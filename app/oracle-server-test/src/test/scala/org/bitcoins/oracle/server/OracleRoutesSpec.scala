@@ -113,8 +113,8 @@ class OracleRoutesSpec
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
-        assert(responseAs[
-          String] == s"""{"result":["${dummyOracleEvent.announcementTLV.hex}"],"error":null}""")
+        assert(
+          responseAs[String] == s"""{"result":["${dummyOracleEvent.eventName}"],"error":null}""")
       }
     }
 

@@ -4,6 +4,7 @@ import org.bitcoins.core.api.dlcoracle.db.EventDb
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.crypto._
 
 import java.time.Instant
@@ -133,7 +134,35 @@ case class CompletedDigitDecompositionV0OracleEvent(
     outcomes: Vector[DLCAttestationType],
     attestations: Vector[FieldElement])
     extends CompletedOracleEvent
-    with DigitDecompositionV0OracleEvent
+    with DigitDecompositionV0OracleEvent {
+
+  val outcomeBase10: Long = {
+    val (digits, positive) = {
+      eventDescriptorTLV match {
+        case _: SignedDigitDecompositionEventDescriptor =>
+          val positive = outcomes.head
+            .asInstanceOf[DigitDecompositionSignAttestation]
+            .positive
+          val digits = outcomes.tail.map(
+            _.asInstanceOf[DigitDecompositionAttestation].outcome)
+
+          (digits, positive)
+        case _: UnsignedDigitDecompositionEventDescriptor =>
+          val digits =
+            outcomes.map(_.asInstanceOf[DigitDecompositionAttestation].outcome)
+          (digits, true)
+      }
+    }
+
+    val base = eventDescriptorTLV.base.toInt
+    val numDigits = eventDescriptorTLV.numDigits.toInt
+
+    val num = NumberUtil.fromDigits(digits, base, numDigits)
+
+    if (positive) num
+    else num * -1
+  }
+}
 
 object OracleEvent {
 
