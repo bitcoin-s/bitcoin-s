@@ -38,8 +38,10 @@ object CommonSettings {
         url("https://twitter.com/Chris_Stewart_5")
       )
     ),
-    scalacOptions in Compile := compilerOpts(scalaVersion = scalaVersion.value),
-    Test / scalacOptions := testCompilerOpts(scalaVersion = scalaVersion.value),
+    scalacOptions in Compile ++= compilerOpts(scalaVersion =
+      scalaVersion.value),
+    Test / scalacOptions ++= testCompilerOpts(scalaVersion =
+      scalaVersion.value),
     //remove annoying import unused things in the scala console
     //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
     scalacOptions in (Compile, console) ~= (_ filterNot (s =>
@@ -51,8 +53,8 @@ object CommonSettings {
     //we don't want -Xfatal-warnings for publishing with publish/publishLocal either
     scalacOptions in (Compile, doc) ~= (_ filterNot (s =>
       s == "-Xfatal-warnings")),
-    scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
-    scalacOptions in Test := testCompilerOpts(scalaVersion.value),
+    scalacOptions in (Test, console) ++= (scalacOptions in (Compile, console)).value,
+    scalacOptions in Test ++= testCompilerOpts(scalaVersion.value),
     licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
   )
 
@@ -148,7 +150,7 @@ object CommonSettings {
     //show full stack trace (-oF) of failed tests and duration of tests (-oD)
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
     logBuffered in Test := false,
-    publish / skip := true
+    skip.in(publish) := true
   ) ++ settings
 
   lazy val prodSettings: Seq[Setting[_]] = settings

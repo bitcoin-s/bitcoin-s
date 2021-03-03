@@ -7,7 +7,7 @@ import scodec.bits.ByteVector
 import scala.util.{Failure, Success, Try}
 
 /** Tests from https://github.com/sipa/bips/blob/bip-taproot/bip-0340/test-vectors.csv */
-class BIP340Test extends BitcoinSUnitTest {
+class BouncyCastleBIP340Test extends BitcoinSUnitTest {
   behavior of "Schnorr Signing"
 
   def testSign(

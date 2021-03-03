@@ -30,18 +30,6 @@ class ECPublicKeyTest extends BitcoinSUnitTest {
     assert(ECPublicKey() != ECPublicKey())
   }
 
-  it must "have serialization symmetry from ECPublicKey -> ECPoint -> ECPublicKey" in {
-    CryptoContext.cryptoRuntime match {
-      case _: BouncycastleCryptoRuntime | _: LibSecp256k1CryptoRuntime =>
-        forAll(CryptoGenerators.publicKey) { pubKey =>
-          val p = BouncyCastleUtil.decodePoint(pubKey)
-          val pub2 = BouncyCastleUtil.decodePubKey(p, pubKey.isCompressed)
-          assert(pubKey == pub2)
-        }
-      case _ => succeed
-    }
-  }
-
   it must "decompress keys correctly" in {
     forAll(CryptoGenerators.privateKey) { privKey =>
       val pubKey = privKey.publicKey
