@@ -1,7 +1,8 @@
 package org.bitcoins.dlc.oracle
 
-import org.bitcoins.core.api.dlcoracle.db._
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.api.dlcoracle._
+import org.bitcoins.core.api.dlcoracle.db._
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
@@ -10,9 +11,9 @@ import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto._
+import org.bitcoins.testkit.fixtures.DLCOracleFixture
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.{ChainParamsGenerator, TLVGen}
-import org.bitcoins.testkit.fixtures.DLCOracleFixture
 
 import java.time.Instant
 
@@ -57,6 +58,51 @@ class DLCOracleTest extends DLCOracleFixture {
                       network)
       assert(dlcOracle.stakingAddress(network) == expected)
     }
+  }
+
+  it must "have same keys with different network configs" in {
+    oracleA: DLCOracle =>
+      // set to mainnet and give separate db
+      val newConf = oracleA.conf.newConfigOfType(
+        Vector(ConfigFactory.parseString("bitcoin-s.network = mainnet"),
+               ConfigFactory.parseString("bitcoin-s.oracle.db.name = oracle1")))
+
+      newConf.initialize().flatMap { oracleB =>
+        assert(oracleA.publicKey == oracleB.publicKey)
+
+        val eventName = "test"
+        val descriptorTLV =
+          DigitDecompositionEventDescriptorV0TLV(base = UInt16(2),
+                                                 isSigned = false,
+                                                 numDigits = 3,
+                                                 unit = "units",
+                                                 precision = Int32.zero)
+
+        for {
+          announcementA <- oracleA.createNewEvent(eventName = eventName,
+                                                  maturationTime = futureTime,
+                                                  descriptorTLV)
+          announcementB <- oracleB.createNewEvent(eventName = eventName,
+                                                  maturationTime = futureTime,
+                                                  descriptorTLV)
+
+          // Can't compare announcementTLV because different nonces might be used for signature
+          _ = assert(announcementA.publicKey == announcementB.publicKey)
+          _ = assert(announcementA.eventTLV == announcementB.eventTLV)
+
+          eventA <- oracleA.signDigits(eventName, 1)
+          eventB <- oracleB.signDigits(eventName, 1)
+        } yield {
+          (eventA, eventB) match {
+            case (completedA: CompletedDigitDecompositionV0OracleEvent,
+                  completedB: CompletedDigitDecompositionV0OracleEvent) =>
+              assert(
+                completedA.oracleAttestmentV0TLV == completedB.oracleAttestmentV0TLV)
+            case (_, _) =>
+              fail("Unexpected outcome")
+          }
+        }
+      }
   }
 
   it must "create a new event and list it with pending" in {

@@ -70,6 +70,12 @@ case class EventDAO()(implicit
     safeDatabase.runVec(query.result.transactionally)
   }
 
+  def findDifferentPublicKey(key: SchnorrPublicKey): Future[Vector[EventDb]] = {
+    val query = table.filterNot(_.pubkey === key)
+
+    safeDatabase.runVec(query.result.transactionally)
+  }
+
   class EventTable(tag: Tag) extends Table[EventDb](tag, schemaName, "events") {
 
     def nonce: Rep[SchnorrNonce] = column("nonce", O.PrimaryKey)
