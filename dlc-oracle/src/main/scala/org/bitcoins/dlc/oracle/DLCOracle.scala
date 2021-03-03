@@ -28,12 +28,18 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
   implicit val ec: ExecutionContext = conf.ec
 
+  // We have to use Testnet here because before this was dictated by
+  // by the network config. The default network config was Regtest,
+  // which uses a Testnet HDCoinType, so that was chosen as the hard coded value.
+  // It was a mistake to originally have this dictated by the config
+  // as the oracle should be network agnostic.
+  // see https://github.com/bitcoin-s/bitcoin-s/issues/2748
+  private val coinType = HDCoinType.Testnet
+
   private val rValAccount: HDAccount = {
     val purpose = conf.kmParams.purpose
-    // We have to use Testnet here because before this was dictated by
-    // by the network config. The default network config was Regtest,
-    // which uses a Testnet HDCoinType, so that was chosen as the hard coded value.
-    val coin = HDCoin(purpose, HDCoinType.Testnet)
+
+    val coin = HDCoin(purpose, coinType)
     HDAccount(coin, 0)
   }
 
@@ -41,10 +47,7 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
   private val rValueChainIndex = 0
 
   private def signingKey: ECPrivateKey = {
-    // We have to use Testnet here because before this was dictated by
-    // by the network config. The default network config was Regtest,
-    // which uses a Testnet HDCoinType, so that was chosen as the hard coded value.
-    val coin = HDCoin(HDPurposes.SegWit, HDCoinType.Testnet)
+    val coin = HDCoin(HDPurposes.SegWit, coinType)
     val account = HDAccount(coin, 0)
     val purpose = coin.purpose
     val chain = HDChainType.External
