@@ -131,7 +131,7 @@ case class CompletedDigitDecompositionV0OracleEvent(
     maturationTime: Instant,
     announcementSignature: SchnorrDigitalSignature,
     eventDescriptorTLV: DigitDecompositionEventDescriptorV0TLV,
-    outcomes: Vector[DLCAttestationType],
+    outcomes: Vector[DigitDecompositionAttestationType],
     attestations: Vector[FieldElement])
     extends CompletedOracleEvent
     with DigitDecompositionV0OracleEvent {

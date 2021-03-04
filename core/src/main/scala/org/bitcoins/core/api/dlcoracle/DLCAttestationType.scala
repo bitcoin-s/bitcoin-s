@@ -13,14 +13,16 @@ case class EnumAttestation(outcomeString: String) extends DLCAttestationType {
   def bytes: ByteVector = CryptoUtil.serializeForHash(outcomeString)
 }
 
+sealed trait DigitDecompositionAttestationType extends DLCAttestationType
+
 case class DigitDecompositionSignAttestation(positive: Boolean)
-    extends DLCAttestationType {
+    extends DigitDecompositionAttestationType {
   override def outcomeString: String = if (positive) "+" else "-"
   def bytes: ByteVector = CryptoUtil.serializeForHash(outcomeString)
 }
 
 case class DigitDecompositionAttestation(outcome: Int)
-    extends DLCAttestationType {
+    extends DigitDecompositionAttestationType {
   override def outcomeString: String = outcome.toString
   def bytes: ByteVector = CryptoUtil.serializeForHash(outcomeString)
 }
