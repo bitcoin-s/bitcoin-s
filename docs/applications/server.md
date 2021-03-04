@@ -52,7 +52,7 @@ This will build a `Dockerfile` that is located in `app/server/target/docker/stag
 You can now build the docker image with
 
 ```
-docker build app/server/target/docker/stage/ -t app-server
+docker build app/server/target/docker/stage/ -t bitcoin-s-server:latest
 ```
 
 Finally, let's run the image! It's important that you correctly configure port forwarding with the docker container so
@@ -63,7 +63,7 @@ This means we need to forward requests on the host machine to the docker contain
 
 This can be done with the following command
 ```
-docker run -d -p 9999:9999 app-server:latest
+docker run -d -p 9999:9999 bitcoin-s-server:latest:latest
 ```
 
 Now you can send requests with `bitcoin-s-cli` or `curl`.
@@ -102,6 +102,9 @@ For more information on how to use our built in `cli` to interact with the serve
 
 ### Docker configuration
 
+In this example, we are using the latest docker image published to our [docker hub](https://hub.docker.com/repository/docker/bitcoinscala/bitcoin-s-oracle-server/tags?page=1&ordering=last_updated)
+which is referenced by `bitcoinscala/bitcoin-s-server:latest`
+
 You can use bitcoin-s with docker volumes. You can also pass in a custom configuration at container runtime.
 
 #### Using a docker volume
@@ -109,7 +112,7 @@ You can use bitcoin-s with docker volumes. You can also pass in a custom configu
 ```basrc
 docker volume create bitcoin-s
 docker run -p 9999:9999 \
---mount source=bitcoin-s,target=/home/bitcoin-s/ app-server:latest
+--mount source=bitcoin-s,target=/home/bitcoin-s/ bitcoinscala/bitcoin-s-server:latest
 ```
 
 Now you can re-use this volume across container runs. It will keep the same oracle database
@@ -127,7 +130,7 @@ You can do this with the following command
 ```bashrc
 docker run -p 9999:9999 \
 --mount type=bind,source=/my/new/config/,target=/home/bitcoin-s/.bitcoin-s/ \
-app-server:latest --conf /home/bitcoin-s/.bitcoin-s/bitcoin-s.conf
+bitcoinscala/bitcoin-s-server:latest --conf /home/bitcoin-s/.bitcoin-s/bitcoin-s.conf
 ```
 
 Note: If you adjust the `bitcoin-s.server.rpcport` setting you will need to adjust
