@@ -115,7 +115,7 @@ lazy val eclairRpc = project
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
 lazy val jsProjects: Vector[ProjectReference] =
-  Vector(cryptoJS, coreJS, cryptoTestJS, coreTestJS, testkitCoreJS
+  Vector(cryptoJS, coreJS, cryptoTestJS, coreTestJS, testkitCoreJS)
 
 // quoting the val name this way makes it appear as
 // 'bitcoin-s' in sbt/bloop instead of 'bitcoins'
