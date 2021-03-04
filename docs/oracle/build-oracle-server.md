@@ -86,7 +86,7 @@ You can publish to your local docker repository by using `docker:publishLocal` i
 You can now build the docker image with
 
 ```
-docker build app/oracle-server/target/docker/stage/ -t oracle-server
+docker build app/oracle-server/target/docker/stage/ -t bitcoin-s-oracle-server:latest
 ```
 
 Finally, let's run the image! It's important that you correctly configure port forwarding with the docker container so
@@ -97,7 +97,7 @@ This means we need to forward requests on the host machine to the docker contain
 
 This can be done with the following command
 ```
-docker run -d -p 9998:9998 oracle-server:latest
+docker run -d -p 9998:9998 bitcoin-s-oracle-server:latest
 ```
 
 Now you can send requests with `bitcoin-s-cli` or `curl`.
@@ -136,6 +136,9 @@ For more information on how to use our built in `cli` to interact with the serve
 
 ### Docker configuration
 
+In this example, we are using the latest docker image published to our [docker hub](https://hub.docker.com/repository/docker/bitcoinscala/bitcoin-s-oracle-server/tags?page=1&ordering=last_updated)
+which is referenced by `bitcoinscala/bitcoin-s-oracle-server:latest`
+
 You can use bitcoin-s with docker volumes. You can also pass in a custom configuration at container runtime.
 
 #### Using a docker volume
@@ -143,7 +146,7 @@ You can use bitcoin-s with docker volumes. You can also pass in a custom configu
 ```basrc
 docker volume create bitcoin-s
 docker run -p 9998:9998 \
---mount source=bitcoin-s,target=/home/bitcoin-s/ oracle-server:latest
+--mount source=bitcoin-s,target=/home/bitcoin-s/ bitcoinscala/bitcoin-s-oracle-server:latest
 ```
 
 Now you can re-use this volume across container runs. It will keep the same oracle database
@@ -161,7 +164,7 @@ You can do this with the following command
 ```bashrc
 docker run -p 9998:9998 \
 --mount type=bind,source=/my/new/config/,target=/home/bitcoin-s/.bitcoin-s/ \
-oracle-server:latest --conf /home/bitcoin-s/.bitcoin-s/bitcoin-s.conf
+bitcoinscala/bitcoin-s-oracle-server:latest --conf /home/bitcoin-s/.bitcoin-s/bitcoin-s.conf
 ```
 
 Note: If you adjust the `bitcoin-s.oracle.rpcport` setting you will need to adjust
