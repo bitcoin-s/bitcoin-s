@@ -145,41 +145,6 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
     createNewEvent(eventName, maturationTime, descriptorTLV)
   }
 
-  override def createNewRangedEvent(
-      eventName: String,
-      maturationTime: Instant,
-      start: Int,
-      count: Int,
-      step: Int,
-      unit: String,
-      precision: Int): Future[OracleAnnouncementTLV] =
-    createNewRangedEvent(eventName,
-                         maturationTime,
-                         Int32(start),
-                         UInt32(count),
-                         UInt16(step),
-                         unit,
-                         Int32(precision))
-
-  override def createNewRangedEvent(
-      eventName: String,
-      maturationTime: Instant,
-      start: Int32,
-      count: UInt32,
-      step: UInt16,
-      unit: String,
-      precision: Int32): Future[OracleAnnouncementTLV] = {
-    require(count > UInt32.zero,
-            s"Count cannot be less than 1, got ${count.toInt}")
-    require(step > UInt16.zero,
-            s"Step cannot be less than 1, got ${step.toInt}")
-
-    val descriptorTLV =
-      RangeEventDescriptorV0TLV(start, count, step, unit, precision)
-
-    createNewEvent(eventName, maturationTime, descriptorTLV)
-  }
-
   override def createNewEnumEvent(
       eventName: String,
       maturationTime: Instant,
@@ -351,7 +316,7 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
     val eventDescriptorTLV: DigitDecompositionEventDescriptorV0TLV = {
       oracleEventTLV.eventDescriptor match {
-        case _: EnumEventDescriptorV0TLV | _: RangeEventDescriptorV0TLV =>
+        case _: EnumEventDescriptorV0TLV =>
           throw new IllegalArgumentException(
             "Must have a DigitDecomposition event descriptor use signEvent instead")
         case decomp: DigitDecompositionEventDescriptorV0TLV =>

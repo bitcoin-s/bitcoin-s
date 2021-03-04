@@ -126,18 +126,6 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                 val outcomesJson = event.eventDescriptorTLV match {
                   case enum: EnumEventDescriptorV0TLV =>
                     enum.outcomes.map(outcome => Str(outcome.normStr))
-                  case range: RangeEventDescriptorV0TLV =>
-                    val outcomes: Vector[Long] = {
-                      val startL = range.start.toLong
-                      val stepL = range.step.toLong
-
-                      val outcomeRange =
-                        0L.until(range.count.toLong)
-                          .map(num => startL + (num * stepL))
-
-                      outcomeRange.toVector
-                    }
-                    outcomes.map(num => Num(num.toDouble))
                   case decomp: DigitDecompositionEventDescriptorV0TLV =>
                     val sign = decomp match {
                       case _: UnsignedDigitDecompositionEventDescriptor =>

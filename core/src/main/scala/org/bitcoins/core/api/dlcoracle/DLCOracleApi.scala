@@ -35,24 +35,6 @@ trait DLCOracleApi {
       unit: String,
       precision: Int32): Future[OracleAnnouncementTLV]
 
-  def createNewRangedEvent(
-      eventName: String,
-      maturationTime: Instant,
-      start: Int,
-      count: Int,
-      step: Int,
-      unit: String,
-      precision: Int): Future[OracleAnnouncementTLV]
-
-  def createNewRangedEvent(
-      eventName: String,
-      maturationTime: Instant,
-      start: Int32,
-      count: UInt32,
-      step: UInt16,
-      unit: String,
-      precision: Int32): Future[OracleAnnouncementTLV]
-
   def createNewEnumEvent(
       eventName: String,
       maturationTime: Instant,
