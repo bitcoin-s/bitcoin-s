@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.tlv
 
-import org.bitcoins.core.number.{Int32, UInt16, UInt32}
+import org.bitcoins.core.number.{Int32, UInt16}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import scala.collection.immutable.NumericRange
@@ -18,72 +18,6 @@ class EventDescriptorTest extends BitcoinSUnitTest {
     assert(enumEventDescriptorV0TLV.noncesNeeded == 1)
   }
 
-  it must "create a range event" in {
-    val rangeEventDescriptorV0TLV =
-      RangeEventDescriptorV0TLV(start = Int32(-2),
-                                count = UInt32(4),
-                                step = UInt16.one,
-                                unit = "test_unit",
-                                precision = Int32.zero)
-
-    assert(rangeEventDescriptorV0TLV.maxNum == 1)
-    assert(rangeEventDescriptorV0TLV.minNum == -2)
-    assert(Vector(-2, -1, 0, 1).forall(rangeEventDescriptorV0TLV.contains(_)))
-    assert(
-      Vector(-2, -1, 0, 1).forall(
-        rangeEventDescriptorV0TLV.containsPreciseOutcome(_)))
-
-    val rangeEventBasePrecision1 =
-      RangeEventDescriptorV0TLV(start = Int32(0),
-                                count = UInt32(15),
-                                step = UInt16.one,
-                                unit = "test_unit",
-                                precision = Int32(2))
-
-    assert(rangeEventBasePrecision1.maxNum == 14)
-    assert(rangeEventBasePrecision1.maxToPrecision == 1400)
-    assert(rangeEventBasePrecision1.minNum == 0)
-    assert(rangeEventBasePrecision1.minToPrecision == 0)
-    val rangePrecision1 =
-      NumericRange
-        .inclusive[BigDecimal](start = 0, end = 1400, step = 100)(
-          BigDecimalAsIfIntegral)
-        .toVector
-    assert(
-      rangePrecision1.forall(
-        rangeEventBasePrecision1.containsPreciseOutcome(_)))
-    val expected = 0.until(15).toVector
-    assert(expected.forall(rangeEventBasePrecision1.contains(_)))
-  }
-
-  it must "handle a range event with negative precision" in {
-    //https://suredbits.slack.com/archives/CVA6LJA4E/p1604514328172300?thread_ts=1604507650.160900&cid=CVA6LJA4E
-    val rangeEventBasePrecision1 =
-      RangeEventDescriptorV0TLV(start = Int32(-10),
-                                count = UInt32(20),
-                                step = UInt16(5),
-                                unit = "test_unit",
-                                precision = Int32.negOne)
-    val range =
-      NumericRange[BigDecimal](start = -1.0, end = 9.0, step = 0.5)(
-        BigDecimalAsIfIntegral).toVector
-    assert(rangeEventBasePrecision1.stepToPrecision == 0.5)
-    assert(rangeEventBasePrecision1.minNum == -10)
-    assert(rangeEventBasePrecision1.minToPrecision == -1)
-    assert(rangeEventBasePrecision1.maxNum == 85)
-    assert(rangeEventBasePrecision1.maxToPrecision == 8.5)
-    assert(range.forall(rangeEventBasePrecision1.containsPreciseOutcome(_)))
-
-    assert(
-      -10
-        .until(90, 5)
-        .toVector
-        .forall(rangeEventBasePrecision1.contains(_)))
-
-    assert(!rangeEventBasePrecision1.containsPreciseOutcome(8.4))
-    assert(rangeEventBasePrecision1.containsPreciseOutcome(8.5))
-  }
-
   it must "be illegal to have num digits be zero" in {
     intercept[IllegalArgumentException] {
       UnsignedDigitDecompositionEventDescriptor(base = UInt16(10),
@@ -98,20 +32,6 @@ class EventDescriptorTest extends BitcoinSUnitTest {
                                               precision = Int32.zero)
     }
   }
-
-  it must "serialize and deserialize a range event" in {
-    val hex = "fdd80815fffffffe0000000400010642544355534400000000"
-    val re = RangeEventDescriptorV0TLV(start = Int32(-2),
-                                       count = UInt32(4),
-                                       step = UInt16.one,
-                                       unit = "BTCUSD",
-                                       precision = Int32.zero)
-
-    val reFromHex = RangeEventDescriptorV0TLV.fromHex(hex)
-    assert(reFromHex == re)
-    assert(re.hex == hex)
-  }
-
   it must "create a unsigned digit decomposition event" in {
     val descriptor =
       UnsignedDigitDecompositionEventDescriptor(base = UInt16(10),

@@ -107,41 +107,6 @@ case class CompletedEnumV0OracleEvent(
   override def outcomes: Vector[DLCAttestationType] = Vector(outcome)
 }
 
-sealed trait RangeV0OracleEvent extends OracleEvent {
-  override def eventDescriptorTLV: RangeEventDescriptorV0TLV
-  def nonce: SchnorrNonce
-
-  final override def nonces: Vector[SchnorrNonce] = Vector(nonce)
-}
-
-case class PendingRangeV0OracleEvent(
-    pubkey: SchnorrPublicKey,
-    nonce: SchnorrNonce,
-    eventName: String,
-    signingVersion: SigningVersion,
-    maturationTime: Instant,
-    announcementSignature: SchnorrDigitalSignature,
-    eventDescriptorTLV: RangeEventDescriptorV0TLV)
-    extends PendingOracleEvent
-    with RangeV0OracleEvent
-
-case class CompletedRangeV0OracleEvent(
-    pubkey: SchnorrPublicKey,
-    nonce: SchnorrNonce,
-    eventName: String,
-    signingVersion: SigningVersion,
-    maturationTime: Instant,
-    announcementSignature: SchnorrDigitalSignature,
-    eventDescriptorTLV: RangeEventDescriptorV0TLV,
-    outcome: RangeAttestation,
-    attestation: FieldElement)
-    extends CompletedOracleEvent
-    with RangeV0OracleEvent {
-  override def attestations: Vector[FieldElement] = Vector(attestation)
-
-  override def outcomes: Vector[DLCAttestationType] = Vector(outcome)
-}
-
 sealed trait DigitDecompositionV0OracleEvent extends OracleEvent {
   override def eventDescriptorTLV: DigitDecompositionEventDescriptorV0TLV
 }
@@ -200,28 +165,6 @@ object OracleEvent {
                                  eventDb.maturationTime,
                                  eventDb.announcementSignature,
                                  enum)
-      case (range: RangeEventDescriptorV0TLV, Some(sig)) =>
-        require(eventDbs.size == 1, "Range events may only have one eventDb")
-        CompletedRangeV0OracleEvent(
-          eventDb.pubkey,
-          eventDb.nonce,
-          eventDb.eventName,
-          eventDb.signingVersion,
-          eventDb.maturationTime,
-          eventDb.announcementSignature,
-          range,
-          RangeAttestation(eventDb.outcomeOpt.get.toLong),
-          sig
-        )
-      case (range: RangeEventDescriptorV0TLV, None) =>
-        require(eventDbs.size == 1, "Range events may only have one eventDb")
-        PendingRangeV0OracleEvent(eventDb.pubkey,
-                                  eventDb.nonce,
-                                  eventDb.eventName,
-                                  eventDb.signingVersion,
-                                  eventDb.maturationTime,
-                                  eventDb.announcementSignature,
-                                  range)
       case (decomp: DigitDecompositionEventDescriptorV0TLV, Some(_)) =>
         require(eventDbs.forall(_.attestationOpt.isDefined),
                 "Cannot have a partially signed event")
@@ -339,7 +282,6 @@ object OracleEvent {
             }
 
           validSign && validDigits
-        case _: RangeEventDescriptorV0TLV => false
       }
     }
   }

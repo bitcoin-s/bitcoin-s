@@ -61,16 +61,6 @@ trait TLVGen {
     } yield EnumEventDescriptorV0TLV(outcomes.toVector)
   }
 
-  def rangeEventDescriptorV0TLV: Gen[RangeEventDescriptorV0TLV] = {
-    for {
-      start <- NumberGenerator.int32s
-      count <- NumberGenerator.uInt32s
-      step <- NumberGenerator.uInt16
-      unit <- StringGenerators.genUTF8String
-      precision <- NumberGenerator.int32s
-    } yield RangeEventDescriptorV0TLV(start, count, step, unit, precision)
-  }
-
   def digitDecompositionEventDescriptorV0TLV: Gen[
     DigitDecompositionEventDescriptorV0TLV] = {
     for {
@@ -87,9 +77,7 @@ trait TLVGen {
   }
 
   def eventDescriptorTLV: Gen[EventDescriptorTLV] =
-    Gen.oneOf(enumEventDescriptorV0TLV,
-              rangeEventDescriptorV0TLV,
-              digitDecompositionEventDescriptorV0TLV)
+    Gen.oneOf(enumEventDescriptorV0TLV, digitDecompositionEventDescriptorV0TLV)
 
   def oracleEventV0TLV: Gen[OracleEventV0TLV] = {
     for {
