@@ -91,14 +91,6 @@ object CliReaders {
         EnumEventDescriptorV0TLV.fromHex
     }
 
-  implicit val rangeEventDescriptorReads: Read[RangeEventDescriptorV0TLV] =
-    new Read[RangeEventDescriptorV0TLV] {
-      override def arity: Int = 1
-
-      override def reads: String => RangeEventDescriptorV0TLV =
-        RangeEventDescriptorV0TLV.fromHex
-    }
-
   implicit val digitDecompEventDescriptorReads: Read[
     DigitDecompositionEventDescriptorV0TLV] =
     new Read[DigitDecompositionEventDescriptorV0TLV] {

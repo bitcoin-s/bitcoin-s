@@ -459,9 +459,7 @@ sealed trait EventDescriptorTLV extends TLV {
 object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
 
   val allFactories: Vector[TLVFactory[EventDescriptorTLV]] =
-    Vector(EnumEventDescriptorV0TLV,
-           RangeEventDescriptorV0TLV,
-           DigitDecompositionEventDescriptorV0TLV)
+    Vector(EnumEventDescriptorV0TLV, DigitDecompositionEventDescriptorV0TLV)
 
   override def typeName: String = "EventDescriptorTLV"
 }
@@ -549,57 +547,6 @@ sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
       case Some(unModifiedOutcome) => contains(unModifiedOutcome)
       case None                    => false
     }
-  }
-}
-
-/** Describes a simple event over a range of numbers
-  * @param start The first number in the range
-  * @param count The number of possible outcomes
-  * @param step The increment between each outcome
-  */
-case class RangeEventDescriptorV0TLV(
-    start: Int32,
-    count: UInt32,
-    step: UInt16,
-    unit: NormalizedString,
-    precision: Int32)
-    extends NumericEventDescriptorTLV {
-
-  override val minNum: BigInt = BigInt(start.toInt)
-
-  override val min: Vector[NormalizedString] = Vector(minNum.toString)
-
-  override val maxNum: BigInt =
-    start.toLong + (step.toLong * (count.toLong - 1))
-
-  override val max: Vector[NormalizedString] = Vector(maxNum.toString)
-
-  override val base: UInt16 = UInt16(10)
-
-  override val tpe: BigSizeUInt = RangeEventDescriptorV0TLV.tpe
-
-  override val value: ByteVector = {
-    start.bytes ++ count.bytes ++ step.bytes ++
-      strBytes(unit) ++ precision.bytes
-  }
-
-  override def noncesNeeded: Int = 1
-}
-
-object RangeEventDescriptorV0TLV extends TLVFactory[RangeEventDescriptorV0TLV] {
-
-  override val tpe: BigSizeUInt = BigSizeUInt(55304)
-
-  override def fromTLVValue(value: ByteVector): RangeEventDescriptorV0TLV = {
-    val iter = ValueIterator(value)
-
-    val start = iter.takeI32()
-    val count = iter.takeU32()
-    val step = iter.takeU16()
-    val unit = iter.takeString()
-    val precision = iter.takeI32()
-
-    RangeEventDescriptorV0TLV(start, count, step, unit, precision)
   }
 }
 

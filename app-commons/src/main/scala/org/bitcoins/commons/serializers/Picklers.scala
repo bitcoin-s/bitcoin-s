@@ -56,10 +56,6 @@ object Picklers {
     EnumEventDescriptorV0TLV] =
     readwriter[String].bimap(_.hex, EnumEventDescriptorV0TLV.fromHex)
 
-  implicit val rangeEventDescriptorPickler: ReadWriter[
-    RangeEventDescriptorV0TLV] =
-    readwriter[String].bimap(_.hex, RangeEventDescriptorV0TLV.fromHex)
-
   implicit val digitDecompEventDescriptorPickler: ReadWriter[
     DigitDecompositionEventDescriptorV0TLV] =
     readwriter[String].bimap(_.hex,

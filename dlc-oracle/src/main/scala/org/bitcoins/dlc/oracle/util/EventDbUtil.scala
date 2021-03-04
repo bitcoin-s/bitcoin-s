@@ -25,26 +25,6 @@ trait EventDbUtil {
             signingVersion.calcOutcomeHash(enum, attestationType.bytes)
           EventOutcomeDb(nonce, outcome, hash)
         }
-      case range: RangeEventDescriptorV0TLV =>
-        require(nonces.size == 1, "Range events should only have one R value")
-        val nonce = nonces.head
-
-        val outcomes: Vector[Long] = {
-          val startL = range.start.toLong
-          val stepL = range.step.toLong
-
-          val outcomeRange =
-            0L.until(range.count.toLong).map(num => startL + (num * stepL))
-
-          outcomeRange.toVector
-        }
-
-        outcomes.map { outcome =>
-          val attestationType = RangeAttestation(outcome)
-          val hash =
-            signingVersion.calcOutcomeHash(range, attestationType.bytes)
-          EventOutcomeDb(nonce, outcome.toString, hash)
-        }
       case decomp: DigitDecompositionEventDescriptorV0TLV =>
         val signDbs = decomp match {
           case _: SignedDigitDecompositionEventDescriptor =>

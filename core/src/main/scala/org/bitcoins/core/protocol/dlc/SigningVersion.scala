@@ -65,7 +65,7 @@ object SigningVersion extends StringFactory[SigningVersion] {
         descriptor: EventDescriptorTLV,
         byteVector: ByteVector): ByteVector = {
       descriptor match {
-        case _: EnumEventDescriptorV0TLV | _: RangeEventDescriptorV0TLV |
+        case _: EnumEventDescriptorV0TLV |
             _: DigitDecompositionEventDescriptorV0TLV =>
           CryptoUtil.sha256(byteVector).bytes
       }
@@ -90,7 +90,7 @@ object SigningVersion extends StringFactory[SigningVersion] {
         descriptor: EventDescriptorTLV,
         byteVector: ByteVector): ByteVector = {
       descriptor match {
-        case _: EnumEventDescriptorV0TLV | _: RangeEventDescriptorV0TLV |
+        case _: EnumEventDescriptorV0TLV |
             _: DigitDecompositionEventDescriptorV0TLV =>
           CryptoUtil.sha256DLCAttestation(byteVector).bytes
       }
