@@ -11,14 +11,14 @@ import org.bitcoins.core.util._
 import org.bitcoins.core.wallet.builder.StandardNonInteractiveFinalizer
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.testkit.core.gen.{CreditingTxGen, ScriptGenerators}
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
 import scala.util.Try
 
 /** Created by chris on 2/19/16.
   */
-class TransactionSignatureSerializerTest extends BitcoinSAsyncTest {
+class TransactionSignatureSerializerTest extends BitcoinSJvmTest {
 
   "TransactionSignatureSerializer" must "correctly serialize an input that is being checked where another input in the same tx is using SIGHASH_ANYONECANPAY" in {
     //this is from a test case inside of tx_valid.json

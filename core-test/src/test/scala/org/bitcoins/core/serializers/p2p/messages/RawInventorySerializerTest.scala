@@ -3,7 +3,7 @@ package org.bitcoins.core.serializers.p2p.messages
 import org.bitcoins.core.p2p.TypeIdentifier.MsgTx
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 6/1/16.
   */

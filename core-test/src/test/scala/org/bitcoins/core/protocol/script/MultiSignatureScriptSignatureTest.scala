@@ -1,10 +1,10 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TransactionTestUtil}
+import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TransactionTestUtil}
 
 /** Created by chris on 3/8/16.
   */
-class MultiSignatureScriptSignatureTest extends BitcoinSUnitTest {
+class MultiSignatureScriptSignatureTest extends BitcoinSJvmTest {
 
   "MultiSignatureScriptSignature" must "find all of the digital signatures for a multisignature scriptSig" in {
     val (spendingTx, inputIndex, _, _) =

@@ -15,7 +15,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError.MnemonicNotFound
 import org.bitcoins.crypto.{AesPassword, ECPublicKey}
-import org.bitcoins.testkit.util.TransactionTestUtil._
+import org.bitcoins.testkitcore.util.TransactionTestUtil._
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion

@@ -5,8 +5,8 @@ import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.Implicits.GeneratorOps
-import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkitcore.Implicits.GeneratorOps
+import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 import java.nio.file.{Files, Path}

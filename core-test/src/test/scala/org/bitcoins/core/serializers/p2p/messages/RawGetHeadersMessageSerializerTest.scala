@@ -4,13 +4,13 @@ import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.testkit.node.NodeTestUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.node.P2PMessageTestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 6/29/16.
   */
 class RawGetHeadersMessageSerializerTest extends BitcoinSUnitTest {
-  val hex = NodeTestUtil.rawGetHeadersMsg
+  val hex = P2PMessageTestUtil.rawGetHeadersMsg
 
   "RawGetHeadersMessageSerializer" must "read a hex string representing a GetHeaderMessage" in {
     val getHeadersMessage = RawGetHeadersMessageSerializer.read(hex)

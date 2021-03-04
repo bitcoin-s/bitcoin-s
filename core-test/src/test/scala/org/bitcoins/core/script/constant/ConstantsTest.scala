@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.constant
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 import scala.util.Try

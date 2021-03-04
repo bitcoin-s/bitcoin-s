@@ -3,8 +3,8 @@ package org.bitcoins.core.serializers.p2p.messages
 import org.bitcoins.core.number.{UInt16, UInt32, UInt64}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.testkit.core.gen.NumberGenerator
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.NumberGenerator
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import scodec.bits.{ByteVector, HexStringSyntax}
 

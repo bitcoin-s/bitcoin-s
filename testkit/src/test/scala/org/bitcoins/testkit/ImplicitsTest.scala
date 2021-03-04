@@ -1,7 +1,7 @@
 package org.bitcoins.testkit
 
-import util.BitcoinSUnitTest
-import Implicits._
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalatest.exceptions.TestFailedException
 
 class ImplicitsTest extends BitcoinSUnitTest {

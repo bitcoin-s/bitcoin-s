@@ -11,7 +11,8 @@ import org.bitcoins.core.script.{
   PreExecutionScriptProgram
 }
 import org.bitcoins.core.util.ScriptProgramTestUtil
-import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
+import org.bitcoins.testkitcore.util.TestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 3/30/16.
   */

@@ -1,7 +1,7 @@
 package org.bitcoins.core.p2p
 
 import org.bitcoins.core.p2p.TypeIdentifier._
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class TypeIdentifierTest extends BitcoinSUnitTest {
 

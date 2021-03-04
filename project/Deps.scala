@@ -34,6 +34,7 @@ object Deps {
     val akkaActorV = akkaStreamv
     val slickV = "3.3.3"
     val sqliteV = "3.34.0"
+
     val scalameterV = "0.17"
     val scalamockV = "5.1.0"
     val scalaCollectionCompatV = "2.4.2"
@@ -171,6 +172,9 @@ object Deps {
 
     // HTTP client lib
     val sttp = "com.softwaremill.sttp" %% "core" % V.sttpV
+
+    val scalaCollectionCompat =
+      "org.scala-lang.modules" %% "scala-collection-compat" % V.scalaCollectionCompatV
 
     val scalacheck =
       "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
@@ -418,7 +422,18 @@ object Deps {
     )
   }
 
-  val testkit = Def.setting {
+  def testkitCore = Def.setting {
+    List(
+      Compile.newMicroPickle,
+      Compile.scalaCollectionCompat,
+      Compile.scalacheck,
+      Compile.scalaTest.value,
+      Compile.scalaTestPlus,
+      Compile.slf4j
+    )
+  }
+
+  def testkit = Def.setting {
     List(
       Compile.slf4j,
       Compile.scalacheck,

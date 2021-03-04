@@ -1,7 +1,7 @@
 package org.bitcoins.core.serializers
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.testkit.core.gen.CurrencyUnitGenerator
+import org.bitcoins.testkitcore.gen.CurrencyUnitGenerator
 import org.scalacheck.{Prop, Properties}
 
 /** Created by chris on 6/23/16.

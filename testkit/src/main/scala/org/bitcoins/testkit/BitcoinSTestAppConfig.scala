@@ -3,8 +3,8 @@ package org.bitcoins.testkit
 import com.typesafe.config._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.Implicits.GeneratorOps
-import org.bitcoins.testkit.core.gen.{NumberGenerator, StringGenerators}
+import org.bitcoins.testkitcore.Implicits.GeneratorOps
+import org.bitcoins.testkitcore.gen.{NumberGenerator, StringGenerators}
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil
 

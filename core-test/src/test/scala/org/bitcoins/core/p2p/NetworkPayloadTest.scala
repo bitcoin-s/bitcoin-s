@@ -1,14 +1,14 @@
 package org.bitcoins.core.p2p
 
 import org.bitcoins.core.config.TestNet3
-import org.bitcoins.testkit.core.gen.p2p.P2PGenerator
-import org.bitcoins.testkit.node.NodeTestUtil
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.gen.p2p.P2PGenerator
+import org.bitcoins.testkitcore.node.P2PMessageTestUtil
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
-class NetworkPayloadTest extends BitcoinSAsyncTest {
+class NetworkPayloadTest extends BitcoinSJvmTest {
 
   "NetworkMessage" must "create a payload object from it's network header and the payload bytes" in {
-    val rawNetworkMessage = NodeTestUtil.rawNetworkMessage
+    val rawNetworkMessage = P2PMessageTestUtil.rawNetworkMessage
     val header = NetworkHeader(rawNetworkMessage.take(48))
     logger.debug("Header: " + header)
     val payloadHex = rawNetworkMessage.slice(48, rawNetworkMessage.length)

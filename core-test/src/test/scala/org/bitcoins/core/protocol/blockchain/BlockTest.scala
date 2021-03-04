@@ -1,13 +1,13 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.bitcoins.testkit.core.gen.BlockchainElementsGenerator
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.gen.BlockchainElementsGenerator
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
 import scala.io.Source
 
 /** Created by chris on 7/15/16.
   */
-class BlockTest extends BitcoinSAsyncTest {
+class BlockTest extends BitcoinSJvmTest {
 
   def timeBlockParsing[R](block: => R): Long = {
     val t0 = System.currentTimeMillis()

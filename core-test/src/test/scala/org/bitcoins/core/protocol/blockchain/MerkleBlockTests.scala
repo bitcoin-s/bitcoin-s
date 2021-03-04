@@ -5,7 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 8/9/16.
   */

@@ -5,22 +5,22 @@ import org.bitcoins.db.AppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.util.BaseAsyncTest
+import org.bitcoins.testkit.util.BitcoinSAkkaAsyncTest
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.Await
 
-sealed trait CachedAppConfig { _: BaseAsyncTest =>
+sealed trait CachedAppConfig { _: BitcoinSAkkaAsyncTest =>
 
   /** Unfortunately this can't be a 'val' because of NPE */
   implicit protected def appConfig: AppConfig
 
   override def afterAll(): Unit = {
-    Await.result(appConfig.stop(), akkaTimeout.duration)
+    Await.result(appConfig.stop(), duration)
   }
 }
 
-trait CachedBitcoinSAppConfig { _: BaseAsyncTest =>
+trait CachedBitcoinSAppConfig { _: BitcoinSAkkaAsyncTest =>
 
   implicit protected lazy val cachedConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
@@ -38,10 +38,11 @@ trait CachedBitcoinSAppConfig { _: BaseAsyncTest =>
   }
 
   override def afterAll(): Unit = {
-    Await.result(cachedConfig.stop(), akkaTimeout.duration)
+    Await.result(cachedConfig.stop(), duration)
   }
 }
 
-trait CachedChainAppConfig extends CachedBitcoinSAppConfig { _: BaseAsyncTest =>
+trait CachedChainAppConfig extends CachedBitcoinSAppConfig {
+  _: BitcoinSAkkaAsyncTest =>
 
 }

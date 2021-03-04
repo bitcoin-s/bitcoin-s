@@ -1,16 +1,12 @@
 package org.bitcoins.core.util
 
-import akka.actor.ActorSystem
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalatest.compatible.Assertion
 
 import scala.concurrent._
 
-class FutureUtilTest extends BitcoinSAsyncTest with BitcoinSLogger {
+class FutureUtilTest extends BitcoinSJvmTest with BitcoinSLogger {
   it must "execute futures sequentially in the correct order" in {
-
-    val actorSystem = ActorSystem()
-    implicit val ec = actorSystem.dispatcher
 
     val assertionP = Promise[Assertion]()
     val assertionF = assertionP.future

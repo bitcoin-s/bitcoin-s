@@ -2,7 +2,7 @@ package org.bitcoins.core.wallet.fee
 
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class FeeUnitTest extends BitcoinSUnitTest {
 

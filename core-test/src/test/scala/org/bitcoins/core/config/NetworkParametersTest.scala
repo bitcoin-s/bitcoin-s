@@ -1,7 +1,7 @@
 package org.bitcoins.core.config
 
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 6/10/16.
   */

@@ -1,6 +1,6 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class RawServiceIdentifierSerializerTest extends BitcoinSUnitTest {
 

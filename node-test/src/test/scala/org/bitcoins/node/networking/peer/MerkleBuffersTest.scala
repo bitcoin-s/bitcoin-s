@@ -4,7 +4,7 @@ import _root_.org.scalatest.compatible.Assertion
 import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.{NodeCallbacks, OnMerkleBlockReceived}
-import org.bitcoins.testkit.core.gen.{
+import org.bitcoins.testkitcore.gen.{
   BlockchainElementsGenerator,
   TransactionGenerators
 }

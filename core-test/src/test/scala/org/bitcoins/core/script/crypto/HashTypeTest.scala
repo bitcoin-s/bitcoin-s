@@ -1,7 +1,7 @@
 package org.bitcoins.core.script.crypto
 
 import org.bitcoins.core.number.Int32
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /** Created by chris on 2/27/16.

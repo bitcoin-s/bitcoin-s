@@ -31,8 +31,8 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.number._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.utxo.ConditionalPath
-import org.bitcoins.testkit.core.gen._
-import org.bitcoins.testkit.core.gen.ScriptGenerators._
+import org.bitcoins.testkitcore.gen._
+import org.bitcoins.testkitcore.gen.ScriptGenerators._
 
 import org.scalacheck.Gen
 

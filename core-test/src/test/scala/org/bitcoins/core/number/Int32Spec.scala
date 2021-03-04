@@ -1,6 +1,6 @@
 package org.bitcoins.core.number
 
-import org.bitcoins.testkit.core.gen.NumberGenerator
+import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.scalacheck.{Prop, Properties}
 
 import scala.util.Try

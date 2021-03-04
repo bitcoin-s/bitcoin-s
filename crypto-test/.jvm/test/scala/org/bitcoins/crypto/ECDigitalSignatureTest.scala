@@ -1,7 +1,7 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.CryptoGenerators
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /** Created by chris on 3/22/16.
@@ -91,16 +91,6 @@ class ECDigitalSignatureTest extends BitcoinSUnitTest {
     forAll(CryptoGenerators.digitalSignature) { case sig: ECDigitalSignature =>
       val raw = sig.toRawRS
       assert(ECDigitalSignature.fromRS(raw) == sig)
-    }
-  }
-
-  it must "be able to generate valid signatures with bouncy castle" in {
-    forAll(CryptoGenerators.privateKey, CryptoGenerators.sha256Digest) {
-      case (privKey: ECPrivateKey, hash: Sha256Digest) =>
-        val sig = BouncycastleCryptoRuntime.sign(privKey, hash.bytes)
-        val pubKey = privKey.publicKey
-
-        assert(pubKey.verify(hash, sig))
     }
   }
 

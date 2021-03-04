@@ -2,8 +2,8 @@ package org.bitcoins.core.serializers.p2p.headers
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.NetworkPayload
-import org.bitcoins.testkit.node.NodeTestUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.node.P2PMessageTestUtil
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
 
 class RawNetworkHeaderSerializerTest extends BitcoinSUnitTest {
@@ -29,7 +29,7 @@ class RawNetworkHeaderSerializerTest extends BitcoinSUnitTest {
   }
 
   it must "read a network header from a node on the network" in {
-    val hex = NodeTestUtil.rawNetworkMessage.take(48)
+    val hex = P2PMessageTestUtil.rawNetworkMessage.take(48)
     val header = RawNetworkHeaderSerializer.read(hex)
     header.network.magicBytes must be(hex"0B110907")
     header.commandName.size must be(NetworkPayload.versionCommandName.size)

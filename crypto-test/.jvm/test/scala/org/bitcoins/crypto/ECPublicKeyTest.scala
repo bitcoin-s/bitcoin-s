@@ -1,7 +1,7 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.CryptoGenerators
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
 
 import scala.concurrent.ExecutionContext
@@ -28,18 +28,6 @@ class ECPublicKeyTest extends BitcoinSUnitTest {
 
   it must "generate unique keys" in {
     assert(ECPublicKey() != ECPublicKey())
-  }
-
-  it must "have serialization symmetry from ECPublicKey -> ECPoint -> ECPublicKey" in {
-    CryptoContext.cryptoRuntime match {
-      case _: BouncycastleCryptoRuntime | _: LibSecp256k1CryptoRuntime =>
-        forAll(CryptoGenerators.publicKey) { pubKey =>
-          val p = BouncyCastleUtil.decodePoint(pubKey)
-          val pub2 = BouncyCastleUtil.decodePubKey(p, pubKey.isCompressed)
-          assert(pubKey == pub2)
-        }
-      case _ => succeed
-    }
   }
 
   it must "decompress keys correctly" in {

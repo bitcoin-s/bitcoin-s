@@ -15,7 +15,7 @@ import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, ECDigitalSignature}
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TestUtil}
+import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TestUtil}
 import scodec.bits.ByteVector
 import spray.json._
 
@@ -23,7 +23,7 @@ import scala.io.Source
 
 /** Created by chris on 2/17/16.
   */
-class ScriptSignatureTest extends BitcoinSAsyncTest {
+class ScriptSignatureTest extends BitcoinSJvmTest {
 
   "ScriptSignature" must "find the digital signature for the transaction inside of a p2pkh script signature" in {
     val scriptSig = ScriptSignature(TestUtil.rawScriptSig)

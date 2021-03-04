@@ -2,11 +2,10 @@ package org.bitcoins.core.p2p
 
 import java.net.InetAddress
 import java.time.Instant
-
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.number.{Int32, UInt64}
-import org.bitcoins.testkit.core.gen.p2p.ControlMessageGenerator
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.p2p.ControlMessageGenerator
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
 
 class VersionMessageTest extends BitcoinSUnitTest {

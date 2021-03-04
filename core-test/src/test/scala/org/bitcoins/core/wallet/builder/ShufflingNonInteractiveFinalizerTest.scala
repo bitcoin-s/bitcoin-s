@@ -14,15 +14,15 @@ import org.bitcoins.core.wallet.utxo.{
   UnassignedSegwitNativeInputInfo
 }
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.{
+import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.gen.{
   CreditingTxGen,
   FeeUnitGen,
   ScriptGenerators
 }
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
-class ShufflingNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
+class ShufflingNonInteractiveFinalizerTest extends BitcoinSJvmTest {
   behavior of "ShufflingNonInteractiveFinalizer"
 
   private val (spk, privKey) = ScriptGenerators.p2pkhScriptPubKey.sampleSome

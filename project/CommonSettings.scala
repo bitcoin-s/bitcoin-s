@@ -6,7 +6,10 @@ import java.nio.file.Paths
 import com.typesafe.sbt.packager.Keys.{
   daemonUser,
   daemonUserUid,
+  dockerAlias,
+  dockerAliases,
   dockerRepository,
+  dockerUpdateLatest,
   maintainer
 }
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.dockerBaseImage
@@ -23,7 +26,7 @@ object CommonSettings {
       .isDefined
   }
 
-  lazy val settings: Seq[Setting[_]] = List(
+  lazy val settings: Seq[Setting[_]] = Vector(
     organization := "org.bitcoin-s",
     homepage := Some(url("https://bitcoin-s.org")),
     maintainer := "Chris Stewart <stewart.chris1234@gmail.com>",
@@ -35,6 +38,27 @@ object CommonSettings {
         url("https://twitter.com/Chris_Stewart_5")
       )
     ),
+    scalacOptions in Compile ++= compilerOpts(scalaVersion =
+      scalaVersion.value),
+    Test / scalacOptions ++= testCompilerOpts(scalaVersion =
+      scalaVersion.value),
+    //remove annoying import unused things in the scala console
+    //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
+    scalacOptions in (Compile, console) ~= (_ filterNot (s =>
+      s == "-Ywarn-unused-import"
+        || s == "-Ywarn-unused"
+        || s == "-Xfatal-warnings"
+        //for 2.13 -- they use different compiler opts
+        || s == "-Xlint:unused")),
+    //we don't want -Xfatal-warnings for publishing with publish/publishLocal either
+    scalacOptions in (Compile, doc) ~= (_ filterNot (s =>
+      s == "-Xfatal-warnings")),
+    scalacOptions in (Test, console) ++= (scalacOptions in (Compile, console)).value,
+    scalacOptions in Test ++= testCompilerOpts(scalaVersion.value),
+    licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+  )
+
+  lazy val jvmSettings: Seq[Setting[_]] = List(
     ////
     // scaladoc settings
     Compile / doc / scalacOptions ++= List(
@@ -49,21 +73,6 @@ object CommonSettings {
     apiURL := homepage.value.map(_.toString + "/api").map(url(_)),
     // scaladoc settings end
     ////
-    scalacOptions in Compile := compilerOpts(scalaVersion = scalaVersion.value),
-    Test / scalacOptions := testCompilerOpts(scalaVersion = scalaVersion.value),
-    //remove annoying import unused things in the scala console
-    //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
-    scalacOptions in (Compile, console) ~= (_ filterNot (s =>
-      s == "-Ywarn-unused-import"
-        || s == "-Ywarn-unused"
-        || s == "-Xfatal-warnings"
-        //for 2.13 -- they use different compiler opts
-        || s == "-Xlint:unused")),
-    //we don't want -Xfatal-warnings for publishing with publish/publishLocal either
-    scalacOptions in (Compile, doc) ~= (_ filterNot (s =>
-      s == "-Xfatal-warnings")),
-    scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
-    scalacOptions in Test := testCompilerOpts(scalaVersion.value),
     Compile / compile / javacOptions ++= {
       if (isCI) {
         //jdk11 is used on CI, we need to use the --release flag to make sure
@@ -73,8 +82,7 @@ object CommonSettings {
       } else {
         Seq("-source", "1.8", "-target", "1.8")
       }
-    },
-    licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+    }
   )
 
   private val commonCompilerOpts = {
@@ -142,7 +150,7 @@ object CommonSettings {
     //show full stack trace (-oF) of failed tests and duration of tests (-oD)
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
     logBuffered in Test := false,
-    publish / skip := true
+    skip.in(publish) := true
   ) ++ settings
 
   lazy val prodSettings: Seq[Setting[_]] = settings
@@ -162,7 +170,8 @@ object CommonSettings {
       //which is 'demiourgos728'
       daemonUser in Docker := "bitcoin-s",
       packageName in Docker := packageName.value,
-      version in Docker := version.value
+      version in Docker := version.value,
+      dockerUpdateLatest := isSnapshot.value
     )
   }
 
