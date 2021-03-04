@@ -93,6 +93,11 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     updateUtxoConfirmedStates(Vector(txo)).map(_.headOption)
   }
 
+  /** Returns a map of the SpendingInfoDbs with their relevant block.
+    * The relevant block is determined by if the utxo has been spent or not.
+    * If it has been spent it uses the block that included the spending transaction,
+    * otherwise it uses the block that included the receiving transaction.
+    */
   private[wallet] def getDbsByRelevantBlock(
       spendingInfoDbs: Vector[SpendingInfoDb]): Future[
     Map[Option[DoubleSha256DigestBE], Vector[SpendingInfoDb]]] = {
@@ -123,6 +128,9 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
   }
 
+  /** Updates the SpendingInfoDb to the correct state based
+    * on the number of confirmations it has received
+    */
   private[wallet] def updateTxoWithConfs(
       txo: SpendingInfoDb,
       confs: Int): SpendingInfoDb = {
@@ -152,6 +160,9 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
   }
 
+  /** Updates all the given SpendingInfoDbs to the correct state
+    * based on how many confirmations they have received
+    */
   private[wallet] def updateUtxoConfirmedStates(
       spendingInfoDbs: Vector[SpendingInfoDb]): Future[
     Vector[SpendingInfoDb]] = {

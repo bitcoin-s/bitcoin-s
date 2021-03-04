@@ -1,9 +1,10 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2PKHScriptPubKey}
-import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState._
@@ -78,6 +79,55 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       assert(confirmedCoins.forall(_.state == ConfirmedSpent))
       assert(confirmedCoins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
     }
+  }
+
+  it should "handle processing a new spending tx for a spent utxo" in { param =>
+    val WalletWithBitcoindRpc(wallet, bitcoind) = param
+
+    for {
+      oldTransactions <- wallet.listTransactions()
+      tx <- wallet.sendToAddress(testAddr, Satoshis(3000), None)
+
+      updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+      newTransactions <- wallet.listTransactions()
+      _ = assert(updatedCoins.forall(_.state == PendingConfirmationsSpent))
+      _ = assert(!oldTransactions.map(_.transaction).contains(tx))
+      _ = assert(newTransactions.map(_.transaction).contains(tx))
+
+      // Give tx a fake hash so it can appear as it's in a block
+      hash <- bitcoind.getBestBlockHash
+      _ <- wallet.processTransaction(tx, Some(hash))
+
+      pendingCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+      _ <- wallet.updateUtxoPendingStates()
+      _ = assert(pendingCoins.forall(_.state == PendingConfirmationsSpent))
+
+      // Put confirmations on top of the tx's block
+      _ <- bitcoind.getNewAddress.flatMap(
+        bitcoind.generateToAddress(wallet.walletConfig.requiredConfirmations,
+                                   _))
+      // Need to call this to actually update the state, normally a node callback would do this
+      _ <- wallet.updateUtxoPendingStates()
+      confirmedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+
+      // Assert tx is confirmed
+      _ = assert(confirmedCoins.forall(_.state == ConfirmedSpent))
+      _ = assert(confirmedCoins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
+
+      // Create tx to spend same utxos
+      newTx = {
+        val inputs = updatedCoins.map { db =>
+          TransactionInput(db.outPoint, EmptyScriptSignature, UInt32.zero)
+        }
+        BaseTransaction(Int32.zero, inputs, Vector.empty, UInt32.zero)
+      }
+
+      _ <- wallet.processTransaction(newTx, None)
+
+      coins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+
+      // coins should not change
+    } yield assert(coins == confirmedCoins)
   }
 
   it should "track a utxo state change to pending received" in { param =>

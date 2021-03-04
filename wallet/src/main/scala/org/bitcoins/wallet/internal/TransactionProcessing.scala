@@ -8,7 +8,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
-import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.core.util.{FutureUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
@@ -281,15 +281,21 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           logger.debug(
             s"Marked utxo=${updated.toHumanReadableString} as state=${updated.state}"))
         updatedF.map(Some(_))
-      case TxoState.Reserved | TxoState.ConfirmedSpent |
-          TxoState.PendingConfirmationsSpent | TxoState.DoesNotExist =>
+      case TxoState.Reserved | TxoState.PendingConfirmationsSpent =>
         val updated =
-          out
-            .copyWithSpendingTxId(spendingTxId)
+          out.copyWithSpendingTxId(spendingTxId)
         val updatedF =
           spendingInfoDAO.update(updated)
         updatedF.map(Some(_))
-
+      case TxoState.DoesNotExist | TxoState.ConfirmedSpent =>
+        if (
+          out.spendingTxIdOpt.isDefined && !out.spendingTxIdOpt.contains(
+            spendingTxId)
+        ) {
+          logger.warn(
+            s"Attempted to mark an already spent utxo ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}")
+        }
+        FutureUtil.none
     }
   }
 
