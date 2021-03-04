@@ -27,6 +27,12 @@ class ECDSA(
 
   def verify(msg: Buffer, sig: Buffer, key: Buffer): Boolean = js.native
 
+  def recover(
+      msg: Buffer,
+      sig: Buffer,
+      param: Byte,
+      compress: Boolean): Buffer = js.native
+
   var schnorr: Schnorr = js.native
 
   def schnorrSign(msg: Buffer, key: Buffer): Buffer = js.native

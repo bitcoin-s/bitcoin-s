@@ -104,7 +104,17 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     */
   override def recoverPublicKey(
       signature: ECDigitalSignature,
-      message: ByteVector): (ECPublicKey, ECPublicKey) = ???
+      message: ByteVector): (ECPublicKey, ECPublicKey) = {
+    val keyBytes =
+      ecdsa.recover(message, signature.bytes, param = 0, compress = true)
+    val key = ECPublicKey.fromBytes(keyBytes)
+
+    val keyBytesWithSign =
+      ecdsa.recover(message, signature.bytes, param = 1, compress = true)
+    val keyWithSign = ECPublicKey.fromBytes(keyBytesWithSign)
+
+    (key, keyWithSign)
+  }
 
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey = {
     val buffer =

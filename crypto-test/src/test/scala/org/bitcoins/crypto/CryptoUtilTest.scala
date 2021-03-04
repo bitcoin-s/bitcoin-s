@@ -77,8 +77,7 @@ class CryptoUtilTest
     CryptoUtil.sha256Hash160(bytes).flip.flip.hex must be(expected)
   }
 
-  // TODO enable this
-  it must "recover the 2 public keys from a digital signature" ignore {
+  it must "recover the 2 public keys from a digital signature" in {
     forAll(CryptoGenerators.privateKey, CryptoGenerators.sha256Digest) {
       case (privKey, hash) =>
         val pubKey = privKey.publicKey
@@ -89,8 +88,7 @@ class CryptoUtilTest
     }
   }
 
-  // TODO enable this
-  it must "be able to recover and verify a siganture for a message" ignore {
+  it must "be able to recover and verify a siganture for a message" in {
     forAll(CryptoGenerators.privateKey, CryptoGenerators.sha256Digest) {
       (privKey, hash) =>
         val message = hash.bytes
