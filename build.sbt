@@ -100,6 +100,8 @@ lazy val testkitCore = crossProject(JVMPlatform, JSPlatform)
 
 lazy val testkitCoreJVM = testkitCore.jvm
 
+lazy val testkitCoreJS = testkitCore.js
+
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
   .settings(CommonSettings.prodSettings: _*)
@@ -112,7 +114,8 @@ lazy val eclairRpc = project
   .in(file("eclair-rpc"))
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
-val jsProjects: Vector[ProjectReference] = Vector(cryptoJS)
+lazy val jsProjects: Vector[ProjectReference] =
+  Vector(cryptoJS, coreJS, cryptoTestJS, coreTestJS, testkitCoreJS)
 
 // quoting the val name this way makes it appear as
 // 'bitcoin-s' in sbt/bloop instead of 'bitcoins'
@@ -157,6 +160,7 @@ lazy val `bitcoin-s` = project
     appCommons,
     appCommonsTest,
     testkitCoreJVM,
+    testkitCoreJS,
     testkit,
     zmq,
     oracleServer,
