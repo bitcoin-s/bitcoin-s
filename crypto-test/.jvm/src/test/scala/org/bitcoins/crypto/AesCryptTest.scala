@@ -1,11 +1,10 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkitcore.gen.NumberGenerator
-import scodec.bits.{ByteVector, HexStringSyntax}
-import org.scalatest.compatible.Assertion
-import org.bitcoins.testkitcore.gen.CryptoGenerators
+import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
+import org.scalatest.compatible.Assertion
+import scodec.bits.{ByteVector, HexStringSyntax}
 
 class AesCryptTest extends BitcoinSUnitTest {
   behavior of "AesEncrypt"

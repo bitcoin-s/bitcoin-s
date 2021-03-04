@@ -177,7 +177,8 @@ object Deps {
       "org.scala-lang.modules" %% "scala-collection-compat" % V.scalaCollectionCompatV
 
     val scalacheck =
-      "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
+      Def.setting(
+        "org.scalacheck" %%% "scalacheck" % V.scalacheck withSources () withJavadoc ())
 
     val scalaJsStubs =
       "org.scala-js" %% "scalajs-stubs" % V.scalaJsStubsV % "provided"
@@ -186,8 +187,8 @@ object Deps {
       Def.setting(
         "org.scalatest" %%% "scalatest" % V.scalaTest withSources () withJavadoc ())
 
-    val scalaTestPlus =
-      "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources () withJavadoc ()
+    val scalaTestPlus = Def.setting(
+      "org.scalatestplus" %%% "scalacheck-1-14" % V.scalaTestPlus withSources () withJavadoc ())
 
     val pgEmbedded =
       "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV withSources () withJavadoc ()
@@ -205,7 +206,9 @@ object Deps {
       "com.novocode" % "junit-interface" % V.junitV % "test" withSources () withJavadoc ()
     val logback = Compile.logback % "test"
     val grizzledSlf4j = Compile.grizzledSlf4j % "test"
-    val scalacheck = Compile.scalacheck % "test"
+
+    val scalacheck = Def.setting(
+      "org.scalacheck" %%% "scalacheck" % V.scalacheck % "test" withSources () withJavadoc ())
 
     val scalaTest = Def.setting(
       "org.scalatest" %%% "scalatest" % V.scalaTest % "test" withSources () withJavadoc ())
@@ -290,7 +293,8 @@ object Deps {
 
   def cryptoTest = Def.setting {
     List(
-      Test.scalaTest.value
+      Test.scalaTest.value,
+      Test.scalacheck.value
     )
   }
 
@@ -299,7 +303,7 @@ object Deps {
       Compile.zeromq,
       Compile.slf4j,
       Test.logback,
-      Test.scalacheck,
+      Test.scalacheck.value,
       Test.scalaTest.value
     )
   }
@@ -316,7 +320,7 @@ object Deps {
       Test.akkaStream,
       Test.logback,
       Test.scalaTest.value,
-      Test.scalacheck,
+      Test.scalacheck.value,
       Test.newAsync,
       Test.scalaCollectionCompat
     )
@@ -387,7 +391,7 @@ object Deps {
       Test.akkaStream,
       Test.logback,
       Test.scalaTest.value,
-      Test.scalacheck
+      Test.scalacheck.value
     )
   }
 
@@ -426,9 +430,9 @@ object Deps {
     List(
       Compile.newMicroPickle,
       Compile.scalaCollectionCompat,
-      Compile.scalacheck,
+      Compile.scalacheck.value,
       Compile.scalaTest.value,
-      Compile.scalaTestPlus,
+      Compile.scalaTestPlus.value,
       Compile.slf4j
     )
   }
@@ -436,9 +440,9 @@ object Deps {
   def testkit = Def.setting {
     List(
       Compile.slf4j,
-      Compile.scalacheck,
+      Compile.scalacheck.value,
       Compile.scalaTest.value,
-      Compile.scalaTestPlus,
+      Compile.scalaTestPlus.value,
       Compile.pgEmbedded,
       Test.akkaTestkit
     )
