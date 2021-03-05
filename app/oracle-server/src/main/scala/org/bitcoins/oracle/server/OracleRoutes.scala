@@ -153,8 +153,6 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                 val signedOutcomeJs = event match {
                   case _: PendingOracleEvent =>
                     ujson.Null
-                  case _: CompletedRangeV0OracleEvent =>
-                    ujson.Null // todo remove range
                   case emum: CompletedEnumV0OracleEvent =>
                     Str(emum.outcome.outcomeString)
                   case decomp: CompletedDigitDecompositionV0OracleEvent =>

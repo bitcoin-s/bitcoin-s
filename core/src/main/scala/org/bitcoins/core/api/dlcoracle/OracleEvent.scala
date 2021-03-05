@@ -71,6 +71,8 @@ sealed trait CompletedOracleEvent extends OracleEvent {
                           outcomes.map(_.outcomeString))
 
   def outcomes: Vector[DLCAttestationType]
+
+  def dlcOutcome: DLCOutcomeType
 }
 
 sealed trait EnumV0OracleEvent extends OracleEvent {
@@ -106,6 +108,8 @@ case class CompletedEnumV0OracleEvent(
   override def attestations: Vector[FieldElement] = Vector(attestation)
 
   override def outcomes: Vector[DLCAttestationType] = Vector(outcome)
+
+  override def dlcOutcome: DLCOutcomeType = EnumOutcome(outcome.outcomeString)
 }
 
 sealed trait DigitDecompositionV0OracleEvent extends OracleEvent {
@@ -132,26 +136,17 @@ case class CompletedDigitDecompositionV0OracleEvent(
     announcementSignature: SchnorrDigitalSignature,
     eventDescriptorTLV: DigitDecompositionEventDescriptorV0TLV,
     outcomes: Vector[DigitDecompositionAttestationType],
+    dlcOutcome: NumericDLCOutcomeType,
     attestations: Vector[FieldElement])
     extends CompletedOracleEvent
     with DigitDecompositionV0OracleEvent {
 
   val outcomeBase10: Long = {
-    val (digits, positive) = {
-      eventDescriptorTLV match {
-        case _: SignedDigitDecompositionEventDescriptor =>
-          val positive = outcomes.head
-            .asInstanceOf[DigitDecompositionSignAttestation]
-            .positive
-          val digits = outcomes.tail.map(
-            _.asInstanceOf[DigitDecompositionAttestation].outcome)
-
-          (digits, positive)
-        case _: UnsignedDigitDecompositionEventDescriptor =>
-          val digits =
-            outcomes.map(_.asInstanceOf[DigitDecompositionAttestation].outcome)
-          (digits, true)
-      }
+    val (digits, positive) = dlcOutcome match {
+      case UnsignedNumericOutcome(digits) =>
+        (digits, true)
+      case SignedNumericOutcome(positive, digits) =>
+        (digits, positive)
     }
 
     val base = eventDescriptorTLV.base.toInt
@@ -201,18 +196,20 @@ object OracleEvent {
 
         val attestations = sortedEventDbs.flatMap(_.attestationOpt)
 
-        val outcomes = decomp match {
+        val (outcomes, dlcOutcome) = decomp match {
           case _: SignedDigitDecompositionEventDescriptor =>
             val sign = DigitDecompositionSignAttestation(
               sortedEventDbs.head.outcomeOpt.get == "+")
             val digits = sortedEventDbs.tail.map { eventDb =>
               DigitDecompositionAttestation(eventDb.outcomeOpt.get.toInt)
             }
-            sign +: digits
+            (sign +: digits,
+             SignedNumericOutcome(sign.positive, digits.map(_.outcome)))
           case _: UnsignedDigitDecompositionEventDescriptor =>
-            sortedEventDbs.map { eventDb =>
+            val digits = sortedEventDbs.map { eventDb =>
               DigitDecompositionAttestation(eventDb.outcomeOpt.get.toInt)
             }
+            (digits, UnsignedNumericOutcome(digits.map(_.outcome)))
         }
 
         CompletedDigitDecompositionV0OracleEvent(
@@ -224,6 +221,7 @@ object OracleEvent {
           eventDb.announcementSignature,
           decomp,
           outcomes,
+          dlcOutcome,
           attestations
         )
       case (decomp: DigitDecompositionEventDescriptorV0TLV, None) =>
