@@ -3,6 +3,10 @@ id: getting-setup
 title: Getting Bitcoin-S installed on your machine
 ---
 
+> This documentation is intended for setting up development of bitcoin-s.
+> If you want to just install bitcoin-s rather than develop, 
+> see [getting-started](getting-started.md)
+
 ## Getting Setup With Bitcoin-S
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -17,6 +21,7 @@ title: Getting Bitcoin-S installed on your machine
 - [Step 6 (Optional): Moving To Testnet](#step-6-optional-moving-to-testnet)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 
 ## Step 1: Java and Scala
 
