@@ -106,14 +106,14 @@ The native packager offers <a href="https://github.com/sbt/sbt-native-packager#e
 <p>This will build a <code>Dockerfile</code> that is located in <code>app/oracle-server/target/docker/stage</code></p>
 <p>You can publish to your local docker repository by using <code>docker:publishLocal</code> instead of <code>docker:stage</code></p>
 <p>You can now build the docker image with</p>
-<pre><code class="hljs">docker build app/oracle-<span class="hljs-keyword">server</span>/target/docker/stage/ -t oracle-<span class="hljs-keyword">server</span>
+<pre><code class="hljs">docker build app<span class="hljs-regexp">/oracle-server/</span>target<span class="hljs-regexp">/docker/</span>stage/ -t bitcoin-s-oracle-<span class="hljs-string">server:</span>latest
 </code></pre>
 <p>Finally, let's run the image! It's important that you correctly configure port forwarding with the docker container so
 you can interact with the running container with <code>bitcoin-s-cli</code> or <code>curl</code>. By default, our oracle
 server listens for requests on port <code>9998</code>.</p>
 <p>This means we need to forward requests on the host machine to the docker container correctly.</p>
 <p>This can be done with the following command</p>
-<pre><code class="hljs">docker run -d -p <span class="hljs-number">9998</span>:<span class="hljs-number">9998</span> oracle-server:latest
+<pre><code class="hljs">docker <span class="hljs-keyword">run</span><span class="bash"> -d -p 9998:9998 bitcoin<span class="hljs-_">-s</span>-oracle-server:latest</span>
 </code></pre>
 <p>Now you can send requests with <code>bitcoin-s-cli</code> or <code>curl</code>.
 Here is an example with <code>bitcoin-s-cli</code></p>
@@ -135,11 +135,13 @@ Here is an example with <code>bitcoin-s-cli</code></p>
 <p>For more information on configuring the server please see our <a href="/docs/next/config/configuration">configuration</a> document.</p>
 <p>For more information on how to use our built in <code>cli</code> to interact with the server please see the <a href="/docs/next/applications/cli">cli docs</a>.</p>
 <h3><a class="anchor" aria-hidden="true" id="docker-configuration"></a><a href="#docker-configuration" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Docker configuration</h3>
+<p>In this example, we are using the latest docker image published to our <a href="https://hub.docker.com/repository/docker/bitcoinscala/bitcoin-s-oracle-server/tags?page=1&amp;ordering=last_updated">docker hub</a>
+which is referenced by <code>bitcoinscala/bitcoin-s-oracle-server:latest</code></p>
 <p>You can use bitcoin-s with docker volumes. You can also pass in a custom configuration at container runtime.</p>
 <h4><a class="anchor" aria-hidden="true" id="using-a-docker-volume"></a><a href="#using-a-docker-volume" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Using a docker volume</h4>
 <pre><code class="hljs css language-basrc">docker <span class="hljs-keyword">volume</span><span class="bash"> create bitcoin<span class="hljs-_">-s</span></span>
 docker <span class="hljs-keyword">run</span><span class="bash"> -p 9998:9998 \
---mount <span class="hljs-built_in">source</span>=bitcoin<span class="hljs-_">-s</span>,target=/home/bitcoin<span class="hljs-_">-s</span>/ oracle-server:latest</span>
+--mount <span class="hljs-built_in">source</span>=bitcoin<span class="hljs-_">-s</span>,target=/home/bitcoin<span class="hljs-_">-s</span>/ bitcoinscala/bitcoin<span class="hljs-_">-s</span>-oracle-server:latest</span>
 </code></pre>
 <p>Now you can re-use this volume across container runs. It will keep the same oracle database
 and seeds directory located at <code>/home/bitcoin-s/.bitcoin-s/seeds</code> in the volume.</p>
@@ -151,7 +153,7 @@ the default one we provide <a href="https://github.com/bitcoin-s/bitcoin-s/blob/
 <p>You can do this with the following command</p>
 <pre><code class="hljs css language-bashrc">docker run -p <span class="hljs-number">9998</span>:<span class="hljs-number">9998</span> \
 --mount type=<span class="hljs-keyword">bind</span>,source=<span class="hljs-regexp">/my/new</span><span class="hljs-regexp">/config/</span>,target=<span class="hljs-regexp">/home/bitcoin</span>-<span class="hljs-regexp">s/.bitcoin-s/ \
-oracle-server:latest --conf /home</span><span class="hljs-regexp">/bitcoin-s/</span>.bitcoin-<span class="hljs-keyword">s</span>/bitcoin-s.conf
+bitcoinscala/bitcoin</span>-<span class="hljs-keyword">s</span>-oracle-server:latest --conf /home/bitcoin-<span class="hljs-keyword">s</span>/.bitcoin-<span class="hljs-keyword">s</span>/bitcoin-s.conf
 </code></pre>
 <p>Note: If you adjust the <code>bitcoin-s.oracle.rpcport</code> setting you will need to adjust
 the <code>-p 9998:9998</code> port mapping on the docker container to adjust for this.</p>
