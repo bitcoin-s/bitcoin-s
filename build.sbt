@@ -55,13 +55,20 @@ lazy val crypto = crossProject(JVMPlatform, JSPlatform)
   .jvmSettings(
     libraryDependencies ++= Deps.cryptoJVM
   )
+  .jsSettings(
+    npmDependencies in Compile ++= Seq(
+      "bcrypto" -> "5.4.0"
+    )
+  )
   .jvmSettings(CommonSettings.jvmSettings: _*)
   .jsSettings(commonJsSettings: _*)
   .in(file("crypto"))
 
 lazy val cryptoJS = crypto.js
+  .enablePlugins(ScalaJSBundlerPlugin)
 
-lazy val cryptoJVM = crypto.jvm.dependsOn(secp256k1jni)
+lazy val cryptoJVM = crypto.jvm
+  .dependsOn(secp256k1jni)
 
 lazy val core = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
@@ -363,6 +370,7 @@ lazy val cryptoTest = crossProject(JVMPlatform, JSPlatform)
 lazy val cryptoTestJVM = cryptoTest.jvm
 
 lazy val cryptoTestJS = cryptoTest.js
+  .enablePlugins(ScalaJSBundlerPlugin)
 
 lazy val coreTest = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)

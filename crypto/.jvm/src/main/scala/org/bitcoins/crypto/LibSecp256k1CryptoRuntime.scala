@@ -265,10 +265,6 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
                                             adaptorPoint)
   }
 
-  override def decodeSignature(
-      signature: ECDigitalSignature): (BigInt, BigInt) =
-    BouncycastleCryptoRuntime.decodeSignature(signature)
-
   override def isValidSignatureEncoding(
       signature: ECDigitalSignature): Boolean =
     BouncycastleCryptoRuntime.isValidSignatureEncoding(signature)
