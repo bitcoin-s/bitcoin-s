@@ -8,7 +8,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
-import org.bitcoins.core.util.{FutureUtil, TimeUtil}
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
@@ -263,14 +263,13 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   }
 
   /** If the given UTXO is marked as unspent, updates
-    * its spending status. Otherwise returns `None`.
+    * its spending status. Otherwise returns an error.
     */
   private def markAsSpent(
       out: SpendingInfoDb,
       spendingTxId: DoubleSha256DigestBE): Future[Option[SpendingInfoDb]] = {
     out.state match {
-      case TxoState.ConfirmedReceived | TxoState.PendingConfirmationsReceived |
-          TxoState.ImmatureCoinbase =>
+      case TxoState.ConfirmedReceived | TxoState.PendingConfirmationsReceived =>
         val updated =
           out
             .copyWithState(state = TxoState.PendingConfirmationsSpent)
@@ -287,15 +286,15 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
         val updatedF =
           spendingInfoDAO.update(updated)
         updatedF.map(Some(_))
-      case TxoState.DoesNotExist | TxoState.ConfirmedSpent =>
-        if (
-          out.spendingTxIdOpt.isDefined && !out.spendingTxIdOpt.contains(
-            spendingTxId)
-        ) {
-          logger.warn(
-            s"Attempted to mark an already spent utxo ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}")
-        }
-        FutureUtil.none
+      case TxoState.ImmatureCoinbase =>
+        Future.failed(new RuntimeException(
+          s"Attempting to spend an ImmatureCoinbase ${out.outPoint.hex}, this should not be possible until it is confirmed."))
+      case TxoState.ConfirmedSpent =>
+        Future.failed(new RuntimeException(
+          s"Attempted to mark an already spent utxo ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}"))
+      case TxoState.DoesNotExist =>
+        Future.failed(new RuntimeException(
+          s"Attempted to process a transaction for a utxo that does not exist ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}"))
     }
   }
 

@@ -2,7 +2,6 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -21,10 +20,6 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
   behavior of "Wallet Txo States"
 
   override type FixtureParam = WalletWithBitcoind
-
-  val testAddr: BitcoinAddress =
-    BitcoinAddress
-      .fromString("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq")
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withFundedWalletAndBitcoind(test, getBIP39PasswordOpt())
@@ -81,6 +76,51 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
     }
   }
 
+  it should "handle an RBF transaction on unconfirmed coins" in { param =>
+    val WalletWithBitcoindRpc(wallet, _) = param
+
+    for {
+      tx <- wallet.sendToAddress(testAddr,
+                                 Satoshis(3000),
+                                 Some(SatoshisPerByte.one))
+
+      coins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+      _ = assert(coins.forall(_.state == PendingConfirmationsSpent))
+      _ = assert(coins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
+
+      rbf <- wallet.bumpFeeRBF(tx.txIdBE, SatoshisPerByte.fromLong(3))
+      _ <- wallet.processTransaction(rbf, None)
+      rbfCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(rbf)
+    } yield {
+      assert(rbfCoins.forall(_.state == PendingConfirmationsSpent))
+      assert(rbfCoins.forall(_.spendingTxIdOpt.contains(rbf.txIdBE)))
+    }
+  }
+
+  it should "handle attempting to spend an immature coinbase" in { param =>
+    val WalletWithBitcoindRpc(wallet, _) = param
+
+    for {
+      tx <- wallet.sendToAddress(testAddr, Satoshis(3000), None)
+
+      coins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+
+      updatedCoins = coins.map(_.copyWithState(TxoState.ImmatureCoinbase))
+      _ <- wallet.spendingInfoDAO.updateAllSpendingInfoDb(updatedCoins.toVector)
+
+      // Create tx to spend immature coinbase utxos
+      newTx = {
+        val inputs = coins.map { db =>
+          TransactionInput(db.outPoint, EmptyScriptSignature, UInt32.zero)
+        }
+        BaseTransaction(Int32.zero, inputs, Vector.empty, UInt32.zero)
+      }
+
+      res <- recoverToSucceededIf[RuntimeException](
+        wallet.processTransaction(newTx, None))
+    } yield res
+  }
+
   it should "handle processing a new spending tx for a spent utxo" in { param =>
     val WalletWithBitcoindRpc(wallet, bitcoind) = param
 
@@ -122,12 +162,33 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
         BaseTransaction(Int32.zero, inputs, Vector.empty, UInt32.zero)
       }
 
-      _ <- wallet.processTransaction(newTx, None)
+      res <- recoverToSucceededIf[RuntimeException](
+        wallet.processTransaction(newTx, None))
+    } yield res
+  }
+
+  it should "handle processing a new spending tx for a DNE utxo" in { param =>
+    val WalletWithBitcoindRpc(wallet, _) = param
+
+    for {
+      tx <- wallet.sendToAddress(testAddr, Satoshis(3000), None)
 
       coins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
 
-      // coins should not change
-    } yield assert(coins == confirmedCoins)
+      dneCoins = coins.map(_.copyWithState(TxoState.DoesNotExist))
+      _ <- wallet.spendingInfoDAO.updateAllSpendingInfoDb(dneCoins.toVector)
+
+      // Create tx to spend dne utxos
+      newTx = {
+        val inputs = coins.map { db =>
+          TransactionInput(db.outPoint, EmptyScriptSignature, UInt32.zero)
+        }
+        BaseTransaction(Int32.zero, inputs, Vector.empty, UInt32.zero)
+      }
+
+      res <- recoverToSucceededIf[RuntimeException](
+        wallet.processTransaction(newTx, None))
+    } yield res
   }
 
   it should "track a utxo state change to pending received" in { param =>
