@@ -1,9 +1,5 @@
 package org.bitcoins.rpc
 
-import java.io.{File, PrintWriter}
-import java.net.URI
-import java.nio.file.{Files, Path}
-import akka.stream.StreamTcpException
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -18,8 +14,12 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil.newestBitcoindBinary
 import org.bitcoins.testkit.util.{BitcoindRpcTest, FileUtil}
 import org.scalatest.compatible.Assertion
 
+import java.io.{File, PrintWriter}
+import java.net.URI
+import java.nio.file.{Files, Path}
 import scala.concurrent.Future
 import scala.io.Source
+import scala.util.control.NonFatal
 
 class BitcoindInstanceTest extends BitcoindRpcTest {
 
@@ -144,7 +144,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
             logger.error(s"Got unexpected balance: $balance")
             fail("Was able to connect to bitcoind after shutting down")
           }
-          .recover { case _: StreamTcpException =>
+          .recover { case NonFatal(_) =>
             ()
           }
     } yield assert(balance > Bitcoins(0))
