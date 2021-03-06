@@ -223,6 +223,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
     */
   def stop(): Future[BitcoindRpcClient] = {
     for {
+      _ <- httpClient.shutdownAllConnectionPools()
       _ <- bitcoindCall[String]("stop")
       _ <- {
         if (system.name == BitcoindRpcClient.ActorSystemName) {
