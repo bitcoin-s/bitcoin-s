@@ -6,8 +6,8 @@ import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.StreamTcpException
-import akka.util.ByteString
 import com.fasterxml.jackson.core.JsonParseException
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
@@ -316,10 +316,8 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
     */
   protected def getPayload(response: HttpResponse): Future[JsValue] = {
     try {
-      val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
-      payloadF.flatMap { payload =>
-        val json = Json.parse(payload.decodeString(ByteString.UTF_8))
-        Future.successful(json)
+      Unmarshal(response).to[String].map { data =>
+        Json.parse(data)
       }
     } catch {
       case NonFatal(exn) =>
