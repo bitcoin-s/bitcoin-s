@@ -6,8 +6,8 @@ import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.StreamTcpException
-import akka.util.ByteString
 import com.fasterxml.jackson.core.JsonParseException
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
@@ -33,7 +33,8 @@ import play.api.libs.json._
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 import scala.sys.process._
-import scala.util.{Failure, Success, Try}
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
 
 /** This is the base trait for Bitcoin Core
   * RPC clients. It defines no RPC calls
@@ -189,7 +190,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
       val responseF = sendRequest(request)
 
       val payloadF: Future[JsValue] =
-        responseF.flatMap(getPayload(_, command = "ping", request = request))
+        responseF.flatMap(getPayload(_))
 
       // Ping successful if no error can be parsed from the payload
       val parsedF = payloadF.map { payload =>
@@ -255,7 +256,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
     val responseF = sendRequest(request)
 
     val payloadF: Future[JsValue] =
-      responseF.flatMap(getPayload(_, command, request, parameters))
+      responseF.flatMap(getPayload(_))
 
     payloadF.map { payload =>
       /** These lines are handy if you want to inspect what's being sent to and
@@ -313,27 +314,14 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
     * The command, parameters and request are given as debug parameters,
     * and only used for printing diagnostics if things go belly-up.
     */
-  protected def getPayload(
-      response: HttpResponse,
-      command: String,
-      request: HttpRequest,
-      parameters: List[JsValue] = List.empty): Future[JsValue] = {
-    val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
-
-    payloadF.flatMap { payload =>
-      Try(Json.parse(payload.decodeString(ByteString.UTF_8))) match {
-        case Failure(err) =>
-          if (network != MainNet) {
-            logger.error(s"Error when parsing result of command: $command")
-            logger.error(s"Parameters: ${Json.stringify(JsArray(parameters))}")
-            logger.error(s"Sent HTTP request: $request")
-            logger.error(s"Received HTTP response: $response")
-            logger.error(s"Error: $err")
-
-          }
-          Future.failed(err)
-        case Success(js) => Future.successful(js)
+  protected def getPayload(response: HttpResponse): Future[JsValue] = {
+    try {
+      Unmarshal(response).to[String].map { data =>
+        Json.parse(data)
       }
+    } catch {
+      case NonFatal(exn) =>
+        Future.failed(exn)
     }
   }
 
