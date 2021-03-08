@@ -146,7 +146,8 @@ abstract class AsyncUtil extends BitcoinSLogger {
 
 object AsyncUtil extends AsyncUtil {
 
-  private[bitcoins] val scheduler = Executors.newScheduledThreadPool(2)
+  private[bitcoins] val scheduler =
+    Executors.newScheduledThreadPool(Runtime.getRuntime.availableProcessors())
 
   /** The default interval between async attempts
     */
