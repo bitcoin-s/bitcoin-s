@@ -28,7 +28,8 @@ import java.io.File
 import java.util.Scanner
 import scala.annotation.nowarn
 import scala.async.Async.{async, await}
-import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Future, Promise}
 import scala.reflect.io.Directory
 
 @nowarn
@@ -51,11 +52,11 @@ class WalletRpcTest extends BitcoindRpcTest {
       _ <- walletClient.encryptWallet(password)
       _ <- walletClient.stop()
       _ <- RpcUtil.awaitServerShutdown(walletClient)
-      _ <- Future {
-        // Very rarely we are prevented from starting the client again because Core
-        // hasn't released its locks on the datadir. This is prevent that.
-        Thread.sleep(1000)
-      }
+      promise = Promise[Unit]()
+      // Very rarely we are prevented from starting the client again because Core
+      // hasn't released its locks on the datadir. This is prevent that.
+      _ = system.scheduler.scheduleOnce(1000.millis)(promise.success())
+      _ <- promise.future
       _ <- walletClient.start()
     } yield walletClient
   }
