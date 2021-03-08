@@ -36,7 +36,7 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
     case ServerCommand("listevents", _) =>
       complete {
         oracle.listEvents().map { events =>
-          val strs = events.map(_.announcementTLV.hex)
+          val strs = events.map(_.eventName)
           val json = Arr.from(strs)
 
           Server.httpSuccess(json)
@@ -127,13 +127,6 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                   case enum: EnumEventDescriptorV0TLV =>
                     enum.outcomes.map(outcome => Str(outcome.normStr))
                   case decomp: DigitDecompositionEventDescriptorV0TLV =>
-                    val sign = decomp match {
-                      case _: UnsignedDigitDecompositionEventDescriptor =>
-                        Vector.empty
-                      case _: SignedDigitDecompositionEventDescriptor =>
-                        Vector(Str("+"), Str("-"))
-                    }
-
                     val digits = 0.until(decomp.numDigits.toInt).map { _ =>
                       0
                         .until(decomp.base.toInt)
@@ -141,7 +134,12 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                         .toVector
                     }
 
-                    val vecs = digits :+ sign
+                    val vecs = decomp match {
+                      case _: UnsignedDigitDecompositionEventDescriptor =>
+                        digits
+                      case _: SignedDigitDecompositionEventDescriptor =>
+                        Vector(Str("+"), Str("-")) +: digits
+                    }
                     vecs.map(vec => Arr.from(vec))
                 }
 
@@ -150,6 +148,15 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                     Str(completedEvent.oracleAttestmentV0TLV.hex)
                   case _: PendingOracleEvent =>
                     ujson.Null
+                }
+
+                val signedOutcomeJs = event match {
+                  case _: PendingOracleEvent =>
+                    ujson.Null
+                  case emum: CompletedEnumV0OracleEvent =>
+                    Str(emum.outcome.outcomeString)
+                  case decomp: CompletedDigitDecompositionV0OracleEvent =>
+                    Num(decomp.outcomeBase10.toDouble)
                 }
 
                 val json = Obj(
@@ -165,7 +172,8 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                   "eventTLV" -> Str(event.eventTLV.hex),
                   "announcementTLV" -> Str(event.announcementTLV.hex),
                   "attestations" -> attestationJson,
-                  "outcomes" -> outcomesJson
+                  "outcomes" -> outcomesJson,
+                  "signedOutcome" -> signedOutcomeJs
                 )
                 Server.httpSuccess(json)
               case None =>

@@ -257,9 +257,7 @@ If you use the `getevent` rpc along the oracle announcement, you can see the eve
       "0",
       "1"
     ],
-    [
-
-    ]
+    "signedOutcome": 42069
   ]
 }
 ```

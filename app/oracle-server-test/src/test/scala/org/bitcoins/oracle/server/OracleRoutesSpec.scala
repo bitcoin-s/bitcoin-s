@@ -10,15 +10,11 @@ import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv.{
   EnumEventDescriptorV0TLV,
+  NormalizedString,
   OracleAnnouncementV0TLV,
   OracleAttestmentV0TLV
 }
-import org.bitcoins.crypto.{
-  ECPublicKey,
-  FieldElement,
-  SchnorrDigitalSignature,
-  SchnorrPublicKey
-}
+import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -44,18 +40,28 @@ class OracleRoutesSpec
   val testAddressStr = "bc1qvrctqwa6g70z5vtxsyft7xvsyyt749trlm80al"
   val testAddress: Bech32Address = Bech32Address.fromString(testAddressStr)
 
-  val dummyKey: ECPublicKey = ECPublicKey.freshPublicKey
+  val kVal: ECPrivateKey = ECPrivateKey.freshPrivateKey
+
+  val dummyPrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
+  val dummyKey: ECPublicKey = dummyPrivKey.publicKey
+
+  val outcome: NormalizedString = EnumEventDescriptorV0TLV.dummy.outcomes.head
+
+  val hash: Sha256Digest = CryptoUtil.sha256DLCAttestation(outcome)
+
+  val sig: SchnorrDigitalSignature =
+    dummyPrivKey.schnorrSignWithNonce(hash.bytes, kVal)
 
   val dummyEventDb: EventDb = EventDb(
-    nonce = dummyKey.schnorrNonce,
+    nonce = kVal.schnorrNonce,
     pubkey = dummyKey.schnorrPublicKey,
     nonceIndex = 0,
     eventName = "id",
     numOutcomes = 2,
     signingVersion = SigningVersion.latest,
     maturationTime = Instant.ofEpochSecond(0),
-    attestationOpt = Some(FieldElement.one),
-    outcomeOpt = Some("outcome"),
+    attestationOpt = Some(sig.sig),
+    outcomeOpt = Some(outcome),
     announcementSignature = SchnorrDigitalSignature(
       "1efe41fa42ea1dcd103a0251929dd2b192d2daece8a4ce4d81f68a183b750d92d6f02d796965dc79adf4e7786e08f861a1ecc897afbba2dab9cff6eb0a81937e"),
     eventDescriptorTLV = EnumEventDescriptorV0TLV.dummy
@@ -113,8 +119,8 @@ class OracleRoutesSpec
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
-        assert(responseAs[
-          String] == s"""{"result":["${dummyOracleEvent.announcementTLV.hex}"],"error":null}""")
+        assert(
+          responseAs[String] == s"""{"result":["${dummyOracleEvent.eventName}"],"error":null}""")
       }
     }
 

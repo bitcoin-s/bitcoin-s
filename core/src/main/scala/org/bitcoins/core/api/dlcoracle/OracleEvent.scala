@@ -4,6 +4,7 @@ import org.bitcoins.core.api.dlcoracle.db.EventDb
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.crypto._
 
 import java.time.Instant
@@ -70,6 +71,8 @@ sealed trait CompletedOracleEvent extends OracleEvent {
                           outcomes.map(_.outcomeString))
 
   def outcomes: Vector[DLCAttestationType]
+
+  def dlcOutcome: DLCOutcomeType
 }
 
 sealed trait EnumV0OracleEvent extends OracleEvent {
@@ -102,9 +105,16 @@ case class CompletedEnumV0OracleEvent(
     attestation: FieldElement)
     extends CompletedOracleEvent
     with EnumV0OracleEvent {
+  require(OracleEvent.verifyAttestations(announcementTLV,
+                                         oracleAttestmentV0TLV,
+                                         signingVersion),
+          "Signatures given are invalid")
+
   override def attestations: Vector[FieldElement] = Vector(attestation)
 
   override def outcomes: Vector[DLCAttestationType] = Vector(outcome)
+
+  override def dlcOutcome: DLCOutcomeType = EnumOutcome(outcome.outcomeString)
 }
 
 sealed trait DigitDecompositionV0OracleEvent extends OracleEvent {
@@ -130,10 +140,42 @@ case class CompletedDigitDecompositionV0OracleEvent(
     maturationTime: Instant,
     announcementSignature: SchnorrDigitalSignature,
     eventDescriptorTLV: DigitDecompositionEventDescriptorV0TLV,
-    outcomes: Vector[DLCAttestationType],
+    dlcOutcome: NumericDLCOutcomeType,
     attestations: Vector[FieldElement])
     extends CompletedOracleEvent
-    with DigitDecompositionV0OracleEvent
+    with DigitDecompositionV0OracleEvent {
+
+  require(OracleEvent.verifyAttestations(announcementTLV,
+                                         oracleAttestmentV0TLV,
+                                         signingVersion),
+          "Signatures given are invalid")
+
+  val outcomeBase10: Long = {
+    val (digits, positive) = dlcOutcome match {
+      case UnsignedNumericOutcome(digits) =>
+        (digits, true)
+      case SignedNumericOutcome(positive, digits) =>
+        (digits, positive)
+    }
+
+    val base = eventDescriptorTLV.base.toInt
+    val numDigits = eventDescriptorTLV.numDigits.toInt
+
+    val num = NumberUtil.fromDigits(digits, base, numDigits)
+
+    if (positive) num
+    else num * -1
+  }
+
+  override def outcomes: Vector[DigitDecompositionAttestationType] =
+    dlcOutcome match {
+      case UnsignedNumericOutcome(digits) =>
+        digits.map(DigitDecompositionAttestation)
+      case SignedNumericOutcome(positive, digits) =>
+        val sign = DigitDecompositionSignAttestation(positive)
+        sign +: digits.map(DigitDecompositionAttestation)
+    }
+}
 
 object OracleEvent {
 
@@ -172,18 +214,18 @@ object OracleEvent {
 
         val attestations = sortedEventDbs.flatMap(_.attestationOpt)
 
-        val outcomes = decomp match {
+        val dlcOutcome = decomp match {
           case _: SignedDigitDecompositionEventDescriptor =>
-            val sign = DigitDecompositionSignAttestation(
-              sortedEventDbs.head.outcomeOpt.get == "+")
+            val positive = sortedEventDbs.head.outcomeOpt.get == "+"
             val digits = sortedEventDbs.tail.map { eventDb =>
-              DigitDecompositionAttestation(eventDb.outcomeOpt.get.toInt)
+              eventDb.outcomeOpt.get.toInt
             }
-            sign +: digits
+            SignedNumericOutcome(positive, digits)
           case _: UnsignedDigitDecompositionEventDescriptor =>
-            sortedEventDbs.map { eventDb =>
-              DigitDecompositionAttestation(eventDb.outcomeOpt.get.toInt)
+            val digits = sortedEventDbs.map { eventDb =>
+              eventDb.outcomeOpt.get.toInt
             }
+            UnsignedNumericOutcome(digits)
         }
 
         CompletedDigitDecompositionV0OracleEvent(
@@ -194,7 +236,7 @@ object OracleEvent {
           eventDb.maturationTime,
           eventDb.announcementSignature,
           decomp,
-          outcomes,
+          dlcOutcome,
           attestations
         )
       case (decomp: DigitDecompositionEventDescriptorV0TLV, None) =>

@@ -1053,7 +1053,7 @@ object ConsoleCli {
         .text(s"Get oracle's staking address"),
       cmd("listevents")
         .action((_, conf) => conf.copy(command = ListEvents))
-        .text(s"Lists all event announcements"),
+        .text(s"Lists all event names"),
       cmd("createenumevent")
         .action((_, conf) =>
           conf.copy(command = CreateEnumEvent("", new Date(), Seq.empty)))
