@@ -2,9 +2,9 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.currency._
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.TransactionGenerators
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 
@@ -36,7 +36,8 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
     } yield {
       assert(oldConfirmed == newConfirmed)
       assert(oldUnconfirmed == newUnconfirmed)
-      assert(oldUtxos == newUtxos)
+      // make id not comparable
+      assert(oldUtxos.map(_.copyWithId(0)) == newUtxos.map(_.copyWithId(0)))
       assert(oldTransactions == newTransactions)
     }
 
