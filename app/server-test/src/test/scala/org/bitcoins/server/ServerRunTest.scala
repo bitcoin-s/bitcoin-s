@@ -1,12 +1,11 @@
 package org.bitcoins.server
 
 import java.nio.file._
-
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkit.util.{AkkaUtil, BitcoinSAsyncTest}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -75,7 +74,7 @@ class ServerRunTest extends BitcoinSAsyncTest {
       _ = thread.start()
 
       // Wait for the server to have successfully started up
-      _ = Thread.sleep(10000)
+      _ <- AkkaUtil.nonBlockingSleep(1.second)
       binding <- BitcoinSServer.startedF
 
       // Stop the server

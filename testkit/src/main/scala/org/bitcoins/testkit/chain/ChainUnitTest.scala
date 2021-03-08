@@ -27,7 +27,7 @@ import org.bitcoins.testkit.chain.models.{
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.CachedChainAppConfig
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.ScalaTestUtil
+import org.bitcoins.testkit.util.{AkkaUtil, ScalaTestUtil}
 import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.zmq.ZMQSubscriber
 import org.scalatest._
@@ -35,6 +35,7 @@ import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
 
 trait ChainUnitTest
     extends BitcoinSFixture
@@ -253,9 +254,9 @@ trait ChainUnitTest
                         rawTxListener = None,
                         rawBlockListener = Some(handleRawBlock))
     zmqSubscriber.start()
-    Thread.sleep(1000)
 
     for {
+      _ <- AkkaUtil.nonBlockingSleep(1.second)
       chainHandler <- chainHandlerF
     } yield (chainHandler, zmqSubscriber)
   }
