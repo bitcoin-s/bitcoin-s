@@ -3,6 +3,7 @@ package org.bitcoins.dlc.execution
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.crypto.{AdaptorSign, ECPublicKey}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
@@ -103,6 +104,12 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
 
   def executeRefundDLC(dlcSetup: SetupDLC): RefundDLCOutcome = {
     val SetupDLC(fundingTx, _, refundTx) = dlcSetup
+    RefundDLCOutcome(fundingTx, refundTx)
+  }
+
+  def executeRefundDLC(refundSig: PartialSignature): RefundDLCOutcome = {
+    val refundTx = signer.completeRefundTx(refundSig)
+    val fundingTx = signer.builder.buildFundingTx
     RefundDLCOutcome(fundingTx, refundTx)
   }
 }

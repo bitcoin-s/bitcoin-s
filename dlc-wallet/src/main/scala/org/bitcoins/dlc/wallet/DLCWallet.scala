@@ -1338,6 +1338,10 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       DLCExecutor.apply)
   }
 
+  private def executorFromDb(paramHash: Sha256DigestBE): Future[DLCExecutor] = {
+    signerFromDb(paramHash).map(DLCExecutor.apply)
+  }
+
   private def executorAndSetupFromDb(
       contractId: ByteVector): Future[(DLCExecutor, SetupDLC)] = {
     getAllDLCData(contractId).flatMap {
@@ -1507,8 +1511,15 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
   override def executeDLCRefund(contractId: ByteVector): Future[Transaction] = {
     for {
-      (executor, setup) <- executorAndSetupFromDb(contractId)
-      refundTx = executor.executeRefundDLC(setup).refundTx
+      dlcDbOpt <- dlcDAO.findByContractId(contractId)
+      dlcDb = dlcDbOpt.get
+
+      executor <- executorFromDb(dlcDb.paramHash)
+      refundSigDbOpt <- dlcRefundSigDAO.findByParamHash(dlcDb.paramHash,
+                                                        !dlcDb.isInitiator)
+      refundSig = refundSigDbOpt.get.refundSig
+
+      refundTx = executor.executeRefundDLC(refundSig).refundTx
       _ = logger.info(
         s"Created DLC refund transaction ${refundTx.txIdBE.hex} for contract ${contractId.toHex}")
 
