@@ -59,7 +59,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     destinationOpt match {
       case Some(path) =>
         Files.write(path, returnedStr.getBytes)
-        path.toAbsolutePath.toString
+        val absPath = path.toAbsolutePath.toString
+        s"Written to $absPath"
       case None => returnedStr
     }
   }

@@ -245,7 +245,7 @@ object ConsoleCli {
                 case other => other
               })),
           arg[Path]("destination")
-            .required()
+            .optional()
             .action((dest, conf) =>
               conf.copy(command = conf.command match {
                 case accept: AcceptDLCOfferFromFile =>
@@ -280,7 +280,7 @@ object ConsoleCli {
                 case other => other
               })),
           arg[Path]("destination")
-            .required()
+            .optional()
             .action((dest, conf) =>
               conf.copy(command = conf.command match {
                 case accept: SignDLCFromFile =>
