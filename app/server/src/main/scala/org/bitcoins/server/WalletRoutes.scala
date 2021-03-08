@@ -58,7 +58,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
   ): String = {
     destinationOpt match {
       case Some(path) =>
-        Files.writeString(path, returnedStr)
+        Files.write(path, returnedStr.getBytes)
         path.toAbsolutePath.toString
       case None => returnedStr
     }
