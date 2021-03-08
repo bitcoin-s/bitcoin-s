@@ -17,7 +17,15 @@ class SignDLCDialog
                                                DLCDialog.acceptFileChosenLabel.text =
                                                  file.toString
                                              },
-                                           DLCDialog.fileChosenStr -> DLCDialog.acceptFileChosenLabel
+                                           DLCDialog.fileChosenStr -> DLCDialog.acceptFileChosenLabel,
+                                           DLCDialog.dlcSignFileDestStr ->
+                                             DLCDialog.fileChooserButton { file =>
+                                               DLCDialog.signDestDLCFile =
+                                                 Some(file)
+                                               DLCDialog.signDestFileChosenLabel.text =
+                                                 file.toString
+                                             },
+                                           DLCDialog.fileChosenStr -> DLCDialog.signDestFileChosenLabel
                                          ),
                                          Vector(DLCDialog.dlcAcceptStr,
                                                 DLCDialog.dlcAcceptFileStr)) {
@@ -29,7 +37,10 @@ class SignDLCDialog
       case Some(file) =>
         acceptDLCFile = None // reset
         acceptFileChosenLabel.text = "" // reset
-        SignDLCFromFile(file.toPath)
+        signDestDLCFile = None // reset
+        signFileChosenLabel.text = "" // reset
+
+        SignDLCFromFile(file.toPath, signDestDLCFile.map(_.toPath))
       case None =>
         val acceptHex = readStringFromNode(inputs(dlcAcceptStr))
 

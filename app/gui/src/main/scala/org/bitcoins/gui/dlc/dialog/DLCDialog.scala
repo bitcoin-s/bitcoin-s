@@ -168,9 +168,14 @@ object DLCDialog {
   var acceptDLCFile: Option[File] = None
   var signDLCFile: Option[File] = None
 
+  var acceptDestDLCFile: Option[File] = None
+  var signDestDLCFile: Option[File] = None
+
   val offerFileChosenLabel = new Label("")
   val acceptFileChosenLabel = new Label("")
+  val acceptDestFileChosenLabel = new Label("")
   val signFileChosenLabel = new Label("")
+  val signDestFileChosenLabel = new Label("")
 
   val oracleAnnouncementStr = "Oracle Announcement"
   val contractInfoStr = "Contract Info"
@@ -200,8 +205,12 @@ object DLCDialog {
   val dlcOfferStr = "DLC Offer"
   val dlcOfferFileStr = "Open Offer from File"
 
+  val dlcAcceptFileDestStr = "Accept file destination"
+
   val dlcAcceptStr = "DLC Accept Message"
   val dlcAcceptFileStr = "Open Accept from File"
+
+  val dlcSignFileDestStr = "Sign file destination"
 
   val dlcSigStr = "DLC Signatures"
   val dlcSignFileStr = "Open Sign from File"
