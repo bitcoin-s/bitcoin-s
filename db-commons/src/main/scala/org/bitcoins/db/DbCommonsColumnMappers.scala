@@ -278,6 +278,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
           s"$enumStr$outcome"
         case UnsignedNumericOutcome(digits) =>
           s"$unsignedNumStr" + digits.mkString("|")
+        case _: SignedNumericOutcome =>
+          throw new RuntimeException("Unknown outcome type")
       },
       str => {
         if (str.startsWith(enumStr)) {
@@ -307,6 +309,8 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
               s"$enumStr$outcome"
             case UnsignedNumericOutcome(digits) =>
               s"$unsignedNumStr" + digits.mkString("|")
+            case _: SignedNumericOutcome =>
+              throw new RuntimeException("Unknown outcome type")
           }
         }.mkString,
       str => {

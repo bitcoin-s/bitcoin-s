@@ -17,6 +17,8 @@ case class EnumOutcome(outcome: String) extends DLCOutcomeType {
     Vector(CryptoUtil.serializeForHash(outcome))
 }
 
+sealed trait NumericDLCOutcomeType extends DLCOutcomeType
+
 /** An outcome from a multi-nonce unsigned numeric event type.
   *
   * If digits.length is less than the the total number of digits to be
@@ -25,8 +27,27 @@ case class EnumOutcome(outcome: String) extends DLCOutcomeType {
   *
   * I.e. the Vector[Int] is always the most significant digits.
   */
-case class UnsignedNumericOutcome(digits: Vector[Int]) extends DLCOutcomeType {
+case class UnsignedNumericOutcome(digits: Vector[Int])
+    extends NumericDLCOutcomeType {
 
   override lazy val serialized: Vector[ByteVector] =
     digits.map(digit => CryptoUtil.serializeForHash(digit.toString))
+}
+
+/** An outcome from a multi-nonce signed numeric event type.
+  *
+  * If digits.length is less than the the total number of digits to be
+  * signed by the oracle then this outcome represents all outcomes prefixed
+  * by the given digits.
+  *
+  * I.e. the Vector[Int] is always the most significant digits.
+  */
+case class SignedNumericOutcome(positive: Boolean, digits: Vector[Int])
+    extends NumericDLCOutcomeType {
+
+  private val signOutcomeStr = if (positive) "+" else "-"
+
+  override lazy val serialized: Vector[ByteVector] =
+    CryptoUtil.serializeForHash(signOutcomeStr) +:
+      digits.map(digit => CryptoUtil.serializeForHash(digit.toString))
 }

@@ -132,7 +132,7 @@ case class EnumSingleOracleInfo(announcement: OracleAnnouncementTLV)
                                sig)
             }
         }
-      case UnsignedNumericOutcome(_) =>
+      case UnsignedNumericOutcome(_) | _: SignedNumericOutcome =>
         throw new IllegalArgumentException(
           s"Expected EnumOutcome, got $outcome")
     }
@@ -177,7 +177,7 @@ case class NumericSingleOracleInfo(announcement: OracleAnnouncementTLV)
       s"Too many signatures (expected at most ${nonces.length}), got $sigs")
 
     outcome match {
-      case EnumOutcome(_) =>
+      case EnumOutcome(_) | _: SignedNumericOutcome =>
         throw new IllegalArgumentException(
           s"Expected numeric outcome, got $outcome")
       case UnsignedNumericOutcome(digits) =>

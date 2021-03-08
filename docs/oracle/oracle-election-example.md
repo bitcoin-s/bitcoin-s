@@ -106,6 +106,7 @@ If you use the `getevent` rpc along the oracle announcement, you can see the eve
     "Republican_win",
     "Democrat_win",
     "other"
-  ]
+  ],
+  "signedOutcome": "Democrat_win"
 }
 ```

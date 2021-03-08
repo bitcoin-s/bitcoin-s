@@ -4,6 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.tlv.{
   DLCOutcomeType,
   EnumOutcome,
+  SignedNumericOutcome,
   UnsignedNumericOutcome
 }
 import org.bitcoins.core.util.{Indexed, NumberUtil}
@@ -281,7 +282,7 @@ object CETCalculator {
       digits: Digits,
       outcomes: Vector[DLCOutcomeType]): Option[UnsignedNumericOutcome] = {
     searchForPrefix(digits, outcomes) {
-      case outcome: EnumOutcome =>
+      case outcome @ (_: EnumOutcome | _: SignedNumericOutcome) =>
         throw new IllegalArgumentException(
           s"Expected Numeric Outcome, got $outcome")
       case UnsignedNumericOutcome(digits) => digits
