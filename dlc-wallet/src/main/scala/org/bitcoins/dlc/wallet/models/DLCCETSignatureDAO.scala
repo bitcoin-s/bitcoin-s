@@ -49,6 +49,18 @@ case class DLCCETSignatureDAO()(implicit
     Seq] =
     findByPrimaryKeys(dlcs.map(sig => (sig.paramHash, sig.sigPoint)))
 
+  def findBySigPoint(
+      paramHash: Sha256DigestBE,
+      sigPoint: ECPublicKey,
+      isInit: Boolean): Future[Option[DLCCETSignatureDb]] = {
+    val q = table
+      .filter(_.paramHash === paramHash)
+      .filter(_.sigPoint === sigPoint)
+      .filter(_.isInitiator === isInit)
+
+    safeDatabase.run(q.result).map(_.headOption)
+  }
+
   def findByParamHash(
       paramHash: Sha256DigestBE): Future[Vector[DLCCETSignatureDb]] = {
     val q = table.filter(_.paramHash === paramHash)

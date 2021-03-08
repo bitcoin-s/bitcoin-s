@@ -325,15 +325,34 @@ object DLCTxSigner {
                                                          cetSigningInfo,
                                                          signLowR,
                                                          HashType.sigHashAll)
+    val localPartialSig =
+      PartialSignature(cetSigningInfo.signer.publicKey, localSig)
+
+    completeCET(outcome,
+                localPartialSig,
+                fundingMultiSig,
+                fundingTx,
+                ucet,
+                remoteAdaptorSig,
+                remoteFundingPubKey,
+                oracleSigs)
+  }
+
+  def completeCET(
+      outcome: OracleOutcome,
+      localSig: PartialSignature,
+      fundingMultiSig: MultiSignatureScriptPubKey,
+      fundingTx: Transaction,
+      ucet: WitnessTransaction,
+      remoteAdaptorSig: ECAdaptorSignature,
+      remoteFundingPubKey: ECPublicKey,
+      oracleSigs: Vector[OracleSignatures]): WitnessTransaction = {
     val oracleSigSum =
       OracleSignatures.computeAggregateSignature(outcome, oracleSigs)
 
     val remoteSig =
       oracleSigSum
         .completeAdaptorSignature(remoteAdaptorSig, HashType.sigHashAll.byte)
-
-    val localParitalSig =
-      PartialSignature(cetSigningInfo.signer.publicKey, localSig)
     val remotePartialSig = PartialSignature(remoteFundingPubKey, remoteSig)
 
     val psbt =
@@ -341,7 +360,7 @@ object DLCTxSigner {
         .fromUnsignedTx(ucet)
         .addUTXOToInput(fundingTx, index = 0)
         .addScriptWitnessToInput(P2WSHWitnessV0(fundingMultiSig), index = 0)
-        .addSignature(localParitalSig, inputIndex = 0)
+        .addSignature(localSig, inputIndex = 0)
         .addSignature(remotePartialSig, inputIndex = 0)
 
     val cetT = psbt.finalizePSBT

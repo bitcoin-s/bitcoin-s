@@ -4,7 +4,7 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.crypto.{AdaptorSign, ECPublicKey}
+import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
 
@@ -102,6 +102,33 @@ case class DLCExecutor(signer: DLCTxSigner) {
                            builder.fundOutputIndex)
   }
 
+  /** Computes closing transactions from the remote's ECAdaptorSignature,
+    * the outcome, and the corresponding set of OracleSignatures.
+    */
+  def executeDLC(
+      remoteAdaptorSig: ECAdaptorSignature,
+      outcome: OracleOutcome,
+      oracleSigs: Vector[OracleSignatures]): ExecutedDLCOutcome = {
+    val remoteFundingPubKey = if (isInitiator) {
+      builder.acceptFundingKey
+    } else {
+      builder.offerFundingKey
+    }
+
+    val fundingTx = builder.buildFundingTx
+
+    val ucet = builder.buildCET(outcome)
+    val cetInfo = CETInfo(ucet, remoteAdaptorSig)
+
+    DLCExecutor.executeDLC(outcome,
+                           cetInfo,
+                           oracleSigs,
+                           signer.fundingKey,
+                           remoteFundingPubKey,
+                           fundingTx,
+                           builder.fundOutputIndex)
+  }
+
   def executeRefundDLC(dlcSetup: SetupDLC): RefundDLCOutcome = {
     val SetupDLC(fundingTx, _, refundTx) = dlcSetup
     RefundDLCOutcome(fundingTx, refundTx)
@@ -115,6 +142,20 @@ case class DLCExecutor(signer: DLCTxSigner) {
 }
 
 object DLCExecutor {
+
+  def findOutcomeAndSignatures(
+      contractInfo: ContractInfo,
+      oracleSigs: Vector[OracleSignatures]): Option[
+    (OracleOutcome, Vector[OracleSignatures])] = {
+    val threshold = contractInfo.oracleInfo.threshold
+    val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
+    sigCombinations.flatMap { sigs =>
+      contractInfo.findOutcome(sigs) match {
+        case Some(outcome) => Some((outcome, sigs))
+        case None          => None
+      }
+    }.headOption // should only be one
+  }
 
   /** Given DLC setup data and oracle signatures, computes the OracleOutcome and a fully signed CET.
     *
@@ -130,16 +171,9 @@ object DLCExecutor {
       fundingTx: Transaction,
       fundOutputIndex: Int
   ): ExecutedDLCOutcome = {
-    val threshold = contractInfo.oracleInfo.threshold
-    val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
+    val outcomeAndSigsOpt = findOutcomeAndSignatures(contractInfo, oracleSigs)
 
-    var msgOpt: Option[OracleOutcome] = None
-    val sigsUsedOpt = sigCombinations.find { sigs =>
-      msgOpt = contractInfo.findOutcome(sigs)
-      msgOpt.isDefined
-    }
-
-    val msgAndCETInfoOpt = msgOpt.flatMap { msg =>
+    val msgAndCETInfoOpt = outcomeAndSigsOpt.flatMap { case (msg, _) =>
       remoteCETInfos.find(_._1 == msg)
     }
 
@@ -150,7 +184,27 @@ object DLCExecutor {
           s"Signature does not correspond to any possible outcome! $oracleSigs")
     }
     val sigsUsed =
-      sigsUsedOpt.get // Safe because msgOpt is defined if no throw
+      outcomeAndSigsOpt.get._2 // Safe because msgOpt is defined if no throw
+
+    executeDLC(msg,
+               CETInfo(ucet, remoteAdaptorSig),
+               sigsUsed,
+               fundingKey,
+               remoteFundingPubKey,
+               fundingTx,
+               fundOutputIndex)
+  }
+
+  def executeDLC(
+      oracleOutcome: OracleOutcome,
+      remoteCETInfo: CETInfo,
+      oracleSigs: Vector[OracleSignatures],
+      fundingKey: AdaptorSign,
+      remoteFundingPubKey: ECPublicKey,
+      fundingTx: Transaction,
+      fundOutputIndex: Int
+  ): ExecutedDLCOutcome = {
+    val CETInfo(ucet, remoteAdaptorSig) = remoteCETInfo
 
     val (fundingMultiSig, _) = DLCTxBuilder.buildFundingSPKs(
       Vector(fundingKey.publicKey, remoteFundingPubKey))
@@ -161,15 +215,15 @@ object DLCExecutor {
                                       fundingMultiSig,
                                       fundingKey)
 
-    val cet = DLCTxSigner.completeCET(msg,
+    val cet = DLCTxSigner.completeCET(oracleOutcome,
                                       signingInfo,
                                       fundingMultiSig,
                                       fundingTx,
                                       ucet,
                                       remoteAdaptorSig,
                                       remoteFundingPubKey,
-                                      sigsUsed)
+                                      oracleSigs)
 
-    ExecutedDLCOutcome(fundingTx, cet, msg, sigsUsed)
+    ExecutedDLCOutcome(fundingTx, cet, oracleOutcome, oracleSigs)
   }
 }

@@ -1521,11 +1521,31 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
     require(oracleSigs.nonEmpty, "Must provide at least one oracle signature")
     for {
-      (executor, setup) <- executorAndSetupFromDb(contractId)
+      dlcDbOpt <- dlcDAO.findByContractId(contractId)
+      dlcDb = dlcDbOpt.get
+      offerDbOpt <- dlcOfferDAO.findByParamHash(dlcDb.paramHash)
+      offerDb = offerDbOpt.get
 
-      executed = executor.executeDLC(setup, oracleSigs)
-      (tx, outcome, sigsUsed) =
-        (executed.cet, executed.outcome, executed.sigsUsed)
+      (outcome, sigsUsed) = DLCExecutor
+        .findOutcomeAndSignatures(offerDb.contractInfo, oracleSigs)
+        .get
+      oracleSigSum = OracleSignatures.computeAggregateSignature(outcome,
+                                                                sigsUsed)
+
+      outcomeSigDb <- dlcSigsDAO.findBySigPoint(dlcDb.paramHash,
+                                                oracleSigSum.publicKey,
+                                                !dlcDb.isInitiator)
+      remoteSig = outcomeSigDb.get.signature
+
+      executor <- executorFromDb(dlcDb.paramHash)
+
+      executed = executor.executeDLC(remoteSig, outcome, sigsUsed)
+      tx = executed.cet
+
+      // Sanity checks
+      _ = require(executed.outcome == outcome)
+      _ = require(executed.sigsUsed == sigsUsed)
+
       _ = logger.info(
         s"Created DLC execution transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}")
 
