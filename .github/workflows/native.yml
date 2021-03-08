@@ -27,7 +27,10 @@ jobs:
             uploaded_filename: bitcoin-s-cli-x86_64-pc-win32.exe
             local_path: app\cli\target\native-image\bitcoin-s-cli.exe
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - uses: olafurpg/setup-scala@v10
       - run: git fetch --tags || true
       - run: sbt cli/nativeImage
