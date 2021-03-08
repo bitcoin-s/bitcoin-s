@@ -1,5 +1,7 @@
 ALTER TABLE "tx_table"
     ADD COLUMN "block_hash" TEXT;
+ALTER TABLE "tx_table"
+    Drop COLUMN "id";
 
 
 UPDATE "tx_table"

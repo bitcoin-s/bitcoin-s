@@ -36,8 +36,12 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
     } yield {
       assert(oldConfirmed == newConfirmed)
       assert(oldUnconfirmed == newUnconfirmed)
-      // make id not comparable
-      assert(oldUtxos.map(_.copyWithId(0)) == newUtxos.map(_.copyWithId(0)))
+      // make utxos comparable
+      val comparableOldUtxos =
+        oldUtxos.map(_.copyWithId(0)).sortBy(_.outPoint.hex)
+      val comparableNewUtxos =
+        newUtxos.map(_.copyWithId(0)).sortBy(_.outPoint.hex)
+      assert(comparableOldUtxos == comparableNewUtxos)
       assert(oldTransactions == newTransactions)
     }
 
