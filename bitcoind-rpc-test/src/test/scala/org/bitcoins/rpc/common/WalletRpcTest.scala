@@ -34,6 +34,7 @@ import scala.reflect.io.Directory
 @nowarn
 class WalletRpcTest extends BitcoindRpcTest {
 
+  //make a diff
   lazy val clientsF: Future[
     (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] =
     BitcoindRpcTestUtil.createNodeTripleV19(clientAccum = clientAccum)
