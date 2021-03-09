@@ -7,7 +7,6 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.{AkkaUtil, BitcoinSAsyncTest}
 
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.reflect.io.Directory
 
@@ -33,11 +32,12 @@ class ServerRunTest extends BitcoinSAsyncTest {
     // Use Exception because different errors can occur
     recoverToSucceededIf[Exception] {
       val runMainF = new BitcoinSServerMain(args).startup
-      val deleteDirF = Future {
-        Thread.sleep(2000)
-        directory.deleteRecursively()
-        Thread.sleep(2000)
-      }
+      val deleteDirF = for {
+        _ <- AkkaUtil.nonBlockingSleep(2.seconds)
+        _ = directory.deleteRecursively()
+        _ <- AkkaUtil.nonBlockingSleep(2.seconds)
+      } yield ()
+
       for {
         _ <- runMainF
         _ <- deleteDirF
