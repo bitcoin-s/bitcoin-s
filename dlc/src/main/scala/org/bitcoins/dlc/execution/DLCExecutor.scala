@@ -143,6 +143,9 @@ case class DLCExecutor(signer: DLCTxSigner) {
 
 object DLCExecutor {
 
+  /** Finds the correct subset of signatures and corresponding oracle outcome
+    * given a ContractInfo and OracleSignatures
+    */
   def findOutcomeAndSignatures(
       contractInfo: ContractInfo,
       oracleSigs: Vector[OracleSignatures]): Option[
