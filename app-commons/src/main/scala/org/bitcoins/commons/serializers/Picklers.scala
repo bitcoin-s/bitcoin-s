@@ -351,14 +351,24 @@ object Picklers {
     )
   }
 
-  implicit val dlcStatusW: Writer[DLCStatus] = Writer.merge(offeredW,
-                                                            acceptedW,
-                                                            signedW,
-                                                            broadcastedW,
-                                                            confirmedW,
-                                                            claimedW,
-                                                            remoteClaimedW,
-                                                            refundedW)
+  implicit val dlcStatusW: Writer[DLCStatus] = writer[Value].comap {
+    case o: Offered =>
+      writeJs(o)(offeredW)
+    case a: Accepted =>
+      writeJs(a)(acceptedW)
+    case s: Signed =>
+      writeJs(s)(signedW)
+    case b: Broadcasted =>
+      writeJs(b)(broadcastedW)
+    case c: Confirmed =>
+      writeJs(c)(confirmedW)
+    case c: Claimed =>
+      writeJs(c)(claimedW)
+    case r: RemoteClaimed =>
+      writeJs(r)(remoteClaimedW)
+    case r: Refunded =>
+      writeJs(r)(refundedW)
+  }
 
   implicit val dlcStatusR: Reader[DLCStatus] = reader[Obj].map { obj =>
     val paramHash = Sha256DigestBE(obj("paramHash").str)
