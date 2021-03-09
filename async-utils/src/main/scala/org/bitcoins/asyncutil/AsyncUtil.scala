@@ -25,7 +25,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
       interval: FiniteDuration = AsyncUtil.DEFAULT_INTERVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(implicit
       ec: ExecutionContext): Future[Unit] = {
-    val f = () => Future.successful(condition)
+    val f = () => Future(condition)
     retryUntilSatisfiedF(f, interval, maxTries)
   }
 
@@ -125,8 +125,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
     //type hackery here to go from () => Boolean to () => Future[Boolean]
     //to make sure we re-evaluate every time retryUntilSatisfied is called
     def conditionDef: Boolean = condition()
-    val conditionF: () => Future[Boolean] = () =>
-      Future.successful(conditionDef)
+    val conditionF: () => Future[Boolean] = () => Future(conditionDef)
 
     awaitConditionF(conditionF, interval, maxTries)
   }
