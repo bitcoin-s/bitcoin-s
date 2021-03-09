@@ -97,6 +97,19 @@ lazy val asyncUtilsJVM = asyncUtils.jvm
 
 lazy val asyncUtilsJS = asyncUtils.js
 
+lazy val asyncUtilsTest = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("async-utils-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(name := "bitcoin-s-async-utils-test")
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
+  .dependsOn(asyncUtils, testkitCore)
+
+lazy val asyncUtilsTestJVM = asyncUtilsTest.jvm
+
+lazy val asyncUtilsTestJS = asyncUtilsTest.js
+
 lazy val testkitCore = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("testkit-core"))
@@ -125,6 +138,7 @@ lazy val eclairRpc = project
 
 lazy val jsProjects: Vector[ProjectReference] =
   Vector(asyncUtilsJS,
+         asyncUtilsTestJS,
          cryptoJS,
          coreJS,
          cryptoTestJS,
