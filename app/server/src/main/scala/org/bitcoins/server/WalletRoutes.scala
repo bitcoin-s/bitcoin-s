@@ -19,7 +19,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import ujson._
 import upickle.default._
 
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 import java.time.Instant
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -49,6 +49,19 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       Future.successful(tx)
     } else {
       wallet.broadcastTransaction(tx).map(_ => tx.txIdBE)
+    }
+  }
+
+  private def handleDestinationOpt(
+      returnedStr: String,
+      destinationOpt: Option[Path]
+  ): String = {
+    destinationOpt match {
+      case Some(path) =>
+        Files.write(path, returnedStr.getBytes)
+        val absPath = path.toAbsolutePath.toString
+        s"Written to $absPath"
+      case None => returnedStr
     }
   }
 
@@ -315,7 +328,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       DLCDataFromFile.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(DLCDataFromFile(path)) =>
+        case Success(DLCDataFromFile(path, destOpt)) =>
           complete {
 
             val hex = Files.readAllLines(path).get(0)
@@ -325,7 +338,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
             wallet
               .acceptDLCOffer(offerMessage.tlv)
               .map { accept =>
-                Server.httpSuccess(accept.toMessage.hex)
+                val ret = handleDestinationOpt(accept.toMessage.hex, destOpt)
+                Server.httpSuccess(ret)
               }
           }
       }
@@ -348,7 +362,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       DLCDataFromFile.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(DLCDataFromFile(path)) =>
+        case Success(DLCDataFromFile(path, destOpt)) =>
           complete {
 
             val hex = Files.readAllLines(path).get(0)
@@ -358,7 +372,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
             wallet
               .signDLC(acceptMessage.tlv)
               .map { sign =>
-                Server.httpSuccess(sign.toMessage.hex)
+                val ret = handleDestinationOpt(sign.toMessage.hex, destOpt)
+                Server.httpSuccess(ret)
               }
           }
       }
@@ -380,7 +395,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       DLCDataFromFile.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(DLCDataFromFile(path)) =>
+        case Success(DLCDataFromFile(path, _)) =>
           complete {
 
             val hex = Files.readAllLines(path).get(0)

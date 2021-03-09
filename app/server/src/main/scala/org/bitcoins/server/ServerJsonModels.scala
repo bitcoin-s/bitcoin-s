@@ -740,7 +740,7 @@ object AddDLCSigs extends ServerJsonModels {
   }
 }
 
-case class DLCDataFromFile(path: Path)
+case class DLCDataFromFile(path: Path, destinationOpt: Option[Path])
 
 object DLCDataFromFile extends ServerJsonModels {
 
@@ -749,7 +749,13 @@ object DLCDataFromFile extends ServerJsonModels {
       case pathJs :: Nil =>
         Try {
           val path = new File(pathJs.str).toPath
-          DLCDataFromFile(path)
+          DLCDataFromFile(path, None)
+        }
+      case pathJs :: destJs :: Nil =>
+        Try {
+          val path = new File(pathJs.str).toPath
+          val dest = new File(destJs.str).toPath
+          DLCDataFromFile(path, Some(dest))
         }
       case Nil =>
         Failure(new IllegalArgumentException("Missing path argument"))
