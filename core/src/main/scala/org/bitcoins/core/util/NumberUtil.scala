@@ -1,20 +1,19 @@
 package org.bitcoins.core.util
 
-import java.math.BigInteger
-
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.blockchain.BlockHeader.TargetDifficultyHelper
 import org.bitcoins.crypto.FieldElement
 import scodec.bits.{BitVector, ByteVector}
 
+import java.math.BigInteger
 import scala.annotation.tailrec
 import scala.math.BigInt
 import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 2/8/16.
   */
-sealed abstract class NumberUtil extends BitcoinSLogger {
+sealed abstract class NumberUtil {
 
   /** Takes 2^^num. */
   def pow2(exponent: Int): BigInt = {

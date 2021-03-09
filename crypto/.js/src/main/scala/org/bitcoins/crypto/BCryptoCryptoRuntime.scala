@@ -2,10 +2,11 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
+import java.math.BigInteger
 import scala.scalajs.js
-import scala.scalajs.js.typedarray._
 import scala.scalajs.js.JSStringOps._
-import scala.scalajs.js.UnicodeNormalizationForm
+import scala.scalajs.js.typedarray._
+import scala.scalajs.js.{JavaScriptException, UnicodeNormalizationForm}
 
 /** This is an implementation of [[CryptoRuntime]] that defaults to
   * Bcrypto (https://github.com/bcoin-org/bcrypto) when possible.
@@ -22,7 +23,9 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   private lazy val sha1 = new SHA1
   private lazy val sha256 = SHA256Factory.create()
   private lazy val hmac = SHA512.hmac.apply().asInstanceOf[HMAC]
-  private lazy val ecdsa = new ECDSA("SECP256K1", sha256, sha256, null)
+
+  private lazy val ecdsa =
+    new ECDSA("SECP256K1", sha256, js.constructorOf[SHA256], null)
 
   private lazy val randomBytesFunc: Int => ByteVector =
     try {
@@ -148,48 +151,34 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
 
   override def tweakMultiply(
       publicKey: ECPublicKey,
-      tweak: FieldElement): ECPublicKey = ???
+      tweak: FieldElement): ECPublicKey = {
+    val keyBuffer = ecdsa.publicKeyTweakMul(publicKey.bytes, tweak.bytes, true)
+    ECPublicKey.fromBytes(keyBuffer)
+  }
 
-  override def add(pk1: ECPrivateKey, pk2: ECPrivateKey): ECPrivateKey = ???
-
-  override def add(bytes: ByteVector, pk2: ECPrivateKey): ByteVector = ???
-
-  override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey = ???
+  override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey = {
+    try {
+      val keyBuffer =
+        ecdsa.publicKeyCombine(js.Array(pk1.bytes, pk2.bytes), true)
+      ECPublicKey.fromBytes(keyBuffer)
+    } catch {
+      case _: JavaScriptException =>
+        // if ex.getMessage().contains("Invalid point") =>
+        ECPublicKey.fromHex("00")
+    }
+  }
 
   override def pubKeyTweakAdd(
       pubkey: ECPublicKey,
-      privkey: ECPrivateKey): ECPublicKey = ???
+      privkey: ECPrivateKey): ECPublicKey = {
+    val keyBuffer = ecdsa.publicKeyTweakAdd(pubkey.bytes, privkey.bytes, true)
+    ECPublicKey.fromBytes(keyBuffer)
+  }
 
   override def isValidPubKey(bytes: ByteVector): Boolean =
     ecdsa.publicKeyVerify(bytes)
 
   override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean = ???
-
-  override def schnorrSign(
-      dataToSign: ByteVector,
-      privateKey: ECPrivateKey,
-      auxRand: ByteVector): SchnorrDigitalSignature = {
-    val buffer = ecdsa.schnorrSign(dataToSign, privateKey.bytes) //, auxRand)
-    SchnorrDigitalSignature.fromBytes(buffer)
-  }
-
-  override def schnorrSignWithNonce(
-      dataToSign: ByteVector,
-      privateKey: ECPrivateKey,
-      nonceKey: ECPrivateKey): SchnorrDigitalSignature = ???
-
-  override def schnorrVerify(
-      data: ByteVector,
-      schnorrPubKey: SchnorrPublicKey,
-      signature: SchnorrDigitalSignature): Boolean = {
-    ecdsa.schnorrVerify(data, signature.bytes, schnorrPubKey.bytes)
-  }
-
-  override def schnorrComputeSigPoint(
-      data: ByteVector,
-      nonce: SchnorrNonce,
-      pubKey: SchnorrPublicKey,
-      compressed: Boolean): ECPublicKey = ???
 
   override def adaptorSign(
       key: ECPrivateKey,
@@ -245,6 +234,25 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     require(accum.length == len,
             s"Need $len bytes for buffer -> bytevector conversion")
     ByteVector(accum.map(_.toByte))
+  }
+
+  override def decodePoint(bytes: ByteVector): ECPoint = {
+    try {
+      val decoded = ecdsa.curve
+        .applyDynamic("decodePoint")(toNodeBuffer(bytes))
+        .asInstanceOf[Point]
+
+      if (decoded.isInfinity())
+        ECPointInfinity
+      else
+        ECPoint(new BigInteger(decoded.getX().toString()),
+                new BigInteger(decoded.getY().toString()))
+    } catch {
+      case _: JavaScriptException =>
+        // if ex.getMessage().contains("Not a point") =>
+        ECPointInfinity
+    }
+
   }
 }
 

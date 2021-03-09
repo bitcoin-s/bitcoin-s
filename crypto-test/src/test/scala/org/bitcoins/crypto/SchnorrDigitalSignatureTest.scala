@@ -2,9 +2,9 @@ package org.bitcoins.crypto
 
 import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSSyncTest
 
-class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
+class SchnorrDigitalSignatureTest extends BitcoinSSyncTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
