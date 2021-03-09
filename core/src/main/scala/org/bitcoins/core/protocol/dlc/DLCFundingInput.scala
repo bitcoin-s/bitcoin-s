@@ -66,6 +66,17 @@ object DLCFundingInput {
       case _: P2SHScriptPubKey =>
         redeemScriptOpt match {
           case Some(redeemScript) =>
+            redeemScript match {
+              case _: P2WPKHWitnessSPKV0 =>
+                require(
+                  maxWitnessLen == UInt16(107) || maxWitnessLen == UInt16(108),
+                  s"P2WPKH max witness length must be 107 or 108, got $maxWitnessLen")
+              case _: P2WSHWitnessSPKV0 => ()
+              case spk: UnassignedWitnessScriptPubKey =>
+                throw new IllegalArgumentException(
+                  s"Unknown segwit version: $spk")
+            }
+
             DLCFundingInputP2SHSegwit(inputSerialId,
                                       prevTx,
                                       prevTxVout,
