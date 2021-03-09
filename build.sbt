@@ -97,6 +97,15 @@ lazy val asyncUtilsJVM = asyncUtils.jvm
 
 lazy val asyncUtilsJS = asyncUtils.js
 
+lazy val asyncUtilsTest = crossProject(JVMPlatform, JSPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("async-utils-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(name := "bitcoin-s-async-utils-test")
+  .jvmSettings(CommonSettings.jvmSettings: _*)
+  .jsSettings(commonJsSettings: _*)
+  .dependsOn(asyncUtils)
+
 lazy val testkitCore = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("testkit-core"))
