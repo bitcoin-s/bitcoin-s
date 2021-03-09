@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
 import org.scalatest.concurrent.AsyncTimeLimitedTests
-import org.scalatest.flatspec.AsyncFlatSpec
+import org.scalatest.flatspec.{AnyFlatSpec, AsyncFlatSpec}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.Span
 import org.scalatest._
@@ -284,8 +284,36 @@ trait BaseAsyncTest
   * uses the default scala execution context to run
   * the tests on
   */
-trait BitcoinSJvmTest extends AsyncFlatSpec with BaseAsyncTest {
+trait BitcoinSJvmTest
+    extends AsyncFlatSpec
+    with BaseAsyncTest
+    with BitcoinSLogger {
 
   implicit override def executionContext: ExecutionContext =
     scala.concurrent.ExecutionContext.global
+}
+
+trait BitcoinSSyncTest
+    extends AnyFlatSpec
+    with BeforeAndAfter
+    with BeforeAndAfterAll
+    with Matchers
+    with ScalaCheckPropertyChecks {
+
+  implicit def executionContext: ExecutionContext =
+    scala.concurrent.ExecutionContext.global
+
+  def generatorDrivenConfigNewCode: PropertyCheckConfiguration = {
+    customGenDrivenConfig(BitcoinSUnitTest.NEW_CODE_EXECUTIONS)
+  }
+
+  /** Sets the generator driven tests to perform the given amount of execs */
+  def customGenDrivenConfig(executions: Int): PropertyCheckConfiguration = {
+    PropertyCheckConfiguration(
+      minSuccessful = PosInt.from(executions).get,
+      minSize = PosInt.from(executions).get,
+      workers = 1
+    )
+  }
+
 }
