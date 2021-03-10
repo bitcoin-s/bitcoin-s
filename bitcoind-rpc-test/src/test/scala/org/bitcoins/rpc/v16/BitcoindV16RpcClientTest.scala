@@ -16,7 +16,7 @@ import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.BitcoindRpcTest
+import org.bitcoins.testkit.util.{AkkaUtil, BitcoindRpcTest}
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
@@ -166,7 +166,7 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
                                    accountlessAddress,
                                    sendAmt))
 
-    if (Properties.isMac) Thread.sleep(10000)
+    if (Properties.isMac) await(AkkaUtil.nonBlockingSleep(10.seconds))
     val ourAccountAmount = await(client.getReceivedByAccount(ourAccount))
 
     assert(ourAccountAmount == sendAmt)

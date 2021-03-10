@@ -7,7 +7,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.{BitcoindRpcTest, FileUtil}
+import org.bitcoins.testkit.util.{AkkaUtil, BitcoindRpcTest, FileUtil}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -19,10 +19,9 @@ class TestRpcUtilTest extends BitcoindRpcTest {
     BitcoindRpcTestUtil.createNodeTriple(clientAccum = clientAccum)
 
   private def trueLater(delay: Int): Future[Boolean] = {
-    Future {
-      Thread.sleep(delay)
-      true
-    }
+    AkkaUtil
+      .nonBlockingSleep(delay.millis)
+      .map(_ => true)
   }
 
   private def boolLaterDoneAnd(
