@@ -9,7 +9,7 @@ object Deps {
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.3"
-    val scalaTest = "3.2.5"
+    val scalaTest = "3.2.6"
 
     val scalaTestPlus =
       "3.2.1.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
@@ -54,11 +54,11 @@ object Deps {
     // obviously has to be changed before this is
     // merged.
 
-    val sourcecodeV = "0.2.3"
+    val sourcecodeV = "0.2.4"
 
     val scalaJsStubsV = "1.0.0"
     // CLI deps
-    val scoptV = "4.0.0"
+    val scoptV = "4.0.1"
     val sttpV = "1.7.2"
     val codehausV = "3.1.3"
   }

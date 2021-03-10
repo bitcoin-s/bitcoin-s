@@ -20,8 +20,7 @@ sealed abstract class ECPrivateKey
 
   override def signFunction: ByteVector => Future[ECDigitalSignature] = {
     bytes =>
-      import scala.concurrent.ExecutionContext.Implicits.global
-      Future(sign(bytes))
+      Future.successful(sign(bytes))
   }
 
   /** Signs a given sequence of bytes with the signingKey
