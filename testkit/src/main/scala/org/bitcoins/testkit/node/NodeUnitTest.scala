@@ -31,7 +31,6 @@ import org.bitcoins.testkit.node.fixture.{
   SpvNodeConnectedWithBitcoind,
   SpvNodeConnectedWithBitcoindV19
 }
-
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.bitcoins.testkitcore.node.P2PMessageTestUtil
 import org.bitcoins.wallet.WalletCallbacks

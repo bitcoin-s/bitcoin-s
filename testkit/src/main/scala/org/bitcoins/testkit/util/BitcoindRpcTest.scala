@@ -1,5 +1,7 @@
 package org.bitcoins.testkit.util
 
+import grizzled.slf4j.Logging
+
 import java.nio.file.Files
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -7,7 +9,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import scala.collection.mutable
 import scala.concurrent.{Await, Future}
 
-abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
+abstract class BitcoindRpcTest extends BitcoinSAsyncTest with Logging {
 
   private val dirExists =
     Files.exists(BitcoindRpcTestClient.sbtBinaryDirectory)

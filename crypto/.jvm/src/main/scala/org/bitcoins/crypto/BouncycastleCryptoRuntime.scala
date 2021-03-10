@@ -10,7 +10,6 @@ import org.bouncycastle.crypto.params.{
   ECPrivateKeyParameters,
   KeyParameter
 }
-import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
 
 import java.math.BigInteger
@@ -42,7 +41,9 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
     *         p1.y is even, p2.y is odd
     */
-  def recoverPoint(x: BigInteger): (ECPoint, ECPoint) = {
+  def recoverPoint(x: BigInteger): (
+      org.bouncycastle.math.ec.ECPoint,
+      org.bouncycastle.math.ec.ECPoint) = {
     val bytes = ByteVector(x.toByteArray)
 
     val bytes32 = if (bytes.length < 32) {
