@@ -22,12 +22,13 @@ import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.BitcoindRpcTest
+import org.bitcoins.testkit.util.{AkkaUtil, BitcoindRpcTest}
 
 import java.io.File
 import java.util.Scanner
 import scala.annotation.nowarn
 import scala.async.Async.{async, await}
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
 import scala.reflect.io.Directory
 
@@ -51,11 +52,9 @@ class WalletRpcTest extends BitcoindRpcTest {
       _ <- walletClient.encryptWallet(password)
       _ <- walletClient.stop()
       _ <- RpcUtil.awaitServerShutdown(walletClient)
-      _ <- Future {
-        // Very rarely we are prevented from starting the client again because Core
-        // hasn't released its locks on the datadir. This is prevent that.
-        Thread.sleep(1000)
-      }
+      // Very rarely we are prevented from starting the client again because Core
+      // hasn't released its locks on the datadir. This is prevent that.
+      _ <- AkkaUtil.nonBlockingSleep(1.second)
       _ <- walletClient.start()
     } yield walletClient
   }

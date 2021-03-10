@@ -2,7 +2,6 @@ package org.bitcoins.rpc.common
 
 import java.io.File
 import java.util.Scanner
-
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
@@ -16,9 +15,10 @@ import org.bitcoins.rpc._
 import org.bitcoins.rpc.client.common._
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.BitcoindRpcTest
+import org.bitcoins.testkit.util.{AkkaUtil, BitcoindRpcTest}
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 /** These tests are all copied over from WalletRpcTest and changed to be for multi-wallet */
 class MultiWalletRpcTest extends BitcoindRpcTest {
@@ -50,11 +50,9 @@ class MultiWalletRpcTest extends BitcoindRpcTest {
         // Restart so wallet is encrypted
         _ <- walletClient.stop()
         _ <- RpcUtil.awaitServerShutdown(walletClient)
-        _ <- Future {
-          // Very rarely we are prevented from starting the client again because Core
-          // hasn't released its locks on the datadir. This is prevent that.
-          Thread.sleep(1000)
-        }
+        // Very rarely we are prevented from starting the client again because Core
+        // hasn't released its locks on the datadir. This is prevent that.
+        _ <- AkkaUtil.nonBlockingSleep(1.second)
         _ <- walletClient.start()
         _ <- walletClient.loadWallet(walletName)
 
