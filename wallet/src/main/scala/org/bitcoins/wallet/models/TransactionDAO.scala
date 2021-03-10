@@ -116,7 +116,7 @@ case class TransactionDAO()(implicit
   class TransactionTable(tag: Tag)
       extends TxTable[TransactionDb](tag, schemaName, "tx_table") {
 
-    def txIdBE: Rep[DoubleSha256DigestBE] = column("txIdBE", O.Unique)
+    def txIdBE: Rep[DoubleSha256DigestBE] = column("txIdBE", O.PrimaryKey)
 
     def transaction: Rep[Transaction] = column("transaction")
 
