@@ -150,7 +150,8 @@ object CommonSettings {
     //show full stack trace (-oF) of failed tests and duration of tests (-oD)
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
     logBuffered in Test := false,
-    skip.in(publish) := true
+    skip.in(publish) := true,
+    parallelExecution.in(Test) := false
   ) ++ settings
 
   lazy val prodSettings: Seq[Setting[_]] = settings
