@@ -11,7 +11,7 @@ import org.bitcoins.testkit.wallet.{
   WalletWithBitcoind
 }
 import org.bitcoins.testkitcore.util.TestUtil
-import org.scalatest.{Assertion, FutureOutcome}
+import org.scalatest.{Assertion, FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
@@ -20,7 +20,14 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
   override type FixtureParam = WalletWithBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWalletAndBitcoind(test, getBIP39PasswordOpt())
+    val f: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      futOutcome = withFundedWalletAndBitcoindCached(test,
+                                                     bitcoind,
+                                                     getBIP39PasswordOpt())
+      fut <- futOutcome.toFuture
+    } yield fut
+    new FutureOutcome(f)
   }
 
   val destination: TransactionOutput =

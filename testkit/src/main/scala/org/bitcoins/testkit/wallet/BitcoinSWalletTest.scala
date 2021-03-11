@@ -31,6 +31,7 @@ import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkitcore.gen._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
+import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, CachedBitcoind}
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
@@ -40,8 +41,12 @@ import org.scalatest._
 
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
-trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
+trait BitcoinSWalletTest
+    extends BitcoinSFixture
+    with EmbeddedPg
+    with CachedBitcoind {
   import BitcoinSWalletTest._
 
   /** Wallet config with data directory set to user temp directory */
@@ -58,6 +63,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
   }
 
   override def afterAll(): Unit = {
+    super[CachedBitcoind].afterAll()
     Await.result(getFreshConfig.chainConf.stop(), 1.minute)
     Await.result(getFreshConfig.nodeConf.stop(), 1.minute)
     Await.result(getFreshConfig.walletConf.stop(), 1.minute)
@@ -268,11 +274,55 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
   def withFundedWalletAndBitcoind(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String]): FutureOutcome = {
+    val bitcoindF = BitcoinSFixture
+      .createBitcoindWithFunds(None)
+
+    //create a bitcoind, then pretend that it is cached
+    //so we can re-use code in withFundedWalletBitcoindCached
+    val resultF = for {
+      bitcoind <- bitcoindF
+      outcome = withFundedWalletAndBitcoindCached(test,
+                                                  bitcoind,
+                                                  bip39PasswordOpt)
+      f <- outcome.toFuture
+    } yield f
+
+    //since we aren't actually caching the bitcoind, we need
+    //to shut it down now
+    val stoppedBitcoind: Future[Outcome] = resultF.transformWith({
+      case Success(outcome) =>
+        stopBitcoind(bitcoindF)
+          .map(_ => outcome)
+      case Failure(err) =>
+        stopBitcoind(bitcoindF)
+          .flatMap(_ => Future.failed(err))
+    })
+
+    val futureOutcome = new FutureOutcome(stoppedBitcoind)
+    futureOutcome
+  }
+
+  /** Helper method to stop a Future[BitcoindRpcClient] */
+  private def stopBitcoind(
+      bitcoindF: Future[BitcoindRpcClient]): Future[Unit] = {
+    for {
+      bitcoind <- bitcoindF
+      _ <- BitcoindRpcTestUtil.stopServer(bitcoind)
+    } yield ()
+  }
+
+  /** Creates a funded wallet fixture with bitcoind
+    * This is different than [[withFundedWalletAndBitcoind()]]
+    * in the sense that it does NOT destroy the given bitcoind.
+    * It is the responsibility of the caller of this method to
+    * do that, if needed.
+    */
+  def withFundedWalletAndBitcoindCached(
+      test: OneArgAsyncTest,
+      bitcoind: BitcoindRpcClient,
+      bip39PasswordOpt: Option[String]): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = { () =>
       for {
-        bitcoind <-
-          BitcoinSFixture
-            .createBitcoindWithFunds(None)
         walletWithBitcoind <- createWalletWithBitcoindCallbacks(
           bitcoind = bitcoind,
           bip39PasswordOpt = bip39PasswordOpt)
@@ -678,12 +728,12 @@ object BitcoinSWalletTest extends WalletLogger {
 
   def destroyWalletWithBitcoind(walletWithBitcoind: WalletWithBitcoind)(implicit
       ec: ExecutionContext): Future[Unit] = {
-    val (wallet, bitcoind) =
+    val (wallet, _) =
       (walletWithBitcoind.wallet, walletWithBitcoind.bitcoind)
-    val stopF = bitcoind.stop()
+    //val stopF = bitcoind.stop()
     val destroyWalletF = destroyWallet(wallet)
     for {
-      _ <- stopF
+      //_ <- stopF
       _ <- destroyWalletF
     } yield ()
   }
