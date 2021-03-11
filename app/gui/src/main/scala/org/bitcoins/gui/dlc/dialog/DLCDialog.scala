@@ -1,7 +1,5 @@
 package org.bitcoins.gui.dlc.dialog
 
-import java.io.File
-
 import org.bitcoins.cli.CliCommand
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.GlobalDLCData
@@ -13,6 +11,7 @@ import scalafx.scene.control._
 import scalafx.scene.layout.GridPane
 import scalafx.stage.{FileChooser, Window}
 
+import java.io.File
 import scala.util.Properties
 
 abstract class DLCDialog[T <: CliCommand](
@@ -147,14 +146,18 @@ object DLCDialog {
     }
   }
 
-  def fileChooserButton[T](handleFile: File => T): Node = {
+  def fileChooserButton[T](open: Boolean, handleFile: File => T): Node = {
     new Button("Browse...") {
       onAction = _ => {
         val fileChooser = new FileChooser() {
           initialDirectory = new File(Properties.userHome)
         }
 
-        val selectedFile = fileChooser.showOpenDialog(null)
+        val selectedFile =
+          if (open)
+            fileChooser.showOpenDialog(null)
+          else
+            fileChooser.showSaveDialog(null)
 
         if (selectedFile != null) {
           handleFile(selectedFile)

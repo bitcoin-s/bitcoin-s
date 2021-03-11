@@ -754,8 +754,9 @@ object DLCDataFromFile extends ServerJsonModels {
       case pathJs :: destJs :: Nil =>
         Try {
           val path = new File(pathJs.str).toPath
-          val dest = new File(destJs.str).toPath
-          DLCDataFromFile(path, Some(dest))
+          val destJsOpt = nullToOpt(destJs)
+          val destOpt = destJsOpt.map(js => new File(js.str).toPath)
+          DLCDataFromFile(path, destOpt)
         }
       case Nil =>
         Failure(new IllegalArgumentException("Missing path argument"))

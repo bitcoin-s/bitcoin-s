@@ -13,15 +13,19 @@ class AcceptDLCDialog
       "Enter DLC Offer to accept or open from file",
       Vector(
         DLCDialog.dlcOfferStr -> DLCDialog.textArea(),
-        DLCDialog.dlcOfferFileStr -> DLCDialog.fileChooserButton(file => {
-          DLCDialog.offerDLCFile = Some(file)
-          DLCDialog.offerFileChosenLabel.text = file.toString
-        }),
+        DLCDialog.dlcOfferFileStr -> DLCDialog.fileChooserButton(
+          open = true,
+          file => {
+            DLCDialog.offerDLCFile = Some(file)
+            DLCDialog.offerFileChosenLabel.text = file.toString
+          }),
         DLCDialog.fileChosenStr -> DLCDialog.offerFileChosenLabel,
-        DLCDialog.dlcAcceptFileDestStr -> DLCDialog.fileChooserButton(file => {
-          DLCDialog.acceptDestDLCFile = Some(file)
-          DLCDialog.acceptDestFileChosenLabel.text = file.toString
-        }),
+        DLCDialog.dlcAcceptFileDestStr -> DLCDialog.fileChooserButton(
+          open = false,
+          file => {
+            DLCDialog.acceptDestDLCFile = Some(file)
+            DLCDialog.acceptDestFileChosenLabel.text = file.toString
+          }),
         DLCDialog.fileChosenStr -> DLCDialog.acceptDestFileChosenLabel,
         DLCDialog.oracleAnnouncementStr -> new TextField() {
           promptText = "(optional)"

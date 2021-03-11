@@ -11,20 +11,24 @@ class SignDLCDialog
                                            DLCDialog.dlcAcceptStr -> DLCDialog
                                              .textArea(),
                                            "Open Accept from File" ->
-                                             DLCDialog.fileChooserButton { file =>
-                                               DLCDialog.acceptDLCFile =
-                                                 Some(file)
-                                               DLCDialog.acceptFileChosenLabel.text =
-                                                 file.toString
-                                             },
+                                             DLCDialog.fileChooserButton(
+                                               open = true,
+                                               { file =>
+                                                 DLCDialog.acceptDLCFile =
+                                                   Some(file)
+                                                 DLCDialog.acceptFileChosenLabel.text =
+                                                   file.toString
+                                               }),
                                            DLCDialog.fileChosenStr -> DLCDialog.acceptFileChosenLabel,
                                            DLCDialog.dlcSignFileDestStr ->
-                                             DLCDialog.fileChooserButton { file =>
-                                               DLCDialog.signDestDLCFile =
-                                                 Some(file)
-                                               DLCDialog.signDestFileChosenLabel.text =
-                                                 file.toString
-                                             },
+                                             DLCDialog.fileChooserButton(
+                                               open = false,
+                                               { file =>
+                                                 DLCDialog.signDestDLCFile =
+                                                   Some(file)
+                                                 DLCDialog.signDestFileChosenLabel.text =
+                                                   file.toString
+                                               }),
                                            DLCDialog.fileChosenStr -> DLCDialog.signDestFileChosenLabel
                                          ),
                                          Vector(DLCDialog.dlcAcceptStr,
