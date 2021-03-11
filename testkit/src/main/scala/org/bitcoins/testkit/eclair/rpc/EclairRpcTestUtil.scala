@@ -26,7 +26,7 @@ import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.{EclairRpcTestClient, FileUtil}
 
 import java.io.{File, PrintWriter}
@@ -594,9 +594,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     }
 
     logger.debug(s"Awaiting connection between clients")
-    val connected = TestRpcUtil.retryUntilSatisfiedF(conditionF =
-                                                       () => isConnected(),
-                                                     interval = 1.second)
+    val connected = TestAsyncUtil.retryUntilSatisfiedF(conditionF =
+                                                         () => isConnected(),
+                                                       interval = 1.second)
 
     connected.map(_ => logger.debug(s"Successfully connected two clients"))
 
