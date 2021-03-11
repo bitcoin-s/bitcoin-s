@@ -3,7 +3,7 @@ package org.bitcoins.core.util
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.blockchain.BlockHeader.TargetDifficultyHelper
-import org.bitcoins.crypto.{CryptoNumberUtil, FieldElement}
+import org.bitcoins.crypto.CryptoNumberUtil
 import scodec.bits.{BitVector, ByteVector}
 
 import java.math.BigInteger
