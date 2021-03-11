@@ -1102,6 +1102,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           _ <- dlcSigsDAO.createAll(sigsDbs)
           _ <- dlcRefundSigDAO.create(refundSigDb)
           updated <- dlcDAO.update(dlc.updateState(DLCState.Signed))
+          _ = logger.info(
+            s"DLC ${sign.contractId.toHex} sigs are verified and stored, ready to broadcast")
         } yield updated
       case None =>
         Future.failed(new NoSuchElementException(
