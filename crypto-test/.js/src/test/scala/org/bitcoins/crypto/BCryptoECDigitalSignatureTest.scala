@@ -7,7 +7,7 @@ class BCryptoECDigitalSignatureTest extends BitcoinSSyncTest {
 
   behavior of "BCryptoECDigitalSignatureTest"
 
-  it must "be able to generate valid signatures with bouncy castle" in {
+  it must "be able to generate valid signatures with bcrypto" in {
     forAll(CryptoGenerators.privateKey, CryptoGenerators.sha256Digest) {
       case (privKey: ECPrivateKey, hash: Sha256Digest) =>
         val sig = BCryptoCryptoRuntime.sign(privKey, hash.bytes)
