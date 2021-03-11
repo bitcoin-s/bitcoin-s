@@ -148,7 +148,19 @@ trait CryptoRuntime {
       data: ByteVector,
       signature: ECDigitalSignature): Boolean
 
-  def decompressed(publicKey: ECPublicKey): ECPublicKey
+  def decompressed(publicKey: ECPublicKey): ECPublicKey = {
+    if (publicKey.isCompressed) {
+      decodePoint(publicKey.bytes) match {
+        case ECPointInfinity => ECPublicKey.fromHex("00")
+        case point: ECPointImpl =>
+          val decompressedBytes =
+            ByteVector.fromHex("04").get ++
+              point.x.bytes ++
+              point.y.bytes
+          ECPublicKey(decompressedBytes)
+      }
+    } else publicKey
+  }
 
   def tweakMultiply(publicKey: ECPublicKey, tweak: FieldElement): ECPublicKey
 

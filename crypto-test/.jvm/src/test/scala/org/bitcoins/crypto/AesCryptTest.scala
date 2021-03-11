@@ -1,12 +1,10 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import org.scalatest.compatible.Assertion
 import scodec.bits.{ByteVector, HexStringSyntax}
 
-class AesCryptTest extends BitcoinSUnitTest {
+class AesCryptTest extends BitcoinSCryptoTest {
   behavior of "AesEncrypt"
 
   val password = AesPassword.fromNonEmptyString("PASSWORD")

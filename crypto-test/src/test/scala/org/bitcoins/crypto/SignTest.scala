@@ -1,9 +1,6 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkitcore.gen.CryptoGenerators
-import org.bitcoins.testkitcore.util.BitcoinSSyncTest
-
-class SignTest extends BitcoinSSyncTest {
+class SignTest extends BitcoinSCryptoAsyncTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
@@ -16,7 +13,7 @@ class SignTest extends BitcoinSSyncTest {
   behavior of "Sign"
 
   it must "sign arbitrary pieces of data correctly" in {
-    forAll(CryptoGenerators.sha256Digest) { hash =>
+    forAllAsync(CryptoGenerators.sha256Digest) { hash =>
       val sigF = privKey.signFunction(hash.bytes)
 
       sigF.map { sig =>
@@ -25,19 +22,8 @@ class SignTest extends BitcoinSSyncTest {
     }
   }
 
-  it must "sign arbitrary pieces of data with arbitrary entropy correctly" in {
-    forAll(CryptoGenerators.sha256Digest, CryptoGenerators.sha256Digest) {
-      case (hash, entropy) =>
-        val sigF = privKey.signWithEntropyFunction(hash.bytes, entropy.bytes)
-
-        sigF.map { sig =>
-          assert(pubKey.verify(hash.bytes, sig))
-        }
-    }
-  }
-
   it must "sign arbitrary data correctly with low R values" in {
-    forAll(CryptoGenerators.sha256Digest) { hash =>
+    forAllAsync(CryptoGenerators.sha256Digest) { hash =>
       val bytes = hash.bytes
 
       for {

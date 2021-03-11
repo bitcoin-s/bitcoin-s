@@ -292,28 +292,3 @@ trait BitcoinSJvmTest
   implicit override def executionContext: ExecutionContext =
     scala.concurrent.ExecutionContext.global
 }
-
-trait BitcoinSSyncTest
-    extends AnyFlatSpec
-    with BeforeAndAfter
-    with BeforeAndAfterAll
-    with Matchers
-    with ScalaCheckPropertyChecks {
-
-  implicit def executionContext: ExecutionContext =
-    scala.concurrent.ExecutionContext.global
-
-  def generatorDrivenConfigNewCode: PropertyCheckConfiguration = {
-    customGenDrivenConfig(BitcoinSUnitTest.NEW_CODE_EXECUTIONS)
-  }
-
-  /** Sets the generator driven tests to perform the given amount of execs */
-  def customGenDrivenConfig(executions: Int): PropertyCheckConfiguration = {
-    PropertyCheckConfiguration(
-      minSuccessful = PosInt.from(executions).get,
-      minSize = PosInt.from(executions).get,
-      workers = 1
-    )
-  }
-
-}

@@ -162,9 +162,16 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
         ecdsa.publicKeyCombine(js.Array(pk1.bytes, pk2.bytes), true)
       ECPublicKey.fromBytes(keyBuffer)
     } catch {
-      case _: JavaScriptException =>
-        // if ex.getMessage().contains("Invalid point") =>
-        ECPublicKey.fromHex("00")
+      case ex: JavaScriptException =>
+        // check for infinity
+        val k1 = if (pk1.isCompressed) pk1 else decompressed(pk1)
+        val k2 = if (pk2.isCompressed) pk2 else decompressed(pk2)
+        if (
+          ((k1.bytes.head == 0x02 && k2.bytes.head == 0x03) || (k1.bytes.head == 0x03 && k2.bytes.head == 0x02)) &&
+          k1.bytes.tail == k2.bytes.tail
+        ) {
+          ECPublicKey.fromHex("00")
+        } else throw ex
     }
   }
 
@@ -242,7 +249,9 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   }
 
   override def decodePoint(bytes: ByteVector): ECPoint = {
-    try {
+    if (bytes.size == 1 && bytes(0) == 0x00) {
+      ECPointInfinity
+    } else {
       val decoded = ecdsa.curve
         .applyDynamic("decodePoint")(toNodeBuffer(bytes))
         .asInstanceOf[Point]
@@ -252,12 +261,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       else
         ECPoint(new BigInteger(decoded.getX().toString()),
                 new BigInteger(decoded.getY().toString()))
-    } catch {
-      case _: JavaScriptException =>
-        // if ex.getMessage().contains("Not a point") =>
-        ECPointInfinity
     }
-
   }
 }
 

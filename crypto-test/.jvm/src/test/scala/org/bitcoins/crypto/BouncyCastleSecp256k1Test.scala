@@ -1,11 +1,9 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import org.scalatest.{Outcome, Succeeded}
 
-class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
+class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode

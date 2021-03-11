@@ -1,13 +1,11 @@
 package org.bitcoins.crypto
 
 import org.scalatest.Assertion
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.must.Matchers
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
-class SigningTest extends AnyFlatSpec with Matchers {
+class SigningTest extends BitcoinSCryptoTest {
 
   it must "be able to sign and verify signatures" in {
     val privkey = ECPrivateKey.freshPrivateKey

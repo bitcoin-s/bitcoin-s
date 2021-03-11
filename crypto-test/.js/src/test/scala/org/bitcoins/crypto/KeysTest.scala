@@ -1,9 +1,6 @@
 package org.bitcoins.crypto
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.must.Matchers
-
-class KeysTest extends AnyFlatSpec with Matchers {
+class KeysTest extends BitcoinSCryptoTest {
 
   it must "generate keys" in {
     val privkey = ECPrivateKey.freshPrivateKey
