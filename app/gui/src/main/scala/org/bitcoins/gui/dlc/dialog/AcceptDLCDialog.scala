@@ -29,6 +29,7 @@ class AcceptDLCDialog
       ),
       Vector(DLCDialog.dlcOfferStr,
              DLCDialog.dlcOfferFileStr,
+             DLCDialog.dlcAcceptFileDestStr,
              DLCDialog.oracleAnnouncementStr)) {
   import DLCDialog._
 

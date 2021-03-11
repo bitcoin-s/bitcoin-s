@@ -28,7 +28,8 @@ class SignDLCDialog
                                            DLCDialog.fileChosenStr -> DLCDialog.signDestFileChosenLabel
                                          ),
                                          Vector(DLCDialog.dlcAcceptStr,
-                                                DLCDialog.dlcAcceptFileStr)) {
+                                                DLCDialog.dlcAcceptFileStr,
+                                                DLCDialog.dlcSignFileDestStr)) {
   import DLCDialog._
 
   override def constructFromInput(
