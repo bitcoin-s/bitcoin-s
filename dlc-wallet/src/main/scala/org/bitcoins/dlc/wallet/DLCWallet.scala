@@ -965,6 +965,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ <- dlcRefundSigDAO.upsert(refundSigDb)
 
       _ <- updateDLCState(dlc.contractIdOpt.get, DLCState.Signed)
+      _ = logger.info(s"DLC ${contractId.toHex} is signed")
     } yield DLCSign(cetSigs, fundingSigs, contractId)
   }
 
