@@ -37,10 +37,11 @@ class SignDLCDialog
       case Some(file) =>
         acceptDLCFile = None // reset
         acceptFileChosenLabel.text = "" // reset
+        val destPathOpt = signDestDLCFile
         signDestDLCFile = None // reset
         signFileChosenLabel.text = "" // reset
 
-        SignDLCFromFile(file.toPath, signDestDLCFile.map(_.toPath))
+        SignDLCFromFile(file.toPath, destPathOpt.map(_.toPath))
       case None =>
         val acceptHex = readStringFromNode(inputs(dlcAcceptStr))
 
