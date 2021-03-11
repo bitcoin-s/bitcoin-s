@@ -38,7 +38,7 @@ class AcceptDLCDialog
     val fromOffer = OracleInfo.fromTLV(offer.tlv.contractInfo.oracleInfo)
     val fromAnnouncement = SingleOracleInfo(announcement)
 
-    fromOffer == fromAnnouncement
+    fromOffer.singleOracleInfos.contains(fromAnnouncement)
   }
 
   override def constructFromInput(
