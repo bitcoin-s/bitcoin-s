@@ -25,7 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     extends P2PLogger {
   private val socket = client.peer.socket
-  implicit private val timeout = Timeout(25.seconds)
+  implicit private val timeout = Timeout(30.seconds)
 
   /** Initiates a connection with the given peer */
   def connect(): Unit = {
