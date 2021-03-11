@@ -376,10 +376,7 @@ lazy val cryptoTest = crossProject(JVMPlatform, JSPlatform)
     name := "bitcoin-s-crypto-test",
     libraryDependencies ++= Deps.cryptoTest.value
   )
-  .dependsOn(
-    crypto,
-    testkitCore
-  )
+  .dependsOn(crypto)
 
 lazy val cryptoTestJVM = cryptoTest.jvm
 

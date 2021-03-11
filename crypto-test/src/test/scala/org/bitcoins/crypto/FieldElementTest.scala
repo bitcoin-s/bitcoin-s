@@ -1,9 +1,6 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkitcore.gen.CryptoGenerators
-import org.bitcoins.testkitcore.util.BitcoinSSyncTest
-
-class FieldElementTest extends BitcoinSSyncTest {
+class FieldElementTest extends BitcoinSCryptoTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode

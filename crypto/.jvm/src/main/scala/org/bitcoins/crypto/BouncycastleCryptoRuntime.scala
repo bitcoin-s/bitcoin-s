@@ -151,9 +151,6 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       signature: ECDigitalSignature): Boolean =
     BouncyCastleUtil.verifyDigitalSignature(data, publicKey, signature)
 
-  override def decompressed(publicKey: ECPublicKey): ECPublicKey =
-    BouncyCastleUtil.decompressPublicKey(publicKey)
-
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey =
     BouncyCastleUtil.computePublicKey(privateKey)
 

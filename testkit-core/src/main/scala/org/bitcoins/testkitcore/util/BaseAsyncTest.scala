@@ -6,22 +6,22 @@ import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
+import org.scalatest.concurrent.AsyncTimeLimitedTests
+import org.scalatest.flatspec.AsyncFlatSpec
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.time.Span
 import org.scalatest.{
   Assertion,
   AsyncTestSuite,
   BeforeAndAfter,
   BeforeAndAfterAll
 }
-import org.scalatest.concurrent.AsyncTimeLimitedTests
-import org.scalatest.flatspec.{AnyFlatSpec, AsyncFlatSpec}
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.time.Span
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.annotation.nowarn
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
 /** This is a base trait in bitcoin-s for async tests
   */
@@ -297,29 +297,4 @@ trait BitcoinSJvmTest
 
   implicit override def executionContext: ExecutionContext =
     scala.concurrent.ExecutionContext.global
-}
-
-trait BitcoinSSyncTest
-    extends AnyFlatSpec
-    with BeforeAndAfter
-    with BeforeAndAfterAll
-    with Matchers
-    with ScalaCheckPropertyChecks {
-
-  implicit def executionContext: ExecutionContext =
-    scala.concurrent.ExecutionContext.global
-
-  def generatorDrivenConfigNewCode: PropertyCheckConfiguration = {
-    customGenDrivenConfig(BitcoinSUnitTest.NEW_CODE_EXECUTIONS)
-  }
-
-  /** Sets the generator driven tests to perform the given amount of execs */
-  def customGenDrivenConfig(executions: Int): PropertyCheckConfiguration = {
-    PropertyCheckConfiguration(
-      minSuccessful = PosInt.from(executions).get,
-      minSize = PosInt.from(executions).get,
-      workers = 1
-    )
-  }
-
 }

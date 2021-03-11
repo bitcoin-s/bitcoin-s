@@ -1,13 +1,12 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalatest.Assertion
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
 /** Tests from https://github.com/sipa/bips/blob/bip-taproot/bip-0340/test-vectors.csv */
-class BouncyCastleBIP340Test extends BitcoinSUnitTest {
+class BouncyCastleBIP340Test extends BitcoinSCryptoTest {
   behavior of "Schnorr Signing"
 
   def testSign(
