@@ -94,6 +94,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   }
 
   /** Returns a map of the SpendingInfoDbs with their relevant block.
+    * If the block hash is None, then it is a mempool transaction.
     * The relevant block is determined by if the utxo has been spent or not.
     * If it has been spent it uses the block that included the spending transaction,
     * otherwise it uses the block that included the receiving transaction.
