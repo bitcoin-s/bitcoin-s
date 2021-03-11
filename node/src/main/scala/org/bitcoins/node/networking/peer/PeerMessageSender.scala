@@ -30,7 +30,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   /** Initiates a connection with the given peer */
   def connect(): Unit = {
     logger.info(s"Attempting to connect to peer=$socket")
-    (client.actor ! Tcp.Connect(socket))
+    (client.actor ! Tcp.Connect(socket, timeout = Some(timeout.duration)))
   }
 
   def isConnected()(implicit ec: ExecutionContext): Future[Boolean] = {
