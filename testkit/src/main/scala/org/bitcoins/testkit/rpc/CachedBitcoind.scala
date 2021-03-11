@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.rpc
 
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.BitcoinSAkkaAsyncTest
 
@@ -27,11 +28,11 @@ trait CachedBitcoind { _: BitcoinSAkkaAsyncTest =>
     * inside of [[afterAll()]] just to have it
     * cleaned up in the same method.
     */
-  private[this] val isBitcoindUsed: AtomicBoolean = new AtomicBoolean(false)
+  protected val isBitcoindUsed: AtomicBoolean = new AtomicBoolean(false)
 
   /** The bitcoind instance, lazyily created */
   protected lazy val cachedBitcoindWithFundsF: Future[BitcoindRpcClient] = {
-    isBitcoindUsed.set(true)
+    val _ = isBitcoindUsed.set(true)
     BitcoinSFixture
       .createBitcoindWithFunds(None)
   }
@@ -49,5 +50,15 @@ trait CachedBitcoind { _: BitcoinSAkkaAsyncTest =>
       //do nothing since bitcoind wasn't used
     }
   }
+}
 
+trait CachedBitcoindV19 extends CachedBitcoind { _: BitcoinSAkkaAsyncTest =>
+
+  override protected lazy val cachedBitcoindWithFundsF: Future[
+    BitcoindV19RpcClient] = {
+    val _ = isBitcoindUsed.set(true)
+    BitcoinSFixture
+      .createBitcoindWithFunds(Some(BitcoindVersion.V19))
+      .map(_.asInstanceOf[BitcoindV19RpcClient])
+  }
 }

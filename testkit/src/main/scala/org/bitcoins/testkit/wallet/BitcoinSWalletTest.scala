@@ -9,7 +9,7 @@ import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.BlockFilter
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee._
@@ -26,15 +26,15 @@ import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
-import org.bitcoins.testkitcore.Implicits.GeneratorOps
+import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.SyncUtil
-import org.bitcoins.testkitcore.gen._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, CachedBitcoind}
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.bitcoins.testkitcore.Implicits.GeneratorOps
+import org.bitcoins.testkitcore.gen._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 import org.scalatest._
@@ -44,18 +44,12 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 trait BitcoinSWalletTest
-    extends BitcoinSFixture
+    extends BitcoinSWalletTestCachedBitcoind
+    with BaseWalletTest
+    with BitcoinSFixture
     with EmbeddedPg
     with CachedBitcoind {
   import BitcoinSWalletTest._
-
-  /** Wallet config with data directory set to user temp directory */
-  implicit protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
-
-  implicit protected def getFreshWalletAppConfig: WalletAppConfig = {
-    getFreshConfig.walletConf
-  }
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)
@@ -72,6 +66,7 @@ trait BitcoinSWalletTest
 
   def nodeApi: NodeApi = MockNodeApi
 
+<<<<<<< HEAD
   val testAddr: BitcoinAddress =
     BitcoinAddress.fromString("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq")
 
@@ -158,6 +153,8 @@ trait BitcoinSWalletTest
         Future.successful(0)
     }
 
+=======
+>>>>>>> Add BaseWalletTest, extend it with BitcoinSWalletTest & BitcoinSWalletTestCachedBitcoind, add CachedBitcoinV19 and use it RescanHandlingTest
   /** Lets you customize the parameters for the created wallet */
   val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome = {
     walletConfig =>
@@ -311,31 +308,6 @@ trait BitcoinSWalletTest
     } yield ()
   }
 
-  /** Creates a funded wallet fixture with bitcoind
-    * This is different than [[withFundedWalletAndBitcoind()]]
-    * in the sense that it does NOT destroy the given bitcoind.
-    * It is the responsibility of the caller of this method to
-    * do that, if needed.
-    */
-  def withFundedWalletAndBitcoindCached(
-      test: OneArgAsyncTest,
-      bitcoind: BitcoindRpcClient,
-      bip39PasswordOpt: Option[String]): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoind] = { () =>
-      for {
-        walletWithBitcoind <- createWalletWithBitcoindCallbacks(
-          bitcoind = bitcoind,
-          bip39PasswordOpt = bip39PasswordOpt)
-        fundedWallet <- fundWalletWithBitcoind(walletWithBitcoind)
-        _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,
-                                           bitcoind = bitcoind)
-        _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
-      } yield fundedWallet
-    }
-
-    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
-  }
-
   def withFundedWalletAndBitcoindV19(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String]): FutureOutcome = {
@@ -387,9 +359,6 @@ trait BitcoinSWalletTest
     }
     makeDependentFixture(builder, destroy = destroy)(test)
   }
-
-  def getBIP39PasswordOpt(): Option[String] =
-    KeyManagerTestUtil.bip39PasswordOpt
 }
 
 object BitcoinSWalletTest extends WalletLogger {

@@ -13,7 +13,7 @@ import scala.concurrent.Future
 class ProcessTransactionTest extends BitcoinSWalletTest {
   override type FixtureParam = WalletApi
 
-  def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withNewWallet(test, getBIP39PasswordOpt())
   }
 
