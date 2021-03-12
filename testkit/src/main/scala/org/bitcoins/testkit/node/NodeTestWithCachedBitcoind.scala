@@ -6,7 +6,10 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest.createPeer
-import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoindV19
+import org.bitcoins.testkit.node.fixture.{
+  SpvNodeConnectedWithBitcoind,
+  SpvNodeConnectedWithBitcoindV19
+}
 import org.bitcoins.testkit.rpc.{
   CachedBitcoind,
   CachedBitcoindNewest,
@@ -39,6 +42,32 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind =>
       }
     )(test)
   }
+
+  def withSpvNodeConnectedToBitcoindCached(
+      test: OneArgAsyncTest,
+      bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
+    val nodeWithBitcoindBuilder: () => Future[SpvNodeConnectedWithBitcoind] = {
+      () =>
+        require(appConfig.nodeType == NodeType.SpvNode)
+        for {
+          node <- NodeUnitTest.createSpvNode(createPeer(bitcoind))(
+            system,
+            appConfig.chainConf,
+            appConfig.nodeConf)
+          started <- node.start()
+          _ <- NodeUnitTest.syncSpvNode(started, bitcoind)
+        } yield SpvNodeConnectedWithBitcoind(node, bitcoind)
+    }
+
+    makeDependentFixture[SpvNodeConnectedWithBitcoind](
+      build = nodeWithBitcoindBuilder,
+      { case x: SpvNodeConnectedWithBitcoind =>
+        NodeUnitTest.destroyNode(x.node)
+      })(test)
+  }
+
 }
 
 trait NodeTestWithCachedBitcoindNewest

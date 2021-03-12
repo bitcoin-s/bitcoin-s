@@ -7,15 +7,15 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.{
   NodeTestUtil,
-  NodeUnitTest,
+  NodeTestWithCachedBitcoindNewest,
   SpvNodeFundedWalletBitcoind
 }
 import org.bitcoins.wallet.Wallet
-import org.scalatest.FutureOutcome
+import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
-class SpvNodeWithWalletTest extends NodeUnitTest {
+class SpvNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   implicit override protected def getFreshConfig: BitcoinSAppConfig =
@@ -24,7 +24,14 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
   override type FixtureParam = SpvNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withSpvNodeFundedWalletBitcoind(test, getBIP39PasswordOpt())
+    val outcomeF: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      outcome = withSpvNodeFundedWalletBitcoindCached(test,
+                                                      getBIP39PasswordOpt(),
+                                                      bitcoind)
+      f <- outcome.toFuture
+    } yield f
+    new FutureOutcome(outcomeF)
   }
 
   val amountFromBitcoind = 1.bitcoin

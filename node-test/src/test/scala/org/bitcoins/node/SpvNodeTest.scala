@@ -6,13 +6,16 @@ import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
-import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
-import org.scalatest.FutureOutcome
+import org.bitcoins.testkit.node.{
+  NodeTestUtil,
+  NodeTestWithCachedBitcoindNewest
+}
+import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class SpvNodeTest extends NodeUnitTest {
+class SpvNodeTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   implicit override protected def getFreshConfig: BitcoinSAppConfig =
@@ -20,8 +23,14 @@ class SpvNodeTest extends NodeUnitTest {
 
   override type FixtureParam = SpvNodeConnectedWithBitcoind
 
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeConnectedToBitcoind(test)
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val outcomeF: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      outcome = withSpvNodeConnectedToBitcoindCached(test, bitcoind)
+      f <- outcome.toFuture
+    } yield f
+    new FutureOutcome(outcomeF)
+  }
 
   behavior of "SpvNode"
 
@@ -89,7 +98,11 @@ class SpvNodeTest extends NodeUnitTest {
         //the send headers message.
         val has6BlocksF = RpcUtil.retryUntilSatisfiedF(
           conditionF = () =>
-            spvNode.chainApiFromDb().flatMap(_.getBlockCount().map(_ == 6)),
+            spvNode
+              .chainApiFromDb()
+              .flatMap(_.getBlockCount().map { count =>
+                count == 108
+              }),
           interval = 250.millis)
 
         has6BlocksF.map { _ =>
