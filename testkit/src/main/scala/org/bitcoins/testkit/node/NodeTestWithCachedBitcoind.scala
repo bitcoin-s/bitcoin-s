@@ -2,6 +2,7 @@ package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
 import org.bitcoins.node.NodeType
+import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
@@ -16,6 +17,7 @@ import org.bitcoins.testkit.rpc.{
   CachedBitcoindNewest,
   CachedBitcoindV19
 }
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.WalletCallbacks
 import org.scalatest.FutureOutcome
 
@@ -107,8 +109,24 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind =>
             bitcoind,
             walletCallbacks = walletCallbacks)(system, appConfig),
       { case x: NeutrinoNodeFundedWalletBitcoind =>
-        NodeUnitTest.destroyNode(x.node)
+        val destroyNodeF = NodeUnitTest.destroyNode(x.node)
+        val destroyWalletF = BitcoinSWalletTest.destroyWallet(x.wallet)
+        for {
+          _ <- destroyNodeF
+          _ <- destroyWalletF
+        } yield ()
       }
+    )(test)
+  }
+
+  def withBitcoindPeer(
+      test: OneArgAsyncTest,
+      bitcoind: BitcoindRpcClient): FutureOutcome = {
+    val peer = NodeTestUtil.getBitcoindPeer(bitcoind)
+
+    makeDependentFixture[Peer](
+      () => Future.successful(peer),
+      _ => Future.unit
     )(test)
   }
 }

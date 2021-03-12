@@ -31,7 +31,7 @@ import org.bitcoins.testkit.node.fixture.{
   SpvNodeConnectedWithBitcoind,
   SpvNodeConnectedWithBitcoindV19
 }
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.bitcoins.testkitcore.node.P2PMessageTestUtil
 import org.bitcoins.wallet.WalletCallbacks
@@ -41,10 +41,6 @@ import java.net.InetSocketAddress
 import scala.concurrent.{ExecutionContext, Future}
 
 trait NodeUnitTest extends BaseNodeTest {
-
-  lazy val startedBitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
-
-  lazy val bitcoindPeerF = startedBitcoindF.map(NodeTestUtil.getBitcoindPeer)
 
   def withDisconnectedSpvNode(test: OneArgAsyncTest)(implicit
       system: ActorSystem,
