@@ -39,8 +39,8 @@ trait BitcoinSWalletTestCachedBitcoind
     */
   def withFundedWalletAndBitcoindCached(
       test: OneArgAsyncTest,
-      bitcoind: BitcoindRpcClient,
-      bip39PasswordOpt: Option[String]): FutureOutcome = {
+      bip39PasswordOpt: Option[String],
+      bitcoind: BitcoindRpcClient): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = { () =>
       for {
         walletWithBitcoind <- createWalletWithBitcoindCallbacks(
@@ -86,8 +86,8 @@ trait BitcoinSWalletTestCachedBitcoind
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
       futOutcome = withFundedWalletAndBitcoindCached(test,
-                                                     bitcoind,
-                                                     getBIP39PasswordOpt())
+                                                     getBIP39PasswordOpt(),
+                                                     bitcoind)
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)
@@ -119,8 +119,8 @@ trait BitcoinSWalletTestCachedBitcoinV19
     */
   def withFundedWalletAndBitcoindCachedV19(
       test: OneArgAsyncTest,
-      bitcoind: BitcoindV19RpcClient,
-      bip39PasswordOpt: Option[String]): FutureOutcome = {
+      bip39PasswordOpt: Option[String],
+      bitcoind: BitcoindV19RpcClient): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoindV19] = { () =>
       for {
         walletWithBitcoind <- createWalletWithBitcoindCallbacks(
@@ -171,8 +171,8 @@ trait BitcoinSWalletTestCachedBitcoinV19
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
       futOutcome = withFundedWalletAndBitcoindCachedV19(test,
-                                                        bitcoind,
-                                                        getBIP39PasswordOpt())
+                                                        getBIP39PasswordOpt(),
+                                                        bitcoind)
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)

@@ -273,8 +273,8 @@ trait BitcoinSWalletTest
     val resultF = for {
       bitcoind <- bitcoindF
       outcome = withFundedWalletAndBitcoindCached(test,
-                                                  bitcoind,
-                                                  bip39PasswordOpt)
+                                                  bip39PasswordOpt,
+                                                  bitcoind)
       f <- outcome.toFuture
     } yield f
 
