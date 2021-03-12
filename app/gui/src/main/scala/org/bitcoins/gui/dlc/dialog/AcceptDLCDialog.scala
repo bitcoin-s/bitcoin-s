@@ -27,23 +27,23 @@ class AcceptDLCDialog
             DLCDialog.acceptDestFileChosenLabel.text = file.toString
           }),
         DLCDialog.fileChosenStr -> DLCDialog.acceptDestFileChosenLabel,
-        DLCDialog.oracleAnnouncementStr -> new TextField() {
+        DLCDialog.oracleAnnouncementsStr -> new TextField() {
           promptText = "(optional)"
         }
       ),
       Vector(DLCDialog.dlcOfferStr,
              DLCDialog.dlcOfferFileStr,
              DLCDialog.dlcAcceptFileDestStr,
-             DLCDialog.oracleAnnouncementStr)) {
+             DLCDialog.oracleAnnouncementsStr)) {
   import DLCDialog._
 
-  def validateMatchingAnnouncement(
+  def validateMatchingAnnouncements(
       offer: LnMessage[DLCOfferTLV],
-      announcement: OracleAnnouncementTLV): Boolean = {
+      announcements: Vector[OracleAnnouncementTLV]): Boolean = {
     val fromOffer = OracleInfo.fromTLV(offer.tlv.contractInfo.oracleInfo)
-    val fromAnnouncement = SingleOracleInfo(announcement)
+    val singles = announcements.map(SingleOracleInfo(_))
 
-    fromOffer.singleOracleInfos.contains(fromAnnouncement)
+    singles.forall(an => fromOffer.singleOracleInfos.contains(an))
   }
 
   override def constructFromInput(
@@ -62,11 +62,13 @@ class AcceptDLCDialog
         val offerHex = readStringFromNode(inputs(dlcOfferStr))
         val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerHex)
 
-        val announcementHex = readStringFromNode(inputs(oracleAnnouncementStr))
+        val announcementsHex = readStringFromNode(
+          inputs(oracleAnnouncementsStr))
 
-        if (announcementHex.nonEmpty) {
-          val announcement = OracleAnnouncementTLV(announcementHex)
-          if (!validateMatchingAnnouncement(offer, announcement)) {
+        if (announcementsHex.nonEmpty) {
+          val announcements =
+            announcementsHex.split(",").map(OracleAnnouncementTLV.fromHex)
+          if (!validateMatchingAnnouncements(offer, announcements.toVector)) {
             throw new RuntimeException(
               "Offer given does not have the same oracle info as announcement!")
           }
