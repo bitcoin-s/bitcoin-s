@@ -647,7 +647,7 @@ object ChainUnitTest extends ChainVerificationLogger {
       val chainHandlerF = makeChainHandler()
       for {
         chainHandler <- chainHandlerF
-        genHeader <- chainHandler.blockHeaderDAO.create(genesisHeaderDb)
+        genHeader <- chainHandler.blockHeaderDAO.upsert(genesisHeaderDb)
       } yield genHeader
     }
 
