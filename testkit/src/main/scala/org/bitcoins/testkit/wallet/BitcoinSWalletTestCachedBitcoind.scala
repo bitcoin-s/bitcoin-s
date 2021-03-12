@@ -7,6 +7,7 @@ import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.{CachedBitcoind, CachedBitcoindV19}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+  createWalletWithBitcoind,
   createWalletWithBitcoindCallbacks,
   destroyWalletWithBitcoind,
   fundWalletWithBitcoind
@@ -51,6 +52,24 @@ trait BitcoinSWalletTestCachedBitcoind
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
   }
 
+  def withNewWalletAndBitcoindCached(
+      test: OneArgAsyncTest,
+      bip39PasswordOpt: Option[String],
+      bitcoind: BitcoindRpcClient): FutureOutcome = {
+    val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
+      builder = { () =>
+        Future.successful(bitcoind)
+      },
+      dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
+        createWalletWithBitcoind(bitcoind, bip39PasswordOpt)
+      },
+      wrap = (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoind) =>
+        walletWithBitcoind
+    )
+
+    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+  }
+
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
@@ -91,6 +110,26 @@ trait BitcoinSWalletTestCachedBitcoinV19
         _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
       } yield fundedWallet
     }
+
+    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+  }
+
+  def withNewWalletAndBitcoindCachedV19(
+      test: OneArgAsyncTest,
+      bip39PasswordOpt: Option[String],
+      bitcoind: BitcoindV19RpcClient): FutureOutcome = {
+    val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
+      builder = { () =>
+        Future.successful(bitcoind)
+      },
+      dependentBuilder = { (bitcoind: BitcoindV19RpcClient) =>
+        BitcoinSWalletTest.createWalletWithBitcoindV19(bitcoind,
+                                                       bip39PasswordOpt)
+      },
+      wrap =
+        (_: BitcoindRpcClient, walletWithBitcoind: WalletWithBitcoindV19) =>
+          walletWithBitcoind
+    )
 
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
   }

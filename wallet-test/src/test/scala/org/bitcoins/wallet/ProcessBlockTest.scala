@@ -5,15 +5,31 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindV19}
-import org.scalatest.FutureOutcome
+import org.bitcoins.testkit.rpc.CachedBitcoindV19
+import org.bitcoins.testkit.wallet.{
+  BitcoinSWalletTestCachedBitcoinV19,
+  WalletWithBitcoindV19
+}
+import org.scalatest.{FutureOutcome, Outcome}
 
-class ProcessBlockTest extends BitcoinSWalletTest {
+import scala.concurrent.Future
 
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNewWalletAndBitcoindV19(test, getBIP39PasswordOpt())
+class ProcessBlockTest
+    extends BitcoinSWalletTestCachedBitcoinV19
+    with CachedBitcoindV19 {
 
   override type FixtureParam = WalletWithBitcoindV19
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val f: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      futOutcome = withNewWalletAndBitcoindCachedV19(test,
+                                                     getBIP39PasswordOpt(),
+                                                     bitcoind)
+      fut <- futOutcome.toFuture
+    } yield fut
+    new FutureOutcome(f)
+  }
 
   it must "process a block" in { param =>
     val WalletWithBitcoindV19(wallet, bitcoind) = param
@@ -83,7 +99,7 @@ class ProcessBlockTest extends BitcoinSWalletTest {
       _ = assert(startingUtxos.isEmpty)
       _ = assert(startingBalance == Satoshis.zero)
       addr <- wallet.getNewAddress()
-      hashes <- bitcoind.generateToAddress(101, addr)
+      hashes <- bitcoind.generateToAddress(102, addr)
       filters <- FutureUtil.sequentially(hashes)(
         bitcoind.getBlockFilter(_, FilterType.Basic))
       filtersWithBlockHash = hashes.map(_.flip).zip(filters.map(_.filter))

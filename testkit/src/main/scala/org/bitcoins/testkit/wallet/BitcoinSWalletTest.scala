@@ -605,8 +605,18 @@ object BitcoinSWalletTest extends WalletLogger {
     import system.dispatcher
     for {
       created <- createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
-
     } yield WalletWithBitcoindV19(created.wallet, bitcoind)
+  }
+
+  def createWalletWithBitcoind(
+      bitcoind: BitcoindRpcClient,
+      bip39PasswordOpt: Option[String])(implicit
+      system: ActorSystem,
+      config: BitcoinSAppConfig): Future[WalletWithBitcoindRpc] = {
+    import system.dispatcher
+    for {
+      created <- createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
+    } yield WalletWithBitcoindRpc(created.wallet, bitcoind)
   }
 
   def createWalletWithBitcoind(
