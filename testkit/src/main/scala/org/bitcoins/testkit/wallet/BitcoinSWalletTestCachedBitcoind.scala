@@ -13,7 +13,7 @@ import org.bitcoins.testkit.rpc.{
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   createWalletWithBitcoind,
   createWalletWithBitcoindCallbacks,
-  destroyWalletWithBitcoind,
+  destroyWallet,
   fundWalletWithBitcoind
 }
 import org.scalatest.{FutureOutcome, Outcome}
@@ -53,7 +53,11 @@ trait BitcoinSWalletTestCachedBitcoind
       } yield fundedWallet
     }
 
-    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+    makeDependentFixture[WalletWithBitcoind](
+      builder,
+      { case walletWithBitcoind: WalletWithBitcoind =>
+        destroyWallet(walletWithBitcoind.wallet)
+      })(test)
   }
 
   def withNewWalletAndBitcoindCached(
@@ -71,7 +75,11 @@ trait BitcoinSWalletTestCachedBitcoind
         walletWithBitcoind
     )
 
-    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+    makeDependentFixture[WalletWithBitcoind](
+      builder,
+      { case walletWithBitcoind: WalletWithBitcoind =>
+        destroyWallet(walletWithBitcoind.wallet)
+      })(test)
   }
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
@@ -88,11 +96,20 @@ trait BitcoinSWalletTestCachedBitcoind
 
 trait BitcoinSWalletTestCachedBitcoindNewest
     extends BitcoinSWalletTestCachedBitcoind
-    with CachedBitcoindNewest
+    with CachedBitcoindNewest {
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindNewest].afterAll()
+  }
+}
 
 trait BitcoinSWalletTestCachedBitcoinV19
     extends BitcoinSWalletTestCachedBitcoind
     with CachedBitcoindV19 {
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindV19].afterAll()
+  }
 
   /** Creates a funded wallet fixture with bitcoind
     * This is different than [[withFundedWalletAndBitcoind()]]
@@ -119,7 +136,11 @@ trait BitcoinSWalletTestCachedBitcoinV19
       } yield fundedWallet
     }
 
-    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+    makeDependentFixture[WalletWithBitcoind](
+      builder,
+      destroy = { case walletWithBitcoind: WalletWithBitcoind =>
+        destroyWallet(walletWithBitcoind.wallet)
+      })(test)
   }
 
   def withNewWalletAndBitcoindCachedV19(
@@ -139,7 +160,11 @@ trait BitcoinSWalletTestCachedBitcoinV19
           walletWithBitcoind
     )
 
-    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+    makeDependentFixture[WalletWithBitcoind](
+      builder,
+      { case walletWithBitcoind: WalletWithBitcoind =>
+        destroyWallet(walletWithBitcoind.wallet)
+      })(test)
   }
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {

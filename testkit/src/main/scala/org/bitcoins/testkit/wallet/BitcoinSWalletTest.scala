@@ -51,17 +51,11 @@ trait BitcoinSWalletTest
     with CachedBitcoind {
   import BitcoinSWalletTest._
 
-  override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)
-    super[EmbeddedPg].beforeAll()
-  }
-
   override def afterAll(): Unit = {
-    super[CachedBitcoind].afterAll()
     Await.result(getFreshConfig.chainConf.stop(), 1.minute)
     Await.result(getFreshConfig.nodeConf.stop(), 1.minute)
     Await.result(getFreshConfig.walletConf.stop(), 1.minute)
-    super[EmbeddedPg].afterAll()
+    super.afterAll()
   }
 
   def nodeApi: NodeApi = MockNodeApi
@@ -707,12 +701,12 @@ object BitcoinSWalletTest extends WalletLogger {
 
   def destroyWalletWithBitcoind(walletWithBitcoind: WalletWithBitcoind)(implicit
       ec: ExecutionContext): Future[Unit] = {
-    val (wallet, _) =
+    val (wallet, bitcoind) =
       (walletWithBitcoind.wallet, walletWithBitcoind.bitcoind)
-    //val stopF = bitcoind.stop()
+    val stopF = bitcoind.stop()
     val destroyWalletF = destroyWallet(wallet)
     for {
-      //_ <- stopF
+      _ <- stopF
       _ <- destroyWalletF
     } yield ()
   }
