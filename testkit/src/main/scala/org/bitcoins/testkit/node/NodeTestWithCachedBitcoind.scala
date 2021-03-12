@@ -5,8 +5,9 @@ import org.bitcoins.node.NodeType
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.node.NodeUnitTest.createPeer
+import org.bitcoins.testkit.node.NodeUnitTest.{createPeer, syncNeutrinoNode}
 import org.bitcoins.testkit.node.fixture.{
+  NeutrinoNodeConnectedWithBitcoind,
   SpvNodeConnectedWithBitcoind,
   SpvNodeConnectedWithBitcoindV19
 }
@@ -68,6 +69,48 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind =>
       })(test)
   }
 
+  def withNeutrinoNodeConnectedToBitcoind(
+      test: OneArgAsyncTest,
+      bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
+    val nodeWithBitcoindBuilder: () => Future[
+      NeutrinoNodeConnectedWithBitcoind] = { () =>
+      require(appConfig.nodeType == NodeType.NeutrinoNode)
+      for {
+        node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
+                                                          appConfig.chainConf,
+                                                          appConfig.nodeConf)
+        startedNode <- node.start()
+        syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
+      } yield NeutrinoNodeConnectedWithBitcoind(syncedNode, bitcoind)
+    }
+    makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
+      build = nodeWithBitcoindBuilder,
+      { case x: NeutrinoNodeConnectedWithBitcoind =>
+        NodeUnitTest.destroyNode(x.node)
+      })(test)
+  }
+
+  def withNeutrinoNodeFundedWalletBitcoind(
+      test: OneArgAsyncTest,
+      bip39PasswordOpt: Option[String],
+      bitcoind: BitcoindRpcClient,
+      walletCallbacks: WalletCallbacks = WalletCallbacks.empty)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
+    makeDependentFixture[NeutrinoNodeFundedWalletBitcoind](
+      build = () =>
+        NodeUnitTest
+          .createNeutrinoNodeFundedWalletFromBitcoind(
+            bip39PasswordOpt = bip39PasswordOpt,
+            bitcoind,
+            walletCallbacks = walletCallbacks)(system, appConfig),
+      { case x: NeutrinoNodeFundedWalletBitcoind =>
+        NodeUnitTest.destroyNode(x.node)
+      }
+    )(test)
+  }
 }
 
 trait NodeTestWithCachedBitcoindNewest

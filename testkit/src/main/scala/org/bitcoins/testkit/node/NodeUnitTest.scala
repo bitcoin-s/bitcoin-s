@@ -342,6 +342,36 @@ object NodeUnitTest extends P2PLogger {
     }
   }
 
+  def createNeutrinoNodeFundedWalletFromBitcoind(
+      bip39PasswordOpt: Option[String],
+      bitcoind: BitcoindRpcClient,
+      walletCallbacks: WalletCallbacks)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): Future[
+    NeutrinoNodeFundedWalletBitcoind] = {
+    import system.dispatcher
+    require(appConfig.nodeType == NodeType.NeutrinoNode)
+    for {
+      node <- createNeutrinoNode(bitcoind)
+      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
+        bitcoindRpcClient = bitcoind,
+        nodeApi = node,
+        chainQueryApi = node,
+        bip39PasswordOpt = bip39PasswordOpt,
+        walletCallbacks = walletCallbacks)
+      startedNode <- node.start()
+      syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
+      //callbacks are executed asynchronously, which is how we fund the wallet
+      //so we need to wait until the wallet balances are correct
+      _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
+    } yield {
+      NeutrinoNodeFundedWalletBitcoind(node = syncedNode,
+                                       wallet = fundedWallet.wallet,
+                                       bitcoindRpc = fundedWallet.bitcoind,
+                                       bip39PasswordOpt = bip39PasswordOpt)
+    }
+  }
+
   def destroyNodeFundedWalletBitcoind(
       fundedWalletBitcoind: NodeFundedWalletBitcoind)(implicit
       system: ActorSystem,
