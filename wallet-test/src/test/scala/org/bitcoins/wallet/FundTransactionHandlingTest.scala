@@ -6,7 +6,7 @@ import org.bitcoins.core.wallet.builder.RawTxSigner
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.testkit.wallet.{
-  BitcoinSWalletTest,
+  BitcoinSWalletTestCachedBitcoindNewest,
   WalletTestUtil,
   WalletWithBitcoind
 }
@@ -15,7 +15,8 @@ import org.scalatest.Assertion
 
 import scala.concurrent.Future
 
-class FundTransactionHandlingTest extends BitcoinSWalletTest {
+class FundTransactionHandlingTest
+    extends BitcoinSWalletTestCachedBitcoindNewest {
 
   override type FixtureParam = WalletWithBitcoind
 

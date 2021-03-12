@@ -52,6 +52,16 @@ trait CachedBitcoind { _: BitcoinSAkkaAsyncTest =>
   }
 }
 
+trait CachedBitcoindNewest extends CachedBitcoind { _: BitcoinSAkkaAsyncTest =>
+
+  override protected lazy val cachedBitcoindWithFundsF: Future[
+    BitcoindRpcClient] = {
+    val _ = isBitcoindUsed.set(true)
+    BitcoinSFixture
+      .createBitcoindWithFunds(Some(BitcoindVersion.newest))
+  }
+}
+
 trait CachedBitcoindV19 extends CachedBitcoind { _: BitcoinSAkkaAsyncTest =>
 
   override protected lazy val cachedBitcoindWithFundsF: Future[

@@ -5,7 +5,11 @@ import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.rpc.{CachedBitcoind, CachedBitcoindV19}
+import org.bitcoins.testkit.rpc.{
+  CachedBitcoind,
+  CachedBitcoindNewest,
+  CachedBitcoindV19
+}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   createWalletWithBitcoind,
   createWalletWithBitcoindCallbacks,
@@ -81,6 +85,10 @@ trait BitcoinSWalletTestCachedBitcoind
     new FutureOutcome(f)
   }
 }
+
+trait BitcoinSWalletTestCachedBitcoindNewest
+    extends BitcoinSWalletTestCachedBitcoind
+    with CachedBitcoindNewest
 
 trait BitcoinSWalletTestCachedBitcoinV19
     extends BitcoinSWalletTestCachedBitcoind
