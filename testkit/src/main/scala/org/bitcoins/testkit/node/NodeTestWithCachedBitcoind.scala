@@ -1,11 +1,12 @@
 package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
-import org.bitcoins.node.NodeType
+import org.bitcoins.node.{Node, NodeType}
 import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.node.NodeUnitTest.{createPeer, syncNeutrinoNode}
 import org.bitcoins.testkit.node.fixture.{
   NeutrinoNodeConnectedWithBitcoind,
@@ -84,15 +85,13 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind =>
                                                           appConfig.chainConf,
                                                           appConfig.nodeConf)
         startedNode <- node.start()
-        _ = println(s"Syncyhing neutrino node in test fixture")
         syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
-        _ = println(s"Done syncing neutrino node in test fixture")
       } yield NeutrinoNodeConnectedWithBitcoind(syncedNode, bitcoind)
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
       build = nodeWithBitcoindBuilder,
       { case x: NeutrinoNodeConnectedWithBitcoind =>
-        NodeUnitTest.destroyNode(x.node)
+        tearDownNode(x.node)
       })(test)
   }
 
@@ -129,12 +128,22 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind =>
 
   private def tearDownNodeWithBitcoind(
       nodeWithBitcoind: NodeFundedWalletBitcoind): Future[Unit] = {
-    val destroyNodeF = NodeUnitTest.destroyNode(nodeWithBitcoind.node)
+    val node = nodeWithBitcoind.node
+    val destroyNodeF = tearDownNode(node)
     val destroyWalletF =
       BitcoinSWalletTest.destroyWallet(nodeWithBitcoind.wallet)
     for {
       _ <- destroyNodeF
       _ <- destroyWalletF
+    } yield ()
+  }
+
+  private def tearDownNode(node: Node): Future[Unit] = {
+    val destroyNodeF = NodeUnitTest.destroyNode(node)
+    for {
+      _ <- destroyNodeF
+      _ <- ChainUnitTest.destroyAllTables()(node.chainAppConfig,
+                                            system.dispatcher)
     } yield ()
   }
 }
