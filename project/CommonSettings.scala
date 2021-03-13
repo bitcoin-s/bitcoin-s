@@ -21,8 +21,8 @@ import scala.util.Properties
 object CommonSettings {
 
   private val isCI = {
-    sys.props
-      .get("CI")
+    Properties
+      .envOrNone("CI")
       .isDefined
   }
 
@@ -151,7 +151,7 @@ object CommonSettings {
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
     logBuffered in Test := false,
     skip.in(publish) := true,
-    parallelExecution.in(Test) := false
+    parallelExecution.in(Test) := !isCI
   ) ++ settings
 
   lazy val prodSettings: Seq[Setting[_]] = settings
