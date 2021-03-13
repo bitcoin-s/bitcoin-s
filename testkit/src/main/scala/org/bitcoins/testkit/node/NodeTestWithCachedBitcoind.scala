@@ -41,7 +41,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind =>
           system, // Force V18 because Spv is disabled on versions after
           appConfig),
       { case x: SpvNodeFundedWalletBitcoind =>
-        NodeUnitTest.destroyNode(x.node)
+        tearDownNodeWithBitcoind(x)
       }
     )(test)
   }
@@ -84,7 +84,9 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind =>
                                                           appConfig.chainConf,
                                                           appConfig.nodeConf)
         startedNode <- node.start()
+        _ = println(s"Syncyhing neutrino node in test fixture")
         syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
+        _ = println(s"Done syncing neutrino node in test fixture")
       } yield NeutrinoNodeConnectedWithBitcoind(syncedNode, bitcoind)
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
@@ -109,12 +111,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind =>
             bitcoind,
             walletCallbacks = walletCallbacks)(system, appConfig),
       { case x: NeutrinoNodeFundedWalletBitcoind =>
-        val destroyNodeF = NodeUnitTest.destroyNode(x.node)
-        val destroyWalletF = BitcoinSWalletTest.destroyWallet(x.wallet)
-        for {
-          _ <- destroyNodeF
-          _ <- destroyWalletF
-        } yield ()
+        tearDownNodeWithBitcoind(x)
       }
     )(test)
   }
@@ -128,6 +125,17 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind =>
       () => Future.successful(peer),
       _ => Future.unit
     )(test)
+  }
+
+  private def tearDownNodeWithBitcoind(
+      nodeWithBitcoind: NodeFundedWalletBitcoind): Future[Unit] = {
+    val destroyNodeF = NodeUnitTest.destroyNode(nodeWithBitcoind.node)
+    val destroyWalletF =
+      BitcoinSWalletTest.destroyWallet(nodeWithBitcoind.wallet)
+    for {
+      _ <- destroyNodeF
+      _ <- destroyWalletF
+    } yield ()
   }
 }
 
