@@ -130,9 +130,6 @@ trait CryptoUtil extends CryptoRuntime {
   override def isValidPubKey(bytes: ByteVector): Boolean =
     cryptoRuntime.isValidPubKey(bytes)
 
-  override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean =
-    cryptoRuntime.isFullyValidWithBouncyCastle(bytes)
-
   override def schnorrSign(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,

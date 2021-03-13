@@ -178,8 +178,6 @@ trait CryptoRuntime {
 
   def isValidPubKey(bytes: ByteVector): Boolean
 
-  def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean
-
   def decodePoint(bytes: ByteVector): ECPoint
 
   def decodePoint(pubKey: ECPublicKey): ECPoint = {
@@ -262,29 +260,38 @@ trait CryptoRuntime {
   def adaptorSign(
       key: ECPrivateKey,
       adaptorPoint: ECPublicKey,
-      msg: ByteVector): ECAdaptorSignature
+      msg: ByteVector): ECAdaptorSignature = {
+    AdaptorUtil.adaptorSign(key, adaptorPoint, msg)
+  }
 
   def adaptorComplete(
       key: ECPrivateKey,
-      adaptorSignature: ECAdaptorSignature): ECDigitalSignature
+      adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
+    AdaptorUtil.adaptorComplete(key, adaptorSignature.adaptedSig)
+  }
 
   def extractAdaptorSecret(
       signature: ECDigitalSignature,
       adaptorSignature: ECAdaptorSignature,
-      key: ECPublicKey): ECPrivateKey
+      key: ECPublicKey): ECPrivateKey = {
+    AdaptorUtil.extractAdaptorSecret(signature, adaptorSignature, key)
+  }
 
   def adaptorVerify(
       adaptorSignature: ECAdaptorSignature,
       key: ECPublicKey,
       msg: ByteVector,
-      adaptorPoint: ECPublicKey): Boolean
+      adaptorPoint: ECPublicKey): Boolean =
+    AdaptorUtil.adaptorVerify(adaptorSignature, key, msg, adaptorPoint)
 
   def decodeSignature(signature: ECDigitalSignature): (BigInt, BigInt) =
     DERSignatureUtil.decodeSignature(signature)
 
-  def isValidSignatureEncoding(signature: ECDigitalSignature): Boolean
+  def isValidSignatureEncoding(signature: ECDigitalSignature): Boolean =
+    DERSignatureUtil.isValidSignatureEncoding(signature)
 
-  def isDEREncoded(signature: ECDigitalSignature): Boolean
+  def isDEREncoded(signature: ECDigitalSignature): Boolean =
+    DERSignatureUtil.isDEREncoded(signature)
 
   /** https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects */
   def sipHash(item: ByteVector, key: SipHashKey): Long

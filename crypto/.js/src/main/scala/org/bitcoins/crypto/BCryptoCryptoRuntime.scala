@@ -109,11 +109,17 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       signature: ECDigitalSignature,
       message: ByteVector): (ECPublicKey, ECPublicKey) = {
     val keyBytes =
-      ecdsa.recover(message, signature.bytes, param = 0, compress = true)
+      if (signature.isDEREncoded)
+        ecdsa.recoverDER(message, signature.bytes, param = 0, compress = true)
+      else
+        ecdsa.recover(message, signature.bytes, param = 0, compress = true)
     val key = ECPublicKey.fromBytes(keyBytes)
 
     val keyBytesWithSign =
-      ecdsa.recover(message, signature.bytes, param = 1, compress = true)
+      if (signature.isDEREncoded)
+        ecdsa.recoverDER(message, signature.bytes, param = 1, compress = true)
+      else
+        ecdsa.recover(message, signature.bytes, param = 1, compress = true)
     val keyWithSign = ECPublicKey.fromBytes(keyBytesWithSign)
 
     (key, keyWithSign)
@@ -128,8 +134,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def sign(
       privateKey: ECPrivateKey,
       dataToSign: ByteVector): ECDigitalSignature = {
-    val buffer = ecdsa.sign(dataToSign, privateKey.bytes)
-    ECDigitalSignature.fromBytes(buffer)
+    val buffer = ecdsa.signDER(dataToSign, privateKey.bytes)
+    ECDigitalSignature.fromFrontOfBytes(buffer)
   }
 
   override def signWithEntropy(
@@ -144,10 +150,12 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       publicKey: ECPublicKey,
       data: ByteVector,
       signature: ECDigitalSignature): Boolean = {
-    ecdsa.verify(data, signature.bytes, publicKey.bytes)
+    if (signature.isDEREncoded) {
+      ecdsa.verifyDER(data, signature.bytes, publicKey.bytes)
+    } else {
+      ecdsa.verify(data, signature.bytes, publicKey.bytes)
+    }
   }
-
-  override def decompressed(publicKey: ECPublicKey): ECPublicKey = ???
 
   override def tweakMultiply(
       publicKey: ECPublicKey,
@@ -183,33 +191,6 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
 
   override def isValidPubKey(bytes: ByteVector): Boolean =
     ecdsa.publicKeyVerify(bytes)
-
-  override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean = ???
-
-  override def adaptorSign(
-      key: ECPrivateKey,
-      adaptorPoint: ECPublicKey,
-      msg: ByteVector): ECAdaptorSignature = ???
-
-  override def adaptorComplete(
-      key: ECPrivateKey,
-      adaptorSignature: ECAdaptorSignature): ECDigitalSignature = ???
-
-  override def extractAdaptorSecret(
-      signature: ECDigitalSignature,
-      adaptorSignature: ECAdaptorSignature,
-      key: ECPublicKey): ECPrivateKey = ???
-
-  override def adaptorVerify(
-      adaptorSignature: ECAdaptorSignature,
-      key: ECPublicKey,
-      msg: ByteVector,
-      adaptorPoint: ECPublicKey): Boolean = ???
-
-  override def isValidSignatureEncoding(
-      signature: ECDigitalSignature): Boolean = ???
-
-  override def isDEREncoded(signature: ECDigitalSignature): Boolean = ???
 
   override def sipHash(item: ByteVector, key: SipHashKey): Long = ???
 

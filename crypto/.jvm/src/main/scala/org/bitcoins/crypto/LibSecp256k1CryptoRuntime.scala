@@ -158,9 +158,6 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     }
   }
 
-  override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean =
-    bytes.nonEmpty && BouncycastleCryptoRuntime.isValidPubKey(bytes)
-
   // TODO: add a native implementation
   override def schnorrSign(
       dataToSign: ByteVector,

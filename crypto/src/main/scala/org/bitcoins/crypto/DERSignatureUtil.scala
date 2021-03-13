@@ -37,12 +37,16 @@ sealed abstract class DERSignatureUtil {
       val thirdByteIs0x02 = bytes(2) == 0x02
       //this is the size of the r value in the signature
       val rSize = bytes(3)
+      val sOffset = rSize + 4
+      if (sOffset < 0 || sOffset >= bytes.length) {
+        false
+      } else {
+        //this 0x02 separates the r and s value in the signature
+        val second0x02Exists = bytes(sOffset) == 0x02
 
-      //this 0x02 separates the r and s value )in the signature
-      val second0x02Exists = bytes(rSize + 4) == 0x02
-
-      firstByteIs0x30 && signatureLengthIsCorrect && thirdByteIs0x02 &&
-      second0x02Exists
+        firstByteIs0x30 && signatureLengthIsCorrect && thirdByteIs0x02 &&
+        second0x02Exists
+      }
     } else true
   }
 
