@@ -91,11 +91,10 @@ trait CachedBitcoindCollection extends CachedBitcoind {
     * inside of [[afterAll()]] just to have it
     * cleaned up in the same method.
     */
-  private val isClientsUsed: AtomicBoolean = new AtomicBoolean(false)
+  protected val isClientsUsed: AtomicBoolean = new AtomicBoolean(false)
 
   protected lazy val cachedClients: AtomicReference[
     Vector[BitcoindRpcClient]] = {
-    isClientsUsed.set(true)
     new AtomicReference[Vector[BitcoindRpcClient]](Vector.empty)
   }
 
@@ -122,6 +121,7 @@ trait CachedBitcoindPair extends CachedBitcoindCollection {
       .createNodePair()
       .map(NodePair.fromTuple(_))
       .map { triple =>
+        isClientsUsed.set(true)
         cachedClients.set(triple.toVector)
         triple
       }
@@ -136,6 +136,7 @@ trait CachedBitcoindTriple extends CachedBitcoindCollection {
       .createNodeTriple()
       .map(NodeTriple.fromTuple(_))
       .map { triple =>
+        isClientsUsed.set(true)
         cachedClients.set(triple.toVector)
         triple
       }

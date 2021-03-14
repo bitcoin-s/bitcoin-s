@@ -68,7 +68,7 @@ trait BitcoindFixturesFundedCached extends BitcoindFixtures {
 /** Bitcoind fixtures with three cached bitcoins that are connected via p2p */
 trait BitcoindFixturesCachedPair
     extends BitcoindFixturesCached
-    with CachedBitcoindTriple {
+    with CachedBitcoindPair {
   _: BitcoinSAsyncFixtureTest =>
 
   def with2BitcoindsCached(

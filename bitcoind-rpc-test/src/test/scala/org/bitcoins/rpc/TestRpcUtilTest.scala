@@ -1,10 +1,9 @@
 package org.bitcoins.rpc
 
 import org.bitcoins.core.currency.Bitcoins
-
-import org.bitcoins.rpc.util.{NodeTriple, RpcUtil}
+import org.bitcoins.rpc.util.{NodePair, RpcUtil}
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedTriple,
+  BitcoindFixturesCachedPair,
   BitcoindRpcTestUtil
 }
 import org.bitcoins.testkit.util.{BitcoinSAsyncFixtureTest, FileUtil}
@@ -15,14 +14,14 @@ import scala.concurrent.Future
 
 class TestRpcUtilTest
     extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedTriple {
+    with BitcoindFixturesCachedPair {
 
-  override type FixtureParam = NodeTriple
+  override type FixtureParam = NodePair
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF: Future[Outcome] = for {
       clients <- clientsF
-      outcome = with3BitcoindsCached(test, clients)
+      outcome = with2BitcoindsCached(test, clients)
       fut <- outcome.toFuture
     } yield fut
 
@@ -32,7 +31,7 @@ class TestRpcUtilTest
   behavior of "BitcoindRpcUtil"
 
   it should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
-    _: NodeTriple =>
+    _: NodePair =>
       val instance =
         BitcoindRpcTestUtil.instance(RpcUtil.randomPort, RpcUtil.randomPort)
       val dir = instance.datadir
@@ -44,12 +43,12 @@ class TestRpcUtilTest
       assert(!dir.exists)
   }
 
-  it should "be able to generate and sync blocks" in { nodes: NodeTriple =>
-    val NodeTriple(first, second, third) = nodes
+  it should "be able to generate and sync blocks" in { nodes: NodePair =>
+    val NodePair(first, second) = nodes
     for {
       address <- second.getNewAddress
       txid <- first.sendToAddress(address, Bitcoins.one)
-      _ <- BitcoindRpcTestUtil.generateAndSync(Vector(first, second, third))
+      _ <- BitcoindRpcTestUtil.generateAndSync(Vector(first, second))
       tx <- first.getTransaction(txid)
       _ = assert(tx.confirmations > 0)
       rawTx <- second.getRawTransaction(txid)
@@ -60,9 +59,9 @@ class TestRpcUtilTest
   }
 
   it should "ble able to generate blocks with multiple clients and sync inbetween" in {
-    nodes: NodeTriple =>
+    nodes: NodePair =>
       val blocksToGenerate = 10
-      val NodeTriple(first, second, _) = nodes
+      val NodePair(first, second) = nodes
       val allClients = nodes.toVector
       for {
         heightPreGeneration <- first.getBlockCount
@@ -79,8 +78,8 @@ class TestRpcUtilTest
   }
 
   it should "be able to find outputs of previous transactions" in {
-    nodes: NodeTriple =>
-      val NodeTriple(first, second, _) = nodes
+    nodes: NodePair =>
+      val NodePair(first, second) = nodes
       for {
         address <- second.getNewAddress
         txid <- first.sendToAddress(address, Bitcoins.one)
