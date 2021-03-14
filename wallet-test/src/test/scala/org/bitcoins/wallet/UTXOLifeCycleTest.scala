@@ -13,12 +13,26 @@ import org.bitcoins.testkit.wallet.{
   WalletWithBitcoind,
   WalletWithBitcoindRpc
 }
+import org.scalatest.{FutureOutcome, Outcome}
+
+import scala.concurrent.Future
 
 class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
   behavior of "Wallet Txo States"
 
   override type FixtureParam = WalletWithBitcoind
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val f: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      futOutcome = withFundedWalletAndBitcoindCached(test,
+                                                     getBIP39PasswordOpt(),
+                                                     bitcoind)
+      fut <- futOutcome.toFuture
+    } yield fut
+    new FutureOutcome(f)
+  }
 
   val testAddr: BitcoinAddress =
     BitcoinAddress

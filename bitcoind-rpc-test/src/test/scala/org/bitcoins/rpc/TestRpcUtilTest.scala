@@ -1,6 +1,7 @@
 package org.bitcoins.rpc
 
 import org.bitcoins.core.currency.Bitcoins
+
 import org.bitcoins.rpc.util.{NodeTriple, RpcUtil}
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedTriple,
@@ -16,6 +17,8 @@ class TestRpcUtilTest
     extends BitcoinSAsyncFixtureTest
     with BitcoindFixturesCachedTriple {
 
+  override type FixtureParam = NodeTriple
+
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF: Future[Outcome] = for {
       clients <- clientsF
@@ -29,7 +32,7 @@ class TestRpcUtilTest
   behavior of "BitcoindRpcUtil"
 
   it should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
-    case _ =>
+    _: NodeTriple =>
       val instance =
         BitcoindRpcTestUtil.instance(RpcUtil.randomPort, RpcUtil.randomPort)
       val dir = instance.datadir
@@ -41,8 +44,8 @@ class TestRpcUtilTest
       assert(!dir.exists)
   }
 
-  it should "be able to generate and sync blocks" in { case nodes: NodeTriple =>
-    val Vector(first, second, third) = nodes.toVector
+  it should "be able to generate and sync blocks" in { nodes: NodeTriple =>
+    val NodeTriple(first, second, third) = nodes
     for {
       address <- second.getNewAddress
       txid <- first.sendToAddress(address, Bitcoins.one)
@@ -57,9 +60,9 @@ class TestRpcUtilTest
   }
 
   it should "ble able to generate blocks with multiple clients and sync inbetween" in {
-    case nodes: NodeTriple =>
+    nodes: NodeTriple =>
       val blocksToGenerate = 10
-      val Vector(first, second, _) = nodes.toVector
+      val NodeTriple(first, second, _) = nodes
       val allClients = nodes.toVector
       for {
         heightPreGeneration <- first.getBlockCount
@@ -76,8 +79,8 @@ class TestRpcUtilTest
   }
 
   it should "be able to find outputs of previous transactions" in {
-    case nodes: NodeTriple =>
-      val Vector(first, second, _) = nodes.toVector
+    nodes: NodeTriple =>
+      val NodeTriple(first, second, _) = nodes
       for {
         address <- second.getNewAddress
         txid <- first.sendToAddress(address, Bitcoins.one)

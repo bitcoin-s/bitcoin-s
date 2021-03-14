@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.rpc
 
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.util.NodeTriple
+import org.bitcoins.rpc.util.{NodePair, NodeTriple}
 import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
@@ -62,6 +62,26 @@ trait BitcoindFixturesFundedCached extends BitcoindFixtures {
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)
+  }
+}
+
+/** Bitcoind fixtures with three cached bitcoins that are connected via p2p */
+trait BitcoindFixturesCachedPair
+    extends BitcoindFixturesCached
+    with CachedBitcoindTriple {
+  _: BitcoinSAsyncFixtureTest =>
+
+  def with2BitcoindsCached(
+      test: OneArgAsyncTest,
+      bitcoinds: NodePair): FutureOutcome = {
+    makeDependentFixture[NodePair](
+      () => Future.successful(bitcoinds),
+      destroy = { case _: NodePair =>
+        //do nothing since we are caching bitcoinds
+        //the test trait may want to re-use them
+        Future.unit
+      }
+    )(test)
   }
 }
 

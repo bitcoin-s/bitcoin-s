@@ -81,17 +81,6 @@ trait BitcoinSWalletTestCachedBitcoind
         destroyWallet(walletWithBitcoind.wallet)
       })(test)
   }
-
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val f: Future[Outcome] = for {
-      bitcoind <- cachedBitcoindWithFundsF
-      futOutcome = withFundedWalletAndBitcoindCached(test,
-                                                     getBIP39PasswordOpt(),
-                                                     bitcoind)
-      fut <- futOutcome.toFuture
-    } yield fut
-    new FutureOutcome(f)
-  }
 }
 
 trait BitcoinSWalletTestCachedBitcoindNewest

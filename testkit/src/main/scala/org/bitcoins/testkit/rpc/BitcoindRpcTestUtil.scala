@@ -666,21 +666,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     connectedPairsF.map(_ => ())
   }
 
-  /** Generates a vector of connected and started RPC clients. They all have
-    * spenable money in their wallet.
-    */
-  private def createNodeSequence[T <: BitcoindRpcClient](
-      numNodes: Int,
-      version: BitcoindVersion,
-      clientAccum: RpcClientAccum)(implicit
-      system: ActorSystem): Future[Vector[T]] = {
-    import system.dispatcher
-    createNodeSequence[T](numNodes, version).map { nodes =>
-      clientAccum.++=(nodes)
-      nodes
-    }
-  }
-
   private def createNodeSequence[T <: BitcoindRpcClient](
       numNodes: Int,
       version: BitcoindVersion)(implicit
@@ -741,7 +726,18 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       system: ActorSystem): Future[(T, T)] = {
     import system.dispatcher
 
-    createNodeSequence[T](numNodes = 2, version, clientAccum).map {
+    createNodePairInternal[T](version).map { pair =>
+      clientAccum.++=(Vector(pair._1, pair._2))
+      pair
+    }
+  }
+
+  private def createNodePairInternal[T <: BitcoindRpcClient](
+      version: BitcoindVersion)(implicit
+      system: ActorSystem): Future[(T, T)] = {
+    import system.dispatcher
+
+    createNodeSequence[T](numNodes = 2, version).map {
       case first +: second +: _ => (first, second)
       case _: Vector[BitcoindRpcClient] =>
         throw new RuntimeException("Did not get two clients!")
@@ -753,7 +749,15 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     */
   def createNodePair(clientAccum: RpcClientAccum = Vector.newBuilder)(implicit
       system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    createNodePairInternal(BitcoindVersion.Unknown, clientAccum)
+    createNodePair().map { pair =>
+      clientAccum.++=(Vector(pair._1, pair._2))
+      pair
+    }(system.dispatcher)
+
+  def createNodePair()(implicit
+      system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
+    createNodePairInternal(BitcoindVersion.Unknown)
+  }
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
     * that are connected with some blocks in the chain
