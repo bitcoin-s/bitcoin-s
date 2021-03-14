@@ -154,4 +154,11 @@ object AsyncUtil extends AsyncUtil {
   /** The default number of async attempts before timing out
     */
   private[bitcoins] val DEFAULT_MAX_TRIES: Int = 50
+
+  def nonBlockingSleep(duration: FiniteDuration): Future[Unit] = {
+    val p = Promise[Unit]()
+    val r: Runnable = () => p.success(())
+    scheduler.schedule(r, duration.toMillis, TimeUnit.MILLISECONDS)
+    p.future
+  }
 }
