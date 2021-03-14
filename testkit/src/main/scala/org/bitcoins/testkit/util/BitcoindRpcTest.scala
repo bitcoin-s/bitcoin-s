@@ -1,7 +1,6 @@
 package org.bitcoins.testkit.util
 
 import java.nio.file.Files
-import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 
@@ -29,8 +28,6 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
       msg
     }
   }
-
-  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
   /** Bitcoind RPC clients can be added to this builder
     * as they are created in tests. After tests have

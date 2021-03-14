@@ -3,6 +3,8 @@ package org.bitcoins.testkit.util
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import akka.util.Timeout
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkitcore.util.BaseAsyncTest
 import org.scalatest._
 import org.scalatest.flatspec.{AsyncFlatSpec, FixtureAsyncFlatSpec}
@@ -18,6 +20,7 @@ trait BitcoinSAkkaAsyncTest extends BaseAsyncTest { this: AsyncTestSuite =>
   implicit val system: ActorSystem = {
     ActorSystem(s"${getClass.getSimpleName}-${System.currentTimeMillis()}")
   }
+  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
   /** Needed because the default execution context will become overloaded
     * if we do not specify a unique execution context for each suite
