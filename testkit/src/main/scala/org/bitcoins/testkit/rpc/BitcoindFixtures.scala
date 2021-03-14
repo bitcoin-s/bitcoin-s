@@ -1,10 +1,10 @@
 package org.bitcoins.testkit.rpc
 
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.util.NodeTriple
 import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
-
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -31,10 +31,29 @@ trait BitcoindFixtures extends BitcoinSFixture with EmbeddedPg {
         Future.unit // don't want to destroy anything since it is cached
       })(test)
   }
+
+  def with3Bitcoinds(test: OneArgAsyncTest): FutureOutcome = {
+    makeDependentFixture[(
+        BitcoindRpcClient,
+        BitcoindRpcClient,
+        BitcoindRpcClient)](
+      () => BitcoindRpcTestUtil.createNodeTriple(),
+      destroy = {
+        case nodes: (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient) =>
+          BitcoindRpcTestUtil.stopServers(Vector(nodes._1, nodes._2, nodes._3))
+      }
+    )(test)
+  }
 }
 
-trait BitcoindFixturesCached extends BitcoindFixtures with CachedBitcoind {
-  _: BitcoinSAsyncFixtureTest =>
+/** Bitcoind fixtures with a cached a bitcoind instance */
+trait BitcoindFixturesCached extends BitcoindFixtures {
+  _: BitcoinSAsyncFixtureTest with CachedBitcoind =>
+}
+
+/** Bitcoind fixtures with a cached a bitcoind instance that is funded */
+trait BitcoindFixturesFundedCached extends BitcoindFixtures {
+  _: BitcoinSAsyncFixtureTest with CachedBitcoindFunded =>
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
@@ -43,5 +62,25 @@ trait BitcoindFixturesCached extends BitcoindFixtures with CachedBitcoind {
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)
+  }
+}
+
+/** Bitcoind fixtures with three cached bitcoins that are connected via p2p */
+trait BitcoindFixturesCachedTriple
+    extends BitcoindFixturesCached
+    with CachedBitcoindTriple {
+  _: BitcoinSAsyncFixtureTest =>
+
+  def with3BitcoindsCached(
+      test: OneArgAsyncTest,
+      bitcoinds: NodeTriple): FutureOutcome = {
+    makeDependentFixture[NodeTriple](
+      () => Future.successful(bitcoinds),
+      destroy = { case _: NodeTriple =>
+        //do nothing since we are caching bitcoinds
+        //the test trait may want to re-use them
+        Future.unit
+      }
+    )(test)
   }
 }

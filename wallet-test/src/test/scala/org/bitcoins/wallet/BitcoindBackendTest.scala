@@ -5,10 +5,13 @@ import org.bitcoins.core.currency._
 import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
-import org.bitcoins.testkit.rpc.BitcoindFixturesCached
+import org.bitcoins.testkit.rpc.{
+  BitcoindFixturesFundedCached,
+  CachedBitcoindNewest
+}
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.Await
@@ -16,7 +19,8 @@ import scala.concurrent.duration.DurationInt
 
 class BitcoindBackendTest
     extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCached
+    with BitcoindFixturesFundedCached
+    with CachedBitcoindNewest
     with EmbeddedPg {
 
   override type FixtureParam = BitcoindRpcClient

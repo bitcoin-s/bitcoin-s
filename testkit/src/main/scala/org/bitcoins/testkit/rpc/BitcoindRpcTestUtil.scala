@@ -675,6 +675,17 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       clientAccum: RpcClientAccum)(implicit
       system: ActorSystem): Future[Vector[T]] = {
     import system.dispatcher
+    createNodeSequence[T](numNodes, version).map { nodes =>
+      clientAccum.++=(nodes)
+      nodes
+    }
+  }
+
+  private def createNodeSequence[T <: BitcoindRpcClient](
+      numNodes: Int,
+      version: BitcoindVersion)(implicit
+      system: ActorSystem): Future[Vector[T]] = {
+    import system.dispatcher
 
     val clients: Vector[T] = (0 until numNodes).map { _ =>
       val rpc = version match {
@@ -708,8 +719,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       // methods calling this make sure that the version
       // arg and the type arg matches up
       val rpcT = rpc.asInstanceOf[T]
-      clientAccum += rpcT
-
       rpcT
     }.toVector
 
@@ -803,7 +812,23 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   )(implicit system: ActorSystem): Future[(T, T, T)] = {
     import system.dispatcher
 
-    createNodeSequence[T](numNodes = 3, version, clientAccum).map {
+    createNodeTripleInternal[T](version).map { nodes =>
+      clientAccum.+=(nodes._1)
+      clientAccum.+=(nodes._2)
+      clientAccum.+=(nodes._3)
+      nodes
+    }
+  }
+
+  /** Returns a triple of [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
+    * that are connected with some blocks in the chain
+    */
+  private def createNodeTripleInternal[T <: BitcoindRpcClient](
+      version: BitcoindVersion
+  )(implicit system: ActorSystem): Future[(T, T, T)] = {
+    import system.dispatcher
+
+    createNodeSequence[T](numNodes = 3, version).map {
       case first +: second +: third +: _ => (first, second, third)
       case _: Vector[T] =>
         throw new RuntimeException("Did not get three clients!")
@@ -818,6 +843,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   )(implicit system: ActorSystem): Future[
     (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] = {
     createNodeTripleInternal(BitcoindVersion.Unknown, clientAccum)
+  }
+
+  /** Returns a triple of org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient
+    * that are connected with some blocks in the chain
+    */
+  def createNodeTriple()(implicit system: ActorSystem): Future[
+    (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] = {
+    createNodeTripleInternal(BitcoindVersion.Unknown)
   }
 
   /** @return a triple of [[org.bitcoins.rpc.client.v17.BitcoindV17RpcClient BitcoindV17RpcClient]]
