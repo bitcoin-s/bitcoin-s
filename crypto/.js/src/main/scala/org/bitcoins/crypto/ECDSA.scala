@@ -26,6 +26,8 @@ class ECDSA(
 
   def publicKeyVerify(key: Buffer): Boolean = js.native
 
+  def publicKeyConvert(key: Buffer, compressed: Boolean): Buffer = js.native
+
   def publicKeyTweakMul(key: Buffer, tweak: Buffer, compress: Boolean): Buffer =
     js.native
 
