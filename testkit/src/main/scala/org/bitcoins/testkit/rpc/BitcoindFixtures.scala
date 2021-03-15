@@ -40,7 +40,7 @@ trait BitcoindFixtures extends BitcoinSFixture with EmbeddedPg {
         BitcoindRpcClient,
         BitcoindRpcClient,
         BitcoindRpcClient)](
-      () => BitcoindRpcTestUtil.createNodeTriple(),
+      () => BitcoindRpcTestUtil.createNodeTriple(BitcoindVersion.newest),
       destroy = {
         case nodes: (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient) =>
           BitcoindRpcTestUtil.stopServers(Vector(nodes._1, nodes._2, nodes._3))

@@ -762,48 +762,42 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   /** Returns a pair of [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
     * that are connected with some blocks in the chain
     */
-  def createNodePairV16(
-      clientAccum: RpcClientAccum = Vector.newBuilder)(implicit
+  def createNodePairV16(clientAccum: RpcClientAccum)(implicit
   system: ActorSystem): Future[(BitcoindV16RpcClient, BitcoindV16RpcClient)] =
     createNodePairInternal(BitcoindVersion.V16, clientAccum)
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v17.BitcoindV17RpcClient BitcoindV17RpcClient]]
     * that are connected with some blocks in the chain
     */
-  def createNodePairV17(
-      clientAccum: RpcClientAccum = Vector.newBuilder)(implicit
+  def createNodePairV17(clientAccum: RpcClientAccum)(implicit
   system: ActorSystem): Future[(BitcoindV17RpcClient, BitcoindV17RpcClient)] =
     createNodePairInternal(BitcoindVersion.V17, clientAccum)
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v18.BitcoindV18RpcClient BitcoindV18RpcClient]]
     * that are connected with some blocks in the chain
     */
-  def createNodePairV18(
-      clientAccum: RpcClientAccum = Vector.newBuilder)(implicit
+  def createNodePairV18(clientAccum: RpcClientAccum)(implicit
   system: ActorSystem): Future[(BitcoindV18RpcClient, BitcoindV18RpcClient)] =
     createNodePairInternal(BitcoindVersion.V18, clientAccum)
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v19.BitcoindV19RpcClient BitcoindV19RpcClient]]
     * that are connected with some blocks in the chain
     */
-  def createNodePairV19(
-      clientAccum: RpcClientAccum = Vector.newBuilder)(implicit
+  def createNodePairV19(clientAccum: RpcClientAccum)(implicit
   system: ActorSystem): Future[(BitcoindV19RpcClient, BitcoindV19RpcClient)] =
     createNodePairInternal(BitcoindVersion.V19, clientAccum)
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v20.BitcoindV20RpcClient BitcoindV20RpcClient]]
     * that are connected with some blocks in the chain
     */
-  def createNodePairV20(
-      clientAccum: RpcClientAccum = Vector.newBuilder)(implicit
+  def createNodePairV20(clientAccum: RpcClientAccum)(implicit
   system: ActorSystem): Future[(BitcoindV20RpcClient, BitcoindV20RpcClient)] =
     createNodePairInternal(BitcoindVersion.V20, clientAccum)
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v21.BitcoindV21RpcClient BitcoindV21RpcClient]]
     * that are connected with some blocks in the chain
     */
-  def createNodePairV21(
-      clientAccum: RpcClientAccum = Vector.newBuilder)(implicit
+  def createNodePairV21(clientAccum: RpcClientAccum)(implicit
   system: ActorSystem): Future[(BitcoindV21RpcClient, BitcoindV21RpcClient)] =
     createNodePairInternal(BitcoindVersion.V21, clientAccum)
 
@@ -843,7 +837,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     * that are connected with some blocks in the chain
     */
   def createNodeTriple(
-      clientAccum: RpcClientAccum = Vector.newBuilder
+      clientAccum: RpcClientAccum
   )(implicit system: ActorSystem): Future[
     (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] = {
     createNodeTripleInternal(BitcoindVersion.Unknown, clientAccum)
@@ -862,21 +856,21 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     * that are connected with some blocks in the chain
     */
   def createNodeTripleV17(
-      clientAccum: RpcClientAccum = Vector.newBuilder
+      clientAccum: RpcClientAccum
   )(implicit system: ActorSystem): Future[
     (BitcoindV17RpcClient, BitcoindV17RpcClient, BitcoindV17RpcClient)] = {
     createNodeTripleInternal(BitcoindVersion.V17, clientAccum)
   }
 
   def createNodeTripleV18(
-      clientAccum: RpcClientAccum = Vector.newBuilder
+      clientAccum: RpcClientAccum
   )(implicit system: ActorSystem): Future[
     (BitcoindV18RpcClient, BitcoindV18RpcClient, BitcoindV18RpcClient)] = {
     createNodeTripleInternal(BitcoindVersion.V18, clientAccum)
   }
 
   def createNodeTripleV19(
-      clientAccum: RpcClientAccum = Vector.newBuilder
+      clientAccum: RpcClientAccum
   )(implicit system: ActorSystem): Future[
     (BitcoindV19RpcClient, BitcoindV19RpcClient, BitcoindV19RpcClient)] = {
     createNodeTripleInternal(BitcoindVersion.V19, clientAccum)
@@ -1106,7 +1100,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     */
   def startedBitcoindRpcClient(
       instance: BitcoindInstance = BitcoindRpcTestUtil.instance(),
-      clientAccum: RpcClientAccum = Vector.newBuilder)(implicit
+      clientAccum: RpcClientAccum)(implicit
       system: ActorSystem): Future[BitcoindRpcClient] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
     require(
