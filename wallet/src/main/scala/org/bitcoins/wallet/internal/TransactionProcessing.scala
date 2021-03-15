@@ -251,11 +251,9 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     logger.debug(
       s"Processing transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
 
-    val incomingF = processIncomingUtxos(transaction, blockHashOpt, newTags)
-    val outgoingF = processOutgoingUtxos(transaction, blockHashOpt)
     for {
-      incoming <- incomingF
-      outgoing <- outgoingF
+      incoming <- processIncomingUtxos(transaction, blockHashOpt, newTags)
+      outgoing <- processOutgoingUtxos(transaction, blockHashOpt)
       _ <- walletCallbacks.executeOnTransactionProcessed(logger, transaction)
     } yield {
       ProcessTxResult(incoming, outgoing)
