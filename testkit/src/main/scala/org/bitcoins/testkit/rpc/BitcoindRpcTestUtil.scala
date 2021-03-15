@@ -756,7 +756,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   def createNodePair()(implicit
       system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
-    createNodePairInternal(BitcoindVersion.Unknown)
+    createNodePairInternal(BitcoindVersion.newest)
   }
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
@@ -927,6 +927,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         v17.signRawTransactionWithWallet(transaction, utxoDeps)
       case v16: BitcoindV16RpcClient =>
         v16.signRawTransaction(transaction, utxoDeps)
+      case v20: BitcoindV20RpcClient =>
+        v20.signRawTransactionWithWallet(transaction)
+      case v21: BitcoindV21RpcClient =>
+        v21.signRawTransactionWithWallet(transaction)
       case unknown: BitcoindRpcClient =>
         val v16T = BitcoindV16RpcClient.fromUnknownVersion(unknown)
         val v17T = BitcoindV17RpcClient.fromUnknownVersion(unknown)
