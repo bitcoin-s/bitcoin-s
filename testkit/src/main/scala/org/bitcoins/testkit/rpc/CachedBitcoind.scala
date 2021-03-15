@@ -2,6 +2,8 @@ package org.bitcoins.testkit.rpc
 
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
+import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.util.{NodePair, NodeTriple}
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.BitcoinSAkkaAsyncTest
@@ -75,6 +77,30 @@ trait CachedBitcoindV19 extends CachedBitcoindFunded {
     BitcoinSFixture
       .createBitcoindWithFunds(Some(BitcoindVersion.V19))
       .map(_.asInstanceOf[BitcoindV19RpcClient])
+  }
+}
+
+trait CachedBitcoindV20 extends CachedBitcoindFunded {
+  _: BitcoinSAkkaAsyncTest =>
+
+  override protected lazy val cachedBitcoindWithFundsF: Future[
+    BitcoindV20RpcClient] = {
+    val _ = isBitcoindUsed.set(true)
+    BitcoinSFixture
+      .createBitcoindWithFunds(Some(BitcoindVersion.V20))
+      .map(_.asInstanceOf[BitcoindV20RpcClient])
+  }
+}
+
+trait CachedBitcoindV21 extends CachedBitcoindFunded {
+  _: BitcoinSAkkaAsyncTest =>
+
+  override protected lazy val cachedBitcoindWithFundsF: Future[
+    BitcoindV21RpcClient] = {
+    val _ = isBitcoindUsed.set(true)
+    BitcoinSFixture
+      .createBitcoindWithFunds(Some(BitcoindVersion.V21))
+      .map(_.asInstanceOf[BitcoindV21RpcClient])
   }
 }
 
