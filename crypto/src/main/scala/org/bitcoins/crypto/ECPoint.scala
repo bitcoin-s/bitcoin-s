@@ -4,10 +4,18 @@ import scodec.bits.ByteVector
 
 import java.math.BigInteger
 
+/** Represents a point on an elliptic curve.
+  */
 sealed trait ECPoint
 
+/** The infinity point.
+  */
 case object ECPointInfinity extends ECPoint
 
+/** A point on an elliptic curve.
+  * @param x
+  * @param y
+  */
 case class ECPointImpl(x: FieldElement, y: FieldElement) extends ECPoint
 
 object ECPoint {
