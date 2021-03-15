@@ -16,6 +16,7 @@ import org.scalatest.AsyncTestSuite
 
 import scala.concurrent.Future
 
+/** Base test trait for all the tests in our walletTest module */
 trait BaseWalletTest extends EmbeddedPg { _: AsyncTestSuite =>
 
   override def beforeAll(): Unit = {

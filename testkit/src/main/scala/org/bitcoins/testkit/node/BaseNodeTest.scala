@@ -24,6 +24,7 @@ import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
+/** A base test trait for all the tests in our nodeTest module */
 trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
 
   /** Wallet config with data directory set to user temp directory */
