@@ -749,14 +749,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     */
   def createNodePair(clientAccum: RpcClientAccum = Vector.newBuilder)(implicit
       system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    createNodePair().map { pair =>
+    createNodePair(BitcoindVersion.newest).map { pair =>
       clientAccum.++=(Vector(pair._1, pair._2))
       pair
     }(system.dispatcher)
 
-  def createNodePair()(implicit
+  def createNodePair(version: BitcoindVersion)(implicit
       system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
-    createNodePairInternal(BitcoindVersion.newest)
+    createNodePairInternal(version)
   }
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
@@ -852,9 +852,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   /** Returns a triple of org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient
     * that are connected with some blocks in the chain
     */
-  def createNodeTriple()(implicit system: ActorSystem): Future[
+  def createNodeTriple(version: BitcoindVersion)(implicit
+      system: ActorSystem): Future[
     (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] = {
-    createNodeTripleInternal(BitcoindVersion.Unknown)
+    createNodeTripleInternal(version)
   }
 
   /** @return a triple of [[org.bitcoins.rpc.client.v17.BitcoindV17RpcClient BitcoindV17RpcClient]]

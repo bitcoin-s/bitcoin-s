@@ -107,6 +107,11 @@ trait CachedBitcoindV21 extends CachedBitcoindFunded {
 trait CachedBitcoindCollection extends CachedBitcoind {
   _: BitcoinSAkkaAsyncTest =>
 
+  /** The version of bitcoind we are creating in the collection
+    * By default, we just use the newest version of bitcoind
+    */
+  def version: BitcoindVersion = BitcoindVersion.newest
+
   /** Flag to indicate if the bitcoinds were used
     *
     * If we don't have this, we have no way
@@ -144,7 +149,7 @@ trait CachedBitcoindPair extends CachedBitcoindCollection {
 
   lazy val clientsF: Future[NodePair] = {
     BitcoindRpcTestUtil
-      .createNodePair()
+      .createNodePair(version)
       .map(NodePair.fromTuple(_))
       .map { triple =>
         isClientsUsed.set(true)
@@ -159,7 +164,7 @@ trait CachedBitcoindTriple extends CachedBitcoindCollection {
 
   lazy val clientsF: Future[NodeTriple] = {
     BitcoindRpcTestUtil
-      .createNodeTriple()
+      .createNodeTriple(version)
       .map(NodeTriple.fromTuple(_))
       .map { triple =>
         isClientsUsed.set(true)

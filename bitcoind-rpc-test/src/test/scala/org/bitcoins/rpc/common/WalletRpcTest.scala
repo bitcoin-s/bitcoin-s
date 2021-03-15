@@ -31,12 +31,11 @@ import org.scalatest.{FutureOutcome, Outcome}
 
 import java.io.File
 import java.util.Scanner
-//import scala.annotation.nowarn
+
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.reflect.io.Directory
 
-//@nowarn
 class WalletRpcTest
     extends BitcoinSAsyncFixtureTest
     with BitcoindFixturesCachedPair
