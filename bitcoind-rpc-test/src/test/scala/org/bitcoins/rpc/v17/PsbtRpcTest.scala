@@ -13,37 +13,21 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint
 }
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.util.NodePair
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPair,
+  BitcoindFixturesCachedPairV17,
   BitcoindRpcTestUtil
 }
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
-import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
 class PsbtRpcTest
     extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPair[BitcoindV17RpcClient] {
+    with BitcoindFixturesCachedPairV17 {
 
   behavior of "PsbtRpc"
-
-  override def version: BitcoindVersion = BitcoindVersion.V17
-
-  override type FixtureParam = NodePair[BitcoindV17RpcClient]
-
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val f: Future[Outcome] = for {
-      clients <- clientsF
-      futOutcome = with2BitcoindsCached(test, clients)
-      fut <- futOutcome.toFuture
-    } yield fut
-
-    new FutureOutcome(f)
-  }
 
   // https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#Test_Vectors
   it should "decode all the BIP174 example PSBTs" in {
