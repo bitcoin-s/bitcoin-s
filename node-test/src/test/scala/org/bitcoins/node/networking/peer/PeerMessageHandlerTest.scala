@@ -46,8 +46,6 @@ class PeerMessageHandlerTest
     val peerMsgSenderF = peerHandlerF.map(_.peerMsgSender)
     val p2pClientF = peerHandlerF.map(_.p2pClient)
 
-    //val _ =
-    //  bitcoindPeerF.flatMap(_ => peerHandlerF.map(_.peerMsgSender.connect()))
     val _ = peerHandlerF.map(_.peerMsgSender.connect())
     val isConnectedF = TestAsyncUtil.retryUntilSatisfiedF(
       () => p2pClientF.flatMap(_.isConnected()),

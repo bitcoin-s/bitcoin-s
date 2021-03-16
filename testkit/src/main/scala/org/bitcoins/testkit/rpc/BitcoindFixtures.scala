@@ -14,6 +14,7 @@ import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
+/** A trait that is useful if you need bitcoind fixtures for your test suite */
 trait BitcoindFixtures extends BitcoinSFixture with EmbeddedPg {
   _: BitcoinSAsyncFixtureTest =>
 
@@ -70,6 +71,9 @@ trait BitcoindFixturesFundedCached extends BitcoindFixtures {
   }
 }
 
+/** Test trait that caches a [[BitcoindV18RpcClient]] that is funded
+  * and available to use with fixtures
+  */
 trait BitcoindFixturesFundedCachedV18
     extends BitcoindFixturesFundedCached
     with CachedBitcoindV18 { _: BitcoinSAsyncFixtureTest =>
@@ -96,6 +100,9 @@ trait BitcoindFixturesFundedCachedV18
   }
 }
 
+/** Test trait that caches a [[BitcoindV19RpcClient]] that is funded
+  * and available to use with fixtures
+  */
 trait BitcoindFixturesFundedCachedV19
     extends BitcoindFixturesFundedCached
     with CachedBitcoindV19 { _: BitcoinSAsyncFixtureTest =>
@@ -122,6 +129,9 @@ trait BitcoindFixturesFundedCachedV19
   }
 }
 
+/** Test trait that caches a [[BitcoindV20RpcClient]] that is funded
+  * and available to use with fixtures
+  */
 trait BitcoindFixturesFundedCachedV20
     extends BitcoindFixturesFundedCached
     with CachedBitcoindV20 { _: BitcoinSAsyncFixtureTest =>
@@ -147,6 +157,9 @@ trait BitcoindFixturesFundedCachedV20
   }
 }
 
+/** Test trait that caches a [[BitcoindV21RpcClient]] that is funded
+  * and available to use with fixtures
+  */
 trait BitcoindFixturesFundedCachedV21
     extends BitcoindFixturesFundedCached
     with CachedBitcoindV21 { _: BitcoinSAsyncFixtureTest =>
@@ -172,7 +185,7 @@ trait BitcoindFixturesFundedCachedV21
   }
 }
 
-/** Bitcoind fixtures with three cached bitcoins that are connected via p2p */
+/** Bitcoind fixtures with two cached bitcoind that are connected via p2p */
 trait BitcoindFixturesCachedPair[T <: BitcoindRpcClient]
     extends BitcoindFixturesCached
     with CachedBitcoindPair[T] {
@@ -192,6 +205,7 @@ trait BitcoindFixturesCachedPair[T <: BitcoindRpcClient]
   }
 }
 
+/** Bitcoind fixtures with two cached [[BitcoindV17RpcClient]] that are connected via p2p */
 trait BitcoindFixturesCachedPairV17
     extends BitcoindFixturesCachedPair[BitcoindV17RpcClient] {
   _: BitcoinSAsyncFixtureTest =>
@@ -200,6 +214,7 @@ trait BitcoindFixturesCachedPairV17
   override val version: BitcoindVersion = BitcoindVersion.V17
 }
 
+/** Bitcoind fixtures with two cached [[BitcoindV18RpcClient]] that are connected via p2p */
 trait BitcoindFixturesCachedPairV18
     extends BitcoindFixturesCachedPair[BitcoindV18RpcClient] {
   _: BitcoinSAsyncFixtureTest =>
@@ -208,6 +223,7 @@ trait BitcoindFixturesCachedPairV18
   override val version: BitcoindVersion = BitcoindVersion.V18
 }
 
+/** Bitcoind fixtures with two cached bitcoind rpc clients that are [[BitcoindVersion.newest]] that are connected via p2p */
 trait BitcoindFixturesCachedPairNewest
     extends BitcoindFixturesCachedPair[BitcoindV21RpcClient] {
   _: BitcoinSAsyncFixtureTest =>
@@ -216,7 +232,7 @@ trait BitcoindFixturesCachedPairNewest
   override val version: BitcoindVersion = BitcoindVersion.newest
 }
 
-/** Bitcoind fixtures with three cached bitcoins that are connected via p2p */
+/** Bitcoind fixtures with three cached bitcoind that are connected via p2p */
 trait BitcoindFixturesCachedTriple[T <: BitcoindRpcClient]
     extends BitcoindFixturesCached
     with CachedBitcoindTriple[T] {

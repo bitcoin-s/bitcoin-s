@@ -24,6 +24,10 @@ import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
+/** Test trait for using a bitcoin-s [[Node]] that requires a cached bitcoind.
+  * The cached bitcoind will be share across tests in the test suite that extends
+  * this trait.
+  */
 trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
 
   def withSpvNodeFundedWalletBitcoindCached(
