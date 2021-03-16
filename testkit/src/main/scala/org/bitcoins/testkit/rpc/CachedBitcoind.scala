@@ -138,7 +138,7 @@ trait CachedBitcoindCollection[T <: BitcoindRpcClient]
   /** The version of bitcoind we are creating in the collection
     * By default, we just use the newest version of bitcoind
     */
-  def version: BitcoindVersion = BitcoindVersion.newest
+  def version: BitcoindVersion
 
   /** Flag to indicate if the bitcoinds were used
     *
