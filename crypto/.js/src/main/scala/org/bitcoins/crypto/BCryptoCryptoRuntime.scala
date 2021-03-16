@@ -2,6 +2,7 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
+import java.math.BigInteger
 import scala.scalajs.js
 import scala.scalajs.js.typedarray._
 import scala.scalajs.js.JSStringOps._
@@ -216,7 +217,12 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
 
   override def isDEREncoded(signature: ECDigitalSignature): Boolean = ???
 
-  override def sipHash(item: ByteVector, key: SipHashKey): Long = ???
+  override def sipHash(item: ByteVector, key: SipHashKey): Long = {
+    val siphash = SipHash.siphash(item, key.bytes)
+    val hi = (siphash(0).toLong & 0x00000000ffffffffL) << 32
+    val lo = siphash(1).toLong & 0x00000000ffffffffL
+    hi | lo
+  }
 
   private def toNodeBuffer(byteVector: ByteVector): Buffer = {
     //the implicit used here is this
