@@ -58,17 +58,17 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       _ <- walletStateOpt match {
         case None =>
           for {
-            utxos <- wallet.listUtxos()
-            lastConfirmedOpt = utxos.filter(_.blockHash.isDefined).lastOption
+            txDbs <- wallet.listTransactions()
+            lastConfirmedOpt = txDbs.filter(_.blockHashOpt.isDefined).lastOption
             _ <- lastConfirmedOpt match {
               case None => Future.unit
-              case Some(utxo) =>
+              case Some(txDb) =>
                 for {
-                  heightOpt <- bitcoind.getBlockHeight(utxo.blockHash.get)
+                  heightOpt <- bitcoind.getBlockHeight(txDb.blockHashOpt.get)
                   _ <- heightOpt match {
                     case Some(height) =>
                       logger.info(
-                        s"Last utxo occurred at block $height, syncing from there")
+                        s"Last tx occurred at block $height, syncing from there")
                       doSync(height, bitcoindHeight)
                     case None => Future.unit
                   }

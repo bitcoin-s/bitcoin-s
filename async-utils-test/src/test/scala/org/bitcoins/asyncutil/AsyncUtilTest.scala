@@ -6,10 +6,68 @@ import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import scala.util.Success
 
 class AsyncUtilTest extends BitcoinSJvmTest {
-
   behavior of "AsyncUtil"
+
+  private def trueLater(delay: Int): Future[Boolean] = {
+    AsyncUtil
+      .nonBlockingSleep(delay.millis)
+      .map(_ => true)
+  }
+
+  private def boolLaterDoneAnd(
+      bool: Boolean,
+      boolFuture: Future[Boolean]): Future[Boolean] = {
+    Future.successful(boolFuture.value.contains(Success(bool)))
+  }
+
+  private def boolLaterDoneAndTrue(
+      trueLater: Future[Boolean]): () => Future[Boolean] = { () =>
+    boolLaterDoneAnd(bool = true, trueLater)
+  }
+
+  behavior of "TestRpcUtil"
+
+  it should "complete immediately if condition is true" in {
+    AsyncUtil
+      .retryUntilSatisfiedF(conditionF = () => Future.successful(true),
+                            interval = 0.millis)
+      .map { _ =>
+        succeed
+      }
+  }
+
+  it should "fail if condition is false" in {
+    recoverToSucceededIf[AsyncUtil.RpcRetryException] {
+      AsyncUtil.retryUntilSatisfiedF(conditionF =
+                                       () => Future.successful(false),
+                                     interval = 0.millis)
+    }
+  }
+
+  it should "succeed after a delay" in {
+    val boolLater = trueLater(delay = 250)
+    AsyncUtil.retryUntilSatisfiedF(boolLaterDoneAndTrue(boolLater)).map { _ =>
+      succeed
+    }
+  }
+
+  it should "succeed immediately if condition is true" in {
+    AsyncUtil
+      .awaitCondition(condition = () => true, 0.millis)
+      .map(_ => succeed)
+
+  }
+
+  it should "timeout if condition is false" in {
+    recoverToSucceededIf[AsyncUtil.RpcRetryException] {
+      AsyncUtil
+        .awaitCondition(condition = () => false, interval = 0.millis)
+        .map(_ => succeed)
+    }
+  }
 
   it must "retry a predicate until it is satisfied" in {
     val counter = new AtomicInteger(0)

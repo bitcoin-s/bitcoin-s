@@ -9,7 +9,7 @@ import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.BlockFilter
-import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee._
@@ -65,6 +65,9 @@ trait BitcoinSWalletTest extends BitcoinSFixture with EmbeddedPg {
   }
 
   def nodeApi: NodeApi = MockNodeApi
+
+  val testAddr: BitcoinAddress =
+    BitcoinAddress.fromString("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq")
 
   val legacyWalletConf: Config =
     ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = legacy")

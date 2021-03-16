@@ -12,17 +12,6 @@ class SignWithEntropyTest extends BitcoinSCryptoAsyncTest {
 
   behavior of "SignWithEntropy"
 
-  it must "sign arbitrary pieces of data with arbitrary entropy correctly" in {
-    forAllAsync(CryptoGenerators.sha256Digest, CryptoGenerators.sha256Digest) {
-      case (hash, entropy) =>
-        val sigF = privKey.signWithEntropyFunction(hash.bytes, entropy.bytes)
-
-        sigF.map { sig =>
-          assert(pubKey.verify(hash.bytes, sig))
-        }
-    }
-  }
-
   it must "sign arbitrary data correctly with low R values" in {
     forAllAsync(CryptoGenerators.sha256Digest) { hash =>
       val bytes = hash.bytes
@@ -38,6 +27,17 @@ class SignWithEntropyTest extends BitcoinSCryptoAsyncTest {
         assert(sig1.bytes == sig2.bytes)
         assert(sig1 == sig2)
       }
+    }
+  }
+
+  it must "sign arbitrary pieces of data with arbitrary entropy correctly" in {
+    forAllAsync(CryptoGenerators.sha256Digest, CryptoGenerators.sha256Digest) {
+      case (hash, entropy) =>
+        val sigF = privKey.signWithEntropyFunction(hash.bytes, entropy.bytes)
+
+        sigF.map { sig =>
+          assert(pubKey.verify(hash.bytes, sig))
+        }
     }
   }
 }

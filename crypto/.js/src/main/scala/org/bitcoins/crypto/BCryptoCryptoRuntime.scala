@@ -164,6 +164,12 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     ECPublicKey.fromBytes(keyBuffer)
   }
 
+  def publicKeyConvert(buffer: ByteVector, compressed: Boolean): ByteVector =
+    publicKeyConvert(toNodeBuffer(buffer), compressed)
+
+  def publicKeyConvert(buffer: Buffer, compressed: Boolean): Buffer =
+    ecdsa.publicKeyConvert(buffer, compressed)
+
   override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey = {
     try {
       val keyBuffer =
@@ -172,13 +178,23 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     } catch {
       case ex: JavaScriptException =>
         // check for infinity
+        val k1: Buffer =
+          if (pk1.isCompressed) pk1.bytes
+          else publicKeyConvert(pk1.bytes, compressed = true)
+
+        val k2: Buffer =
+          if (pk2.isCompressed) pk2.bytes
+          else publicKeyConvert(pk2.bytes, compressed = true)
+
         if (
-          pk1.isCompressed && pk2.isCompressed &&
-          ((pk1.bytes.head == 0x02 && pk2.bytes.head == 0x03) || (pk1.bytes.head == 0x03 && pk2.bytes.head == 0x02)) &&
-          pk1.bytes.tail == pk2.bytes.tail
+          ((k1.head == 0x02 && k2.head == 0x03) ||
+            (k1.head == 0x03 && k2.head == 0x02)) &&
+          k1.tail == k2.tail
         ) {
           ECPublicKey.fromHex("00")
-        } else throw ex
+        } else {
+          throw ex
+        }
     }
   }
 
@@ -192,7 +208,12 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def isValidPubKey(bytes: ByteVector): Boolean =
     ecdsa.publicKeyVerify(bytes)
 
-  override def sipHash(item: ByteVector, key: SipHashKey): Long = ???
+  override def sipHash(item: ByteVector, key: SipHashKey): Long = {
+    val siphash = SipHash.siphash(item, key.bytes)
+    val hi = (siphash(0).toLong & 0x00000000ffffffffL) << 32
+    val lo = siphash(1).toLong & 0x00000000ffffffffL
+    hi | lo
+  }
 
   private def toNodeBuffer(byteVector: ByteVector): Buffer = {
     //the implicit used here is this

@@ -24,34 +24,36 @@ class MempoolRpcTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
     BitcoindRpcTestUtil.createNodePairV18(clientAccum = clientAccum)
 
-  lazy val clientWithoutBroadcastF: Future[BitcoindRpcClient] =
-    clientsF.flatMap { case (client, otherClient) =>
-      val defaultConfig = BitcoindRpcTestUtil.standardConfig
+  lazy val clientWithoutBroadcastF: Future[BitcoindRpcClient] = {
+    val defaultConfig = BitcoindRpcTestUtil.standardConfig
 
-      val configNoBroadcast =
-        defaultConfig
-          .withOption("walletbroadcast", 0.toString)
+    val configNoBroadcast =
+      defaultConfig
+        .withOption("walletbroadcast", 0.toString)
 
-      val instanceWithoutBroadcast =
-        BitcoindInstance.fromConfig(configNoBroadcast,
-                                    BitcoindRpcTestUtil.getBinary(V18))
+    val instanceWithoutBroadcast =
+      BitcoindInstance.fromConfig(configNoBroadcast,
+                                  BitcoindRpcTestUtil.getBinary(V18))
 
-      val clientWithoutBroadcast =
-        BitcoindRpcClient.withActorSystem(instanceWithoutBroadcast)
-      clientAccum += clientWithoutBroadcast
+    val clientWithoutBroadcast =
+      BitcoindRpcClient.withActorSystem(instanceWithoutBroadcast)
 
-      val pairs = Vector(client -> clientWithoutBroadcast,
-                         otherClient -> clientWithoutBroadcast)
-
-      for {
-        _ <- clientWithoutBroadcast.start()
-        _ <- BitcoindRpcTestUtil.connectPairs(pairs)
-        _ <- BitcoindRpcTestUtil.syncPairs(pairs)
-        _ <- BitcoindRpcTestUtil.generateAndSync(
-          Vector(clientWithoutBroadcast, client, otherClient),
-          blocks = 200)
-      } yield clientWithoutBroadcast
-    }
+    val clientWithoutBroadcastF = clientWithoutBroadcast.start()
+    for {
+      (client, otherClient) <- clientsF
+      clientWithoutBroadcast <- clientWithoutBroadcastF
+      _ = {
+        clientAccum += clientWithoutBroadcast
+      }
+      pairs = Vector(client -> clientWithoutBroadcast,
+                     otherClient -> clientWithoutBroadcast)
+      _ <- BitcoindRpcTestUtil.connectPairs(pairs)
+      _ <- BitcoindRpcTestUtil.syncPairs(pairs)
+      _ <- BitcoindRpcTestUtil.generateAndSync(
+        Vector(clientWithoutBroadcast, client, otherClient),
+        blocks = 200)
+    } yield clientWithoutBroadcast
+  }
 
   behavior of "MempoolRpc"
 

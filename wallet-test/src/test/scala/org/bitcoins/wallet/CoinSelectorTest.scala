@@ -41,7 +41,7 @@ class CoinSelectorTest extends BitcoinSWalletTest {
       output = TransactionOutput(10.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
       scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
-      blockHash = None
+      spendingTxIdOpt = None
     )
     val utxo2 = SegwitV0SpendingInfo(
       txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
@@ -51,7 +51,7 @@ class CoinSelectorTest extends BitcoinSWalletTest {
       output = TransactionOutput(90.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
       scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
-      blockHash = None
+      spendingTxIdOpt = None
     )
     val utxo3 = SegwitV0SpendingInfo(
       txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
@@ -61,7 +61,7 @@ class CoinSelectorTest extends BitcoinSWalletTest {
       output = TransactionOutput(20.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
       scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
-      blockHash = None
+      spendingTxIdOpt = None
     )
 
     test(CoinSelectionFixture(output, feeRate, utxo1, utxo2, utxo3))

@@ -36,7 +36,7 @@ import scala.concurrent.duration.DurationInt
 
 //TODO: Need to provide generators for [[NonStandardScriptSignature]] and [[NonStandardScriptPubKey]]
 sealed abstract class ScriptGenerators extends BitcoinSLogger {
-  val timeout = 15.seconds
+  val timeout = 30.seconds
   val defaultMaxDepth: Int = 2
 
   /** Since redeem scripts are pushed onto the stack, this function
@@ -608,7 +608,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     *         `ECPrivateKey` used to sign the scriptSig
     */
   def signedP2PKHScriptSignature: Gen[
-    (P2PKHScriptSignature, P2PKHScriptPubKey, ECPrivateKey)] =
+    (P2PKHScriptSignature, P2PKHScriptPubKey, ECPrivateKey)] = {
     for {
       privateKey <- CryptoGenerators.privateKey
       hashType <- CryptoGenerators.hashType
@@ -635,6 +635,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         txSigComponent.scriptSignature
           .asInstanceOf[P2PKHScriptSignature]
     } yield (signedScriptSig, scriptPubKey, privateKey)
+  }
 
   def signedP2PKWithTimeoutScriptSignature: Gen[
     (ConditionalScriptSignature, P2PKWithTimeoutScriptPubKey, ECPrivateKey)] =
