@@ -19,16 +19,6 @@ import scala.concurrent.Future
 trait BitcoindFixtures extends BitcoinSFixture with EmbeddedPg {
   _: BitcoinSAsyncFixtureTest =>
 
-  def withNewestFundedBitcoind(test: OneArgAsyncTest): FutureOutcome = {
-    makeDependentFixture[BitcoindRpcClient](
-      () =>
-        BitcoinSFixture.createBitcoindWithFunds(Some(BitcoindVersion.newest)),
-      { case bitcoind: BitcoindRpcClient =>
-        BitcoindRpcTestUtil.stopServer(bitcoind)
-      }
-    )(test)
-  }
-
   def withNewestFundedBitcoindCached(
       test: OneArgAsyncTest,
       bitcoind: BitcoindRpcClient): FutureOutcome = {
@@ -39,18 +29,6 @@ trait BitcoindFixtures extends BitcoinSFixture with EmbeddedPg {
       })(test)
   }
 
-  def with3Bitcoinds(test: OneArgAsyncTest): FutureOutcome = {
-    makeDependentFixture[(
-        BitcoindRpcClient,
-        BitcoindRpcClient,
-        BitcoindRpcClient)](
-      () => BitcoindRpcTestUtil.createNodeTriple(BitcoindVersion.newest),
-      destroy = {
-        case nodes: (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient) =>
-          BitcoindRpcTestUtil.stopServers(Vector(nodes._1, nodes._2, nodes._3))
-      }
-    )(test)
-  }
 }
 
 /** Bitcoind fixtures with a cached a bitcoind instance */
