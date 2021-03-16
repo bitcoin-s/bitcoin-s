@@ -134,6 +134,8 @@ trait CryptoRuntime {
 
   def publicKey(privateKey: ECPrivateKey): ECPublicKey
 
+  def publicKeyConvert(key: ECPublicKey, compressed: Boolean): ECPublicKey
+
   def sign(privateKey: ECPrivateKey, dataToSign: ByteVector): ECDigitalSignature
 
   def signWithEntropy(

@@ -74,6 +74,20 @@ object BouncyCastleUtil {
     ECPublicKey(pubBytes)
   }
 
+  def publicKeyConvert(key: ECPublicKey, compressed: Boolean): ECPublicKey = {
+    if (key.isCompressed == compressed) {
+      key
+    } else {
+      val point = decodePoint(key)
+      val pubBytes = ByteVector(point.getEncoded(compressed))
+      require(
+        ECPublicKey.isFullyValid(pubBytes),
+        s"Bouncy Castle failed to generate a valid public key, got: ${CryptoBytesUtil
+          .encodeHex(pubBytes)}")
+      ECPublicKey(pubBytes)
+    }
+  }
+
   def sign(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey): ECDigitalSignature = {

@@ -85,6 +85,11 @@ trait CryptoUtil extends CryptoRuntime {
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey =
     cryptoRuntime.publicKey(privateKey)
 
+  override def publicKeyConvert(
+      key: ECPublicKey,
+      compressed: Boolean): ECPublicKey =
+    cryptoRuntime.publicKeyConvert(key, compressed)
+
   override def sign(
       privateKey: ECPrivateKey,
       dataToSign: ByteVector): ECDigitalSignature =

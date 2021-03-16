@@ -154,6 +154,11 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey =
     BouncyCastleUtil.computePublicKey(privateKey)
 
+  override def publicKeyConvert(
+      key: ECPublicKey,
+      compressed: Boolean): ECPublicKey =
+    BouncyCastleUtil.publicKeyConvert(key, compressed)
+
   override def tweakMultiply(
       publicKey: ECPublicKey,
       tweak: FieldElement): ECPublicKey =

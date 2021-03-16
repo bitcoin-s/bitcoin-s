@@ -116,6 +116,11 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     ECPublicKey(pubBytes)
   }
 
+  override def publicKeyConvert(
+      key: ECPublicKey,
+      compressed: Boolean): ECPublicKey =
+    BouncycastleCryptoRuntime.publicKeyConvert(key, compressed)
+
   override def tweakMultiply(
       publicKey: ECPublicKey,
       tweak: FieldElement): ECPublicKey = {

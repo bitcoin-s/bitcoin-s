@@ -170,6 +170,11 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   def publicKeyConvert(buffer: Buffer, compressed: Boolean): Buffer =
     ecdsa.publicKeyConvert(buffer, compressed)
 
+  override def publicKeyConvert(
+      key: ECPublicKey,
+      compressed: Boolean): ECPublicKey =
+    ECPublicKey(publicKeyConvert(key.bytes, compressed))
+
   override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey = {
     try {
       val keyBuffer =
@@ -191,7 +196,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
             (k1.head == 0x03 && k2.head == 0x02)) &&
           k1.tail == k2.tail
         ) {
-          ECPublicKey.fromHex("00")
+          ECPublicKey.infinity
         } else {
           throw ex
         }

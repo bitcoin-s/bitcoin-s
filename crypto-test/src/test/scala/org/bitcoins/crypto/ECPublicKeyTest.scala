@@ -51,4 +51,60 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
       "02020202020202020202020202020202020202020202020202020202020202"
     assert(!ECPublicKey.isFullyValid(ByteVector.fromHex(badHex).get))
   }
+
+  it must "be able to compress/decompress public keys" in {
+    val privkey = ECPrivateKey.freshPrivateKey
+    assert(CryptoUtil.secKeyVerify(privkey.bytes))
+    assert(privkey.isCompressed)
+
+    val pubkey = CryptoUtil.toPublicKey(privkey, isCompressed = false)
+    assert(CryptoUtil.isValidPubKey(pubkey.bytes))
+    assert(!pubkey.isCompressed)
+
+    val compressed = privkey.publicKey
+    assert(CryptoUtil.isValidPubKey(compressed.bytes))
+    assert(compressed.isCompressed)
+
+    val converted =
+      CryptoUtil.publicKeyConvert(pubkey, compressed = true)
+    assert(CryptoUtil.isValidPubKey(converted.bytes))
+    assert(converted.isCompressed)
+
+    val decompressed =
+      CryptoUtil.publicKeyConvert(compressed, compressed = false)
+    assert(CryptoUtil.isValidPubKey(decompressed.bytes))
+    assert(!decompressed.isCompressed)
+
+    assert(pubkey.bytes != converted.bytes)
+    assert(compressed.bytes == converted.bytes)
+    assert(compressed.bytes != decompressed.bytes)
+    assert(pubkey.bytes == decompressed.bytes)
+  }
+
+  it must "be able to add infinity points" in {
+    val privkey = ECPrivateKey.freshPrivateKey
+    val pubkey1 = privkey.publicKey
+    val firstByte: Byte =
+      if (pubkey1.bytes.head == 0x02) 0x03
+      else if (pubkey1.bytes.head == 0x03) 0x02
+      else pubkey1.bytes.head
+    val pubkey2 =
+      ECPublicKey.fromBytes(ByteVector(firstByte) ++ pubkey1.bytes.tail)
+
+    val res1 = CryptoUtil.add(pubkey1, pubkey2)
+
+    assert(res1 == ECPublicKey.infinity)
+
+    val decompressedPubkey1 =
+      CryptoUtil.publicKeyConvert(pubkey1, compressed = false)
+
+    val decompressedPubkey2 =
+      CryptoUtil.publicKeyConvert(pubkey2, compressed = false)
+
+    val res2 =
+      CryptoUtil.add(decompressedPubkey1, decompressedPubkey2)
+
+    assert(res2 == ECPublicKey.infinity)
+  }
+
 }
