@@ -9,8 +9,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.BitcoindException
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.client.common.BitcoindVersion.V18
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
@@ -43,8 +42,9 @@ class MempoolRpcTest
         .withOption("walletbroadcast", 0.toString)
 
     val instanceWithoutBroadcast =
-      BitcoindInstance.fromConfig(configNoBroadcast,
-                                  BitcoindRpcTestUtil.getBinary(V18))
+      BitcoindInstance.fromConfig(
+        configNoBroadcast,
+        BitcoindRpcTestUtil.getBinary(BitcoindVersion.newest))
 
     val clientWithoutBroadcast =
       BitcoindRpcClient.withActorSystem(instanceWithoutBroadcast)
@@ -54,6 +54,7 @@ class MempoolRpcTest
       nodePair <- clientsF
       (client, otherClient) = (nodePair.node1, nodePair.node2)
       clientWithoutBroadcast <- clientWithoutBroadcastF
+      _ <- clientWithoutBroadcast.createWallet("")
       pairs = Vector(client -> clientWithoutBroadcast,
                      otherClient -> clientWithoutBroadcast)
       _ <- BitcoindRpcTestUtil.connectPairs(pairs)

@@ -182,7 +182,8 @@ trait CachedBitcoindPair[T <: BitcoindRpcClient]
       .map(NodePair.fromTuple)
       .map { tuple =>
         isClientsUsed.set(true)
-        cachedClients.set(tuple.toVector)
+        val clients = cachedClients.get()
+        cachedClients.set(clients ++ tuple.toVector)
         tuple
       }
   }
@@ -198,7 +199,8 @@ trait CachedBitcoindTriple[T <: BitcoindRpcClient]
       .map(NodeTriple.fromTuple)
       .map { triple =>
         isClientsUsed.set(true)
-        cachedClients.set(triple.toVector)
+        val clients = cachedClients.get()
+        cachedClients.set(clients ++ triple.toVector)
         triple
       }
   }
