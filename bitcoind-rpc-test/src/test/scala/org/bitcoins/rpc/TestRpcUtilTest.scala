@@ -1,89 +1,17 @@
 package org.bitcoins.rpc
 
-import org.bitcoins.asyncutil.AsyncUtil
-
-import java.io.File
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.{AkkaUtil, BitcoindRpcTest, FileUtil}
+import org.bitcoins.testkit.util.{BitcoindRpcTest, FileUtil}
 
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import scala.util.Success
+import java.io.File
 
 class TestRpcUtilTest extends BitcoindRpcTest {
 
   private lazy val clientsF =
     BitcoindRpcTestUtil.createNodeTriple(clientAccum = clientAccum)
-
-  private def trueLater(delay: Int): Future[Boolean] = {
-    AkkaUtil
-      .nonBlockingSleep(delay.millis)
-      .map(_ => true)
-  }
-
-  private def boolLaterDoneAnd(
-      bool: Boolean,
-      boolFuture: Future[Boolean]): Future[Boolean] = {
-    Future.successful(boolFuture.value.contains(Success(bool)))
-  }
-
-  private def boolLaterDoneAndTrue(
-      trueLater: Future[Boolean]): () => Future[Boolean] = { () =>
-    boolLaterDoneAnd(bool = true, trueLater)
-  }
-
-  behavior of "TestRpcUtil"
-
-  it should "complete immediately if condition is true" in {
-    AsyncUtil
-      .retryUntilSatisfiedF(conditionF = () => Future.successful(true),
-                            interval = 0.millis)
-      .map { _ =>
-        succeed
-      }
-  }
-
-  it should "fail if condition is false" in {
-    recoverToSucceededIf[AsyncUtil.RpcRetryException] {
-      AsyncUtil.retryUntilSatisfiedF(conditionF =
-                                       () => Future.successful(false),
-                                     interval = 0.millis)
-    }
-  }
-
-  it should "succeed after a delay" in {
-    val boolLater = trueLater(delay = 250)
-    AsyncUtil.retryUntilSatisfiedF(boolLaterDoneAndTrue(boolLater)).map { _ =>
-      succeed
-    }
-  }
-
-  it should "succeed immediately if condition is true" in {
-    AsyncUtil
-      .awaitCondition(condition = () => true, 0.millis)
-      .map(_ => succeed)
-
-  }
-
-  it should "timeout if condition is false" in {
-    recoverToSucceededIf[AsyncUtil.RpcRetryException] {
-      AsyncUtil
-        .awaitCondition(condition = () => false, interval = 0.millis)
-        .map(_ => succeed)
-    }
-  }
-
-  it should "wait for a delay and then succeed" in {
-    val boolLater = trueLater(delay = 250)
-    val before: Long = System.currentTimeMillis
-    AsyncUtil.awaitConditionF(boolLaterDoneAndTrue(boolLater)).flatMap { _ =>
-      val after: Long = System.currentTimeMillis
-      assert(after - before >= 250)
-    }
-  }
 
   behavior of "BitcoindRpcUtil"
 
