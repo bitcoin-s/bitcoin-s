@@ -195,6 +195,9 @@ trait CryptoUtil extends CryptoRuntime {
 
   override def sipHash(item: ByteVector, key: SipHashKey): Long =
     cryptoRuntime.sipHash(item, key)
+
+  override def decodePoint(bytes: ByteVector): ECPoint =
+    cryptoRuntime.decodePoint(bytes)
 }
 
 object CryptoUtil extends CryptoUtil

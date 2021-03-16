@@ -1,9 +1,6 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkitcore.gen.CryptoGenerators
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
-
-class BouncyCastleECDigitalSignatureTest extends BitcoinSUnitTest {
+class BouncyCastleECDigitalSignatureTest extends BitcoinSCryptoTest {
 
   behavior of "BouncyCastleECDigitalSignatureTest"
 

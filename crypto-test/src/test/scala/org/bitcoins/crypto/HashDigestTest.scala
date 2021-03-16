@@ -1,10 +1,8 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
 
-class HashDigestTest extends BitcoinSUnitTest {
+class HashDigestTest extends BitcoinSCryptoTest {
   behavior of "DoubleSha256Digest"
 
   it must "be constructable from 32 bytes" in {

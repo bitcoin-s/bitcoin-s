@@ -1,3 +1,4 @@
+import Deps.{Compile, Test}
 import sbt._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
@@ -269,8 +270,7 @@ object Deps {
   def crypto: Def.Initialize[Seq[ModuleID]] = {
     Def.setting {
       List(
-        Compile.scodec.value,
-        Test.scalaTest.value
+        Compile.scodec.value
       )
     }
   }
@@ -294,7 +294,8 @@ object Deps {
   def cryptoTest = Def.setting {
     List(
       Test.scalaTest.value,
-      Test.scalacheck.value
+      Test.scalacheck.value,
+      Compile.scalaTestPlus.value
     )
   }
 

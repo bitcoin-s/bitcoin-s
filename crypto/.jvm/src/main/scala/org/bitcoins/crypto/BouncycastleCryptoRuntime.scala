@@ -1,5 +1,6 @@
 package org.bitcoins.crypto
 
+import org.bitcoins.crypto
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator
@@ -9,12 +10,10 @@ import org.bouncycastle.crypto.params.{
   ECPrivateKeyParameters,
   KeyParameter
 }
-import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
 
 import java.math.BigInteger
 import java.security.{MessageDigest, SecureRandom}
-import scala.util.{Failure, Success, Try}
 
 /** This is an implementation of [[CryptoRuntime]] that defaults to Bouncy Castle (https://bouncycastle.org/)
   * and [[java.security]].
@@ -42,7 +41,9 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
     *         p1.y is even, p2.y is odd
     */
-  def recoverPoint(x: BigInteger): (ECPoint, ECPoint) = {
+  def recoverPoint(x: BigInteger): (
+      org.bouncycastle.math.ec.ECPoint,
+      org.bouncycastle.math.ec.ECPoint) = {
     val bytes = ByteVector(x.toByteArray)
 
     val bytes32 = if (bytes.length < 32) {
@@ -150,9 +151,6 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       signature: ECDigitalSignature): Boolean =
     BouncyCastleUtil.verifyDigitalSignature(data, publicKey, signature)
 
-  override def decompressed(publicKey: ECPublicKey): ECPublicKey =
-    BouncyCastleUtil.decompressPublicKey(publicKey)
-
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey =
     BouncyCastleUtil.computePublicKey(privateKey)
 
@@ -161,18 +159,10 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       tweak: FieldElement): ECPublicKey =
     BouncyCastleUtil.pubKeyTweakMul(publicKey, tweak.bytes)
 
-  override def add(pk1: ECPrivateKey, pk2: ECPrivateKey): ECPrivateKey =
-    pk1.fieldElement.add(pk2.fieldElement).toPrivateKey
-
-  override def add(pk1: ByteVector, pk2: ECPrivateKey): ByteVector = {
-    val sum = pk2.fieldElement.add(FieldElement(pk1))
-    sum.bytes
-  }
-
   override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey = {
-    val sumPoint =
-      BouncyCastleUtil.decodePoint(pk1).add(BouncyCastleUtil.decodePoint(pk2))
-
+    val p1 = BouncyCastleUtil.decodePoint(pk1)
+    val p2 = BouncyCastleUtil.decodePoint(pk2)
+    val sumPoint = p1.add(p2)
     BouncyCastleUtil.decodePubKey(sumPoint)
   }
 
@@ -188,77 +178,6 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
 
   override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean =
     bytes.nonEmpty && isValidPubKey(bytes)
-
-  override def schnorrSign(
-      dataToSign: ByteVector,
-      privateKey: ECPrivateKey,
-      auxRand: ByteVector): SchnorrDigitalSignature = {
-    val nonceKey =
-      SchnorrNonce.kFromBipSchnorr(privateKey, dataToSign, auxRand)
-
-    schnorrSignWithNonce(dataToSign, privateKey, nonceKey)
-  }
-
-  override def schnorrSignWithNonce(
-      dataToSign: ByteVector,
-      privateKey: ECPrivateKey,
-      nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
-    val rx = nonceKey.schnorrNonce
-    val k = nonceKey.nonceKey.fieldElement
-    val x = privateKey.schnorrKey.fieldElement
-    val e = sha256SchnorrChallenge(
-      rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign).bytes
-
-    val challenge = x.multiply(FieldElement(e))
-    val sig = k.add(challenge)
-
-    SchnorrDigitalSignature(rx, sig)
-  }
-
-  override def schnorrVerify(
-      data: ByteVector,
-      schnorrPubKey: SchnorrPublicKey,
-      signature: SchnorrDigitalSignature): Boolean = {
-    val rx = signature.rx
-    val sT = Try(signature.sig.toPrivateKey)
-
-    sT match {
-      case Success(s) =>
-        val eBytes = sha256SchnorrChallenge(
-          rx.bytes ++ schnorrPubKey.bytes ++ data).bytes
-
-        val e = FieldElement(eBytes)
-        val negE = e.negate
-
-        val sigPoint = s.publicKey
-        val challengePoint = schnorrPubKey.publicKey.tweakMultiply(negE)
-        val computedR = challengePoint.add(sigPoint)
-        val yCoord = BouncyCastleUtil.decodePoint(computedR).getRawYCoord
-
-        yCoord != null && !yCoord.testBitZero() && computedR.schnorrNonce == rx
-      case Failure(_) => false
-    }
-  }
-
-  override def schnorrComputeSigPoint(
-      data: ByteVector,
-      nonce: SchnorrNonce,
-      pubKey: SchnorrPublicKey,
-      compressed: Boolean): ECPublicKey = {
-    val eBytes = sha256SchnorrChallenge(
-      nonce.bytes ++ pubKey.bytes ++ data).bytes
-
-    val e = FieldElement(eBytes)
-
-    val compressedSigPoint =
-      nonce.publicKey.add(pubKey.publicKey.tweakMultiply(e))
-
-    if (compressed) {
-      compressedSigPoint
-    } else {
-      compressedSigPoint.decompressed
-    }
-  }
 
   override def adaptorSign(
       key: ECPrivateKey,
@@ -311,6 +230,15 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     sh.doFinal()
   }
 
+  override def decodePoint(bytes: ByteVector): crypto.ECPoint = {
+    val decoded = BouncyCastleUtil.decodePoint(bytes)
+
+    if (decoded.isInfinity)
+      crypto.ECPointInfinity
+    else
+      crypto.ECPoint(decoded.getRawXCoord.getEncoded,
+                     decoded.getRawYCoord.getEncoded)
+  }
 }
 
 object BouncycastleCryptoRuntime extends BouncycastleCryptoRuntime
