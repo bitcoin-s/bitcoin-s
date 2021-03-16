@@ -16,22 +16,12 @@ import org.bitcoins.testkit.rpc.{
   BitcoindRpcTestUtil
 }
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
-import org.scalatest.FutureOutcome
 
 import scala.concurrent.{Await, Future}
 
 class BitcoindV18RpcClientTest
     extends BitcoinSAsyncFixtureTest
     with BitcoindFixturesCachedPairV18 {
-
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val futOutcome = for {
-      pair <- clientsF
-      futOutcome = with2BitcoindsCached(test, pair)
-      f <- futOutcome.toFuture
-    } yield f
-    new FutureOutcome(futOutcome)
-  }
 
   lazy val clientF: Future[BitcoindV18RpcClient] = {
     val client = new BitcoindV18RpcClient(BitcoindRpcTestUtil.v18Instance())

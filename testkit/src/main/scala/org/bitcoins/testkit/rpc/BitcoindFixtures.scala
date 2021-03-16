@@ -212,6 +212,15 @@ trait BitcoindFixturesCachedPairV17
   override type FixtureParam = NodePair[BitcoindV17RpcClient]
 
   override val version: BitcoindVersion = BitcoindVersion.V17
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val futOutcome = for {
+      pair <- clientsF
+      futOutcome = with2BitcoindsCached(test, pair)
+      f <- futOutcome.toFuture
+    } yield f
+    new FutureOutcome(futOutcome)
+  }
 }
 
 /** Bitcoind fixtures with two cached [[BitcoindV18RpcClient]] that are connected via p2p */
@@ -221,6 +230,15 @@ trait BitcoindFixturesCachedPairV18
   override type FixtureParam = NodePair[BitcoindV18RpcClient]
 
   override val version: BitcoindVersion = BitcoindVersion.V18
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val futOutcome = for {
+      pair <- clientsF
+      futOutcome = with2BitcoindsCached(test, pair)
+      f <- futOutcome.toFuture
+    } yield f
+    new FutureOutcome(futOutcome)
+  }
 }
 
 /** Bitcoind fixtures with two cached bitcoind rpc clients that are [[BitcoindVersion.newest]] that are connected via p2p */
