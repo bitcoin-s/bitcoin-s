@@ -1,9 +1,11 @@
 package org.bitcoins.crypto
 
+import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import org.scalatest.{Outcome, Succeeded}
 
-class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
+class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
@@ -14,6 +16,7 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
     CryptoContext.default match {
       case CryptoContext.LibSecp256k1 => super.withFixture(test)
       case CryptoContext.BouncyCastle | CryptoContext.BCrypto =>
+        logger.warn(s"Test ${test.name} skipped as Secp256k1 is not available.")
         Succeeded
     }
   }

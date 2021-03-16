@@ -2,8 +2,6 @@ package org.bitcoins.crypto
 
 import scodec.bits.{BitVector, ByteVector}
 
-import scala.util.{Failure, Success, Try}
-
 /** Trait that should be extended by specific runtimes like javascript
   * or the JVM to support crypto functions needed for bitcoin-s
   */
@@ -148,29 +146,13 @@ trait CryptoRuntime {
       data: ByteVector,
       signature: ECDigitalSignature): Boolean
 
-  def decompressed(publicKey: ECPublicKey): ECPublicKey = {
-    if (publicKey.isCompressed) {
-      decodePoint(publicKey.bytes) match {
-        case ECPointInfinity => ECPublicKey.fromHex("00")
-        case point: ECPointImpl =>
-          val decompressedBytes =
-            ByteVector.fromHex("04").get ++
-              point.x.bytes ++
-              point.y.bytes
-          ECPublicKey(decompressedBytes)
-      }
-    } else publicKey
-  }
+  def decompressed(publicKey: ECPublicKey): ECPublicKey
 
   def tweakMultiply(publicKey: ECPublicKey, tweak: FieldElement): ECPublicKey
 
-  def add(pk1: ECPrivateKey, pk2: ECPrivateKey): ECPrivateKey =
-    pk1.fieldElement.add(pk2.fieldElement).toPrivateKey
+  def add(pk1: ECPrivateKey, pk2: ECPrivateKey): ECPrivateKey
 
-  def add(pk1: ByteVector, pk2: ECPrivateKey): ByteVector = {
-    val sum = pk2.fieldElement.add(FieldElement(pk1))
-    sum.bytes
-  }
+  def add(bytes: ByteVector, pk2: ECPrivateKey): ByteVector
 
   def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey
 
@@ -180,84 +162,26 @@ trait CryptoRuntime {
 
   def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean
 
-  def decodePoint(bytes: ByteVector): ECPoint
-
-  def decodePoint(pubKey: ECPublicKey): ECPoint = {
-    decodePoint(pubKey.bytes)
-  }
-
   def schnorrSign(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
-      auxRand: ByteVector): SchnorrDigitalSignature = {
-    val nonceKey =
-      SchnorrNonce.kFromBipSchnorr(privateKey, dataToSign, auxRand)
-
-    schnorrSignWithNonce(dataToSign, privateKey, nonceKey)
-  }
+      auxRand: ByteVector): SchnorrDigitalSignature
 
   def schnorrSignWithNonce(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
-      nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
-    val rx = nonceKey.schnorrNonce
-    val k = nonceKey.nonceKey.fieldElement
-    val x = privateKey.schnorrKey.fieldElement
-    val e = sha256SchnorrChallenge(
-      rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign).bytes
-
-    val challenge = x.multiply(FieldElement(e))
-    val sig = k.add(challenge)
-
-    SchnorrDigitalSignature(rx, sig)
-  }
+      nonceKey: ECPrivateKey): SchnorrDigitalSignature
 
   def schnorrVerify(
       data: ByteVector,
       schnorrPubKey: SchnorrPublicKey,
-      signature: SchnorrDigitalSignature): Boolean = {
-    val rx = signature.rx
-    val sT = Try(signature.sig.toPrivateKey)
-
-    sT match {
-      case Success(s) =>
-        val eBytes = sha256SchnorrChallenge(
-          rx.bytes ++ schnorrPubKey.bytes ++ data).bytes
-
-        val e = FieldElement(eBytes)
-        val negE = e.negate
-
-        val sigPoint = s.publicKey
-        val challengePoint = schnorrPubKey.publicKey.tweakMultiply(negE)
-        val computedR = challengePoint.add(sigPoint)
-        decodePoint(computedR) match {
-          case ECPointInfinity => false
-          case ECPointImpl(_, yCoord) =>
-            !yCoord.toBigInteger.testBit(0) && computedR.schnorrNonce == rx
-        }
-      case Failure(_) => false
-    }
-  }
+      signature: SchnorrDigitalSignature): Boolean
 
   def schnorrComputeSigPoint(
       data: ByteVector,
       nonce: SchnorrNonce,
       pubKey: SchnorrPublicKey,
-      compressed: Boolean): ECPublicKey = {
-    val eBytes = sha256SchnorrChallenge(
-      nonce.bytes ++ pubKey.bytes ++ data).bytes
-
-    val e = FieldElement(eBytes)
-
-    val compressedSigPoint =
-      nonce.publicKey.add(pubKey.publicKey.tweakMultiply(e))
-
-    if (compressed) {
-      compressedSigPoint
-    } else {
-      compressedSigPoint.decompressed
-    }
-  }
+      compressed: Boolean): ECPublicKey
 
   def adaptorSign(
       key: ECPrivateKey,

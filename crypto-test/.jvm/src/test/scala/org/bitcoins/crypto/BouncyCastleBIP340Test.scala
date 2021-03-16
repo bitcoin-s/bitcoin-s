@@ -1,12 +1,13 @@
 package org.bitcoins.crypto
 
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalatest.Assertion
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
 /** Tests from https://github.com/sipa/bips/blob/bip-taproot/bip-0340/test-vectors.csv */
-class BouncyCastleBIP340Test extends BitcoinSCryptoTest {
+class BouncyCastleBIP340Test extends BitcoinSUnitTest {
   behavior of "Schnorr Signing"
 
   def testSign(
@@ -75,9 +76,35 @@ class BouncyCastleBIP340Test extends BitcoinSCryptoTest {
     }
   }
 
+  private def toOpt(str: String): Option[String] = {
+    if (str.isEmpty) {
+      None
+    } else {
+      Some(str)
+    }
+  }
+
   it must "pass the BIP 340 test-vectors with both secp256k1 bindings and bouncy castle" in {
-    BIP340TestVectors.vectors.foreach {
-      case (index, secKeyOpt, pubKey, auxRandOpt, msg, sig, result, comment) =>
+    val bufferedSource =
+      io.Source.fromURL(getClass.getResource("/bip340-test-vectors.csv"))
+    try {
+      val lines = bufferedSource.getLines()
+      val _ = lines.next()
+      for (line <- bufferedSource.getLines()) {
+        val testVec = line.split(",").map(_.trim)
+        val index = testVec.head.toInt
+        val secKeyOpt = toOpt(testVec(1))
+        val pubKey = testVec(2)
+        val auxRandOpt = toOpt(testVec(3))
+        val msg = testVec(4)
+        val sig = testVec(5)
+        val result = testVec(6).toBoolean
+        val comment = if (testVec.length > 7) {
+          testVec(7)
+        } else {
+          ""
+        }
+
         test(index = index,
              secKeyOpt = secKeyOpt,
              pubKey = pubKey,
@@ -86,6 +113,9 @@ class BouncyCastleBIP340Test extends BitcoinSCryptoTest {
              sig = sig,
              result = result,
              comment = comment)
+      }
+    } finally {
+      bufferedSource.close()
     }
   }
 }

@@ -2,14 +2,13 @@ package org.bitcoins.testkit.util
 
 import java.nio.file.Files
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 
 import scala.collection.mutable
 import scala.concurrent.Future
 
-abstract class BitcoindRpcTest extends BitcoinSAsyncTest with BitcoinSLogger {
+abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
 
   private val dirExists =
     Files.exists(BitcoindRpcTestClient.sbtBinaryDirectory)

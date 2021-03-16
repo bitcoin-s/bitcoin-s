@@ -14,7 +14,6 @@ import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node._
@@ -56,7 +55,7 @@ import org.scalatest.FutureOutcome
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg with BitcoinSLogger {
+trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(getFreshConfig.nodeConf)
