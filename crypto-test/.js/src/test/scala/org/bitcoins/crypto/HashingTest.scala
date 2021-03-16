@@ -1,8 +1,10 @@
 package org.bitcoins.crypto
 
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers
 import scodec.bits.ByteVector
 
-class HashingTest extends BitcoinSCryptoTest {
+class HashingTest extends AnyFlatSpec with Matchers {
 
   private lazy val lines = Vector(
     // rnd,sha1(rnd),sha256(rnd),ripeMd160(rnd),sha256Hash160(rnd),hmac(rnd,sha256)

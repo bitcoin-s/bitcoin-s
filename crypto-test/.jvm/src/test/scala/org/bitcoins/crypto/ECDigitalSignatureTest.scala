@@ -1,10 +1,12 @@
 package org.bitcoins.crypto
 
+import org.bitcoins.testkitcore.gen.CryptoGenerators
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /** Created by chris on 3/22/16.
   */
-class ECDigitalSignatureTest extends BitcoinSCryptoTest {
+class ECDigitalSignatureTest extends BitcoinSUnitTest {
 
   implicit override val generatorDrivenConfig = generatorDrivenConfigNewCode
 
