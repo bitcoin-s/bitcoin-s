@@ -1,18 +1,16 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.api.wallet.db.{
-  OutgoingTransactionDb,
-  TransactionDb,
-  TransactionDbHelper
-}
+import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.WalletTestUtil
 
 class OutgoingTransactionDAOTest extends WalletDAOFixture {
 
   val txDb: TransactionDb =
-    TransactionDbHelper.fromTransaction(WalletTestUtil.sampleTransaction)
+    TransactionDbHelper.fromTransaction(WalletTestUtil.sampleTransaction,
+                                        Some(DoubleSha256DigestBE.empty))
 
   val outgoing: OutgoingTransactionDb = OutgoingTransactionDb.fromTransaction(
     WalletTestUtil.sampleTransaction,

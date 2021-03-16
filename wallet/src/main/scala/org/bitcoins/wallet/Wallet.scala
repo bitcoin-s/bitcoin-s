@@ -107,7 +107,8 @@ abstract class Wallet
   protected def downloadMissingUtxos: Future[Unit] =
     for {
       utxos <- utxosWithMissingTx
-      blockHashes = utxos.flatMap(_.blockHash.map(_.flip))
+      txDbs <- transactionDAO.findByTxIdBEs(utxos.map(_.txid))
+      blockHashes = txDbs.flatMap(_.blockHashOpt.map(_.flip))
       // Download the block the tx is from so we process the block and subsequent txs
       _ <-
         if (blockHashes.nonEmpty) {
@@ -512,12 +513,13 @@ abstract class Wallet
       newFeeRate: FeeUnit): Future[Transaction] = {
     for {
       txDbOpt <- transactionDAO.findByTxId(txId)
-      tx <- txDbOpt match {
-        case Some(db) => Future.successful(db.transaction)
+      txDb <- txDbOpt match {
+        case Some(db) => Future.successful(db)
         case None =>
           Future.failed(
             new RuntimeException(s"Unable to find transaction ${txId.hex}"))
       }
+      tx = txDb.transaction
 
       _ = require(TxUtil.isRBFEnabled(tx), "Transaction is not signaling RBF")
 
@@ -529,11 +531,9 @@ abstract class Wallet
       _ = require(utxos.size == tx.inputs.size,
                   "Can only bump fee for a transaction we own all the inputs")
 
-      oldOutputs <- spendingInfoDAO.findDbsForTx(txId)
-      blockHashes = oldOutputs.flatMap(_.blockHash).distinct
       _ = require(
-        blockHashes.isEmpty,
-        s"Cannot replace a confirmed transaction, ${blockHashes.map(_.hex)}")
+        txDb.blockHashOpt.isEmpty,
+        s"Cannot replace a confirmed transaction, ${txDb.blockHashOpt.get.hex}")
 
       spendingInfos <- FutureUtil.sequentially(utxos) { utxo =>
         transactionDAO
@@ -579,6 +579,7 @@ abstract class Wallet
           Random.shuffle(myAddrs.map(_.scriptPubKey)).head
         }
 
+      oldOutputs <- spendingInfoDAO.findDbsForTx(txId)
       // Mark old outputs as replaced
       _ <- spendingInfoDAO.updateAll(
         oldOutputs.map(_.copyWithState(TxoState.DoesNotExist)))
@@ -738,22 +739,21 @@ abstract class Wallet
       feeRate: FeeUnit): Future[Transaction] = {
     for {
       txDbOpt <- transactionDAO.findByTxId(txId)
-      tx <- txDbOpt match {
-        case Some(db) => Future.successful(db.transaction)
+      txDb <- txDbOpt match {
+        case Some(db) => Future.successful(db)
         case None =>
           Future.failed(
             new RuntimeException(s"Unable to find transaction ${txId.hex}"))
       }
+      tx = txDb.transaction
 
       spendingInfos <- spendingInfoDAO.findTx(tx)
       _ = require(spendingInfos.nonEmpty,
                   s"Transaction ${txId.hex} must have an output we own")
 
-      oldOutputs <- spendingInfoDAO.findDbsForTx(txId)
-      blockHashes = oldOutputs.flatMap(_.blockHash).distinct
       _ = require(
-        blockHashes.isEmpty,
-        s"No need to fee bump a confirmed transaction, ${blockHashes.map(_.hex)}")
+        txDb.blockHashOpt.isEmpty,
+        s"Cannot replace a confirmed transaction, ${txDb.blockHashOpt.get.hex}")
 
       changeSpendingInfos = spendingInfos.flatMap { db =>
         if (db.isChange) {

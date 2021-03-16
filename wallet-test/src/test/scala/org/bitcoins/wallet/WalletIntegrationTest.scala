@@ -2,15 +2,15 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.HDChainType
+import org.bitcoins.core.number._
+import org.bitcoins.core.protocol.script.EmptyScriptSignature
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.RandomFeeProvider
-import org.bitcoins.testkit.wallet.{
-  BitcoinSWalletTest,
-  WalletTestUtil,
-  WalletWithBitcoind,
-  WalletWithBitcoindRpc
-}
+import org.bitcoins.testkit.wallet._
 import org.scalatest.FutureOutcome
 
 class WalletIntegrationTest extends BitcoinSWalletTest {
@@ -192,7 +192,10 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
 
       replacementInfo <- bitcoind.getRawTransaction(replacementTx.txIdBE)
+
+      utxos <- wallet.spendingInfoDAO.findOutputsBeingSpent(replacementTx)
     } yield {
+      assert(utxos.forall(_.spendingTxIdOpt.contains(replacementTx.txIdBE)))
       // Check correct one was confirmed
       assert(replacementInfo.blockhash.isDefined)
     }
@@ -270,5 +273,77 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
 
       walletBal2 <- wallet.getBalance()
     } yield assert(walletBal1 > walletBal2)
+  }
+
+  it should "correctly handle spending coinbase utxos" in {
+    walletWithBitcoind =>
+      val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+
+      val amountToSend = Bitcoins(49.99)
+
+      for {
+        // Mine to wallet
+        addr <- wallet.getNewAddress()
+        hash <- bitcoind.generateToAddress(1, addr).map(_.head)
+        block <- bitcoind.getBlockRaw(hash)
+
+        // Assert we mined to our address
+        coinbaseTx = block.transactions.head
+        _ = assert(
+          coinbaseTx.outputs.exists(_.scriptPubKey == addr.scriptPubKey))
+
+        _ <- wallet.processBlock(block)
+
+        // Verify we funded the wallet
+        allUtxos <- wallet.spendingInfoDAO.findAllSpendingInfos()
+        _ = assert(allUtxos.size == 1)
+        utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
+        _ = assert(utxos.size == 1)
+
+        bitcoindAddr <- bitcoind.getNewAddress
+
+        // Attempt to spend utxo
+        _ <- recoverToSucceededIf[RuntimeException](
+          wallet.sendToAddress(bitcoindAddr, valueToBitcoind, None))
+
+        spendingTx = {
+          val inputs = utxos.map { db =>
+            TransactionInput(db.outPoint, EmptyScriptSignature, UInt32.zero)
+          }
+          val outputs =
+            Vector(TransactionOutput(amountToSend, bitcoindAddr.scriptPubKey))
+          BaseTransaction(Int32.two, inputs, outputs, UInt32.zero)
+        }
+
+        _ <- recoverToSucceededIf[RuntimeException](
+          wallet.processTransaction(spendingTx, None))
+
+        // Make coinbase mature
+        _ <- bitcoind.generateToAddress(101, bitcoindAddr)
+        _ <- wallet.updateUtxoPendingStates()
+
+        // Create valid spending tx
+        psbt = PSBT.fromUnsignedTx(spendingTx)
+        signedPSBT <- wallet.signPSBT(psbt)
+        signedTx = signedPSBT.finalizePSBT
+          .flatMap(_.extractTransactionAndValidate)
+          .get
+
+        // Process tx, validate correctly moved to
+        _ <- wallet.processTransaction(signedTx, None)
+        newCoinbaseUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
+        _ = assert(newCoinbaseUtxos.isEmpty)
+        spentUtxos <- wallet.listUtxos(TxoState.PendingConfirmationsSpent)
+        _ = assert(spentUtxos.size == 1)
+
+        // Assert spending tx valid to bitcoind
+        oldBalance <- bitcoind.getBalance
+        _ = assert(oldBalance == Satoshis(510000000000L))
+
+        _ <- bitcoind.sendRawTransaction(signedTx)
+        _ <- bitcoind.generateToAddress(1, bitcoindAddr)
+
+        newBalance <- bitcoind.getBalance
+      } yield assert(newBalance == oldBalance + amountToSend + Bitcoins(50))
   }
 }

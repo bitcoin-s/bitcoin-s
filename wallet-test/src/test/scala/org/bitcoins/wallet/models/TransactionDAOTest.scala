@@ -7,7 +7,7 @@ import org.bitcoins.testkit.wallet.WalletTestUtil
 class TransactionDAOTest extends WalletDAOFixture {
 
   val txDb: TransactionDb =
-    TransactionDbHelper.fromTransaction(WalletTestUtil.sampleTransaction)
+    TransactionDbHelper.fromTransaction(WalletTestUtil.sampleTransaction, None)
 
   it should "insert and read an transaction into the database" in { daos =>
     val txDAO = daos.transactionDAO

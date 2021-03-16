@@ -101,10 +101,22 @@ case class TransactionDAO()(implicit
 
   override val table = TableQuery[TransactionTable]
 
+  def findAllUnconfirmed(): Future[Vector[TransactionDb]] = {
+    val query = table.filter(_.blockHash === Rep.None[DoubleSha256DigestBE])
+
+    safeDatabase.runVec(query.result)
+  }
+
+  def findAllConfirmed(): Future[Vector[TransactionDb]] = {
+    val query = table.filterNot(_.blockHash === Rep.None[DoubleSha256DigestBE])
+
+    safeDatabase.runVec(query.result)
+  }
+
   class TransactionTable(tag: Tag)
       extends TxTable[TransactionDb](tag, schemaName, "tx_table") {
 
-    def txIdBE: Rep[DoubleSha256DigestBE] = column("txIdBE", O.Unique)
+    def txIdBE: Rep[DoubleSha256DigestBE] = column("txIdBE", O.PrimaryKey)
 
     def transaction: Rep[Transaction] = column("transaction")
 
@@ -123,6 +135,8 @@ case class TransactionDAO()(implicit
 
     def locktime: Rep[UInt32] = column("locktime")
 
+    def blockHash: Rep[Option[DoubleSha256DigestBE]] = column("block_hash")
+
     def * : ProvenShape[TransactionDb] =
       (txIdBE,
        transaction,
@@ -132,7 +146,8 @@ case class TransactionDAO()(implicit
        totalOutput,
        numInputs,
        numOutputs,
-       locktime).<>(TransactionDb.tupled, TransactionDb.unapply)
+       locktime,
+       blockHash).<>(TransactionDb.tupled, TransactionDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)
