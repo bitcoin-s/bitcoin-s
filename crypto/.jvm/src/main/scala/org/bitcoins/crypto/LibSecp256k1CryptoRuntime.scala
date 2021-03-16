@@ -274,9 +274,6 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
 
   override def sipHash(item: ByteVector, key: SipHashKey): Long =
     BouncycastleCryptoRuntime.sipHash(item, key)
-
-  override def decodePoint(bytes: ByteVector): ECPoint =
-    BouncycastleCryptoRuntime.decodePoint(bytes)
 }
 
 object LibSecp256k1CryptoRuntime extends LibSecp256k1CryptoRuntime

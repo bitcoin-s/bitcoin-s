@@ -1,6 +1,9 @@
 package org.bitcoins.crypto
 
-class SchnorrPublicKeyTest extends BitcoinSCryptoTest {
+import org.bitcoins.testkitcore.gen.CryptoGenerators
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+
+class SchnorrPublicKeyTest extends BitcoinSUnitTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
