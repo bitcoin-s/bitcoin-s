@@ -9,8 +9,6 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.BitcoindException
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
@@ -19,7 +17,7 @@ import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.scalatest.{FutureOutcome, Outcome}
 
 import java.io.File
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 class MempoolRpcTest
     extends BitcoinSAsyncFixtureTest
@@ -32,37 +30,6 @@ class MempoolRpcTest
       f <- futOutcome.toFuture
     } yield f
     new FutureOutcome(futOutcome)
-  }
-
-  lazy val clientWithoutBroadcastF: Future[BitcoindRpcClient] = {
-    val defaultConfig = BitcoindRpcTestUtil.standardConfig
-
-    val configNoBroadcast =
-      defaultConfig
-        .withOption("walletbroadcast", 0.toString)
-
-    val instanceWithoutBroadcast =
-      BitcoindInstance.fromConfig(
-        configNoBroadcast,
-        BitcoindRpcTestUtil.getBinary(BitcoindVersion.newest))
-
-    val clientWithoutBroadcast =
-      BitcoindRpcClient.withActorSystem(instanceWithoutBroadcast)
-
-    val clientWithoutBroadcastF = clientWithoutBroadcast.start()
-    for {
-      nodePair <- clientsF
-      (client, otherClient) = (nodePair.node1, nodePair.node2)
-      clientWithoutBroadcast <- clientWithoutBroadcastF
-      _ <- clientWithoutBroadcast.createWallet("")
-      pairs = Vector(client -> clientWithoutBroadcast,
-                     otherClient -> clientWithoutBroadcast)
-      _ <- BitcoindRpcTestUtil.connectPairs(pairs)
-      _ <- BitcoindRpcTestUtil.syncPairs(pairs)
-      _ <- BitcoindRpcTestUtil.generateAndSync(
-        Vector(clientWithoutBroadcast, client, otherClient),
-        blocks = 200)
-    } yield clientWithoutBroadcast
   }
 
   behavior of "MempoolRpc"
@@ -213,17 +180,6 @@ class MempoolRpcTest
       }
   }
 
-  it should "be able to abandon a transaction" in { nodePair: FixtureParam =>
-    val otherClient = nodePair.node2
-    for {
-      clientWithoutBroadcast <- clientWithoutBroadcastF
-      recipient <- otherClient.getNewAddress
-      txid <- clientWithoutBroadcast.sendToAddress(recipient, Bitcoins(1))
-      _ <- clientWithoutBroadcast.abandonTransaction(txid)
-      maybeAbandoned <- clientWithoutBroadcast.getTransaction(txid)
-    } yield assert(maybeAbandoned.details.head.abandoned.contains(true))
-  }
-
   it should "be able to save the mem pool to disk" in {
     nodePair: FixtureParam =>
       val client = nodePair.node1
@@ -234,12 +190,5 @@ class MempoolRpcTest
       for {
         _ <- client.saveMemPool()
       } yield assert(regTest.list().contains("mempool.dat"))
-  }
-
-  override def afterAll(): Unit = {
-    val stoppedF =
-      clientWithoutBroadcastF.flatMap(BitcoindRpcTestUtil.stopServer(_))
-    Await.result(stoppedF, duration)
-    super.afterAll()
   }
 }
