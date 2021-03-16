@@ -48,7 +48,7 @@ trait BitcoinSWalletTest
     with BaseWalletTest
     with BitcoinSFixture
     with EmbeddedPg
-    with CachedBitcoind {
+    with CachedBitcoind[BitcoindRpcClient] {
   import BitcoinSWalletTest._
 
   override def afterAll(): Unit = {

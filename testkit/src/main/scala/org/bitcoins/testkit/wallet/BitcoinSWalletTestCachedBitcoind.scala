@@ -29,7 +29,7 @@ import scala.concurrent.Future
 trait BitcoinSWalletTestCachedBitcoind
     extends BitcoinSFixture
     with BaseWalletTest
-    with EmbeddedPg { _: CachedBitcoind =>
+    with EmbeddedPg { _: CachedBitcoind[_] =>
 
   /** Creates a funded wallet fixture with bitcoind
     * This is different than [[withFundedWalletAndBitcoind()]]

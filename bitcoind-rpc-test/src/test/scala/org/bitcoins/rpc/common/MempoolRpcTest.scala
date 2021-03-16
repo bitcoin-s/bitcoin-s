@@ -1,6 +1,5 @@
 package org.bitcoins.rpc.common
 
-import java.io.File
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
@@ -10,25 +9,22 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.BitcoindException
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common.BitcoindVersion.V18
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.util.NodePair
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPair,
+  BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.scalatest.{FutureOutcome, Outcome}
 
+import java.io.File
 import scala.concurrent.{Await, Future}
 
 class MempoolRpcTest
     extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPair {
-  override def version: BitcoindVersion = BitcoindVersion.V21
-
-  override type FixtureParam = NodePair
+    with BitcoindFixturesCachedPairNewest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val futOutcome: Future[Outcome] = for {
@@ -71,7 +67,7 @@ class MempoolRpcTest
   behavior of "MempoolRpc"
 
   it should "be able to find a transaction sent to the mem pool" in {
-    nodePair: NodePair =>
+    nodePair: FixtureParam =>
       val client = nodePair.node1
       val otherClient = nodePair.node2
       for {
@@ -85,7 +81,7 @@ class MempoolRpcTest
   }
 
   it should "be able to find a verbose transaction in the mem pool" in {
-    nodePair: NodePair =>
+    nodePair: FixtureParam =>
       val client = nodePair.node1
       val otherClient = nodePair.node2
       for {
@@ -99,7 +95,7 @@ class MempoolRpcTest
       }
   }
 
-  it should "be able to find a mem pool entry" in { nodePair: NodePair =>
+  it should "be able to find a mem pool entry" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
     for {
@@ -109,7 +105,7 @@ class MempoolRpcTest
     } yield succeed
   }
 
-  it must "fail to find a mempool entry" in { nodePair: NodePair =>
+  it must "fail to find a mempool entry" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val txid = DoubleSha256Digest.empty
     val resultF = for {
@@ -123,7 +119,7 @@ class MempoolRpcTest
   }
 
   it must "fail to find a mempool entry and return None" in {
-    nodePair: NodePair =>
+    nodePair: FixtureParam =>
       val client = nodePair.node1
       val txid = DoubleSha256Digest.empty
       val resultF = for {
@@ -133,7 +129,7 @@ class MempoolRpcTest
       }
       resultF
   }
-  it should "be able to get mem pool info" in { nodePair: NodePair =>
+  it should "be able to get mem pool info" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
     for {
@@ -150,7 +146,7 @@ class MempoolRpcTest
   }
 
   it should "be able to prioritise a mem pool transaction" in {
-    nodePair: NodePair =>
+    nodePair: FixtureParam =>
       val client = nodePair.node1
       val otherClient = nodePair.node2
       for {
@@ -170,7 +166,7 @@ class MempoolRpcTest
   }
 
   it should "be able to find mem pool ancestors and descendants" in {
-    nodePair: NodePair =>
+    nodePair: FixtureParam =>
       val client = nodePair.node1
       for {
         _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
@@ -216,7 +212,7 @@ class MempoolRpcTest
       }
   }
 
-  it should "be able to abandon a transaction" in { nodePair: NodePair =>
+  it should "be able to abandon a transaction" in { nodePair: FixtureParam =>
     val otherClient = nodePair.node2
     for {
       clientWithoutBroadcast <- clientWithoutBroadcastF
@@ -227,15 +223,16 @@ class MempoolRpcTest
     } yield assert(maybeAbandoned.details.head.abandoned.contains(true))
   }
 
-  it should "be able to save the mem pool to disk" in { nodePair: NodePair =>
-    val client = nodePair.node1
-    val regTest =
-      new File(client.getDaemon.datadir.getAbsolutePath + "/regtest")
-    assert(regTest.isDirectory)
-    assert(!regTest.list().contains("mempool.dat"))
-    for {
-      _ <- client.saveMemPool()
-    } yield assert(regTest.list().contains("mempool.dat"))
+  it should "be able to save the mem pool to disk" in {
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      val regTest =
+        new File(client.getDaemon.datadir.getAbsolutePath + "/regtest")
+      assert(regTest.isDirectory)
+      assert(!regTest.list().contains("mempool.dat"))
+      for {
+        _ <- client.saveMemPool()
+      } yield assert(regTest.list().contains("mempool.dat"))
   }
 
   override def afterAll(): Unit = {

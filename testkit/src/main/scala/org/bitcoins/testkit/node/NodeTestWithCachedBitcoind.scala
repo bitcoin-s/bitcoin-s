@@ -24,7 +24,7 @@ import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
-trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind =>
+trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
 
   def withSpvNodeFundedWalletBitcoindCached(
       test: OneArgAsyncTest,

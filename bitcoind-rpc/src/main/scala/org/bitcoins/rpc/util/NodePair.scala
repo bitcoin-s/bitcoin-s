@@ -2,13 +2,13 @@ package org.bitcoins.rpc.util
 
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
-case class NodePair(node1: BitcoindRpcClient, node2: BitcoindRpcClient) {
-  val toVector: Vector[BitcoindRpcClient] = Vector(node1, node2)
+case class NodePair[T <: BitcoindRpcClient](node1: T, node2: T) {
+  val toVector: Vector[T] = Vector(node1, node2)
 }
 
 object NodePair {
 
-  def fromTuple(pair: (BitcoindRpcClient, BitcoindRpcClient)): NodePair = {
+  def fromTuple[T <: BitcoindRpcClient](pair: (T, T)): NodePair[T] = {
     NodePair(pair._1, pair._2)
   }
 }

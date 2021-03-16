@@ -20,28 +20,23 @@ import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{ECSignatureParams, P2WPKHV0InputInfo}
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.util.{NodePair, RpcUtil}
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPair,
-  BitcoindRpcTestUtil,
-  CachedBitcoindPair
+  BitcoindFixturesCachedPairNewest,
+  BitcoindRpcTestUtil
 }
 import org.bitcoins.testkit.util.{AkkaUtil, BitcoinSAsyncFixtureTest}
 import org.scalatest.{FutureOutcome, Outcome}
 
 import java.io.File
 import java.util.Scanner
-
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.reflect.io.Directory
 
 class WalletRpcTest
     extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPair
-    with CachedBitcoindPair {
-
-  override type FixtureParam = NodePair
+    with BitcoindFixturesCachedPairNewest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
@@ -76,7 +71,7 @@ class WalletRpcTest
 
   behavior of "WalletRpc"
 
-  it should "be able to dump the wallet" in { nodePair: NodePair =>
+  it should "be able to dump the wallet" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     for {
       result <- {
@@ -89,7 +84,7 @@ class WalletRpcTest
     }
   }
 
-  it should "be able to list wallets" in { nodePair: NodePair =>
+  it should "be able to list wallets" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     for {
       wallets <- client.listWallets
@@ -103,7 +98,7 @@ class WalletRpcTest
     }
   }
 
-  it should "be able to backup the wallet" in { nodePair: NodePair =>
+  it should "be able to backup the wallet" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     for {
       _ <- {
@@ -118,7 +113,7 @@ class WalletRpcTest
     }
   }
 
-  it should "be able to lock and unlock the wallet" in { _: NodePair =>
+  it should "be able to lock and unlock the wallet" in { _: FixtureParam =>
     for {
       walletClient <- walletClientF
       _ <- walletClient.walletLock()
@@ -134,38 +129,40 @@ class WalletRpcTest
     } yield assert(newInfo.unlocked_until.contains(0))
   }
 
-  it should "be able to get an address from bitcoind" in { nodePair: NodePair =>
-    val client = nodePair.node1
-    for {
-      _ <- {
-        val addrFuts =
-          List(client.getNewAddress,
-               client.getNewAddress(AddressType.Bech32),
-               client.getNewAddress(AddressType.P2SHSegwit),
-               client.getNewAddress(AddressType.Legacy))
-        Future.sequence(addrFuts)
-      }
-    } yield succeed
+  it should "be able to get an address from bitcoind" in {
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      for {
+        _ <- {
+          val addrFuts =
+            List(client.getNewAddress,
+                 client.getNewAddress(AddressType.Bech32),
+                 client.getNewAddress(AddressType.P2SHSegwit),
+                 client.getNewAddress(AddressType.Legacy))
+          Future.sequence(addrFuts)
+        }
+      } yield succeed
   }
 
-  it should "be able to get a new raw change address" in { nodePair: NodePair =>
-    val client = nodePair.node1
-    for {
-      _ <- {
-        val addrFuts =
-          List(
-            client.getRawChangeAddress,
-            client.getRawChangeAddress(AddressType.Legacy),
-            client.getRawChangeAddress(AddressType.Bech32),
-            client.getRawChangeAddress(AddressType.P2SHSegwit)
-          )
-        Future.sequence(addrFuts)
-      }
-    } yield succeed
+  it should "be able to get a new raw change address" in {
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      for {
+        _ <- {
+          val addrFuts =
+            List(
+              client.getRawChangeAddress,
+              client.getRawChangeAddress(AddressType.Legacy),
+              client.getRawChangeAddress(AddressType.Bech32),
+              client.getRawChangeAddress(AddressType.P2SHSegwit)
+            )
+          Future.sequence(addrFuts)
+        }
+      } yield succeed
   }
 
   it should "be able to get the amount recieved by some address" in {
-    nodePair: NodePair =>
+    nodePair: FixtureParam =>
       val client = nodePair.node1
       for {
         address <- client.getNewAddress
@@ -173,19 +170,21 @@ class WalletRpcTest
       } yield assert(amount == Bitcoins(0))
   }
 
-  it should "be able to get the unconfirmed balance" in { nodePair: NodePair =>
-    val client = nodePair.node1
-    for {
-      balance <- client.getUnconfirmedBalance
-      transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client, client)
-      newBalance <- client.getUnconfirmedBalance
-    } yield {
-      assert(balance == Bitcoins(0))
-      assert(newBalance == transaction.amount)
-    }
+  it should "be able to get the unconfirmed balance" in {
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      for {
+        balance <- client.getUnconfirmedBalance
+        transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client,
+                                                                   client)
+        newBalance <- client.getUnconfirmedBalance
+      } yield {
+        assert(balance == Bitcoins(0))
+        assert(newBalance == transaction.amount)
+      }
   }
 
-  it should "be able to get the wallet info" in { nodePair: NodePair =>
+  it should "be able to get the wallet info" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     for {
       info <- client.getWalletInfo
@@ -197,7 +196,7 @@ class WalletRpcTest
     }
   }
 
-  it should "be able to refill the keypool" in { nodePair: NodePair =>
+  it should "be able to refill the keypool" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     for {
       info <- client.getWalletInfo
@@ -206,7 +205,7 @@ class WalletRpcTest
     } yield assert(newInfo.keypoolsize == info.keypoolsize + 1)
   }
 
-  it should "be able to change the wallet password" in { _: NodePair =>
+  it should "be able to change the wallet password" in { _: FixtureParam =>
     val newPass = "new_password"
 
     for {
@@ -229,7 +228,7 @@ class WalletRpcTest
     }
   }
 
-  it should "be able to list address groupings" in { nodePair: NodePair =>
+  it should "be able to list address groupings" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
     val amount = Bitcoins(1.25)
@@ -294,7 +293,7 @@ class WalletRpcTest
     }
   }
 
-  it should "be able to send to an address" in { nodePair: NodePair =>
+  it should "be able to send to an address" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
     for {
@@ -307,25 +306,26 @@ class WalletRpcTest
     }
   }
 
-  it should "be able to send btc to many addresses" in { nodePair: NodePair =>
-    val client = nodePair.node1
-    val otherClient = nodePair.node2
-    for {
-      address1 <- otherClient.getNewAddress
-      address2 <- otherClient.getNewAddress
-      txid <-
-        client
-          .sendMany(Map(address1 -> Bitcoins(1), address2 -> Bitcoins(2)))
-      transaction <- client.getTransaction(txid)
-    } yield {
-      assert(transaction.amount == Bitcoins(-3))
-      assert(transaction.details.exists(_.address.contains(address1)))
-      assert(transaction.details.exists(_.address.contains(address2)))
-    }
+  it should "be able to send btc to many addresses" in {
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      val otherClient = nodePair.node2
+      for {
+        address1 <- otherClient.getNewAddress
+        address2 <- otherClient.getNewAddress
+        txid <-
+          client
+            .sendMany(Map(address1 -> Bitcoins(1), address2 -> Bitcoins(2)))
+        transaction <- client.getTransaction(txid)
+      } yield {
+        assert(transaction.amount == Bitcoins(-3))
+        assert(transaction.details.exists(_.address.contains(address1)))
+        assert(transaction.details.exists(_.address.contains(address2)))
+      }
   }
 
   it should "be able to list transactions by receiving addresses" in {
-    nodePair: NodePair =>
+    nodePair: FixtureParam =>
       val client = nodePair.node1
       val otherClient = nodePair.node2
       for {
@@ -349,7 +349,7 @@ class WalletRpcTest
       }
   }
 
-  it should "be able to import an address" in { nodePair: NodePair =>
+  it should "be able to import an address" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
     val address = Bech32Address
@@ -374,7 +374,7 @@ class WalletRpcTest
     }
   }
 
-  it should "be able to get the balance" in { nodePair: NodePair =>
+  it should "be able to get the balance" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     for {
       balance <- client.getBalance
@@ -386,7 +386,7 @@ class WalletRpcTest
     }
   }
 
-  it should "be able to dump a private key" in { nodePair: NodePair =>
+  it should "be able to dump a private key" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     for {
       address <- client.getNewAddress
@@ -394,7 +394,7 @@ class WalletRpcTest
     } yield succeed
   }
 
-  it should "be able to import a private key" in { nodePair: NodePair =>
+  it should "be able to import a private key" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val ecPrivateKey = ECPrivateKey.freshPrivateKey
     val publicKey = ecPrivateKey.publicKey
@@ -420,7 +420,7 @@ class WalletRpcTest
     }
   }
 
-  it should "be able to import a public key" in { nodePair: NodePair =>
+  it should "be able to import a public key" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val pubKey = ECPublicKey.freshPublicKey
     for {
@@ -429,7 +429,7 @@ class WalletRpcTest
   }
 
   it should "be able to import multiple addresses with importMulti" in {
-    nodePair: NodePair =>
+    nodePair: FixtureParam =>
       val client = nodePair.node1
       val privKey = ECPrivateKey.freshPrivateKey
       val address1 = P2PKHAddress(privKey.publicKey, networkParam)
@@ -460,7 +460,7 @@ class WalletRpcTest
       }
   }
 
-  it should "be able to import a wallet" in { nodePair: NodePair =>
+  it should "be able to import a wallet" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     for {
       walletClient <- walletClientF
@@ -476,7 +476,7 @@ class WalletRpcTest
 
   }
 
-  it should "be able to load a wallet" in { nodePair: NodePair =>
+  it should "be able to load a wallet" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val name = "tmp_wallet"
 
@@ -497,7 +497,7 @@ class WalletRpcTest
     }
   }
 
-  it should "be able to set the tx fee" in { nodePair: NodePair =>
+  it should "be able to set the tx fee" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     for {
       success <- client.setTxFee(Bitcoins(0.01))
@@ -508,7 +508,7 @@ class WalletRpcTest
     }
   }
 
-  it should "be able to bump a mem pool tx fee" in { nodePair: NodePair =>
+  it should "be able to bump a mem pool tx fee" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
     for {
@@ -539,7 +539,7 @@ class WalletRpcTest
   }
 
   it should "be able to sign a raw transaction with the wallet" in {
-    nodePair: NodePair =>
+    nodePair: FixtureParam =>
       val client = nodePair.node1
       val otherClient = nodePair.node2
       for {
@@ -562,7 +562,7 @@ class WalletRpcTest
   }
 
   it should "generate the same (low R) signatures as bitcoin-s" in {
-    nodePair: NodePair =>
+    nodePair: FixtureParam =>
       val client = nodePair.node1
       val otherClient = nodePair.node2
       for {

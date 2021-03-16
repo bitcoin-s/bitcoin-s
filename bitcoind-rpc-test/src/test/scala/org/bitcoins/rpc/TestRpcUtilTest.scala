@@ -1,9 +1,10 @@
 package org.bitcoins.rpc
 
 import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.util.{NodePair, RpcUtil}
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPair,
+  BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
 import org.bitcoins.testkit.util.{BitcoinSAsyncFixtureTest, FileUtil}
@@ -14,9 +15,7 @@ import scala.concurrent.Future
 
 class TestRpcUtilTest
     extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPair {
-
-  override type FixtureParam = NodePair
+    with BitcoindFixturesCachedPairNewest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF: Future[Outcome] = for {
@@ -31,7 +30,7 @@ class TestRpcUtilTest
   behavior of "BitcoindRpcUtil"
 
   it should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
-    _: NodePair =>
+    _: NodePair[BitcoindV21RpcClient] =>
       val instance =
         BitcoindRpcTestUtil.instance(RpcUtil.randomPort, RpcUtil.randomPort)
       val dir = instance.datadir
@@ -43,23 +42,24 @@ class TestRpcUtilTest
       assert(!dir.exists)
   }
 
-  it should "be able to generate and sync blocks" in { nodes: NodePair =>
-    val NodePair(first, second) = nodes
-    for {
-      address <- second.getNewAddress
-      txid <- first.sendToAddress(address, Bitcoins.one)
-      _ <- BitcoindRpcTestUtil.generateAndSync(Vector(first, second))
-      tx <- first.getTransaction(txid)
-      _ = assert(tx.confirmations > 0)
-      rawTx <- second.getRawTransaction(txid)
-      _ = assert(rawTx.confirmations.exists(_ > 0))
-      firstBlock <- first.getBestBlockHash
-      secondBlock <- second.getBestBlockHash
-    } yield assert(firstBlock == secondBlock)
+  it should "be able to generate and sync blocks" in {
+    nodes: NodePair[BitcoindV21RpcClient] =>
+      val NodePair(first, second) = nodes
+      for {
+        address <- second.getNewAddress
+        txid <- first.sendToAddress(address, Bitcoins.one)
+        _ <- BitcoindRpcTestUtil.generateAndSync(Vector(first, second))
+        tx <- first.getTransaction(txid)
+        _ = assert(tx.confirmations > 0)
+        rawTx <- second.getRawTransaction(txid)
+        _ = assert(rawTx.confirmations.exists(_ > 0))
+        firstBlock <- first.getBestBlockHash
+        secondBlock <- second.getBestBlockHash
+      } yield assert(firstBlock == secondBlock)
   }
 
   it should "ble able to generate blocks with multiple clients and sync inbetween" in {
-    nodes: NodePair =>
+    nodes: NodePair[BitcoindV21RpcClient] =>
       val blocksToGenerate = 10
       val NodePair(first, second) = nodes
       val allClients = nodes.toVector
@@ -78,7 +78,7 @@ class TestRpcUtilTest
   }
 
   it should "be able to find outputs of previous transactions" in {
-    nodes: NodePair =>
+    nodes: NodePair[BitcoindV21RpcClient] =>
       val NodePair(first, second) = nodes
       for {
         address <- second.getNewAddress
