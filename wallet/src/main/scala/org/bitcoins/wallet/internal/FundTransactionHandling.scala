@@ -2,7 +2,6 @@ package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.api.wallet.{CoinSelectionAlgo, CoinSelector}
-import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.builder._
@@ -75,18 +74,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         }
 
         // Need to remove immature coinbase inputs
-        coinbaseUtxos = utxoWithTxs.filter(_._2.isCoinbase)
-        confFs = coinbaseUtxos.map(utxo =>
-          chainQueryApi
-            .getNumberOfConfirmations(utxo._1.blockHash.get)
-            .map((utxo, _)))
-        confs <- FutureUtil.collect(confFs)
-        immatureCoinbases =
-          confs
-            .filter { case (_, confsOpt) =>
-              confsOpt.isDefined && confsOpt.get < Consensus.coinbaseMaturity
-            }
-            .map(_._1)
+        immatureCoinbases = utxoWithTxs.filter(
+          _._1.state == TxoState.ImmatureCoinbase)
       } yield utxoWithTxs.filter(utxo =>
         !immatureCoinbases.exists(_._1 == utxo._1))
 

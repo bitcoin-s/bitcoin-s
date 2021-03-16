@@ -1,7 +1,5 @@
 package org.bitcoins.wallet.models
 
-import java.sql.SQLException
-
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
@@ -17,6 +15,7 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config._
 
+import java.sql.SQLException
 import scala.concurrent.{ExecutionContext, Future}
 
 case class SpendingInfoDAO()(implicit
@@ -483,7 +482,8 @@ case class SpendingInfoDAO()(implicit
 
     def scriptWitnessOpt: Rep[Option[ScriptWitness]] = column("script_witness")
 
-    def blockHash: Rep[Option[DoubleSha256DigestBE]] = column("block_hash")
+    def spendingTxIdOpt: Rep[Option[DoubleSha256DigestBE]] = column(
+      "spending_txid")
 
     /** All UTXOs must have a SPK in the wallet that gets spent to */
     def fk_scriptPubKeyId: slick.lifted.ForeignKeyQuery[_, ScriptPubKeyDb] = {
@@ -511,7 +511,7 @@ case class SpendingInfoDAO()(implicit
        privKeyPath,
        redeemScriptOpt,
        scriptWitnessOpt,
-       blockHash,
+       spendingTxIdOpt,
        id.?).<>((UTXORecord.apply _).tupled, UTXORecord.unapply)
   }
 }

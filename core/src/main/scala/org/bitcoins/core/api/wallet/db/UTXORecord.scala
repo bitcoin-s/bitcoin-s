@@ -29,7 +29,7 @@ case class UTXORecord(
     path: HDPath,
     redeemScript: Option[ScriptPubKey], // RedeemScript
     scriptWitness: Option[ScriptWitness],
-    blockHash: Option[DoubleSha256DigestBE], // block hash
+    spendingTxIdOpt: Option[DoubleSha256DigestBE],
     id: Option[Long] = None
 ) extends DbRowAutoInc[UTXORecord] {
   override def copyWithId(id: Long): UTXORecord = copy(id = Option(id))
@@ -47,7 +47,7 @@ case class UTXORecord(
           id = id,
           state = state,
           txid = txid,
-          blockHash = blockHash
+          spendingTxIdOpt = spendingTxIdOpt
         )
 
       case (path: LegacyHDPath, None, None) =>
@@ -56,20 +56,22 @@ case class UTXORecord(
                            privKeyPath = path,
                            id = id,
                            state = state,
-                           txid = txid,
-                           blockHash = blockHash)
+                           spendingTxIdOpt = spendingTxIdOpt,
+                           txid = txid)
 
       case (path: NestedSegWitHDPath, Some(redeemScript), Some(scriptWitness))
           if WitnessScriptPubKey.isValidAsm(redeemScript.asm) =>
-        NestedSegwitV0SpendingInfo(outpoint,
-                                   TransactionOutput(value, scriptPubKey),
-                                   path,
-                                   redeemScript,
-                                   scriptWitness,
-                                   txid,
-                                   state,
-                                   blockHash,
-                                   id)
+        NestedSegwitV0SpendingInfo(
+          outPoint = outpoint,
+          output = TransactionOutput(value, scriptPubKey),
+          privKeyPath = path,
+          redeemScript = redeemScript,
+          scriptWitness = scriptWitness,
+          txid = txid,
+          state = state,
+          spendingTxIdOpt = spendingTxIdOpt,
+          id = id
+        )
 
       case _ =>
         throw new IllegalArgumentException(
@@ -91,7 +93,7 @@ object UTXORecord {
       spendingInfoDb.privKeyPath,
       spendingInfoDb.redeemScriptOpt, // ReedemScript
       spendingInfoDb.scriptWitnessOpt,
-      spendingInfoDb.blockHash, // block hash
+      spendingInfoDb.spendingTxIdOpt,
       spendingInfoDb.id
     )
 }

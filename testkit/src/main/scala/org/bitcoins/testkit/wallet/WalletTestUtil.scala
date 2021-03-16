@@ -1,6 +1,5 @@
 package org.bitcoins.testkit.wallet
 
-import org.bitcoins.core.api.wallet.db
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
@@ -125,14 +124,14 @@ object WalletTestUtil {
       TransactionOutput(1.bitcoin, spk)
     val scriptWitness = randomScriptWitness
     val privkeyPath = WalletTestUtil.sampleSegwitPath
-    db.SegwitV0SpendingInfo(
+    SegwitV0SpendingInfo(
       state = randomState,
       txid = randomTXID,
       outPoint = outpoint,
       output = output,
       privKeyPath = privkeyPath,
       scriptWitness = scriptWitness,
-      blockHash = Some(randomBlockHash)
+      spendingTxIdOpt = None
     )
   }
 
@@ -142,12 +141,12 @@ object WalletTestUtil {
     val output =
       TransactionOutput(1.bitcoin, spk)
     val privKeyPath = WalletTestUtil.sampleLegacyPath
-    db.LegacySpendingInfo(state = randomState,
-                          txid = randomTXID,
-                          outPoint = outpoint,
-                          output = output,
-                          privKeyPath = privKeyPath,
-                          blockHash = Some(randomBlockHash))
+    LegacySpendingInfo(state = randomState,
+                       txid = randomTXID,
+                       outPoint = outpoint,
+                       output = output,
+                       privKeyPath = privKeyPath,
+                       spendingTxIdOpt = None)
   }
 
   def sampleNestedSegwitUTXO(
@@ -158,7 +157,7 @@ object WalletTestUtil {
       TransactionOutput(1.bitcoin, P2SHScriptPubKey(wpkh))
     val scriptWitness = randomScriptWitness
     val privkeyPath = WalletTestUtil.sampleNestedSegwitPath
-    db.NestedSegwitV0SpendingInfo(
+    NestedSegwitV0SpendingInfo(
       state = randomState,
       txid = randomTXID,
       outPoint = outpoint,
@@ -166,7 +165,7 @@ object WalletTestUtil {
       privKeyPath = privkeyPath,
       redeemScript = wpkh,
       scriptWitness = scriptWitness,
-      blockHash = Some(randomBlockHash)
+      spendingTxIdOpt = None
     )
   }
 
@@ -201,7 +200,8 @@ object WalletTestUtil {
       totalOutput = Satoshis.zero,
       numInputs = 1,
       numOutputs = 1,
-      lockTime = UInt32.zero
+      lockTime = UInt32.zero,
+      blockHashOpt = Some(randomBlockHash)
     )
     val incomingDb = IncomingTransactionDb(utxo.txid, utxo.output.value)
     for {

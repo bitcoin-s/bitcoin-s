@@ -30,7 +30,8 @@ case class TransactionDb(
     totalOutput: CurrencyUnit,
     numInputs: Int,
     numOutputs: Int,
-    lockTime: UInt32)
+    lockTime: UInt32,
+    blockHashOpt: Option[DoubleSha256DigestBE])
     extends TxDB {
   require(unsignedTx.inputs.forall(_.scriptSignature == EmptyScriptSignature),
           s"All ScriptSignatures must be empty, got $unsignedTx")
@@ -42,7 +43,9 @@ case class TransactionDb(
 
 object TransactionDbHelper {
 
-  def fromTransaction(tx: Transaction): TransactionDb = {
+  def fromTransaction(
+      tx: Transaction,
+      blockHashOpt: Option[DoubleSha256DigestBE]): TransactionDb = {
     val (unsignedTx, wTxIdBEOpt) = tx match {
       case btx: NonWitnessTransaction =>
         val unsignedInputs = btx.inputs.map(input =>
@@ -76,6 +79,7 @@ object TransactionDbHelper {
                   totalOutput,
                   tx.inputs.size,
                   tx.outputs.size,
-                  tx.lockTime)
+                  tx.lockTime,
+                  blockHashOpt)
   }
 }
