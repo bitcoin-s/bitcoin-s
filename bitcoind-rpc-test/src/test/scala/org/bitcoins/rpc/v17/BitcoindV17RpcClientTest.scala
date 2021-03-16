@@ -43,6 +43,13 @@ class BitcoindV17RpcClientTest
     }
   }
 
+  it must "have our BitcoindRpcClient work with .hashCode() and equals" in {
+    nodePair =>
+      val NodePair(client1, client2) = nodePair
+      assert(client1 != client2)
+      assert(client1.hashCode() != client2.hashCode())
+  }
+
   it should "test mempool acceptance" in { nodePair: FixtureParam =>
     val NodePair(client, otherClient) = nodePair
     for {

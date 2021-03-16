@@ -8,31 +8,17 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
-import org.bitcoins.rpc.util.NodePair
 import org.bitcoins.testkit.chain.BlockHeaderHelper
-import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairV18,
-  BitcoindRpcTestUtil
-}
+import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV18
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
-
-import scala.concurrent.{Await, Future}
 
 class BitcoindV18RpcClientTest
     extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPairV18 {
-
-  lazy val clientF: Future[BitcoindV18RpcClient] = {
-    val client = new BitcoindV18RpcClient(BitcoindRpcTestUtil.v18Instance())
-    val clientIsStartedF = BitcoindRpcTestUtil.startServers(Vector(client))
-    clientIsStartedF.map(_ => client)
-  }
+    with BitcoindFixturesFundedCachedV18 {
 
   behavior of "BitcoindV18RpcClient"
 
-  it should "have extra address information" in { nodePair =>
-    val NodePair(client: BitcoindV18RpcClient, _) = nodePair
+  it should "have extra address information" in { client =>
     for {
       address <- client.getNewAddress
       info <- client.getAddressInfo(address)
@@ -46,32 +32,11 @@ class BitcoindV18RpcClientTest
     }
   }
 
-  it should "be able to get peer info" in { nodePair =>
-    val NodePair(freshClient, otherFreshClient) = nodePair
-    for {
-      infoList <- freshClient.getPeerInfo
-    } yield {
-      assert(infoList.length >= 0)
-      val info = infoList.head
-      assert(info.addnode)
-      assert(info.networkInfo.addr == otherFreshClient.getDaemon.uri)
-    }
-  }
-
-  it must "have our BitcoindRpcClient work with .hashCode() and equals" in {
-    nodePair =>
-      val NodePair(client1, client2) = nodePair
-      assert(client1 != client2)
-      assert(client1.hashCode() != client2.hashCode())
-  }
-
-  it should "be able to start a V18 bitcoind instance" in { nodePair =>
-    val NodePair(client, _) = nodePair
+  it should "be able to start a V18 bitcoind instance" in { client =>
     assert(client.version == BitcoindVersion.V18)
   }
 
-  it should "return active rpc commands" in { nodePair =>
-    val NodePair(client: BitcoindV18RpcClient, _) = nodePair
+  it should "return active rpc commands" in { client =>
     val generatedF =
       client.getNewAddress.flatMap(addr => client.generateToAddress(100, addr))
     val rpcinfoF =
@@ -82,8 +47,7 @@ class BitcoindV18RpcClientTest
     }
   }
 
-  it should "return a list of wallets" in { nodePair =>
-    val NodePair(client: BitcoindV18RpcClient, _) = nodePair
+  it should "return a list of wallets" in { client =>
     for {
       _ <- client.createWallet("Suredbits")
       list <- client.listWalletDir()
@@ -92,8 +56,7 @@ class BitcoindV18RpcClientTest
     }
   }
 
-  it should "analyze a descriptor" in { nodePair =>
-    val NodePair(client: BitcoindV18RpcClient, _) = nodePair
+  it should "analyze a descriptor" in { client =>
     val descriptor =
       "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)"
 
@@ -106,8 +69,7 @@ class BitcoindV18RpcClientTest
     }
   }
 
-  it should "get node address given a null parameter" in { nodePair =>
-    val NodePair(client: BitcoindV18RpcClient, _) = nodePair
+  it should "get node address given a null parameter" in { client =>
     val nodeF = client.getNodeAddresses()
 
     nodeF.map { result =>
@@ -115,18 +77,11 @@ class BitcoindV18RpcClientTest
     }
   }
 
-  it should "successfully submit a header" in { nodePair =>
-    val NodePair(client: BitcoindV18RpcClient, _) = nodePair
+  it should "successfully submit a header" in { client =>
     val genesisHeader = RegTestNetChainParams.genesisBlock.blockHeader
     val genesisHeaderDb =
       BlockHeaderDbHelper.fromBlockHeader(height = 1, BigInt(0), genesisHeader)
     val nextHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
     client.submitHeader(nextHeader.blockHeader).map(_ => succeed)
-  }
-
-  override def afterAll(): Unit = {
-    val stoppedF = clientF.map(BitcoindRpcTestUtil.stopServer)
-    Await.result(stoppedF, duration)
-    super.afterAll()
   }
 }
