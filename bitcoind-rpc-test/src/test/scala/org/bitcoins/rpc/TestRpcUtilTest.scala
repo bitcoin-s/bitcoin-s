@@ -7,15 +7,13 @@ import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
-import org.bitcoins.testkit.util.{BitcoinSAsyncFixtureTest, FileUtil}
+import org.bitcoins.testkit.util.FileUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import java.io.File
 import scala.concurrent.Future
 
-class TestRpcUtilTest
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPairNewest {
+class TestRpcUtilTest extends BitcoindFixturesCachedPairNewest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF: Future[Outcome] = for {

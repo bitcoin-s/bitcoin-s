@@ -10,11 +10,8 @@ import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.testkit.chain.BlockHeaderHelper
 import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV18
-import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 
-class BitcoindV18RpcClientTest
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesFundedCachedV18 {
+class BitcoindV18RpcClientTest extends BitcoindFixturesFundedCachedV18 {
 
   behavior of "BitcoindV18RpcClient"
 

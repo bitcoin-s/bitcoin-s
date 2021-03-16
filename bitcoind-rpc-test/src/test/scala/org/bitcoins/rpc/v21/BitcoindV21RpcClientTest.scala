@@ -10,17 +10,12 @@ import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV21
-import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 
 import java.io.File
 import java.nio.file.Files
 import scala.concurrent.Future
 
-class BitcoindV21RpcClientTest
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesFundedCachedV21 {
-
-  override type FixtureParam = BitcoindV21RpcClient
+class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
 
   behavior of "BitcoindV21RpcClient"
 

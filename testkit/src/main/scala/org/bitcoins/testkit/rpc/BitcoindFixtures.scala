@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.rpc
 
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
@@ -75,8 +76,9 @@ trait BitcoindFixturesFundedCached extends BitcoindFixtures {
   * and available to use with fixtures
   */
 trait BitcoindFixturesFundedCachedV18
-    extends BitcoindFixturesFundedCached
-    with CachedBitcoindV18 { _: BitcoinSAsyncFixtureTest =>
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesFundedCached
+    with CachedBitcoindV18 {
 
   override type FixtureParam = BitcoindV18RpcClient
 
@@ -98,14 +100,20 @@ trait BitcoindFixturesFundedCachedV18
         Future.unit // don't want to destroy anything since it is cached
       })(test)
   }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindV18].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
 }
 
 /** Test trait that caches a [[BitcoindV19RpcClient]] that is funded
   * and available to use with fixtures
   */
 trait BitcoindFixturesFundedCachedV19
-    extends BitcoindFixturesFundedCached
-    with CachedBitcoindV19 { _: BitcoinSAsyncFixtureTest =>
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesFundedCached
+    with CachedBitcoindV19 {
 
   override type FixtureParam = BitcoindV19RpcClient
 
@@ -127,14 +135,20 @@ trait BitcoindFixturesFundedCachedV19
         Future.unit // don't want to destroy anything since it is cached
       })(test)
   }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindV19].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
 }
 
 /** Test trait that caches a [[BitcoindV20RpcClient]] that is funded
   * and available to use with fixtures
   */
 trait BitcoindFixturesFundedCachedV20
-    extends BitcoindFixturesFundedCached
-    with CachedBitcoindV20 { _: BitcoinSAsyncFixtureTest =>
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesFundedCached
+    with CachedBitcoindV20 {
   override type FixtureParam = BitcoindV20RpcClient
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
@@ -155,14 +169,21 @@ trait BitcoindFixturesFundedCachedV20
         Future.unit // don't want to destroy anything since it is cached
       })(test)
   }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindV20].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
+
 }
 
 /** Test trait that caches a [[BitcoindV21RpcClient]] that is funded
   * and available to use with fixtures
   */
 trait BitcoindFixturesFundedCachedV21
-    extends BitcoindFixturesFundedCached
-    with CachedBitcoindV21 { _: BitcoinSAsyncFixtureTest =>
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesFundedCached
+    with CachedBitcoindV21 {
   override type FixtureParam = BitcoindV21RpcClient
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
@@ -182,6 +203,11 @@ trait BitcoindFixturesFundedCachedV21
       { case _ =>
         Future.unit // don't want to destroy anything since it is cached
       })(test)
+  }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindV21].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
   }
 }
 
@@ -205,10 +231,33 @@ trait BitcoindFixturesCachedPair[T <: BitcoindRpcClient]
   }
 }
 
+/** Bitcoind fixtures with two cached BitcoindV16RpcClient that are connected via p2p */
+trait BitcoindFixturesCachedPairV16
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesCachedPair[BitcoindV16RpcClient] {
+  override type FixtureParam = NodePair[BitcoindV16RpcClient]
+
+  override val version: BitcoindVersion = BitcoindVersion.V16
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val futOutcome = for {
+      pair <- clientsF
+      futOutcome = with2BitcoindsCached(test, pair)
+      f <- futOutcome.toFuture
+    } yield f
+    new FutureOutcome(futOutcome)
+  }
+
+  override def afterAll(): Unit = {
+    super[BitcoindFixturesCachedPair].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
+}
+
 /** Bitcoind fixtures with two cached [[BitcoindV17RpcClient]] that are connected via p2p */
 trait BitcoindFixturesCachedPairV17
-    extends BitcoindFixturesCachedPair[BitcoindV17RpcClient] {
-  _: BitcoinSAsyncFixtureTest =>
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesCachedPair[BitcoindV17RpcClient] {
   override type FixtureParam = NodePair[BitcoindV17RpcClient]
 
   override val version: BitcoindVersion = BitcoindVersion.V17
@@ -221,12 +270,17 @@ trait BitcoindFixturesCachedPairV17
     } yield f
     new FutureOutcome(futOutcome)
   }
+
+  override def afterAll(): Unit = {
+    super[BitcoindFixturesCachedPair].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
 }
 
 /** Bitcoind fixtures with two cached [[BitcoindV18RpcClient]] that are connected via p2p */
 trait BitcoindFixturesCachedPairV18
-    extends BitcoindFixturesCachedPair[BitcoindV18RpcClient] {
-  _: BitcoinSAsyncFixtureTest =>
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesCachedPair[BitcoindV18RpcClient] {
   override type FixtureParam = NodePair[BitcoindV18RpcClient]
 
   override val version: BitcoindVersion = BitcoindVersion.V18
@@ -239,22 +293,32 @@ trait BitcoindFixturesCachedPairV18
     } yield f
     new FutureOutcome(futOutcome)
   }
+
+  override def afterAll(): Unit = {
+    super[BitcoindFixturesCachedPair].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
 }
 
 /** Bitcoind fixtures with two cached bitcoind rpc clients that are [[BitcoindVersion.newest]] that are connected via p2p */
 trait BitcoindFixturesCachedPairNewest
-    extends BitcoindFixturesCachedPair[BitcoindV21RpcClient] {
-  _: BitcoinSAsyncFixtureTest =>
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesCachedPair[BitcoindV21RpcClient] {
   override type FixtureParam = NodePair[BitcoindV21RpcClient]
 
   override val version: BitcoindVersion = BitcoindVersion.newest
+
+  override def afterAll(): Unit = {
+    super[BitcoindFixturesCachedPair].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
 }
 
 /** Bitcoind fixtures with three cached bitcoind that are connected via p2p */
 trait BitcoindFixturesCachedTriple[T <: BitcoindRpcClient]
-    extends BitcoindFixturesCached
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesCached
     with CachedBitcoindTriple[T] {
-  _: BitcoinSAsyncFixtureTest =>
 
   def with3BitcoindsCached(
       test: OneArgAsyncTest,
@@ -267,5 +331,10 @@ trait BitcoindFixturesCachedTriple[T <: BitcoindRpcClient]
         Future.unit
       }
     )(test)
+  }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindTriple].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
   }
 }

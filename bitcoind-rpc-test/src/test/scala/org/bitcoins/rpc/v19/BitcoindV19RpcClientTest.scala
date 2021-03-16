@@ -11,13 +11,10 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV19
-import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 
 import scala.concurrent.Future
 
-class BitcoindV19RpcClientTest
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesFundedCachedV19 {
+class BitcoindV19RpcClientTest extends BitcoindFixturesFundedCachedV19 {
 
   behavior of "BitcoindV19RpcClient"
 

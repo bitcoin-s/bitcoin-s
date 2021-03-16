@@ -19,13 +19,10 @@ import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairV17,
   BitcoindRpcTestUtil
 }
-import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 
 import scala.concurrent.Future
 
-class BitcoindV17RpcClientTest
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPairV17 {
+class BitcoindV17RpcClientTest extends BitcoindFixturesCachedPairV17 {
   val usedLabel = "used_label"
   val unusedLabel = "unused_label"
 

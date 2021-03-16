@@ -19,13 +19,10 @@ import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairV17,
   BitcoindRpcTestUtil
 }
-import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 
 import scala.concurrent.Future
 
-class PsbtRpcTest
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPairV17 {
+class PsbtRpcTest extends BitcoindFixturesCachedPairV17 {
 
   behavior of "PsbtRpc"
 
