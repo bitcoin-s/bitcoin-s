@@ -1,5 +1,10 @@
 package org.bitcoins.rpc.v18
 
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  AddressInfoResultPostV18,
+  AddressInfoResultPostV21,
+  AddressInfoResultPreV18
+}
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.rpc.client.common.BitcoindVersion
@@ -35,6 +40,21 @@ class BitcoindV18RpcClientTest
   }
 
   behavior of "BitcoindV18RpcClient"
+
+  it should "have extra address information" in { nodePair =>
+    val NodePair(client: BitcoindV18RpcClient, _) = nodePair
+    for {
+      address <- client.getNewAddress
+      info <- client.getAddressInfo(address)
+    } yield {
+      info match {
+        case _: AddressInfoResultPreV18 | _: AddressInfoResultPostV21 =>
+          fail("Was expecting AddressInfoResultPostV18")
+        case postV18Info: AddressInfoResultPostV18 =>
+          assert(postV18Info.address == address)
+      }
+    }
+  }
 
   it should "be able to get peer info" in { nodePair =>
     val NodePair(freshClient, otherFreshClient) = nodePair
@@ -113,21 +133,6 @@ class BitcoindV18RpcClientTest
     val nextHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
     client.submitHeader(nextHeader.blockHeader).map(_ => succeed)
   }
-
-  /*  it should "have extra address information" in { nodePair =>
-    val NodePair(client: BitcoindV18RpcClient, _) = nodePair
-    for {
-      address <- client.getNewAddress
-      info <- client.getAddressInfo(address)
-    } yield {
-      info match {
-        case _: AddressInfoResultPreV18 | _: AddressInfoResultPostV21 =>
-          fail("Was expecting AddressInfoResultPostV18")
-        case postV18Info: AddressInfoResultPostV18 =>
-          assert(postV18Info.address == address)
-      }
-    }
-  }*/
 
   override def afterAll(): Unit = {
     val stoppedF = clientF.map(BitcoindRpcTestUtil.stopServer)
