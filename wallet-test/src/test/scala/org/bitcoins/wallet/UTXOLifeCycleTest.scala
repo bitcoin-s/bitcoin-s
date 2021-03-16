@@ -2,6 +2,7 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte

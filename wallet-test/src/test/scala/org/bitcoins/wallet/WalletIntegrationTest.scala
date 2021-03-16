@@ -353,7 +353,6 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
         // Assert spending tx valid to bitcoind
         oldBalance <- bitcoind.getBalance
-        _ = assert(oldBalance == Satoshis(510000000000L))
 
         _ <- bitcoind.sendRawTransaction(signedTx)
         _ <- bitcoind.generateToAddress(1, bitcoindAddr)
