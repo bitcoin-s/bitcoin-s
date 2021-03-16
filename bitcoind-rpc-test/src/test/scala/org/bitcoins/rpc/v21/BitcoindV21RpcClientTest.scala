@@ -1,12 +1,13 @@
 package org.bitcoins.rpc.v21
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletFlag
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.rpc.client.common.BitcoindVersion
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV21
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
@@ -39,8 +40,12 @@ class BitcoindV21RpcClientTest
   }
 
   it should "get index info" in { client: BitcoindV21RpcClient =>
+    def isHeight101(client: BitcoindRpcClient): Future[Boolean] = {
+      client.getBlockCount.map(_ == 101)
+    }
     for {
       indexes <- client.getIndexInfo
+      _ <- AsyncUtil.retryUntilSatisfiedF(() => isHeight101(client))
     } yield {
       val txIndexInfo = indexes("txindex")
       assert(txIndexInfo.synced)
