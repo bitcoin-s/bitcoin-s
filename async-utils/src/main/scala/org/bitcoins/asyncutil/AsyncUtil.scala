@@ -1,12 +1,14 @@
 package org.bitcoins.asyncutil
 
+import org.bitcoins.asyncutil.AsyncUtil.scheduler
+import org.bitcoins.core.api.asyncutil.AsyncUtilApi
 import org.bitcoins.core.util.BitcoinSLogger
 
 import java.util.concurrent.{Executors, TimeUnit}
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-abstract class AsyncUtil extends BitcoinSLogger {
+abstract class AsyncUtil extends AsyncUtilApi with BitcoinSLogger {
   import AsyncUtil.DEFAULT_MAX_TRIES
 
   private def retryRunnable(
@@ -140,6 +142,13 @@ abstract class AsyncUtil extends BitcoinSLogger {
                          interval = interval,
                          maxTries = maxTries)
 
+  }
+
+  override def nonBlockingSleep(duration: FiniteDuration): Future[Unit] = {
+    val p = Promise[Unit]()
+    val r: Runnable = () => p.success(())
+    scheduler.schedule(r, duration.toMillis, TimeUnit.MILLISECONDS)
+    p.future
   }
 }
 
