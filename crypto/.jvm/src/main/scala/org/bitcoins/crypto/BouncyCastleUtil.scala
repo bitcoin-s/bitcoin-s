@@ -26,15 +26,17 @@ object BouncyCastleUtil {
     decodePubKey(point, publicKey.isCompressed)
   }
 
-  def decodePoint(bytes: ByteVector): org.bouncycastle.math.ec.ECPoint = {
+  private[crypto] def decodePoint(
+      bytes: ByteVector): org.bouncycastle.math.ec.ECPoint = {
     curve.decodePoint(bytes.toArray)
   }
 
-  def decodePoint(pubKey: ECPublicKey): org.bouncycastle.math.ec.ECPoint = {
+  private[crypto] def decodePoint(
+      pubKey: ECPublicKey): org.bouncycastle.math.ec.ECPoint = {
     decodePoint(pubKey.bytes)
   }
 
-  def decodePubKey(
+  private[crypto] def decodePubKey(
       point: org.bouncycastle.math.ec.ECPoint,
       isCompressed: Boolean = true): ECPublicKey = {
     val bytes = point.getEncoded(isCompressed)
