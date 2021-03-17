@@ -28,11 +28,11 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
   PasswordBased
 }
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
+import org.bitcoins.rpc.util.NativeProcessFactory
 import play.api.libs.json._
 
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
-import scala.sys.process._
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
@@ -43,7 +43,10 @@ import scala.util.{Failure, Success}
   * client, like data directories, log files
   * and whether or not the client is started.
   */
-trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
+trait Client
+    extends BitcoinSLogger
+    with StartStopAsync[BitcoindRpcClient]
+    with NativeProcessFactory {
   def version: BitcoindVersion
   protected val instance: BitcoindInstance
 
@@ -68,7 +71,9 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
     instance.datadir.toPath.resolve("bitcoin.conf")
 
   implicit protected val system: ActorSystem
-  implicit protected val executor: ExecutionContext = system.getDispatcher
+
+  implicit override protected val executionContext: ExecutionContext =
+    system.getDispatcher
   implicit protected val network: NetworkParameters = instance.network
 
   /** This is here (and not in JsonWrriters)
@@ -92,6 +97,18 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
 
   def getDaemon: BitcoindInstance = instance
 
+  override def cmd: String = {
+    val binaryPath = instance.binary.getAbsolutePath
+    val cmd = List(binaryPath,
+                   "-datadir=" + instance.datadir,
+                   "-rpcport=" + instance.rpcUri.getPort,
+                   "-port=" + instance.uri.getPort)
+    logger.debug(
+      s"starting bitcoind with datadir ${instance.datadir} and binary path $binaryPath")
+
+    cmd.mkString(" ")
+  }
+
   /** Starts bitcoind on the local system.
     * @return a future that completes when bitcoind is fully started.
     *         This future times out after 60 seconds if the client
@@ -106,16 +123,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
       }
     }
 
-    val binaryPath = instance.binary.getAbsolutePath
-    val cmd = List(binaryPath,
-                   "-datadir=" + instance.datadir,
-                   "-rpcport=" + instance.rpcUri.getPort,
-                   "-port=" + instance.uri.getPort)
-
-    logger.debug(
-      s"starting bitcoind with datadir ${instance.datadir} and binary path $binaryPath")
-    val _ = Process(cmd).run()
-
+    val startedF = startBinary()
     def isStartedF: Future[Boolean] = {
       val started: Promise[Boolean] = Promise()
 
@@ -147,6 +155,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
 
     val started: Future[BitcoindRpcClient] = {
       for {
+        _ <- startedF
         _ <- awaitCookie(instance.authCredentials)
         _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
                                             interval = 1.seconds,
@@ -224,6 +233,10 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
   def stop(): Future[BitcoindRpcClient] = {
     for {
       _ <- bitcoindCall[String]("stop")
+      //do we want to call this right away?
+      //i think bitcoind stops asynchronously
+      //so it returns fast from the 'stop' rpc command
+      _ <- stopBinary()
       _ <- {
         if (system.name == BitcoindRpcClient.ActorSystemName) {
           system.terminate()
