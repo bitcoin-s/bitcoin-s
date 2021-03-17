@@ -182,7 +182,7 @@ trait Client
     started
   }
 
-  private def tryPing: Future[Boolean] = {
+  private def tryPing(): Future[Boolean] = {
     val request = buildRequest(instance, "ping", JsArray.empty)
     val responseF = sendRequest(request)
 
@@ -219,7 +219,7 @@ trait Client
         Future.successful(false)
       case (CookieBased(_, _) | PasswordBased(_, _)) =>
         if (isStartedFlag.get) {
-          tryPing
+          tryPing()
         } else {
           Future.successful(false)
         }
