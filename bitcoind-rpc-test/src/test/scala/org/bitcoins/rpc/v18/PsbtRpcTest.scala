@@ -4,14 +4,11 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV18
-import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 
 /** Tests for PSBT for RPC calls specific to V18 new PSBT calls
   * @see https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#test-vectors
   */
-class PsbtRpcTest
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesFundedCachedV18 {
+class PsbtRpcTest extends BitcoindFixturesFundedCachedV18 {
 
   behavior of "PsbtRpc"
 
