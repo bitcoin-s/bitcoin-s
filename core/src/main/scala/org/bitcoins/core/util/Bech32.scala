@@ -7,8 +7,31 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
+/** There exists 2 different kinds of bech32 encodings: bech32 & bech32m
+  * @see https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+  * @see https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki
+  */
+sealed abstract class Bech32Encoding {
+
+  /** The constant that is XORed into the checksum
+    * @see https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki#bech32m
+    */
+  def constant: Int
+}
+
+object Bech32Encoding {
+
+  case object Bech32 extends Bech32Encoding {
+    override val constant = 1
+  }
+
+  case object Bech32m extends Bech32Encoding {
+    override val constant = 0x2bc830a3
+  }
+}
+
 /** A abstract class representing basic utility functions of Bech32
-  * For more information on Bech32 please seee BIP173
+  * For more information on Bech32 please see BIP173
   * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki]]
   */
 sealed abstract class Bech32 {
@@ -19,9 +42,12 @@ sealed abstract class Bech32 {
   /** Creates a checksum for the given byte vector according to
     * [[https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki#bech32 BIP173]]
     */
-  def createChecksum(u5s: Vector[UInt5]): Vector[UInt5] = {
+  def createChecksum(
+      u5s: Vector[UInt5],
+      encoding: Bech32Encoding): Vector[UInt5] = {
     val z = UInt5.zero
-    val polymod: Long = polyMod(u5s ++ Array(z, z, z, z, z, z)) ^ 1
+    val polymod: Long =
+      polyMod(u5s ++ Array(z, z, z, z, z, z)) ^ encoding.constant
     //[(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
 
     val result: Vector[UInt5] = 0
@@ -204,7 +230,9 @@ sealed abstract class Bech32 {
     *      [[https://github.com/sipa/bech32/blob/master/ref/python/segwit_addr.py#L62 this function]]
     *      by Sipa
     */
-  def splitToHrpAndData(bech32: String): Try[(String, Vector[UInt5])] = {
+  def splitToHrpAndData(
+      bech32: String,
+      encoding: Bech32Encoding): Try[(String, Vector[UInt5])] = {
     val sepIndexes = bech32.zipWithIndex.filter { case (sep, _) =>
       sep == Bech32.separator
     }
@@ -242,7 +270,7 @@ sealed abstract class Bech32 {
           dataWithCheck <- Bech32.checkDataValidity(dataStr)
           hrpU5s = hrpExpand(hrpStr)
           dataNoCheck <- {
-            if (verifyChecksum(hrpU5s, dataWithCheck)) {
+            if (verifyChecksum(hrpU5s, dataWithCheck, encoding)) {
               Success(dataWithCheck.take(dataWithCheck.size - 6))
             } else
               Failure(
@@ -256,19 +284,23 @@ sealed abstract class Bech32 {
 
   def splitToHrpAndData[T <: Bech32HumanReadablePart](
       bech32: String,
+      encoding: Bech32Encoding,
       factory: StringFactory[T]): Try[(T, Vector[UInt5])] = {
 
-    splitToHrpAndData(bech32).flatMap { case (hrpString, data) =>
+    splitToHrpAndData(bech32, encoding).flatMap { case (hrpString, data) =>
       factory
         .fromStringT(hrpString)
         .map(hrp => (hrp, data))
     }
   }
 
-  def verifyChecksum(hrp: Seq[UInt5], u5s: Seq[UInt5]): Boolean = {
+  def verifyChecksum(
+      hrp: Seq[UInt5],
+      u5s: Seq[UInt5],
+      encoding: Bech32Encoding): Boolean = {
     val data = hrp ++ u5s
     val checksum = Bech32.polyMod(data.toVector)
-    checksum == 1
+    checksum == encoding.constant
   }
 
   /** Assumes we are given a valid bech32 string */
