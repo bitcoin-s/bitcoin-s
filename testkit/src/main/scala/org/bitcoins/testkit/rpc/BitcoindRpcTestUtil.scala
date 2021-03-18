@@ -482,7 +482,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       system: ActorSystem): Future[Vector[Vector[DoubleSha256DigestBE]]] = {
     import system.dispatcher
 
-    val sliding = ListUtil.rotateHead(clients)
+    val sliding: Vector[Vector[BitcoindRpcClient]] =
+      ListUtil.rotateHead(clients)
 
     val initF = Future.successful(Vector.empty[Vector[DoubleSha256DigestBE]])
 
@@ -716,7 +717,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     for {
       pairs <- pairsF
       _ <- connectPairs(pairs)
-      _ <- BitcoindRpcTestUtil.generateAllAndSync(clients, blocks = 200)
+      _ <- BitcoindRpcTestUtil.generateAllAndSync(clients, blocks = 101)
     } yield clients
   }
 

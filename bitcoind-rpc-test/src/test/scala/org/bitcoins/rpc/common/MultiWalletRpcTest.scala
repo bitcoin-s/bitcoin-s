@@ -102,7 +102,7 @@ class MultiWalletRpcTest
       balance <- walletClient.getBalance(walletName)
     } yield {
       // Has one mature coinbase
-      assert(balance == Bitcoins(12.5))
+      assert(balance == Bitcoins(25))
     }
   }
 

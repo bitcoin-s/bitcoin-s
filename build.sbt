@@ -566,12 +566,18 @@ lazy val zmq = project
     coreJVM % testAndCompile
   )
 
+def isCI = {
+  Properties
+    .envOrNone("CI")
+    .isDefined
+}
+
 lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(name := "bitcoin-s-bitcoind-rpc-test",
             libraryDependencies ++= Deps.bitcoindRpcTest.value,
-            parallelExecution := false)
+            parallelExecution := !(isCI && Properties.isMac))
   .dependsOn(coreJVM % testAndCompile, testkit)
 
 lazy val bench = project

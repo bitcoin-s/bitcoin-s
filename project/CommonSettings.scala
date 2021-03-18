@@ -20,7 +20,7 @@ import scala.util.Properties
 
 object CommonSettings {
 
-  private val isCI = {
+  private def isCI = {
     Properties
       .envOrNone("CI")
       .isDefined
