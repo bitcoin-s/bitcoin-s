@@ -39,8 +39,8 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
       client.getBlockCount.map(_ == 101)
     }
     for {
-      indexes <- client.getIndexInfo
       _ <- AsyncUtil.retryUntilSatisfiedF(() => isHeight101(client))
+      indexes <- client.getIndexInfo
     } yield {
       val txIndexInfo = indexes("txindex")
       assert(txIndexInfo.synced)
