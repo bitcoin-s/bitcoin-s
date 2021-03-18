@@ -333,7 +333,7 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
         _ <- wallet.processTransaction(signedTx, None)
         newCoinbaseUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
         _ = assert(newCoinbaseUtxos.isEmpty)
-        spentUtxos <- wallet.listUtxos(TxoState.PendingConfirmationsSpent)
+        spentUtxos <- wallet.listUtxos(TxoState.BroadcastSpent)
         _ = assert(spentUtxos.size == 1)
 
         // Assert spending tx valid to bitcoind
