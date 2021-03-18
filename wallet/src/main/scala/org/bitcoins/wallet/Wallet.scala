@@ -31,10 +31,7 @@ import org.bitcoins.core.wallet.keymanagement.{
   KeyManagerParams,
   KeyManagerUnlockError
 }
-import org.bitcoins.core.wallet.utxo.TxoState.{
-  ConfirmedReceived,
-  PendingConfirmationsReceived
-}
+import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
@@ -267,11 +264,11 @@ abstract class Wallet
           .map { txo =>
             txo.state match {
               case TxoState.PendingConfirmationsReceived |
-                  TxoState.ConfirmedReceived =>
+                  TxoState.ConfirmedReceived | TxoState.BroadcastReceived =>
                 txo.output.value
               case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
-                  TxoState.ConfirmedSpent | TxoState.DoesNotExist |
-                  TxoState.ImmatureCoinbase =>
+                  TxoState.ConfirmedSpent | TxoState.BroadcastSpent |
+                  TxoState.DoesNotExist | TxoState.ImmatureCoinbase =>
                 CurrencyUnits.zero
             }
           }
@@ -307,10 +304,12 @@ abstract class Wallet
   }
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
-    filterThenSum(_.state == PendingConfirmationsReceived).map { balance =>
-      logger.trace(s"Unconfirmed balance=${balance.satoshis}")
-      balance
-    }
+    filterThenSum(utxo =>
+      utxo.state == PendingConfirmationsReceived || utxo.state == BroadcastReceived)
+      .map { balance =>
+        logger.trace(s"Unconfirmed balance=${balance.satoshis}")
+        balance
+      }
   }
 
   override def getUnconfirmedBalance(
@@ -320,7 +319,7 @@ abstract class Wallet
     } yield {
       val confirmedUtxos = allUnspent.filter { utxo =>
         HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
-        utxo.state == PendingConfirmationsReceived
+        utxo.state == PendingConfirmationsReceived || utxo.state == BroadcastReceived
       }
       confirmedUtxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
     }
@@ -328,7 +327,8 @@ abstract class Wallet
 
   override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
     spendingInfoDAO.findAllUnspentForTag(tag).map { allUnspent =>
-      val confirmed = allUnspent.filter(_.state == PendingConfirmationsReceived)
+      val confirmed = allUnspent.filter(utxo =>
+        utxo.state == PendingConfirmationsReceived || utxo.state == BroadcastReceived)
       confirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
     }
   }
