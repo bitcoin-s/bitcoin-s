@@ -116,9 +116,10 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       val blockHashMap = txDbs.map(db => db.txIdBE -> db.blockHashOpt).toMap
       val blockHashAndDb = spendingInfoDbs.map { txo =>
         val txToUse = txo.state match {
-          case _: ReceivedState | DoesNotExist | ImmatureCoinbase | Reserved =>
+          case _: ReceivedState | DoesNotExist | ImmatureCoinbase |
+              Reserved | BroadcastReceived =>
             txo.txid
-          case PendingConfirmationsSpent | ConfirmedSpent =>
+          case PendingConfirmationsSpent | ConfirmedSpent | BroadcastSpent =>
             txo.spendingTxIdOpt.get
         }
         (blockHashMap(txToUse), txo)
@@ -143,14 +144,14 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           else
             txo.copyWithState(TxoState.PendingConfirmationsReceived)
         } else txo
-      case TxoState.PendingConfirmationsReceived =>
+      case TxoState.PendingConfirmationsReceived | BroadcastReceived =>
         if (confs >= walletConfig.requiredConfirmations)
           txo.copyWithState(TxoState.ConfirmedReceived)
-        else txo
-      case TxoState.PendingConfirmationsSpent =>
+        else txo.copyWithState(PendingConfirmationsReceived)
+      case TxoState.PendingConfirmationsSpent | BroadcastSpent =>
         if (confs >= walletConfig.requiredConfirmations)
           txo.copyWithState(TxoState.ConfirmedSpent)
-        else txo
+        else txo.copyWithState(PendingConfirmationsSpent)
       case TxoState.Reserved =>
         // We should keep the utxo as reserved so it is not used in
         // a future transaction that it should not be in

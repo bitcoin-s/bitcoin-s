@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.wallet._
@@ -267,10 +268,11 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       out: SpendingInfoDb,
       spendingTxId: DoubleSha256DigestBE): Future[Option[SpendingInfoDb]] = {
     out.state match {
-      case TxoState.ConfirmedReceived | TxoState.PendingConfirmationsReceived =>
+      case ConfirmedReceived | PendingConfirmationsReceived |
+          BroadcastReceived =>
         val updated =
           out
-            .copyWithState(state = TxoState.PendingConfirmationsSpent)
+            .copyWithState(state = BroadcastSpent)
             .copyWithSpendingTxId(spendingTxId)
         val updatedF =
           spendingInfoDAO.update(updated)
@@ -278,7 +280,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           logger.debug(
             s"Marked utxo=${updated.toHumanReadableString} as state=${updated.state}"))
         updatedF.map(Some(_))
-      case TxoState.Reserved | TxoState.PendingConfirmationsSpent =>
+      case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
+          BroadcastSpent =>
         val updated =
           out.copyWithSpendingTxId(spendingTxId)
         val updatedF =
@@ -345,7 +348,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
             case TxoState.PendingConfirmationsReceived |
                 TxoState.ConfirmedReceived |
                 TxoState.PendingConfirmationsSpent | TxoState.ConfirmedSpent |
-                TxoState.DoesNotExist | TxoState.ImmatureCoinbase =>
+                TxoState.DoesNotExist | TxoState.ImmatureCoinbase |
+                BroadcastReceived | BroadcastSpent =>
               foundTxo
           }
 
@@ -377,7 +381,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     Seq[SpendingInfoDb]] = {
     val stateF: Future[TxoState] = blockHashOpt match {
       case None =>
-        Future.successful(TxoState.PendingConfirmationsReceived)
+        Future.successful(TxoState.BroadcastReceived)
       case Some(blockHash) =>
         chainQueryApi.getNumberOfConfirmations(blockHash).map {
           case None =>
