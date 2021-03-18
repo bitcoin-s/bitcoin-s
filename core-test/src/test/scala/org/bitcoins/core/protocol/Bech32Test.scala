@@ -5,9 +5,9 @@ import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.ln.LnHumanReadablePart
 import org.bitcoins.core.protocol.ln.currency.PicoBitcoins
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.util.Bech32
+import org.bitcoins.core.util.{Bech32, Bech32Encoding}
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.testkitcore.gen.NumberGenerator
+import org.bitcoins.testkitcore.gen._
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
@@ -233,7 +233,7 @@ class Bech32Test extends BitcoinSUnitTest {
   )
   it must "fail to find the bech32 weakness" in {
     val failsAll = invalidBech32.forall(invalid =>
-      Bech32.splitToHrpAndData(invalid).isSuccess)
+      Bech32.splitToHrpAndData(invalid, Bech32Encoding.Bech32).isSuccess)
     assert(failsAll)
   }
 
@@ -262,5 +262,11 @@ class Bech32Test extends BitcoinSUnitTest {
         .fromStringT(
           "bc1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7")
         .isFailure)
+  }
+
+  it must "fail to read a bech32m address" in {
+    forAll(AddressGenerator.bech32mAddress) { bech32m =>
+      assert(Bech32Address.fromStringT(bech32m.toString).isFailure)
+    }
   }
 }
