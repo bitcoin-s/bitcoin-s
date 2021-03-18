@@ -595,7 +595,8 @@ lazy val eclairRpcTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     libraryDependencies ++= Deps.eclairRpcTest.value,
-    name := "bitcoin-s-eclair-rpc-test"
+    name := "bitcoin-s-eclair-rpc-test",
+    parallelExecution := !(isCI && Properties.isMac)
   )
   .dependsOn(coreJVM % testAndCompile, testkit)
 
