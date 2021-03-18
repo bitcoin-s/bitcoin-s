@@ -22,7 +22,9 @@ object TxoState extends StringFactory[TxoState] {
   /** Means we have received funds to this utxo, and they have not been confirmed in a block */
   final case object BroadcastReceived extends ReceivedState
 
-  /** Means we have received funds to this utxo, and they have not reached our confirmation threshold */
+  /** Means we have received funds to this utxo, and they have some confirmations but
+    * have not reached our confirmation threshold
+    */
   final case object PendingConfirmationsReceived extends ReceivedState
 
   /** Means we have received funds and they are fully confirmed for this utxo */
@@ -34,7 +36,9 @@ object TxoState extends StringFactory[TxoState] {
   /** Means we have spent this utxo, and they have not been confirmed in a block */
   final case object BroadcastSpent extends SpentState
 
-  /** Means we have spent this utxo, and they have not reached our confirmation threshold */
+  /** Means we have spent this utxo, and they have some confirmations but
+    * have not reached our confirmation threshold
+    */
   final case object PendingConfirmationsSpent extends SpentState
 
   /** Means we have spent this utxo, and it is fully confirmed */
