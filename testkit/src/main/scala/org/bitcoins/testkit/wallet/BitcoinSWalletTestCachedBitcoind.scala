@@ -6,6 +6,7 @@ import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.{
+  BitcoindRpcTestUtil,
   CachedBitcoind,
   CachedBitcoindNewest,
   CachedBitcoindV19
@@ -19,6 +20,7 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 /** Bitcoin-s wallet test trait that uses cached bitcoinds
   * rather than fresh bitcoinds.
@@ -80,6 +82,46 @@ trait BitcoinSWalletTestCachedBitcoind
       { case walletWithBitcoind: WalletWithBitcoind =>
         destroyWallet(walletWithBitcoind.wallet)
       })(test)
+  }
+
+  def withFundedWalletAndBitcoind(
+      test: OneArgAsyncTest,
+      bip39PasswordOpt: Option[String]): FutureOutcome = {
+    val bitcoindF = BitcoinSFixture
+      .createBitcoindWithFunds(None)
+
+    //create a bitcoind, then pretend that it is cached
+    //so we can re-use code in withFundedWalletBitcoindCached
+    val resultF = for {
+      bitcoind <- bitcoindF
+      outcome = withFundedWalletAndBitcoindCached(test,
+                                                  bip39PasswordOpt,
+                                                  bitcoind)
+      f <- outcome.toFuture
+    } yield f
+
+    //since we aren't actually caching the bitcoind, we need
+    //to shut it down now
+    val stoppedBitcoind: Future[Outcome] = resultF.transformWith({
+      case Success(outcome) =>
+        stopBitcoind(bitcoindF)
+          .map(_ => outcome)
+      case Failure(err) =>
+        stopBitcoind(bitcoindF)
+          .flatMap(_ => Future.failed(err))
+    })
+
+    val futureOutcome = new FutureOutcome(stoppedBitcoind)
+    futureOutcome
+  }
+
+  /** Helper method to stop a Future[BitcoindRpcClient] */
+  private def stopBitcoind(
+      bitcoindF: Future[BitcoindRpcClient]): Future[Unit] = {
+    for {
+      bitcoind <- bitcoindF
+      _ <- BitcoindRpcTestUtil.stopServer(bitcoind)
+    } yield ()
   }
 }
 

@@ -140,7 +140,6 @@ class BitcoindV17RpcClientTest extends BitcoindFixturesCachedPairV17 {
       } yield assert(info.address == addr)
   }
 
-  // needs #360 to be merged
   it should "be able to get the address info for a given Bech32 address" in {
     nodePair: FixtureParam =>
       val NodePair(client, _) = nodePair

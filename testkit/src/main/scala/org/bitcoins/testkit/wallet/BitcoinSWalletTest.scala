@@ -29,7 +29,6 @@ import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
-import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, CachedBitcoind}
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
@@ -40,14 +39,11 @@ import org.scalatest._
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 
 trait BitcoinSWalletTest
-    extends BitcoinSWalletTestCachedBitcoind
+    extends BitcoinSFixture
     with BaseWalletTest
-    with BitcoinSFixture
-    with EmbeddedPg
-    with CachedBitcoind[BitcoindRpcClient] {
+    with EmbeddedPg {
   import BitcoinSWalletTest._
 
   override def afterAll(): Unit = {
@@ -170,46 +166,6 @@ trait BitcoinSWalletTest
     )
 
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
-  }
-
-  def withFundedWalletAndBitcoind(
-      test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String]): FutureOutcome = {
-    val bitcoindF = BitcoinSFixture
-      .createBitcoindWithFunds(None)
-
-    //create a bitcoind, then pretend that it is cached
-    //so we can re-use code in withFundedWalletBitcoindCached
-    val resultF = for {
-      bitcoind <- bitcoindF
-      outcome = withFundedWalletAndBitcoindCached(test,
-                                                  bip39PasswordOpt,
-                                                  bitcoind)
-      f <- outcome.toFuture
-    } yield f
-
-    //since we aren't actually caching the bitcoind, we need
-    //to shut it down now
-    val stoppedBitcoind: Future[Outcome] = resultF.transformWith({
-      case Success(outcome) =>
-        stopBitcoind(bitcoindF)
-          .map(_ => outcome)
-      case Failure(err) =>
-        stopBitcoind(bitcoindF)
-          .flatMap(_ => Future.failed(err))
-    })
-
-    val futureOutcome = new FutureOutcome(stoppedBitcoind)
-    futureOutcome
-  }
-
-  /** Helper method to stop a Future[BitcoindRpcClient] */
-  private def stopBitcoind(
-      bitcoindF: Future[BitcoindRpcClient]): Future[Unit] = {
-    for {
-      bitcoind <- bitcoindF
-      _ <- BitcoindRpcTestUtil.stopServer(bitcoind)
-    } yield ()
   }
 
   def withFundedWalletAndBitcoindV19(
