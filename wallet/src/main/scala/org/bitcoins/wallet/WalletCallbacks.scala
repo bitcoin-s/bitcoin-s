@@ -31,22 +31,41 @@ trait WalletCallbacks {
 
   def executeOnTransactionProcessed(logger: Logger, tx: Transaction)(implicit
       ec: ExecutionContext): Future[Unit] = {
-    onTransactionProcessed.execute(logger, tx)
+    onTransactionProcessed.execute(
+      tx,
+      (err: Throwable) =>
+        logger.error(
+          s"${onTransactionProcessed.name} Callback failed with error: ",
+          err))
   }
 
   def executeOnTransactionBroadcast(logger: Logger, tx: Transaction)(implicit
       ec: ExecutionContext): Future[Unit] = {
-    onTransactionBroadcast.execute(logger, tx)
+    onTransactionBroadcast.execute(
+      tx,
+      (err: Throwable) =>
+        logger.error(
+          s"${onTransactionProcessed.name} Callback failed with error: ",
+          err))
   }
 
   def executeOnReservedUtxos(logger: Logger, utxos: Vector[SpendingInfoDb])(
       implicit ec: ExecutionContext): Future[Unit] = {
-    onReservedUtxos.execute(logger, utxos)
+    onReservedUtxos.execute(
+      utxos,
+      (err: Throwable) =>
+        logger.error(s"${onReservedUtxos.name} Callback failed with error: ",
+                     err))
   }
 
   def executeOnNewAddressGenerated(logger: Logger, address: BitcoinAddress)(
       implicit ec: ExecutionContext): Future[Unit] = {
-    onNewAddressGenerated.execute(logger, address)
+    onNewAddressGenerated.execute(
+      address,
+      (err: Throwable) =>
+        logger.error(
+          s"${onNewAddressGenerated.name} Callback failed with error: ",
+          err))
   }
 
 }

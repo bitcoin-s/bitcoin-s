@@ -8,7 +8,7 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.util.BitcoinSLogger
+import grizzled.slf4j.Logging
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
@@ -18,7 +18,7 @@ import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait FundWalletUtil extends BitcoinSLogger {
+trait FundWalletUtil extends Logging {
 
   def fundAccountForWallet(
       amts: Vector[CurrencyUnit],

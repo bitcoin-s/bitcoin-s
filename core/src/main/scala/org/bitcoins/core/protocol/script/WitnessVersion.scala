@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{CryptoUtil, Sha256Digest, Sha256Hash160Digest}
 
 import scala.util.{Failure, Success, Try}
@@ -12,7 +12,7 @@ import scala.util.{Failure, Success, Try}
   * this indicates how a [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] is rebuilt.
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program BIP141]]
   */
-sealed trait WitnessVersion extends BitcoinSLogger {
+sealed trait WitnessVersion {
 
   /** Rebuilds the full script from the given witness and [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
     * Either returns the [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
@@ -49,9 +49,6 @@ case object WitnessVersion0 extends WitnessVersion {
           val stackHash = CryptoUtil.sha256(stackTop)
           val witnessHash = Sha256Digest(witnessProgram.head.bytes)
           if (stackHash != witnessHash) {
-            logger.debug(
-              "Witness hashes did not match Stack hash: " + stackHash)
-            logger.debug("Witness program: " + witnessProgram)
             Failure(new IllegalArgumentException(
               s"Witness hash $witnessHash did not match stack hash $stackHash"))
           } else {
@@ -62,10 +59,6 @@ case object WitnessVersion0 extends WitnessVersion {
           }
         }
       case _ =>
-        logger.error(
-          "Invalid witness program length for witness version 0, got: " + programBytes.size)
-        logger.error("Witness: " + scriptWitness)
-        logger.error("Witness program: " + witnessProgram)
         //witness version 0 programs need to be 20 bytes or 32 bytes in size
         Failure(new IllegalArgumentException(
           s"Witness program had invalid length (${programBytes.length}) for version 0, must be 20 or 30: $witnessProgram"))

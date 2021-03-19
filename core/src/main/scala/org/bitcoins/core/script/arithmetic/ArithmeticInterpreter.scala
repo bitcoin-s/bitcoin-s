@@ -12,13 +12,13 @@ import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   StartedScriptProgram
 }
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.bitcoins.core.util.BitcoinScriptUtil
 
 import scala.annotation.tailrec
 
 /** Created by chris on 1/25/16.
   */
-sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
+sealed abstract class ArithmeticInterpreter {
 
   /** a is added to b. */
   def opAdd(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
@@ -56,11 +56,10 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
             "Script top must be OP_ABS")
     performUnaryArithmeticOperation(
       program,
-      x =>
-        x match {
-          case ScriptNumber.zero => ScriptNumber.zero
-          case _: ScriptNumber   => ScriptNumber(x.toLong.abs)
-        })
+      {
+        case ScriptNumber.zero     => ScriptNumber.zero
+        case x @ (_: ScriptNumber) => ScriptNumber(x.toLong.abs)
+      })
   }
 
   /** Negates the stack top. */
@@ -131,7 +130,6 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
     require(program.script.headOption.contains(OP_NUMEQUALVERIFY),
             "Script top must be OP_NUMEQUALVERIFY")
     if (program.stack.size < 2) {
-      logger.error("OP_NUMEQUALVERIFY requires two stack elements")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val numEqualProgram = program.updateStackAndScript(
@@ -200,7 +198,6 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
     require(program.script.headOption.contains(OP_MIN),
             "Script top must be OP_MIN")
     if (program.stack.size < 2) {
-      logger.error("OP_MAX requires at least two stack elements")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       performComparisonOnTwoStackTopItems(
@@ -214,7 +211,6 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
     require(program.script.headOption.contains(OP_MAX),
             "Script top must be OP_MAX")
     if (program.stack.size < 2) {
-      logger.error("OP_MAX requires at least two stack elements")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       performComparisonOnTwoStackTopItems(
@@ -229,7 +225,6 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
     require(program.script.headOption.contains(OP_WITHIN),
             "Script top must be OP_WITHIN")
     if (program.stack.size < 3) {
-      logger.error("OP_WITHIN requires at least 3 elements on the stack")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val c = ScriptNumber(program.stack.head.bytes)
@@ -241,17 +236,12 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
           !BitcoinScriptUtil.isShortestEncoding(b) || !BitcoinScriptUtil
             .isShortestEncoding(a))
       ) {
-        logger.error(
-          "The constant you gave us is not encoded in the shortest way possible")
         program.failExecution(ScriptErrorUnknownError)
       } else if (
         isLargerThan4Bytes(c) || isLargerThan4Bytes(b) || isLargerThan4Bytes(a)
       ) {
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
-        logger.error(
-          "Cannot perform arithmetic operation on a number larger than 4 bytes, one of these three numbers is larger than 4 bytes: "
-            + c + " " + b + " " + a)
         program.failExecution(ScriptErrorUnknownError)
       } else {
         val isWithinRange = a >= b && a < c
@@ -281,20 +271,14 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
       op: ScriptNumber => ScriptNumber): StartedScriptProgram = {
     program.stack.headOption match {
       case None =>
-        logger.error(
-          "We need one stack element for performing a unary arithmetic operation")
         program.failExecution(ScriptErrorInvalidStackOperation)
       case Some(s: ScriptNumber) =>
         if (
           ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil
             .isShortestEncoding(s)
         ) {
-          logger.error(
-            "The number you gave us is not encoded in the shortest way possible")
           program.failExecution(ScriptErrorMinimalData)
         } else if (isLargerThan4Bytes(s)) {
-          logger.error(
-            "Cannot perform arithmetic operation on a number larger than 4 bytes, here is the number: " + s)
           //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
           //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
           program.failExecution(ScriptErrorUnknownError)
@@ -308,8 +292,6 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
           ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil
             .isShortestEncoding(s)
         ) {
-          logger.error(
-            "The number you gave us is not encoded in the shortest way possible")
           program.failExecution(ScriptErrorUnknownError)
         } else {
           val interpretedNumber = ScriptNumber(ScriptNumberUtil.toLong(s.hex))
@@ -320,8 +302,6 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
       case Some(_: ScriptToken) =>
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
-        logger.error(
-          "Stack top must be a script number/script constant to perform an arithmetic operation")
         program.failExecution(ScriptErrorUnknownError)
     }
   }
@@ -338,8 +318,6 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
           ScriptNumber,
           ScriptNumber) => ScriptNumber): StartedScriptProgram = {
     if (program.stack.size < 2) {
-      logger.error(
-        "We must have two elements to perform a binary arithmetic operation")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       (program.stack.head, program.stack.tail.head) match {
@@ -350,14 +328,10 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
               .isShortestEncoding(x) || !BitcoinScriptUtil.isShortestEncoding(
               y))
           ) {
-            logger.error(
-              "The constant you gave us is not encoded in the shortest way possible")
             program.failExecution(ScriptErrorUnknownError)
           } else if (isLargerThan4Bytes(x) || isLargerThan4Bytes(y)) {
             //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
             //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
-            logger.error(
-              "Cannot perform arithmetic operation on a number larger than 4 bytes, one of these two numbers is larger than 4 bytes: " + x + " " + y)
             program.failExecution(ScriptErrorUnknownError)
           } else {
             val newStackTop = op(x, y)
@@ -385,8 +359,6 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
         case (_: ScriptToken, _: ScriptToken) =>
           //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
           //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
-          logger.error(
-            "The top two stack items must be script numbers to perform an arithmetic operation")
           program.failExecution(ScriptErrorUnknownError)
       }
     }
@@ -401,7 +373,6 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
       program: ExecutionInProgressScriptProgram,
       op: (ScriptNumber, ScriptNumber) => Boolean): StartedScriptProgram = {
     if (program.stack.size < 2) {
-      logger.error("We need two stack elements for a binary boolean operation")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val (x, y) = parseTopTwoStackElementsAsScriptNumbers(program)
@@ -410,14 +381,10 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
         (!BitcoinScriptUtil.isShortestEncoding(x) || !BitcoinScriptUtil
           .isShortestEncoding(y))
       ) {
-        logger.error(
-          "The constant you gave us is not encoded in the shortest way possible")
         program.failExecution(ScriptErrorUnknownError)
       } else if (isLargerThan4Bytes(x) || isLargerThan4Bytes(y)) {
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
-        logger.error(
-          "Cannot perform boolean operation on a number larger than 4 bytes, one of these two numbers is larger than 4 bytes: " + x + " " + y)
         program.failExecution(ScriptErrorUnknownError)
       } else {
         val newStackTop = if (op(x, y)) OP_TRUE else OP_FALSE
@@ -466,8 +433,6 @@ sealed abstract class ArithmeticInterpreter extends BitcoinSLogger {
       case (_: ScriptToken, _: ScriptToken) =>
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
-        logger.error(
-          "The top two stack items must be script numbers to perform an arithmetic operation")
         throw new RuntimeException(
           "Stack top elements must have be script constants to be interpreted as numbers")
     }

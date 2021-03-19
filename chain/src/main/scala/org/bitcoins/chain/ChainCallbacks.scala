@@ -18,7 +18,13 @@ trait ChainCallbacks {
       logger: Logger,
       height: Int,
       header: BlockHeader)(implicit ec: ExecutionContext): Future[Unit] = {
-    onBlockHeaderConnected.execute(logger, (height, header))
+
+    onBlockHeaderConnected.execute(
+      (height, header),
+      (err: Throwable) =>
+        logger.error(
+          s"${onBlockHeaderConnected.name} Callback failed with error: ",
+          err))
   }
 
 }

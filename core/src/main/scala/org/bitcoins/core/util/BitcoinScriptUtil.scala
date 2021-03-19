@@ -43,7 +43,7 @@ import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 3/2/16.
   */
-trait BitcoinScriptUtil extends BitcoinSLogger {
+trait BitcoinScriptUtil {
 
   /** Takes in a sequence of script tokens and converts them to their hexadecimal value */
   def asmToHex(asm: Seq[ScriptToken]): String = {
@@ -394,9 +394,6 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
     val scriptForChecking =
       calculateScriptForSigning(txSignatureComponent, script)
-    logger.debug("sig for removal: " + signature)
-    logger.debug("script: " + script)
-    logger.debug("scriptWithSigRemoved: " + scriptForChecking)
     txSignatureComponent.sigVersion match {
       case SigVersionBase =>
         removeSignatureFromScript(signature, scriptForChecking)
@@ -515,11 +512,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       //replicates this line in bitcoin core
       //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L872
       val sigIndex = script.indexOf(ScriptConstant(signature.hex))
-      logger.debug("SigIndex: " + sigIndex)
       //remove sig and it's corresponding BytesToPushOntoStack
       val sigRemoved =
         script.slice(0, sigIndex - 1) ++ script.slice(sigIndex + 1, script.size)
-      logger.debug("sigRemoved: " + sigRemoved)
       sigRemoved
     } else script
   }
@@ -558,11 +553,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
   private def parseScriptTry(scriptT: Try[ScriptPubKey]): Seq[ScriptToken] =
     scriptT match {
-      case Success(scriptPubKey) =>
-        logger.debug(
-          "Script pubkey asm inside calculateForSigning: " + scriptPubKey.asm)
-        scriptPubKey.asm
-      case Failure(err) => throw err
+      case Success(scriptPubKey) => scriptPubKey.asm
+      case Failure(err)          => throw err
     }
 
   /** Casts the given script token to a boolean value

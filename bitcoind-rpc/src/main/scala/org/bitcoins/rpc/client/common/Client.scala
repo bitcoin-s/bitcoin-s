@@ -1,26 +1,19 @@
 package org.bitcoins.rpc.client.common
 
-import java.nio.file.{Files, Path}
-import java.util.UUID
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.StreamTcpException
 import com.fasterxml.jackson.core.JsonParseException
+import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.core.config.{
-  MainNet,
-  NetworkParameters,
-  RegTest,
-  SigNet,
-  TestNet3
-}
+import org.bitcoins.core.config._
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
-import org.bitcoins.core.util.{BitcoinSLogger, StartStopAsync}
+import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
@@ -31,6 +24,8 @@ import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
 import org.bitcoins.rpc.util.NativeProcessFactory
 import play.api.libs.json._
 
+import java.nio.file.{Files, Path}
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
@@ -45,7 +40,7 @@ import scala.util.{Failure, Success}
   * and whether or not the client is started.
   */
 trait Client
-    extends BitcoinSLogger
+    extends Logging
     with StartStopAsync[BitcoindRpcClient]
     with NativeProcessFactory {
   def version: BitcoindVersion

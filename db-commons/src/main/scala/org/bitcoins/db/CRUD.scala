@@ -1,6 +1,7 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
+import grizzled.slf4j.Logging
+import org.bitcoins.core.util.FutureUtil
 import slick.dbio.{DBIOAction, NoStream}
 import slick.lifted.AbstractTable
 
@@ -177,7 +178,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
 }
 
 case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
-    extends BitcoinSLogger {
+    extends Logging {
 
   import jdbcProfile.database
   import jdbcProfile.profile.api.actionBasedSQLInterpolation

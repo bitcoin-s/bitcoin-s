@@ -3,7 +3,6 @@ package org.bitcoins.core.wallet.builder
 import org.bitcoins.core.crypto.TxSigComponent
 import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{
@@ -21,7 +20,7 @@ import scala.util.{Success, Try}
   * In the future sign methods specific to multi-party protocols will be added
   * here to support PSBT and signed transaction construction between multiple parties.
   */
-object RawTxSigner extends BitcoinSLogger {
+object RawTxSigner {
 
   val emptyInvariant: (
       Vector[ScriptSignatureParams[InputInfo]],

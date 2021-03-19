@@ -1,18 +1,18 @@
 package org.bitcoins.testkitcore.gen
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.crypto.{TransactionSignatureCreator, _}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.control.{ConditionalOperation, OP_IF, OP_NOTIF}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.signer.{
   MultiSigSigner,
   P2PKHSigner,
@@ -35,7 +35,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
 //TODO: Need to provide generators for [[NonStandardScriptSignature]] and [[NonStandardScriptPubKey]]
-sealed abstract class ScriptGenerators extends BitcoinSLogger {
+sealed abstract class ScriptGenerators extends Logging {
   val timeout = 30.seconds
   val defaultMaxDepth: Int = 2
 

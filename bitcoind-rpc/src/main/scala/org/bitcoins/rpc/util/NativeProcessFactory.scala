@@ -1,12 +1,12 @@
 package org.bitcoins.rpc.util
 
-import org.bitcoins.core.util.BitcoinSLogger
+import grizzled.slf4j.Logging
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process.{Process, ProcessBuilder}
 
 /** A trait that helps start bitcoind/eclair when it is started via bitcoin-s */
-trait NativeProcessFactory extends BitcoinSLogger {
+trait NativeProcessFactory extends Logging {
   implicit protected def executionContext: ExecutionContext
 
   private[this] var processOpt: Option[Process] = None

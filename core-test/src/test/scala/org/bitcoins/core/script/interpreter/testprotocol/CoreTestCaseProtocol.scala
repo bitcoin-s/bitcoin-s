@@ -1,17 +1,18 @@
 package org.bitcoins.core.script.interpreter.testprotocol
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.result.ScriptResult
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
+import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import scodec.bits.ByteVector
 import spray.json._
 
 /** Created by chris on 1/18/16.
   */
-object CoreTestCaseProtocol extends DefaultJsonProtocol with BitcoinSLogger {
+object CoreTestCaseProtocol extends DefaultJsonProtocol with Logging {
 
   implicit object CoreTestCaseFormatter
       extends RootJsonFormat[Option[CoreTestCase]] {

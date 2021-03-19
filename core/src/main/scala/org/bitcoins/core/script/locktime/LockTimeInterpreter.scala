@@ -13,13 +13,12 @@ import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   StartedScriptProgram
 }
-import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.annotation.tailrec
 
 /** Created by chris on 2/8/16.
   */
-sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
+sealed abstract class LockTimeInterpreter {
 
   /** Marks transaction as invalid if the top stack item is greater than the transaction's `nLockTime` field,
     * otherwise script evaluation continues as though an `OP_NOP` was executed. Transaction is also invalid if
@@ -39,30 +38,20 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
       .inputs(program.txSignatureComponent.inputIndex.toInt)
     val transaction = program.txSignatureComponent.transaction
     if (program.stack.isEmpty) {
-      logger.error(
-        "Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because we have no stack items")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else if (input.sequence == TransactionConstants.sequence) {
-      logger.error(
-        "Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because the sequence number is 0xffffffff")
       program.failExecution(ScriptErrorUnsatisfiedLocktime)
     } else {
       program.stack.head match {
         case s: ScriptNumber if s < ScriptNumber.zero =>
-          logger.error(
-            "OP_CHECKLOCKTIMEVERIFY marks tx as invalid if the stack top is negative")
           program.failExecution(ScriptErrorNegativeLockTime)
         case s: ScriptNumber
             if s >= ScriptNumber(500000000) && transaction.lockTime < UInt32(
               500000000) =>
-          logger.error(
-            "OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top >= 500000000 & tx locktime < 500000000")
           program.failExecution(ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber
             if s < ScriptNumber(500000000) && transaction.lockTime >= UInt32(
               500000000) =>
-          logger.error(
-            "OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top < 500000000 & tx locktime >= 500000000")
           program.failExecution(ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber =>
           if (s.bytes.size > 5) {
@@ -71,8 +60,6 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
           } else if (checkLockTime(program, s)) {
             program.updateScript(program.script.tail)
           } else {
-            logger.error(
-              "Stack top locktime and transaction locktime number comparison failed")
             program.failExecution(ScriptErrorUnsatisfiedLocktime)
           }
         case s: ScriptConstant =>
@@ -98,7 +85,6 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
   final def opCheckSequenceVerify(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     if (program.stack.isEmpty) {
-      logger.error("Cannot execute OP_CHECKSEQUENCEVERIFY on an empty stack")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       program.stack.head match {
@@ -107,25 +93,17 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
         case s: ScriptNumber
             if ScriptFlagUtil.requireMinimalData(
               program.flags) && !s.isShortestEncoding =>
-          logger.error(
-            "Sequence number is not encoded in the shortest way possible")
           program.failExecution(ScriptErrorUnknownError)
         case s: ScriptNumber if !isLockTimeBitOff(s) =>
           //see BIP68 for semantic of locktimeDisableFlag
-          logger.info(
-            "Locktime disable flag was set so OP_CHECKSEQUENCEVERIFY is treated as a NOP")
           program.updateScript(program.script.tail)
         case s: ScriptNumber
             if isLockTimeBitOff(
               s) && program.txSignatureComponent.transaction.version < TransactionConstants.validLockVersion =>
-          logger.error(
-            "OP_CSV fails if locktime bit is not set and the tx version < 2")
           program.failExecution(ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber =>
           if (s.bytes.size > 5) {
             //if the number size is larger than 5 bytes the number is invalid
-            logger.error(
-              "The OP_CSV value in the script was larger than 5 bytes in size.")
             program.failExecution(ScriptErrorUnknownError)
           } else if (checkSequence(program, s)) {
             program.updateScript(program.script.tail)
@@ -157,7 +135,6 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
       program: ExecutionInProgressScriptProgram,
       nSequence: ScriptNumber): Boolean = {
     val inputIndex = program.txSignatureComponent.inputIndex.toInt
-    logger.debug("inputIndex: " + inputIndex)
     val transaction = program.txSignatureComponent.transaction
 
     // Relative lock times are supported by comparing the passed
@@ -169,8 +146,6 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
     if (
       program.txSignatureComponent.transaction.version < TransactionConstants.validLockVersion
     ) {
-      logger.error(
-        "OP_CSV fails the script if the transaction's version is less than 2.")
       return false
     }
 
@@ -182,14 +157,6 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
 
     val (nSequenceMasked, txToSequenceMasked) =
       (maskScriptNumber(nSequence), maskSequenceNumber(txToSequence))
-
-    logger.debug(
-      "tx sequence number: " + transaction.inputs(inputIndex).sequence)
-    logger.debug("txToSequenceMasked: " + txToSequenceMasked)
-    logger.debug("nSequence: " + nSequence)
-    logger.debug("nSequenceMasked: " + nSequenceMasked)
-    logger.debug(
-      "Sequence locktime flag: " + TransactionConstants.sequenceLockTimeTypeFlag)
 
     // There are two kinds of nSequence: lock-by-blockheight
     // and lock-by-blocktime, distinguished by whether
@@ -203,16 +170,12 @@ sealed abstract class LockTimeInterpreter extends BitcoinSLogger {
         nSequence,
         txToSequence) || isCSVLockByRelativeLockTime(nSequence, txToSequence))
     ) {
-      logger.error(
-        "The txSequence and nSequence (OP_CSV value) are not of the same type (timestamp/block-height).")
       return false
     }
 
     // Now that we know we're comparing apples-to-apples, the
     // comparison is a simple numeric one.
     if (nSequenceMasked > Int64(txToSequenceMasked.toLong)) {
-      logger.error("OP_CSV fails because relative locktime in transaction has not been met yet. " +
-        "(OP_CSV value was greater than the txInput's sequence) script number: " + nSequenceMasked + " tx sequence no: " + txToSequenceMasked)
       return false
     }
 

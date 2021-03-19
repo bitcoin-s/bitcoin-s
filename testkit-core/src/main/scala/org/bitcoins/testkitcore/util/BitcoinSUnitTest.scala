@@ -1,6 +1,6 @@
 package org.bitcoins.testkitcore.util
 
-import org.bitcoins.core.util.BitcoinSLogger
+import grizzled.slf4j.Logging
 import org.scalacheck.Shrink
 import org.scalactic.anyvals.PosInt
 import org.scalatest.concurrent.TimeLimitedTests
@@ -17,7 +17,7 @@ abstract class BitcoinSUnitTest
     with Matchers
     with ScalaCheckPropertyChecks
     with TimeLimitedTests
-    with BitcoinSLogger {
+    with Logging {
 
   override val timeLimit: Span = 120.seconds
 

@@ -1,17 +1,17 @@
 package org.bitcoins.testkitcore.util
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
 
 /** Created by chris on 2/12/16.
   */
-trait TransactionTestUtil extends BitcoinSLogger {
+trait TransactionTestUtil extends Logging {
 
   /** Raw multisignature script pub key output
     * @return

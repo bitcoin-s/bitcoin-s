@@ -1,13 +1,13 @@
 package org.bitcoins.testkit.util
 
-import org.bitcoins.core.util.BitcoinSLogger
+import grizzled.slf4j.Logging
 
 import java.io.File
 import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
 import scala.util.{Properties, Random}
 
-object FileUtil extends BitcoinSLogger {
+object FileUtil extends Logging {
 
   /** Returns a `BufferedSource` for any file on the classpath */
   def getFileAsSource(fileName: String): scala.io.BufferedSource = {
