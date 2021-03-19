@@ -109,7 +109,7 @@ case class WalletAppConfig(
         config.getDuration("bitcoin-s.wallet.rebroadcastFrequency")
       new FiniteDuration(javaDuration.toNanos, TimeUnit.NANOSECONDS)
     } else {
-      30.minutes
+      4.hours
     }
   }
 

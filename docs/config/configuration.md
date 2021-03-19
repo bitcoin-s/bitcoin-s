@@ -204,7 +204,7 @@ bitcoin-s {
         addressQueueTimeout = 5 seconds
         
         # How often the wallet will rebroadcast unconfirmed transactions
-        rebroadcastFrequency = 30 minutes
+        rebroadcastFrequency = 4 hours
         
         hikari-logging = true
         hikari-logging-interval = 1 minute
