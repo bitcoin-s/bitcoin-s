@@ -21,29 +21,35 @@ import org.bitcoins.core.wallet.utxo.{ECSignatureParams, P2WPKHV0InputInfo}
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.{AkkaUtil, BitcoindRpcTest}
+import org.bitcoins.testkit.rpc.{
+  BitcoindFixturesCachedPairNewest,
+  BitcoindRpcTestUtil
+}
+import org.bitcoins.testkit.util.AkkaUtil
+import org.scalatest.{FutureOutcome, Outcome}
 
 import java.io.File
 import java.util.Scanner
-import scala.annotation.nowarn
-import scala.async.Async.{async, await}
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.reflect.io.Directory
 
-@nowarn
-class WalletRpcTest extends BitcoindRpcTest {
+class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
-  lazy val clientsF: Future[
-    (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodeTripleV19(clientAccum = clientAccum)
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val f: Future[Outcome] = for {
+      clients <- clientsF
+      futOutcome = with2BitcoindsCached(test, clients)
+      fut <- futOutcome.toFuture
+    } yield fut
+
+    new FutureOutcome(f)
+  }
 
   // This client's wallet is encrypted
   lazy val walletClientF: Future[BitcoindRpcClient] = clientsF.flatMap { _ =>
     val walletClient =
       BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil.instance())
-    clientAccum += walletClient
 
     for {
       _ <- startClient(walletClient)
@@ -63,9 +69,9 @@ class WalletRpcTest extends BitcoindRpcTest {
 
   behavior of "WalletRpc"
 
-  it should "be able to dump the wallet" in {
+  it should "be able to dump the wallet" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
     for {
-      (client, _, _) <- clientsF
       result <- {
         val datadir = client.getDaemon.datadir.getAbsolutePath
         client.dumpWallet(datadir + "/test.dat")
@@ -76,9 +82,9 @@ class WalletRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to list wallets" in {
+  it should "be able to list wallets" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
     for {
-      (client, _, _) <- clientsF
       wallets <- client.listWallets
     } yield {
 
@@ -90,9 +96,9 @@ class WalletRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to backup the wallet" in {
+  it should "be able to backup the wallet" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
     for {
-      (client, _, _) <- clientsF
       _ <- {
         val datadir = client.getDaemon.datadir.getAbsolutePath
         client.backupWallet(datadir + "/backup.dat")
@@ -105,7 +111,7 @@ class WalletRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to lock and unlock the wallet" in {
+  it should "be able to lock and unlock the wallet" in { _: FixtureParam =>
     for {
       walletClient <- walletClientF
       _ <- walletClient.walletLock()
@@ -122,58 +128,63 @@ class WalletRpcTest extends BitcoindRpcTest {
   }
 
   it should "be able to get an address from bitcoind" in {
-    for {
-      (client, _, _) <- clientsF
-      _ <- {
-        val addrFuts =
-          List(client.getNewAddress,
-               client.getNewAddress(AddressType.Bech32),
-               client.getNewAddress(AddressType.P2SHSegwit),
-               client.getNewAddress(AddressType.Legacy))
-        Future.sequence(addrFuts)
-      }
-    } yield succeed
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      for {
+        _ <- {
+          val addrFuts =
+            List(client.getNewAddress,
+                 client.getNewAddress(AddressType.Bech32),
+                 client.getNewAddress(AddressType.P2SHSegwit),
+                 client.getNewAddress(AddressType.Legacy))
+          Future.sequence(addrFuts)
+        }
+      } yield succeed
   }
 
   it should "be able to get a new raw change address" in {
-    for {
-      (client, _, _) <- clientsF
-      _ <- {
-        val addrFuts =
-          List(
-            client.getRawChangeAddress,
-            client.getRawChangeAddress(AddressType.Legacy),
-            client.getRawChangeAddress(AddressType.Bech32),
-            client.getRawChangeAddress(AddressType.P2SHSegwit)
-          )
-        Future.sequence(addrFuts)
-      }
-    } yield succeed
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      for {
+        _ <- {
+          val addrFuts =
+            List(
+              client.getRawChangeAddress,
+              client.getRawChangeAddress(AddressType.Legacy),
+              client.getRawChangeAddress(AddressType.Bech32),
+              client.getRawChangeAddress(AddressType.P2SHSegwit)
+            )
+          Future.sequence(addrFuts)
+        }
+      } yield succeed
   }
 
   it should "be able to get the amount recieved by some address" in {
-    for {
-      (client, _, _) <- clientsF
-      address <- client.getNewAddress
-      amount <- client.getReceivedByAddress(address)
-    } yield assert(amount == Bitcoins(0))
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      for {
+        address <- client.getNewAddress
+        amount <- client.getReceivedByAddress(address)
+      } yield assert(amount == Bitcoins(0))
   }
 
   it should "be able to get the unconfirmed balance" in {
-    for {
-      (client, _, _) <- clientsF
-      balance <- client.getUnconfirmedBalance
-      transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client, client)
-      newBalance <- client.getUnconfirmedBalance
-    } yield {
-      assert(balance == Bitcoins(0))
-      assert(newBalance == transaction.amount)
-    }
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      for {
+        balance <- client.getUnconfirmedBalance
+        transaction <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client,
+                                                                   client)
+        newBalance <- client.getUnconfirmedBalance
+      } yield {
+        assert(balance == Bitcoins(0))
+        assert(newBalance == transaction.amount)
+      }
   }
 
-  it should "be able to get the wallet info" in {
+  it should "be able to get the wallet info" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
     for {
-      (client, _, _) <- clientsF
       info <- client.getWalletInfo
     } yield {
       assert(info.balance.toBigDecimal > 0)
@@ -183,16 +194,16 @@ class WalletRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to refill the keypool" in {
+  it should "be able to refill the keypool" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
     for {
-      (client, _, _) <- clientsF
       info <- client.getWalletInfo
       _ <- client.keyPoolRefill(info.keypoolsize + 1)
       newInfo <- client.getWalletInfo
     } yield assert(newInfo.keypoolsize == info.keypoolsize + 1)
   }
 
-  it should "be able to change the wallet password" in {
+  it should "be able to change the wallet password" in { _: FixtureParam =>
     val newPass = "new_password"
 
     for {
@@ -215,44 +226,9 @@ class WalletRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to import funds without rescan and then remove them" in async {
-    val (client, otherClient, thirdClient) = await(clientsF)
-
-    val address = await(thirdClient.getNewAddress)
-    val privKey = await(thirdClient.dumpPrivKey(address))
-
-    val txidF =
-      BitcoindRpcTestUtil
-        .fundBlockChainTransaction(client, thirdClient, address, Bitcoins(1.5))
-    val txid = await(txidF)
-
-    await(client.getNewAddress.flatMap(client.generateToAddress(1, _)))
-
-    val tx = await(client.getTransaction(txid))
-
-    val proof = await(client.getTxOutProof(Vector(txid)))
-
-    val balanceBefore = await(otherClient.getBalance)
-
-    await(otherClient.importPrivKey(privKey, rescan = false))
-    await(otherClient.importPrunedFunds(tx.hex, proof))
-
-    val balanceAfter = await(otherClient.getBalance)
-    assert(balanceAfter == balanceBefore + Bitcoins(1.5))
-
-    val addressInfo = await(otherClient.validateAddress(address))
-    if (otherClient.instance.getVersion == BitcoindVersion.V16) {
-      assert(addressInfo.ismine.contains(true))
-    }
-
-    await(otherClient.removePrunedFunds(txid))
-
-    val balance = await(otherClient.getBalance)
-    assert(balance == balanceBefore)
-  }
-
-  it should "be able to list address groupings" in {
-
+  it should "be able to list address groupings" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
     val amount = Bitcoins(1.25)
 
     def getChangeAddressAndAmount(
@@ -274,7 +250,6 @@ class WalletRpcTest extends BitcoindRpcTest {
     }
 
     for {
-      (client, otherClient, _) <- clientsF
       groupingsBefore <- client.listAddressGroupings
 
       address <- client.getNewAddress
@@ -316,9 +291,10 @@ class WalletRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to send to an address" in {
+  it should "be able to send to an address" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
     for {
-      (client, otherClient, _) <- clientsF
       address <- otherClient.getNewAddress
       txid <- client.sendToAddress(address, Bitcoins(1))
       transaction <- client.getTransaction(txid)
@@ -329,51 +305,55 @@ class WalletRpcTest extends BitcoindRpcTest {
   }
 
   it should "be able to send btc to many addresses" in {
-    for {
-      (client, otherClient, _) <- clientsF
-      address1 <- otherClient.getNewAddress
-      address2 <- otherClient.getNewAddress
-      txid <-
-        client
-          .sendMany(Map(address1 -> Bitcoins(1), address2 -> Bitcoins(2)))
-      transaction <- client.getTransaction(txid)
-    } yield {
-      assert(transaction.amount == Bitcoins(-3))
-      assert(transaction.details.exists(_.address.contains(address1)))
-      assert(transaction.details.exists(_.address.contains(address2)))
-    }
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      val otherClient = nodePair.node2
+      for {
+        address1 <- otherClient.getNewAddress
+        address2 <- otherClient.getNewAddress
+        txid <-
+          client
+            .sendMany(Map(address1 -> Bitcoins(1), address2 -> Bitcoins(2)))
+        transaction <- client.getTransaction(txid)
+      } yield {
+        assert(transaction.amount == Bitcoins(-3))
+        assert(transaction.details.exists(_.address.contains(address1)))
+        assert(transaction.details.exists(_.address.contains(address2)))
+      }
   }
 
   it should "be able to list transactions by receiving addresses" in {
-    for {
-      (client, otherClient, _) <- clientsF
-      address <- otherClient.getNewAddress
-      txid <-
-        BitcoindRpcTestUtil
-          .fundBlockChainTransaction(client,
-                                     otherClient,
-                                     address,
-                                     Bitcoins(1.5))
-      receivedList <- otherClient.listReceivedByAddress()
-    } yield {
-      val entryList =
-        receivedList.filter(entry => entry.address == address)
-      assert(entryList.length == 1)
-      val entry = entryList.head
-      assert(entry.txids.head == txid)
-      assert(entry.address == address)
-      assert(entry.amount == Bitcoins(1.5))
-      assert(entry.confirmations == 1)
-    }
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      val otherClient = nodePair.node2
+      for {
+        address <- otherClient.getNewAddress
+        txid <-
+          BitcoindRpcTestUtil
+            .fundBlockChainTransaction(client,
+                                       otherClient,
+                                       address,
+                                       Bitcoins(1.5))
+        receivedList <- otherClient.listReceivedByAddress()
+      } yield {
+        val entryList =
+          receivedList.filter(entry => entry.address == address)
+        assert(entryList.length == 1)
+        val entry = entryList.head
+        assert(entry.txids.head == txid)
+        assert(entry.address == address)
+        assert(entry.amount == Bitcoins(1.5))
+        assert(entry.confirmations == 1)
+      }
   }
 
-  it should "be able to import an address" in {
-
+  it should "be able to import an address" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
     val address = Bech32Address
       .fromString("bcrt1q9h9wkz6ad49szfl035wh3qdacuslkp6j9pfp4j")
 
     for {
-      (client, otherClient, _) <- clientsF
       _ <- otherClient.importAddress(address)
       txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
                                                             otherClient,
@@ -392,9 +372,9 @@ class WalletRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to get the balance" in {
+  it should "be able to get the balance" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
     for {
-      (client, _, _) <- clientsF
       balance <- client.getBalance
       _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       newBalance <- client.getBalance
@@ -404,21 +384,21 @@ class WalletRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to dump a private key" in {
+  it should "be able to dump a private key" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
     for {
-      (client, _, _) <- clientsF
       address <- client.getNewAddress
       _ <- client.dumpPrivKey(address)
     } yield succeed
   }
 
-  it should "be able to import a private key" in {
+  it should "be able to import a private key" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
     val ecPrivateKey = ECPrivateKey.freshPrivateKey
     val publicKey = ecPrivateKey.publicKey
     val address = P2PKHAddress(publicKey, networkParam)
 
     for {
-      (client, _, _) <- clientsF
       _ <- client.importPrivKey(ecPrivateKey, rescan = false)
       key <- client.dumpPrivKey(address)
       result <-
@@ -438,48 +418,49 @@ class WalletRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to import a public key" in {
+  it should "be able to import a public key" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
     val pubKey = ECPublicKey.freshPublicKey
     for {
-      (client, _, _) <- clientsF
       _ <- client.importPubKey(pubKey)
     } yield succeed
   }
 
   it should "be able to import multiple addresses with importMulti" in {
-    val privKey = ECPrivateKey.freshPrivateKey
-    val address1 = P2PKHAddress(privKey.publicKey, networkParam)
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      val privKey = ECPrivateKey.freshPrivateKey
+      val address1 = P2PKHAddress(privKey.publicKey, networkParam)
 
-    val privKey1 = ECPrivateKey.freshPrivateKey
-    val privKey2 = ECPrivateKey.freshPrivateKey
+      val privKey1 = ECPrivateKey.freshPrivateKey
+      val privKey2 = ECPrivateKey.freshPrivateKey
 
-    for {
-      (client, _, _) <- clientsF
-      firstResult <-
-        client
-          .createMultiSig(2, Vector(privKey1.publicKey, privKey2.publicKey))
-      address2 = firstResult.address
+      for {
+        firstResult <-
+          client
+            .createMultiSig(2, Vector(privKey1.publicKey, privKey2.publicKey))
+        address2 = firstResult.address
 
-      secondResult <-
-        client
-          .importMulti(
-            Vector(
-              RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address1),
-                                         UInt32(0)),
-              RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address2),
-                                         UInt32(0))),
-            rescan = false
-          )
-    } yield {
-      assert(secondResult.length == 2)
-      assert(secondResult(0).success)
-      assert(secondResult(1).success)
-    }
+        secondResult <-
+          client
+            .importMulti(
+              Vector(
+                RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address1),
+                                           UInt32(0)),
+                RpcOpts.ImportMultiRequest(RpcOpts.ImportMultiAddress(address2),
+                                           UInt32(0))),
+              rescan = false
+            )
+      } yield {
+        assert(secondResult.length == 2)
+        assert(secondResult(0).success)
+        assert(secondResult(1).success)
+      }
   }
 
-  it should "be able to import a wallet" in {
+  it should "be able to import a wallet" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
     for {
-      (client, _, _) <- clientsF
       walletClient <- walletClientF
       address <- client.getNewAddress
       walletFile =
@@ -493,11 +474,11 @@ class WalletRpcTest extends BitcoindRpcTest {
 
   }
 
-  it should "be able to load a wallet" in {
+  it should "be able to load a wallet" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
     val name = "tmp_wallet"
 
     for {
-      (client, _, _) <- clientsF
       walletClient <- walletClientF
       walletFile =
         client.getDaemon.datadir.getAbsolutePath + s"/regtest/wallets/$name"
@@ -514,9 +495,9 @@ class WalletRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to set the tx fee" in {
+  it should "be able to set the tx fee" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
     for {
-      (client, _, _) <- clientsF
       success <- client.setTxFee(Bitcoins(0.01))
       info <- client.getWalletInfo
     } yield {
@@ -525,9 +506,10 @@ class WalletRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to bump a mem pool tx fee" in {
+  it should "be able to bump a mem pool tx fee" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
     for {
-      (client, otherClient, _) <- clientsF
       address <- otherClient.getNewAddress
       unspent <- client.listUnspent
       changeAddress <- client.getRawChangeAddress
@@ -555,65 +537,79 @@ class WalletRpcTest extends BitcoindRpcTest {
   }
 
   it should "be able to sign a raw transaction with the wallet" in {
-    for {
-      (client, otherClient, _) <- clientsF
-      address <- otherClient.getNewAddress
-      transactionWithoutFunds <-
-        client
-          .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
-      transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
-      transaction = transactionResult.hex
-      singedTx <- client.signRawTransactionWithWallet(transaction).map(_.hex)
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      val otherClient = nodePair.node2
+      for {
+        address <- otherClient.getNewAddress
+        transactionWithoutFunds <-
+          client
+            .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
+        transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
+        transaction = transactionResult.hex
+        singedTx <- client.signRawTransactionWithWallet(transaction).map(_.hex)
 
-      // Will throw error if invalid
-      _ <- client.sendRawTransaction(singedTx)
-    } yield {
-      assert(transaction.inputs.length == 1)
-      assert(
-        transaction.outputs.contains(
-          TransactionOutput(Bitcoins(1), address.scriptPubKey)))
-    }
+        // Will throw error if invalid
+        _ <- client.sendRawTransaction(singedTx)
+      } yield {
+        assert(transaction.inputs.length == 2)
+        assert(
+          transaction.outputs.contains(
+            TransactionOutput(Bitcoins(1), address.scriptPubKey)))
+      }
   }
 
   it should "generate the same (low R) signatures as bitcoin-s" in {
-    for {
-      (client, otherClient, _) <- clientsF
-      address <- otherClient.getNewAddress
-      transactionWithoutFunds <-
-        client
-          .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
-      transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
-      transaction = transactionResult.hex
-      signedTx <- client.signRawTransactionWithWallet(transaction).map(_.hex)
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      val otherClient = nodePair.node2
+      for {
+        address <- otherClient.getNewAddress
+        transactionWithoutFunds <-
+          client
+            .createRawTransaction(Vector.empty, Map(address -> Bitcoins(1)))
+        transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
+        transaction = transactionResult.hex
+        signedTx <- client.signRawTransactionWithWallet(transaction).map(_.hex)
 
-      // Validate signature against bitcoin-s generated one
-      outPoint = transaction.inputs.head.previousOutput
-      prevTx <- client.getRawTransactionRaw(outPoint.txIdBE)
-      output = prevTx.outputs(outPoint.vout.toInt)
-      privKey <- client.dumpPrivKey(
-        BitcoinAddress.fromScriptPubKey(output.scriptPubKey, RegTest))
-      partialSig <- BitcoinSigner.signSingle(
-        ECSignatureParams(
-          P2WPKHV0InputInfo(outPoint, output.value, privKey.publicKey),
-          prevTx,
-          privKey,
-          HashType.sigHashAll),
-        transaction,
-        isDummySignature = false)
-    } yield {
-      signedTx match {
-        case btx: NonWitnessTransaction =>
-          assert(
-            btx.inputs.head.scriptSignature.signatures.head == partialSig.signature)
-        case wtx: WitnessTransaction =>
-          wtx.witness.head match {
-            case p2wpkh: P2WPKHWitnessV0 =>
-              assert(p2wpkh.pubKey == partialSig.pubKey)
-              assert(p2wpkh.signature == partialSig.signature)
-            case _: P2WSHWitnessV0 | EmptyScriptWitness =>
-              fail("Expected P2WPKH")
-          }
+        // Validate signature against bitcoin-s generated one
+        outPoint = transaction.inputs.head.previousOutput
+        prevTx <- client.getRawTransactionRaw(outPoint.txIdBE)
+        output = prevTx.outputs(outPoint.vout.toInt)
+        privKey <- client.dumpPrivKey(
+          BitcoinAddress.fromScriptPubKey(output.scriptPubKey, RegTest))
+        partialSig <- BitcoinSigner.signSingle(
+          ECSignatureParams(
+            P2WPKHV0InputInfo(outPoint, output.value, privKey.publicKey),
+            prevTx,
+            privKey,
+            HashType.sigHashAll),
+          transaction,
+          isDummySignature = false)
+      } yield {
+        signedTx match {
+          case btx: NonWitnessTransaction =>
+            assert(
+              btx.inputs.head.scriptSignature.signatures.head == partialSig.signature)
+          case wtx: WitnessTransaction =>
+            wtx.witness.head match {
+              case p2wpkh: P2WPKHWitnessV0 =>
+                assert(p2wpkh.pubKey == partialSig.pubKey)
+                assert(p2wpkh.signature == partialSig.signature)
+              case _: P2WSHWitnessV0 | EmptyScriptWitness =>
+                fail("Expected P2WPKH")
+            }
+        }
       }
-    }
+  }
+
+  def startClient(client: BitcoindRpcClient): Future[Unit] = {
+    BitcoindRpcTestUtil.startServers(Vector(client))
+  }
+
+  override def afterAll(): Unit = {
+    val stopF = walletClientF.map(BitcoindRpcTestUtil.stopServer)
+    Await.result(stopF, duration)
+    super.afterAll()
   }
 }

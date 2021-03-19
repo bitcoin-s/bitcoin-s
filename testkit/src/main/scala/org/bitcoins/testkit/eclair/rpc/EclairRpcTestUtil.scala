@@ -57,7 +57,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     */
   def startedBitcoindRpcClient(instance: BitcoindInstance = bitcoindInstance())(
       implicit actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
+    //need to do something with the Vector.newBuilder presumably?
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(instance, Vector.newBuilder)
   }
 
   /** Creates a bitcoind instance with the given parameters */

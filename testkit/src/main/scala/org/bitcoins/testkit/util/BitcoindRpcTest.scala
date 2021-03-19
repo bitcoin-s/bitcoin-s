@@ -1,12 +1,11 @@
 package org.bitcoins.testkit.util
 
 import java.nio.file.Files
-import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
 
@@ -30,8 +29,6 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
     }
   }
 
-  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
-
   /** Bitcoind RPC clients can be added to this builder
     * as they are created in tests. After tests have
     * stopped running (either by succeeding or failing)
@@ -42,7 +39,8 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest {
     Vector[BitcoindRpcClient]] = Vector.newBuilder
 
   override def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(clientAccum.result())
+    val stopF = BitcoindRpcTestUtil.stopServers(clientAccum.result())
+    Await.result(stopF, duration)
     super.afterAll()
   }
 

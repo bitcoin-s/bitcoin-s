@@ -12,10 +12,8 @@ import scala.concurrent.Future
 class MessageRpcTest extends BitcoindRpcTest {
 
   val clientF: Future[BitcoindRpcClient] =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient().map { client =>
-      clientAccum += client
-      client
-    }
+    BitcoindRpcTestUtil
+      .startedBitcoindRpcClient(clientAccum = clientAccum)
 
   behavior of "MessageRpc"
 

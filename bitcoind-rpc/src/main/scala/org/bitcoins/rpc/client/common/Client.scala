@@ -31,6 +31,7 @@ import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
 import org.bitcoins.rpc.util.NativeProcessFactory
 import play.api.libs.json._
 
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 import scala.util.control.NonFatal
@@ -97,7 +98,7 @@ trait Client
 
   def getDaemon: BitcoindInstance = instance
 
-  override def cmd: String = {
+  override lazy val cmd: String = {
     val binaryPath = instance.binary.getAbsolutePath
     val cmd = List(binaryPath,
                    "-datadir=" + instance.datadir,
@@ -124,17 +125,6 @@ trait Client
     }
 
     val startedF = startBinary()
-    def isStartedF: Future[Boolean] = {
-      val started: Promise[Boolean] = Promise()
-
-      val pingF = bitcoindCall[Unit]("ping", printError = false)
-      pingF.onComplete {
-        case Success(_) => started.success(true)
-        case Failure(_) => started.success(false)
-      }
-
-      started.future
-    }
 
     // if we're doing cookie based authentication, we might attempt
     // to read the cookie file before it's written. this ensures
@@ -157,6 +147,7 @@ trait Client
       for {
         _ <- startedF
         _ <- awaitCookie(instance.authCredentials)
+        _ = isStartedFlag.set(true)
         _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
                                             interval = 1.seconds,
                                             maxTries = 60)
@@ -191,39 +182,47 @@ trait Client
     started
   }
 
+  private def tryPing(): Future[Boolean] = {
+    val request = buildRequest(instance, "ping", JsArray.empty)
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] =
+      responseF.flatMap(getPayload(_))
+
+    // Ping successful if no error can be parsed from the payload
+    val parsedF = payloadF.map { payload =>
+      (payload \ errorKey).validate[BitcoindException] match {
+        case _: JsSuccess[BitcoindException] => false
+        case _: JsError                      => true
+      }
+    }
+
+    parsedF.recover {
+      case exc: StreamTcpException
+          if exc.getMessage.contains("Connection refused") =>
+        false
+      case _: JsonParseException =>
+        //see https://github.com/bitcoin-s/bitcoin-s/issues/527
+        false
+    }
+  }
+
+  private val isStartedFlag: AtomicBoolean = new AtomicBoolean(false)
+
   /** Checks whether the underlying bitcoind daemon is running
     */
   def isStartedF: Future[Boolean] = {
-    def tryPing: Future[Boolean] = {
-      val request = buildRequest(instance, "ping", JsArray.empty)
-      val responseF = sendRequest(request)
-
-      val payloadF: Future[JsValue] =
-        responseF.flatMap(getPayload(_))
-
-      // Ping successful if no error can be parsed from the payload
-      val parsedF = payloadF.map { payload =>
-        (payload \ errorKey).validate[BitcoindException] match {
-          case _: JsSuccess[BitcoindException] => false
-          case _: JsError                      => true
-        }
-      }
-
-      parsedF.recover {
-        case exc: StreamTcpException
-            if exc.getMessage.contains("Connection refused") =>
-          false
-        case _: JsonParseException =>
-          //see https://github.com/bitcoin-s/bitcoin-s/issues/527
-          false
-      }
-    }
 
     instance.authCredentials match {
       case cookie: CookieBased if Files.notExists(cookie.cookiePath) =>
         // if the cookie file doesn't exist we're not started
         Future.successful(false)
-      case (CookieBased(_, _) | PasswordBased(_, _)) => tryPing
+      case (CookieBased(_, _) | PasswordBased(_, _)) =>
+        if (isStartedFlag.get) {
+          tryPing()
+        } else {
+          Future.successful(false)
+        }
     }
   }
 
@@ -233,6 +232,7 @@ trait Client
   def stop(): Future[BitcoindRpcClient] = {
     for {
       _ <- bitcoindCall[String]("stop")
+      _ = isStartedFlag.set(false)
       //do we want to call this right away?
       //i think bitcoind stops asynchronously
       //so it returns fast from the 'stop' rpc command

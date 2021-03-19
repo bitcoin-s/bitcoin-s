@@ -66,7 +66,7 @@ implicit val ec = system.dispatcher
 //so let's start one (make sure you ran 'sbt downloadBitcoind')
 val instance = BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.Experimental))
 val p2pPort = instance.p2pPort
-val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
+val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient(instance, Vector.newBuilder)
 
 //contains information on how to connect to bitcoin's p2p info
 val peerF = bitcoindF.map(b => NodeUnitTest.createPeer(b))

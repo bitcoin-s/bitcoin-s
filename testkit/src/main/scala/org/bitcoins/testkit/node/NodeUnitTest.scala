@@ -1,21 +1,8 @@
 package org.bitcoins.testkit.node
 
-import java.net.InetSocketAddress
-import akka.actor.{ActorSystem, Cancellable}
+import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi, FilterSyncMarker}
-import org.bitcoins.core.api.chain.db.{
-  BlockHeaderDb,
-  CompactFilterDb,
-  CompactFilterHeaderDb
-}
-import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.gcs.FilterHeader
-import org.bitcoins.core.p2p.CompactFilterMessage
-import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.db.AppConfig
+import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -31,10 +18,8 @@ import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
-import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.node.NodeUnitTest.{
   createPeer,
   emptyPeer,
@@ -46,131 +31,16 @@ import org.bitcoins.testkit.node.fixture.{
   SpvNodeConnectedWithBitcoind,
   SpvNodeConnectedWithBitcoindV19
 }
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.bitcoins.testkitcore.node.P2PMessageTestUtil
 import org.bitcoins.wallet.WalletCallbacks
 import org.scalatest.FutureOutcome
 
-import scala.concurrent.duration._
+import java.net.InetSocketAddress
 import scala.concurrent.{ExecutionContext, Future}
 
-trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
-
-  override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(getFreshConfig.nodeConf)
-    super[EmbeddedPg].beforeAll()
-  }
-
-  override def afterAll(): Unit = {
-    super[EmbeddedPg].afterAll()
-  }
-
-  /** Wallet config with data directory set to user temp directory */
-  implicit protected def getFreshConfig: BitcoinSAppConfig
-
-  implicit override lazy val np: NetworkParameters =
-    getFreshConfig.nodeConf.network
-
-  lazy val startedBitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
-
-  lazy val bitcoindPeerF = startedBitcoindF.map(NodeTestUtil.getBitcoindPeer)
-
-  lazy val junkAddress: BitcoinAddress =
-    BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
-
-  val genesisChainApi: ChainApi = new ChainApi {
-
-    override def processHeaders(
-        headers: Vector[BlockHeader]): Future[ChainApi] =
-      Future.successful(this)
-
-    override def getHeader(
-        hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] =
-      Future.successful(None)
-
-    override def getHeadersAtHeight(
-        height: Int): Future[Vector[BlockHeaderDb]] =
-      Future.successful(Vector.empty)
-
-    override def getBlockCount(): Future[Int] = Future.successful(0)
-
-    override def getBestBlockHeader(): Future[BlockHeaderDb] =
-      Future.successful(ChainUnitTest.genesisHeaderDb)
-
-    override def processFilterHeaders(
-        filterHeaders: Vector[FilterHeader],
-        stopHash: DoubleSha256DigestBE): Future[ChainApi] =
-      Future.successful(this)
-
-    override def nextBlockHeaderBatchRange(
-        stopHash: DoubleSha256DigestBE,
-        batchSize: Int): Future[Option[FilterSyncMarker]] =
-      Future.successful(None)
-
-    override def nextFilterHeaderBatchRange(
-        startHeight: Int,
-        batchSize: Int): Future[Option[FilterSyncMarker]] =
-      Future.successful(None)
-
-    override def processFilters(
-        message: Vector[CompactFilterMessage]): Future[ChainApi] =
-      Future.successful(this)
-
-    override def processCheckpoints(
-        checkpoints: Vector[DoubleSha256DigestBE],
-        blockHash: DoubleSha256DigestBE): Future[ChainApi] =
-      Future.successful(this)
-
-    override def getFilterHeaderCount(): Future[Int] = Future.successful(0)
-
-    override def getFilterHeadersAtHeight(
-        height: Int): Future[Vector[CompactFilterHeaderDb]] =
-      Future.successful(Vector.empty)
-
-    override def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]] =
-      Future.successful(None)
-
-    override def getFilterHeader(blockHash: DoubleSha256DigestBE): Future[
-      Option[CompactFilterHeaderDb]] = Future.successful(None)
-
-    override def getFilter(
-        hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] =
-      Future.successful(None)
-
-    override def getFilterCount(): Future[Int] = Future.successful(0)
-
-    override def getFiltersAtHeight(
-        height: Int): Future[Vector[CompactFilterDb]] =
-      Future.successful(Vector.empty)
-
-    override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
-      Future.successful(0)
-
-    override def getHeadersBetween(
-        from: BlockHeaderDb,
-        to: BlockHeaderDb): Future[Vector[BlockHeaderDb]] =
-      Future.successful(Vector.empty)
-
-    override def getBlockHeight(
-        blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
-      Future.successful(None)
-
-    override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
-      Future.successful(DoubleSha256DigestBE.empty)
-
-    override def getNumberOfConfirmations(
-        blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
-      Future.successful(None)
-
-    override def getFiltersBetweenHeights(
-        startHeight: Int,
-        endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] =
-      Future.successful(Vector.empty)
-
-    override def epochSecondToBlockHeight(time: Long): Future[Int] =
-      Future.successful(0)
-  }
+trait NodeUnitTest extends BaseNodeTest {
 
   def withDisconnectedSpvNode(test: OneArgAsyncTest)(implicit
       system: ActorSystem,
@@ -316,31 +186,6 @@ trait NodeUnitTest extends BitcoinSFixture with EmbeddedPg {
         _: NodeFundedWalletBitcoind)(system, appConfig)
     )(test)
   }
-
-  /** Helper method to generate blocks every interval
-    * @return a cancellable that will stop generating blocks
-    */
-  def genBlockInterval(bitcoind: BitcoindRpcClient)(implicit
-      system: ActorSystem): Cancellable = {
-
-    var counter = 0
-    val desiredBlocks = 5
-    val interval = 500.millis
-
-    val genBlock = new Runnable {
-      override def run(): Unit = {
-        if (counter < desiredBlocks) {
-          bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
-          counter = counter + 1
-        }
-      }
-    }
-
-    system.scheduler.scheduleAtFixedRate(2.second, interval)(genBlock)
-  }
-
-  def getBIP39PasswordOpt(): Option[String] =
-    KeyManagerTestUtil.bip39PasswordOpt
 }
 
 object NodeUnitTest extends P2PLogger {
@@ -380,7 +225,9 @@ object NodeUnitTest extends P2PLogger {
   def destroyNode(node: Node)(implicit ec: ExecutionContext): Future[Unit] = {
     for {
       _ <- node.stop()
-    } yield ()
+    } yield {
+      ()
+    }
   }
 
   def destroyNodeConnectedWithBitcoind(
@@ -415,6 +262,25 @@ object NodeUnitTest extends P2PLogger {
     require(appConfig.nodeType == NodeType.SpvNode)
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
+      spvNodeWithBitcoind <- createSpvNodeFundedWalletFromBitcoind(
+        walletCallbacks,
+        bip39PasswordOpt,
+        bitcoind)
+    } yield {
+      spvNodeWithBitcoind
+    }
+  }
+
+  /** Creates a spv node & funded wallet with the given bitcoind */
+  def createSpvNodeFundedWalletFromBitcoind(
+      walletCallbacks: WalletCallbacks,
+      bip39PasswordOpt: Option[String],
+      bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): Future[SpvNodeFundedWalletBitcoind] = {
+    import system.dispatcher
+    require(appConfig.nodeType == NodeType.SpvNode)
+    for {
       node <- createSpvNode(createPeer(bitcoind))
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoind,
@@ -452,6 +318,36 @@ object NodeUnitTest extends P2PLogger {
     require(appConfig.nodeType == NodeType.NeutrinoNode)
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
+      node <- createNeutrinoNode(bitcoind)
+      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
+        bitcoindRpcClient = bitcoind,
+        nodeApi = node,
+        chainQueryApi = node,
+        bip39PasswordOpt = bip39PasswordOpt,
+        walletCallbacks = walletCallbacks)
+      startedNode <- node.start()
+      syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
+      //callbacks are executed asynchronously, which is how we fund the wallet
+      //so we need to wait until the wallet balances are correct
+      _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
+    } yield {
+      NeutrinoNodeFundedWalletBitcoind(node = syncedNode,
+                                       wallet = fundedWallet.wallet,
+                                       bitcoindRpc = fundedWallet.bitcoind,
+                                       bip39PasswordOpt = bip39PasswordOpt)
+    }
+  }
+
+  def createNeutrinoNodeFundedWalletFromBitcoind(
+      bip39PasswordOpt: Option[String],
+      bitcoind: BitcoindRpcClient,
+      walletCallbacks: WalletCallbacks)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): Future[
+    NeutrinoNodeFundedWalletBitcoind] = {
+    import system.dispatcher
+    require(appConfig.nodeType == NodeType.NeutrinoNode)
+    for {
       node <- createNeutrinoNode(bitcoind)
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoindRpcClient = bitcoind,

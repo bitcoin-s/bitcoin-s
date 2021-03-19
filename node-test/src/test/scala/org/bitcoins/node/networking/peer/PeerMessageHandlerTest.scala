@@ -1,26 +1,39 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.node.models.Peer
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.{CachedBitcoinSAppConfig, NodeUnitTest}
-import org.scalatest.FutureOutcome
+import org.bitcoins.testkit.node.{
+  CachedBitcoinSAppConfig,
+  NodeTestWithCachedBitcoindNewest,
+  NodeUnitTest
+}
+import org.scalatest.{FutureOutcome, Outcome}
 
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 /** Created by chris on 7/1/16.
   */
-class PeerMessageHandlerTest extends NodeUnitTest with CachedBitcoinSAppConfig {
+class PeerMessageHandlerTest
+    extends NodeTestWithCachedBitcoindNewest
+    with CachedBitcoinSAppConfig {
 
   /** Wallet config with data directory set to user temp directory */
   implicit override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
 
-  override type FixtureParam = Unit
+  override type FixtureParam = Peer
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    test(())
+    val outcomeF: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      outcome = withBitcoindPeer(test, bitcoind)
+      f <- outcome.toFuture
+    } yield f
+    new FutureOutcome(outcomeF)
   }
 
   implicit protected lazy val chainConfig: ChainAppConfig =
@@ -28,15 +41,12 @@ class PeerMessageHandlerTest extends NodeUnitTest with CachedBitcoinSAppConfig {
 
   behavior of "PeerHandler"
 
-  it must "be able to fully initialize a PeerMessageReceiver" in { _ =>
-    val peerHandlerF =
-      bitcoindPeerF.flatMap(p => NodeUnitTest.buildPeerHandler(p))
+  it must "be able to fully initialize a PeerMessageReceiver" in { peer =>
+    val peerHandlerF = NodeUnitTest.buildPeerHandler(peer)
     val peerMsgSenderF = peerHandlerF.map(_.peerMsgSender)
     val p2pClientF = peerHandlerF.map(_.p2pClient)
 
-    val _ =
-      bitcoindPeerF.flatMap(_ => peerHandlerF.map(_.peerMsgSender.connect()))
-
+    val _ = peerHandlerF.map(_.peerMsgSender.connect())
     val isConnectedF = TestAsyncUtil.retryUntilSatisfiedF(
       () => p2pClientF.flatMap(_.isConnected()),
       interval = 500.millis
@@ -196,9 +206,4 @@ class PeerMessageHandlerTest extends NodeUnitTest with CachedBitcoinSAppConfig {
           peerMsgHandler ! Tcp.Close
           probe.expectMsg(Tcp.Closed)
         }*/
-
-  override def afterAll(): Unit = {
-    startedBitcoindF.flatMap(_.stop())
-    super.afterAll()
-  }
 }

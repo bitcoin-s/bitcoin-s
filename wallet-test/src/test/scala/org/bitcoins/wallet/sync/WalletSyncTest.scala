@@ -1,17 +1,16 @@
 package org.bitcoins.wallet.sync
 
 import org.bitcoins.testkit.chain.SyncUtil
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindV19}
-import org.scalatest.FutureOutcome
+import org.bitcoins.testkit.wallet.{
+  BitcoinSWalletTestCachedBitcoinV19,
+  WalletWithBitcoindV19
+}
 
-class WalletSyncTest extends BitcoinSWalletTest {
+class WalletSyncTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
   behavior of "WalletSync"
 
   override type FixtureParam = WalletWithBitcoindV19
-
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNewWalletAndBitcoindV19(test, getBIP39PasswordOpt())
 
   it must "sync a wallet with bitcoind" in { param =>
     val wallet = param.wallet

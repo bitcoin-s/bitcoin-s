@@ -10,15 +10,30 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.RandomFeeProvider
-import org.bitcoins.testkit.wallet._
-import org.scalatest.FutureOutcome
+import org.bitcoins.testkit.wallet.{
+  BitcoinSWalletTestCachedBitcoindNewest,
+  WalletTestUtil,
+  WalletWithBitcoind,
+  WalletWithBitcoindRpc
+}
+import org.scalatest.{FutureOutcome, Outcome}
 
-class WalletIntegrationTest extends BitcoinSWalletTest {
+import scala.concurrent.Future
+
+class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
   override type FixtureParam = WalletWithBitcoind
 
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNewWalletAndBitcoind(test)
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val f: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      futOutcome = withNewWalletAndBitcoindCached(test,
+                                                  getBIP39PasswordOpt(),
+                                                  bitcoind)
+      fut <- futOutcome.toFuture
+    } yield fut
+    new FutureOutcome(f)
+  }
 
   behavior of "Wallet - integration test"
 
@@ -338,7 +353,6 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
 
         // Assert spending tx valid to bitcoind
         oldBalance <- bitcoind.getBalance
-        _ = assert(oldBalance == Satoshis(510000000000L))
 
         _ <- bitcoind.sendRawTransaction(signedTx)
         _ <- bitcoind.generateToAddress(1, bitcoindAddr)
