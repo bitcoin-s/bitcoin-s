@@ -6,21 +6,29 @@ import org.bitcoins.core.wallet.builder.RawTxSigner
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.testkit.wallet.{
-  BitcoinSWalletTest,
+  BitcoinSWalletTestCachedBitcoindNewest,
   WalletTestUtil,
   WalletWithBitcoind
 }
 import org.bitcoins.testkitcore.util.TestUtil
-import org.scalatest.{Assertion, FutureOutcome}
+import org.scalatest.{Assertion, FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
-class FundTransactionHandlingTest extends BitcoinSWalletTest {
+class FundTransactionHandlingTest
+    extends BitcoinSWalletTestCachedBitcoindNewest {
 
   override type FixtureParam = WalletWithBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWalletAndBitcoind(test, getBIP39PasswordOpt())
+    val f: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      futOutcome = withFundedWalletAndBitcoindCached(test,
+                                                     getBIP39PasswordOpt(),
+                                                     bitcoind)
+      fut <- futOutcome.toFuture
+    } yield fut
+    new FutureOutcome(f)
   }
 
   val destination: TransactionOutput =

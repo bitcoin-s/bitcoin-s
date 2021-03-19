@@ -2,6 +2,7 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -9,21 +10,34 @@ import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.wallet.{
-  BitcoinSWalletTest,
+  BitcoinSWalletTestCachedBitcoindNewest,
   WalletWithBitcoind,
   WalletWithBitcoindRpc
 }
-import org.scalatest.FutureOutcome
+import org.scalatest.{FutureOutcome, Outcome}
 
-class UTXOLifeCycleTest extends BitcoinSWalletTest {
+import scala.concurrent.Future
+
+class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
   behavior of "Wallet Txo States"
 
   override type FixtureParam = WalletWithBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWalletAndBitcoind(test, getBIP39PasswordOpt())
+    val f: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      futOutcome = withFundedWalletAndBitcoindCached(test,
+                                                     getBIP39PasswordOpt(),
+                                                     bitcoind)
+      fut <- futOutcome.toFuture
+    } yield fut
+    new FutureOutcome(f)
   }
+
+  val testAddr: BitcoinAddress =
+    BitcoinAddress
+      .fromString("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq")
 
   it should "track a utxo state change to broadcast spent" in { param =>
     val WalletWithBitcoindRpc(wallet, _) = param

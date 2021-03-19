@@ -3,9 +3,13 @@ package org.bitcoins.wallet
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency._
 import org.bitcoins.db.AppConfig
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
-import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkit.rpc.{
+  BitcoindFixturesFundedCached,
+  CachedBitcoindNewest
+}
+import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -13,7 +17,13 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
-class BitcoindBlockPollingTest extends BitcoinSAsyncTest with EmbeddedPg {
+class BitcoindBlockPollingTest
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesFundedCached
+    with CachedBitcoindNewest
+    with EmbeddedPg {
+
+  override type FixtureParam = BitcoindRpcClient
 
   /** Wallet config with data directory set to user temp directory */
   implicit protected def config: BitcoinSAppConfig =
@@ -32,15 +42,13 @@ class BitcoindBlockPollingTest extends BitcoinSAsyncTest with EmbeddedPg {
     Await.result(config.chainConf.stop(), 1.minute)
     Await.result(config.nodeConf.stop(), 1.minute)
     Await.result(config.walletConf.stop(), 1.minute)
-    super[EmbeddedPg].afterAll()
+    super.afterAll()
   }
 
-  it must "properly setup and poll blocks from bitcoind" in {
+  it must "properly setup and poll blocks from bitcoind" in { bitcoind =>
     val amountToSend = Bitcoins.one
 
     for {
-      // Setup bitcoind
-      bitcoind <- BitcoinSFixture.createBitcoindWithFunds()
       blockCount <- bitcoind.getBlockCount
 
       // Setup wallet

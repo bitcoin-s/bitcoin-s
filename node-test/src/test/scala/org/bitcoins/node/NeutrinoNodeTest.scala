@@ -2,17 +2,19 @@ package org.bitcoins.node
 
 import akka.actor.Cancellable
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.UsesExperimentalBitcoind
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
-import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
-import org.scalatest.FutureOutcome
+import org.bitcoins.testkit.node.{
+  NodeTestUtil,
+  NodeTestWithCachedBitcoindNewest
+}
+import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
-class NeutrinoNodeTest extends NodeUnitTest {
+class NeutrinoNodeTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   implicit override protected def getFreshConfig: BitcoinSAppConfig =
@@ -20,8 +22,14 @@ class NeutrinoNodeTest extends NodeUnitTest {
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNeutrinoNodeConnectedToBitcoind(test, Some(BitcoindVersion.V21))
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val outcomeF: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      outcome = withNeutrinoNodeConnectedToBitcoind(test, bitcoind)
+      f <- outcome.toFuture
+    } yield f
+    new FutureOutcome(outcomeF)
+  }
 
   behavior of "NeutrinoNode"
 

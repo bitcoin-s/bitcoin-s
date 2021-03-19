@@ -1,65 +1,38 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResultPreV19
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
-  AddNodeArgument,
-  AddressType
-}
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.BitcoindRpcTest
+import org.bitcoins.testkit.rpc.{
+  BitcoindFixturesCachedPairV17,
+  BitcoindRpcTestUtil
+}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
-class BlockchainRpcTest extends BitcoindRpcTest {
+class BlockchainRpcTest extends BitcoindFixturesCachedPairV17 {
 
-  lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePairV17(clientAccum = clientAccum)
+  lazy val pruneClientF: Future[BitcoindRpcClient] = {
+    val pruneClient =
+      BitcoindRpcClient.withActorSystem(
+        BitcoindRpcTestUtil
+          .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.V17)))
 
-  lazy val pruneClientF: Future[BitcoindRpcClient] = clientsF.flatMap {
-    case (_, _) =>
-      val pruneClient =
-        BitcoindRpcClient.withActorSystem(
-          BitcoindRpcTestUtil
-            .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.V17)))
-
-      clientAccum += pruneClient
-
-      for {
-        _ <- pruneClient.start()
-        _ <- pruneClient.getNewAddress.flatMap(
-          pruneClient.generateToAddress(1000, _))
-      } yield pruneClient
+    for {
+      _ <- pruneClient.start()
+      _ <- pruneClient.getNewAddress.flatMap(
+        pruneClient.generateToAddress(1000, _))
+    } yield pruneClient
   }
 
   behavior of "BlockchainRpc"
 
-  it should "be able to get the block count" in {
-
+  it should "be able to get the first block" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, otherClient) <- clientsF
-
-      // kick off both futures at the same time to avoid
-      // one of them generating new blocks in between
-      clientCountF = client.getBlockCount
-      otherClientCountF = otherClient.getBlockCount
-      List(clientCount, otherClientCount) <- {
-        val countsF = List(clientCountF, otherClientCountF)
-        Future.sequence(countsF)
-      }
-    } yield {
-      assert(clientCount >= 0)
-      assert(clientCount == otherClientCount)
-    }
-  }
-
-  it should "be able to get the first block" in {
-    for {
-      (client, _) <- clientsF
       block <- BitcoindRpcTestUtil.getFirstBlock(client)
     } yield {
       assert(block.tx.nonEmpty)
@@ -67,19 +40,9 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to prune the blockchain" in {
+  it should "be able to get blockchain info" in { nodePair =>
+    val client = nodePair.node1
     for {
-      pruneClient <- pruneClientF
-      count <- pruneClient.getBlockCount
-      pruned <- pruneClient.pruneBlockChain(count)
-    } yield {
-      assert(pruned > 0)
-    }
-  }
-
-  it should "be able to get blockchain info" in {
-    for {
-      (client, _) <- clientsF
       info <- client.getBlockChainInfo
       bestHash <- client.getBestBlockHash
     } yield {
@@ -92,9 +55,10 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to invalidate a block" in {
+  it should "be able to invalidate a block" in { nodePair =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
     for {
-      (client, otherClient) <- clientsF
       address <- otherClient.getNewAddress(addressType = AddressType.P2SHSegwit)
       txid <-
         BitcoindRpcTestUtil
@@ -116,9 +80,9 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to get block hash by height" in {
+  it should "be able to get block hash by height" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
       count <- client.getBlockCount
       hash <- client.getBlockHash(count)
@@ -129,38 +93,9 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to mark a block as precious" in {
+  it should "be able to get tx out proof and verify it" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (freshClient, otherFreshClient) <-
-        BitcoindRpcTestUtil.createNodePair(clientAccum)
-      _ <- freshClient.disconnectNode(otherFreshClient.getDaemon.uri)
-      _ <- BitcoindRpcTestUtil.awaitDisconnected(freshClient, otherFreshClient)
-
-      blocks1 <-
-        freshClient.getNewAddress.flatMap(freshClient.generateToAddress(1, _))
-      blocks2 <- otherFreshClient.getNewAddress.flatMap(
-        otherFreshClient.generateToAddress(1, _))
-
-      bestHash1 <- freshClient.getBestBlockHash
-      _ = assert(bestHash1 == blocks1.head)
-      bestHash2 <- otherFreshClient.getBestBlockHash
-      _ = assert(bestHash2 == blocks2.head)
-
-      _ <-
-        freshClient
-          .addNode(otherFreshClient.getDaemon.uri, AddNodeArgument.OneTry)
-      _ <- AsyncUtil.retryUntilSatisfiedF(() =>
-        BitcoindRpcTestUtil.hasSeenBlock(otherFreshClient, bestHash1))
-
-      _ <- otherFreshClient.preciousBlock(bestHash1)
-      newBestHash <- otherFreshClient.getBestBlockHash
-
-    } yield assert(newBestHash == bestHash1)
-  }
-
-  it should "be able to get tx out proof and verify it" in {
-    for {
-      (client, _) <- clientsF
       block <- BitcoindRpcTestUtil.getFirstBlock(client)
       merkle <- client.getTxOutProof(Vector(block.tx.head.txid))
       txids <- client.verifyTxOutProof(merkle)
@@ -172,9 +107,9 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to rescan the blockchain" in {
+  it should "be able to rescan the blockchain" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       result <- client.rescanBlockChain()
       count <- client.getBlockCount
     } yield {
@@ -183,9 +118,9 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to get the chain tx stats" in {
+  it should "be able to get the chain tx stats" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       stats <- client.getChainTxStats
     } yield {
       assert(stats.txcount > 0)
@@ -193,18 +128,18 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to get a raw block" in {
+  it should "be able to get a raw block" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       blocks <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       block <- client.getBlockRaw(blocks.head)
       blockHeader <- client.getBlockHeaderRaw(blocks.head)
     } yield assert(block.blockHeader == blockHeader)
   }
 
-  it should "be able to get a block" in {
+  it should "be able to get a block" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       blocks <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       block <- client.getBlock(blocks.head)
     } yield {
@@ -217,9 +152,9 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to get a transaction" in {
+  it should "be able to get a transaction" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       block <- BitcoindRpcTestUtil.getFirstBlock(client)
       tx <- client.getTransaction(block.tx.head.txid)
       count <- client.getBlockCount
@@ -233,9 +168,9 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to get a block with verbose transactions" in {
+  it should "be able to get a block with verbose transactions" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
       block <- client.getBlockWithTransactions(blocks(1))
     } yield {
@@ -246,23 +181,23 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to get the chain tips" in {
+  it should "be able to get the chain tips" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       _ <- client.getChainTips
     } yield succeed
   }
 
-  it should "be able to get the best block hash" in {
+  it should "be able to get the best block hash" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       _ <- client.getBestBlockHash
     } yield succeed
   }
 
-  it should "be able to list all blocks since a given block" in {
+  it should "be able to list all blocks since a given block" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       blocks <- client.getNewAddress.flatMap(client.generateToAddress(3, _))
       list <- client.listSinceBlock(blocks(0))
     } yield {
@@ -272,16 +207,16 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to verify the chain" in {
+  it should "be able to verify the chain" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       valid <- client.verifyChain(blocks = 0)
     } yield assert(valid)
   }
 
-  it should "be able to get the tx outset info" in {
+  it should "be able to get the tx outset info" in { nodePair =>
+    val client = nodePair.node1
     for {
-      (client, _) <- clientsF
       info <- client.getTxOutSetInfo
       count <- client.getBlockCount
       hash <- client.getBestBlockHash
@@ -291,15 +226,19 @@ class BlockchainRpcTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to list transactions in a given range" in { // Assumes 30 transactions
+  it should "be able to prune the blockchain" in { _ =>
     for {
-      (client, _) <- clientsF
-      list1 <- client.listTransactions()
-      list2 <- client.listTransactions(count = 20)
-      list3 <- client.listTransactions(count = 20, skip = 10)
+      pruneClient <- pruneClientF
+      count <- pruneClient.getBlockCount
+      pruned <- pruneClient.pruneBlockChain(count)
     } yield {
-      assert(list2.takeRight(10) == list1)
-      assert(list2.splitAt(10)._1 == list3.takeRight(10))
+      assert(pruned > 0)
     }
+  }
+
+  override def afterAll(): Unit = {
+    val stoppedF = pruneClientF.flatMap(BitcoindRpcTestUtil.stopServer)
+    val _ = Await.result(stoppedF, duration)
+    super.afterAll()
   }
 }

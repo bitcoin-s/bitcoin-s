@@ -7,15 +7,15 @@ import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.NodeUnitTest
+import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindV19
 import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoindV19
-import org.scalatest.FutureOutcome
+import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-class BroadcastTransactionTest extends NodeUnitTest {
+class BroadcastTransactionTest extends NodeTestWithCachedBitcoindV19 {
 
   /** Wallet config with data directory set to user temp directory */
   implicit override protected def getFreshConfig: BitcoinSAppConfig =
@@ -23,8 +23,16 @@ class BroadcastTransactionTest extends NodeUnitTest {
 
   override type FixtureParam = SpvNodeConnectedWithBitcoindV19
 
-  def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeConnectedToBitcoindV19(test)(system, getFreshConfig)
+  def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val outcome: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      outcome = withSpvNodeConnectedToBitcoindV19Cached(test, bitcoind)(
+        system,
+        getFreshConfig)
+      f <- outcome.toFuture
+    } yield f
+    new FutureOutcome(outcome)
+  }
 
   private val sendAmount = 1.bitcoin
 

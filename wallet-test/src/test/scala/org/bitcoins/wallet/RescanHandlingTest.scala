@@ -7,25 +7,20 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.{
-  BitcoinSWalletTest,
+  BitcoinSWalletTestCachedBitcoinV19,
   WalletWithBitcoind,
   WalletWithBitcoindV19
 }
-import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
-class RescanHandlingTest extends BitcoinSWalletTest {
+class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
   /** Wallet config with data directory set to user temp directory */
   implicit override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = WalletWithBitcoind
-
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWalletAndBitcoindV19(test, getBIP39PasswordOpt())
-  }
 
   behavior of "Wallet rescans"
 

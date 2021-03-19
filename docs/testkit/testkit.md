@@ -51,7 +51,7 @@ val bitcoindV = BitcoindVersion.V19
 val instance = BitcoindRpcTestUtil.instance(versionOpt = Some(bitcoindV))
 
 //now let's create an rpc client off of that instance
-val bitcoindRpcClientF = BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
+val bitcoindRpcClientF = BitcoindRpcTestUtil.startedBitcoindRpcClient(instance, Vector.newBuilder)
 
 //yay! it's started. Now you can run tests against this.
 //let's just grab the block count for an example

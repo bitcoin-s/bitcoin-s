@@ -40,19 +40,20 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
   /** Tests that the client can call the isStartedF method
     * without throwing and then start
     */
-  private def testClientStart(client: BitcoindRpcClient): Future[Assertion] = {
-    clientAccum += client
-    for {
-      firstStarted <- client.isStartedF
-      _ <- startClient(client)
-      secondStarted <- client.isStartedF
+  private def testClientStart(client: BitcoindRpcClient): Future[Assertion] =
+    synchronized {
+      clientAccum += client
+      for {
+        firstStarted <- client.isStartedF
+        _ <- startClient(client)
+        secondStarted <- client.isStartedF
 
-      _ <- client.getBalance
-    } yield {
-      assert(!firstStarted)
-      assert(secondStarted)
+        _ <- client.getBalance
+      } yield {
+        assert(!firstStarted)
+        assert(secondStarted)
+      }
     }
-  }
 
   behavior of "BitcoindInstance"
 
