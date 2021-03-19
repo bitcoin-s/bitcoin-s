@@ -1,24 +1,21 @@
 ---
-id: configuration
-title: Application Configuration
+id: configuration title: Application Configuration
 ---
 
 Bitcoin-S uses [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md)
-to configure various parts of the application the library offers. HOCON is a
-superset of JSON, that is, all valid JSON is valid HOCON.
+to configure various parts of the application the library offers. HOCON is a superset of JSON, that is, all valid JSON
+is valid HOCON.
 
 All configuration for Bitcoin-S is under the `bitcoin-s` key.
 
-If you have a file `application.conf` anywhere on your classpath when using
-bitcoin-s, the values there take precedence over the ones found in our
-`reference.conf`. We also look for the file `bitcoin-s.conf` in the current
-Bitcoin-S data directory.
+If you have a file `application.conf` anywhere on your classpath when using bitcoin-s, the values there take precedence
+over the ones found in our
+`reference.conf`. We also look for the file `bitcoin-s.conf` in the current Bitcoin-S data directory.
 
 The resolved configuration gets parsed by
 [`AppConfig`](/api/org/bitcoins/db/AppConfig).
-`AppConfig` is an abstract class that's implemented by corresponding case
-classes in the `wallet`, `chain` and `node` projects. Here's some examples of how to
-construct a wallet configuration:
+`AppConfig` is an abstract class that's implemented by corresponding case classes in the `wallet`, `chain` and `node`
+projects. Here's some examples of how to construct a wallet configuration:
 
 ```scala mdoc:compile-only
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -40,8 +37,8 @@ val customOverride = ConfigFactory.parseString("bitcoin-s.network = testnet3")
 val configFromCustomDirAndOverride = WalletAppConfig(customDirectory, customOverride)
 ```
 
-You can pass as many `com.typesafe.config.Config`s as you'd like. If any
-keys appear multiple times the last one encountered takes precedence.
+You can pass as many `com.typesafe.config.Config`s as you'd like. If any keys appear multiple times the last one
+encountered takes precedence.
 
 ## Command Line Options
 
@@ -49,51 +46,55 @@ There are a few command line options available that take precedence over configu
 
 - `--datadir <directory>`
 
-     `datadir` sets the data directory instead of using the default `$HOME/.bitcoin-s`
+  `datadir` sets the data directory instead of using the default `$HOME/.bitcoin-s`
 
 - `--rpcbind <ip>`
 
-    `rpcbind` sets the interface the rpc server binds to instead of using the default `127.0.0.1`
+  `rpcbind` sets the interface the rpc server binds to instead of using the default `127.0.0.1`
 
 - `--rpcport <port>`
 
-    `rpcport` sets the port the rpc server binds to instead of using the default `9999`
+  `rpcport` sets the port the rpc server binds to instead of using the default `9999`
 
 - `--force-recalc-chainwork`
 
-    `force-recalc-chainwork` will force a recalculation of the entire chain's chain work, this
-    can be useful if there is an incompatible migration or if it got out of sync.
-    
+  `force-recalc-chainwork` will force a recalculation of the entire chain's chain work, this can be useful if there is
+  an incompatible migration or if it got out of sync.
+
 - `-Dlogback.configurationFile=/path/to/config.xml`
 
-    You can set a custom logback configuration. If you need help creating a custom logback file
-    you can read [the logback configuration documentation](http://logback.qos.ch/manual/configuration.html).
+  You can set a custom logback configuration. If you need help creating a custom logback file you can
+  read [the logback configuration documentation](http://logback.qos.ch/manual/configuration.html).
 
 ## Internal configuration
 
-Database connections are also configured by using HOCON.
-This is done in [`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf) inside the `db-commons` module.
-The options exposed here are **not** intended to be used by users of Bitcoin-S, and are internal only.
+Database connections are also configured by using HOCON. This is done
+in [`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf)
+inside the `db-commons` module. The options exposed here are **not** intended to be used by users of Bitcoin-S, and are
+internal only.
 
 ## Database Migrations
 
-All of our modules that require databases now have database migrations. The tool we use for these migrations is 
-called [flyway](https://flywaydb.org/). To find your projects migraitons, you need to look inside of the 
-`[project-name]/src/main/resources/[database-name]/migration/`. For example, the chain projects migrations live under 
+All of our modules that require databases now have database migrations. The tool we use for these migrations is
+called [flyway](https://flywaydb.org/). To find your projects migraitons, you need to look inside of the
+`[project-name]/src/main/resources/[database-name]/migration/`. For example, the chain projects migrations live under
 the path `chain/src/main/resources/chaindb/migration/V1__chain_db_baseline.sql`.
 
-Migrations can be executed by calling the [`DbManagement.migrate()`](https://github.com/bitcoin-s/bitcoin-s/blob/e387d075b0ff2e0a0fec15788fcb48e4ddc4d9d5/db-commons/src/main/scala/org/bitcoins/db/DbManagement.scala#L92) 
-method. Migrations are applied by default on server startup, via the [`AppConfig.start()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49)
-method. 
+Migrations can be executed by calling
+the [`DbManagement.migrate()`](https://github.com/bitcoin-s/bitcoin-s/blob/e387d075b0ff2e0a0fec15788fcb48e4ddc4d9d5/db-commons/src/main/scala/org/bitcoins/db/DbManagement.scala#L92)
+method. Migrations are applied by default on server startup, via
+the [`AppConfig.start()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49)
+method.
 
 These migrations are setup so that project's databases and migrations are independent of each other. Therefore if you
-want to use the `bitcoin-s-chain` project, but not the `bitcoin-s-wallet` project, wallet migrations are not applied. 
-It should be noted if you are using a module as a library, you are responsible for configuring the database via 
-[slick's configuration](https://scala-slick.org/doc/3.3.1/database.html#using-typesafe-config) and calling 
+want to use the `bitcoin-s-chain` project, but not the `bitcoin-s-wallet` project, wallet migrations are not applied. It
+should be noted if you are using a module as a library, you are responsible for configuring the database via
+[slick's configuration](https://scala-slick.org/doc/3.3.1/database.html#using-typesafe-config) and calling
 [`AppConfig.start()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49)
 to ensure the entire module is initialized correctly.
 
 ## Example Configuration File
+
 ```$xslt
 bitcoin-s {
     datadir = ${HOME}/.bitcoin-s
@@ -202,6 +203,9 @@ bitcoin-s {
         # before we timeout
         addressQueueTimeout = 5 seconds
         
+        # How often the wallet will rebroadcast unconfirmed transactions
+        rebroadcastFrequency = 30 minutes
+        
         hikari-logging = true
         hikari-logging-interval = 1 minute
    }
@@ -304,13 +308,13 @@ akka {
 
 ## Database configuration
 
-By default, bitcoin-s uses Sqlite to store its data. 
-It creates three Sqlite databases in `~/.bitcoin-s/${network}`: `chain.sqlite` for `chain` project, 
-`node.sqlite` for `node` project and `wallet.sqlite` the wallet. This is the default configuration, 
-it doesn't require additional changes in the config file. 
+By default, bitcoin-s uses Sqlite to store its data. It creates three Sqlite databases
+in `~/.bitcoin-s/${network}`: `chain.sqlite` for `chain` project,
+`node.sqlite` for `node` project and `wallet.sqlite` the wallet. This is the default configuration, it doesn't require
+additional changes in the config file.
 
-`bitcoin-s` also supports PostgreSQL as a database backend. In order to use a 
-PostgreSQL database for all project you need to add following into your config file: 
+`bitcoin-s` also supports PostgreSQL as a database backend. In order to use a PostgreSQL database for all project you
+need to add following into your config file:
 
 ```$xslt
 bitcoin-s {
@@ -355,9 +359,9 @@ bitcoin-s {
 
 The database driver will create a separate SQL namespace for each sub-project: `chain`, `node` and `wallet`.
 
-Also you can use mix databases and drivers in one configuration. For example,
-This configuration file enables Sqlite for `node` project (it's default, so its configuration 
-is omitted), and `walletdb` and `chaindb` PostgreSQL databases for `wallet` and `chain` projects:
+Also you can use mix databases and drivers in one configuration. For example, This configuration file enables Sqlite
+for `node` project (it's default, so its configuration is omitted), and `walletdb` and `chaindb` PostgreSQL databases
+for `wallet` and `chain` projects:
 
 ```$xslt
 bitcoin-s {

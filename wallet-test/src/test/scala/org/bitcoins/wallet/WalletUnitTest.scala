@@ -5,18 +5,13 @@ import org.bitcoins.core.api.wallet.db.{AddressDb, TransactionDbHelper}
 import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.{
-  MultiSignatureScriptPubKey,
-  P2PKHScriptPubKey,
-  P2SHScriptPubKey,
-  P2WPKHWitnessSPKV0
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError.MnemonicNotFound
-import org.bitcoins.crypto.{AesPassword, ECPublicKey}
-import org.bitcoins.testkitcore.util.TransactionTestUtil._
+import org.bitcoins.crypto.{AesPassword, DoubleSha256DigestBE, ECPublicKey}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.testkitcore.util.TransactionTestUtil._
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 
@@ -286,5 +281,25 @@ class WalletUnitTest extends BitcoinSWalletTest {
     for {
       signed <- wallet.signPSBT(psbt)
     } yield assert(signed == psbt)
+  }
+
+  it must "get correct txs to broadcast" in { wallet: Wallet =>
+    for {
+      addr <- wallet.getNewAddress(AddressType.SegWit)
+      addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
+      walletKey = addrDb.ecPublicKey
+
+      spk = addr.scriptPubKey
+      _ = assert(spk == P2WPKHWitnessSPKV0(walletKey))
+      dummyPrevTx = dummyTx(spk = spk)
+      _ <- wallet.processTransaction(dummyPrevTx,
+                                     blockHashOpt =
+                                       Some(DoubleSha256DigestBE.empty))
+
+      dummyPrevTx1 = dummyTx(prevTxId = dummyPrevTx.txId, spk = spk)
+      _ <- wallet.processTransaction(dummyPrevTx1, blockHashOpt = None)
+
+      toBroadcast <- wallet.getTransactionsToBroadcast
+    } yield assert(toBroadcast.map(_.txIdBE) == Vector(dummyPrevTx1.txIdBE))
   }
 }

@@ -103,6 +103,16 @@ case class WalletAppConfig(
     confs
   }
 
+  lazy val rebroadcastFrequency: Duration = {
+    if (config.hasPath("bitcoin-s.wallet.rebroadcastFrequency")) {
+      val javaDuration =
+        config.getDuration("bitcoin-s.wallet.rebroadcastFrequency")
+      new FiniteDuration(javaDuration.toNanos, TimeUnit.NANOSECONDS)
+    } else {
+      30.minutes
+    }
+  }
+
   lazy val feeProviderNameOpt: Option[String] = {
     config.getStringOrNone("bitcoin-s.fee-provider.name")
   }

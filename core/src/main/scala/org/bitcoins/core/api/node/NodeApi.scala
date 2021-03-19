@@ -11,7 +11,12 @@ trait NodeApi {
 
   /** Broadcasts the given transaction over the P2P network
     */
-  def broadcastTransaction(transaction: Transaction): Future[Unit]
+  def broadcastTransaction(transaction: Transaction): Future[Unit] =
+    broadcastTransactions(Vector(transaction))
+
+  /** Broadcasts the given transactions over the P2P network
+    */
+  def broadcastTransactions(transactions: Vector[Transaction]): Future[Unit]
 
   /** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
     */

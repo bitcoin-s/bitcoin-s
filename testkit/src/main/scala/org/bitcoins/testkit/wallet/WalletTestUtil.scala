@@ -16,9 +16,9 @@ import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
 import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
+import org.bitcoins.testkit.fixtures.WalletDAOs
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
-import org.bitcoins.testkit.fixtures.WalletDAOs
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -189,8 +189,13 @@ object WalletTestUtil {
                     scriptPubKey = wspk)
   }
 
-  def insertDummyIncomingTransaction(daos: WalletDAOs, utxo: SpendingInfoDb)(
-      implicit ec: ExecutionContext): Future[IncomingTransactionDb] = {
+  def insertDummyIncomingTransaction(
+      daos: WalletDAOs,
+      utxo: SpendingInfoDb,
+      confirmed: Boolean = true)(implicit
+      ec: ExecutionContext): Future[IncomingTransactionDb] = {
+    val blockHashOpt = if (confirmed) Some(randomBlockHash) else None
+
     val txDb = TransactionDb(
       txIdBE = utxo.txid,
       transaction = EmptyTransaction,
@@ -201,7 +206,7 @@ object WalletTestUtil {
       numInputs = 1,
       numOutputs = 1,
       lockTime = UInt32.zero,
-      blockHashOpt = Some(randomBlockHash)
+      blockHashOpt = blockHashOpt
     )
     val incomingDb = IncomingTransactionDb(utxo.txid, utxo.output.value)
     for {

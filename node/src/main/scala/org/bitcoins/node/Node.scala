@@ -213,39 +213,35 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   }
 
   /** Broadcasts the given transaction over the P2P network */
-  override def broadcastTransaction(transaction: Transaction): Future[Unit] = {
-    val broadcastTx = BroadcastAbleTransaction(transaction)
+  override def broadcastTransactions(
+      transactions: Vector[Transaction]): Future[Unit] = {
+    val broadcastTxDbs = transactions.map(tx => BroadcastAbleTransaction(tx))
 
-    val addToDbF = txDAO.upsert(broadcastTx)
+    val addToDbF = txDAO.upsertAll(broadcastTxDbs)
+
+    val txIds = transactions.map(_.txIdBE.hex)
 
     addToDbF.onComplete {
       case Failure(exception) =>
-        logger.error(s"Error when writing broadcastable TX to DB", exception)
+        logger.error(s"Error when writing broadcastable TXs to DB", exception)
       case Success(written) =>
         logger.debug(
-          s"Wrote tx=${written.transaction.txIdBE.hex} to broadcastable table")
+          s"Wrote tx=${written.map(_.transaction.txIdBE.hex)} to broadcastable table")
     }
 
     for {
       _ <- addToDbF
       peerMsgSender <- peerMsgSenderF
 
-      // Note: This is a privacy leak and should be fixed in the future. Ideally, we should
-      // be using an inventory message to broadcast the transaction to help hide the fact that
-      // this transaction belongs to us. However, currently it is okay for us to use a transaction
-      // message because a Bitcoin-S node currently doesn't have a mempool and only
-      // broadcasts/relays transactions from its own wallet.
-      // See https://developer.bitcoin.org/reference/p2p_networking.html#tx
       connected <- isConnected
 
       res <- {
         if (connected) {
-          logger.info(
-            s"Sending out tx message for tx=${transaction.txIdBE.hex}")
-          peerMsgSender.sendTransactionMessage(transaction)
+          logger.info(s"Sending out tx message for tx=$txIds")
+          peerMsgSender.sendInventoryMessage(transactions: _*)
         } else {
           Future.failed(new RuntimeException(
-            s"Error broadcasting transaction ${transaction.txIdBE.hex}, peer is disconnected $peer"))
+            s"Error broadcasting transaction $txIds, peer is disconnected $peer"))
         }
       }
     } yield res

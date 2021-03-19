@@ -450,7 +450,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
     * With this background thread, we poll the [[addressRequestQueue]] seeing if there
     * are any elements in it, if there are, we process them and complete the Promise in the queue.
     */
-  lazy val walletThread = new Thread(AddressQueueRunnable)
+  lazy val addressQueueThread = new Thread(AddressQueueRunnable)
 
   lazy val addressRequestQueue = {
     val queue = new java.util.concurrent.ArrayBlockingQueue[(
@@ -468,15 +468,16 @@ private[wallet] trait AddressHandling extends WalletLogger {
   }
 
   def startWalletThread(): Unit = {
-    walletThread.setDaemon(true)
-    walletThread.setName(s"wallet-address-queue-${System.currentTimeMillis()}")
-    walletThread.start()
+    addressQueueThread.setDaemon(true)
+    addressQueueThread.setName(
+      s"wallet-address-queue-${System.currentTimeMillis()}")
+    addressQueueThread.start()
     threadStarted.set(true)
   }
 
   /** Kills the wallet's thread */
-  def stopWalletThread(): Unit = {
-    walletThread.interrupt()
+  def stopAddressQueueThread(): Unit = {
+    addressQueueThread.interrupt()
   }
 
   /** A runnable that drains [[addressRequestQueue]]. Currently polls every 100ms
@@ -487,7 +488,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
   private case object AddressQueueRunnable extends Runnable {
 
     override def run(): Unit = {
-      while (!walletThread.isInterrupted) {
+      while (!addressQueueThread.isInterrupted) {
         val (account, chainType, promise) =
           try {
             addressRequestQueue.take()

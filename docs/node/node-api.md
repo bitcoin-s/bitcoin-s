@@ -1,6 +1,5 @@
 ---
-id: node-api
-title: Node API
+id: node-api title: Node API
 ---
 
 ```scala mdoc:invisible
@@ -11,6 +10,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee._
+import org.bitcoins.core.util._
 import org.bitcoins.feeprovider._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.node._
@@ -29,12 +29,11 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 
 ### NodeAPI
 
-The NodeApi is how the wallet project retrieves relevant node data like blocks.
-This allows the wallet for example to retrieve blocks for finding its relevant transactions.
+The NodeApi is how the wallet project retrieves relevant node data like blocks. This allows the wallet for example to
+retrieve blocks for finding its relevant transactions.
 
-Since this is an API it can be hooked up to the `node` module of bitcoin-s but it can also be linked to
-any other implementation of your choosing. This allows you to use the bitcoin-s wallet in any schema that you
-want.
+Since this is an API it can be hooked up to the `node` module of bitcoin-s but it can also be linked to any other
+implementation of your choosing. This allows you to use the bitcoin-s wallet in any schema that you want.
 
 The functions that the NodeApi supports are:
 
@@ -94,8 +93,8 @@ val exampleCallback = createCallback(exampleProcessBlock)
 // but for the examples sake we will keep it small.
   val nodeApi = new NodeApi {
 
-    override def broadcastTransaction(transaction: Transaction): Future[Unit] = {
-        bitcoind.sendRawTransaction(transaction).map(_ => ())
+    override def broadcastTransactions(transactions: Vector[Transaction]): Future[Unit] = {
+            FutureUtil.sequentially(transactions)(bitcoind.sendRawTransaction(_)).map(_ => ())
     }
 
     override def downloadBlocks(
