@@ -434,9 +434,7 @@ object Deps {
       Compile.scalaCollectionCompat,
       Compile.scalacheck.value,
       Compile.scalaTest.value,
-      Compile.scalaTestPlus.value,
-      Compile.slf4j,
-      Compile.grizzledSlf4j
+      Compile.scalaTestPlus.value
     )
   }
 
