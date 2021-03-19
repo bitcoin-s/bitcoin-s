@@ -85,7 +85,7 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
 <span class="hljs-keyword">val</span> instance = <span class="hljs-type">BitcoindRpcTestUtil</span>.instance(versionOpt = <span class="hljs-type">Some</span>(bitcoindV))
 
 <span class="hljs-comment">//now let's create an rpc client off of that instance</span>
-<span class="hljs-keyword">val</span> bitcoindRpcClientF = <span class="hljs-type">BitcoindRpcTestUtil</span>.startedBitcoindRpcClient(instance)
+<span class="hljs-keyword">val</span> bitcoindRpcClientF = <span class="hljs-type">BitcoindRpcTestUtil</span>.startedBitcoindRpcClient(instance, <span class="hljs-type">Vector</span>.newBuilder)
 
 <span class="hljs-comment">//yay! it's started. Now you can run tests against this.</span>
 <span class="hljs-comment">//let's just grab the block count for an example</span>
