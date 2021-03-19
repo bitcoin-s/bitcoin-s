@@ -148,25 +148,30 @@ trait TLVGen {
     contractDescriptorV0TLVWithTotalCollateral.map(_._1)
   }
 
-  def oracleInfoV0TLV: Gen[OracleInfoV0TLV] = {
+  def oracleInfoV0TLV(outcomes: Vector[String]): Gen[OracleInfoV0TLV] = {
     for {
       privKey <- CryptoGenerators.privateKey
       rValue <- CryptoGenerators.schnorrNonce
-      outcomes <- Gen.listOf(StringGenerators.genUTF8String)
     } yield {
       OracleInfoV0TLV(
         OracleAnnouncementV0TLV.dummyForEventsAndKeys(
           privKey,
           rValue,
-          outcomes.toVector.map(EnumOutcome.apply)))
+          outcomes.map(EnumOutcome.apply)))
     }
+  }
+
+  def oracleInfoV0TLV: Gen[OracleInfoV0TLV] = {
+    Gen
+      .listOf(StringGenerators.genUTF8String)
+      .flatMap(outcomes => oracleInfoV0TLV(outcomes.toVector))
   }
 
   def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
     for {
       (descriptor, totalCollateral) <-
         contractDescriptorV0TLVWithTotalCollateral
-      oracleInfo <- oracleInfoV0TLV
+      oracleInfo <- oracleInfoV0TLV(descriptor.outcomes.map(_._1))
     } yield {
       ContractInfoV0TLV(totalCollateral, descriptor, oracleInfo)
     }
