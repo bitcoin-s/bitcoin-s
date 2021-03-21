@@ -144,6 +144,8 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `getfiltercount` - Get the number of filters
  - `getfilterheadercount` - Get the number of filter headers
  - `getbestblockhash` - Get the best block hash
+ - `getblockheader` - Returns information about block header <hash>
+     - `hash` - The block hash
  - `decoderawtransaction` `tx` - `Decode the given raw hex transaction`
      - `tx` - Transaction encoded in hex to decode
 
