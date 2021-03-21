@@ -282,7 +282,6 @@ object Deps {
   def coreTest = Def.setting {
     List(
       Test.junitInterface,
-      Test.logback,
       Test.scalaTest.value,
       Test.spray,
       Test.playJson,
