@@ -134,6 +134,9 @@ trait CryptoRuntime {
 
   def publicKey(privateKey: ECPrivateKey): ECPublicKey
 
+  /** Converts the given public key from its current representation to compressed/not compressed
+    * depending upon how [[compressed]] is set
+    */
   def publicKeyConvert(key: ECPublicKey, compressed: Boolean): ECPublicKey
 
   def sign(privateKey: ECPrivateKey, dataToSign: ByteVector): ECDigitalSignature

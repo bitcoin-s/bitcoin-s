@@ -13,7 +13,8 @@ object AdaptorUtil {
       privateKey: ECPrivateKey): FieldElement = {
     CryptoUtil.decodePoint(r) match {
       case ECPointInfinity =>
-        throw new IllegalArgumentException("Invalid point")
+        throw new IllegalArgumentException(
+          s"Invalid point, got=${ECPointInfinity}")
       case point: ECPointImpl =>
         val rx = FieldElement(point.x.toBigInteger)
         val x = privateKey.fieldElement
