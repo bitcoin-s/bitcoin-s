@@ -294,7 +294,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
     walletWithBitcoind =>
       val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
 
-      val amountToSend = Bitcoins(49.99)
+      // Makes fee rate for tx ~5 sat/vbyte
+      val amountToSend = Bitcoins(49.99999000)
 
       for {
         // Mine to wallet
