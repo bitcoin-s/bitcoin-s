@@ -1,12 +1,10 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkitcore.gen.CryptoGenerators
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
 
 import scala.concurrent.ExecutionContext
 
-class ECPublicKeyTest extends BitcoinSUnitTest {
+class ECPublicKeyTest extends BitcoinSCryptoTest {
 
   it must "be able to decompress keys" in {
     val uncompressed =

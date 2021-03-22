@@ -1,19 +1,11 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
 import org.scalacheck.Gen
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.must.Matchers
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import scodec.bits._
 
 /** Created by chris on 1/26/16.
   */
-class CryptoUtilTest
-    extends AnyFlatSpec
-    with Matchers
-    with ScalaCheckPropertyChecks {
+class CryptoUtilTest extends BitcoinSCryptoTest {
 
   "CryptoUtil" must "perform a SHA-1 hash" in {
     val hash = CryptoUtil.sha1(hex"")
@@ -49,7 +41,7 @@ class CryptoUtilTest
 
   it must "perform a single SHA256 hash on a bit vector" in {
     val binary = bin"010001101110010001101110"
-    val strBytes = BytesUtil.decodeHex(binary.toHex)
+    val strBytes = CryptoBytesUtil.decodeHex(binary.toHex)
 
     val shaStrBytes = CryptoUtil.sha256(strBytes)
     val shaBinary = CryptoUtil.sha256(binary)

@@ -1,10 +1,6 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.core.util.NumberUtil
-import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
-
-class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
+class SchnorrDigitalSignatureTest extends BitcoinSCryptoTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
@@ -109,8 +105,8 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
           sig2.rx.bytes ++ privKey.schnorrPublicKey.bytes ++ message2
         val e2Bytes = CryptoUtil.sha256SchnorrChallenge(bytesToHash2).bytes
 
-        val e1 = NumberUtil.uintToFieldElement(e1Bytes)
-        val e2 = NumberUtil.uintToFieldElement(e2Bytes)
+        val e1 = CryptoNumberUtil.uintToFieldElement(e1Bytes)
+        val e2 = CryptoNumberUtil.uintToFieldElement(e2Bytes)
 
         val k = nonce.nonceKey.fieldElement
         val x = privKey.schnorrKey.fieldElement
