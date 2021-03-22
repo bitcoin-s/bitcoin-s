@@ -1,6 +1,5 @@
 package org.bitcoins.core.script.interpreter.testprotocol
 
-import grizzled.slf4j.Logging
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
@@ -12,7 +11,7 @@ import spray.json._
 
 /** Created by chris on 1/18/16.
   */
-object CoreTestCaseProtocol extends DefaultJsonProtocol with Logging {
+object CoreTestCaseProtocol extends DefaultJsonProtocol {
 
   implicit object CoreTestCaseFormatter
       extends RootJsonFormat[Option[CoreTestCase]] {

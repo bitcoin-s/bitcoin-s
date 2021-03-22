@@ -3,15 +3,13 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result._
-import grizzled.slf4j.Logging
 import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.scalacheck.{Prop, Properties}
 
 /** Created by chris on 7/25/16.
   */
 class TransactionSignatureCreatorSpec
-    extends Properties("TransactionSignatureCreatorSpec")
-    with Logging {
+    extends Properties("TransactionSignatureCreatorSpec") {
 
   property("Must generate a valid signature for a p2pk transaction") =
     Prop.forAll(TransactionGenerators.signedP2PKTransaction) {
@@ -108,7 +106,6 @@ class TransactionSignatureCreatorSpec
       case (wtxSigComponent, _) =>
         val program = PreExecutionScriptProgram(wtxSigComponent)
         val result = ScriptInterpreter.run(program)
-        if (result != ScriptOk) logger.warn("Result: " + result)
         result == ScriptOk
     }
 
@@ -118,7 +115,6 @@ class TransactionSignatureCreatorSpec
       case (wtxSigComponent, _) =>
         val program = PreExecutionScriptProgram(wtxSigComponent)
         val result = ScriptInterpreter.run(program)
-        if (result != ScriptOk) logger.warn("Result: " + result)
         Seq(ScriptErrorPushSize, ScriptOk).contains(result)
     }
 }

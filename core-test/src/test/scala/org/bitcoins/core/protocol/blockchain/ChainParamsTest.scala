@@ -136,7 +136,6 @@ class ChainParamsTest extends BitcoinSUnitTest {
     RegTestNetChainParams.genesisBlock.hex must be(expectedHex)
   }
   it must "generate the correct blockheader hash for the genesis block on regtest" in {
-    logger.debug("Regtest genesis block: " + RegTestNetChainParams.genesisBlock)
     RegTestNetChainParams.genesisBlock.blockHeader.hash.hex must be(
       BytesUtil.flipEndianness(
         "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"))

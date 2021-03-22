@@ -1,12 +1,11 @@
 package org.bitcoins.core.number
 
-import grizzled.slf4j.Logging
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.util.Try
 
-class UInt8Spec extends Properties("UInt8Spec") with Logging {
+class UInt8Spec extends Properties("UInt8Spec") {
 
   property("convert uint8 -> byte -> uint8") = {
     Prop.forAll(NumberGenerator.uInt8) { case u8: UInt8 =>
@@ -39,12 +38,7 @@ class UInt8Spec extends Properties("UInt8Spec") with Logging {
         val r = u8 >> shift
         val expected =
           if (shift > 31) UInt8.zero else UInt8((u8.toLong >> shift).toShort)
-        if (r != expected) {
-          logger.warn("expected: " + expected)
-          logger.warn("r: " + r)
-        }
         r == expected
-
     }
   }
 }

@@ -1,12 +1,11 @@
 package org.bitcoins.core.util
 
-import grizzled.slf4j.Logging
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalatest.compatible.Assertion
 
 import scala.concurrent._
 
-class FutureUtilTest extends BitcoinSJvmTest with Logging {
+class FutureUtilTest extends BitcoinSJvmTest {
   it must "execute futures sequentially in the correct order" in {
 
     val assertionP = Promise[Assertion]()

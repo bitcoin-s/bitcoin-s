@@ -1,6 +1,5 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import grizzled.slf4j.Logging
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.BytesUtil
@@ -9,7 +8,7 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 7/5/16.
   */
-class RawHeadersMessageSerializerTest extends BitcoinSUnitTest with Logging {
+class RawHeadersMessageSerializerTest extends BitcoinSUnitTest {
 
   //from this example
   //https://bitcoin.org/en/developer-reference#headers
@@ -45,7 +44,6 @@ class RawHeadersMessageSerializerTest extends BitcoinSUnitTest with Logging {
       "020100000043497fd7f826957108f4a30fd9cec3aeba79972084e90ead01ea330900000000bac8b0fa927c0ac8234287e33c5f74d38d354820e24756ad709d7038fc5f31f020e7494dffff001d03e4b672000100000006128e87be8b1b4dea47a7247d5528d2702c96826c7a648497e773b800000000e241352e3bec0a95a6217e10c3abb54adfa05abb12c126695595580fb92e222032e7494dffff001d00d2353400"
     val headersMsg = RawHeadersMessageSerializer.read(hex)
     val first = headersMsg.headers.head
-    logger.debug("Headers: " + headersMsg.headers)
     first.previousBlockHash.hex must be(
       BytesUtil.flipEndianness(
         "000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943"))
@@ -55,7 +53,6 @@ class RawHeadersMessageSerializerTest extends BitcoinSUnitTest with Logging {
     first.merkleRootHash.hex must be(
       BytesUtil.flipEndianness(
         "f0315ffc38709d70ad5647e22048358dd3745f3ce3874223c80a7c92fab0c8ba"))
-    logger.debug("Second header: " + headersMsg.headers(1))
     val second = headersMsg.headers(1)
     second.previousBlockHash.hex must be(
       BytesUtil.flipEndianness(

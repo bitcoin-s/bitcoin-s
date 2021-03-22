@@ -1,6 +1,5 @@
 package org.bitcoins.testkitcore.util
 
-import grizzled.slf4j.Logging
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.{Int32, UInt32}
@@ -11,7 +10,7 @@ import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
 
 /** Created by chris on 2/12/16.
   */
-trait TransactionTestUtil extends Logging {
+trait TransactionTestUtil {
 
   /** Raw multisignature script pub key output
     * @return
@@ -124,7 +123,6 @@ trait TransactionTestUtil extends Logging {
       TransactionOutput) = {
     val spendingTx = TestUtil.simpleTransaction
     val creditingTx = TestUtil.parentSimpleTransaction
-    logger.info("Crediting transaction: " + creditingTx)
     val creditingOutput = TestUtil.parentSimpleTransaction.outputs(
       spendingTx.inputs.head.previousOutput.vout.toInt)
     //make sure the outpoint index and the outpoint txid are correct

@@ -1,6 +1,5 @@
 package org.bitcoins.testkitcore.util
 
-import grizzled.slf4j.Logging
 import org.scalacheck.Shrink
 import org.scalactic.anyvals.PosInt
 import org.scalatest.concurrent.TimeLimitedTests
@@ -16,8 +15,7 @@ abstract class BitcoinSUnitTest
     extends AnyFlatSpec
     with Matchers
     with ScalaCheckPropertyChecks
-    with TimeLimitedTests
-    with Logging {
+    with TimeLimitedTests {
 
   override val timeLimit: Span = 120.seconds
 

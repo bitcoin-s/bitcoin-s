@@ -1,6 +1,5 @@
 package org.bitcoins.core.number
 
-import grizzled.slf4j.Logging
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.scalacheck.{Gen, Prop, Properties}
 
@@ -8,7 +7,7 @@ import scala.util.Try
 
 /** Created by chris on 6/16/16.
   */
-class UInt32Spec extends Properties("UInt32") with Logging {
+class UInt32Spec extends Properties("UInt32") {
 
   property("serialization symmetry") = {
     Prop.forAll(NumberGenerator.uInt32s) { uInt32: UInt32 =>

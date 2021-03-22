@@ -10,7 +10,6 @@ class NetworkPayloadTest extends BitcoinSJvmTest {
   "NetworkMessage" must "create a payload object from it's network header and the payload bytes" in {
     val rawNetworkMessage = P2PMessageTestUtil.rawNetworkMessage
     val header = NetworkHeader(rawNetworkMessage.take(48))
-    logger.debug("Header: " + header)
     val payloadHex = rawNetworkMessage.slice(48, rawNetworkMessage.length)
     val payload = NetworkPayload(header, payloadHex)
     payload.isInstanceOf[VersionMessage] must be(true)
