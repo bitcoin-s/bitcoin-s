@@ -6,13 +6,13 @@ import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   StartedScriptProgram
 }
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
+import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 
 import scala.annotation.tailrec
 
 /** Created by chris on 1/24/16.
   */
-sealed abstract class ConstantInterpreter extends BitcoinSLogger {
+sealed abstract class ConstantInterpreter {
 
   /** The next byte contains the number of bytes to be pushed onto the stack. */
   def opPushData1(
@@ -73,8 +73,6 @@ sealed abstract class ConstantInterpreter extends BitcoinSLogger {
         takeUntilBytesNeeded(program.script.tail.tail, Nil)
       case _: ScriptToken => takeUntilBytesNeeded(program.script.tail, Nil)
     }
-    logger.debug("new script: " + newScript)
-    logger.debug("Bytes to push onto stack: " + bytesToPushOntoStack)
     val constant: ScriptToken =
       if (bytesToPushOntoStack.size == 1) bytesToPushOntoStack.head
       else
@@ -82,7 +80,6 @@ sealed abstract class ConstantInterpreter extends BitcoinSLogger {
           BytesUtil.flipEndianness(
             BytesUtil.toByteVector(bytesToPushOntoStack)))
 
-    logger.debug("Constant to be pushed onto stack: " + constant)
     //check to see if we have the exact amount of bytes needed to be pushed onto the stack
     //if we do not, mark the program as invalid
     if (bytesNeeded == 0)
@@ -92,24 +89,13 @@ sealed abstract class ConstantInterpreter extends BitcoinSLogger {
       ScriptFlagUtil.requireMinimalData(program.flags) && bytesNeeded == 1 &&
       constant.isInstanceOf[ScriptNumber] && constant.toLong <= 16
     ) {
-      logger.error(
-        "We can push this constant onto the stack with OP_0 - OP_16 instead of using a script constant")
       program.failExecution(ScriptErrorMinimalData)
     } else if (bytesNeeded != bytesToPushOntoStack.map(_.bytes.size).sum) {
-      logger.error("Incorrect amount of bytes being pushed onto the stack")
-      logger.error("Bytes needed: " + bytesNeeded)
-      logger.error(
-        "Number of byte received: " + bytesToPushOntoStack
-          .map(_.bytes.size)
-          .sum)
       program.failExecution(ScriptErrorBadOpCode)
     } else if (
       ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil
         .isMinimalPush(program.script.head, constant)
     ) {
-      logger.debug("Pushing operation: " + program.script.head)
-      logger.debug("Constant parsed: " + constant)
-      logger.debug("Constant size: " + constant.bytes.size)
       program.failExecution(ScriptErrorMinimalData)
     } else program.updateStackAndScript(constant :: program.stack, newScript)
   }
@@ -140,8 +126,6 @@ sealed abstract class ConstantInterpreter extends BitcoinSLogger {
             program.flags) && program.script.size > 2 && !BitcoinScriptUtil
             .isMinimalPush(program.script.head, program.script(2))
         ) {
-          logger.error(
-            s"Non-minimal push where minimal push was required: $program")
           program.failExecution(ScriptErrorMinimalData)
         } else {
           pushScriptNumberBytesToStack(program)

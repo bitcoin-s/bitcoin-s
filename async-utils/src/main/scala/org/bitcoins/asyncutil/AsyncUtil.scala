@@ -1,14 +1,14 @@
 package org.bitcoins.asyncutil
 
+import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil.scheduler
 import org.bitcoins.core.api.asyncutil.AsyncUtilApi
-import org.bitcoins.core.util.BitcoinSLogger
 
 import java.util.concurrent.{Executors, TimeUnit}
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-abstract class AsyncUtil extends AsyncUtilApi with BitcoinSLogger {
+abstract class AsyncUtil extends AsyncUtilApi with Logging {
   import AsyncUtil.DEFAULT_MAX_TRIES
 
   private def retryRunnable(

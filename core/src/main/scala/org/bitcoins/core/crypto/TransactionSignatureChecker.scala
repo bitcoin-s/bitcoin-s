@@ -8,7 +8,7 @@ import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.crypto.{DERSignatureUtil, ECDigitalSignature, ECPublicKey}
 import scodec.bits.ByteVector
 
@@ -18,7 +18,7 @@ import scala.annotation.tailrec
   * Responsible for checking digital signatures on inputs against their respective
   * public keys
   */
-trait TransactionSignatureChecker extends BitcoinSLogger {
+trait TransactionSignatureChecker {
 
   def checkSignature(
       txSignatureComponent: TxSigComponent,
@@ -62,7 +62,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       signature: ECDigitalSignature,
       flags: Seq[ScriptFlag] =
         Policy.standardFlags): TransactionSignatureCheckerResult = {
-    logger.debug("Signature: " + signature)
     val pubKeyEncodedCorrectly = BitcoinScriptUtil.isValidPubKeyEncoding(
       pubKey,
       txSignatureComponent.sigVersion,
@@ -71,21 +70,16 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       ScriptFlagUtil.requiresStrictDerEncoding(flags) && !DERSignatureUtil
         .isValidSignatureEncoding(signature)
     ) {
-      logger.error("Signature was not stricly encoded der: " + signature.hex)
       SignatureValidationErrorNotStrictDerEncoding
     } else if (
       ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil
         .isLowS(signature)
     ) {
-      logger.error("Signature did not have a low s value")
       SignatureValidationErrorHighSValue
     } else if (
       ScriptFlagUtil.requireStrictEncoding(flags) && signature.bytes.nonEmpty &&
       !HashType.isDefinedHashtypeSignature(signature)
     ) {
-      logger.error("signature: " + signature.hex)
-      logger.error(
-        "Hash type was not defined on the signature, got: " + signature.bytes.last)
       SignatureValidationErrorHashType
     } else if (pubKeyEncodedCorrectly.isDefined) {
       val err = pubKeyEncodedCorrectly.get
@@ -93,8 +87,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
         if (err == ScriptErrorWitnessPubKeyType)
           SignatureValidationErrorWitnessPubKeyType
         else SignatureValidationErrorPubKeyEncoding
-      logger.error(
-        "The public key given for signature checking was not encoded correctly, err: " + result)
       result
     } else {
       val sigsRemovedScript = BitcoinScriptUtil.calculateScriptForChecking(
@@ -130,8 +122,6 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
             hashType)
       }
 
-      logger.trace(
-        "Hash for signature: " + BytesUtil.encodeHex(hashForSignature.bytes))
       val sigWithoutHashType = stripHashType(signature)
       val isValid = pubKey.verify(hashForSignature, sigWithoutHashType)
       if (isValid) SignatureValidationSuccess
@@ -162,19 +152,14 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       requiredSigs: Long): TransactionSignatureCheckerResult = {
     require(requiredSigs >= 0,
             s"requiredSigs cannot be negative, got $requiredSigs")
-    logger.trace("Signatures inside of helper: " + sigs)
-    logger.trace("Public keys inside of helper: " + pubKeys)
     if (sigs.size > pubKeys.size) {
       //this is how bitcoin core treats this. If there are ever any more
       //signatures than public keys remaining we immediately return
       //false https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L943-L945
-      logger.info("We have more sigs than we have public keys remaining")
       nullFailCheck(sigs, SignatureValidationErrorIncorrectSignatures, flags)
     } else if (requiredSigs > sigs.size) {
       //for the case when we do not have enough sigs left to check to meet the required signature threshold
       //https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L990-L991
-      logger.info(
-        "We do not have enough sigs to meet the threshold of requireSigs in the multiSignatureScriptPubKey")
       nullFailCheck(sigs, SignatureValidationErrorSignatureCount, flags)
     } else if (sigs.nonEmpty && pubKeys.nonEmpty) {
       val sig = sigs.head

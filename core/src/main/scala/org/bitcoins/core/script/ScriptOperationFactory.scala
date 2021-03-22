@@ -9,7 +9,7 @@ import org.bitcoins.core.script.locktime.LocktimeOperation
 import org.bitcoins.core.script.reserved.ReservedOperation
 import org.bitcoins.core.script.splice.SpliceOperation
 import org.bitcoins.core.script.stack.StackOperation
-import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.StringFactory
 import scodec.bits.ByteVector
 
@@ -17,9 +17,7 @@ import scodec.bits.ByteVector
   * Responsible for matching script op codes with their given
   * hexadecimal representation or byte representation
   */
-trait ScriptOperationFactory[T <: ScriptOperation]
-    extends StringFactory[T]
-    with BitcoinSLogger {
+trait ScriptOperationFactory[T <: ScriptOperation] extends StringFactory[T] {
 
   /** All of the [[org.bitcoins.core.script.ScriptOperation ScriptOperation]]s for a particular `T`. */
   def operations: Vector[T]

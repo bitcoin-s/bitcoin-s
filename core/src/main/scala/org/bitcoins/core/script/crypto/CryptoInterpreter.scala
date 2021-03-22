@@ -10,7 +10,7 @@ import org.bitcoins.core.script.control.{
 }
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.crypto.{
   CryptoUtil,
   ECDigitalSignature,
@@ -21,7 +21,7 @@ import scodec.bits.ByteVector
 
 /** Created by chris on 1/6/16.
   */
-sealed abstract class CryptoInterpreter extends BitcoinSLogger {
+sealed abstract class CryptoInterpreter {
 
   /** The input is hashed twice: first with SHA-256 and then with RIPEMD-160. */
   def opHash160(
@@ -75,19 +75,14 @@ sealed abstract class CryptoInterpreter extends BitcoinSLogger {
     require(program.script.headOption.contains(OP_CHECKSIG),
             "Script top must be OP_CHECKSIG")
     if (program.stack.size < 2) {
-      logger.error("OP_CHECKSIG requires at lest two stack elements")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val pubKey = ECPublicKey(program.stack.head.bytes)
       val signature = ECDigitalSignature(program.stack.tail.head.bytes)
       val flags = program.flags
       val restOfStack = program.stack.tail.tail
-      logger.debug(
-        "Program before removing OP_CODESEPARATOR: " + program.originalScript)
       val removedOpCodeSeparatorsScript =
         BitcoinScriptUtil.removeOpCodeSeparator(program)
-      logger.debug(
-        "Program after removing OP_CODESEPARATOR: " + removedOpCodeSeparatorsScript)
       val result = TransactionSignatureChecker.checkSignature(
         program.txSignatureComponent,
         removedOpCodeSeparatorsScript,
@@ -106,14 +101,11 @@ sealed abstract class CryptoInterpreter extends BitcoinSLogger {
     require(program.script.headOption.contains(OP_CHECKSIGVERIFY),
             "Script top must be OP_CHECKSIGVERIFY")
     if (program.stack.size < 2) {
-      logger.error("Stack must contain at least 3 items for OP_CHECKSIGVERIFY")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val newScript = OP_CHECKSIG :: OP_VERIFY :: program.script.tail
       val newProgram = program.updateScript(newScript)
       val programFromOpCheckSig = opCheckSig(newProgram)
-      logger.debug(
-        "Stack after OP_CHECKSIG execution: " + programFromOpCheckSig.stack)
       programFromOpCheckSig match {
         case _: ExecutedScriptProgram =>
           programFromOpCheckSig
@@ -157,25 +149,19 @@ sealed abstract class CryptoInterpreter extends BitcoinSLogger {
     val flags = program.flags
 
     if (program.stack.size < 1) {
-      logger.error("OP_CHECKMULTISIG requires at least 1 stack elements")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       //these next lines remove the appropriate stack/script values after the signatures have been checked
       val nPossibleSignatures: ScriptNumber =
         BitcoinScriptUtil.numPossibleSignaturesOnStack(program)
       if (nPossibleSignatures < ScriptNumber.zero) {
-        logger.error(
-          "We cannot have the number of pubkeys in the script be negative")
         program.failExecution(ScriptErrorPubKeyCount)
       } else if (
         ScriptFlagUtil.requireMinimalData(
           flags) && !nPossibleSignatures.isShortestEncoding
       ) {
-        logger.error(
-          "The required signatures and the possible signatures must be encoded as the shortest number possible")
         program.failExecution(ScriptErrorUnknownError)
       } else if (program.stack.size < 2) {
-        logger.error("We need at least 2 operations on the stack")
         program.failExecution(ScriptErrorInvalidStackOperation)
       } else {
         val mRequiredSignatures: ScriptNumber =
@@ -185,26 +171,18 @@ sealed abstract class CryptoInterpreter extends BitcoinSLogger {
           ScriptFlagUtil.requireMinimalData(
             flags) && !mRequiredSignatures.isShortestEncoding
         ) {
-          logger.error(
-            "The required signatures val must be the shortest encoding as possible")
           return program.failExecution(ScriptErrorUnknownError)
         }
 
         if (mRequiredSignatures < ScriptNumber.zero) {
-          logger.error(
-            "We cannot have the number of signatures specified in the script be negative")
           return program.failExecution(ScriptErrorSigCount)
         }
-        logger.debug("nPossibleSignatures: " + nPossibleSignatures)
         val (pubKeysScriptTokens, stackWithoutPubKeys) =
           (program.stack.tail.slice(0, nPossibleSignatures.toInt),
            program.stack.tail
              .slice(nPossibleSignatures.toInt, program.stack.tail.size))
 
         val pubKeys = pubKeysScriptTokens.map(key => ECPublicKey(key.bytes))
-        logger.debug("Public keys on the stack: " + pubKeys)
-        logger.debug("Stack without pubkeys: " + stackWithoutPubKeys)
-        logger.debug("mRequiredSignatures: " + mRequiredSignatures)
 
         //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
         val signaturesScriptTokens = program.stack.tail.slice(
@@ -212,24 +190,15 @@ sealed abstract class CryptoInterpreter extends BitcoinSLogger {
           nPossibleSignatures.toInt + mRequiredSignatures.toInt + 1)
         val signatures =
           signaturesScriptTokens.map(token => ECDigitalSignature(token.bytes))
-        logger.debug("Signatures on the stack: " + signatures)
 
         //this contains the extra Script OP that is required for OP_CHECKMULTISIG
         val stackWithoutPubKeysAndSignatures = stackWithoutPubKeys.tail
           .slice(mRequiredSignatures.toInt, stackWithoutPubKeys.tail.size)
-        logger.debug(
-          "stackWithoutPubKeysAndSignatures: " + stackWithoutPubKeysAndSignatures)
         if (pubKeys.size > Consensus.maxPublicKeysPerMultiSig) {
-          logger.error(
-            "We have more public keys than the maximum amount of public keys allowed")
           program.failExecution(ScriptErrorPubKeyCount)
         } else if (signatures.size > pubKeys.size) {
-          logger.error(
-            "We have more signatures than public keys inside OP_CHECKMULTISIG")
           program.failExecution(ScriptErrorSigCount)
         } else if (stackWithoutPubKeysAndSignatures.size < 1) {
-          logger.error(
-            "OP_CHECKMULTISIG must have a remaining element on the stack afterk execution")
           //this is because of a bug in bitcoin core for the implementation of OP_CHECKMULTISIG
           //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L966
           program.failExecution(ScriptErrorInvalidStackOperation)
@@ -237,8 +206,6 @@ sealed abstract class CryptoInterpreter extends BitcoinSLogger {
           ScriptFlagUtil.requireNullDummy(flags) &&
           (stackWithoutPubKeysAndSignatures.nonEmpty && stackWithoutPubKeysAndSignatures.head.bytes.nonEmpty)
         ) {
-          logger.error(
-            "Script flag null dummy was set however the first element in the script signature was not an OP_0, stackWithoutPubKeysAndSignatures: " + stackWithoutPubKeysAndSignatures)
           program.failExecution(ScriptErrorSigNullDummy)
         } else {
           //remove the last OP_CODESEPARATOR
@@ -270,15 +237,11 @@ sealed abstract class CryptoInterpreter extends BitcoinSLogger {
     require(program.script.headOption.contains(OP_CHECKMULTISIGVERIFY),
             "Script top must be OP_CHECKMULTISIGVERIFY")
     if (program.stack.size < 3) {
-      logger.error(
-        "Stack must contain at least 3 items for OP_CHECKMULTISIGVERIFY")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val newScript = OP_CHECKMULTISIG :: OP_VERIFY :: program.script.tail
       val newProgram = program.updateScript(newScript)
       val programFromOpCheckMultiSig = opCheckMultiSig(newProgram)
-      logger.debug(
-        "Stack after OP_CHECKMULTSIG execution: " + programFromOpCheckMultiSig.stack)
       programFromOpCheckMultiSig match {
         case _: ExecutedScriptProgram =>
           programFromOpCheckMultiSig
@@ -304,8 +267,6 @@ sealed abstract class CryptoInterpreter extends BitcoinSLogger {
       program.updateStackAndScript(hash :: program.stack.tail,
                                    program.script.tail)
     } else {
-      logger.error(
-        "We must have the stack top defined to execute a hash function")
       program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }

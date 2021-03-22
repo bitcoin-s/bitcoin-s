@@ -1,16 +1,15 @@
 package org.bitcoins.core.serializers.p2p.messages
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 7/5/16.
   */
-class RawHeadersMessageSerializerTest
-    extends BitcoinSUnitTest
-    with BitcoinSLogger {
+class RawHeadersMessageSerializerTest extends BitcoinSUnitTest with Logging {
 
   //from this example
   //https://bitcoin.org/en/developer-reference#headers

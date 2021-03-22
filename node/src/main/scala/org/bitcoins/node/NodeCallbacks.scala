@@ -35,33 +35,55 @@ trait NodeCallbacks {
 
   def executeOnTxReceivedCallbacks(logger: Logger, tx: Transaction)(implicit
       ec: ExecutionContext): Future[Unit] = {
-    onTxReceived.execute(logger, tx)
+    onTxReceived.execute(
+      tx,
+      (err: Throwable) =>
+        logger.error(s"${onTxReceived.name} Callback failed with error: ", err))
   }
 
   def executeOnBlockReceivedCallbacks(logger: Logger, block: Block)(implicit
       ec: ExecutionContext): Future[Unit] = {
-    onBlockReceived.execute(logger, block)
+    onBlockReceived.execute(
+      block,
+      (err: Throwable) =>
+        logger.error(s"${onBlockReceived.name} Callback failed with error: ",
+                     err))
   }
 
   def executeOnMerkleBlockReceivedCallbacks(
       logger: Logger,
       merkleBlock: MerkleBlock,
       txs: Vector[Transaction])(implicit ec: ExecutionContext): Future[Unit] = {
-    onMerkleBlockReceived.execute(logger, (merkleBlock, txs))
+    onMerkleBlockReceived.execute(
+      (merkleBlock, txs),
+      (err: Throwable) =>
+        logger.error(
+          s"${onMerkleBlockReceived.name} Callback failed with error: ",
+          err))
   }
 
   def executeOnCompactFiltersReceivedCallbacks(
       logger: Logger,
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)])(implicit
       ec: ExecutionContext): Future[Unit] = {
-    onCompactFiltersReceived.execute(logger, blockFilters)
+    onCompactFiltersReceived.execute(
+      blockFilters,
+      (err: Throwable) =>
+        logger.error(
+          s"${onCompactFiltersReceived.name} Callback failed with error: ",
+          err))
   }
 
   def executeOnBlockHeadersReceivedCallbacks(
       logger: Logger,
       headers: Vector[BlockHeader])(implicit
       ec: ExecutionContext): Future[Unit] = {
-    onBlockHeadersReceived.execute(logger, headers)
+    onBlockHeadersReceived.execute(
+      headers,
+      (err: Throwable) =>
+        logger.error(
+          s"${onBlockHeadersReceived.name} Callback failed with error: ",
+          err))
   }
 }
 

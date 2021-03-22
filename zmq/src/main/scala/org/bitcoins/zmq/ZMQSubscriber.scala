@@ -4,7 +4,7 @@ import java.net.InetSocketAddress
 
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.BitcoinSLogger
+import grizzled.slf4j.Logging
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.zeromq.{SocketType, ZMQ, ZMQException, ZMsg}
 import scodec.bits.ByteVector
@@ -26,7 +26,7 @@ class ZMQSubscriber(
     hashBlockListener: Option[DoubleSha256DigestBE => Unit],
     rawTxListener: Option[Transaction => Unit],
     rawBlockListener: Option[Block => Unit])
-    extends BitcoinSLogger {
+    extends Logging {
 
   private var running = true
   private val context = ZMQ.context(1)

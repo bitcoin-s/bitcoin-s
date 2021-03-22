@@ -2,8 +2,9 @@ package org.bitcoins.server.routes
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+import grizzled.slf4j.Logging
 import org.bitcoins.core.config._
-import org.bitcoins.core.util.{BitcoinSLogger, EnvUtil}
+import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.safePathToString
 
@@ -11,7 +12,7 @@ import java.nio.file.{Path, Paths}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Properties
 
-trait BitcoinSRunner extends BitcoinSLogger {
+trait BitcoinSRunner extends Logging {
 
   protected def args: Array[String]
 

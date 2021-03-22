@@ -1,5 +1,6 @@
 package org.bitcoins.keymanager.bip39
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.api.keymanager.{
   BIP39KeyManagerApi,
   BIP39KeyManagerCreateApi,
@@ -7,7 +8,7 @@ import org.bitcoins.core.api.keymanager.{
 }
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd.{HDAccount, HDPath}
-import org.bitcoins.core.util.{BitcoinSLogger, HDUtil, TimeUtil}
+import org.bitcoins.core.util.{HDUtil, TimeUtil}
 import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError._
 import org.bitcoins.core.wallet.keymanagement.{
   InitializeKeyManagerError,
@@ -68,7 +69,7 @@ class BIP39KeyManager(
 
 object BIP39KeyManager
     extends BIP39KeyManagerCreateApi[BIP39KeyManager]
-    with BitcoinSLogger {
+    with Logging {
 
   def fromMnemonic(
       mnemonic: MnemonicCode,

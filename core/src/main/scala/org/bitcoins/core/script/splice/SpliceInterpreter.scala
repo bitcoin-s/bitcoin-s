@@ -6,11 +6,10 @@ import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   StartedScriptProgram
 }
-import org.bitcoins.core.util.BitcoinSLogger
 
 /** Created by chris on 2/4/16.
   */
-sealed abstract class SpliceInterpreter extends BitcoinSLogger {
+sealed abstract class SpliceInterpreter {
 
   /** Pushes the string length of the top element of the stack (without popping it). */
   def opSize(
@@ -29,7 +28,6 @@ sealed abstract class SpliceInterpreter extends BitcoinSLogger {
                                      program.script.tail)
       }
     } else {
-      logger.error("Must have at least 1 element on the stack for OP_SIZE")
       program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }

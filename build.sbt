@@ -1,4 +1,3 @@
-import Deps.V
 import com.typesafe.sbt.SbtGit.GitKeys._
 
 import scala.util.Properties
@@ -29,8 +28,6 @@ lazy val benchSettings: Seq[Def.SettingsDefinition] = {
     inConfig(Benchmark)(Defaults.testSettings)
   )
 }
-
-import Projects._
 
 lazy val commonJsSettings = {
   Seq(
@@ -88,7 +85,8 @@ lazy val asyncUtils = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .in(file("async-utils"))
   .settings(CommonSettings.prodSettings: _*)
-  .settings(name := "bitcoin-s-async-utils")
+  .settings(name := "bitcoin-s-async-utils",
+            libraryDependencies ++= Deps.asyncUtils)
   .jvmSettings(CommonSettings.jvmSettings: _*)
   .jsSettings(commonJsSettings: _*)
   .dependsOn(core)

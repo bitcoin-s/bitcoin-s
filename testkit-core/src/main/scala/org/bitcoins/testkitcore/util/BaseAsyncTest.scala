@@ -1,27 +1,22 @@
 package org.bitcoins.testkitcore.util
 
+import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.protocol.blockchain.ChainParams
-import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
-import org.scalatest.{
-  Assertion,
-  AsyncTestSuite,
-  BeforeAndAfter,
-  BeforeAndAfterAll
-}
 import org.scalatest.concurrent.AsyncTimeLimitedTests
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.Span
+import org.scalatest._
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.annotation.nowarn
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
 /** This is a base trait in bitcoin-s for async tests
   */
@@ -31,7 +26,7 @@ trait BaseAsyncTest
     with Matchers
     with ScalaCheckPropertyChecks
     with AsyncTimeLimitedTests
-    with BitcoinSLogger { this: AsyncTestSuite =>
+    with Logging { this: AsyncTestSuite =>
 
   implicit def np: NetworkParameters = RegTest
 

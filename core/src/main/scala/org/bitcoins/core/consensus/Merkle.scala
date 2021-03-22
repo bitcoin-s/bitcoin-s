@@ -16,7 +16,7 @@ import scala.annotation.tailrec
   * Mimics this functionality inside of bitcoin core
   * [[https://github.com/bitcoin/bitcoin/blob/master/src/consensus/merkle.cpp]]
   */
-trait Merkle extends BitcoinSLogger {
+trait Merkle {
 
   type MerkleTree = BinaryTree[DoubleSha256Digest]
 

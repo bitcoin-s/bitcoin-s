@@ -6,7 +6,6 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.builder.{
   AddWitnessDataFinalizer,
   RawTxBuilder,
@@ -22,7 +21,7 @@ import scala.annotation.tailrec
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-object TxUtil extends BitcoinSLogger {
+object TxUtil {
 
   def isRBFEnabled(transaction: Transaction): Boolean = {
     transaction.inputs.exists(
@@ -339,13 +338,8 @@ object TxUtil extends BitcoinSLogger {
       val max = Satoshis(acceptableVariance)
       val difference = estimatedFee - actualFee
       if (difference <= min) {
-        logger.error(
-          s"Fee was too high. Estimated fee $estimatedFee, actualFee $actualFee, difference $difference, acceptableVariance $acceptableVariance")
         TxBuilderError.HighFee
       } else if (difference >= max) {
-        logger.error(
-          s"Fee was too low. Estimated fee $estimatedFee, actualFee $actualFee, difference $difference, acceptableVariance $acceptableVariance")
-
         TxBuilderError.LowFee
       } else {
         Success(())

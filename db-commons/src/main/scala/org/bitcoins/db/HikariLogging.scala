@@ -2,7 +2,8 @@ package org.bitcoins.db
 
 import com.codahale.metrics.{Histogram, MetricRegistry}
 import com.zaxxer.hikari.{HikariDataSource, HikariPoolMXBean}
-import org.bitcoins.core.util.{BitcoinSLogger, StartStop}
+import grizzled.slf4j.Logging
+import org.bitcoins.core.util._
 import slick.jdbc.JdbcDataSource
 import slick.jdbc.hikaricp.HikariCPJdbcDataSource
 import slick.util.AsyncExecutorMXBean
@@ -16,7 +17,7 @@ case class HikariLogging(
     hikariDataSource: HikariDataSource,
     moduleName: String,
     interval: Duration
-) extends BitcoinSLogger
+) extends Logging
     with StartStop[HikariLogging] {
 
   /** Logs thread activity */
@@ -207,7 +208,7 @@ case class HikariLogging(
   }
 }
 
-object HikariLogging extends BitcoinSLogger {
+object HikariLogging extends Logging {
   private[db] val scheduler = Executors.newScheduledThreadPool(1)
 
   /** Returns a started hikari logger if configuration is correct, else None
