@@ -16,7 +16,6 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
     CryptoContext.default match {
       case CryptoContext.LibSecp256k1 => super.withFixture(test)
       case CryptoContext.BouncyCastle | CryptoContext.BCrypto =>
-        logger.warn(s"Test ${test.name} skipped as Secp256k1 is not available.")
         Succeeded
     }
   }

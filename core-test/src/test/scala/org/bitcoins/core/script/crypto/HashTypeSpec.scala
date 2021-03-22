@@ -1,10 +1,9 @@
 package org.bitcoins.core.script.crypto
 
-import grizzled.slf4j.Logging
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.scalacheck.{Prop, Properties}
 
-class HashTypeSpec extends Properties("HashTypeSpec") with Logging {
+class HashTypeSpec extends Properties("HashTypeSpec") {
 
   property("serialization symmetry") = {
     Prop.forAll(NumberGenerator.int32s) { i32 =>

@@ -1,6 +1,5 @@
 package org.bitcoins.testkitcore.util
 
-import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.protocol.blockchain.ChainParams
@@ -25,8 +24,7 @@ trait BaseAsyncTest
     with BeforeAndAfterAll
     with Matchers
     with ScalaCheckPropertyChecks
-    with AsyncTimeLimitedTests
-    with Logging { this: AsyncTestSuite =>
+    with AsyncTimeLimitedTests { this: AsyncTestSuite =>
 
   implicit def np: NetworkParameters = RegTest
 

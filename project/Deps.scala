@@ -310,7 +310,9 @@ object Deps {
   val bitcoindRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
-    Compile.typesafeConfig
+    Compile.typesafeConfig,
+    Compile.slf4j,
+    Compile.grizzledSlf4j
   )
 
   def bitcoindRpcTest = Def.setting {
@@ -383,7 +385,8 @@ object Deps {
     Compile.akkaHttp,
     Compile.akkaStream,
     Compile.playJson,
-    Compile.slf4j
+    Compile.slf4j,
+    Compile.grizzledSlf4j
   )
 
   def eclairRpcTest = Def.setting {
@@ -416,7 +419,9 @@ object Deps {
     Compile.logback,
     Compile.slick,
     Compile.slickHikari,
-    Compile.sqlite
+    Compile.sqlite,
+    Compile.slf4j,
+    Compile.grizzledSlf4j
   )
 
   val nodeTest = Def.setting {
@@ -507,11 +512,6 @@ object Deps {
     Compile.akkaActor,
     Compile.akkaSlf4j,
     Compile.akkaStream,
-    Compile.slf4j,
-    Compile.grizzledSlf4j
-  )
-
-  val asyncUtils = List(
     Compile.slf4j,
     Compile.grizzledSlf4j
   )

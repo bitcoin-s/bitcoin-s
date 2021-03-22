@@ -1,6 +1,5 @@
 package org.bitcoins.testkitcore.gen
 
-import grizzled.slf4j.Logging
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.{Int32, UInt32}
@@ -15,7 +14,7 @@ import org.scalacheck.Gen
 
 import scala.annotation.tailrec
 
-object TransactionGenerators extends Logging {
+object TransactionGenerators {
 
   /** Responsible for generating [[org.bitcoins.core.protocol.transaction.TransactionOutPoint TransactionOutPoint]] */
   def outPoint: Gen[TransactionOutPoint] =

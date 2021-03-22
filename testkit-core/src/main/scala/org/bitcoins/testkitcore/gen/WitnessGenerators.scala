@@ -9,11 +9,10 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.ECPrivateKey
 import org.scalacheck.Gen
-import grizzled.slf4j.Logging
 
 /** Created by chris on 11/28/16.
   */
-sealed abstract class WitnessGenerators extends Logging {
+sealed abstract class WitnessGenerators {
 
   /** Generates a random [[org.bitcoins.core.protocol.script.ScriptWitness]] */
   def scriptWitness: Gen[ScriptWitness] = {
