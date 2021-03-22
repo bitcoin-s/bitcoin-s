@@ -28,10 +28,6 @@ class TransactionTest extends BitcoinSUnitTest {
   it must "have serialization symmetry" in {
     forAll(TransactionGenerators.transaction) { tx =>
       val result = Transaction(tx.hex) == tx
-      if (!result) {
-        logger.error(s"tx: $tx")
-        logger.error("Incorrect tx hex: " + tx.hex)
-      }
       assert(result)
     }
   }
@@ -324,7 +320,6 @@ class TransactionTest extends BitcoinSUnitTest {
           val program = PreExecutionScriptProgram(txSigComponent)
           ScriptInterpreter.run(program) == ScriptOk
         } else {
-          logger.error("Transaction does not pass CheckTransaction()")
           isValidTx
         }
       }

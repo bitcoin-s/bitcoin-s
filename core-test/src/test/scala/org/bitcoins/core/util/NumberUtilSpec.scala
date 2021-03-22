@@ -1,13 +1,12 @@
 package org.bitcoins.core.util
 
-import grizzled.slf4j.Logging
 import org.bitcoins.core.number.UInt8
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.scalacheck.{Prop, Properties}
 
 /** Created by chris on 6/20/16.
   */
-class NumberUtilSpec extends Properties("NumberUtilSpec") with Logging {
+class NumberUtilSpec extends Properties("NumberUtilSpec") {
 
   property("Serialization symmetry for BigInt") =
     Prop.forAll(NumberGenerator.bigInts) { bigInt: BigInt =>

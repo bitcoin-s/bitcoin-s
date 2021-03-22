@@ -510,9 +510,4 @@ object Deps {
     Compile.slf4j,
     Compile.grizzledSlf4j
   )
-
-  val asyncUtils = List(
-    Compile.slf4j,
-    Compile.grizzledSlf4j
-  )
 }

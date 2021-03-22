@@ -1,6 +1,5 @@
 package org.bitcoins.core.protocol.transaction.testprotocol
 
-import grizzled.slf4j.Logging
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -14,9 +13,7 @@ import spray.json.{DefaultJsonProtocol, JsArray, JsValue, RootJsonFormat}
 
 /** Created by chris on 5/4/16.
   */
-object CoreTransactionTestCaseProtocol
-    extends DefaultJsonProtocol
-    with Logging {
+object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol {
 
   implicit object CoreTransactionTestCaseProtocol
       extends RootJsonFormat[Option[CoreTransactionTestCase]] {

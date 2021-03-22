@@ -1,6 +1,5 @@
 package org.bitcoins.testkitcore.gen
 
-import grizzled.slf4j.Logging
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
@@ -35,7 +34,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
 //TODO: Need to provide generators for [[NonStandardScriptSignature]] and [[NonStandardScriptPubKey]]
-sealed abstract class ScriptGenerators extends Logging {
+sealed abstract class ScriptGenerators {
   val timeout = 30.seconds
   val defaultMaxDepth: Int = 2
 
