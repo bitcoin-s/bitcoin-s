@@ -5,11 +5,11 @@ import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
+import org.scalatest._
 import org.scalatest.concurrent.AsyncTimeLimitedTests
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.Span
-import org.scalatest._
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.annotation.nowarn

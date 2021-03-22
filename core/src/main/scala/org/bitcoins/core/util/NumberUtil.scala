@@ -1,20 +1,19 @@
 package org.bitcoins.core.util
 
-import java.math.BigInteger
-
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.blockchain.BlockHeader.TargetDifficultyHelper
-import org.bitcoins.crypto.FieldElement
+import org.bitcoins.crypto.CryptoNumberUtil
 import scodec.bits.{BitVector, ByteVector}
 
+import java.math.BigInteger
 import scala.annotation.tailrec
 import scala.math.BigInt
 import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 2/8/16.
   */
-sealed abstract class NumberUtil {
+sealed abstract class NumberUtil extends CryptoNumberUtil {
 
   /** Takes 2^^num. */
   def pow2(exponent: Int): BigInt = {
@@ -22,43 +21,6 @@ sealed abstract class NumberUtil {
       exponent < 64,
       "We cannot have anything larger than 2^64 - 1 in a long, you tried to do 2^" + exponent)
     BigInt(1) << exponent
-  }
-
-  /** Converts a sequence of bytes to a **big endian** unsigned integer */
-  def toUnsignedInt(bytes: ByteVector): BigInt = {
-    toUnsignedInt(bytes.toArray)
-  }
-
-  def uintToFieldElement(bytes: ByteVector): FieldElement = {
-    FieldElement(toUnsignedInt(bytes))
-  }
-
-  /** Converts a sequence of bytes to a **big endian** unsigned integer */
-  def toUnsignedInt(bytes: Array[Byte]): BigInt = {
-    BigInt(new BigInteger(1, bytes))
-  }
-
-  /** Takes a hex string and parses it to a [[scala.math.BigInt BigInt]]. */
-  def toBigInt(hex: String): BigInt = toBigInt(BytesUtil.decodeHex(hex))
-
-  /** Converts a sequence of bytes to twos complement signed number. */
-  def toBigInt(bytes: ByteVector): BigInt = {
-    //BigInt interprets the number as an unsigned number then applies the given
-    //sign in front of that number, therefore if we have a negative number we need to invert it
-    //since twos complement is an inverted number representation for negative numbers
-    //see [[https://en.wikipedia.org/wiki/Two%27s_complement]]
-    if (bytes.isEmpty) BigInt(0)
-    //check if sign bit is set
-    else if ((0x80.toByte & bytes.head) != 0) {
-      val invertedBytes = bytes.tail.map(b => (b ^ 0xff.toByte).toByte)
-      val firstByteInverted = (bytes.head ^ 0xff.toByte).toByte
-      val num = firstByteInverted +: invertedBytes
-      BigInt(-1, num.toArray) - 1
-    } else {
-      val firstBitOff = (0x7f & bytes.head).toByte
-      val num = firstBitOff +: bytes.tail
-      BigInt(num.toArray)
-    }
   }
 
   /** Converts a sequence of [[scala.Byte Byte]] to a [[scala.Int Int]]. */

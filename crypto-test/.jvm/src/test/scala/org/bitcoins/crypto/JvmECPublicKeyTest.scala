@@ -1,10 +1,7 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkitcore.gen.CryptoGenerators
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
-
 /** Public key tests specific to the JVM */
-class JvmECPublicKeyTest extends BitcoinSUnitTest {
+class JvmECPublicKeyTest extends BitcoinSCryptoTest {
 
   behavior of "JVMECPublicKeytest"
 
