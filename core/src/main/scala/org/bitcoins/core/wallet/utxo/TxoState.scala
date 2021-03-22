@@ -19,7 +19,12 @@ object TxoState extends StringFactory[TxoState] {
     */
   final case object ImmatureCoinbase extends TxoState
 
-  /** Means we have received funds to this utxo, but they are not confirmed */
+  /** Means we have received funds to this utxo, and they have not been confirmed in a block */
+  final case object BroadcastReceived extends ReceivedState
+
+  /** Means we have received funds to this utxo, and they have some confirmations but
+    * have not reached our confirmation threshold
+    */
   final case object PendingConfirmationsReceived extends ReceivedState
 
   /** Means we have received funds and they are fully confirmed for this utxo */
@@ -28,33 +33,49 @@ object TxoState extends StringFactory[TxoState] {
   /** Means we have not spent this utxo yet, but will be used in a future transaction */
   final case object Reserved extends SpentState
 
-  /** Means we have spent this utxo, but it is not fully confirmed */
+  /** Means we have spent this utxo, and they have not been confirmed in a block */
+  final case object BroadcastSpent extends SpentState
+
+  /** Means we have spent this utxo, and they have some confirmations but
+    * have not reached our confirmation threshold
+    */
   final case object PendingConfirmationsSpent extends SpentState
 
   /** Means we have spent this utxo, and it is fully confirmed */
   final case object ConfirmedSpent extends SpentState
 
   val pendingConfStates: Set[TxoState] =
-    Set(TxoState.ImmatureCoinbase,
-        TxoState.PendingConfirmationsReceived,
-        TxoState.PendingConfirmationsSpent)
+    Set(BroadcastSpent,
+        BroadcastReceived,
+        ImmatureCoinbase,
+        PendingConfirmationsReceived,
+        PendingConfirmationsSpent)
 
   val confirmedStates: Set[TxoState] =
     Set(TxoState.ConfirmedReceived, TxoState.ConfirmedSpent)
 
   val receivedStates: Set[TxoState] =
-    Set(PendingConfirmationsReceived, ConfirmedReceived)
+    Set(PendingConfirmationsReceived, ConfirmedReceived, BroadcastReceived)
 
   val spentStates: Set[TxoState] =
-    Set(PendingConfirmationsSpent, TxoState.ConfirmedSpent, Reserved)
+    Set(PendingConfirmationsSpent,
+        TxoState.ConfirmedSpent,
+        Reserved,
+        BroadcastSpent)
 
-  val all: Vector[TxoState] = Vector(DoesNotExist,
-                                     ImmatureCoinbase,
-                                     PendingConfirmationsReceived,
-                                     ConfirmedReceived,
-                                     Reserved,
-                                     PendingConfirmationsSpent,
-                                     ConfirmedSpent)
+  val broadcastStates: Set[TxoState] = Set(BroadcastReceived, BroadcastSpent)
+
+  val all: Vector[TxoState] = Vector(
+    DoesNotExist,
+    ImmatureCoinbase,
+    BroadcastReceived,
+    PendingConfirmationsReceived,
+    ConfirmedReceived,
+    Reserved,
+    BroadcastSpent,
+    PendingConfirmationsSpent,
+    ConfirmedSpent
+  )
 
   override def fromStringOpt(str: String): Option[TxoState] = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase)

@@ -3,19 +3,13 @@ package org.bitcoins.testkitcore.util
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.protocol.blockchain.ChainParams
-import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
+import org.scalatest._
 import org.scalatest.concurrent.AsyncTimeLimitedTests
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.Span
-import org.scalatest.{
-  Assertion,
-  AsyncTestSuite,
-  BeforeAndAfter,
-  BeforeAndAfterAll
-}
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.annotation.nowarn
@@ -290,10 +284,7 @@ trait BaseAsyncTest
   * uses the default scala execution context to run
   * the tests on
   */
-trait BitcoinSJvmTest
-    extends AsyncFlatSpec
-    with BaseAsyncTest
-    with BitcoinSLogger {
+trait BitcoinSJvmTest extends AsyncFlatSpec with BaseAsyncTest {
 
   implicit override def executionContext: ExecutionContext =
     scala.concurrent.ExecutionContext.global

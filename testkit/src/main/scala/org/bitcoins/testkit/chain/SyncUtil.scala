@@ -7,17 +7,18 @@ import org.bitcoins.core.api.node.{NodeApi, NodeChainQueryApi}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.sync.WalletSync
+import grizzled.slf4j.Logging
 
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Useful utilities to use in the chain project for syncing things against bitcoind */
-abstract class SyncUtil extends BitcoinSLogger {
+abstract class SyncUtil extends Logging {
 
   /** Creates a function that will retrun bitcoin's best block hash when called */
   def getBestBlockHashFunc(

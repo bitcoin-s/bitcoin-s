@@ -4,7 +4,7 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 
 import org.bitcoins.core.config._
-import org.bitcoins.core.util.BitcoinSLogger
+import grizzled.slf4j.Logging
 
 /** This trait contains the information we need to authenticate
   * to a `bitcoind` node.
@@ -15,7 +15,7 @@ sealed trait BitcoindAuthCredentials {
   def username: String
 }
 
-object BitcoindAuthCredentials extends BitcoinSLogger {
+object BitcoindAuthCredentials extends Logging {
   import org.bitcoins.core.compat.JavaConverters._
 
   /** Authenticate by providing a username and password.

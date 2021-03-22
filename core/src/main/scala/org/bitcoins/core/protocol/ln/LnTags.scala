@@ -1,7 +1,5 @@
 package org.bitcoins.core.protocol.ln
 
-import java.nio.charset.Charset
-
 import org.bitcoins.core.config.{MainNet, NetworkParameters}
 import org.bitcoins.core.number.{UInt32, UInt5, UInt8}
 import org.bitcoins.core.protocol._
@@ -13,6 +11,7 @@ import org.bitcoins.core.util.{Bech32, SeqWrapper}
 import org.bitcoins.crypto.{CryptoUtil, Sha256Digest, Sha256Hash160Digest}
 import scodec.bits.ByteVector
 
+import java.nio.charset.Charset
 import scala.annotation.tailrec
 
 /** One of the tagged fields on a Lightning Network invoice
@@ -202,6 +201,8 @@ object LnTag {
         case _: P2SHAddress  => FallbackAddressV.P2SH.u8
         case bech32: Bech32Address =>
           UInt8(bech32.scriptPubKey.witnessVersion.version.toInt)
+        case bech32m: Bech32mAddress =>
+          UInt8(bech32m.scriptPubKey.witnessVersion.version.toInt)
       }
     }
 

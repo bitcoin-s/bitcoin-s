@@ -1,15 +1,15 @@
 package org.bitcoins.testkit.util
 
+import grizzled.slf4j.Logging
+
 import java.nio.file.Files
-import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
-abstract class BitcoindRpcTest extends BitcoinSAsyncTest with BitcoinSLogger {
+abstract class BitcoindRpcTest extends BitcoinSAsyncTest with Logging {
 
   private val dirExists =
     Files.exists(BitcoindRpcTestClient.sbtBinaryDirectory)
@@ -31,8 +31,6 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest with BitcoinSLogger {
     }
   }
 
-  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
-
   /** Bitcoind RPC clients can be added to this builder
     * as they are created in tests. After tests have
     * stopped running (either by succeeding or failing)
@@ -43,7 +41,8 @@ abstract class BitcoindRpcTest extends BitcoinSAsyncTest with BitcoinSLogger {
     Vector[BitcoindRpcClient]] = Vector.newBuilder
 
   override def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(clientAccum.result())
+    val stopF = BitcoindRpcTestUtil.stopServers(clientAccum.result())
+    Await.result(stopF, duration)
     super.afterAll()
   }
 

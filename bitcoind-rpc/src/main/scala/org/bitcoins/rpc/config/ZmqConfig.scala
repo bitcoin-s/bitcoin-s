@@ -2,7 +2,7 @@ package org.bitcoins.rpc.config
 
 import java.net.InetSocketAddress
 
-import org.bitcoins.core.util.BitcoinSLogger
+import grizzled.slf4j.Logging
 
 sealed trait ZmqConfig {
   def hashBlock: Option[InetSocketAddress]
@@ -11,7 +11,7 @@ sealed trait ZmqConfig {
   def rawTx: Option[InetSocketAddress]
 }
 
-object ZmqConfig extends BitcoinSLogger {
+object ZmqConfig extends Logging {
 
   private case class ZmqConfigImpl(
       hashBlock: Option[InetSocketAddress],

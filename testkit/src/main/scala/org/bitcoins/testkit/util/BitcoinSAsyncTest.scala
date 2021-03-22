@@ -3,6 +3,9 @@ package org.bitcoins.testkit.util
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import akka.util.Timeout
+import grizzled.slf4j.Logging
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkitcore.util.BaseAsyncTest
 import org.scalatest._
 import org.scalatest.flatspec.{AsyncFlatSpec, FixtureAsyncFlatSpec}
@@ -12,12 +15,14 @@ import scala.concurrent.ExecutionContext
 /** A bitcoin-s async test trait, that uses akka's actor system
   * execution context to run the scalatest test suites
   */
-trait BitcoinSAkkaAsyncTest extends BaseAsyncTest { this: AsyncTestSuite =>
+trait BitcoinSAkkaAsyncTest extends BaseAsyncTest with Logging {
+  this: AsyncTestSuite =>
   implicit lazy val akkaTimeout = Timeout(duration)
 
   implicit val system: ActorSystem = {
     ActorSystem(s"${getClass.getSimpleName}-${System.currentTimeMillis()}")
   }
+  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
   /** Needed because the default execution context will become overloaded
     * if we do not specify a unique execution context for each suite

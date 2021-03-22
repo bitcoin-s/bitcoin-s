@@ -17,7 +17,7 @@ import org.bitcoins.core.protocol.ln.channel.{
 }
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.util.BitcoinSLogger
+import grizzled.slf4j.Logging
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
@@ -46,7 +46,7 @@ import scala.util.{Failure, Success}
   * Each double sided arrow represents a P2P connection as well as a funded
   * channel
   */
-trait EclairRpcTestUtil extends BitcoinSLogger {
+trait EclairRpcTestUtil extends Logging {
 
   def randomEclairDatadir(): File =
     new File(s"/tmp/eclair-test/${FileUtil.randomDirName}/.eclair/")
@@ -57,7 +57,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     */
   def startedBitcoindRpcClient(instance: BitcoindInstance = bitcoindInstance())(
       implicit actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
+    //need to do something with the Vector.newBuilder presumably?
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(instance, Vector.newBuilder)
   }
 
   /** Creates a bitcoind instance with the given parameters */

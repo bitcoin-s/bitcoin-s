@@ -1,12 +1,12 @@
 package org.bitcoins.core.protocol.ln.util
 
 import org.bitcoins.core.number.UInt5
-import org.bitcoins.core.util.{Bech32, BitcoinSLogger}
+import org.bitcoins.core.util.Bech32
 
 import scala.annotation.tailrec
 
 /** Useful utility functions for the Lightning encoding / decoding */
-abstract class LnUtil extends BitcoinSLogger {
+abstract class LnUtil {
 
   /** The formula for this calculation is as follows:
     * Take the length of the Bech32 encoded input and divide it by 32.

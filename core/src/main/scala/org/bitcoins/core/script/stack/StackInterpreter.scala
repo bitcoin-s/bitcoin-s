@@ -7,7 +7,6 @@ import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   StartedScriptProgram
 }
-import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.util.{Failure, Success, Try}
 
@@ -15,7 +14,7 @@ import scala.util.{Failure, Success, Try}
   * Stack operations implemented in the script programming language
   * https://en.bitcoin.it/wiki/Script#Stack
   */
-sealed abstract class StackInterpreter extends BitcoinSLogger {
+sealed abstract class StackInterpreter {
 
   /** Duplicates the element on top of the stack
     * expects the first element in script to be the OP_DUP operation.
@@ -27,7 +26,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
       case h :: _ =>
         program.updateStackAndScript(h :: program.stack, program.script.tail)
       case Nil =>
-        logger.error("Cannot duplicate the top element on an empty stack")
         program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -43,7 +41,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
       program.updateStackAndScript(program.stack.head :: program.stack,
                                    program.script.tail)
     } else {
-      logger.error("Cannot duplicate the top element on an empty stack")
       program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -70,7 +67,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
         .updateScript(program.script.tail)
         .updateAltStack(program.stack.head :: program.altStack)
     } else {
-      logger.error("OP_TOALTSTACK requires an element to be on the stack")
       program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -86,8 +82,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
         .updateScript(program.script.tail)
         .updateAltStack(program.altStack.tail)
     } else {
-      logger.error(
-        "Alt Stack must have at least one item on it for OP_FROMALTSTACK")
       program.failExecution(ScriptErrorInvalidAltStackOperation)
     }
   }
@@ -100,7 +94,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
     if (program.stack.nonEmpty) {
       program.updateStackAndScript(program.stack.tail, program.script.tail)
     } else {
-      logger.error("Stack must have at least one item on it for OP_DROP")
       program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -113,10 +106,8 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
       case h :: _ :: t =>
         program.updateStackAndScript(h :: t, program.script.tail)
       case _ :: _ =>
-        logger.error("Stack must have at least two items on it for OP_NIP")
         program.failExecution(ScriptErrorInvalidStackOperation)
       case Nil =>
-        logger.error("Stack must have at least two items on it for OP_NIP")
         program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -130,10 +121,8 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
       case _ :: h1 :: _ =>
         program.updateStackAndScript(h1 :: program.stack, program.script.tail)
       case _ :: _ =>
-        logger.error("Stack must have at least two items on it for OP_OVER")
         program.failExecution(ScriptErrorInvalidStackOperation)
       case Nil =>
-        logger.error("Stack must have at least two items on it for OP_OVER")
         program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -156,8 +145,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
           program.updateStackAndScript(newStackTop :: program.stack.tail,
                                        program.script.tail)
         } else {
-          logger.error(
-            "The index for OP_PICK would have caused an index out of bounds exception")
           program.failExecution(ScriptErrorInvalidStackOperation)
         }
       }
@@ -183,8 +170,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
             .diff(List(newStackTop))
           program.updateStackAndScript(newStack, program.script.tail)
         } else {
-          logger.error(
-            "The index for OP_ROLL would have caused an index out of bounds exception")
           program.failExecution(ScriptErrorInvalidStackOperation)
         }
     )
@@ -201,7 +186,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
         val newStack = h2 :: h :: h1 :: t
         program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
-        logger.error("Stack must have at least 3 items on it for OP_ROT")
         program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -218,7 +202,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
         val newStack = h4 :: h5 :: h :: h1 :: h2 :: h3 :: t
         program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
-        logger.error("OP_2ROT requires 6 elements on the stack")
         program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -231,7 +214,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
     if (program.stack.size > 1) {
       program.updateStackAndScript(program.stack.tail.tail, program.script.tail)
     } else {
-      logger.error("OP_2DROP requires two elements to be on the stack")
       program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -246,7 +228,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
         program.stack.tail.head :: program.stack.head :: program.stack.tail.tail
       program.updateStackAndScript(newStack, program.script.tail)
     } else {
-      logger.error("Stack must have at least 2 items on it for OP_SWAP")
       program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -261,7 +242,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
         val newStack = h :: h1 :: h :: t
         program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
-        logger.error("Stack must have at least 2 items on it for OP_TUCK")
         program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -276,7 +256,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
         val newStack = h :: h1 :: h :: h1 :: t
         program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
-        logger.error("Stack must have at least 2 items on it for OP_2DUP")
         program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -291,7 +270,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
         val newStack = h :: h1 :: h2 :: h :: h1 :: h2 :: t
         program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
-        logger.error("Stack must have at least 3 items on it for OP_3DUP")
         program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -306,7 +284,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
         val newStack = h2 :: h3 :: h :: h1 :: h2 :: h3 :: t
         program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
-        logger.error("Stack must have at least 4 items on it for OP_2OVER")
         program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -321,7 +298,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
         val newStack = h2 :: h3 :: h :: h1 :: t
         program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
-        logger.error("Stack must have at least 4 items on it for OP_2SWAP")
         program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
@@ -344,7 +320,6 @@ sealed abstract class StackInterpreter extends BitcoinSLogger {
         number match {
           case Success(n) => op(n)
           case Failure(_) =>
-            logger.error("Script number was not minimally encoded")
             program.failExecution(ScriptErrorUnknownError)
         }
     }

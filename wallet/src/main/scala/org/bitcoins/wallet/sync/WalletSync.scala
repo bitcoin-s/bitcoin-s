@@ -1,13 +1,14 @@
 package org.bitcoins.wallet.sync
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
-import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait WalletSync extends BitcoinSLogger {
+trait WalletSync extends Logging {
 
   /** Synchronizes the bitcoin-s' wallet by retrieving each block and then calling
     * [[Wallet.processBlock()]] on the block retrieved

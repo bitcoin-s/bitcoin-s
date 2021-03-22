@@ -1,12 +1,9 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.testkitcore.gen.{ScriptGenerators, WitnessGenerators}
 import org.scalacheck.{Prop, Properties}
 
-class ScriptWitnessSpec
-    extends Properties("ScriptWitnessSpec")
-    with BitcoinSLogger {
+class ScriptWitnessSpec extends Properties("ScriptWitnessSpec") {
 
   property("serialization symmetry") = {
     Prop.forAll(WitnessGenerators.scriptWitness) { scriptWit =>

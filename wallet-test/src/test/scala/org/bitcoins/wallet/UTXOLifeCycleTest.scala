@@ -2,6 +2,7 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -9,23 +10,36 @@ import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.wallet.{
-  BitcoinSWalletTest,
+  BitcoinSWalletTestCachedBitcoindNewest,
   WalletWithBitcoind,
   WalletWithBitcoindRpc
 }
-import org.scalatest.FutureOutcome
+import org.scalatest.{FutureOutcome, Outcome}
 
-class UTXOLifeCycleTest extends BitcoinSWalletTest {
+import scala.concurrent.Future
+
+class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
   behavior of "Wallet Txo States"
 
   override type FixtureParam = WalletWithBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWalletAndBitcoind(test, getBIP39PasswordOpt())
+    val f: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      futOutcome = withFundedWalletAndBitcoindCached(test,
+                                                     getBIP39PasswordOpt(),
+                                                     bitcoind)
+      fut <- futOutcome.toFuture
+    } yield fut
+    new FutureOutcome(f)
   }
 
-  it should "track a utxo state change to pending spent" in { param =>
+  val testAddr: BitcoinAddress =
+    BitcoinAddress
+      .fromString("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq")
+
+  it should "track a utxo state change to broadcast spent" in { param =>
     val WalletWithBitcoindRpc(wallet, _) = param
 
     for {
@@ -35,7 +49,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       newTransactions <- wallet.listTransactions()
     } yield {
-      assert(updatedCoins.forall(_.state == TxoState.PendingConfirmationsSpent))
+      assert(updatedCoins.forall(_.state == TxoState.BroadcastSpent))
       assert(updatedCoins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
       assert(!oldTransactions.map(_.transaction).contains(tx))
       assert(newTransactions.map(_.transaction).contains(tx))
@@ -51,7 +65,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       newTransactions <- wallet.listTransactions()
-      _ = assert(updatedCoins.forall(_.state == PendingConfirmationsSpent))
+      _ = assert(updatedCoins.forall(_.state == BroadcastSpent))
       _ = assert(!oldTransactions.map(_.transaction).contains(tx))
       _ = assert(newTransactions.map(_.transaction).contains(tx))
 
@@ -59,8 +73,8 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       hash <- bitcoind.getBestBlockHash
       _ <- wallet.processTransaction(tx, Some(hash))
 
-      pendingCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       _ <- wallet.updateUtxoPendingStates()
+      pendingCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       _ = assert(pendingCoins.forall(_.state == PendingConfirmationsSpent))
 
       // Put confirmations on top of the tx's block
@@ -85,14 +99,14 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
                                  Some(SatoshisPerByte.one))
 
       coins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
-      _ = assert(coins.forall(_.state == PendingConfirmationsSpent))
+      _ = assert(coins.forall(_.state == BroadcastSpent))
       _ = assert(coins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
 
       rbf <- wallet.bumpFeeRBF(tx.txIdBE, SatoshisPerByte.fromLong(3))
       _ <- wallet.processTransaction(rbf, None)
       rbfCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(rbf)
     } yield {
-      assert(rbfCoins.forall(_.state == PendingConfirmationsSpent))
+      assert(rbfCoins.forall(_.state == BroadcastSpent))
       assert(rbfCoins.forall(_.spendingTxIdOpt.contains(rbf.txIdBE)))
     }
   }
@@ -130,7 +144,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       newTransactions <- wallet.listTransactions()
-      _ = assert(updatedCoins.forall(_.state == PendingConfirmationsSpent))
+      _ = assert(updatedCoins.forall(_.state == BroadcastSpent))
       _ = assert(!oldTransactions.map(_.transaction).contains(tx))
       _ = assert(newTransactions.map(_.transaction).contains(tx))
 
@@ -138,8 +152,8 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       hash <- bitcoind.getBestBlockHash
       _ <- wallet.processTransaction(tx, Some(hash))
 
-      pendingCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       _ <- wallet.updateUtxoPendingStates()
+      pendingCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
       _ = assert(pendingCoins.forall(_.state == PendingConfirmationsSpent))
 
       // Put confirmations on top of the tx's block
@@ -191,7 +205,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
     } yield res
   }
 
-  it should "track a utxo state change to pending received" in { param =>
+  it should "track a utxo state change to broadcast received" in { param =>
     val WalletWithBitcoindRpc(wallet, bitcoind) = param
 
     for {
@@ -211,8 +225,43 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
         wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
       newTransactions <- wallet.listTransactions()
     } yield {
+      assert(updatedCoin.forall(_.state == TxoState.BroadcastReceived))
+      assert(!oldTransactions.map(_.transaction).contains(tx))
+      assert(newTransactions.map(_.transaction).contains(tx))
+    }
+  }
+
+  it should "track a utxo state change to pending received" in { param =>
+    val WalletWithBitcoindRpc(wallet, bitcoind) = param
+
+    for {
+      oldTransactions <- wallet.listTransactions()
+      addr <- wallet.getNewAddress()
+
+      txId <- bitcoind.sendToAddress(addr, Satoshis(3000))
+      tx <- bitcoind.getRawTransactionRaw(txId)
+      _ <- wallet.processOurTransaction(transaction = tx,
+                                        feeRate = SatoshisPerByte(Satoshis(3)),
+                                        inputAmount = Satoshis(4000),
+                                        sentAmount = Satoshis(3000),
+                                        blockHashOpt = None,
+                                        newTags = Vector.empty)
+
+      updatedCoin <-
+        wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
+      newTransactions <- wallet.listTransactions()
+      _ = assert(updatedCoin.forall(_.state == TxoState.BroadcastReceived))
+
+      hash <- bitcoind.getNewAddress
+        .flatMap(bitcoind.generateToAddress(1, _))
+        .map(_.head)
+      _ <- wallet.processTransaction(tx, Some(hash))
+
+      pendingCoins <-
+        wallet.spendingInfoDAO.findByScriptPubKey(addr.scriptPubKey)
+    } yield {
       assert(
-        updatedCoin.forall(_.state == TxoState.PendingConfirmationsReceived))
+        pendingCoins.forall(_.state == TxoState.PendingConfirmationsReceived))
       assert(!oldTransactions.map(_.transaction).contains(tx))
       assert(newTransactions.map(_.transaction).contains(tx))
     }
@@ -376,5 +425,4 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
         assert(newTransactions.map(_.transaction).contains(tx))
       }
   }
-
 }

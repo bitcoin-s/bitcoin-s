@@ -6,20 +6,19 @@ import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.{
   NeutrinoNodeFundedWalletBitcoind,
   NodeTestUtil,
-  NodeUnitTest
+  NodeTestWithCachedBitcoindNewest
 }
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.scalatest.FutureOutcome
+import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
-class NeutrinoNodeWithWalletTest extends NodeUnitTest {
+class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   implicit override protected def getFreshConfig: BitcoinSAppConfig =
@@ -28,11 +27,17 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
   override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withNeutrinoNodeFundedWalletBitcoind(
-      test = test,
-      bip39PasswordOpt = getBIP39PasswordOpt(),
-      versionOpt = Some(BitcoindVersion.V21)
-    )(system, getFreshConfig)
+    val outcomeF: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      outcome = withNeutrinoNodeFundedWalletBitcoind(
+        test = test,
+        bip39PasswordOpt = getBIP39PasswordOpt(),
+        bitcoind = bitcoind
+      )(system, getFreshConfig)
+      f <- outcome.toFuture
+    } yield f
+
+    new FutureOutcome(outcomeF)
   }
 
   val TestAmount = 1.bitcoin

@@ -1,26 +1,19 @@
 package org.bitcoins.rpc.client.common
 
-import java.nio.file.{Files, Path}
-import java.util.UUID
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.StreamTcpException
 import com.fasterxml.jackson.core.JsonParseException
+import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.core.config.{
-  MainNet,
-  NetworkParameters,
-  RegTest,
-  SigNet,
-  TestNet3
-}
+import org.bitcoins.core.config._
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
-import org.bitcoins.core.util.{BitcoinSLogger, StartStopAsync}
+import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
@@ -28,11 +21,14 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
   PasswordBased
 }
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
+import org.bitcoins.rpc.util.NativeProcessFactory
 import play.api.libs.json._
 
+import java.nio.file.{Files, Path}
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
-import scala.sys.process._
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
@@ -43,7 +39,10 @@ import scala.util.{Failure, Success}
   * client, like data directories, log files
   * and whether or not the client is started.
   */
-trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
+trait Client
+    extends Logging
+    with StartStopAsync[BitcoindRpcClient]
+    with NativeProcessFactory {
   def version: BitcoindVersion
   protected val instance: BitcoindInstance
 
@@ -68,7 +67,9 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
     instance.datadir.toPath.resolve("bitcoin.conf")
 
   implicit protected val system: ActorSystem
-  implicit protected val executor: ExecutionContext = system.getDispatcher
+
+  implicit override protected val executionContext: ExecutionContext =
+    system.getDispatcher
   implicit protected val network: NetworkParameters = instance.network
 
   /** This is here (and not in JsonWrriters)
@@ -92,6 +93,18 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
 
   def getDaemon: BitcoindInstance = instance
 
+  override lazy val cmd: String = {
+    val binaryPath = instance.binary.getAbsolutePath
+    val cmd = List(binaryPath,
+                   "-datadir=" + instance.datadir,
+                   "-rpcport=" + instance.rpcUri.getPort,
+                   "-port=" + instance.uri.getPort)
+    logger.debug(
+      s"starting bitcoind with datadir ${instance.datadir} and binary path $binaryPath")
+
+    cmd.mkString(" ")
+  }
+
   /** Starts bitcoind on the local system.
     * @return a future that completes when bitcoind is fully started.
     *         This future times out after 60 seconds if the client
@@ -106,27 +119,7 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
       }
     }
 
-    val binaryPath = instance.binary.getAbsolutePath
-    val cmd = List(binaryPath,
-                   "-datadir=" + instance.datadir,
-                   "-rpcport=" + instance.rpcUri.getPort,
-                   "-port=" + instance.uri.getPort)
-
-    logger.debug(
-      s"starting bitcoind with datadir ${instance.datadir} and binary path $binaryPath")
-    val _ = Process(cmd).run()
-
-    def isStartedF: Future[Boolean] = {
-      val started: Promise[Boolean] = Promise()
-
-      val pingF = bitcoindCall[Unit]("ping", printError = false)
-      pingF.onComplete {
-        case Success(_) => started.success(true)
-        case Failure(_) => started.success(false)
-      }
-
-      started.future
-    }
+    val startedF = startBinary()
 
     // if we're doing cookie based authentication, we might attempt
     // to read the cookie file before it's written. this ensures
@@ -147,7 +140,9 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
 
     val started: Future[BitcoindRpcClient] = {
       for {
+        _ <- startedF
         _ <- awaitCookie(instance.authCredentials)
+        _ = isStartedFlag.set(true)
         _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
                                             interval = 1.seconds,
                                             maxTries = 60)
@@ -182,39 +177,47 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
     started
   }
 
+  private def tryPing(): Future[Boolean] = {
+    val request = buildRequest(instance, "ping", JsArray.empty)
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] =
+      responseF.flatMap(getPayload(_))
+
+    // Ping successful if no error can be parsed from the payload
+    val parsedF = payloadF.map { payload =>
+      (payload \ errorKey).validate[BitcoindException] match {
+        case _: JsSuccess[BitcoindException] => false
+        case _: JsError                      => true
+      }
+    }
+
+    parsedF.recover {
+      case exc: StreamTcpException
+          if exc.getMessage.contains("Connection refused") =>
+        false
+      case _: JsonParseException =>
+        //see https://github.com/bitcoin-s/bitcoin-s/issues/527
+        false
+    }
+  }
+
+  private val isStartedFlag: AtomicBoolean = new AtomicBoolean(false)
+
   /** Checks whether the underlying bitcoind daemon is running
     */
   def isStartedF: Future[Boolean] = {
-    def tryPing: Future[Boolean] = {
-      val request = buildRequest(instance, "ping", JsArray.empty)
-      val responseF = sendRequest(request)
-
-      val payloadF: Future[JsValue] =
-        responseF.flatMap(getPayload(_))
-
-      // Ping successful if no error can be parsed from the payload
-      val parsedF = payloadF.map { payload =>
-        (payload \ errorKey).validate[BitcoindException] match {
-          case _: JsSuccess[BitcoindException] => false
-          case _: JsError                      => true
-        }
-      }
-
-      parsedF.recover {
-        case exc: StreamTcpException
-            if exc.getMessage.contains("Connection refused") =>
-          false
-        case _: JsonParseException =>
-          //see https://github.com/bitcoin-s/bitcoin-s/issues/527
-          false
-      }
-    }
 
     instance.authCredentials match {
       case cookie: CookieBased if Files.notExists(cookie.cookiePath) =>
         // if the cookie file doesn't exist we're not started
         Future.successful(false)
-      case (CookieBased(_, _) | PasswordBased(_, _)) => tryPing
+      case (CookieBased(_, _) | PasswordBased(_, _)) =>
+        if (isStartedFlag.get) {
+          tryPing()
+        } else {
+          Future.successful(false)
+        }
     }
   }
 
@@ -224,6 +227,11 @@ trait Client extends BitcoinSLogger with StartStopAsync[BitcoindRpcClient] {
   def stop(): Future[BitcoindRpcClient] = {
     for {
       _ <- bitcoindCall[String]("stop")
+      _ = isStartedFlag.set(false)
+      //do we want to call this right away?
+      //i think bitcoind stops asynchronously
+      //so it returns fast from the 'stop' rpc command
+      _ <- stopBinary()
       _ <- {
         if (system.name == BitcoindRpcClient.ActorSystemName) {
           system.terminate()

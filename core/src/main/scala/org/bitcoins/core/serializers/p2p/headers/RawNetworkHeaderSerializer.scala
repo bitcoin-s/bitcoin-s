@@ -4,15 +4,12 @@ import org.bitcoins.core.config._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.NetworkHeader
 import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
 /** Reads and writes a message header on the peer-to-peer network
   * @see https://bitcoin.org/en/developer-reference#message-headers
   */
-trait RawNetworkHeaderSerializer
-    extends RawBitcoinSerializer[NetworkHeader]
-    with BitcoinSLogger {
+trait RawNetworkHeaderSerializer extends RawBitcoinSerializer[NetworkHeader] {
 
   /** Transforms a sequence of bytes into a message header
     * @param bytes the byte representation for a MessageHeader on the peer-to-peer network

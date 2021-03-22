@@ -7,7 +7,9 @@ import akka.actor.{ActorSystem, Cancellable}
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
+import org.bitcoins.core.util.FutureUtil
+import grizzled.slf4j.Logging
+
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.wallet.Wallet
@@ -18,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
 /** Useful utilities to use in the wallet project for syncing things against bitcoind */
-object BitcoindRpcBackendUtil extends BitcoinSLogger {
+object BitcoindRpcBackendUtil extends Logging {
 
   /** Has the wallet process all the blocks it has not seen up until bitcoind's chain tip */
   def syncWalletToBitcoind(bitcoind: BitcoindRpcClient, wallet: Wallet)(implicit

@@ -3,7 +3,8 @@ package org.bitcoins.db
 import com.typesafe.config._
 import org.bitcoins.core.config._
 import org.bitcoins.core.protocol.blockchain.BitcoinChainParams
-import org.bitcoins.core.util.{BitcoinSLogger, StartStopAsync}
+import org.bitcoins.core.util.StartStopAsync
+import grizzled.slf4j.Logging
 
 import java.nio.file.{Files, Path, Paths}
 import scala.concurrent.Future
@@ -16,7 +17,7 @@ import scala.util.matching.Regex
   * @see [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
   *      for more information.
   */
-abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
+abstract class AppConfig extends StartStopAsync[Unit] with Logging {
 
   /** Starts this project.
     * After this future resolves, all operations should be
@@ -156,7 +157,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
   }
 }
 
-object AppConfig extends BitcoinSLogger {
+object AppConfig extends Logging {
 
   def safePathToString(path: Path): String = {
     val pathStr = path.toString.replace("\\", "/")

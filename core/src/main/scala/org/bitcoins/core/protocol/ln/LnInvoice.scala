@@ -112,7 +112,7 @@ sealed abstract class LnInvoice {
   }
 }
 
-object LnInvoice extends StringFactory[LnInvoice] with BitcoinSLogger {
+object LnInvoice extends StringFactory[LnInvoice] {
 
   private case class LnInvoiceImpl(
       hrp: LnHumanReadablePart,
@@ -137,7 +137,7 @@ object LnInvoice extends StringFactory[LnInvoice] with BitcoinSLogger {
       hrp: LnHumanReadablePart,
       data: Vector[UInt5]): Vector[UInt5] = {
     val hrpBytes = hrpExpand(hrp)
-    val u5s = Bech32.createChecksum(hrpBytes ++ data)
+    val u5s = Bech32.createChecksum(hrpBytes ++ data, Bech32Encoding.Bech32)
     u5s
   }
 

@@ -1,12 +1,12 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.util.BitcoinSLogger
+import grizzled.slf4j.Logging
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import scala.concurrent.duration.Duration
 
-trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends BitcoinSLogger {
+trait JdbcProfileComponent[+ConfigType <: DbAppConfig] extends Logging {
 
   def appConfig: ConfigType
 

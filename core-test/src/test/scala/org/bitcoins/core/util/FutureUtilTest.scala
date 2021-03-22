@@ -5,7 +5,7 @@ import org.scalatest.compatible.Assertion
 
 import scala.concurrent._
 
-class FutureUtilTest extends BitcoinSJvmTest with BitcoinSLogger {
+class FutureUtilTest extends BitcoinSJvmTest {
   it must "execute futures sequentially in the correct order" in {
 
     val assertionP = Promise[Assertion]()

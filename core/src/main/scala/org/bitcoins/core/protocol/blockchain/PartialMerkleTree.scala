@@ -32,7 +32,7 @@ import scala.math._
   * The same depth first decoding procedure is performed, but we consume the
   * bits and hashes that we used during encoding
   */
-sealed trait PartialMerkleTree extends BitcoinSLogger {
+sealed trait PartialMerkleTree {
 
   /** The total number of transactions in this block */
   def transactionCount: UInt32

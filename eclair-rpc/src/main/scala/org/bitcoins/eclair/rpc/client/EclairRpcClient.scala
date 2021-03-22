@@ -31,7 +31,7 @@ import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.network.NodeUri
 import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.slf4j.LoggerFactory
+import org.bitcoins.rpc.util.NativeProcessFactory
 import play.api.libs.json._
 
 import java.io.File
@@ -41,7 +41,6 @@ import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.sys.process._
 import scala.util.{Failure, Properties, Success}
 
 /** @param binary Path to Eclair Jar. If not present, reads
@@ -51,9 +50,8 @@ class EclairRpcClient(
     val instance: EclairInstance,
     binary: Option[File] = None)(implicit system: ActorSystem)
     extends EclairApi
+    with NativeProcessFactory
     with StartStopAsync[EclairRpcClient] {
-
-  private val logger = LoggerFactory.getLogger(this.getClass)
 
   def getDaemon: EclairInstance = instance
 
@@ -744,7 +742,15 @@ class EclairRpcClient(
     }
   }
 
-  private var process: Option[Process] = None
+  override def cmd: String = {
+    val logback = instance.logbackXmlPath
+      .map(path => s"-Dlogback.configurationFile=$path")
+      .getOrElse("")
+    val cmd = {
+      s"${pathToEclairJar} -Declair.datadir=${instance.authCredentials.datadir.get} $logback"
+    }
+    cmd
+  }
 
   /** Starts eclair on the local system.
     *
@@ -754,31 +760,11 @@ class EclairRpcClient(
     */
   override def start(): Future[EclairRpcClient] = {
 
-    val _ = {
-
-      require(instance.authCredentials.datadir.isDefined,
-              s"A datadir needs to be provided to start eclair")
-      if (process.isEmpty) {
-        val logback = instance.logbackXmlPath
-          .map(path => s"-Dlogback.configurationFile=$path")
-          .getOrElse("")
-        val cmd =
-          s"${pathToEclairJar} -Declair.datadir=${instance.authCredentials.datadir.get} $logback"
-        val p = Process(cmd)
-        val result = p.run()
-        logger.debug(
-          s"Starting eclair with datadir ${instance.authCredentials.datadir.get}")
-
-        process = Some(result)
-        ()
-      } else {
-        logger.info(s"Eclair was already started!")
-        ()
-      }
-    }
+    val startedBinaryF = startBinary()
 
     val started: Future[EclairRpcClient] = {
       for {
+        _ <- startedBinaryF
         _ <- AsyncUtil.retryUntilSatisfiedF(() => isStarted(),
                                             interval = 1.seconds,
                                             maxTries = 60)
@@ -807,17 +793,17 @@ class EclairRpcClient(
     * Eclair instance, inherits from the StartStop trait
     * @return A future EclairRpcClient that is stopped
     */
-  def stop(): Future[EclairRpcClient] = {
-    val _ = process.map(_.destroy()) match {
-      case None    => false
-      case Some(_) => true
-    }
+  override def stop(): Future[EclairRpcClient] = {
+    val stoppedF = stopBinary()
     val actorSystemF = if (system.name == EclairRpcClient.ActorSystemName) {
       system.terminate()
     } else {
       Future.unit
     }
-    actorSystemF.map(_ => this)
+    for {
+      _ <- stoppedF
+      _ <- actorSystemF
+    } yield this
   }
 
   /** Checks to see if the client stopped successfully

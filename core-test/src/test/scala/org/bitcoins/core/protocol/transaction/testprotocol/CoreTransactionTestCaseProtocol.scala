@@ -7,15 +7,13 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagFactory}
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.DoubleSha256Digest
 import spray.json.{DefaultJsonProtocol, JsArray, JsValue, RootJsonFormat}
 
 /** Created by chris on 5/4/16.
   */
-object CoreTransactionTestCaseProtocol
-    extends DefaultJsonProtocol
-    with BitcoinSLogger {
+object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol {
 
   implicit object CoreTransactionTestCaseProtocol
       extends RootJsonFormat[Option[CoreTransactionTestCase]] {

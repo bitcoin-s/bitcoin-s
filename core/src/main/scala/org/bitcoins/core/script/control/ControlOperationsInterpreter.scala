@@ -12,7 +12,7 @@ import org.bitcoins.core.util._
 
 /** Created by chris on 1/6/16.
   */
-sealed abstract class ControlOperationsInterpreter extends BitcoinSLogger {
+sealed abstract class ControlOperationsInterpreter {
 
   /** Factors out the similarities between OP_IF and OP_NOTIF */
   private def opConditional(conditional: ConditionalOperation)(
@@ -28,18 +28,12 @@ sealed abstract class ControlOperationsInterpreter extends BitcoinSLogger {
 
       stackTopOpt match {
         case None =>
-          logger.error(
-            s"We do not have any stack elements for our $conditional")
           program.failExecution(ScriptErrorUnbalancedConditional)
         case Some(stackTop) =>
           if (isNotMinimalStackTop(stackTop, sigVersion, minimalIfEnabled)) {
-            logger.error(
-              s"$conditional argument was not minimally encoded, got: " + stackTop)
             program.failExecution(ScriptErrorMinimalIf)
           } else {
             val stackTopTrue: Boolean = program.stackTopIsTrue
-            logger.debug(s"$conditional stack top was $stackTopTrue")
-            logger.debug(s"Stack top: ${program.stack}")
 
             val conditionToAdd = conditional match {
               case OP_IF    => stackTopTrue
@@ -120,12 +114,10 @@ sealed abstract class ControlOperationsInterpreter extends BitcoinSLogger {
             "Script top must be OP_VERIFY")
     program.stack.nonEmpty match {
       case true =>
-        logger.debug("Stack for OP_VERIFY: " + program.stack)
         if (program.stackTopIsFalse) program.failExecution(ScriptErrorVerify)
         else
           program.updateStackAndScript(program.stack.tail, program.script.tail)
       case false =>
-        logger.error("OP_VERIFY requires an element to be on the stack")
         program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }

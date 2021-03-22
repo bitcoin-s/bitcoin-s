@@ -5,7 +5,7 @@ import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkitcore.gen.{ChainParamsGenerator, CryptoGenerators}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
-class ECPrivateKeyTest extends BitcoinSUnitTest {
+class WIFEncodingTest extends BitcoinSUnitTest {
 
   it must "determine if a private key corresponds to a compressed public key or not" in {
     val compressedKey = "L1RrrnXkcKut5DEMwtDthjwRcTTwED36thyL1DebVrKuwvohjMNi"

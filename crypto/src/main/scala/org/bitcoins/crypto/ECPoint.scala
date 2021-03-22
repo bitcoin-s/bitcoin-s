@@ -4,7 +4,7 @@ import scodec.bits.ByteVector
 
 import java.math.BigInteger
 
-/** Represents a point on an elliptic curve.
+/** Represents a point on secp256k1 elliptic curve.
   */
 sealed trait ECPoint
 

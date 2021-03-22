@@ -6,7 +6,7 @@ import org.scalacheck.{Prop, Properties}
 
 /** Created by chris on 6/20/16.
   */
-class NumberUtilSpec extends Properties("NumberUtilSpec") with BitcoinSLogger {
+class NumberUtilSpec extends Properties("NumberUtilSpec") {
 
   property("Serialization symmetry for BigInt") =
     Prop.forAll(NumberGenerator.bigInts) { bigInt: BigInt =>

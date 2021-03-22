@@ -1,12 +1,8 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.util.Bech32
+import org.bitcoins.core.util.{Bech32, Bech32Encoding}
+import org.bitcoins.testkitcore.gen._
 import org.bitcoins.testkitcore.gen.ln.LnInvoiceGen
-import org.bitcoins.testkitcore.gen.{
-  AddressGenerator,
-  ChainParamsGenerator,
-  ScriptGenerators
-}
 import org.scalacheck.{Prop, Properties}
 
 import scala.annotation.tailrec
@@ -15,14 +11,16 @@ import scala.util.{Random, Success}
 class Bech32Spec extends Properties("Bech32Spec") {
   property("split all LN invoices into HRP and data") = {
     Prop.forAll(LnInvoiceGen.lnInvoice) { invoice =>
-      val splitT = Bech32.splitToHrpAndData(invoice.toString)
+      val splitT =
+        Bech32.splitToHrpAndData(invoice.toString, Bech32Encoding.Bech32)
       splitT.isSuccess
     }
   }
 
   property("split all Bech32 addresses into HRP and data") = {
     Prop.forAll(AddressGenerator.bech32Address) { address =>
-      val splitT = Bech32.splitToHrpAndData(address.value)
+      val splitT =
+        Bech32.splitToHrpAndData(address.value, Bech32Encoding.Bech32)
       splitT.isSuccess
     }
   }

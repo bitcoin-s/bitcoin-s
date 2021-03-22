@@ -32,7 +32,9 @@ case class BitcoindRpcTestClient(
       case Some(client) => Future.successful(client)
       case None =>
         val clientF =
-          BitcoindRpcTestUtil.startedBitcoindRpcClient(bitcoindInstance)
+          BitcoindRpcTestUtil.startedBitcoindRpcClient(bitcoindInstance,
+                                                       clientAccum =
+                                                         Vector.newBuilder)
         clientF.map { c =>
           clientOpt = Some(c)
           c

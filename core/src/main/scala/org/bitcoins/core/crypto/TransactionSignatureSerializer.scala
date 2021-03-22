@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
+import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
 import scodec.bits.ByteVector
@@ -20,7 +20,7 @@ import scodec.bits.ByteVector
   * bitcoinj version of this
   * [[https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008]]
   */
-sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
+sealed abstract class TransactionSignatureSerializer {
 
   /** Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
     * actually returns the constant "1" to indicate an error
@@ -43,7 +43,6 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
     val script = BitcoinScriptUtil.calculateScriptForSigning(
       txSigComponent,
       output.scriptPubKey.asm)
-    logger.trace(s"scriptForSigning: $script")
     val amount = output.value
 
     serializeForSignature(spendingTransaction,
@@ -63,8 +62,6 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
       sigVersion: SignatureVersion): ByteVector = {
     sigVersion match {
       case SigVersionBase =>
-        logger.trace("Serializing for signature")
-        logger.trace("Script: " + script)
         // Clear input scripts in preparation for signing. If we're signing a fresh
         // CScript's inside the Bitcoin Core codebase retain their compactSizeUInt
         // while clearing out all of the actual asm operations in the CScript
@@ -88,12 +85,8 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
         // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
         // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
         // do it, we could split off the main chain.
-        logger.trace("Before Bitcoin-S Script to be connected: " + script)
         val scriptWithOpCodeSeparatorsRemoved: Seq[ScriptToken] =
           removeOpCodeSeparators(script)
-
-        logger.trace(
-          "After Bitcoin-S Script to be connected: " + scriptWithOpCodeSeparatorsRemoved)
 
         val inputToSign = inputSigsRemoved(inputIndex.toInt)
 
@@ -102,7 +95,6 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
         // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
         val scriptSig =
           ScriptSignature.fromAsm(scriptWithOpCodeSeparatorsRemoved)
-        logger.trace(s"scriptSig $scriptSig")
         val inputWithConnectedScript = TransactionInput(
           inputToSign.previousOutput,
           scriptSig,
@@ -222,9 +214,6 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
             i.previousOutput.bytes ++ CompactSizeUInt.calc(scriptBytes).bytes ++
             scriptBytes ++ amount.bytes ++ i.sequence.bytes.reverse ++
             outputHash ++ spendingTransaction.lockTime.bytes.reverse ++ hashType.num.bytes.reverse
-        logger.debug(
-          "Serialization for signature for WitnessV0Sig: " + BytesUtil
-            .encodeHex(serializationForSig))
         serializationForSig
     }
   }
@@ -242,8 +231,6 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
       inputIndex >= UInt32(spendingTransaction.inputs.size) &&
       txSigComponent.sigVersion != SigVersionWitnessV0
     ) {
-      logger.warn(
-        "Our inputIndex is out of the range of the inputs in the spending transaction")
       errorHash
     } else if (
       (hashType.isInstanceOf[SIGHASH_SINGLE] || hashType
@@ -251,16 +238,10 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
       inputIndex >= UInt32(spendingTransaction.outputs.size) &&
       txSigComponent.sigVersion != SigVersionWitnessV0
     ) {
-      logger.warn(
-        "When we have a SIGHASH_SINGLE we cannot have more inputs than outputs")
       errorHash
     } else {
       val serializedTxForSignature =
         serializeForSignature(txSigComponent, hashType)
-      logger.trace(
-        "Serialized tx for signature: " + BytesUtil.encodeHex(
-          serializedTxForSignature))
-      logger.trace("HashType: " + hashType.num)
       CryptoUtil.doubleSHA256(serializedTxForSignature)
     }
   }
@@ -286,7 +267,6 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
       spendingTransaction,
       signingInfo,
       output.scriptPubKey.asm)
-    logger.trace(s"scriptForSigning: $script")
     val amount = output.value
 
     serializeForSignature(spendingTransaction,
@@ -309,7 +289,6 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
       TxUtil.inputIndexOpt(signingInfo.inputInfo, spendingTransaction)
 
     if (inputIndexOpt.isEmpty) {
-      logger.warn("Our input is not contained in the spending transaction")
       errorHash
     } else if (
       (hashType.isInstanceOf[SIGHASH_SINGLE] || hashType
@@ -317,16 +296,10 @@ sealed abstract class TransactionSignatureSerializer extends BitcoinSLogger {
       inputIndexOpt.get >= spendingTransaction.outputs.size &&
       signingInfo.sigVersion != SigVersionWitnessV0
     ) {
-      logger.warn(
-        "When we have a SIGHASH_SINGLE we cannot have more inputs than outputs")
       errorHash
     } else {
       val serializedTxForSignature =
         serializeForSignature(spendingTransaction, signingInfo, hashType)
-      logger.trace(
-        "Serialized tx for signature: " + BytesUtil.encodeHex(
-          serializedTxForSignature))
-      logger.trace("HashType: " + hashType.num)
       CryptoUtil.doubleSHA256(serializedTxForSignature)
     }
   }

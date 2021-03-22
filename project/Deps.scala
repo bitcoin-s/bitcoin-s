@@ -26,7 +26,7 @@ object Deps {
     val typesafeConfigV = "1.4.1"
 
     val scalaFxV = "15.0.1-R21"
-    val javaFxV = "17-ea+2"
+    val javaFxV = "17-ea+3"
 
     val asyncNewScalaV = "0.10.0"
 
@@ -250,15 +250,14 @@ object Deps {
     List(
       Compile.newMicroPickle,
       Compile.playJson,
-      Compile.slf4j
+      Compile.slf4j,
+      Compile.grizzledSlf4j
     )
 
   def core = Def.setting {
     List(
       Compile.bouncycastle,
-      Compile.scodec.value,
-      Compile.slf4j,
-      Compile.grizzledSlf4j
+      Compile.scodec.value
     )
   }
 
@@ -283,7 +282,6 @@ object Deps {
   def coreTest = Def.setting {
     List(
       Test.junitInterface,
-      Test.logback,
       Test.scalaTest.value,
       Test.spray,
       Test.playJson,
@@ -303,6 +301,7 @@ object Deps {
     List(
       Compile.zeromq,
       Compile.slf4j,
+      Compile.grizzledSlf4j,
       Test.logback,
       Test.scalacheck.value,
       Test.scalaTest.value
@@ -312,7 +311,9 @@ object Deps {
   val bitcoindRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
-    Compile.typesafeConfig
+    Compile.typesafeConfig,
+    Compile.slf4j,
+    Compile.grizzledSlf4j
   )
 
   def bitcoindRpcTest = Def.setting {
@@ -342,6 +343,8 @@ object Deps {
       Compile.sqlite,
       Compile.postgres,
       Compile.slickHikari,
+      Compile.slf4j,
+      Compile.grizzledSlf4j,
       Test.scalaTest.value,
       Test.pgEmbedded
     )
@@ -383,7 +386,8 @@ object Deps {
     Compile.akkaHttp,
     Compile.akkaStream,
     Compile.playJson,
-    Compile.slf4j
+    Compile.slf4j,
+    Compile.grizzledSlf4j
   )
 
   def eclairRpcTest = Def.setting {
@@ -416,7 +420,9 @@ object Deps {
     Compile.logback,
     Compile.slick,
     Compile.slickHikari,
-    Compile.sqlite
+    Compile.sqlite,
+    Compile.slf4j,
+    Compile.grizzledSlf4j
   )
 
   val nodeTest = Def.setting {
@@ -433,8 +439,7 @@ object Deps {
       Compile.scalaCollectionCompat,
       Compile.scalacheck.value,
       Compile.scalaTest.value,
-      Compile.scalaTestPlus.value,
-      Compile.slf4j
+      Compile.scalaTestPlus.value
     )
   }
 
@@ -445,6 +450,8 @@ object Deps {
       Compile.scalaTest.value,
       Compile.scalaTestPlus.value,
       Compile.pgEmbedded,
+      Compile.slf4j,
+      Compile.grizzledSlf4j,
       Test.akkaTestkit
     )
   }
@@ -462,7 +469,9 @@ object Deps {
   def wallet(scalaVersion: String) =
     List(
       Compile.newMicroJson,
-      Compile.logback
+      Compile.logback,
+      Compile.slf4j,
+      Compile.grizzledSlf4j
     )
 
   val walletTest = List(
@@ -488,7 +497,9 @@ object Deps {
   val dlcOracle =
     List(
       Compile.newMicroJson,
-      Compile.logback
+      Compile.logback,
+      Compile.slf4j,
+      Compile.grizzledSlf4j
     )
 
   val dlcOracleTest =
@@ -501,6 +512,8 @@ object Deps {
     Compile.akkaHttp,
     Compile.akkaActor,
     Compile.akkaSlf4j,
-    Compile.akkaStream
+    Compile.akkaStream,
+    Compile.slf4j,
+    Compile.grizzledSlf4j
   )
 }

@@ -7,13 +7,12 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.ECPrivateKey
 import org.scalacheck.Gen
 
 /** Created by chris on 11/28/16.
   */
-sealed abstract class WitnessGenerators extends BitcoinSLogger {
+sealed abstract class WitnessGenerators {
 
   /** Generates a random [[org.bitcoins.core.protocol.script.ScriptWitness]] */
   def scriptWitness: Gen[ScriptWitness] = {

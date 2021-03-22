@@ -1,4 +1,3 @@
-import Deps.V
 import com.typesafe.sbt.SbtGit.GitKeys._
 
 import scala.util.Properties
@@ -29,8 +28,6 @@ lazy val benchSettings: Seq[Def.SettingsDefinition] = {
     inConfig(Benchmark)(Defaults.testSettings)
   )
 }
-
-import Projects._
 
 lazy val commonJsSettings = {
   Seq(
@@ -563,11 +560,18 @@ lazy val zmq = project
     coreJVM % testAndCompile
   )
 
+def isCI = {
+  Properties
+    .envOrNone("CI")
+    .isDefined
+}
+
 lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(name := "bitcoin-s-bitcoind-rpc-test",
-            libraryDependencies ++= Deps.bitcoindRpcTest.value)
+            libraryDependencies ++= Deps.bitcoindRpcTest.value,
+            parallelExecution := !(isCI && Properties.isMac))
   .dependsOn(coreJVM % testAndCompile, testkit)
 
 lazy val bench = project
@@ -585,7 +589,8 @@ lazy val eclairRpcTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     libraryDependencies ++= Deps.eclairRpcTest.value,
-    name := "bitcoin-s-eclair-rpc-test"
+    name := "bitcoin-s-eclair-rpc-test",
+    parallelExecution := !(isCI && Properties.isMac)
   )
   .dependsOn(coreJVM % testAndCompile, testkit)
 
