@@ -41,7 +41,17 @@ class ECDSA(
 
   def verify(msg: Buffer, sig: Buffer, key: Buffer): Boolean = js.native
 
+  def signDER(msg: Buffer, key: Buffer): Buffer = js.native
+
+  def verifyDER(msg: Buffer, sig: Buffer, key: Buffer): Boolean = js.native
+
   def recover(
+      msg: Buffer,
+      sig: Buffer,
+      param: Byte,
+      compress: Boolean): Buffer = js.native
+
+  def recoverDER(
       msg: Buffer,
       sig: Buffer,
       param: Byte,

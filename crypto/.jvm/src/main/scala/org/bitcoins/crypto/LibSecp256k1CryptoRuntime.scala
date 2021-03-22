@@ -42,11 +42,10 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     BouncycastleCryptoRuntime.sha256Hash160(bytes)
   }
 
-  override def toPublicKey(
-      privateKey: ECPrivateKey,
-      isCompressed: Boolean): ECPublicKey = {
+  override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
     val pubKeyBytes: Array[Byte] =
-      NativeSecp256k1.computePubkey(privateKey.bytes.toArray, isCompressed)
+      NativeSecp256k1.computePubkey(privateKey.bytes.toArray,
+                                    privateKey.isCompressed)
     val pubBytes = ByteVector(pubKeyBytes)
     require(
       ECPublicKey.isFullyValid(pubBytes),
@@ -116,6 +115,11 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     ECPublicKey(pubBytes)
   }
 
+  override def publicKeyConvert(
+      key: ECPublicKey,
+      compressed: Boolean): ECPublicKey =
+    BouncycastleCryptoRuntime.publicKeyConvert(key, compressed)
+
   override def tweakMultiply(
       publicKey: ECPublicKey,
       tweak: FieldElement): ECPublicKey = {
@@ -157,9 +161,6 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
         false
     }
   }
-
-  override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean =
-    bytes.nonEmpty && BouncycastleCryptoRuntime.isValidPubKey(bytes)
 
   // TODO: add a native implementation
   override def schnorrSign(

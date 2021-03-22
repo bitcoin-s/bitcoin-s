@@ -286,6 +286,8 @@ object ECPublicKey extends Factory[ECPublicKey] {
 
   val dummy: ECPublicKey = FieldElement.one.getPublicKey
 
+  val infinity: ECPublicKey = ECPublicKey.fromBytes(ByteVector(0x00))
+
   /** Generates a fresh [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] that has not been used before. */
   def freshPublicKey: ECPublicKey = ECPrivateKey.freshPrivateKey.publicKey
 

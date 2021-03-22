@@ -124,10 +124,9 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     Sha256Hash160Digest(hash)
   }
 
-  override def toPublicKey(
-      privateKey: ECPrivateKey,
-      isCompressed: Boolean): ECPublicKey =
+  override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
     BouncyCastleUtil.computePublicKey(privateKey)
+  }
 
   override def sign(
       privateKey: ECPrivateKey,
@@ -154,6 +153,11 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey =
     BouncyCastleUtil.computePublicKey(privateKey)
 
+  override def publicKeyConvert(
+      key: ECPublicKey,
+      compressed: Boolean): ECPublicKey =
+    BouncyCastleUtil.publicKeyConvert(key, compressed)
+
   override def tweakMultiply(
       publicKey: ECPublicKey,
       tweak: FieldElement): ECPublicKey =
@@ -175,43 +179,6 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
 
   override def isValidPubKey(bytes: ByteVector): Boolean =
     BouncyCastleUtil.validatePublicKey(bytes)
-
-  override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean =
-    bytes.nonEmpty && isValidPubKey(bytes)
-
-  override def adaptorSign(
-      key: ECPrivateKey,
-      adaptorPoint: ECPublicKey,
-      msg: ByteVector): ECAdaptorSignature = {
-    AdaptorStuff.adaptorSign(key, adaptorPoint, msg)
-  }
-
-  override def adaptorComplete(
-      key: ECPrivateKey,
-      adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
-    AdaptorStuff.adaptorComplete(key, adaptorSignature.adaptedSig)
-  }
-
-  override def extractAdaptorSecret(
-      signature: ECDigitalSignature,
-      adaptorSignature: ECAdaptorSignature,
-      key: ECPublicKey): ECPrivateKey = {
-    AdaptorStuff.extractAdaptorSecret(signature, adaptorSignature, key)
-  }
-
-  override def adaptorVerify(
-      adaptorSignature: ECAdaptorSignature,
-      key: ECPublicKey,
-      msg: ByteVector,
-      adaptorPoint: ECPublicKey): Boolean =
-    AdaptorStuff.adaptorVerify(adaptorSignature, key, msg, adaptorPoint)
-
-  override def isValidSignatureEncoding(
-      signature: ECDigitalSignature): Boolean =
-    DERSignatureUtil.isValidSignatureEncoding(signature)
-
-  override def isDEREncoded(signature: ECDigitalSignature): Boolean =
-    DERSignatureUtil.isDEREncoded(signature)
 
   override def sipHash(item: ByteVector, key: SipHashKey): Long = {
     val sipHashCParam = 2

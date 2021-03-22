@@ -12,6 +12,24 @@ class SignWithEntropyTest extends BitcoinSCryptoAsyncTest {
 
   behavior of "SignWithEntropy"
 
+  it must "sign arbitrary data correctly with low R values" in {
+    forAllAsync(CryptoGenerators.sha256Digest) { hash =>
+      val bytes = hash.bytes
+
+      for {
+        sig1 <- privKey.signLowRFuture(bytes)
+        sig2 <- privKey.signLowRFuture(bytes) // Check for determinism
+      } yield {
+        assert(pubKey.verify(bytes, sig1))
+        assert(
+          sig1.bytes.length <= 70
+        ) // This assertion fails if Low R is not used
+        assert(sig1.bytes == sig2.bytes)
+        assert(sig1 == sig2)
+      }
+    }
+  }
+
   it must "sign arbitrary pieces of data with arbitrary entropy correctly" in {
     forAllAsync(CryptoGenerators.sha256Digest, CryptoGenerators.sha256Digest) {
       case (hash, entropy) =>
@@ -22,5 +40,4 @@ class SignWithEntropyTest extends BitcoinSCryptoAsyncTest {
         }
     }
   }
-
 }
