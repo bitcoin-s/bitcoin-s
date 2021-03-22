@@ -57,7 +57,9 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     assert(CryptoUtil.secKeyVerify(privkey.bytes))
     assert(privkey.isCompressed)
 
-    val pubkey = CryptoUtil.toPublicKey(privkey, isCompressed = false)
+    val notCompressedKey =
+      ECPrivateKey(bytes = privkey.bytes, isCompressed = false)
+    val pubkey = CryptoUtil.toPublicKey(notCompressedKey)
     assert(CryptoUtil.isValidPubKey(pubkey.bytes))
     assert(!pubkey.isCompressed)
 

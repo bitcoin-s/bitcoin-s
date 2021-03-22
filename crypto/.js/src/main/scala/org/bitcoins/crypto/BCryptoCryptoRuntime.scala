@@ -60,11 +60,10 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     * @param privateKey   the private key we want the corresponding public key for
     * @param isCompressed whether the returned public key should be compressed or not
     */
-  override def toPublicKey(
-      privateKey: ECPrivateKey,
-      isCompressed: Boolean): ECPublicKey = {
+  override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
     val pubKeyBuffer =
-      ecdsa.publicKeyCreate(key = privateKey.bytes, compressed = isCompressed)
+      ecdsa.publicKeyCreate(key = privateKey.bytes,
+                            compressed = privateKey.isCompressed)
     ECPublicKey.fromBytes(pubKeyBuffer)
   }
 

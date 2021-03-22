@@ -42,11 +42,10 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     BouncycastleCryptoRuntime.sha256Hash160(bytes)
   }
 
-  override def toPublicKey(
-      privateKey: ECPrivateKey,
-      isCompressed: Boolean): ECPublicKey = {
+  override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
     val pubKeyBytes: Array[Byte] =
-      NativeSecp256k1.computePubkey(privateKey.bytes.toArray, isCompressed)
+      NativeSecp256k1.computePubkey(privateKey.bytes.toArray,
+                                    privateKey.isCompressed)
     val pubBytes = ByteVector(pubKeyBytes)
     require(
       ECPublicKey.isFullyValid(pubBytes),

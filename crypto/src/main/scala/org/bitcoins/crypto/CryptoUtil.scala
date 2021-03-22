@@ -20,10 +20,8 @@ trait CryptoUtil extends CryptoRuntime {
     cryptoRuntime.freshPrivateKey
   }
 
-  override def toPublicKey(
-      privateKey: ECPrivateKey,
-      isCompressed: Boolean): ECPublicKey = {
-    cryptoRuntime.toPublicKey(privateKey, isCompressed)
+  override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
+    cryptoRuntime.toPublicKey(privateKey)
   }
 
   override def normalize(str: String): String = {

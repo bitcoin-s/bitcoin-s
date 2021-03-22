@@ -18,7 +18,7 @@ trait CryptoRuntime {
     * @param privateKey the private key we want the corresponding public key for
     * @param isCompressed whether the returned public key should be compressed or not
     */
-  def toPublicKey(privateKey: ECPrivateKey, isCompressed: Boolean): ECPublicKey
+  def toPublicKey(privateKey: ECPrivateKey): ECPublicKey
 
   def ripeMd160(bytes: ByteVector): RipeMd160Digest
 

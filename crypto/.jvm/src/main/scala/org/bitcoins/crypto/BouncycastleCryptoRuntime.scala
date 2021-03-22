@@ -124,10 +124,9 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     Sha256Hash160Digest(hash)
   }
 
-  override def toPublicKey(
-      privateKey: ECPrivateKey,
-      isCompressed: Boolean): ECPublicKey =
+  override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
     BouncyCastleUtil.computePublicKey(privateKey)
+  }
 
   override def sign(
       privateKey: ECPrivateKey,
