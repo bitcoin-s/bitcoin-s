@@ -20,10 +20,8 @@ trait CryptoUtil extends CryptoRuntime {
     cryptoRuntime.freshPrivateKey
   }
 
-  override def toPublicKey(
-      privateKey: ECPrivateKey,
-      isCompressed: Boolean): ECPublicKey = {
-    cryptoRuntime.toPublicKey(privateKey, isCompressed)
+  override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
+    cryptoRuntime.toPublicKey(privateKey)
   }
 
   override def normalize(str: String): String = {
@@ -85,6 +83,11 @@ trait CryptoUtil extends CryptoRuntime {
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey =
     cryptoRuntime.publicKey(privateKey)
 
+  override def publicKeyConvert(
+      key: ECPublicKey,
+      compressed: Boolean): ECPublicKey =
+    cryptoRuntime.publicKeyConvert(key, compressed)
+
   override def sign(
       privateKey: ECPrivateKey,
       dataToSign: ByteVector): ECDigitalSignature =
@@ -129,9 +132,6 @@ trait CryptoUtil extends CryptoRuntime {
 
   override def isValidPubKey(bytes: ByteVector): Boolean =
     cryptoRuntime.isValidPubKey(bytes)
-
-  override def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean =
-    cryptoRuntime.isFullyValidWithBouncyCastle(bytes)
 
   override def schnorrSign(
       dataToSign: ByteVector,
