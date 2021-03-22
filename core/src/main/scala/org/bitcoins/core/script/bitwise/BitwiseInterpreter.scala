@@ -11,11 +11,10 @@ import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   StartedScriptProgram
 }
-import org.bitcoins.core.util.BitcoinSLogger
 
 /** Created by chris on 1/6/16.
   */
-sealed abstract class BitwiseInterpreter extends BitcoinSLogger {
+sealed abstract class BitwiseInterpreter {
 
   /** Returns 1 if the inputs are exactly equal, 0 otherwise. */
   def opEqual(
@@ -68,7 +67,6 @@ sealed abstract class BitwiseInterpreter extends BitcoinSLogger {
         case p: ExecutionInProgressScriptProgram => p
       }
     } else {
-      logger.error("OP_EQUALVERIFY requires at least 2 elements on the stack")
       program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }

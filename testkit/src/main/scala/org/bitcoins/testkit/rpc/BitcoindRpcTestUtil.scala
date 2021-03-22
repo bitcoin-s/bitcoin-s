@@ -23,7 +23,8 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
-import org.bitcoins.core.util.{BitcoinSLogger, EnvUtil}
+import grizzled.slf4j.Logging
+import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
@@ -56,7 +57,7 @@ import scala.util._
 import scala.util.control.NonFatal
 
 //noinspection AccessorLikeMethodIsEmptyParen
-trait BitcoindRpcTestUtil extends BitcoinSLogger {
+trait BitcoindRpcTestUtil extends Logging {
 
   lazy val network: RegTest.type = RegTest
 

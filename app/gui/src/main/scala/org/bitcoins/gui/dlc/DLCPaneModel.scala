@@ -1,5 +1,6 @@
 package org.bitcoins.gui.dlc
 
+import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.serializers.Picklers._
@@ -7,7 +8,6 @@ import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.{GlobalData, TaskRunner}
@@ -23,7 +23,7 @@ import java.nio.file.Files
 import scala.util.{Failure, Properties, Success, Try}
 
 class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
-    extends BitcoinSLogger {
+    extends Logging {
   var taskRunner: TaskRunner = _
 
   lazy val txPrintFunc: String => String = str => {

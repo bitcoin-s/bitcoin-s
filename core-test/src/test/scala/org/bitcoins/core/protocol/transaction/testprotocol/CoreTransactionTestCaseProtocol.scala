@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.transaction.testprotocol
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -7,7 +8,7 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagFactory}
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.DoubleSha256Digest
 import spray.json.{DefaultJsonProtocol, JsArray, JsValue, RootJsonFormat}
 
@@ -15,7 +16,7 @@ import spray.json.{DefaultJsonProtocol, JsArray, JsValue, RootJsonFormat}
   */
 object CoreTransactionTestCaseProtocol
     extends DefaultJsonProtocol
-    with BitcoinSLogger {
+    with Logging {
 
   implicit object CoreTransactionTestCaseProtocol
       extends RootJsonFormat[Option[CoreTransactionTestCase]] {

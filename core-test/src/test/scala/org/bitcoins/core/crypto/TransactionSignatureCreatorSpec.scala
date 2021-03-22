@@ -3,7 +3,7 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.util.BitcoinSLogger
+import grizzled.slf4j.Logging
 import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.scalacheck.{Prop, Properties}
 
@@ -11,7 +11,7 @@ import org.scalacheck.{Prop, Properties}
   */
 class TransactionSignatureCreatorSpec
     extends Properties("TransactionSignatureCreatorSpec")
-    with BitcoinSLogger {
+    with Logging {
 
   property("Must generate a valid signature for a p2pk transaction") =
     Prop.forAll(TransactionGenerators.signedP2PKTransaction) {

@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
@@ -23,8 +23,7 @@ case class PSBT(
     globalMap: GlobalPSBTMap,
     inputMaps: Vector[InputPSBTMap],
     outputMaps: Vector[OutputPSBTMap])
-    extends NetworkElement
-    with BitcoinSLogger {
+    extends NetworkElement {
   require(
     inputMaps.size == transaction.inputs.size,
     s"There must be an input map for every input in the global transaction, inputs: ${transaction.inputs}")

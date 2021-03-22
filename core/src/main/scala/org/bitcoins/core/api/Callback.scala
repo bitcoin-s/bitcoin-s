@@ -1,6 +1,5 @@
 package org.bitcoins.core.api
 
-import grizzled.slf4j.Logger
 import org.bitcoins.core.util.SeqWrapper
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -58,13 +57,5 @@ case class CallbackHandler[C, T <: Callback[C]](
     }
 
     Future.sequence(executeFs).map(_ => ())
-  }
-
-  /** Executes the callbacks synchronously, Failures are logged */
-  def execute(logger: Logger, param: C)(implicit
-      ec: ExecutionContext): Future[Unit] = {
-    val recoverFunc = (err: Throwable) =>
-      logger.error(s"$name Callback failed with error: ", err)
-    execute(param, recoverFunc)
   }
 }

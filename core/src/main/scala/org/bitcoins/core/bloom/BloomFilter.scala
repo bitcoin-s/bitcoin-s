@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.script.{
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
 import org.bitcoins.core.serializers.bloom.RawBloomFilterSerializer
-import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto._
 import scodec.bits.{BitVector, ByteVector}
 
@@ -22,7 +22,7 @@ import scala.util.hashing.MurmurHash3
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki BIP37]].
   * @see [[https://github.com/bitcoin/bitcoin/blob/master/src/bloom.h Bitcoin Core bloom.h]]
   */
-sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
+sealed abstract class BloomFilter extends NetworkElement {
 
   /** How large the bloom filter is, in Bytes */
   def filterSize: CompactSizeUInt
@@ -190,7 +190,6 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
             }
           }
 
-        logger.debug("Inserting outPoints: " + outPoints)
         val outPointsBytes = outPoints.map(_.bytes)
         val filterWithOutPoints = insertByteVectors(outPointsBytes)
         //add txid
@@ -198,9 +197,6 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
           filterWithOutPoints.insert(transaction.txId)
         filterWithTxIdAndOutPoints
       case BloomUpdateNone =>
-        logger.debug(
-          "You are attempting to update a bloom filter when the flag is set to BloomUpdateNone, " +
-            "no information will be added to the bloom filter, specifically this transaction: " + transaction)
         this
       case BloomUpdateP2PKOnly =>
         //update the filter with the outpoint if the filter matches any of the constants in a p2pkh or multisig script pubkey
@@ -225,7 +221,6 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
         accumFilter: BloomFilter): BloomFilter =
       constantsWithIndex match {
         case h +: t if accumFilter.contains(h._1.bytes) =>
-          logger.debug("Found constant in bloom filter: " + h._1.hex)
           val filter =
             accumFilter.insert(TransactionOutPoint(txId, UInt32(h._2)))
           loop(t, filter)
@@ -287,7 +282,7 @@ sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
   override def bytes = RawBloomFilterSerializer.write(this)
 }
 
-object BloomFilter extends Factory[BloomFilter] with BitcoinSLogger {
+object BloomFilter extends Factory[BloomFilter] {
 
   private case class BloomFilterImpl(
       filterSize: CompactSizeUInt,
@@ -348,11 +343,9 @@ object BloomFilter extends Factory[BloomFilter] with BitcoinSLogger {
       //from https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format
       val optimalFilterSize: Double =
         (-1 / pow(log(2), 2) * numElements * log(falsePositiveRate)) / 8
-      logger.debug("optimalFilterSize " + optimalFilterSize)
       //BIP37 places limitations on the filter size, namely it cannot be > 36,000 bytes
       val actualFilterSize: Int =
         max(1, min(optimalFilterSize, maxSize.toInt * 8)).toInt
-      logger.debug("actualFilterSize: " + actualFilterSize)
       val optimalHashFuncs: Double = actualFilterSize * 8 / numElements * log(2)
       //BIP37 places a limit on the amount of hashFuncs we can use, which is 50
       val actualHashFuncs: Int =

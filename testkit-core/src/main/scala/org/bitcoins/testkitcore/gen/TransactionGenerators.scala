@@ -1,26 +1,21 @@
 package org.bitcoins.testkitcore.gen
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{
-  TransactionInput,
-  TransactionOutPoint,
-  TransactionOutput,
-  _
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkitcore.Implicits._
 import org.scalacheck.Gen
 
 import scala.annotation.tailrec
 
-object TransactionGenerators extends BitcoinSLogger {
+object TransactionGenerators extends Logging {
 
   /** Responsible for generating [[org.bitcoins.core.protocol.transaction.TransactionOutPoint TransactionOutPoint]] */
   def outPoint: Gen[TransactionOutPoint] =

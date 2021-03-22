@@ -11,12 +11,13 @@ import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, NumberUtil, TimeUtil}
+import org.bitcoins.core.util.{FutureUtil, NumberUtil, TimeUtil}
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.dlc.oracle.util.EventDbUtil
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
+import grizzled.slf4j.Logging
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,7 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
     val conf: DLCOracleAppConfig)
     extends DLCOracleApi
-    with BitcoinSLogger {
+    with Logging {
 
   implicit val ec: ExecutionContext = conf.ec
 

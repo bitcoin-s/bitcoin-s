@@ -14,7 +14,7 @@ import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 2/8/16.
   */
-sealed abstract class NumberUtil extends BitcoinSLogger {
+sealed abstract class NumberUtil {
 
   /** Takes 2^^num. */
   def pow2(exponent: Int): BigInt = {

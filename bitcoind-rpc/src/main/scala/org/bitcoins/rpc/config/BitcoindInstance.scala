@@ -5,7 +5,7 @@ import java.net.URI
 import java.nio.file.{Files, Paths}
 
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.util.BitcoinSLogger
+import grizzled.slf4j.Logging
 import org.bitcoins.rpc.client.common.BitcoindVersion
 
 import scala.sys.process._
@@ -13,7 +13,7 @@ import scala.util.Properties
 
 /** Created by chris on 4/29/17.
   */
-sealed trait BitcoindInstance extends BitcoinSLogger {
+sealed trait BitcoindInstance extends Logging {
 
   require(binary.exists,
           s"bitcoind binary path (${binary.getAbsolutePath}) does not exist!")

@@ -1,12 +1,12 @@
 package org.bitcoins.core.number
 
-import org.bitcoins.core.util.BitcoinSLogger
+import grizzled.slf4j.Logging
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.util.Try
 
-class UInt8Spec extends Properties("UInt8Spec") with BitcoinSLogger {
+class UInt8Spec extends Properties("UInt8Spec") with Logging {
 
   property("convert uint8 -> byte -> uint8") = {
     Prop.forAll(NumberGenerator.uInt8) { case u8: UInt8 =>
