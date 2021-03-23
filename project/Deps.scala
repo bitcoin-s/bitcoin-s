@@ -1,6 +1,5 @@
-import Deps.{Compile, Test}
-import sbt._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+import sbt._
 
 object Deps {
 
@@ -280,6 +279,16 @@ object Deps {
   )
 
   def coreTest = Def.setting {
+    List(
+      Test.junitInterface,
+      Test.scalaTest.value,
+      //      Test.spray,
+      //      Test.playJson,
+      Test.scalaCollectionCompat
+    )
+  }
+
+  val coreTestJVM = Def.setting {
     List(
       Test.junitInterface,
       Test.scalaTest.value,

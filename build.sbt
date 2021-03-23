@@ -405,6 +405,7 @@ lazy val coreTest = crossProject(JVMPlatform, JSPlatform)
   )
 
 lazy val coreTestJVM = coreTest.jvm
+  .settings(libraryDependencies ++= Deps.coreTestJVM.value)
 
 lazy val coreTestJS = coreTest.js
 

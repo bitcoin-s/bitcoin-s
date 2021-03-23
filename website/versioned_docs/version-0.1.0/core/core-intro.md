@@ -165,7 +165,6 @@ Here is an example of a transaction spending a `scriptPubKey` which is correctly
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script._
-import org.bitcoins.core.script.interpreter._
 import org.bitcoins.core.policy._
 import org.bitcoins.core.number._
 import org.bitcoins.core.crypto._
@@ -188,4 +187,3 @@ val preExecution = PreExecutionScriptProgram(btxsc)
 val result = ScriptInterpreter.run(preExecution)
 // result: org.bitcoins.core.script.result.ScriptResult = ScriptOk
 ```
-
