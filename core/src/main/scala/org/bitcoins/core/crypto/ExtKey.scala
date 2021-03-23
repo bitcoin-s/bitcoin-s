@@ -7,7 +7,6 @@ import org.bitcoins.crypto._
 import scodec.bits.{ByteVector, HexStringSyntax}
 
 import scala.annotation.tailrec
-import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 /** Represents an extended key as defined by BIP32
@@ -225,21 +224,21 @@ sealed abstract class ExtPrivateKey
 
   override def publicKey: ECPublicKey = key.publicKey
 
-  override def signFunction: ByteVector => Future[ECDigitalSignature] = {
-    key.signFunction
+  override def sign(bytes: ByteVector): ECDigitalSignature = {
+    key.sign(bytes)
   }
 
-  override def signWithEntropyFunction: (
-      ByteVector,
-      ByteVector) => Future[ECDigitalSignature] = {
-    key.signWithEntropyFunction
+  override def signWithEntropy(
+      bytes: ByteVector,
+      entropy: ByteVector): ECDigitalSignature = {
+    key.signWithEntropy(bytes, entropy)
   }
 
   /** Signs the given bytes with the given [[BIP32Path path]] */
-  override def deriveAndSignFuture: (
-      ByteVector,
-      BIP32Path) => Future[ECDigitalSignature] = { case (bytes, path) =>
-    deriveChildPrivKey(path).signFunction(bytes)
+  override def deriveAndSign(
+      bytes: ByteVector,
+      path: BIP32Path): ECDigitalSignature = {
+    deriveChildPrivKey(path).sign(bytes)
   }
 
   override def toStringSensitive: String = {

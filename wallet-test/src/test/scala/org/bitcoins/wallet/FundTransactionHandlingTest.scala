@@ -250,9 +250,10 @@ class FundTransactionHandlingTest
             fromTagOpt = Some(tag),
             markAsReserved = true
           )
-      utx <- txBuilder.buildTx()
-      tx <- RawTxSigner.sign(utx, utxoInfos, feeRate)
     } yield {
+      val utx = txBuilder.buildTx()
+      val tx = RawTxSigner.sign(utx, utxoInfos, feeRate)
+
       assert(tx.inputs.forall(input =>
         expectedUtxos.exists(_.outPoint == input.previousOutput)))
     }

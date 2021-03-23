@@ -83,8 +83,8 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
                                       fromAccount = account,
                                       fromTagOpt = Some(exampleTag))
       }
-      utx <- txBuilder.buildTx()
-      signedTx <- RawTxSigner.sign(utx, utxoInfos, feeRate)
+      utx = txBuilder.buildTx()
+      signedTx = RawTxSigner.sign(utx, utxoInfos, feeRate)
       _ <- wallet.processTransaction(signedTx, None)
 
       utxos <- wallet.listUtxos()

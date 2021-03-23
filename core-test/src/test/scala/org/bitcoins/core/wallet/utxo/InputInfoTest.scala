@@ -12,9 +12,9 @@ import org.bitcoins.testkitcore.gen.{
   ScriptGenerators,
   TransactionGenerators
 }
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
-class InputInfoTest extends BitcoinSJvmTest {
+class InputInfoTest extends BitcoinSUnitTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
@@ -214,7 +214,7 @@ class InputInfoTest extends BitcoinSJvmTest {
   }
 
   it must "successfully compute maxWitnessLengths" in {
-    forAllAsync(CreditingTxGen.output) { scriptSigParams =>
+    forAll(CreditingTxGen.output) { scriptSigParams =>
       val dummyTx = BaseTransaction(
         TransactionConstants.validLockVersion,
         Vector(
@@ -225,22 +225,19 @@ class InputInfoTest extends BitcoinSJvmTest {
         UInt32.zero
       )
 
-      val maxWitnessLenF = BitcoinSigner
+      val maxWitnessLen = BitcoinSigner
         .sign(scriptSigParams, unsignedTx = dummyTx, isDummySignature = true)
-        .map(_.transaction)
-        .map {
-          case wtx: WitnessTransaction  => wtx.witness.head.byteSize.toInt
-          case _: NonWitnessTransaction => 0
-        }
-
-      maxWitnessLenF.map { expectedLen =>
-        assert(scriptSigParams.maxWitnessLen == expectedLen)
+        .transaction match {
+        case wtx: WitnessTransaction  => wtx.witness.head.byteSize.toInt
+        case _: NonWitnessTransaction => 0
       }
+
+      assert(scriptSigParams.maxWitnessLen == maxWitnessLen)
     }
   }
 
   it must "successfully compute maxScriptSigLengths" in {
-    forAllAsync(CreditingTxGen.output) { scriptSigParams =>
+    forAll(CreditingTxGen.output) { scriptSigParams =>
       val dummyTx = BaseTransaction(
         TransactionConstants.validLockVersion,
         Vector(
@@ -251,18 +248,16 @@ class InputInfoTest extends BitcoinSJvmTest {
         UInt32.zero
       )
 
-      val maxScriptSigF = BitcoinSigner
+      val maxScriptSig = BitcoinSigner
         .sign(scriptSigParams, unsignedTx = dummyTx, isDummySignature = true)
-        .map(_.transaction)
-        .map { tx =>
-          tx.inputs.head.scriptSignature
-        }
+        .transaction
+        .inputs
+        .head
+        .scriptSignature
 
-      maxScriptSigF.map { scriptSig =>
-        assert(InputInfo.maxScriptSigLen(
-                 scriptSigParams.inputInfo) == scriptSig.byteSize,
-               scriptSig.hex)
-      }
+      assert(InputInfo.maxScriptSigLen(
+               scriptSigParams.inputInfo) == maxScriptSig.byteSize,
+             maxScriptSig.hex)
     }
   }
 }

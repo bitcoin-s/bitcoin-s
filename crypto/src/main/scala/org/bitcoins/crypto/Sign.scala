@@ -2,8 +2,8 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.annotation.tailrec
+import scala.concurrent.{ExecutionContext, Future}
 
 /** This is meant to be an abstraction for a [[org.bitcoins.crypto.ECPrivateKey]], sometimes we will not
   * have direct access to a private key in memory -- for instance if that key is on a hardware device -- so we need to create an
@@ -17,11 +17,8 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   * If you have a hardware wallet, you will need to implement the protocol to send a message to the hardware device. The
   * type signature of the function you implement must be scodec.bits.ByteVector => Future[ECDigitalSignature]
   */
-trait Sign {
-  def signFunction: ByteVector => Future[ECDigitalSignature]
-
-  def signFuture(bytes: ByteVector): Future[ECDigitalSignature] =
-    signFunction(bytes)
+trait AsyncSign {
+  def asyncSign(bytes: ByteVector): Future[ECDigitalSignature]
 
   /** Note that using this function to generate digital signatures with specific
     * properties (by trying a bunch of entropy values) can reduce privacy as it will
@@ -32,88 +29,70 @@ trait Sign {
     * In short, ALL USES OF THIS FUNCTION THAT SIGN THE SAME DATA WITH DIFFERENT ENTROPY
     * HAVE THE POTENTIAL TO CAUSE REDUCTIONS IN SECURITY AND PRIVACY, BEWARE!
     */
-  def signWithEntropyFunction: (
-      ByteVector,
-      ByteVector) => Future[ECDigitalSignature]
-
-  /** Note that using this function to generate digital signatures with specific
-    * properties (by trying a bunch of entropy values) can reduce privacy as it will
-    * fingerprint your wallet. Additionally it could lead to a loss of entropy in
-    * the resulting nonce should the property you are interested in cause a constraint
-    * on the input space.
-    *
-    * In short, ALL USES OF THIS FUNCTION THAT SIGN THE SAME DATA WITH DIFFERENT ENTROPY
-    * HAVE THE POTENTIAL TO CAUSE REDUCTIONS IN SECURITY AND PRIVACY, BEWARE!
-    */
-  def signWithEntropyFuture(
+  def asyncSignWithEntropy(
       bytes: ByteVector,
-      entropy: ByteVector): Future[ECDigitalSignature] =
-    signWithEntropyFunction(bytes, entropy)
+      entropy: ByteVector): Future[ECDigitalSignature]
 
-  private def signLowRFuture(bytes: ByteVector, startAt: Long)(implicit
+  private def asyncSignLowR(bytes: ByteVector, startAt: Long)(implicit
       ec: ExecutionContext): Future[ECDigitalSignature] = {
-    val sigF: Future[ECDigitalSignature] = if (startAt == 0) {
-      signFunction(bytes)
-    } else {
+    val sigF = if (startAt == 0) { // On first try, use normal signing
+      asyncSign(bytes)
+    } else { // Subsequently, use additional entropy
       val startBytes = ByteVector.fromLong(startAt).padLeft(32).reverse
-      signWithEntropyFunction(bytes, startBytes)
+      asyncSignWithEntropy(bytes, startBytes)
     }
 
     sigF.flatMap { sig =>
       if (sig.bytes.length <= 70) {
         Future.successful(sig)
       } else {
-        signLowRFuture(bytes, startAt + 1)
+        asyncSignLowR(bytes, startAt + 1)
       }
     }
   }
 
-  def signLowRFuture(bytes: ByteVector)(implicit
+  def asyncSignLowR(bytes: ByteVector)(implicit
       ec: ExecutionContext): Future[ECDigitalSignature] = {
-    signLowRFuture(bytes, startAt = 0)
-  }
-
-  def sign(bytes: ByteVector): ECDigitalSignature = {
-    Await.result(signFuture(bytes), 30.seconds)
-  }
-
-  def signLowR(bytes: ByteVector)(implicit
-      ec: ExecutionContext): ECDigitalSignature = {
-    Await.result(signLowRFuture(bytes), 30.seconds)
-  }
-
-  def signWithEntropy(
-      bytes: ByteVector,
-      entropy: ByteVector): ECDigitalSignature = {
-    Await.result(signWithEntropyFuture(bytes, entropy), 30.seconds)
+    asyncSignLowR(bytes, startAt = 0)
   }
 
   def publicKey: ECPublicKey
 }
 
-object Sign {
+object AsyncSign {
 
-  private case class SignImpl(
-      signFunction: ByteVector => Future[ECDigitalSignature],
-      signWithEntropyFunction: (
+  private case class AsyncSignImpl(
+      asyncSignFunction: ByteVector => Future[ECDigitalSignature],
+      asyncSignWithEntropyFunction: (
           ByteVector,
           ByteVector) => Future[ECDigitalSignature],
-      publicKey: ECPublicKey)
-      extends Sign
+      override val publicKey: ECPublicKey)
+      extends AsyncSign {
 
-  def apply(
-      signFunction: ByteVector => Future[ECDigitalSignature],
-      signWithEntropyFunction: (
-          ByteVector,
-          ByteVector) => Future[ECDigitalSignature],
-      pubKey: ECPublicKey): Sign = {
-    SignImpl(signFunction, signWithEntropyFunction, pubKey)
+    override def asyncSign(bytes: ByteVector): Future[ECDigitalSignature] = {
+      asyncSignFunction(bytes)
+    }
+
+    override def asyncSignWithEntropy(
+        bytes: ByteVector,
+        entropy: ByteVector): Future[ECDigitalSignature] = {
+      asyncSignWithEntropyFunction(bytes, entropy)
+    }
   }
 
-  def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): Sign = {
-    SignImpl(_ => Future.successful(sig),
-             (_, _) => Future.successful(sig),
-             pubKey)
+  def apply(
+      asyncSign: ByteVector => Future[ECDigitalSignature],
+      asyncSignWithEntropy: (
+          ByteVector,
+          ByteVector) => Future[ECDigitalSignature],
+      pubKey: ECPublicKey): AsyncSign = {
+    AsyncSignImpl(asyncSign, asyncSignWithEntropy, pubKey)
+  }
+
+  def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): AsyncSign = {
+    AsyncSignImpl(_ => Future.successful(sig),
+                  (_, _) => Future.successful(sig),
+                  pubKey)
   }
 
   /** This dummySign function is useful for the case where we do not have the
@@ -123,6 +102,93 @@ object Sign {
     * the public key is still useful here though because it can be used to match against
     * a specific private key on another server
     */
+  def dummySign(publicKey: ECPublicKey): AsyncSign = {
+    constant(EmptyDigitalSignature, publicKey)
+  }
+}
+
+trait Sign extends AsyncSign {
+  def sign(bytes: ByteVector): ECDigitalSignature
+
+  override def asyncSign(bytes: ByteVector): Future[ECDigitalSignature] = {
+    Future.successful(sign(bytes))
+  }
+
+  /** Note that using this function to generate digital signatures with specific
+    * properties (by trying a bunch of entropy values) can reduce privacy as it will
+    * fingerprint your wallet. Additionally it could lead to a loss of entropy in
+    * the resulting nonce should the property you are interested in cause a constraint
+    * on the input space.
+    *
+    * In short, ALL USES OF THIS FUNCTION THAT SIGN THE SAME DATA WITH DIFFERENT ENTROPY
+    * HAVE THE POTENTIAL TO CAUSE REDUCTIONS IN SECURITY AND PRIVACY, BEWARE!
+    */
+  def signWithEntropy(
+      bytes: ByteVector,
+      entropy: ByteVector): ECDigitalSignature
+
+  override def asyncSignWithEntropy(
+      bytes: ByteVector,
+      entropy: ByteVector): Future[ECDigitalSignature] = {
+    Future.successful(signWithEntropy(bytes, entropy))
+  }
+
+  @tailrec
+  private def signLowR(bytes: ByteVector, startAt: Long): ECDigitalSignature = {
+    val sig = if (startAt == 0) { // On first try, use normal signing
+      sign(bytes)
+    } else { // Subsequently, use additional entropy
+      val startBytes = ByteVector.fromLong(startAt).padLeft(32).reverse
+      signWithEntropy(bytes, startBytes)
+    }
+
+    if (sig.bytes.length <= 70) {
+      sig
+    } else {
+      signLowR(bytes, startAt + 1)
+    }
+  }
+
+  def signLowR(bytes: ByteVector): ECDigitalSignature = {
+    signLowR(bytes, startAt = 0)
+  }
+
+  override def asyncSignLowR(bytes: ByteVector)(implicit
+      ec: ExecutionContext): Future[ECDigitalSignature] = {
+    Future.successful(signLowR(bytes))
+  }
+}
+
+object Sign {
+
+  private case class SignImpl(
+      signFunction: ByteVector => ECDigitalSignature,
+      signWithEntropyFunction: (ByteVector, ByteVector) => ECDigitalSignature,
+      override val publicKey: ECPublicKey)
+      extends Sign {
+
+    override def sign(bytes: ByteVector): ECDigitalSignature = {
+      signFunction(bytes)
+    }
+
+    override def signWithEntropy(
+        bytes: ByteVector,
+        entropy: ByteVector): ECDigitalSignature = {
+      signWithEntropyFunction(bytes, entropy)
+    }
+  }
+
+  def apply(
+      sign: ByteVector => ECDigitalSignature,
+      signWithEntropy: (ByteVector, ByteVector) => ECDigitalSignature,
+      pubKey: ECPublicKey): Sign = {
+    SignImpl(sign, signWithEntropy, pubKey)
+  }
+
+  def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): Sign = {
+    SignImpl(_ => sig, (_, _) => sig, pubKey)
+  }
+
   def dummySign(publicKey: ECPublicKey): Sign = {
     constant(EmptyDigitalSignature, publicKey)
   }

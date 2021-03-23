@@ -12,13 +12,13 @@ import org.bitcoins.core.wallet.builder.StandardNonInteractiveFinalizer
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import scala.util.Try
 
 /** Created by chris on 2/19/16.
   */
-class TransactionSignatureSerializerTest extends BitcoinSJvmTest {
+class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
 
   "TransactionSignatureSerializer" must "correctly serialize an input that is being checked where another input in the same tx is using SIGHASH_ANYONECANPAY" in {
     //this is from a test case inside of tx_valid.json
@@ -406,18 +406,17 @@ class TransactionSignatureSerializerTest extends BitcoinSJvmTest {
   }
 
   it should "have old and new serializeForSignature functions agree" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs(),
-                ScriptGenerators.scriptPubKey) {
+    forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
-        val unsignedTxF = StandardNonInteractiveFinalizer
+        val spendingTx = StandardNonInteractiveFinalizer
           .txFrom(outputs = destinations,
                   utxos = creditingTxsInfo,
                   feeRate = fee,
                   changeSPK = changeSPK)
 
-        val correctScriptsF = unsignedTxF.map { spendingTx =>
+        val correctScripts =
           creditingTxsInfo.flatMap { signInfo =>
             signInfo.signers.map { _ =>
               val txSigComponent =
@@ -437,25 +436,23 @@ class TransactionSignatureSerializerTest extends BitcoinSJvmTest {
               oldBytes == newBytes
             }
           }
-        }
 
-        correctScriptsF.map(x => assert(x.forall(_ == true)))
+        assert(correctScripts.forall(_ == true))
     }
   }
 
   it should "have old and new hashForSignature functions agree" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs(),
-                ScriptGenerators.scriptPubKey) {
+    forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
-        val unsignedTxF = StandardNonInteractiveFinalizer
+        val spendingTx = StandardNonInteractiveFinalizer
           .txFrom(outputs = destinations,
                   utxos = creditingTxsInfo,
                   feeRate = fee,
                   changeSPK = changeSPK)
 
-        val correctHashesF = unsignedTxF.map { spendingTx =>
+        val correctHashes =
           creditingTxsInfo.flatMap { signInfo =>
             signInfo.signers.map { _ =>
               val txSigComponent =
@@ -480,25 +477,23 @@ class TransactionSignatureSerializerTest extends BitcoinSJvmTest {
               oldHash == newHash
             }
           }
-        }
 
-        correctHashesF.map(x => assert(x.forall(_ == true)))
+        assert(correctHashes.forall(_ == true))
     }
   }
 
   it should "have old and new calculateScriptForSigning functions agree" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs(),
-                ScriptGenerators.scriptPubKey) {
+    forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
-        val unsignedTxF = StandardNonInteractiveFinalizer
+        val spendingTx = StandardNonInteractiveFinalizer
           .txFrom(outputs = destinations,
                   utxos = creditingTxsInfo,
                   feeRate = fee,
                   changeSPK = changeSPK)
 
-        val correctScriptsF = unsignedTxF.map { spendingTx =>
+        val correctScripts =
           creditingTxsInfo.flatMap { signInfo =>
             signInfo.signers.map { _ =>
               val txSigComponent =
@@ -518,9 +513,8 @@ class TransactionSignatureSerializerTest extends BitcoinSJvmTest {
               oldScript == newScript
             }
           }
-        }
 
-        correctScriptsF.map(x => assert(x.forall(_ == true)))
+        assert(correctScripts.forall(_ == true))
     }
   }
 }

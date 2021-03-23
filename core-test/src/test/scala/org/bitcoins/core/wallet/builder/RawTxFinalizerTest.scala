@@ -4,16 +4,14 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkitcore.gen.CreditingTxGen
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalatest.Assertion
 
-import scala.concurrent.Future
 import scala.util.Random
 
-class RawTxFinalizerTest extends BitcoinSJvmTest {
+class RawTxFinalizerTest extends BitcoinSUnitTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
@@ -137,60 +135,59 @@ class RawTxFinalizerTest extends BitcoinSJvmTest {
   }
 
   it must "shuffle inputs" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs()) { case (inputs, outputs) =>
+    forAll(CreditingTxGen.inputsAndOutputs()) { case (inputs, outputs) =>
       val txBuilder = RawTxBuilder() ++= inputs ++= outputs
       val finalized = txBuilder.setFinalizer(ShuffleInputsFinalizer)
-      val txsF =
-        FutureUtil.foldLeftAsync(Vector.empty[Transaction], 0 to 20) {
-          (accum, _) => finalized.buildTx().map(_ +: accum)
+      val txs =
+        0.to(20).foldLeft(Vector.empty[Transaction]) { (accum, _) =>
+          finalized.buildTx() +: accum
         }
-      txsF.map(txs =>
-        assert(
-          inputs.size <= 1 || txs.exists(
-            _.inputs.map(_.previousOutput) != inputs.map(_.outPoint))))
+
+      assert(
+        inputs.size <= 1 || txs.exists(
+          _.inputs.map(_.previousOutput) != inputs.map(_.outPoint)))
     }
   }
 
   it must "shuffle outputs" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs()) { case (inputs, outputs) =>
+    forAll(CreditingTxGen.inputsAndOutputs()) { case (inputs, outputs) =>
       val txBuilder = RawTxBuilder() ++= inputs ++= outputs
       val finalized = txBuilder.setFinalizer(ShuffleOutputsFinalizer)
-      val txsF =
-        FutureUtil.foldLeftAsync(Vector.empty[Transaction], 0 to 20) {
-          (accum, _) => finalized.buildTx().map(_ +: accum)
+      val txs =
+        0.to(20).foldLeft(Vector.empty[Transaction]) { (accum, _) =>
+          finalized.buildTx() +: accum
         }
-      txsF.map(txs =>
-        assert(outputs.size <= 1 || txs.exists(_.outputs != outputs)))
+
+      assert(outputs.size <= 1 || txs.exists(_.outputs != outputs))
     }
   }
 
   it must "shuffle input and outputs" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs()) { case (inputs, outputs) =>
+    forAll(CreditingTxGen.inputsAndOutputs()) { case (inputs, outputs) =>
       val txBuilder = RawTxBuilder() ++= inputs ++= outputs
       val finalized = txBuilder.setFinalizer(ShuffleFinalizer)
-      val txsF =
-        FutureUtil.foldLeftAsync(Vector.empty[Transaction], 0 to 20) {
-          (accum, _) => finalized.buildTx().map(_ +: accum)
+      val txs =
+        0.to(20).foldLeft(Vector.empty[Transaction]) { (accum, _) =>
+          finalized.buildTx() +: accum
         }
-      txsF.map { txs =>
-        assert(
-          inputs.size <= 1 || txs.exists(
-            _.inputs.map(_.previousOutput) != inputs.map(_.outPoint)))
-        assert(outputs.size <= 1 || txs.exists(_.outputs != outputs))
-      }
+
+      assert(
+        inputs.size <= 1 || txs.exists(
+          _.inputs.map(_.previousOutput) != inputs.map(_.outPoint)))
+      assert(outputs.size <= 1 || txs.exists(_.outputs != outputs))
     }
   }
 
   def testBIP69Finalizer(
       sortedInputs: Vector[TransactionInput],
-      sortedOutputs: Vector[TransactionOutput]): Future[Assertion] = {
+      sortedOutputs: Vector[TransactionOutput]): Assertion = {
     val inputs = Random.shuffle(sortedInputs)
     val outputs = Random.shuffle(sortedOutputs)
 
     val txBuilder = RawTxBuilder() ++= inputs ++= outputs
-    txBuilder.setFinalizer(BIP69Finalizer).buildTx().map { tx =>
-      assert(tx.inputs == sortedInputs)
-      assert(tx.outputs == sortedOutputs)
-    }
+    val tx = txBuilder.setFinalizer(BIP69Finalizer).buildTx()
+
+    assert(tx.inputs == sortedInputs)
+    assert(tx.outputs == sortedOutputs)
   }
 }

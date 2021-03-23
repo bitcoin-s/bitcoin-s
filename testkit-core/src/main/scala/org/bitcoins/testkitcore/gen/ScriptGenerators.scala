@@ -29,8 +29,6 @@ import org.scalacheck.Gen
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
 //TODO: Need to provide generators for [[NonStandardScriptSignature]] and [[NonStandardScriptPubKey]]
@@ -591,8 +589,9 @@ sealed abstract class ScriptGenerators {
         privateKey,
         hashType
       )
-      txSigComponentFuture = P2PKSigner.sign(spendingInfo, spendingTx, false)
-      txSigComponent = Await.result(txSigComponentFuture, timeout)
+      txSigComponent = P2PKSigner.sign(spendingInfo,
+                                       spendingTx,
+                                       isDummySignature = false)
       //add the signature to the scriptSig instead of having an empty scriptSig
       signedScriptSig =
         txSigComponent.scriptSignature
@@ -628,8 +627,9 @@ sealed abstract class ScriptGenerators {
         privateKey,
         hashType
       )
-      txSigComponentFuture = P2PKHSigner.sign(spendingInfo, unsignedTx, false)
-      txSigComponent = Await.result(txSigComponentFuture, timeout)
+      txSigComponent = P2PKHSigner.sign(spendingInfo,
+                                        unsignedTx,
+                                        isDummySignature = false)
       signedScriptSig =
         txSigComponent.scriptSignature
           .asInstanceOf[P2PKHScriptSignature]
@@ -658,10 +658,9 @@ sealed abstract class ScriptGenerators {
         privKey,
         hashType
       )
-      val txSigComponentF = P2PKWithTimeoutSigner.sign(spendingInfo,
-                                                       spendingTx,
-                                                       isDummySignature = false)
-      val txSigComponent = Await.result(txSigComponentF, timeout)
+      val txSigComponent = P2PKWithTimeoutSigner.sign(spendingInfo,
+                                                      spendingTx,
+                                                      isDummySignature = false)
       val signedScriptSig =
         txSigComponent.scriptSignature.asInstanceOf[ConditionalScriptSignature]
 
@@ -706,9 +705,8 @@ sealed abstract class ScriptGenerators {
         privateKeys.toVector,
         hashType
       )
-      txSigComponentFuture =
-        MultiSigSigner.sign(spendingInfo, spendingTx, false)
-      txSigComponent = Await.result(txSigComponentFuture, timeout)
+      txSigComponent =
+        MultiSigSigner.sign(spendingInfo, spendingTx, isDummySignature = false)
       signedScriptSig =
         txSigComponent.scriptSignature
           .asInstanceOf[MultiSignatureScriptSignature]

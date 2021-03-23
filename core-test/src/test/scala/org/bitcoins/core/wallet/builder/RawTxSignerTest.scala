@@ -22,9 +22,9 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
-class RawTxSignerTest extends BitcoinSJvmTest {
+class RawTxSignerTest extends BitcoinSUnitTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
@@ -58,16 +58,15 @@ class RawTxSignerTest extends BitcoinSJvmTest {
       )
     val utxos = Vector(utxo)
     val feeUnit = SatoshisPerVirtualByte(currencyUnit = Satoshis(1))
-    val utxF = StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
-                                                      utxos = utxos,
-                                                      feeRate = feeUnit,
-                                                      changeSPK =
-                                                        EmptyScriptPubKey)
+    val utx = RawFinalizerFactory.txFrom(outputs = destinations,
+                                         utxos = utxos,
+                                         feeRate = feeUnit,
+                                         changeSPK = EmptyScriptPubKey)
     //trivially false
     val f = (_: Seq[ScriptSignatureParams[InputInfo]], _: Transaction) => false
 
-    recoverToSucceededIf[IllegalArgumentException] {
-      utxF.flatMap(utx => RawTxSigner.sign(utx, utxos, feeUnit, f))
+    assertThrows[IllegalArgumentException] {
+      RawTxSigner.sign(utx, utxos, feeUnit, f)
     }
   }
 
@@ -97,14 +96,13 @@ class RawTxSignerTest extends BitcoinSJvmTest {
     val utxos = Vector(utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val utxF = StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
-                                                      utxos = utxos,
-                                                      feeRate = feeUnit,
-                                                      changeSPK =
-                                                        EmptyScriptPubKey)
+    val utx = RawFinalizerFactory.txFrom(outputs = destinations,
+                                         utxos = utxos,
+                                         feeRate = feeUnit,
+                                         changeSPK = EmptyScriptPubKey)
 
-    recoverToSucceededIf[IllegalArgumentException] {
-      utxF.flatMap(utx => RawTxSigner.sign(utx, utxos, feeUnit))
+    assertThrows[IllegalArgumentException] {
+      RawTxSigner.sign(utx, utxos, feeUnit)
     }
   }
 
@@ -136,14 +134,13 @@ class RawTxSignerTest extends BitcoinSJvmTest {
     val utxos = Vector(utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val utxF = StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
-                                                      utxos = utxos,
-                                                      feeRate = feeUnit,
-                                                      changeSPK =
-                                                        EmptyScriptPubKey)
+    val utx = RawFinalizerFactory.txFrom(outputs = destinations,
+                                         utxos = utxos,
+                                         feeRate = feeUnit,
+                                         changeSPK = EmptyScriptPubKey)
 
-    recoverToSucceededIf[IllegalArgumentException] {
-      utxF.flatMap(utx => RawTxSigner.sign(utx, utxos, feeUnit))
+    assertThrows[IllegalArgumentException] {
+      RawTxSigner.sign(utx, utxos, feeUnit)
     }
   }
 
@@ -176,7 +173,7 @@ class RawTxSignerTest extends BitcoinSJvmTest {
     val utxos = Vector(cltvSpendingInfo)
     val feeUnit = SatoshisPerByte(Satoshis.one)
 
-    val utxF =
+    val utx =
       StandardNonInteractiveFinalizer.txFrom(
         outputs = Vector(
           TransactionOutput(Bitcoins.one - CurrencyUnits.oneMBTC,
@@ -186,9 +183,9 @@ class RawTxSignerTest extends BitcoinSJvmTest {
         changeSPK = EmptyScriptPubKey
       )
 
-    utxF
-      .flatMap(utx => RawTxSigner.sign(utx, utxos, feeUnit))
-      .map(tx => assert(tx.lockTime == UInt32(lockTime)))
+    val tx = RawTxSigner.sign(utx, utxos, feeUnit)
+
+    assert(tx.lockTime == UInt32(lockTime))
   }
 
   it should "succeed to sign a cltv spk that uses a block height locktime" in {
@@ -220,7 +217,7 @@ class RawTxSignerTest extends BitcoinSJvmTest {
     val utxos = Vector(cltvSpendingInfo)
     val feeUnit = SatoshisPerByte(Satoshis.one)
 
-    val utxF =
+    val utx =
       StandardNonInteractiveFinalizer.txFrom(
         outputs = Vector(
           TransactionOutput(Bitcoins.one - CurrencyUnits.oneMBTC,
@@ -230,9 +227,9 @@ class RawTxSignerTest extends BitcoinSJvmTest {
         changeSPK = EmptyScriptPubKey
       )
 
-    utxF
-      .flatMap(utx => RawTxSigner.sign(utx, utxos, feeUnit))
-      .map(tx => assert(tx.lockTime == UInt32(lockTime)))
+    val tx = RawTxSigner.sign(utx, utxos, feeUnit)
+
+    assert(tx.lockTime == UInt32(lockTime))
   }
 
   it should "fail to sign a cltv spk that uses both a second-based and a block height locktime" in {
@@ -274,43 +271,38 @@ class RawTxSignerTest extends BitcoinSJvmTest {
     val utxos = Vector(cltvSpendingInfo1, cltvSpendingInfo2)
     val feeRate = SatoshisPerByte(Satoshis.one)
 
-    val utxF =
-      StandardNonInteractiveFinalizer.txFrom(
-        Vector(
-          TransactionOutput(Bitcoins.one + Bitcoins.one - CurrencyUnits.oneMBTC,
-                            EmptyScriptPubKey)),
-        utxos,
-        feeRate,
-        EmptyScriptPubKey
-      )
+    val utx = RawFinalizerFactory.txFrom(
+      Vector(
+        TransactionOutput(Bitcoins.one + Bitcoins.one - CurrencyUnits.oneMBTC,
+                          EmptyScriptPubKey)),
+      utxos,
+      UInt32.zero,
+      feeRate,
+      EmptyScriptPubKey
+    )
 
-    recoverToSucceededIf[IllegalArgumentException](
-      utxF.flatMap(utx => RawTxSigner.sign(utx, utxos, feeRate))
+    assertThrows[IllegalArgumentException](
+      RawTxSigner.sign(utx, utxos, feeRate)
     )
   }
 
   it should "sign a mix of spks in a tx and then have it verified" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs(),
-                ScriptGenerators.scriptPubKey) {
+    forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(1000))
-        val utxF =
+        val utx =
           StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
                                                  utxos = creditingTxsInfo,
                                                  feeRate = fee,
                                                  changeSPK = changeSPK)
-        val txF = utxF.flatMap(utx =>
-          RawTxSigner.sign(utx, creditingTxsInfo.toVector, fee))
+        val tx = RawTxSigner.sign(utx, creditingTxsInfo.toVector, fee)
 
-        txF.map { tx =>
-          assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo.toVector))
-        }
+        assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo.toVector))
     }
   }
 
   it should "dummy sign a mix of spks in a tx and fill it with dummy signatures" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs(),
-                ScriptGenerators.scriptPubKey) {
+    forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(1000))
 
@@ -324,20 +316,19 @@ class RawTxSignerTest extends BitcoinSJvmTest {
                                    HashType.sigHashAll)
         }
 
-        val utxF =
+        val utx =
           StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
                                                  utxos = dummySpendingInfos,
                                                  feeRate = fee,
                                                  changeSPK = changeSPK)
-        val txF = utxF.flatMap(utx =>
-          RawTxSigner.sign(utx,
-                           dummySpendingInfos.toVector,
-                           RawTxSigner.emptyInvariant,
-                           dummySign = true))
+        val tx = RawTxSigner.sign(utx,
+                                  dummySpendingInfos.toVector,
+                                  RawTxSigner.emptyInvariant,
+                                  dummySign = true)
 
         // Can't use BitcoinScriptUtil.verifyScript because it will pass for things
         // with EmptyScriptPubKeys or Multisig with 0 required sigs
-        txF.map {
+        tx match {
           case EmptyTransaction =>
             succeed
           case btx: BaseTransaction =>
@@ -360,21 +351,18 @@ class RawTxSignerTest extends BitcoinSJvmTest {
   }
 
   it should "sign a mix of p2sh/p2wsh in a tx and then have it verified" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs(CreditingTxGen.nestedOutputs),
-                ScriptGenerators.scriptPubKey) {
+    forAll(CreditingTxGen.inputsAndOutputs(CreditingTxGen.nestedOutputs),
+           ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerByte(Satoshis(1000))
-        val utxF =
+        val utx =
           StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
                                                  utxos = creditingTxsInfo,
                                                  feeRate = fee,
                                                  changeSPK = changeSPK)
-        val txF = utxF.flatMap(utx =>
-          RawTxSigner.sign(utx, creditingTxsInfo.toVector, fee))
+        val tx = RawTxSigner.sign(utx, creditingTxsInfo.toVector, fee)
 
-        txF.map { tx =>
-          assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo.toVector))
-        }
+        assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo.toVector))
     }
   }
 }

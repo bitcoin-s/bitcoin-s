@@ -4,8 +4,6 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 
-import scala.concurrent.{ExecutionContext, Future}
-
 /** Contains a finalized tx (output from [[RawTxFinalizer.buildTx]]) and the
   * ScriptSignatureParams needed to sign that transaction.
   */
@@ -13,8 +11,7 @@ case class FinalizedTxWithSigningInfo(
     finalizedTx: Transaction,
     infos: Vector[ScriptSignatureParams[InputInfo]]) {
 
-  def sign(expectedFeeRate: FeeUnit)(implicit
-      ec: ExecutionContext): Future[Transaction] = {
+  def sign(expectedFeeRate: FeeUnit): Transaction = {
     RawTxSigner.sign(this, expectedFeeRate)
   }
 
@@ -22,8 +19,7 @@ case class FinalizedTxWithSigningInfo(
       expectedFeeRate: FeeUnit,
       invariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction) => Boolean)(implicit
-      ec: ExecutionContext): Future[Transaction] = {
+          Transaction) => Boolean): Transaction = {
     RawTxSigner.sign(this, expectedFeeRate, invariants)
   }
 }

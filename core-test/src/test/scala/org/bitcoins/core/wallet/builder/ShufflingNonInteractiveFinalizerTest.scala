@@ -5,7 +5,6 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
@@ -20,9 +19,9 @@ import org.bitcoins.testkitcore.gen.{
   FeeUnitGen,
   ScriptGenerators
 }
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
-class ShufflingNonInteractiveFinalizerTest extends BitcoinSJvmTest {
+class ShufflingNonInteractiveFinalizerTest extends BitcoinSUnitTest {
   behavior of "ShufflingNonInteractiveFinalizer"
 
   private val (spk, privKey) = ScriptGenerators.p2pkhScriptPubKey.sampleSome
@@ -120,7 +119,7 @@ class ShufflingNonInteractiveFinalizerTest extends BitcoinSJvmTest {
     val utxos = Vector(utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
 
-    recoverToSucceededIf[IllegalArgumentException] {
+    assertThrows[IllegalArgumentException] {
       ShufflingNonInteractiveFinalizer.txFrom(outputs = destinations,
                                               utxos = utxos,
                                               feeRate = feeUnit,
@@ -154,7 +153,7 @@ class ShufflingNonInteractiveFinalizerTest extends BitcoinSJvmTest {
     val utxos = Vector(utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis(-1))
 
-    recoverToSucceededIf[IllegalArgumentException] {
+    assertThrows[IllegalArgumentException] {
       ShufflingNonInteractiveFinalizer.txFrom(outputs = destinations,
                                               utxos = utxos,
                                               feeRate = feeUnit,
@@ -182,7 +181,7 @@ class ShufflingNonInteractiveFinalizerTest extends BitcoinSJvmTest {
         hashType = HashType.sigHashAll
       )
 
-    recoverToSucceededIf[UnsupportedOperationException] {
+    assertThrows[UnsupportedOperationException] {
       ShufflingNonInteractiveFinalizer.txFrom(
         Vector(TransactionOutput(Bitcoins.one, EmptyScriptPubKey)),
         Vector(spendingInfo),
@@ -193,24 +192,20 @@ class ShufflingNonInteractiveFinalizerTest extends BitcoinSJvmTest {
   }
 
   it must "create a shuffled transaction with a ShufflingNonInteractiveFinalizer" in {
-    forAllAsync(CreditingTxGen.inputsAndOutputs(),
-                FeeUnitGen.feeUnit(100),
-                ScriptGenerators.scriptPubKey) {
+    forAll(CreditingTxGen.inputsAndOutputs(),
+           FeeUnitGen.feeUnit(100),
+           ScriptGenerators.scriptPubKey) {
       case ((inputs, outputs), feeRate, (changeSpk, _)) =>
-        val txsF =
-          FutureUtil.foldLeftAsync(Vector.empty[Transaction], 0 to 20) {
-            (accum, _) =>
-              ShufflingNonInteractiveFinalizer
-                .txFrom(outputs, inputs, feeRate, changeSpk)
-                .map(_ +: accum)
+        val txs =
+          0.to(20).foldLeft(Vector.empty[Transaction]) { (accum, _) =>
+            ShufflingNonInteractiveFinalizer
+              .txFrom(outputs, inputs, feeRate, changeSpk) +: accum
           }
 
-        txsF.map { txs =>
-          assert(
-            inputs.size <= 1 || txs.exists(
-              _.inputs.map(_.previousOutput) != inputs.map(_.outPoint)))
-          assert(outputs.size <= 1 || txs.exists(_.outputs != outputs))
-        }
+        assert(
+          inputs.size <= 1 || txs.exists(
+            _.inputs.map(_.previousOutput) != inputs.map(_.outPoint)))
+        assert(outputs.size <= 1 || txs.exists(_.outputs != outputs))
     }
   }
 }

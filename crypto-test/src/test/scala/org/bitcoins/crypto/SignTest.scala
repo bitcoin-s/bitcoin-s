@@ -2,7 +2,7 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-class SignTest extends BitcoinSCryptoAsyncTest {
+class SignTest extends BitcoinSCryptoTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
@@ -30,12 +30,10 @@ class SignTest extends BitcoinSCryptoAsyncTest {
   }
 
   it must "sign arbitrary pieces of data correctly" in {
-    forAllAsync(CryptoGenerators.sha256Digest) { hash =>
-      val sigF = privKey.signFunction(hash.bytes)
+    forAll(CryptoGenerators.sha256Digest) { hash =>
+      val sig = privKey.sign(hash.bytes)
 
-      sigF.map { sig =>
-        assert(pubKey.verify(hash.bytes, sig))
-      }
+      assert(pubKey.verify(hash.bytes, sig))
     }
   }
 }
