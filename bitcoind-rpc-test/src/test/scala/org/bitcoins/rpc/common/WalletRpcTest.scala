@@ -578,7 +578,8 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
         output = prevTx.outputs(outPoint.vout.toInt)
         privKey <- client.dumpPrivKey(
           BitcoinAddress.fromScriptPubKey(output.scriptPubKey, RegTest))
-        partialSig <- BitcoinSigner.signSingle(
+      } yield {
+        val partialSig = BitcoinSigner.signSingle(
           ECSignatureParams(
             P2WPKHV0InputInfo(outPoint, output.value, privKey.publicKey),
             prevTx,
@@ -586,7 +587,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
             HashType.sigHashAll),
           transaction,
           isDummySignature = false)
-      } yield {
+
         signedTx match {
           case btx: NonWitnessTransaction =>
             assert(

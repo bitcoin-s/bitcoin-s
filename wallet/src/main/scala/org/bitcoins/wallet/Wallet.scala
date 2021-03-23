@@ -385,9 +385,10 @@ abstract class Wallet
       sentAmount: CurrencyUnit,
       feeRate: FeeUnit,
       newTags: Vector[AddressTag]): Future[Transaction] = {
+    val utx = txBuilder.buildTx()
+    val signed = RawTxSigner.sign(utx, utxoInfos, feeRate)
+
     for {
-      utx <- txBuilder.buildTx()
-      signed <- RawTxSigner.sign(utx, utxoInfos, feeRate)
       ourOuts <- findOurOuts(signed)
       creditingAmount = utxoInfos.foldLeft(CurrencyUnits.zero)(_ + _.amount)
       _ <- processOurTransaction(transaction = signed,
@@ -449,7 +450,7 @@ abstract class Wallet
 
       withFinalizer = txBuilder.setFinalizer(finalizer)
 
-      tmp <- withFinalizer.buildTx()
+      tmp = withFinalizer.buildTx()
 
       _ = require(
         tmp.outputs.size == 1,
@@ -786,14 +787,14 @@ abstract class Wallet
       ourXpubs = accountDbs.map(_.xpub)
       utxos <- spendingInfoDAO.findAll()
       txs <- transactionDAO.findByTxIds(inputTxIds.keys.toVector)
-
-      updated = txs.foldLeft(psbt) { (accum, tx) =>
+    } yield {
+      val updated = txs.foldLeft(psbt) { (accum, tx) =>
         val index = inputTxIds(tx.txIdBE)
         accum.addUTXOToInput(tx.transaction, index)
       }
 
-      signed <-
-        FutureUtil.foldLeftAsync(updated, updated.inputMaps.zipWithIndex) {
+      val signed =
+        updated.inputMaps.zipWithIndex.foldLeft(updated) {
           case (unsigned, (input, index)) =>
             val xpubKeyPaths = input.BIP32DerivationPaths
               .filter { path =>
@@ -822,7 +823,7 @@ abstract class Wallet
 
             val keyPaths = xpubKeyPaths ++ utxoPath
 
-            FutureUtil.foldLeftAsync(withData, keyPaths) { (accum, hdPath) =>
+            keyPaths.foldLeft(withData) { (accum, hdPath) =>
               val sign = keyManager.toSign(hdPath)
               // Only sign if that key doesn't have a signature yet
               if (!input.partialSignatures.exists(_.pubKey == sign.publicKey)) {
@@ -830,11 +831,11 @@ abstract class Wallet
                   s"Signing input $index with key ${sign.publicKey.hex}")
                 accum.sign(index, sign)
               } else {
-                Future.successful(accum)
+                accum
               }
             }
         }
-    } yield {
+
       if (updated == signed) {
         logger.warn("Did not find any keys or utxos that belong to this wallet")
       }

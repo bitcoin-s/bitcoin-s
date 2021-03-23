@@ -15,9 +15,9 @@ import org.bitcoins.core.wallet.utxo.{
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.ScriptGenerators
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
-class StandardNonInteractiveFinalizerTest extends BitcoinSJvmTest {
+class StandardNonInteractiveFinalizerTest extends BitcoinSUnitTest {
   behavior of "StandardNonInteractiveFinalizer"
 
   private val (spk, privKey) = ScriptGenerators.p2pkhScriptPubKey.sampleSome
@@ -115,7 +115,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSJvmTest {
     val utxos = Vector(utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
 
-    recoverToSucceededIf[IllegalArgumentException] {
+    assertThrows[IllegalArgumentException] {
       StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
                                              utxos = utxos,
                                              feeRate = feeUnit,
@@ -149,7 +149,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSJvmTest {
     val utxos = Vector(utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis(-1))
 
-    recoverToSucceededIf[IllegalArgumentException] {
+    assertThrows[IllegalArgumentException] {
       StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
                                              utxos = utxos,
                                              feeRate = feeUnit,
@@ -177,7 +177,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSJvmTest {
         hashType = HashType.sigHashAll
       )
 
-    recoverToSucceededIf[UnsupportedOperationException] {
+    assertThrows[UnsupportedOperationException] {
       StandardNonInteractiveFinalizer.txFrom(
         Vector(TransactionOutput(Bitcoins.one, EmptyScriptPubKey)),
         Vector(spendingInfo),

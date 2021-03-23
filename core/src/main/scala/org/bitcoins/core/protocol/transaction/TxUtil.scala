@@ -18,7 +18,6 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{DummyECDigitalSignature, Sign}
 
 import scala.annotation.tailrec
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 object TxUtil {
@@ -133,8 +132,7 @@ object TxUtil {
 
   def buildDummyTx(
       utxos: Vector[InputInfo],
-      outputs: Vector[TransactionOutput])(implicit
-      ec: ExecutionContext): Future[Transaction] = {
+      outputs: Vector[TransactionOutput]): Transaction = {
     val dummySpendingInfos = utxos.map { inputInfo =>
       val mockSigners =
         inputInfo.pubKeys.take(inputInfo.requiredSigs).map(Sign.dummySign)
@@ -153,13 +151,12 @@ object TxUtil {
     val txBuilder = RawTxBuilder() ++= dummyInputs ++= outputs
     val withFinalizer = txBuilder.setFinalizer(AddWitnessDataFinalizer(utxos))
 
-    for {
-      utx <- withFinalizer.buildTx()
-      signed <- RawTxSigner.sign(utx,
-                                 dummySpendingInfos,
-                                 RawTxSigner.emptyInvariant,
-                                 dummySign = true)
-    } yield signed
+    val utx = withFinalizer.buildTx()
+
+    RawTxSigner.sign(utx,
+                     dummySpendingInfos,
+                     RawTxSigner.emptyInvariant,
+                     dummySign = true)
   }
 
   /** Inserts script signatures and (potentially) witness data to a given
@@ -170,14 +167,15 @@ object TxUtil {
     * Note that the resulting dummy-signed Transaction will have populated
     * (dummy) witness data when applicable.
     */
-  def addDummySigs(utx: Transaction, inputInfos: Vector[InputInfo])(implicit
-      ec: ExecutionContext): Future[Transaction] = {
-    val dummyInputAndWitnessFs = inputInfos.zipWithIndex.map {
+  def addDummySigs(
+      utx: Transaction,
+      inputInfos: Vector[InputInfo]): Transaction = {
+    val dummyInputAndWitnesses = inputInfos.zipWithIndex.map {
       case (inputInfo, index) =>
         val mockSigners =
           inputInfo.pubKeys.take(inputInfo.requiredSigs).map { pubKey =>
-            Sign(_ => Future.successful(DummyECDigitalSignature),
-                 (_, _) => Future.successful(DummyECDigitalSignature),
+            Sign(_ => DummyECDigitalSignature,
+                 (_, _) => DummyECDigitalSignature,
                  pubKey)
           }
 
@@ -186,36 +184,30 @@ object TxUtil {
                                    mockSigners,
                                    HashType.sigHashAll)
 
-        BitcoinSigner
-          .sign(mockSpendingInfo, utx, isDummySignature = true)
-          .map(_.transaction)
-          .map { tx =>
-            val witnessOpt = tx match {
-              case _: NonWitnessTransaction => None
-              case wtx: WitnessTransaction =>
-                wtx.witness.witnesses(index) match {
-                  case EmptyScriptWitness   => None
-                  case wit: ScriptWitnessV0 => Some(wit)
-                }
-            }
+        val tx =
+          BitcoinSigner
+            .sign(mockSpendingInfo, utx, isDummySignature = true)
+            .transaction
 
-            (tx.inputs(index), witnessOpt)
-          }
+        val witnessOpt = tx match {
+          case _: NonWitnessTransaction => None
+          case wtx: WitnessTransaction =>
+            wtx.witness.witnesses(index) match {
+              case EmptyScriptWitness   => None
+              case wit: ScriptWitnessV0 => Some(wit)
+            }
+        }
+
+        (tx.inputs(index), witnessOpt)
     }
 
-    Future.sequence(dummyInputAndWitnessFs).map { inputsAndWitnesses =>
-      val inputs = inputsAndWitnesses.map(_._1)
-      val txWitnesses = inputsAndWitnesses.map(_._2)
-      TransactionWitness.fromWitOpt(txWitnesses) match {
-        case _: EmptyWitness =>
-          BaseTransaction(utx.version, inputs, utx.outputs, utx.lockTime)
-        case wit: TransactionWitness =>
-          WitnessTransaction(utx.version,
-                             inputs,
-                             utx.outputs,
-                             utx.lockTime,
-                             wit)
-      }
+    val inputs = dummyInputAndWitnesses.map(_._1)
+    val txWitnesses = dummyInputAndWitnesses.map(_._2)
+    TransactionWitness.fromWitOpt(txWitnesses) match {
+      case _: EmptyWitness =>
+        BaseTransaction(utx.version, inputs, utx.outputs, utx.lockTime)
+      case wit: TransactionWitness =>
+        WitnessTransaction(utx.version, inputs, utx.outputs, utx.lockTime, wit)
     }
   }
 
@@ -293,10 +285,7 @@ object TxUtil {
       val expectedTx = if (isSigned) {
         tx
       } else {
-        import scala.concurrent.ExecutionContext.Implicits.global
-        import scala.concurrent.duration.DurationInt
-
-        Await.result(TxUtil.addDummySigs(tx, inputInfos), 20.seconds)
+        TxUtil.addDummySigs(tx, inputInfos)
       }
 
       val actualFee = creditingAmount - spentAmount

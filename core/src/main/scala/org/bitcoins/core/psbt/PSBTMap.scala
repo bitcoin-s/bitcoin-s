@@ -12,7 +12,6 @@ import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 sealed trait PSBTMap[+RecordType <: PSBTRecord] extends NetworkElement {
@@ -839,36 +838,33 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
     */
   def finalizedFromSpendingInfo(
       spendingInfo: ScriptSignatureParams[InputInfo],
-      unsignedTx: Transaction)(implicit
-      ec: ExecutionContext): Future[InputPSBTMap] = {
-    val sigComponentF = BitcoinSigner
+      unsignedTx: Transaction): InputPSBTMap = {
+    val sigComponent = BitcoinSigner
       .sign(spendingInfo, unsignedTx, isDummySignature = false)
 
-    sigComponentF.map { sigComponent =>
-      val utxos = spendingInfo.inputInfo match {
-        case _: UnassignedSegwitNativeInputInfo =>
-          Vector(WitnessUTXO(spendingInfo.output))
-        case _: RawInputInfo | _: P2SHNonSegwitInputInfo |
-            _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
-          Vector(NonWitnessOrUnknownUTXO(spendingInfo.prevTransaction))
-      }
+    val utxos = spendingInfo.inputInfo match {
+      case _: UnassignedSegwitNativeInputInfo =>
+        Vector(WitnessUTXO(spendingInfo.output))
+      case _: RawInputInfo | _: P2SHNonSegwitInputInfo |
+          _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
+        Vector(NonWitnessOrUnknownUTXO(spendingInfo.prevTransaction))
+    }
 
-      val scriptSig =
-        FinalizedScriptSig(sigComponent.scriptSignature)
-      sigComponent.transaction match {
-        case _: NonWitnessTransaction =>
-          InputPSBTMap(utxos ++ Vector(scriptSig))
-        case wtx: WitnessTransaction =>
-          val witness = wtx.witness(sigComponent.inputIndex.toInt)
-          val scriptWitness = FinalizedScriptWitness(witness)
-          val finalizedSigs =
-            if (witness != EmptyScriptWitness) {
-              Vector(scriptSig, scriptWitness)
-            } else {
-              Vector(scriptSig)
-            }
-          InputPSBTMap(utxos ++ finalizedSigs)
-      }
+    val scriptSig =
+      FinalizedScriptSig(sigComponent.scriptSignature)
+    sigComponent.transaction match {
+      case _: NonWitnessTransaction =>
+        InputPSBTMap(utxos ++ Vector(scriptSig))
+      case wtx: WitnessTransaction =>
+        val witness = wtx.witness(sigComponent.inputIndex.toInt)
+        val scriptWitness = FinalizedScriptWitness(witness)
+        val finalizedSigs =
+          if (witness != EmptyScriptWitness) {
+            Vector(scriptSig, scriptWitness)
+          } else {
+            Vector(scriptSig)
+          }
+        InputPSBTMap(utxos ++ finalizedSigs)
     }
   }
 
@@ -878,53 +874,48 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
     */
   def fromUTXOInfo(
       spendingInfo: ScriptSignatureParams[InputInfo],
-      unsignedTx: Transaction)(implicit
-      ec: ExecutionContext): Future[InputPSBTMap] = {
-    val sigsF = spendingInfo.toSingles.map { spendingInfoSingle =>
+      unsignedTx: Transaction): InputPSBTMap = {
+    val sigs = spendingInfo.toSingles.map { spendingInfoSingle =>
       BitcoinSigner.signSingle(spendingInfoSingle,
                                unsignedTx,
                                isDummySignature = false)
     }
 
-    val sigFs = Future.sequence(sigsF)
+    val builder = Vector.newBuilder[InputPSBTRecord]
 
-    sigFs.map { sigs =>
-      val builder = Vector.newBuilder[InputPSBTRecord]
-
-      spendingInfo.inputInfo match {
-        case _: UnassignedSegwitNativeInputInfo =>
-          builder.+=(WitnessUTXO(spendingInfo.output))
-        case _: RawInputInfo | _: P2SHNonSegwitInputInfo |
-            _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
-          builder.+=(NonWitnessOrUnknownUTXO(spendingInfo.prevTransaction))
-      }
-
-      builder.++=(sigs)
-
-      val sigHashType = SigHashType(spendingInfo.hashType)
-      builder.+=(sigHashType)
-
-      spendingInfo.inputInfo match {
-        case p2sh: P2SHNonSegwitInputInfo =>
-          builder.+=(RedeemScript(p2sh.redeemScript))
-        case p2sh: P2SHNestedSegwitV0InputInfo =>
-          builder.+=(RedeemScript(p2sh.redeemScript))
-          p2sh.scriptWitness match {
-            case p2wsh: P2WSHWitnessV0 =>
-              builder.+=(WitnessScript(p2wsh.redeemScript))
-            case _: P2WPKHWitnessV0 => ()
-          }
-        case p2wsh: P2WSHV0InputInfo =>
-          builder.+=(WitnessScript(p2wsh.scriptWitness.redeemScript))
-        case _: RawInputInfo | _: P2WPKHV0InputInfo |
-            _: UnassignedSegwitNativeInputInfo =>
-          ()
-      }
-
-      val inputMap = InputPSBTMap(builder.result())
-
-      inputMap
+    spendingInfo.inputInfo match {
+      case _: UnassignedSegwitNativeInputInfo =>
+        builder.+=(WitnessUTXO(spendingInfo.output))
+      case _: RawInputInfo | _: P2SHNonSegwitInputInfo |
+          _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo =>
+        builder.+=(NonWitnessOrUnknownUTXO(spendingInfo.prevTransaction))
     }
+
+    builder.++=(sigs)
+
+    val sigHashType = SigHashType(spendingInfo.hashType)
+    builder.+=(sigHashType)
+
+    spendingInfo.inputInfo match {
+      case p2sh: P2SHNonSegwitInputInfo =>
+        builder.+=(RedeemScript(p2sh.redeemScript))
+      case p2sh: P2SHNestedSegwitV0InputInfo =>
+        builder.+=(RedeemScript(p2sh.redeemScript))
+        p2sh.scriptWitness match {
+          case p2wsh: P2WSHWitnessV0 =>
+            builder.+=(WitnessScript(p2wsh.redeemScript))
+          case _: P2WPKHWitnessV0 => ()
+        }
+      case p2wsh: P2WSHV0InputInfo =>
+        builder.+=(WitnessScript(p2wsh.scriptWitness.redeemScript))
+      case _: RawInputInfo | _: P2WPKHV0InputInfo |
+          _: UnassignedSegwitNativeInputInfo =>
+        ()
+    }
+
+    val inputMap = InputPSBTMap(builder.result())
+
+    inputMap
   }
 
   override def constructMap(elements: Vector[InputPSBTRecord]): InputPSBTMap =

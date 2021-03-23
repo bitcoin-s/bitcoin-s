@@ -16,13 +16,13 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{ConditionalPath, InputInfo}
 import org.bitcoins.crypto._
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
-import org.bitcoins.testkitcore.util.TransactionTestUtil.{dummyPSBT, dummyTx}
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.TransactionTestUtil._
 import scodec.bits._
 
 import scala.util.{Failure, Success}
 
-class PSBTUnitTest extends BitcoinSJvmTest {
+class PSBTUnitTest extends BitcoinSUnitTest {
 
   behavior of "PSBT"
 
@@ -368,16 +368,14 @@ class PSBTUnitTest extends BitcoinSJvmTest {
         assert(missingSigs.forall(expectedPubKeyHashes.contains))
     }
 
-    for {
-      firstSig0 <- unsignedPsbt.sign(inputIndex = 0, signer = privKey0)
-      signedPsbt0 <- firstSig0.sign(inputIndex = 1, signer = privKey1)
+    val firstSig0 = unsignedPsbt.sign(inputIndex = 0, signer = privKey0)
+    val signedPsbt0 = firstSig0.sign(inputIndex = 1, signer = privKey1)
 
-      firstSig1 <- unsignedPsbt.sign(inputIndex = 0, signer = privKey2)
-      signedPsbt1 <- firstSig1.sign(inputIndex = 1, signer = privKey3)
-    } yield {
-      assert(signedPsbt0 == expectedPsbt0)
-      assert(signedPsbt1 == expectedPsbt1)
-    }
+    val firstSig1 = unsignedPsbt.sign(inputIndex = 0, signer = privKey2)
+    val signedPsbt1 = firstSig1.sign(inputIndex = 1, signer = privKey3)
+
+    assert(signedPsbt0 == expectedPsbt0)
+    assert(signedPsbt1 == expectedPsbt1)
   }
 
   it must "successfully change a NonWitnessUTXO to a WitnessUTXO when compressing" in {

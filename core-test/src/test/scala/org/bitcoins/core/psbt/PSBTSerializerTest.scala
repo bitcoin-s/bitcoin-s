@@ -13,13 +13,13 @@ import org.bitcoins.core.psbt.InputPSBTRecord.ProofOfReservesCommitment
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkitcore.gen.PSBTGenerators
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
 
 /** Test vectors are taken directly from the BIP 174 reference sheet
   * https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#test-vectors
   */
-class PSBTSerializerTest extends BitcoinSJvmTest {
+class PSBTSerializerTest extends BitcoinSUnitTest {
 
   val validPsbts: Vector[ByteVector] = Vector(
     // PSBT with one P2PKH input. Outputs are empty
@@ -243,18 +243,14 @@ class PSBTSerializerTest extends BitcoinSJvmTest {
   }
 
   it must "fail to serialize PSBTs with unknown version numbers" in {
-    forAllAsync(PSBTGenerators.psbtWithUnknownVersion) { psbtF =>
-      psbtF.map { psbt =>
-        assertThrows[IllegalArgumentException](PSBT(psbt.bytes))
-      }
+    forAll(PSBTGenerators.psbtWithUnknownVersion) { psbt =>
+      assertThrows[IllegalArgumentException](PSBT(psbt.bytes))
     }
   }
 
   it must "have serialization symmetry" in {
-    forAllAsync(PSBTGenerators.arbitraryPSBT) { psbtF =>
-      psbtF.map { psbt =>
-        assert(PSBT.fromBytes(psbt.bytes) == psbt)
-      }
+    forAll(PSBTGenerators.arbitraryPSBT) { psbt =>
+      assert(PSBT.fromBytes(psbt.bytes) == psbt)
     }
   }
 

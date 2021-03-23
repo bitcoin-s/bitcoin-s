@@ -40,7 +40,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
                                fromAccount = fromAccount,
                                fromTagOpt = fromTagOpt,
                                markAsReserved = markAsReserved)
-      .flatMap(_._1.buildTx())
+      .map(_._1.buildTx())
   }
 
   /** This returns a [[RawTxBuilder]] that can be used to generate an unsigned transaction with [[RawTxBuilder.result()]]

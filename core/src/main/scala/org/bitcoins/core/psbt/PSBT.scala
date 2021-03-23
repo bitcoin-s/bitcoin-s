@@ -16,7 +16,6 @@ import org.bitcoins.crypto._
 import scodec.bits._
 
 import scala.annotation.tailrec
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 case class PSBT(
@@ -222,8 +221,7 @@ case class PSBT(
       inputIndex: Int,
       signer: Sign,
       conditionalPath: ConditionalPath = ConditionalPath.NoCondition,
-      isDummySignature: Boolean = false)(implicit
-      ec: ExecutionContext): Future[PSBT] = {
+      isDummySignature: Boolean = false): PSBT = {
     require(
       inputMaps.size == 1 || !inputMaps(inputIndex).isBIP143Vulnerable,
       "This input map is susceptible to the BIP 143 vulnerability, add the non-witness utxo to be safe"
@@ -942,8 +940,8 @@ object PSBT extends Factory[PSBT] with StringFactory[PSBT] {
     */
   def fromUnsignedTxAndInputs(
       unsignedTx: Transaction,
-      spendingInfoAndNonWitnessTxs: Vector[ScriptSignatureParams[InputInfo]])(
-      implicit ec: ExecutionContext): Future[PSBT] = {
+      spendingInfoAndNonWitnessTxs: Vector[
+        ScriptSignatureParams[InputInfo]]): PSBT = {
     fromUnsignedTxAndInputs(unsignedTx,
                             spendingInfoAndNonWitnessTxs,
                             finalized = false)
@@ -954,15 +952,14 @@ object PSBT extends Factory[PSBT] with StringFactory[PSBT] {
     */
   def finalizedFromUnsignedTxAndInputs(
       unsignedTx: Transaction,
-      spendingInfos: Vector[ScriptSignatureParams[InputInfo]])(implicit
-      ec: ExecutionContext): Future[PSBT] = {
+      spendingInfos: Vector[ScriptSignatureParams[InputInfo]]): PSBT = {
     fromUnsignedTxAndInputs(unsignedTx, spendingInfos, finalized = true)
   }
 
   private def fromUnsignedTxAndInputs(
       unsignedTx: Transaction,
       spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
-      finalized: Boolean)(implicit ec: ExecutionContext): Future[PSBT] = {
+      finalized: Boolean): PSBT = {
     require(spendingInfos.length == unsignedTx.inputs.length,
             "Must have a SpendingInfo for every input")
     require(
@@ -980,7 +977,7 @@ object PSBT extends Factory[PSBT] with StringFactory[PSBT] {
 
     val globalMap = GlobalPSBTMap(
       Vector(GlobalPSBTRecord.UnsignedTransaction(btx)))
-    val inputMapFs = spendingInfos.map { info =>
+    val inputMaps = spendingInfos.map { info =>
       if (finalized) {
         InputPSBTMap.finalizedFromSpendingInfo(info, unsignedTx)
       } else {
@@ -989,8 +986,6 @@ object PSBT extends Factory[PSBT] with StringFactory[PSBT] {
     }
     val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector
 
-    Future.sequence(inputMapFs).map { inputMaps =>
-      PSBT(globalMap, inputMaps, outputMaps)
-    }
+    PSBT(globalMap, inputMaps, outputMaps)
   }
 }
