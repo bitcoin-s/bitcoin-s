@@ -116,7 +116,8 @@ sealed trait TLVParentFactory[T <: TLV] extends Factory[T] {
     allFactories.find(_.tpe == tpe) match {
       case Some(tlvFactory) => tlvFactory.fromTLVValue(value)
       case None =>
-        throw new IllegalArgumentException(s"Unknown $typeName type got $tpe")
+        throw new IllegalArgumentException(
+          s"Unknown $typeName type got $tpe (${TLV.getTypeName(tpe)})")
     }
   }
 }
@@ -171,6 +172,13 @@ object TLV extends TLVParentFactory[TLV] {
       NegotiationFieldsTLV.allFactories
   }
 
+  def getTypeName(tpe: BigSizeUInt): String = {
+    allFactories
+      .find(_.tpe == tpe)
+      .map(_.typeName)
+      .getOrElse("Unknown TLV type")
+  }
+
   // Need to override to be able to default to Unknown
   override def fromBytes(bytes: ByteVector): TLV = {
     val DecodeTLVResult(tpe, _, value) = decodeTLV(bytes)
@@ -195,12 +203,17 @@ object TLV extends TLVParentFactory[TLV] {
 
 sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
   def tpe: BigSizeUInt
+
+  def typeName: String
+
   def fromTLVValue(value: ByteVector): T
 
   override def fromBytes(bytes: ByteVector): T = {
     val DecodeTLVResult(tpe, _, value) = TLV.decodeTLV(bytes)
 
-    require(tpe == this.tpe, s"Invalid type $tpe when expecting ${this.tpe}")
+    require(
+      tpe == this.tpe,
+      s"Invalid type $tpe (${TLV.getTypeName(tpe)}) when expecting ${this.tpe}")
 
     fromTLVValue(value)
   }
@@ -400,6 +413,8 @@ object ErrorTLV extends TLVFactory[ErrorTLV] {
 
     ErrorTLV(id, data)
   }
+
+  override val typeName: String = "ErrorTLV"
 }
 
 case class PingTLV(numPongBytes: UInt16, ignored: ByteVector) extends TLV {
@@ -421,6 +436,8 @@ object PingTLV extends TLVFactory[PingTLV] {
 
     PingTLV(numPongBytes, ignored)
   }
+
+  override val typeName: String = "PingTLV"
 }
 
 case class PongTLV(ignored: ByteVector) extends TLV {
@@ -445,6 +462,8 @@ object PongTLV extends TLVFactory[PongTLV] {
   def forIgnored(ignored: ByteVector): PongTLV = {
     new PongTLV(ignored)
   }
+
+  override val typeName: String = "PongTLV"
 }
 
 sealed trait EventDescriptorTLV extends TLV {
@@ -461,7 +480,7 @@ object EventDescriptorTLV extends TLVParentFactory[EventDescriptorTLV] {
   val allFactories: Vector[TLVFactory[EventDescriptorTLV]] =
     Vector(EnumEventDescriptorV0TLV, DigitDecompositionEventDescriptorV0TLV)
 
-  override def typeName: String = "EventDescriptorTLV"
+  override val typeName: String = "EventDescriptorTLV"
 }
 
 /** Describes an event over an enumerated set of outcomes
@@ -493,6 +512,8 @@ object EnumEventDescriptorV0TLV extends TLVFactory[EnumEventDescriptorV0TLV] {
 
   val dummy: EnumEventDescriptorV0TLV = EnumEventDescriptorV0TLV(
     Vector("dummy"))
+
+  override val typeName: String = "EnumEventDescriptorV0TLV"
 }
 
 sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
@@ -676,6 +697,8 @@ object DigitDecompositionEventDescriptorV0TLV
                                                 precision)
     }
   }
+
+  override val typeName: String = "DigitDecompositionEventDescriptorV0TLV"
 }
 
 sealed trait OracleEventTLV extends TLV {
@@ -721,6 +744,8 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
 
     OracleEventV0TLV(nonces, eventMaturity, eventDescriptor, eventId)
   }
+
+  override val typeName: String = "OracleEventV0TLV"
 }
 
 sealed trait OracleAnnouncementTLV extends TLV {
@@ -736,7 +761,7 @@ object OracleAnnouncementTLV extends TLVParentFactory[OracleAnnouncementTLV] {
   val allFactories: Vector[TLVFactory[OracleAnnouncementTLV]] =
     Vector(OracleAnnouncementV0TLV)
 
-  override def typeName: String = "OracleAnnouncementTLV"
+  override val typeName: String = "OracleAnnouncementTLV"
 }
 
 case class OracleAnnouncementV0TLV(
@@ -812,6 +837,8 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
 
     OracleAnnouncementV0TLV(sig, privKey.schnorrPublicKey, event)
   }
+
+  override val typeName: String = "OracleAnnouncementV0TLV"
 }
 
 sealed trait OracleAttestmentTLV extends TLV {
@@ -826,7 +853,7 @@ object OracleAttestmentTLV extends TLVParentFactory[OracleAttestmentTLV] {
   val allFactories: Vector[TLVFactory[OracleAttestmentTLV]] =
     Vector(OracleAttestmentV0TLV)
 
-  override def typeName: String = "OracleAttestmentTLV"
+  override val typeName: String = "OracleAttestmentTLV"
 }
 
 case class OracleAttestmentV0TLV(
@@ -882,6 +909,8 @@ object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
                           Vector(sig),
                           Vector(outcome))
   }
+
+  override val typeName: String = "OracleAttestmentV0TLV"
 }
 
 sealed trait ContractDescriptorTLV extends TLV
@@ -891,7 +920,7 @@ object ContractDescriptorTLV extends TLVParentFactory[ContractDescriptorTLV] {
   val allFactories: Vector[TLVFactory[ContractDescriptorTLV]] =
     Vector(ContractDescriptorV0TLV, ContractDescriptorV1TLV)
 
-  override def typeName: String = "ContractDescriptorTLV"
+  override val typeName: String = "ContractDescriptorTLV"
 }
 
 /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Messaging.md#version-0-contract_info */
@@ -924,6 +953,8 @@ object ContractDescriptorV0TLV extends TLVFactory[ContractDescriptorV0TLV] {
 
     ContractDescriptorV0TLV(outcomes)
   }
+
+  override val typeName: String = "ContractDescriptorV0TLV"
 }
 
 case class RoundingIntervalsV0TLV(intervalStarts: Vector[(Long, Satoshis)])
@@ -959,6 +990,8 @@ object RoundingIntervalsV0TLV extends TLVFactory[RoundingIntervalsV0TLV] {
 
     RoundingIntervalsV0TLV(intervalStarts)
   }
+
+  override val typeName: String = "RoundingIntervalsV0TLV"
 }
 
 case class TLVPoint(
@@ -1023,6 +1056,8 @@ object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
 
     PayoutFunctionV0TLV(points)
   }
+
+  override val typeName: String = "PayoutFunctionV0TLV"
 }
 
 case class ContractDescriptorV1TLV(
@@ -1051,6 +1086,8 @@ object ContractDescriptorV1TLV extends TLVFactory[ContractDescriptorV1TLV] {
 
     ContractDescriptorV1TLV(numDigits.toInt, payoutFunction, roundingIntervals)
   }
+
+  override val typeName: String = "ContractDescriptorV1TLV"
 }
 
 sealed trait OracleInfoTLV extends TLV
@@ -1060,7 +1097,7 @@ object OracleInfoTLV extends TLVParentFactory[OracleInfoTLV] {
   override val allFactories: Vector[TLVFactory[OracleInfoTLV]] =
     Vector(OracleInfoV0TLV, OracleInfoV1TLV, OracleInfoV2TLV)
 
-  override def typeName: String = "OracleInfoTLV"
+  override val typeName: String = "OracleInfoTLV"
 }
 
 case class OracleInfoV0TLV(announcement: OracleAnnouncementTLV)
@@ -1082,6 +1119,8 @@ object OracleInfoV0TLV extends TLVFactory[OracleInfoV0TLV] {
 
     OracleInfoV0TLV(announcement)
   }
+
+  override val typeName: String = "OracleInfoV0TLV"
 }
 
 sealed trait MultiOracleInfoTLV extends OracleInfoTLV {
@@ -1112,6 +1151,8 @@ object OracleInfoV1TLV extends TLVFactory[OracleInfoV1TLV] {
 
     OracleInfoV1TLV(threshold, oracles)
   }
+
+  override val typeName: String = "OracleInfoV1TLV"
 }
 
 sealed trait OracleParamsTLV extends TLV
@@ -1142,6 +1183,8 @@ object OracleParamsV0TLV extends TLVFactory[OracleParamsV0TLV] {
 
     OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage)
   }
+
+  override val typeName: String = "OracleParamsV0TLV"
 }
 
 case class OracleInfoV2TLV(
@@ -1169,6 +1212,8 @@ object OracleInfoV2TLV extends TLVFactory[OracleInfoV2TLV] {
 
     OracleInfoV2TLV(threshold, oracles, params)
   }
+
+  override val typeName: String = "OracleInfoV2TLV"
 }
 
 case class ContractInfoV0TLV(
@@ -1204,6 +1249,8 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
 
     ContractInfoV0TLV(totalCollateral, contractDescriptor, oracleInfo)
   }
+
+  override val typeName: String = "ContractInfoV0TLV"
 }
 
 sealed trait FundingInputTLV extends TLV
@@ -1270,6 +1317,8 @@ object FundingInputV0TLV extends TLVFactory[FundingInputV0TLV] {
                       maxWitnessLen,
                       redeemScriptOpt)
   }
+
+  override val typeName: String = "FundingInputV0TLV"
 }
 
 sealed trait CETSignaturesTLV extends TLV
@@ -1294,6 +1343,8 @@ object CETSignaturesV0TLV extends TLVFactory[CETSignaturesV0TLV] {
 
     CETSignaturesV0TLV(sigs)
   }
+
+  override val typeName: String = "CETSignaturesV0TLV"
 }
 
 sealed trait FundingSignaturesTLV extends TLV
@@ -1330,6 +1381,8 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
 
     FundingSignaturesV0TLV(witnesses)
   }
+
+  override val typeName: String = "FundingSignaturesV0TLV"
 }
 
 case class DLCOfferTLV(
@@ -1395,6 +1448,8 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
       contractTimeout
     )
   }
+
+  override val typeName: String = "DLCOfferTLV"
 }
 
 sealed trait NegotiationFieldsTLV extends TLV
@@ -1422,6 +1477,8 @@ object NoNegotiationFieldsTLVFactory
 
     NoNegotiationFieldsTLV
   }
+
+  override val typeName: String = "NoNegotiationFieldsTLV"
 }
 
 case class NegotiationFieldsV1TLV(
@@ -1444,6 +1501,8 @@ object NegotiationFieldsV1TLV extends TLVFactory[NegotiationFieldsV1TLV] {
 
     NegotiationFieldsV1TLV(roundingIntervals)
   }
+
+  override val typeName: String = "NegotiationFieldsV1TLV"
 }
 
 case class DLCAcceptTLV(
@@ -1499,6 +1558,8 @@ object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
                  refundSignature,
                  negotiationFields)
   }
+
+  override val typeName: String = "DLCAcceptTLV"
 }
 
 case class DLCSignTLV(
@@ -1530,4 +1591,6 @@ object DLCSignTLV extends TLVFactory[DLCSignTLV] {
 
     DLCSignTLV(contractId, cetSignatures, refundSignature, fundingSignatures)
   }
+
+  override val typeName: String = "DLCSignTLV"
 }
