@@ -152,12 +152,17 @@ object DLCExecutor {
     (OracleOutcome, Vector[OracleSignatures])] = {
     val threshold = contractInfo.oracleInfo.threshold
     val sigCombinations = CETCalculator.combinations(oracleSigs, threshold)
-    sigCombinations.flatMap { sigs =>
-      contractInfo.findOutcome(sigs) match {
-        case Some(outcome) => Some((outcome, sigs))
-        case None          => None
+
+    var retOpt: Option[(OracleOutcome, Vector[OracleSignatures])] = None
+    sigCombinations.find { sigs =>
+      val outcomeOpt = contractInfo.findOutcome(sigs)
+      outcomeOpt match {
+        case Some(outcome) => retOpt = Some((outcome, sigs))
+        case None          => ()
       }
-    }.headOption // should only be one
+      outcomeOpt.isDefined
+    }
+    retOpt
   }
 
   /** Given DLC setup data and oracle signatures, computes the OracleOutcome and a fully signed CET.
