@@ -62,6 +62,9 @@ lazy val crypto = crossProject(JVMPlatform, JSPlatform)
   .in(file("crypto"))
 
 lazy val cryptoJS = crypto.js
+  .settings(scalacOptions in Compile += {
+    "-Wconf:cat=unused:site=org.bitcoins.crypto.*:silent,cat=w-flag-dead-code:site=org.bitcoins.crypto.*:silent"
+  })
   .enablePlugins(ScalaJSBundlerPlugin)
 
 lazy val cryptoJVM = crypto.jvm
