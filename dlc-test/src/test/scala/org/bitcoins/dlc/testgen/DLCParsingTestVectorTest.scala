@@ -2,7 +2,7 @@ package org.bitcoins.dlc.testgen
 
 import org.bitcoins.core.protocol.tlv.{LnMessage, TLV}
 import org.bitcoins.crypto.NetworkElement
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 
 class DLCParsingTestVectorTest extends BitcoinSUnitTest {

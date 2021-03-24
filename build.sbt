@@ -117,7 +117,7 @@ lazy val testkitCore = crossProject(JVMPlatform, JSPlatform)
   .jsSettings(commonJsSettings: _*)
   .dependsOn(asyncUtils, core, crypto)
 
-lazy val testkitCoreJVM = testkitCore.jvm
+lazy val testkitCoreJVM = testkitCore.jvm.dependsOn(dlc)
 
 lazy val testkitCoreJS = testkitCore.js
 

@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.dlc
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.tlv.{EnumOutcome, OracleAnnouncementV0TLV}
 import org.bitcoins.crypto.ECPrivateKey
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class ContractOraclePairTest extends BitcoinSUnitTest {
 

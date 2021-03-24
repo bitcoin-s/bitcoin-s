@@ -103,5 +103,6 @@ CREATE TABLE tx_table
     "numInputs"      INTEGER NOT NULL,
     "numOutputs"     INTEGER NOT NULL,
     locktime         BIGINT  NOT NULL,
+    "block_hash"     TEXT,
     constraint pk_tx primary key ("txIdBE")
 );

@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.protocol.tlv.{NumericDLCOutcomeType, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{FutureUtil, NumberUtil}
@@ -563,7 +563,7 @@ trait DLCTest {
           .map(dlcOffer.offer.oracleInfo.singleOracleInfos.apply)
           .map(_.asInstanceOf[EnumSingleOracleInfo])
         EnumOracleOutcome(oracles, outcome)
-      case UnsignedNumericOutcome(_) =>
+      case _: NumericDLCOutcomeType =>
         Assertions.fail("Expected EnumOutcome")
     }
   }

@@ -8,7 +8,6 @@ import org.bitcoins.core.protocol.dlc.DLCMessage.DLCAccept
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
@@ -40,8 +39,7 @@ case class TestDLCClient(
     fundingPrivKey: ECPrivateKey,
     payoutPrivKey: ECPrivateKey,
     fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(implicit
-    ec: ExecutionContext)
-    extends BitcoinSLogger {
+    ec: ExecutionContext) {
   val dlcTxBuilder: DLCTxBuilder = DLCTxBuilder(offer, accept)
 
   val dlcTxSigner: DLCTxSigner = DLCTxSigner(dlcTxBuilder,

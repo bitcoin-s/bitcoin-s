@@ -15,7 +15,6 @@ import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.{NodeRoute, Route}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto._
 import org.bitcoins.eclair.rpc.api.EclairApi
@@ -29,8 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class MockEclairClient()(implicit
     override val executionContext: ExecutionContext)
-    extends EclairApi
-    with BitcoinSLogger {
+    extends EclairApi {
   private def now: Instant = Instant.now
 
   private val privKey: ECPrivateKey = ECPrivateKey.freshPrivateKey

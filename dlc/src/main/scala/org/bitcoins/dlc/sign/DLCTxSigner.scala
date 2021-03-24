@@ -293,7 +293,7 @@ object DLCTxSigner {
       remoteFundingPubKey: ECPublicKey,
       oracleSigs: Vector[OracleSignatures]): WitnessTransaction = {
     val signLowR: ByteVector => ECDigitalSignature =
-      cetSigningInfo.signer.signLowR(_: ByteVector)(ExecutionContext.global)
+      cetSigningInfo.signer.signLowR(_: ByteVector)
     val localSig = TransactionSignatureCreator.createSig(ucet,
                                                          cetSigningInfo,
                                                          signLowR,
@@ -333,7 +333,7 @@ object DLCTxSigner {
     val fundingPubKey = refundSigningInfo.signer.publicKey
 
     val signLowR: ByteVector => ECDigitalSignature =
-      refundSigningInfo.signer.signLowR(_: ByteVector)(ExecutionContext.global)
+      refundSigningInfo.signer.signLowR(_: ByteVector)
     val sig = TransactionSignatureCreator.createSig(refundTx,
                                                     refundSigningInfo,
                                                     signLowR,
@@ -379,9 +379,9 @@ object DLCTxSigner {
       }
 
     fundingUtxos.foreach { case SpendingInfoWithSerialId(utxo, _) =>
-      val sigComponentF =
+      val sigComponent =
         BitcoinSigner.sign(utxo, fundingTx, isDummySignature = false)
-      val witnessF = sigComponentF.flatMap { sigComponent =>
+      val witnessF =
         sigComponent.transaction match {
           case wtx: WitnessTransaction =>
             val witness = wtx.witness(sigComponent.inputIndex.toInt)
@@ -395,7 +395,6 @@ object DLCTxSigner {
             Future.failed(
               new RuntimeException(s"Funding Inputs must be SegWit: $utxo"))
         }
-      }
 
       sigFs += witnessF.flatMap {
         case witness: ScriptWitnessV0 =>

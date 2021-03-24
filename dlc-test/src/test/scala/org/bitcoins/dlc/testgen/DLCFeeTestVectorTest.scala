@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.testgen
 
-import org.bitcoins.testkit.core.gen.FeeUnitGen
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.FeeUnitGen
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 
 class DLCFeeTestVectorTest extends BitcoinSUnitTest {

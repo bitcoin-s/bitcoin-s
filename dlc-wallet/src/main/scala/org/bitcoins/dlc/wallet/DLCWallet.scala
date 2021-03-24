@@ -363,7 +363,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           if (dlcDbs.nonEmpty) {
             logger.info(
               s"Processing tx ${tx.txIdBE.hex} for ${dlcDbs.size} DLC(s)")
-            insertTransaction(tx)
+            insertTransaction(tx, blockHashOpt)
           } else FutureUtil.unit
 
         // Update the state to be confirmed or broadcasted
@@ -398,7 +398,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           if (dlcDbs.nonEmpty) {
             logger.info(
               s"Processing tx ${transaction.txIdBE.hex} for ${dlcDbs.size} DLC(s)")
-            insertTransaction(transaction)
+            insertTransaction(transaction, blockHashOpt)
           } else FutureUtil.unit
 
         withTx = dlcDbs.map(_.copy(closingTxIdOpt = Some(transaction.txIdBE)))
@@ -756,7 +756,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         ))
 
       offerPrevTxs = offer.fundingInputs.map(funding =>
-        TransactionDbHelper.fromTransaction(funding.prevTx))
+        TransactionDbHelper.fromTransaction(funding.prevTx,
+                                            blockHashOpt = None))
 
       acceptInputs = spendingInfos.zip(utxos).map { case (utxo, fundingInput) =>
         DLCFundingInputDb(
@@ -833,7 +834,8 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           ))
 
         val acceptPrevTxs = accept.fundingInputs.map { funding =>
-          TransactionDbHelper.fromTransaction(funding.prevTx)
+          TransactionDbHelper.fromTransaction(funding.prevTx,
+                                              blockHashOpt = None)
         }
 
         val sigsDbs = accept.cetSigs.outcomeSigs
@@ -1575,6 +1577,9 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
               val numericOracles =
                 oracles.map(_.asInstanceOf[NumericSingleOracleInfo])
               NumericOracleOutcome(numericOracles.zip(numericOutcomes))
+            case outcome: SignedNumericOutcome =>
+              throw new UnsupportedOperationException(
+                s"Signed numeric outcomes not yet supported. Got $outcome")
           }
         }
 

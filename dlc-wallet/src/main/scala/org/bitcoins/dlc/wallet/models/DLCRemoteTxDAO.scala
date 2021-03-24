@@ -43,6 +43,8 @@ case class DLCRemoteTxDAO()(implicit
 
     def locktime: Rep[UInt32] = column("locktime")
 
+    def blockHash: Rep[Option[DoubleSha256DigestBE]] = column("block_hash")
+
     def * : ProvenShape[TransactionDb] =
       (txIdBE,
        transaction,
@@ -52,7 +54,8 @@ case class DLCRemoteTxDAO()(implicit
        totalOutput,
        numInputs,
        numOutputs,
-       locktime).<>(TransactionDb.tupled, TransactionDb.unapply)
+       locktime,
+       blockHash).<>(TransactionDb.tupled, TransactionDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)

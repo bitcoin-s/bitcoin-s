@@ -101,5 +101,6 @@ CREATE TABLE "dlc_remote_tx_table"
     "totalOutput"    INTEGER      NOT NULL,
     "numInputs"      INTEGER      NOT NULL,
     "numOutputs"     INTEGER      NOT NULL,
-    "locktime"       INTEGER      NOT NULL
+    "locktime"       INTEGER      NOT NULL,
+    "block_hash"     VARCHAR(254)
 );

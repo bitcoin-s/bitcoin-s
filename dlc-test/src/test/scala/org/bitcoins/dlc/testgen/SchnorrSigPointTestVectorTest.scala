@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.testgen
 
-import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.gen.CryptoGenerators
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class SchnorrSigPointTestVectorTest extends BitcoinSUnitTest {
 

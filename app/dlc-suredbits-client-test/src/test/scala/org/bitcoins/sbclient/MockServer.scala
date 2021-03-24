@@ -53,7 +53,8 @@ class MockServer()(implicit ec: ExecutionContext) {
   val tradingPairRegex: Regex = RegexUtil.noCaseOrRegex(TradingPair.all)
 
   val requestTypeRegex: Regex =
-    RegexUtil.noCaseOrRegex(RequestType.all.:+("PublicKey"))
+    RegexUtil.noCaseOrRegex(
+      RequestType.all.map(_.requestString).:+("PublicKey"))
 
   def route: Route = {
     path(exchangeRegex / tradingPairRegex / requestTypeRegex) {

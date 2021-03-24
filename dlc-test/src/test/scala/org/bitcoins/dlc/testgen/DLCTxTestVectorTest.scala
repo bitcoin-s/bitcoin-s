@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.testgen
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class DLCTxTestVectorTest extends BitcoinSUnitTest {
   behavior of "DLCTxTestVector"

@@ -391,24 +391,12 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
         )
 
         DLCTLVTestVector(tlv, "enum_event_descriptor_v0", fields)
-      case RangeEventDescriptorV0TLV(start, stop, step, units, precision) =>
-        val fields = Vector(
-          "tpe" -> Element(RangeEventDescriptorV0TLV.tpe),
-          "length" -> Element(tlv.length),
-          "start" -> Element(start),
-          "stop" -> Element(stop),
-          "step" -> Element(step),
-          "units" -> Element(CryptoUtil.serializeForHash(units)),
-          "precision" -> Element(precision)
-        )
-
-        DLCTLVTestVector(tlv, "range_event_descriptor_v0", fields)
       case SignedDigitDecompositionEventDescriptor(base,
                                                    numDigits,
                                                    units,
                                                    precision) =>
         val fields = Vector(
-          "tpe" -> Element(RangeEventDescriptorV0TLV.tpe),
+          "tpe" -> Element(DigitDecompositionEventDescriptorV0TLV.tpe),
           "length" -> Element(tlv.length),
           "base" -> Element(base),
           "numDigits" -> Element(numDigits),
@@ -417,13 +405,13 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "precision" -> Element(precision)
         )
 
-        DLCTLVTestVector(tlv, "range_event_descriptor_v0", fields)
+        DLCTLVTestVector(tlv, "digit_decomp_event_descriptor_v0", fields)
       case UnsignedDigitDecompositionEventDescriptor(base,
                                                      numDigits,
                                                      units,
                                                      precision) =>
         val fields = Vector(
-          "tpe" -> Element(RangeEventDescriptorV0TLV.tpe),
+          "tpe" -> Element(DigitDecompositionEventDescriptorV0TLV.tpe),
           "length" -> Element(tlv.length),
           "base" -> Element(base),
           "numDigits" -> Element(numDigits),
@@ -432,7 +420,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "precision" -> Element(precision)
         )
 
-        DLCTLVTestVector(tlv, "range_event_descriptor_v0", fields)
+        DLCTLVTestVector(tlv, "digit_decomp_event_descriptor_v0", fields)
       case OracleEventV0TLV(nonces, eventMaturity, descriptor, uri) =>
         val fields = Vector(
           "tpe" -> Element(OracleEventV0TLV.tpe),

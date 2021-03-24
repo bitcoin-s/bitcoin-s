@@ -16,7 +16,7 @@ import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
@@ -25,8 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /** Responsible for verifying all DLC signatures */
-case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
-    extends BitcoinSLogger {
+case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
   private def fundingTx: Transaction = builder.buildFundingTx
 
   def verifyRemoteFundingSigs(remoteSigs: FundingSignatures): Boolean = {
@@ -87,7 +86,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean)
   }
 }
 
-object DLCSignatureVerifier extends BitcoinSLogger {
+object DLCSignatureVerifier {
 
   def validateCETSignature(
       outcome: OracleOutcome,
@@ -164,7 +163,8 @@ object DLCSignatureVerifier extends BitcoinSLogger {
         val idx = serialIds.indexOf(serialId)
         if (ret) {
           if (psbt.transaction.inputs(idx).previousOutput != outPoint) {
-            logger.error("Adding signature for incorrect input")
+            // TODO: Replace with error log
+            println("Adding signature for incorrect input")
 
             false
           } else {
