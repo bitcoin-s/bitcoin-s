@@ -63,6 +63,10 @@ lazy val crypto = crossProject(JVMPlatform, JSPlatform)
 
 lazy val cryptoJS = crypto.js
   .settings(scalacOptions in Compile += {
+    //Added to supress all of the dead code and unused variable warnings
+    //inside of org.bitcoins.crypto.Buffer.scala which is used with scalajs
+    //see: https://www.scala-lang.org/2021/01/12/configuring-and-suppressing-warnings.html
+    //see: https://github.com/bitcoin-s/bitcoin-s/pull/2822
     "-Wconf:cat=unused:site=org.bitcoins.crypto.*:silent,cat=w-flag-dead-code:site=org.bitcoins.crypto.*:silent"
   })
   .enablePlugins(ScalaJSBundlerPlugin)
