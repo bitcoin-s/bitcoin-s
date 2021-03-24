@@ -1,10 +1,10 @@
 package org.bitcoins.dlc.testgen
 
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
 import scala.concurrent.Future
 
-class DLCTestVectorTest extends BitcoinSAsyncTest {
+class DLCTestVectorTest extends BitcoinSJvmTest {
   behavior of "DLCTestVectors"
 
   it should "have serialization symmetry" in {

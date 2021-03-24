@@ -5,9 +5,9 @@ import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.execution.{CETInfo, SetupDLC}
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
-class SetupDLCTest extends BitcoinSAsyncTest {
+class SetupDLCTest extends BitcoinSJvmTest {
   behavior of "SetupAdaptorDLC"
 
   val dummyTxId: DoubleSha256DigestBE = DoubleSha256DigestBE.empty

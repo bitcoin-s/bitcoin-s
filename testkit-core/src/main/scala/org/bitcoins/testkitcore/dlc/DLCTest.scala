@@ -1,4 +1,4 @@
-package org.bitcoins.testkit.dlc
+package org.bitcoins.testkitcore.dlc
 
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}

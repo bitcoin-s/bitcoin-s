@@ -779,7 +779,7 @@ lazy val dlcTest = project
   )
   .dependsOn(
     coreJVM % testAndCompile,
-    testkit,
+    testkitCoreJVM,
     dlc
   )
 

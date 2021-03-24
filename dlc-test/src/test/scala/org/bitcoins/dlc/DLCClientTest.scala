@@ -19,15 +19,15 @@ import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.execution._
 import org.bitcoins.dlc.testgen.TestDLCClient
 import org.bitcoins.dlc.verify.DLCSignatureVerifier
-import org.bitcoins.testkit.dlc.DLCTest
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, BytesUtil}
+import org.bitcoins.testkitcore.dlc.{DLCFeeTestUtil, DLCTest}
+import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, BytesUtil}
 import org.scalatest.Assertion
 import scodec.bits.BitVector
 
 import scala.concurrent.Future
 import scala.util.Random
 
-class DLCClientTest extends BitcoinSAsyncTest with DLCTest {
+class DLCClientTest extends BitcoinSJvmTest with DLCTest {
   behavior of "AdaptorDLCClient"
 
   def validateOutcome(

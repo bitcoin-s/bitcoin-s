@@ -1,4 +1,4 @@
-package org.bitcoins.dlc
+package org.bitcoins.dlc.integration
 
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{UInt16, UInt32}
@@ -24,7 +24,7 @@ import org.bitcoins.dlc.execution.{
 }
 import org.bitcoins.dlc.testgen.TestDLCClient
 import org.bitcoins.rpc.BitcoindException
-import org.bitcoins.testkit.dlc.DLCTest
+import org.bitcoins.testkitcore.dlc.{DLCFeeTestUtil, DLCTest}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest.Assertion
