@@ -5,7 +5,7 @@ import org.bitcoins.core.protocol.dlc.DLCStatus.{Claimed, RemoteClaimed}
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
-import org.bitcoins.testkit.dlc.DLCTest
+import org.bitcoins.testkitcore.dlc.DLCTest
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.FutureOutcome

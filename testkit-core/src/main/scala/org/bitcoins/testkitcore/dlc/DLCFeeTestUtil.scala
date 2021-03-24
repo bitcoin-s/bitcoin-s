@@ -1,4 +1,4 @@
-package org.bitcoins.dlc
+package org.bitcoins.testkitcore.dlc
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.transaction.Transaction

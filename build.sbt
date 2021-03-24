@@ -156,7 +156,7 @@ lazy val `bitcoin-s` = project
     coreJVM,
     coreJS,
     coreTestJVM,
-    coreTestJS,
+    //coreTestJS,
     cryptoJVM,
     cryptoJS,
     cryptoTestJVM,
@@ -193,7 +193,7 @@ lazy val `bitcoin-s` = project
     appCommons,
     appCommonsTest,
     testkitCoreJVM,
-    testkitCoreJS,
+    //testkitCoreJS,
     testkit,
     zmq,
     oracleServer,
@@ -209,7 +209,7 @@ lazy val `bitcoin-s` = project
     coreJVM,
     coreJS,
     coreTestJVM,
-    coreTestJS,
+    //coreTestJS,
     cryptoJVM,
     cryptoJS,
     cryptoTestJVM,
@@ -779,7 +779,7 @@ lazy val dlcTest = project
   )
   .dependsOn(
     coreJVM % testAndCompile,
-    testkit,
+    testkitCoreJVM,
     dlc
   )
 

@@ -1,4 +1,4 @@
-package org.bitcoins.testkit.util
+package org.bitcoins.testkitcore.util
 
 import org.bitcoins.core.protocol.dlc.{CETSignatures, FundingSignatures}
 import org.bitcoins.core.protocol.script.{
