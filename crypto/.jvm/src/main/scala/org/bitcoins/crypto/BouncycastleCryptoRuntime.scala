@@ -206,6 +206,22 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       crypto.ECPoint(decoded.getRawXCoord.getEncoded,
                      decoded.getRawYCoord.getEncoded)
   }
+
+  override def pbkdf2WithSha512(
+      pass: ByteVector,
+      salt: ByteVector,
+      iterationCount: Int,
+      derivedKeyLength: Int): ByteVector = {
+    val bytes =
+      PBKDF2.withSha512(pass, salt, iterationCount, derivedKeyLength).getEncoded
+    ByteVector(bytes)
+  }
+
+  override def randomBytes(n: Int): ByteVector = {
+    val array = new Array[Byte](n)
+    secureRandom.nextBytes(array)
+    ByteVector(array)
+  }
 }
 
 object BouncycastleCryptoRuntime extends BouncycastleCryptoRuntime

@@ -30,7 +30,9 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   private lazy val hash160 = new Hash160
   private lazy val ripeMd160 = new RipeMd160
   private lazy val sha1 = new SHA1
+  private lazy val pbkdf2 = new PBKDF2
   private lazy val sha256 = SHA256Factory.create()
+  private lazy val sha512 = SHA512Factory.create()
   private lazy val hmac = SHA512.hmac.apply().asInstanceOf[HMAC]
 
   private lazy val ecdsa =
@@ -50,7 +52,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     }
   }
 
-  def randomBytes(n: Int): ByteVector = randomBytesFunc(n)
+  override def randomBytes(n: Int): ByteVector = randomBytesFunc(n)
 
   override def ripeMd160(bytes: ByteVector): RipeMd160Digest = {
     val buffer = CryptoJsUtil.toNodeBuffer(bytes)
@@ -290,6 +292,21 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
         ECPoint(new BigInteger(decoded.getX().toString()),
                 new BigInteger(decoded.getY().toString()))
     }
+  }
+
+  override def pbkdf2WithSha512(
+      pass: ByteVector,
+      salt: ByteVector,
+      iterationCount: Int,
+      derivedKeyLength: Int): ByteVector = {
+    val buffer =
+      pbkdf2.derive(sha512,
+                    toNodeBuffer(pass),
+                    toNodeBuffer(salt),
+                    iterationCount,
+                    derivedKeyLength)
+
+    bufferToByteVector(buffer)
   }
 }
 

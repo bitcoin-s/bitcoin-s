@@ -2,7 +2,6 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-import java.security.SecureRandom
 import javax.crypto.spec.{IvParameterSpec, SecretKeySpec}
 import javax.crypto.{BadPaddingException, Cipher, SecretKey}
 import scala.util.{Failure, Success, Try}
@@ -77,10 +76,8 @@ object AesSalt extends Factory[AesSalt] {
     * of 32 bytes
     */
   def random: AesSalt = {
-    val rand = new SecureRandom
-    val array = new Array[Byte](32)
-    rand.nextBytes(array)
-    AesSalt(ByteVector(array))
+    val bytes = CryptoUtil.randomBytes(32)
+    AesSalt(bytes)
   }
 }
 
@@ -110,12 +107,13 @@ final case class AesPassword private (private val value: String)
       case Right(bytes) => bytes
     }
 
-    val secretKey = PBKDF2.withSha512(passwordBytes,
-                                      salt.bytes,
-                                      iterationCount = AesPassword.ITERATIONS,
-                                      derivedKeyLength = AesPassword.KEY_SIZE)
-    val key = AesKey.fromSecretKey(secretKey)
-    key
+    val secretKey = CryptoUtil.pbkdf2WithSha512(
+      passwordBytes,
+      salt.bytes,
+      iterationCount = AesPassword.ITERATIONS,
+      derivedKeyLength = AesPassword.KEY_SIZE)
+
+    AesKey.fromValidBytes(secretKey)
   }
 
   override def toStringSensitive: String = value
@@ -212,10 +210,7 @@ object AesKey {
 
   /** Gets a AES key with the specified number of bytes */
   private def get(length: Int): AesKey = {
-    val random = new SecureRandom
-    val arr = new Array[Byte](length)
-    random.nextBytes(arr)
-    AesKey(ByteVector(arr))
+    AesKey(CryptoUtil.randomBytes(length))
   }
 
   /** Gets a random 128 bit AES key */
@@ -258,10 +253,7 @@ object AesIV {
 
   /** Generates a random IV */
   def random: AesIV = {
-    val random = new SecureRandom()
-    val bytes = new Array[Byte](AesIV.length)
-    random.nextBytes(bytes)
-    AesIV(ByteVector(bytes))
+    AesIV(CryptoUtil.randomBytes(AesIV.length))
   }
 }
 

@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.crypto.{Factory, MaskedToString, NetworkElement, PBKDF2}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 sealed abstract class BIP39Seed extends NetworkElement with MaskedToString {
@@ -48,11 +48,12 @@ object BIP39Seed extends Factory[BIP39Seed] {
 
     val words = mnemonic.mkString(" ")
 
-    val encodedBytes = PBKDF2
-      .withSha512(words, salt, ITERATION_COUNT, DERIVED_KEY_LENGTH)
-      .getEncoded
+    val encodedBytes = CryptoUtil.pbkdf2WithSha512(words,
+                                                   salt,
+                                                   ITERATION_COUNT,
+                                                   DERIVED_KEY_LENGTH)
 
-    BIP39Seed.fromBytes(ByteVector(encodedBytes))
+    BIP39Seed.fromBytes(encodedBytes)
   }
 
   /** Generates a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]]

@@ -3,9 +3,9 @@ package org.bitcoins.core.p2p
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.testkitcore.gen.p2p.P2PGenerator
 import org.bitcoins.testkitcore.node.P2PMessageTestUtil
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
-class NetworkPayloadTest extends BitcoinSJvmTest {
+class NetworkPayloadTest extends BitcoinSUnitTest {
 
   "NetworkMessage" must "create a payload object from it's network header and the payload bytes" in {
     val rawNetworkMessage = P2PMessageTestUtil.rawNetworkMessage
@@ -26,7 +26,7 @@ class NetworkPayloadTest extends BitcoinSJvmTest {
   // this tests has a bunch of messages to choose between, so we set a high config value
   implicit override val generatorDrivenConfig = customGenDrivenConfig(100)
   it must "parse messages based on its command name" in {
-    forAllParallel(P2PGenerator.message) { p2p =>
+    forAll(P2PGenerator.message) { p2p =>
       val bytes = p2p.bytes
       val parser = NetworkPayload.readers(p2p.commandName)
       assert(parser(bytes) == p2p)
