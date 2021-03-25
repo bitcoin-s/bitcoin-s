@@ -51,9 +51,9 @@ sealed abstract class LnCurrencyUnit
 
   def toBigInt: BigInt
 
-  def toLong: Long = toBigInt.bigInteger.longValueExact()
+  def toLong: Long = toBigInt.toLong
 
-  def toInt: Int = toBigInt.bigInteger.intValueExact()
+  def toInt: Int = toBigInt.toInt
 
   protected def underlying: BigInt
 

@@ -61,6 +61,7 @@ object Deps {
     val scoptV = "4.0.1"
     val sttpV = "1.7.2"
     val codehausV = "3.1.3"
+    val scalaJsTimeV = "2.2.0"
   }
 
   object Compile {
@@ -183,6 +184,10 @@ object Deps {
     val scalaJsStubs =
       "org.scala-js" %% "scalajs-stubs" % V.scalaJsStubsV % "provided"
 
+    val scalaJsTime =
+      Def.setting(
+        "io.github.cquiroz" %%% "scala-java-time" % V.scalaJsTimeV withSources () withJavadoc ())
+
     val scalaTest =
       Def.setting(
         "org.scalatest" %%% "scalatest" % V.scalaTest withSources () withJavadoc ())
@@ -295,6 +300,12 @@ object Deps {
       Test.spray,
       Test.playJson,
       Test.scalaCollectionCompat
+    )
+  }
+
+  val coreJs = Def.setting {
+    List(
+      Compile.scalaJsTime.value
     )
   }
 
