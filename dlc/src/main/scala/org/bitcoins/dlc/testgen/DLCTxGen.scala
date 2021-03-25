@@ -13,7 +13,7 @@ import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, ECPublicKey}
 import org.bitcoins.dlc.sign.DLCTxSigner
 import scodec.bits.ByteVector
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 object DLCTxGen {
   import DLCTLVGen._
@@ -216,8 +216,8 @@ object DLCTxGen {
       validTestInputs(dlcParams(contractDescriptor = contractDescriptor)))
   }
 
-  def successTestVector(inputs: ValidTestInputs = validTestInputs())(implicit
-      ec: ExecutionContext): Future[SuccessTestVector] = {
+  def successTestVector(
+      inputs: ValidTestInputs = validTestInputs()): Try[SuccessTestVector] = {
     val offer = inputs.offer
     val acceptWithoutSigs = inputs.accept
 
@@ -285,8 +285,7 @@ object DLCTxGen {
     }
   }
 
-  def randomSuccessTestVector(numOutcomes: Int)(implicit
-      ec: ExecutionContext): Future[SuccessTestVector] = {
+  def randomSuccessTestVector(numOutcomes: Int): Try[SuccessTestVector] = {
     val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
     val contractDescriptor = genContractDescriptor(outcomes)
 

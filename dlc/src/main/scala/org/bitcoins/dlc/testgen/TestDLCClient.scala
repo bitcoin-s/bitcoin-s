@@ -73,7 +73,9 @@ case class TestDLCClient(
     for {
       _ <- sendSigs(remoteCetSigs)
       (cetSigs, fundingSigs) <- getSigs
-      setupDLC <- dlcExecutor.setupDLCAccept(cetSigs, fundingSigs, Some(cets))
+      setupDLC <- Future.fromTry {
+        dlcExecutor.setupDLCAccept(cetSigs, fundingSigs, Some(cets))
+      }
     } yield {
       setupDLC
     }
@@ -92,12 +94,16 @@ case class TestDLCClient(
 
     for {
       cetSigs <- getSigs
-      setupDLCWithoutFundingTxSigs <- dlcExecutor.setupDLCOffer(cetSigs)
+      setupDLCWithoutFundingTxSigs <- Future.fromTry {
+        dlcExecutor.setupDLCOffer(cetSigs)
+      }
       cetSigs =
         dlcTxSigner.createCETSigs(setupDLCWithoutFundingTxSigs.cets.map {
           case (msg, info) => OutcomeCETPair(msg, info.tx)
         })
-      localFundingSigs <- dlcTxSigner.signFundingTx()
+      localFundingSigs <- Future.fromTry {
+        dlcTxSigner.signFundingTx()
+      }
       _ <- sendSigs(cetSigs, localFundingSigs)
       fundingTx <- getFundingTx
     } yield {
