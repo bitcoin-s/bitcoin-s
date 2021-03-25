@@ -1,19 +1,19 @@
 package org.bitcoins.dlc.testgen
 
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
-import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
-class DLCTestVectorTest extends BitcoinSJvmTest {
+class DLCTestVectorTest extends BitcoinSUnitTest {
   behavior of "DLCTestVectors"
 
   it should "have serialization symmetry" in {
     val gen = TestVectorUtil.testInputGen.map(DLCTxGen.successTestVector(_))
 
-    forAllAsync(gen) { testVectorF =>
-      testVectorF.map { testVector =>
+    forAll(gen) {
+      case Success(testVector) =>
         assert(DLCTestVector.fromJson(testVector.toJson).contains(testVector))
-      }
+      case Failure(err) => fail(err)
     }
   }
 
@@ -21,16 +21,17 @@ class DLCTestVectorTest extends BitcoinSJvmTest {
     val vecResult = DLCTestVectorGen.readFromDefaultTestFile()
     assert(vecResult.isSuccess)
 
-    vecResult.get.foldLeft(Future.successful(succeed)) {
-      case (assertF, testVec) =>
-        assertF.flatMap { _ =>
-          testVec match {
-            case testVec: SuccessTestVector =>
-              DLCTxGen
-                .successTestVector(testVec.testInputs)
-                .map(regenerated => assert(regenerated == testVec))
+    vecResult.get.foldLeft(succeed) { case (_, testVec) =>
+      testVec match {
+        case testVec: SuccessTestVector =>
+          val resultT = DLCTxGen
+            .successTestVector(testVec.testInputs)
+
+          resultT match {
+            case Success(regenerated) => assert(regenerated == testVec)
+            case Failure(err)         => fail(err)
           }
-        }
+      }
     }
   }
 }

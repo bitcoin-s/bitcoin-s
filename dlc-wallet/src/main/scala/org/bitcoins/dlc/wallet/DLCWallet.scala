@@ -32,6 +32,7 @@ import scodec.bits.ByteVector
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
 
 abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
@@ -960,7 +961,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         }
 
       _ = logger.info(s"Creating funding sigs for ${contractId.toHex}")
-      fundingSigs <- signer.signFundingTx()
+      fundingSigs <- Future.fromTry(signer.signFundingTx())
 
       refundSigDb =
         DLCRefundSigDb(dlc.paramHash, isInitiator = true, cetSigs.refundSig)
@@ -1410,7 +1411,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs), None)
         }
 
-        setupF.map((executor, _))
+        Future.fromTry(setupF.map((executor, _)))
       }
   }
 
@@ -1420,10 +1421,10 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         contractId)
 
       signer <- signerFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
-      fundingTx <- {
+      fundingTx <- Future.fromTry {
         if (dlcDb.isInitiator) {
           // TODO: If this is called after seeing the funding tx on-chain, it should return that one
-          Future.successful(signer.builder.buildFundingTx)
+          Success(signer.builder.buildFundingTx)
         } else {
           val remoteSigs = fundingInputs
             .filter(_.isInitiator)

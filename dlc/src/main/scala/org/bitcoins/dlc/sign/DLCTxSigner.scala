@@ -20,7 +20,6 @@ import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /** Responsible for constructing all DLC signatures
@@ -31,8 +30,7 @@ case class DLCTxSigner(
     isInitiator: Boolean,
     fundingKey: AdaptorSign,
     finalAddress: BitcoinAddress,
-    fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(implicit
-    ec: ExecutionContext) {
+    fundingUtxos: Vector[ScriptSignatureParams[InputInfo]]) {
 
   private val offer = builder.offer
   private val accept = builder.accept
@@ -78,7 +76,7 @@ case class DLCTxSigner(
   }
 
   /** Creates this party's FundingSignatures */
-  def signFundingTx(): Future[FundingSignatures] = {
+  def signFundingTx(): Try[FundingSignatures] = {
     val fundingInputs =
       if (isInitiator) builder.offerFundingInputs
       else builder.acceptFundingInputs
@@ -95,16 +93,14 @@ case class DLCTxSigner(
   }
 
   /** Constructs the signed DLC funding transaction given remote FundingSignatures */
-  def completeFundingTx(remoteSigs: FundingSignatures): Future[Transaction] = {
-    for {
-      localSigs <- signFundingTx()
-      signedTxT = DLCTxSigner.completeFundingTx(localSigs,
-                                                remoteSigs,
-                                                offer.fundingInputs,
-                                                accept.fundingInputs,
-                                                builder.buildFundingTx)
-      signedTx <- Future.fromTry(signedTxT)
-    } yield signedTx
+  def completeFundingTx(remoteSigs: FundingSignatures): Try[Transaction] = {
+    signFundingTx().flatMap { localSigs =>
+      DLCTxSigner.completeFundingTx(localSigs,
+                                    remoteSigs,
+                                    offer.fundingInputs,
+                                    accept.fundingInputs,
+                                    builder.buildFundingTx)
+    }
   }
 
   private var _cetSigningInfo: Option[ECSignatureParams[P2WSHV0InputInfo]] =
@@ -218,8 +214,7 @@ object DLCTxSigner {
       fundingKey: ECPrivateKey,
       payoutPrivKey: ECPrivateKey,
       network: BitcoinNetwork,
-      fundingUtxos: Vector[ScriptSignatureParams[InputInfo]])(implicit
-      ec: ExecutionContext): DLCTxSigner = {
+      fundingUtxos: Vector[ScriptSignatureParams[InputInfo]]): DLCTxSigner = {
     val payoutAddr =
       Bech32Address(P2WPKHWitnessSPKV0(payoutPrivKey.publicKey), network)
     DLCTxSigner(builder, isInitiator, fundingKey, payoutAddr, fundingUtxos)
@@ -369,46 +364,49 @@ object DLCTxSigner {
   def signFundingTx(
       fundingTx: Transaction,
       fundingUtxos: Vector[SpendingInfoWithSerialId]
-  )(implicit ec: ExecutionContext): Future[FundingSignatures] = {
-    val sigFs =
-      Vector.newBuilder[Future[(TransactionOutPoint, ScriptWitnessV0)]]
+  ): Try[FundingSignatures] = {
+    val sigsT = fundingUtxos
+      .foldLeft[Try[Vector[(TransactionOutPoint, ScriptWitnessV0)]]](
+        Success(Vector.empty)) {
+        case (sigsT, SpendingInfoWithSerialId(utxo, _)) =>
+          sigsT.flatMap { sigs =>
+            val sigComponent =
+              BitcoinSigner.sign(utxo, fundingTx, isDummySignature = false)
+            val witnessT =
+              sigComponent.transaction match {
+                case wtx: WitnessTransaction =>
+                  val witness = wtx.witness(sigComponent.inputIndex.toInt)
+                  if (witness == EmptyScriptWitness) {
+                    Failure(
+                      new RuntimeException(
+                        s"Funding Inputs must be SegWit: $utxo"))
+                  } else {
+                    Success(witness)
+                  }
+                case _: NonWitnessTransaction =>
+                  Failure(
+                    new RuntimeException(
+                      s"Funding Inputs must be SegWit: $utxo"))
+              }
 
-    val fundingInputs: Vector[DLCFundingInput] =
-      fundingUtxos.map { case SpendingInfoWithSerialId(utxo, serialId) =>
-        DLCFundingInput.fromInputSigningInfo(utxo, serialId)
-      }
-
-    fundingUtxos.foreach { case SpendingInfoWithSerialId(utxo, _) =>
-      val sigComponent =
-        BitcoinSigner.sign(utxo, fundingTx, isDummySignature = false)
-      val witnessF =
-        sigComponent.transaction match {
-          case wtx: WitnessTransaction =>
-            val witness = wtx.witness(sigComponent.inputIndex.toInt)
-            if (witness == EmptyScriptWitness) {
-              Future.failed(
-                new RuntimeException(s"Funding Inputs must be SegWit: $utxo"))
-            } else {
-              Future.successful(witness)
+            witnessT.flatMap {
+              case witness: ScriptWitnessV0 =>
+                Success(sigs.:+((utxo.outPoint, witness)))
+              case witness: ScriptWitness =>
+                Failure(
+                  new RuntimeException(
+                    s"Unrecognized script witness: $witness"))
             }
-          case _: NonWitnessTransaction =>
-            Future.failed(
-              new RuntimeException(s"Funding Inputs must be SegWit: $utxo"))
-        }
-
-      sigFs += witnessF.flatMap {
-        case witness: ScriptWitnessV0 =>
-          Future.successful((utxo.outPoint, witness))
-        case witness: ScriptWitness =>
-          Future.failed(
-            new RuntimeException(s"Unrecognized script witness: $witness"))
+          }
       }
-    }
 
-    val sigsF = Future.sequence(sigFs.result())
-
-    sigsF.map { sigs =>
+    sigsT.map { sigs =>
       val sigsMap = sigs.toMap
+
+      val fundingInputs: Vector[DLCFundingInput] =
+        fundingUtxos.map { case SpendingInfoWithSerialId(utxo, serialId) =>
+          DLCFundingInput.fromInputSigningInfo(utxo, serialId)
+        }
 
       val sigsVec = fundingInputs.map { input =>
         input.outPoint -> sigsMap(input.outPoint)

@@ -8,17 +8,17 @@ import org.bitcoins.crypto.{AdaptorSign, ECPublicKey}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Success, Try}
 
 /** Responsible for constructing SetupDLCs and DLCOutcomes */
-case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
+case class DLCExecutor(signer: DLCTxSigner) {
   val builder: DLCTxBuilder = signer.builder
   val isInitiator: Boolean = signer.isInitiator
 
   /** Constructs the initiator's SetupDLC given the non-initiator's
     * CETSignatures which should arrive in a DLC accept message
     */
-  def setupDLCOffer(cetSigs: CETSignatures): Future[SetupDLC] = {
+  def setupDLCOffer(cetSigs: CETSignatures): Try[SetupDLC] = {
     require(isInitiator, "You should call setupDLCAccept")
 
     setupDLC(cetSigs, None, None)
@@ -31,7 +31,7 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
   def setupDLCAccept(
       cetSigs: CETSignatures,
       fundingSigs: FundingSignatures,
-      cetsOpt: Option[Vector[WitnessTransaction]]): Future[SetupDLC] = {
+      cetsOpt: Option[Vector[WitnessTransaction]]): Try[SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
     setupDLC(cetSigs, Some(fundingSigs), cetsOpt)
@@ -43,7 +43,7 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
   def setupDLC(
       cetSigs: CETSignatures,
       fundingSigsOpt: Option[FundingSignatures],
-      cetsOpt: Option[Vector[WitnessTransaction]]): Future[SetupDLC] = {
+      cetsOpt: Option[Vector[WitnessTransaction]]): Try[SetupDLC] = {
     if (!isInitiator) {
       require(fundingSigsOpt.isDefined,
               "Accepting party must provide remote funding signatures")
@@ -64,7 +64,7 @@ case class DLCExecutor(signer: DLCTxSigner)(implicit ec: ExecutionContext) {
       fundingTx <- {
         fundingSigsOpt match {
           case Some(fundingSigs) => signer.completeFundingTx(fundingSigs)
-          case None              => Future.successful(builder.buildFundingTx)
+          case None              => Success(builder.buildFundingTx)
         }
       }
     } yield {

@@ -302,28 +302,32 @@ class DLCClientTest extends BitcoinSJvmTest with DLCTest {
     val offerVerifier = DLCSignatureVerifier(builder, isInitiator = true)
     val acceptVerifier = DLCSignatureVerifier(builder, isInitiator = false)
 
-    for {
-      offerFundingSigs <- offerClient.dlcTxSigner.signFundingTx()
-      acceptFundingSigs <- acceptClient.dlcTxSigner.signFundingTx()
+    val offerFundingSigs = offerClient.dlcTxSigner.signFundingTx().get
+    val acceptFundingSigs = acceptClient.dlcTxSigner.signFundingTx().get
 
-      badOfferFundingSigs = BytesUtil.flipBit(offerFundingSigs)
-      badAcceptFundingSigs = BytesUtil.flipBit(acceptFundingSigs)
+    val badOfferFundingSigs = BytesUtil.flipBit(offerFundingSigs)
+    val badAcceptFundingSigs = BytesUtil.flipBit(acceptFundingSigs)
 
-      _ <- recoverToSucceededIf[RuntimeException] {
-        offerClient.dlcTxSigner.completeFundingTx(badAcceptFundingSigs)
-      }
-      _ <- recoverToSucceededIf[RuntimeException] {
-        acceptClient.dlcTxSigner.completeFundingTx(badOfferFundingSigs)
-      }
-    } yield {
-      assert(offerVerifier.verifyRemoteFundingSigs(acceptFundingSigs))
-      assert(acceptVerifier.verifyRemoteFundingSigs(offerFundingSigs))
+    assert(
+      offerClient.dlcTxSigner
+        .completeFundingTx(badAcceptFundingSigs)
+        .failed
+        .get
+        .isInstanceOf[RuntimeException])
+    assert(
+      acceptClient.dlcTxSigner
+        .completeFundingTx(badOfferFundingSigs)
+        .failed
+        .get
+        .isInstanceOf[RuntimeException])
 
-      assert(!offerVerifier.verifyRemoteFundingSigs(badAcceptFundingSigs))
-      assert(!acceptVerifier.verifyRemoteFundingSigs(badOfferFundingSigs))
-      assert(!offerVerifier.verifyRemoteFundingSigs(offerFundingSigs))
-      assert(!acceptVerifier.verifyRemoteFundingSigs(acceptFundingSigs))
-    }
+    assert(offerVerifier.verifyRemoteFundingSigs(acceptFundingSigs))
+    assert(acceptVerifier.verifyRemoteFundingSigs(offerFundingSigs))
+
+    assert(!offerVerifier.verifyRemoteFundingSigs(badAcceptFundingSigs))
+    assert(!acceptVerifier.verifyRemoteFundingSigs(badOfferFundingSigs))
+    assert(!offerVerifier.verifyRemoteFundingSigs(offerFundingSigs))
+    assert(!acceptVerifier.verifyRemoteFundingSigs(acceptFundingSigs))
   }
 
   it should "fail on invalid CET signatures" in {
@@ -446,7 +450,7 @@ class DLCClientTest extends BitcoinSJvmTest with DLCTest {
     val offerCETSigs = dlcOffer.dlcTxSigner.createCETSigs()
 
     for {
-      offerFundingSigs <- dlcOffer.dlcTxSigner.signFundingTx()
+      offerFundingSigs <- Future.fromTry(dlcOffer.dlcTxSigner.signFundingTx())
       offerOutcome <-
         dlcOffer.executeDLC(offerSetup, Future.successful(oracleSigs))
       acceptOutcome <-
