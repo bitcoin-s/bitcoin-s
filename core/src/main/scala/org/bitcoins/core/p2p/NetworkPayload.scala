@@ -1,6 +1,5 @@
 package org.bitcoins.core.p2p
 
-import java.net.{InetAddress, InetSocketAddress}
 import org.bitcoins.core.bloom.{BloomFilter, BloomFlag}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.gcs.{FilterHeader, FilterType, GolombFilter}
@@ -11,12 +10,8 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.p2p.messages._
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerKiloByte}
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  Factory,
-  HashDigest,
-  NetworkElement
-}
+import org.bitcoins.crypto._
+
 import scodec.bits.ByteVector
 
 /** Trait that represents a payload for a message on the Bitcoin p2p network
@@ -528,7 +523,7 @@ case class IPv4AddrV2Message(
     extends AddrV2Message {
   override val networkId: Byte = AddrV2Message.IPV4_NETWORK_BYTE
 
-  override val addrBytes: ByteVector = ByteVector(addr.getAddress)
+  override val addrBytes: ByteVector = addr.ipv4Bytes
 
   require(addrBytes.size == AddrV2Message.IPV4_ADDR_LENGTH,
           "Incorrect size of IPv4 message, consider using IPv6AddrV2Message")
@@ -1332,7 +1327,7 @@ trait VersionMessage extends ControlPayload {
   // TODO addressTransServices,  addressTransIpAddress and addressTransPort
   // what do these fields mean?
   override def toString(): String =
-    s"VersionMessage($version, $services, epoch=${timestamp.toLong}, receiverServices=$addressReceiveIpAddress, receiverAddress=$addressReceiveIpAddress, receiverPort=$addressReceivePort), userAgent=$userAgent, startHeight=${startHeight.toInt}, relay=$relay)"
+    s"VersionMessage($version, $services, epoch=${timestamp.toLong}, receiverServices=${addressReceiveIpAddress.bytes.toHex}, receiverAddress=${addressReceiveIpAddress.bytes.toHex}, receiverPort=$addressReceivePort), userAgent=$userAgent, startHeight=${startHeight.toInt}, relay=$relay)"
 }
 
 /** @see https://bitcoin.org/en/developer-reference#version
@@ -1395,13 +1390,6 @@ object VersionMessage extends Factory[VersionMessage] {
 
   def apply(
       network: NetworkParameters,
-      receivingIpAddress: InetAddress): VersionMessage = {
-    val transmittingIpAddress = InetAddress.getLocalHost
-    VersionMessage(network, receivingIpAddress, transmittingIpAddress)
-  }
-
-  def apply(
-      network: NetworkParameters,
       receivingIpAddress: InetAddress,
       transmittingIpAddress: InetAddress): VersionMessage = {
     VersionMessage(network,
@@ -1434,18 +1422,6 @@ object VersionMessage extends Factory[VersionMessage] {
       startHeight = startHeight,
       relay = relay
     )
-  }
-
-  def apply(host: String, network: NetworkParameters): VersionMessage = {
-    //network.dnsSeeds(0)
-    val transmittingIpAddress = InetAddress.getByName(host)
-    VersionMessage(network, transmittingIpAddress)
-  }
-
-  def apply(
-      socket: InetSocketAddress,
-      network: NetworkParameters): VersionMessage = {
-    VersionMessage(network, socket.getAddress)
   }
 }
 

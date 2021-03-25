@@ -1,11 +1,8 @@
 package org.bitcoins.testkitcore.gen.p2p
 
-import org.scalacheck.Gen
-import org.bitcoins.core.p2p.NetworkIpAddress
+import org.bitcoins.core.p2p._
 import org.bitcoins.testkitcore.gen.NumberGenerator
-import org.bitcoins.core.p2p.ServiceIdentifier
-import java.net.InetAddress
-import org.bitcoins.core.p2p.NetworkPayload
+import org.scalacheck.Gen
 
 object P2PGenerator {
 
@@ -24,7 +21,11 @@ object P2PGenerator {
     } yield {
       // as long as we don't pass in a host name no IO is performed
       // https://stackoverflow.com/questions/5571744/java-convert-a-string-representing-an-ip-to-inetaddress
-      InetAddress.getByName(s"$first.$second.$third.$fourth")
+      // fixme
+      val arr = Array(first.toByte, second.toByte, third.toByte, fourth.toByte)
+      val inet = InetAddress(arr)
+
+      InetAddress(NetworkIpAddress.writeAddress(inet))
     }
 
   }

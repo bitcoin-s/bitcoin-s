@@ -14,7 +14,9 @@ class NetworkPayloadTest extends BitcoinSJvmTest {
     val payload = NetworkPayload(header, payloadHex)
     payload.isInstanceOf[VersionMessage] must be(true)
     payload.commandName must be(NetworkPayload.versionCommandName)
-    val testVersionMessage = VersionMessage("173.31.39.168", TestNet3)
+    val ipArr = Array(173.toByte, 31.toByte, 39.toByte, 168.toByte)
+    val inet = InetAddress(ipArr)
+    val testVersionMessage = VersionMessage(TestNet3, inet, inet)
     payload.asInstanceOf[VersionMessage].addressReceiveIpAddress must be(
       testVersionMessage.addressReceiveIpAddress)
     payload.asInstanceOf[VersionMessage].addressReceivePort must be(

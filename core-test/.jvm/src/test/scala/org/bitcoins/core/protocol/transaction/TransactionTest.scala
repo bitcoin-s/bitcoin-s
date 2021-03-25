@@ -8,6 +8,8 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
+import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk

@@ -1,15 +1,15 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import java.net.InetSocketAddress
 import org.bitcoins.core.number.{Int32, Int64, UInt64}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import scodec.bits._
 
 class RawVersionMessageSerializerTest extends BitcoinSUnitTest {
 
-  //take from the bitcoin developer reference underneath this seciton
+  //take from the bitcoin developer reference underneath this section
   //https://bitcoin.org/en/developer-reference#version
 
   val protocolVersion = "72110100"
@@ -100,12 +100,12 @@ class RawVersionMessageSerializerTest extends BitcoinSUnitTest {
     assert(versionMessage.services.nodeNetwork)
     versionMessage.timestamp must be(Int64(-4420735367386806222L))
     versionMessage.addressReceiveIpAddress must be(
-      new InetSocketAddress(17057).getAddress)
+      InetAddress(hex"00000000000000000000ffff00000000"))
     assert(versionMessage.addressReceiveServices.nodeNone)
     versionMessage.addressReceivePort must be(17057)
     assert(versionMessage.addressTransServices.nodeNone)
     versionMessage.addressTransIpAddress must be(
-      new InetSocketAddress(41963).getAddress)
+      InetAddress(hex"00000000000000000000ffff00000000"))
     versionMessage.addressTransPort must be(41963)
     versionMessage.nonce must be(UInt64(BigInt("9223372036854775809")))
     versionMessage.userAgentSize must be(CompactSizeUInt(UInt64(86), 1))

@@ -1,6 +1,7 @@
-package org.bitcoins.core.serializers.p2p
+package org.bitcoins.core.serializers.p2p.messages
 
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.serializers.p2p.RawNetworkIpAddressSerializer
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class RawNetworkIpAddressSerializerTest extends BitcoinSUnitTest {
@@ -16,7 +17,7 @@ class RawNetworkIpAddressSerializerTest extends BitcoinSUnitTest {
     val ipAddress = RawNetworkIpAddressSerializer.read(hex)
     ipAddress.time must be(UInt32(1414012889))
     assert(ipAddress.services.nodeNetwork)
-    ipAddress.address.toString must be("/192.0.2.51")
+    ipAddress.address.bytes.toHex must be(address)
     ipAddress.port must be(8333)
   }
 
