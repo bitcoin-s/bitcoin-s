@@ -35,7 +35,7 @@ sealed abstract class MilliSatoshis
 
   def toBigInt: BigInt = underlying
 
-  def toLong: Long = longValueExact(toBigInt.bigInteger)
+  def toLong: Long = toBigInt.bigInteger.longExact
 
   def toBigDecimal: BigDecimal = BigDecimal(toBigInt)
 

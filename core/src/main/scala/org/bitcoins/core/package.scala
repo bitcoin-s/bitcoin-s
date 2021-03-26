@@ -9,7 +9,6 @@ import scodec.bits._
 
 import java.math.BigInteger
 import scala.annotation.tailrec
-import scala.language.implicitConversions
 import scala.math.Ordering
 
 package object core {
@@ -33,14 +32,17 @@ package object core {
     }
   }
 
-  implicit def intValueExact(bigInt: BigInteger): Int = {
-    if (bigInt.bitLength() <= 31) bigInt.intValue()
-    else throw new ArithmeticException("BigInteger out of int range");
-  }
+  implicit class bigIntegerUtil(private val bigInt: BigInteger) extends AnyVal {
 
-  implicit def longValueExact(bigInt: BigInteger): Int = {
-    if (bigInt.bitLength() <= 63) bigInt.intValue()
-    else throw new ArithmeticException("BigInteger out of long range");
+    implicit def intExact: Int = {
+      if (bigInt.bitLength() <= 31) bigInt.intValue()
+      else throw new ArithmeticException("BigInteger out of int range");
+    }
+
+    implicit def longExact: Long = {
+      if (bigInt.bitLength() <= 63) bigInt.longValue()
+      else throw new ArithmeticException("BigInteger out of long range");
+    }
   }
 
   implicit val satoshisPerKiloByteOrdering: Ordering[SatoshisPerKiloByte] =
