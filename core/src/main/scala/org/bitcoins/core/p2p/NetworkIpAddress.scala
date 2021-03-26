@@ -47,7 +47,17 @@ object NetworkIpAddress extends Factory[NetworkIpAddress] {
     * @see https://en.wikipedia.org/wiki/IPv6#IPv4-mapped_IPv6_addresses
     */
   def writeAddress(iNetAddress: InetAddress): ByteVector = {
-    writeAddress(ByteVector(iNetAddress.getAddress))
+    writeAddress(iNetAddress.getAddress)
+  }
+
+  /** Writes an IP address to the representation that the p2p network requires.
+    * An IPv6 address is in big endian byte order.
+    * An IPv4 address has to be mapped to an IPv6 address.
+    *
+    * @see https://en.wikipedia.org/wiki/IPv6#IPv4-mapped_IPv6_addresses
+    */
+  def writeAddress(bytes: Array[Byte]): ByteVector = {
+    writeAddress(ByteVector(bytes))
   }
 
   /** Writes an IP address to the representation that the p2p network requires.
