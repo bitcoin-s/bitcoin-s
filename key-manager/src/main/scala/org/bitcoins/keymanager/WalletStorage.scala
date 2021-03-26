@@ -156,7 +156,7 @@ object WalletStorage extends KeyManagerLogger {
       logger.debug(s"Read raw mnemonic from $seedPath")
 
       Try(ujson.read(rawJson)) match {
-        case Failure(ujson.ParseException(clue, _, _, _)) =>
+        case Failure(ujson.ParseException(clue, _)) =>
           Left(ReadMnemonicError.JsonParsingError(clue))
         case Failure(exception) => throw exception
         case Success(value) =>

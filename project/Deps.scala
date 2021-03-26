@@ -42,7 +42,7 @@ object Deps {
 
     val breezeV = "1.1"
 
-    val newMicroPickleV = "0.8.0"
+    val newMicroPickleV = "1.3.8"
     val newMicroJsonV = newMicroPickleV
 
     // akka-http-upickle is not yet published
