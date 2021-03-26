@@ -21,8 +21,8 @@ sealed abstract class Number[T <: Number[T]]
   /** The underlying scala number used to to hold the number */
   protected def underlying: A
 
-  def toInt: Int = toBigInt.intValue
-  def toLong: Long = toBigInt.longValue
+  def toInt: Int = toBigInt.bigInteger.intValueExact()
+  def toLong: Long = toBigInt.bigInteger.longValueExact()
   def toBigInt: BigInt = underlying
 
   /** This is used to determine the valid amount of bytes in a number

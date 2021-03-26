@@ -9,6 +9,6 @@ case class SigPointComputer(private val computeSigPoint: () => ECPublicKey) {
   private val sigPointF = Future(computeSigPoint())(ExecutionContext.global)
 
   lazy val compute: ECPublicKey = {
-    Await.result(sigPointF, 10.seconds)
+    Await.result(sigPointF, 20.seconds)
   }
 }

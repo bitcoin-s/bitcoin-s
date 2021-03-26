@@ -7,7 +7,9 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
 import scodec.bits._
 
+import java.math.BigInteger
 import scala.annotation.tailrec
+import scala.language.implicitConversions
 import scala.math.Ordering
 
 package object core {
@@ -29,6 +31,16 @@ package object core {
         Some(seq.minBy(f))
       }
     }
+  }
+
+  implicit def intValueExact(bigInt: BigInteger): Int = {
+    if (bigInt.bitLength() <= 31) bigInt.intValue()
+    else throw new ArithmeticException("BigInteger out of int range");
+  }
+
+  implicit def longValueExact(bigInt: BigInteger): Int = {
+    if (bigInt.bitLength() <= 63) bigInt.intValue()
+    else throw new ArithmeticException("BigInteger out of long range");
   }
 
   implicit val satoshisPerKiloByteOrdering: Ordering[SatoshisPerKiloByte] =

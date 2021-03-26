@@ -287,8 +287,6 @@ object Deps {
     List(
       Test.junitInterface,
       Test.scalaTest.value,
-      //      Test.spray,
-      //      Test.playJson,
       Test.scalaCollectionCompat
     )
   }
