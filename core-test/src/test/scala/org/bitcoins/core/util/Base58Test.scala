@@ -2,7 +2,7 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.util.testprotocol._
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
-import spray.json._
+import upickle.default._
 
 /** Created by tom on 5/17/16.
   */
@@ -61,10 +61,8 @@ class Base58Test extends BitcoinSUnitTest {
   }
 
   it must "read base58_keys_valid.json and validate each case" in {
-    import org.bitcoins.core.util.testprotocol.Base58ValidTestCaseProtocol._
-    val json = Base58EncodingTestVectors.valid.parseJson
-    val testCases: Seq[Base58ValidTestCase] =
-      json.convertTo[Seq[Base58ValidTestCase]]
+    val testCases =
+      read[Seq[Base58ValidTestCase]](Base58EncodingTestVectors.valid)
     for {
       testCase <- testCases
     } yield {
@@ -81,15 +79,12 @@ class Base58Test extends BitcoinSUnitTest {
   }
 
   it must "read base58_keys_invalid.json and return each as an invalid base58 string" in {
-    import org.bitcoins.core.util.testprotocol.Base58InvalidTestCase
-    import org.bitcoins.core.util.testprotocol.Base58InvalidTestCaseProtocol._
-    val json = Base58EncodingTestVectors.invalid.parseJson
-    val testCases: Seq[Base58InvalidTestCase] =
-      json.convertTo[Seq[Base58InvalidTestCase]]
+    val testCases =
+      read[Seq[Base58InvalidTestCase]](Base58EncodingTestVectors.invalid)
     for {
       testCase <- testCases
     } yield {
-      testCase must be(Base58InvalidTestCaseImpl(testCase.base58EncodedString))
+      testCase must be(Base58InvalidTestCase(testCase.base58EncodedString))
       Base58.isValid(testCase.base58EncodedString) must be(false)
     }
   }
