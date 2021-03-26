@@ -1,6 +1,6 @@
 name := "bitcoin-s-cli"
 
-libraryDependencies ++= Deps.cli(scalaVersion.value)
+libraryDependencies ++= Deps.cli.value
 
 nativeImageOptions ++= Seq(
   "-H:+ReportExceptionStackTraces",

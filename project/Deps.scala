@@ -163,7 +163,8 @@ object Deps {
 
     val newMicroJson = "com.lihaoyi" %% "ujson" % V.newMicroJsonV
 
-    val newMicroPickle = "com.lihaoyi" %% "upickle" % V.newMicroPickleV
+    val newMicroPickle =
+      Def.setting("com.lihaoyi" %%% "upickle" % V.newMicroPickleV)
 
     // get access to reflection data at compile-time
     val sourcecode = "com.lihaoyi" %% "sourcecode" % V.sourcecodeV
@@ -250,13 +251,14 @@ object Deps {
     Test.pgEmbedded
   )
 
-  def appCommons(scalaVersion: String) =
+  val appCommons = Def.setting {
     List(
-      Compile.newMicroPickle,
+      Compile.newMicroPickle.value,
       Compile.playJson,
       Compile.slf4j,
       Compile.grizzledSlf4j
     )
+  }
 
   def core = Def.setting {
     List(
@@ -287,7 +289,8 @@ object Deps {
     List(
       Test.junitInterface,
       Test.scalaTest.value,
-      Test.scalaCollectionCompat
+      Test.scalaCollectionCompat,
+      Compile.newMicroPickle.value
     )
   }
 
@@ -368,10 +371,10 @@ object Deps {
     )
   }
 
-  def cli(scalaVersion: String) =
+  val cli = Def.setting {
     List(
       Compile.sttp,
-      Compile.newMicroPickle,
+      Compile.newMicroPickle.value,
       Compile.logback,
       Compile.scopt,
       //we can remove this dependency when this is fixed
@@ -379,26 +382,29 @@ object Deps {
       //see https://github.com/bitcoin-s/bitcoin-s/issues/1100
       Compile.codehaus
     )
+  }
 
   val gui = List(Compile.breezeViz, Compile.scalaFx) ++ Compile.javaFxDeps
 
-  def server(scalaVersion: String) =
+  val server = Def.setting {
     List(
-      Compile.newMicroPickle,
+      Compile.newMicroPickle.value,
       Compile.logback,
       Compile.akkaActor,
       Compile.akkaHttp,
       Compile.akkaSlf4j
     )
+  }
 
-  val oracleServer =
+  val oracleServer = Def.setting {
     List(
-      Compile.newMicroPickle,
+      Compile.newMicroPickle.value,
       Compile.logback,
       Compile.akkaActor,
       Compile.akkaHttp,
       Compile.akkaSlf4j
     )
+  }
 
   val eclairRpc = List(
     Compile.akkaHttp,
@@ -453,7 +459,7 @@ object Deps {
 
   def testkitCore = Def.setting {
     List(
-      Compile.newMicroPickle,
+      Compile.newMicroPickle.value,
       Compile.scalaCollectionCompat,
       Compile.scalacheck.value,
       Compile.scalaTest.value,
