@@ -1,5 +1,7 @@
 package org.bitcoins.crypto
 
+import org.bitcoins.crypto.facade.Buffer
+
 import scala.scalajs.js
 
 /** All hash classes in bcrypto have this structure */
