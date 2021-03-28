@@ -243,9 +243,11 @@ object OracleEvent {
         require(eventDbs.forall(_.attestationOpt.isEmpty),
                 "Cannot have a partially signed event")
 
+        val sortedEventDbs = eventDbs.sortBy(_.nonceIndex)
+
         PendingDigitDecompositionV0OracleEvent(
           eventDb.pubkey,
-          eventDbs.map(_.nonce),
+          sortedEventDbs.map(_.nonce),
           eventDb.eventName,
           eventDb.signingVersion,
           eventDb.maturationTime,
