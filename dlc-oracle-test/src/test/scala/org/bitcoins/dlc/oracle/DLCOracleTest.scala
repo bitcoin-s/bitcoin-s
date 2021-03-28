@@ -60,6 +60,40 @@ class DLCOracleTest extends DLCOracleFixture {
     }
   }
 
+  it must "get the correctly sorted nonces in an announcement " in {
+    dlcOracle: DLCOracle =>
+      val eventName = "test"
+      val descriptorTLV =
+        DigitDecompositionEventDescriptorV0TLV(base = UInt16(2),
+                                               isSigned = false,
+                                               numDigits = 3,
+                                               unit = "units",
+                                               precision = Int32.zero)
+
+      for {
+        announcement <- dlcOracle.createNewEvent(eventName = eventName,
+                                                 maturationTime = futureTime,
+                                                 descriptorTLV)
+
+        // To get around foreign key, won't be needed
+        _ <- dlcOracle.eventOutcomeDAO.deleteAll()
+
+        eventDbs <- dlcOracle.eventDAO.findByEventName(eventName)
+        _ <- dlcOracle.eventDAO.deleteAll()
+
+        unsortedDbs = eventDbs.reverse
+        _ <- dlcOracle.eventDAO.createAll(unsortedDbs)
+
+        eventOpt <- dlcOracle.findEvent(eventName)
+      } yield {
+        eventOpt match {
+          case Some(event) =>
+            assert(announcement == event.announcementTLV)
+          case None => fail()
+        }
+      }
+  }
+
   it must "have same keys with different network configs" in {
     oracleA: DLCOracle =>
       // set to mainnet and give separate db
