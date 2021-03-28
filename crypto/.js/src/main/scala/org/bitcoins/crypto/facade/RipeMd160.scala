@@ -1,4 +1,6 @@
-package org.bitcoins.crypto
+package org.bitcoins.crypto.facade
+
+import org.bitcoins.crypto.Hasher
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation._
