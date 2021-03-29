@@ -5,12 +5,12 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import java.net.{InetAddress => JvmAddress}
 
-class InetAddressTest extends BitcoinSUnitTest {
+class InetAddressJVMTest extends BitcoinSUnitTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
-  behavior of "InetAddressTest"
+  behavior of "InetAddress"
 
   it must "have serialization symmetry with java's InetAddress" in {
     forAll(P2PGenerator.inetAddress) { inet =>

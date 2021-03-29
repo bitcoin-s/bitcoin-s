@@ -5,7 +5,11 @@ import scodec.bits._
 trait InetAddress {
   def bytes: ByteVector
 
-  def ipv4Bytes: ByteVector = bytes.drop(12)
+  def ipv4Bytes: ByteVector = {
+    require(bytes.take(12) == hex"00000000000000000000ffff",
+            "Cannot call ipv4Bytes for an IPv6 address")
+    bytes.drop(12)
+  }
 
   def getAddress: Array[Byte] = bytes.toArray
 }
