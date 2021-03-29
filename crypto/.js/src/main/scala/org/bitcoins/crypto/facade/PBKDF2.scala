@@ -1,4 +1,4 @@
-package org.bitcoins.crypto
+package org.bitcoins.crypto.facade
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
@@ -8,7 +8,7 @@ import scala.scalajs.js.annotation.JSImport
 class PBKDF2 extends js.Object {
 
   def derive(
-      hash: Hasher,
+      hash: Dynamic,
       pass: Buffer,
       salt: Buffer,
       iter: Int,

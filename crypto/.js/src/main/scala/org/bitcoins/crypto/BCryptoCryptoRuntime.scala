@@ -1,19 +1,6 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.crypto.facade.{
-  Buffer,
-  ECDSA,
-  HMAC,
-  Hash160,
-  Random,
-  RandomBrowser,
-  RipeMd160,
-  SHA1,
-  SHA256,
-  SHA256Factory,
-  SHA512,
-  SipHash
-}
+import org.bitcoins.crypto.facade._
 import scodec.bits.ByteVector
 
 import java.math.BigInteger
@@ -32,7 +19,6 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   private lazy val sha1 = new SHA1
   private lazy val pbkdf2 = new PBKDF2
   private lazy val sha256 = SHA256Factory.create()
-  private lazy val sha512 = SHA512Factory.create()
   private lazy val hmac = SHA512.hmac.apply().asInstanceOf[HMAC]
 
   private lazy val ecdsa =
@@ -300,13 +286,13 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       iterationCount: Int,
       derivedKeyLength: Int): ByteVector = {
     val buffer =
-      pbkdf2.derive(sha512,
-                    toNodeBuffer(pass),
-                    toNodeBuffer(salt),
+      pbkdf2.derive(js.constructorOf[SHA512],
+                    CryptoJsUtil.toNodeBuffer(pass),
+                    CryptoJsUtil.toNodeBuffer(salt),
                     iterationCount,
                     derivedKeyLength)
 
-    bufferToByteVector(buffer)
+    CryptoJsUtil.toByteVector(buffer)
   }
 }
 
