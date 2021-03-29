@@ -80,7 +80,9 @@ case class Server(
 
   def start(): Future[Http.ServerBinding] = {
     val httpFut =
-      Http().bindAndHandle(route, rpcbindOpt.getOrElse("localhost"), rpcport)
+      Http()
+        .newServerAt(rpcbindOpt.getOrElse("localhost"), rpcport)
+        .bindFlow(route)
     httpFut.foreach { http =>
       logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
     }
