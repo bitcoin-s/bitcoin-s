@@ -1,14 +1,19 @@
 package org.bitcoins.crypto.facade
 
+import org.bitcoins.crypto.Hasher
+
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
 
+/** Scala wrapper for
+  * https://github.com/bcoin-org/bcrypto/blob/master/lib/js/pbkdf2.js
+  */
 @js.native
-@JSImport("bcrypto/lib/pbkdf2.js", JSImport.Default)
-class PBKDF2 extends js.Object {
+@JSImport("bcrypto/lib/pbkdf2.js", JSImport.Namespace)
+object PBKDF2 extends js.Object {
 
   def derive(
-      hash: Dynamic,
+      hash: Hasher,
       pass: Buffer,
       salt: Buffer,
       iter: Int,

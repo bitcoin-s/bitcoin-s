@@ -17,8 +17,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   private lazy val hash160 = new Hash160
   private lazy val ripeMd160 = new RipeMd160
   private lazy val sha1 = new SHA1
-  private lazy val pbkdf2 = new PBKDF2
   private lazy val sha256 = SHA256Factory.create()
+  private lazy val sha512 = SHA512Factory.create()
   private lazy val hmac = SHA512.hmac.apply().asInstanceOf[HMAC]
 
   private lazy val ecdsa =
@@ -78,6 +78,14 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     val hashBuffer = sha256.`final`()
     val hashByteVec = CryptoJsUtil.toByteVector(hashBuffer)
     Sha256Digest.fromBytes(hashByteVec)
+  }
+
+  def sha512(bytes: ByteVector): ByteVector = {
+    val buffer = CryptoJsUtil.toNodeBuffer(bytes)
+    sha512.init()
+    sha512.update(buffer)
+    val hashBuffer = sha512.`final`()
+    CryptoJsUtil.toByteVector(hashBuffer)
   }
 
   /** Generates a 32 byte private key */
@@ -285,13 +293,16 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       salt: ByteVector,
       iterationCount: Int,
       derivedKeyLength: Int): ByteVector = {
+
+    // bcrypto uses bytes instead of bits for length, so divide by 8
+    val keyLengthBytes = derivedKeyLength / 8
+
     val buffer =
-      pbkdf2.derive(js.constructorOf[SHA512],
+      PBKDF2.derive(sha512,
                     CryptoJsUtil.toNodeBuffer(pass),
                     CryptoJsUtil.toNodeBuffer(salt),
                     iterationCount,
-                    derivedKeyLength)
-
+                    keyLengthBytes)
     CryptoJsUtil.toByteVector(buffer)
   }
 }
