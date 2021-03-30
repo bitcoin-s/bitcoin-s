@@ -538,4 +538,11 @@ object Deps {
     Compile.slf4j,
     Compile.grizzledSlf4j
   )
+
+  val oracleExplorerClient = Vector(
+    Compile.akkaActor,
+    Compile.akkaHttp,
+    Compile.akkaStream,
+    Compile.playJson
+  )
 }
