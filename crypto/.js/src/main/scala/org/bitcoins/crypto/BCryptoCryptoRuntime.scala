@@ -1,7 +1,7 @@
 package org.bitcoins.crypto
 
 import org.bitcoins.crypto.facade._
-import scodec.bits.ByteVector
+import scodec.bits._
 
 import java.math.BigInteger
 import scala.scalajs.js
@@ -20,9 +20,6 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   private lazy val sha256 = SHA256Factory.create()
   private lazy val sha512 = SHA512Factory.create()
   private lazy val hmac = SHA512.hmac.apply().asInstanceOf[HMAC]
-
-  private lazy val ecdsa =
-    new ECDSA("SECP256K1", sha256, js.constructorOf[SHA256], null)
 
   private lazy val randomBytesFunc: Int => ByteVector = { int =>
     try {
@@ -66,7 +63,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
     val buffer = CryptoJsUtil.toNodeBuffer(privateKey.bytes)
     val pubKeyBuffer =
-      ecdsa.publicKeyCreate(key = buffer, compressed = privateKey.isCompressed)
+      SECP256k1.publicKeyCreate(key = buffer,
+                                compressed = privateKey.isCompressed)
     val privKeyByteVec = CryptoJsUtil.toByteVector(pubKeyBuffer)
     ECPublicKey.fromBytes(privKeyByteVec)
   }
@@ -90,7 +88,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
 
   /** Generates a 32 byte private key */
   override def freshPrivateKey: ECPrivateKey = {
-    val keyBytes = ecdsa.privateKeyGenerate()
+    val keyBytes = SECP256k1.privateKeyGenerate()
     val byteVec = CryptoJsUtil.toByteVector(keyBytes)
     ECPrivateKey.fromBytes(byteVec)
   }
@@ -132,18 +130,18 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     val sigBuffer = CryptoJsUtil.toNodeBuffer(signature.bytes)
     val keyBytes =
       if (signature.isDEREncoded)
-        ecdsa.recoverDER(msgBuffer, sigBuffer, param = 0, compress = true)
+        SECP256k1.recoverDER(msgBuffer, sigBuffer, param = 0, compress = true)
       else
-        ecdsa.recover(msgBuffer, sigBuffer, param = 0, compress = true)
+        SECP256k1.recover(msgBuffer, sigBuffer, param = 0, compress = true)
 
     val keyByteVec = CryptoJsUtil.toByteVector(keyBytes)
     val key = ECPublicKey.fromBytes(keyByteVec)
 
     val keyBytesWithSign =
       if (signature.isDEREncoded)
-        ecdsa.recoverDER(msgBuffer, sigBuffer, param = 1, compress = true)
+        SECP256k1.recoverDER(msgBuffer, sigBuffer, param = 1, compress = true)
       else
-        ecdsa.recover(msgBuffer, sigBuffer, param = 1, compress = true)
+        SECP256k1.recover(msgBuffer, sigBuffer, param = 1, compress = true)
 
     val keyWithSignByteVec = CryptoJsUtil.toByteVector(keyBytesWithSign)
     val keyWithSign = ECPublicKey.fromBytes(keyWithSignByteVec)
@@ -154,7 +152,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey = {
     val buffer = CryptoJsUtil.toNodeBuffer(privateKey.bytes)
     val bufferPubKey =
-      ecdsa.publicKeyCreate(buffer, privateKey.isCompressed)
+      SECP256k1.publicKeyCreate(buffer, privateKey.isCompressed)
     val byteVec = CryptoJsUtil.toByteVector(bufferPubKey)
     ECPublicKey.fromBytes(byteVec)
   }
@@ -164,7 +162,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       dataToSign: ByteVector): ECDigitalSignature = {
     val privBuffer = CryptoJsUtil.toNodeBuffer(privateKey.bytes)
     val dataBuffer = CryptoJsUtil.toNodeBuffer(dataToSign)
-    val buffer = ecdsa.signDER(dataBuffer, privBuffer)
+    val buffer = SECP256k1.signDER(dataBuffer, privBuffer)
     val byteVec = CryptoJsUtil.toByteVector(buffer)
     ECDigitalSignature.fromFrontOfBytes(byteVec)
   }
@@ -176,7 +174,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
 
   override def secKeyVerify(privateKeybytes: ByteVector): Boolean = {
     val buffer = CryptoJsUtil.toNodeBuffer(privateKeybytes)
-    ecdsa.privateKeyVerify(buffer)
+    SECP256k1.privateKeyVerify(buffer)
   }
 
   override def verify(
@@ -187,9 +185,9 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     val sigBuffer = CryptoJsUtil.toNodeBuffer(signature.bytes)
     val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(publicKey.bytes)
     if (signature.isDEREncoded) {
-      ecdsa.verifyDER(dataBuffer, sigBuffer, pubKeyBuffer)
+      SECP256k1.verifyDER(dataBuffer, sigBuffer, pubKeyBuffer)
     } else {
-      ecdsa.verify(dataBuffer, sigBuffer, pubKeyBuffer)
+      SECP256k1.verify(dataBuffer, sigBuffer, pubKeyBuffer)
     }
   }
 
@@ -198,7 +196,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       tweak: FieldElement): ECPublicKey = {
     val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(publicKey.bytes)
     val tweakBuffer = CryptoJsUtil.toNodeBuffer(tweak.bytes)
-    val keyBuffer = ecdsa.publicKeyTweakMul(pubKeyBuffer, tweakBuffer, true)
+    val keyBuffer =
+      SECP256k1.publicKeyTweakMul(pubKeyBuffer, tweakBuffer, compress = true)
     val keyByteVec = CryptoJsUtil.toByteVector(keyBuffer)
     ECPublicKey.fromBytes(keyByteVec)
   }
@@ -210,7 +209,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   }
 
   def publicKeyConvert(buffer: Buffer, compressed: Boolean): Buffer =
-    ecdsa.publicKeyConvert(buffer, compressed)
+    SECP256k1.publicKeyConvert(buffer, compressed)
 
   override def publicKeyConvert(
       key: ECPublicKey,
@@ -222,7 +221,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     val pk2Buffer = CryptoJsUtil.toNodeBuffer(pk2.bytes)
     try {
       val keyBuffer =
-        ecdsa.publicKeyCombine(js.Array(pk1Buffer, pk2Buffer), true)
+        SECP256k1.publicKeyCombine(js.Array(pk1Buffer, pk2Buffer),
+                                   compress = true)
       val keyBytes = CryptoJsUtil.toByteVector(keyBuffer)
       ECPublicKey.fromBytes(keyBytes)
     } catch {
@@ -253,14 +253,15 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       privkey: ECPrivateKey): ECPublicKey = {
     val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(pubkey.bytes)
     val privKeyBuffer = CryptoJsUtil.toNodeBuffer(privkey.bytes)
-    val keyBuffer = ecdsa.publicKeyTweakAdd(pubKeyBuffer, privKeyBuffer, true)
+    val keyBuffer =
+      SECP256k1.publicKeyTweakAdd(pubKeyBuffer, privKeyBuffer, compress = true)
     val keyByteVec = CryptoJsUtil.toByteVector(keyBuffer)
     ECPublicKey.fromBytes(keyByteVec)
   }
 
   override def isValidPubKey(bytes: ByteVector): Boolean = {
     val buffer = CryptoJsUtil.toNodeBuffer(bytes)
-    ecdsa.publicKeyVerify(buffer)
+    SECP256k1.publicKeyVerify(buffer)
   }
 
   override def sipHash(item: ByteVector, key: SipHashKey): Long = {
@@ -276,7 +277,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     if (bytes.size == 1 && bytes(0) == 0x00) {
       ECPointInfinity
     } else {
-      val decoded = ecdsa.curve
+      val decoded = SECP256k1.curve
         .applyDynamic("decodePoint")(CryptoJsUtil.toNodeBuffer(bytes))
         .asInstanceOf[Point]
 
