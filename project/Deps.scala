@@ -82,8 +82,14 @@ object Deps {
     val akkaHttp =
       "com.typesafe.akka" %% "akka-http" % V.akkav withSources () withJavadoc ()
 
+    val akkaHttp2 =
+      "com.typesafe.akka" %% "akka-http2-support" % V.akkav withSources () withJavadoc ()
+
     val akkaStream =
       "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources () withJavadoc ()
+
+    val akkaDiscovery =
+      "com.typesafe.akka" %% "akka-discovery" % V.akkaStreamv withSources () withJavadoc ()
 
     val akkaActor =
       "com.typesafe.akka" %% "akka-actor" % V.akkaStreamv withSources () withJavadoc ()
@@ -407,6 +413,16 @@ object Deps {
   val eclairRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
+    Compile.playJson,
+    Compile.slf4j,
+    Compile.grizzledSlf4j
+  )
+
+  val lndRpc = List(
+    Compile.akkaHttp,
+    Compile.akkaHttp2,
+    Compile.akkaStream,
+    Compile.akkaDiscovery,
     Compile.playJson,
     Compile.slf4j,
     Compile.grizzledSlf4j

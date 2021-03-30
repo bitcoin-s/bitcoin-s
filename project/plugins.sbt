@@ -37,6 +37,9 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
 //https://github.com/scalameta/sbt-native-image
 addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.3.0")
 
+// gRPC
+addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "1.1.1")
+
 // Scala.js
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.5.1")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.20.0")

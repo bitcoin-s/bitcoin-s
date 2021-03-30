@@ -143,6 +143,10 @@ lazy val eclairRpc = project
   .in(file("eclair-rpc"))
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
+lazy val lndRpc = project
+  .in(file("lnd-rpc"))
+  .dependsOn(asyncUtilsJVM, bitcoindRpc)
+
 lazy val jsProjects: Vector[ProjectReference] =
   Vector(asyncUtilsJS,
          asyncUtilsTestJS,
@@ -200,7 +204,9 @@ lazy val `bitcoin-s` = project
     zmq,
     oracleServer,
     oracleServerTest,
-    serverRoutes
+    serverRoutes,
+    lndRpc,
+    lndRpcTest
   )
   .dependsOn(
     secp256k1jni,
@@ -243,7 +249,9 @@ lazy val `bitcoin-s` = project
     zmq,
     oracleServer,
     oracleServerTest,
-    serverRoutes
+    serverRoutes,
+    lndRpc,
+    lndRpcTest
   )
   .settings(CommonSettings.settings: _*)
   // unidoc aggregates Scaladocs for all subprojects into one big doc
@@ -606,6 +614,16 @@ lazy val eclairRpcTest = project
   )
   .dependsOn(coreJVM % testAndCompile, testkit)
 
+lazy val lndRpcTest = project
+  .in(file("lnd-rpc-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    libraryDependencies ++= Deps.eclairRpcTest.value,
+    name := "bitcoin-s-lnd-rpc-test",
+    parallelExecution := !(isCI && Properties.isMac)
+  )
+  .dependsOn(coreJVM % testAndCompile, testkit, lndRpc)
+
 lazy val nodeDbSettings = dbFlywaySettings("nodedb")
 
 lazy val node =
@@ -663,6 +681,7 @@ lazy val testkit = project
     chain,
     bitcoindRpc,
     eclairRpc,
+    lndRpc,
     node,
     wallet,
     zmq,
