@@ -12,7 +12,11 @@ import akka.http.scaladsl.{Http, HttpExt}
 import akka.util.ByteString
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.explorer.env.ExplorerEnv
-import org.bitcoins.explorer.model.{ExplorerEvent, SbOracleEventExplorer}
+import org.bitcoins.explorer.model.{
+  CreateAttestations,
+  ExplorerEvent,
+  SbOracleEventExplorer
+}
 import org.bitcoins.explorer.picklers.ExplorerPicklers
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
 
@@ -68,6 +72,21 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
     val base = env.baseUri
     val uri = Uri(base + s"events")
     val string = oracleEventExplorer.toString
+    val httpReq =
+      HttpRequest(
+        uri = uri,
+        method = HttpMethods.POST,
+        entity =
+          HttpEntity(ContentTypes.`application/x-www-form-urlencoded`, string))
+    val responseF = sendRequest(httpReq)
+    responseF.map(_ => ())
+  }
+
+  def createAttestations(attestations: CreateAttestations): Future[Unit] = {
+    val base = env.baseUri
+    val uri = Uri(
+      base + s"events/${attestations.announcementHash.hex}/attestations")
+    val string = attestations.toString
     val httpReq =
       HttpRequest(
         uri = uri,
