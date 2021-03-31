@@ -106,29 +106,28 @@ sealed trait OptionTemplate extends ContractDescriptorTemplate {
 
     val curve = this match {
       case _: CallOption =>
-        val pointA = OutcomePayoutEndpoint(
+        val pointA = PiecewisePolynomialEndpoint(
           0L,
-          individualCollateral.satoshis - premium.satoshis)
+          (individualCollateral - premium).satoshis)
 
-        val pointB = OutcomePayoutEndpoint(
+        val pointB = PiecewisePolynomialEndpoint(
           strikePrice,
-          individualCollateral.satoshis - premium.satoshis)
+          (individualCollateral - premium).satoshis)
 
         val pointC =
-          OutcomePayoutEndpoint(maxNum, totalCollateral)
-        DLCPayoutCurve(Vector(pointA, pointB, pointC))
+          PiecewisePolynomialEndpoint(maxNum, totalCollateral.satoshis)
+        DLCPayoutCurve.polynomialInterpolate(Vector(pointA, pointB, pointC))
       case _: PutOption =>
-        val pointA = OutcomePayoutEndpoint(0L, totalCollateral)
+        val pointA = PiecewisePolynomialEndpoint(0L, totalCollateral.satoshis)
 
-        val pointB = OutcomePayoutEndpoint(
+        val pointB = PiecewisePolynomialEndpoint(
           strikePrice,
-          individualCollateral.satoshis - premium.satoshis)
+          (individualCollateral - premium).satoshis)
 
         val pointC =
-          OutcomePayoutEndpoint(
-            maxNum,
-            individualCollateral.satoshis - premium.satoshis)
-        DLCPayoutCurve(Vector(pointA, pointB, pointC))
+          PiecewisePolynomialEndpoint(maxNum,
+                                      (individualCollateral - premium).satoshis)
+        DLCPayoutCurve.polynomialInterpolate(Vector(pointA, pointB, pointC))
     }
 
     NumericContractDescriptor(curve, numDigits = numDigits, roundingIntervals)

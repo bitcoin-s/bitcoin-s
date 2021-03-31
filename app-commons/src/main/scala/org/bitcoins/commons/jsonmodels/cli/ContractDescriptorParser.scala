@@ -1,13 +1,13 @@
 package org.bitcoins.commons.jsonmodels.cli
 
 import org.bitcoins.commons.serializers.Picklers
+import org.bitcoins.core.protocol.dlc.models.DLCPayoutCurve
 import org.bitcoins.core.protocol.tlv.{
   ContractDescriptorTLV,
   ContractDescriptorV0TLV,
   ContractDescriptorV1TLV,
   DigitDecompositionEventDescriptorV0TLV,
   OracleAnnouncementTLV,
-  PayoutFunctionV0TLV,
   RoundingIntervalsV0TLV,
   TLVPoint
 }
@@ -26,12 +26,12 @@ object ContractDescriptorParser {
         //we read the number of digits from the announcement,
         //take in tlv points for the payout curve
         //and don't provide access to give a rounding mode as a parameter
-        val payoutPoints = arr.value.toVector.map { pointJs =>
+        val payoutPoints: Vector[TLVPoint] = arr.value.toVector.map { pointJs =>
           upickle.default
             .read[TLVPoint](pointJs)(Picklers.tlvPointReader)
         }
 
-        val payoutCurve = PayoutFunctionV0TLV(payoutPoints)
+        val payoutCurve = DLCPayoutCurve.fromPoints(payoutPoints).toTLV
         val numDigits = announcementTLV.eventTLV.eventDescriptor
           .asInstanceOf[DigitDecompositionEventDescriptorV0TLV]
           .numDigits
