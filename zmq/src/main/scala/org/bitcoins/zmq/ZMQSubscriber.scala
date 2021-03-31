@@ -33,12 +33,12 @@ class ZMQSubscriber(
 
   private val subscriber: ZMQ.Socket = context.socket(SocketType.SUB)
 
-  private val uri = socket.getHostString + ":" + socket.getPort
+  private val uri = s"tcp://${socket.getHostString}:${socket.getPort}"
 
   private case object SubscriberRunnable extends Runnable {
 
     override def run(): Unit = {
-      logger.info(s"ZmqSubscriber connecting to uri=${uri}")
+      logger.info(s"ZmqSubscriber connecting to uri=$uri")
       subscriber.setLinger(2000)
       val isConnected = subscriber.connect(uri)
 

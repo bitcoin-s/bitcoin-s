@@ -359,10 +359,6 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
   }
 
   /** Starts lnd on the local system.
-    *
-    * @return a future of the started LndRpcClient when lnd is fully started.
-    *         If lnd has not successfully started in 60 seconds
-    *         the future times out.
     */
   override def start(): Future[LndRpcClient] = {
     startBinary().map(_ => this)
