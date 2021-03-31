@@ -1,8 +1,9 @@
 package org.bitcoins.explorer.client
 
+import org.bitcoins.core.protocol.tlv.OracleAnnouncementV0TLV
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.explorer.env.ExplorerEnv
-import org.bitcoins.explorer.model.ExplorerEvent
+import org.bitcoins.explorer.model.{ExplorerEvent, SbOracleEventExplorer}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 import scala.concurrent.Future
@@ -11,7 +12,7 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
 
   behavior of "SbExplorerClient"
 
-  val explorerClient = SbExplorerClient(ExplorerEnv.Test)
+  val explorerClient = SbExplorerClient(ExplorerEnv.Local)
 
   it must "list events" in {
     val eventsF: Future[Vector[ExplorerEvent]] = explorerClient.listEvents()
@@ -24,12 +25,43 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
 
   it must "get an event" in {
     val hash = Sha256Digest.fromHex(
-      "e0a5624edbc854120982165b0eef53f0777a49febd79a0c21bf75e5582021e33")
+      "1985a5e99a8c28a402b58c0c58cbf86bd66a0db850aafc7674f7226d5ce82fde")
     val eventsF = explorerClient.getEvent(hash)
     for {
       event <- eventsF
     } yield {
       assert(event.announcement.sha256 == hash)
+    }
+  }
+
+  it must "return failure from get an event if the event DNE" in {
+    val hash = Sha256Digest.empty
+    recoverToSucceededIf[RuntimeException] {
+      explorerClient.getEvent(hash)
+    }
+  }
+
+  it must "create an event on the oracle explorer and then get that event" in {
+    val announcementHex =
+      "fdd824b33cbc4081b947ea9d05e616b010b563bfdbc42a2d20effa6f169f8e4be732b10d5461fa84b5739876a0c8a7bdb717040b8ee5907fe7e60694199ba948ecd505b01d5dcdba2e64cb116cc0c375a0856298f0058b778f46bfe625ac6576204889e4fdd8224f0001efdf735567ae0a00a515e313d20029de5d7525da7b8367bc843d28b672d4db4d605bd280fdd80609000203594553024e4f1b323032312d30332d32342d73756e6e792d696e2d6368696361676f"
+    val announcement = OracleAnnouncementV0TLV.fromHex(announcementHex)
+    val oracleName = "Chris_Stewart_5"
+    val description = "2021-03-24-sunny-in-chicago"
+    val uriOpt = Some("https://twitter.com/Chris_Stewart_5")
+
+    val event =
+      SbOracleEventExplorer(announcement, oracleName, description, uriOpt)
+
+    val createdF = explorerClient.createAnnouncement(event)
+    for {
+      _ <- createdF
+      event <- explorerClient.getEvent(event.oracleAnnouncementV0.sha256)
+    } yield {
+      assert(event.announcement == announcement)
+      assert(event.attestations.isEmpty)
+      assert(event.uri == uriOpt)
+      assert(event.oracleName == oracleName)
+      assert(event.description == description)
     }
   }
 }

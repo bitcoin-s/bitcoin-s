@@ -9,15 +9,12 @@ case class SbOracleEventExplorer(
     eventURI: Option[String]) {
 
   override def toString: String = {
-    val base = s"""
-                  |oracleAnnouncementV0=${oracleAnnouncementV0.hex}
-                  |description=$description
-                  |oracleName=$oracleName
-                  |""".stripMargin
+    val base =
+      s"oracleAnnouncementV0=${oracleAnnouncementV0.hex}&description=$description&oracleName=$oracleName"
     eventURI match {
       case None => base
       case Some(uri) =>
-        val uriString = s"uri=$uri"
+        val uriString = s"&uri=$uri"
         base + uriString
     }
   }

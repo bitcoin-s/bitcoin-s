@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.{
   HttpRequest,
   Uri
 }
-import akka.http.scaladsl.server.ContentNegotiator.Alternative.ContentType
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.util.ByteString
 import org.bitcoins.crypto.Sha256Digest
@@ -70,14 +69,17 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
     val uri = Uri(base + s"events")
     val string = oracleEventExplorer.toString
     val httpReq =
-      HttpRequest(uri = uri,
-                  method = HttpMethods.POST,
-                  entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, string))
+      HttpRequest(
+        uri = uri,
+        method = HttpMethods.POST,
+        entity =
+          HttpEntity(ContentTypes.`application/x-www-form-urlencoded`, string))
     val responseF = sendRequest(httpReq)
     responseF.map(_ => ())
   }
 
   private def sendRequest(httpReq: HttpRequest): Future[JsValue] = {
+
     val responsePayloadF: Future[String] = {
       httpClient
         .singleRequest(httpReq)
