@@ -8,10 +8,11 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import scalafx.scene.Node
 
 class OfferDLCDialog
-    extends DLCDialog[CreateDLCOffer]("Create DLC Offer",
-                                      "Enter DLC details",
-                                      DLCDialog.constructOfferFields(),
-                                      Vector(DLCDialog.feeRateStr)) {
+    extends DLCDialog[CreateDLCOffer](
+      "Create DLC Offer",
+      "Enter DLC details",
+      DLCDialog.constructOfferFields(),
+      Vector(DLCDialog.feeRateStr, DLCDialog.oracleThresholdStr)) {
   import DLCDialog._
 
   override def constructFromInput(inputs: Map[String, Node]): CreateDLCOffer = {
@@ -25,9 +26,28 @@ class OfferDLCDialog
       )
     }
 
+    val contractInfo = {
+      val totalCol = Satoshis(
+        BigInt(readStringFromNode(inputs(totalCollateralStr))))
+      val descriptor = ContractDescriptorTLV(
+        readStringFromNode(inputs(contractDescriptorStr)))
+      val announcementStrs =
+        readStringFromNode(inputs(oracleAnnouncementsStr)).split(",")
+      val announcementTLVs =
+        announcementStrs.map(OracleAnnouncementV0TLV.fromHex)
+      val threshold = readStringFromNode(inputs(oracleThresholdStr))
+
+      val oracleInfo = if (announcementTLVs.length == 1) {
+        OracleInfoV0TLV(announcementTLVs.head)
+      } else {
+        OracleInfoV1TLV(threshold.toInt, announcementTLVs.toVector)
+      }
+
+      ContractInfoV0TLV(totalCol, descriptor, oracleInfo)
+    }
+
     CreateDLCOffer(
-      contractInfo =
-        ContractInfoV0TLV.fromHex(readStringFromNode(inputs(contractInfoStr))),
+      contractInfo = contractInfo,
       collateral = Satoshis(BigInt(readStringFromNode(inputs(collateralStr)))),
       feeRateOpt = feeRate,
       locktime = UInt32(BigInt(readStringFromNode(inputs(locktimeStr)))),

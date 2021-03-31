@@ -77,15 +77,13 @@ abstract class DLCDialog[T <: CliCommand](
       vgap = 10
       padding = Insets(20, 100, 10, 10)
 
-      var nextRow: Int = 0
-      def addRow(label: String, node: Node): Unit = {
-        add(new Label(label), 0, nextRow)
-        add(node, 1, nextRow)
-        nextRow += 1
+      def addRow(label: String, node: Node, row: Int): Unit = {
+        add(new Label(label), 0, row)
+        add(node, 1, row)
       }
 
-      fields.foreach { case (fieldStr, filedInput) =>
-        addRow(fieldStr, filedInput)
+      fields.zipWithIndex.foreach { case ((fieldStr, filedInput), index) =>
+        addRow(fieldStr, filedInput, index)
       }
     }
 
@@ -180,8 +178,12 @@ object DLCDialog {
   val signFileChosenLabel = new Label("")
   val signDestFileChosenLabel = new Label("")
 
+  val oracleThresholdStr = "Oracle Threshold"
+  val oracleAnnouncementStr = "Oracle Announcement"
   val oracleAnnouncementsStr = "Oracle Announcements"
+  val contractDescriptorStr = "Contract Descriptor"
   val contractInfoStr = "Contract Info"
+  val totalCollateralStr = "Total Collateral"
   val collateralStr = "Your Collateral"
   val feeRateStr = "Fee Rate"
   val locktimeStr = "Locktime"
@@ -189,8 +191,11 @@ object DLCDialog {
 
   val fileChosenStr = ""
 
-  val allOfferFields: Map[String, String] = Map[String, String](
-    contractInfoStr -> "",
+  val allOfferFields: Vector[(String, String)] = Vector[(String, String)](
+    oracleAnnouncementsStr -> "(comma separated)",
+    oracleThresholdStr -> "(required for multiple oracles)",
+    contractDescriptorStr -> "",
+    totalCollateralStr -> "Satoshis",
     collateralStr -> "Satoshis",
     feeRateStr -> "sats/vbyte (optional)",
     locktimeStr -> "Block or unix time",
@@ -203,7 +208,7 @@ object DLCDialog {
        new TextField() {
          promptText = hint
        })
-    }.toVector
+    }
 
   val dlcOfferStr = "DLC Offer"
   val dlcOfferFileStr = "Open Offer from File"
