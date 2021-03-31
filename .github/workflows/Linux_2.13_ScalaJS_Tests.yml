@@ -27,4 +27,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: run tests
-        run: sbt ++2.13.5 cryptoTestJS/test 'set scalaJSStage in Global := FullOptStage' cryptoTestJS/test
+        run: sbt ++2.13.5 cryptoTestJS/test coreJS/test 'set scalaJSStage in Global := FullOptStage' cryptoTestJS/test coreJS/test
