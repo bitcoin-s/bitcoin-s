@@ -39,8 +39,7 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
   }
 
   it must "get an event" in {
-    val hash = Sha256Digest.fromHex(
-      "1985a5e99a8c28a402b58c0c58cbf86bd66a0db850aafc7674f7226d5ce82fde")
+    val hash = announcement.sha256
     val eventsF = explorerClient.getEvent(hash)
     for {
       event <- eventsF

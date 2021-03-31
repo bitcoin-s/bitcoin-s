@@ -18,4 +18,6 @@ object ExplorerEnv {
   case object Local extends ExplorerEnv {
     override val baseUri: String = "http://localhost:9000/v1/"
   }
+
+  val all: Vector[ExplorerEnv] = Vector(Production, Test, Local)
 }
