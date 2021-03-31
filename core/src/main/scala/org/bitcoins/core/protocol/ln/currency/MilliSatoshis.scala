@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.ln.currency
 
+import org.bitcoins.core._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{BasicArithmetic, UInt64}
 import org.bitcoins.crypto.NetworkElement
@@ -34,7 +35,7 @@ sealed abstract class MilliSatoshis
 
   def toBigInt: BigInt = underlying
 
-  def toLong: Long = toBigInt.bigInteger.longValueExact
+  def toLong: Long = toBigInt.bigInteger.longExact
 
   def toBigDecimal: BigDecimal = BigDecimal(toBigInt)
 

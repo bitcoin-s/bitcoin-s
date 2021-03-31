@@ -198,6 +198,15 @@ trait CryptoUtil extends CryptoRuntime {
 
   override def decodePoint(bytes: ByteVector): ECPoint =
     cryptoRuntime.decodePoint(bytes)
+
+  override def randomBytes(n: Int): ByteVector = cryptoRuntime.randomBytes(n)
+
+  override def pbkdf2WithSha512(
+      pass: ByteVector,
+      salt: ByteVector,
+      iterationCount: Int,
+      derivedKeyLength: Int): ByteVector =
+    cryptoRuntime.pbkdf2WithSha512(pass, salt, iterationCount, derivedKeyLength)
 }
 
 object CryptoUtil extends CryptoUtil

@@ -9,7 +9,6 @@ import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
-import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCaseProtocol._
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
@@ -17,7 +16,6 @@ import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits._
-import spray.json._
 
 class TransactionTest extends BitcoinSUnitTest {
   behavior of "Transaction"
@@ -151,9 +149,8 @@ class TransactionTest extends BitcoinSUnitTest {
   }
   it must "read all of the tx_valid.json's contents and return ScriptOk" in {
     val lines = JsonTestVectors.valid
-    val json = lines.parseJson
-    val testCasesOpt: Seq[Option[CoreTransactionTestCase]] =
-      json.convertTo[Seq[Option[CoreTransactionTestCase]]]
+    val testCasesOpt =
+      upickle.default.read[Seq[Option[CoreTransactionTestCase]]](lines)
     val testCases: Seq[CoreTransactionTestCase] = testCasesOpt.flatten
     for {
       testCase <- testCases
@@ -226,9 +223,8 @@ class TransactionTest extends BitcoinSUnitTest {
 
   it must "read all of the tx_invalid.json's contents and return a ScriptError" in {
     val lines = JsonTestVectors.invalid
-    val json = lines.parseJson
-    val testCasesOpt: Seq[Option[CoreTransactionTestCase]] =
-      json.convertTo[Seq[Option[CoreTransactionTestCase]]]
+    val testCasesOpt =
+      upickle.default.read[Seq[Option[CoreTransactionTestCase]]](lines)
     val testCases: Seq[CoreTransactionTestCase] = testCasesOpt.flatten
     for {
       testCase <- testCases

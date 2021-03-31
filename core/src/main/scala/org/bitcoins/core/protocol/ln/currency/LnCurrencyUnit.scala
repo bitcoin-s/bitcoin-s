@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.ln.currency
 
+import org.bitcoins.core._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.ln._
@@ -51,9 +52,9 @@ sealed abstract class LnCurrencyUnit
 
   def toBigInt: BigInt
 
-  def toLong: Long = toBigInt.bigInteger.longValueExact()
+  def toLong: Long = toBigInt.bigInteger.longExact
 
-  def toInt: Int = toBigInt.bigInteger.intValueExact()
+  def toInt: Int = toBigInt.bigInteger.intExact
 
   protected def underlying: BigInt
 

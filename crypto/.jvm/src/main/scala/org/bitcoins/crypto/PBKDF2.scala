@@ -24,18 +24,6 @@ object PBKDF2 {
 
   /** $keyStretch */
   def withSha512(
-      string: String,
-      salt: String,
-      iterationCount: Int,
-      derivedKeyLength: Int): SecretKey = {
-    withSha512(ByteVector(string.getBytes),
-               ByteVector(salt.getBytes),
-               iterationCount,
-               derivedKeyLength)
-  }
-
-  /** $keyStretch */
-  def withSha512(
       bytes: ByteVector,
       salt: ByteVector,
       iterationCount: Int,

@@ -1,6 +1,5 @@
-import Deps.{Compile, Test}
-import sbt._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+import sbt._
 
 object Deps {
 
@@ -43,7 +42,7 @@ object Deps {
 
     val breezeV = "1.1"
 
-    val newMicroPickleV = "0.8.0"
+    val newMicroPickleV = "1.3.8"
     val newMicroJsonV = newMicroPickleV
 
     // akka-http-upickle is not yet published
@@ -62,6 +61,7 @@ object Deps {
     val scoptV = "4.0.1"
     val sttpV = "1.7.2"
     val codehausV = "3.1.3"
+    val scalaJsTimeV = "2.2.0"
   }
 
   object Compile {
@@ -163,7 +163,8 @@ object Deps {
 
     val newMicroJson = "com.lihaoyi" %% "ujson" % V.newMicroJsonV
 
-    val newMicroPickle = "com.lihaoyi" %% "upickle" % V.newMicroPickleV
+    val newMicroPickle =
+      Def.setting("com.lihaoyi" %%% "upickle" % V.newMicroPickleV)
 
     // get access to reflection data at compile-time
     val sourcecode = "com.lihaoyi" %% "sourcecode" % V.sourcecodeV
@@ -183,6 +184,10 @@ object Deps {
 
     val scalaJsStubs =
       "org.scala-js" %% "scalajs-stubs" % V.scalaJsStubsV % "provided"
+
+    val scalaJsTime =
+      Def.setting(
+        "io.github.cquiroz" %%% "scala-java-time" % V.scalaJsTimeV withSources () withJavadoc ())
 
     val scalaTest =
       Def.setting(
@@ -246,13 +251,14 @@ object Deps {
     Test.pgEmbedded
   )
 
-  def appCommons(scalaVersion: String) =
+  val appCommons = Def.setting {
     List(
-      Compile.newMicroPickle,
+      Compile.newMicroPickle.value,
       Compile.playJson,
       Compile.slf4j,
       Compile.grizzledSlf4j
     )
+  }
 
   def core = Def.setting {
     List(
@@ -283,9 +289,22 @@ object Deps {
     List(
       Test.junitInterface,
       Test.scalaTest.value,
-      Test.spray,
-      Test.playJson,
+      Test.scalaCollectionCompat,
+      Compile.newMicroPickle.value
+    )
+  }
+
+  val coreTestJVM = Def.setting {
+    List(
+      Test.junitInterface,
+      Test.scalaTest.value,
       Test.scalaCollectionCompat
+    )
+  }
+
+  val coreJs = Def.setting {
+    List(
+      Compile.scalaJsTime.value
     )
   }
 
@@ -350,10 +369,10 @@ object Deps {
     )
   }
 
-  def cli(scalaVersion: String) =
+  val cli = Def.setting {
     List(
       Compile.sttp,
-      Compile.newMicroPickle,
+      Compile.newMicroPickle.value,
       Compile.logback,
       Compile.scopt,
       //we can remove this dependency when this is fixed
@@ -361,26 +380,29 @@ object Deps {
       //see https://github.com/bitcoin-s/bitcoin-s/issues/1100
       Compile.codehaus
     )
+  }
 
   val gui = List(Compile.breezeViz, Compile.scalaFx) ++ Compile.javaFxDeps
 
-  def server(scalaVersion: String) =
+  val server = Def.setting {
     List(
-      Compile.newMicroPickle,
+      Compile.newMicroPickle.value,
       Compile.logback,
       Compile.akkaActor,
       Compile.akkaHttp,
       Compile.akkaSlf4j
     )
+  }
 
-  val oracleServer =
+  val oracleServer = Def.setting {
     List(
-      Compile.newMicroPickle,
+      Compile.newMicroPickle.value,
       Compile.logback,
       Compile.akkaActor,
       Compile.akkaHttp,
       Compile.akkaSlf4j
     )
+  }
 
   val eclairRpc = List(
     Compile.akkaHttp,
@@ -435,7 +457,7 @@ object Deps {
 
   def testkitCore = Def.setting {
     List(
-      Compile.newMicroPickle,
+      Compile.newMicroPickle.value,
       Compile.scalaCollectionCompat,
       Compile.scalacheck.value,
       Compile.scalaTest.value,

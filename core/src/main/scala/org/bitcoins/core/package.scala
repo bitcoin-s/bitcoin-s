@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
 import scodec.bits._
 
+import java.math.BigInteger
 import scala.annotation.tailrec
 import scala.math.Ordering
 
@@ -28,6 +29,19 @@ package object core {
       } else {
         Some(seq.minBy(f))
       }
+    }
+  }
+
+  implicit class bigIntegerUtil(private val bigInt: BigInteger) extends AnyVal {
+
+    implicit def intExact: Int = {
+      if (bigInt.bitLength() <= 31) bigInt.intValue()
+      else throw new ArithmeticException("BigInteger out of int range");
+    }
+
+    implicit def longExact: Long = {
+      if (bigInt.bitLength() <= 63) bigInt.longValue()
+      else throw new ArithmeticException("BigInteger out of long range");
     }
   }
 

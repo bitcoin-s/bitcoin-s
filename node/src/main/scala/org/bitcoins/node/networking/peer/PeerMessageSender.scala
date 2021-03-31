@@ -1,7 +1,5 @@
 package org.bitcoins.node.networking.peer
 
-import java.net.InetAddress
-
 import akka.actor.ActorRef
 import akka.io.Tcp
 import akka.util.Timeout
@@ -63,7 +61,11 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
 
   /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */
   def sendVersionMessage(): Future[Unit] = {
-    val versionMsg = VersionMessage(client.peer.socket, conf.network)
+    val local = java.net.InetAddress.getLocalHost
+    val versionMsg = VersionMessage(
+      conf.network,
+      InetAddress(client.peer.socket.getAddress.getAddress),
+      InetAddress(local.getAddress))
     logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
     sendMsg(versionMsg)
   }
@@ -71,13 +73,14 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   def sendVersionMessage(chainApi: ChainApi)(implicit
       ec: ExecutionContext): Future[Unit] = {
     chainApi.getBestHashBlockHeight().flatMap { height =>
-      val transmittingIpAddress = InetAddress.getLocalHost
+      val transmittingIpAddress = java.net.InetAddress.getLocalHost
       val receivingIpAddress = client.peer.socket.getAddress
-      val versionMsg = VersionMessage(conf.network,
-                                      "/Bitcoin-S:0.5.0/",
-                                      Int32(height),
-                                      receivingIpAddress,
-                                      transmittingIpAddress)
+      val versionMsg =
+        VersionMessage(conf.network,
+                       "/Bitcoin-S:0.5.0/",
+                       Int32(height),
+                       InetAddress(receivingIpAddress.getAddress),
+                       InetAddress(transmittingIpAddress.getAddress))
 
       logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
       sendMsg(versionMsg)

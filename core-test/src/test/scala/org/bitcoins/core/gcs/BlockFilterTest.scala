@@ -4,7 +4,7 @@ import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
-import play.api.libs.json.{JsArray, Json}
+import ujson._
 
 class BlockFilterTest extends BitcoinSUnitTest {
   behavior of "BlockFilter"
@@ -43,29 +43,27 @@ class BlockFilterTest extends BitcoinSUnitTest {
   object Bip158TestCase {
 
     //["Block Height,Block Hash,Block,[Prev Output Scripts for Block],Previous Basic Header,Basic Filter,Basic Header,Notes"]
-    def fromJsArray(array: JsArray): Bip158TestCase = {
+    def fromArr(array: Arr): Bip158TestCase = {
       val parseResult = for {
-        height <- array(0).validate[Int]
-        blockHash <- array(1).validate[String].map(DoubleSha256DigestBE.fromHex)
+        height <- array(0).numOpt.map(_.toInt)
+        blockHash <- array(1).strOpt.map(DoubleSha256DigestBE.fromHex)
 
-        block <- array(2).validate[String].map(Block.fromHex)
+        block <- array(2).strOpt.map(Block.fromHex)
 
-        scriptArray <- array(3).validate[JsArray]
+        scriptArray <- array(3).arrOpt
         scripts = parseScripts(scriptArray)
 
         prevHeader <-
-          array(4)
-            .validate[String]
+          array(4).strOpt
             .map(DoubleSha256DigestBE.fromHex)
 
         filter <-
-          array(5)
-            .validate[String]
+          array(5).strOpt
             .map(BlockFilter.fromHex(_, blockHash.flip))
 
-        header <- array(6).validate[String].map(DoubleSha256DigestBE.fromHex)
+        header <- array(6).strOpt.map(DoubleSha256DigestBE.fromHex)
 
-        notes <- array(7).validate[String]
+        notes <- array(7).strOpt
       } yield Bip158TestCase(height,
                              blockHash,
                              block,
@@ -78,17 +76,18 @@ class BlockFilterTest extends BitcoinSUnitTest {
       parseResult.get
     }
 
-    private def parseScripts(array: JsArray): Vector[ScriptPubKey] = {
-      val hexScripts = array.validate[Vector[String]].get
+    private def parseScripts(array: Arr): Vector[ScriptPubKey] = {
+      val hexScripts = array.arr.map(_.str)
 
-      hexScripts.map(ScriptPubKey.fromAsmHex)
+      hexScripts.map(ScriptPubKey.fromAsmHex).toVector
     }
   }
 
   it must "pass bip 158 test vectors" in {
-    val vec: Vector[JsArray] =
-      Json.parse(Testnet19.str.mkString).validate[Vector[JsArray]].get.tail
-    val testCases = vec.map(Bip158TestCase.fromJsArray)
+    val vec: Vector[Value] =
+      ujson.read(Testnet19.str.mkString).arr.toVector.tail
+    val testCases =
+      vec.map(value => Bip158TestCase.fromArr(Arr.from(value.arr)))
 
     testCases.foreach(_.runTest())
   }

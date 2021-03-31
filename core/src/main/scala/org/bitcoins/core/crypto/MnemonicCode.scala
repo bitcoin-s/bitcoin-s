@@ -1,7 +1,5 @@
 package org.bitcoins.core.crypto
 
-import java.security.SecureRandom
-
 import org.bitcoins.core.crypto.words.EnglishWordsBip39
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.crypto.{CryptoUtil, MaskedToString}
@@ -197,15 +195,12 @@ object MnemonicCode {
     require(bits % 8 == 0,
             s"Given amount if bits ($bits) must be a multiple of 8!")
 
-    val randomGenerator: SecureRandom = new SecureRandom
-
-    val byteArray: Array[Byte] = new Array[Byte](bits / 8)
-    randomGenerator.nextBytes(byteArray)
-    val bitVector = BitVector(byteArray)
+    val bytes = CryptoUtil.randomBytes(bits / 8)
+    val bitVector = BitVector(bytes)
 
     bitVector.ensuring(
       bitVector => bits == bitVector.length,
-      s"Did not generate enough bits of entropy! Exepcted=$bits, actual=${bitVector.length}"
+      s"Did not generate enough bits of entropy! Expected=$bits, actual=${bitVector.length}"
     )
   }
 

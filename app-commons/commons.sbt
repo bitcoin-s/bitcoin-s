@@ -1,3 +1,3 @@
 name := "bitcoin-s-app-commons"
 
-libraryDependencies ++= Deps.appCommons(scalaVersion.value)
+libraryDependencies ++= Deps.appCommons.value

@@ -5,15 +5,15 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.crypto.{DoubleSha256Digest, SipHashKey}
 import org.bitcoins.testkitcore.gen.CryptoGenerators._
 import org.bitcoins.testkitcore.gen.NumberGenerator
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
-import scodec.bits.{ByteVector, _}
+import scodec.bits._
 
-class GolombFilterTest extends BitcoinSJvmTest {
+class GolombFilterTest extends BitcoinSUnitTest {
   behavior of "GolombFilter"
 
   it must "match encoded data for arbitrary GCS parameters" in {
-    forAllParallel(genKey, genPMRand) { case (k, (p, m, rand)) =>
+    forAll(genKey, genPMRand) { case (k, (p, m, rand)) =>
       val data1 = rand + UInt64.one
       val data2 = data1 + UInt64.one
       val data = Vector(data1, data2)
@@ -55,22 +55,21 @@ class GolombFilterTest extends BitcoinSJvmTest {
     val genRandHashes: Gen[Vector[UInt64]] =
       Gen.listOfN(100, NumberGenerator.uInt64).map(_.toVector)
 
-    forAllParallel(genKey, genData, genRandHashes) {
-      case (k, data, randHashes) =>
-        val filter = GCS.buildBasicBlockFilter(data, k)
-        val binarySearchMatcher = BinarySearchFilterMatcher(filter)
-        val simpleMatcher = SimpleFilterMatcher(filter)
-        val hashes = binarySearchMatcher.decodedHashes
+    forAll(genKey, genData, genRandHashes) { case (k, data, randHashes) =>
+      val filter = GCS.buildBasicBlockFilter(data, k)
+      val binarySearchMatcher = BinarySearchFilterMatcher(filter)
+      val simpleMatcher = SimpleFilterMatcher(filter)
+      val hashes = binarySearchMatcher.decodedHashes
 
-        data.foreach(element => assert(binarySearchMatcher.matches(element)))
-        assert(binarySearchMatcher.matchesAny(data))
-        assert(simpleMatcher.matchesAny(data))
+      data.foreach(element => assert(binarySearchMatcher.matches(element)))
+      assert(binarySearchMatcher.matchesAny(data))
+      assert(simpleMatcher.matchesAny(data))
 
-        val hashesNotInData: Vector[UInt64] =
-          randHashes.filterNot(hashes.contains)
+      val hashesNotInData: Vector[UInt64] =
+        randHashes.filterNot(hashes.contains)
 
-        assert(hashesNotInData.forall(hash =>
-          !binarySearchMatcher.matchesHash(hash)))
+      assert(
+        hashesNotInData.forall(hash => !binarySearchMatcher.matchesHash(hash)))
     }
   }
 

@@ -15,9 +15,8 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
-import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
-import spray.json._
+import upickle.default._
 
 import scala.util.Try
 
@@ -26,9 +25,11 @@ import scala.util.Try
 class ScriptInterpreterTest extends BitcoinSUnitTest {
 
   "ScriptInterpreter" must "evaluate all the scripts from the bitcoin core script_tests.json" in {
-    val json = ScriptTestsJson.str.parseJson
+    import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase._
+
+    val json = ScriptTestsJson.str
     val testCasesOpt: Seq[Option[CoreTestCase]] =
-      json.convertTo[Seq[Option[CoreTestCase]]]
+      read[Seq[Option[CoreTestCase]]](json)
     val testCases: Seq[CoreTestCase] = testCasesOpt.flatten
     for {
       testCase <- testCases

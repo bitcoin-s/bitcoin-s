@@ -79,8 +79,8 @@ object LnRoute {
 
     val (cltvExpiryDeltaBytes, _) = rest3.splitAt(CLTV_EXPIRTY_DELTA_LEN)
 
-    val cltvExpiryDelta = new BigInteger(
-      cltvExpiryDeltaBytes.toArray).shortValueExact
+    val cltvExpiryDelta =
+      new BigInteger(cltvExpiryDeltaBytes.toArray).shortValue()
 
     LnRoute(pubKey,
             shortChannelId,
