@@ -4,7 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models.{
   DLCPayoutCurve,
   NumericContractDescriptor,
-  OutcomePayoutPoint,
+  PiecewisePolynomialPoint,
   RoundingIntervals
 }
 import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
@@ -170,7 +170,7 @@ object InitNumericContractDialog {
           if (xTF.text.value.nonEmpty && yTF.text.value.nonEmpty) {
             val x = xTF.text.value.toLong
             val y = yTF.text.value.toLong
-            Some(OutcomePayoutPoint(x, Satoshis(y), checkBox.selected.value))
+            Some(PiecewisePolynomialPoint(x, y, checkBox.selected.value))
           } else {
             None
           }
@@ -192,7 +192,7 @@ object InitNumericContractDialog {
         val sorted = outcomesValuePoints.sortBy(_.outcome)
         require(sorted == outcomesValuePoints, "Must be sorted by outcome")
 
-        val func = DLCPayoutCurve(outcomesValuePoints)
+        val func = DLCPayoutCurve.polynomialInterpolate(outcomesValuePoints)
         (totalCollateral,
          NumericContractDescriptor(func,
                                    numDigits,

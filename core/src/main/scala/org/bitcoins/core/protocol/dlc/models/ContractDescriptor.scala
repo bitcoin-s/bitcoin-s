@@ -98,13 +98,8 @@ case class NumericContractDescriptor(
     with TLVSerializable[ContractDescriptorV1TLV] {
 
   override def flip(totalCollateral: Satoshis): NumericContractDescriptor = {
-
-    val flippedFunc = DLCPayoutCurve(outcomeValueFunc.points.map { point =>
-      point.copy(payout = totalCollateral.toLong - point.payout)
-    })
-
     NumericContractDescriptor(
-      flippedFunc,
+      outcomeValueFunc.flip(totalCollateral),
       numDigits,
       roundingIntervals
     )

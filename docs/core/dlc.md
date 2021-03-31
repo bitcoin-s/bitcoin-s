@@ -30,7 +30,7 @@ import org.bitcoins.crypto._
 
 [DLCPayoutCurve.scala](https://github.com/bitcoin-s/bitcoin-s/blob/master/core/src/main/scala/org/bitcoins/core/protocol/dlc/DLCPayoutCurve.scala) provides an interface for serializing and evaluating payout curves for DLCs as specified in the [Payout Curve Specification](https://github.com/discreetlogcontracts/dlcspecs/blob/c4fb12d95a4255eabb873611437d05b740bbeccc/PayoutCurve.md). This file supports arbitrary polynomial interpolation.
 
-To approximate a payout curve that is not a piecewise polynomial function, one may either propose a new kind of curve to the specification, or use approximation. For example by feeding `DLCPayoutCurve` a list of `OutcomePayoutEndpoint`s, one receives a linear approximation of their payout curve which takes the sampled points and "connects the dots" with straight lines. Alternatively one can use spline interpolation and sample two midpoints of every spline to get a piecewise cubic interpolation.
+To approximate a payout curve that is not a piecewise polynomial function, one may either propose a new kind of curve to the specification, or use approximation. For example by feeding `DLCPayoutCurve` a list of `PiecewisePolynomialEndpoint`s, one receives a linear approximation of their payout curve which takes the sampled points and "connects the dots" with straight lines. Alternatively one can use spline interpolation and sample two midpoints of every spline to get a piecewise cubic interpolation.
 
 ```scala mdoc:to-string
 // Constructing a forward contract's payout curve (going long) that looks like this:
@@ -42,12 +42,12 @@ To approximate a payout curve that is not a piecewise polynomial function, one m
 // Assume a 15 binary digit oracle
 val maxVal = (1L << 15) - 1
 val pts = Vector(
-    OutcomePayoutEndpoint(0, 0),
-    OutcomePayoutEndpoint(1000, 0),
-    OutcomePayoutEndpoint(2000, 1000),
-    OutcomePayoutEndpoint(maxVal, 1000)
+    PiecewisePolynomialEndpoint(0, 0),
+    PiecewisePolynomialEndpoint(1000, 0),
+    PiecewisePolynomialEndpoint(2000, 1000),
+    PiecewisePolynomialEndpoint(maxVal, 1000)
 )
-val curve = DLCPayoutCurve(pts)
+val curve = DLCPayoutCurve.polynomialInterpolate(pts)
 
 // Let's evalute the curve's values at varios points
 curve(500)
@@ -60,7 +60,7 @@ val roundTo100 = RoundingIntervals(Vector(IntervalStart(0, 100)))
 curve(1667, roundTo100)
 
 // Let's take a look at the pieces in this piece-wise polynomial
-curve.functionComponents
+curve.pieces
 
 // And we can even see which component is used on a given outcome
 val Indexed(line1, _) = curve.componentFor(500)

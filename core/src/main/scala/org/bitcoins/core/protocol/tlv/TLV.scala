@@ -18,6 +18,7 @@ import scodec.bits.ByteVector
 
 import java.nio.charset.StandardCharsets
 import java.time.Instant
+import scala.math.BigDecimal.RoundingMode
 
 sealed trait TLV extends NetworkElement with TLVUtil {
   def tpe: BigSizeUInt
@@ -164,6 +165,7 @@ object TLV extends TLVParentFactory[TLV] {
       DLCAcceptTLV,
       DLCSignTLV
     ) ++ EventDescriptorTLV.allFactories ++
+      PayoutCurvePieceTLV.allFactories ++
       ContractDescriptorTLV.allFactories ++
       OracleInfoTLV.allFactories ++
       ContractInfoTLV.allFactories ++
@@ -995,23 +997,16 @@ object RoundingIntervalsV0TLV extends TLVFactory[RoundingIntervalsV0TLV] {
   override val typeName: String = "RoundingIntervalsV0TLV"
 }
 
-case class TLVPoint(
-    outcome: Long,
-    value: Satoshis,
-    extraPrecision: Int,
-    isEndpoint: Boolean)
+case class TLVPoint(outcome: Long, value: Satoshis, extraPrecision: Int)
     extends NetworkElement {
 
-  lazy val leadingByte: Byte = if (isEndpoint) {
-    1.toByte
-  } else {
-    0.toByte
+  lazy val bigDecimalPayout: BigDecimal = {
+    value.toLong + (BigDecimal(extraPrecision) / (1 << 16))
   }
 
   override def bytes: ByteVector = {
-    ByteVector(leadingByte) ++
-      BigSizeUInt(outcome).bytes ++
-      UInt64(value.toLong).bytes ++
+    BigSizeUInt(outcome).bytes ++
+      BigSizeUInt(value.toLong).bytes ++
       UInt16(extraPrecision).bytes
   }
 }
@@ -1019,7 +1014,82 @@ case class TLVPoint(
 object TLVPoint extends Factory[TLVPoint] {
 
   override def fromBytes(bytes: ByteVector): TLVPoint = {
-    val isEndpoint = bytes.head match {
+
+    val outcome = BigSizeUInt(bytes)
+    val value = BigSizeUInt(bytes.drop(outcome.byteSize))
+    val extraPrecision = UInt16(
+      bytes.drop(outcome.byteSize + value.byteSize).take(2)).toInt
+
+    TLVPoint(outcome = outcome.toLong,
+             value = Satoshis(value.toLong),
+             extraPrecision = extraPrecision)
+  }
+}
+
+sealed trait PayoutCurvePieceTLV extends TLV
+
+object PayoutCurvePieceTLV extends TLVParentFactory[PayoutCurvePieceTLV] {
+
+  override val allFactories: Vector[TLVFactory[PayoutCurvePieceTLV]] =
+    Vector(PolynomialPayoutCurvePieceTLV, HyperbolaPayoutCurvePieceTLV)
+
+  override val typeName: String = "PayoutCurvePieceTLV"
+}
+
+case class PolynomialPayoutCurvePieceTLV(midpoints: Vector[TLVPoint])
+    extends PayoutCurvePieceTLV {
+  override val tpe: BigSizeUInt = PolynomialPayoutCurvePieceTLV.tpe
+
+  override val value: ByteVector = {
+    u16PrefixedList(midpoints)
+  }
+}
+
+object PolynomialPayoutCurvePieceTLV
+    extends TLVFactory[PolynomialPayoutCurvePieceTLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42792)
+
+  override def fromTLVValue(
+      value: ByteVector): PolynomialPayoutCurvePieceTLV = {
+    val iter = ValueIterator(value)
+
+    val points = iter.takeU16PrefixedList(() => iter.take(TLVPoint))
+
+    PolynomialPayoutCurvePieceTLV(points)
+  }
+
+  override val typeName: String = "PolynomialPayoutCurvePieceTLV"
+}
+
+case class Signed16PTLVNumber(
+    sign: Boolean,
+    withoutPrecision: Long,
+    extraPrecision: Int)
+    extends NetworkElement {
+
+  lazy val toBigDecimal: BigDecimal = {
+    val absVal = withoutPrecision + (BigDecimal(extraPrecision) / (1 << 16))
+
+    if (sign) absVal else -absVal
+  }
+
+  lazy val signByte: Byte = if (sign) {
+    1.toByte
+  } else {
+    0.toByte
+  }
+
+  override def bytes: ByteVector = {
+    ByteVector(signByte) ++
+      BigSizeUInt(withoutPrecision).bytes ++
+      UInt16(extraPrecision).bytes
+  }
+}
+
+object Signed16PTLVNumber extends Factory[Signed16PTLVNumber] {
+
+  override def fromBytes(bytes: ByteVector): Signed16PTLVNumber = {
+    val sign = bytes.head match {
       case 0 => false
       case 1 => true
       case b: Byte =>
@@ -1027,23 +1097,91 @@ object TLVPoint extends Factory[TLVPoint] {
           s"Did not recognize leading byte: $b")
     }
 
-    val outcome = BigSizeUInt(bytes.tail)
-    val value = UInt64(bytes.drop(1 + outcome.byteSize).take(8))
-    val extraPrecision = UInt16(bytes.drop(9 + outcome.byteSize).take(2)).toInt
+    val withoutPrecision = BigSizeUInt(bytes.tail)
+    val extraPrecision = UInt16(
+      bytes.drop(1 + withoutPrecision.byteSize).take(2))
 
-    TLVPoint(outcome = outcome.toLong,
-             value = Satoshis(value.toLong),
-             extraPrecision = extraPrecision,
-             isEndpoint = isEndpoint)
+    Signed16PTLVNumber(sign, withoutPrecision.toLong, extraPrecision.toInt)
+  }
+
+  def fromBigDecimal(number: BigDecimal): Signed16PTLVNumber = {
+    val sign = number >= 0
+    val withoutPrecision =
+      number.abs.setScale(0, RoundingMode.FLOOR).toLongExact
+    val extraPrecisionBD = (number.abs - withoutPrecision) * (1 << 16)
+    val extraPrecision =
+      extraPrecisionBD.setScale(0, RoundingMode.FLOOR).toIntExact
+
+    Signed16PTLVNumber(sign, withoutPrecision, extraPrecision)
   }
 }
 
+case class HyperbolaPayoutCurvePieceTLV(
+    usePositivePiece: Boolean,
+    translateOutcome: Signed16PTLVNumber,
+    translatePayout: Signed16PTLVNumber,
+    a: Signed16PTLVNumber,
+    b: Signed16PTLVNumber,
+    c: Signed16PTLVNumber,
+    d: Signed16PTLVNumber)
+    extends PayoutCurvePieceTLV {
+  override val tpe: BigSizeUInt = HyperbolaPayoutCurvePieceTLV.tpe
+
+  override val value: ByteVector = {
+    boolBytes(usePositivePiece) ++
+      translateOutcome.bytes ++
+      translatePayout.bytes ++
+      a.bytes ++
+      b.bytes ++
+      c.bytes ++
+      d.bytes
+  }
+}
+
+object HyperbolaPayoutCurvePieceTLV
+    extends TLVFactory[HyperbolaPayoutCurvePieceTLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(42794)
+
+  override def fromTLVValue(value: ByteVector): HyperbolaPayoutCurvePieceTLV = {
+    val iter = ValueIterator(value)
+
+    val usePositivePiece = iter.takeBoolean()
+    val translateOutcome = iter.take(Signed16PTLVNumber)
+    val translatePayout = iter.take(Signed16PTLVNumber)
+    val a = iter.take(Signed16PTLVNumber)
+    val b = iter.take(Signed16PTLVNumber)
+    val c = iter.take(Signed16PTLVNumber)
+    val d = iter.take(Signed16PTLVNumber)
+
+    HyperbolaPayoutCurvePieceTLV(usePositivePiece,
+                                 translateOutcome,
+                                 translatePayout,
+                                 a,
+                                 b,
+                                 c,
+                                 d)
+  }
+
+  override def typeName: String = "HyperbolaPayoutCurvePieceTLV"
+}
+
 /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#curve-serialization */
-case class PayoutFunctionV0TLV(points: Vector[TLVPoint]) extends TLV {
+case class PayoutFunctionV0TLV(
+    endpoints: Vector[TLVPoint],
+    pieces: Vector[PayoutCurvePieceTLV])
+    extends TLV {
+  require(
+    endpoints.length == pieces.length + 1,
+    s"Number of endpoints (${endpoints.length}) does not match number of pieces (${pieces.length}).")
+
   override val tpe: BigSizeUInt = PayoutFunctionV0TLV.tpe
 
   override val value: ByteVector = {
-    u16PrefixedList(points)
+    u16PrefixedList[(TLVPoint, PayoutCurvePieceTLV)](
+      endpoints.init.zip(pieces),
+      { case (leftEndpoint: TLVPoint, piece: PayoutCurvePieceTLV) =>
+        leftEndpoint.bytes ++ piece.bytes
+      }) ++ endpoints.last.bytes
   }
 }
 
@@ -1053,9 +1191,16 @@ object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
   override def fromTLVValue(value: ByteVector): PayoutFunctionV0TLV = {
     val iter = ValueIterator(value)
 
-    val points = iter.takeU16PrefixedList(() => iter.take(TLVPoint))
+    val endpointsAndPieces = iter.takeU16PrefixedList { () =>
+      val leftEndpoint = iter.take(TLVPoint)
+      val piece = iter.take(PayoutCurvePieceTLV)
+      (leftEndpoint, piece)
+    }
+    val rightEndpoint = iter.take(TLVPoint)
+    val endpoints = endpointsAndPieces.map(_._1).:+(rightEndpoint)
+    val pieces = endpointsAndPieces.map(_._2)
 
-    PayoutFunctionV0TLV(points)
+    PayoutFunctionV0TLV(endpoints, pieces)
   }
 
   override val typeName: String = "PayoutFunctionV0TLV"

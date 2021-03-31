@@ -5,7 +5,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   DLCPayoutCurve,
   EnumContractDescriptor,
   NumericContractDescriptor,
-  OutcomePayoutEndpoint,
+  PiecewisePolynomialEndpoint,
   RoundingIntervals
 }
 import org.bitcoins.core.protocol.tlv.EnumOutcome
@@ -76,12 +76,12 @@ object DLCTestUtil {
     val (leftVal, rightVal) =
       if (isGoingLong) (Satoshis.zero, totalCollateral.satoshis)
       else (totalCollateral.satoshis, Satoshis.zero)
-    val func = DLCPayoutCurve(
+    val func = DLCPayoutCurve.polynomialInterpolate(
       Vector(
-        OutcomePayoutEndpoint(0, leftVal),
-        OutcomePayoutEndpoint(botCollar + 1, leftVal),
-        OutcomePayoutEndpoint(topCollar, rightVal),
-        OutcomePayoutEndpoint(overMaxValue - 1, rightVal)
+        PiecewisePolynomialEndpoint(0, leftVal),
+        PiecewisePolynomialEndpoint(botCollar + 1, leftVal),
+        PiecewisePolynomialEndpoint(topCollar, rightVal),
+        PiecewisePolynomialEndpoint(overMaxValue - 1, rightVal)
       ))
     val roundingIntervalsToUse =
       if (numRounds > 0 && roundingIntervals == RoundingIntervals.noRounding) {

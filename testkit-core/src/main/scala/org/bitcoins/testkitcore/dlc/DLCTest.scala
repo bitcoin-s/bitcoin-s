@@ -786,7 +786,7 @@ trait DLCTest {
       outcomes: Vector[DLCOutcomeType],
       outcomeIndex: Long): Vector[Int] = {
     val points =
-      desc.outcomeValueFunc.points
+      desc.outcomeValueFunc.endpoints
     val left = points(1).outcome
     val right = points(2).outcome
     // Somewhere in the middle third of the interesting values

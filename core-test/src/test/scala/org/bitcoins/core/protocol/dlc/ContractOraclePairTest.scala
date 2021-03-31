@@ -52,11 +52,12 @@ class ContractOraclePairTest extends BitcoinSUnitTest {
   it should "not be able to construct an invalid numeric contract oracle pair" in {
     val contractDescriptor =
       NumericContractDescriptor(
-        DLCPayoutCurve(
-          Vector(OutcomePayoutEndpoint(0, 0),
-                 OutcomePayoutEndpoint((1L << 7) - 1, 1))),
+        DLCPayoutCurve.polynomialInterpolate(
+          Vector(PiecewisePolynomialEndpoint(0, 0),
+                 PiecewisePolynomialEndpoint((1L << 7) - 1, 1))),
         numDigits = 7,
-        RoundingIntervals.noRounding)
+        RoundingIntervals.noRounding
+      )
 
     def numericOracleInfo(numDigits: Int): NumericSingleOracleInfo = {
       NumericSingleOracleInfo(

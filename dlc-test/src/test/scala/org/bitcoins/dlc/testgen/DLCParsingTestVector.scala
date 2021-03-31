@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.testgen
 
-import org.bitcoins.core.number.{UInt16, UInt64}
+import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.tlv._
@@ -140,20 +140,82 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
 
   def apply(tlv: TLV): DLCParsingTestVector = {
     tlv match {
-      case PayoutFunctionV0TLV(points) =>
+      case PayoutFunctionV0TLV(endpoints, pieces) =>
         val fields = Vector(
           "tpe" -> Element(PayoutFunctionV0TLV.tpe),
           "length" -> Element(tlv.length),
-          "numPoints" -> Element(UInt16(points.length)),
-          "points" -> MultiElement(points.map { point =>
+          "numPieces" -> Element(UInt16(pieces.length)),
+          "endpointsAndPieces" -> MultiElement(
+            endpoints
+              .zip(pieces)
+              .flatMap { case (leftEndpoint, piece) =>
+                Vector(leftEndpoint, piece)
+              }
+              .:+(endpoints.last)
+              .map {
+                case point: TLVPoint =>
+                  NamedMultiElement(
+                    "outcome" -> Element(BigSizeUInt(point.outcome)),
+                    "value" -> Element(BigSizeUInt(point.value.toLong)),
+                    "extraPrecision" -> Element(UInt16(point.extraPrecision))
+                  )
+                case piece => Element(piece)
+              })
+        )
+        DLCTLVTestVector(tlv, "payout_function_v0", fields)
+      case PolynomialPayoutCurvePieceTLV(midpoints) =>
+        val fields = Vector(
+          "tpe" -> Element(PolynomialPayoutCurvePieceTLV.tpe),
+          "length" -> Element(tlv.length),
+          "numMidpoints" -> Element(UInt16(midpoints.length)),
+          "midpoints" -> MultiElement(midpoints.map { point =>
             NamedMultiElement(
-              "isEndpoint" -> Element(ByteVector(point.leadingByte)),
               "outcome" -> Element(BigSizeUInt(point.outcome)),
-              "value" -> Element(UInt64(point.value.toLong))
+              "value" -> Element(BigSizeUInt(point.value.toLong)),
+              "extraPrecision" -> Element(UInt16(point.extraPrecision))
             )
           })
         )
-        DLCTLVTestVector(tlv, "payout_function_v0", fields)
+        DLCTLVTestVector(tlv, "polynomial_payout_curve_piece", fields)
+      case HyperbolaPayoutCurvePieceTLV(usePositivePiece,
+                                        translateOutcome,
+                                        translatePayout,
+                                        a,
+                                        b,
+                                        c,
+                                        d) =>
+        def boolToElement(bool: Boolean): Element = {
+          Element(ByteVector(if (bool) 1.toByte else 0.toByte))
+        }
+
+        val fields = Vector(
+          "tpe" -> Element(HyperbolaPayoutCurvePieceTLV.tpe),
+          "length" -> Element(tlv.length),
+          "usePositivePiece" -> boolToElement(usePositivePiece),
+          "translateOutcomeSign" -> boolToElement(translateOutcome.sign),
+          "translateOutcome" -> Element(
+            BigSizeUInt(translateOutcome.withoutPrecision)),
+          "translateOutcomeExtraPrecision" -> Element(
+            UInt16(translateOutcome.extraPrecision)),
+          "translatePayoutSign" -> boolToElement(translatePayout.sign),
+          "translatePayout" -> Element(
+            BigSizeUInt(translatePayout.withoutPrecision)),
+          "translatePayoutExtraPrecision" -> Element(
+            UInt16(translatePayout.extraPrecision)),
+          "aSign" -> boolToElement(a.sign),
+          "a" -> Element(BigSizeUInt(a.withoutPrecision)),
+          "aExtraPrecision" -> Element(UInt16(a.extraPrecision)),
+          "bSign" -> boolToElement(b.sign),
+          "b" -> Element(BigSizeUInt(b.withoutPrecision)),
+          "bExtraPrecision" -> Element(UInt16(b.extraPrecision)),
+          "cSign" -> boolToElement(c.sign),
+          "c" -> Element(BigSizeUInt(c.withoutPrecision)),
+          "cExtraPrecision" -> Element(UInt16(c.extraPrecision)),
+          "dSign" -> boolToElement(d.sign),
+          "d" -> Element(BigSizeUInt(d.withoutPrecision)),
+          "dExtraPrecision" -> Element(UInt16(d.extraPrecision))
+        )
+        DLCTLVTestVector(tlv, "hyperbola_payout_curve_piece", fields)
       case RoundingIntervalsV0TLV(intervalStarts) =>
         val fields = Vector(
           "tpe" -> Element(RoundingIntervalsV0TLV.tpe),
