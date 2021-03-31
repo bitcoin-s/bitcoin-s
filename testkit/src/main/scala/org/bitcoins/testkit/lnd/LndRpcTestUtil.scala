@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
-import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -215,7 +214,7 @@ trait LndRpcTestUtil extends Logging {
       addrA <- client.getNewAddress
       addrB <- otherClient.getNewAddress
 
-      _ <- bitcoind.sendMany(Map(addrA -> Bitcoins(10), addrB -> Bitcoins(10)))
+      _ <- bitcoind.sendMany(Map(addrA -> Bitcoins(1), addrB -> Bitcoins(1)))
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
     } yield ()
   }
@@ -228,61 +227,55 @@ trait LndRpcTestUtil extends Logging {
 
     val actorSystemA =
       ActorSystem.create("bitcoin-s-lnd-test-" + FileUtil.randomDirName)
-
-    val clientF = LndRpcTestClient
+    val clientA = LndRpcTestClient
       .fromSbtDownload(Some(bitcoind))(actorSystemA)
-      .start()
 
     val actorSystemB =
       ActorSystem.create("bitcoin-s-lnd-test-" + FileUtil.randomDirName)
-
-    val otherClientF = LndRpcTestClient
+    val clientB = LndRpcTestClient
       .fromSbtDownload(Some(bitcoind))(actorSystemB)
-      .start()
+
+    val clientsF = for {
+      a <- clientA.start()
+      b <- clientB.start()
+    } yield (a, b)
 
     def isSynced: Future[Boolean] = for {
-      client <- clientF
-      otherClient <- otherClientF
+      (client, otherClient) <- clientsF
 
       infoA <- client.getInfo
       infoB <- otherClient.getInfo
     } yield infoA.syncedToChain && infoB.syncedToChain
 
     def isFunded: Future[Boolean] = for {
-      client <- clientF
-      otherClient <- otherClientF
+      (client, otherClient) <- clientsF
 
       balA <- client.walletBalance()
       balB <- otherClient.walletBalance()
     } yield balA.confirmedBalance > Satoshis.zero && balB.confirmedBalance > Satoshis.zero
 
     for {
-      client <- clientF
-      _ = println("clientA")
-      otherClient <- otherClientF
-      _ = println("clientB")
+      (client, otherClient) <- clientsF
 
       _ <- connectLNNodes(client, otherClient)
-
       _ <- fundLNNodes(bitcoind, client, otherClient)
-      _ <- AsyncUtil.awaitConditionF(() => isFunded)
 
       _ <- AsyncUtil.awaitConditionF(() => isSynced)
+      _ <- AsyncUtil.awaitConditionF(() => isFunded)
 
       _ <- openChannel(bitcoind, client, otherClient)
     } yield (client, otherClient)
   }
 
-  private val DEFAULT_CHANNEL_MSAT_AMT = MilliSatoshis(500000000L)
+  private val DEFAULT_CHANNEL_AMT = Satoshis(500000L)
 
   /** Opens a channel from n1 -> n2 */
   def openChannel(
       bitcoind: BitcoindRpcClient,
       n1: LndRpcClient,
       n2: LndRpcClient,
-      amt: CurrencyUnit = DEFAULT_CHANNEL_MSAT_AMT.toSatoshis,
-      pushMSat: MilliSatoshis = MilliSatoshis(
-        DEFAULT_CHANNEL_MSAT_AMT.toLong / 2))(implicit
+      amt: CurrencyUnit = DEFAULT_CHANNEL_AMT,
+      pushAmt: CurrencyUnit = DEFAULT_CHANNEL_AMT / Satoshis(2))(implicit
       ec: ExecutionContext): Future[TransactionOutPoint] = {
 
     val n1NodeIdF = n1.nodeId
@@ -298,7 +291,7 @@ trait LndRpcTestUtil extends Logging {
           s"Opening a channel from $nodeId1 -> $nodeId2 with amount $amt")
         n1.openChannel(nodeId = nodeId2,
                        fundingAmount = amt,
-                       pushAmt = pushMSat.toSatoshis,
+                       pushAmt = pushAmt,
                        satPerByte = SatoshisPerByte.fromLong(10),
                        privateChannel = false)
           .map(_.get)

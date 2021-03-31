@@ -13,9 +13,9 @@ import org.bitcoins.testkit.util.{
 
 import java.io.File
 import java.nio.file.{Files, Path}
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future, Promise}
-import scala.util.{Properties, Success}
+import scala.util.Properties
 
 /** Helper class to start a bitcoind client with the given binary */
 case class LndRpcTestClient(
@@ -49,23 +49,19 @@ case class LndRpcTestClient(
   }
 
   override def start(): Future[LndRpcClient] = {
-    val p = Promise[Unit]()
-
     clientOpt match {
       case Some(client) => Future.successful(client)
       case None =>
         for {
           lnd <- lndRpcClientF
-          _ <- lnd.start()
-          _ = system.scheduler.scheduleOnce(1.second) {
-            lnd.initWallet("password").map { _ =>
-              p.complete(Success(()))
-            }
-            ()
-          }
 
-          // Give it 15 seconds to unlock, otherwise fail
-          _ = Await.result(p.future, 15.seconds)
+          _ <- lnd.start()
+          // Sleep to make sure lnd is ready for RPC requests
+          _ <- AsyncUtil.nonBlockingSleep(1.second)
+
+          _ <- lnd.initWallet("password")
+          // Sleep to make sure lnd finish setting up the wallet
+          _ <- AsyncUtil.nonBlockingSleep(1.second)
 
           // Wait for it to be ready
           _ <- AsyncUtil.awaitConditionF(() => lnd.isStarted)

@@ -8,7 +8,9 @@ import scala.concurrent.duration.DurationInt
 
 class LndRpcClientPairTest extends DualLndFixture {
 
-  it must "get info from both lnds" in { case (_, lndA, lndB) =>
+  it must "get info from both lnds" in { param =>
+    val (_, lndA, lndB) = param
+
     for {
       infoA <- lndA.getInfo
       infoB <- lndB.getInfo
@@ -19,7 +21,9 @@ class LndRpcClientPairTest extends DualLndFixture {
     }
   }
 
-  it must "pay a invoice" in { case (_, lndA, lndB) =>
+  it must "pay a invoice" in { param =>
+    val (_, lndA, lndB) = param
+
     for {
       invoice <- lndA.addInvoice("test", Satoshis(100), 0)
       payment <- lndB.sendPayment(invoice.invoice)
@@ -32,7 +36,9 @@ class LndRpcClientPairTest extends DualLndFixture {
     } yield succeed
   }
 
-  it must "monitor a invoice" in { case (_, lndA, lndB) =>
+  it must "monitor a invoice" in { param =>
+    val (_, lndA, lndB) = param
+
     for {
       invoice <- lndA.addInvoice("test", Satoshis(100), 0)
       _ = system.scheduler.scheduleOnce(1.second) {
