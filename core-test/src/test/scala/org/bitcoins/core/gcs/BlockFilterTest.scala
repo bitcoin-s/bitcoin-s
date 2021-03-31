@@ -84,9 +84,10 @@ class BlockFilterTest extends BitcoinSUnitTest {
   }
 
   it must "pass bip 158 test vectors" in {
-    val vec: Vector[Arr] =
-      ujson.read(Testnet19.str.mkString).arr.toVector.tail.map(_.arr)
-    val testCases = vec.map(Bip158TestCase.fromArr)
+    val vec: Vector[Value] =
+      ujson.read(Testnet19.str.mkString).arr.toVector.tail
+    val testCases =
+      vec.map(value => Bip158TestCase.fromArr(Arr.from(value.arr)))
 
     testCases.foreach(_.runTest())
   }
