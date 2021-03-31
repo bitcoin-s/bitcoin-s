@@ -205,23 +205,11 @@ object LndConfig extends Logging {
     }
   }
 
-  /** @see https://en.bitcoin.it/wiki/Data_directory
-    */
   val DEFAULT_DATADIR: File = {
     val path = if (Properties.isMac) {
-      Paths.get(Properties.userHome,
-                "Library",
-                "Application Support",
-                "Lnd"
-      ) // fixme
+      Paths.get(Properties.userHome, "Library", "Application Support", "Lnd")
     } else if (Properties.isWin) {
-      Paths.get("C:",
-                "Users",
-                Properties.userName,
-                "Appdata",
-                "Roaming",
-                "Lnd"
-      ) // fixme
+      Paths.get("C:", "Users", Properties.userName, "Appdata", "Local", "Lnd")
     } else {
       Paths.get(Properties.userHome, ".lnd")
     }
