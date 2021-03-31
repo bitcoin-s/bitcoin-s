@@ -1,15 +1,13 @@
 package org.bitcoins.eclair.rpc.config
 
-import java.io.File
-import java.net.{InetSocketAddress, URI}
-import java.nio.file.Paths
-
-import com.sun.jndi.toolkit.url.Uri
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.protocol.ln.LnPolicy
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, ZmqConfig}
 
+import java.io.File
+import java.net.{InetSocketAddress, URI}
+import java.nio.file.Paths
 import scala.util.Properties
 
 sealed trait EclairInstance {
@@ -66,7 +64,7 @@ object EclairInstance {
   private val DEFAULT_CONF_FILE = DEFAULT_DATADIR.resolve("eclair.conf")
 
   private def toInetSocketAddress(string: String): InetSocketAddress = {
-    val uri = new Uri(string)
+    val uri = new URI(string)
     new InetSocketAddress(uri.getHost, uri.getPort)
   }
 
