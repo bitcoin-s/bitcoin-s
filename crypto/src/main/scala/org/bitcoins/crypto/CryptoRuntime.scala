@@ -300,4 +300,23 @@ trait CryptoRuntime {
 
   /** https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects */
   def sipHash(item: ByteVector, key: SipHashKey): Long
+
+  def pbkdf2WithSha512(
+      pass: String,
+      salt: String,
+      iterationCount: Int,
+      derivedKeyLength: Int): ByteVector = {
+    pbkdf2WithSha512(ByteVector(pass.getBytes),
+                     ByteVector(salt.getBytes),
+                     iterationCount,
+                     derivedKeyLength)
+  }
+
+  def pbkdf2WithSha512(
+      pass: ByteVector,
+      salt: ByteVector,
+      iterationCount: Int,
+      derivedKeyLength: Int): ByteVector
+
+  def randomBytes(n: Int): ByteVector
 }

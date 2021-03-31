@@ -3,8 +3,9 @@ package org.bitcoins.core.crypto
 import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalatest.Assertion
-import play.api.libs.json._
 import scodec.bits.{BinStringSyntax, BitVector, ByteVector}
+import ujson._
+import upickle.default._
 
 import scala.util.{Failure, Try}
 
@@ -221,28 +222,29 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
       )
     }
 
-    implicit object TrezorReads extends Reads[RawTrezorTestVector] {
-      def reads(json: JsValue): JsResult[RawTrezorTestVector] = {
-        for {
-          arr <- json.validate[JsArray]
-          entropy <- arr(0).validate[String]
-          words <- arr(1).validate[String]
-          seed <- arr(2).validate[String]
-          xpriv <- arr(3).validate[String]
+    implicit val trezorReads: Reader[RawTrezorTestVector] = reader[Value].map {
+      value =>
+        val resOpt = for {
+          arr <- value.arrOpt
+          entropy <- arr(0).strOpt
+          words <- arr(1).strOpt
+          seed <- arr(2).strOpt
+          xpriv <- arr(3).strOpt
         } yield RawTrezorTestVector(entropy, words, seed, xpriv)
-      }
+
+        resOpt.get
     }
 
     val rawJson = TrezorBIP39Vectors.str
 
-    val json = Json.parse(rawJson)
-    val testVectors =
-      (json \ "english")
-        .validate[Vector[RawTrezorTestVector]]
-        .map(_.map(trezorFromRaw))
-        .get
+    val english = ujson.read(rawJson).obj("english").arr
 
-    testVectors.map(testTrezorVector(_))
+    val testVectors =
+      upickle.default
+        .read[Vector[RawTrezorTestVector]](english)
+        .map(trezorFromRaw)
+
+    testVectors.map(testTrezorVector)
   }
 
   it must "not serialize a MnemonicCode toString" in {

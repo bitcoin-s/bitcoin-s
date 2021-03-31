@@ -5,10 +5,8 @@ import org.bitcoins.core.protocol.tlv.{
   EnumOutcome,
   UnsignedNumericOutcome
 }
+import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.crypto.{ECPublicKey, SchnorrNonce}
-
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future}
 
 /** OracleOutcomes are in one-to-one correspondence with Contract
   * Execution Transactions (CETs) and are defined by a set of oracles
@@ -27,8 +25,12 @@ sealed trait OracleOutcome {
     */
   def outcome: DLCOutcomeType
 
+  protected def computeSigPoint: ECPublicKey
+
   /** The adaptor point used to encrypt the signatures for this corresponding CET. */
-  def sigPoint: ECPublicKey
+  def sigPoint: ECPublicKey = {
+    SigPointComputer(() => computeSigPoint).compute
+  }
 
   /** The sum of all oracle nonces used in execution with this OracleOutcome. */
   def aggregateNonce: SchnorrNonce
@@ -42,12 +44,8 @@ case class EnumOracleOutcome(
     outcome: EnumOutcome)
     extends OracleOutcome {
 
-  private val sigPointF = Future {
+  override protected def computeSigPoint: ECPublicKey = {
     oracles.map(_.sigPoint(outcome)).reduce(_.add(_))
-  }(ExecutionContext.global)
-
-  override lazy val sigPoint: ECPublicKey = {
-    Await.result(sigPointF, 10.seconds)
   }
 
   override lazy val aggregateNonce: SchnorrNonce = {
@@ -77,16 +75,12 @@ case class NumericOracleOutcome(oraclesAndOutcomes: Vector[
   def outcomes: Vector[UnsignedNumericOutcome] =
     oraclesAndOutcomes.map(_._2)
 
-  private val sigPointF = Future {
+  override protected def computeSigPoint: ECPublicKey = {
     oraclesAndOutcomes
       .map { case (oracle, outcome) =>
         oracle.sigPoint(outcome)
       }
       .reduce(_.add(_))
-  }(ExecutionContext.global)
-
-  override lazy val sigPoint: ECPublicKey = {
-    Await.result(sigPointF, 20.seconds)
   }
 
   override lazy val aggregateNonce: SchnorrNonce = {
@@ -108,3 +102,6 @@ object NumericOracleOutcome {
     NumericOracleOutcome(Vector((oracleInfo, outcome)))
   }
 }
+
+/** An oracle outcome and it's corresponding CET */
+case class OutcomeCETPair(outcome: OracleOutcome, wtx: WitnessTransaction)

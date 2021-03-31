@@ -1,5 +1,6 @@
 package org.bitcoins.core.number
 
+import org.bitcoins.core._
 import org.bitcoins.core.util.{BytesUtil, NumberUtil}
 import org.bitcoins.crypto.{CryptoBytesUtil, Factory, NetworkElement}
 import scodec.bits.{ByteOrdering, ByteVector}
@@ -21,8 +22,8 @@ sealed abstract class Number[T <: Number[T]]
   /** The underlying scala number used to to hold the number */
   protected def underlying: A
 
-  def toInt: Int = toBigInt.bigInteger.intValueExact()
-  def toLong: Long = toBigInt.bigInteger.longValueExact()
+  def toInt: Int = toBigInt.bigInteger.intExact
+  def toLong: Long = toBigInt.bigInteger.longExact
   def toBigInt: BigInt = underlying
 
   /** This is used to determine the valid amount of bytes in a number

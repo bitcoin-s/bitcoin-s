@@ -4,16 +4,11 @@ import scala.scalajs.js
 import scala.scalajs.js.annotation._
 
 /** Scala wrapper for
-  * https://github.com/bcoin-org/bcrypto/blob/master/lib/js/ecdsa.js
+  * https://github.com/bcoin-org/bcrypto/blob/master/lib/js/secp256k1.js
   */
 @js.native
-@JSImport("bcrypto/lib/js/ecdsa.js", JSImport.Default)
-class ECDSA(
-    name: String = "SECP256K1",
-    hash: SHA256 = new SHA256,
-    xof: js.Dynamic = js.constructorOf[SHA256],
-    pre: String = null)
-    extends js.Object {
+@JSImport("bcrypto/lib/js/secp256k1.js", JSImport.Namespace)
+object SECP256k1 extends js.Object {
 
   def privateKeyGenerate(): Buffer = js.native
 

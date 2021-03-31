@@ -17,7 +17,7 @@ import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, ECDigitalSignature}
 import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TestUtil}
 import scodec.bits.ByteVector
-import spray.json._
+import upickle.default._
 
 /** Created by chris on 2/17/16.
   */
@@ -120,11 +120,11 @@ class ScriptSignatureTest extends BitcoinSJvmTest {
   }
 
   it must "read sighash.json and return result" in {
-    import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCaseProtocol._
+    import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCase._
 
     val lines = SigHashJson.str
-    val testCases: Seq[SignatureHashTestCase] =
-      lines.parseJson.convertTo[Seq[SignatureHashTestCase]]
+    val testCases: Vector[SignatureHashTestCase] =
+      read[Vector[SignatureHashTestCase]](lines)
 
     val allTests = for {
       testCase <- testCases

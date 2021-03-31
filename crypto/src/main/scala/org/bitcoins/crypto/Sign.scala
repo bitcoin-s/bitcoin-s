@@ -142,10 +142,15 @@ trait Sign extends AsyncSign {
       signWithEntropy(bytes, startBytes)
     }
 
-    if (sig.bytes.length <= 70) {
-      sig
-    } else {
-      signLowR(bytes, startAt + 1)
+    // If we are using BCrypto then we can't sign with entropy
+    CryptoUtil.cryptoContext match {
+      case CryptoContext.BCrypto => sig
+      case CryptoContext.LibSecp256k1 | CryptoContext.BouncyCastle =>
+        if (sig.bytes.length <= 70) {
+          sig
+        } else {
+          signLowR(bytes, startAt + 1)
+        }
     }
   }
 

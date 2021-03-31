@@ -1,9 +1,12 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.number.UInt64
+import org.bitcoins.core.protocol.BigSizeJsonTestVectors._
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
+import ujson.Value
+import upickle.default._
 
 import scala.util.{Failure, Success, Try}
 
@@ -27,32 +30,25 @@ class BigSizeUIntTest extends BitcoinSUnitTest {
   }
 
   it must "pass encoding tests" in {
-    val tests = ujson.read(BigSizeJsonTestVectors.encode).arr.toVector
+    val tests = read[Vector[EncodeTestVector]](BigSizeJsonTestVectors.encode)
     tests.foreach { test =>
-      val obj = test.obj
-      val name = obj("name").str
-      val num = BigInt(obj("value").str)
-      val bytes = ByteVector.fromValidHex(obj("bytes").str)
-      assert(BigSizeUInt(num).bytes == bytes, name)
+      assert(BigSizeUInt(test.value).bytes == test.bytes, test.name)
     }
   }
 
   it must "pass decoding tests" in {
-    val tests = ujson.read(BigSizeJsonTestVectors.decode).arr.toVector
+    val tests = read[Vector[DecodeTestVector]](BigSizeJsonTestVectors.decode)
     tests.foreach { test =>
-      val obj = test.obj
-      val name = obj("name").str
-      val numStr = obj("value").str
-      val bytes = ByteVector.fromValidHex(obj("bytes").str)
-      if (numStr.nonEmpty) {
-        assert(BigSizeUInt(bytes).num == UInt64(BigInt(numStr)), name)
+      if (test.value.nonEmpty) {
+        assert(BigSizeUInt(test.bytes).num == UInt64(BigInt(test.value)),
+               test.name)
       } else {
         Try {
           assertThrows[IllegalArgumentException] {
-            BigSizeUInt(bytes)
+            BigSizeUInt(test.bytes)
           }
         } match {
-          case Failure(err)     => fail(obj("exp_error").str, err)
+          case Failure(err)     => fail(test.expectedErrorOpt.get, err)
           case Success(success) => success
         }
       }
@@ -61,6 +57,19 @@ class BigSizeUIntTest extends BitcoinSUnitTest {
 }
 
 object BigSizeJsonTestVectors {
+
+  case class EncodeTestVector(name: String, value: BigInt, bytes: ByteVector)
+
+  implicit
+  val encodeTestVectorR: Reader[EncodeTestVector] = reader[Value].map { value =>
+    val obj = value.obj
+    val name = obj("name").str
+    val num = BigInt(obj("value").str)
+    val bytes = ByteVector.fromValidHex(obj("bytes").str)
+
+    EncodeTestVector(name, num, bytes)
+  }
+
   val encode: String = """[
                          |  {
                          |    "name": "zero",
@@ -103,6 +112,23 @@ object BigSizeJsonTestVectors {
                          |    "bytes": "ffffffffffffffffff"
                          |  }
                          |]""".stripMargin
+
+  case class DecodeTestVector(
+      name: String,
+      value: String,
+      bytes: ByteVector,
+      expectedErrorOpt: Option[String])
+
+  implicit
+  val decodeTestVectorR: Reader[DecodeTestVector] = reader[Value].map { value =>
+    val obj = value.obj
+    val name = obj("name").str
+    val num = obj("value").str
+    val bytes = ByteVector.fromValidHex(obj("bytes").str)
+    val expectedErrorOpt = Try(obj("exp_error").str).toOption
+
+    DecodeTestVector(name, num, bytes, expectedErrorOpt)
+  }
 
   val decode: String = """[
                          |  {

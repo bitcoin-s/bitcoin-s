@@ -59,7 +59,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
     ConsoleCli.exec(GetDLCs, Config.empty) match {
       case Failure(exception) => throw exception
       case Success(dlcsStr) =>
-        ujson.read(dlcsStr).arr.map(read[DLCStatus]).toVector
+        ujson.read(dlcsStr).arr.map(read[DLCStatus](_)).toVector
     }
   }
 

@@ -1,9 +1,7 @@
 package org.bitcoins.testkitcore.gen.p2p
 
-import java.net.{InetAddress, InetSocketAddress}
-
 import org.bitcoins.core.number.{UInt32, UInt64}
-import org.bitcoins.core.p2p.{ProtocolVersion, _}
+import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.wallet.fee.{
   SatoshisPerByte,
@@ -12,6 +10,7 @@ import org.bitcoins.core.wallet.fee.{
   SatoshisPerVirtualByte
 }
 import org.bitcoins.testkitcore.gen._
+import org.bitcoins.testkitcore.gen.p2p.P2PGenerator._
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 
@@ -118,16 +117,6 @@ object ControlMessageGenerator {
       //service identifiers can only be NodeNetwork or UnnamedService
       randomNum <- Gen.choose(0, 1)
     } yield ServiceIdentifier(randomNum)
-
-  def inetAddress: Gen[InetAddress] =
-    for {
-      socketAddress <- inetSocketAddress
-    } yield socketAddress.getAddress
-
-  def inetSocketAddress: Gen[InetSocketAddress] =
-    for {
-      p <- portNumber
-    } yield new InetSocketAddress(p)
 
   def portNumber: Gen[Int] = Gen.choose(0, 65535)
 

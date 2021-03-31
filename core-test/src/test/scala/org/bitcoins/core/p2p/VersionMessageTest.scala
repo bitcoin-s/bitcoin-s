@@ -1,12 +1,12 @@
 package org.bitcoins.core.p2p
 
-import java.net.InetAddress
-import java.time.Instant
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.number.{Int32, UInt64}
 import org.bitcoins.testkitcore.gen.p2p.ControlMessageGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
+
+import java.time.Instant
 
 class VersionMessageTest extends BitcoinSUnitTest {
 
@@ -18,18 +18,21 @@ class VersionMessageTest extends BitcoinSUnitTest {
 
   it must "have a meaningful toString message" in {
     forAll(ControlMessageGenerator.versionMessage) { version =>
-      assert(version.toString.length < 350 + version.userAgent.length())
+      assert(version.toString().length < 400 + version.userAgent.length())
     }
   }
 
   "VersionMessage" must "create a new version message to be sent to another node on the network" in {
-    val versionMessage = VersionMessage(MainNet, InetAddress.getLocalHost)
+    val ipArr = Array(173.toByte, 31.toByte, 39.toByte, 168.toByte)
+    val inet = InetAddress(ipArr)
+
+    val versionMessage = VersionMessage(MainNet, inet, inet)
     assert(versionMessage.addressReceiveServices.nodeNone)
-    versionMessage.addressReceiveIpAddress must be(InetAddress.getLocalHost)
+    versionMessage.addressReceiveIpAddress must be(inet)
     versionMessage.addressReceivePort must be(MainNet.port)
 
     assert(versionMessage.addressTransServices.nodeNetwork)
-    versionMessage.addressTransIpAddress must be(InetAddress.getLocalHost)
+    versionMessage.addressTransIpAddress must be(inet)
     versionMessage.addressTransPort must be(MainNet.port)
 
     versionMessage.nonce must be(UInt64.zero)

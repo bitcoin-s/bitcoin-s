@@ -278,6 +278,21 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
 
   override def decodePoint(bytes: ByteVector): ECPoint =
     BouncycastleCryptoRuntime.decodePoint(bytes)
+
+  override def randomBytes(n: Int): ByteVector = {
+    BouncycastleCryptoRuntime.randomBytes(n)
+  }
+
+  override def pbkdf2WithSha512(
+      pass: ByteVector,
+      salt: ByteVector,
+      iterationCount: Int,
+      derivedKeyLength: Int): ByteVector = {
+    BouncycastleCryptoRuntime.pbkdf2WithSha512(pass,
+                                               salt,
+                                               iterationCount,
+                                               derivedKeyLength)
+  }
 }
 
 object LibSecp256k1CryptoRuntime extends LibSecp256k1CryptoRuntime

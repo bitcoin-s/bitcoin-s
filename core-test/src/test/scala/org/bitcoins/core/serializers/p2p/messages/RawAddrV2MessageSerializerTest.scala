@@ -8,8 +8,6 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import scodec.bits.{ByteVector, HexStringSyntax}
 
-import java.net.InetAddress
-
 class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
 
   def ipv4AddrV2MessageGen: Gen[IPv4AddrV2Message] = {
@@ -98,10 +96,11 @@ class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
   }
 
   it must "parse an IPv4AddrV2Message" in {
-    val msg = IPv4AddrV2Message(UInt32(4523),
-                                CompactSizeUInt(UInt64(53453453L)),
-                                InetAddress.getByAddress(hex"00000000".toArray),
-                                UInt16(8333))
+    val msg: IPv4AddrV2Message =
+      IPv4AddrV2Message(UInt32(4523),
+                        CompactSizeUInt(UInt64(53453453L)),
+                        InetAddress.getByAddress(hex"00000000".toArray),
+                        UInt16(8333))
 
     assert("000011abfe8da22f030100000000208d" == msg.hex)
   }
