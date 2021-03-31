@@ -19,7 +19,7 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
 
   behavior of "SbExplorerClient"
 
-  val explorerClient = SbExplorerClient(ExplorerEnv.Local)
+  val explorerClient = SbExplorerClient(ExplorerEnv.Test)
 
   //https://test.oracle.suredbits.com/event/57505dcdfe8746d9adf3454df538244a425f302c07642d9dc4a4f635fbf08d30
   private val announcementHex: String =
