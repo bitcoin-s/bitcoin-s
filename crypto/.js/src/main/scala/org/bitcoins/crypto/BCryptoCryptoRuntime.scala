@@ -184,11 +184,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     val dataBuffer = CryptoJsUtil.toNodeBuffer(data)
     val sigBuffer = CryptoJsUtil.toNodeBuffer(signature.bytes)
     val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(publicKey.bytes)
-    if (signature.isDEREncoded) {
-      SECP256k1.verifyDER(dataBuffer, sigBuffer, pubKeyBuffer)
-    } else {
-      SECP256k1.verify(dataBuffer, sigBuffer, pubKeyBuffer)
-    }
+    SECP256k1.verifyDER(dataBuffer, sigBuffer, pubKeyBuffer)
   }
 
   override def tweakMultiply(
