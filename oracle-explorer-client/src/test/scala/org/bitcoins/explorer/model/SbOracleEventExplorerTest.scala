@@ -17,7 +17,7 @@ class SbOracleEventExplorerTest extends BitcoinSUnitTest {
     val uriOpt = Some("https://twitter.com/Chris_Stewart_5")
 
     val event =
-      SbOracleEventExplorer(announcement, oracleName, description, uriOpt)
+      CreateAnnouncementExplorer(announcement, oracleName, description, uriOpt)
 
     //badForm={"description":["This field is required"],
     // "oracleAnnouncementV0":["This field is required"],

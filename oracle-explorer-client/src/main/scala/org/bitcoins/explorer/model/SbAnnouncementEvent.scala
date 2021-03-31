@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.tlv.{
 }
 import org.bitcoins.crypto.Sha256Digest
 
-case class ExplorerEvent(
+case class SbAnnouncementEvent(
     id: Sha256Digest,
     oracleName: String,
     description: String,

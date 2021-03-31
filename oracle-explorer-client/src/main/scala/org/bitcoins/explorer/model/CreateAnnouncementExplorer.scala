@@ -2,7 +2,7 @@ package org.bitcoins.explorer.model
 
 import org.bitcoins.core.protocol.tlv.OracleAnnouncementV0TLV
 
-case class SbOracleEventExplorer(
+case class CreateAnnouncementExplorer(
     oracleAnnouncementV0: OracleAnnouncementV0TLV,
     oracleName: String,
     description: String,

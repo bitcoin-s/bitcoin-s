@@ -7,9 +7,9 @@ import org.bitcoins.core.protocol.tlv.{
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.explorer.env.ExplorerEnv
 import org.bitcoins.explorer.model.{
+  CreateAnnouncementExplorer,
   CreateAttestations,
-  ExplorerEvent,
-  SbOracleEventExplorer
+  SbAnnouncementEvent
 }
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
@@ -29,7 +29,8 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
     OracleAnnouncementV0TLV.fromHex(announcementHex)
 
   it must "list events" in {
-    val eventsF: Future[Vector[ExplorerEvent]] = explorerClient.listEvents()
+    val eventsF: Future[Vector[SbAnnouncementEvent]] =
+      explorerClient.listEvents()
     for {
       events <- eventsF
     } yield {
@@ -55,14 +56,14 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  it must "create an event on the oracle explorer and then get that event" in {
+  it must "create an event on the oracle explorer and then get that event" ignore {
 
     val oracleName = "Chris_Stewart_5"
     val description = "2021-03-24-sunny-in-chicago"
     val uriOpt = Some("https://twitter.com/Chris_Stewart_5")
 
     val event =
-      SbOracleEventExplorer(announcement, oracleName, description, uriOpt)
+      CreateAnnouncementExplorer(announcement, oracleName, description, uriOpt)
 
     val createdF = explorerClient.createAnnouncement(event)
     for {
@@ -77,7 +78,7 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  it must "post attestations for an event to the oracle explorer" in {
+  it must "post attestations for an event to the oracle explorer" ignore {
     //the announcement is posted in the test case above
     //which means the test case above must be run before this test case
     val attestationsHex =

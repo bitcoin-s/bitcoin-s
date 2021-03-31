@@ -13,9 +13,9 @@ import akka.util.ByteString
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.explorer.env.ExplorerEnv
 import org.bitcoins.explorer.model.{
+  CreateAnnouncementExplorer,
   CreateAttestations,
-  ExplorerEvent,
-  SbOracleEventExplorer
+  SbAnnouncementEvent
 }
 import org.bitcoins.explorer.picklers.ExplorerPicklers
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
@@ -28,18 +28,19 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
   import system.dispatcher
   private val httpClient: HttpExt = Http(system)
 
-  /** @see https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f#list-all-events
+  /** Lists all events on oracle explorer
+    * @see https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f#list-all-events
     * @return
     */
-  def listEvents(): Future[Vector[ExplorerEvent]] = {
+  def listEvents(): Future[Vector[SbAnnouncementEvent]] = {
     val base = env.baseUri
     val uri = Uri(base + "events")
     val httpReq = HttpRequest(uri = uri)
     val responseF = sendRequest(httpReq)
     responseF.flatMap { response =>
-      val result = response.validate[Vector[ExplorerEvent]]
+      val result = response.validate[Vector[SbAnnouncementEvent]]
       result match {
-        case success: JsSuccess[Vector[ExplorerEvent]] =>
+        case success: JsSuccess[Vector[SbAnnouncementEvent]] =>
           Future.successful(success.value)
         case err: JsError =>
           Future.failed(
@@ -49,15 +50,18 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
     }
   }
 
-  def getEvent(announcementHash: Sha256Digest): Future[ExplorerEvent] = {
+  /** Gets an announcement from the oracle explorer
+    * @see https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f#get-event
+    */
+  def getEvent(announcementHash: Sha256Digest): Future[SbAnnouncementEvent] = {
     val base = env.baseUri
     val uri = Uri(base + s"events/${announcementHash.hex}")
     val httpReq = HttpRequest(uri = uri)
     val responseF = sendRequest(httpReq)
     responseF.flatMap { response =>
-      val result = response.validate[ExplorerEvent]
+      val result = response.validate[SbAnnouncementEvent]
       result match {
-        case success: JsSuccess[ExplorerEvent] =>
+        case success: JsSuccess[SbAnnouncementEvent] =>
           Future.successful(success.value)
         case err: JsError =>
           Future.failed(
@@ -67,8 +71,11 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
     }
   }
 
+  /** Creates an announcement on the oracle explorer
+    * @see https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f#create-an-event
+    */
   def createAnnouncement(
-      oracleEventExplorer: SbOracleEventExplorer): Future[Unit] = {
+      oracleEventExplorer: CreateAnnouncementExplorer): Future[Unit] = {
     val base = env.baseUri
     val uri = Uri(base + s"events")
     val string = oracleEventExplorer.toString
@@ -82,6 +89,9 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
     responseF.map(_ => ())
   }
 
+  /** Creates an attestation for an announcement on the oracle explorer
+    * @see https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f#create-an-events-attestation
+    */
   def createAttestations(attestations: CreateAttestations): Future[Unit] = {
     val base = env.baseUri
     val uri = Uri(
