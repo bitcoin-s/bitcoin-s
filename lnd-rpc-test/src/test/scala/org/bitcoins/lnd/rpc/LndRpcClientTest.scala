@@ -5,7 +5,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
-import org.bitcoins.testkit.lnd.LndFixture
+import org.bitcoins.testkit.fixtures.LndFixture
 
 class LndRpcClientTest extends LndFixture {
 

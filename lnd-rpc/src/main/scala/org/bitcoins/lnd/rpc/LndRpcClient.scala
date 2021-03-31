@@ -110,6 +110,10 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       .invoke(req)
   }
 
+  def nodeId: Future[NodeId] = {
+    getInfo.map(info => NodeId(info.identityPubkey))
+  }
+
   def lookupInvoice(rHash: ByteVector): Future[Invoice] = {
     logger.trace("lnd calling lookupinvoice")
 
@@ -196,7 +200,8 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
   }
 
   def connectPeer(nodeId: NodeId, addr: InetSocketAddress): Future[Unit] = {
-    val lnAddr = LightningAddress(nodeId.hex, addr.toString)
+    val lnAddr =
+      LightningAddress(nodeId.hex, s"${addr.getHostName}:${addr.getPort}")
 
     val request: ConnectPeerRequest = ConnectPeerRequest(Some(lnAddr))
 
@@ -207,8 +212,8 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       nodeId: NodeId,
       addr: InetSocketAddress,
       permanent: Boolean): Future[Unit] = {
-
-    val lnAddr: LightningAddress = LightningAddress(nodeId.hex, addr.toString)
+    val lnAddr: LightningAddress =
+      LightningAddress(nodeId.hex, s"${addr.getHostName}:${addr.getPort}")
 
     val request: ConnectPeerRequest =
       ConnectPeerRequest(Some(lnAddr), permanent)
@@ -226,31 +231,97 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       .map(_ => ())
   }
 
+  def isConnected(nodeId: NodeId): Future[Boolean] = {
+    listPeers().map { peers =>
+      peers.exists(p => NodeId(p.pubKey) == nodeId)
+    }
+  }
+
+  def listPeers(): Future[Vector[Peer]] = {
+    logger.trace("lnd calling listpeers")
+
+    val request: ListPeersRequest = ListPeersRequest()
+
+    lnd
+      .listPeers()
+      .addHeader(macaroonKey, instance.macaroon)
+      .invoke(request)
+      .map(_.peers.toVector)
+  }
+
   def openChannel(
       nodeId: NodeId,
       fundingAmount: CurrencyUnit,
       satPerByte: SatoshisPerByte,
       privateChannel: Boolean): Future[Option[TransactionOutPoint]] = {
-    logger.trace("lnd calling openchannel")
-
     val request = OpenChannelRequest(ByteString.copyFrom(nodeId.bytes.toArray),
                                      localFundingAmount =
                                        fundingAmount.satoshis.toLong,
                                      satPerByte = satPerByte.toLong,
                                      `private` = privateChannel)
 
+    openChannel(request)
+  }
+
+  def openChannel(
+      nodeId: NodeId,
+      fundingAmount: CurrencyUnit,
+      pushAmt: CurrencyUnit,
+      satPerByte: SatoshisPerByte,
+      privateChannel: Boolean): Future[Option[TransactionOutPoint]] = {
+    val request = OpenChannelRequest(
+      ByteString.copyFrom(nodeId.bytes.toArray),
+      localFundingAmount = fundingAmount.satoshis.toLong,
+      pushSat = pushAmt.satoshis.toLong,
+      satPerByte = satPerByte.toLong,
+      `private` = privateChannel
+    )
+
+    openChannel(request)
+  }
+
+  def openChannel(
+      request: OpenChannelRequest): Future[Option[TransactionOutPoint]] = {
+    logger.trace("lnd calling openchannel")
+
     lnd
       .openChannelSync()
       .addHeader(macaroonKey, instance.macaroon)
       .invoke(request)
       .map { point =>
-        point.fundingTxid.fundingTxidStr match {
-          case Some(str) =>
-            val txId = DoubleSha256DigestBE(str)
+        point.fundingTxid.fundingTxidBytes match {
+          case Some(bytesStr) =>
+            val bytes = ByteVector(bytesStr.toByteArray)
+            val txId = DoubleSha256DigestBE(bytes)
             Some(TransactionOutPoint(txId, UInt32(point.outputIndex)))
           case None => None
         }
       }
+  }
+
+  def listChannels(request: ListChannelsRequest =
+    ListChannelsRequest()): Future[Vector[Channel]] = {
+    logger.trace("lnd calling listchannels")
+
+    lnd
+      .listChannels()
+      .addHeader(macaroonKey, instance.macaroon)
+      .invoke(request)
+      .map(_.channels.toVector)
+  }
+
+  def findChannel(
+      channelPoint: TransactionOutPoint): Future[Option[Channel]] = {
+    listChannels().map { channels =>
+      channels.find(
+        _.channelPoint == s"${channelPoint.txId.hex}:${channelPoint.vout.toLong}")
+    }
+  }
+
+  def findChannel(chanId: Long): Future[Option[Channel]] = {
+    listChannels().map { channels =>
+      channels.find(_.chanId == chanId)
+    }
   }
 
   def walletBalance(): Future[WalletBalances] = {
@@ -428,7 +499,7 @@ object LndRpcClient {
 
   /** Creates an RPC client from the given instance,
     * together with the given actor system. This is for
-    * advanced users, wher you need fine grained control
+    * advanced users, where you need fine grained control
     * over the RPC client.
     */
   def apply(

@@ -2,7 +2,12 @@ package org.bitcoins.testkit.lnd
 
 import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
-import org.bitcoins.core.protocol.ln.channel.FundedChannelId
+import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.lnd.rpc.LndRpcClient
 import org.bitcoins.lnd.rpc.config.LndInstance
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
@@ -13,6 +18,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.{FileUtil, TestkitBinaries}
 
 import java.io.{File, PrintWriter}
+import java.net.InetSocketAddress
 import java.nio.file.Path
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -172,18 +178,172 @@ trait LndRpcTestUtil extends Logging {
     shutdownF
   }
 
-  case class LndNetwork(
-      bitcoind: BitcoindRpcClient,
-      testLndNode: LndRpcClient,
-      networkLndNodes: Vector[LndRpcClient],
-      channelIds: Vector[FundedChannelId]) {
+  def connectLNNodes(client: LndRpcClient, otherClient: LndRpcClient)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    val infoF = otherClient.getInfo
+    val nodeIdF = client.getInfo.map(_.identityPubkey)
+    val connectionF: Future[Unit] = infoF.flatMap { info =>
+      val uri = otherClient.instance.listenBinding
+      client.connectPeer(NodeId(info.identityPubkey),
+                         new InetSocketAddress(uri.getHost, uri.getPort))
+    }
 
-    def shutdown()(implicit ec: ExecutionContext): Future[Unit] =
+    def isConnected: Future[Boolean] = {
       for {
-        _ <- Future.sequence(networkLndNodes.map(_.stop()))
-        _ <- testLndNode.stop()
-        _ <- bitcoind.stop()
-      } yield ()
+        nodeId <- nodeIdF
+        _ <- connectionF
+        res <- otherClient.isConnected(NodeId(nodeId))
+      } yield res
+    }
+
+    logger.debug(s"Awaiting connection between clients")
+    val connected = TestAsyncUtil.retryUntilSatisfiedF(conditionF =
+                                                         () => isConnected,
+                                                       interval = 1.second)
+
+    connected.map(_ => logger.debug(s"Successfully connected two clients"))
+
+    connected
+  }
+
+  def fundLNNodes(
+      bitcoind: BitcoindRpcClient,
+      client: LndRpcClient,
+      otherClient: LndRpcClient)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    for {
+      addrA <- client.getNewAddress
+      addrB <- otherClient.getNewAddress
+
+      _ <- bitcoind.sendMany(Map(addrA -> Bitcoins(10), addrB -> Bitcoins(10)))
+      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+    } yield ()
+  }
+
+  /** Creates two Lnd nodes that are connected together and returns their
+    * respective [[org.bitcoins.lnd.rpc.LndRpcClient LndRpcClient]]s
+    */
+  def createNodePair(bitcoind: BitcoindRpcClient)(implicit
+      ec: ExecutionContext): Future[(LndRpcClient, LndRpcClient)] = {
+
+    val actorSystemA =
+      ActorSystem.create("bitcoin-s-lnd-test-" + FileUtil.randomDirName)
+
+    val clientF = LndRpcTestClient
+      .fromSbtDownload(Some(bitcoind))(actorSystemA)
+      .start()
+
+    val actorSystemB =
+      ActorSystem.create("bitcoin-s-lnd-test-" + FileUtil.randomDirName)
+
+    val otherClientF = LndRpcTestClient
+      .fromSbtDownload(Some(bitcoind))(actorSystemB)
+      .start()
+
+    def isSynced: Future[Boolean] = for {
+      client <- clientF
+      otherClient <- otherClientF
+
+      infoA <- client.getInfo
+      infoB <- otherClient.getInfo
+    } yield infoA.syncedToChain && infoB.syncedToChain
+
+    def isFunded: Future[Boolean] = for {
+      client <- clientF
+      otherClient <- otherClientF
+
+      balA <- client.walletBalance()
+      balB <- otherClient.walletBalance()
+    } yield balA.confirmedBalance > Satoshis.zero && balB.confirmedBalance > Satoshis.zero
+
+    for {
+      client <- clientF
+      _ = println("clientA")
+      otherClient <- otherClientF
+      _ = println("clientB")
+
+      _ <- connectLNNodes(client, otherClient)
+
+      _ <- fundLNNodes(bitcoind, client, otherClient)
+      _ <- AsyncUtil.awaitConditionF(() => isFunded)
+
+      _ <- AsyncUtil.awaitConditionF(() => isSynced)
+
+      _ <- openChannel(bitcoind, client, otherClient)
+    } yield (client, otherClient)
+  }
+
+  private val DEFAULT_CHANNEL_MSAT_AMT = MilliSatoshis(500000000L)
+
+  /** Opens a channel from n1 -> n2 */
+  def openChannel(
+      bitcoind: BitcoindRpcClient,
+      n1: LndRpcClient,
+      n2: LndRpcClient,
+      amt: CurrencyUnit = DEFAULT_CHANNEL_MSAT_AMT.toSatoshis,
+      pushMSat: MilliSatoshis = MilliSatoshis(
+        DEFAULT_CHANNEL_MSAT_AMT.toLong / 2))(implicit
+      ec: ExecutionContext): Future[TransactionOutPoint] = {
+
+    val n1NodeIdF = n1.nodeId
+    val n2NodeIdF = n2.nodeId
+
+    val nodeIdsF: Future[(NodeId, NodeId)] = {
+      n1NodeIdF.flatMap(n1 => n2NodeIdF.map(n2 => (n1, n2)))
+    }
+
+    val fundedChannelIdF =
+      nodeIdsF.flatMap { case (nodeId1, nodeId2) =>
+        logger.debug(
+          s"Opening a channel from $nodeId1 -> $nodeId2 with amount $amt")
+        n1.openChannel(nodeId = nodeId2,
+                       fundingAmount = amt,
+                       pushAmt = pushMSat.toSatoshis,
+                       satPerByte = SatoshisPerByte.fromLong(10),
+                       privateChannel = false)
+          .map(_.get)
+      }
+
+    val genF = for {
+      _ <- fundedChannelIdF
+      address <- bitcoind.getNewAddress
+      blocks <- bitcoind.generateToAddress(6, address)
+    } yield blocks
+
+    val openedF = {
+      genF.flatMap { _ =>
+        fundedChannelIdF.flatMap { id =>
+          for {
+            _ <- awaitUntilChannelActive(n1, id)
+            _ <- awaitUntilChannelActive(n2, id)
+          } yield id
+        }
+      }
+    }
+
+    openedF.flatMap { _ =>
+      nodeIdsF.map { case (nodeId1, nodeId2) =>
+        logger.debug(
+          s"Channel successfully opened $nodeId1 -> $nodeId2 with amount $amt")
+      }
+    }
+
+    openedF
+  }
+
+  private def awaitUntilChannelActive(
+      client: LndRpcClient,
+      outPoint: TransactionOutPoint)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    def isActive: Future[Boolean] = {
+      client.findChannel(outPoint).map {
+        case None          => false
+        case Some(channel) => channel.active
+      }
+    }
+
+    TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isActive,
+                                       interval = 1.seconds)
   }
 }
 
