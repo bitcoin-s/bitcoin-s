@@ -1,15 +1,11 @@
-lazy val `bitcoin-s` = RootProject(file("."))
-
 lazy val publishWebsite = taskKey[Unit]("Publish website")
 
 publishWebsite := Def
   .sequential(
-    `bitcoin-s` / Compile / unidoc,
+    Compile / unidoc,
     Compile / docusaurusPublishGhpages
   )
   .value
-
-name := "bitcoin-s-docs"
 
 publish / skip := true
 
@@ -28,8 +24,6 @@ mdocVariables := Map(
   "STABLE_VERSION" -> previousStableVersion.value.get.toString,
   "UNSTABLE_VERSION" -> version.value
 )
-
-enablePlugins(MdocPlugin, DocusaurusPlugin)
 
 // this expoes the values below as typed values in Scala sources
 enablePlugins(BuildInfoPlugin)
