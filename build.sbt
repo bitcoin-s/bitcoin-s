@@ -198,6 +198,7 @@ lazy val `bitcoin-s` = project
     testkitCoreJS,
     testkit,
     zmq,
+    oracleExplorerClient,
     oracleServer,
     oracleServerTest,
     serverRoutes
@@ -241,6 +242,7 @@ lazy val `bitcoin-s` = project
     appCommonsTest,
     testkit,
     zmq,
+    oracleExplorerClient,
     oracleServer,
     oracleServerTest,
     serverRoutes
@@ -740,6 +742,15 @@ lazy val dlcOracleTest = project
     libraryDependencies ++= Deps.dlcOracleTest
   )
   .dependsOn(coreJVM % testAndCompile, dlcOracle, testkit)
+
+lazy val oracleExplorerClient = project
+  .in(file("oracle-explorer-client"))
+  .settings(CommonSettings.settings: _*)
+  .settings(
+    name := "bitcoin-s-oracle-explorer-client",
+    libraryDependencies ++= Deps.oracleExplorerClient
+  )
+  .dependsOn(coreJVM, appCommons, testkit % "test->test")
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet)

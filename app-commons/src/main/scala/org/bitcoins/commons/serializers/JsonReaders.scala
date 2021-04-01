@@ -21,6 +21,10 @@ import org.bitcoins.core.protocol.script.{
   WitnessVersion,
   WitnessVersion0
 }
+import org.bitcoins.core.protocol.tlv.{
+  OracleAnnouncementV0TLV,
+  OracleAttestmentV0TLV
+}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{
   Address,
@@ -641,6 +645,44 @@ object JsonReaders {
         case JsString(s) =>
           Try(ServiceIdentifier.fromString(s)) match {
             case Success(serviceIdentifier) => JsSuccess(serviceIdentifier)
+            case Failure(err) =>
+              SerializerUtil.buildJsErrorMsg(
+                s"Unexpected Service Identifier: $err",
+                json)
+          }
+        case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
+            _: JsObject) =>
+          SerializerUtil.buildJsErrorMsg("jsstring", err)
+      }
+  }
+
+  implicit object OracleAnnouncementV0TLVReads
+      extends Reads[OracleAnnouncementV0TLV] {
+
+    override def reads(json: JsValue): JsResult[OracleAnnouncementV0TLV] =
+      json match {
+        case JsString(s) =>
+          OracleAnnouncementV0TLV.fromHexT(s) match {
+            case Success(ann) => JsSuccess(ann)
+            case Failure(err) =>
+              SerializerUtil.buildJsErrorMsg(
+                s"Unexpected Service Identifier: $err",
+                json)
+          }
+        case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
+            _: JsObject) =>
+          SerializerUtil.buildJsErrorMsg("jsstring", err)
+      }
+  }
+
+  implicit object OracleAttestmentV0TLVReads
+      extends Reads[OracleAttestmentV0TLV] {
+
+    override def reads(json: JsValue): JsResult[OracleAttestmentV0TLV] =
+      json match {
+        case JsString(s) =>
+          OracleAttestmentV0TLV.fromHexT(s) match {
+            case Success(att) => JsSuccess(att)
             case Failure(err) =>
               SerializerUtil.buildJsErrorMsg(
                 s"Unexpected Service Identifier: $err",
