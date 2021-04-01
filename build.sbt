@@ -251,70 +251,6 @@ lazy val `bitcoin-s` = project
   // unidoc aggregates Scaladocs for all subprojects into one big doc
   .enablePlugins(ScalaUnidocPlugin)
   .settings(
-    //removes scalajs projects from unidoc, see
-    //https://github.com/bitcoin-s/bitcoin-s/issues/2740
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := {
-      inAnyProject -- inProjects(jsProjects: _*)
-    },
-    // we modify the unidoc task to move the generated Scaladocs into the
-    // website directory afterwards
-    Compile / unidoc := {
-      import java.nio.file._
-      import scala.collection.JavaConverters._
-      val logger = streams.value.log
-
-      def cleanPath(path: Path, isRoot: Boolean = true): Unit = {
-        if (Files.isDirectory(path)) {
-          path.toFile.list().map { file =>
-            val toClean = path.resolve(file)
-            cleanPath(toClean, isRoot = false)
-          }
-          if (isRoot) ()
-          else Files.deleteIfExists(path)
-        } else if (isRoot) {
-          ()
-        } else if (path.toString.endsWith(".gitkeep")) {
-          ()
-        } else {
-          Files.deleteIfExists(path)
-        }
-      }
-
-      val websiteScaladocDir =
-        Paths.get("website", "static", "api").toAbsolutePath
-
-      logger.info(s"Cleaning website Scaladoc directory $websiteScaladocDir")
-      cleanPath(websiteScaladocDir)
-
-      // returned value is a list of files,
-      // list has one element
-      val generatedDir = (Compile / unidoc).value.head
-
-      logger.info(s"Moving files in $generatedDir to $websiteScaladocDir")
-
-      try {
-        Files
-          .walk(generatedDir.toPath)
-          .iterator()
-          .asScala
-          .drop(1) // skip the root directory
-          .foreach { child =>
-            val pathDiff = generatedDir.toPath.relativize(child)
-            Files.copy(
-              child,
-              websiteScaladocDir.resolve(pathDiff),
-              StandardCopyOption.REPLACE_EXISTING
-            )
-          }
-      } catch {
-        case e: Throwable =>
-          logger.err(
-            "Error when copying Scaladocs to website folder: ${e.toString}"
-          )
-          throw e
-      }
-      Seq(generatedDir)
-    }
   )
   .settings(
     name := "bitcoin-s",
@@ -335,44 +271,6 @@ lazy val secp256k1jni = project
     coverageEnabled := false
   )
 
-/** If you want sbt projects to depend on each other in
-  * slighly nonstandard ways, the way to do it is through
-  * stringly typed syntax.
-  *
-  * Suppose you have a module A and a module B:
-  * {{{
-  * lazy val A = project.in(file("A"))
-  * lazy val B = project.in(file("B"))
-  *    .dependsOn(A)
-  * // .dependsOn(A % "compile->compile")
-  * // the line above is equivalent to the one
-  * // above it
-  * }}}
-  *
-  * With this setup, main sources in B can access
-  * main sources in A
-  *
-  * To make test sources in A available to test
-  * sources in B, you'd write this:
-  * {{{
-  * lazy val A = project.in(file("A"))
-  * lazy val B = project.in(file("B"))
-  *    .dependsOn(A % "test->test")
-  * }}}
-  *
-  * And finally, to make main sources able to access
-  * main sources as well as test sources able to
-  * access test sources:
-  * {{{
-  * lazy val A = project.in(file("A"))
-  * lazy val B = project.in(file("B"))
-  *    .dependsOn(A % "compile->compile;test->test")
-  * }}}
-  *
-  * We use this to make logging configuration in core
-  * propagate to tests in the other modules, without
-  * being published in the generated JARs.
-  */
 val testAndCompile = "compile->compile;test->test"
 
 lazy val cryptoTest = crossProject(JVMPlatform, JSPlatform)
@@ -676,14 +574,44 @@ lazy val docs = project
   .in(file("bitcoin-s-docs")) // important: it must not be docs/
   .settings(CommonSettings.testSettings: _*)
   .settings(libraryDependencies ++= Deps.docs.value)
+  .settings(
+    name := "bitcoin-s-docs",
+    moduleName := name.value,
+    //removes scalajs projects from unidoc, see
+    //https://github.com/bitcoin-s/bitcoin-s/issues/2740
+    unidocProjectFilter in (ScalaUnidoc, unidoc) := {
+      inAnyProject -- inProjects(jsProjects: _*)
+    },
+    target in (ScalaUnidoc, unidoc) := (baseDirectory in LocalRootProject).value / "website" / "static" / "api",
+    cleanFiles += (target in (ScalaUnidoc, unidoc)).value,
+    docusaurusCreateSite := docusaurusCreateSite
+      .dependsOn(unidoc in Compile)
+      .value,
+    docusaurusPublishGhpages := docusaurusPublishGhpages
+      .dependsOn(unidoc in Compile)
+      .value
+  )
+  .enablePlugins(MdocPlugin,
+                 DocusaurusPlugin,
+                 ScalaUnidocPlugin,
+                 BuildInfoPlugin)
   .dependsOn(
+    appCommons,
+    asyncUtilsJVM,
+    appServer,
     bitcoindRpc,
     chain,
     cli,
+    cryptoJVM,
     coreJVM,
+    dbCommons,
+    feeProvider,
+    dlcOracle,
     eclairRpc,
     keyManager,
+    node,
     secp256k1jni,
+    testkitCoreJVM,
     testkit,
     wallet,
     zmq
