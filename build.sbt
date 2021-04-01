@@ -597,7 +597,7 @@ lazy val docs = project
                  BuildInfoPlugin)
   .dependsOn(
     appCommons,
-    asyncUtils,
+    asyncUtilsJVM,
     appServer,
     bitcoindRpc,
     chain,
@@ -611,7 +611,7 @@ lazy val docs = project
     keyManager,
     node,
     secp256k1jni,
-    testkitCore,
+    testkitCoreJVM,
     testkit,
     wallet,
     zmq
