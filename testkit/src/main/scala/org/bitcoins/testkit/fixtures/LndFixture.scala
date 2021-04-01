@@ -55,9 +55,9 @@ trait DualLndFixture extends BitcoinSFixture {
       () => {
         for {
           bitcoind <- LndRpcTestUtil.startedBitcoindRpcClient()
-          _ = println("starting bitcoind")
+          _ = logger.debug("starting bitcoind")
           _ <- bitcoind.start()
-          _ = println("creating lnds")
+          _ = logger.debug("creating lnds")
           lnds <- LndRpcTestUtil.createNodePair(bitcoind)
         } yield (bitcoind, lnds._1, lnds._2)
       },

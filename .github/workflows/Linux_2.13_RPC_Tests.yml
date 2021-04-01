@@ -1,4 +1,4 @@
-name: Linux 2.13 bitcoind and eclair rpc tests
+name: Linux 2.13 bitcoind, eclair, and lnd rpc tests
 env:
   COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
 

@@ -2,7 +2,6 @@ package org.bitcoins.lnd.rpc.config
 
 import grizzled.slf4j.Logging
 import org.bitcoins.core.config._
-import org.bitcoins.crypto.StringFactory
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import org.bitcoins.rpc.config.ZmqConfig
 
@@ -98,8 +97,8 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
     new InetSocketAddress(uri.getHost, uri.getPort)
   }
 
-  lazy val bitcoindUser: String = getValue("bitcoind.rpcuser").getOrElse("foo")
-  lazy val bitcoindPass: String = getValue("bitcoind.rpcpass").getOrElse("bar")
+  lazy val bitcoindUser: String = getValue("bitcoind.rpcuser").get
+  lazy val bitcoindPass: String = getValue("bitcoind.rpcpass").get
 
   lazy val listenBinding: URI = new URI({
     val baseUrl = getValue("listen").getOrElse("127.0.0.1:9735")
@@ -239,30 +238,5 @@ object LndConfig extends Logging {
     }
 
     confFile
-  }
-}
-
-sealed abstract class LogLevel
-
-object LogLevel extends StringFactory[LogLevel] {
-  case object Trace extends LogLevel
-  case object Debug extends LogLevel
-  case object Info extends LogLevel
-  case object Warn extends LogLevel
-  case object Error extends LogLevel
-  case object Critical extends LogLevel
-
-  val all = Vector(Trace, Debug, Info, Warn, Error, Critical)
-
-  override def fromStringOpt(str: String): Option[LogLevel] = {
-    all.find(state => str.toLowerCase() == state.toString.toLowerCase)
-  }
-
-  override def fromString(string: String): LogLevel = {
-    fromStringOpt(string) match {
-      case Some(state) => state
-      case None =>
-        sys.error(s"Could not find LogLevel for string=$string")
-    }
   }
 }

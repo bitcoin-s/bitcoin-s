@@ -50,10 +50,10 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
   // These need to be lazy so we don't try and fetch
   // the tls certificate before it is generated
 
-  lazy val certStream = new FileInputStream(instance.certFile)
+  private[this] lazy val certStream = new FileInputStream(instance.certFile)
 
   // Configure the client
-  lazy val clientSettings: GrpcClientSettings =
+  private lazy val clientSettings: GrpcClientSettings =
     GrpcClientSettings
       .connectToServiceAt(instance.rpcUri.getHost, instance.rpcUri.getPort)
       .withTrustManager(SSLContextUtils.trustManagerFromStream(certStream))

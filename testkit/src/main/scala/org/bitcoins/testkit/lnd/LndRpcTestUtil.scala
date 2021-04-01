@@ -88,6 +88,7 @@ trait LndRpcTestUtil extends Logging {
     val rawTx = bitcoindInstance.zmqConfig.rawTx.get
     val rawBlock = bitcoindInstance.zmqConfig.rawBlock.get
     s"""
+       |noseedbackup = true
        |bitcoin.active = true
        |bitcoin.regtest = true
        |bitcoin.node = bitcoind

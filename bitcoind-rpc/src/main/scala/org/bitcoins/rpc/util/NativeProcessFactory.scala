@@ -36,6 +36,8 @@ trait NativeProcessFactory extends Logging {
         if (cmd.nonEmpty) {
           val started = process.run()
           processOpt = Some(started)
+        } else {
+          logger.warn("cmd not set, no binary started")
         }
         ()
     }

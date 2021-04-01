@@ -59,10 +59,6 @@ case class LndRpcTestClient(
           // Sleep to make sure lnd is ready for RPC requests
           _ <- AsyncUtil.nonBlockingSleep(1.second)
 
-          _ <- lnd.initWallet("password")
-          // Sleep to make sure lnd finish setting up the wallet
-          _ <- AsyncUtil.nonBlockingSleep(1.second)
-
           // Wait for it to be ready
           _ <- AsyncUtil.awaitConditionF(() => lnd.isStarted)
         } yield {
