@@ -1,13 +1,13 @@
 package org.bitcoins.zmq
 
-import java.net.InetSocketAddress
-
+import grizzled.slf4j.Logging
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
-import grizzled.slf4j.Logging
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.zeromq.{SocketType, ZMQ, ZMQException, ZMsg}
 import scodec.bits.ByteVector
+
+import java.net.InetSocketAddress
 
 /** This class is designed to consume a zmq stream from a cryptocurrency's daemon.
   * An example of this is  bitcoind. For information on how to setup your coin's  conf
@@ -33,14 +33,14 @@ class ZMQSubscriber(
 
   private val subscriber: ZMQ.Socket = context.socket(SocketType.SUB)
 
-  private val uri = s"tcp://${socket.getHostString}:${socket.getPort}"
+  private val uri = socket.getHostString + ":" + socket.getPort
 
   private case object SubscriberRunnable extends Runnable {
 
     override def run(): Unit = {
       logger.info(s"ZmqSubscriber connecting to uri=$uri")
       subscriber.setLinger(2000)
-      val isConnected = subscriber.connect(uri)
+      val isConnected = subscriber.connect(s"tcp://$uri")
 
       if (isConnected) {
         hashTxListener.foreach { _ =>
