@@ -1,10 +1,12 @@
 package org.bitcoins.explorer.env
 
+import org.bitcoins.crypto.StringFactory
+
 sealed trait ExplorerEnv {
   def baseUri: String
 }
 
-object ExplorerEnv {
+object ExplorerEnv extends StringFactory[ExplorerEnv] {
 
   case object Production extends ExplorerEnv {
     override val baseUri: String = "https://oracle.suredbits.com/v1/"
@@ -20,4 +22,13 @@ object ExplorerEnv {
   }
 
   val all: Vector[ExplorerEnv] = Vector(Production, Test, Local)
+
+  override def fromString(string: String): ExplorerEnv = {
+    val explorerEnvOpt = all.find(_.toString.toLowerCase == string)
+    explorerEnvOpt match {
+      case Some(env) => env
+      case None =>
+        sys.error(s"Failed to parse explorer env from str=$string")
+    }
+  }
 }
