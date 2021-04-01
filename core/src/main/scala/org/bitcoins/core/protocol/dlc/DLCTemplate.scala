@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.dlc.ContractOraclePair._
-import org.bitcoins.core.protocol.dlc.DLCTemplate.validateMatchingOracleDescriptors
+import org.bitcoins.core.protocol.dlc.DLCTemplate._
 import org.bitcoins.core.protocol.tlv._
 
 sealed trait DLCTemplate {
@@ -18,8 +18,7 @@ sealed trait DLCTemplate {
 
   def toContractInfo: ContractInfo
 
-  def individualCollateral: CurrencyUnit =
-    totalCollateral.satoshis / Satoshis(2)
+  def individualCollateral: CurrencyUnit
 }
 
 sealed trait SingleOracleDLCTemplate extends DLCTemplate {
@@ -35,12 +34,18 @@ sealed trait MultiOracleDLCTemplate extends DLCTemplate {
   override def oracleInfo: MultiOracleInfo[SingleOracleInfo]
 }
 
+/** A template for creating a Contract For Difference DLC
+  *
+  * @see https://www.investopedia.com/terms/c/contractfordifferences.asp
+  */
 sealed trait CFDTemplate extends DLCTemplate {
   override def oracleInfo: NumericOracleInfo
 
-  def currentPrice: Long
+  def strikePrice: Long
 
-  def roundingIntervalsOpt: Option[RoundingIntervals]
+  def roundingIntervals: RoundingIntervals
+
+  def isLong: Boolean
 
   override val contractDescriptor: NumericContractDescriptor = {
     oracles.head.eventTLV.eventDescriptor match {
@@ -53,20 +58,21 @@ sealed trait CFDTemplate extends DLCTemplate {
 
         val func: Long => Long = { outcome =>
           if (outcome == 0) Long.MaxValue
-          else (currentPrice * individualCollateral.satoshis.toLong) / outcome
+          else (strikePrice * individualCollateral.satoshis.toLong) / outcome
         }
 
         val numDigits = decomp.numDigits.toInt
 
+        // TODO use hyperbola DLC
         val curve = CETCalculator.lineApprox(func, numDigits, 100)
-        roundingIntervalsOpt match {
-          case Some(rounding) =>
-            NumericContractDescriptor(curve, numDigits = numDigits, rounding)
-          case None =>
-            NumericContractDescriptor(curve,
-                                      numDigits = numDigits,
-                                      RoundingIntervals.noRounding)
-        }
+
+        val descriptor = NumericContractDescriptor(curve,
+                                                   numDigits = numDigits,
+                                                   roundingIntervals)
+
+        if (isLong) {
+          descriptor.flip(totalCollateral.satoshis)
+        } else descriptor
     }
   }
 
@@ -77,27 +83,33 @@ sealed trait CFDTemplate extends DLCTemplate {
   }
 }
 
-case class SingleOracleCFD(
+/** @inheritdoc */
+case class SingleOracleLongCFD(
+    individualCollateral: CurrencyUnit,
     totalCollateral: CurrencyUnit,
     oracle: OracleAnnouncementTLV,
-    currentPrice: Long,
-    roundingIntervalsOpt: Option[RoundingIntervals] = None
+    strikePrice: Long,
+    roundingIntervals: RoundingIntervals
 ) extends SingleOracleDLCTemplate
     with CFDTemplate {
 
   override val oracleInfo: NumericSingleOracleInfo = NumericSingleOracleInfo(
     oracle)
+
+  override def isLong: Boolean = true
 }
 
-case class MultiOracleCFD(
+/** @inheritdoc */
+case class MultiOracleLongCFD(
+    individualCollateral: CurrencyUnit,
     totalCollateral: CurrencyUnit,
     oracles: Vector[OracleAnnouncementTLV],
     oracleThreshold: Int,
-    currentPrice: Long,
+    strikePrice: Long,
     maxErrorExp: Int,
     minFailExp: Int,
     maximizeCoverage: Boolean,
-    roundingIntervalsOpt: Option[RoundingIntervals] = None
+    roundingIntervals: RoundingIntervals
 ) extends MultiOracleDLCTemplate
     with CFDTemplate {
 
@@ -113,8 +125,60 @@ case class MultiOracleCFD(
                            maxErrorExp = maxErrorExp,
                            minFailExp = minFailExp,
                            maximizeCoverage = maximizeCoverage)
+
+  override def isLong: Boolean = true
 }
 
+/** @inheritdoc */
+case class SingleOracleShortCFD(
+    individualCollateral: CurrencyUnit,
+    totalCollateral: CurrencyUnit,
+    oracle: OracleAnnouncementTLV,
+    strikePrice: Long,
+    roundingIntervals: RoundingIntervals
+) extends SingleOracleDLCTemplate
+    with CFDTemplate {
+
+  override val oracleInfo: NumericSingleOracleInfo = NumericSingleOracleInfo(
+    oracle)
+
+  override def isLong: Boolean = false
+}
+
+/** @inheritdoc */
+case class MultiOracleShortCFD(
+    individualCollateral: CurrencyUnit,
+    totalCollateral: CurrencyUnit,
+    oracles: Vector[OracleAnnouncementTLV],
+    oracleThreshold: Int,
+    strikePrice: Long,
+    maxErrorExp: Int,
+    minFailExp: Int,
+    maximizeCoverage: Boolean,
+    roundingIntervals: RoundingIntervals
+) extends MultiOracleDLCTemplate
+    with CFDTemplate {
+
+  require(oracles.nonEmpty, "Cannot have no oracles")
+  require(oracleThreshold > 0, "Oracle threshold must be greater than 0")
+  require(
+    oracles.size >= oracleThreshold,
+    s"Oracle threshold cannot be greater than the number of oracles, got ${oracles.size} >= $oracleThreshold")
+
+  override val oracleInfo: NumericMultiOracleInfo =
+    NumericMultiOracleInfo(threshold = oracleThreshold,
+                           announcements = oracles,
+                           maxErrorExp = maxErrorExp,
+                           minFailExp = minFailExp,
+                           maximizeCoverage = maximizeCoverage)
+
+  override def isLong: Boolean = false
+}
+
+/** A template for doing an options contract DLC
+  *
+  * @see https://www.investopedia.com/terms/o/optionscontract.asp
+  */
 sealed trait OptionTemplate extends DLCTemplate {
   override def oracleInfo: NumericOracleInfo
 
@@ -124,7 +188,7 @@ sealed trait OptionTemplate extends DLCTemplate {
 
   def isCall: Boolean
 
-  def roundingIntervalsOpt: Option[RoundingIntervals]
+  def roundingIntervals: RoundingIntervals
 
   override val contractDescriptor: NumericContractDescriptor = {
     oracles.head.eventTLV.eventDescriptor match {
@@ -163,14 +227,9 @@ sealed trait OptionTemplate extends DLCTemplate {
           DLCPayoutCurve(Vector(pointA, pointB, pointC))
         }
 
-        roundingIntervalsOpt match {
-          case Some(rounding) =>
-            NumericContractDescriptor(curve, numDigits = numDigits, rounding)
-          case None =>
-            NumericContractDescriptor(curve,
-                                      numDigits = numDigits,
-                                      RoundingIntervals.noRounding)
-        }
+        NumericContractDescriptor(curve,
+                                  numDigits = numDigits,
+                                  roundingIntervals)
     }
   }
 
@@ -181,12 +240,14 @@ sealed trait OptionTemplate extends DLCTemplate {
   }
 }
 
+/** @inheritdoc */
 case class SingleOracleCallOption(
+    individualCollateral: CurrencyUnit,
     totalCollateral: CurrencyUnit,
     oracle: OracleAnnouncementTLV,
     strikePrice: Long,
     premium: CurrencyUnit,
-    roundingIntervalsOpt: Option[RoundingIntervals] = None
+    roundingIntervals: RoundingIntervals
 ) extends SingleOracleDLCTemplate
     with OptionTemplate {
 
@@ -196,7 +257,9 @@ case class SingleOracleCallOption(
     oracle)
 }
 
+/** @inheritdoc */
 case class MultiOracleCallOption(
+    individualCollateral: CurrencyUnit,
     totalCollateral: CurrencyUnit,
     oracles: Vector[OracleAnnouncementTLV],
     oracleThreshold: Int,
@@ -205,7 +268,7 @@ case class MultiOracleCallOption(
     maxErrorExp: Int,
     minFailExp: Int,
     maximizeCoverage: Boolean,
-    roundingIntervalsOpt: Option[RoundingIntervals] = None
+    roundingIntervals: RoundingIntervals
 ) extends MultiOracleDLCTemplate
     with OptionTemplate {
 
@@ -225,12 +288,14 @@ case class MultiOracleCallOption(
                            maximizeCoverage = maximizeCoverage)
 }
 
+/** @inheritdoc */
 case class SingleOraclePutOption(
+    individualCollateral: CurrencyUnit,
     totalCollateral: CurrencyUnit,
     oracle: OracleAnnouncementTLV,
     strikePrice: Long,
     premium: CurrencyUnit,
-    roundingIntervalsOpt: Option[RoundingIntervals] = None
+    roundingIntervals: RoundingIntervals
 ) extends SingleOracleDLCTemplate
     with OptionTemplate {
 
@@ -240,7 +305,9 @@ case class SingleOraclePutOption(
     oracle)
 }
 
+/** @inheritdoc */
 case class MultiOraclePutOption(
+    individualCollateral: CurrencyUnit,
     totalCollateral: CurrencyUnit,
     oracles: Vector[OracleAnnouncementTLV],
     oracleThreshold: Int,
@@ -249,7 +316,7 @@ case class MultiOraclePutOption(
     maxErrorExp: Int,
     minFailExp: Int,
     maximizeCoverage: Boolean,
-    roundingIntervalsOpt: Option[RoundingIntervals] = None
+    roundingIntervals: RoundingIntervals
 ) extends MultiOracleDLCTemplate
     with OptionTemplate {
 
@@ -271,6 +338,7 @@ case class MultiOraclePutOption(
 
 object DLCTemplate {
 
+  /** Verifies that the oracles are using compatible event descriptors */
   private[dlc] def validateMatchingOracleDescriptors(
       oracles: Vector[OracleAnnouncementTLV]
   ): Boolean = {
@@ -279,7 +347,7 @@ object DLCTemplate {
         oracles.forall {
           _.eventTLV.eventDescriptor match {
             case enum: EnumEventDescriptorV0TLV =>
-              enum.outcomes == outcomes
+              enum.outcomes.sortBy(_.normStr) == outcomes.sortBy(_.normStr)
             case _: DigitDecompositionEventDescriptorV0TLV => false
           }
         }
