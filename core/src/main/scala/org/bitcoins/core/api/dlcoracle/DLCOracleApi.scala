@@ -62,4 +62,8 @@ trait DLCOracleApi {
   def signDigits(eventName: String, num: Long): Future[OracleEvent]
 
   def signDigits(oracleEventTLV: OracleEventTLV, num: Long): Future[OracleEvent]
+
+  def deleteSigs(eventName: String): Future[OracleEvent]
+
+  def deleteSigs(oracleEventTLV: OracleEventTLV): Future[OracleEvent]
 }

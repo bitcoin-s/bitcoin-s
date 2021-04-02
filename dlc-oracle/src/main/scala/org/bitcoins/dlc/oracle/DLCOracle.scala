@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.oracle
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db._
 import org.bitcoins.core.config.BitcoinNetwork
@@ -17,7 +18,6 @@ import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.dlc.oracle.util.EventDbUtil
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
-import grizzled.slf4j.Logging
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -371,6 +371,25 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
       signSig <- signSigF
       digitSigs <- Future.sequence(digitSigFs)
     } yield OracleEvent.fromEventDbs(signSig ++ digitSigs)
+  }
+
+  override def deleteSigs(eventName: String): Future[OracleEvent] = {
+    for {
+      eventOpt <- findEvent(eventName)
+      _ = require(eventOpt.isDefined,
+                  s"No event found by event name $eventName")
+      res <- deleteSigs(eventOpt.get.eventTLV)
+    } yield res
+  }
+
+  override def deleteSigs(
+      oracleEventTLV: OracleEventTLV): Future[OracleEvent] = {
+    for {
+      eventDbs <- eventDAO.findByOracleEventTLV(oracleEventTLV)
+
+      updated = eventDbs.map(_.copy(outcomeOpt = None, attestationOpt = None))
+      _ <- eventDAO.updateAll(updated)
+    } yield OracleEvent.fromEventDbs(eventDbs)
   }
 }
 
