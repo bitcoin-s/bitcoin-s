@@ -727,4 +727,112 @@ class DLCOracleTest extends DLCOracleFixture {
                                             SigningVersion.latest))
       }
   }
+
+  it must "create and delete signatures for an enum event" in {
+    dlcOracle: DLCOracle =>
+      val descriptor = TLVGen.enumEventDescriptorV0TLV.sampleSome
+      val outcome = descriptor.outcomes.head
+
+      val descriptorV0TLV =
+        EnumEventDescriptorV0TLV(descriptor.outcomes)
+
+      for {
+        announcement <-
+          dlcOracle.createNewEvent("test", futureTime, descriptorV0TLV)
+
+        _ <-
+          dlcOracle.signEnumEvent(announcement.eventTLV,
+                                  EnumAttestation(outcome))
+
+        signedEvent <- dlcOracle.findEvent("test").map(_.get)
+        _ = {
+          signedEvent match {
+            case c: CompletedEnumV0OracleEvent =>
+              assert(c.attestations.nonEmpty)
+              assert(c.outcomes.nonEmpty)
+            case _: PendingOracleEvent | _: CompletedOracleEvent =>
+              fail()
+          }
+        }
+
+        _ <- dlcOracle.deleteAttestations("test")
+        event <- dlcOracle.findEvent("test").map(_.get)
+      } yield {
+        event match {
+          case _: PendingEnumV0OracleEvent => succeed
+          case _: PendingOracleEvent | _: CompletedOracleEvent =>
+            fail()
+        }
+      }
+  }
+
+  it must "create and delete signatures for a decomp event" in {
+    dlcOracle: DLCOracle =>
+      val descriptor =
+        UnsignedDigitDecompositionEventDescriptor(UInt16(2),
+                                                  UInt16(3),
+                                                  "unit",
+                                                  Int32(0))
+
+      for {
+        _ <- dlcOracle.createNewEvent("test", futureTime, descriptor)
+
+        _ <- dlcOracle.signDigits("test", 0)
+
+        signedEvent <- dlcOracle.findEvent("test").map(_.get)
+        _ = {
+          signedEvent match {
+            case c: CompletedDigitDecompositionV0OracleEvent =>
+              assert(c.attestations.nonEmpty)
+              assert(c.outcomes.nonEmpty)
+            case _: PendingOracleEvent | _: CompletedOracleEvent =>
+              fail()
+          }
+        }
+
+        _ <- dlcOracle.deleteAttestations("test")
+        event <- dlcOracle.findEvent("test").map(_.get)
+      } yield {
+        event match {
+          case _: PendingDigitDecompositionV0OracleEvent => succeed
+          case _: PendingOracleEvent | _: CompletedOracleEvent =>
+            fail()
+        }
+      }
+  }
+
+  it must "fail to delete signatures for an unsigned enum event" in {
+    dlcOracle: DLCOracle =>
+      val descriptor =
+        UnsignedDigitDecompositionEventDescriptor(UInt16(2),
+                                                  UInt16(3),
+                                                  "unit",
+                                                  Int32(0))
+
+      for {
+        _ <- dlcOracle.createNewEvent("test", futureTime, descriptor)
+
+        signedEvent <- dlcOracle.findEvent("test").map(_.get)
+        _ = assert(
+          signedEvent.isInstanceOf[PendingDigitDecompositionV0OracleEvent])
+
+        res <- recoverToSucceededIf[IllegalArgumentException](
+          dlcOracle.deleteAttestations("test"))
+      } yield res
+  }
+
+  it must "fail to delete signatures for an unsigned decomp event" in {
+    dlcOracle: DLCOracle =>
+      val descriptor = TLVGen.enumEventDescriptorV0TLV.sampleSome
+
+      for {
+        _ <- dlcOracle.createNewEvent("test", futureTime, descriptor)
+
+        signedEvent <- dlcOracle.findEvent("test").map(_.get)
+        _ = assert(signedEvent.isInstanceOf[PendingEnumV0OracleEvent])
+
+        res <- recoverToSucceededIf[IllegalArgumentException](
+          dlcOracle.deleteAttestations("test"))
+      } yield res
+  }
 }
