@@ -374,9 +374,9 @@ object BitcoindConfig extends ConfigFactory[BitcoindConfig] with Logging {
     Files.createDirectories(datadir.toPath)
     val confFile = datadir.toPath.resolve("bitcoin.conf")
 
-    if (datadir == DEFAULT_DATADIR && confFile == DEFAULT_CONF_FILE) {
+    if (datadir == DEFAULT_DATADIR && confFile.toFile == DEFAULT_CONF_FILE) {
       logger.warn(
-        s"We will not overrwrite the existing bitcoin.conf in default datadir")
+        s"We will not overwrite the existing bitcoin.conf in default datadir")
     } else {
       Files.write(confFile, confStr.getBytes)
     }
