@@ -1,6 +1,7 @@
 package org.bitcoins.lnd.rpc.config
 
 import grizzled.slf4j.Logging
+import org.bitcoins.commons.ConfigFactory
 import org.bitcoins.core.config._
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import org.bitcoins.rpc.config.ZmqConfig
@@ -165,23 +166,25 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
   )
 }
 
-object LndConfig extends Logging {
+object LndConfig extends ConfigFactory[LndConfig] with Logging {
 
   /** The empty `lnd` config */
-  lazy val empty: LndConfig = LndConfig("", DEFAULT_DATADIR)
+  override lazy val empty: LndConfig = LndConfig("", DEFAULT_DATADIR)
 
   /** Constructs a `lnd` config from the given string,
     * by splitting it on newlines
     */
-  def apply(config: String, datadir: File): LndConfig =
+  override def apply(config: String, datadir: File): LndConfig =
     apply(config.split("\n").toList, datadir)
 
   /** Reads the given path and construct a `lnd` config from it */
-  def apply(config: Path): LndConfig =
+  override def apply(config: Path): LndConfig =
     apply(config.toFile, config.getParent.toFile)
 
   /** Reads the given file and construct a `lnd` config from it */
-  def apply(config: File, datadir: File = DEFAULT_DATADIR): LndConfig = {
+  override def apply(
+      config: File,
+      datadir: File = DEFAULT_DATADIR): LndConfig = {
     import org.bitcoins.core.compat.JavaConverters._
     val lines = Files
       .readAllLines(config.toPath)
@@ -192,11 +195,19 @@ object LndConfig extends Logging {
     apply(lines, datadir)
   }
 
+  override def fromConfigFile(file: File): LndConfig = {
+    apply(file.toPath)
+  }
+
+  override def fromDataDir(dir: File): LndConfig = {
+    apply(dir.toPath.resolve("lnd.conf"))
+  }
+
   /** If there is a `lnd.conf` in the default
     * data directory, this is read. Otherwise, the
     * default configuration is returned.
     */
-  def fromDefaultDatadir: LndConfig = {
+  override def fromDefaultDatadir: LndConfig = {
     if (DEFAULT_CONF_FILE.isFile) {
       apply(DEFAULT_CONF_FILE)
     } else {
@@ -204,7 +215,7 @@ object LndConfig extends Logging {
     }
   }
 
-  val DEFAULT_DATADIR: File = {
+  override val DEFAULT_DATADIR: File = {
     val path = if (Properties.isMac) {
       Paths.get(Properties.userHome, "Library", "Application Support", "Lnd")
     } else if (Properties.isWin) {
@@ -216,14 +227,14 @@ object LndConfig extends Logging {
   }
 
   /** Default location of lnd conf file */
-  val DEFAULT_CONF_FILE: File = DEFAULT_DATADIR.toPath
+  override val DEFAULT_CONF_FILE: File = DEFAULT_DATADIR.toPath
     .resolve("lnd.conf")
     .toFile
 
   /** Writes the config to the data directory within it, if it doesn't
     * exist. Returns the written file.
     */
-  def writeConfigToFile(config: LndConfig, datadir: File): Path = {
+  override def writeConfigToFile(config: LndConfig, datadir: File): Path = {
 
     val confStr = config.lines.mkString("\n")
 

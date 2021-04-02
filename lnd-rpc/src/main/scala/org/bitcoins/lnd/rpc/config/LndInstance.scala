@@ -1,5 +1,6 @@
 package org.bitcoins.lnd.rpc.config
 
+import org.bitcoins.commons.InstanceFactory
 import org.bitcoins.core.config._
 import org.bitcoins.rpc.config.BitcoindAuthCredentials._
 import org.bitcoins.rpc.config._
@@ -47,13 +48,13 @@ case class LndInstance(
   }
 }
 
-object LndInstance {
+object LndInstance extends InstanceFactory[LndInstance] {
 
-  private val DEFAULT_DATADIR = Paths.get(Properties.userHome, ".lnd")
+  override val DEFAULT_DATADIR: Path = Paths.get(Properties.userHome, ".lnd")
 
-  private val DEFAULT_CONF_FILE = DEFAULT_DATADIR.resolve("lnd.conf")
+  override val DEFAULT_CONF_FILE: Path = DEFAULT_DATADIR.resolve("lnd.conf")
 
-  def getNetworkDirName(network: BitcoinNetwork): String = {
+  private[lnd] def getNetworkDirName(network: BitcoinNetwork): String = {
     network match {
       case _: MainNet  => "mainnet"
       case _: TestNet3 => "testnet"
@@ -62,7 +63,8 @@ object LndInstance {
     }
   }
 
-  def fromConfigFile(file: File = DEFAULT_CONF_FILE.toFile): LndInstance = {
+  override def fromConfigFile(
+      file: File = DEFAULT_CONF_FILE.toFile): LndInstance = {
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
@@ -71,7 +73,7 @@ object LndInstance {
     fromConfig(config)
   }
 
-  def fromDataDir(dir: File = DEFAULT_DATADIR.toFile): LndInstance = {
+  override def fromDataDir(dir: File = DEFAULT_DATADIR.toFile): LndInstance = {
     require(dir.exists, s"${dir.getPath} does not exist!")
     require(dir.isDirectory, s"${dir.getPath} is not a directory!")
 
