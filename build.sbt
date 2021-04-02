@@ -33,8 +33,7 @@ lazy val commonJsSettings = {
   Seq(
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.CommonJSModule)
-    },
-    skip.in(publish) := true
+    }
   ) ++ CommonSettings.settings
 }
 
