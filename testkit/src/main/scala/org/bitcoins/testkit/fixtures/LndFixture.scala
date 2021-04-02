@@ -2,14 +2,12 @@ package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.lnd.rpc.LndRpcClient
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.lnd.{LndRpcTestClient, LndRpcTestUtil}
-import org.bitcoins.testkit.rpc.{CachedBitcoindFunded, CachedBitcoindV21}
-import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
+import org.bitcoins.testkit.lnd._
+import org.bitcoins.testkit.rpc._
 import org.scalatest.FutureOutcome
 
 /** A trait that is useful if you need Lnd fixtures for your test suite */
 trait LndFixture extends BitcoinSFixture with CachedBitcoindV21 {
-  _: BitcoinSAsyncFixtureTest with CachedBitcoindFunded[_] =>
 
   override type FixtureParam = LndRpcClient
 
@@ -22,7 +20,6 @@ trait LndFixture extends BitcoinSFixture with CachedBitcoindV21 {
       () => {
         for {
           bitcoind <- cachedBitcoindWithFundsF
-          _ <- bitcoind.start()
 
           client = LndRpcTestClient.fromSbtDownload(Some(bitcoind))
           lnd <- client.start()
@@ -39,7 +36,6 @@ trait LndFixture extends BitcoinSFixture with CachedBitcoindV21 {
 
 /** A trait that is useful if you need Lnd fixtures for your test suite */
 trait DualLndFixture extends BitcoinSFixture with CachedBitcoindV21 {
-  _: BitcoinSAsyncFixtureTest with CachedBitcoindFunded[_] =>
 
   override type FixtureParam = (BitcoindRpcClient, LndRpcClient, LndRpcClient)
 
@@ -52,8 +48,6 @@ trait DualLndFixture extends BitcoinSFixture with CachedBitcoindV21 {
       () => {
         for {
           bitcoind <- cachedBitcoindWithFundsF
-          _ = logger.debug("starting bitcoind")
-          _ <- bitcoind.start()
           _ = logger.debug("creating lnds")
           lnds <- LndRpcTestUtil.createNodePair(bitcoind)
         } yield (bitcoind, lnds._1, lnds._2)
