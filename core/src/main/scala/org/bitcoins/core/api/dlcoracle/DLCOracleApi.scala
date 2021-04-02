@@ -63,7 +63,17 @@ trait DLCOracleApi {
 
   def signDigits(oracleEventTLV: OracleEventTLV, num: Long): Future[OracleEvent]
 
-  def deleteSigs(eventName: String): Future[OracleEvent]
+  /** Deletes attestations for the given event
+    *
+    * WARNING: if previous signatures have been made public
+    * the oracle private key will be revealed.
+    */
+  def deleteAttestations(eventName: String): Future[OracleEvent]
 
-  def deleteSigs(oracleEventTLV: OracleEventTLV): Future[OracleEvent]
+  /** Deletes attestations for the given event
+    *
+    * WARNING: if previous signatures have been made public
+    * the oracle private key will be revealed.
+    */
+  def deleteAttestations(oracleEventTLV: OracleEventTLV): Future[OracleEvent]
 }

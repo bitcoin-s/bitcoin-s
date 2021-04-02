@@ -755,7 +755,7 @@ class DLCOracleTest extends DLCOracleFixture {
           }
         }
 
-        _ <- dlcOracle.deleteSigs("test")
+        _ <- dlcOracle.deleteAttestations("test")
         event <- dlcOracle.findEvent("test").map(_.get)
       } yield {
         event match {
@@ -790,7 +790,7 @@ class DLCOracleTest extends DLCOracleFixture {
           }
         }
 
-        _ <- dlcOracle.deleteSigs("test")
+        _ <- dlcOracle.deleteAttestations("test")
         event <- dlcOracle.findEvent("test").map(_.get)
       } yield {
         event match {
@@ -799,5 +799,40 @@ class DLCOracleTest extends DLCOracleFixture {
             fail()
         }
       }
+  }
+
+  it must "fail to delete signatures for an unsigned enum event" in {
+    dlcOracle: DLCOracle =>
+      val descriptor =
+        UnsignedDigitDecompositionEventDescriptor(UInt16(2),
+                                                  UInt16(3),
+                                                  "unit",
+                                                  Int32(0))
+
+      for {
+        _ <- dlcOracle.createNewEvent("test", futureTime, descriptor)
+
+        signedEvent <- dlcOracle.findEvent("test").map(_.get)
+        _ = assert(
+          signedEvent.isInstanceOf[PendingDigitDecompositionV0OracleEvent])
+
+        res <- recoverToSucceededIf[IllegalArgumentException](
+          dlcOracle.deleteAttestations("test"))
+      } yield res
+  }
+
+  it must "fail to delete signatures for an unsigned decomp event" in {
+    dlcOracle: DLCOracle =>
+      val descriptor = TLVGen.enumEventDescriptorV0TLV.sampleSome
+
+      for {
+        _ <- dlcOracle.createNewEvent("test", futureTime, descriptor)
+
+        signedEvent <- dlcOracle.findEvent("test").map(_.get)
+        _ = assert(signedEvent.isInstanceOf[PendingEnumV0OracleEvent])
+
+        res <- recoverToSucceededIf[IllegalArgumentException](
+          dlcOracle.deleteAttestations("test"))
+      } yield res
   }
 }

@@ -373,19 +373,31 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
     } yield OracleEvent.fromEventDbs(signSig ++ digitSigs)
   }
 
-  override def deleteSigs(eventName: String): Future[OracleEvent] = {
+  /** Deletes attestations for the given event
+    *
+    * WARNING: if previous signatures have been made public
+    * the oracle private key will be revealed.
+    */
+  override def deleteAttestations(eventName: String): Future[OracleEvent] = {
     for {
       eventOpt <- findEvent(eventName)
       _ = require(eventOpt.isDefined,
                   s"No event found by event name $eventName")
-      res <- deleteSigs(eventOpt.get.eventTLV)
+      res <- deleteAttestations(eventOpt.get.eventTLV)
     } yield res
   }
 
-  override def deleteSigs(
+  /** Deletes attestations for the given event
+    *
+    * WARNING: if previous signatures have been made public
+    * the oracle private key will be revealed.
+    */
+  override def deleteAttestations(
       oracleEventTLV: OracleEventTLV): Future[OracleEvent] = {
     for {
       eventDbs <- eventDAO.findByOracleEventTLV(oracleEventTLV)
+      _ = require(eventDbs.exists(_.attestationOpt.isDefined),
+                  s"Event given is unsigned")
 
       updated = eventDbs.map(_.copy(outcomeOpt = None, attestationOpt = None))
       _ <- eventDAO.updateAll(updated)
