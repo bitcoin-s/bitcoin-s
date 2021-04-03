@@ -89,6 +89,7 @@ lazy val coreJVM = core.jvm
 
 lazy val coreJS = core.js
   .settings(libraryDependencies ++= Deps.coreJs.value)
+  .enablePlugins(ScalaJSBundlerPlugin)
 
 lazy val asyncUtils = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
