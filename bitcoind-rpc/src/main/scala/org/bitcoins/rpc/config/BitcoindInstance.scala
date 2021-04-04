@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.config
 
 import grizzled.slf4j.Logging
-import org.bitcoins.commons.InstanceFactory
+import org.bitcoins.core.api.commons.InstanceFactory
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.rpc.client.common.BitcoindVersion
 

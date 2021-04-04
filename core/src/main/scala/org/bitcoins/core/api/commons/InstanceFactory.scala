@@ -1,4 +1,4 @@
-package org.bitcoins.commons
+package org.bitcoins.core.api.commons
 
 import java.io.File
 import java.nio.file.Path

@@ -1,7 +1,7 @@
 package org.bitcoins.lnd.rpc.config
 
 import grizzled.slf4j.Logging
-import org.bitcoins.commons.ConfigFactory
+import org.bitcoins.core.api.commons.ConfigFactory
 import org.bitcoins.core.config._
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import org.bitcoins.rpc.config.ZmqConfig

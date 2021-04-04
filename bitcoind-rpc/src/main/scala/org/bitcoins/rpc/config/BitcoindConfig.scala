@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.config
 
 import grizzled.slf4j.Logging
-import org.bitcoins.commons.ConfigFactory
+import org.bitcoins.core.api.commons.ConfigFactory
 import org.bitcoins.core.config._
 
 import java.io.File

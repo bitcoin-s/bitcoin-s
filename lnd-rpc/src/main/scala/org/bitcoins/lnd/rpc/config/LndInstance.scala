@@ -1,6 +1,6 @@
 package org.bitcoins.lnd.rpc.config
 
-import org.bitcoins.commons.InstanceFactory
+import org.bitcoins.core.api.commons.InstanceFactory
 import org.bitcoins.core.config._
 import org.bitcoins.rpc.config.BitcoindAuthCredentials._
 import org.bitcoins.rpc.config._

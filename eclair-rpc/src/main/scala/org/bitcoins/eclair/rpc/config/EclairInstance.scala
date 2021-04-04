@@ -1,7 +1,7 @@
 package org.bitcoins.eclair.rpc.config
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.commons.InstanceFactory
+import org.bitcoins.core.api.commons.InstanceFactory
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.protocol.ln.LnPolicy
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, ZmqConfig}
