@@ -8,20 +8,28 @@ import lnrpc._
 import org.bitcoins.commons.jsonmodels.lnd._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.protocol.transaction.{
+  TransactionOutPoint,
+  TransactionOutput
+}
+import org.bitcoins.core.protocol.{transaction, BitcoinAddress}
 import org.bitcoins.core.util.StartStopAsync
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.{
+  SatoshisPerByte,
+  SatoshisPerKW,
+  SatoshisPerVirtualByte
+}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.config.LndInstance
 import org.bitcoins.rpc.util.NativeProcessFactory
 import scodec.bits.ByteVector
-import walletrpc.WalletKitClient
+import signrpc.TxOut
+import walletrpc.{SendOutputsRequest, WalletKitClient}
 
 import java.io.{File, FileInputStream}
 import java.net.InetSocketAddress
@@ -384,6 +392,61 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       .sendPaymentSync()
       .addHeader(macaroonKey, instance.macaroon)
       .invoke(request)
+  }
+
+  def sendOutputs(
+      outputs: Vector[TransactionOutput],
+      feeRate: SatoshisPerVirtualByte,
+      spendUnconfirmed: Boolean): Future[transaction.Transaction] = {
+    sendOutputs(outputs, feeRate.toSatoshisPerKW, spendUnconfirmed)
+  }
+
+  def sendOutputs(
+      outputs: Vector[TransactionOutput],
+      feeRate: SatoshisPerKW,
+      spendUnconfirmed: Boolean): Future[transaction.Transaction] = {
+
+    val txOuts = outputs.map(out =>
+      TxOut(out.value.satoshis.toLong,
+            ByteString.copyFrom(out.scriptPubKey.asmBytes.toArray)))
+
+    val request = SendOutputsRequest(satPerKw = feeRate.toLong,
+                                     outputs = txOuts,
+                                     spendUnconfirmed = spendUnconfirmed)
+    sendOutputs(request)
+  }
+
+  def sendOutputs(
+      request: SendOutputsRequest): Future[transaction.Transaction] = {
+    logger.trace("lnd calling sendoutputs")
+
+    wallet
+      .sendOutputs()
+      .addHeader(macaroonKey, instance.macaroon)
+      .invoke(request)
+      .map { res =>
+        val bytes = ByteVector(res.rawTx.toByteArray)
+        transaction.Transaction(bytes)
+      }
+  }
+
+  /** Broadcasts the given transaction
+    * @return None if no error, otherwise the error string
+    */
+  def publishTransaction(
+      tx: transaction.Transaction): Future[Option[String]] = {
+    logger.trace("lnd calling publishtransaction")
+
+    val request = walletrpc.Transaction(ByteString.copyFrom(tx.bytes.toArray))
+
+    wallet
+      .publishTransaction()
+      .addHeader(macaroonKey, instance.macaroon)
+      .invoke(request)
+      .map { res =>
+        if (res.publishError.isEmpty) None
+        else Some(res.publishError)
+      }
   }
 
   def monitorInvoice(
