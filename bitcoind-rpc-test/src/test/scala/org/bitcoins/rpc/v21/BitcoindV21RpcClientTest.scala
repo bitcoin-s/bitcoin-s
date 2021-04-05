@@ -35,11 +35,14 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
   }
 
   it should "get index info" in { client: BitcoindV21RpcClient =>
-    def isHeight101(client: BitcoindRpcClient): Future[Boolean] = {
-      client.getBlockCount.map(_ == 101)
+    def indexSynced(client: BitcoindRpcClient): Future[Boolean] = {
+      client.getIndexInfo.map { indexes =>
+        indexes("txindex").best_block_height == 101 && indexes(
+          "basic block filter index").best_block_height == 101
+      }
     }
     for {
-      _ <- AsyncUtil.retryUntilSatisfiedF(() => isHeight101(client))
+      _ <- AsyncUtil.retryUntilSatisfiedF(() => indexSynced(client))
       indexes <- client.getIndexInfo
     } yield {
       val txIndexInfo = indexes("txindex")
