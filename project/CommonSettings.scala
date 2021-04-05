@@ -38,23 +38,22 @@ object CommonSettings {
         url("https://twitter.com/Chris_Stewart_5")
       )
     ),
-    scalacOptions in Compile ++= compilerOpts(scalaVersion =
-      scalaVersion.value),
+    Compile / scalacOptions ++= compilerOpts(scalaVersion = scalaVersion.value),
     Test / scalacOptions ++= testCompilerOpts(scalaVersion =
       scalaVersion.value),
     //remove annoying import unused things in the scala console
     //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
-    scalacOptions in (Compile, console) ~= (_ filterNot (s =>
+    Compile / console / scalacOptions ~= (_ filterNot (s =>
       s == "-Ywarn-unused-import"
         || s == "-Ywarn-unused"
         || s == "-Xfatal-warnings"
         //for 2.13 -- they use different compiler opts
         || s == "-Xlint:unused")),
     //we don't want -Xfatal-warnings for publishing with publish/publishLocal either
-    scalacOptions in (Compile, doc) ~= (_ filterNot (s =>
+    Compile / doc / scalacOptions ~= (_ filterNot (s =>
       s == "-Xfatal-warnings")),
-    scalacOptions in (Test, console) ++= (scalacOptions in (Compile, console)).value,
-    scalacOptions in Test ++= testCompilerOpts(scalaVersion.value),
+    Test / console / scalacOptions ++= (Compile / console / scalacOptions).value,
+    Test / scalacOptions ++= testCompilerOpts(scalaVersion.value),
     licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
   )
 
@@ -148,9 +147,9 @@ object CommonSettings {
 
   lazy val testSettings: Seq[Setting[_]] = Seq(
     //show full stack trace (-oF) of failed tests and duration of tests (-oD)
-    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
-    logBuffered in Test := false,
-    skip.in(publish) := true
+    Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
+    Test / logBuffered := false,
+    skip / publish := true
   ) ++ settings
 
   lazy val prodSettings: Seq[Setting[_]] = settings
@@ -168,9 +167,9 @@ object CommonSettings {
       //set the user to be 'bitcoin-s' rather than
       //the default provided by sbt native packager
       //which is 'demiourgos728'
-      daemonUser in Docker := "bitcoin-s",
-      packageName in Docker := packageName.value,
-      version in Docker := version.value,
+      Docker / daemonUser := "bitcoin-s",
+      Docker / packageName := packageName.value,
+      Docker / version := version.value,
       dockerUpdateLatest := isSnapshot.value
     )
   }
