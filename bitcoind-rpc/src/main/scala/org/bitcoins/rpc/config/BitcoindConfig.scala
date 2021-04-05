@@ -1,14 +1,13 @@
 package org.bitcoins.rpc.config
 
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.commons.ConfigFactory
 import org.bitcoins.core.config._
 
 import java.io.File
-import java.nio.file.Files
-import scala.util.Properties
-import java.nio.file.Paths
 import java.net.{InetSocketAddress, URI}
-import java.nio.file.Path
+import java.nio.file.{Files, Path, Paths}
+import scala.util.Properties
 
 /** This class represents a parsed `bitcoin.conf` file. It
   * respects the different ways of writing options in
@@ -288,7 +287,7 @@ case class BitcoindConfig(
 
 }
 
-object BitcoindConfig extends Logging {
+object BitcoindConfig extends ConfigFactory[BitcoindConfig] with Logging {
 
   /** The empty `bitcoind` config */
   lazy val empty: BitcoindConfig = BitcoindConfig("", DEFAULT_DATADIR)
@@ -296,15 +295,17 @@ object BitcoindConfig extends Logging {
   /** Constructs a `bitcoind` config from the given string,
     * by splitting it on newlines
     */
-  def apply(config: String, datadir: File): BitcoindConfig =
+  override def apply(config: String, datadir: File): BitcoindConfig =
     apply(config.split("\n").toList, datadir)
 
   /** Reads the given path and construct a `bitcoind` config from it */
-  def apply(config: Path): BitcoindConfig =
+  override def apply(config: Path): BitcoindConfig =
     apply(config.toFile, config.getParent.toFile)
 
   /** Reads the given file and construct a `bitcoind` config from it */
-  def apply(config: File, datadir: File = DEFAULT_DATADIR): BitcoindConfig = {
+  override def apply(
+      config: File,
+      datadir: File = DEFAULT_DATADIR): BitcoindConfig = {
     import org.bitcoins.core.compat.JavaConverters._
     val lines = Files
       .readAllLines(config.toPath)
@@ -315,11 +316,19 @@ object BitcoindConfig extends Logging {
     apply(lines, datadir)
   }
 
+  override def fromConfigFile(file: File): BitcoindConfig = {
+    apply(file.toPath)
+  }
+
+  override def fromDataDir(dir: File): BitcoindConfig = {
+    apply(dir.toPath.resolve("bitcoin.conf"))
+  }
+
   /** If there is a `bitcoin.conf` in the default
     * data directory, this is read. Otherwise, the
     * default configuration is returned.
     */
-  def fromDefaultDatadir: BitcoindConfig = {
+  override def fromDefaultDatadir: BitcoindConfig = {
     if (DEFAULT_CONF_FILE.isFile) {
       apply(DEFAULT_CONF_FILE)
     } else {
@@ -329,7 +338,7 @@ object BitcoindConfig extends Logging {
 
   /** @see https://en.bitcoin.it/wiki/Data_directory
     */
-  val DEFAULT_DATADIR: File = {
+  override val DEFAULT_DATADIR: File = {
     val path = if (Properties.isMac) {
       Paths.get(Properties.userHome,
                 "Library",
@@ -349,23 +358,25 @@ object BitcoindConfig extends Logging {
   }
 
   /** Default location of bitcoind conf file */
-  val DEFAULT_CONF_FILE: File = DEFAULT_DATADIR.toPath
+  override val DEFAULT_CONF_FILE: File = DEFAULT_DATADIR.toPath
     .resolve("bitcoin.conf")
     .toFile
 
   /** Writes the config to the data directory within it, if it doesn't
     * exist. Returns the written file.
     */
-  def writeConfigToFile(config: BitcoindConfig, datadir: File): Path = {
+  override def writeConfigToFile(
+      config: BitcoindConfig,
+      datadir: File): Path = {
 
     val confStr = config.lines.mkString("\n")
 
     Files.createDirectories(datadir.toPath)
     val confFile = datadir.toPath.resolve("bitcoin.conf")
 
-    if (datadir == DEFAULT_DATADIR && confFile == DEFAULT_CONF_FILE.toPath) {
+    if (datadir == DEFAULT_DATADIR && confFile.toFile == DEFAULT_CONF_FILE) {
       logger.warn(
-        s"We will not overrwrite the existing bitcoin.conf in default datadir")
+        s"We will not overwrite the existing bitcoin.conf in default datadir")
     } else {
       Files.write(confFile, confStr.getBytes)
     }

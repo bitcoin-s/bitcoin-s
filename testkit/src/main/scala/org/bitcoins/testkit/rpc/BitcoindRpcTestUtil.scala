@@ -1,9 +1,7 @@
 package org.bitcoins.testkit.rpc
 
-import java.io.File
-import java.net.URI
-import java.nio.file.{Files, Path}
 import akka.actor.ActorSystem
+import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
 import org.bitcoins.commons.jsonmodels.bitcoind.{
@@ -23,7 +21,6 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
-import grizzled.slf4j.Logging
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
@@ -39,16 +36,14 @@ import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
-import org.bitcoins.rpc.config.{
-  BitcoindAuthCredentials,
-  BitcoindConfig,
-  BitcoindInstance,
-  ZmqConfig
-}
+import org.bitcoins.rpc.config._
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.util.{BitcoindRpcTestClient, FileUtil}
 import org.bitcoins.util.ListUtil
 
+import java.io.File
+import java.net.URI
+import java.nio.file.{Files, Path}
 import scala.collection.immutable.Map
 import scala.collection.mutable
 import scala.concurrent._
@@ -97,9 +92,9 @@ trait BitcoindRpcTestUtil extends Logging {
                   |txindex=${if (pruneMode) 0
     else 1 /* pruning and txindex are not compatible */}
                   |zmqpubhashtx=tcp://127.0.0.1:$zmqPort
-                  |zmqpubhashblock=tcp://127.0.0.1:$zmqPort
-                  |zmqpubrawtx=tcp://127.0.0.1:$zmqPort
-                  |zmqpubrawblock=tcp://127.0.0.1:$zmqPort
+                  |zmqpubhashblock=tcp://127.0.0.1:${zmqPort + 1}
+                  |zmqpubrawtx=tcp://127.0.0.1:${zmqPort + 2}
+                  |zmqpubrawblock=tcp://127.0.0.1:${zmqPort + 3}
                   |prune=${if (pruneMode) 1 else 0}
     """.stripMargin
     val config =
@@ -200,7 +195,6 @@ trait BitcoindRpcTestUtil extends Logging {
                     pruneMode,
                     blockFilterIndex = hasNeutrinoSupport)
     val conf = BitcoindConfig(configFile)
-    val auth = BitcoindAuthCredentials.fromConfig(conf)
     val binary: File = versionOpt match {
       case Some(version) => getBinary(version)
       case None =>
@@ -213,15 +207,8 @@ trait BitcoindRpcTestUtil extends Logging {
         }
 
     }
-    val instance = BitcoindInstance(network = network,
-                                    uri = uri,
-                                    rpcUri = rpcUri,
-                                    authCredentials = auth,
-                                    zmqConfig = ZmqConfig.fromPort(zmqPort),
-                                    binary = binary,
-                                    datadir = configFile.getParent.toFile)
 
-    instance
+    BitcoindInstance.fromConfig(conf, binary)
   }
 
   def v16Instance(

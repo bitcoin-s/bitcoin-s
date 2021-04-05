@@ -54,12 +54,12 @@ class ZMQSubscriberTest extends AsyncFlatSpec with Logging {
 
   it must "be able to subscribe to a publisher and read a value" in {
     val port = Math.abs(scala.util.Random.nextInt() % 14000) + 1024
-    val socket = new InetSocketAddress("tcp://127.0.0.1", port)
+    val socket = new InetSocketAddress("127.0.0.1", port)
 
     val context = ZMQ.context(1)
     val publisher = context.socket(SocketType.PUB)
 
-    val uri = socket.getHostString + ":" + socket.getPort
+    val uri = "tcp://" + socket.getHostString + ":" + socket.getPort
     publisher.bind(uri)
 
     val valuePromise = Promise[Array[Byte]]()

@@ -1,15 +1,14 @@
 package org.bitcoins.eclair.rpc.config
 
-import java.io.File
-import java.net.{InetSocketAddress, URI}
-import java.nio.file.Paths
-
-import com.sun.jndi.toolkit.url.Uri
 import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.api.commons.InstanceFactory
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.protocol.ln.LnPolicy
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, ZmqConfig}
 
+import java.io.File
+import java.net.{InetSocketAddress, URI}
+import java.nio.file.{Path, Paths}
 import scala.util.Properties
 
 sealed trait EclairInstance {
@@ -29,7 +28,7 @@ sealed trait EclairInstance {
   * file to a
   * [[org.bitcoins.eclair.rpc.config.EclairInstance EclairInstance]]
   */
-object EclairInstance {
+object EclairInstance extends InstanceFactory[EclairInstance] {
 
   private case class EclairInstanceImpl(
       network: NetworkParameters,
@@ -61,12 +60,12 @@ object EclairInstance {
                        zmqConfig)
   }
 
-  private val DEFAULT_DATADIR = Paths.get(Properties.userHome, ".eclair")
+  override val DEFAULT_DATADIR: Path = Paths.get(Properties.userHome, ".eclair")
 
-  private val DEFAULT_CONF_FILE = DEFAULT_DATADIR.resolve("eclair.conf")
+  override val DEFAULT_CONF_FILE: Path = DEFAULT_DATADIR.resolve("eclair.conf")
 
   private def toInetSocketAddress(string: String): InetSocketAddress = {
-    val uri = new Uri(string)
+    val uri = new URI(string)
     new InetSocketAddress(uri.getHost, uri.getPort)
   }
 
@@ -78,11 +77,15 @@ object EclairInstance {
 
     val eclairConf = new File(datadir.getAbsolutePath + "/eclair.conf")
 
-    fromConfigFile(eclairConf, logbackXml)
+    fromConfFile(eclairConf, logbackXml)
 
   }
 
-  def fromConfigFile(
+  override def fromConfigFile(
+      file: File = DEFAULT_CONF_FILE.toFile): EclairInstance =
+    fromConfFile(file, None)
+
+  def fromConfFile(
       file: File = DEFAULT_CONF_FILE.toFile,
       logbackXml: Option[String]): EclairInstance = {
     require(file.exists, s"${file.getPath} does not exist!")
@@ -91,6 +94,15 @@ object EclairInstance {
     val config = ConfigFactory.parseFile(file)
 
     fromConfig(config, file.getParentFile, logbackXml)
+  }
+
+  override def fromDataDir(
+      dir: File = DEFAULT_DATADIR.toFile): EclairInstance = {
+    require(dir.exists, s"${dir.getPath} does not exist!")
+    require(dir.isDirectory, s"${dir.getPath} is not a directory!")
+
+    val confFile = dir.toPath.resolve("eclair.conf").toFile
+    fromConfigFile(confFile)
   }
 
   /** $fromConfigDoc
