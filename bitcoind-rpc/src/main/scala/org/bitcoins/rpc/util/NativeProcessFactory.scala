@@ -33,8 +33,12 @@ trait NativeProcessFactory extends Logging {
         logger.debug(s"Binary was already started!")
         ()
       case None =>
-        val started = process.run()
-        processOpt = Some(started)
+        if (cmd.nonEmpty) {
+          val started = process.run()
+          processOpt = Some(started)
+        } else {
+          logger.warn("cmd not set, no binary started")
+        }
         ()
     }
   }

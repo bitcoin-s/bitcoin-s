@@ -108,6 +108,8 @@ trait EclairRpcTestUtil extends Logging {
       port: Int = RpcUtil.randomPort,
       apiPort: Int = RpcUtil.randomPort): Config = {
     val configMap = {
+      val rawBlock = bitcoindInstance.zmqConfig.rawBlock.get
+      val rawTx = bitcoindInstance.zmqConfig.rawTx.get
       Map[String, Any](
         "eclair.chain" -> "regtest",
         "eclair.spv" -> false,
@@ -122,11 +124,8 @@ trait EclairRpcTestUtil extends Logging {
           .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
           .password,
         "eclair.bitcoind.rpcport" -> bitcoindInstance.rpcUri.getPort,
-        // newer versions of Eclair has removed this config setting, in favor of
-        // the below it. All three are included here for good measure
-        "eclair.bitcoind.zmq" -> bitcoindInstance.zmqConfig.rawTx.get.toString,
-        "eclair.bitcoind.zmqblock" -> bitcoindInstance.zmqConfig.rawBlock.get.toString,
-        "eclair.bitcoind.zmqtx" -> bitcoindInstance.zmqConfig.rawTx.get.toString,
+        "eclair.bitcoind.zmqblock" -> s"tcp://${rawBlock.getHostName}:${rawBlock.getPort}",
+        "eclair.bitcoind.zmqtx" -> s"tcp://${rawTx.getHostName}:${rawTx.getPort}",
         "eclair.api.enabled" -> true,
         "eclair.api.binding-ip" -> "127.0.0.1",
         "eclair.api.password" -> "abc123",

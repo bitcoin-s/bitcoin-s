@@ -1,13 +1,13 @@
 package org.bitcoins.rpc.config
 
-import java.io.{File, FileNotFoundException}
-import java.net.URI
-import java.nio.file.{Files, Paths}
-
-import org.bitcoins.core.config.NetworkParameters
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.commons.InstanceFactory
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.rpc.client.common.BitcoindVersion
 
+import java.io.{File, FileNotFoundException}
+import java.net.URI
+import java.nio.file.{Files, Path, Paths}
 import scala.sys.process._
 import scala.util.Properties
 
@@ -65,7 +65,7 @@ sealed trait BitcoindInstance extends Logging {
   def p2pPort: Int = uri.getPort
 }
 
-object BitcoindInstance {
+object BitcoindInstance extends InstanceFactory[BitcoindInstance] {
 
   private case class BitcoindInstanceImpl(
       network: NetworkParameters,
@@ -131,10 +131,14 @@ object BitcoindInstance {
     if (Files.exists(configPath)) {
 
       val file = configPath.toFile()
-      fromConfigFile(file, binary)
+      fromConfFile(file, binary)
     } else {
       fromConfig(BitcoindConfig.empty, binary)
     }
+  }
+
+  override def fromDataDir(dir: File): BitcoindInstance = {
+    fromDatadir(dir, DEFAULT_BITCOIND_LOCATION)
   }
 
   /** Construct a `bitcoind` from the given config file. If no `datadir` setting
@@ -142,7 +146,7 @@ object BitcoindInstance {
     *
     * @throws  IllegalArgumentException if the given config file does not exist
     */
-  def fromConfigFile(
+  def fromConfFile(
       file: File = BitcoindConfig.DEFAULT_CONF_FILE,
       binary: File = DEFAULT_BITCOIND_LOCATION
   ): BitcoindInstance = {
@@ -152,6 +156,10 @@ object BitcoindInstance {
     val conf = BitcoindConfig(file, file.getParentFile)
 
     fromConfig(conf, binary)
+  }
+
+  override def fromConfigFile(file: File): BitcoindInstance = {
+    fromConfFile(file, DEFAULT_BITCOIND_LOCATION)
   }
 
   /** Constructs a `bitcoind` instance from the given config */
@@ -169,4 +177,8 @@ object BitcoindInstance {
                      binary = binary,
                      datadir = config.datadir)
   }
+
+  override val DEFAULT_DATADIR: Path = BitcoindConfig.DEFAULT_DATADIR.toPath
+
+  override val DEFAULT_CONF_FILE: Path = BitcoindConfig.DEFAULT_CONF_FILE.toPath
 }
