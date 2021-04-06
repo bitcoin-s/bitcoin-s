@@ -85,7 +85,7 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
 
   private[config] def getValue(key: String): Option[String] = {
     val linesToSearchIn =
-      lines.takeWhile(l => !l.trim.startsWith("[") && !l.trim.startsWith(";"))
+      lines.takeWhile(l => !l.trim.startsWith("[") || !l.trim.startsWith(";"))
     val collect = collectFrom(linesToSearchIn)(_)
     collect { case (`key`, value) =>
       value
