@@ -10,6 +10,7 @@ import akka.http.scaladsl.model.{
 }
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.util.ByteString
+import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.explorer.env.ExplorerEnv
 import org.bitcoins.explorer.model.{
@@ -48,6 +49,14 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
               s"Failed to parse response for listevents, err=$err"))
       }
     }
+  }
+
+  /** Gets an announcement from the oracle explorer
+    * @see https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f#get-event
+    */
+  def getEvent(
+      announcement: OracleAnnouncementTLV): Future[SbAnnouncementEvent] = {
+    getEvent(announcement.sha256)
   }
 
   /** Gets an announcement from the oracle explorer
