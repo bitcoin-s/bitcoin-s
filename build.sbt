@@ -2,7 +2,7 @@ import com.typesafe.sbt.SbtGit.GitKeys._
 
 import scala.util.Properties
 
-cancelable in Global := true
+Global / cancelable := true
 
 //don't allow us to wipe all of our prod databases
 flywayClean / aggregate := false
@@ -19,12 +19,12 @@ lazy val benchSettings: Seq[Def.SettingsDefinition] = {
   //  .settings(benchSettings: _*)
   //  .configs(Benchmark)
   List(
-    unmanagedSourceDirectories in Test += baseDirectory.value / "src" / "bench" / "scala",
+    Test / unmanagedSourceDirectories += baseDirectory.value / "src" / "bench" / "scala",
     testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
-    parallelExecution in Benchmark := false,
-    outputStrategy in Benchmark := Some(StdoutOutput),
-    fork in Benchmark := true,
-    connectInput in Benchmark := true,
+    Benchmark / parallelExecution := false,
+    Benchmark / outputStrategy := Some(StdoutOutput),
+    Benchmark / fork := true,
+    Benchmark / connectInput := true,
     inConfig(Benchmark)(Defaults.testSettings)
   )
 }
@@ -48,7 +48,7 @@ lazy val crypto = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies ++= Deps.cryptoJVM
   )
   .jsSettings(
-    npmDependencies in Compile ++= Seq(
+    Compile / npmDependencies ++= Seq(
       "bcrypto" -> "5.4.0"
     )
   )
@@ -57,7 +57,7 @@ lazy val crypto = crossProject(JVMPlatform, JSPlatform)
   .in(file("crypto"))
 
 lazy val cryptoJS = crypto.js
-  .settings(scalacOptions in Compile += {
+  .settings(Compile / scalacOptions += {
     //Added to supress all of the dead code and unused variable warnings
     //inside of org.bitcoins.crypto.facade which is used with scalajs
     //see: https://www.scala-lang.org/2021/01/12/configuring-and-suppressing-warnings.html
@@ -272,7 +272,7 @@ lazy val secp256k1jni = project
   .settings(
     libraryDependencies ++= Deps.secp256k1jni,
     // we place lib files in this directory
-    unmanagedResourceDirectories in Compile += baseDirectory.value / "natives",
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "natives",
     //since this is not a scala module, we have no code coverage
     //this also doesn't place nice with scoverage, see
     //https://github.com/scoverage/sbt-scoverage/issues/275
@@ -500,7 +500,7 @@ lazy val bench = project
   .settings(
     libraryDependencies ++= Deps.bench,
     name := "bitcoin-s-bench",
-    skip in publish := true
+    publish / skip := true
   )
   .dependsOn(coreJVM % testAndCompile, testkit)
 
@@ -598,16 +598,16 @@ lazy val docs = project
     moduleName := name.value,
     //removes scalajs projects from unidoc, see
     //https://github.com/bitcoin-s/bitcoin-s/issues/2740
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := {
+    ScalaUnidoc / unidoc / unidocProjectFilter := {
       inAnyProject -- inProjects(jsProjects: _*)
     },
-    target in (ScalaUnidoc, unidoc) := (baseDirectory in LocalRootProject).value / "website" / "static" / "api",
-    cleanFiles += (target in (ScalaUnidoc, unidoc)).value,
+    ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
+    cleanFiles += (ScalaUnidoc / unidoc / target).value,
     docusaurusCreateSite := docusaurusCreateSite
-      .dependsOn(unidoc in Compile)
+      .dependsOn(Compile / unidoc)
       .value,
     docusaurusPublishGhpages := docusaurusPublishGhpages
-      .dependsOn(unidoc in Compile)
+      .dependsOn(Compile / unidoc)
       .value
   )
   .enablePlugins(MdocPlugin,

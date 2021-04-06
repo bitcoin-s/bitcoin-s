@@ -9,4 +9,4 @@ enablePlugins(JavaAppPackaging)
 publish / skip := true
 
 // Fork a new JVM for 'run' and 'test:run' to avoid JavaFX double initialization problems
-fork in run := true
+fork / run := true
