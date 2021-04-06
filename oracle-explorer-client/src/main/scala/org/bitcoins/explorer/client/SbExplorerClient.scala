@@ -35,7 +35,7 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
     */
   def listEvents(): Future[Vector[SbAnnouncementEvent]] = {
     val base = env.baseUri
-    val uri = Uri(base + "events")
+    val uri = Uri(base + "announcements")
     val httpReq = HttpRequest(uri = uri)
     val responseF = sendRequest(httpReq)
     responseF.flatMap { response =>
@@ -64,7 +64,7 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
     */
   def getEvent(announcementHash: Sha256Digest): Future[SbAnnouncementEvent] = {
     val base = env.baseUri
-    val uri = Uri(base + s"events/${announcementHash.hex}")
+    val uri = Uri(base + s"announcements/${announcementHash.hex}")
     val httpReq = HttpRequest(uri = uri)
     val responseF = sendRequest(httpReq)
     responseF.flatMap { response =>
@@ -86,7 +86,7 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
   def createAnnouncement(
       oracleEventExplorer: CreateAnnouncementExplorer): Future[Unit] = {
     val base = env.baseUri
-    val uri = Uri(base + s"events")
+    val uri = Uri(base + s"announcements")
     val string = oracleEventExplorer.toString
     val httpReq =
       HttpRequest(
@@ -104,7 +104,7 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
   def createAttestations(attestations: CreateAttestations): Future[Unit] = {
     val base = env.baseUri
     val uri = Uri(
-      base + s"events/${attestations.announcementHash.hex}/attestations")
+      base + s"announcements/${attestations.announcementHash.hex}/attestations")
     val string = attestations.toString
     val httpReq =
       HttpRequest(
