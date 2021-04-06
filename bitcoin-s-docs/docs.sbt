@@ -37,4 +37,4 @@ Test / bloopGenerate := None
 Compile / bloopGenerate := None
 
 //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
-scalacOptions in Compile ~= (_.filterNot(s => s == "-Xfatal-warnings"))
+Compile / scalacOptions ~= (_.filterNot(s => s == "-Xfatal-warnings"))

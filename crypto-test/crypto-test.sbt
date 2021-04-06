@@ -1,8 +1,8 @@
 publishArtifact := false
 
-testOptions in Test += Tests.Argument(TestFrameworks.ScalaCheck,
-                                      "-verbosity",
-                                      "2")
+Test / testOptions += Tests.Argument(TestFrameworks.ScalaCheck,
+                                     "-verbosity",
+                                     "2")
 
 coverageExcludedPackages := ".*gen"
 
