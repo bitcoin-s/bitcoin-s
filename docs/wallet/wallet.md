@@ -154,7 +154,7 @@ val keyManager = BIP39KeyManager.initialize(aesPasswordOpt, walletConfig.kmParam
 // once this future completes, we have a initialized
 // wallet
 val wallet = Wallet(keyManager, new NodeApi {
-    override def broadcastTransaction(tx: Transaction): Future[Unit] = Future.successful(())
+    override def broadcastTransactions(txs: Vector[Transaction]): Future[Unit] = Future.successful(())
     override def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.successful(())
   }, chainApi, ConstantFeeRateProvider(SatoshisPerVirtualByte.one), creationTime = Instant.now)
 val walletF: Future[WalletApi] = configF.flatMap { _ =>

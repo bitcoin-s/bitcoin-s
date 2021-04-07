@@ -394,6 +394,23 @@ case class SpendingInfoDAO()(implicit
         })
   }
 
+  /** Enumerates all TX outputs in the wallet with the state
+    * [[TxoState.BroadcastSpent]] or [[TxoState.BroadcastReceived]]
+    */
+  def findAllInMempool: Future[Vector[SpendingInfoDb]] = {
+    val query = table
+      .join(spkTable)
+      .on(_.scriptPubKeyId === _.id)
+    val filtered = query.filter(_._1.state.inSet(TxoState.broadcastStates))
+
+    safeDatabase
+      .runVec(filtered.result)
+      .map(res =>
+        res.map { case (utxoRec, spkRec) =>
+          utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
+        })
+  }
+
   /** Enumerates all TX outpoints in the wallet */
   def findAllOutpoints(): Future[Vector[TransactionOutPoint]] = {
     val query = table.map(_.outPoint)

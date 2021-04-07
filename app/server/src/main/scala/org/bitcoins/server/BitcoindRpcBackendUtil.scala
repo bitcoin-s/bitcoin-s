@@ -1,8 +1,5 @@
 package org.bitcoins.server
 
-import java.net.InetSocketAddress
-import java.util.concurrent.atomic.AtomicReference
-
 import akka.actor.{ActorSystem, Cancellable}
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.protocol.blockchain.Block
@@ -15,6 +12,8 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.zmq.ZMQSubscriber
 
+import java.net.InetSocketAddress
+import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
@@ -86,9 +85,6 @@ object BitcoindRpcBackendUtil extends Logging {
   def createWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
       wallet: Wallet)(implicit ec: ExecutionContext): Wallet = {
-    // Kill the old wallet
-    wallet.stopWalletThread()
-
     // We need to create a promise so we can inject the wallet with the callback
     // after we have created it into SyncUtil.getNodeApiWalletCallback
     // so we don't lose the internal state of the wallet
@@ -186,9 +182,9 @@ object BitcoindRpcBackendUtil extends Logging {
 
       /** Broadcasts the given transaction over the P2P network
         */
-      override def broadcastTransaction(
-          transaction: Transaction): Future[Unit] = {
-        bitcoindRpcClient.sendRawTransaction(transaction).map(_ => ())
+      override def broadcastTransactions(
+          transactions: Vector[Transaction]): Future[Unit] = {
+        bitcoindRpcClient.broadcastTransactions(transactions)
       }
     }
   }

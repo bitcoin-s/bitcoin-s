@@ -1,7 +1,5 @@
 package org.bitcoins.wallet.internal
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import org.bitcoins.core.api.wallet
 import org.bitcoins.core.api.wallet.AddressInfo
 import org.bitcoins.core.api.wallet.db._
@@ -19,6 +17,7 @@ import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType}
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.wallet._
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.{Await, Future, Promise, TimeoutException}
 import scala.util.{Failure, Success}
 
@@ -442,15 +441,13 @@ private[wallet] trait AddressHandling extends WalletLogger {
     addressTagDAO.dropByAddressAndTag(address, addressTagType)
   }
 
-  private val threadStarted = new AtomicBoolean(false)
-
   /** Background thread meant to ensure safety when calling [[getNewAddress()]]
     * We to ensure independent calls to getNewAddress don't result in a race condition
     * to the database that would generate the same address and cause an error.
     * With this background thread, we poll the [[addressRequestQueue]] seeing if there
     * are any elements in it, if there are, we process them and complete the Promise in the queue.
     */
-  lazy val walletThread = new Thread(AddressQueueRunnable)
+  lazy val addressQueueThread = new Thread(AddressQueueRunnable)
 
   lazy val addressRequestQueue = {
     val queue = new java.util.concurrent.ArrayBlockingQueue[(
@@ -460,23 +457,13 @@ private[wallet] trait AddressHandling extends WalletLogger {
       walletConfig.addressQueueSize
     )
 
-    if (!threadStarted.get) {
-      startWalletThread()
-    }
+    //uses the wallet background thread to query addresses
+    scheduler.scheduleAtFixedRate(AddressQueueRunnable,
+                                  0,
+                                  25,
+                                  TimeUnit.MILLISECONDS)
 
     queue
-  }
-
-  def startWalletThread(): Unit = {
-    walletThread.setDaemon(true)
-    walletThread.setName(s"wallet-address-queue-${System.currentTimeMillis()}")
-    walletThread.start()
-    threadStarted.set(true)
-  }
-
-  /** Kills the wallet's thread */
-  def stopWalletThread(): Unit = {
-    walletThread.interrupt()
   }
 
   /** A runnable that drains [[addressRequestQueue]]. Currently polls every 100ms
@@ -487,7 +474,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
   private case object AddressQueueRunnable extends Runnable {
 
     override def run(): Unit = {
-      while (!walletThread.isInterrupted) {
+      while (!addressQueueThread.isInterrupted) {
         val (account, chainType, promise) =
           try {
             addressRequestQueue.take()

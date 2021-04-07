@@ -14,6 +14,7 @@ import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
@@ -118,8 +119,9 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
 
   // Node Api
 
-  override def broadcastTransaction(transaction: Transaction): Future[Unit] =
-    sendRawTransaction(transaction).map(_ => ())
+  override def broadcastTransactions(
+      transactions: Vector[Transaction]): Future[Unit] =
+    FutureUtil.sequentially(transactions)(sendRawTransaction(_)).map(_ => ())
 
   override def downloadBlocks(
       blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.unit
