@@ -8,9 +8,14 @@ d315b5028b4 update Base docker image to a ubuntu buster (#2799)
 
 f7d14f35e48 Rework docker configuration to pass in a custom configuration file (#2718)
 
+2532de09193 2021 02 19 dockerhub docs (#2693)
+
+eb005b71812 Add github workflow steps to publish to dockerhub (#2684)
+
 a20b87788ba 2021 02 15 appserver docker (#2673)
 
 5de4537f411 Get basic docker image working with oracle server (#2668)
+
 
 
 ## New modules
@@ -60,6 +65,8 @@ f256636565e Remove logging from testkit core (#2813)
 
 68034600bd2 Fix parsing comments in LndConfig (#2864)
 
+c0e6a7e5a12 Add sendouputs function to lnd rpc (#2858)
+
 656e0928bf1 Inital LND rpc with some tests (#2836)
 
 ### AsyncUtil
@@ -80,138 +87,157 @@ bb49a1f16d6 2021 02 25 async utils (#2725)
 ad738a5a283 Implement Oracle Explorer Client (#2838)
 
 
-
-8ce22583a55 Wallet Rebroadcast Transactions thread (#2711)
-
-7dcef9b5696 Fix build warnings that came with sbt 1.5.0 (#2857)
-
-c0e6a7e5a12 Add sendouputs function to lnd rpc (#2858)
-
-02ab4026b8f Have BitcoindV21RpcClientTest wait for indexes to sync (#2855)
-
-176cbc9e3ee Add ability to delete Oracle signatures (#2851)
-
-2745fdf8db9 Rework the website scaladoc aggregation and website (#2846)
-
-0437dcb04d4 Update gitignore file with recommendations from unidoc (#2845)
-
-2d3b3b64b8a Fix potential unordered nonces in announcement (#2831)
+## Core
 
 32a6db930bd Made ECPrivateKey signing synchronous and got src compiling (#2652)
 
 d8f1b1e03c3 Attempt to find type name when parsing incorrect tlv type (#2820)
 
-7a88f585340 Reduce fee rate for spending coinbase utxos (#2815)
-
-e9cac3d8b19 Add docs for getblockheader (#2811)
-
-eaac9c154c2 Implement caching of bitcoind in the walletTest,nodeTest, and partially bitcoindRpcTest project (#2792)
-
 147a6537fd8 Implement bech32m (#2572)
 
 fcb5dbeaa9f Add Broadcast TxoState (#2735)
 
-96f658317ed Create NativeProcessFactory, extend it in both Client.scala & EclairRpcClient.scala (#2800)
-
-b90a8250427 Move blockhash to tx table from spending info table (#2744)
-
-3f938bf8c31 Bump timeout on bind to avoid spurious ci failures hopefully (#2791)
-
-b0f098ffde6 Turn off parallelExecution and remove extra AsyncUtil test class (#2790)
-
-e0421f657b5 Refactor starting second bitcoind in MempoolRpcTest, remove Thread.sleep (#2776)
-
-eef52bb512b Update all deps that failed because of bad build (#2774)
-
-989443bb5f9 Add signed outcome to `getevent` rpc, fix other small api bugs (#2757)
-
-b6b234d0a24 Add fetch depth zero to everything to fix bug introduced in #2766 (#2773)
-
-827553ac9dd Make website publish work with teh latest stable version (#2766)
-
-ab78b6fa3b3 Wrap entire Client.getPayload() into try catch to avoid exceptions leaking (#2767)
-
-7bf00a1a200 Make it clear on the getting-setup.md page that this is only for development, you can find binaries in getting-started.md (#2759)
-
 207856b0c42 Completely remove range event descriptors (#2764)
-
-9b252337db0 2021 03 04 fix publish pt2 (#2763)
-
-4a7bd73f4cf Fix DLCOracle to be Network Agnostic (#2749)
-
-4a847c03d6d Fix unidoc issue with scala-js modules, this now ignores them from un… (#2742)
-
-99b9c188ad5 Correct log location and logs for oracle server (#2722)
-
-
-
-0bfc034ae13 Make sure DLCOracleAppConfig creates the oracle directory (#2720)
-
-98da2516b22 Begin re-introducing parallelism in the wallet to make everything faster (#2705)
-
-b20776cb241 Simplify oracle server RPC api (#2656)
 
 0d7edb7a681 2021 02 21 cheap redeemscript check (#2707)
 
-c6bf0bb1a31 Workaround for issue 2708 (#2709)
-
-cd1e2e1b5d3 Reduce usage of .findAll() (doesn't scale for large dbs). Now pass in… (#2706)
-
-97f5c1d14f3 Allow implicit execution context to be passed in to RescanHandling.findMatches() & RescanHandling.fetchFiltersInRange() (#2704)
-
 7d4314e28d7 2021 02 20 number byte representation (#2703)
-
-7357da38115 Bump the timeout for address queue exception test to make sure we get correct exception (#2697)
 
 6132d20e3a0 Decrease false positive rate to avoid spurious CI failures (#2698)
 
-4c65782c62c Cache httpClient in bitcoind, rename Test.akkaHttp -> Test.akkaHttpTestkit (#2702)
-
-2532de09193 2021 02 19 dockerhub docs (#2693)
-
-40e1ab0c01e Add guard for the case when listFiles returns null (#2696)
-
 f6b48e1824e Fix normalized string comparison (#2695)
-
-67303b14107 Set fetch-depth to 100 so we don't take forever to clone repo on ci (#2694)
-
-eb005b71812 Add github workflow steps to publish to dockerhub (#2684)
-
-9d210b7e1f4 Change oracle db to have its own directory (#2667)
-
-aa632efb652 Make sure dynver versions use '-' instead of '+' (#2681)
-
-581b3e8ac51 Add --depth 100 restriction when cloning bitcoin-s repo to speed up clone time (#2674)
-
-6280b2a7ffa Fix docs to use correct oracle server port (#2666)
 
 942e31d60e4 Optimized sigPoint computation to use non-custom secp functions (#2665)
 
 8f24377c79d Compute `sigPoint`s eagerly but asynchronously (#2642)
 
-89185338e04 Refactoring `chain` (#2662)
-
-291efe0e4c2 Give oracle server its own port (#2653)
-
 7f5e9b4cc98 Use specific functions for Oracle Signing version (#2659)
 
 95163d51146 Refactor HDCoinType to be ADT (#2657)
 
-af8343dd567 2021 02 10 Website fixes (#2643)
-
-b079073094c Fix/typos (#2633)
-
 9fdf4bca493 Create ScriptFactory.isValidAsm() to standardize how check validity o… (#2629)
-
-5d1dace60d5 Update README to have correct latest version (#2631)
 
 58a46fdfdaa Add number cache trait, use it in all number types (u8,u32,etc) and S… (#2627)
 
 de30c61f546 Do cheap checks in predicates first before more expensive ones (#2628)
 
+26e481a6e48 Re-wrote CETCalculator.splitIntoRanges (#2621)
+
 f815eb7f77b Added utilities to created linear approximations of Long => Long functions (#2537)
 
-26e481a6e48 Re-wrote CETCalculator.splitIntoRanges (#2621)
+## Chain
+
+89185338e04 Refactoring `chain` (#2662)
+
+## Wallet
+
+8ce22583a55 Wallet Rebroadcast Transactions thread (#2711)
+
+7a88f585340 Reduce fee rate for spending coinbase utxos (#2815)
+
+b90a8250427 Move blockhash to tx table from spending info table (#2744)
+
+98da2516b22 Begin re-introducing parallelism in the wallet to make everything faster (#2705)
+
+cd1e2e1b5d3 Reduce usage of .findAll() (doesn't scale for large dbs). Now pass in… (#2706)
+
+97f5c1d14f3 Allow implicit execution context to be passed in to RescanHandling.findMatches() & RescanHandling.fetchFiltersInRange() (#2704)
+
+7357da38115 Bump the timeout for address queue exception test to make sure we get correct exception (#2697)
+
+
+## Node
+
+## Testkit
+
+eaac9c154c2 Implement caching of bitcoind in the walletTest,nodeTest, and partially bitcoindRpcTest project (#2792)
+
+40e1ab0c01e Add guard for the case when listFiles returns null (#2696)
+
+## DLC oracle
+
+2d3b3b64b8a Fix potential unordered nonces in announcement (#2831)
+
+4a7bd73f4cf Fix DLCOracle to be Network Agnostic (#2749)
+
+0bfc034ae13 Make sure DLCOracleAppConfig creates the oracle directory (#2720)
+
+9d210b7e1f4 Change oracle db to have its own directory (#2667)
+
+
+## Oracle Server
+
+176cbc9e3ee Add ability to delete Oracle signatures (#2851)
+
+989443bb5f9 Add signed outcome to `getevent` rpc, fix other small api bugs (#2757)
+
+99b9c188ad5 Correct log location and logs for oracle server (#2722)
+
+b20776cb241 Simplify oracle server RPC api (#2656)
+
+6280b2a7ffa Fix docs to use correct oracle server port (#2666)
+
+291efe0e4c2 Give oracle server its own port (#2653)
+
+
+## Bitcoind rpc
+
+02ab4026b8f Have BitcoindV21RpcClientTest wait for indexes to sync (#2855)
+
+96f658317ed Create NativeProcessFactory, extend it in both Client.scala & EclairRpcClient.scala (#2800)
+
+e0421f657b5 Refactor starting second bitcoind in MempoolRpcTest, remove Thread.sleep (#2776)
+
+ab78b6fa3b3 Wrap entire Client.getPayload() into try catch to avoid exceptions leaking (#2767)
+
+4c65782c62c Cache httpClient in bitcoind, rename Test.akkaHttp -> Test.akkaHttpTestkit (#2702)
+
+
+## Eclair rpc
+
+## Documentation / Website
+
+2745fdf8db9 Rework the website scaladoc aggregation and website (#2846)
+
+e9cac3d8b19 Add docs for getblockheader (#2811)
+
+827553ac9dd Make website publish work with teh latest stable version (#2766)
+
+7bf00a1a200 Make it clear on the getting-setup.md page that this is only for development, you can find binaries in getting-started.md (#2759)
+
+af8343dd567 2021 02 10 Website fixes (#2643)
+
+b079073094c Fix/typos (#2633)
+
+5d1dace60d5 Update README to have correct latest version (#2631)
+
+
+## Build
+
+7dcef9b5696 Fix build warnings that came with sbt 1.5.0 (#2857)
+
+0437dcb04d4 Update gitignore file with recommendations from unidoc (#2845)
+
+3f938bf8c31 Bump timeout on bind to avoid spurious ci failures hopefully (#2791)
+
+b0f098ffde6 Turn off parallelExecution and remove extra AsyncUtil test class (#2790)
+
+eef52bb512b Update all deps that failed because of bad build (#2774)
+
+b6b234d0a24 Add fetch depth zero to everything to fix bug introduced in #2766 (#2773)
+
+9b252337db0 2021 03 04 fix publish pt2 (#2763)
+
+4a847c03d6d Fix unidoc issue with scala-js modules, this now ignores them from un… (#2742)
+
+c6bf0bb1a31 Workaround for issue 2708 (#2709)
+
+67303b14107 Set fetch-depth to 100 so we don't take forever to clone repo on ci (#2694)
+
+aa632efb652 Make sure dynver versions use '-' instead of '+' (#2681)
+
+581b3e8ac51 Add --depth 100 restriction when cloning bitcoin-s repo to speed up clone time (#2674)
+
 
 ### Other
 
