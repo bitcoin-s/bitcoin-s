@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.dlc
 
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.tlv.{PayoutFunctionV0TLV, TLVPoint}
 import org.bitcoins.core.util.{Indexed, NumberUtil}
 
@@ -156,8 +156,8 @@ case class OutcomePayoutEndpoint(outcome: Long, payout: BigDecimal)
 
 object OutcomePayoutEndpoint {
 
-  def apply(outcome: Long, payout: Satoshis): OutcomePayoutEndpoint = {
-    OutcomePayoutEndpoint(outcome, payout.toLong)
+  def apply(outcome: Long, payout: CurrencyUnit): OutcomePayoutEndpoint = {
+    OutcomePayoutEndpoint(outcome, payout.satoshis.toLong)
   }
 }
 
