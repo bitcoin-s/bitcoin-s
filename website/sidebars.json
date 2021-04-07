@@ -75,6 +75,9 @@
       "oracle/oracle-election-example",
       "oracle/oracle-price-example"
     ],
+    "Oracle Explorer Client": [
+      "oracle-explorer-client/oracle-explorer-client"
+    ],
     "Contributing": [
       "contributing",
       "contributing-website"
