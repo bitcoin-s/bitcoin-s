@@ -67,7 +67,8 @@
       "secp256k1/jni-modify"
     ],
     "Testkit": [
-      "testkit/testkit"
+      "testkit/testkit",
+      "testkit/testkit-core"
     ],
     "DLC Oracle": [
       "oracle/build-oracle-server",
