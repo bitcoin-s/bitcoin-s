@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairNewest,
+  BitcoindFixturesCachedPairV21,
   BitcoindRpcTestUtil
 }
 import org.scalatest.{FutureOutcome, Outcome}
@@ -18,7 +18,7 @@ import org.scalatest.{FutureOutcome, Outcome}
 import java.io.File
 import scala.concurrent.Future
 
-class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
+class MempoolRpcTest extends BitcoindFixturesCachedPairV21 {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val futOutcome: Future[Outcome] = for {
