@@ -53,7 +53,15 @@ sealed abstract class ECPrivateKey
   def adaptorSign(
       adaptorPoint: ECPublicKey,
       msg: ByteVector): ECAdaptorSignature = {
-    CryptoUtil.adaptorSign(this, adaptorPoint, msg)
+    val auxRand = ECPrivateKey.freshPrivateKey.bytes
+    adaptorSign(adaptorPoint, msg, auxRand)
+  }
+
+  def adaptorSign(
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector,
+      auxRand: ByteVector): ECAdaptorSignature = {
+    CryptoUtil.adaptorSign(this, adaptorPoint, msg, auxRand)
   }
 
   def completeAdaptorSignature(

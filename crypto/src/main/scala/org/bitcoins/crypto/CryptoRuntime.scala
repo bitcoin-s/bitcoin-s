@@ -265,7 +265,9 @@ trait CryptoRuntime {
   def adaptorSign(
       key: ECPrivateKey,
       adaptorPoint: ECPublicKey,
-      msg: ByteVector): ECAdaptorSignature = {
+      msg: ByteVector,
+      auxRand: ByteVector): ECAdaptorSignature = {
+    val _ = auxRand
     AdaptorUtil.adaptorSign(key, adaptorPoint, msg)
   }
 

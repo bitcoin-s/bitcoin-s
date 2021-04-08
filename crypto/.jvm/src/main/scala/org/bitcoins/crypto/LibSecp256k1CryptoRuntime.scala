@@ -141,8 +141,12 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     ByteVector(sum)
   }
 
-  override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey =
-    BouncycastleCryptoRuntime.add(pk1, pk2)
+  override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey = {
+    val summands = Array(pk1.bytes.toArray, pk2.bytes.toArray)
+    val sumKey = NativeSecp256k1.pubKeyCombine(summands, pk1.isCompressed)
+
+    ECPublicKey(ByteVector(sumKey))
+  }
 
   override def pubKeyTweakAdd(
       pubkey: ECPublicKey,
@@ -162,40 +166,35 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     }
   }
 
-  // TODO: add a native implementation
   override def schnorrSign(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
       auxRand: ByteVector): SchnorrDigitalSignature = {
-//    val sigBytes =
-//      NativeSecp256k1.schnorrSign(dataToSign.toArray,
-//                                  privateKey.bytes.toArray,
-//                                  auxRand.toArray)
-//    SchnorrDigitalSignature(ByteVector(sigBytes))
-    BouncycastleCryptoRuntime.schnorrSign(dataToSign, privateKey, auxRand)
+    val sigBytes =
+      NativeSecp256k1.schnorrSign(dataToSign.toArray,
+                                  privateKey.bytes.toArray,
+                                  auxRand.toArray)
+    SchnorrDigitalSignature(ByteVector(sigBytes))
   }
 
-  // TODO: add a native implementation
   override def schnorrSignWithNonce(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
       nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
-//    val sigBytes =
-//      NativeSecp256k1.schnorrSignWithNonce(dataToSign.toArray,
-//                                           privateKey.bytes.toArray,
-//                                           nonceKey.bytes.toArray)
-//    SchnorrDigitalSignature(ByteVector(sigBytes))
-    BouncycastleCryptoRuntime.schnorrSignWithNonce(dataToSign,
-                                                   privateKey,
-                                                   nonceKey)
+    val sigBytes =
+      NativeSecp256k1.schnorrSignWithNonce(dataToSign.toArray,
+                                           privateKey.bytes.toArray,
+                                           nonceKey.bytes.toArray)
+    SchnorrDigitalSignature(ByteVector(sigBytes))
   }
 
-  // TODO: add a native implementation
   override def schnorrVerify(
       data: ByteVector,
       schnorrPubKey: SchnorrPublicKey,
       signature: SchnorrDigitalSignature): Boolean = {
-    BouncycastleCryptoRuntime.schnorrVerify(data, schnorrPubKey, signature)
+    NativeSecp256k1.schnorrVerify(signature.bytes.toArray,
+                                  data.toArray,
+                                  schnorrPubKey.bytes.toArray)
   }
 
   // TODO: add a native implementation
@@ -210,60 +209,48 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
                                                      compressed)
   }
 
-  // TODO: add a native implementation
   override def adaptorSign(
       key: ECPrivateKey,
       adaptorPoint: ECPublicKey,
-      msg: ByteVector): ECAdaptorSignature = {
-//    val sigWithProof = NativeSecp256k1.adaptorSign(key.bytes.toArray,
-//                                                   adaptorPoint.bytes.toArray,
-//                                                   msg.toArray)
-//    ECAdaptorSignature(ByteVector(sigWithProof))
-    BouncycastleCryptoRuntime.adaptorSign(key, adaptorPoint, msg)
+      msg: ByteVector,
+      auxRand: ByteVector): ECAdaptorSignature = {
+    val sig = NativeSecp256k1.adaptorSign(key.bytes.toArray,
+                                          adaptorPoint.bytes.toArray,
+                                          msg.toArray,
+                                          auxRand.toArray)
+    ECAdaptorSignature(ByteVector(sig))
   }
 
-  // TODO: add a native implementation
   override def adaptorComplete(
       key: ECPrivateKey,
       adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
-//    val sigBytes =
-//      NativeSecp256k1.adaptorAdapt(key.bytes.toArray,
-//                                   adaptorSignature.adaptedSig.toArray)
-//    ECDigitalSignature.fromBytes(ByteVector(sigBytes))
-    BouncycastleCryptoRuntime.adaptorComplete(key, adaptorSignature)
+    val sigBytes =
+      NativeSecp256k1.adaptorAdapt(key.bytes.toArray,
+                                   adaptorSignature.bytes.toArray)
+    ECDigitalSignature.fromBytes(ByteVector(sigBytes))
   }
 
-  // TODO: add a native implementation
   override def extractAdaptorSecret(
       signature: ECDigitalSignature,
       adaptorSignature: ECAdaptorSignature,
       key: ECPublicKey): ECPrivateKey = {
-//    val secretBytes = NativeSecp256k1.adaptorExtractSecret(
-//      signature.bytes.toArray,
-//      adaptorSignature.adaptedSig.toArray,
-//      key.bytes.toArray)
-//
-//    ECPrivateKey(ByteVector(secretBytes))
-    BouncycastleCryptoRuntime.extractAdaptorSecret(signature,
-                                                   adaptorSignature,
-                                                   key)
+    val secretBytes = NativeSecp256k1.adaptorExtractSecret(
+      signature.bytes.toArray,
+      adaptorSignature.bytes.toArray,
+      key.bytes.toArray)
+
+    ECPrivateKey(ByteVector(secretBytes))
   }
 
-  // TODO: add a native implementation
   override def adaptorVerify(
       adaptorSignature: ECAdaptorSignature,
       key: ECPublicKey,
       msg: ByteVector,
       adaptorPoint: ECPublicKey): Boolean = {
-//    NativeSecp256k1.adaptorVerify(adaptorSignature.adaptedSig.toArray,
-//                                  key.bytes.toArray,
-//                                  msg.toArray,
-//                                  adaptorPoint.bytes.toArray,
-//                                  adaptorSignature.dleqProof.toArray)
-    BouncycastleCryptoRuntime.adaptorVerify(adaptorSignature,
-                                            key,
-                                            msg,
-                                            adaptorPoint)
+    NativeSecp256k1.adaptorVerify(adaptorSignature.bytes.toArray,
+                                  key.bytes.toArray,
+                                  msg.toArray,
+                                  adaptorPoint.bytes.toArray)
   }
 
   override def isValidSignatureEncoding(
@@ -276,8 +263,16 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
   override def sipHash(item: ByteVector, key: SipHashKey): Long =
     BouncycastleCryptoRuntime.sipHash(item, key)
 
-  override def decodePoint(bytes: ByteVector): ECPoint =
-    BouncycastleCryptoRuntime.decodePoint(bytes)
+  override def decodePoint(bytes: ByteVector): ECPoint = {
+    if (bytes == ByteVector.fromByte(0x00)) {
+      ECPointInfinity
+    } else {
+      val pointBytes = NativeSecp256k1.decompress(bytes.toArray)
+      val xBytes = pointBytes.tail.take(32)
+      val yBytes = pointBytes.takeRight(32)
+      ECPoint(xBytes, yBytes)
+    }
+  }
 
   override def randomBytes(n: Int): ByteVector = {
     BouncycastleCryptoRuntime.randomBytes(n)

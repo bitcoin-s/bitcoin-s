@@ -32,9 +32,10 @@ class BouncyCastleBIP340Test extends BitcoinSCryptoTest {
       sig: SchnorrDigitalSignature,
       expectedResult: Boolean,
       comment: String): Assertion = {
-    val secpResult = pubKey.verify(msg, sig)
+    val secpResult = Try(pubKey.verify(msg, sig)).getOrElse(false)
     val bouncyCastleResult =
-      BouncycastleCryptoRuntime.schnorrVerify(msg, pubKey, sig)
+      Try(BouncycastleCryptoRuntime.schnorrVerify(msg, pubKey, sig))
+        .getOrElse(false)
     assert(secpResult == expectedResult,
            s"Test $index failed verification for libsecp256k1: $comment")
     assert(bouncyCastleResult == expectedResult,

@@ -7,18 +7,16 @@ case class ECAdaptorSignature(bytes: ByteVector) extends NetworkElement {
     bytes.length == 162,
     s"Adaptor signature must have 65 byte sig and 97 byte dleq proof, got $bytes")
 
-  val (adaptedSig: ByteVector, dleqProof: ByteVector) = bytes.splitAt(65)
+  val (adaptedSig: ByteVector, dleqProof: ByteVector) = bytes.splitAt(98)
 
-  val tweakedNonce: ECPublicKey =
-    ECAdaptorSignature.deserializePoint(adaptedSig.take(33))
-  val adaptedS: FieldElement = FieldElement(adaptedSig.drop(33))
+  val tweakedNonce: ECPublicKey = ECPublicKey(adaptedSig.take(33))
+  val untweakedNonce: ECPublicKey = ECPublicKey(adaptedSig.drop(33).take(33))
+  val adaptedS: FieldElement = FieldElement(adaptedSig.drop(66))
 
   require(!adaptedS.isZero, "Adapted signature cannot be zero.")
 
-  val untweakedNonce: ECPublicKey =
-    ECAdaptorSignature.deserializePoint(dleqProof.take(33))
-  val dleqProofS: FieldElement = FieldElement(dleqProof.drop(33).take(32))
-  val dleqProofE: FieldElement = FieldElement(dleqProof.drop(65))
+  val dleqProofS: FieldElement = FieldElement(dleqProof.take(32))
+  val dleqProofE: FieldElement = FieldElement(dleqProof.drop(32))
 
   require(
     tweakedNonce.bytes.nonEmpty && CryptoUtil.isValidPubKey(tweakedNonce.bytes),

@@ -1,5 +1,6 @@
 package org.bitcoins.crypto
 
+import org.bitcoin.NativeSecp256k1Util.AssertFailException
 import scodec.bits._
 
 import scala.concurrent.ExecutionContext
@@ -83,7 +84,7 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     assert(pubkey.bytes == decompressed.bytes)
   }
 
-  it must "be able to add infinity points" in {
+  it must "not be able to add opposite public keys" in {
     val privkey = ECPrivateKey.freshPrivateKey
     val pubkey1 = privkey.publicKey
     val firstByte: Byte =
@@ -93,9 +94,7 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     val pubkey2 =
       ECPublicKey.fromBytes(ByteVector(firstByte) ++ pubkey1.bytes.tail)
 
-    val res1 = CryptoUtil.add(pubkey1, pubkey2)
-
-    assert(res1 == ECPublicKey.infinity)
+    assertThrows[AssertFailException](CryptoUtil.add(pubkey1, pubkey2))
 
     val decompressedPubkey1 =
       CryptoUtil.publicKeyConvert(pubkey1, compressed = false)
@@ -103,10 +102,8 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     val decompressedPubkey2 =
       CryptoUtil.publicKeyConvert(pubkey2, compressed = false)
 
-    val res2 =
-      CryptoUtil.add(decompressedPubkey1, decompressedPubkey2)
-
-    assert(res2 == ECPublicKey.infinity)
+    assertThrows[AssertFailException](
+      CryptoUtil.add(decompressedPubkey1, decompressedPubkey2))
   }
 
 }
