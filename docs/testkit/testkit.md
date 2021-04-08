@@ -3,7 +3,7 @@ id: testkit
 title: Testkit
 ---
 
-## Philosphy of Testkit
+## Philosophy of Testkit
 
 The high level of of the bitcoin-s testkit is to mimic and provide functionality to test 3rd party applications.
 
@@ -154,17 +154,6 @@ val resultF = for {
 
 Await.result(resultF, 180.seconds)
 ```
-
-### Testkit for core
-
-The testkit functionality for our core module primary consists of generators for property based tests.
-
-A generator is a piece of code that generates a random object for a data strucutre -- such as a `Transaction`.
-
-There is also a robust set of generators available in the [org.bitcoins.testkit.gen](../../testkit-core/src/main/scala/org/bitcoins/testkitcore/gen) package.
-This allows you to integrate property based testing into your library and feel confident about implementing your application specific logic correctly.
-
-You can see examples of us using these generators inside of testkit in our [Private Key test cases](https://github.com/bitcoin-s/bitcoin-s/blob/master/crypto-test/src/test/scala/org/bitcoins/crypto/ECPrivateKeyTest.scala)
 
 ### Other modules
 
