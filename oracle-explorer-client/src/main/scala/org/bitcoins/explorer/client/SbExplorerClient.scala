@@ -33,7 +33,7 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
     * @see https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f#list-all-events
     * @return
     */
-  def listEvents(): Future[Vector[SbAnnouncementEvent]] = {
+  def listAnnouncements(): Future[Vector[SbAnnouncementEvent]] = {
     val base = env.baseUri
     val uri = Uri(base + "announcements")
     val httpReq = HttpRequest(uri = uri)
@@ -54,15 +54,16 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
   /** Gets an announcement from the oracle explorer
     * @see https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f#get-event
     */
-  def getEvent(
+  def getAnnouncement(
       announcement: OracleAnnouncementTLV): Future[SbAnnouncementEvent] = {
-    getEvent(announcement.sha256)
+    getAnnouncement(announcement.sha256)
   }
 
   /** Gets an announcement from the oracle explorer
     * @see https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f#get-event
     */
-  def getEvent(announcementHash: Sha256Digest): Future[SbAnnouncementEvent] = {
+  def getAnnouncement(
+      announcementHash: Sha256Digest): Future[SbAnnouncementEvent] = {
     val base = env.baseUri
     val uri = Uri(base + s"announcements/${announcementHash.hex}")
     val httpReq = HttpRequest(uri = uri)
