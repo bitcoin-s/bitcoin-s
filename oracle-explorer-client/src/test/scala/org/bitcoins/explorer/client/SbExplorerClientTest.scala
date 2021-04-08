@@ -30,7 +30,7 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
 
   it must "list events" in {
     val eventsF: Future[Vector[SbAnnouncementEvent]] =
-      explorerClient.listEvents()
+      explorerClient.listAnnouncements()
     for {
       events <- eventsF
     } yield {
@@ -40,7 +40,7 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
 
   it must "get an event" in {
     val hash = announcement.sha256
-    val eventsF = explorerClient.getEvent(hash)
+    val eventsF = explorerClient.getAnnouncement(hash)
     for {
       event <- eventsF
     } yield {
@@ -51,7 +51,7 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
   it must "return failure from get an event if the event DNE" in {
     val hash = Sha256Digest.empty
     recoverToSucceededIf[RuntimeException] {
-      explorerClient.getEvent(hash)
+      explorerClient.getAnnouncement(hash)
     }
   }
 
@@ -67,7 +67,7 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
     val createdF = explorerClient.createAnnouncement(event)
     for {
       _ <- createdF
-      event <- explorerClient.getEvent(event.oracleAnnouncementV0.sha256)
+      event <- explorerClient.getAnnouncement(event.oracleAnnouncementV0.sha256)
     } yield {
       assert(event.announcement == announcement)
       assert(event.attestations.isEmpty)
@@ -92,7 +92,7 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
     for {
       _ <- createdF
       //now we must have the attesations
-      event <- explorerClient.getEvent(announcementHash)
+      event <- explorerClient.getAnnouncement(announcementHash)
     } yield {
       assert(event.attestations.isDefined)
       assert(event.attestations.get == attestations)

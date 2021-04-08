@@ -624,6 +624,7 @@ lazy val docs = project
     cryptoJVM,
     coreJVM,
     dbCommons,
+    oracleExplorerClient,
     feeProvider,
     dlcOracle,
     eclairRpc,
