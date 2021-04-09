@@ -29,8 +29,8 @@
       "chain/filter-sync": {
         "title": "Syncing Blockfilters"
       },
-      "config/configuration": {
-        "title": "Application Configuration"
+      "config/configuration title: Application Configuration": {
+        "title": "config/configuration title: Application Configuration"
       },
       "contributing-website": {
         "title": "Contributing to the website"
@@ -89,11 +89,14 @@
       "key-manager/server-key-manager": {
         "title": "Server Key Manager"
       },
-      "node/node-api": {
-        "title": "Node API"
+      "node/node-api title: Node API": {
+        "title": "node/node-api title: Node API"
       },
       "node/node": {
         "title": "Light Client"
+      },
+      "oracle-explorer-client/oracle-explorer-client": {
+        "title": "Oracle Explorer Client"
       },
       "oracle/build-oracle-server": {
         "title": "Building the Oracle Server"
@@ -628,6 +631,7 @@
       "Secp256k1": "Secp256k1",
       "Testkit": "Testkit",
       "DLC Oracle": "DLC Oracle",
+      "Oracle Explorer Client": "Oracle Explorer Client",
       "Contributing": "Contributing",
       "Security": "Security",
       "Getting started": "Getting started",
