@@ -147,40 +147,13 @@ object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
   }
 
   /** Takes in a BIP32 Path and verifies all paths are hardened
-    * @throws IllegalArgumentException is a non hardened path is found
+    * @throws RuntimeException is a non hardened path is found
     */
   def fromHardenedString(string: String): BIP32Path = {
-    val parts: Vector[String] = {
-      val p = string
-        .split("/")
-        .toVector
-        // BIP32 path segments are written both with whitespace between (https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#examples)
-        // and without (https://wiki.trezor.io/Standard_derivation_paths)
-        .map(_.trim)
-
-      val head +: rest = p
-      require(head == "m",
-              """The first element in a BIP32 path string must be "m"""")
-      rest
-    }
-
-    val isAllPathsHardened = parts.forall(string => isHardened(string))
-
-    if (isAllPathsHardened) {
-      BIP32Path.fromString(string)
-    } else {
-      throw new IllegalArgumentException(
-        s"Did not receive all hardened paths from string, got=$string")
-    }
-  }
-
-  /** Takes in a single element path and checks if it is hardened
-    */
-  private def isHardened(string: String): Boolean = {
-    require(
-      string.count(_ == '\'') == 1,
-      s"Receive multiple paths in string=$string, can only check one path for hardness")
-    string.endsWith("'")
+    val path = BIP32Path.fromString(string)
+    require(path.forall(_.hardened),
+            s"Found non hardened path in string=$string")
+    path
   }
 
   private def fromBytes(bytes: ByteVector, littleEndian: Boolean): BIP32Path = {
