@@ -234,16 +234,15 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
   }
 
   it must "extract adaptor secrets the same" in {
-    forAll(CryptoGenerators.digitalSignature,
-           CryptoGenerators.adaptorSignature,
-           CryptoGenerators.publicKey) { case (sig, adaptorSig, adaptor) =>
-      assert(
-        LibSecp256k1CryptoRuntime.extractAdaptorSecret(
-          sig,
-          adaptorSig,
-          adaptor) == BouncycastleCryptoRuntime.extractAdaptorSecret(sig,
-                                                                     adaptorSig,
-                                                                     adaptor))
+    forAll(CryptoGenerators.adaptorSignatureWithDecryptedSignatureAndAdaptor) {
+      case (adaptorSig, sig, adaptor) =>
+        assert(
+          LibSecp256k1CryptoRuntime.extractAdaptorSecret(sig,
+                                                         adaptorSig,
+                                                         adaptor) ==
+            BouncycastleCryptoRuntime.extractAdaptorSecret(sig,
+                                                           adaptorSig,
+                                                           adaptor))
     }
   }
 }

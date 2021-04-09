@@ -14,26 +14,32 @@ object DLEQUtil {
   }
 
   def dleqNonceFunc(
-      hash: ByteVector,
       fe: FieldElement,
-      algoName: String): FieldElement = {
-    val kBytes =
-      CryptoUtil.taggedSha256(fe.bytes ++ hash, algoName).bytes
-    FieldElement(kBytes)
+      adaptorPoint: ECPublicKey,
+      point: ECPublicKey,
+      tweakedPoint: ECPublicKey,
+      auxRand: ByteVector): FieldElement = {
+    val hash = CryptoUtil
+      .sha256(point.compressed.bytes ++ tweakedPoint.compressed.bytes)
+      .bytes
+
+    AdaptorUtil.adaptorNonce(hash,
+                             fe.toPrivateKey,
+                             adaptorPoint,
+                             "DLEQ",
+                             auxRand)
   }
 
   def dleqChallengeHash(
-      algoName: String,
       adaptorPoint: ECPublicKey,
       r1: ECPublicKey,
       r2: ECPublicKey,
       p1: ECPublicKey,
       p2: ECPublicKey): ByteVector = {
     CryptoUtil
-      .taggedSha256(
-        adaptorPoint.compressed.bytes ++ r1.compressed.bytes ++
-          r2.compressed.bytes ++ p1.compressed.bytes ++ p2.compressed.bytes,
-        algoName)
+      .sha256DLEQ(
+        p1.compressed.bytes ++ adaptorPoint.compressed.bytes ++
+          p2.compressed.bytes ++ r1.compressed.bytes ++ r2.compressed.bytes)
       .bytes
   }
 
@@ -43,24 +49,17 @@ object DLEQUtil {
   def dleqProve(
       fe: FieldElement,
       adaptorPoint: ECPublicKey,
-      algoName: String): (FieldElement, FieldElement) = {
+      auxRand: ByteVector): (FieldElement, FieldElement) = {
     // (fe*G, fe*Y)
     val (p1, p2) = dleqPair(fe, adaptorPoint)
 
-    // hash(Y || fe*G || fe*Y)
-    val hash =
-      CryptoUtil
-        .sha256(
-          adaptorPoint.compressed.bytes ++ p1.compressed.bytes ++ p2.compressed.bytes)
-        .bytes
-    val k = dleqNonceFunc(hash, fe, algoName)
+    val k = dleqNonceFunc(fe, adaptorPoint, p1, p2, auxRand)
 
     if (k.isZero) {
       throw new RuntimeException("Nonce cannot be zero.")
     }
 
-    val r1 = k.getPublicKey
-    val r2 = adaptorPoint.tweakMultiply(k)
+    val (r1, r2) = dleqPair(k, adaptorPoint)
 
     // Hash all components to get a challenge (this is the trick that turns
     // interactive ZKPs into non-interactive ZKPs, using hash assumptions)
@@ -70,7 +69,7 @@ object DLEQUtil {
     // this hash as the challenge to the prover as loosely speaking this
     // should only be game-able if the prover can reverse hash functions.
     val challengeHash =
-      dleqChallengeHash(algoName, adaptorPoint, r1, r2, p1, p2)
+      dleqChallengeHash(adaptorPoint, r1, r2, p1, p2)
     val e = FieldElement(challengeHash)
 
     // s = k + fe*challenge. This proof works because then k = fe*challenge - s
@@ -79,12 +78,11 @@ object DLEQUtil {
     // if R = y*R' which is what we are trying to prove.
     val s = fe.multiply(e).add(k)
 
-    (s, e)
+    (e, s)
   }
 
   /** Verifies a proof that the DLOG_G of P1 equals the DLOG_adaptor of P2 */
   def dleqVerify(
-      algoName: String,
       s: FieldElement,
       e: FieldElement,
       p1: ECPublicKey,
@@ -92,7 +90,7 @@ object DLEQUtil {
       p2: ECPublicKey): Boolean = {
     val r1 = p1.tweakMultiply(e.negate).add(s.getPublicKey)
     val r2 = p2.tweakMultiply(e.negate).add(adaptor.tweakMultiply(s))
-    val challengeHash = dleqChallengeHash(algoName, adaptor, r1, r2, p1, p2)
+    val challengeHash = dleqChallengeHash(adaptor, r1, r2, p1, p2)
 
     challengeHash == e.bytes
   }

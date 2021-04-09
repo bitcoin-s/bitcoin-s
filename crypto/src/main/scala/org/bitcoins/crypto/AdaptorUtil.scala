@@ -4,6 +4,25 @@ import scodec.bits.ByteVector
 
 object AdaptorUtil {
 
+  def adaptorNonce(
+      message: ByteVector,
+      privKey: ECPrivateKey,
+      adaptorPoint: ECPublicKey,
+      algoName: String,
+      auxRand: ByteVector): FieldElement = {
+    val randHash = CryptoUtil.sha256ECDSAAdaptorAux(auxRand).bytes
+    val maskedKey = randHash.xor(privKey.bytes)
+
+    val bytesToHash = maskedKey ++ adaptorPoint.compressed.bytes ++ message
+    val nonceHash = algoName match {
+      case "DLEQ"             => CryptoUtil.sha256DLEQ(bytesToHash)
+      case "ECDSAadaptor/non" => CryptoUtil.sha256ECDSAAdaptorNonce(bytesToHash)
+      case _: String          => CryptoUtil.taggedSha256(bytesToHash, algoName)
+    }
+
+    FieldElement(nonceHash.bytes)
+  }
+
   // Compute s' = k^-1 * (dataToSign + rx*privateKey)
   private def adaptorSignHelper(
       dataToSign: ByteVector,
@@ -27,13 +46,13 @@ object AdaptorUtil {
   def adaptorSign(
       privateKey: ECPrivateKey,
       adaptorPoint: ECPublicKey,
-      dataToSign: ByteVector): ECAdaptorSignature = {
-    // Include dataToSign and adaptor in nonce derivation
-    val hash =
-      CryptoUtil.sha256(dataToSign ++ adaptorPoint.compressed.bytes)
-    val k = DLEQUtil.dleqNonceFunc(hash.bytes,
-                                   privateKey.fieldElement,
-                                   "ECDSAAdaptorNon")
+      dataToSign: ByteVector,
+      auxRand: ByteVector): ECAdaptorSignature = {
+    val k = adaptorNonce(dataToSign,
+                         privateKey,
+                         adaptorPoint,
+                         "ECDSAadaptor/non",
+                         auxRand)
 
     if (k.isZero) {
       throw new RuntimeException("Nonce cannot be zero.")
@@ -43,16 +62,15 @@ object AdaptorUtil {
     val tweakedNonce = adaptorPoint.tweakMultiply(k) // k*Y
 
     // DLEQ_prove((G,R'),(Y, R))
-    val (proofS, proofE) =
-      DLEQUtil.dleqProve(k, adaptorPoint, "ECDSAAdaptorSig")
+    val (proofE, proofS) = DLEQUtil.dleqProve(k, adaptorPoint, auxRand)
 
     // s' = k^-1*(m + rx*x)
     val adaptedSig = adaptorSignHelper(dataToSign, k, tweakedNonce, privateKey)
 
-    ECAdaptorSignature(tweakedNonce, adaptedSig, untweakedNonce, proofS, proofE)
+    ECAdaptorSignature(tweakedNonce, untweakedNonce, adaptedSig, proofE, proofS)
   }
 
-  // Compute R'x = s^-1 * (msg*G + rx*pubKey) = s^-1 * (msg + rx*privKey) * G
+  // Compute R = s^-1 * (msg*G + rx*pubKey) = s^-1 * (msg + rx*privKey) * G
   private def adaptorVerifyHelper(
       rx: FieldElement,
       s: FieldElement,
@@ -62,7 +80,7 @@ object AdaptorUtil {
     val untweakedPoint =
       m.getPublicKey.add(pubKey.tweakMultiply(rx)).tweakMultiply(s.inverse)
 
-    FieldElement(untweakedPoint.bytes.tail)
+    FieldElement(untweakedPoint.compressed.bytes.tail)
   }
 
   def adaptorVerify(
@@ -70,32 +88,24 @@ object AdaptorUtil {
       pubKey: ECPublicKey,
       data: ByteVector,
       adaptor: ECPublicKey): Boolean = {
-    val untweakedNonce = ECPublicKey(adaptorSig.dleqProof.take(33))
-    val proofS = FieldElement(adaptorSig.dleqProof.drop(33).take(32))
-    val proofR = FieldElement(adaptorSig.dleqProof.drop(65))
-
-    val tweakedNonce = ECPublicKey(adaptorSig.adaptedSig.take(33))
-    val adaptedSig = FieldElement(adaptorSig.adaptedSig.drop(33))
-
     val validProof = DLEQUtil.dleqVerify(
-      "ECDSAAdaptorSig",
-      proofS,
-      proofR,
-      untweakedNonce,
+      adaptorSig.dleqProofS,
+      adaptorSig.dleqProofE,
+      adaptorSig.untweakedNonce,
       adaptor,
-      tweakedNonce
+      adaptorSig.tweakedNonce
     )
 
     if (validProof) {
-      val tweakedNoncex = FieldElement(tweakedNonce.bytes.tail)
-      val untweakedNoncex = FieldElement(untweakedNonce.bytes.tail)
+      val tweakedNoncex = FieldElement(adaptorSig.tweakedNonce.bytes.tail)
+      val untweakedNoncex = FieldElement(adaptorSig.untweakedNonce.bytes.tail)
 
       if (tweakedNoncex.isZero || untweakedNoncex.isZero) {
         false
       } else {
 
         val untweakedRx =
-          adaptorVerifyHelper(tweakedNoncex, adaptedSig, pubKey, data)
+          adaptorVerifyHelper(tweakedNoncex, adaptorSig.adaptedS, pubKey, data)
 
         untweakedRx == untweakedNoncex
       }
@@ -106,11 +116,9 @@ object AdaptorUtil {
 
   def adaptorComplete(
       adaptorSecret: ECPrivateKey,
-      adaptedSig: ByteVector): ECDigitalSignature = {
-    val tweakedNonce: ECPublicKey = ECPublicKey(adaptedSig.take(33))
-    val rx = FieldElement(tweakedNonce.bytes.tail)
-    val adaptedS: FieldElement = FieldElement(adaptedSig.drop(33))
-    val correctedS = adaptedS.multInv(adaptorSecret.fieldElement)
+      adaptorSig: ECAdaptorSignature): ECDigitalSignature = {
+    val rx = FieldElement(adaptorSig.tweakedNonce.bytes.tail)
+    val correctedS = adaptorSig.adaptedS.multInv(adaptorSecret.fieldElement)
 
     val sig = ECDigitalSignature.fromRS(BigInt(rx.toBigInteger),
                                         BigInt(correctedS.toBigInteger))
@@ -121,7 +129,15 @@ object AdaptorUtil {
       sig: ECDigitalSignature,
       adaptorSig: ECAdaptorSignature,
       adaptor: ECPublicKey): ECPrivateKey = {
+    require(adaptorSig.tweakedNonce.bytes.tail == sig.rBytes,
+            "Adaptor signature must be related to signature")
+
     val secretOrNeg = adaptorSig.adaptedS.multInv(FieldElement(sig.s))
+
+    require(
+      secretOrNeg.getPublicKey.compressed.bytes.tail == adaptor.compressed.bytes.tail,
+      s"Invalid inputs: $sig, $adaptorSig, and $adaptor")
+
     if (secretOrNeg.getPublicKey == adaptor) {
       secretOrNeg.toPrivateKey
     } else {

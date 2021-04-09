@@ -3,9 +3,8 @@ package org.bitcoins.crypto
 import scodec.bits.ByteVector
 
 case class ECAdaptorSignature(bytes: ByteVector) extends NetworkElement {
-  require(
-    bytes.length == 162,
-    s"Adaptor signature must have 65 byte sig and 97 byte dleq proof, got $bytes")
+  require(bytes.length == 162,
+          s"Adaptor signature must be 162 bytes, got $bytes")
 
   val (adaptedSig: ByteVector, dleqProof: ByteVector) = bytes.splitAt(98)
 
@@ -15,8 +14,8 @@ case class ECAdaptorSignature(bytes: ByteVector) extends NetworkElement {
 
   require(!adaptedS.isZero, "Adapted signature cannot be zero.")
 
-  val dleqProofS: FieldElement = FieldElement(dleqProof.take(32))
-  val dleqProofE: FieldElement = FieldElement(dleqProof.drop(32))
+  val dleqProofE: FieldElement = FieldElement(dleqProof.take(32))
+  val dleqProofS: FieldElement = FieldElement(dleqProof.drop(32))
 
   require(
     tweakedNonce.bytes.nonEmpty && CryptoUtil.isValidPubKey(tweakedNonce.bytes),
@@ -34,21 +33,21 @@ object ECAdaptorSignature extends Factory[ECAdaptorSignature] {
 
   def apply(
       tweakedNonce: ECPublicKey,
-      adaptedS: FieldElement,
       untweakedNonce: ECPublicKey,
-      dleqProofS: FieldElement,
-      dleqProofE: FieldElement): ECAdaptorSignature = {
+      adaptedS: FieldElement,
+      dleqProofE: FieldElement,
+      dleqProofS: FieldElement): ECAdaptorSignature = {
     fromBytes(
-      tweakedNonce.compressed.bytes ++ adaptedS.bytes ++
-        untweakedNonce.compressed.bytes ++ dleqProofS.bytes ++ dleqProofE.bytes
+      tweakedNonce.compressed.bytes ++ untweakedNonce.compressed.bytes ++
+        adaptedS.bytes ++ dleqProofE.bytes ++ dleqProofS.bytes
     )
   }
 
   lazy val dummy: ECAdaptorSignature = {
     ECAdaptorSignature(
       ECPublicKey.freshPublicKey,
-      ECPrivateKey.freshPrivateKey.fieldElement,
       ECPublicKey.freshPublicKey,
+      ECPrivateKey.freshPrivateKey.fieldElement,
       ECPrivateKey.freshPrivateKey.fieldElement,
       ECPrivateKey.freshPrivateKey.fieldElement
     )

@@ -105,10 +105,26 @@ sealed abstract class CryptoGenerators {
       tweakedNonce <- publicKey
       untweakedNonce <- publicKey
       adaptedS <- fieldElement
-      proofS <- fieldElement
       proofE <- fieldElement
+      proofS <- fieldElement
     } yield {
-      ECAdaptorSignature(tweakedNonce, adaptedS, untweakedNonce, proofS, proofE)
+      ECAdaptorSignature(tweakedNonce, untweakedNonce, adaptedS, proofE, proofS)
+    }
+  }
+
+  def adaptorSignatureWithDecryptedSignatureAndAdaptor: Gen[
+    (ECAdaptorSignature, ECDigitalSignature, ECPublicKey)] = {
+    for {
+      privKey <- privateKey
+      decKey <- privateKey
+      data <- NumberGenerator.bytevector(32)
+      auxRand <- NumberGenerator.bytevector(32)
+    } yield {
+      val adaptorPoint = decKey.publicKey
+      val adaptorSig = privKey.adaptorSign(adaptorPoint, data, auxRand)
+      val sig = decKey.completeAdaptorSignature(adaptorSig)
+
+      (adaptorSig, sig, adaptorPoint)
     }
   }
 

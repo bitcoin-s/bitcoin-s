@@ -64,16 +64,52 @@ trait CryptoRuntime {
       )
   }
 
+  def sha256SchnorrChallenge(bytes: ByteVector): Sha256Digest = {
+    sha256(schnorrChallengeTagBytes ++ bytes)
+  }
+
+  // The tag "DLEQ"
+  private lazy val dleqTagBytes = {
+    ByteVector
+      .fromValidHex(
+        "4ba8f2d94f2cbc10e555e8befa96b62f14cd7396aff9cdaf0f638c673166d5274ba8f2d94f2cbc10e555e8befa96b62f14cd7396aff9cdaf0f638c673166d527"
+      )
+  }
+
+  def sha256DLEQ(bytes: ByteVector): Sha256Digest = {
+    sha256(dleqTagBytes ++ bytes)
+  }
+
+  // The tag "ECDSAadaptor/aux"
+  private lazy val ecdsaAdaptorAuxTagBytes = {
+    ByteVector
+      .fromValidHex(
+        "bffb017fd37ef53b393ddd2e2a168c340b3ee5dd4e53c89de63a74b1d9061b0dbffb017fd37ef53b393ddd2e2a168c340b3ee5dd4e53c89de63a74b1d9061b0d"
+      )
+  }
+
+  def sha256ECDSAAdaptorAux(bytes: ByteVector): Sha256Digest = {
+    sha256(ecdsaAdaptorAuxTagBytes ++ bytes)
+  }
+
+  // The tag "ECDSAadaptor/non"
+  private lazy val ecdsaAdaptorNonceTagBytes = {
+    ByteVector
+      .fromValidHex(
+        "848f232fbe7f662cf520de8e335986eaf63a6617dd2a8b28f3a180a681d6f161848f232fbe7f662cf520de8e335986eaf63a6617dd2a8b28f3a180a681d6f161"
+      )
+  }
+
+  def sha256ECDSAAdaptorNonce(bytes: ByteVector): Sha256Digest = {
+    sha256(ecdsaAdaptorNonceTagBytes ++ bytes)
+  }
+
   // The tag "DLC/oracle/attestation/v0"
   private val dlcAttestationTagBytes = {
     ByteVector
       .fromValidHex(
         "0c2fa46216e6e460e5e3f78555b102c5ac6aecabbfb82b430cf36cdfe04421790c2fa46216e6e460e5e3f78555b102c5ac6aecabbfb82b430cf36cdfe0442179"
       )
-  }
-
-  def sha256SchnorrChallenge(bytes: ByteVector): Sha256Digest = {
-    sha256(schnorrChallengeTagBytes ++ bytes)
   }
 
   def sha256DLCAttestation(bytes: ByteVector): Sha256Digest = {
@@ -267,14 +303,13 @@ trait CryptoRuntime {
       adaptorPoint: ECPublicKey,
       msg: ByteVector,
       auxRand: ByteVector): ECAdaptorSignature = {
-    val _ = auxRand
-    AdaptorUtil.adaptorSign(key, adaptorPoint, msg)
+    AdaptorUtil.adaptorSign(key, adaptorPoint, msg, auxRand)
   }
 
   def adaptorComplete(
       key: ECPrivateKey,
       adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
-    AdaptorUtil.adaptorComplete(key, adaptorSignature.adaptedSig)
+    AdaptorUtil.adaptorComplete(key, adaptorSignature)
   }
 
   def extractAdaptorSecret(
