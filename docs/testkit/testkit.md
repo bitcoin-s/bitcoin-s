@@ -31,8 +31,8 @@ This gives the ability to create and destroy `bitcoind` on the underlying operat
 
 Make sure you have run `sbt downloadBitcoind` before running this example, as you need access to the bitcoind binaries.
 
-Our [BitcoindRpcClient](../../bitcoind-rpc/src/main/scala/org/bitcoins/rpc/client/common/BitcoindRpcClient.scala) is tested with the functionality provided in the testkit.
-A quick example of a useful utility method is [BitcoindRpcTestUtil.startedBitcoindRpcClient()](../../testkit/src/main/scala/org/bitcoins/testkit/rpc/BitcoindRpcTestUtil.scala).
+Our [BitcoindRpcClient](/api/org/bitcoins/rpc/client/common/BitcoindRpcClient) is tested with the functionality provided in the testkit.
+A quick example of a useful utility method is [BitcoindRpcTestUtil.startedBitcoindRpcClient()](/api/org/bitcoins/testkit/rpc/BitcoindRpcTestUtil).
 This spins up a bitcoind regtest instance on machine and generates 101 blocks on that node.
 
 This gives you the ability to start spending money immediately with that bitcoind node.
