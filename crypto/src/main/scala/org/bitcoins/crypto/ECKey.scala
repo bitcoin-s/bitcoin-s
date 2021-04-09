@@ -241,6 +241,17 @@ sealed abstract class ECPublicKey extends BaseECKey {
   def decompressed: ECPublicKey =
     CryptoUtil.decompressed(this)
 
+  def compressed: ECPublicKey = {
+    if (isCompressed || bytes == ByteVector.fromByte(0x00)) {
+      this
+    } else {
+      val key = if (bytes.length == 65) this else decompressed
+      val (x, y) = key.bytes.tail.splitAt(32)
+      val leadByte = if (FieldElement(y).isEven) 2.toByte else 3.toByte
+      ECPublicKey(x.+:(leadByte))
+    }
+  }
+
   /** Adds this ECPublicKey to another as points and returns the resulting ECPublicKey.
     *
     * Note: if this ever becomes a bottleneck, secp256k1_ec_pubkey_combine should

@@ -39,8 +39,8 @@ object ECAdaptorSignature extends Factory[ECAdaptorSignature] {
       dleqProofS: FieldElement,
       dleqProofE: FieldElement): ECAdaptorSignature = {
     fromBytes(
-      serializePoint(tweakedNonce) ++ adaptedS.bytes ++ serializePoint(
-        untweakedNonce) ++ dleqProofS.bytes ++ dleqProofE.bytes
+      tweakedNonce.compressed.bytes ++ adaptedS.bytes ++
+        untweakedNonce.compressed.bytes ++ dleqProofS.bytes ++ dleqProofE.bytes
     )
   }
 
@@ -52,15 +52,5 @@ object ECAdaptorSignature extends Factory[ECAdaptorSignature] {
       ECPrivateKey.freshPrivateKey.fieldElement,
       ECPrivateKey.freshPrivateKey.fieldElement
     )
-  }
-
-  def serializePoint(point: ECPublicKey): ByteVector = {
-    val (sign, xCoor) = point.bytes.splitAt(1)
-    sign.map(b => (b & 0x01).toByte) ++ xCoor
-  }
-
-  def deserializePoint(point: ByteVector): ECPublicKey = {
-    val (sign, xCoor) = point.splitAt(1)
-    ECPublicKey(sign.map(b => (b | 0x02).toByte) ++ xCoor)
   }
 }

@@ -22,6 +22,20 @@ class FieldElementTest extends BitcoinSCryptoTest {
     }
   }
 
+  it must "compute parity correctly" in {
+    val zeroBI = BigInt(0).bigInteger
+    val oneBI = BigInt(1).bigInteger
+    val twoBI = BigInt(2).bigInteger
+
+    forAll(CryptoGenerators.fieldElement) { fe =>
+      val isEven = fe.toBigInteger.mod(twoBI).equals(zeroBI)
+      val isOdd = fe.toBigInteger.mod(twoBI).equals(oneBI)
+
+      assert(fe.isEven == isEven)
+      assert(fe.isOdd == isOdd)
+    }
+  }
+
   it must "add small numbers correctly" in {
     forAll(CryptoGenerators.smallFieldElement,
            CryptoGenerators.smallFieldElement) { case (fe1, fe2) =>

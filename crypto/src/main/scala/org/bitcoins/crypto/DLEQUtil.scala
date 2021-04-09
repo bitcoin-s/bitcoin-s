@@ -3,7 +3,6 @@ package org.bitcoins.crypto
 import scodec.bits.ByteVector
 
 object DLEQUtil {
-  import ECAdaptorSignature.serializePoint
 
   def dleqPair(
       fe: FieldElement,
@@ -32,8 +31,8 @@ object DLEQUtil {
       p2: ECPublicKey): ByteVector = {
     CryptoUtil
       .taggedSha256(
-        serializePoint(adaptorPoint) ++ serializePoint(r1) ++ serializePoint(
-          r2) ++ serializePoint(p1) ++ serializePoint(p2),
+        adaptorPoint.compressed.bytes ++ r1.compressed.bytes ++
+          r2.compressed.bytes ++ p1.compressed.bytes ++ p2.compressed.bytes,
         algoName)
       .bytes
   }
@@ -52,8 +51,7 @@ object DLEQUtil {
     val hash =
       CryptoUtil
         .sha256(
-          serializePoint(adaptorPoint) ++ serializePoint(p1) ++ serializePoint(
-            p2))
+          adaptorPoint.compressed.bytes ++ p1.compressed.bytes ++ p2.compressed.bytes)
         .bytes
     val k = dleqNonceFunc(hash, fe, algoName)
 

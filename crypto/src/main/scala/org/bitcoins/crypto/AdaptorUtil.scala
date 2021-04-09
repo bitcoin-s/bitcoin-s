@@ -3,7 +3,6 @@ package org.bitcoins.crypto
 import scodec.bits.ByteVector
 
 object AdaptorUtil {
-  import ECAdaptorSignature.{deserializePoint, serializePoint}
 
   // Compute s' = k^-1 * (dataToSign + rx*privateKey)
   private def adaptorSignHelper(
@@ -14,7 +13,7 @@ object AdaptorUtil {
     CryptoUtil.decodePoint(r) match {
       case ECPointInfinity =>
         throw new IllegalArgumentException(
-          s"Invalid point, got=${ECPointInfinity}")
+          s"Invalid point, got=$ECPointInfinity")
       case point: ECPointImpl =>
         val rx = FieldElement(point.x.toBigInteger)
         val x = privateKey.fieldElement
@@ -31,7 +30,7 @@ object AdaptorUtil {
       dataToSign: ByteVector): ECAdaptorSignature = {
     // Include dataToSign and adaptor in nonce derivation
     val hash =
-      CryptoUtil.sha256(dataToSign ++ serializePoint(adaptorPoint))
+      CryptoUtil.sha256(dataToSign ++ adaptorPoint.compressed.bytes)
     val k = DLEQUtil.dleqNonceFunc(hash.bytes,
                                    privateKey.fieldElement,
                                    "ECDSAAdaptorNon")
@@ -71,11 +70,11 @@ object AdaptorUtil {
       pubKey: ECPublicKey,
       data: ByteVector,
       adaptor: ECPublicKey): Boolean = {
-    val untweakedNonce = deserializePoint(adaptorSig.dleqProof.take(33))
+    val untweakedNonce = ECPublicKey(adaptorSig.dleqProof.take(33))
     val proofS = FieldElement(adaptorSig.dleqProof.drop(33).take(32))
     val proofR = FieldElement(adaptorSig.dleqProof.drop(65))
 
-    val tweakedNonce = deserializePoint(adaptorSig.adaptedSig.take(33))
+    val tweakedNonce = ECPublicKey(adaptorSig.adaptedSig.take(33))
     val adaptedSig = FieldElement(adaptorSig.adaptedSig.drop(33))
 
     val validProof = DLEQUtil.dleqVerify(
@@ -108,8 +107,7 @@ object AdaptorUtil {
   def adaptorComplete(
       adaptorSecret: ECPrivateKey,
       adaptedSig: ByteVector): ECDigitalSignature = {
-    val tweakedNonce: ECPublicKey =
-      ECAdaptorSignature.deserializePoint(adaptedSig.take(33))
+    val tweakedNonce: ECPublicKey = ECPublicKey(adaptedSig.take(33))
     val rx = FieldElement(tweakedNonce.bytes.tail)
     val adaptedS: FieldElement = FieldElement(adaptedSig.drop(33))
     val correctedS = adaptedS.multInv(adaptorSecret.fieldElement)
