@@ -146,6 +146,16 @@ object BIP32Path extends Factory[BIP32Path] with StringFactory[BIP32Path] {
     BIP32PathImpl(path)
   }
 
+  /** Takes in a BIP32 Path and verifies all paths are hardened
+    * @throws RuntimeException is a non hardened path is found
+    */
+  def fromHardenedString(string: String): BIP32Path = {
+    val path = BIP32Path.fromString(string)
+    require(path.forall(_.hardened),
+            s"Found non hardened path in string=$string")
+    path
+  }
+
   private def fromBytes(bytes: ByteVector, littleEndian: Boolean): BIP32Path = {
     require(bytes.size % 4 == 0,
             s"ByteVector is not suited for KeyPath, got=${bytes.length}")

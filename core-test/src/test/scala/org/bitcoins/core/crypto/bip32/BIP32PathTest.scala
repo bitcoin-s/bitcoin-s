@@ -232,4 +232,34 @@ class BIP32PathTest extends BitcoinSUnitTest {
 
     }
   }
+
+  it must "ensure that all paths are hardened when using BIP32.fromHardenedString" in {
+    val string = "m/1'/2'/3'/4'/5'"
+    val bip32Path = BIP32Path.fromHardenedString(string)
+    assert(bip32Path.toString == string)
+
+    //bad paths
+    val badPath1 = "m/1/2'/3'/4'/5'"
+    assertThrows[IllegalArgumentException] {
+      BIP32Path.fromHardenedString(badPath1)
+    }
+
+    val badPath2 = "m/1'/2'/3'/4'/5"
+
+    assertThrows[IllegalArgumentException] {
+      BIP32Path.fromHardenedString(badPath2)
+    }
+
+    val badPath3 = "m/1'/2'/3/4'/5"
+
+    assertThrows[IllegalArgumentException] {
+      BIP32Path.fromHardenedString(badPath3)
+    }
+
+    val badPath4 = "m/1/2/3/4/5"
+
+    assertThrows[IllegalArgumentException] {
+      BIP32Path.fromHardenedString(badPath4)
+    }
+  }
 }
