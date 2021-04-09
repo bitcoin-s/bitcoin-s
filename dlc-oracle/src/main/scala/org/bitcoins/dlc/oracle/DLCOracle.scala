@@ -54,7 +54,7 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
     val chain = HDChainType.External
     val index = 0
 
-    val path = BIP32Path.fromString(
+    val path = BIP32Path.fromHardenedString(
       s"m/${purpose.constant}'/${coin.coinType.toInt}'/${account.index}'/${chain.index}'/$index'")
 
     extPrivateKey.deriveChildPrivKey(path).key
