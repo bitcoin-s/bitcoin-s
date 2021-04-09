@@ -22,7 +22,7 @@ import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairNewest,
+  BitcoindFixturesCachedPairV21,
   BitcoindRpcTestUtil
 }
 import org.bitcoins.testkit.util.AkkaUtil
@@ -34,7 +34,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.reflect.io.Directory
 
-class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
+class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {

@@ -74,6 +74,27 @@ val stoppedF = for {
 
 For more information on how the bitcoind rpc client works, see our [bitcoind rpc docs](../rpc/bitcoind.md)
 
+#### Caching bitcoind in test cases
+
+When doing integration tests with bitcoind, you likely do not want to spin up a
+new bitcoind for _every_ test that is run.
+
+Not to fear, when using `testkit` you can use our bitcoind fixtures for your unit tests!
+These will only spin up on bitcoind per test suite, rather than one bitcoind per test.
+
+We currently have two types of fixtures available to users of this dependency
+
+1. [Connected pairs of bitcoind nodes](https://github.com/bitcoin-s/bitcoin-s/blob/eaac9c154c25f3bd76615ea2151092f06df6bdb4/testkit/src/main/scala/org/bitcoins/testkit/rpc/BitcoindFixtures.scala#L282)
+2. [Bitcoind nodes with funded wallets](https://github.com/bitcoin-s/bitcoin-s/blob/eaac9c154c25f3bd76615ea2151092f06df6bdb4/testkit/src/main/scala/org/bitcoins/testkit/rpc/BitcoindFixtures.scala#L161)
+
+If you mixin either of those traits for your test, you will now have access to the corresponding fixture.
+
+You can find an examples of how to use these two test fixtures
+
+1. [Example of using a connected pair of nodes in test suite](https://github.com/bitcoin-s/bitcoin-s/blob/32a6db930bdf849a94d92cd1de160b87845ab168/bitcoind-rpc-test/src/test/scala/org/bitcoins/rpc/common/WalletRpcTest.scala#L37)
+2. [Example of using a bitcoind with funded wallet in test suite](https://github.com/bitcoin-s/bitcoin-s/blob/eaac9c154c25f3bd76615ea2151092f06df6bdb4/testkit/src/main/scala/org/bitcoins/testkit/rpc/BitcoindFixtures.scala#L161)
+
+
 ### Testkit for eclair
 
 We have similar utility methods for eclair. Eclair's testkit requires a bitcoind running (which we can spin up thanks to our bitcoind testkit).
