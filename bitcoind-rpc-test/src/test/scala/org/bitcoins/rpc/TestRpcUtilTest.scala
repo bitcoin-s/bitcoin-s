@@ -4,7 +4,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.util.{NodePair, RpcUtil}
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairNewest,
+  BitcoindFixturesCachedPairV21,
   BitcoindRpcTestUtil
 }
 import org.bitcoins.testkit.util.FileUtil
@@ -13,7 +13,7 @@ import org.scalatest.{FutureOutcome, Outcome}
 import java.io.File
 import scala.concurrent.Future
 
-class TestRpcUtilTest extends BitcoindFixturesCachedPairNewest {
+class TestRpcUtilTest extends BitcoindFixturesCachedPairV21 {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF: Future[Outcome] = for {

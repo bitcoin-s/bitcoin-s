@@ -279,12 +279,12 @@ trait BitcoindFixturesCachedPairV18
 }
 
 /** Bitcoind fixtures with two cached bitcoind rpc clients that are [[BitcoindVersion.newest]] that are connected via p2p */
-trait BitcoindFixturesCachedPairNewest
+trait BitcoindFixturesCachedPairV21
     extends BitcoinSAsyncFixtureTest
     with BitcoindFixturesCachedPair[BitcoindV21RpcClient] {
   override type FixtureParam = NodePair[BitcoindV21RpcClient]
 
-  override val version: BitcoindVersion = BitcoindVersion.newest
+  override val version: BitcoindVersion = BitcoindVersion.V21
 
   override def afterAll(): Unit = {
     super[BitcoindFixturesCachedPair].afterAll()
