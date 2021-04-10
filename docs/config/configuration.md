@@ -121,7 +121,7 @@ bitcoin-s {
         registerMbeans = true
       }
       hikari-logging = false
-      hikari-logging-interval = 1 minute
+      hikari-logging-interval = 10 minute
     }
     
     bitcoind-rpc {
@@ -155,7 +155,7 @@ bitcoin-s {
         # 18333 for testnet and 18444 for regtest.
         
         hikari-logging = true
-        hikari-logging-interval = 1 minute
+        hikari-logging-interval = 10 minute
     }
 
     chain {
@@ -173,7 +173,7 @@ bitcoin-s {
         }
         
         hikari-logging = true
-        hikari-logging-interval = 1 minute
+        hikari-logging-interval = 10 minute
     }
 
     # settings for wallet module
@@ -207,7 +207,7 @@ bitcoin-s {
         rebroadcastFrequency = 4 hours
         
         hikari-logging = true
-        hikari-logging-interval = 1 minute
+        hikari-logging-interval = 10 minute
    }
 
     keymanager {
@@ -257,7 +257,7 @@ bitcoin-s {
         rpcbind = "127.0.0.1"
 
         hikari-logging = true
-        hikari-logging-interval = 1 minute
+        hikari-logging-interval = 10 minute
 
         db {
           path = ${bitcoin-s.datadir}/oracle/
