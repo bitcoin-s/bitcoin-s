@@ -43,50 +43,14 @@ or alternatively, if you do not have ssh setup with github, you can run
 git clone --depth 100 --recursive https://github.com/bitcoin-s/bitcoin-s.git
 ```
 
-Next, you will want to execute the commands
 
-```bashrc
-cd bitcoin-s
-git submodule update
-```
-
-to download the secp256k1 submodule.
-
-You should be able to test your secp256k1 installation by running `sbt core/console` in your bitcoin-s directory and then running
-
-`sbt coreTest/test`
-
-### Optional
-
-#### Verify libsecp256k1 installation 
-
-To verify you are actually using libsecp256k1 rather than our bouncy castle crypto implementation you can do the following
-
-`sbt secp256k1jni/console`
-
-and then type in 
-```scala
-scala> import org.bitcoin._
-import org.bitcoin._
-
-scala> Secp256k1Context.isEnabled()
-SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
-SLF4J: Defaulting to no-operation (NOP) logger implementation
-SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
-res0: Boolean = true
-```
-
-where the important thing is that the function returns `true`, and you can ignore SLF4J errors.
-
-Note: To exit the `sbt console`, you can execute `:quit`, and for general help, run `:help`.
-
-#### Running full test suite
-
+#### Optional: Running full test suite
+<details>
 > WARNING: This should not be done on low resource machines. Running the entire test suite requires at minimum of 4GB
 > of RAM on the machine you are running this on.
 
 To run the entire test suite, you need to download all bitcoind instances and eclair instances. This is needed for unit tests
-or binding bitcoin-s to a bitcoind instance if you do not have locally running instances. 
+or binding bitcoin-s to a bitcoind instance if you do not have locally running instances.
 
 ```bashrc
 sbt downloadBitcoind
@@ -94,11 +58,13 @@ sbt downloadEclair
 ```
 
 If you want to run the entire test suite you can run the following command after you download bitcoind
-and eclair. 
+and eclair.
 
 ```bashrc
 sbt test
 ```
+</details>
+
 
 ## Step 3: Configuration
 
@@ -120,29 +86,16 @@ zmqpubrawblock=tcp://127.0.0.1:29000
 zmqpubrawtx=tcp://127.0.0.1:29000
 ```
 
-## Step 4 (Optional): Discreet Log Contract Branch
-
-In order to run the Bitcoin-S server with DLCs enabled, you will have to checkout the `adaptor-dlc` feature branch:
-
-```bashrc
-git fetch origin
-git checkout adaptor-dlc
-git submodule update
-```
-
-and then finally test that `Secp256k1Context.isEnabled()` as in Step 2.
-
-If you're looking to set up a DLC Oracle instead go to the [oracle server docs](oracle/oracle-server.md).
-
-## Step 5: Setting Up A Bitcoin-S Server
+## Step 4: Setting Up A Bitcoin-S Node
 
 We are finally ready to start running some programs! Follow the [instructions here](applications/server.md#building-the-server) to build the server. Then, follow [these instructions](applications/cli.md) to setup the CLI.
 
 There are 2 ways to use the bitcoin-s server. It can either be as a neutrino node or use bitcoind as a backend.
 This can be configured by the configuration option `bitcoin-s.node.mode` choosing either `neutrino` or `bitcoind`.
 
-### Option A: Neutrino Server
+### Neutrino Node
 
+<details>
 To use a neutrino server you need to be paired with a bitcoin node that can serve compact filters.
 [Suredbits](https://suredbits.com/) runs a mainnet and testnet node you can connect to them by setting your `peers` config option to:
 
@@ -168,9 +121,11 @@ and once this is done, you should be able to communicate with the server using
 ```bashrc
 ./app/cli/target/universal/stage/bitcoin-s-cli getnewaddress
 ```
+</details>
 
-### Option B: Bitcoind Backend
+### Bitcoind Backend
 
+<details>
 If you already have a bitcoind node running and would like to connect your bitcoin-s server to it you can set your node's mode to `bitcoind`.
 
 You will need to configure bitcoin-s to be able to find your bitcoind.
@@ -202,6 +157,8 @@ bitcoin-s {
         zmqport = 29000
     }
 ```
+
+</details>
 
 ## Step 6 (Optional): Moving To Testnet
 
