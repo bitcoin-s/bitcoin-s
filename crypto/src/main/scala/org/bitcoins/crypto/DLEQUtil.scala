@@ -13,7 +13,10 @@ object DLEQUtil {
     (point, tweakedPoint)
   }
 
-  def dleqNonceFunc(
+  /** Computes the nonce for dleqProve as specified in
+    * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#proving
+    */
+  def dleqNonce(
       fe: FieldElement,
       adaptorPoint: ECPublicKey,
       point: ECPublicKey,
@@ -30,6 +33,9 @@ object DLEQUtil {
                              auxRand)
   }
 
+  /** Computes the challenge hash value for dleqProve as specified in
+    * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#proving
+    */
   def dleqChallengeHash(
       adaptorPoint: ECPublicKey,
       r1: ECPublicKey,
@@ -45,15 +51,18 @@ object DLEQUtil {
 
   /** Proves that the DLOG_G(R') = DLOG_Y(R) (= fe)
     * For a full description, see https://cs.nyu.edu/courses/spring07/G22.3220-001/lec3.pdf
+    * @see https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#proving
     */
   def dleqProve(
       fe: FieldElement,
       adaptorPoint: ECPublicKey,
       auxRand: ByteVector): (FieldElement, FieldElement) = {
+    require(!fe.isZero, "Input field element cannot be zero.")
+
     // (fe*G, fe*Y)
     val (p1, p2) = dleqPair(fe, adaptorPoint)
 
-    val k = dleqNonceFunc(fe, adaptorPoint, p1, p2, auxRand)
+    val k = dleqNonce(fe, adaptorPoint, p1, p2, auxRand)
 
     if (k.isZero) {
       throw new RuntimeException("Nonce cannot be zero.")
@@ -81,7 +90,9 @@ object DLEQUtil {
     (e, s)
   }
 
-  /** Verifies a proof that the DLOG_G of P1 equals the DLOG_adaptor of P2 */
+  /** Verifies a proof that the DLOG_G of P1 equals the DLOG_adaptor of P2
+    * @see https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#verifying
+    */
   def dleqVerify(
       s: FieldElement,
       e: FieldElement,

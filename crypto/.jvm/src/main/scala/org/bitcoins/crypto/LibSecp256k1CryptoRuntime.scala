@@ -264,7 +264,9 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     BouncycastleCryptoRuntime.sipHash(item, key)
 
   override def decodePoint(bytes: ByteVector): ECPoint = {
-    if (bytes == ByteVector.fromByte(0x00)) {
+    val infinityPt: ByteVector = ByteVector.fromByte(0x00)
+
+    if (bytes == infinityPt) {
       ECPointInfinity
     } else {
       val pointBytes = NativeSecp256k1.decompress(bytes.toArray)

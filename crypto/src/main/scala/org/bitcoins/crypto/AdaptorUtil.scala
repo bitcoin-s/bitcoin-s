@@ -4,6 +4,9 @@ import scodec.bits.ByteVector
 
 object AdaptorUtil {
 
+  /** Generates a secure random nonce as is done in BIP340:
+    * https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki#default-signing
+    */
   def adaptorNonce(
       message: ByteVector,
       privKey: ECPrivateKey,
@@ -23,7 +26,10 @@ object AdaptorUtil {
     FieldElement(nonceHash.bytes)
   }
 
-  // Compute s' = k^-1 * (dataToSign + rx*privateKey)
+  /** Computes s_a = inverse(k) * (dataToSign + rx*privateKey)
+    * which is the third from last step in
+    * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encrypted-signing
+    */
   private def adaptorSignHelper(
       dataToSign: ByteVector,
       k: FieldElement,
@@ -43,6 +49,7 @@ object AdaptorUtil {
     }
   }
 
+  /** Implements https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encrypted-signing */
   def adaptorSign(
       privateKey: ECPrivateKey,
       adaptorPoint: ECPublicKey,
@@ -70,7 +77,7 @@ object AdaptorUtil {
     ECAdaptorSignature(tweakedNonce, untweakedNonce, adaptedSig, proofE, proofS)
   }
 
-  // Compute R = s^-1 * (msg*G + rx*pubKey) = s^-1 * (msg + rx*privKey) * G
+  /** Computes R = inverse(s) * (msg*G + rx*pubKey) = inverse(s) * (msg + rx*privKey) * G */
   private def adaptorVerifyHelper(
       rx: FieldElement,
       s: FieldElement,
@@ -83,6 +90,7 @@ object AdaptorUtil {
     FieldElement(untweakedPoint.compressed.bytes.tail)
   }
 
+  /** https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encryption-verification */
   def adaptorVerify(
       adaptorSig: ECAdaptorSignature,
       pubKey: ECPublicKey,
@@ -114,6 +122,7 @@ object AdaptorUtil {
     }
   }
 
+  /** Implements https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#decryption */
   def adaptorComplete(
       adaptorSecret: ECPrivateKey,
       adaptorSig: ECAdaptorSignature): ECDigitalSignature = {
@@ -125,6 +134,7 @@ object AdaptorUtil {
     DERSignatureUtil.lowS(sig)
   }
 
+  /** Implements https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#key-recovery */
   def extractAdaptorSecret(
       sig: ECDigitalSignature,
       adaptorSig: ECAdaptorSignature,
