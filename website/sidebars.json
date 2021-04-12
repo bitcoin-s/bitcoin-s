@@ -60,7 +60,8 @@
     "RPC Clients": [
       "rpc/rpc-clients-intro",
       "rpc/rpc-eclair",
-      "rpc/rpc-bitcoind"
+      "rpc/rpc-bitcoind",
+      "rpc/lnd-rpc"
     ],
     "Secp256k1": [
       "secp256k1/secp256k1",
