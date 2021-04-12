@@ -18,6 +18,7 @@ import org.bitcoins.feeprovider._
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.rpc.config.ZmqConfig
 import org.bitcoins.server.routes.{BitcoinSRunner, Server}
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -147,15 +148,14 @@ class BitcoinSServerMain(override val args: Array[String])
 
         blockCount <- bitcoind.getBlockCount
         // Create callbacks for processing new blocks
-        _ = bitcoindRpcConf.zmqPortOpt match {
-          case Some(_) =>
-            val zmq = BitcoindRpcBackendUtil.createZMQWalletCallbacks(wallet)
-            zmq.start()
-          case None =>
+        _ =
+          if (bitcoindRpcConf.zmqConfig == ZmqConfig()) {
             BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
                                                              bitcoind,
                                                              blockCount)
-        }
+          } else {
+            BitcoindRpcBackendUtil.startZMQWalletCallbacks(wallet)
+          }
 
         binding <- startHttpServer(nodeApi = bitcoind,
                                    chainApi = bitcoind,

@@ -1,9 +1,5 @@
 package org.bitcoins.server
 
-import java.io.File
-import java.net.URI
-import java.nio.file._
-
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.db._
@@ -12,6 +8,9 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config._
 
+import java.io.File
+import java.net.{InetSocketAddress, URI}
+import java.nio.file._
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for a BitcoindRpcClient
@@ -91,13 +90,32 @@ case class BitcoindRpcAppConfig(
   lazy val authCredentials: BitcoindAuthCredentials =
     BitcoindAuthCredentials.PasswordBased(rpcUser, rpcPassword)
 
-  lazy val zmqPortOpt: Option[Int] =
-    config.getIntOpt("bitcoin-s.bitcoind-rpc.zmqport")
+  lazy val zmqRawBlock: Option[InetSocketAddress] =
+    config.getStringOrNone("bitcoin-s.bitcoind-rpc.zmqpubrawblock").map { str =>
+      val uri = URI.create(str)
+      new InetSocketAddress(uri.getHost, uri.getPort)
+    }
 
-  lazy val zmqConfig: ZmqConfig = zmqPortOpt match {
-    case Some(zmqPort) => ZmqConfig.fromPort(zmqPort)
-    case None          => ZmqConfig()
-  }
+  lazy val zmqRawTx: Option[InetSocketAddress] =
+    config.getStringOrNone("bitcoin-s.bitcoind-rpc.zmqpubrawtx").map { str =>
+      val uri = URI.create(str)
+      new InetSocketAddress(uri.getHost, uri.getPort)
+    }
+
+  lazy val zmqHashBlock: Option[InetSocketAddress] =
+    config.getStringOrNone("bitcoin-s.bitcoind-rpc.zmqpubashblock").map { str =>
+      val uri = URI.create(str)
+      new InetSocketAddress(uri.getHost, uri.getPort)
+    }
+
+  lazy val zmqHashTx: Option[InetSocketAddress] =
+    config.getStringOrNone("bitcoin-s.bitcoind-rpc.zmqpubashtx").map { str =>
+      val uri = URI.create(str)
+      new InetSocketAddress(uri.getHost, uri.getPort)
+    }
+
+  lazy val zmqConfig: ZmqConfig =
+    ZmqConfig(zmqHashBlock, zmqRawBlock, zmqHashTx, zmqRawTx)
 
   lazy val bitcoindInstance: BitcoindInstance =
     BitcoindInstance(network = network,

@@ -144,6 +144,10 @@ bitcoin-s {
         rpcport = 8332
         # bitcoind zmq port for all services
         zmqport = 29000
+        # bitcoind zmq raw tx
+        zmqpubrawtx = "tcp://127.0.0.1:28332"
+        # bitcoind zmq raw block
+        zmqpubrawblock = "tcp://127.0.0.1:28333"
     }
 
     node {
