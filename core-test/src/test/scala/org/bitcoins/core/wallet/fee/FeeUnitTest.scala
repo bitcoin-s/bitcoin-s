@@ -65,6 +65,12 @@ class FeeUnitTest extends BitcoinSUnitTest {
     assert(satPerKb.toSatPerByte == SatoshisPerByte(Satoshis(3)))
   }
 
+  it must "correctly convert SatoshisPerVirtualByte to SatoshisPerKW" in {
+    val satPerVb = SatoshisPerVirtualByte(Satoshis(3))
+
+    assert(satPerVb.toSatoshisPerKW == SatoshisPerKW(Satoshis(750)))
+  }
+
   it must "have matching scaleFactor between class and factory" in {
     assert(
       SatoshisPerKiloByte.zero.scaleFactor == SatoshisPerKiloByte.scaleFactor)
