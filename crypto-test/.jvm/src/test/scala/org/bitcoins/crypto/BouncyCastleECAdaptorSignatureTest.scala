@@ -6,8 +6,8 @@ import scodec.bits.ByteVector
 /** Executes tests at https://github.com/discreetlogcontracts/dlcspecs/blob/9b11bcc99341ad40d8ae146d5d3ead116d5bb131/test/ecdsa_adaptor.json
   * along with some static signing tests Jesse generated.
   */
-class ECAdaptorSigantureTest extends BitcoinSCryptoTest {
-  behavior of "ECDSA Adaptor Signing"
+class BouncyCastleECAdaptorSignatureTest extends BitcoinSCryptoTest {
+  behavior of "Bouncy Castle ECDSA Adaptor Signing"
 
   def testSign(
       secKey: String,
@@ -37,12 +37,6 @@ class ECAdaptorSigantureTest extends BitcoinSCryptoTest {
       auxRand: ByteVector,
       adaptorSig: ECAdaptorSignature): Assertion = {
     assert(pubKey == secKey.publicKey)
-    assert(secKey.adaptorSign(encKey, msg, auxRand) == adaptorSig)
-    assert(pubKey.adaptorVerify(msg, encKey, adaptorSig))
-
-    val sig = decKey.completeAdaptorSignature(adaptorSig)
-    assert(encKey.extractAdaptorSecret(adaptorSig, sig) == decKey)
-
     assert(
       BouncycastleCryptoRuntime
         .adaptorSign(secKey, encKey, msg, auxRand) == adaptorSig)
@@ -151,10 +145,6 @@ class ECAdaptorSigantureTest extends BitcoinSCryptoTest {
     val signature = ECDigitalSignature.fromRS(
       "424d14a5471c048ab87b3b83f6085d125d5864249ae4297a57c84e74710bb67329e80e0ee60e57af3e625bbae1672b1ecaa58effe613426b024fa1621d903394")
 
-    assert(pubKey.adaptorVerify(msg, encKey, adaptorSig))
-    assert(decKey.completeAdaptorSignature(adaptorSig) == signature)
-    assert(encKey.extractAdaptorSecret(adaptorSig, signature) == decKey)
-
     assert(
       BouncycastleCryptoRuntime.adaptorVerify(adaptorSig, pubKey, msg, encKey))
     assert(
@@ -180,10 +170,6 @@ class ECAdaptorSigantureTest extends BitcoinSCryptoTest {
     val signature = ECDigitalSignature.fromRS(
       "6035c89860ec62ad153f69b5b3077bcd08fbb0d28dc7f7f6df4a05cca35455be4ceacf921546c03dd1be596723ad1e7691bdac73d88cc36c421c5e7f08384305")
 
-    assert(pubKey.adaptorVerify(msg, encKey, adaptorSig))
-    assert(decKey.completeAdaptorSignature(adaptorSig) == signature)
-    assert(encKey.extractAdaptorSecret(adaptorSig, signature) == decKey)
-
     assert(
       BouncycastleCryptoRuntime.adaptorVerify(adaptorSig, pubKey, msg, encKey))
     assert(
@@ -205,8 +191,6 @@ class ECAdaptorSigantureTest extends BitcoinSCryptoTest {
     val encKey = ECPublicKey(
       "0214ccb756249ad6e733c80285ea7ac2ee12ffebbcee4e556e6810793a60c45ad4")
 
-    assert(!pubKey.adaptorVerify(msg, encKey, adaptorSig))
-
     assert(
       !BouncycastleCryptoRuntime.adaptorVerify(adaptorSig, pubKey, msg, encKey))
   }
@@ -221,7 +205,6 @@ class ECAdaptorSigantureTest extends BitcoinSCryptoTest {
     val signature = ECDigitalSignature.fromRS(
       "f2db6e9ed33092cc0b898fd6b282e99bdaeccb3de85c2d2512d8d507f9abab2921811fe7b53becf3b7affa9442abaa93c0ab8a8e45cd7ee2ea8d258bfc25d464")
 
-    assert(encKey.extractAdaptorSecret(adaptorSig, signature) == decKey)
     assert(
       BouncycastleCryptoRuntime.extractAdaptorSecret(signature,
                                                      adaptorSig,
@@ -236,7 +219,6 @@ class ECAdaptorSigantureTest extends BitcoinSCryptoTest {
     val signature = ECDigitalSignature.fromRS(
       "f7f7fe6bd056fc4abd70d335f72d0aa1e8406bba68f3e579e4789475323564a452c46176c7fb40aa37d5651341f55697dab27d84a213b30c93011a7790bace8c")
 
-    assertThrows[Exception](encKey.extractAdaptorSecret(adaptorSig, signature))
     assertThrows[Exception](
       BouncycastleCryptoRuntime
         .extractAdaptorSecret(signature, adaptorSig, encKey))
@@ -252,24 +234,9 @@ class ECAdaptorSigantureTest extends BitcoinSCryptoTest {
     val signature = ECDigitalSignature.fromRS(
       "2c637cd797dd8c2ce261907ed43e82d6d1a48cbabbbece801133dd8d70a01b14b5f24321f550b7b9dd06ee4fcfd82bdad8b142ff93a790cc4d9f7962b38c6a3b")
 
-    assert(encKey.extractAdaptorSecret(adaptorSig, signature) == decKey)
     assert(
       BouncycastleCryptoRuntime.extractAdaptorSecret(signature,
                                                      adaptorSig,
                                                      encKey) == decKey)
-  }
-
-  it must "pass serialization tests" in {
-    val _ = ECAdaptorSignature(
-      "03e6d51da7bc2bf24cf9dfd9acc6c4f0a3e74d8a6273ee5a573ed6818e3095b60903f33bc98f9d2ea3511f2e24f3358557c815abd7713c9318af9f4dfab4441898ecd619acb1cb75c1a5946fbaf716d227199a6479a678d10a6d95512d674fb7703d85b58980b8e6c54bd20616bdb9461dccd8eebb7d7e7c83a91452cc20edf53be5b0fe0db44dddaaafbe737678c684b6e89b9b4b679b1855aa6ed644498b89c918")
-    val _ = ECAdaptorSignature(
-      "03fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2c03f33bc98f9d2ea3511f2e24f3358557c815abd7713c9318af9f4dfab4441898ecd619acb1cb75c1a5946fbaf716d227199a6479a678d10a6d95512d674fb7703d85b58980b8e6c54bd20616bdb9461dccd8eebb7d7e7c83a91452cc20edf53be5b0fe0db44dddaaafbe737678c684b6e89b9b4b679b1855aa6ed644498b89c918")
-    val _ = ECAdaptorSignature(
-      "03e6d51da7bc2bf24cf9dfd9acc6c4f0a3e74d8a6273ee5a573ed6818e3095b60903fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2cd619acb1cb75c1a5946fbaf716d227199a6479a678d10a6d95512d674fb7703d85b58980b8e6c54bd20616bdb9461dccd8eebb7d7e7c83a91452cc20edf53be5b0fe0db44dddaaafbe737678c684b6e89b9b4b679b1855aa6ed644498b89c918")
-
-    assertThrows[IllegalArgumentException](ECAdaptorSignature(
-      "03e6d51da7bc2bf24cf9dfd9acc6c4f0a3e74d8a6273ee5a573ed6818e3095b60903f33bc98f9d2ea3511f2e24f3358557c815abd7713c9318af9f4dfab4441898ec000000000000000000000000000000000000000000000000000000000000000085b58980b8e6c54bd20616bdb9461dccd8eebb7d7e7c83a91452cc20edf53be5b0fe0db44dddaaafbe737678c684b6e89b9b4b679b1855aa6ed644498b89c918"))
-    assertThrows[IllegalArgumentException](ECAdaptorSignature(
-      "03e6d51da7bc2bf24cf9dfd9acc6c4f0a3e74d8a6273ee5a573ed6818e3095b60903f33bc98f9d2ea3511f2e24f3358557c815abd7713c9318af9f4dfab4441898ecfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036414185b58980b8e6c54bd20616bdb9461dccd8eebb7d7e7c83a91452cc20edf53be5b0fe0db44dddaaafbe737678c684b6e89b9b4b679b1855aa6ed644498b89c918"))
   }
 }
