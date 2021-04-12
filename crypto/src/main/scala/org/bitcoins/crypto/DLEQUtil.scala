@@ -2,6 +2,28 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
+/** Implements the DLEQ ZKP Specification:
+  * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md
+  *
+  * Note that the naming is not entirely consistent between the specification
+  * and this file in hopes of making this code more readable.
+  *
+  * The naming in this file more closely matches the naming in the secp256k1-zkp implementation:
+  * https://github.com/ElementsProject/secp256k1-zkp/tree/master/src/modules/ecdsa_adaptor
+  *
+  * Legend:
+  * x <> fe
+  * X <> p1/point
+  * y <> adaptorSecret
+  * Y <> adaptorPoint/adaptor
+  * Z <> p2/tweakedPoint
+  * a <> k
+  * A_G <> r1
+  * A_Y <> r2
+  * b <> e
+  * c <> s
+  * proof <> (e, s)
+  */
 object DLEQUtil {
 
   def dleqPair(

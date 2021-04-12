@@ -2,6 +2,25 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
+/** Implements the ECDSA Adaptor Signing Specification:
+  * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md
+  *
+  * Note that the naming is not entirely consistent between the specification
+  * and this file in hopes of making this code more readable.
+  *
+  * The naming in this file more closely matches the naming in the secp256k1-zkp implementation:
+  * https://github.com/ElementsProject/secp256k1-zkp/tree/master/src/modules/ecdsa_adaptor
+  *
+  * Legend:
+  * x <> privKey
+  * X <> pubKey
+  * y <> adaptorSecret
+  * Y <> adaptorPoint/adaptor
+  * messageHash <> dataToSign/data/message
+  * R_a <> untweakedNonce
+  * R <> tweakedNonce
+  * proof <> (e, s)
+  */
 object AdaptorUtil {
 
   /** Generates a secure random nonce as is done in BIP340:
