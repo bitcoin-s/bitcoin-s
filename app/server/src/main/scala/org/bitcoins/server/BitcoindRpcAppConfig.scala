@@ -1,17 +1,16 @@
 package org.bitcoins.server
 
-import java.io.File
-import java.net.URI
-import java.nio.file._
-
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.db._
 import org.bitcoins.node.NodeType
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config._
 
+import java.io.File
+import java.net.URI
+import java.nio.file._
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for a BitcoindRpcClient
@@ -39,7 +38,12 @@ case class BitcoindRpcAppConfig(
   override def start(): Future[Unit] = {
     nodeConf.nodeType match {
       case NodeType.BitcoindBackend =>
-        client.start().map(_ => ())
+        binaryOpt match {
+          case Some(_) =>
+            client.start().map(_ => ())
+          case None =>
+            Future.unit
+        }
       case NodeType.SpvNode | NodeType.NeutrinoNode | NodeType.FullNode =>
         Future.unit
     }
@@ -50,10 +54,8 @@ case class BitcoindRpcAppConfig(
   lazy val DEFAULT_BINARY_PATH: File =
     BitcoindInstance.DEFAULT_BITCOIND_LOCATION
 
-  lazy val binary: File =
-    new File(
-      config.getStringOrElse("bitcoin-s.bitcoind-rpc.binary",
-                             DEFAULT_BINARY_PATH.toString))
+  lazy val binaryOpt: Option[File] =
+    config.getStringOrNone("bitcoin-s.bitcoind-rpc.binary").map(new File(_))
 
   lazy val bitcoindDataDir = new File(
     config.getStringOrElse("bitcoin-s.bitcoind-rpc.datadir",
@@ -88,6 +90,11 @@ case class BitcoindRpcAppConfig(
   lazy val rpcPassword: String =
     config.getString("bitcoin-s.bitcoind-rpc.rpcpassword")
 
+  lazy val versionOpt: Option[BitcoindVersion] =
+    config
+      .getStringOrNone("bitcoin-s.bitcoind-rpc.version")
+      .map(BitcoindVersion.fromString)
+
   lazy val authCredentials: BitcoindAuthCredentials =
     BitcoindAuthCredentials.PasswordBased(rpcUser, rpcPassword)
 
@@ -100,16 +107,19 @@ case class BitcoindRpcAppConfig(
   }
 
   lazy val bitcoindInstance: BitcoindInstance =
-    BitcoindInstance(network = network,
-                     uri = uri,
-                     rpcUri = rpcUri,
-                     authCredentials = authCredentials,
-                     zmqConfig = zmqConfig,
-                     binary = binary,
-                     datadir = bitcoindDataDir)
+    BitcoindInstance(
+      network = network,
+      uri = uri,
+      rpcUri = rpcUri,
+      authCredentials = authCredentials,
+      zmqConfig = zmqConfig,
+      binary = binaryOpt.getOrElse(DEFAULT_BINARY_PATH),
+      datadir = bitcoindDataDir,
+      isRemote = binaryOpt.isEmpty
+    )
 
   lazy val client: BitcoindRpcClient = {
-    val version = bitcoindInstance.getVersion
+    val version = versionOpt.getOrElse(bitcoindInstance.getVersion)
     implicit val system: ActorSystem =
       ActorSystem.create("bitcoind-rpc-client-created-by-bitcoin-s", config)
     BitcoindRpcClient.fromVersion(version, bitcoindInstance)
