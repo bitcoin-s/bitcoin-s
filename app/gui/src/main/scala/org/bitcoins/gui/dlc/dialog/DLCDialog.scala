@@ -2,6 +2,7 @@ package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand
 import org.bitcoins.gui.GlobalData
+import org.bitcoins.gui.GlobalData.feeRate
 import org.bitcoins.gui.dlc.GlobalDLCData
 import scalafx.Includes._
 import scalafx.beans.property.BooleanProperty
@@ -184,23 +185,26 @@ object DLCDialog {
   val contractInfoStr = "Contract Info"
   val collateralStr = "Your Collateral"
   val feeRateStr = "Fee Rate"
-  val locktimeStr = "Locktime"
   val refundLocktimeStr = "Refund Locktime"
 
   val fileChosenStr = ""
 
-  val allOfferFields: Map[String, String] = Map[String, String](
-    contractInfoStr -> "",
-    collateralStr -> "Satoshis",
-    feeRateStr -> "sats/vbyte (optional)",
-    locktimeStr -> "Block or unix time",
-    refundLocktimeStr -> "Block or unix time"
-  )
+  /** Offer fields
+    * formatted as key -> (hint, default text)
+    */
+  val allOfferFields: Map[String, (String, String)] =
+    Map[String, (String, String)](
+      (contractInfoStr, ("", "")),
+      (collateralStr, ("Satoshis", "")),
+      (feeRateStr, ("sats/vbyte (optional)", feeRate.toLong.toString)),
+      (refundLocktimeStr, ("Block or unix time", ""))
+    )
 
   def constructOfferFields(): Vector[(String, TextField)] =
-    allOfferFields.map { case (label, hint) =>
+    allOfferFields.map { case (label, (hint, defaultText)) =>
       (label,
        new TextField() {
+         text = defaultText
          promptText = hint
        })
     }.toVector
