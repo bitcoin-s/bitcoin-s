@@ -1,18 +1,17 @@
 package org.bitcoins.server
 
 import akka.actor.{ActorSystem, Cancellable}
+import grizzled.slf4j.Logging
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
-import grizzled.slf4j.Logging
-
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.config.ZmqConfig
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.zmq.ZMQSubscriber
 
-import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -105,34 +104,43 @@ object BitcoindRpcBackendUtil extends Logging {
     pairedWallet
   }
 
-  def createZMQWalletCallbacks(wallet: Wallet)(implicit
-      bitcoindRpcConf: BitcoindRpcAppConfig): ZMQSubscriber = {
-    require(bitcoindRpcConf.zmqPortOpt.isDefined,
-            "Must have the zmq port defined to setup ZMQ callbacks")
-    val zmqSocket =
-      new InetSocketAddress("tcp://127.0.0.1", bitcoindRpcConf.zmqPortOpt.get)
+  def startZMQWalletCallbacks(wallet: Wallet)(implicit
+      bitcoindRpcConf: BitcoindRpcAppConfig): Unit = {
+    require(bitcoindRpcConf.zmqConfig != ZmqConfig.empty,
+            "Must have the zmq raw configs defined to setup ZMQ callbacks")
 
-    val rawTxListener: Option[Transaction => Unit] = Some {
-      { tx: Transaction =>
-        logger.debug(s"Received tx ${tx.txIdBE}, processing")
-        wallet.processTransaction(tx, None)
-        ()
+    bitcoindRpcConf.zmqRawTx.foreach { zmq =>
+      val rawTxListener: Option[Transaction => Unit] = Some {
+        { tx: Transaction =>
+          logger.debug(s"Received tx ${tx.txIdBE.hex}, processing")
+          wallet.processTransaction(tx, None)
+          ()
+        }
       }
+
+      new ZMQSubscriber(socket = zmq,
+                        hashTxListener = None,
+                        hashBlockListener = None,
+                        rawTxListener = rawTxListener,
+                        rawBlockListener = None).start()
     }
 
-    val rawBlockListener: Option[Block => Unit] = Some {
-      { block: Block =>
-        logger.debug(s"Received block ${block.blockHeader.hashBE}, processing")
-        wallet.processBlock(block)
-        ()
+    bitcoindRpcConf.zmqRawBlock.foreach { zmq =>
+      val rawBlockListener: Option[Block => Unit] = Some {
+        { block: Block =>
+          logger.debug(
+            s"Received block ${block.blockHeader.hashBE.hex}, processing")
+          wallet.processBlock(block)
+          ()
+        }
       }
-    }
 
-    new ZMQSubscriber(socket = zmqSocket,
-                      hashTxListener = None,
-                      hashBlockListener = None,
-                      rawTxListener = rawTxListener,
-                      rawBlockListener = rawBlockListener)
+      new ZMQSubscriber(socket = zmq,
+                        hashTxListener = None,
+                        hashBlockListener = None,
+                        rawTxListener = None,
+                        rawBlockListener = rawBlockListener).start()
+    }
   }
 
   private def getNodeApiWalletCallback(
