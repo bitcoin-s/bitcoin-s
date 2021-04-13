@@ -64,40 +64,23 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val oracleCol = new TableColumn[DLCStatus, String] {
-      text = "Oracle"
-      prefWidth = 150
+    val otherCollateralCol = new TableColumn[DLCStatus, String] {
+      text = "Counter Party Collateral"
+      prefWidth = 200
       cellValueFactory = { status =>
-        new StringProperty(
-          status,
-          "Oracles",
-          status.value.oracleInfo.singleOracleInfos
-            .map(_.publicKey.hex)
-            .mkString
-        )
+        new StringProperty(status,
+                           "Counter Party Collateral",
+                           status.value.remoteCollateral.toString)
       }
     }
 
-    val eventCol = new TableColumn[DLCStatus, String] {
-      text = "Event"
+    val totalCollateralCol = new TableColumn[DLCStatus, String] {
+      text = "Total Collateral"
       prefWidth = 150
       cellValueFactory = { status =>
         new StringProperty(status,
-                           "Event",
-                           status.value.oracleInfo.singleOracleInfos
-                             .flatMap(_.nonces.map(_.hex))
-                             .mkString)
-      }
-    }
-
-    val contractMaturityCol = new TableColumn[DLCStatus, String] {
-      text = "Contract Mat."
-      prefWidth = 110
-      cellValueFactory = { status =>
-        new StringProperty(
-          status,
-          "Contract Maturity",
-          status.value.timeouts.contractMaturity.toUInt32.toLong.toString)
+                           "Total Collateral",
+                           status.value.totalCollateral.toString)
       }
     }
 
@@ -107,9 +90,8 @@ class DLCTableView(model: DLCPaneModel) {
                       statusCol,
                       initiatorCol,
                       collateralCol,
-                      oracleCol,
-                      eventCol,
-                      contractMaturityCol)
+                      otherCollateralCol,
+                      totalCollateralCol)
       margin = Insets(10, 0, 10, 0)
 
       val infoItem: MenuItem = new MenuItem("View DLC") {
@@ -124,5 +106,4 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
   }
-
 }
