@@ -112,7 +112,12 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
       val pubKeyCompressed = pubKey.compressed
       val pubKeyDecompressed = pubKey.decompressed
 
-      assert(pubKey == pubKeyCompressed || pubKey == pubKeyDecompressed)
+      if (privKey.isCompressed) {
+        assert(pubKey == pubKeyCompressed)
+      } else {
+        assert(pubKey == pubKeyDecompressed)
+      }
+
       assert(pubKeyCompressed.decompressed == pubKeyDecompressed)
       assert(pubKeyCompressed.compressed == pubKeyCompressed)
       assert(pubKeyDecompressed.compressed == pubKeyCompressed)
