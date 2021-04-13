@@ -10,7 +10,7 @@ CommonSettings.prodSettings
 enablePlugins(AkkaGrpcPlugin)
 
 // Disable deprecation warning otherwise protobuf deprecation warnings will cause errors
-scalacOptions in Compile += {
+Compile / scalacOptions += {
   //Added to supress all of the deprecation warnings inside of the
   //generated scala code by the grpc plugin. Two packages have deprecations
   //inside of them, 'signrpc' and 'lnrpc'
