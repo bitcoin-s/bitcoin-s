@@ -9,13 +9,15 @@ import scalafx.scene.control.{ContextMenu, MenuItem, TableColumn, TableView}
 class DLCTableView(model: DLCPaneModel) {
 
   val tableView: TableView[DLCStatus] = {
-    val paramHashCol = new TableColumn[DLCStatus, String] {
-      text = "Temp Contract Id"
+
+    val eventIdCol = new TableColumn[DLCStatus, String] {
+      text = "Event Id"
       prefWidth = 150
       cellValueFactory = { status =>
-        new StringProperty(status,
-                           "Temp Contract Id",
-                           status.value.tempContractId.hex)
+        val eventIdStr =
+          status.value.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
+
+        new StringProperty(status, "Event Id", eventIdStr)
       }
     }
 
@@ -85,7 +87,7 @@ class DLCTableView(model: DLCPaneModel) {
     }
 
     new TableView[DLCStatus](model.dlcs) {
-      columns ++= Seq(paramHashCol,
+      columns ++= Seq(eventIdCol,
                       contractIdCol,
                       statusCol,
                       initiatorCol,
