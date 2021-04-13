@@ -65,6 +65,22 @@ class FeeUnitTest extends BitcoinSUnitTest {
     assert(satPerKb.toSatPerByte == SatoshisPerByte(Satoshis(3)))
   }
 
+  it must "correctly convert SatoshisPerVirtualByte to SatoshisPerKW" in {
+    val satPerVb = SatoshisPerVirtualByte(Satoshis(3))
+
+    assert(satPerVb.toSatoshisPerKW == SatoshisPerKW(Satoshis(750)))
+  }
+
+  it must "calculate the same fee when using SatoshisPerVirtualByte.toSatoshisPerKW" in {
+    val transaction = Transaction(
+      "0100000001d8bdc17a9baced096231edd3a2a5ee4ebdb236c4319314034ec012cd18acb004000000006a47304402205b9a9e3483a14143ce12be73ecb4f96011da8d3a15525c59fbbd519fa65e3e18022019d4453683075625c6310b6bd7aa1fdb0f8f49d20db808292e067c1a9de8986b012102fff6ec89268401a69f8f04541cd29d545a761d4a6ba258f52edbf0d0cccac030ffffffff0209f31600000000001976a914a61a24357d1c28f8a13e9167bfed7c4d9f3ac97d88ac6eb70500000000001976a91402b4d9a52a5dfc9b477522adf4952c972e10f79588ac00000000")
+
+    val satsPerVByte = SatoshisPerVirtualByte.fromLong(5)
+    val satsPerKW = satsPerVByte.toSatoshisPerKW
+
+    assert(satsPerVByte.calc(transaction) == satsPerKW.calc(transaction))
+  }
+
   it must "have matching scaleFactor between class and factory" in {
     assert(
       SatoshisPerKiloByte.zero.scaleFactor == SatoshisPerKiloByte.scaleFactor)
