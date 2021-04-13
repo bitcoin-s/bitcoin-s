@@ -185,7 +185,6 @@ object DLCDialog {
   val contractInfoStr = "Contract Info"
   val collateralStr = "Your Collateral"
   val feeRateStr = "Fee Rate"
-  val locktimeStr = "Locktime"
   val refundLocktimeStr = "Refund Locktime"
 
   val fileChosenStr = ""
@@ -198,7 +197,6 @@ object DLCDialog {
       (contractInfoStr, ("", "")),
       (collateralStr, ("Satoshis", "")),
       (feeRateStr, ("sats/vbyte (optional)", feeRate.toLong.toString)),
-      (locktimeStr, ("Block or unix time", "")),
       (refundLocktimeStr, ("Block or unix time", ""))
     )
 
