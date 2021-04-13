@@ -1495,11 +1495,6 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     for {
       (executor, setup) <- executorAndSetupFromDb(contractId)
 
-      payout = executor.getPayout(oracleSigs)
-      _ = if (payout <= 0.satoshis)
-        throw new UnsupportedOperationException(
-          "Cannot execute a losing outcome")
-
       executed = executor.executeDLC(setup, oracleSigs)
       (tx, outcome, sigsUsed) =
         (executed.cet, executed.outcome, executed.sigsUsed)

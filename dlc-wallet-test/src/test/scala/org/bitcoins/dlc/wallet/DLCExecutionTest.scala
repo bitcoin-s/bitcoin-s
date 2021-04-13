@@ -214,18 +214,47 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     }
   }
 
-  it must "fail to do losing unilateral close" in { wallets =>
+  it must "execute a losing dlc" in { wallets =>
     val dlcA = wallets._1.wallet
 
-    val executeDLCForceCloseF = for {
+    for {
       contractId <- getContractId(wallets._1.wallet)
       offer <- getInitialOffer(dlcA)
+      // use dlcB winning sigs
       (_, sig) = getSigs(offer.contractInfo)
 
-      tx <- dlcA.executeDLC(contractId, sig)
-    } yield tx
+      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
-    recoverToSucceededIf[UnsupportedOperationException](executeDLCForceCloseF)
+      result <- dlcExecutionTest(wallets = wallets,
+                                 asInitiator = true,
+                                 func = func,
+                                 expectedOutputs = 1)
+
+      _ = assert(result)
+
+      dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
+      dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
+
+      paramHash = dlcDbAOpt.get.paramHash
+
+      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
+      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+
+      _ = {
+        (statusAOpt, statusBOpt) match {
+          case (Some(statusA: Claimed), Some(statusB: RemoteClaimed)) =>
+            assert(statusA.oracleSigs == Vector(statusB.oracleSig))
+          case (_, _) => fail()
+        }
+      }
+    } yield {
+      (dlcDbAOpt, dlcDbBOpt) match {
+        case (Some(dlcA), Some(dlcB)) =>
+          assert(dlcA.state == DLCState.Claimed)
+          assert(dlcB.state == DLCState.RemoteClaimed)
+        case (_, _) => fail()
+      }
+    }
   }
 
   it must "do a refund on a dlc as the initiator" in { wallets =>
