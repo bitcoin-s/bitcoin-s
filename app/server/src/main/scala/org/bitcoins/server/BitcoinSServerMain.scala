@@ -149,7 +149,7 @@ class BitcoinSServerMain(override val args: Array[String])
         blockCount <- bitcoind.getBlockCount
         // Create callbacks for processing new blocks
         _ =
-          if (bitcoindRpcConf.zmqConfig == ZmqConfig()) {
+          if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
             BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
                                                              bitcoind,
                                                              blockCount)

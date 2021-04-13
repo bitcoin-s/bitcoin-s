@@ -148,6 +148,10 @@ bitcoin-s {
         zmqpubrawtx = "tcp://127.0.0.1:28332"
         # bitcoind zmq raw block
         zmqpubrawblock = "tcp://127.0.0.1:28333"
+        # bitcoind zmq hash tx
+        zmqpubhashtx = "tcp://127.0.0.1:28330"
+        # bitcoind zmq raw block
+        zmqpubhashblock = "tcp://127.0.0.1:28331"
     }
 
     node {

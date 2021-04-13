@@ -106,7 +106,7 @@ object BitcoindRpcBackendUtil extends Logging {
 
   def startZMQWalletCallbacks(wallet: Wallet)(implicit
       bitcoindRpcConf: BitcoindRpcAppConfig): Unit = {
-    require(bitcoindRpcConf.zmqConfig != ZmqConfig(),
+    require(bitcoindRpcConf.zmqConfig != ZmqConfig.empty,
             "Must have the zmq raw configs defined to setup ZMQ callbacks")
 
     bitcoindRpcConf.zmqRawTx.foreach { zmq =>

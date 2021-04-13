@@ -13,6 +13,8 @@ sealed trait ZmqConfig {
 
 object ZmqConfig extends Logging {
 
+  val empty: ZmqConfig = ZmqConfig()
+
   private case class ZmqConfigImpl(
       hashBlock: Option[InetSocketAddress],
       rawBlock: Option[InetSocketAddress],
