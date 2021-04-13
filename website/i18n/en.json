@@ -116,6 +116,9 @@
       "rpc/rpc-eclair": {
         "title": "Eclair"
       },
+      "rpc/lnd-rpc": {
+        "title": "LND"
+      },
       "rpc/rpc-clients-intro": {
         "title": "Introduction"
       },
@@ -127,6 +130,9 @@
       },
       "security": {
         "title": "Security"
+      },
+      "testkit/testkit-core": {
+        "title": "Testkit Core"
       },
       "testkit/testkit": {
         "title": "Testkit"

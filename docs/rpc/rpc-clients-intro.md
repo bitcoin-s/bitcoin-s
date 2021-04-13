@@ -28,4 +28,4 @@ RPC calls like `getblockheader` we'll even parse the
 hexadecimal string into a complete header that you can
 interact with without goofing around with bits and bytes.
 
-We currently have RPC clients for Bitcoin Core and Eclair.
+We currently have RPC clients for Bitcoin Core, Eclair, Lnd.
