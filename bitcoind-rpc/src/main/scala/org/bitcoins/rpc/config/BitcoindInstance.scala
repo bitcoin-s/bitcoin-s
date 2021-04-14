@@ -1,13 +1,12 @@
 package org.bitcoins.rpc.config
 
+import grizzled.slf4j.Logging
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.rpc.client.common.BitcoindVersion
+
 import java.io.{File, FileNotFoundException}
 import java.net.URI
 import java.nio.file.{Files, Paths}
-
-import org.bitcoins.core.config.NetworkParameters
-import grizzled.slf4j.Logging
-import org.bitcoins.rpc.client.common.BitcoindVersion
-
 import scala.sys.process._
 import scala.util.Properties
 
@@ -15,11 +14,11 @@ import scala.util.Properties
   */
 sealed trait BitcoindInstance extends Logging {
 
-  require(binary.exists,
+  require(binary.exists || isRemote,
           s"bitcoind binary path (${binary.getAbsolutePath}) does not exist!")
 
   // would like to check .canExecute as well, but we've run into issues on some machines
-  require(binary.isFile,
+  require(binary.isFile || isRemote,
           s"bitcoind binary path (${binary.getAbsolutePath}) must be a file")
 
   /** The binary file that should get executed to start Bitcoin Core */
@@ -32,6 +31,8 @@ sealed trait BitcoindInstance extends Logging {
   def rpcUri: URI
   def authCredentials: BitcoindAuthCredentials
   def zmqConfig: ZmqConfig
+
+  def isRemote: Boolean
 
   def getVersion: BitcoindVersion = {
 
@@ -74,7 +75,8 @@ object BitcoindInstance {
       authCredentials: BitcoindAuthCredentials,
       zmqConfig: ZmqConfig,
       binary: File,
-      datadir: File
+      datadir: File,
+      isRemote: Boolean
   ) extends BitcoindInstance
 
   def apply(
@@ -84,7 +86,8 @@ object BitcoindInstance {
       authCredentials: BitcoindAuthCredentials,
       zmqConfig: ZmqConfig = ZmqConfig(),
       binary: File = DEFAULT_BITCOIND_LOCATION,
-      datadir: File = BitcoindConfig.DEFAULT_DATADIR
+      datadir: File = BitcoindConfig.DEFAULT_DATADIR,
+      isRemote: Boolean = false
   ): BitcoindInstance = {
     BitcoindInstanceImpl(network,
                          uri,
@@ -92,7 +95,8 @@ object BitcoindInstance {
                          authCredentials,
                          zmqConfig = zmqConfig,
                          binary = binary,
-                         datadir = datadir)
+                         datadir = datadir,
+                         isRemote = isRemote)
   }
 
   lazy val DEFAULT_BITCOIND_LOCATION: File = {
