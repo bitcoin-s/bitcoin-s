@@ -2,8 +2,6 @@ package org.bitcoins.crypto
 
 import scodec.bits._
 
-import scala.concurrent.ExecutionContext
-
 class ECPublicKeyTest extends BitcoinSCryptoTest {
 
   it must "be able to decompress keys" in {
@@ -36,8 +34,7 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
       assert(pubKey.isCompressed)
 
       val decompressedPrivKey =
-        ECPrivateKey(privKey.bytes, isCompressed = false)(
-          ExecutionContext.global)
+        ECPrivateKey(privKey.bytes, isCompressed = false)
       val decompressedPubKey = pubKey.decompressed
 
       assert(decompressedPrivKey.publicKey == decompressedPubKey)

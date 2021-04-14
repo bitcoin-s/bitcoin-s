@@ -4,7 +4,6 @@ import scodec.bits.ByteVector
 
 import java.math.BigInteger
 import scala.annotation.tailrec
-import scala.concurrent.ExecutionContext
 
 /** Created by chris on 2/16/16.
   */
@@ -129,15 +128,13 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
 
   private case class ECPrivateKeyImpl(
       override val bytes: ByteVector,
-      isCompressed: Boolean,
-      ec: ExecutionContext)
+      isCompressed: Boolean)
       extends ECPrivateKey {
     require(CryptoUtil.secKeyVerify(bytes), s"Invalid key, hex: ${bytes.toHex}")
   }
 
-  def apply(bytes: ByteVector, isCompressed: Boolean)(implicit
-      ec: ExecutionContext): ECPrivateKey = {
-    ECPrivateKeyImpl(bytes, isCompressed, ec)
+  def apply(bytes: ByteVector, isCompressed: Boolean): ECPrivateKey = {
+    ECPrivateKeyImpl(bytes, isCompressed)
   }
 
   override def fromBytes(bytes: ByteVector): ECPrivateKey =
@@ -147,7 +144,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   def fromBytes(bytes: ByteVector, isCompressed: Boolean): ECPrivateKey = {
 
     if (bytes.size == 32)
-      ECPrivateKeyImpl(bytes, isCompressed, ExecutionContext.global)
+      ECPrivateKeyImpl(bytes, isCompressed)
     else if (bytes.size < 32) {
       //means we need to pad the private key with 0 bytes so we have 32 bytes
       ECPrivateKey.fromBytes(bytes.padLeft(32), isCompressed)
@@ -267,9 +264,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
 
 object ECPublicKey extends Factory[ECPublicKey] {
 
-  private case class ECPublicKeyImpl(
-      override val bytes: ByteVector,
-      ec: ExecutionContext)
+  private case class ECPublicKeyImpl(override val bytes: ByteVector)
       extends ECPublicKey {
     //unfortunately we cannot place ANY invariants here
     //because of old transactions on the blockchain that have weirdly formatted public keys. Look at example in script_tests.json
@@ -281,7 +276,7 @@ object ECPublicKey extends Factory[ECPublicKey] {
   }
 
   override def fromBytes(bytes: ByteVector): ECPublicKey = {
-    ECPublicKeyImpl(bytes, ExecutionContext.global)
+    ECPublicKeyImpl(bytes)
   }
 
   def apply(): ECPublicKey = freshPublicKey
