@@ -6,6 +6,9 @@ import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.{ContextMenu, MenuItem, TableColumn, TableView}
 
+import java.awt.Toolkit.getDefaultToolkit
+import java.awt.datatransfer.StringSelection
+
 class DLCTableView(model: DLCPaneModel) {
 
   val tableView: TableView[DLCStatus] = {
@@ -103,8 +106,21 @@ class DLCTableView(model: DLCPaneModel) {
         }
       }
 
+      val copyIdItem: MenuItem = new MenuItem("Copy Contract Id") {
+        onAction = _ => {
+          val dlc = selectionModel.value.getSelectedItem
+          getContractId(dlc).foreach { id =>
+            GlobalDLCData.lastContractId = id.toHex
+
+            val clipboard = getDefaultToolkit.getSystemClipboard
+            val sel = new StringSelection(id.toHex)
+            clipboard.setContents(sel, sel)
+          }
+        }
+      }
+
       contextMenu = new ContextMenu() {
-        items ++= Vector(infoItem)
+        items ++= Vector(infoItem, copyIdItem)
       }
     }
   }
