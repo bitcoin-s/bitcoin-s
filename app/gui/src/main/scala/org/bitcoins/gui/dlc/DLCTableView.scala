@@ -2,6 +2,7 @@ package org.bitcoins.gui.dlc
 
 import org.bitcoins.core.protocol.dlc.DLCStatus._
 import org.bitcoins.core.protocol.dlc.{AcceptedDLCStatus, DLCStatus}
+import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.{ContextMenu, MenuItem, TableColumn, TableView}
@@ -15,7 +16,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val eventIdCol = new TableColumn[DLCStatus, String] {
       text = "Event Id"
-      prefWidth = 150
+      prefWidth = 160
       cellValueFactory = { status =>
         val eventIdStr =
           status.value.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
@@ -63,9 +64,9 @@ class DLCTableView(model: DLCPaneModel) {
       text = "Collateral"
       prefWidth = 110
       cellValueFactory = { status =>
-        new StringProperty(status,
-                           "Collateral",
-                           status.value.localCollateral.toString)
+        val amt = GUIUtil.numberFormatter.format(
+          status.value.localCollateral.satoshis.toLong)
+        new StringProperty(status, "Collateral", s"$amt sats")
       }
     }
 
@@ -73,9 +74,9 @@ class DLCTableView(model: DLCPaneModel) {
       text = "Counter Party Collateral"
       prefWidth = 200
       cellValueFactory = { status =>
-        new StringProperty(status,
-                           "Counter Party Collateral",
-                           status.value.remoteCollateral.toString)
+        val amt = GUIUtil.numberFormatter.format(
+          status.value.remoteCollateral.satoshis.toLong)
+        new StringProperty(status, "Counter Party Collateral", s"$amt sats")
       }
     }
 
@@ -83,9 +84,9 @@ class DLCTableView(model: DLCPaneModel) {
       text = "Total Collateral"
       prefWidth = 150
       cellValueFactory = { status =>
-        new StringProperty(status,
-                           "Total Collateral",
-                           status.value.totalCollateral.toString)
+        val amt = GUIUtil.numberFormatter.format(
+          status.value.totalCollateral.satoshis.toLong)
+        new StringProperty(status, "Total Collateral", s"$amt sats")
       }
     }
 

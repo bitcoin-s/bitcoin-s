@@ -11,6 +11,7 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.dialog.{GetNewAddressDialog, SendDialog}
+import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.scene.control.Alert
 import scalafx.scene.control.Alert.AlertType
@@ -108,7 +109,8 @@ class WalletGUIModel() {
     ConsoleCli.exec(GetBalance(isSats = true),
                     GlobalData.consoleCliConfig) match {
       case Success(commandReturn) =>
-        GlobalData.currentBalance.value = commandReturn.split(' ').head.toLong
+        GlobalData.currentBalance.value =
+          GUIUtil.numberFormatter.format(commandReturn.split(' ').head.toLong)
       case Failure(err) =>
         err.printStackTrace()
         val _ = new Alert(AlertType.Error) {
