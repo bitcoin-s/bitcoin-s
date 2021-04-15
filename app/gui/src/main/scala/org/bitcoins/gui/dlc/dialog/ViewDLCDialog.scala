@@ -53,6 +53,7 @@ object ViewDLCDialog {
           text =
             status.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
           editable = false
+          minWidth = 300
         },
         columnIndex = 1,
         rowIndex = row
