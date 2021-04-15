@@ -120,7 +120,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
               Reserved | BroadcastReceived =>
             txo.txid
           case PendingConfirmationsSpent | ConfirmedSpent | BroadcastSpent =>
-            txo.spendingTxIdOpt.get
+            txo.spendingTxIdOpt.getOrElse(txo.txid)
         }
         (blockHashMap(txToUse), txo)
       }
