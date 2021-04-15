@@ -1,4 +1,5 @@
 name: Mac 2.13 Wallet, Node, and DLC tests
+timeout-minutes: 60
 env:
   COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
 
