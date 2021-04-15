@@ -6,6 +6,7 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.dialog._
+import org.bitcoins.gui.dialog.{GetNewAddressDialog, SendDialog}
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.scene.control.Alert
