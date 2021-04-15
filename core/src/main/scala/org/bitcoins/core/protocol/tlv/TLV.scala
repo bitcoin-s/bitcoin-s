@@ -704,6 +704,7 @@ object DigitDecompositionEventDescriptorV0TLV
 sealed trait OracleEventTLV extends TLV {
   def eventDescriptor: EventDescriptorTLV
   def nonces: Vector[SchnorrNonce]
+  def eventId: NormalizedString
 }
 
 case class OracleEventV0TLV(
