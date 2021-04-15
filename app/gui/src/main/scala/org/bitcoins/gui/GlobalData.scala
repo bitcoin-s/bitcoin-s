@@ -5,10 +5,10 @@ import org.bitcoins.core.config._
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.gui.settings.Themes
-import scalafx.beans.property.{LongProperty, StringProperty}
+import scalafx.beans.property.StringProperty
 
 object GlobalData {
-  val currentBalance: LongProperty = LongProperty(0)
+  val currentBalance: StringProperty = StringProperty("0")
 
   var network: BitcoinNetwork = _
 
