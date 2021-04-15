@@ -7,7 +7,6 @@ import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.{GlobalData, TaskRunner}
@@ -20,32 +19,11 @@ import upickle.default._
 
 import java.io.File
 import java.nio.file.Files
-import scala.util.{Failure, Properties, Success, Try}
+import scala.util.{Failure, Properties, Success}
 
 class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
     extends Logging {
   var taskRunner: TaskRunner = _
-
-  lazy val txPrintFunc: String => String = str => {
-    // See if it was an error or not
-    Try(Transaction.fromHex(str)) match {
-      case Failure(_) =>
-        // if it was print the error
-        str
-      case Success(tx) =>
-        s"""|TxId: ${tx.txIdBE.hex}
-            |
-            |url: ${GlobalData.buildTxUrl(tx.txIdBE)}
-            |
-            |If the tx doesn't show up after a few minutes at this url you may need to manually
-            |broadcast the tx with the full hex below
-            |
-            |Link to broadcast: ${GlobalData.broadcastUrl}
-            |
-            |Transaction: ${tx.hex}
-      """.stripMargin
-    }
-  }
 
   // Sadly, it is a Java "pattern" to pass null into
   // constructors to signal that you want some default
@@ -302,7 +280,25 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
   }
 
   def onOffer(): Unit = {
-    printDLCDialogResult("CreateDLCOffer", new OfferDLCDialog)
+    val result = InitEnumOfferDialog.showAndWait(parentWindow.value)
+
+    result match {
+      case Some(command) =>
+        taskRunner.run(
+          caption = "Create DLC Offer",
+          op = {
+            ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
+              case Success(commandReturn) =>
+                resultArea.text = commandReturn
+              case Failure(err) =>
+                err.printStackTrace()
+                resultArea.text = s"Error executing command:\n${err.getMessage}"
+            }
+            updateDLCs()
+          }
+        )
+      case None => ()
+    }
   }
 
   def onAccept(): Unit = {
@@ -318,17 +314,15 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
   }
 
   def onGetFunding(): Unit = {
-    printDLCDialogResult("GetDLCFundingTx",
-                         new GetFundingDLCDialog,
-                         txPrintFunc)
+    printDLCDialogResult("GetDLCFundingTx", new GetFundingDLCDialog)
   }
 
   def onExecute(): Unit = {
-    printDLCDialogResult("ExecuteDLC", new ExecuteDLCDialog, txPrintFunc)
+    printDLCDialogResult("ExecuteDLC", new ExecuteDLCDialog)
   }
 
   def onRefund(): Unit = {
-    printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog, txPrintFunc)
+    printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog)
   }
 
   def viewDLC(status: DLCStatus): Unit = {

@@ -47,28 +47,6 @@ class DLCPane(glassPane: VBox) {
   // It should be uncommented when on the adaptor-dlc branch
   model.setUp()
 
-  private val enumContractButton = new Button {
-    text = "Enum Contract"
-    onAction = _ => model.onInitEnumContractDialog()
-  }
-
-  private val numericContractButton = new Button {
-    text = "Numeric Contract"
-    onAction = _ => model.onInitNumericContractDialog()
-  }
-
-  private val oracleButtonHBox = new HBox {
-    alignment = Pos.Center
-    children = Seq(enumContractButton, numericContractButton)
-    spacing = 15
-  }
-
-  private val demoOracleVBox = new VBox {
-    padding = Insets(10)
-    children = Seq(demoOracleArea, oracleButtonHBox)
-    spacing = 15
-  }
-
   private val offerButton = new Button {
     text = "Offer"
     onAction = new EventHandler[ActionEvent] {
@@ -145,7 +123,7 @@ class DLCPane(glassPane: VBox) {
   }
 
   private val textAreaHBox = new HBox {
-    children = Seq(resultArea, demoOracleVBox)
+    children = Seq(resultArea)
     spacing = 10
   }
 
@@ -162,11 +140,8 @@ class DLCPane(glassPane: VBox) {
     bottom = statusLabel
   }
 
-  resultArea.prefWidth <== (borderPane.width * 2) / 3
-  demoOracleVBox.prefWidth <== (borderPane.width / 3)
+  resultArea.prefWidth <== borderPane.width
   resultArea.prefHeight <== (borderPane.height * 2) / 3
-  demoOracleVBox.prefHeight <== (borderPane.height * 2) / 3
-  demoOracleArea.prefHeight <== demoOracleVBox.height * 0.9
 
   spaceRegion.prefWidth <== (borderPane.width - initButtonBar.width - acceptButtonBar.width - execButtonBar.width - 100) / 2
   spaceRegion2.prefWidth <== spaceRegion.prefWidth

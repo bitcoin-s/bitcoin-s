@@ -16,6 +16,9 @@ import scalafx.scene.control._
 import scalafx.scene.layout.GridPane
 import scalafx.stage.Window
 
+import java.time.format.{DateTimeFormatter, FormatStyle}
+import java.time.{Instant, ZoneOffset}
+
 object ViewDLCDialog {
 
   def showAndWait(
@@ -37,13 +40,16 @@ object ViewDLCDialog {
       padding = Insets(20, 100, 10, 10)
 
       private var row = 0
-      add(new Label("Param Hash:"), 0, row)
-      add(new TextField() {
-            text = status.paramHash.hex
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
+      add(new Label("Event Id:"), 0, row)
+      add(
+        new TextField() {
+          text =
+            status.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
+          editable = false
+        },
+        columnIndex = 1,
+        rowIndex = row
+      )
 
       row += 1
       add(new Label("Initiator:"), 0, row)
@@ -64,15 +70,6 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
-      add(new Label("Temp Contract Id:"), 0, row)
-      add(new TextField() {
-            text = status.tempContractId.hex
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
-
-      row += 1
       add(new Label("Contract Id:"), 0, row)
       val contractId: String = DLCStatus
         .getContractId(status)
@@ -81,24 +78,6 @@ object ViewDLCDialog {
 
       add(new TextField() {
             text = contractId
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
-
-      row += 1
-      add(new Label("Oracle Info:"), 0, row)
-      add(new TextField() {
-            text = status.oracleInfo.hex
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
-
-      row += 1
-      add(new Label("Contract Info:"), 0, row)
-      add(new TextField() {
-            text = status.contractInfo.hex
             editable = false
           },
           columnIndex = 1,
@@ -114,22 +93,21 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
-      add(new Label("Contract Maturity:"), 0, row)
-      add(new TextField() {
-            text = status.timeouts.contractMaturity.toUInt32.toLong.toString
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
-
-      row += 1
       add(new Label("Contract Timeout:"), 0, row)
-      add(new TextField() {
-            text = status.timeouts.contractTimeout.toUInt32.toLong.toString
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
+      add(
+        new TextField() {
+          text = {
+            val epoch = status.timeouts.contractTimeout.toUInt32.toLong
+            val instant = Instant.ofEpochSecond(epoch).atOffset(ZoneOffset.UTC)
+            DateTimeFormatter
+              .ofLocalizedDate(FormatStyle.MEDIUM)
+              .format(instant)
+          }
+          editable = false
+        },
+        columnIndex = 1,
+        rowIndex = row
+      )
 
       row += 1
       add(new Label("Collateral:"), 0, row)
