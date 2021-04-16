@@ -303,7 +303,25 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
   }
 
   def onAccept(): Unit = {
-    printDLCDialogResult("AcceptDLCOffer", new AcceptDLCDialog)
+    val result = AcceptOfferDialog.showAndWait(parentWindow.value)
+
+    result match {
+      case Some(command) =>
+        taskRunner.run(
+          caption = "Accept DLC Offer",
+          op = {
+            ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
+              case Success(commandReturn) =>
+                resultArea.text = commandReturn
+              case Failure(err) =>
+                err.printStackTrace()
+                resultArea.text = s"Error executing command:\n${err.getMessage}"
+            }
+            updateDLCs()
+          }
+        )
+      case None => ()
+    }
   }
 
   def onSign(): Unit = {

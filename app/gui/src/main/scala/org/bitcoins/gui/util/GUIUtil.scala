@@ -1,8 +1,11 @@
 package org.bitcoins.gui.util
 
+import org.bitcoins.core.protocol.BlockTimeStamp
 import scalafx.scene.control.{TextField, TextFormatter}
 
 import java.text.NumberFormat
+import java.time.format.{DateTimeFormatter, FormatStyle}
+import java.time.{Instant, ZoneOffset}
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
 
@@ -41,5 +44,13 @@ object GUIUtil {
           change // no need for modification, if only the selection changes
         }
       })
+  }
+
+  def epochToDateString(epoch: BlockTimeStamp): String = {
+    val long = epoch.toUInt32.toLong
+    val instant = Instant.ofEpochSecond(long).atOffset(ZoneOffset.UTC)
+    DateTimeFormatter
+      .ofLocalizedDate(FormatStyle.MEDIUM)
+      .format(instant)
   }
 }
