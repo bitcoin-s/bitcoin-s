@@ -107,8 +107,16 @@ object InitEnumOfferDialog {
             announcement.eventTLV.eventDescriptor match {
               case EnumEventDescriptorV0TLV(outcomes) =>
                 outcomesAdded = true
-                gridPane.add(new Label("Outcomes"), 0, 1)
-                gridPane.add(new Label("Values"), 1, 1)
+                gridPane.add(new Label("Event Id"), 0, 1)
+                gridPane.add(new TextField() {
+                               text = announcement.eventTLV.eventId
+                               editable = false
+                             },
+                             1,
+                             1)
+
+                gridPane.add(new Label("Outcomes"), 0, 2)
+                gridPane.add(new Label("Values"), 1, 2)
                 outcomes.foreach(str => addOutcomeRow(str.normStr))
                 addRemainingFields()
                 dialog.dialogPane().getScene.getWindow.sizeToScene()
