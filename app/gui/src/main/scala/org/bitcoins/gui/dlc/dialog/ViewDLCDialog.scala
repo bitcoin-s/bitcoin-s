@@ -9,15 +9,13 @@ import org.bitcoins.core.protocol.tlv.{
 }
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.{DLCPaneModel, DLCPlotUtil, GlobalDLCData}
+import org.bitcoins.gui.util.GUIUtil
 import scalafx.Includes._
 import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout.GridPane
 import scalafx.stage.Window
-
-import java.time.format.{DateTimeFormatter, FormatStyle}
-import java.time.{Instant, ZoneOffset}
 
 object ViewDLCDialog {
 
@@ -97,13 +95,7 @@ object ViewDLCDialog {
       add(new Label("Contract Timeout:"), 0, row)
       add(
         new TextField() {
-          text = {
-            val epoch = status.timeouts.contractTimeout.toUInt32.toLong
-            val instant = Instant.ofEpochSecond(epoch).atOffset(ZoneOffset.UTC)
-            DateTimeFormatter
-              .ofLocalizedDate(FormatStyle.MEDIUM)
-              .format(instant)
-          }
+          text = GUIUtil.epochToDateString(status.timeouts.contractTimeout)
           editable = false
         },
         columnIndex = 1,
