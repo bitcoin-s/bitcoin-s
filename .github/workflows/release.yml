@@ -1,4 +1,5 @@
 name: Release
+timeout-minutes: 60
 on:
   push:
     branches: [master, main, adaptor-dlc]
