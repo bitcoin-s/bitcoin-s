@@ -1,5 +1,6 @@
 # https://docs.docker.com/ci-cd/github-actions/
 name: CI to Docker Hub
+timeout-minutes: 60
 on:
   push:
     branches: [master, main, adaptor-dlc]
