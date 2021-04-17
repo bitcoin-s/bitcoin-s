@@ -67,7 +67,7 @@ trait CachedBitcoindNewest extends CachedBitcoindFunded[BitcoindRpcClient] {
     BitcoindRpcClient] = {
     val _ = isBitcoindUsed.set(true)
     BitcoinSFixture
-      .createBitcoindWithFunds(Some(BitcoindVersion.V19))
+      .createBitcoindWithFunds(Some(BitcoindVersion.newest))
   }
 }
 
