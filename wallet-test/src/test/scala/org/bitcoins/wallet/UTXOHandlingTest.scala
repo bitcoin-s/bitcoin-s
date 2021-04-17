@@ -1,6 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.WalletTestUtil._
@@ -17,7 +18,9 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "correctly update txo state based on confirmations" in { wallet =>
-    val utxo = sampleSegwitUTXO(EmptyScriptPubKey)
+    val utxo = sampleSegwitUTXO(EmptyScriptPubKey,
+                                state = TxoState.Reserved
+    ) //state doesn't matter here
     val requiredConfs = 6
     assert(wallet.walletConfig.requiredConfirmations == requiredConfs)
 

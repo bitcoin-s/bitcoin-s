@@ -34,11 +34,13 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
       createdAddr1 <- addressDAO.create(addr1)
       createdAddr2 <- addressDAO.create(addr2)
 
-      u1 = sampleLegacyUTXO(addr1.scriptPubKey)
+      u1 = sampleLegacyUTXO(addr1.scriptPubKey,
+                            state = TxoState.BroadcastReceived)
       _ <- insertDummyIncomingTransaction(daos, u1)
       utxo1 <- daos.utxoDAO.create(u1)
 
-      u2 = WalletTestUtil.sampleSegwitUTXO(addr2.scriptPubKey)
+      u2 = WalletTestUtil.sampleSegwitUTXO(addr2.scriptPubKey,
+                                           state = TxoState.BroadcastReceived)
       _ <- insertDummyIncomingTransaction(daos, u2)
       utxo2 <- daos.utxoDAO.create(u2)
 
@@ -62,16 +64,17 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
       addr <- addressDAO.create(getAddressDb(account))
 
-      u1 = sampleLegacyUTXO(addr.scriptPubKey)
+      u1 = sampleLegacyUTXO(addr.scriptPubKey, state = TxoState.DoesNotExist)
       _ <- insertDummyIncomingTransaction(daos, u1)
       utxo1 <- daos.utxoDAO.create(u1)
 
-      u2 = WalletTestUtil.sampleSegwitUTXO(addr.scriptPubKey)
+      u2 = WalletTestUtil.sampleSegwitUTXO(addr.scriptPubKey,
+                                           state = TxoState.DoesNotExist)
       _ <- insertDummyIncomingTransaction(daos, u2)
       utxo2 <- daos.utxoDAO.create(u2)
 
       utxos = Vector(utxo1, utxo2)
-      changed = utxos.map(_.copyWithState(TxoState.DoesNotExist))
+      changed = utxos.map(_.copyWithState(TxoState.BroadcastReceived))
       updated <- spendingInfoDAO.updateAllSpendingInfoDb(changed)
     } yield assert(updated == changed)
   }
@@ -80,7 +83,8 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
     val utxoDAO = daos.utxoDAO
 
     for {
-      created <- WalletTestUtil.insertSegWitUTXO(daos)
+      created <- WalletTestUtil.insertSegWitUTXO(daos = daos,
+                                                 state = TxoState.DoesNotExist)
       spk = created.output.scriptPubKey
       read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(spk)))
     } yield read match {
@@ -93,7 +97,8 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
   it should "insert a legacy UTXO and read it" in { daos =>
     val utxoDAO = daos.utxoDAO
     for {
-      created <- WalletTestUtil.insertLegacyUTXO(daos)
+      created <- WalletTestUtil.insertLegacyUTXO(daos,
+                                                 state = TxoState.DoesNotExist)
       spk = created.output.scriptPubKey
       read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(spk)))
     } yield read match {
@@ -107,7 +112,9 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
     val utxoDAO = daos.utxoDAO
 
     for {
-      utxo <- WalletTestUtil.insertLegacyUTXO(daos)
+      utxo <- WalletTestUtil.insertLegacyUTXO(daos,
+                                              state =
+                                                TxoState.ConfirmedReceived)
       transaction = {
         val randomTX = TransactionGenerators.transaction
           .suchThat(_.inputs.nonEmpty)
@@ -140,7 +147,9 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
   it must "insert an unspent TXO and find it as unspent" in { daos =>
     val spendingInfoDAO = daos.utxoDAO
     for {
-      utxo <- WalletTestUtil.insertLegacyUTXO(daos)
+      utxo <- WalletTestUtil.insertLegacyUTXO(daos,
+                                              state =
+                                                TxoState.ConfirmedReceived)
       state = utxo.copy(state = TxoState.PendingConfirmationsReceived)
       updated <- spendingInfoDAO.update(state)
       unspent <- spendingInfoDAO.findAllUnspent()
@@ -155,8 +164,12 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
   it must "insert a spent TXO and NOT find it as unspent" in { daos =>
     val spendingInfoDAO = daos.utxoDAO
     for {
-      utxo <- WalletTestUtil.insertLegacyUTXO(daos)
-      state = utxo.copy(state = TxoState.PendingConfirmationsSpent)
+      utxo <- WalletTestUtil.insertLegacyUTXO(daos = daos,
+                                              state =
+                                                TxoState.ConfirmedReceived)
+      state = utxo
+        .copy(spendingTxIdOpt = Some(randomTXID))
+        .copy(state = TxoState.PendingConfirmationsSpent)
       _ <- spendingInfoDAO.update(state)
       unspent <- spendingInfoDAO.findAllUnspent()
     } yield assert(unspent.isEmpty)
@@ -166,7 +179,8 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
     val spendingInfoDAO = daos.utxoDAO
 
     for {
-      utxo <- WalletTestUtil.insertLegacyUTXO(daos)
+      utxo <- WalletTestUtil.insertLegacyUTXO(daos,
+                                              state = TxoState.DoesNotExist)
       foundTxos <- spendingInfoDAO.findTx(utxo.txid)
     } yield assert(foundTxos.contains(utxo))
 
@@ -175,7 +189,9 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
   it should "insert a nested segwit UTXO and read it" in { daos =>
     val utxoDAO = daos.utxoDAO
     for {
-      created <- WalletTestUtil.insertNestedSegWitUTXO(daos)
+      created <- WalletTestUtil.insertNestedSegWitUTXO(daos,
+                                                       state =
+                                                         TxoState.DoesNotExist)
       spk = created.output.scriptPubKey
       read <- utxoDAO.read(created.id.get).map(_.map(_.toSpendingInfoDb(spk)))
     } yield read match {
@@ -189,14 +205,17 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
     val utxoDAO = daos.utxoDAO
 
     for {
-      created <- WalletTestUtil.insertNestedSegWitUTXO(daos)
+      created <- WalletTestUtil.insertNestedSegWitUTXO(
+        daos,
+        state = TxoState.ConfirmedReceived)
       db <- utxoDAO.read(created.id.get)
 
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
       addr <- daos.addressDAO.create(getAddressDb(account))
 
       // Add another utxo
-      u2 = WalletTestUtil.sampleSegwitUTXO(addr.scriptPubKey)
+      u2 = WalletTestUtil.sampleSegwitUTXO(addr.scriptPubKey,
+                                           state = TxoState.ConfirmedReceived)
       _ <- insertDummyIncomingTransaction(daos, u2)
       _ <- utxoDAO.create(u2)
 
