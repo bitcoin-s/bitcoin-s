@@ -15,7 +15,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
 import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
+import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE, ECPublicKey}
 import org.bitcoins.testkit.fixtures.WalletDAOs
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
@@ -107,7 +107,8 @@ object WalletTestUtil {
   private def randomScriptWitness: ScriptWitness =
     P2WPKHWitnessV0(freshXpub().key)
 
-  private def randomTXID = CryptoGenerators.doubleSha256Digest.sampleSome.flip
+  def randomTXID: DoubleSha256DigestBE =
+    CryptoGenerators.doubleSha256Digest.sampleSome.flip
   private def randomVout = NumberGenerator.uInt32s.sampleSome
 
   private def randomBlockHash =
@@ -124,14 +125,24 @@ object WalletTestUtil {
       TransactionOutput(1.bitcoin, spk)
     val scriptWitness = randomScriptWitness
     val privkeyPath = WalletTestUtil.sampleSegwitPath
+    val state = randomState
+
+    val spendingTxIdOpt = {
+      if (TxoState.spentStates.contains(state)) {
+        Some(randomTXID)
+      } else {
+        None
+      }
+    }
+
     SegwitV0SpendingInfo(
-      state = randomState,
+      state = state,
       txid = randomTXID,
       outPoint = outpoint,
       output = output,
       privKeyPath = privkeyPath,
       scriptWitness = scriptWitness,
-      spendingTxIdOpt = None
+      spendingTxIdOpt = spendingTxIdOpt
     )
   }
 
@@ -141,12 +152,21 @@ object WalletTestUtil {
     val output =
       TransactionOutput(1.bitcoin, spk)
     val privKeyPath = WalletTestUtil.sampleLegacyPath
-    LegacySpendingInfo(state = randomState,
+    val state = randomState
+    val spendingTxIdOpt = {
+      if (TxoState.spentStates.contains(state)) {
+        Some(randomTXID)
+      } else {
+        None
+      }
+    }
+
+    LegacySpendingInfo(state = state,
                        txid = randomTXID,
                        outPoint = outpoint,
                        output = output,
                        privKeyPath = privKeyPath,
-                       spendingTxIdOpt = None)
+                       spendingTxIdOpt = spendingTxIdOpt)
   }
 
   def sampleNestedSegwitUTXO(
@@ -157,15 +177,25 @@ object WalletTestUtil {
       TransactionOutput(1.bitcoin, P2SHScriptPubKey(wpkh))
     val scriptWitness = randomScriptWitness
     val privkeyPath = WalletTestUtil.sampleNestedSegwitPath
+
+    val state = randomState
+    val spendingTxIdOpt = {
+      if (TxoState.spentStates.contains(state)) {
+        Some(randomTXID)
+      } else {
+        None
+      }
+    }
+
     NestedSegwitV0SpendingInfo(
-      state = randomState,
+      state = state,
       txid = randomTXID,
       outPoint = outpoint,
       output = output,
       privKeyPath = privkeyPath,
       redeemScript = wpkh,
       scriptWitness = scriptWitness,
-      spendingTxIdOpt = None
+      spendingTxIdOpt = spendingTxIdOpt
     )
   }
 

@@ -23,9 +23,15 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
 
     val immatureCoinbase = utxo.copyWithState(ImmatureCoinbase)
     val pendingConfReceived = utxo.copyWithState(PendingConfirmationsReceived)
-    val pendingConfSpent = utxo.copyWithState(PendingConfirmationsSpent)
-    val confReceived = utxo.copyWithState(ConfirmedReceived)
-    val confSpent = utxo.copyWithState(ConfirmedSpent)
+    val spendingTxId = randomTXID
+    val pendingConfSpent = utxo
+      .copyWithSpendingTxId(spendingTxId)
+      .copyWithState(PendingConfirmationsSpent)
+    val confReceived = utxo
+      .copyWithState(ConfirmedReceived)
+    val confSpent = utxo
+      .copyWithSpendingTxId(spendingTxId)
+      .copyWithState(ConfirmedSpent)
     val reserved = utxo.copyWithState(Reserved)
     val dne = utxo.copyWithState(DoesNotExist)
 
