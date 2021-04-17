@@ -4,11 +4,7 @@ import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -215,36 +211,6 @@ case class SpendingInfoDAO()(implicit
       utxos.map(utxo =>
         utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey))
     }
-  }
-
-  /** Updates the [[org.bitcoins.core.wallet.utxo.TxoState TxoState]] of all of the given
-    * outputs in our database to be the state
-    */
-  def updateTxoState(
-      outputs: Seq[TransactionOutput],
-      state: TxoState): Future[Vector[SpendingInfoDb]] = {
-    val spks = outputs.map(_.scriptPubKey)
-
-    val filtered = for {
-      spkDbs <- spkTable.filter(_.scriptPubKey.inSet(spks)).result
-      utxos <- table.filter(_.scriptPubKeyId.inSet(spkDbs.map(_.id.get))).result
-    } yield (utxos, spkDbs)
-
-    for {
-      (utxos, spks) <- safeDatabase.run(filtered)
-      _ = require(
-        utxos.length == outputs.length,
-        s"Was given ${outputs.length} outputs, found ${utxos.length} in DB")
-      newStates = utxos.map(_.copyWithState(state = state)).toVector
-      updated <- updateAll(newStates)
-    } yield {
-      require(utxos.length == updated.length,
-              "Updated a different number of UTXOs than what we found!")
-      logger.debug(s"Updated ${updated.length} UTXO(s) to state=${state}")
-      val spkMap = spks.map(spk => (spk.id.get, spk.scriptPubKey)).toMap
-      updated.map(utxo => utxo.toSpendingInfoDb(spkMap(utxo.scriptPubKeyId)))
-    }
-
   }
 
   /** Given a TXID, fetches all incoming TXOs and the address the TXO pays to

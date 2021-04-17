@@ -137,25 +137,6 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
     }
   }
 
-  it must "insert an unspent TXO and then mark it as spent" in { daos =>
-    val spendingInfoDAO = daos.utxoDAO
-    for {
-      utxo <- WalletTestUtil.insertSegWitUTXO(daos)
-      _ <- spendingInfoDAO.update(
-        utxo.copy(state = TxoState.PendingConfirmationsReceived))
-      unspent <- spendingInfoDAO.findAllUnspent()
-      updated <-
-        spendingInfoDAO.updateTxoState(outputs = unspent.map(_.output),
-                                       state =
-                                         TxoState.PendingConfirmationsSpent)
-      unspentPostUpdate <- spendingInfoDAO.findAllUnspent()
-    } yield {
-      assert(unspent.nonEmpty)
-      assert(updated.length == unspent.length)
-      assert(unspentPostUpdate.isEmpty)
-    }
-  }
-
   it must "insert an unspent TXO and find it as unspent" in { daos =>
     val spendingInfoDAO = daos.utxoDAO
     for {
