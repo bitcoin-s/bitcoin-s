@@ -371,7 +371,7 @@ class BitcoinSServerMain(override val args: Array[String])
 
     //clear the entire wallet, then rescan to make sure we get out of a corrupted state
     val clearedF = wallet.clearAllUtxosAndAddresses()
-    for {
+    val walletF = for {
       clearedWallet <- clearedF
       _ <- clearedWallet.rescanNeutrinoWallet(startOpt = None,
                                               endOpt = None,
@@ -379,6 +379,7 @@ class BitcoinSServerMain(override val args: Array[String])
                                                 walletConf.discoveryBatchSize,
                                               useCreationTime = true)
     } yield clearedWallet
+    walletF.map(_ => ())
   }
 }
 
