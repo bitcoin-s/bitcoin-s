@@ -260,7 +260,10 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           Future.sequence(processedVec)
       }
 
-  protected def processOutgoingUtxos(
+  /** Searches for outputs on the given transaction that are
+    * being spent from our wallet
+    */
+  protected def processSpentUtxos(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[
     Vector[SpendingInfoDb]] = {
@@ -309,7 +312,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
     for {
       incoming <- processIncomingUtxos(transaction, blockHashOpt, newTags)
-      outgoing <- processOutgoingUtxos(transaction, blockHashOpt)
+      outgoing <- processSpentUtxos(transaction, blockHashOpt)
       _ <- walletCallbacks.executeOnTransactionProcessed(logger, transaction)
     } yield {
       ProcessTxResult(incoming, outgoing)
@@ -335,10 +338,18 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           logger.debug(
             s"Marked utxo=${updated.toHumanReadableString} as state=${updated.state}"))
         updatedF.map(Some(_))
-      case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
-          BroadcastSpent =>
+      case state @ (TxoState.Reserved | TxoState.PendingConfirmationsSpent |
+          BroadcastSpent) =>
+        logger.warn(
+          s"Updating the spendingTxId of a transaction that is already spent, " +
+            s"old state=$state old spendingTxId=${out.spendingTxIdOpt} new spendingTxId=${spendingTxId}")
         val updated =
-          out.copyWithSpendingTxId(spendingTxId)
+          out
+            .copyWithSpendingTxId(spendingTxId)
+            //we need to go back to the BroadcastSpent state
+            //as we are overriding the previous spending tx
+            //therefore we can no longer use the old Txo state
+            .copyWithState(state = BroadcastSpent)
         val updatedF =
           spendingInfoDAO.update(updated)
         updatedF.map(Some(_))
