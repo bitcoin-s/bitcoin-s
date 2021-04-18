@@ -17,7 +17,7 @@ object TxoState extends StringFactory[TxoState] {
   /** A coinbase output that has not reached maturity and cannot be spent yet.
     * https://bitcoin.stackexchange.com/questions/1991/what-is-the-block-maturation-time
     */
-  final case object ImmatureCoinbase extends TxoState
+  final case object ImmatureCoinbase extends ReceivedState
 
   /** Means we have received funds to this utxo, and they have not been confirmed in a block */
   final case object BroadcastReceived extends ReceivedState
@@ -55,7 +55,10 @@ object TxoState extends StringFactory[TxoState] {
     Set(TxoState.ConfirmedReceived, TxoState.ConfirmedSpent)
 
   val receivedStates: Set[TxoState] =
-    Set(PendingConfirmationsReceived, ConfirmedReceived, BroadcastReceived)
+    Set(PendingConfirmationsReceived,
+        ConfirmedReceived,
+        BroadcastReceived,
+        TxoState.ImmatureCoinbase)
 
   val spentStates: Set[TxoState] =
     Set(PendingConfirmationsSpent, TxoState.ConfirmedSpent, BroadcastSpent)
