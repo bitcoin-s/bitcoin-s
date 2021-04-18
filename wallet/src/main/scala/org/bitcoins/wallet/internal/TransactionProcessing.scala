@@ -275,21 +275,9 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           insertTransaction(transaction, blockHashOpt)
         else Future.unit
 
-      // unreserved outputs now they are in a block
-      outputsToUse = blockHashOpt match {
-        case Some(_) =>
-          outputsBeingSpent.map { out =>
-            if (out.state == TxoState.Reserved)
-              out.copyWithState(TxoState.PendingConfirmationsReceived)
-            else out
-          }
-        case None =>
-          outputsBeingSpent
-      }
-
       processed <- Future
         .sequence {
-          outputsToUse.map(markAsSpent(_, transaction.txIdBE))
+          outputsBeingSpent.map(markAsSpent(_, transaction.txIdBE))
         }
         .map(_.toVector.flatten)
 
