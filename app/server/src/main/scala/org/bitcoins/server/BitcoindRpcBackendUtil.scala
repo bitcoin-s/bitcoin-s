@@ -7,7 +7,6 @@ import grizzled.slf4j.Logging
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.ZmqConfig
@@ -24,36 +23,8 @@ object BitcoindRpcBackendUtil extends Logging {
 
   /** Has the wallet process all the blocks it has not seen up until bitcoind's chain tip */
   def syncWalletToBitcoind(bitcoind: BitcoindRpcClient, wallet: Wallet)(implicit
-      ec: ExecutionContext): Future[Unit] = {
-
-    def doSync(walletHeight: Int, bitcoindHeight: Int): Future[Unit] = {
-      if (walletHeight > bitcoindHeight) {
-        Future.failed(new RuntimeException(
-          s"Bitcoind and wallet are in incompatible states, " +
-            s"wallet height: $walletHeight, bitcoind height: $bitcoindHeight"))
-      } else {
-        val blockRange = walletHeight.to(bitcoindHeight).tail
-
-        logger.info(s"Syncing ${blockRange.size} blocks")
-
-        val func: Vector[Int] => Future[Unit] = { range =>
-          val hashFs =
-            range.map(bitcoind.getBlockHash(_).map(_.flip))
-          for {
-            hashes <- Future.sequence(hashFs)
-            _ <- wallet.nodeApi.downloadBlocks(hashes)
-          } yield ()
-        }
-
-        FutureUtil
-          .batchExecute(elements = blockRange.toVector,
-                        f = func,
-                        init = Vector.empty,
-                        batchSize = 25)
-          .map(_ => ())
-      }
-    }
-
+      system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
     for {
       bitcoindHeight <- bitcoind.getBlockCount
       walletStateOpt <- wallet.getSyncDescriptorOpt()
@@ -71,16 +42,47 @@ object BitcoindRpcBackendUtil extends Logging {
                     case Some(height) =>
                       logger.info(
                         s"Last tx occurred at block $height, syncing from there")
-                      doSync(height, bitcoindHeight)
+                      doSync(height, bitcoindHeight, bitcoind, wallet)
                     case None => Future.unit
                   }
                 } yield ()
             }
           } yield ()
         case Some(syncHeight) =>
-          doSync(syncHeight.height, bitcoindHeight)
+          doSync(syncHeight.height, bitcoindHeight, bitcoind, wallet)
       }
     } yield ()
+  }
+
+  /** Helper method to sync the wallet until the bitcoind height */
+  private def doSync(
+      walletHeight: Int,
+      bitcoindHeight: Int,
+      bitcoind: BitcoindRpcClient,
+      wallet: Wallet)(implicit system: ActorSystem): Future[Wallet] = {
+    if (walletHeight > bitcoindHeight) {
+      Future.failed(
+        new RuntimeException(
+          s"Bitcoind and wallet are in incompatible states, " +
+            s"wallet height: $walletHeight, bitcoind height: $bitcoindHeight"))
+    } else {
+      import system.dispatcher
+      val blockRange = walletHeight.to(bitcoindHeight).tail
+      val numParallelism = Runtime.getRuntime.availableProcessors()
+      logger.info(s"Syncing ${blockRange.size} blocks")
+      val hashFs = Source(blockRange)
+        .mapAsync(numParallelism) {
+          bitcoind
+            .getBlockHash(_)
+            .map(_.flip)
+        }
+        .toMat(Sink.seq)(Keep.right)
+        .run()
+      for {
+        hashes <- hashFs
+        _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
+      } yield wallet
+    }
   }
 
   def createWalletWithBitcoindCallbacks(
