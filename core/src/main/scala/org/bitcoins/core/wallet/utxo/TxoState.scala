@@ -55,7 +55,10 @@ object TxoState extends StringFactory[TxoState] {
     Set(TxoState.ConfirmedReceived, TxoState.ConfirmedSpent)
 
   val receivedStates: Set[TxoState] =
-    Set(PendingConfirmationsReceived, ConfirmedReceived, BroadcastReceived)
+    Set(PendingConfirmationsReceived,
+        ConfirmedReceived,
+        BroadcastReceived,
+        TxoState.ImmatureCoinbase)
 
   val spentStates: Set[TxoState] =
     Set(PendingConfirmationsSpent, TxoState.ConfirmedSpent, BroadcastSpent)
