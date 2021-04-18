@@ -215,7 +215,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   /** Constructs a DB level representation of the given UTXO, and persist it to disk */
   private def writeUtxo(
       tx: Transaction,
-      state: TxoState,
+      state: ReceivedState,
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
       addressDb: AddressDb): Future[SpendingInfoDb] = {
@@ -263,39 +263,27 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
   }
 
+  private def getAddressDbEitherF(
+      output: TransactionOutput): Future[Either[AddUtxoError, AddressDb]] = {
+    findAddress(output.scriptPubKey)
+  }
+
   /** Adds the provided UTXO to the wallet
     */
   protected def addUtxo(
       transaction: Transaction,
       vout: UInt32,
-      state: TxoState): Future[AddUtxoResult] = {
+      state: ReceivedState): Future[AddUtxoResult] = {
 
     logger.info(s"Adding UTXO to wallet: ${transaction.txId.hex}:${vout.toInt}")
 
-    // first check: does the provided vout exist in the tx?
-    val voutIndexOutOfBounds: Boolean = {
-      val voutLength = transaction.outputs.length
-      val outOfBunds = voutLength <= vout.toInt
-
-      if (outOfBunds)
-        logger.error(
-          s"TX with TXID ${transaction.txId.hex} only has $voutLength, got request to add vout ${vout.toInt}!")
-      outOfBunds
-    }
-
-    if (voutIndexOutOfBounds) {
+    if (vout.toInt >= transaction.outputs.length) {
+      //out of bounds output
       Future.successful(VoutIndexOutOfBounds)
     } else {
-
       val output = transaction.outputs(vout.toInt)
       val outPoint = TransactionOutPoint(transaction.txId, vout)
-
-      // second check: do we have an address associated with the provided
-      // output in our DB?
-      def addressDbEitherF: Future[Either[AddUtxoError, AddressDb]] = {
-        findAddress(output.scriptPubKey)
-      }
-
+      val addressDbEitherF = getAddressDbEitherF(output)
       // insert the UTXO into the DB
       addressDbEitherF
         .map { addressDbE =>
