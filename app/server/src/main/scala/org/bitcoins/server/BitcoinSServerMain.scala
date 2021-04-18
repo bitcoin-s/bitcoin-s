@@ -96,6 +96,7 @@ class BitcoinSServerMain(override val args: Array[String])
         _ <- node.start()
         _ <- wallet.start().recoverWith {
           //https://github.com/bitcoin-s/bitcoin-s/issues/2917
+          //https://github.com/bitcoin-s/bitcoin-s/pull/2918
           case err: IllegalArgumentException
               if err.getMessage.contains("If we have spent a spendinginfodb") =>
             handleMissingSpendingInfoDb(err, wallet)
@@ -150,6 +151,7 @@ class BitcoinSServerMain(override val args: Array[String])
         _ = logger.info("Starting wallet")
         _ <- wallet.start().recoverWith {
           //https://github.com/bitcoin-s/bitcoin-s/issues/2917
+          //https://github.com/bitcoin-s/bitcoin-s/pull/2918
           case err: IllegalArgumentException
               if err.getMessage.contains("If we have spent a spendinginfodb") =>
             handleMissingSpendingInfoDb(err, wallet)
@@ -358,9 +360,8 @@ class BitcoinSServerMain(override val args: Array[String])
   /** Handles a bug we had in our wallet with missing the spendingTxId for transactions spent from our wallet database.
     * This clears the utxos/addresses from the wallet and then
     * starts a rescan to find the missing spending txids
-    *
     * @see https://github.com/bitcoin-s/bitcoin-s/issues/2917
-    * @see
+    * @see https://github.com/bitcoin-s/bitcoin-s/pull/2918
     */
   private def handleMissingSpendingInfoDb(err: Throwable, wallet: Wallet)(
       implicit walletConf: WalletAppConfig): Future[Unit] = {
