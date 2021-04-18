@@ -368,13 +368,14 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     val spendingInfoDb = SegwitV0SpendingInfo(
-      TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
-      EmptyTransactionOutput,
-      SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
-      EmptyScriptWitness,
-      DoubleSha256DigestBE.empty,
-      TxoState.PendingConfirmationsSpent,
-      None
+      outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
+      output = EmptyTransactionOutput,
+      privKeyPath =
+        SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
+      scriptWitness = EmptyScriptWitness,
+      txid = DoubleSha256DigestBE.empty,
+      state = TxoState.PendingConfirmationsSpent,
+      spendingTxIdOpt = Some(DoubleSha256DigestBE.empty)
     )
 
     "return the wallet utxos" in {

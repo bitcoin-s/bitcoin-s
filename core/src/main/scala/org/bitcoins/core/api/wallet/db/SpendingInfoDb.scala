@@ -120,6 +120,12 @@ case class NestedSegwitV0SpendingInfo(
   */
 sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
 
+  if (TxoState.spentStates.contains(state)) {
+    require(
+      spendingTxIdOpt.isDefined,
+      s"If we have spent a spendinginfodb, the spendingTxId must be defined")
+  }
+
   protected type PathType <: HDPath
 
   /** This type is here to ensure copyWithSpent returns the same

@@ -403,7 +403,11 @@ class WalletSendingTest extends BitcoinSWalletTest {
       for {
         allUtxos <- wallet.listUtxos()
         // Make one already spent
-        spent = allUtxos.head.copyWithState(TxoState.PendingConfirmationsSpent)
+        spent = allUtxos.head
+          .copyWithSpendingTxId(
+            DoubleSha256DigestBE.empty
+          ) // dummy spending txid
+          .copyWithState(TxoState.PendingConfirmationsSpent)
         _ <- wallet.spendingInfoDAO.update(spent)
         test <- recoverToSucceededIf[IllegalArgumentException](
           wallet.sendFromOutPoints(allUtxos.map(_.outPoint),

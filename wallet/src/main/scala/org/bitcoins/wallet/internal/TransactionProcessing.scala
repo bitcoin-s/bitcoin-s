@@ -326,8 +326,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           BroadcastReceived =>
         val updated =
           out
-            .copyWithState(state = BroadcastSpent)
             .copyWithSpendingTxId(spendingTxId)
+            .copyWithState(state = BroadcastSpent)
         val updatedF =
           spendingInfoDAO.update(updated)
         updatedF.foreach(updated =>
