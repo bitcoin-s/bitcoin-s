@@ -2,7 +2,7 @@ package org.bitcoins.server
 
 import akka.Done
 import akka.actor.{ActorSystem, Cancellable}
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.protocol.blockchain.Block
@@ -14,7 +14,7 @@ import org.bitcoins.rpc.config.ZmqConfig
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.zmq.ZMQSubscriber
 
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
@@ -157,7 +157,7 @@ object BitcoindRpcBackendUtil extends Logging {
         val numParallelism = Runtime.getRuntime.availableProcessors()
         walletF.flatMap { wallet =>
           val runStream: Future[Done] = Source(blockHashes)
-            .mapAsync(numParallelism) { hash =>
+            .mapAsync(parallelism = numParallelism) { hash =>
               bitcoindRpcClient.getBlockRaw(hash)
             }
             .foldAsync(wallet) { case (wallet, block) =>
@@ -191,7 +191,8 @@ object BitcoindRpcBackendUtil extends Logging {
       interval: FiniteDuration = 10.seconds)(implicit
       system: ActorSystem,
       ec: ExecutionContext): Cancellable = {
-    val atomicPrevCount: AtomicReference[Int] = new AtomicReference(startCount)
+    val numParallelism = Runtime.getRuntime.availableProcessors()
+    val atomicPrevCount: AtomicInteger = new AtomicInteger(startCount)
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
         logger.debug("Polling bitcoind for block count")
@@ -202,22 +203,26 @@ object BitcoindRpcBackendUtil extends Logging {
 
             // use .tail so we don't process the previous block that we already did
             val range = prevCount.to(count).tail
-
-            val hashFs =
-              range.map(bitcoind.getBlockHash(_).map(_.flip))
-
-            val oldPrevCount = prevCount
-            atomicPrevCount.set(count)
+            val hashFs: Future[Seq[DoubleSha256Digest]] = Source(range)
+              .mapAsync(parallelism = numParallelism) { height =>
+                bitcoind.getBlockHash(height).map(_.flip)
+              }
+              .map { hash =>
+                val _ = atomicPrevCount.incrementAndGet()
+                hash
+              }
+              .toMat(Sink.seq)(Keep.right)
+              .run()
 
             val requestsBlocksF = for {
-              hashes <- Future.sequence(hashFs)
+              hashes <- hashFs
               _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
             } yield logger.debug("Successfully polled bitcoind for new blocks")
 
             requestsBlocksF.onComplete {
               case Success(_) => ()
               case Failure(err) =>
-                atomicPrevCount.set(oldPrevCount)
+                atomicPrevCount.set(prevCount)
                 logger.error("Requesting blocks from bitcoind polling failed",
                              err)
             }
