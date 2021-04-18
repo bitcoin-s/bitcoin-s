@@ -1,6 +1,8 @@
 package org.bitcoins.server
 
+import akka.Done
 import akka.actor.{ActorSystem, Cancellable}
+import akka.stream.scaladsl.Source
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.protocol.blockchain.Block
@@ -83,7 +85,7 @@ object BitcoindRpcBackendUtil extends Logging {
 
   def createWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
-      wallet: Wallet)(implicit ec: ExecutionContext): Wallet = {
+      wallet: Wallet)(implicit system: ActorSystem): Wallet = {
     // We need to create a promise so we can inject the wallet with the callback
     // after we have created it into SyncUtil.getNodeApiWalletCallback
     // so we don't lose the internal state of the wallet
@@ -145,46 +147,24 @@ object BitcoindRpcBackendUtil extends Logging {
 
   private def getNodeApiWalletCallback(
       bitcoindRpcClient: BitcoindRpcClient,
-      walletF: Future[Wallet])(implicit ec: ExecutionContext): NodeApi = {
+      walletF: Future[Wallet])(implicit system: ActorSystem): NodeApi = {
+    import system.dispatcher
     new NodeApi {
 
       override def downloadBlocks(
           blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
         logger.info(s"Fetching ${blockHashes.length} hashes from bitcoind")
-        val f: Vector[DoubleSha256Digest] => Future[Wallet] = { hashes =>
-          val blocksF =
-            FutureUtil.sequentially(hashes)(bitcoindRpcClient.getBlockRaw)
-
-          val updatedWalletF = for {
-            blocks <- blocksF
-            wallet <- walletF
-            processedWallet <- {
-              FutureUtil.foldLeftAsync(wallet, blocks) { case (wallet, block) =>
-                wallet.processBlock(block)
-              }
+        val numParallelism = Runtime.getRuntime.availableProcessors()
+        walletF.flatMap { wallet =>
+          val runStream: Future[Done] = Source(blockHashes)
+            .mapAsync(numParallelism) { hash =>
+              bitcoindRpcClient.getBlockRaw(hash)
             }
-          } yield processedWallet
-
-          updatedWalletF
-        }
-
-        val batchSize = 25
-        val batchedExecutedF = {
-          for {
-            wallet <- walletF
-            wallet <- FutureUtil.batchExecute[DoubleSha256Digest, Wallet](
-              elements = blockHashes,
-              f = f,
-              init = wallet,
-              batchSize = batchSize)
-          } yield wallet
-
-        }
-
-        batchedExecutedF.map { _ =>
-          logger.info(
-            s"Done fetching ${blockHashes.length} hashes from bitcoind")
-          ()
+            .foldAsync(wallet) { case (wallet, block) =>
+              wallet.processBlock(block)
+            }
+            .run()
+          runStream.map(_ => ())
         }
       }
 
