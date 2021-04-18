@@ -1,7 +1,6 @@
 # Docs:
 # https://github.com/scalameta/sbt-native-image#generate-native-image-from-github-actions
 name: Native Image bitcoin-s-cli
-timeout-minutes: 60
 on:
   push:
     branches: [master, main, adaptor-dlc]
@@ -13,6 +12,7 @@ jobs:
   unix:
     if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:

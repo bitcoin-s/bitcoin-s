@@ -1,5 +1,4 @@
 name: Linux 2.12 KeyManager, Wallet, and DLC tests
-timeout-minutes: 60
 env:
   COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
 
@@ -9,6 +8,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     steps:
       - name: Checkout

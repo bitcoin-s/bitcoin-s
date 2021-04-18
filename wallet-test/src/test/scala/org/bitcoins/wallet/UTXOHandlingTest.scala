@@ -1,6 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.WalletTestUtil._
@@ -17,15 +18,23 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "correctly update txo state based on confirmations" in { wallet =>
-    val utxo = sampleSegwitUTXO(EmptyScriptPubKey)
+    val utxo = sampleSegwitUTXO(EmptyScriptPubKey,
+                                state = TxoState.Reserved
+    ) //state doesn't matter here
     val requiredConfs = 6
     assert(wallet.walletConfig.requiredConfirmations == requiredConfs)
 
     val immatureCoinbase = utxo.copyWithState(ImmatureCoinbase)
     val pendingConfReceived = utxo.copyWithState(PendingConfirmationsReceived)
-    val pendingConfSpent = utxo.copyWithState(PendingConfirmationsSpent)
-    val confReceived = utxo.copyWithState(ConfirmedReceived)
-    val confSpent = utxo.copyWithState(ConfirmedSpent)
+    val spendingTxId = randomTXID
+    val pendingConfSpent = utxo
+      .copyWithSpendingTxId(spendingTxId)
+      .copyWithState(PendingConfirmationsSpent)
+    val confReceived = utxo
+      .copyWithState(ConfirmedReceived)
+    val confSpent = utxo
+      .copyWithSpendingTxId(spendingTxId)
+      .copyWithState(ConfirmedSpent)
     val reserved = utxo.copyWithState(Reserved)
     val dne = utxo.copyWithState(DoesNotExist)
 

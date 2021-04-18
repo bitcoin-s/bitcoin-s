@@ -1,5 +1,4 @@
 name: Release
-timeout-minutes: 60
 on:
   push:
     branches: [master, main, adaptor-dlc]
@@ -7,6 +6,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v2.3.4
         with:

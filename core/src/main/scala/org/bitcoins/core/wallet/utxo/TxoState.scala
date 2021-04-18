@@ -58,10 +58,7 @@ object TxoState extends StringFactory[TxoState] {
     Set(PendingConfirmationsReceived, ConfirmedReceived, BroadcastReceived)
 
   val spentStates: Set[TxoState] =
-    Set(PendingConfirmationsSpent,
-        TxoState.ConfirmedSpent,
-        Reserved,
-        BroadcastSpent)
+    Set(PendingConfirmationsSpent, TxoState.ConfirmedSpent, BroadcastSpent)
 
   val broadcastStates: Set[TxoState] = Set(BroadcastReceived, BroadcastSpent)
 
