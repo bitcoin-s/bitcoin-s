@@ -11,7 +11,7 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState._
-import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
+import org.bitcoins.core.wallet.utxo.{AddressTag, ReceivedState, TxoState}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.wallet._
 
@@ -357,17 +357,18 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     * error if any (this is because we're operating on data we've
     * already verified).
     */
-  private def processUtxo(
+  private def processReceivedUtxo(
       transaction: Transaction,
       index: Int,
-      state: TxoState): Future[SpendingInfoDb] = {
-    addUtxo(transaction = transaction, vout = UInt32(index), state = state)
-      .flatMap {
-        case AddUtxoSuccess(utxo) => Future.successful(utxo)
-        case err: AddUtxoError =>
-          logger.error(s"Could not add UTXO", err)
-          Future.failed(err)
-      }
+      state: ReceivedState): Future[SpendingInfoDb] = {
+    val addIncomingUtxoF =
+      addUtxo(transaction = transaction, vout = UInt32(index), state = state)
+    addIncomingUtxoF.flatMap {
+      case AddUtxoSuccess(utxo) => Future.successful(utxo)
+      case err: AddUtxoError =>
+        logger.error(s"Could not add UTXO", err)
+        Future.failed(err)
+    }
   }
 
   private case class OutputWithIndex(output: TransactionOutput, index: Int)
@@ -428,12 +429,13 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     }
   }
 
-  private def addUTXOsFut(
+  /** Adds utxos to the database that we are receiving */
+  private def addReceivedUTXOs(
       outputsWithIndex: Seq[OutputWithIndex],
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[
     Seq[SpendingInfoDb]] = {
-    val stateF: Future[TxoState] = blockHashOpt match {
+    val stateF: Future[ReceivedState] = blockHashOpt match {
       case None =>
         Future.successful(TxoState.BroadcastReceived)
       case Some(blockHash) =>
@@ -453,7 +455,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
     stateF.flatMap { state =>
       val outputsVec = outputsWithIndex.map { out =>
-        processUtxo(
+        processReceivedUtxo(
           transaction,
           out.index,
           state = state
@@ -504,17 +506,6 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
         Future.successful(Vector.empty)
 
       case outputsWithIndex =>
-        val count = outputsWithIndex.length
-        val outputStr = {
-          outputsWithIndex
-            .map { elem =>
-              s"${transaction.txIdBE.hex}:${elem.index}"
-            }
-            .mkString(", ")
-        }
-        logger.trace(
-          s"Found $count relevant output(s) in transaction=${transaction.txIdBE.hex}: $outputStr")
-
         val totalIncoming = outputsWithIndex.map(_.output.value).sum
 
         val spks = outputsWithIndex.map(_.output.scriptPubKey)
@@ -556,7 +547,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
         for {
           (txDb, _) <- txDbF
           ourOutputs <- ourOutputsF
-          utxos <- addUTXOsFut(ourOutputs, txDb.transaction, blockHashOpt)
+          utxos <- addReceivedUTXOs(ourOutputs, txDb.transaction, blockHashOpt)
           _ <- newTagsF
         } yield utxos
     }
