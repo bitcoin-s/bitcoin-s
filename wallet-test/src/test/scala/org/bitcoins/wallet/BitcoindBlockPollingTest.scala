@@ -33,6 +33,7 @@ class BitcoindBlockPollingTest
   }
 
   override def afterAll(): Unit = {
+    super[CachedBitcoindNewest].afterAll()
     super[EmbeddedPg].afterAll()
   }
 

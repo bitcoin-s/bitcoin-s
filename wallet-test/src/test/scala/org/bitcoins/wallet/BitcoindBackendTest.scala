@@ -12,10 +12,6 @@ import org.bitcoins.testkit.rpc.{
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
-import org.bitcoins.wallet.config.WalletAppConfig
-
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
 
 class BitcoindBackendTest
     extends BitcoinSAsyncFixtureTest
@@ -30,20 +26,14 @@ class BitcoindBackendTest
   implicit protected def config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
-  implicit protected def walletAppConfig: WalletAppConfig = {
-    config.walletConf
-  }
-
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.walletConf)
     super[EmbeddedPg].beforeAll()
   }
 
   override def afterAll(): Unit = {
-    Await.result(config.chainConf.stop(), 1.minute)
-    Await.result(config.nodeConf.stop(), 1.minute)
-    Await.result(config.walletConf.stop(), 1.minute)
-    super.afterAll()
+    super[CachedBitcoindNewest].afterAll()
+    super[EmbeddedPg].afterAll()
   }
 
   it must "correctly catch up to bitcoind" in { bitcoind =>
@@ -82,9 +72,9 @@ class BitcoindBackendTest
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
-    } yield {
-      assert(balance == amountToSend)
-      assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
-    }
+      _ = assert(balance == amountToSend)
+      _ = assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
+      _ <- wallet.stop()
+    } yield succeed
   }
 }
