@@ -1,6 +1,5 @@
 package org.bitcoins.crypto
 
-import org.bitcoin.NativeSecp256k1Util.AssertFailException
 import scodec.bits._
 
 import scala.concurrent.ExecutionContext
@@ -94,7 +93,10 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     val pubkey2 =
       ECPublicKey.fromBytes(ByteVector(firstByte) ++ pubkey1.bytes.tail)
 
-    assertThrows[AssertFailException](CryptoUtil.add(pubkey1, pubkey2))
+    assertThrows[Exception] {
+      val sumKey = CryptoUtil.add(pubkey1, pubkey2)
+      if (sumKey == ECPublicKey.infinity) fail()
+    }
 
     val decompressedPubkey1 =
       CryptoUtil.publicKeyConvert(pubkey1, compressed = false)
@@ -102,8 +104,10 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     val decompressedPubkey2 =
       CryptoUtil.publicKeyConvert(pubkey2, compressed = false)
 
-    assertThrows[AssertFailException](
-      CryptoUtil.add(decompressedPubkey1, decompressedPubkey2))
+    assertThrows[Exception] {
+      val sumKey = CryptoUtil.add(decompressedPubkey1, decompressedPubkey2)
+      if (sumKey == ECPublicKey.infinity) fail()
+    }
   }
 
   it must "correctly compress keys" in {
