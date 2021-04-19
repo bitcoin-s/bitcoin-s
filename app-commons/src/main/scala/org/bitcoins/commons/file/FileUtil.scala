@@ -16,7 +16,10 @@ object FileUtil extends Logging {
   /** Zips the [[directory]] into a zip file and then stores it at [[target]]
     * @see https://www.quickprogrammingtips.com/java/how-to-zip-a-folder-in-java.html
     */
-  def zipDirectory(source: Path, target: Path): Path = {
+  def zipDirectory(
+      source: Path,
+      target: Path,
+      fileNameFilter: Vector[String]): Path = {
     val zos = new ZipOutputStream(new FileOutputStream(target.toFile()))
     Files.walkFileTree(
       source,
@@ -25,16 +28,22 @@ object FileUtil extends Logging {
         override def visitFile(
             file: Path,
             attrs: BasicFileAttributes): FileVisitResult = {
-          logger.info(
-            s"Zipping file=${file.toAbsolutePath} to ${target.toAbsolutePath}")
-          zos.putNextEntry(new ZipEntry(source.relativize(file).toString))
-          Files.copy(file, zos)
-          zos.closeEntry()
-          logger.info(s"Done zipping file=${file.toAbsolutePath}")
-          FileVisitResult.CONTINUE
+          if (fileNameFilter.exists(fileName => file.endsWith(fileName))) {
+            logger.info(s"Skipping ${file.toAbsolutePath} for zip")
+            FileVisitResult.CONTINUE
+          } else {
+            logger.info(
+              s"Zipping file=${file.toAbsolutePath} to ${target.toAbsolutePath}")
+            zos.putNextEntry(new ZipEntry(source.relativize(file).toString))
+            Files.copy(file, zos)
+            zos.closeEntry()
+            logger.info(s"Done zipping file=${file.toAbsolutePath}")
+            FileVisitResult.CONTINUE
+          }
         }
       }
     )
+
     zos.close()
     target
   }

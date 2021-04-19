@@ -74,6 +74,16 @@ case class BitcoinSAppConfig(
       None
     }
   }
+
+  /** Zips $HOME/.bitcoin-s
+    */
+  def zipDatadir(target: Path): Path = {
+    FileUtil.zipDirectory(source = directory,
+                          target = target,
+                          //we don't want to store chaindb.sqlite as these
+                          //databases are huge
+                          fileNameFilter = Vector("chaindb.sqlite"))
+  }
 }
 
 /** Implicit conversions that allow a unified configuration
