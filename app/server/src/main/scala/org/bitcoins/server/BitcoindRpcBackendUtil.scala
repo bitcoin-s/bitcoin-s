@@ -223,53 +223,55 @@ object BitcoindRpcBackendUtil extends Logging {
   def startBitcoindBlockPolling(
       wallet: Wallet,
       bitcoind: BitcoindRpcClient,
-      startCount: Int,
       interval: FiniteDuration = 10.seconds)(implicit
       system: ActorSystem,
-      ec: ExecutionContext): Cancellable = {
-    val numParallelism = Runtime.getRuntime.availableProcessors()
-    val atomicPrevCount: AtomicInteger = new AtomicInteger(startCount)
-    system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
-      {
-        logger.debug("Polling bitcoind for block count")
-        bitcoind.getBlockCount.flatMap { count =>
-          val prevCount = atomicPrevCount.get()
-          if (prevCount < count) {
-            logger.debug("Bitcoind has new block(s), requesting...")
+      ec: ExecutionContext): Future[Cancellable] = {
+    bitcoind.getBlockCount.map { startCount =>
+      val numParallelism = Runtime.getRuntime.availableProcessors()
+      val atomicPrevCount: AtomicInteger = new AtomicInteger(startCount)
+      system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
+        {
+          logger.debug("Polling bitcoind for block count")
+          bitcoind.getBlockCount.flatMap { count =>
+            val prevCount = atomicPrevCount.get()
+            if (prevCount < count) {
+              logger.debug("Bitcoind has new block(s), requesting...")
 
-            // use .tail so we don't process the previous block that we already did
-            val range = prevCount.to(count).tail
-            val hashFs: Future[Seq[DoubleSha256Digest]] = Source(range)
-              .mapAsync(parallelism = numParallelism) { height =>
-                bitcoind.getBlockHash(height).map(_.flip)
+              // use .tail so we don't process the previous block that we already did
+              val range = prevCount.to(count).tail
+              val hashFs: Future[Seq[DoubleSha256Digest]] = Source(range)
+                .mapAsync(parallelism = numParallelism) { height =>
+                  bitcoind.getBlockHash(height).map(_.flip)
+                }
+                .map { hash =>
+                  val _ = atomicPrevCount.incrementAndGet()
+                  hash
+                }
+                .toMat(Sink.seq)(Keep.right)
+                .run()
+
+              val requestsBlocksF = for {
+                hashes <- hashFs
+                _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
+              } yield logger.debug(
+                "Successfully polled bitcoind for new blocks")
+
+              requestsBlocksF.onComplete {
+                case Success(_) => ()
+                case Failure(err) =>
+                  atomicPrevCount.set(prevCount)
+                  logger.error("Requesting blocks from bitcoind polling failed",
+                               err)
               }
-              .map { hash =>
-                val _ = atomicPrevCount.incrementAndGet()
-                hash
-              }
-              .toMat(Sink.seq)(Keep.right)
-              .run()
 
-            val requestsBlocksF = for {
-              hashes <- hashFs
-              _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
-            } yield logger.debug("Successfully polled bitcoind for new blocks")
-
-            requestsBlocksF.onComplete {
-              case Success(_) => ()
-              case Failure(err) =>
-                atomicPrevCount.set(prevCount)
-                logger.error("Requesting blocks from bitcoind polling failed",
-                             err)
-            }
-
-            requestsBlocksF
-          } else if (prevCount > count) {
-            Future.failed(new RuntimeException(
-              s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
-          } else Future.unit
+              requestsBlocksF
+            } else if (prevCount > count) {
+              Future.failed(new RuntimeException(
+                s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
+            } else Future.unit
+          }
+          ()
         }
-        ()
       }
     }
   }
