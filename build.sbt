@@ -659,7 +659,7 @@ lazy val wallet = project
     name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
-  .dependsOn(coreJVM, appCommons, dbCommons, keyManager)
+  .dependsOn(coreJVM, appCommons, dbCommons, keyManager, asyncUtilsJVM)
   .enablePlugins(FlywayPlugin)
 
 lazy val walletTest = project

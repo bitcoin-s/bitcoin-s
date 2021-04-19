@@ -154,16 +154,7 @@ abstract class AsyncUtil extends AsyncUtilApi {
 
 object AsyncUtil extends AsyncUtil {
 
-  private[this] val threadFactory = new ThreadFactory {
-    private val atomicInteger = new AtomicInteger(0)
-
-    override def newThread(r: Runnable): Thread = {
-      val t = new Thread(
-        r,
-        s"bitcoin-s-async-util-${atomicInteger.getAndIncrement()}")
-      t
-    }
-  }
+  private[this] val threadFactory = getNewThreadFactory("bitcoin-s-async-util")
 
   private[bitcoins] val scheduler =
     Executors.newScheduledThreadPool(2, threadFactory)
@@ -175,4 +166,16 @@ object AsyncUtil extends AsyncUtil {
   /** The default number of async attempts before timing out
     */
   private[bitcoins] val DEFAULT_MAX_TRIES: Int = 50
+
+  /** Gives you a thread factory with the given prefix with a counter appended to the name */
+  def getNewThreadFactory(prefix: String): ThreadFactory = {
+    new ThreadFactory {
+      private val atomicInteger = new AtomicInteger(0)
+
+      override def newThread(r: Runnable): Thread = {
+        val t = new Thread(r, s"$prefix-${atomicInteger.getAndIncrement()}")
+        t
+      }
+    }
+  }
 }
