@@ -12,9 +12,7 @@ import org.bitcoins.testkit.rpc.{
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
-import org.bitcoins.wallet.config.WalletAppConfig
 
-import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
 class BitcoindBlockPollingTest
@@ -29,20 +27,13 @@ class BitcoindBlockPollingTest
   implicit protected def config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
-  implicit protected def walletAppConfig: WalletAppConfig = {
-    config.walletConf
-  }
-
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.walletConf)
     super[EmbeddedPg].beforeAll()
   }
 
   override def afterAll(): Unit = {
-    Await.result(config.chainConf.stop(), 1.minute)
-    Await.result(config.nodeConf.stop(), 1.minute)
-    Await.result(config.walletConf.stop(), 1.minute)
-    super.afterAll()
+    super[EmbeddedPg].afterAll()
   }
 
   it must "properly setup and poll blocks from bitcoind" in { bitcoind =>
@@ -80,6 +71,9 @@ class BitcoindBlockPollingTest
         wallet.getBalance().map(_ > Satoshis.zero))
 
       balance <- wallet.getBalance()
-    } yield assert(balance == amountToSend)
+      _ = assert(balance == amountToSend)
+      //clean up
+      _ <- wallet.stop()
+    } yield succeed
   }
 }
