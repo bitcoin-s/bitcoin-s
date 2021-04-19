@@ -123,6 +123,10 @@ trait BitcoinSWalletTestCachedBitcoind
       _ <- BitcoindRpcTestUtil.stopServer(bitcoind)
     } yield ()
   }
+
+  override def afterAll(): Unit = {
+    super[BaseWalletTest].afterAll()
+  }
 }
 
 trait BitcoinSWalletTestCachedBitcoindNewest
@@ -131,6 +135,7 @@ trait BitcoinSWalletTestCachedBitcoindNewest
 
   override def afterAll(): Unit = {
     super[CachedBitcoindNewest].afterAll()
+    super[BitcoinSWalletTestCachedBitcoind].afterAll()
   }
 }
 
@@ -140,6 +145,7 @@ trait BitcoinSWalletTestCachedBitcoinV19
 
   override def afterAll(): Unit = {
     super[CachedBitcoindV19].afterAll()
+    super[BitcoinSWalletTestCachedBitcoind].afterAll()
   }
 
   /** Creates a funded wallet fixture with bitcoind
