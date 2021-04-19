@@ -396,6 +396,7 @@ object Deps {
       Compile.logback,
       Compile.akkaActor,
       Compile.akkaHttp,
+      Compile.akkaStream,
       Compile.akkaSlf4j
     )
   }
