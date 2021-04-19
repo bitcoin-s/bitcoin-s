@@ -176,7 +176,7 @@ case class WalletAppConfig(
     if (isHikariLoggingEnabled) {
       val _ = stopHikariLogger()
     }
-    Future.unit
+    super.stop()
   }
 
   /** The path to our encrypted mnemonic seed */
