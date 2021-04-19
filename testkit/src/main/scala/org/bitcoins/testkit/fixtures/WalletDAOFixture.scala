@@ -6,7 +6,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
 import org.scalatest._
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 case class WalletDAOs(
     accountDAO: AccountDAO,
@@ -75,5 +75,11 @@ trait WalletDAOFixture extends BitcoinSFixture with EmbeddedPg {
     } yield ()
     res.failed.foreach(_.printStackTrace())
     res
+  }
+
+  override def afterAll(): Unit = {
+    val stoppedF = config.stop()
+    val _ = Await.ready(stoppedF, akkaTimeout.duration)
+    super[EmbeddedPg].afterAll()
   }
 }

@@ -3,7 +3,8 @@ package org.bitcoins.asyncutil
 import org.bitcoins.asyncutil.AsyncUtil.scheduler
 import org.bitcoins.core.api.asyncutil.AsyncUtilApi
 
-import java.util.concurrent.{Executors, TimeUnit}
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{Executors, ThreadFactory, TimeUnit}
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
@@ -153,7 +154,19 @@ abstract class AsyncUtil extends AsyncUtilApi {
 
 object AsyncUtil extends AsyncUtil {
 
-  private[bitcoins] val scheduler = Executors.newScheduledThreadPool(2)
+  private[this] val threadFactory = new ThreadFactory {
+    private val atomicInteger = new AtomicInteger(0)
+
+    override def newThread(r: Runnable): Thread = {
+      val t = new Thread(
+        r,
+        s"bitcoin-s-async-util-${atomicInteger.getAndIncrement()}")
+      t
+    }
+  }
+
+  private[bitcoins] val scheduler =
+    Executors.newScheduledThreadPool(2, threadFactory)
 
   /** The default interval between async attempts
     */
