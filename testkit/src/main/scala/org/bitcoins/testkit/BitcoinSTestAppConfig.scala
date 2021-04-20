@@ -181,7 +181,7 @@ object BitcoinSTestAppConfig {
          |   user = "postgres"
          |   password = "postgres"
          |   port = $port
-         |   numThreads = 10
+         |   numThreads = 2
          |   keepAliveConnection = true
          | }""".stripMargin
     }
