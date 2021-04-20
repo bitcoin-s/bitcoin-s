@@ -288,9 +288,10 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
         .sequence {
           outputsToUse.map(markAsSpent(_, transaction.txIdBE))
         }
-        .map(_.toVector)
-    } yield processed.flatten
+        .map(_.toVector.flatten)
 
+      _ <- updateUtxoConfirmedStates(processed)
+    } yield processed
   }
 
   /** Does the grunt work of processing a TX.
