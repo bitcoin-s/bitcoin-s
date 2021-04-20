@@ -449,7 +449,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
     */
   lazy val addressQueueThread = {
     val t = new Thread(AddressQueueRunnable)
-    t.setName(s"bitcoin-s-ad  dress-queue-${System.currentTimeMillis()}")
+    t.setName(s"bitcoin-s-address-queue-${System.currentTimeMillis()}")
     t
   }
 
