@@ -345,8 +345,10 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
         Future.failed(new RuntimeException(
           s"Attempting to spend an ImmatureCoinbase ${out.outPoint.hex}, this should not be possible until it is confirmed."))
       case TxoState.ConfirmedSpent =>
-        Future.failed(new RuntimeException(
-          s"Attempted to mark an already spent utxo ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}"))
+        if (!out.spendingTxIdOpt.contains(spendingTxId)) {
+          Future.failed(new RuntimeException(
+            s"Attempted to mark an already spent utxo ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}"))
+        } else Future.successful(Some(out))
       case TxoState.DoesNotExist =>
         Future.failed(new RuntimeException(
           s"Attempted to process a transaction for a utxo that does not exist ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}"))
