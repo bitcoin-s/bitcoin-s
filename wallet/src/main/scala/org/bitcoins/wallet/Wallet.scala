@@ -41,7 +41,6 @@ import org.bitcoins.wallet.models._
 import scodec.bits.ByteVector
 
 import java.time.Instant
-import java.util.concurrent._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Random, Success}
 
@@ -61,7 +60,7 @@ abstract class Wallet
 
   implicit val walletConfig: WalletAppConfig
 
-  private[wallet] val scheduler = Executors.newScheduledThreadPool(1)
+  private[wallet] lazy val scheduler = walletConfig.scheduler
 
   val chainParams: ChainParams = walletConfig.chain
 
@@ -158,7 +157,6 @@ abstract class Wallet
     for {
       _ <- walletConfig.stop()
     } yield {
-      scheduler.shutdown()
       stopRebroadcastTxsScheduler()
       this
     }
