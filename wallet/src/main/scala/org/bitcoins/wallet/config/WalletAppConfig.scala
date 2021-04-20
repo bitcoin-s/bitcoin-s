@@ -188,13 +188,13 @@ case class WalletAppConfig(
 
   override def stop(): Future[Unit] = {
     if (isHikariLoggingEnabled) {
-      val _ = stopHikariLogger()
+      stopHikariLogger()
     }
     //this eagerly shuts down all scheduled tasks on the scheduler
     //in the future, we should actually cancel all things that are scheduled
     //manually, and then shutdown the scheduler
-    val _ = scheduler.shutdownNow()
-    val _ = rescanThreadPool.shutdownNow()
+    scheduler.shutdownNow()
+    rescanThreadPool.shutdownNow()
     super.stop()
   }
 
