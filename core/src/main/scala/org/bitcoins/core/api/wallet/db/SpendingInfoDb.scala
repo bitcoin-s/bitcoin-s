@@ -123,7 +123,7 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   if (TxoState.spentStates.contains(state)) {
     require(
       spendingTxIdOpt.isDefined,
-      s"If we have spent a spendinginfodb, the spendingTxId must be defined")
+      s"If we have spent a spendinginfodb, the spendingTxId must be defined. Outpoint=${outPoint.toString}")
   }
 
   protected type PathType <: HDPath
