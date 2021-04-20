@@ -6,7 +6,7 @@ import org.bouncycastle.crypto.params.{
   ECPublicKeyParameters
 }
 import org.bouncycastle.crypto.signers.{ECDSASigner, HMacDSAKCalculator}
-import org.bouncycastle.math.ec.ECCurve
+import org.bouncycastle.math.ec.{ECCurve, ECPoint}
 import scodec.bits.ByteVector
 
 import java.math.BigInteger
@@ -26,25 +26,23 @@ object BouncyCastleUtil {
     decodePubKey(point, publicKey.isCompressed)
   }
 
-  private[crypto] def decodePoint(
-      bytes: ByteVector): org.bouncycastle.math.ec.ECPoint = {
+  private[crypto] def decodePoint(bytes: ByteVector): ECPoint = {
     curve.decodePoint(bytes.toArray)
   }
 
-  private[crypto] def decodePoint(
-      pubKey: ECPublicKey): org.bouncycastle.math.ec.ECPoint = {
+  private[crypto] def decodePoint(pubKey: ECPublicKey): ECPoint = {
     decodePoint(pubKey.bytes)
   }
 
   private[crypto] def decodePubKey(
-      point: org.bouncycastle.math.ec.ECPoint,
+      point: ECPoint,
       isCompressed: Boolean = true): ECPublicKey = {
     val bytes = point.getEncoded(isCompressed)
     ECPublicKey.fromBytes(ByteVector(bytes))
   }
 
   def validatePublicKey(bytes: ByteVector): Boolean = {
-    Try(decodePoint(bytes))
+    bytes != ByteVector(0x00) && Try(decodePoint(bytes))
       .map(_.getCurve == curve)
       .getOrElse(false)
   }

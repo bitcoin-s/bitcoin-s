@@ -55,10 +55,10 @@ object AdaptorUtil {
       r: ECPublicKey,
       privateKey: ECPrivateKey): FieldElement = {
     CryptoUtil.decodePoint(r) match {
-      case ECPointInfinity =>
+      case SecpPointInfinity =>
         throw new IllegalArgumentException(
-          s"Invalid point, got=$ECPointInfinity")
-      case point: ECPointImpl =>
+          s"Invalid point, got=$SecpPointInfinity")
+      case point: SecpPointImpl =>
         val rx = FieldElement(point.x.toBigInteger)
         val x = privateKey.fieldElement
         val m = FieldElement(dataToSign)

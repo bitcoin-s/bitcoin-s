@@ -118,10 +118,11 @@ sealed abstract class BaseECKey extends NetworkElement
 
 /** Created by chris on 2/16/16.
   */
-sealed abstract class ECPrivateKey
+case class ECPrivateKey(bytes: ByteVector)
     extends BaseECKey
     with Sign
     with MaskedToString {
+  require(CryptoUtil.secKeyVerify(bytes), s"Invalid key, hex: ${bytes.toHex}")
 
   /** Signs a given sequence of bytes with the signingKey
     * @param dataToSign the bytes to be signed
@@ -234,15 +235,10 @@ sealed abstract class ECPrivateKey
 
 object ECPrivateKey extends Factory[ECPrivateKey] {
 
-  private case class ECPrivateKeyImpl(override val bytes: ByteVector)
-      extends ECPrivateKey {
-    require(CryptoUtil.secKeyVerify(bytes), s"Invalid key, hex: ${bytes.toHex}")
-  }
-
   @tailrec
   override def fromBytes(bytes: ByteVector): ECPrivateKey = {
     if (bytes.size == 32)
-      ECPrivateKeyImpl(bytes)
+      new ECPrivateKey(bytes)
     else if (bytes.size < 32) {
       //means we need to pad the private key with 0 bytes so we have 32 bytes
       ECPrivateKey.fromBytes(bytes.padLeft(32))
@@ -268,15 +264,13 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
 
 /** Created by chris on 2/16/16.
   */
-sealed abstract class ECPublicKey
+case class ECPublicKey(_bytes: ByteVector)
     extends BaseECKey
     with PublicKey[ECPublicKey] {
 
   override private[crypto] def fromBytes(bytes: ByteVector): ECPublicKey = {
     ECPublicKey.fromBytes(bytes)
   }
-
-  protected def _bytes: ByteVector
 
   def schnorrVerify(
       data: ByteVector,
@@ -366,19 +360,8 @@ sealed abstract class ECPublicKey
 
 object ECPublicKey extends Factory[ECPublicKey] {
 
-  private case class ECPublicKeyImpl(override protected val _bytes: ByteVector)
-      extends ECPublicKey {
-    //unfortunately we cannot place ANY invariants here
-    //because of old transactions on the blockchain that have weirdly formatted public keys. Look at example in script_tests.json
-    //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_tests.json#L457
-    //bitcoin core only checks CPubKey::IsValid()
-    //this means we can have public keys with only one byte i.e. 0x00 or no bytes.
-    //Eventually we would like this to be CPubKey::IsFullyValid() but since we are remaining backwards compatible
-    //we cannot do this. If there ever is a hard fork this would be a good thing to add.
-  }
-
   override def fromBytes(bytes: ByteVector): ECPublicKey = {
-    ECPublicKeyImpl(bytes)
+    new ECPublicKey(bytes)
   }
 
   def apply(): ECPublicKey = freshPublicKey

@@ -187,8 +187,8 @@ trait CryptoRuntime {
   def decompressed[PK <: PublicKey[PK]](publicKey: PK): PK = {
     if (publicKey.isCompressed) {
       decodePoint(publicKey.bytes) match {
-        case ECPointInfinity => publicKey.fromHex("00")
-        case point: ECPointImpl =>
+        case SecpPointInfinity => publicKey.fromHex("00")
+        case point: SecpPointImpl =>
           val decompressedBytes =
             ByteVector.fromHex("04").get ++
               point.x.bytes ++
@@ -210,13 +210,17 @@ trait CryptoRuntime {
 
   def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey
 
+  def combinePubKeys(pubKeys: Vector[ECPublicKey]): ECPublicKey = {
+    pubKeys.reduce(add(_, _))
+  }
+
   def pubKeyTweakAdd(pubkey: ECPublicKey, privkey: ECPrivateKey): ECPublicKey
 
   def isValidPubKey(bytes: ByteVector): Boolean
 
-  def decodePoint(bytes: ByteVector): ECPoint
+  def decodePoint(bytes: ByteVector): SecpPoint
 
-  def decodePoint(pubKey: ECPublicKey): ECPoint = {
+  def decodePoint(pubKey: ECPublicKey): SecpPoint = {
     decodePoint(pubKey.bytes)
   }
 
@@ -265,8 +269,8 @@ trait CryptoRuntime {
         val challengePoint = schnorrPubKey.publicKey.tweakMultiply(negE)
         val computedR = challengePoint.add(sigPoint)
         decodePoint(computedR) match {
-          case ECPointInfinity => false
-          case ECPointImpl(_, yCoord) =>
+          case SecpPointInfinity => false
+          case SecpPointImpl(_, yCoord) =>
             !yCoord.toBigInteger.testBit(0) && computedR.schnorrNonce == rx
         }
       case Failure(_) => false

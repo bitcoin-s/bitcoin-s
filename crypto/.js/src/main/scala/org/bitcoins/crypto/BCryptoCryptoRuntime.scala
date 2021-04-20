@@ -248,19 +248,19 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     hi | lo
   }
 
-  override def decodePoint(bytes: ByteVector): ECPoint = {
+  override def decodePoint(bytes: ByteVector): SecpPoint = {
     if (bytes.size == 1 && bytes(0) == 0x00) {
-      ECPointInfinity
+      SecpPointInfinity
     } else {
       val decoded = SECP256k1.curve
         .applyDynamic("decodePoint")(CryptoJsUtil.toNodeBuffer(bytes))
         .asInstanceOf[Point]
 
       if (decoded.isInfinity())
-        ECPointInfinity
+        SecpPointInfinity
       else
-        ECPoint(new BigInteger(decoded.getX().toString()),
-                new BigInteger(decoded.getY().toString()))
+        SecpPoint(new BigInteger(decoded.getX().toString()),
+                  new BigInteger(decoded.getY().toString()))
     }
   }
 

@@ -118,7 +118,7 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
       tweak: FieldElement): ECPublicKey = {
     val mulBytes = NativeSecp256k1.pubKeyTweakMul(publicKey.bytes.toArray,
                                                   tweak.bytes.toArray,
-                                                  publicKey.isCompressed)
+                                                  false)
     ECPublicKey(ByteVector(mulBytes))
   }
 
@@ -136,7 +136,14 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
 
   override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey = {
     val summands = Array(pk1.bytes.toArray, pk2.bytes.toArray)
-    val sumKey = NativeSecp256k1.pubKeyCombine(summands, pk1.isCompressed)
+    val sumKey = NativeSecp256k1.pubKeyCombine(summands, false)
+
+    ECPublicKey(ByteVector(sumKey))
+  }
+
+  override def combinePubKeys(pubKeys: Vector[ECPublicKey]): ECPublicKey = {
+    val summands = pubKeys.map(_.bytes.toArray).toArray
+    val sumKey = NativeSecp256k1.pubKeyCombine(summands, false)
 
     ECPublicKey(ByteVector(sumKey))
   }
@@ -256,16 +263,16 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
   override def sipHash(item: ByteVector, key: SipHashKey): Long =
     BouncycastleCryptoRuntime.sipHash(item, key)
 
-  override def decodePoint(bytes: ByteVector): ECPoint = {
+  override def decodePoint(bytes: ByteVector): SecpPoint = {
     val infinityPt: ByteVector = ByteVector.fromByte(0x00)
 
     if (bytes == infinityPt) {
-      ECPointInfinity
+      SecpPointInfinity
     } else {
       val pointBytes = NativeSecp256k1.decompress(bytes.toArray)
       val xBytes = pointBytes.tail.take(32)
       val yBytes = pointBytes.takeRight(32)
-      ECPoint(xBytes, yBytes)
+      SecpPoint(xBytes, yBytes)
     }
   }
 
