@@ -5,6 +5,7 @@ import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState._
@@ -423,6 +424,51 @@ class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
         assert(newReserved.isEmpty)
         assert(!oldTransactions.map(_.transaction).contains(tx))
         assert(newTransactions.map(_.transaction).contains(tx))
+      }
+  }
+
+  it should "handle a utxo being spent from a tx outside the wallet" in {
+    param =>
+      val WalletWithBitcoindRpc(wallet, bitcoind) = param
+
+      for {
+        utxo <- wallet.listUtxos().map(_.head)
+        changeAddr <- wallet.getNewChangeAddress()
+        unsignedPSBT = {
+          val input =
+            TransactionInput(utxo.outPoint, EmptyScriptSignature, UInt32.zero)
+
+          val amt = Satoshis(100000)
+          val output =
+            TransactionOutput(amt, testAddr.scriptPubKey)
+          val changeOutput =
+            TransactionOutput(utxo.output.value - amt - Satoshis(1000),
+                              changeAddr.scriptPubKey)
+
+          val tx = BaseTransaction(Int32.two,
+                                   Vector(input),
+                                   Vector(output, changeOutput),
+                                   UInt32.zero)
+
+          PSBT.fromUnsignedTx(tx)
+        }
+
+        psbt <- wallet.signPSBT(unsignedPSBT)
+
+        tx <- Future.fromTry(
+          psbt.finalizePSBT.flatMap(_.extractTransactionAndValidate))
+
+        // Confirm tx in a block
+        _ <- bitcoind.sendRawTransaction(tx)
+        hash <- bitcoind.generateToAddress(1, testAddr).map(_.head)
+        block <- bitcoind.getBlockRaw(hash)
+        _ <- wallet.processBlock(block)
+
+        updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+      } yield {
+        assert(
+          updatedCoins.forall(_.state == TxoState.PendingConfirmationsSpent))
+        assert(updatedCoins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
       }
   }
 }
