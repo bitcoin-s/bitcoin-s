@@ -338,12 +338,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           s"Updating the spendingTxId of a transaction that is already spent, " +
             s"old state=${TxoState.BroadcastSpent} old spendingTxId=${out.spendingTxIdOpt} new spendingTxId=${spendingTxId}")
         val updated =
-          out
-            .copyWithSpendingTxId(spendingTxId)
-            //we need to go back to the BroadcastSpent state
-            //as we are overriding the previous spending tx
-            //therefore we can no longer use the old Txo state
-            .copyWithState(state = BroadcastSpent)
+          out.copyWithSpendingTxId(spendingTxId)
         val updatedF = spendingInfoDAO.update(updated)
         updatedF.map(Some(_))
       case TxoState.ImmatureCoinbase =>
