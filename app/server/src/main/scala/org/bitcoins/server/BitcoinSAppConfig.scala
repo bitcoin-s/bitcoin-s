@@ -2,6 +2,7 @@ package org.bitcoins.server
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
