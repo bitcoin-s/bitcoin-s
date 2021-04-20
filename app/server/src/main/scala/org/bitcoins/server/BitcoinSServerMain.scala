@@ -156,16 +156,17 @@ class BitcoinSServerMain(override val args: Array[String])
               if err.getMessage.contains("If we have spent a spendinginfodb") =>
             handleMissingSpendingInfoDb(err, wallet)
         }
-        _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
+        _ = BitcoindRpcBackendUtil
+          .syncWalletToBitcoind(bitcoind, wallet)
+          .flatMap { _ =>
+            if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
+              BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet, bitcoind)
+            } else Future.unit
+          }
 
-        blockCount <- bitcoind.getBlockCount
         // Create callbacks for processing new blocks
         _ =
-          if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
-            BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
-                                                             bitcoind,
-                                                             blockCount)
-          } else {
+          if (bitcoindRpcConf.zmqConfig != ZmqConfig.empty) {
             BitcoindRpcBackendUtil.startZMQWalletCallbacks(wallet)
           }
 
