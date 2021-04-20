@@ -94,7 +94,13 @@ class BitcoinSServerMain(override val args: Array[String])
         node <- configuredNodeF
         wallet <- configuredWalletF
         _ <- node.start()
-        _ <- wallet.start()
+        _ <- wallet.start().recoverWith {
+          //https://github.com/bitcoin-s/bitcoin-s/issues/2917
+          //https://github.com/bitcoin-s/bitcoin-s/pull/2918
+          case err: IllegalArgumentException
+              if err.getMessage.contains("If we have spent a spendinginfodb") =>
+            handleMissingSpendingInfoDb(err, wallet)
+        }
         cachedChainApi <- node.chainApiFromDb()
         chainApi = ChainHandler.fromChainHandlerCached(cachedChainApi)
         binding <- startHttpServer(nodeApi = node,
@@ -143,7 +149,13 @@ class BitcoinSServerMain(override val args: Array[String])
           bitcoind,
           tmpWallet)
         _ = logger.info("Starting wallet")
-        _ <- wallet.start()
+        _ <- wallet.start().recoverWith {
+          //https://github.com/bitcoin-s/bitcoin-s/issues/2917
+          //https://github.com/bitcoin-s/bitcoin-s/pull/2918
+          case err: IllegalArgumentException
+              if err.getMessage.contains("If we have spent a spendinginfodb") =>
+            handleMissingSpendingInfoDb(err, wallet)
+        }
         _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
 
         blockCount <- bitcoind.getBlockCount
@@ -343,6 +355,31 @@ class BitcoinSServerMain(override val args: Array[String])
 
     logger.info(s"Using fee provider: $feeProvider")
     feeProvider
+  }
+
+  /** Handles a bug we had in our wallet with missing the spendingTxId for transactions spent from our wallet database.
+    * This clears the utxos/addresses from the wallet and then
+    * starts a rescan to find the missing spending txids
+    * @see https://github.com/bitcoin-s/bitcoin-s/issues/2917
+    * @see https://github.com/bitcoin-s/bitcoin-s/pull/2918
+    */
+  private def handleMissingSpendingInfoDb(err: Throwable, wallet: Wallet)(
+      implicit walletConf: WalletAppConfig): Future[Unit] = {
+    logger.warn(
+      s"Found corrupted wallet, rescanning to find spendinginfodbs.spendingTxId as detailed in issue 2917",
+      err)
+
+    //clear the entire wallet, then rescan to make sure we get out of a corrupted state
+    val clearedF = wallet.clearAllUtxosAndAddresses()
+    val walletF = for {
+      clearedWallet <- clearedF
+      _ <- clearedWallet.rescanNeutrinoWallet(startOpt = None,
+                                              endOpt = None,
+                                              addressBatchSize =
+                                                walletConf.discoveryBatchSize,
+                                              useCreationTime = true)
+    } yield clearedWallet
+    walletF.map(_ => ())
   }
 }
 
