@@ -302,6 +302,13 @@ object JsonReaders {
       SerializerUtil.processJsString[ECPublicKey](ECPublicKey.fromHex)(json)
   }
 
+  implicit object ECPublicKeyBytesReads extends Reads[ECPublicKeyBytes] {
+
+    override def reads(json: JsValue): JsResult[ECPublicKeyBytes] =
+      SerializerUtil.processJsString[ECPublicKeyBytes](
+        ECPublicKeyBytes.fromHex)(json)
+  }
+
   implicit object SchnorrPublicKeyReads extends Reads[SchnorrPublicKey] {
 
     override def reads(json: JsValue): JsResult[SchnorrPublicKey] =

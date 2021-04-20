@@ -287,7 +287,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
     val address = P2PKHAddress(publicKey, networkParam)
 
     for {
-      _ <- client.importPrivKey(ecPrivateKey,
+      _ <- client.importPrivKey(ecPrivateKey.toPrivateKeyBytes(),
                                 rescan = false,
                                 walletNameOpt = Some(walletName))
       key <- client.dumpPrivKey(address, Some(walletName))
@@ -297,11 +297,15 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
             client.getDaemon.datadir.getAbsolutePath + "/wallet_dump.dat",
             Some(walletName))
     } yield {
-      assert(key == ecPrivateKey)
+      assert(key.toPrivateKey == ecPrivateKey)
       val reader = new Scanner(result.filename)
       var found = false
       while (reader.hasNext) {
-        if (reader.next == ECPrivateKeyUtil.toWIF(ecPrivateKey, networkParam)) {
+        if (
+          reader.next == ECPrivateKeyUtil.toWIF(
+            ecPrivateKey.toPrivateKeyBytes(),
+            networkParam)
+        ) {
           found = true
         }
       }

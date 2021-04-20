@@ -64,7 +64,8 @@ object P2WPKHWitnessV0 {
   private def apply(stack: Seq[ByteVector]): P2WPKHWitnessV0 =
     P2WPKHWitnessV0Impl(stack)
 
-  private[core] def apply(pubKeyBytes: ECPublicKeyBytes): P2WPKHWitnessV0 = {
+  private[bitcoins] def apply(
+      pubKeyBytes: ECPublicKeyBytes): P2WPKHWitnessV0 = {
     P2WPKHWitnessV0(pubKeyBytes, EmptyDigitalSignature)
   }
 
@@ -72,7 +73,7 @@ object P2WPKHWitnessV0 {
     P2WPKHWitnessV0(pubKey, EmptyDigitalSignature)
   }
 
-  private[core] def apply(
+  private[bitcoins] def apply(
       publicKeyBytes: ECPublicKeyBytes,
       signature: ECDigitalSignature): P2WPKHWitnessV0 = {
     P2WPKHWitnessV0(Seq(publicKeyBytes.bytes, signature.bytes))

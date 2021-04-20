@@ -14,7 +14,7 @@ import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config._
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.util.StartStopAsync
-import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.crypto.{ECPrivateKey, ECPrivateKeyBytes}
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
   CookieBased,
@@ -78,10 +78,22 @@ trait Client
   implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
 
     override def writes(o: ECPrivateKey): JsValue =
-      JsString(ECPrivateKeyUtil.toWIF(o, network))
+      JsString(ECPrivateKeyUtil.toWIF(o.toPrivateKeyBytes(), network))
   }
 
   implicit val eCPrivateKeyWrites: Writes[ECPrivateKey] = ECPrivateKeyWrites
+
+  /** This is here (and not in JsonWrriters)
+    * so that the implicit network val is accessible
+    */
+  implicit object ECPrivateKeyBytesWrites extends Writes[ECPrivateKeyBytes] {
+
+    override def writes(o: ECPrivateKeyBytes): JsValue =
+      JsString(ECPrivateKeyUtil.toWIF(o, network))
+  }
+
+  implicit val eCPrivateKeyBytesWrites: Writes[ECPrivateKeyBytes] =
+    ECPrivateKeyBytesWrites
 
   implicit val importMultiAddressWrites: Writes[RpcOpts.ImportMultiAddress] =
     Json.writes[RpcOpts.ImportMultiAddress]

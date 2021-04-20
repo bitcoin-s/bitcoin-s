@@ -68,6 +68,9 @@ object JsonSerializers {
   implicit val sha256Hash160DigestReads: Reads[Sha256Hash160Digest] =
     Sha256Hash160DigestReads
   implicit val eCPublicKeyReads: Reads[ECPublicKey] = ECPublicKeyReads
+
+  implicit val eCPublicKeyBytesReads: Reads[ECPublicKeyBytes] =
+    ECPublicKeyBytesReads
   implicit val p2PKHAddressReads: Reads[P2PKHAddress] = P2PKHAddressReads
   implicit val p2SHAddressReads: Reads[P2SHAddress] = P2SHAddressReads
 
@@ -630,6 +633,9 @@ object JsonSerializers {
 
   implicit val ecPublicKeyWrites: Writes[ECPublicKey] =
     Writes[ECPublicKey](pubKey => JsString(pubKey.hex))
+
+  implicit val ecPublicKeyBytesWrites: Writes[ECPublicKeyBytes] =
+    Writes[ECPublicKeyBytes](pubKey => JsString(pubKey.hex))
 
   implicit val scriptTokenWrites: Writes[ScriptToken] =
     Writes[ScriptToken](token => JsString(tokenToString(token)))
