@@ -68,7 +68,7 @@ object BouncyCastleUtil {
   def computePublicKey(privateKey: ECPrivateKey): ECPublicKey = {
     val priv = getBigInteger(privateKey.bytes)
     val point = G.multiply(priv)
-    val pubBytes = ByteVector(point.getEncoded(privateKey.isCompressed))
+    val pubBytes = ByteVector(point.getEncoded(false))
     require(
       ECPublicKey.isFullyValid(pubBytes),
       s"Bouncy Castle failed to generate a valid public key, got: ${CryptoBytesUtil
@@ -149,7 +149,7 @@ object BouncyCastleUtil {
 
   def verifyDigitalSignature(
       data: ByteVector,
-      publicKey: ECPublicKey,
+      publicKey: PublicKey[_],
       signature: ECDigitalSignature): Boolean = {
     val resultTry = Try {
       val publicKeyParams =

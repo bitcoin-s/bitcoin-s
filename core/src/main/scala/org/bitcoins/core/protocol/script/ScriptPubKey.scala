@@ -154,11 +154,11 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
   }
 
   /** Returns the public keys encoded into the `scriptPubKey` */
-  def publicKeys: Seq[ECPublicKey] = {
+  def publicKeys: Seq[ECPublicKeyBytes] = {
     asm
       .filter(_.isInstanceOf[ScriptConstant])
       .slice(1, maxSigs + 1)
-      .map(key => ECPublicKey(key.hex))
+      .map(key => ECPublicKeyBytes(key.bytes))
   }
 
   override def toString = s"multi($requiredSigs,${publicKeys.mkString(",")})"
@@ -343,8 +343,8 @@ object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
   */
 sealed trait P2PKScriptPubKey extends RawScriptPubKey {
 
-  def publicKey: ECPublicKey =
-    ECPublicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
+  def publicKey: ECPublicKeyBytes =
+    ECPublicKeyBytes(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
 
   override def toString = s"pk(${publicKey.hex})"
 
@@ -381,6 +381,18 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
       case Seq(_: BytesToPushOntoStack, _: ScriptConstant, OP_CHECKSIG) => true
       case _                                                            => false
     }
+
+  private[core] def fromP2PKWithTimeout(
+      p2pkWithTimeout: P2PKWithTimeoutScriptPubKey,
+      timeoutBranch: Boolean): P2PKScriptPubKey = {
+    val pubKeyBytes =
+      if (timeoutBranch) p2pkWithTimeout.timeoutPubKey
+      else p2pkWithTimeout.pubKey
+    val pushOps = BitcoinScriptUtil.calculatePushOp(pubKeyBytes.bytes)
+    val asm = pushOps ++ Seq(ScriptConstant(pubKeyBytes.bytes), OP_CHECKSIG)
+
+    P2PKScriptPubKey(asm)
+  }
 
 }
 
@@ -896,8 +908,8 @@ object NonStandardNotIfConditionalScriptPubKey
   */
 sealed trait P2PKWithTimeoutScriptPubKey extends RawScriptPubKey {
 
-  lazy val pubKey: ECPublicKey =
-    ECPublicKey.fromBytes(asm(2).bytes)
+  lazy val pubKey: ECPublicKeyBytes =
+    ECPublicKeyBytes(asm(2).bytes)
 
   private lazy val smallCSVOpt: Option[Long] = {
     asm(4) match {
@@ -912,10 +924,10 @@ sealed trait P2PKWithTimeoutScriptPubKey extends RawScriptPubKey {
       .getOrElse(ScriptNumber(asm(5).bytes))
   }
 
-  lazy val timeoutPubKey: ECPublicKey = {
+  lazy val timeoutPubKey: ECPublicKeyBytes = {
     smallCSVOpt match {
-      case Some(_) => ECPublicKey.fromBytes(asm(8).bytes)
-      case None    => ECPublicKey.fromBytes(asm(9).bytes)
+      case Some(_) => ECPublicKeyBytes(asm(8).bytes)
+      case None    => ECPublicKeyBytes(asm(9).bytes)
     }
   }
 }
@@ -1258,12 +1270,16 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
     fromAsm(Seq(OP_0) ++ pushop ++ Seq(ScriptConstant(hash.bytes)))
   }
 
-  /** Creates a P2WPKH witness script pubkey */
-  def apply(pubKey: ECPublicKey): P2WPKHWitnessSPKV0 = {
+  private[core] def apply(pubKey: ECPublicKeyBytes): P2WPKHWitnessSPKV0 = {
     //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
     require(
       pubKey.isCompressed,
       s"Public key must be compressed to be used in a segwit script, see BIP143")
+    P2WPKHWitnessSPKV0(pubKey.toPublicKey)
+  }
+
+  /** Creates a P2WPKH witness script pubkey */
+  def apply(pubKey: ECPublicKey): P2WPKHWitnessSPKV0 = {
     val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
     val pushop = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     fromAsm(Seq(OP_0) ++ pushop ++ Seq(ScriptConstant(hash.bytes)))

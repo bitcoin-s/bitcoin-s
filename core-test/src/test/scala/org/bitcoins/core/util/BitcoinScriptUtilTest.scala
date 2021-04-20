@@ -8,10 +8,9 @@ import org.bitcoins.core.script.flag.ScriptVerifyWitnessPubKeyType
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.{OP_NOP, OP_RESERVED}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
-import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
+import org.bitcoins.crypto.{ECPrivateKeyBytes, ECPublicKeyBytes}
 import org.bitcoins.testkitcore.gen.ScriptGenerators
-import org.bitcoins.testkitcore.util.TestUtil
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
 /** Created by chris on 3/2/16.
@@ -36,7 +35,7 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
 
   // https://en.bitcoin.it/wiki/Genesis_block
   it must "filter out non-data from the genesis coinbase transaction" in {
-    val genesisPK = ECPublicKey.fromHex(
+    val genesisPK = ECPublicKeyBytes.fromHex(
       "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f")
     val output = TransactionOutput.fromHex(
       "00f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac")
@@ -272,7 +271,7 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
 
   it must "check a public key's encoding" in {
     //pubkeys must be compressed or uncompressed or else that are not validly encoded
-    val key = ECPublicKey("00")
+    val key = ECPublicKeyBytes("00")
     val program = TestUtil.testProgramExecutionInProgress
     BitcoinScriptUtil.checkPubKeyEncoding(key, program) must be(false)
   }
@@ -300,16 +299,16 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
   }
 
   it must "determine if a segwit pubkey is compressed" in {
-    val key = ECPrivateKey(false)
-    val pubKey = key.publicKey
+    val key = ECPrivateKeyBytes.freshPrivateKey(false)
+    val pubKey = key.publicKeyBytes
     val flags = Seq(ScriptVerifyWitnessPubKeyType)
     BitcoinScriptUtil.isValidPubKeyEncoding(pubKey,
                                             SigVersionWitnessV0,
                                             flags) must be(
       Some(ScriptErrorWitnessPubKeyType))
 
-    val key2 = ECPrivateKey(false)
-    val pubKey2 = key2.publicKey
+    val key2 = ECPrivateKeyBytes.freshPrivateKey(false)
+    val pubKey2 = key2.publicKeyBytes
     BitcoinScriptUtil.isValidPubKeyEncoding(pubKey2,
                                             SigVersionBase,
                                             flags) must be(None)

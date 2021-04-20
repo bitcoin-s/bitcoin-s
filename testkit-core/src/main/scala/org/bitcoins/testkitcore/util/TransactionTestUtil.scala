@@ -6,7 +6,7 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
+import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKeyBytes}
 
 /** Created by chris on 2/12/16.
   */
@@ -136,7 +136,7 @@ trait TransactionTestUtil {
       Transaction,
       Int,
       ScriptPubKey,
-      Seq[ECPublicKey]) = {
+      Seq[ECPublicKeyBytes]) = {
     val key1 = ECPrivateKeyUtil.fromWIFToPrivateKey(
       "cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT")
     val key2 = ECPrivateKeyUtil.fromWIFToPrivateKey(
@@ -146,7 +146,7 @@ trait TransactionTestUtil {
     (signedMultiSignatureTx,
      0,
      multiSignatureScriptPubKey,
-     Seq(key1.publicKey, key2.publicKey, key3.publicKey))
+     Seq(key1.publicKeyBytes, key2.publicKeyBytes, key3.publicKeyBytes))
   }
 
   /** Returns a p2sh transaction with its corresponding crediting output */

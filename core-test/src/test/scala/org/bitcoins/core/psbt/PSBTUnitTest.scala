@@ -339,10 +339,14 @@ class PSBTUnitTest extends BitcoinSUnitTest {
 
     assert(unsignedPsbt.nextRole == PSBTRole.SignerPSBTRole)
 
-    val privKey0 = ECPrivateKeyUtil.fromWIFToPrivateKey(
-      "cP53pDbR5WtAD8dYAW9hhTjuvvTVaEiQBdrz9XPrgLBeRFiyCbQr")
-    val privKey1 = ECPrivateKeyUtil.fromWIFToPrivateKey(
-      "cR6SXDoyfQrcp4piaiHE97Rsgta9mNhGTen9XeonVgwsh4iSgw6d")
+    val privKey0 = ECPrivateKeyUtil
+      .fromWIFToPrivateKey(
+        "cP53pDbR5WtAD8dYAW9hhTjuvvTVaEiQBdrz9XPrgLBeRFiyCbQr")
+      .toPrivateKey
+    val privKey1 = ECPrivateKeyUtil
+      .fromWIFToPrivateKey(
+        "cR6SXDoyfQrcp4piaiHE97Rsgta9mNhGTen9XeonVgwsh4iSgw6d")
+      .toPrivateKey
 
     // BCrypto does not use low r signing
     val (expectedPsbt0, expectedPsbt1) = CryptoUtil.cryptoContext match {
@@ -361,11 +365,15 @@ class PSBTUnitTest extends BitcoinSUnitTest {
 
         (psbt0, psbt1)
     }
-    val privKey2 = ECPrivateKeyUtil.fromWIFToPrivateKey(
-      "cT7J9YpCwY3AVRFSjN6ukeEeWY6mhpbJPxRaDaP5QTdygQRxP9Au")
+    val privKey2 = ECPrivateKeyUtil
+      .fromWIFToPrivateKey(
+        "cT7J9YpCwY3AVRFSjN6ukeEeWY6mhpbJPxRaDaP5QTdygQRxP9Au")
+      .toPrivateKey
 
-    val privKey3 = ECPrivateKeyUtil.fromWIFToPrivateKey(
-      "cNBc3SWUip9PPm1GjRoLEJT6T41iNzCYtD7qro84FMnM5zEqeJsE")
+    val privKey3 = ECPrivateKeyUtil
+      .fromWIFToPrivateKey(
+        "cNBc3SWUip9PPm1GjRoLEJT6T41iNzCYtD7qro84FMnM5zEqeJsE")
+      .toPrivateKey
 
     val expectedPubKeyHashes =
       Vector(privKey0, privKey1, privKey2, privKey3).map { key =>

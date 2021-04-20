@@ -9,9 +9,6 @@ import scodec.bits.ByteVector
   * 33 byte compressed secp256k1 public key.
   */
 case class NodeId(pubKey: ECPublicKey) extends NetworkElement {
-  require(
-    pubKey.isCompressed,
-    s"Cannot create a nodeId from a public key that was not compressed ${pubKey.hex}")
 
   override def toString: String = pubKey.hex
 

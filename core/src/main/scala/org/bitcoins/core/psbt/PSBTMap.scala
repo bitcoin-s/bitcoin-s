@@ -503,10 +503,14 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
               addLeaves(conditional.trueSPK, path :+ true)
               addLeaves(conditional.falseSPK, path :+ false)
             case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
-              addLeaves(P2PKScriptPubKey(p2pkWithTimeout.pubKey), path :+ true)
+              addLeaves(P2PKScriptPubKey.fromP2PKWithTimeout(p2pkWithTimeout,
+                                                             timeoutBranch =
+                                                               false),
+                        path :+ true)
               val timeoutSPK = CLTVScriptPubKey(
                 p2pkWithTimeout.lockTime,
-                P2PKScriptPubKey(p2pkWithTimeout.timeoutPubKey))
+                P2PKScriptPubKey.fromP2PKWithTimeout(p2pkWithTimeout,
+                                                     timeoutBranch = true))
               addLeaves(timeoutSPK, path :+ false)
             case cltv: CLTVScriptPubKey =>
               addLeaves(cltv.nestedScriptPubKey, path)

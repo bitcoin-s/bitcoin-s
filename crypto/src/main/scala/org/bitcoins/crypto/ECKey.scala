@@ -5,6 +5,113 @@ import scodec.bits.ByteVector
 import java.math.BigInteger
 import scala.annotation.tailrec
 
+sealed trait ECKeyBytes extends NetworkElement
+
+case class ECPrivateKeyBytes(bytes: ByteVector, isCompressed: Boolean = true)
+    extends ECKeyBytes
+    with MaskedToString {
+  val toPrivateKey: ECPrivateKey = ECPrivateKey(bytes)
+
+  def publicKeyBytes: ECPublicKeyBytes = {
+    val pubKey = toPrivateKey.publicKey
+    if (isCompressed) {
+      ECPublicKeyBytes(pubKey.bytes)
+    } else {
+      ECPublicKeyBytes(pubKey.decompressedBytes)
+    }
+  }
+
+  override def toStringSensitive: String = s"ECPrivateKeyBytes($hex)"
+}
+
+object ECPrivateKeyBytes extends Factory[ECPrivateKeyBytes] {
+
+  override def fromBytes(bytes: ByteVector): ECPrivateKeyBytes = {
+    val modifiedBytes = ECPrivateKey.fromBytes(bytes).bytes
+
+    new ECPrivateKeyBytes(modifiedBytes)
+  }
+
+  def freshPrivateKey(isCompressed: Boolean): ECPrivateKeyBytes = {
+    CryptoUtil.freshPrivateKey.toPrivateKeyBytes(isCompressed)
+  }
+
+  def freshPrivateKey: ECPrivateKeyBytes = {
+    CryptoUtil.freshPrivateKey.toPrivateKeyBytes()
+  }
+}
+
+sealed trait PublicKey[PK <: PublicKey[PK]] extends NetworkElement {
+  private[crypto] def fromBytes(bytes: ByteVector): PK
+
+  private[crypto] def fromHex(hex: String): PK = {
+    fromBytes(CryptoBytesUtil.decodeHex(hex))
+  }
+
+  private def thisAsPK: PK = {
+    this.asInstanceOf[PK]
+  }
+
+  def verify(hash: HashDigest, signature: ECDigitalSignature): Boolean =
+    verify(hash.bytes, signature)
+
+  /** Verifies if a given piece of data is signed by the
+    * [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]]'s corresponding
+    * [[org.bitcoins.crypto.ECPublicKey ECPublicKey]].
+    */
+  def verify(data: ByteVector, signature: ECDigitalSignature): Boolean = {
+    CryptoUtil.verify(this, data, signature)
+  }
+
+  def verify(hex: String, signature: ECDigitalSignature): Boolean =
+    verify(CryptoBytesUtil.decodeHex(hex), signature)
+
+  /** Checks if the [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] is compressed */
+  def isCompressed: Boolean = bytes.size == 33
+
+  /** Checks if the [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] is valid according to secp256k1 */
+  def isFullyValid: Boolean = ECPublicKey.isFullyValid(bytes)
+
+  /** Returns the decompressed version of this [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] */
+  lazy val decompressed: PK = {
+    if (isCompressed) {
+      CryptoUtil.decompressed(thisAsPK)
+    } else thisAsPK
+  }
+
+  lazy val compressed: PK = {
+    if (isCompressed || bytes == ByteVector.fromByte(0x00)) {
+      thisAsPK
+    } else {
+      val key = if (bytes.length == 65) this else decompressed
+      val (x, y) = key.bytes.tail.splitAt(32)
+      val leadByte = if (FieldElement(y).isEven) 2.toByte else 3.toByte
+      fromBytes(x.+:(leadByte))
+    }
+  }
+}
+
+case class ECPublicKeyBytes(bytes: ByteVector)
+    extends ECKeyBytes
+    with PublicKey[ECPublicKeyBytes] {
+
+  def toPublicKey: ECPublicKey = ECPublicKey(bytes)
+
+  override private[crypto] def fromBytes(bytes: ByteVector): ECPublicKeyBytes =
+    ECPublicKeyBytes(bytes)
+}
+
+object ECPublicKeyBytes extends Factory[ECPublicKeyBytes] {
+
+  override def fromBytes(bytes: ByteVector): ECPublicKeyBytes = {
+    new ECPublicKeyBytes(bytes)
+  }
+
+  def freshPublicKey: ECPublicKeyBytes = {
+    ECPrivateKeyBytes.freshPrivateKey.publicKeyBytes
+  }
+}
+
 /** Created by chris on 2/16/16.
   */
 sealed abstract class BaseECKey extends NetworkElement
@@ -104,9 +211,6 @@ sealed abstract class ECPrivateKey
     CryptoUtil.add(this, other)
   }
 
-  /** Signifies if the this private key corresponds to a compressed public key */
-  def isCompressed: Boolean
-
   /** Derives the public for a the private key */
   override def publicKey: ECPublicKey =
     CryptoUtil.publicKey(this)
@@ -121,80 +225,58 @@ sealed abstract class ECPrivateKey
 
   def fieldElement: FieldElement = FieldElement(bytes)
 
-  override def toStringSensitive: String = s"ECPrivateKey($hex,$isCompressed)"
+  override def toStringSensitive: String = s"ECPrivateKey($hex)"
+
+  def toPrivateKeyBytes(isCompressed: Boolean = true): ECPrivateKeyBytes = {
+    ECPrivateKeyBytes(bytes, isCompressed)
+  }
 }
 
 object ECPrivateKey extends Factory[ECPrivateKey] {
 
-  private case class ECPrivateKeyImpl(
-      override val bytes: ByteVector,
-      isCompressed: Boolean)
+  private case class ECPrivateKeyImpl(override val bytes: ByteVector)
       extends ECPrivateKey {
     require(CryptoUtil.secKeyVerify(bytes), s"Invalid key, hex: ${bytes.toHex}")
   }
 
-  def apply(bytes: ByteVector, isCompressed: Boolean): ECPrivateKey = {
-    ECPrivateKeyImpl(bytes, isCompressed)
-  }
-
-  override def fromBytes(bytes: ByteVector): ECPrivateKey =
-    fromBytes(bytes, isCompressed = true)
-
   @tailrec
-  def fromBytes(bytes: ByteVector, isCompressed: Boolean): ECPrivateKey = {
-
+  override def fromBytes(bytes: ByteVector): ECPrivateKey = {
     if (bytes.size == 32)
-      ECPrivateKeyImpl(bytes, isCompressed)
+      ECPrivateKeyImpl(bytes)
     else if (bytes.size < 32) {
       //means we need to pad the private key with 0 bytes so we have 32 bytes
-      ECPrivateKey.fromBytes(bytes.padLeft(32), isCompressed)
+      ECPrivateKey.fromBytes(bytes.padLeft(32))
     } //this is for the case when java serialies a BigInteger to 33 bytes to hold the signed num representation
     else if (bytes.size == 33)
-      ECPrivateKey.fromBytes(bytes.slice(1, 33), isCompressed)
+      ECPrivateKey.fromBytes(bytes.slice(1, 33))
     else
       throw new IllegalArgumentException(
         "Private keys cannot be greater than 33 bytes in size, got: " +
           CryptoBytesUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
   }
 
-  def fromHex(hex: String, isCompressed: Boolean): ECPrivateKey =
-    fromBytes(CryptoBytesUtil.decodeHex(hex), isCompressed)
-
   def fromFieldElement(fieldElement: FieldElement): ECPrivateKey = {
     fieldElement.toPrivateKey
   }
 
   /** Generates a fresh [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] that has not been used before. */
-  def apply(): ECPrivateKey = ECPrivateKey(true)
-
-  def apply(isCompressed: Boolean): ECPrivateKey = freshPrivateKey(isCompressed)
+  def apply(): ECPrivateKey = ECPrivateKey.freshPrivateKey
 
   /** Generates a fresh [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] that has not been used before. */
-  def freshPrivateKey: ECPrivateKey = freshPrivateKey(true)
-
-  def freshPrivateKey(isCompressed: Boolean): ECPrivateKey = {
-    val priv = CryptoUtil.freshPrivateKey
-    ECPrivateKey.fromBytes(priv.bytes, isCompressed)
-  }
+  def freshPrivateKey: ECPrivateKey = CryptoUtil.freshPrivateKey
 }
 
 /** Created by chris on 2/16/16.
   */
-sealed abstract class ECPublicKey extends BaseECKey {
+sealed abstract class ECPublicKey
+    extends BaseECKey
+    with PublicKey[ECPublicKey] {
 
-  def verify(hash: HashDigest, signature: ECDigitalSignature): Boolean =
-    verify(hash.bytes, signature)
-
-  /** Verifies if a given piece of data is signed by the
-    * [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]]'s corresponding
-    * [[org.bitcoins.crypto.ECPublicKey ECPublicKey]].
-    */
-  def verify(data: ByteVector, signature: ECDigitalSignature): Boolean = {
-    CryptoUtil.verify(this, data, signature)
+  override private[crypto] def fromBytes(bytes: ByteVector): ECPublicKey = {
+    ECPublicKey.fromBytes(bytes)
   }
 
-  def verify(hex: String, signature: ECDigitalSignature): Boolean =
-    verify(CryptoBytesUtil.decodeHex(hex), signature)
+  protected def _bytes: ByteVector
 
   def schnorrVerify(
       data: ByteVector,
@@ -204,9 +286,8 @@ sealed abstract class ECPublicKey extends BaseECKey {
 
   def schnorrComputePoint(
       data: ByteVector,
-      nonce: SchnorrNonce,
-      compressed: Boolean = isCompressed): ECPublicKey = {
-    schnorrPublicKey.computeSigPoint(data, nonce, compressed)
+      nonce: SchnorrNonce): ECPublicKey = {
+    schnorrPublicKey.computeSigPoint(data, nonce)
   }
 
   def schnorrPublicKey: SchnorrPublicKey = SchnorrPublicKey(bytes)
@@ -229,23 +310,44 @@ sealed abstract class ECPublicKey extends BaseECKey {
   override def toString: String = "ECPublicKey(" + hex + ")"
 
   /** Checks if the [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] is compressed */
-  def isCompressed: Boolean = bytes.size == 33
+  override def isCompressed: Boolean = _bytes.size == 33
 
   /** Checks if the [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] is valid according to secp256k1 */
-  def isFullyValid: Boolean = ECPublicKey.isFullyValid(bytes)
+  override def isFullyValid: Boolean = ECPublicKey.isFullyValid(_bytes)
 
-  /** Returns the decompressed version of this [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] */
-  def decompressed: ECPublicKey =
-    CryptoUtil.decompressed(this)
-
-  def compressed: ECPublicKey = {
-    if (isCompressed || bytes == ByteVector.fromByte(0x00)) {
+  override lazy val compressed: ECPublicKey = {
+    if (isCompressed || _bytes == ByteVector.fromByte(0x00)) {
       this
     } else {
-      val key = if (bytes.length == 65) this else decompressed
-      val (x, y) = key.bytes.tail.splitAt(32)
+      val key = if (_bytes.length == 65) this else decompressed
+      val (x, y) = key._bytes.tail.splitAt(32)
       val leadByte = if (FieldElement(y).isEven) 2.toByte else 3.toByte
       ECPublicKey(x.+:(leadByte))
+    }
+  }
+
+  override def bytes: ByteVector = {
+    compressed._bytes
+  }
+
+  def decompressedBytes: ByteVector = {
+    decompressed._bytes
+  }
+
+  def decompressedHex: String = {
+    decompressedBytes.toHex
+  }
+
+  def toPublicKeyBytes(isCompressed: Boolean = true): ECPublicKeyBytes = {
+    val bs = if (isCompressed) bytes else decompressedBytes
+
+    ECPublicKeyBytes(bs)
+  }
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case pubKey: ECPublicKey => bytes == pubKey.bytes
+      case _                   => false
     }
   }
 
@@ -264,7 +366,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
 
 object ECPublicKey extends Factory[ECPublicKey] {
 
-  private case class ECPublicKeyImpl(override val bytes: ByteVector)
+  private case class ECPublicKeyImpl(override protected val _bytes: ByteVector)
       extends ECPublicKey {
     //unfortunately we cannot place ANY invariants here
     //because of old transactions on the blockchain that have weirdly formatted public keys. Look at example in script_tests.json

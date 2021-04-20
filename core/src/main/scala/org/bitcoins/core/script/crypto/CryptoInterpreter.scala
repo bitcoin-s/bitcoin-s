@@ -14,7 +14,7 @@ import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.crypto.{
   CryptoUtil,
   ECDigitalSignature,
-  ECPublicKey,
+  ECPublicKeyBytes,
   HashDigest
 }
 import scodec.bits.ByteVector
@@ -77,7 +77,7 @@ sealed abstract class CryptoInterpreter {
     if (program.stack.size < 2) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
-      val pubKey = ECPublicKey(program.stack.head.bytes)
+      val pubKey = ECPublicKeyBytes(program.stack.head.bytes)
       val signature = ECDigitalSignature(program.stack.tail.head.bytes)
       val flags = program.flags
       val restOfStack = program.stack.tail.tail
@@ -182,7 +182,8 @@ sealed abstract class CryptoInterpreter {
            program.stack.tail
              .slice(nPossibleSignatures.toInt, program.stack.tail.size))
 
-        val pubKeys = pubKeysScriptTokens.map(key => ECPublicKey(key.bytes))
+        val pubKeys =
+          pubKeysScriptTokens.map(key => ECPublicKeyBytes(key.bytes))
 
         //+1 is for the fact that we have the # of sigs + the script token indicating the # of sigs
         val signaturesScriptTokens = program.stack.tail.slice(

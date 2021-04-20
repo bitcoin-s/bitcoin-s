@@ -44,8 +44,7 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
 
   override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
     val pubKeyBytes: Array[Byte] =
-      NativeSecp256k1.computePubkey(privateKey.bytes.toArray,
-                                    privateKey.isCompressed)
+      NativeSecp256k1.computePubkey(privateKey.bytes.toArray, false)
     val pubBytes = ByteVector(pubKeyBytes)
     require(
       ECPublicKey.isFullyValid(pubBytes),
@@ -77,7 +76,7 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     NativeSecp256k1.secKeyVerify(privateKeyBytes.toArray)
 
   override def verify(
-      publicKey: ECPublicKey,
+      publicKey: PublicKey[_],
       data: ByteVector,
       signature: ECDigitalSignature): Boolean = {
     val result =
@@ -96,17 +95,16 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     } else result
   }
 
-  override def decompressed(publicKey: ECPublicKey): ECPublicKey = {
+  override def decompressed[PK <: PublicKey[PK]](publicKey: PK): PK = {
     if (publicKey.isCompressed) {
       val decompressed = NativeSecp256k1.decompress(publicKey.bytes.toArray)
-      ECPublicKey.fromBytes(ByteVector(decompressed))
+      publicKey.fromBytes(ByteVector(decompressed))
     } else publicKey
   }
 
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey = {
     val pubKeyBytes: Array[Byte] =
-      NativeSecp256k1.computePubkey(privateKey.bytes.toArray,
-                                    privateKey.isCompressed)
+      NativeSecp256k1.computePubkey(privateKey.bytes.toArray, false)
     val pubBytes = ByteVector(pubKeyBytes)
     require(
       ECPublicKey.isFullyValid(pubBytes),
@@ -114,11 +112,6 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
         .encodeHex(pubBytes)}")
     ECPublicKey(pubBytes)
   }
-
-  override def publicKeyConvert(
-      key: ECPublicKey,
-      compressed: Boolean): ECPublicKey =
-    BouncycastleCryptoRuntime.publicKeyConvert(key, compressed)
 
   override def tweakMultiply(
       publicKey: ECPublicKey,
@@ -153,7 +146,7 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
       privkey: ECPrivateKey): ECPublicKey = {
     val tweaked = NativeSecp256k1.pubKeyTweakAdd(pubkey.bytes.toArray,
                                                  privkey.bytes.toArray,
-                                                 privkey.isCompressed)
+                                                 false)
     ECPublicKey(ByteVector(tweaked))
   }
 

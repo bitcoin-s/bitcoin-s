@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptToken
-import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
+import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey, ECPublicKeyBytes}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 2/29/16.
@@ -27,7 +27,7 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
   val p2pkOutput: TransactionOutput = TransactionOutput(
     "00f2052a0100000043410411db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5cb2e0eaddfb84ccf9744464f82e160bfa9b8b64f9d4c03f999b8643f656b412a3ac")
 
-  val p2pkPubKey: ECPublicKey = ECPublicKey(
+  val p2pkPubKey: ECPublicKeyBytes = ECPublicKeyBytes(
     "0311db93e1dcdb8a016b49840f8c53bc1eb68a382e97b1482ecad7b148a6909a5c")
 
   val p2pkSig: ECDigitalSignature = ECDigitalSignature(
@@ -55,7 +55,7 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
   val p2pkhOutput: TransactionOutput = TransactionOutput(
     "00000000000000001976a914cd0385f813ec73f8fc340b7069daf566878a0d6b88ac")
 
-  val p2pkhPubKey: ECPublicKey = ECPublicKey(
+  val p2pkhPubKey: ECPublicKeyBytes = ECPublicKeyBytes(
     "02a01aaa27b468ec3fb2ae0c2a9fa1d5dce9b79b35062178f479156d8daa6c0e50")
 
   val p2pkhSig: ECDigitalSignature = ECDigitalSignature(
@@ -86,10 +86,10 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
     MultiSignatureScriptPubKey(
       "47522102895a52495c4c370d50e6bef622ff28d87eec2df00c546b8921b6d07e844bfb9c210283fe2cf10b7dba0d635b3e408532183e27cd43adc11e125027107c095a2bfbc552ae")
 
-  val p2shMultiPubKey1: ECPublicKey = ECPublicKey(
+  val p2shMultiPubKey1: ECPublicKeyBytes = ECPublicKeyBytes(
     "02895a52495c4c370d50e6bef622ff28d87eec2df00c546b8921b6d07e844bfb9c")
 
-  val p2shMultiPubKey2: ECPublicKey = ECPublicKey(
+  val p2shMultiPubKey2: ECPublicKeyBytes = ECPublicKeyBytes(
     "0283fe2cf10b7dba0d635b3e408532183e27cd43adc11e125027107c095a2bfbc5")
 
   val p2shMultiSig1: ECDigitalSignature = ECDigitalSignature(
@@ -176,7 +176,7 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
   val p2shwpkhRedeemScript: ScriptPubKey =
     ScriptPubKey("16001422fe81d0b50f7a6407d4280e1603c10f5fc3fac8")
 
-  val p2shwpkhPubKey: ECPublicKey = ECPublicKey(
+  val p2shwpkhPubKey: ECPublicKeyBytes = ECPublicKeyBytes(
     "029ca7faef43714b34508589f31394e0b0b6ab24dd4e440eaa03e72841d48e50c5")
 
   val p2shwpkhSig: ECDigitalSignature = ECDigitalSignature(
@@ -211,10 +211,10 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
     MultiSignatureScriptPubKey(
       "6952210375e00eb72e29da82b89367947f29ef34afb75e8654f6ea368e0acdfd92976b7c2103a1b26313f430c4b15bb1fdce663207659d8cac749a0e53d70eff01874496feff2103c96d495bfdd5ba4145e3e046fee45e84a8a48ad05bd8dbb395c011a32cf9f88053ae")
 
-  val p2wshPubKey1: ECPublicKey = ECPublicKey(
+  val p2wshPubKey1: ECPublicKeyBytes = ECPublicKeyBytes(
     "0375e00eb72e29da82b89367947f29ef34afb75e8654f6ea368e0acdfd92976b7c")
 
-  val p2wshPubKey2: ECPublicKey = ECPublicKey(
+  val p2wshPubKey2: ECPublicKeyBytes = ECPublicKeyBytes(
     "03a1b26313f430c4b15bb1fdce663207659d8cac749a0e53d70eff01874496feff")
 
   val p2wshSig1: ECDigitalSignature = ECDigitalSignature(
@@ -261,7 +261,7 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
   }
 
   // Negative Test Cases
-  val incorrectPubKey: ECPublicKey = ECPublicKey.freshPublicKey
+  val incorrectPubKey: ECPublicKeyBytes = ECPublicKeyBytes.freshPublicKey
   val incorrectOutput: EmptyTransactionOutput.type = EmptyTransactionOutput
   val incorrectTx: Transaction = EmptyTransaction
   val incorrectInputIndex: UInt32 = UInt32(100)

@@ -148,18 +148,13 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
   }
 
   override def verify(
-      publicKey: ECPublicKey,
+      publicKey: PublicKey[_],
       data: ByteVector,
       signature: ECDigitalSignature): Boolean =
     BouncyCastleUtil.verifyDigitalSignature(data, publicKey, signature)
 
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey =
     BouncyCastleUtil.computePublicKey(privateKey)
-
-  override def publicKeyConvert(
-      key: ECPublicKey,
-      compressed: Boolean): ECPublicKey =
-    BouncyCastleUtil.publicKeyConvert(key, compressed)
 
   override def tweakMultiply(
       publicKey: ECPublicKey,

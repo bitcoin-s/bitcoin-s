@@ -170,11 +170,6 @@ trait CryptoRuntime {
 
   def publicKey(privateKey: ECPrivateKey): ECPublicKey
 
-  /** Converts the given public key from its current representation to compressed/not compressed
-    * depending upon how [[compressed]] is set
-    */
-  def publicKeyConvert(key: ECPublicKey, compressed: Boolean): ECPublicKey
-
   def sign(privateKey: ECPrivateKey, dataToSign: ByteVector): ECDigitalSignature
 
   def signWithEntropy(
@@ -185,20 +180,20 @@ trait CryptoRuntime {
   def secKeyVerify(privateKeybytes: ByteVector): Boolean
 
   def verify(
-      publicKey: ECPublicKey,
+      publicKey: PublicKey[_],
       data: ByteVector,
       signature: ECDigitalSignature): Boolean
 
-  def decompressed(publicKey: ECPublicKey): ECPublicKey = {
+  def decompressed[PK <: PublicKey[PK]](publicKey: PK): PK = {
     if (publicKey.isCompressed) {
       decodePoint(publicKey.bytes) match {
-        case ECPointInfinity => ECPublicKey.fromHex("00")
+        case ECPointInfinity => publicKey.fromHex("00")
         case point: ECPointImpl =>
           val decompressedBytes =
             ByteVector.fromHex("04").get ++
               point.x.bytes ++
               point.y.bytes
-          ECPublicKey(decompressedBytes)
+          publicKey.fromBytes(decompressedBytes)
       }
     } else publicKey
   }

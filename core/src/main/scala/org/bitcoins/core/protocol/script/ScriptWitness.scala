@@ -10,6 +10,7 @@ import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.{
   ECDigitalSignature,
   ECPublicKey,
+  ECPublicKeyBytes,
   EmptyDigitalSignature,
   Factory,
   NetworkElement
@@ -43,7 +44,7 @@ sealed abstract class ScriptWitnessV0 extends ScriptWitness {
   * Format: <pubKey> <signature>
   */
 sealed abstract class P2WPKHWitnessV0 extends ScriptWitnessV0 {
-  def pubKey: ECPublicKey = ECPublicKey(stack.head)
+  def pubKey: ECPublicKeyBytes = ECPublicKeyBytes(stack.head)
 
   def signature: ECDigitalSignature =
     stack(1) match {
@@ -63,14 +64,24 @@ object P2WPKHWitnessV0 {
   private def apply(stack: Seq[ByteVector]): P2WPKHWitnessV0 =
     P2WPKHWitnessV0Impl(stack)
 
+  private[core] def apply(pubKeyBytes: ECPublicKeyBytes): P2WPKHWitnessV0 = {
+    P2WPKHWitnessV0(pubKeyBytes, EmptyDigitalSignature)
+  }
+
   def apply(pubKey: ECPublicKey): P2WPKHWitnessV0 = {
     P2WPKHWitnessV0(pubKey, EmptyDigitalSignature)
+  }
+
+  private[core] def apply(
+      publicKeyBytes: ECPublicKeyBytes,
+      signature: ECDigitalSignature): P2WPKHWitnessV0 = {
+    P2WPKHWitnessV0(Seq(publicKeyBytes.bytes, signature.bytes))
   }
 
   def apply(
       publicKey: ECPublicKey,
       signature: ECDigitalSignature): P2WPKHWitnessV0 = {
-    P2WPKHWitnessV0(Seq(publicKey.bytes, signature.bytes))
+    P2WPKHWitnessV0(publicKey.toPublicKeyBytes(), signature)
   }
 
   def fromP2PKHScriptSig(scriptSig: ScriptSignature): P2WPKHWitnessV0 =
@@ -176,11 +187,11 @@ object ScriptWitness extends Factory[ScriptWitness] {
     if (stack.isEmpty) {
       EmptyScriptWitness
     } else if (isPubKey && stack.size == 2) {
-      val pubKey = ECPublicKey(stack.head)
+      val pubKey = ECPublicKeyBytes(stack.head)
       val sig = ECDigitalSignature(stack(1))
       P2WPKHWitnessV0(pubKey, sig)
     } else if (isPubKey && stack.size == 1) {
-      val pubKey = ECPublicKey(stack.head)
+      val pubKey = ECPublicKeyBytes(stack.head)
       P2WPKHWitnessV0(pubKey)
     } else {
       //wont match a Vector if I don't convert to list
