@@ -326,11 +326,17 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           logger.debug(
             s"Marked utxo=${updated.toHumanReadableString} as state=${updated.state}"))
         updatedF.map(Some(_))
-      case state @ (TxoState.Reserved | TxoState.PendingConfirmationsSpent |
-          BroadcastSpent) =>
+      case TxoState.Reserved =>
+        val updated =
+          out
+            .copyWithSpendingTxId(spendingTxId)
+            .copyWithState(state = BroadcastSpent)
+        val updatedF = spendingInfoDAO.update(updated)
+        updatedF.map(Some(_))
+      case TxoState.BroadcastSpent =>
         logger.warn(
           s"Updating the spendingTxId of a transaction that is already spent, " +
-            s"old state=$state old spendingTxId=${out.spendingTxIdOpt} new spendingTxId=${spendingTxId}")
+            s"old state=${TxoState.BroadcastSpent} old spendingTxId=${out.spendingTxIdOpt} new spendingTxId=${spendingTxId}")
         val updated =
           out
             .copyWithSpendingTxId(spendingTxId)
@@ -338,13 +344,12 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
             //as we are overriding the previous spending tx
             //therefore we can no longer use the old Txo state
             .copyWithState(state = BroadcastSpent)
-        val updatedF =
-          spendingInfoDAO.update(updated)
+        val updatedF = spendingInfoDAO.update(updated)
         updatedF.map(Some(_))
       case TxoState.ImmatureCoinbase =>
         Future.failed(new RuntimeException(
           s"Attempting to spend an ImmatureCoinbase ${out.outPoint.hex}, this should not be possible until it is confirmed."))
-      case TxoState.ConfirmedSpent =>
+      case TxoState.ConfirmedSpent | TxoState.PendingConfirmationsSpent =>
         if (!out.spendingTxIdOpt.contains(spendingTxId)) {
           Future.failed(new RuntimeException(
             s"Attempted to mark an already spent utxo ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}"))
