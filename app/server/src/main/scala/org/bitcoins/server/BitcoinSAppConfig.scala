@@ -2,6 +2,7 @@ package org.bitcoins.server
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
@@ -73,6 +74,16 @@ case class BitcoinSAppConfig(
     } else {
       None
     }
+  }
+
+  /** Zips $HOME/.bitcoin-s
+    */
+  def zipDatadir(target: Path): Path = {
+    FileUtil.zipDirectory(source = directory,
+                          target = target,
+                          //we don't want to store chaindb.sqlite as these
+                          //databases are huge
+                          fileNameFilter = Vector("chaindb.sqlite"))
   }
 }
 
