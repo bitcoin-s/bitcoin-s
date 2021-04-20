@@ -1,6 +1,5 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.chain.ChainQueryApi.{
   FilterResponse,
   InvalidBlockRange
@@ -15,7 +14,6 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
-import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.{ExecutionContext, Future}
 
 private[wallet] trait RescanHandling extends WalletLogger {
@@ -212,7 +210,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       blocks <- getMatchingBlocks(scripts = scriptPubKeys,
                                   startOpt = startOpt,
                                   endOpt = endOpt)(
-        ExecutionContext.fromExecutor(RescanHandling.threadPool))
+        ExecutionContext.fromExecutor(walletConfig.rescanThreadPool))
     } yield {
       blocks.sortBy(_.blockHeight).map(_.blockHash.flip)
     }
@@ -322,15 +320,4 @@ private[wallet] trait RescanHandling extends WalletLogger {
       vectorSize / parallelismLevel + 1
     else vectorSize / parallelismLevel
   }
-
-}
-
-object RescanHandling {
-
-  private lazy val threadFactory =
-    AsyncUtil.getNewThreadFactory("bitcoin-s-rescan")
-
-  private[internal] lazy val threadPool: ExecutorService =
-    Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors() * 2,
-                                 threadFactory)
 }

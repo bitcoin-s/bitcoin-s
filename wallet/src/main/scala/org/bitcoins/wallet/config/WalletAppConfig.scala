@@ -21,7 +21,7 @@ import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 
 import java.nio.file.{Files, Path, Paths}
-import java.util.concurrent.{Executors, TimeUnit}
+import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -54,6 +54,14 @@ case class WalletAppConfig(
     1,
     AsyncUtil.getNewThreadFactory(
       s"bitcoin-s-wallet-scheduler-${System.currentTimeMillis()}"))
+
+  private lazy val rescanThreadFactory =
+    AsyncUtil.getNewThreadFactory("bitcoin-s-rescan")
+
+  /** Threads for rescanning the wallet */
+  private[wallet] lazy val rescanThreadPool: ExecutorService =
+    Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors() * 2,
+                                 rescanThreadFactory)
 
   private val callbacks = new Mutable(WalletCallbacks.empty)
 
@@ -186,6 +194,7 @@ case class WalletAppConfig(
     //in the future, we should actually cancel all things that are scheduled
     //manually, and then shutdown the scheduler
     val _ = scheduler.shutdownNow()
+    val _ = rescanThreadPool.shutdownNow()
     super.stop()
   }
 
