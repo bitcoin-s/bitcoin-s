@@ -41,8 +41,6 @@ class BitcoindBlockPollingTest
     val amountToSend = Bitcoins.one
 
     for {
-      blockCount <- bitcoind.getBlockCount
-
       // Setup wallet
       tmpWallet <-
         BitcoinSWalletTest.createDefaultWallet(bitcoind, bitcoind, None)
@@ -56,7 +54,6 @@ class BitcoindBlockPollingTest
       // Send to wallet
       addr <- wallet.getNewAddress()
       _ <- bitcoind.sendToAddress(addr, amountToSend)
-      _ <- bitcoind.generateToAddress(6, addr)
 
       // assert wallet hasn't seen it yet
       firstBalance <- wallet.getBalance()
@@ -65,16 +62,17 @@ class BitcoindBlockPollingTest
       // Setup block polling
       _ = BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
                                                            bitcoind,
-                                                           blockCount,
                                                            1.second)
+      _ <- bitcoind.generateToAddress(6, addr)
+
       // Wait for it to process
-      _ <- AsyncUtil.awaitConditionF(() =>
-        wallet.getBalance().map(_ > Satoshis.zero))
+      _ <- AsyncUtil.awaitConditionF(
+        () => wallet.getBalance().map(_ > Satoshis.zero),
+        1.second)
 
       balance <- wallet.getBalance()
-      _ = assert(balance == amountToSend)
       //clean up
       _ <- wallet.stop()
-    } yield succeed
+    } yield assert(balance == amountToSend)
   }
 }

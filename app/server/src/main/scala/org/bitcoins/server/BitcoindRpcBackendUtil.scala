@@ -73,7 +73,7 @@ object BitcoindRpcBackendUtil extends Logging {
       val hasFiltersF = bitcoind
         .getFilter(wallet.walletConfig.chain.genesisHashBE)
         .map(_ => true)
-        .recover(_ => false)
+        .recover { case _: Throwable => false }
 
       val blockRange = walletHeight.to(bitcoindHeight).tail
       val numParallelism = Runtime.getRuntime.availableProcessors()
