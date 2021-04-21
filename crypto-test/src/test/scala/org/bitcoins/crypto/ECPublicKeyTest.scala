@@ -80,8 +80,7 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
   }
 
   it must "not be able to add opposite public keys" in {
-    val privkey = ECPrivateKey.freshPrivateKey
-    val pubkey1 = privkey.publicKey
+    val pubkey1 = ECPublicKey.freshPublicKey
     val firstByte: Byte =
       if (pubkey1.bytes.head == 0x02) 0x03
       else if (pubkey1.bytes.head == 0x03) 0x02
@@ -89,18 +88,37 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     val pubkey2 =
       ECPublicKey.fromBytes(ByteVector(firstByte) ++ pubkey1.bytes.tail)
 
-    assertThrows[Exception] {
-      val sumKey = CryptoUtil.add(pubkey1, pubkey2)
-      if (sumKey == ECPublicKey.infinity) fail()
-    }
-    assertThrows[Exception] {
-      val sumKey = CryptoUtil.add(pubkey1.compressed, pubkey2.compressed)
-      if (sumKey == ECPublicKey.infinity) fail()
-    }
-    assertThrows[Exception] {
-      val sumKey = CryptoUtil.add(pubkey1.decompressed, pubkey2.decompressed)
-      if (sumKey == ECPublicKey.infinity) fail()
-    }
+    assertThrows[Exception](CryptoUtil.add(pubkey1, pubkey2))
+    assertThrows[Exception](
+      CryptoUtil.add(pubkey1.compressed, pubkey2.compressed))
+    assertThrows[Exception](
+      CryptoUtil.add(pubkey1.decompressed, pubkey2.decompressed))
+  }
+
+  it must "be able to add multiple public keys together with sub-sums of 0x00" in {
+    val pubkey1 = ECPublicKey.freshPublicKey
+    val firstByte: Byte =
+      if (pubkey1.bytes.head == 0x02) 0x03
+      else if (pubkey1.bytes.head == 0x03) 0x02
+      else pubkey1.bytes.head
+    val pubkey2 =
+      ECPublicKey.fromBytes(ByteVector(firstByte) ++ pubkey1.bytes.tail)
+    val pubkey3 = ECPublicKey.freshPublicKey
+    val firstByte2: Byte =
+      if (pubkey3.bytes.head == 0x02) 0x03
+      else if (pubkey3.bytes.head == 0x03) 0x02
+      else pubkey3.bytes.head
+    val pubkey4 =
+      ECPublicKey.fromBytes(ByteVector(firstByte2) ++ pubkey3.bytes.tail)
+
+    assert(
+      CryptoUtil.combinePubKeys(Vector(pubkey1, pubkey2, pubkey3)) == pubkey3)
+    assert(
+      CryptoUtil.combinePubKeys(Vector(pubkey3, pubkey1, pubkey2)) == pubkey3)
+    assertThrows[Exception](
+      CryptoUtil.combinePubKeys(Vector(pubkey1, pubkey2, pubkey3, pubkey4)))
+    assertThrows[Exception](
+      CryptoUtil.combinePubKeys(Vector(pubkey1, pubkey3, pubkey2, pubkey4)))
   }
 
   it must "correctly compress keys" in {

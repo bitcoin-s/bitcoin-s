@@ -188,7 +188,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def tweakMultiply(
       publicKey: ECPublicKey,
       tweak: FieldElement): ECPublicKey = {
-    val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(publicKey.bytes)
+    val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(publicKey.decompressedBytes)
     val tweakBuffer = CryptoJsUtil.toNodeBuffer(tweak.bytes)
     val keyBuffer =
       SECP256k1.publicKeyTweakMul(pubKeyBuffer, tweakBuffer, compress = true)
@@ -197,8 +197,8 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   }
 
   override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey = {
-    val pk1Buffer = CryptoJsUtil.toNodeBuffer(pk1.bytes)
-    val pk2Buffer = CryptoJsUtil.toNodeBuffer(pk2.bytes)
+    val pk1Buffer = CryptoJsUtil.toNodeBuffer(pk1.decompressedBytes)
+    val pk2Buffer = CryptoJsUtil.toNodeBuffer(pk2.decompressedBytes)
     try {
       val keyBuffer =
         SECP256k1.publicKeyCombine(js.Array(pk1Buffer, pk2Buffer),
@@ -207,16 +207,13 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       ECPublicKey.fromBytes(keyBytes)
     } catch {
       case ex: JavaScriptException =>
-        val k1: ByteVector = pk1.compressed.bytes
-        val k2: ByteVector = pk2.compressed.bytes
+        val k1: ByteVector = pk1.bytes
+        val k2: ByteVector = pk2.bytes
 
         // check for infinity
-        if (
-          ((k1.head == 0x02 && k2.head == 0x03) ||
-            (k1.head == 0x03 && k2.head == 0x02)) &&
-          k1.tail == k2.tail
-        ) {
-          ECPublicKey.infinity
+        if ((k1.head ^ k2.head) == 0x01 && k1.tail == k2.tail) {
+          throw new IllegalArgumentException(
+            s"Invalid public key sum, got 0x00 = $pk1 + $pk2")
         } else {
           throw ex
         }
@@ -226,7 +223,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def pubKeyTweakAdd(
       pubkey: ECPublicKey,
       privkey: ECPrivateKey): ECPublicKey = {
-    val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(pubkey.bytes)
+    val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(pubkey.decompressedBytes)
     val privKeyBuffer = CryptoJsUtil.toNodeBuffer(privkey.bytes)
     val keyBuffer =
       SECP256k1.publicKeyTweakAdd(pubKeyBuffer, privKeyBuffer, compress = true)

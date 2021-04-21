@@ -31,7 +31,7 @@ object BouncyCastleUtil {
   }
 
   private[crypto] def decodePoint(pubKey: ECPublicKey): ECPoint = {
-    decodePoint(pubKey.bytes)
+    decodePoint(pubKey.decompressedBytes)
   }
 
   private[crypto] def decodePubKey(

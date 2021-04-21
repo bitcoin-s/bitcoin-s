@@ -267,6 +267,9 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
 case class ECPublicKey(_bytes: ByteVector)
     extends BaseECKey
     with PublicKey[ECPublicKey] {
+  require(isFullyValid, s"Invalid public key: ${_bytes}")
+
+  def toPoint: SecpPointFinite = SecpPoint.fromPublicKey(this)
 
   override private[crypto] def fromBytes(bytes: ByteVector): ECPublicKey = {
     ECPublicKey.fromBytes(bytes)
@@ -366,9 +369,9 @@ object ECPublicKey extends Factory[ECPublicKey] {
 
   def apply(): ECPublicKey = freshPublicKey
 
-  val dummy: ECPublicKey = FieldElement.one.getPublicKey
+  def apply(point: SecpPointFinite): ECPublicKey = point.toPublicKey
 
-  val infinity: ECPublicKey = ECPublicKey.fromBytes(ByteVector(0x00))
+  val dummy: ECPublicKey = FieldElement.one.getPublicKey
 
   /** Generates a fresh [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] that has not been used before. */
   def freshPublicKey: ECPublicKey = ECPrivateKey.freshPrivateKey.publicKey

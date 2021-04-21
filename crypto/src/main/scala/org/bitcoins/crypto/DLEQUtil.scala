@@ -45,7 +45,7 @@ object DLEQUtil {
       tweakedPoint: ECPublicKey,
       auxRand: ByteVector): FieldElement = {
     val hash = CryptoUtil
-      .sha256(point.compressed.bytes ++ tweakedPoint.compressed.bytes)
+      .sha256(point.bytes ++ tweakedPoint.bytes)
       .bytes
 
     AdaptorUtil.adaptorNonce(hash,
@@ -66,8 +66,8 @@ object DLEQUtil {
       p2: ECPublicKey): ByteVector = {
     CryptoUtil
       .sha256DLEQ(
-        p1.compressed.bytes ++ adaptorPoint.compressed.bytes ++
-          p2.compressed.bytes ++ r1.compressed.bytes ++ r2.compressed.bytes)
+        p1.bytes ++ adaptorPoint.bytes ++
+          p2.bytes ++ r1.bytes ++ r2.bytes)
       .bytes
   }
 

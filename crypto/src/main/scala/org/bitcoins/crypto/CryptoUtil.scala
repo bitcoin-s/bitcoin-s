@@ -117,6 +117,9 @@ trait CryptoUtil extends CryptoRuntime {
   override def add(pk1: ByteVector, pk2: ECPrivateKey): ByteVector =
     cryptoRuntime.add(pk1, pk2)
 
+  override def add(point1: SecpPoint, point2: SecpPoint): SecpPoint =
+    cryptoRuntime.add(point1, point2)
+
   override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey =
     cryptoRuntime.add(pk1, pk2)
 

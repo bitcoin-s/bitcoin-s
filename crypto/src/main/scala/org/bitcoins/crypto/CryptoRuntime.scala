@@ -188,7 +188,7 @@ trait CryptoRuntime {
     if (publicKey.isCompressed) {
       decodePoint(publicKey.bytes) match {
         case SecpPointInfinity => publicKey.fromHex("00")
-        case point: SecpPointImpl =>
+        case point: SecpPointFinite =>
           val decompressedBytes =
             ByteVector.fromHex("04").get ++
               point.x.bytes ++
@@ -208,10 +208,35 @@ trait CryptoRuntime {
     sum.bytes
   }
 
+  def add(point1: SecpPoint, point2: SecpPoint): SecpPoint = {
+    (point1, point2) match {
+      case (SecpPointInfinity, p) => p
+      case (p, SecpPointInfinity) => p
+      case (p1: SecpPointFinite, p2: SecpPointFinite) =>
+        val pk1 = p1.toPublicKey
+        val pk2 = p2.toPublicKey
+
+        if (
+          (pk1.bytes.head ^ pk2.bytes.head) == 0x01 && pk1.bytes.tail == pk2.bytes.tail
+        ) {
+          SecpPointInfinity
+        } else {
+          add(pk1, pk2).toPoint
+        }
+    }
+  }
+
   def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey
 
   def combinePubKeys(pubKeys: Vector[ECPublicKey]): ECPublicKey = {
-    pubKeys.reduce(add(_, _))
+    val summandPoints = pubKeys.map(_.toPoint)
+    val sumPoint = summandPoints.reduce[SecpPoint](add(_, _))
+    sumPoint match {
+      case SecpPointInfinity =>
+        throw new IllegalArgumentException(
+          "Sum result was 0x00, an invalid public key.")
+      case p: SecpPointFinite => p.toPublicKey
+    }
   }
 
   def pubKeyTweakAdd(pubkey: ECPublicKey, privkey: ECPrivateKey): ECPublicKey
@@ -221,7 +246,7 @@ trait CryptoRuntime {
   def decodePoint(bytes: ByteVector): SecpPoint
 
   def decodePoint(pubKey: ECPublicKey): SecpPoint = {
-    decodePoint(pubKey.bytes)
+    decodePoint(pubKey.decompressedBytes)
   }
 
   def schnorrSign(
@@ -267,11 +292,12 @@ trait CryptoRuntime {
 
         val sigPoint = s.publicKey
         val challengePoint = schnorrPubKey.publicKey.tweakMultiply(negE)
-        val computedR = challengePoint.add(sigPoint)
-        decodePoint(computedR) match {
+        val computedR = challengePoint.toPoint.add(sigPoint.toPoint)
+        computedR match {
           case SecpPointInfinity => false
-          case SecpPointImpl(_, yCoord) =>
-            !yCoord.toBigInteger.testBit(0) && computedR.schnorrNonce == rx
+          case point: SecpPointFinite =>
+            !point.y.toBigInteger.testBit(
+              0) && point.toPublicKey.schnorrNonce == rx
         }
       case Failure(_) => false
     }
