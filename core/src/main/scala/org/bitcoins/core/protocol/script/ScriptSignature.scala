@@ -103,6 +103,7 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
     )
   }
 
+  /** Builds a P2PKH ScriptSig from a signature and raw ECPublicKeyBytes (may be invalid). */
   private[core] def apply(
       signature: ECDigitalSignature,
       pubKeyBytes: ECPublicKeyBytes): P2PKHScriptSignature = {

@@ -208,6 +208,7 @@ trait CryptoRuntime {
     sum.bytes
   }
 
+  /** Adds two SecpPoints together and correctly handles the point at infinity (0x00). */
   def add(point1: SecpPoint, point2: SecpPoint): SecpPoint = {
     (point1, point2) match {
       case (SecpPointInfinity, p) => p
@@ -226,8 +227,12 @@ trait CryptoRuntime {
     }
   }
 
+  /** Adds two public keys together, failing if the sum is 0x00 (the point at infinity). */
   def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey
 
+  /** Adds a Vector of public keys together, failing only if the total sum is 0x00
+    * (the point at infinity), but still succeeding if sub-sums are 0x00.
+    */
   def combinePubKeys(pubKeys: Vector[ECPublicKey]): ECPublicKey = {
     val summandPoints = pubKeys.map(_.toPoint)
     val sumPoint = summandPoints.reduce[SecpPoint](add(_, _))

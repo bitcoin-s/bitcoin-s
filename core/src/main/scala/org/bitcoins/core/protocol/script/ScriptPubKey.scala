@@ -382,6 +382,9 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
       case _                                                            => false
     }
 
+  /** Builds a P2PKScriptPubKey from a specific branch of a P2PKWithTimeout.
+    * Useful for when decomposing a script into spending branches.
+    */
   private[core] def fromP2PKWithTimeout(
       p2pkWithTimeout: P2PKWithTimeoutScriptPubKey,
       timeoutBranch: Boolean): P2PKScriptPubKey = {
@@ -1274,6 +1277,7 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
     fromAsm(Seq(OP_0) ++ pushop ++ Seq(ScriptConstant(hash.bytes)))
   }
 
+  /** Builds a P2WPKH SPK from raw ECPublicKeyBytes (unsafe). */
   private[core] def apply(pubKey: ECPublicKeyBytes): P2WPKHWitnessSPKV0 = {
     //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
     require(

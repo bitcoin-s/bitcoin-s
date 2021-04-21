@@ -1,6 +1,5 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.crypto
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator
@@ -194,14 +193,14 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     sh.doFinal()
   }
 
-  override def decodePoint(bytes: ByteVector): crypto.SecpPoint = {
+  override def decodePoint(bytes: ByteVector): SecpPoint = {
     val decoded = BouncyCastleUtil.decodePoint(bytes)
 
     if (decoded.isInfinity)
-      crypto.SecpPointInfinity
+      SecpPointInfinity
     else
-      crypto.SecpPoint(decoded.getRawXCoord.getEncoded,
-                       decoded.getRawYCoord.getEncoded)
+      SecpPoint(decoded.getRawXCoord.getEncoded,
+                decoded.getRawYCoord.getEncoded)
   }
 
   override def pbkdf2WithSha512(
