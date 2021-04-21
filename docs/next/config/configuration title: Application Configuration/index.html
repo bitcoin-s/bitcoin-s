@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>config/configuration title: Application Configuration · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Bitcoin-S uses [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md)"/><meta name="docsearch:version" content="next"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="config/configuration title: Application Configuration · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="Bitcoin-S uses [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md)"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>config/configuration title: Application Configuration · bitcoin-s</title><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Bitcoin-S uses [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md)"/><meta name="docsearch:version" content="next"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="config/configuration title: Application Configuration · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="Bitcoin-S uses [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md)"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
               (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
               (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
               m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -100,7 +100,7 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-attr">registerMbeans</span> = <span class="hljs-literal">true</span>
       }
       <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">false</span>
-      <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">1</span> minute
+      <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
     }
     
     bitcoind-rpc {
@@ -123,6 +123,14 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-attr">rpcport</span> = <span class="hljs-number">8332</span>
         <span class="hljs-comment"># bitcoind zmq port for all services</span>
         <span class="hljs-attr">zmqport</span> = <span class="hljs-number">29000</span>
+        <span class="hljs-comment"># bitcoind zmq raw tx</span>
+        <span class="hljs-attr">zmqpubrawtx</span> = <span class="hljs-string">"tcp://127.0.0.1:28332"</span>
+        <span class="hljs-comment"># bitcoind zmq raw block</span>
+        <span class="hljs-attr">zmqpubrawblock</span> = <span class="hljs-string">"tcp://127.0.0.1:28333"</span>
+        <span class="hljs-comment"># bitcoind zmq hash tx</span>
+        <span class="hljs-attr">zmqpubhashtx</span> = <span class="hljs-string">"tcp://127.0.0.1:28330"</span>
+        <span class="hljs-comment"># bitcoind zmq raw block</span>
+        <span class="hljs-attr">zmqpubhashblock</span> = <span class="hljs-string">"tcp://127.0.0.1:28331"</span>
     }
 
     node {
@@ -134,7 +142,7 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment"># 18333 for testnet and 18444 for regtest.</span>
         
         <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">true</span>
-        <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">1</span> minute
+        <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
     }
 
     chain {
@@ -152,7 +160,7 @@ to ensure the entire module is initialized correctly.</p>
         }
         
         <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">true</span>
-        <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">1</span> minute
+        <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
     }
 
     <span class="hljs-comment"># settings for wallet module</span>
@@ -186,7 +194,7 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-attr">rebroadcastFrequency</span> = <span class="hljs-number">4</span> hours
         
         <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">true</span>
-        <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">1</span> minute
+        <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
    }
 
     keymanager {
@@ -236,7 +244,7 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-attr">rpcbind</span> = <span class="hljs-string">"127.0.0.1"</span>
 
         <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">true</span>
-        <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">1</span> minute
+        <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
 
         db {
           <span class="hljs-attr">path</span> = ${bitcoin-s.datadir}/oracle/
