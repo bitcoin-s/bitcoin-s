@@ -180,6 +180,7 @@ object BitcoinSTestAppConfig {
          |   driver = "org.postgresql.Driver"
          |   user = "postgres"
          |   password = "postgres"
+         |   poolName = "bitcoin-s-db-pool"
          |   port = $port
          |   numThreads = 1
          |   keepAliveConnection = true
