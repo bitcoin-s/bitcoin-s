@@ -53,7 +53,15 @@ sealed abstract class ECPrivateKey
   def adaptorSign(
       adaptorPoint: ECPublicKey,
       msg: ByteVector): ECAdaptorSignature = {
-    CryptoUtil.adaptorSign(this, adaptorPoint, msg)
+    val auxRand = ECPrivateKey.freshPrivateKey.bytes
+    adaptorSign(adaptorPoint, msg, auxRand)
+  }
+
+  def adaptorSign(
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector,
+      auxRand: ByteVector): ECAdaptorSignature = {
+    CryptoUtil.adaptorSign(this, adaptorPoint, msg, auxRand)
   }
 
   def completeAdaptorSignature(
@@ -232,6 +240,17 @@ sealed abstract class ECPublicKey extends BaseECKey {
   /** Returns the decompressed version of this [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] */
   def decompressed: ECPublicKey =
     CryptoUtil.decompressed(this)
+
+  def compressed: ECPublicKey = {
+    if (isCompressed || bytes == ByteVector.fromByte(0x00)) {
+      this
+    } else {
+      val key = if (bytes.length == 65) this else decompressed
+      val (x, y) = key.bytes.tail.splitAt(32)
+      val leadByte = if (FieldElement(y).isEven) 2.toByte else 3.toByte
+      ECPublicKey(x.+:(leadByte))
+    }
+  }
 
   /** Adds this ECPublicKey to another as points and returns the resulting ECPublicKey.
     *

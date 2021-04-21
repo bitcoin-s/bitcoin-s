@@ -2,8 +2,29 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
+/** Implements the DLEQ ZKP Specification:
+  * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md
+  *
+  * Note that the naming is not entirely consistent between the specification
+  * and this file in hopes of making this code more readable.
+  *
+  * The naming in this file more closely matches the naming in the secp256k1-zkp implementation:
+  * https://github.com/ElementsProject/secp256k1-zkp/tree/master/src/modules/ecdsa_adaptor
+  *
+  * Legend:
+  * x <> fe
+  * X <> p1/point
+  * y <> adaptorSecret
+  * Y <> adaptorPoint/adaptor
+  * Z <> p2/tweakedPoint
+  * a <> k
+  * A_G <> r1
+  * A_Y <> r2
+  * b <> e
+  * c <> s
+  * proof <> (e, s)
+  */
 object DLEQUtil {
-  import ECAdaptorSignature.serializePoint
 
   def dleqPair(
       fe: FieldElement,
@@ -14,55 +35,62 @@ object DLEQUtil {
     (point, tweakedPoint)
   }
 
-  def dleqNonceFunc(
-      hash: ByteVector,
+  /** Computes the nonce for dleqProve as specified in
+    * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#proving
+    */
+  def dleqNonce(
       fe: FieldElement,
-      algoName: String): FieldElement = {
-    val kBytes =
-      CryptoUtil.taggedSha256(fe.bytes ++ hash, algoName).bytes
-    FieldElement(kBytes)
+      adaptorPoint: ECPublicKey,
+      point: ECPublicKey,
+      tweakedPoint: ECPublicKey,
+      auxRand: ByteVector): FieldElement = {
+    val hash = CryptoUtil
+      .sha256(point.compressed.bytes ++ tweakedPoint.compressed.bytes)
+      .bytes
+
+    AdaptorUtil.adaptorNonce(hash,
+                             fe.toPrivateKey,
+                             adaptorPoint,
+                             "DLEQ",
+                             auxRand)
   }
 
+  /** Computes the challenge hash value for dleqProve as specified in
+    * https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#proving
+    */
   def dleqChallengeHash(
-      algoName: String,
       adaptorPoint: ECPublicKey,
       r1: ECPublicKey,
       r2: ECPublicKey,
       p1: ECPublicKey,
       p2: ECPublicKey): ByteVector = {
     CryptoUtil
-      .taggedSha256(
-        serializePoint(adaptorPoint) ++ serializePoint(r1) ++ serializePoint(
-          r2) ++ serializePoint(p1) ++ serializePoint(p2),
-        algoName)
+      .sha256DLEQ(
+        p1.compressed.bytes ++ adaptorPoint.compressed.bytes ++
+          p2.compressed.bytes ++ r1.compressed.bytes ++ r2.compressed.bytes)
       .bytes
   }
 
   /** Proves that the DLOG_G(R') = DLOG_Y(R) (= fe)
     * For a full description, see https://cs.nyu.edu/courses/spring07/G22.3220-001/lec3.pdf
+    * @see https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#proving
     */
   def dleqProve(
       fe: FieldElement,
       adaptorPoint: ECPublicKey,
-      algoName: String): (FieldElement, FieldElement) = {
+      auxRand: ByteVector): (FieldElement, FieldElement) = {
+    require(!fe.isZero, "Input field element cannot be zero.")
+
     // (fe*G, fe*Y)
     val (p1, p2) = dleqPair(fe, adaptorPoint)
 
-    // hash(Y || fe*G || fe*Y)
-    val hash =
-      CryptoUtil
-        .sha256(
-          serializePoint(adaptorPoint) ++ serializePoint(p1) ++ serializePoint(
-            p2))
-        .bytes
-    val k = dleqNonceFunc(hash, fe, algoName)
+    val k = dleqNonce(fe, adaptorPoint, p1, p2, auxRand)
 
     if (k.isZero) {
       throw new RuntimeException("Nonce cannot be zero.")
     }
 
-    val r1 = k.getPublicKey
-    val r2 = adaptorPoint.tweakMultiply(k)
+    val (r1, r2) = dleqPair(k, adaptorPoint)
 
     // Hash all components to get a challenge (this is the trick that turns
     // interactive ZKPs into non-interactive ZKPs, using hash assumptions)
@@ -72,7 +100,7 @@ object DLEQUtil {
     // this hash as the challenge to the prover as loosely speaking this
     // should only be game-able if the prover can reverse hash functions.
     val challengeHash =
-      dleqChallengeHash(algoName, adaptorPoint, r1, r2, p1, p2)
+      dleqChallengeHash(adaptorPoint, r1, r2, p1, p2)
     val e = FieldElement(challengeHash)
 
     // s = k + fe*challenge. This proof works because then k = fe*challenge - s
@@ -81,12 +109,13 @@ object DLEQUtil {
     // if R = y*R' which is what we are trying to prove.
     val s = fe.multiply(e).add(k)
 
-    (s, e)
+    (e, s)
   }
 
-  /** Verifies a proof that the DLOG_G of P1 equals the DLOG_adaptor of P2 */
+  /** Verifies a proof that the DLOG_G of P1 equals the DLOG_adaptor of P2
+    * @see https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#verifying
+    */
   def dleqVerify(
-      algoName: String,
       s: FieldElement,
       e: FieldElement,
       p1: ECPublicKey,
@@ -94,7 +123,7 @@ object DLEQUtil {
       p2: ECPublicKey): Boolean = {
     val r1 = p1.tweakMultiply(e.negate).add(s.getPublicKey)
     val r2 = p2.tweakMultiply(e.negate).add(adaptor.tweakMultiply(s))
-    val challengeHash = dleqChallengeHash(algoName, adaptor, r1, r2, p1, p2)
+    val challengeHash = dleqChallengeHash(adaptor, r1, r2, p1, p2)
 
     challengeHash == e.bytes
   }

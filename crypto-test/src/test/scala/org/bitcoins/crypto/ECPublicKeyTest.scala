@@ -83,7 +83,7 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     assert(pubkey.bytes == decompressed.bytes)
   }
 
-  it must "be able to add infinity points" in {
+  it must "not be able to add opposite public keys" in {
     val privkey = ECPrivateKey.freshPrivateKey
     val pubkey1 = privkey.publicKey
     val firstByte: Byte =
@@ -93,9 +93,10 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     val pubkey2 =
       ECPublicKey.fromBytes(ByteVector(firstByte) ++ pubkey1.bytes.tail)
 
-    val res1 = CryptoUtil.add(pubkey1, pubkey2)
-
-    assert(res1 == ECPublicKey.infinity)
+    assertThrows[Exception] {
+      val sumKey = CryptoUtil.add(pubkey1, pubkey2)
+      if (sumKey == ECPublicKey.infinity) fail()
+    }
 
     val decompressedPubkey1 =
       CryptoUtil.publicKeyConvert(pubkey1, compressed = false)
@@ -103,10 +104,29 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     val decompressedPubkey2 =
       CryptoUtil.publicKeyConvert(pubkey2, compressed = false)
 
-    val res2 =
-      CryptoUtil.add(decompressedPubkey1, decompressedPubkey2)
+    assertThrows[Exception] {
+      val sumKey = CryptoUtil.add(decompressedPubkey1, decompressedPubkey2)
+      if (sumKey == ECPublicKey.infinity) fail()
+    }
+  }
 
-    assert(res2 == ECPublicKey.infinity)
+  it must "correctly compress keys" in {
+    forAll(CryptoGenerators.privateKey) { privKey =>
+      val pubKey = privKey.publicKey
+      val pubKeyCompressed = pubKey.compressed
+      val pubKeyDecompressed = pubKey.decompressed
+
+      if (privKey.isCompressed) {
+        assert(pubKey == pubKeyCompressed)
+      } else {
+        assert(pubKey == pubKeyDecompressed)
+      }
+
+      assert(pubKeyCompressed.decompressed == pubKeyDecompressed)
+      assert(pubKeyCompressed.compressed == pubKeyCompressed)
+      assert(pubKeyDecompressed.compressed == pubKeyCompressed)
+      assert(pubKeyDecompressed.decompressed == pubKeyDecompressed)
+    }
   }
 
 }

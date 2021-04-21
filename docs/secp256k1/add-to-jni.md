@@ -3,7 +3,7 @@ id: jni-modify
 title: Adding to Secp256k1 JNI
 ---
 
-Bitcoin-S uses a Java Native Interface (JNI) to execute functions in [secp256k1](https://github.com/bitcoin-core/secp256k1) from java/scala. The native java bindings used to be a part of the secp256k1 library that was maintained by bitcoin-core, but it was [removed in October 2019](https://github.com/bitcoin-core/secp256k1/pull/682). We maintain a [fork of secp256k1](https://github.com/bitcoin-s/secp256k1) which forks off of bitcoin-core's `master` but re-introduces the jni. This is also the easiest way to add functionality from new projects such as [Schnorr signatures](https://github.com/bitcoin-core/secp256k1/pull/558) and [ECDSA adaptor signatures](https://github.com/jonasnick/secp256k1/pull/14) by rebasing the bitcoin-s branch with the JNI on top of these experimental branches. That said, it is quite tricky to hook up new functionality in secp256k1 into bitcoin-s and specifically `NativeSecp256k1.java`. The following is a description of this process.
+Bitcoin-S uses a Java Native Interface (JNI) to execute functions in [secp256k1-zkp](https://github.com/ElementsProject/secp256k1-zkp) from java/scala. The native java bindings used to be a part of the secp256k1 library that was maintained by bitcoin-core, but it was [removed in October 2019](https://github.com/bitcoin-core/secp256k1/pull/682). We maintain a [fork of secp256k1](https://github.com/bitcoin-s/secp256k1) which forks off of bitcoin-core's `master` but re-introduces the jni. This is also the easiest way to add functionality from new projects such as [Schnorr signatures](https://github.com/bitcoin-core/secp256k1/pull/558) and [ECDSA adaptor signatures](https://github.com/ElementsProject/secp256k1-zkp/pull/117) by rebasing the bitcoin-s branch with the JNI on top of these experimental branches. That said, it is quite tricky to hook up new functionality in secp256k1 into bitcoin-s and specifically `NativeSecp256k1.java`. The following is a description of this process.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -354,7 +354,7 @@ I normally first build the C binaries and add to Bitcoin-S before coming back to
 
 1. Translate `NativeSecp256k1` and `NativeSecp256k1Test` to jni project
 
-   By translate I mean to say that you must copy the functions from those files to the corresponding files in the `bitcoin-s/secp256k1jni` project. For tests this will require changing calls to `DatatypeConverter` to either `toByteArray` or `toHex` as well as changing the method to make it non-`static` as well as adding the  `@Test` annotation above the method (rather than adding to a `main` method).
+   By translate I mean to say that you must copy the functions from those files to the corresponding files in the `bitcoin-s/secp256k1jni` project. For tests this will require changing the methods to be non-`static` as well as adding the  `@Test` annotation above each method (rather than adding to a `main` method).
 
 2. Configure and build `secp256k1`
 
@@ -379,8 +379,8 @@ I normally first build the C binaries and add to Bitcoin-S before coming back to
 
    ```bashrc
    ./autogen.sh
-   ./configure --enable-jni --enable-experimental --enable-module-ecdh
-   make
+   ./configure --enable-jni --enable-experimental --enable-module-ecdh --enable-module-schnorrsig --enable-module-ecdsa-adaptor
+   make CFLAGS="-std=c99"
    make check
    make check-java
    ```
@@ -398,7 +398,7 @@ I normally first build the C binaries and add to Bitcoin-S before coming back to
 
    ```bashrc
    echo "LDFLAGS = -no-undefined" >> Makefile.am
-   ./configure --host=x86_64-w64-mingw32 --enable-experimental --enable-module_ecdh --enable-jni && make clean && make CFLAGS="-std=c99"
+   ./configure --host=x86_64-w64-mingw32 --enable-jni --enable-experimental --enable-module-ecdh --enable-module-schnorrsig --enable-module-ecdsa-adaptor && make clean && make CFLAGS="-std=c99"
    ```
 
    There may be some errors that can be ignored:
