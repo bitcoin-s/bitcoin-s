@@ -1,6 +1,5 @@
 package org.bitcoins.node
 
-import akka.Done
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
@@ -8,14 +7,15 @@ import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.node.networking.peer.DataMessageHandler
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 
 case class NeutrinoNode(
     nodePeer: Peer,
+    dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
-    initialSyncDone: Option[Promise[Done]],
     actorSystem: ActorSystem)
     extends Node {
   require(
@@ -30,12 +30,16 @@ case class NeutrinoNode(
 
   override val peer: Peer = nodePeer
 
+  override def updateDataMessageHandler(
+      dataMessageHandler: DataMessageHandler): NeutrinoNode = {
+    copy(dataMessageHandler = dataMessageHandler)
+  }
+
   override def start(): Future[NeutrinoNode] = {
     val res = for {
       node <- super.start()
       chainApi <- chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash()
-      peerMsgSender <- peerMsgSenderF
       _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(
         stopHash = bestHash.flip)
     } yield {
@@ -62,7 +66,6 @@ case class NeutrinoNode(
       header <- chainApi.getBestBlockHeader()
       filterHeaderCount <- chainApi.getFilterHeaderCount()
       filterCount <- chainApi.getFilterCount()
-      peerMsgSender <- peerMsgSenderF
       blockchains <- blockchainsF
     } yield {
       // Get all of our cached headers in case of a reorg
@@ -101,5 +104,4 @@ case class NeutrinoNode(
       startHeight: Int,
       endHeight: Int): Future[Vector[FilterResponse]] =
     chainApiFromDb().flatMap(_.getFiltersBetweenHeights(startHeight, endHeight))
-
 }

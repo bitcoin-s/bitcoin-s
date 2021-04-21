@@ -39,35 +39,44 @@ class PeerMessageHandlerTest
   implicit protected lazy val chainConfig: ChainAppConfig =
     cachedConfig.chainConf
 
+  override def beforeAll(): Unit = {
+    implicit val chainConf: ChainAppConfig = cachedConfig.chainConf
+    chainConf.migrate()
+    ()
+  }
+
+  override def afterAll(): Unit = {
+    implicit val chainConf: ChainAppConfig = cachedConfig.chainConf
+    val shutdownConfigF = for {
+      _ <- chainConf.dropTable("flyway_schema_history")
+      _ <- chainConf.dropAll()
+    } yield {
+      super[CachedBitcoinSAppConfig].afterAll()
+    }
+
+    shutdownConfigF.onComplete { _ =>
+      super.afterAll()
+    }
+  }
+
   behavior of "PeerHandler"
 
   it must "be able to fully initialize a PeerMessageReceiver" in { peer =>
-    val peerHandlerF = NodeUnitTest.buildPeerHandler(peer)
-    val peerMsgSenderF = peerHandlerF.map(_.peerMsgSender)
-    val p2pClientF = peerHandlerF.map(_.p2pClient)
+    for {
+      peerHandler <- NodeUnitTest.buildPeerHandler(peer)
+      peerMsgSender = peerHandler.peerMsgSender
+      p2pClient = peerHandler.p2pClient
 
-    val _ = peerHandlerF.map(_.peerMsgSender.connect())
-    val isConnectedF = TestAsyncUtil.retryUntilSatisfiedF(
-      () => p2pClientF.flatMap(_.isConnected()),
-      interval = 500.millis
-    )
+      _ = peerMsgSender.connect()
 
-    val isInitF = isConnectedF.flatMap { _ =>
-      TestAsyncUtil.retryUntilSatisfiedF(() =>
-        p2pClientF.flatMap(_.isInitialized()))
-    }
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(() => p2pClient.isConnected(),
+                                              interval = 500.millis)
 
-    val disconnectF = isInitF.flatMap { _ =>
-      peerMsgSenderF.map(_.disconnect())
-    }
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(() => p2pClient.isInitialized())
+      _ <- peerMsgSender.disconnect()
 
-    val isDisconnectedF = disconnectF.flatMap { _ =>
-      TestAsyncUtil.retryUntilSatisfiedF(() =>
-        p2pClientF.flatMap(_.isDisconnected()))
-
-    }
-
-    isDisconnectedF.map(_ => succeed)
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(() => p2pClient.isDisconnected())
+    } yield succeed
   }
 
   /*
