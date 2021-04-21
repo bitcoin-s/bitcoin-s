@@ -447,7 +447,11 @@ private[wallet] trait AddressHandling extends WalletLogger {
     * With this background thread, we poll the [[addressRequestQueue]] seeing if there
     * are any elements in it, if there are, we process them and complete the Promise in the queue.
     */
-  lazy val addressQueueThread = new Thread(AddressQueueRunnable)
+  lazy val addressQueueThread = {
+    val t = new Thread(AddressQueueRunnable)
+    t.setName(s"bitcoin-s-address-queue-${System.currentTimeMillis()}")
+    t
+  }
 
   lazy val addressRequestQueue = {
     val queue = new java.util.concurrent.ArrayBlockingQueue[(

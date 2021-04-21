@@ -1,6 +1,7 @@
 package org.bitcoins.wallet.config
 
 import com.typesafe.config.Config
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -20,7 +21,7 @@ import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 
 import java.nio.file.{Files, Path, Paths}
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -48,6 +49,19 @@ case class WalletAppConfig(
   protected[bitcoins] def baseDatadir: Path = directory
 
   override def appConfig: WalletAppConfig = this
+
+  private[wallet] lazy val scheduler = Executors.newScheduledThreadPool(
+    1,
+    AsyncUtil.getNewThreadFactory(
+      s"bitcoin-s-wallet-scheduler-${System.currentTimeMillis()}"))
+
+  private lazy val rescanThreadFactory =
+    AsyncUtil.getNewThreadFactory("bitcoin-s-rescan")
+
+  /** Threads for rescanning the wallet */
+  private[wallet] lazy val rescanThreadPool: ExecutorService =
+    Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors() * 2,
+                                 rescanThreadFactory)
 
   private val callbacks = new Mutable(WalletCallbacks.empty)
 
@@ -174,8 +188,13 @@ case class WalletAppConfig(
 
   override def stop(): Future[Unit] = {
     if (isHikariLoggingEnabled) {
-      val _ = stopHikariLogger()
+      stopHikariLogger()
     }
+    //this eagerly shuts down all scheduled tasks on the scheduler
+    //in the future, we should actually cancel all things that are scheduled
+    //manually, and then shutdown the scheduler
+    scheduler.shutdownNow()
+    rescanThreadPool.shutdownNow()
     super.stop()
   }
 
