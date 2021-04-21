@@ -9,7 +9,7 @@ object Deps {
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.3"
-    val scalaTest = "3.2.7"
+    val scalaTest = "3.2.8"
 
     val scalaTestPlus =
       "3.2.1.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
@@ -19,7 +19,7 @@ object Deps {
     val akkav = "10.2.4"
     val playv = "2.9.2"
     val akkaStreamv = "2.6.14"
-    val scodecV = "1.1.25"
+    val scodecV = "1.1.26"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.5"
     val typesafeConfigV = "1.4.1"
