@@ -21,6 +21,12 @@ case class FieldElement(bytes: ByteVector) extends NetworkElement {
 
   def isZero: Boolean = bytes.toArray.forall(_ == 0.toByte)
 
+  def isEven: Boolean = {
+    (bytes.last & 0x01) == 0
+  }
+
+  def isOdd: Boolean = !isEven
+
   def toPrivateKey: ECPrivateKey =
     if (!isZero) {
       privKeyT.get

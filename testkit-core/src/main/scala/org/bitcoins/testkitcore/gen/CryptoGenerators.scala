@@ -232,10 +232,10 @@ sealed abstract class CryptoGenerators {
       tweakedNonce <- publicKey
       untweakedNonce <- publicKey
       adaptedS <- fieldElement
-      proofS <- fieldElement
       proofE <- fieldElement
+      proofS <- fieldElement
     } yield {
-      ECAdaptorSignature(tweakedNonce, adaptedS, untweakedNonce, proofS, proofE)
+      ECAdaptorSignature(tweakedNonce, untweakedNonce, adaptedS, proofE, proofS)
     }
   }
 

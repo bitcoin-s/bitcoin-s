@@ -140,9 +140,12 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       entropy: ByteVector): ECDigitalSignature =
     BouncyCastleUtil.signWithEntropy(bytes, privateKey, entropy)
 
-  override def secKeyVerify(privateKeyBytes: ByteVector): Boolean =
-    BouncyCastleCryptoParams.curve.getCurve
-      .isValidFieldElement(new BigInteger(1, privateKeyBytes.toArray))
+  override def secKeyVerify(privateKeyBytes: ByteVector): Boolean = {
+    val num = new BigInteger(1, privateKeyBytes.toArray)
+
+    BouncyCastleCryptoParams.curve.getCurve.isValidFieldElement(num) && num
+      .compareTo(BouncyCastleCryptoParams.curve.getN) < 0
+  }
 
   override def verify(
       publicKey: ECPublicKey,

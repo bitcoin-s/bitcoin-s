@@ -1,4 +1,3 @@
-[submodule "secp256k1"]
-	path = secp256k1
-	url = https://github.com/bitcoin-s/secp256k1.git
-	branch = bitcoin-s-master
+[submodule "secp256k1-zkp"]
+	path = secp256k1-zkp
+	url = git@github.com:bitcoin-s/secp256k1-zkp.git

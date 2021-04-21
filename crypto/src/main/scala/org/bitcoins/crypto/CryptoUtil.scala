@@ -161,8 +161,9 @@ trait CryptoUtil extends CryptoRuntime {
   override def adaptorSign(
       key: ECPrivateKey,
       adaptorPoint: ECPublicKey,
-      msg: ByteVector): ECAdaptorSignature =
-    cryptoRuntime.adaptorSign(key, adaptorPoint, msg)
+      msg: ByteVector,
+      auxRand: ByteVector): ECAdaptorSignature =
+    cryptoRuntime.adaptorSign(key, adaptorPoint, msg, auxRand)
 
   override def adaptorComplete(
       key: ECPrivateKey,
