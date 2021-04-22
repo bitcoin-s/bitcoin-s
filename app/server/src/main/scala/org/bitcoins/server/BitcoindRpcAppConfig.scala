@@ -95,6 +95,9 @@ case class BitcoindRpcAppConfig(
       .getStringOrNone("bitcoin-s.bitcoind-rpc.version")
       .map(BitcoindVersion.fromString)
 
+  lazy val isRemote: Boolean =
+    config.getBooleanOrElse("bitcoin-s.bitcoind-rpc.isRemote", default = false)
+
   lazy val authCredentials: BitcoindAuthCredentials =
     BitcoindAuthCredentials.PasswordBased(rpcUser, rpcPassword)
 
@@ -125,17 +128,21 @@ case class BitcoindRpcAppConfig(
   lazy val zmqConfig: ZmqConfig =
     ZmqConfig(zmqHashBlock, zmqRawBlock, zmqHashTx, zmqRawTx)
 
-  lazy val bitcoindInstance: BitcoindInstance =
+  lazy val bitcoindInstance: BitcoindInstance = {
+    val fallbackBinary =
+      if (isRemote) BitcoindInstance.remoteFilePath else DEFAULT_BINARY_PATH
+
     BitcoindInstance(
       network = network,
       uri = uri,
       rpcUri = rpcUri,
       authCredentials = authCredentials,
       zmqConfig = zmqConfig,
-      binary = binaryOpt.getOrElse(DEFAULT_BINARY_PATH),
+      binary = binaryOpt.getOrElse(fallbackBinary),
       datadir = bitcoindDataDir,
-      isRemote = binaryOpt.isEmpty
+      isRemote = isRemote
     )
+  }
 
   lazy val client: BitcoindRpcClient = {
     val version = versionOpt.getOrElse(bitcoindInstance.getVersion)
