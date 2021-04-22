@@ -9,7 +9,7 @@ import org.scalatest.FutureOutcome
 
 class DisconnectedPeerTest extends NodeUnitTest with CachedBitcoinSAppConfig {
 
-  implicit override protected def getFreshConfig: BitcoinSAppConfig =
+  override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   /** Wallet config with data directory set to user temp directory */

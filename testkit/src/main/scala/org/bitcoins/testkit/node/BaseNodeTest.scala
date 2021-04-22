@@ -7,7 +7,7 @@ import org.bitcoins.core.api.chain.db.{
   CompactFilterDb,
   CompactFilterHeaderDb
 }
-import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -28,10 +28,9 @@ import scala.concurrent.duration.DurationInt
 trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit protected def getFreshConfig: BitcoinSAppConfig
+  protected def getFreshConfig: BitcoinSAppConfig
 
-  implicit override lazy val np: NetworkParameters =
-    getFreshConfig.nodeConf.network
+  implicit override lazy val np: NetworkParameters = RegTest
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(getFreshConfig.nodeConf)

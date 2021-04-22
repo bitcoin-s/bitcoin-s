@@ -18,7 +18,7 @@ import scala.concurrent.Future
 class SpvNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def getFreshConfig: BitcoinSAppConfig =
+  override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = SpvNodeFundedWalletBitcoind
@@ -26,9 +26,10 @@ class SpvNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
-      outcome = withSpvNodeFundedWalletBitcoindCached(test,
-                                                      getBIP39PasswordOpt(),
-                                                      bitcoind)
+      outcome = withSpvNodeFundedWalletBitcoindCached(
+        test,
+        getBIP39PasswordOpt(),
+        bitcoind)(system, getFreshConfig)
       f <- outcome.toFuture
     } yield f
     new FutureOutcome(outcomeF)

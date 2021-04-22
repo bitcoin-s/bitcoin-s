@@ -148,6 +148,8 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
       _ <- destroyNodeF
       _ <- ChainUnitTest.destroyAllTables()(node.chainAppConfig,
                                             system.dispatcher)
+      //need to stop chainAppConfig too since this is a test
+      _ <- node.chainAppConfig.stop()
     } yield ()
   }
 }
