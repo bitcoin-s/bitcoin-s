@@ -8,7 +8,7 @@ import org.bitcoins.testkit.node.{
   NodeTestWithCachedBitcoindNewest,
   SpvNodeFundedWalletBitcoind
 }
-import org.scalatest.{BeforeAndAfter, FutureOutcome, Outcome}
+import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
