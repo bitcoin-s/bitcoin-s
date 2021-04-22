@@ -91,13 +91,13 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       result <- processTransactionImpl(transaction, blockHashOpt, Vector.empty)
     } yield {
       logger.debug(
-        s"Finished processing of transaction=${transaction.txIdBE}. Relevant incomingTXOs=${result.updatedIncoming.length}, outgoingTXOs=${result.updatedOutgoing.length}")
+        s"Finished processing of transaction=${transaction.txIdBE.hex}. Relevant incomingTXOs=${result.updatedIncoming.length}, outgoingTXOs=${result.updatedOutgoing.length}")
       this
     }
   }
 
   override def processBlock(block: Block): Future[Wallet] = {
-    logger.info(s"Processing block=${block.blockHeader.hash.flip}")
+    logger.info(s"Processing block=${block.blockHeader.hash.flip.hex}")
     val start = TimeUtil.currentEpochMs
     val resF = for {
       newWallet <- block.transactions.foldLeft(Future.successful(this)) {
@@ -126,11 +126,12 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     f.foreach { _ =>
       val stop = TimeUtil.currentEpochMs
       logger.info(
-        s"Finished processing of block=${block.blockHeader.hash.flip}. It took ${stop - start}ms")
+        s"Finished processing of block=${block.blockHeader.hash.flip.hex}. It took ${stop - start}ms")
     }
     f.failed.foreach(e =>
-      logger.error(s"Error processing of block=${block.blockHeader.hash.flip}.",
-                   e))
+      logger.error(
+        s"Error processing of block=${block.blockHeader.hash.flip.hex}.",
+        e))
     f
   }
 
@@ -186,7 +187,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       blockHashOpt: Option[DoubleSha256DigestBE],
       newTags: Vector[AddressTag]): Future[ProcessTxResult] = {
     logger.info(
-      s"Processing TX from our wallet, transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
+      s"Processing TX from our wallet, transaction=${transaction.txIdBE.hex} with blockHash=${blockHashOpt
+        .map(_.hex)}")
     for {
       (txDb, _) <-
         insertOutgoingTransaction(transaction,
@@ -201,7 +203,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       val spentOutputs = result.updatedOutgoing.length
 
       logger.info(
-        s"Processing of internal transaction=$txid resulted in changeOutputs=$changeOutputs and spentUTXOs=$spentOutputs")
+        s"Processing of internal transaction=${txid.hex} resulted in changeOutputs=$changeOutputs and spentUTXOs=$spentOutputs")
       result
     }
   }
@@ -229,7 +231,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       blockHash: DoubleSha256Digest,
       failure: Try[_]): Unit =
     synchronized {
-      logger.debug(s"Updating wallet signal completion for ${blockHash}")
+      logger.debug(
+        s"Updating wallet signal completion for ${blockHash.flip.hex}")
       blockProcessingSignals.get(blockHash).foreach { signal =>
         blockProcessingSignals =
           blockProcessingSignals.filterNot(_._1 == blockHash)
@@ -296,7 +299,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       newTags: Vector[AddressTag]): Future[ProcessTxResult] = {
 
     logger.debug(
-      s"Processing transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
+      s"Processing transaction=${transaction.txIdBE.hex} with blockHash=${blockHashOpt
+        .map(_.hex)}")
 
     for {
       incoming <- processIncomingUtxos(transaction, blockHashOpt, newTags)
@@ -336,7 +340,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       case TxoState.BroadcastSpent =>
         logger.warn(
           s"Updating the spendingTxId of a transaction that is already spent, " +
-            s"old state=${TxoState.BroadcastSpent} old spendingTxId=${out.spendingTxIdOpt} new spendingTxId=${spendingTxId}")
+            s"old state=${TxoState.BroadcastSpent} old spendingTxId=${out.spendingTxIdOpt
+              .map(_.hex)} new spendingTxId=${spendingTxId.hex}")
         val updated =
           out.copyWithSpendingTxId(spendingTxId)
         val updatedF = spendingInfoDAO.update(updated)
@@ -395,7 +400,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       blockHashOpt match {
         case Some(blockHash) =>
           logger.debug(
-            s"Updating block_hash of txo=${transaction.txIdBE}, new block hash=$blockHash")
+            s"Updating block_hash of txo=${transaction.txIdBE.hex}, new block hash=${blockHash.hex}")
 
           // If the utxo was marked reserved we want to update it to spent now
           // since it has been included in a block
@@ -504,7 +509,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     getRelevantOutputs(transaction).flatMap {
       case Nil =>
         logger.debug(
-          s"Found no outputs relevant to us in transaction${transaction.txIdBE}")
+          s"Found no outputs relevant to us in transaction${transaction.txIdBE.hex}")
         Future.successful(Vector.empty)
 
       case outputsWithIndex =>
