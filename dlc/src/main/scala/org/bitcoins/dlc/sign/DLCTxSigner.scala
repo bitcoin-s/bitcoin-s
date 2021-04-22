@@ -211,8 +211,8 @@ object DLCTxSigner {
   def apply(
       builder: DLCTxBuilder,
       isInitiator: Boolean,
-      fundingKey: ECPrivateKey,
-      payoutPrivKey: ECPrivateKey,
+      fundingKey: AdaptorSign,
+      payoutPrivKey: AdaptorSign,
       network: BitcoinNetwork,
       fundingUtxos: Vector[ScriptSignatureParams[InputInfo]]): DLCTxSigner = {
     val payoutAddr =
@@ -245,7 +245,7 @@ object DLCTxSigner {
       outcome: OracleOutcome,
       cet: WitnessTransaction,
       cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
-      fundingKey: ECPrivateKey): ECAdaptorSignature = {
+      fundingKey: AdaptorSign): ECAdaptorSignature = {
     signCETs(Vector(OutcomeCETPair(outcome, cet)),
              cetSigningInfo,
              fundingKey).head._2

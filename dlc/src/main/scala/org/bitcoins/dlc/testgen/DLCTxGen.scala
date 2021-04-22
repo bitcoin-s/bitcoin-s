@@ -222,16 +222,20 @@ object DLCTxGen {
     val acceptWithoutSigs = inputs.accept
 
     val builder = inputs.builder
-    val offerSigner = DLCTxSigner(builder,
-                                  isInitiator = true,
-                                  inputs.offerParams.fundingPrivKey,
-                                  inputs.offerParams.payoutAddress,
-                                  inputs.offerParams.fundingScriptSigParams)
-    val acceptSigner = DLCTxSigner(builder,
-                                   isInitiator = false,
-                                   inputs.acceptParams.fundingPrivKey,
-                                   inputs.acceptParams.payoutAddress,
-                                   inputs.acceptParams.fundingScriptSigParams)
+    val offerSigner = DLCTxSigner(
+      builder,
+      isInitiator = true,
+      ConstRandAdaptorSign(inputs.offerParams.fundingPrivKey),
+      inputs.offerParams.payoutAddress,
+      inputs.offerParams.fundingScriptSigParams
+    )
+    val acceptSigner = DLCTxSigner(
+      builder,
+      isInitiator = false,
+      ConstRandAdaptorSign(inputs.acceptParams.fundingPrivKey),
+      inputs.acceptParams.payoutAddress,
+      inputs.acceptParams.fundingScriptSigParams
+    )
 
     val outcomeStr = inputs.params.contractInfo
       .find(_.outcome == inputs.params.realOutcome)
