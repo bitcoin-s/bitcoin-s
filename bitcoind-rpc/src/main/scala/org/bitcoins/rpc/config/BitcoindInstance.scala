@@ -119,6 +119,10 @@ object BitcoindInstance {
       throw new FileNotFoundException("Cannot find a path to bitcoind"))
   }
 
+  lazy val remoteFilePath: File = {
+    Files.createTempFile("dummy", "").toFile
+  }
+
   /** Constructs a `bitcoind` instance from the given datadir, using the
     * `bitcoin.conf` found within (if any)
     *
