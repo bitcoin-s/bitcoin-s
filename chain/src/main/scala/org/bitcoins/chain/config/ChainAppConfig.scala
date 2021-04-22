@@ -104,7 +104,7 @@ case class ChainAppConfig(
 
   override def stop(): Future[Unit] = {
     val _ = stopHikariLogger()
-    Future.unit
+    super.stop()
   }
 
   lazy val filterHeaderBatchSize: Int = {

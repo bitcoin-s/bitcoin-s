@@ -154,7 +154,13 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
 
 trait NodeTestWithCachedBitcoindNewest
     extends NodeTestWithCachedBitcoind
-    with CachedBitcoindNewest
+    with CachedBitcoindNewest {
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindNewest].afterAll()
+    super[NodeTestWithCachedBitcoind].afterAll()
+  }
+}
 
 trait NodeTestWithCachedBitcoindV19
     extends NodeTestWithCachedBitcoind
@@ -184,5 +190,10 @@ trait NodeTestWithCachedBitcoindV19
         NodeUnitTest.destroyNode(x.node)
       }
     )(test)
+  }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindV19].afterAll()
+    super[NodeTestWithCachedBitcoind].afterAll()
   }
 }

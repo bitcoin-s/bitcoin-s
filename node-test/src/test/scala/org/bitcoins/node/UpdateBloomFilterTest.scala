@@ -12,9 +12,7 @@ import org.scalatest.{BeforeAndAfter, FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
-class UpdateBloomFilterTest
-    extends NodeTestWithCachedBitcoindNewest
-    with BeforeAndAfter {
+class UpdateBloomFilterTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   implicit override protected def getFreshConfig: BitcoinSAppConfig =

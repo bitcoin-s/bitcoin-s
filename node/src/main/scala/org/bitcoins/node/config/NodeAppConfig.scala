@@ -65,7 +65,7 @@ case class NodeAppConfig(
 
   override def stop(): Future[Unit] = {
     val _ = stopHikariLogger()
-    Future.unit
+    super.stop()
   }
 
   lazy val nodeType: NodeType =
