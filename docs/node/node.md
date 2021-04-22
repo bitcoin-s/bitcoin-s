@@ -44,6 +44,7 @@ For your node to be able to service these filters you will need set
 import akka.actor.ActorSystem
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.node._
+import org.bitcoins.node.networking.peer._
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.testkit.node._
 import org.bitcoins.testkit.node.fixture._
@@ -108,14 +109,15 @@ val chainApiF = for {
 
 //yay! All setup done, let's create a node and then start it!
 val nodeF = for {
-  _ <- chainApiF
+  chainApi <- chainApiF
   peer <- peerF
 } yield {
+    val dataMessageHandler = DataMessageHandler(chainApi)
     NeutrinoNode(nodePeer = peer,
+               dataMessageHandler = dataMessageHandler,
                nodeConfig = nodeConfig,
                chainConfig = chainConfig,
-               actorSystem = system,
-               initialSyncDone = None)
+               actorSystem = system)
 }
 
 //let's start it
