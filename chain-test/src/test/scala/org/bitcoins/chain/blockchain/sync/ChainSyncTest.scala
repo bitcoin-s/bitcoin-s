@@ -1,6 +1,5 @@
 package org.bitcoins.chain.blockchain.sync
 
-import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -12,9 +11,6 @@ import scala.concurrent.Future
 
 class ChainSyncTest extends ChainDbUnitTest {
   override type FixtureParam = BitcoindChainHandlerViaRpc
-
-  implicit override val system = ActorSystem(
-    s"chain-sync-test-${System.currentTimeMillis()}")
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withBitcoindChainHandlerViaRpc(test)

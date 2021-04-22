@@ -1,6 +1,5 @@
 package org.bitcoins.chain.blockchain
 
-import akka.actor.ActorSystem
 import org.bitcoins.chain.validation.TipUpdateResult
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.number.UInt32
@@ -16,8 +15,6 @@ class BlockchainTest extends ChainUnitTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainFixture(test)
-
-  implicit override val system: ActorSystem = ActorSystem("BlockchainTest")
 
   behavior of "Blockchain"
 

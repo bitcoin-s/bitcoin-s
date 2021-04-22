@@ -24,4 +24,8 @@ trait ChainDbUnitTest extends ChainUnitTest with EmbeddedPg {
     chainConfig.withOverrides(memoryDb)
   }
 
+  override def afterAll(): Unit = {
+    super[EmbeddedPg].afterAll()
+    super[ChainUnitTest].afterAll()
+  }
 }
