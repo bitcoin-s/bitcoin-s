@@ -284,6 +284,7 @@ case class WalletAppConfig(
         //already scheduled, do nothing
         ()
       case None =>
+        logger.info(s"Starting wallet rebroadcast task")
         val interval = rebroadcastFrequency.toSeconds
 
         val future =
@@ -301,6 +302,7 @@ case class WalletAppConfig(
     rebroadcastTransactionsCancelOpt match {
       case Some(cancel) =>
         if (!cancel.isCancelled) {
+          logger.info(s"Stopping wallet rebroadcast task")
           cancel.cancel(true)
         } else {
           rebroadcastTransactionsCancelOpt = None
