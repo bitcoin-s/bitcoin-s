@@ -3,17 +3,17 @@ id: adaptor-signatures
 title: Adaptor Signatures
 ---
 
-Bitcoin-S now has support for an old experimental version of [ECDSA Adaptor Signatures](https://github.com/jonasnick/secp256k1/pull/14). This old version will soon be replaced by a newer version which is [being specified](https://github.com/discreetlogcontracts/dlcspecs/blob/03bf7095c2016e1ce9c9fb612920872d4456f179/ECDSA-adaptor.md) but in the meantime, bitcoin-s' version can still be used to experiment with applications of ECDSA adaptor signatures as it has a similar interface.
+Bitcoin-S now has support for [ECDSA Adaptor Signatures](https://github.com/discreetlogcontracts/dlcspecs/blob/03bf7095c2016e1ce9c9fb612920872d4456f179/ECDSA-adaptor.md).
 
 There are four relevant functions to adaptor signatures:
 
-* `sign`
+* `sign` (aka encrypt)
   * This function belongs to `ECPrivateKey` and creates an adaptor signature given a message (`ByteVector`) and an adaptor point (`ECPublicKey`).
 * `verify`
   * Verifies an adaptor signature given the signing public key, the message and the adaptor point.
-* `complete`
+* `complete` (aka decrypt)
   * This function belongs to `ECPrivateKey` and computes a valid ECDSA signature given a valid adaptor signature whose adaptor point is this private key's public key.
-* `extract`
+* `extract` (aka recover)
   * This function belongs to `ECPublicKey` and computes the adaptor secret (private key to this public key) given a valid adaptor signature for this adaptor point, and the valid ECDSA signature computed using `complete`.
 
 The following code shows each function to do with adaptor signature usage:
