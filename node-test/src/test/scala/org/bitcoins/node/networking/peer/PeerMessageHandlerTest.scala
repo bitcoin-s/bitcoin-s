@@ -22,7 +22,7 @@ class PeerMessageHandlerTest
     with CachedBitcoinSAppConfig {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def getFreshConfig: BitcoinSAppConfig =
+  override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
 
   override type FixtureParam = Peer

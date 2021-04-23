@@ -1,6 +1,5 @@
 package org.bitcoins.chain.validation
 
-import akka.actor.ActorSystem
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
@@ -19,8 +18,6 @@ class TipValidationTest extends ChainDbUnitTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBlockHeaderDAO(test)
-
-  implicit override val system: ActorSystem = ActorSystem("TipValidationTest")
 
   behavior of "TipValidation"
 

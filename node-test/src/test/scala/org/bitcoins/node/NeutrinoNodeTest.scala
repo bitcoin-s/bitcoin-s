@@ -17,7 +17,7 @@ import scala.concurrent.Future
 class NeutrinoNodeTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def getFreshConfig: BitcoinSAppConfig =
+  override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
@@ -25,7 +25,9 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindNewest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
-      outcome = withNeutrinoNodeConnectedToBitcoind(test, bitcoind)
+      outcome = withNeutrinoNodeConnectedToBitcoind(test, bitcoind)(
+        system,
+        getFreshConfig)
       f <- outcome.toFuture
     } yield f
     new FutureOutcome(outcomeF)

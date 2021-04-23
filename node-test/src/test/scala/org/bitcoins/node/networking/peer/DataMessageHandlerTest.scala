@@ -20,13 +20,13 @@ import scala.concurrent.{Future, Promise}
 class DataMessageHandlerTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def getFreshConfig: BitcoinSAppConfig =
+  override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = SpvNodeConnectedWithBitcoindV19
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeConnectedToBitcoindV19(test)
+    withSpvNodeConnectedToBitcoindV19(test)(system, getFreshConfig)
 
   it must "catch errors and not fail when processing an invalid payload" in {
     param: SpvNodeConnectedWithBitcoindV19 =>

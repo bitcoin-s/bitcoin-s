@@ -42,7 +42,17 @@ trait CachedBitcoinSAppConfig { _: BitcoinSAkkaAsyncTest =>
   }
 }
 
-trait CachedChainAppConfig extends CachedBitcoinSAppConfig {
+trait CachedChainAppConfig {
   _: BitcoinSAkkaAsyncTest =>
 
+  private[this] lazy val cachedConfig: BitcoinSAppConfig =
+    BitcoinSTestAppConfig.getSpvTestConfig()
+
+  implicit protected lazy val cachedChainConf: ChainAppConfig = {
+    cachedConfig.chainConf
+  }
+
+  override def afterAll(): Unit = {
+    Await.result(cachedChainConf.stop(), duration)
+  }
 }

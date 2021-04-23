@@ -1,6 +1,5 @@
 package org.bitcoins.chain.models
 
-import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.number.{Int32, UInt32}
@@ -26,8 +25,6 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBlockHeaderDAO(test)
-
-  implicit override val system: ActorSystem = ActorSystem("BlockHeaderDAOTest")
 
   behavior of "BlockHeaderDAO"
 
