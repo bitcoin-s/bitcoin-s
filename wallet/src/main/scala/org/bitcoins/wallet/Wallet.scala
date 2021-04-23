@@ -154,9 +154,7 @@ abstract class Wallet
   }
 
   override def stop(): Future[Wallet] = {
-    for {
-      _ <- walletConfig.stop()
-    } yield {
+    Future.successful {
       stopRebroadcastTxsScheduler()
       this
     }
