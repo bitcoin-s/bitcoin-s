@@ -148,13 +148,21 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
       _ <- destroyNodeF
       _ <- ChainUnitTest.destroyAllTables()(node.chainAppConfig,
                                             system.dispatcher)
+      //need to stop chainAppConfig too since this is a test
+      _ <- node.chainAppConfig.stop()
     } yield ()
   }
 }
 
 trait NodeTestWithCachedBitcoindNewest
     extends NodeTestWithCachedBitcoind
-    with CachedBitcoindNewest
+    with CachedBitcoindNewest {
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindNewest].afterAll()
+    super[NodeTestWithCachedBitcoind].afterAll()
+  }
+}
 
 trait NodeTestWithCachedBitcoindV19
     extends NodeTestWithCachedBitcoind
@@ -184,5 +192,10 @@ trait NodeTestWithCachedBitcoindV19
         NodeUnitTest.destroyNode(x.node)
       }
     )(test)
+  }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindV19].afterAll()
+    super[NodeTestWithCachedBitcoind].afterAll()
   }
 }
