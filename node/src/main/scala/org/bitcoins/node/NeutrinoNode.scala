@@ -31,7 +31,7 @@ case class NeutrinoNode(
 
   protected var peers: Vector[Peer] = _nodePeers
 
-  protected var dataMessageHandler: DataMessageHandler = _dataMessageHandler
+  var dataMessageHandler: DataMessageHandler = _dataMessageHandler
 
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): NeutrinoNode = {

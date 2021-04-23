@@ -458,7 +458,7 @@ object NodeUnitTest extends P2PLogger {
       val dmh = DataMessageHandler(chainHandler)
       SpvNode(
         _nodePeers = Vector(peer),
-        dataMessageHandler = dmh,
+        _dataMessageHandler = dmh,
         nodeConfig = nodeAppConfig,
         chainConfig = chainAppConfig,
         actorSystem = system
@@ -487,7 +487,7 @@ object NodeUnitTest extends P2PLogger {
       chainApi <- chainApiF
     } yield {
       val dmh = DataMessageHandler(chainApi)
-      NeutrinoNode(nodePeers = Vector(peer),
+      NeutrinoNode(_nodePeers = Vector(peer),
                    _dataMessageHandler = dmh,
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,

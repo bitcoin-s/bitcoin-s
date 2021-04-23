@@ -42,7 +42,7 @@ case class SpvNode(
     this
   }
 
-  protected var dataMessageHandler: DataMessageHandler = _dataMessageHandler
+  var dataMessageHandler: DataMessageHandler = _dataMessageHandler
 
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): SpvNode = {
