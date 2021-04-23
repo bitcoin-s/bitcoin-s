@@ -65,12 +65,25 @@ case class SpvNode(
 
   def addPeer(peer: Peer): Unit = {
     if (!peers.contains(peer)) {
+      val peerMsgRecv: PeerMessageReceiver =
+        PeerMessageReceiver.newReceiver(node = this, peer = peer)
+      val client = P2PClient(context = system,
+                             peer = peer,
+                             peerMessageReceiver = peerMsgRecv)
+      val peerMsgSender = PeerMessageSender(client)
+
       this.peers = peers :+ peer
+      this.clients = clients :+ client
+      this.peerMsgSenders = peerMsgSenders :+ peerMsgSender
     } else ()
   }
 
-  def removePeer(peer: Peer): Unit =
+  def removePeer(peer: Peer): Peer = {
     this.peers = peers.filter(_ != peer)
+    this.clients = clients.filter(_.peer != peer)
+    this.peerMsgSenders = peerMsgSenders.filter(_.client.peer != peer)
+    peer
+  }
 
   /** Updates our bloom filter to match the given TX
     *

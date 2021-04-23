@@ -70,10 +70,11 @@ case class NeutrinoNode(
     } else ()
   }
 
-  def removePeer(peer: Peer): Unit = {
+  def removePeer(peer: Peer): Peer = {
     this.peers = peers.filter(_ != peer)
     this.clients = clients.filter(_.peer != peer)
     this.peerMsgSenders = peerMsgSenders.filter(_.client.peer != peer)
+    peer
   }
 
   override def start(): Future[NeutrinoNode] = {

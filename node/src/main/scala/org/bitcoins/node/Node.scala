@@ -26,6 +26,7 @@ import org.bitcoins.node.networking.peer.{DataMessageHandler, PeerMessageSender}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Random, Success}
 
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
@@ -58,7 +59,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   def addPeer(peer: Peer): Unit
 
-  def removePeer(peer: Peer): Unit
+  def removePeer(peer: Peer): Peer
 
   /** This is constructing a chain api from disk every time we call this method
     * This involves database calls which can be slow and expensive to construct
@@ -131,7 +132,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         isInitializedF.failed.foreach(err =>
           logger.error(s"Failed to connect with peer=$peer with err=$err"))
 
-        isInitializedF.recover { case _: Throwable => removePeer(peer) }
+        isInitializedF.recover { case NonFatal(_) => removePeer(peer) }
 
         isInitializedF.map { peer =>
           logger.info(s"Our peer=$peer has been initialized")
