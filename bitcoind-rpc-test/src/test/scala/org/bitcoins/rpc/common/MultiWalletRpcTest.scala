@@ -14,10 +14,10 @@ import org.bitcoins.rpc.client.common._
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.util.{NodePair, RpcUtil}
 import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPair,
+  BitcoindFixturesCachedPairV19,
   BitcoindRpcTestUtil
 }
-import org.bitcoins.testkit.util.{AkkaUtil, BitcoinSAsyncFixtureTest}
+import org.bitcoins.testkit.util.AkkaUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import java.io.File
@@ -26,11 +26,8 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 /** These tests are all copied over from WalletRpcTest and changed to be for multi-wallet */
-class MultiWalletRpcTest
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesCachedPair[BitcoindV19RpcClient] {
-  override val version = BitcoindVersion.V19
-  override type FixtureParam = NodePair[BitcoindV19RpcClient]
+class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
+
   val walletName = "other"
 
   var password = "password"
