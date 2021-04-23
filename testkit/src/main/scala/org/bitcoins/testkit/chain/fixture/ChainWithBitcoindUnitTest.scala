@@ -46,6 +46,10 @@ trait ChainWithBitcoindNewestCachedUnitTest
     makeDependentFixture(builder, destroy)(test)
   }
 
+  override def afterAll(): Unit = {
+    super[CachedBitcoindNewest].afterAll()
+    super[ChainWithBitcoindUnitTest].afterAll()
+  }
 }
 
 /** Chain Unit test suite that has a cached bitcoind v19 instance */
