@@ -153,7 +153,12 @@ abstract class Wallet
     }
   }
 
-  override def stop(): Future[Wallet] = Future.successful(this)
+  override def stop(): Future[Wallet] = {
+    Future.successful {
+      walletConfig.stopRebroadcastTxsScheduler()
+      this
+    }
+  }
 
   def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
     stateDescriptorDAO.getSyncDescriptorOpt()
