@@ -2,7 +2,7 @@ package org.bitcoins.testkit.chain.fixture
 
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
-import org.bitcoins.testkit.chain.{ChainDbUnitTest, ChainUnitTest, SyncUtil}
+import org.bitcoins.testkit.chain.{ChainDbUnitTest, ChainUnitTest}
 import org.bitcoins.testkit.rpc.{CachedBitcoind, CachedBitcoindV19}
 import org.scalatest.{FutureOutcome, Outcome}
 
@@ -34,26 +34,9 @@ trait ChainWithBitcoindV19CachedUnitTest
       test: OneArgAsyncTest,
       bitcoindV19RpcClient: BitcoindV19RpcClient): FutureOutcome = {
     val builder: () => Future[BitcoindV19ChainHandler] = { () =>
-      createBitcoindV19ChainHandler(bitcoindV19RpcClient)
+      ChainUnitTest.createBitcoindV19ChainHandler(bitcoindV19RpcClient)
     }
     makeDependentFixture(builder, destroyChainApi)(test)
-  }
-
-  def createBitcoindV19ChainHandler(
-      bitcoindV19RpcClient: BitcoindV19RpcClient): Future[
-    BitcoindV19ChainHandler] = {
-
-    val chainApiWithBitcoindF = createChainApiWithBitcoindV19Rpc(
-      bitcoindV19RpcClient)
-
-    //now sync the chain api to the bitcoind node
-    val syncedBitcoindWithChainHandlerF = for {
-      chainApiWithBitcoind <- chainApiWithBitcoindF
-      bitcoindWithChainHandler <- SyncUtil.syncBitcoindV19WithChainHandler(
-        chainApiWithBitcoind)
-    } yield bitcoindWithChainHandler
-
-    syncedBitcoindWithChainHandlerF
   }
 
   /** Destroys the chain api, but leaves the bitcoind instance running
@@ -63,18 +46,6 @@ trait ChainWithBitcoindV19CachedUnitTest
       chainAppConfig: ChainAppConfig): Future[Unit] = {
     val _ = bitcoindV19ChainHandler
     ChainUnitTest.destroyAllTables()(chainAppConfig, system.dispatcher)
-  }
-
-  private def createChainApiWithBitcoindV19Rpc(
-      bitcoind: BitcoindV19RpcClient): Future[BitcoindV19ChainHandler] = {
-    val handlerWithGenesisHeaderF =
-      ChainUnitTest.setupHeaderTableWithGenesisHeader()
-
-    val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
-
-    chainHandlerF.map { handler =>
-      BitcoindV19ChainHandler(bitcoind, handler)
-    }
   }
 
   override def afterAll(): Unit = {

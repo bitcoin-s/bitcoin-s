@@ -15,7 +15,8 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.AppConfig
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.chain.ChainUnitTest.createChainHandler
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.chain.models.{
@@ -651,5 +652,58 @@ object ChainUnitTest extends ChainVerificationLogger {
     }
 
     ChainSync.sync(chainHandler, getBlockHeaderFunc, getBestBlockHashFunc)
+  }
+
+  def createBitcoindV19ChainHandler()(implicit
+      system: ActorSystem,
+      chainAppConfig: ChainAppConfig): Future[BitcoindV19ChainHandler] = {
+    import system.dispatcher
+    val bitcoindV = BitcoindVersion.V19
+    val bitcoindF = BitcoinSFixture
+      .createBitcoind(Some(bitcoindV))
+      .map(_.asInstanceOf[BitcoindV19RpcClient])
+    bitcoindF.flatMap(b => createBitcoindV19ChainHandler(b))
+  }
+
+  def createBitcoindV19ChainHandler(
+      bitcoindV19RpcClient: BitcoindV19RpcClient)(implicit
+      ec: ExecutionContext,
+      chainAppConfig: ChainAppConfig): Future[BitcoindV19ChainHandler] = {
+
+    val chainApiWithBitcoindF = createChainApiWithBitcoindV19Rpc(
+      bitcoindV19RpcClient)
+
+    //now sync the chain api to the bitcoind node
+    val syncedBitcoindWithChainHandlerF = for {
+      chainApiWithBitcoind <- chainApiWithBitcoindF
+      bitcoindWithChainHandler <- SyncUtil.syncBitcoindV19WithChainHandler(
+        chainApiWithBitcoind)
+    } yield bitcoindWithChainHandler
+
+    syncedBitcoindWithChainHandlerF
+  }
+
+  private def createChainApiWithBitcoindV19Rpc(
+      bitcoind: BitcoindV19RpcClient)(implicit
+      ec: ExecutionContext,
+      chainAppConfig: ChainAppConfig): Future[BitcoindV19ChainHandler] = {
+    val handlerWithGenesisHeaderF =
+      ChainUnitTest.setupHeaderTableWithGenesisHeader()
+
+    val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
+
+    chainHandlerF.map { handler =>
+      BitcoindV19ChainHandler(bitcoind, handler)
+    }
+  }
+
+  def destroyBitcoindV19ChainApi(
+      bitcoindV19ChainHandler: BitcoindV19ChainHandler)(implicit
+      system: ActorSystem,
+      chainAppConfig: ChainAppConfig): Future[Unit] = {
+    val b = BitcoindBaseVersionChainHandlerViaRpc(
+      bitcoindV19ChainHandler.bitcoindRpc,
+      bitcoindV19ChainHandler.chainHandler)
+    destroyBitcoindChainApiViaRpc(b)
   }
 }
