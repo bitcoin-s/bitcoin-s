@@ -3,14 +3,14 @@ package org.bitcoins.chain.blockchain.sync
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.testkit.chain.fixture.BitcoindChainHandlerViaRpc
+import org.bitcoins.testkit.chain.fixture.BitcoindBaseVersionChainHandlerViaRpc
 import org.bitcoins.testkit.chain.{ChainDbUnitTest, SyncUtil}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
 class ChainSyncTest extends ChainDbUnitTest {
-  override type FixtureParam = BitcoindChainHandlerViaRpc
+  override type FixtureParam = BitcoindBaseVersionChainHandlerViaRpc
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withBitcoindChainHandlerViaRpc(test)
@@ -19,7 +19,7 @@ class ChainSyncTest extends ChainDbUnitTest {
   behavior of "ChainSync"
 
   it must "sync our chain handler when it is not synced with bitcoind" in {
-    bitcoindWithChainHandler: BitcoindChainHandlerViaRpc =>
+    bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc =>
       val bitcoind = bitcoindWithChainHandler.bitcoindRpc
       val chainHandler = bitcoindWithChainHandler.chainHandler
       //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
@@ -43,7 +43,7 @@ class ChainSyncTest extends ChainDbUnitTest {
   }
 
   it must "not fail when syncing a chain handler that is synced with it's external data source" in {
-    bitcoindWithChainHandler: BitcoindChainHandlerViaRpc =>
+    bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc =>
       val bitcoind = bitcoindWithChainHandler.bitcoindRpc
       val chainHandler = bitcoindWithChainHandler.chainHandler
       //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions

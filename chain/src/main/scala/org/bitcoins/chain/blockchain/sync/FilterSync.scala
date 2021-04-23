@@ -34,7 +34,6 @@ abstract class FilterSync extends ChainVerificationLogger {
       batchSize: Int = 25)(implicit
       ec: ExecutionContext,
       chainAppConfig: ChainAppConfig): Future[ChainApi] = {
-
     val ourBestFilterHeaderOptF = chainApi.getBestFilterHeader()
     val ourBestBlockHeaderF = chainApi.getBestBlockHeader()
     for {
@@ -96,7 +95,17 @@ abstract class FilterSync extends ChainVerificationLogger {
         missing <- chainApi.getHeadersBetween(from = bestFilterBlockHeader.get,
                                               to = ourBestHeader)
       } yield {
-        missing
+        //getHeaderBetween is inclusive with 'from' parameter,
+        //we only want the inclusive behavior when we are fetching
+        //from the genesis block hash, so we can get the genesis filter
+        //else we need the _next_ header after our bestFilterBlockHeader
+        if (
+          bestFilterBlockHeader.get.hashBE == chainAppConfig.chain.genesisHashBE
+        ) {
+          missing
+        } else {
+          missing.tail
+        }
       }
 
       //because filters can be really large, we don't want to process too many

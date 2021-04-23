@@ -1,6 +1,13 @@
 package org.bitcoins.testkit.chain
 
-import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
+import grizzled.slf4j.Logging
+import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.blockchain.sync.{
+  ChainSync,
+  FilterSync,
+  FilterWithHeaderHash
+}
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
 import org.bitcoins.core.api.node
 import org.bitcoins.core.api.node.{NodeApi, NodeChainQueryApi}
@@ -11,9 +18,12 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.testkit.chain.fixture.{
+  BitcoindBaseVersionChainHandlerViaRpc,
+  BitcoindV19ChainHandler
+}
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.sync.WalletSync
-import grizzled.slf4j.Logging
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -175,6 +185,56 @@ abstract class SyncUtil extends Logging {
       getBestBlockHashFunc = SyncUtil.getBestBlockHashFunc(bitcoind),
       getBlockFunc = SyncUtil.getBlockFunc(bitcoind)
     )
+  }
+
+  /** Syncs the given chain handler to the given bitcoind node */
+  def syncBitcoindWithChainHandler(
+      bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc)(implicit
+      ec: ExecutionContext): Future[BitcoindBaseVersionChainHandlerViaRpc] = {
+    val getBestBlockHash = getBestBlockHashFunc(
+      bitcoindWithChainHandler.bitcoindRpc)
+    val getBlockHeader = getBlockHeaderFunc(
+      bitcoindWithChainHandler.bitcoindRpc)
+
+    val chainApiF = ChainSync.sync(bitcoindWithChainHandler.chainHandler,
+                                   getBlockHeader,
+                                   getBestBlockHash)
+    for {
+      chainApi <- chainApiF
+    } yield BitcoindBaseVersionChainHandlerViaRpc(
+      bitcoindRpc = bitcoindWithChainHandler.bitcoindRpc,
+      chainHandler = chainApi.asInstanceOf[ChainHandler])
+  }
+
+  /** Syncs the given chain handler to the given bitcoind node */
+  def syncBitcoindV19WithChainHandler(
+      bitcoindWithChainHandler: BitcoindV19ChainHandler)(implicit
+      ec: ExecutionContext,
+      chainAppConfig: ChainAppConfig): Future[BitcoindV19ChainHandler] = {
+    val bitcoindV19 = bitcoindWithChainHandler.bitcoindRpc
+    val getBestBlockHash = getBestBlockHashFunc(bitcoindV19)
+    val getBlockHeader = getBlockHeaderFunc(bitcoindV19)
+
+    val chainApiF = ChainSync.sync(bitcoindWithChainHandler.chainHandler,
+                                   getBlockHeader,
+                                   getBestBlockHash)
+
+    val getFilter: BlockHeader => Future[FilterWithHeaderHash] = {
+      getFilterFunc(bitcoindV19, FilterType.Basic)
+    }
+
+    for {
+      chainApi <- chainApiF
+      filterSyncChainApi <- FilterSync.syncFilters(chainApi, getFilter)
+      bestBlockHash <- bitcoindV19.getBestBlockHash
+      ourBestFilter <- chainApi.getBestFilterHeader()
+      _ = require(
+        bestBlockHash == ourBestFilter.get.blockHashBE,
+        s"We did not sync filter's in our fixture bitcoindBestBlockHash=$bestBlockHash our best filter's blockHash=${ourBestFilter.get.blockHashBE}"
+      )
+    } yield BitcoindV19ChainHandler(
+      bitcoindRpc = bitcoindWithChainHandler.bitcoindRpc,
+      chainHandler = filterSyncChainApi.asInstanceOf[ChainHandler])
   }
 }
 
