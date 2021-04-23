@@ -20,6 +20,7 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.chain.fixture.{
   BitcoindBaseVersionChainHandlerViaRpc,
+  BitcoindChainHandlerViaRpc,
   BitcoindV19ChainHandler
 }
 import org.bitcoins.wallet.Wallet
@@ -187,9 +188,12 @@ abstract class SyncUtil extends Logging {
     )
   }
 
-  /** Syncs the given chain handler to the given bitcoind node */
+  /** Syncs the given chain handler to the given bitcoind node.
+    * This does NOT sync this like block filters, as we cannot
+    * determine if the bitcoind version passed to us has support for block filters
+    */
   def syncBitcoindWithChainHandler(
-      bitcoindWithChainHandler: BitcoindBaseVersionChainHandlerViaRpc)(implicit
+      bitcoindWithChainHandler: BitcoindChainHandlerViaRpc)(implicit
       ec: ExecutionContext): Future[BitcoindBaseVersionChainHandlerViaRpc] = {
     val getBestBlockHash = getBestBlockHashFunc(
       bitcoindWithChainHandler.bitcoindRpc)
@@ -206,18 +210,16 @@ abstract class SyncUtil extends Logging {
       chainHandler = chainApi.asInstanceOf[ChainHandler])
   }
 
-  /** Syncs the given chain handler to the given bitcoind node */
+  /** Syncs the given chain handler to the given bitcoind node. This also syncs block filters
+    * since we know a bitcoind v19 node has block filter capability
+    */
   def syncBitcoindV19WithChainHandler(
       bitcoindWithChainHandler: BitcoindV19ChainHandler)(implicit
       ec: ExecutionContext,
       chainAppConfig: ChainAppConfig): Future[BitcoindV19ChainHandler] = {
     val bitcoindV19 = bitcoindWithChainHandler.bitcoindRpc
-    val getBestBlockHash = getBestBlockHashFunc(bitcoindV19)
-    val getBlockHeader = getBlockHeaderFunc(bitcoindV19)
-
-    val chainApiF = ChainSync.sync(bitcoindWithChainHandler.chainHandler,
-                                   getBlockHeader,
-                                   getBestBlockHash)
+    val chainApiF = syncBitcoindWithChainHandler(bitcoindWithChainHandler)
+      .map(_.chainHandler)
 
     val getFilter: BlockHeader => Future[FilterWithHeaderHash] = {
       getFilterFunc(bitcoindV19, FilterType.Basic)
