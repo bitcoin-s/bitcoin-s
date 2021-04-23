@@ -16,14 +16,21 @@ import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
+import org.bitcoins.wallet.config.WalletAppConfig.RebroadcastTransactionsRunnable
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 
 import java.nio.file.{Files, Path, Paths}
-import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
+import java.util.concurrent.{
+  ExecutorService,
+  Executors,
+  ScheduledFuture,
+  TimeUnit
+}
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.Try
 
 /** Configuration for the Bitcoin-S wallet
   * @param directory The data directory of the wallet
@@ -190,6 +197,8 @@ case class WalletAppConfig(
     if (isHikariLoggingEnabled) {
       stopHikariLogger()
     }
+
+    stopRebroadcastTxsScheduler()
     //this eagerly shuts down all scheduled tasks on the scheduler
     //in the future, we should actually cancel all things that are scheduled
     //manually, and then shutdown the scheduler
@@ -265,6 +274,41 @@ case class WalletAppConfig(
                                    feeRateApi = feeRateApi)(this, ec)
   }
 
+  private[this] var rebroadcastTransactionsCancelOpt: Option[
+    ScheduledFuture[_]] = None
+
+  /** Starts the wallet's rebroadcast transaction scheduler */
+  def startRebroadcastTxsScheduler(wallet: Wallet): Unit = synchronized {
+    rebroadcastTransactionsCancelOpt match {
+      case Some(_) =>
+        //already scheduled, do nothing
+        ()
+      case None =>
+        val interval = rebroadcastFrequency.toSeconds
+
+        val future =
+          scheduler.scheduleAtFixedRate(RebroadcastTransactionsRunnable(wallet),
+                                        interval,
+                                        interval,
+                                        TimeUnit.SECONDS)
+        rebroadcastTransactionsCancelOpt = Some(future)
+        ()
+    }
+  }
+
+  /** Kills the wallet's rebroadcast transaction scheduler */
+  def stopRebroadcastTxsScheduler(): Unit = synchronized {
+    rebroadcastTransactionsCancelOpt match {
+      case Some(cancel) =>
+        if (!cancel.isCancelled) {
+          cancel.cancel(true)
+        } else {
+          rebroadcastTransactionsCancelOpt = None
+        }
+        ()
+      case None => ()
+    }
+  }
 }
 
 object WalletAppConfig
@@ -330,4 +374,30 @@ object WalletAppConfig
       }
     }
   }
+
+  case class RebroadcastTransactionsRunnable(wallet: Wallet)(implicit
+      ec: ExecutionContext)
+      extends Runnable {
+
+    override def run(): Unit = {
+      val f = for {
+        txs <- wallet.getTransactionsToBroadcast
+
+        _ = {
+          if (txs.size > 1)
+            logger.info(s"Rebroadcasting ${txs.size} transactions")
+          else if (txs.size == 1)
+            logger.info(s"Rebroadcasting ${txs.size} transaction")
+        }
+
+        _ <- wallet.nodeApi.broadcastTransactions(txs)
+      } yield ()
+
+      // Make sure broadcasting completes
+      // Wrap in try in case of spurious failure
+      Try(Await.result(f, 60.seconds))
+      ()
+    }
+  }
+
 }

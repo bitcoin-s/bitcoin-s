@@ -147,20 +147,13 @@ abstract class Wallet
       _ <- walletConfig.start()
       _ <- checkRootAccount
       _ <- downloadMissingUtxos
+      _ = walletConfig.startRebroadcastTxsScheduler(this)
     } yield {
-      startRebroadcastTxsScheduler()
       this
     }
   }
 
-  override def stop(): Future[Wallet] = {
-    for {
-      _ <- walletConfig.stop()
-    } yield {
-      stopRebroadcastTxsScheduler()
-      this
-    }
-  }
+  override def stop(): Future[Wallet] = Future.successful(this)
 
   def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
     stateDescriptorDAO.getSyncDescriptorOpt()
