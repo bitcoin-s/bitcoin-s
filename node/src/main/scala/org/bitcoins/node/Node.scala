@@ -41,12 +41,12 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def executionContext: ExecutionContext = system.dispatcher
 
-  def peers: Vector[Peer]
+  protected def peers: Vector[Peer]
 
   /** The current data message handler.
     * It should be noted that the dataMessageHandler contains
     * chainstate. When we update with a new chainstate, we need to
-    * maek sure we update the [[DataMessageHandler]] via [[updateDataMessageHandler()]]
+    * make sure we update the [[DataMessageHandler]] via [[updateDataMessageHandler()]]
     * to make sure we don't corrupt our chainstate cache
     */
   def dataMessageHandler: DataMessageHandler
@@ -102,6 +102,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     Future.sequence(initFs).map(_.forall(_ == true))
   }
 
+  /** Checks if we are disconnected from all of our peers
+    */
   def isDisconnected: Future[Boolean] = {
     val disconnectedFs = peerMsgSenders.map(_.isDisconnected())
     Future.sequence(disconnectedFs).map(_.forall(_ == true))

@@ -16,8 +16,8 @@ import org.bitcoins.node.networking.peer._
 import scala.concurrent.Future
 
 case class SpvNode(
-    nodePeers: Vector[Peer],
-    dataMessageHandler: DataMessageHandler,
+    private val _nodePeers: Vector[Peer],
+    private val _dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem)
@@ -31,7 +31,7 @@ case class SpvNode(
 
   override def chainAppConfig: ChainAppConfig = chainConfig
 
-  var peers: Vector[Peer] = nodePeers
+  protected var peers: Vector[Peer] = _nodePeers
 
   private val _bloomFilter = new Mutable(BloomFilter.empty)
 
@@ -42,9 +42,12 @@ case class SpvNode(
     this
   }
 
+  protected var dataMessageHandler: DataMessageHandler = _dataMessageHandler
+
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): SpvNode = {
-    copy(dataMessageHandler = dataMessageHandler)
+    this.dataMessageHandler = dataMessageHandler
+    this
   }
 
   var clients: Vector[P2PClient] = {

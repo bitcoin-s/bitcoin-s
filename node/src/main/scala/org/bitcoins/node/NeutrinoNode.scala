@@ -13,8 +13,8 @@ import org.bitcoins.node.networking.peer._
 import scala.concurrent.Future
 
 case class NeutrinoNode(
-    nodePeers: Vector[Peer],
-    _dataMessageHandler: DataMessageHandler,
+    private val _nodePeers: Vector[Peer],
+    private val _dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem)
@@ -29,9 +29,9 @@ case class NeutrinoNode(
 
   implicit override val chainAppConfig: ChainAppConfig = chainConfig
 
-  var peers: Vector[Peer] = nodePeers
+  protected var peers: Vector[Peer] = _nodePeers
 
-  var dataMessageHandler: DataMessageHandler = _dataMessageHandler
+  protected var dataMessageHandler: DataMessageHandler = _dataMessageHandler
 
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): NeutrinoNode = {
