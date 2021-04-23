@@ -3,18 +3,15 @@ package org.bitcoins.chain.blockchain.sync
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.testkit.chain.fixture.BitcoindBaseVersionChainHandlerViaRpc
-import org.bitcoins.testkit.chain.{ChainDbUnitTest, SyncUtil}
-import org.scalatest.FutureOutcome
+import org.bitcoins.testkit.chain.SyncUtil
+import org.bitcoins.testkit.chain.fixture.{
+  BitcoindBaseVersionChainHandlerViaRpc,
+  ChainWithBitcoindNewestCachedUnitTest
+}
 
 import scala.concurrent.Future
 
-class ChainSyncTest extends ChainDbUnitTest {
-  override type FixtureParam = BitcoindBaseVersionChainHandlerViaRpc
-
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withBitcoindChainHandlerViaRpc(test)
-  }
+class ChainSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
 
   behavior of "ChainSync"
 
@@ -36,9 +33,12 @@ class ChainSyncTest extends ChainDbUnitTest {
                        getBestBlockHashFunc = getBestBlockHashFunc)
       }
 
-      newChainHandlerF.flatMap { chainHandler =>
-        chainHandler.getBlockCount().map(count => assert(count == 1))
-
+      for {
+        chainHandler <- newChainHandlerF
+        count <- chainHandler.getBlockCount()
+        bitcoindCount <- bitcoind.getBlockCount
+      } yield {
+        assert(bitcoindCount == count)
       }
   }
 
@@ -61,9 +61,18 @@ class ChainSyncTest extends ChainDbUnitTest {
                        getBlockHeaderFunc = getBlockHeaderFunc,
                        getBestBlockHashFunc = getBestBlockHashFunc)
 
-      newChainHandlerF.flatMap { chainHandler =>
-        chainHandler.getBlockCount().map(count => assert(count == 0))
-      }
+      val newChainHandler2F = for {
+        newChainHandler <- newChainHandlerF
+        //sync it again to make sure we don't fail
+        newChainHandler2 <- ChainSync.sync(
+          chainHandler = newChainHandler.asInstanceOf[ChainHandler],
+          getBlockHeaderFunc = getBlockHeaderFunc,
+          getBestBlockHashFunc = getBestBlockHashFunc)
+        bitcoinSCount <- newChainHandler2.getBlockCount()
+        bitcoindCount <- bitcoind.getBlockCount
+      } yield assert(bitcoinSCount == bitcoindCount)
+
+      newChainHandler2F
   }
 
   it must "be able to call sync() twice and not fail when nothing has happened" in {
@@ -87,13 +96,15 @@ class ChainSyncTest extends ChainDbUnitTest {
       }
 
       val assertion1F = for {
-        hashes <- generate1F
+        _ <- generate1F
         chainApiSync1 <- sync1F
         count <- chainApiSync1.getBlockCount()
         bestHash <- chainApiSync1.getBestBlockHash()
+        bitcoindBlockCount <- bitcoind.getBlockCount
+        bitcoindBestBlockHash <- bitcoind.getBestBlockHash
       } yield {
-        assert(count == 1)
-        assert(bestHash == hashes.head)
+        assert(count == bitcoindBlockCount)
+        assert(bestHash == bitcoindBestBlockHash)
       }
 
       //let's call sync again and make sure nothing bad happens
@@ -106,11 +117,13 @@ class ChainSyncTest extends ChainDbUnitTest {
                          getBlockHeaderFunc = getBlockHeaderFunc,
                          getBestBlockHashFunc = getBestBlockHashFunc)
         count <- chainApiSync2.getBlockCount()
-        hashes <- generate1F
+        _ <- generate1F
         bestHash <- chainApiSync2.getBestBlockHash()
+        bitcoindBlockCount <- bitcoind.getBlockCount
+        bitcoindBestBlockHash <- bitcoind.getBestBlockHash
       } yield {
-        assert(count == 1)
-        assert(bestHash == hashes.head)
+        assert(count == bitcoindBlockCount)
+        assert(bestHash == bitcoindBestBlockHash)
       }
 
       sync2F

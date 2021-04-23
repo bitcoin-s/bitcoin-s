@@ -706,4 +706,13 @@ object ChainUnitTest extends ChainVerificationLogger {
       bitcoindV19ChainHandler.chainHandler)
     destroyBitcoindChainApiViaRpc(b)
   }
+
+  /** Destroys the chain api, but leaves the bitcoind instance running
+    * so we can cache it
+    */
+  def destroyChainApi()(implicit
+      system: ActorSystem,
+      chainAppConfig: ChainAppConfig): Future[Unit] = {
+    ChainUnitTest.destroyAllTables()(chainAppConfig, system.dispatcher)
+  }
 }
