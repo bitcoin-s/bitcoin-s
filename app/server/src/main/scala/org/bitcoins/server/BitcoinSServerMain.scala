@@ -80,17 +80,18 @@ class BitcoinSServerMain(override val args: Array[String])
         "No peers specified, unable to start node")
     }
 
-    val peerSocket =
-      NetworkUtil.parseInetSocketAddress(nodeConf.peers.head,
-                                         nodeConf.network.port)
-    val peer = Peer.fromSocket(peerSocket)
+    val peerSockets = nodeConf.peers.map { peer =>
+      NetworkUtil.parseInetSocketAddress(peer, nodeConf.network.port)
+    }
+
+    val peers = peerSockets.map(Peer.fromSocket)
 
     //run chain work migration
     val chainApiF = runChainWorkCalc(
       forceChainWorkRecalc || chainConf.forceRecalcChainWork)
 
     //get a node that isn't started
-    val nodeF = nodeConf.createNode(peer)(chainConf, system)
+    val nodeF = nodeConf.createNode(peers)(chainConf, system)
 
     //get our wallet
     val configuredWalletF = for {

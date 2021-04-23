@@ -11,8 +11,8 @@ import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.node.{NodeType, P2PLogger}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Try
 import scala.util.control.NonFatal
+import scala.util.{Random, Try}
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -27,6 +27,7 @@ case class DataMessageHandler(
     currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
     filterHeaderHeightOpt: Option[Int] = None,
     filterHeightOpt: Option[Int] = None,
+    lastMessageReceived: Long = System.currentTimeMillis(),
     syncing: Boolean = false)(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
@@ -40,12 +41,18 @@ case class DataMessageHandler(
 
   def handleDataPayload(
       payload: DataPayload,
-      peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
+      peerMsgSender: PeerMessageSender,
+      allPeers: Vector[PeerMessageSender]): Future[DataMessageHandler] = {
+    lazy val peers =
+      if (!allPeers.contains(peerMsgSender)) allPeers :+ peerMsgSender
+      else allPeers
+
+    lazy val randPeer = peers(Random.nextInt(peers.size))
 
     val resultF = payload match {
       case checkpoint: CompactFilterCheckPointMessage =>
         logger.debug(
-          s"Got ${checkpoint.filterHeaders.size} checkpoints ${checkpoint}")
+          s"Got ${checkpoint.filterHeaders.size} checkpoints $checkpoint")
         for {
           newChainApi <- chainApi.processCheckpoints(
             checkpoint.filterHeaders.map(_.flip),
@@ -66,13 +73,13 @@ case class DataMessageHandler(
               logger.info(
                 s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
               sendNextGetCompactFilterHeadersCommand(
-                peerMsgSender,
+                randPeer,
                 filterHeader.stopHash.flip).map(_ => syncing)
             } else {
               logger.debug(
                 s"Received filter headers=${filterHeaders.size} in one message, " +
                   "which is less than max. This means we are synced.")
-              sendFirstGetCompactFilterCommand(peerMsgSender).map { synced =>
+              sendFirstGetCompactFilterCommand(randPeer).map { synced =>
                 if (!synced) logger.info("We are synced")
                 syncing
               }
@@ -136,7 +143,7 @@ case class DataMessageHandler(
             if (batchSizeFull) {
               logger.info(
                 s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
-              sendNextGetCompactFilterCommand(peerMsgSender, newFilterHeight)
+              sendNextGetCompactFilterCommand(randPeer, newFilterHeight)
             } else Future.unit
         } yield {
           this.copy(
@@ -177,7 +184,7 @@ case class DataMessageHandler(
 
             case unassigned: MsgUnassigned =>
               logger.warn(
-                s"Received unassigned message we do not understand, msg=${unassigned}")
+                s"Received unassigned message we do not understand, msg=$unassigned")
           }
 
         }
@@ -190,8 +197,8 @@ case class DataMessageHandler(
 
         if (appConfig.nodeType == NodeType.SpvNode) {
           logger.trace(s"Requesting data for headers=${headers.length}")
-          peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgFilteredBlock,
-                                           headers.map(_.hash): _*)
+          randPeer.sendGetDataMessage(TypeIdentifier.MsgFilteredBlock,
+                                      headers.map(_.hash): _*)
         }
 
         val getHeadersF = chainApiF
@@ -208,7 +215,7 @@ case class DataMessageHandler(
               if (count.toInt == HeadersMessage.MaxHeadersCount) {
                 logger.info(
                   s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
-                peerMsgSender
+                randPeer
                   .sendGetHeadersMessage(lastHash)
                   .map(_ => syncing)
               } else {
@@ -226,7 +233,7 @@ case class DataMessageHandler(
                     (filterHeaderHeightOpt.isEmpty &&
                       filterHeightOpt.isEmpty))
                 ) {
-                  sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
+                  sendFirstGetCompactFilterHeadersCommand(randPeer)
                 } else {
                   Try(initialSyncDone.map(_.success(Done)))
                   Future.successful(syncing)
@@ -287,11 +294,11 @@ case class DataMessageHandler(
           belongsToMerkle =>
             if (belongsToMerkle) {
               logger.trace(
-                s"Transaction=${tx.txIdBE} belongs to merkleblock, not calling callbacks")
+                s"Transaction=${tx.txIdBE.hex} belongs to merkleblock, not calling callbacks")
               Future.successful(this)
             } else {
               logger.trace(
-                s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
+                s"Transaction=${tx.txIdBE.hex} does not belong to merkleblock, processing given callbacks")
               appConfig.nodeCallbacks
                 .executeOnTxReceivedCallbacks(logger, tx)
                 .map(_ => this)
@@ -308,9 +315,11 @@ case class DataMessageHandler(
       logger.error(s"Failed to handle data payload=${payload}", err)
     }
 
-    resultF.recoverWith { case NonFatal(_) =>
-      Future.successful(this)
-    }
+    resultF
+      .map(_.copy(lastMessageReceived = System.currentTimeMillis()))
+      .recoverWith { case NonFatal(_) =>
+        Future.successful(this)
+      }
   }
 
   private def sendNextGetCompactFilterHeadersCommand(

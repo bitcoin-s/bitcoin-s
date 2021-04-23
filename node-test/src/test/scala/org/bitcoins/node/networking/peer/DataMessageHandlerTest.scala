@@ -32,7 +32,7 @@ class DataMessageHandlerTest extends NodeUnitTest {
     param: SpvNodeConnectedWithBitcoindV19 =>
       val SpvNodeConnectedWithBitcoindV19(spv, _) = param
 
-      val sender = spv.peerMsgSender
+      val sender = spv.randomPeer
       for {
         chainApi <- spv.chainApiFromDb()
         dataMessageHandler = DataMessageHandler(chainApi)(spv.executionContext,
@@ -48,7 +48,9 @@ class DataMessageHandlerTest extends NodeUnitTest {
           chainApi.processHeaders(invalidPayload.headers))
 
         // Verify we handle the payload correctly
-        _ <- dataMessageHandler.handleDataPayload(invalidPayload, sender)
+        _ <- dataMessageHandler.handleDataPayload(invalidPayload,
+                                                  sender,
+                                                  Vector.empty)
       } yield succeed
   }
 
@@ -66,7 +68,7 @@ class DataMessageHandlerTest extends NodeUnitTest {
           }
       }
 
-      val sender = spv.peerMsgSender
+      val sender = spv.randomPeer
       for {
         txId <- bitcoind.sendToAddress(junkAddress, 1.bitcoin)
         tx <- bitcoind.getRawTransactionRaw(txId)
@@ -83,8 +85,12 @@ class DataMessageHandlerTest extends NodeUnitTest {
           DataMessageHandler(genesisChainApi)(spv.executionContext,
                                               spv.nodeAppConfig,
                                               spv.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload1, sender)
-        _ <- dataMessageHandler.handleDataPayload(payload2, sender)
+        _ <- dataMessageHandler.handleDataPayload(payload1,
+                                                  sender,
+                                                  Vector.empty)
+        _ <- dataMessageHandler.handleDataPayload(payload2,
+                                                  sender,
+                                                  Vector.empty)
         result <- resultP.future
       } yield assert(result == ((merkleBlock, Vector(tx))))
   }
@@ -101,7 +107,7 @@ class DataMessageHandlerTest extends NodeUnitTest {
           ()
         }
       }
-      val sender = spv.peerMsgSender
+      val sender = spv.randomPeer
 
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
@@ -116,7 +122,7 @@ class DataMessageHandlerTest extends NodeUnitTest {
           DataMessageHandler(genesisChainApi)(spv.executionContext,
                                               spv.nodeAppConfig,
                                               spv.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload, sender)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, Vector.empty)
         result <- resultP.future
       } yield assert(result == block)
   }
@@ -136,7 +142,7 @@ class DataMessageHandlerTest extends NodeUnitTest {
         }
       }
 
-      val sender = spv.peerMsgSender
+      val sender = spv.randomPeer
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         header <- bitcoind.getBlockHeaderRaw(hash)
@@ -151,7 +157,7 @@ class DataMessageHandlerTest extends NodeUnitTest {
                                               spv.nodeAppConfig,
                                               spv.chainConfig)
 
-        _ <- dataMessageHandler.handleDataPayload(payload, sender)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, Vector.empty)
         result <- resultP.future
       } yield assert(result == Vector(header))
   }
@@ -169,7 +175,7 @@ class DataMessageHandlerTest extends NodeUnitTest {
             ()
           }
       }
-      val sender = spv.peerMsgSender
+      val sender = spv.randomPeer
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         filter <- bitcoind.getBlockFilter(hash, FilterType.Basic)
@@ -184,7 +190,7 @@ class DataMessageHandlerTest extends NodeUnitTest {
                                               spv.nodeAppConfig,
                                               spv.chainConfig)
 
-        _ <- dataMessageHandler.handleDataPayload(payload, sender)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, Vector.empty)
         result <- resultP.future
       } yield assert(result == Vector((hash.flip, filter.filter)))
   }

@@ -10,12 +10,13 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.node.networking.P2PClient
+import org.bitcoins.node.networking.peer._
 
 import scala.concurrent.Future
 
 case class SpvNode(
-    nodePeer: Peer,
+    nodePeers: Vector[Peer],
     dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
@@ -30,7 +31,7 @@ case class SpvNode(
 
   override def chainAppConfig: ChainAppConfig = chainConfig
 
-  override val peer: Peer = nodePeer
+  var peers: Vector[Peer] = nodePeers
 
   private val _bloomFilter = new Mutable(BloomFilter.empty)
 
@@ -46,6 +47,31 @@ case class SpvNode(
     copy(dataMessageHandler = dataMessageHandler)
   }
 
+  var clients: Vector[P2PClient] = {
+    peers.map { peer =>
+      val peerMsgRecv: PeerMessageReceiver =
+        PeerMessageReceiver.newReceiver(node = this, peer = peer)
+      P2PClient(context = system,
+                peer = peer,
+                peerMessageReceiver = peerMsgRecv)
+    }
+  }
+
+  var peerMsgSenders: Vector[PeerMessageSender] = {
+    clients.map { client =>
+      PeerMessageSender(client)
+    }
+  }
+
+  def addPeer(peer: Peer): Unit = {
+    if (!peers.contains(peer)) {
+      this.peers = peers :+ peer
+    } else ()
+  }
+
+  def removePeer(peer: Peer): Unit =
+    this.peers = peers.filter(_ != peer)
+
   /** Updates our bloom filter to match the given TX
     *
     * @return SPV node with the updated bloom filter
@@ -57,11 +83,14 @@ case class SpvNode(
     // we could send filteradd messages, but we would
     // then need to calculate all the new elements in
     // the filter. this is easier:-)
-    for {
-      _ <- peerMsgSender.sendFilterClearMessage()
-      _ <- peerMsgSender.sendFilterLoadMessage(newBloom)
-    } yield this
+    val updateFs = peerMsgSenders.map { peerMsgSender =>
+      for {
+        _ <- peerMsgSender.sendFilterClearMessage()
+        _ <- peerMsgSender.sendFilterLoadMessage(newBloom)
+      } yield ()
+    }
 
+    Future.sequence(updateFs).map(_ => this)
   }
 
   /** Updates our bloom filter to match the given address
@@ -73,18 +102,19 @@ case class SpvNode(
     val hash = address.hash
     _bloomFilter.atomicUpdate(hash)(_.insert(_))
 
-    val sentFilterAddF = peerMsgSender.sendFilterAddMessage(hash)
+    val sentFilterAddFs = peerMsgSenders.map(_.sendFilterAddMessage(hash))
 
-    sentFilterAddF.map(_ => this)
+    Future.sequence(sentFilterAddFs).map(_ => this)
   }
 
   override def start(): Future[SpvNode] = {
     for {
       node <- super.start()
       _ <- AsyncUtil.retryUntilSatisfiedF(() => isConnected)
-      _ <- peerMsgSender.sendFilterLoadMessage(bloomFilter)
+      loadMsgFs = peerMsgSenders.map(_.sendFilterLoadMessage(bloomFilter))
+      _ <- Future.sequence(loadMsgFs)
     } yield {
-      logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
+      logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peers")
       node.asInstanceOf[SpvNode]
     }
   }

@@ -2,6 +2,7 @@ package org.bitcoins.node.config
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
@@ -17,6 +18,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
 
 import java.nio.file.Path
+import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S node
@@ -48,6 +50,11 @@ case class NodeAppConfig(
   def addCallbacks(newCallbacks: NodeCallbacks): NodeCallbacks = {
     callbacks.atomicUpdate(newCallbacks)(_ + _)
   }
+
+  private[node] lazy val scheduler = Executors.newScheduledThreadPool(
+    1,
+    AsyncUtil.getNewThreadFactory(
+      s"bitcoin-s-node-scheduler-${System.currentTimeMillis()}"))
 
   /** Ensures correct tables and other required information is in
     * place for our node.
@@ -88,10 +95,10 @@ case class NodeAppConfig(
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peer: Peer)(
+  def createNode(peers: Vector[Peer])(
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
-    NodeAppConfig.createNode(peer)(this, chainConf, system)
+    NodeAppConfig.createNode(peers)(this, chainConf, system)
   }
 }
 
@@ -107,7 +114,7 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
     NodeAppConfig(datadir, confs: _*)
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peer: Peer)(implicit
+  def createNode(peers: Vector[Peer])(implicit
       nodeConf: NodeAppConfig,
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
@@ -123,9 +130,9 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
 
     nodeConf.nodeType match {
       case NodeType.SpvNode =>
-        dmhF.map(dmh => SpvNode(peer, dmh, nodeConf, chainConf, system))
+        dmhF.map(dmh => SpvNode(peers, dmh, nodeConf, chainConf, system))
       case NodeType.NeutrinoNode =>
-        dmhF.map(dmh => NeutrinoNode(peer, dmh, nodeConf, chainConf, system))
+        dmhF.map(dmh => NeutrinoNode(peers, dmh, nodeConf, chainConf, system))
       case NodeType.FullNode =>
         Future.failed(new RuntimeException("Not implemented"))
       case NodeType.BitcoindBackend =>
