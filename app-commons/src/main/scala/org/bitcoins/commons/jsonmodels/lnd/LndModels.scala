@@ -4,7 +4,8 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import scodec.bits.ByteVector
 
 sealed abstract class LndModel
@@ -38,3 +39,16 @@ case class ChannelBalances(
     pendingOpenLocalBalance: CurrencyUnit,
     pendingOpenRemoteBalance: CurrencyUnit
 ) extends LndModel
+
+case class TxDetails(
+    txId: DoubleSha256DigestBE,
+    amount: CurrencyUnit,
+    numConfirmations: Int,
+    blockHashOpt: Option[DoubleSha256DigestBE],
+    blockHeight: Int,
+    timeStamp: Long,
+    totalFees: CurrencyUnit,
+    destAddresses: Vector[BitcoinAddress],
+    tx: Transaction,
+    label: String
+)
