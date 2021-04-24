@@ -8,15 +8,16 @@ import lnrpc._
 import org.bitcoins.commons.jsonmodels.lnd._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
-  TransactionOutput
+  TransactionOutput,
+  Transaction => Tx
 }
-import org.bitcoins.core.protocol.{transaction, BitcoinAddress}
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.{
   SatoshisPerByte,
@@ -397,14 +398,14 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
   def sendOutputs(
       outputs: Vector[TransactionOutput],
       feeRate: SatoshisPerVirtualByte,
-      spendUnconfirmed: Boolean): Future[transaction.Transaction] = {
+      spendUnconfirmed: Boolean): Future[Tx] = {
     sendOutputs(outputs, feeRate.toSatoshisPerKW, spendUnconfirmed)
   }
 
   def sendOutputs(
       outputs: Vector[TransactionOutput],
       feeRate: SatoshisPerKW,
-      spendUnconfirmed: Boolean): Future[transaction.Transaction] = {
+      spendUnconfirmed: Boolean): Future[Tx] = {
 
     val txOuts = outputs.map(out =>
       TxOut(out.value.satoshis.toLong,
@@ -416,8 +417,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     sendOutputs(request)
   }
 
-  def sendOutputs(
-      request: SendOutputsRequest): Future[transaction.Transaction] = {
+  def sendOutputs(request: SendOutputsRequest): Future[Tx] = {
     logger.trace("lnd calling sendoutputs")
 
     wallet
@@ -426,15 +426,14 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       .invoke(request)
       .map { res =>
         val bytes = ByteVector(res.rawTx.toByteArray)
-        transaction.Transaction(bytes)
+        Tx(bytes)
       }
   }
 
   /** Broadcasts the given transaction
     * @return None if no error, otherwise the error string
     */
-  def publishTransaction(
-      tx: transaction.Transaction): Future[Option[String]] = {
+  def publishTransaction(tx: Tx): Future[Option[String]] = {
     logger.trace("lnd calling publishtransaction")
 
     val request = walletrpc.Transaction(ByteString.copyFrom(tx.bytes.toArray))
@@ -446,6 +445,58 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       .map { res =>
         if (res.publishError.isEmpty) None
         else Some(res.publishError)
+      }
+  }
+
+  def getTransaction(txId: DoubleSha256DigestBE): Future[Option[TxDetails]] = {
+    // Idk why they don't have a separate function to just get one tx
+    getTransactions.map(_.find(_.txId == txId))
+  }
+
+  def getTransactions: Future[Vector[TxDetails]] = {
+    getTransactions(GetTransactionsRequest())
+  }
+
+  def getTransactions(startHeight: Int): Future[Vector[TxDetails]] = {
+    getTransactions(startHeight, -1)
+  }
+
+  def getTransactions(
+      startHeight: Int,
+      endHeight: Int): Future[Vector[TxDetails]] = {
+    getTransactions(GetTransactionsRequest(startHeight, endHeight))
+  }
+
+  def getTransactions(
+      request: GetTransactionsRequest): Future[Vector[TxDetails]] = {
+    logger.trace("lnd calling gettransactions")
+
+    lnd
+      .getTransactions()
+      .addHeader(macaroonKey, instance.macaroon)
+      .invoke(request)
+      .map {
+        _.transactions.map { details =>
+          val blockHashOpt = if (details.blockHash.isEmpty) {
+            None
+          } else Some(DoubleSha256DigestBE(details.blockHash))
+
+          val addrs =
+            details.destAddresses.map(BitcoinAddress.fromString).toVector
+
+          TxDetails(
+            txId = DoubleSha256DigestBE(details.txHash),
+            amount = Satoshis(details.amount),
+            numConfirmations = details.numConfirmations,
+            blockHashOpt = blockHashOpt,
+            blockHeight = details.blockHeight,
+            timeStamp = details.timeStamp,
+            totalFees = Satoshis(details.totalFees),
+            destAddresses = addrs,
+            tx = Tx(details.rawTxHex),
+            label = details.label
+          )
+        }.toVector
       }
   }
 

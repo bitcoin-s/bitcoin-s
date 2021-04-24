@@ -69,12 +69,21 @@ class LndRpcClientPairTest extends DualLndFixture {
       _ <- lndA.publishTransaction(tx)
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
 
+      detailsOpt <- lndB.getTransaction(tx.txIdBE)
+      _ = assert(detailsOpt.isDefined)
+      details = detailsOpt.get
+
       newBalA <- lndA.walletBalance().map(_.balance)
       newBalB <- lndB.walletBalance().map(_.balance)
     } yield {
       assert(newBalB == oldBalB + sendAmt)
       // account for variance in fees
       assert(newBalA === oldBalA - sendAmt - feeRate.calc(tx) +- Satoshis(6))
+
+      assert(details.tx == tx)
+      assert(details.txId == tx.txIdBE)
+      assert(details.destAddresses.contains(addr))
+      assert(details.amount == sendAmt)
     }
   }
 }
