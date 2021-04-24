@@ -56,10 +56,12 @@ class ScanBitcoind(override val args: Array[String]) extends BitcoinSRunner {
           .flatMap(h => bitcoind.getBlockRaw(h))
           .map(b => (b, height))
       }
-      .map { case (block, height) =>
+      .mapAsync(numParallelism) { case (block, height) =>
         logger.info(
           s"Searching block at height=$height hashBE=${block.blockHeader.hashBE.hex}")
-        f(block)
+        Future {
+          f(block)
+        }
       }
       .toMat(Sink.seq)(Keep.right)
       .run()
@@ -94,7 +96,7 @@ class ScanBitcoind(override val args: Array[String]) extends BitcoinSRunner {
       count <- countF
       endTime = System.currentTimeMillis()
       _ = println(
-        s"Count of segwit txs from height${startHeight} to endHeight=${endHeight} is ${count}. It took ${endTime - startTime}ms ")
+        s"Count of segwit txs from height=${startHeight} to endHeight=${endHeight} is ${count}. It took ${endTime - startTime}ms ")
     } yield ()
   }
 }
