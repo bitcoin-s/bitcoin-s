@@ -207,7 +207,8 @@ lazy val `bitcoin-s` = project
     oracleServerTest,
     serverRoutes,
     lndRpc,
-    lndRpcTest
+    lndRpcTest,
+    scripts
   )
   .dependsOn(
     secp256k1jni,
@@ -253,7 +254,8 @@ lazy val `bitcoin-s` = project
     oracleServerTest,
     serverRoutes,
     lndRpc,
-    lndRpcTest
+    lndRpcTest,
+    scripts
   )
   .settings(CommonSettings.settings: _*)
   // unidoc aggregates Scaladocs for all subprojects into one big doc
@@ -699,6 +701,15 @@ lazy val oracleExplorerClient = project
     libraryDependencies ++= Deps.oracleExplorerClient
   )
   .dependsOn(coreJVM, appCommons, testkit % "test->test")
+
+lazy val scripts = project
+  .in(file("app/scripts"))
+  .settings(CommonSettings.settings: _*)
+  .settings(
+    name := "bitcoin-s-scripts",
+    publishArtifact := false //do not want to publish our scripts
+  )
+  .dependsOn(appServer)
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet)
