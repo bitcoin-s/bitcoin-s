@@ -273,6 +273,12 @@ object BitcoindRpcClient {
 
     bitcoind
   }
+
+  def fromVersionNoSystem(
+      version: BitcoindVersion,
+      instance: BitcoindInstance): BitcoindRpcClient = {
+    fromVersion(version, instance)(system)
+  }
 }
 
 sealed trait BitcoindVersion

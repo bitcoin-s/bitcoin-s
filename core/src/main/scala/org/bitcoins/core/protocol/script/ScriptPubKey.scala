@@ -615,7 +615,7 @@ sealed trait ConditionalScriptPubKey extends RawScriptPubKey {
 
   require(!P2SHScriptPubKey.isValidAsm(trueSPK.asm) && !P2SHScriptPubKey
             .isValidAsm(falseSPK.asm),
-          "ConditionalScriptPubKey cannot wrap P2SH")
+          s"ConditionalScriptPubKey cannot wrap P2SH asm=$asm")
   require(
     !WitnessScriptPubKey
       .isValidAsm(trueSPK.asm) && !WitnessScriptPubKey
