@@ -4,8 +4,6 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.routes.BitcoinSRunner
 
 import java.nio.file.Path
-
-//import java.nio.file.Path
 import scala.concurrent.Future
 
 /** This script zips your $HOME/.bitcoin-s/ directory to a specified path, excluding chaindb.sqlite */

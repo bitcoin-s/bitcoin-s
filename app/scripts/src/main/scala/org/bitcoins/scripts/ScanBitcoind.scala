@@ -76,16 +76,8 @@ class ScanBitcoind(override val args: Array[String]) extends BitcoinSRunner {
 
     //in this simple example, we are going to count the number of witness transactions
     val countSegwitTxs: Block => Int = { block: Block =>
-      var counter = 0
-      block.transactions.map {
-        case _: WitnessTransaction =>
-          counter = counter + 1
-        case _: BaseTransaction | EmptyTransaction =>
-        //do nothing
-      }
-      counter
+      block.transactions.count(_.isInstanceOf[WitnessTransaction])
     }
-
     val countsF: Future[Seq[Int]] = for {
       counts <- searchBlocks[Int](bitcoind, source, countSegwitTxs)
     } yield counts
