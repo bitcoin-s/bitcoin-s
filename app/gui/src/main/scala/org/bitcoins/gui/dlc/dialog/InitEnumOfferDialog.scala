@@ -11,7 +11,7 @@ import org.bitcoins.core.protocol.dlc.{
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.gui.GlobalData
-import org.bitcoins.gui.util.GUIUtil.setNumericInput
+import org.bitcoins.gui.util.GUIUtil.{numberFormatter, setNumericInput}
 import scalafx.Includes._
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
@@ -133,12 +133,13 @@ object InitEnumOfferDialog {
     dialog.resultConverter = dialogButton =>
       if (dialogButton == ButtonType.OK) {
         val inputs = fields.values.flatMap { case (str, value) =>
-          if (str.text.value.nonEmpty && value.text.value.nonEmpty)
-            Some((str.text(), value.text()))
-          else None
+          if (str.text.value.nonEmpty && value.text.value.nonEmpty) {
+            val amount = numberFormatter.parse(value.text.value).doubleValue()
+            Some((str.text(), amount))
+          } else None
         }
         val contractMap = inputs.map { case (str, value) =>
-          EnumOutcome(str) -> Bitcoins(value.toDouble).satoshis
+          EnumOutcome(str) -> Bitcoins(value).satoshis
         }.toVector
 
         val descriptor = EnumContractDescriptor(contractMap)
