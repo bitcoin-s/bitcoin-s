@@ -222,6 +222,8 @@ object BitcoindRpcClient {
     */
   private[rpc] val ActorSystemName = "bitcoind-rpc-client-created-by-bitcoin-s"
 
+  implicit private lazy val system = ActorSystem.create(ActorSystemName)
+
   /** Creates an RPC client from the given instance.
     *
     * Behind the scenes, we create an actor system for
@@ -229,8 +231,7 @@ object BitcoindRpcClient {
     * manually specify an actor system for the RPC client.
     */
   def apply(instance: BitcoindInstance): BitcoindRpcClient = {
-    implicit val system = ActorSystem.create(ActorSystemName)
-    withActorSystem(instance)
+    withActorSystem(instance)(system)
   }
 
   /** Creates an RPC client from the given instance,
@@ -271,6 +272,12 @@ object BitcoindRpcClient {
     }
 
     bitcoind
+  }
+
+  def fromVersionNoSystem(
+      version: BitcoindVersion,
+      instance: BitcoindInstance): BitcoindRpcClient = {
+    fromVersion(version, instance)(system)
   }
 }
 
