@@ -1,6 +1,5 @@
 package org.bitcoins.server
 
-import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.db._
 import org.bitcoins.node.NodeType
@@ -128,9 +127,7 @@ case class BitcoindRpcAppConfig(
 
   lazy val client: BitcoindRpcClient = {
     val version = bitcoindInstance.getVersion
-    implicit val system: ActorSystem =
-      ActorSystem.create("bitcoind-rpc-client-created-by-bitcoin-s", config)
-    BitcoindRpcClient.fromVersion(version, bitcoindInstance)
+    BitcoindRpcClient.fromVersionNoSystem(version, bitcoindInstance)
   }
 
 }

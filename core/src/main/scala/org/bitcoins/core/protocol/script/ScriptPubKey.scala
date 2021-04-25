@@ -613,9 +613,6 @@ sealed trait ConditionalScriptPubKey extends RawScriptPubKey {
 
   val opElseIndex: Int = opElseIndexOpt.get
 
-  require(!P2SHScriptPubKey.isValidAsm(trueSPK.asm) && !P2SHScriptPubKey
-            .isValidAsm(falseSPK.asm),
-          "ConditionalScriptPubKey cannot wrap P2SH")
   require(
     !WitnessScriptPubKey
       .isValidAsm(trueSPK.asm) && !WitnessScriptPubKey
