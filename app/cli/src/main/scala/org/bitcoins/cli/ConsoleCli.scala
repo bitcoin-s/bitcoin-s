@@ -395,6 +395,20 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("canceldlc")
+        .action((_, conf) =>
+          conf.copy(command = CancelDLC(Sha256DigestBE.empty)))
+        .text("Cancels a DLC and unreserves used utxos")
+        .children(
+          arg[Sha256DigestBE]("paramhash")
+            .required()
+            .action((paramHash, conf) =>
+              conf.copy(command = conf.command match {
+                case cancelDLC: CancelDLC =>
+                  cancelDLC.copy(paramHash = paramHash)
+                case other => other
+              }))
+        ),
       cmd("getdlcs")
         .action((_, conf) => conf.copy(command = GetDLCs))
         .text("Returns all dlcs in the wallet"),
@@ -1447,6 +1461,8 @@ object ConsoleCli {
       case ExecuteDLCRefund(contractId, noBroadcast) =>
         RequestParam("executedlcrefund",
                      Seq(up.writeJs(contractId), up.writeJs(noBroadcast)))
+      case CancelDLC(paramHash) =>
+        RequestParam("canceldlc", Seq(up.writeJs(paramHash)))
       // Wallet
       case GetBalance(isSats) =>
         RequestParam("getbalance", Seq(up.writeJs(isSats)))
@@ -1812,6 +1828,8 @@ object CliCommand {
   case class ExecuteDLCRefund(contractId: ByteVector, noBroadcast: Boolean)
       extends AppServerCliCommand
       with Broadcastable
+
+  case class CancelDLC(paramHash: Sha256DigestBE) extends AppServerCliCommand
 
   case object GetDLCs extends AppServerCliCommand
   case class GetDLC(paramHash: Sha256DigestBE) extends AppServerCliCommand

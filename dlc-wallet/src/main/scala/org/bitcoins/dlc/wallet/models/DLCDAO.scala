@@ -44,6 +44,11 @@ case class DLCDAO()(implicit
   override def findAll(dlcs: Vector[DLCDb]): Query[DLCTable, DLCDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.paramHash))
 
+  def deleteByParamHash(paramHash: Sha256DigestBE): Future[Int] = {
+    val q = table.filter(_.paramHash === paramHash)
+    safeDatabase.run(q.delete)
+  }
+
   def findByTempContractId(
       tempContractId: Sha256Digest): Future[Option[DLCDb]] = {
     val q = table.filter(_.tempContractId === tempContractId)

@@ -48,6 +48,11 @@ case class DLCRefundSigDAO()(implicit
     Seq] =
     findByPrimaryKeys(dlcs.map(dlc => (dlc.paramHash, dlc.isInitiator)))
 
+  def deleteByParamHash(paramHash: Sha256DigestBE): Future[Int] = {
+    val q = table.filter(_.paramHash === paramHash)
+    safeDatabase.run(q.delete)
+  }
+
   def findByParamHash(
       paramHash: Sha256DigestBE): Future[Vector[DLCRefundSigDb]] = {
     val q = table.filter(_.paramHash === paramHash)
