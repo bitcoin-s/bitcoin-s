@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.dlc.{
 import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.DLCPlotUtil
-import org.bitcoins.gui.util.GUIUtil.setNumericInput
+import org.bitcoins.gui.util.GUIUtil.{numberFormatter, setNumericInput}
 import scalafx.Includes._
 import scalafx.application.Platform
 import scalafx.geometry.{Insets, Pos}
@@ -162,8 +162,9 @@ object InitNumericContractDialog {
 
     def getContractInfo: Try[(Satoshis, NumericContractDescriptor)] = {
       Try {
-        val numDigits = numDigitsTF.text.value.toInt
-        val totalCollateral = Satoshis(totalCollateralTF.text.value.toLong)
+        val numDigits = numberFormatter.parse(numDigitsTF.text.value).intValue()
+        val totalCollateral =
+          Satoshis(numberFormatter.parse(numDigitsTF.text.value).longValue())
 
         val points = pointMap.values.toVector
         val outcomesValuePoints = points.flatMap { case (xTF, yTF, checkBox) =>
@@ -181,8 +182,10 @@ object InitNumericContractDialog {
             if (
               outcomeTF.text.value.nonEmpty && roundingModTF.text.value.nonEmpty
             ) {
-              val outcome = outcomeTF.text.value.toLong
-              val roundingMod = roundingModTF.text.value.toLong
+              val outcome =
+                numberFormatter.parse(outcomeTF.text.value).doubleValue()
+              val roundingMod =
+                numberFormatter.parse(roundingModTF.text.value).longValue()
               Some(
                 RoundingIntervals.IntervalStart(BigDecimal(outcome),
                                                 roundingMod))
