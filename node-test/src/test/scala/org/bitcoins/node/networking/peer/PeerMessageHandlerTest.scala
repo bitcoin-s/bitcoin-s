@@ -5,6 +5,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.node.{
   CachedBitcoinSAppConfig,
   NodeTestWithCachedBitcoindNewest,
@@ -12,7 +13,7 @@ import org.bitcoins.testkit.node.{
 }
 import org.scalatest.{FutureOutcome, Outcome}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
 /** Created by chris on 7/1/16.
@@ -40,23 +41,14 @@ class PeerMessageHandlerTest
     cachedConfig.chainConf
 
   override def beforeAll(): Unit = {
-    implicit val chainConf: ChainAppConfig = cachedConfig.chainConf
-    chainConf.migrate()
+    val setupF = ChainUnitTest.setupHeaderTableWithGenesisHeader()
+    Await.result(setupF, duration)
     ()
   }
 
   override def afterAll(): Unit = {
-    implicit val chainConf: ChainAppConfig = cachedConfig.chainConf
-    val shutdownConfigF = for {
-      _ <- chainConf.dropTable("flyway_schema_history")
-      _ <- chainConf.dropAll()
-    } yield {
-      super[CachedBitcoinSAppConfig].afterAll()
-    }
-
-    shutdownConfigF.onComplete { _ =>
-      super.afterAll()
-    }
+    super[CachedBitcoinSAppConfig].afterAll()
+    super[NodeTestWithCachedBitcoindNewest].afterAll()
   }
 
   behavior of "PeerHandler"
