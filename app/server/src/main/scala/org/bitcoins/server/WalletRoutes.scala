@@ -439,7 +439,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
         case Success(BroadcastDLCFundingTx(contractId)) =>
           complete {
             wallet.broadcastDLCFundingTx(contractId).map { tx =>
-              Server.httpSuccess(tx.hex)
+              Server.httpSuccess(tx.txIdBE.hex)
             }
           }
       }
@@ -454,7 +454,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
               tx <- wallet.executeDLC(contractId, sigs)
               _ <- handleBroadcastable(tx, noBroadcast)
             } yield {
-              Server.httpSuccess(tx.hex)
+              Server.httpSuccess(tx.txIdBE.hex)
             }
           }
       }
@@ -469,7 +469,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
               tx <- wallet.executeDLCRefund(contractId)
               _ <- handleBroadcastable(tx, noBroadcast)
             } yield {
-              Server.httpSuccess(tx.hex)
+              Server.httpSuccess(tx.txIdBE.hex)
             }
           }
       }
