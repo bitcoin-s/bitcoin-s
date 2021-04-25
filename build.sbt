@@ -710,6 +710,7 @@ lazy val scripts = project
     publishArtifact := false //do not want to publish our scripts
   )
   .dependsOn(appServer)
+  .enablePlugins(JavaAppPackaging)
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet)
