@@ -72,10 +72,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
 
   def sendVersionMessage(chainApi: ChainApi)(implicit
       ec: ExecutionContext): Future[Unit] = {
-    val heightF =
-      chainApi.getBestHashBlockHeight()
-
-    heightF.flatMap { height =>
+    chainApi.getBestHashBlockHeight().flatMap { height =>
       val transmittingIpAddress = java.net.InetAddress.getLocalHost
       val receivingIpAddress = client.peer.socket.getAddress
       val versionMsg =

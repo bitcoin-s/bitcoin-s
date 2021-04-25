@@ -45,6 +45,12 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   val peer: Peer
 
+  /** The current data message handler.
+    * It should be noted that the dataMessageHandler contains
+    * chainstate. When we update with a new chainstate, we need to
+    * maek sure we update the [[DataMessageHandler]] via [[updateDataMessageHandler()]]
+    * to make sure we don't corrupt our chainstate cache
+    */
   def dataMessageHandler: DataMessageHandler
 
   def nodeCallbacks: NodeCallbacks = nodeAppConfig.nodeCallbacks
@@ -194,11 +200,11 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
       blockchains <- blockchainsF
-    } yield {
+
       // Get all of our cached headers in case of a reorg
-      val cachedHeaders =
-        blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      peerMsgSender.sendGetHeadersMessage(cachedHeaders)
+      cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
+      _ <- peerMsgSender.sendGetHeadersMessage(cachedHeaders)
+    } yield {
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE}")
     }
