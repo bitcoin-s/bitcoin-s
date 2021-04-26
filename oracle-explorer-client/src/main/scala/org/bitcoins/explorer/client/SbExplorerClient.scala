@@ -1,21 +1,17 @@
 package org.bitcoins.explorer.client
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{
-  ContentTypes,
-  HttpEntity,
-  HttpMethods,
-  HttpRequest,
-  Uri
-}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.util.ByteString
 import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
-import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.crypto.{SchnorrPublicKey, Sha256Digest}
 import org.bitcoins.explorer.env.ExplorerEnv
 import org.bitcoins.explorer.model.{
   CreateAnnouncementExplorer,
   CreateAttestations,
+  Oracle,
   SbAnnouncementEvent
 }
 import org.bitcoins.explorer.picklers.ExplorerPicklers
@@ -115,6 +111,21 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
           HttpEntity(ContentTypes.`application/x-www-form-urlencoded`, string))
     val responseF = sendRequest(httpReq)
     responseF.map(_ => ())
+  }
+
+  def getOracleName(pubkey: SchnorrPublicKey): Future[Option[String]] = {
+    val base = env.baseUri
+    val uri = Uri(base + s"oracle/${pubkey.hex}")
+    val httpReq = HttpRequest(uri = uri)
+    val responseF = sendRequest(httpReq)
+    responseF.flatMap { response =>
+      val result = response.validate[Oracle]
+      result match {
+        case success: JsSuccess[Oracle] =>
+          Future.successful(Some(success.value.oracleName))
+        case _: JsError => FutureUtil.none
+      }
+    }
   }
 
   private def sendRequest(httpReq: HttpRequest): Future[JsValue] = {
