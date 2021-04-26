@@ -6,6 +6,7 @@ import org.bitcoins.core.util._
 import org.bitcoins.core.wallet.utxo.ConditionalPath
 import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 
+import scala.annotation.tailrec
 import scala.util.Try
 
 /** Created by chris on 12/26/15.
@@ -265,50 +266,25 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
     }
   }
 
+  @tailrec
   private def isStandardNonP2SH(
       spk: ScriptPubKey,
       isRecursiveCall: Boolean): Boolean = {
     spk match {
       case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
           _: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
-          _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
-        true
-      case _: P2SHScriptPubKey =>
+          _: UnassignedWitnessScriptPubKey | _: WitnessScriptPubKeyV0 |
+          _: ConditionalScriptPubKey => // Conditional SPKs are not recursively checked
         true
       case EmptyScriptPubKey => isRecursiveCall // Fine if nested
-      case conditional: ConditionalScriptPubKey =>
-        val first =
-          isStandardNonP2SH(conditional.firstSPK, isRecursiveCall = true)
-
-        val second =
-          isStandardNonP2SH(conditional.secondSPK, isRecursiveCall = true)
-
-        //we need to see if we have a p2sh scriptpubkey nested
-        //inside of the conditional spk. This can actually happen
-        //when you literally just want to use the script OP_HASH160 <bytes> OP_EQUAL
-        //independent of the normal p2sh flow
-        //see: https://github.com/bitcoin-s/bitcoin-s/issues/2962
-        (first, second) match {
-          case (true, true) => true
-          case (true, false) =>
-            P2SHScriptPubKey.isValidAsm(conditional.secondSPK.asm)
-          case (false, true) =>
-            P2SHScriptPubKey.isValidAsm(conditional.firstSPK.asm)
-          case (false, false) =>
-            val isP2SHFirst =
-              P2SHScriptPubKey.isValidAsm(conditional.firstSPK.asm)
-            val isP2SHSecond =
-              P2SHScriptPubKey.isValidAsm(conditional.secondSPK.asm)
-
-            isP2SHFirst && isP2SHSecond
-        }
       case locktime: LockTimeScriptPubKey =>
         if (Try(locktime.locktime).isSuccess) {
           isStandardNonP2SH(locktime.nestedScriptPubKey, isRecursiveCall = true)
         } else {
           false
         }
-      case _: NonStandardScriptPubKey | _: WitnessCommitment =>
+      case _: NonStandardScriptPubKey | _: WitnessCommitment |
+          _: P2SHScriptPubKey =>
         false
     }
   }
