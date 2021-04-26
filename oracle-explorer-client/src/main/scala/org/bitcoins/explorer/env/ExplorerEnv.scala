@@ -28,7 +28,7 @@ object ExplorerEnv extends StringFactory[ExplorerEnv] {
   val all: Vector[ExplorerEnv] = Vector(Production, Test, Local)
 
   override def fromString(string: String): ExplorerEnv = {
-    val explorerEnvOpt = all.find(_.toString.toLowerCase == string)
+    val explorerEnvOpt = all.find(_.toString.toLowerCase == string.toLowerCase)
     explorerEnvOpt match {
       case Some(env) => env
       case None =>

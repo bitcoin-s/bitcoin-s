@@ -1,5 +1,6 @@
 package org.bitcoins.explorer.env
 
+import org.bitcoins.explorer.env.ExplorerEnv._
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class ExplorerEnvTest extends BitcoinSUnitTest {
@@ -10,5 +11,11 @@ class ExplorerEnvTest extends BitcoinSUnitTest {
     ExplorerEnv.all.foreach { e =>
       assert(e.baseUri.last == '/')
     }
+  }
+
+  it must "correctly parse from string" in {
+    assert(ExplorerEnv.fromString("Production") == Production)
+    assert(ExplorerEnv.fromString("Test") == Test)
+    assert(ExplorerEnv.fromString("Local") == Local)
   }
 }
