@@ -5,7 +5,6 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.testkit.rpc.CachedBitcoindV19
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoinV19,
   WalletWithBitcoindV19
@@ -14,9 +13,7 @@ import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
-class ProcessBlockTest
-    extends BitcoinSWalletTestCachedBitcoinV19
-    with CachedBitcoindV19 {
+class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
   override type FixtureParam = WalletWithBitcoindV19
 
