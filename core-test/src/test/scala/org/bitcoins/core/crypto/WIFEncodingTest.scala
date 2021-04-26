@@ -19,7 +19,7 @@ class WIFEncodingTest extends BitcoinSUnitTest {
   }
   it must "serialize a private key to WIF and then be able to deserialize it" in {
 
-    val hex = "2cecbfb72f8d5146d7fe7e5a3f80402c6dd688652c332dff2e44618d2d3372"
+    val hex = "002cecbfb72f8d5146d7fe7e5a3f80402c6dd688652c332dff2e44618d2d3372"
     val privKey = ECPrivateKeyBytes(hex)
     val wif = ECPrivateKeyUtil.toWIF(privKey, TestNet3)
     val privKeyFromWIF = ECPrivateKeyUtil.fromWIFToPrivateKey(wif)
@@ -63,9 +63,10 @@ class WIFEncodingTest extends BitcoinSUnitTest {
            NumberGenerator.bool) { (privKey, network, compressed) =>
       val wif =
         ECPrivateKeyUtil.toWIF(privKey.toPrivateKeyBytes(compressed), network)
+      assert(ECPrivateKeyUtil.isCompressed(wif) == compressed)
       network match {
         case MainNet =>
-          assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == network)
+          assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == MainNet)
         case TestNet3 | RegTest | SigNet =>
           assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == TestNet3)
       }
@@ -73,6 +74,19 @@ class WIFEncodingTest extends BitcoinSUnitTest {
         ECPrivateKeyUtil.fromWIFToPrivateKey(wif) == privKey.toPrivateKeyBytes(
           compressed))
     }
+  }
+
+  it must "have serialization symmetry for WIF format when private key ends in 0x01" in {
+    val privKey = ECPrivateKey(
+      "710ed6c96012015f02e352cddd6f5a5b32499f2926ac7752b57d93b38be8c701")
+    val wif =
+      ECPrivateKeyUtil.toWIF(privKey.toPrivateKeyBytes(isCompressed = false),
+                             TestNet3)
+    assert(!ECPrivateKeyUtil.isCompressed(wif))
+    assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == TestNet3)
+    assert(
+      ECPrivateKeyUtil.fromWIFToPrivateKey(wif) == privKey
+        .toPrivateKeyBytes(isCompressed = false))
   }
 
   it must "fail to parse unknown WIF networks" in {

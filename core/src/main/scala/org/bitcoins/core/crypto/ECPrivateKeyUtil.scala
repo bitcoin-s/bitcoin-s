@@ -49,7 +49,7 @@ object ECPrivateKeyUtil {
     val validCompressedBytesInHex: Seq[String] =
       validCompressedBytes.map(b => BytesUtil.encodeHex(b))
     val firstByteHex = BytesUtil.encodeHex(bytes.head)
-    if (validCompressedBytesInHex.contains(firstByteHex))
+    if (validCompressedBytesInHex.contains(firstByteHex) && bytes.length == 38)
       bytes(bytes.length - 5) == 0x01.toByte
     else false
   }

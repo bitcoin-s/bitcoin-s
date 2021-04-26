@@ -34,7 +34,7 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       keypair.getPrivate.asInstanceOf[ECPrivateKeyParameters]
     val priv: BigInteger = privParams.getD
     val bytes = ByteVector(priv.toByteArray)
-    ECPrivateKey.fromBytes(bytes)
+    ECPrivateKey.fromBytes(bytes.padLeft(33))
   }
 
   /** @param x x coordinate

@@ -22,7 +22,7 @@ sealed trait SecpPoint extends NetworkElement {
   * 0x00 = FieldElement.zero*G).
   */
 case object SecpPointInfinity extends SecpPoint {
-  override def bytes: ByteVector = ByteVector(0x00)
+  override val bytes: ByteVector = ByteVector(0x00)
 }
 
 /** A non-identity point, (x, y), on the secp256k1 elliptic curve.

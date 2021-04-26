@@ -3,7 +3,6 @@ package org.bitcoins.crypto
 import scodec.bits.ByteVector
 
 import java.math.BigInteger
-import scala.annotation.tailrec
 
 /** Represents the raw bytes which are meant to represent an ECKey without deserializing. */
 sealed trait ECKeyBytes extends NetworkElement
@@ -223,7 +222,7 @@ case class ECPrivateKey(bytes: ByteVector)
 
   def negate: ECPrivateKey = {
     val negPrivKeyNum = N.subtract(new BigInteger(1, bytes.toArray))
-    ECPrivateKey(ByteVector(negPrivKeyNum.toByteArray))
+    ECPrivateKey(ByteVector(negPrivKeyNum.toByteArray).padLeft(33))
   }
 
   def add(other: ECPrivateKey): ECPrivateKey = {
@@ -253,19 +252,14 @@ case class ECPrivateKey(bytes: ByteVector)
 
 object ECPrivateKey extends Factory[ECPrivateKey] {
 
-  @tailrec
   override def fromBytes(bytes: ByteVector): ECPrivateKey = {
     if (bytes.size == 32)
       new ECPrivateKey(bytes)
-    else if (bytes.size < 32) {
-      //means we need to pad the private key with 0 bytes so we have 32 bytes
-      ECPrivateKey.fromBytes(bytes.padLeft(32))
-    } //this is for the case when java serialies a BigInteger to 33 bytes to hold the signed num representation
-    else if (bytes.size == 33)
-      ECPrivateKey.fromBytes(bytes.slice(1, 33))
-    else
+    else if (bytes.size == 33 && bytes.head == 0x00) {
+      new ECPrivateKey(bytes.slice(1, 33))
+    } else
       throw new IllegalArgumentException(
-        "Private keys cannot be greater than 33 bytes in size, got: " +
+        "Private keys must be 32 in size, got: " +
           CryptoBytesUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
   }
 
