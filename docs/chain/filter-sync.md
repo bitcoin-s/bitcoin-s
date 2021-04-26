@@ -64,7 +64,7 @@ implicit val chainAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig().chai
 val bitcoindWithChainApiF: Future[BitcoindV19ChainHandler] = {
   ChainUnitTest.createBitcoindV19ChainHandler()
 }
-val bitcoindF = bitcoindWithChainApiF.map(_.bitcoind)
+val bitcoindF = bitcoindWithChainApiF.map(_.bitcoindRpc)
 val chainApiF = bitcoindWithChainApiF.map(_.chainHandler)
 
 val filterType = FilterType.Basic
