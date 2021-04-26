@@ -48,6 +48,15 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
     }
   }
 
+  it must "get an oracle name" in {
+    val key = announcement.publicKey
+    for {
+      name <- explorerClient.getOracleName(key)
+    } yield {
+      assert(name.contains("Chris_Stewart_5"))
+    }
+  }
+
   it must "return failure from get an event if the event DNE" in {
     val hash = Sha256Digest.empty
     recoverToSucceededIf[RuntimeException] {
