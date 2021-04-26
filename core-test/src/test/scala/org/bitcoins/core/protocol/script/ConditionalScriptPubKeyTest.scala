@@ -28,8 +28,15 @@ class ConditionalScriptPubKeyTest extends BitcoinSJvmTest {
       "632103184b16f5d6c01e2d6ded3f8a292e5b81608318ecb8e93aa3747bc88b8dbf256cac67a914f5862841f254a1483eab66909ae588e45d617c5e8768"
     val scriptPubKey = RawScriptPubKey.fromAsmHex(hex)
 
-    assert(scriptPubKey.isInstanceOf[IfConditionalScriptPubKey])
-
+    scriptPubKey match {
+      case conditional: IfConditionalScriptPubKey =>
+        assert(
+          conditional.secondSPK.isInstanceOf[NonStandardScriptPubKey],
+          s"Although we have same op codes as p2sh spk, " +
+            s"this combination isn't used in a standalone output, rather a redeemScript"
+        )
+      case x => fail(s"Incorrect type for the spk, got=$x")
+    }
     val constant = ScriptConstant.fromHex(hex)
 
     assert(P2SHScriptSignature.isRedeemScript(constant))

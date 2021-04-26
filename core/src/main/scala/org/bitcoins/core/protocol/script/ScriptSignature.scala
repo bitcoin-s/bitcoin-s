@@ -273,8 +273,6 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
           _: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
           _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
         true
-      case _: P2SHScriptPubKey =>
-        true
       case EmptyScriptPubKey => isRecursiveCall // Fine if nested
       case conditional: ConditionalScriptPubKey =>
         val first =
@@ -308,7 +306,8 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
         } else {
           false
         }
-      case _: NonStandardScriptPubKey | _: WitnessCommitment =>
+      case _: NonStandardScriptPubKey | _: WitnessCommitment |
+          _: P2SHScriptPubKey =>
         false
     }
   }
