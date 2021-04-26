@@ -12,7 +12,7 @@ import scala.util.{Failure, Success, Try}
 
 case class BitcoinerLiveFeeRateProvider(minutes: Int)(implicit
     override val system: ActorSystem)
-    extends CachedHttpFeeRateProvider {
+    extends CachedHttpFeeRateProvider[SatoshisPerVirtualByte] {
 
   require(validMinutes.contains(minutes),
           s"$minutes is not a valid selection, must be from $validMinutes")

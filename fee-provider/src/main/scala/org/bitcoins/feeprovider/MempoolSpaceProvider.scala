@@ -15,7 +15,7 @@ import scala.util.{Failure, Success, Try}
   */
 case class MempoolSpaceProvider(target: MempoolSpaceTarget)(implicit
     override val system: ActorSystem)
-    extends CachedHttpFeeRateProvider {
+    extends CachedHttpFeeRateProvider[SatoshisPerVirtualByte] {
 
   override val uri: Uri =
     Uri("https://mempool.space/api/v1/fees/recommended")

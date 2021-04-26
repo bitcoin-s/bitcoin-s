@@ -14,7 +14,7 @@ import scala.util.{Failure, Success, Try}
   */
 case class BitGoFeeRateProvider(blockTargetOpt: Option[Int])(implicit
     override val system: ActorSystem)
-    extends CachedHttpFeeRateProvider {
+    extends CachedHttpFeeRateProvider[SatoshisPerKiloByte] {
 
   override val uri: Uri = Uri("https://www.bitgo.com/api/v2/btc/tx/fee")
 

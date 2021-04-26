@@ -26,27 +26,28 @@ object HttpFeeRateProvider {
   }
 }
 
-abstract class HttpFeeRateProvider extends FeeRateApi {
+abstract class HttpFeeRateProvider[T <: FeeUnit] extends FeeRateApi {
   implicit protected val system: ActorSystem
 
   protected def uri: Uri
 
-  protected def converter(str: String): Try[FeeUnit]
+  protected def converter(str: String): Try[T]
 
-  def getFeeRate: Future[FeeUnit] = {
+  def getFeeRate: Future[T] = {
     HttpFeeRateProvider
       .makeApiCall(uri)
       .flatMap(ret => Future.fromTry(converter(ret)))(system.dispatcher)
   }
 }
 
-abstract class CachedHttpFeeRateProvider extends HttpFeeRateProvider {
+abstract class CachedHttpFeeRateProvider[T <: FeeUnit]
+    extends HttpFeeRateProvider[T] {
 
-  private var cachedFeeRateOpt: Option[(FeeUnit, Instant)] = None
+  private var cachedFeeRateOpt: Option[(T, Instant)] = None
 
   val cacheDuration: Duration = Duration.ofMinutes(5)
 
-  private def updateFeeRate(): Future[FeeUnit] = {
+  private def updateFeeRate(): Future[T] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
     super.getFeeRate.map { feeRate =>
       cachedFeeRateOpt = Some((feeRate, TimeUtil.now))
@@ -54,7 +55,7 @@ abstract class CachedHttpFeeRateProvider extends HttpFeeRateProvider {
     }
   }
 
-  override def getFeeRate: Future[FeeUnit] = {
+  override def getFeeRate: Future[T] = {
     cachedFeeRateOpt match {
       case None =>
         updateFeeRate()
