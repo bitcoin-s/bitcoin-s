@@ -3,8 +3,6 @@ package org.bitcoins.testkit
 import com.opentable.db.postgres.embedded.EmbeddedPostgres
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
-import scala.util.Try
-
 trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
 
   lazy val pgEnabled: Boolean = sys.env.contains("PG_ENABLED")
@@ -17,7 +15,7 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
 
   override def afterAll(): Unit = {
     super.afterAll()
-    Try(pg.foreach(_.close()))
+    val _ = pg.foreach(_.close())
     ()
   }
 
