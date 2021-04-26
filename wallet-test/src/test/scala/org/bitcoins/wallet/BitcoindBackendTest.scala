@@ -74,7 +74,7 @@ class BitcoindBackendTest
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
       _ = assert(balance == amountToSend)
       _ = assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
-      _ <- wallet.stop()
+      _ <- wallet.walletConfig.stop()
     } yield succeed
   }
 }

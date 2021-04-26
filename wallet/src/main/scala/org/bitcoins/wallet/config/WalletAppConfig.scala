@@ -25,7 +25,9 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.{
   ExecutorService,
   Executors,
+  ScheduledExecutorService,
   ScheduledFuture,
+  ThreadFactory,
   TimeUnit
 }
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
@@ -57,12 +59,14 @@ case class WalletAppConfig(
 
   override def appConfig: WalletAppConfig = this
 
-  private[wallet] lazy val scheduler = Executors.newScheduledThreadPool(
-    1,
-    AsyncUtil.getNewThreadFactory(
-      s"bitcoin-s-wallet-scheduler-${System.currentTimeMillis()}"))
+  private[wallet] lazy val scheduler: ScheduledExecutorService = {
+    Executors.newScheduledThreadPool(
+      1,
+      AsyncUtil.getNewThreadFactory(
+        s"bitcoin-s-wallet-scheduler-${System.currentTimeMillis()}"))
+  }
 
-  private lazy val rescanThreadFactory =
+  private lazy val rescanThreadFactory: ThreadFactory =
     AsyncUtil.getNewThreadFactory("bitcoin-s-rescan")
 
   /** Threads for rescanning the wallet */

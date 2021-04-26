@@ -72,7 +72,7 @@ class BitcoindBlockPollingTest
 
       balance <- wallet.getBalance()
       //clean up
-      _ <- wallet.stop()
+      _ <- wallet.walletConfig.stop()
     } yield assert(balance == amountToSend)
   }
 }
