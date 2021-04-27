@@ -80,6 +80,7 @@ object CommonSettings {
 
   private val commonCompilerOpts = {
     List(
+      //https://stackoverflow.com/a/43103038/967713
       "-release",
       "8"
     )
