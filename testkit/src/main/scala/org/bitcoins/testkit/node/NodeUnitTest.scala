@@ -1,17 +1,14 @@
 package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.models._
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.{
-  PeerHandler,
-  PeerMessageReceiver,
-  PeerMessageReceiverState,
-  PeerMessageSender
-}
+import org.bitcoins.node.networking.peer._
 import org.bitcoins.rpc.client.common.BitcoindVersion.{V18, V19}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
@@ -189,14 +186,39 @@ trait NodeUnitTest extends BaseNodeTest {
 
 object NodeUnitTest extends P2PLogger {
 
+  def buildNode(peer: Peer)(implicit
+      chainConf: ChainAppConfig,
+      nodeConf: NodeAppConfig,
+      system: ActorSystem): Future[NeutrinoNode] = {
+    import system.dispatcher
+
+    val blockHeaderDAO = BlockHeaderDAO()
+    val filterHeaderDAO = CompactFilterHeaderDAO()
+    val filterDAO = CompactFilterDAO()
+
+    val chainApiF = ChainHandlerCached
+      .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO)
+
+    chainApiF.map(buildNode(peer, _))
+  }
+
+  def buildNode(peer: Peer, chainApi: ChainApi)(implicit
+      chainConf: ChainAppConfig,
+      nodeConf: NodeAppConfig,
+      system: ActorSystem): NeutrinoNode = {
+    import system.dispatcher
+
+    val dmh = DataMessageHandler(chainApi)
+
+    NeutrinoNode(peer, dmh, nodeConf, chainConf, system)
+  }
+
   def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(implicit
       appConfig: BitcoinSAppConfig,
       system: ActorSystem): Future[PeerMessageReceiver] = {
-    val receiver =
-      PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
-                          chainApi = chainApi,
-                          peer = peer,
-                          initialSyncDone = None)
+    val receiver = PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
+                                       node = buildNode(peer, chainApi),
+                                       peer = peer)
     Future.successful(receiver)
   }
 
@@ -205,9 +227,9 @@ object NodeUnitTest extends P2PLogger {
       chainAppConfig: ChainAppConfig,
       system: ActorSystem): Future[PeerHandler] = {
     import system.dispatcher
-    val chainApiF = ChainUnitTest.createChainHandler()
-    val peerMsgReceiverF = chainApiF.flatMap { _ =>
-      PeerMessageReceiver.preConnection(peer, None)
+    val nodeF = buildNode(peer)
+    val peerMsgReceiverF = nodeF.map { node =>
+      PeerMessageReceiver.preConnection(peer, node)
     }
     //the problem here is the 'self', this needs to be an ordinary peer message handler
     //that can handle the handshake
@@ -394,9 +416,8 @@ object NodeUnitTest extends P2PLogger {
       system: ActorSystem): Future[PeerMessageReceiver] = {
     val receiver =
       PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
-                          chainApi = chainApi,
-                          peer = peer,
-                          initialSyncDone = None)
+                          node = buildNode(peer, chainApi),
+                          peer = peer)
     Future.successful(receiver)
   }
 
@@ -427,24 +448,20 @@ object NodeUnitTest extends P2PLogger {
     val checkConfigF = Future {
       assert(nodeAppConfig.nodeType == NodeType.SpvNode)
     }
-    val chainApiF = for {
+
+    for {
       _ <- checkConfigF
       chainHandler <- ChainUnitTest.createChainHandler()
-    } yield chainHandler
-    val nodeF = for {
-      _ <- chainApiF
     } yield {
+      val dmh = DataMessageHandler(chainHandler)
       SpvNode(
         nodePeer = peer,
+        dataMessageHandler = dmh,
         nodeConfig = nodeAppConfig,
         chainConfig = chainAppConfig,
-        actorSystem = system,
-        initialSyncDone = None
+        actorSystem = system
       ).setBloomFilter(P2PMessageTestUtil.emptyBloomFilter)
     }
-
-    nodeF
-
   }
 
   /** Creates a Neutrino node peered with the given bitcoind client, this method
@@ -465,13 +482,14 @@ object NodeUnitTest extends P2PLogger {
     } yield chainHandler
     val peer = createPeer(bitcoind)
     val nodeF = for {
-      _ <- chainApiF
+      chainApi <- chainApiF
     } yield {
+      val dmh = DataMessageHandler(chainApi)
       NeutrinoNode(nodePeer = peer,
+                   dataMessageHandler = dmh,
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
-                   actorSystem = system,
-                   initialSyncDone = None)
+                   actorSystem = system)
     }
 
     nodeF

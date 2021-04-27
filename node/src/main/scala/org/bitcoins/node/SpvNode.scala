@@ -1,6 +1,5 @@
 package org.bitcoins.node
 
-import akka.Done
 import akka.actor.ActorSystem
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
@@ -11,14 +10,15 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.node.networking.peer.DataMessageHandler
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 
 case class SpvNode(
     nodePeer: Peer,
+    dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
-    initialSyncDone: Option[Promise[Done]],
     actorSystem: ActorSystem)
     extends Node {
   require(nodeConfig.nodeType == NodeType.SpvNode,
@@ -41,6 +41,11 @@ case class SpvNode(
     this
   }
 
+  override def updateDataMessageHandler(
+      dataMessageHandler: DataMessageHandler): SpvNode = {
+    copy(dataMessageHandler = dataMessageHandler)
+  }
+
   /** Updates our bloom filter to match the given TX
     *
     * @return SPV node with the updated bloom filter
@@ -53,9 +58,8 @@ case class SpvNode(
     // then need to calculate all the new elements in
     // the filter. this is easier:-)
     for {
-      p <- peerMsgSenderF
-      _ <- p.sendFilterClearMessage()
-      _ <- p.sendFilterLoadMessage(newBloom)
+      _ <- peerMsgSender.sendFilterClearMessage()
+      _ <- peerMsgSender.sendFilterLoadMessage(newBloom)
     } yield this
 
   }
@@ -69,7 +73,7 @@ case class SpvNode(
     val hash = address.hash
     _bloomFilter.atomicUpdate(hash)(_.insert(_))
 
-    val sentFilterAddF = peerMsgSenderF.flatMap(_.sendFilterAddMessage(hash))
+    val sentFilterAddF = peerMsgSender.sendFilterAddMessage(hash)
 
     sentFilterAddF.map(_ => this)
   }
@@ -77,7 +81,6 @@ case class SpvNode(
   override def start(): Future[SpvNode] = {
     for {
       node <- super.start()
-      peerMsgSender <- peerMsgSenderF
       _ <- AsyncUtil.retryUntilSatisfiedF(() => isConnected)
       _ <- peerMsgSender.sendFilterLoadMessage(bloomFilter)
     } yield {

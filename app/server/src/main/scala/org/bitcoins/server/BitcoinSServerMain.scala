@@ -61,7 +61,7 @@ class BitcoinSServerMain(override val args: Array[String])
 
       //get a node that isn't started
       val nodeF = configInitializedF.flatMap { _ =>
-        nodeConf.createNode(peer, None)(chainConf, system)
+        nodeConf.createNode(peer)(chainConf, system)
       }
 
       //get our wallet
