@@ -23,7 +23,7 @@ sealed trait CachedAppConfig { _: BitcoinSAkkaAsyncTest =>
 trait CachedBitcoinSAppConfig { _: BitcoinSAkkaAsyncTest =>
 
   implicit protected lazy val cachedConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getNeutrinoTestConfig()
 
   implicit protected lazy val cachedNodeConf: NodeAppConfig = {
     cachedConfig.nodeConf

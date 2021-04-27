@@ -32,8 +32,8 @@ class DataMessageHandlerTest extends NodeUnitTest {
     param: SpvNodeConnectedWithBitcoindV19 =>
       val SpvNodeConnectedWithBitcoindV19(spv, _) = param
 
+      val sender = spv.peerMsgSender
       for {
-        sender <- spv.peerMsgSenderF
         chainApi <- spv.chainApiFromDb()
         dataMessageHandler = DataMessageHandler(chainApi)(spv.executionContext,
                                                           spv.nodeAppConfig,
@@ -66,9 +66,8 @@ class DataMessageHandlerTest extends NodeUnitTest {
           }
       }
 
+      val sender = spv.peerMsgSender
       for {
-        sender <- spv.peerMsgSenderF
-
         txId <- bitcoind.sendToAddress(junkAddress, 1.bitcoin)
         tx <- bitcoind.getRawTransactionRaw(txId)
         _ <- bitcoind.generateToAddress(blocks = 1, junkAddress)
@@ -102,9 +101,9 @@ class DataMessageHandlerTest extends NodeUnitTest {
           ()
         }
       }
-      for {
-        sender <- spv.peerMsgSenderF
+      val sender = spv.peerMsgSender
 
+      for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         block <- bitcoind.getBlockRaw(hash)
 
@@ -137,9 +136,8 @@ class DataMessageHandlerTest extends NodeUnitTest {
         }
       }
 
+      val sender = spv.peerMsgSender
       for {
-        sender <- spv.peerMsgSenderF
-
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         header <- bitcoind.getBlockHeaderRaw(hash)
 
@@ -171,9 +169,8 @@ class DataMessageHandlerTest extends NodeUnitTest {
             ()
           }
       }
+      val sender = spv.peerMsgSender
       for {
-        sender <- spv.peerMsgSenderF
-
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         filter <- bitcoind.getBlockFilter(hash, FilterType.Basic)
 

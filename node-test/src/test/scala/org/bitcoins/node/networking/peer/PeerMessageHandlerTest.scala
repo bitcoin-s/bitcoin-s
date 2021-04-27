@@ -5,6 +5,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.node.{
   CachedBitcoinSAppConfig,
   NodeTestWithCachedBitcoindNewest,
@@ -12,7 +13,7 @@ import org.bitcoins.testkit.node.{
 }
 import org.scalatest.{FutureOutcome, Outcome}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
 /** Created by chris on 7/1/16.
@@ -39,35 +40,35 @@ class PeerMessageHandlerTest
   implicit protected lazy val chainConfig: ChainAppConfig =
     cachedConfig.chainConf
 
+  override def beforeAll(): Unit = {
+    val setupF = ChainUnitTest.setupHeaderTableWithGenesisHeader()
+    Await.result(setupF, duration)
+    ()
+  }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoinSAppConfig].afterAll()
+    super[NodeTestWithCachedBitcoindNewest].afterAll()
+  }
+
   behavior of "PeerHandler"
 
   it must "be able to fully initialize a PeerMessageReceiver" in { peer =>
-    val peerHandlerF = NodeUnitTest.buildPeerHandler(peer)
-    val peerMsgSenderF = peerHandlerF.map(_.peerMsgSender)
-    val p2pClientF = peerHandlerF.map(_.p2pClient)
+    for {
+      peerHandler <- NodeUnitTest.buildPeerHandler(peer)
+      peerMsgSender = peerHandler.peerMsgSender
+      p2pClient = peerHandler.p2pClient
 
-    val _ = peerHandlerF.map(_.peerMsgSender.connect())
-    val isConnectedF = TestAsyncUtil.retryUntilSatisfiedF(
-      () => p2pClientF.flatMap(_.isConnected()),
-      interval = 500.millis
-    )
+      _ = peerMsgSender.connect()
 
-    val isInitF = isConnectedF.flatMap { _ =>
-      TestAsyncUtil.retryUntilSatisfiedF(() =>
-        p2pClientF.flatMap(_.isInitialized()))
-    }
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(() => p2pClient.isConnected(),
+                                              interval = 500.millis)
 
-    val disconnectF = isInitF.flatMap { _ =>
-      peerMsgSenderF.map(_.disconnect())
-    }
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(() => p2pClient.isInitialized())
+      _ <- peerMsgSender.disconnect()
 
-    val isDisconnectedF = disconnectF.flatMap { _ =>
-      TestAsyncUtil.retryUntilSatisfiedF(() =>
-        p2pClientF.flatMap(_.isDisconnected()))
-
-    }
-
-    isDisconnectedF.map(_ => succeed)
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(() => p2pClient.isDisconnected())
+    } yield succeed
   }
 
   /*

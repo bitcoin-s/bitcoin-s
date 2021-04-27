@@ -1,28 +1,14 @@
 package org.bitcoins.node.networking.peer
 
-import akka.Done
 import akka.actor.ActorRefFactory
-import org.bitcoins.chain.blockchain.ChainHandlerCached
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  CompactFilterDAO,
-  CompactFilterHeaderDAO
-}
-import org.bitcoins.core.api.chain.ChainApi
-import org.bitcoins.core.p2p.{NetworkMessage, _}
+import org.bitcoins.core.p2p._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
-  Disconnected,
-  Initializing,
-  Normal,
-  Preconnection
-}
-import org.bitcoins.node.{NodeType, P2PLogger}
+import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
+import org.bitcoins.node.{Node, NodeType, P2PLogger}
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 
 /** Responsible for receiving messages from a peer on the
   * p2p network. This is called by [[org.bitcoins.rpc.client.common.Client Client]] when doing the p2p
@@ -31,13 +17,10 @@ import scala.concurrent.{Future, Promise}
   * [[org.bitcoins.core.p2p.NetworkMessage NetworkMessage]]
   */
 class PeerMessageReceiver(
-    dataMessageHandler: DataMessageHandler,
+    node: Node,
     val state: PeerMessageReceiverState,
     peer: Peer
-)(implicit
-    ref: ActorRefFactory,
-    nodeAppConfig: NodeAppConfig,
-    chainAppConfig: ChainAppConfig)
+)(implicit ref: ActorRefFactory, nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
   import ref.dispatcher
 
@@ -62,7 +45,7 @@ class PeerMessageReceiver(
 
         val peerMsgSender = PeerMessageSender(client)
 
-        peerMsgSender.sendVersionMessage(dataMessageHandler.chainApi)
+        peerMsgSender.sendVersionMessage(node.dataMessageHandler.chainApi)
 
         val newRecv = toState(newState)
 
@@ -135,8 +118,9 @@ class PeerMessageReceiver(
       sender: PeerMessageSender): Future[PeerMessageReceiver] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
-    dataMessageHandler.handleDataPayload(payload, sender).map { handler =>
-      new PeerMessageReceiver(handler, state, peer)
+    node.dataMessageHandler.handleDataPayload(payload, sender).map { handler =>
+      val newNode = node.updateDataMessageHandler(handler)
+      new PeerMessageReceiver(newNode, state, peer)
     }
   }
 
@@ -152,7 +136,7 @@ class PeerMessageReceiver(
     payload match {
 
       case versionMsg: VersionMessage =>
-        logger.trace(s"Received versionMsg=${versionMsg}from peer=${peer}")
+        logger.trace(s"Received versionMsg=$versionMsg from peer=$peer")
 
         state match {
           case bad @ (_: Disconnected | _: Normal | Preconnection) =>
@@ -162,28 +146,6 @@ class PeerMessageReceiver(
 
           case good: Initializing =>
             val newState = good.withVersionMsg(versionMsg)
-
-            // TODO: do not throw error once we have peer discovery
-            nodeAppConfig.nodeType match {
-              case NodeType.NeutrinoNode =>
-                if (!versionMsg.services.nodeCompactFilters) {
-                  val errMsg =
-                    s"Connected Peer ($peer) does not support compact filters"
-                  logger.warn(errMsg)
-                  sys.error(errMsg)
-                }
-              case NodeType.SpvNode =>
-                if (!versionMsg.services.nodeBloom) {
-                  val errMsg =
-                    s"Connected Peer ($peer) does not support bloom filters"
-                  logger.warn(errMsg)
-                  sys.error(errMsg)
-                }
-              case NodeType.FullNode =>
-                sys.error("Not yet implemented.")
-              case NodeType.BitcoindBackend =>
-                throw new RuntimeException("This is impossible")
-            }
 
             sender.sendVerackMessage()
 
@@ -235,7 +197,7 @@ class PeerMessageReceiver(
   /** Transitions our PeerMessageReceiver to a new state */
   def toState(newState: PeerMessageReceiverState): PeerMessageReceiver = {
     new PeerMessageReceiver(
-      dataMessageHandler = dataMessageHandler,
+      node = node,
       state = newState,
       peer = peer
     )
@@ -255,59 +217,31 @@ object PeerMessageReceiver {
   case class NetworkMessageReceived(msg: NetworkMessage, client: P2PClient)
       extends PeerMessageReceiverMsg
 
-  def apply(
-      state: PeerMessageReceiverState,
-      chainApi: ChainApi,
-      peer: Peer,
-      initialSyncDone: Option[Promise[Done]])(implicit
+  def apply(state: PeerMessageReceiverState, node: Node, peer: Peer)(implicit
       ref: ActorRefFactory,
-      nodeAppConfig: NodeAppConfig,
-      chainAppConfig: ChainAppConfig
+      nodeAppConfig: NodeAppConfig
   ): PeerMessageReceiver = {
-    import ref.dispatcher
-    val dataHandler = DataMessageHandler(chainApi, initialSyncDone)
-    new PeerMessageReceiver(dataMessageHandler = dataHandler,
-                            state = state,
-                            peer = peer)
+    new PeerMessageReceiver(node = node, state = state, peer = peer)
   }
 
   /** Creates a peer message receiver that is ready
     * to be connected to a peer. This can be given to [[org.bitcoins.node.networking.P2PClient.props() P2PClient]]
     * to connect to a peer on the network
     */
-  def preConnection(peer: Peer, initialSyncDone: Option[Promise[Done]])(implicit
+  def preConnection(peer: Peer, node: Node)(implicit
       ref: ActorRefFactory,
-      nodeAppConfig: NodeAppConfig,
-      chainAppConfig: ChainAppConfig
-  ): Future[PeerMessageReceiver] = {
-    import ref.dispatcher
-    val blockHeaderDAO = BlockHeaderDAO()
-    val filterHeaderDAO = CompactFilterHeaderDAO()
-    val filterDAO = CompactFilterDAO()
-    val chainHandlerF =
-      ChainHandlerCached.fromDatabase(blockHeaderDAO,
-                                      filterHeaderDAO,
-                                      filterDAO)
-    for {
-      chainHandler <- chainHandlerF
-    } yield {
-      PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
-                          chainApi = chainHandler,
-                          peer = peer,
-                          initialSyncDone = initialSyncDone)
-    }
+      nodeAppConfig: NodeAppConfig
+  ): PeerMessageReceiver = {
+    PeerMessageReceiver(node = node,
+                        state = PeerMessageReceiverState.fresh(),
+                        peer = peer)
   }
 
-  def newReceiver(
-      chainApi: ChainApi,
-      peer: Peer,
-      initialSyncDone: Option[Promise[Done]])(implicit
+  def newReceiver(node: Node, peer: Peer)(implicit
       nodeAppConfig: NodeAppConfig,
-      chainAppConfig: ChainAppConfig,
       ref: ActorRefFactory): PeerMessageReceiver = {
     PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
-                        chainApi = chainApi,
-                        peer = peer,
-                        initialSyncDone = initialSyncDone)
+                        node = node,
+                        peer = peer)
   }
 }
