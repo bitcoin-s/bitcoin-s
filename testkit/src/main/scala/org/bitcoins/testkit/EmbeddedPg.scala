@@ -13,7 +13,7 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
       val p = EmbeddedPostgres
         .builder()
         .setServerConfig("max_connections", "25")
-        .setServerConfig("shared_buffers", "32MB")
+        .setServerConfig("shared_buffers", "1MB")
         .start()
       Some(p)
     } else {
