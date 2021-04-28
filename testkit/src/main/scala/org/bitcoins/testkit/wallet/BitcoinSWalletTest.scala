@@ -29,7 +29,6 @@ import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
-import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen._
@@ -588,13 +587,9 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield ()
   }
 
-  def destroyWalletAppConfig(walletAppConfig: WalletAppConfig)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+  def destroyWalletAppConfig(walletAppConfig: WalletAppConfig): Future[Unit] = {
     val stoppedF = walletAppConfig.stop()
-    for {
-      _ <- stoppedF
-      _ = FileUtil.deleteTmpDir(walletAppConfig.datadir)
-    } yield ()
+    stoppedF
   }
 
   /** Constructs callbacks for the wallet from the node to process blocks and compact filters */

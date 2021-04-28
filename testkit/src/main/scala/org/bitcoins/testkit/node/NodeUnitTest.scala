@@ -303,6 +303,7 @@ object NodeUnitTest extends P2PLogger {
     require(appConfig.nodeType == NodeType.SpvNode)
     for {
       node <- createSpvNode(createPeer(bitcoind))
+      _ <- appConfig.walletConf.start()
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoind,
         node,
