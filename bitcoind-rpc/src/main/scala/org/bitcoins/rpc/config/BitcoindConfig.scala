@@ -201,11 +201,9 @@ case class BitcoindConfig(
     }.headOption
   }
 
-  import com.sun.jndi.toolkit.url.Uri
-
   /** Converts a string to an InetSocketAddress */
   private def toInetSocketAddress(string: String): InetSocketAddress = {
-    val uri = new Uri(string)
+    val uri = new URI(string)
     new InetSocketAddress(uri.getHost, uri.getPort)
   }
 
