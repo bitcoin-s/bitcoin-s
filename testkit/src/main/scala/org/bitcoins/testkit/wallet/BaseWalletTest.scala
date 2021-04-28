@@ -40,7 +40,7 @@ trait BaseWalletTest extends EmbeddedPg { _: AsyncTestSuite =>
 
   /** Wallet config with data directory set to user temp directory */
   protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, Vector.empty)
+    BaseWalletTest.getFreshConfig(pgUrl, Vector.empty)
 
   protected def getFreshWalletAppConfig: WalletAppConfig = {
     getFreshConfig.walletConf

@@ -46,13 +46,6 @@ trait BitcoinSWalletTest
     with EmbeddedPg {
   import BitcoinSWalletTest._
 
-  override def afterAll(): Unit = {
-    Await.result(getFreshConfig.chainConf.stop(), 1.minute)
-    Await.result(getFreshConfig.nodeConf.stop(), 1.minute)
-    Await.result(getFreshConfig.walletConf.stop(), 1.minute)
-    super.afterAll()
-  }
-
   def nodeApi: NodeApi = MockNodeApi
 
   /** Lets you customize the parameters for the created wallet */
