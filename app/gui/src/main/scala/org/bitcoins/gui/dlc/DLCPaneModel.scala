@@ -341,37 +341,39 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
   }
 
   def cancelDLC(status: DLCStatus): Unit = {
-    if (status.state == DLCState.Offered || status.state == DLCState.Accepted) {
-      val confirmed = new Alert(AlertType.Confirmation) {
-        initOwner(owner)
-        headerText = "Confirm Canceling DLC"
-        contentText = "Are you sure you want to cancel this DLC?\n" +
-          "This cannot be undone."
-      }.showAndWait() match {
-        case Some(ButtonType.OK) => true
-        case None | Some(_)      => false
-      }
+    status.state match {
+      case DLCState.Offered | DLCState.Accepted =>
+        val confirmed = new Alert(AlertType.Confirmation) {
+          initOwner(owner)
+          headerText = "Confirm Canceling DLC"
+          contentText = "Are you sure you want to cancel this DLC?\n" +
+            "This cannot be undone."
+        }.showAndWait() match {
+          case Some(ButtonType.OK) => true
+          case None | Some(_)      => false
+        }
 
-      if (confirmed) {
-        taskRunner.run(
-          caption = "Canceling DLC",
-          op = {
-            ConsoleCli.exec(CancelDLC(status.paramHash),
-                            GlobalData.consoleCliConfig) match {
-              case Success(_)   => ()
-              case Failure(err) => throw err
+        if (confirmed) {
+          taskRunner.run(
+            caption = "Canceling DLC",
+            op = {
+              ConsoleCli.exec(CancelDLC(status.paramHash),
+                              GlobalData.consoleCliConfig) match {
+                case Success(_)   => ()
+                case Failure(err) => throw err
+              }
+              updateDLCs()
             }
-            updateDLCs()
-          }
-        )
-      }
-    } else {
-      new Alert(AlertType.Error) {
-        initOwner(owner)
-        headerText = "Failed to Cancel DLC"
-        contentText = "Cannot cancel a DLC after it has been signed"
-      }.showAndWait()
-      ()
+          )
+        }
+      case DLCState.Signed | DLCState.Broadcasted | DLCState.Confirmed |
+          DLCState.Claimed | DLCState.RemoteClaimed | DLCState.Refunded =>
+        new Alert(AlertType.Error) {
+          initOwner(owner)
+          headerText = "Failed to Cancel DLC"
+          contentText = "Cannot cancel a DLC after it has been signed"
+        }.showAndWait()
+        ()
     }
   }
 
