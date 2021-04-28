@@ -7,8 +7,19 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
 
   lazy val pgEnabled: Boolean = sys.env.contains("PG_ENABLED")
 
-  lazy val pg: Option[EmbeddedPostgres] =
-    if (pgEnabled) Some(EmbeddedPostgres.start()) else None
+  lazy val pg: Option[EmbeddedPostgres] = {
+
+    if (pgEnabled) {
+      val p = EmbeddedPostgres
+        .builder()
+        .setServerConfig("max_connections", "25")
+        .setServerConfig("shared_buffers", "1MB")
+        .start()
+      Some(p)
+    } else {
+      None
+    }
+  }
 
   def pgUrl(): Option[String] =
     pg.map(_.getJdbcUrl(userName = "postgres", dbName = "postgres"))
