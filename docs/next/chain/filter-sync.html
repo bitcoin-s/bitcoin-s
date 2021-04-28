@@ -93,7 +93,7 @@ data store is NOT associated with our best block header, we attempt to sync our 
 <span class="hljs-keyword">val</span> bitcoindWithChainApiF: <span class="hljs-type">Future</span>[<span class="hljs-type">BitcoindV19ChainHandler</span>] = {
   <span class="hljs-type">ChainUnitTest</span>.createBitcoindV19ChainHandler()
 }
-<span class="hljs-keyword">val</span> bitcoindF = bitcoindWithChainApiF.map(_.bitcoind)
+<span class="hljs-keyword">val</span> bitcoindF = bitcoindWithChainApiF.map(_.bitcoindRpc)
 <span class="hljs-keyword">val</span> chainApiF = bitcoindWithChainApiF.map(_.chainHandler)
 
 <span class="hljs-keyword">val</span> filterType = <span class="hljs-type">FilterType</span>.<span class="hljs-type">Basic</span>
