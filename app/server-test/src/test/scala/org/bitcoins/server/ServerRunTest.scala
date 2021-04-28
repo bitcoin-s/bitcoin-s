@@ -6,7 +6,9 @@ import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.{AkkaUtil, BitcoinSAsyncTest}
+import org.scalatest.Assertion
 
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.reflect.io.Directory
 
@@ -29,10 +31,12 @@ class ServerRunTest extends BitcoinSAsyncTest {
                      "--rpcport",
                      randPort.toString)
 
+    val main = new BitcoinSServerMain(args)
+    val runMainF = main.start()
     // Use Exception because different errors can occur
-    recoverToSucceededIf[Exception] {
-      val runMainF = new BitcoinSServerMain(args).startup
+    val assertionF: Future[Assertion] = recoverToSucceededIf[Exception] {
       val deleteDirF = for {
+        _ <- runMainF
         _ <- AkkaUtil.nonBlockingSleep(2.seconds)
         _ = directory.deleteRecursively()
         _ <- AkkaUtil.nonBlockingSleep(2.seconds)
@@ -43,6 +47,11 @@ class ServerRunTest extends BitcoinSAsyncTest {
         _ <- deleteDirF
       } yield ()
     }
+
+    for {
+      _ <- assertionF
+      _ <- main.stop()
+    } yield succeed
   }
 
   it must "start up and log to the correct location" in {

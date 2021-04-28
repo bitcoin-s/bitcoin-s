@@ -10,10 +10,10 @@ class OracleServerMain(override val args: Array[String])
 
   override val actorSystemName = "bitcoin-s-oracle"
 
-  override def startup: Future[Unit] = {
+  implicit val conf: DLCOracleAppConfig =
+    DLCOracleAppConfig(datadir, baseConfig)
 
-    implicit val conf: DLCOracleAppConfig =
-      DLCOracleAppConfig(datadir, baseConfig)
+  override def start(): Future[Unit] = {
 
     val bindConfOpt = rpcBindOpt match {
       case Some(rpcbind) => Some(rpcbind)
@@ -41,12 +41,18 @@ class OracleServerMain(override val args: Array[String])
       _ <- server.start()
     } yield {
       logger.info(s"Done starting oracle!")
-      sys.addShutdownHook {
-        logger.error(s"Exiting process")
+      ()
+    }
+  }
 
-        conf.stop().foreach(_ => logger.info(s"Stopped DLC Oracle"))
-        system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
-      }
+  override def stop(): Future[Unit] = {
+    logger.error(s"Exiting process")
+    for {
+      _ <- conf.stop()
+      _ = logger.info(s"Stopped DLC Oracle")
+      _ <- system.terminate()
+    } yield {
+      logger.info(s"Actor system terminated")
       ()
     }
   }

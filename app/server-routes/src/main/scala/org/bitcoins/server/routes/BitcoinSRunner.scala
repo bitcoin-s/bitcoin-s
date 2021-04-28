@@ -4,15 +4,15 @@ import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.bitcoins.core.config._
-import org.bitcoins.core.util.EnvUtil
+import org.bitcoins.core.util.{EnvUtil, StartStopAsync}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.safePathToString
 
 import java.nio.file.{Path, Paths}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.util.Properties
 
-trait BitcoinSRunner extends Logging {
+trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
 
   protected def args: Array[String]
 
@@ -88,8 +88,6 @@ trait BitcoinSRunner extends Logging {
   lazy val datadir: Path =
     Paths.get(baseConfig.getString("bitcoin-s.datadir"))
 
-  def startup: Future[Unit]
-
   // start everything!
   final def run(customFinalDirOpt: Option[String] = None): Unit = {
 
@@ -131,7 +129,7 @@ trait BitcoinSRunner extends Logging {
     logger.info(s"version=${EnvUtil.getVersion}")
 
     logger.info(s"using directory ${usedDir.toAbsolutePath.toString}")
-    val runner = startup
+    val runner = start()
     runner.failed.foreach { err =>
       logger.error(s"Failed to startup server!", err)
       sys.exit(1)
