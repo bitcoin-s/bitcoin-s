@@ -33,6 +33,8 @@ jobs:
         with:
           fetch-depth: 0
       - uses: olafurpg/setup-scala@v10
+        with:
+          java-version: zulu@1.11
       - run: git fetch --tags || true
       - run: sbt cli/nativeImage
         shell: bash
