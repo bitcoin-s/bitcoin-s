@@ -46,18 +46,13 @@ object ECPrivateKeyBytes extends Factory[ECPrivateKeyBytes] {
 /** Represents any type which wraps public key bytes which can be used for ECDSA verification.
   * Should always be instantiated with class X extends PublicKey[X].
   */
-sealed trait PublicKey[PK <: PublicKey[PK]] extends NetworkElement {
+sealed trait PublicKey extends NetworkElement {
 
   /** The fromBytes function for the PK type. */
-  private[crypto] def fromBytes(bytes: ByteVector): PK
+  private[crypto] def fromBytes(bytes: ByteVector): this.type
 
-  private[crypto] def fromHex(hex: String): PK = {
+  private[crypto] def fromHex(hex: String): this.type = {
     fromBytes(CryptoBytesUtil.decodeHex(hex))
-  }
-
-  /** Returns this but as a PK. */
-  private def thisAsPK: PK = {
-    this.asInstanceOf[PK]
   }
 
   def verify(hash: HashDigest, signature: ECDigitalSignature): Boolean =
@@ -77,22 +72,24 @@ sealed trait PublicKey[PK <: PublicKey[PK]] extends NetworkElement {
   /** Returns true if the underlying bytes being wrapped are compressed */
   def isCompressed: Boolean = bytes.size == 33
 
+  /** Returns true if the underlying bytes being wrapped are decompressed */
+  def isDecompressed: Boolean = bytes.size == 65
+
   /** Returns true if the underlying bytes being wrapped are valid according to secp256k1 */
   def isFullyValid: Boolean = ECPublicKey.isFullyValid(bytes)
 
   /** Returns the decompressed version of this PublicKey */
-  lazy val decompressed: PK = {
-    if (isCompressed) {
-      CryptoUtil.decompressed(thisAsPK)
-    } else thisAsPK
+  lazy val decompressed: this.type = {
+    if (isDecompressed) this
+    else CryptoUtil.decompressed(this)
   }
 
   /** Returns the compressed version of this PublicKey */
-  lazy val compressed: PK = {
+  lazy val compressed: this.type = {
     if (isCompressed || bytes == ByteVector.fromByte(0x00)) {
-      thisAsPK
+      this
     } else {
-      val key = if (bytes.length == 65) this else decompressed
+      val key = if (isDecompressed) this else decompressed
       val (x, y) = key.bytes.tail.splitAt(32)
       val leadByte = if (FieldElement(y).isEven) 2.toByte else 3.toByte
       fromBytes(x.+:(leadByte))
@@ -103,13 +100,13 @@ sealed trait PublicKey[PK <: PublicKey[PK]] extends NetworkElement {
 /** Wraps raw ECPublicKey bytes without doing any validation or deserialization (may be invalid). */
 case class ECPublicKeyBytes(bytes: ByteVector)
     extends ECKeyBytes
-    with PublicKey[ECPublicKeyBytes] {
+    with PublicKey {
 
   /** Parse these bytes into the bitcoin-s internal public key type. */
   def toPublicKey: ECPublicKey = ECPublicKey(bytes)
 
-  override private[crypto] def fromBytes(bytes: ByteVector): ECPublicKeyBytes =
-    ECPublicKeyBytes(bytes)
+  override private[crypto] def fromBytes(bytes: ByteVector): this.type =
+    ECPublicKeyBytes(bytes).asInstanceOf[this.type]
 }
 
 object ECPublicKeyBytes extends Factory[ECPublicKeyBytes] {
@@ -281,14 +278,14 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
   */
 case class ECPublicKey(private val _bytes: ByteVector)
     extends BaseECKey
-    with PublicKey[ECPublicKey] {
+    with PublicKey {
   require(isFullyValid, s"Invalid public key: ${_bytes}")
 
   /** Converts this public key into the raw underlying point on secp256k1 for computation. */
   def toPoint: SecpPointFinite = SecpPoint.fromPublicKey(this)
 
-  override private[crypto] def fromBytes(bytes: ByteVector): ECPublicKey = {
-    ECPublicKey.fromBytes(bytes)
+  override private[crypto] def fromBytes(bytes: ByteVector): this.type = {
+    ECPublicKey.fromBytes(bytes).asInstanceOf[this.type]
   }
 
   def schnorrVerify(
@@ -325,20 +322,24 @@ case class ECPublicKey(private val _bytes: ByteVector)
   /** Returns true only if the underlying wrapped _bytes are compressed */
   override def isCompressed: Boolean = _bytes.size == 33
 
+  /** Returns true only if the underlying wrapped _bytes are decompressed */
+  override def isDecompressed: Boolean = _bytes.size == 65
+
   /** @inheritdoc */
   override def isFullyValid: Boolean = ECPublicKey.isFullyValid(_bytes)
 
   /** Returns this same ECPublicKey wrapping the underlying compressed _bytes.
     * This function doesn't really have any use, don't use it probably.
+    * Same for decompressed.
     */
-  override lazy val compressed: ECPublicKey = {
+  override lazy val compressed: this.type = {
     if (isCompressed || _bytes == ByteVector.fromByte(0x00)) {
       this
     } else {
-      val key = if (_bytes.length == 65) this else decompressed
+      val key = if (isDecompressed) this else decompressed
       val (x, y) = key._bytes.tail.splitAt(32)
       val leadByte = if (FieldElement(y).isEven) 2.toByte else 3.toByte
-      ECPublicKey(x.+:(leadByte))
+      fromBytes(x.+:(leadByte))
     }
   }
 

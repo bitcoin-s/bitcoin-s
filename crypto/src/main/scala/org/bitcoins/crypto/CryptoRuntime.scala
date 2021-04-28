@@ -180,22 +180,29 @@ trait CryptoRuntime {
   def secKeyVerify(privateKeybytes: ByteVector): Boolean
 
   def verify(
-      publicKey: PublicKey[_],
+      publicKey: PublicKey,
       data: ByteVector,
       signature: ECDigitalSignature): Boolean
 
-  def decompressed[PK <: PublicKey[PK]](publicKey: PK): PK = {
-    if (publicKey.isCompressed) {
-      decodePoint(publicKey.bytes) match {
-        case SecpPointInfinity => publicKey.fromHex("00")
-        case point: SecpPointFinite =>
-          val decompressedBytes =
-            ByteVector.fromHex("04").get ++
-              point.x.bytes ++
-              point.y.bytes
-          publicKey.fromBytes(decompressedBytes)
-      }
-    } else publicKey
+  def decompressed(pubKeyBytes: ByteVector): ByteVector = {
+    decodePoint(pubKeyBytes) match {
+      case SecpPointInfinity => ByteVector(0x00)
+      case point: SecpPointFinite =>
+        ByteVector.fromHex("04").get ++
+          point.x.bytes ++
+          point.y.bytes
+    }
+  }
+
+  def decompressed[PK <: PublicKey](
+      pubKeyBytes: ByteVector,
+      fromBytes: ByteVector => PK): PK = {
+    fromBytes(decompressed(pubKeyBytes))
+  }
+
+  def decompressed[PK <: PublicKey](publicKey: PK): publicKey.type = {
+    if (publicKey.isDecompressed) publicKey
+    else decompressed(publicKey.bytes, publicKey.fromBytes(_))
   }
 
   def tweakMultiply(publicKey: ECPublicKey, tweak: FieldElement): ECPublicKey

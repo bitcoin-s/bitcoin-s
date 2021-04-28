@@ -76,7 +76,7 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     NativeSecp256k1.secKeyVerify(privateKeyBytes.toArray)
 
   override def verify(
-      publicKey: PublicKey[_],
+      publicKey: PublicKey,
       data: ByteVector,
       signature: ECDigitalSignature): Boolean = {
     val result =
@@ -95,11 +95,9 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     } else result
   }
 
-  override def decompressed[PK <: PublicKey[PK]](publicKey: PK): PK = {
-    if (publicKey.isCompressed) {
-      val decompressed = NativeSecp256k1.decompress(publicKey.bytes.toArray)
-      publicKey.fromBytes(ByteVector(decompressed))
-    } else publicKey
+  override def decompressed(pubKeyBytes: ByteVector): ByteVector = {
+    val decompressed = NativeSecp256k1.decompress(pubKeyBytes.toArray)
+    ByteVector(decompressed)
   }
 
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey = {
