@@ -44,6 +44,7 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures._
 import org.bitcoins.testkit.wallet._
 import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.wallet.config.WalletAppConfig
 import akka.actor.ActorSystem
 import scala.concurrent.{ExecutionContext, Future, Await}
 import scala.concurrent.duration.DurationInt
@@ -55,6 +56,7 @@ import scala.concurrent.duration.DurationInt
 implicit val system: ActorSystem = ActorSystem(s"wallet-rescan-example")
 implicit val ec: ExecutionContext = system.dispatcher
 implicit val appConfig: BitcoinSAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig()
+implicit val walletAppConfig: WalletAppConfig = appConfig.walletConf
 
 val bip39PasswordOpt = None
 //ok now let's spin up a bitcoind and a bitcoin-s wallet with funds in it
