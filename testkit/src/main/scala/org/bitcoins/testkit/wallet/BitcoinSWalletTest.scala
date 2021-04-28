@@ -58,7 +58,8 @@ trait BitcoinSWalletTest
   /** Lets you customize the parameters for the created wallet */
   val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome = {
     walletConfig =>
-      val newWalletConf = getFreshWalletAppConfig.withOverrides(walletConfig)
+      implicit val newWalletConf =
+        getFreshWalletAppConfig.withOverrides(walletConfig)
       val km = createNewKeyManager()(newWalletConf)
       val bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
       makeDependentFixture(
@@ -75,9 +76,8 @@ trait BitcoinSWalletTest
     * peered with a bitcoind so the funds in the wallet are not tied to an
     * underlying blockchain
     */
-  def withFundedWallet(
-      test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String]): FutureOutcome = {
+  def withFundedWallet(test: OneArgAsyncTest, bip39PasswordOpt: Option[String])(
+      implicit walletAppConfig: WalletAppConfig): FutureOutcome = {
     makeDependentFixture(
       build = () =>
         FundWalletUtil.createFundedWallet(nodeApi,
@@ -91,7 +91,8 @@ trait BitcoinSWalletTest
 
   def withFundedSegwitWallet(
       test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String]): FutureOutcome = {
+      bip39PasswordOpt: Option[String])(implicit
+      walletAppConfig: WalletAppConfig): FutureOutcome = {
     makeDependentFixture(
       build = () =>
         FundWalletUtil.createFundedWallet(nodeApi,
@@ -114,9 +115,8 @@ trait BitcoinSWalletTest
     withNewConfiguredWallet(segwitWalletConf)(test)
   }
 
-  def withNewWallet(
-      test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String]): FutureOutcome =
+  def withNewWallet(test: OneArgAsyncTest, bip39PasswordOpt: Option[String])(
+      implicit walletAppConfig: WalletAppConfig): FutureOutcome =
     makeDependentFixture(
       build = { () =>
         createDefaultWallet(nodeApi, chainQueryApi, bip39PasswordOpt)
@@ -125,7 +125,8 @@ trait BitcoinSWalletTest
 
   def withNewWallet2Accounts(
       test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String]): FutureOutcome = {
+      bip39PasswordOpt: Option[String])(implicit
+      walletAppConfig: WalletAppConfig): FutureOutcome = {
     makeDependentFixture(
       build = { () =>
         createWallet2Accounts(nodeApi, chainQueryApi, bip39PasswordOpt)
@@ -133,7 +134,8 @@ trait BitcoinSWalletTest
       destroy = destroyWallet)(test)
   }
 
-  def withNewWalletAndBitcoind(test: OneArgAsyncTest): FutureOutcome = {
+  def withNewWalletAndBitcoind(test: OneArgAsyncTest)(implicit
+      walletAppConfig: WalletAppConfig): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
       builder = { () =>
         BitcoinSFixture.createBitcoindWithFunds()
@@ -150,7 +152,8 @@ trait BitcoinSWalletTest
 
   def withNewWalletAndBitcoindV19(
       test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String]): FutureOutcome = {
+      bip39PasswordOpt: Option[String])(implicit
+      walletAppConfig: WalletAppConfig): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
       builder = { () =>
         BitcoinSFixture
@@ -170,7 +173,8 @@ trait BitcoinSWalletTest
 
   def withFundedWalletAndBitcoindV19(
       test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String]): FutureOutcome = {
+      bip39PasswordOpt: Option[String])(implicit
+      walletAppConfig: WalletAppConfig): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoindV19] = { () =>
       for {
         bitcoind <-
@@ -192,30 +196,11 @@ trait BitcoinSWalletTest
 
   def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletAppConfig] = () => {
-      val baseConf = getFreshConfig.walletConf
-      val walletNameOpt = if (NumberGenerator.bool.sampleSome) {
-        Some(StringGenerators.genNonEmptyString.sampleSome)
-      } else None
-
-      val walletConf = walletNameOpt match {
-        case Some(walletName) =>
-          val walletNameOverride = ConfigFactory.parseString(
-            s"bitcoin-s.wallet.walletName = $walletName"
-          )
-
-          BitcoinSAppConfig(
-            baseConf.baseDatadir,
-            (walletNameOverride +: baseConf.configOverrides): _*).walletConf
-        case None => baseConf
-      }
-
-      walletConf.start().map(_ => walletConf)
+      createWalletAppConfig(pgUrl, Vector.empty)
     }
 
     val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
-      FileUtil.deleteTmpDir(walletAppConfig.datadir)
-      walletAppConfig.stop()
-      Future.unit
+      destroyWalletAppConfig(walletAppConfig)
     }
     makeDependentFixture(builder, destroy = destroy)(test)
   }
@@ -299,6 +284,30 @@ object BitcoinSWalletTest extends WalletLogger {
     }
   }
 
+  def createWalletAppConfig(
+      pgUrl: () => Option[String],
+      configs: Vector[Config])(implicit
+      ec: ExecutionContext): Future[WalletAppConfig] = {
+    val baseConf = BaseWalletTest.getFreshWalletAppConfig(pgUrl, configs)
+    val walletNameOpt = if (NumberGenerator.bool.sampleSome) {
+      Some(StringGenerators.genNonEmptyString.sampleSome)
+    } else None
+
+    val walletConf = walletNameOpt match {
+      case Some(walletName) =>
+        val walletNameOverride = ConfigFactory.parseString(
+          s"bitcoin-s.wallet.walletName = $walletName"
+        )
+
+        BitcoinSAppConfig(
+          baseConf.baseDatadir,
+          (walletNameOverride +: baseConf.configOverrides): _*).walletConf
+      case None => baseConf
+    }
+
+    walletConf.start().map(_ => walletConf)
+  }
+
   /** Returns a function that can be used to create a wallet fixture.
     * If you pass in a configuration to this method that configuration
     * is given to the wallet as user-provided overrides. You could for
@@ -311,13 +320,12 @@ object BitcoinSWalletTest extends WalletLogger {
       extraConfig: Option[Config],
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi)(implicit
-      config: BitcoinSAppConfig,
+      config: WalletAppConfig,
       ec: ExecutionContext): () => Future[Wallet] =
     () => {
-      val defaultConf = config.walletConf
       val walletConfig = extraConfig match {
-        case None    => defaultConf
-        case Some(c) => defaultConf.withOverrides(c)
+        case None    => config
+        case Some(c) => config.withOverrides(c)
       }
 
       // we want to check we're not overwriting
@@ -341,13 +349,13 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi: ChainQueryApi,
       bip39PasswordOpt: Option[String],
       extraConfig: Option[Config] = None)(implicit
-      config: BitcoinSAppConfig,
+      config: WalletAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
     val newWalletConf = extraConfig match {
       case None =>
-        config.walletConf
+        config
       case Some(walletConf) =>
-        config.walletConf.withOverrides(walletConf)
+        config.withOverrides(walletConf)
     }
     val km =
       createNewKeyManager(bip39PasswordOpt = bip39PasswordOpt)(newWalletConf)
@@ -366,7 +374,7 @@ object BitcoinSWalletTest extends WalletLogger {
       bitcoind: BitcoindRpcClient,
       bip39PasswordOpt: Option[String],
       extraConfig: Option[Config] = None)(implicit
-      config: BitcoinSAppConfig,
+      config: WalletAppConfig,
       system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
     //we need to create a promise so we can inject the wallet with the callback
@@ -404,7 +412,7 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi: ChainQueryApi,
       bip39PasswordOpt: Option[String],
       extraConfig: Option[Config] = None)(implicit
-      config: BitcoinSAppConfig,
+      config: WalletAppConfig,
       system: ActorSystem): Future[Wallet] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
 
@@ -440,7 +448,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
   def createWalletWithBitcoind(bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem,
-      config: BitcoinSAppConfig): Future[WalletWithBitcoind] = {
+      config: WalletAppConfig): Future[WalletWithBitcoind] = {
     createWalletWithBitcoindCallbacks(bitcoind, None)
   }
 
@@ -460,7 +468,7 @@ object BitcoinSWalletTest extends WalletLogger {
       bitcoind: BitcoindV19RpcClient,
       bip39PasswordOpt: Option[String])(implicit
       system: ActorSystem,
-      config: BitcoinSAppConfig): Future[WalletWithBitcoindV19] = {
+      config: WalletAppConfig): Future[WalletWithBitcoindV19] = {
     import system.dispatcher
     for {
       created <- createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
@@ -471,7 +479,7 @@ object BitcoinSWalletTest extends WalletLogger {
       bitcoind: BitcoindRpcClient,
       bip39PasswordOpt: Option[String])(implicit
       system: ActorSystem,
-      config: BitcoinSAppConfig): Future[WalletWithBitcoindRpc] = {
+      config: WalletAppConfig): Future[WalletWithBitcoindRpc] = {
     import system.dispatcher
     for {
       created <- createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
@@ -583,7 +591,16 @@ object BitcoinSWalletTest extends WalletLogger {
       _ <- wallet.walletConfig.dropTable("flyway_schema_history")
       _ <- wallet.walletConfig.dropAll()
       _ <- wallet.stop()
-      _ <- wallet.walletConfig.stop()
+      _ <- destroyWalletAppConfig(wallet.walletConfig)
+    } yield ()
+  }
+
+  def destroyWalletAppConfig(walletAppConfig: WalletAppConfig)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    val stoppedF = walletAppConfig.stop()
+    for {
+      _ <- stoppedF
+      _ = FileUtil.deleteTmpDir(walletAppConfig.datadir)
     } yield ()
   }
 
@@ -624,7 +641,7 @@ object BitcoinSWalletTest extends WalletLogger {
     * [[BitcoinSWalletTest]]. This will future won't be completed until balances satisfy [[isSameWalletBalances()]]
     */
   def awaitWalletBalances(fundedWallet: WalletWithBitcoind)(implicit
-      config: BitcoinSAppConfig,
+      config: WalletAppConfig,
       system: ActorSystem): Future[Unit] = {
     AsyncUtil.retryUntilSatisfiedF(conditionF =
                                      () => isSameWalletBalances(fundedWallet),
@@ -632,11 +649,11 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   private def isSameWalletBalances(fundedWallet: WalletWithBitcoind)(implicit
-      config: BitcoinSAppConfig,
+      config: WalletAppConfig,
       system: ActorSystem): Future[Boolean] = {
     import system.dispatcher
-    val defaultAccount = config.walletConf.defaultAccount
-    val hdAccount1 = WalletTestUtil.getHdAccount1(config.walletConf)
+    val defaultAccount = config.defaultAccount
+    val hdAccount1 = WalletTestUtil.getHdAccount1(config)
     val expectedDefaultAmt = BitcoinSWalletTest.expectedDefaultAmt
     val expectedAccount1Amt = BitcoinSWalletTest.expectedAccount1Amt
     val defaultBalanceF = fundedWallet.wallet.getBalance(defaultAccount)

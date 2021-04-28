@@ -14,7 +14,7 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
   override type FixtureParam = Wallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withNewWallet(test, getBIP39PasswordOpt())
+    withNewWallet(test, getBIP39PasswordOpt())(getFreshWalletAppConfig)
   }
 
   it must "correctly update txo state based on confirmations" in { wallet =>

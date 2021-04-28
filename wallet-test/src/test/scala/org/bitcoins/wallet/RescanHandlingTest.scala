@@ -17,7 +17,7 @@ import scala.concurrent.Future
 class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def getFreshConfig: BitcoinSAppConfig =
+  override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = WalletWithBitcoind

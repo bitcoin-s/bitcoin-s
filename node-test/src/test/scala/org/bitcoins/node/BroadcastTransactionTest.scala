@@ -19,7 +19,7 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindV19 {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
+    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, Vector.empty)
 
   override type FixtureParam = SpvNodeConnectedWithBitcoindV19
 

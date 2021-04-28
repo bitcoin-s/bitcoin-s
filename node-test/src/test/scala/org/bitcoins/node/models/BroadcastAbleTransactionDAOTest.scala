@@ -10,7 +10,7 @@ class BroadcastAbleTransactionDAOTest extends NodeDAOFixture with EmbeddedPg {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
+    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, Vector.empty)
 
   behavior of "BroadcastAbleTransactionDAO"
 

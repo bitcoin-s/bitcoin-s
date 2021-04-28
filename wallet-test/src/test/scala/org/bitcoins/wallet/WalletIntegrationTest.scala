@@ -27,9 +27,10 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
-      futOutcome = withNewWalletAndBitcoindCached(test,
-                                                  getBIP39PasswordOpt(),
-                                                  bitcoind)
+      futOutcome = withNewWalletAndBitcoindCached(
+        test,
+        getBIP39PasswordOpt(),
+        bitcoind)(getFreshWalletAppConfig)
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)

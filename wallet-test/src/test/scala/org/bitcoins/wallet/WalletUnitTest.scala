@@ -24,7 +24,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   override type FixtureParam = Wallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNewWallet(test, bip39PasswordOpt)
+    withNewWallet(test, bip39PasswordOpt)(getFreshWalletAppConfig)
 
   behavior of "Wallet - unit test"
 
@@ -163,9 +163,13 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   it must "be able to call initialize twice without throwing an exception if we have the same key manager" in {
     wallet: Wallet =>
-      val twiceF = Wallet.initialize(wallet, bip39PasswordOpt).flatMap { _ =>
-        Wallet.initialize(wallet, bip39PasswordOpt)
-      }
+      val twiceF = Wallet
+        .initialize(wallet, bip39PasswordOpt)(wallet.walletConfig,
+                                              executionContext)
+        .flatMap { _ =>
+          Wallet.initialize(wallet, bip39PasswordOpt)(wallet.walletConfig,
+                                                      executionContext)
+        }
 
       twiceF.map(_ => succeed)
 
@@ -174,12 +178,17 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it must "be able to detect an incompatible key manager with a wallet" in {
     wallet: Wallet =>
       recoverToSucceededIf[RuntimeException] {
-        Wallet.initialize(wallet, bip39PasswordOpt).flatMap { _ =>
-          //use a BIP39 password to make the key-managers different
-          Wallet.initialize(
-            wallet,
-            Some("random-password-to-make-key-managers-different"))
-        }
+        Wallet
+          .initialize(wallet, bip39PasswordOpt)(wallet.walletConfig,
+                                                executionContext)
+          .flatMap { _ =>
+            //use a BIP39 password to make the key-managers different
+            Wallet.initialize(
+              wallet,
+              Some("random-password-to-make-key-managers-different"))(
+              wallet.walletConfig,
+              executionContext)
+          }
       }
   }
 
