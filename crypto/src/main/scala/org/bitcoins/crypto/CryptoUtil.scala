@@ -134,8 +134,8 @@ trait CryptoUtil extends CryptoRuntime {
       privkey: ECPrivateKey): ECPublicKey =
     cryptoRuntime.pubKeyTweakAdd(pubkey, privkey)
 
-  override def isValidPubKey(bytes: ByteVector): Boolean =
-    cryptoRuntime.isValidPubKey(bytes)
+  override def isValidPubKey(pubKey: PublicKey): Boolean =
+    cryptoRuntime.isValidPubKey(pubKey)
 
   override def schnorrSign(
       dataToSign: ByteVector,

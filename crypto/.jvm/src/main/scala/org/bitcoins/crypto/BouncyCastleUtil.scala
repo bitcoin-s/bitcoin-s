@@ -41,12 +41,6 @@ object BouncyCastleUtil {
     ECPublicKey.fromBytes(ByteVector(bytes))
   }
 
-  def validatePublicKey(bytes: ByteVector): Boolean = {
-    bytes != ByteVector(0x00) && Try(decodePoint(bytes))
-      .map(_.getCurve == curve)
-      .getOrElse(false)
-  }
-
   def pubKeyTweakMul(pubKey: ECPublicKey, tweak: FieldElement): ECPublicKey = {
     val tweakedPoint = decodePoint(pubKey).multiply(tweak.toBigInteger)
     decodePubKey(tweakedPoint, pubKey.isCompressed)
@@ -67,10 +61,6 @@ object BouncyCastleUtil {
     val priv = getBigInteger(privateKey.bytes)
     val point = G.multiply(priv)
     val pubBytes = ByteVector(point.getEncoded(false))
-    require(
-      ECPublicKey.isFullyValid(pubBytes),
-      s"Bouncy Castle failed to generate a valid public key, got: ${CryptoBytesUtil
-        .encodeHex(pubBytes)}")
     ECPublicKey(pubBytes)
   }
 
@@ -80,10 +70,6 @@ object BouncyCastleUtil {
     } else {
       val point = decodePoint(key)
       val pubBytes = ByteVector(point.getEncoded(compressed))
-      require(
-        ECPublicKey.isFullyValid(pubBytes),
-        s"Bouncy Castle failed to generate a valid public key, got: ${CryptoBytesUtil
-          .encodeHex(pubBytes)}")
       ECPublicKey(pubBytes)
     }
   }

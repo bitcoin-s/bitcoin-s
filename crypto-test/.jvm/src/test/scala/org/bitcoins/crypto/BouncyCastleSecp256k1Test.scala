@@ -1,6 +1,5 @@
 package org.bitcoins.crypto
 
-import org.scalacheck.Gen
 import org.scalatest.{Assertion, Outcome, Succeeded}
 
 class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
@@ -38,15 +37,6 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
   it must "multiply keys the same" in {
     forAll(CryptoGenerators.publicKey, CryptoGenerators.fieldElement) {
       case (pubKey, tweak) => testCompatibility(_.tweakMultiply(pubKey, tweak))
-    }
-  }
-
-  it must "validate keys the same" in {
-    val keyOrGarbageGen =
-      Gen.oneOf(CryptoGenerators.publicKey.map(_.bytes),
-                NumberGenerator.bytevector(33))
-    forAll(keyOrGarbageGen) { bytes =>
-      testCompatibility(_.isValidPubKey(bytes))
     }
   }
 

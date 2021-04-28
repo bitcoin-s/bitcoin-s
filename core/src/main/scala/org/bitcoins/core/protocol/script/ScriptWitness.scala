@@ -181,9 +181,8 @@ object ScriptWitness extends Factory[ScriptWitness] {
     //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
     val isPubKey = {
       stack.nonEmpty &&
-      (stack.head.size == 33
-        || stack.head.size == 65) &&
-      ECPublicKey.isFullyValid(stack.head)
+      ((stack.head.size == 33 && (stack.head.head == 0x02 || stack.head.head == 0x03))
+        || (stack.head.size == 65 && stack.head.head == 0x04))
     }
     if (stack.isEmpty) {
       EmptyScriptWitness

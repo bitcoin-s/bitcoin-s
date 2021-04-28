@@ -231,11 +231,6 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     ECPublicKey.fromBytes(keyByteVec)
   }
 
-  override def isValidPubKey(bytes: ByteVector): Boolean = {
-    val buffer = CryptoJsUtil.toNodeBuffer(bytes)
-    SECP256k1.publicKeyVerify(buffer)
-  }
-
   override def sipHash(item: ByteVector, key: SipHashKey): Long = {
     val itemBuffer = CryptoJsUtil.toNodeBuffer(item)
     val keyBuffer = CryptoJsUtil.toNodeBuffer(key.bytes)
@@ -243,6 +238,11 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     val hi = (siphash(0).toLong & 0x00000000ffffffffL) << 32
     val lo = siphash(1).toLong & 0x00000000ffffffffL
     hi | lo
+  }
+
+  override def isValidPubKey(pubKey: PublicKey): Boolean = {
+    val buffer = CryptoJsUtil.toNodeBuffer(pubKey.bytes)
+    SECP256k1.publicKeyVerify(buffer)
   }
 
   override def decodePoint(bytes: ByteVector): SecpPoint = {

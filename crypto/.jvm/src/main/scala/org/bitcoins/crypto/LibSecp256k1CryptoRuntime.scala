@@ -46,10 +46,6 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     val pubKeyBytes: Array[Byte] =
       NativeSecp256k1.computePubkey(privateKey.bytes.toArray, false)
     val pubBytes = ByteVector(pubKeyBytes)
-    require(
-      ECPublicKey.isFullyValid(pubBytes),
-      s"secp256k1 failed to generate a valid public key, got: ${CryptoBytesUtil
-        .encodeHex(pubBytes)}")
     ECPublicKey(pubBytes)
   }
 
@@ -104,10 +100,6 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     val pubKeyBytes: Array[Byte] =
       NativeSecp256k1.computePubkey(privateKey.bytes.toArray, false)
     val pubBytes = ByteVector(pubKeyBytes)
-    require(
-      ECPublicKey.isFullyValid(pubBytes),
-      s"secp256k1 failed to generate a valid public key, got: ${CryptoBytesUtil
-        .encodeHex(pubBytes)}")
     ECPublicKey(pubBytes)
   }
 
@@ -156,15 +148,6 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
       privkey.bytes.toArray,
       false)
     ECPublicKey(ByteVector(tweaked))
-  }
-
-  override def isValidPubKey(bytes: ByteVector): Boolean = {
-    try {
-      NativeSecp256k1.isValidPubKey(bytes.toArray)
-    } catch {
-      case scala.util.control.NonFatal(_) =>
-        false
-    }
   }
 
   override def schnorrSign(

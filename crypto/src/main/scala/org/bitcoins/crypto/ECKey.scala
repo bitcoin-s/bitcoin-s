@@ -3,6 +3,7 @@ package org.bitcoins.crypto
 import scodec.bits.ByteVector
 
 import java.math.BigInteger
+import scala.util.Try
 
 /** Represents the raw bytes which are meant to represent an ECKey without deserializing. */
 sealed trait ECKeyBytes extends NetworkElement
@@ -76,12 +77,18 @@ sealed trait PublicKey extends NetworkElement {
   def isDecompressed: Boolean = bytes.size == 65
 
   /** Returns true if the underlying bytes being wrapped are valid according to secp256k1 */
-  def isFullyValid: Boolean = ECPublicKey.isFullyValid(bytes)
+  def isFullyValid: Boolean = {
+    CryptoUtil.isValidPubKey(this)
+  }
+
+  private[crypto] lazy val decompressedBytesT: Try[ByteVector] = {
+    Try(CryptoUtil.decompressed(bytes))
+  }
 
   /** Returns the decompressed version of this PublicKey */
   lazy val decompressed: this.type = {
     if (isDecompressed) this
-    else CryptoUtil.decompressed(this)
+    else fromBytes(decompressedBytesT.get)
   }
 
   /** Returns the compressed version of this PublicKey */
@@ -279,7 +286,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
 case class ECPublicKey(private val _bytes: ByteVector)
     extends BaseECKey
     with PublicKey {
-  require(isFullyValid, s"Invalid public key: ${_bytes}")
+  require(isFullyValid, s"Invalid public key: ${_bytes}: $decompressedBytesT")
 
   /** Converts this public key into the raw underlying point on secp256k1 for computation. */
   def toPoint: SecpPointFinite = SecpPoint.fromPublicKey(this)
@@ -325,8 +332,9 @@ case class ECPublicKey(private val _bytes: ByteVector)
   /** Returns true only if the underlying wrapped _bytes are decompressed */
   override def isDecompressed: Boolean = _bytes.size == 65
 
-  /** @inheritdoc */
-  override def isFullyValid: Boolean = ECPublicKey.isFullyValid(_bytes)
+  override private[crypto] lazy val decompressedBytesT: Try[ByteVector] = {
+    Try(CryptoUtil.decompressed(_bytes))
+  }
 
   /** Returns this same ECPublicKey wrapping the underlying compressed _bytes.
     * This function doesn't really have any use, don't use it probably.
@@ -350,7 +358,7 @@ case class ECPublicKey(private val _bytes: ByteVector)
 
   /** Returns the decompressed representation of this ECPublicKey */
   def decompressedBytes: ByteVector = {
-    decompressed._bytes
+    decompressedBytesT.get
   }
 
   def decompressedHex: String = {
@@ -396,16 +404,4 @@ object ECPublicKey extends Factory[ECPublicKey] {
 
   /** Generates a fresh [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] that has not been used before. */
   def freshPublicKey: ECPublicKey = ECPrivateKey.freshPrivateKey.publicKey
-
-  /** Checks if the public key is valid according to secp256k1
-    * Mimics this function in bitcoin core
-    * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.cpp#L207-L212]]
-    */
-  def isFullyValid(bytes: ByteVector): Boolean =
-    isValid(bytes) && CryptoUtil.isValidPubKey(bytes)
-
-  /** Mimics the CPubKey::IsValid function in Bitcoin core, this is a consensus rule
-    * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.h#L158]]
-    */
-  def isValid(bytes: ByteVector): Boolean = bytes.nonEmpty
 }

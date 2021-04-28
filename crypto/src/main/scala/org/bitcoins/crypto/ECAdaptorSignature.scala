@@ -16,13 +16,6 @@ case class ECAdaptorSignature(bytes: ByteVector) extends NetworkElement {
 
   val dleqProofE: FieldElement = FieldElement(dleqProof.take(32))
   val dleqProofS: FieldElement = FieldElement(dleqProof.drop(32))
-
-  require(
-    tweakedNonce.bytes.nonEmpty && CryptoUtil.isValidPubKey(tweakedNonce.bytes),
-    s"Tweaked nonce (R) must be a valid public key: $tweakedNonce")
-  require(untweakedNonce.bytes.nonEmpty && CryptoUtil.isValidPubKey(
-            untweakedNonce.bytes),
-          s"Untweaked nonce (R') must be a valid public key: $untweakedNonce")
 }
 
 object ECAdaptorSignature extends Factory[ECAdaptorSignature] {

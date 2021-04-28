@@ -9,10 +9,8 @@ class KeysTest extends BitcoinSCryptoTest {
 
     val pubkey = privkey.publicKey
     assert(pubkey != null)
-    assert(BCryptoCryptoRuntime.isValidPubKey(pubkey.bytes))
 
     assert(!BCryptoCryptoRuntime.secKeyVerify(pubkey.bytes))
-    assert(!BCryptoCryptoRuntime.isValidPubKey(privkey.bytes))
   }
 
 }

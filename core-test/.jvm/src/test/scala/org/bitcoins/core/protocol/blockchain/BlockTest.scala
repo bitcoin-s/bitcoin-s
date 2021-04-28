@@ -45,8 +45,7 @@ class BlockTest extends BitcoinSJvmTest {
 
   it must "have serialization symmetry" in {
     forAllParallel(BlockchainElementsGenerator.block) { block =>
-      val result = Block(block.hex) == block
-      assert(result)
+      assert(Block(block.hex) == block)
     }
   }
 }

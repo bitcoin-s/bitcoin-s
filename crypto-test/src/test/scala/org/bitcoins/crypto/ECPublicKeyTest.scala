@@ -47,7 +47,7 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     // 31 bytes
     val badHex =
       "02020202020202020202020202020202020202020202020202020202020202"
-    assert(!ECPublicKey.isFullyValid(ByteVector.fromHex(badHex).get))
+    assertThrows[RuntimeException](ECPublicKey(badHex))
   }
 
   it must "be able to compress/decompress public keys" in {
@@ -58,19 +58,15 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     val notCompressedKey =
       ECPrivateKeyBytes(bytes = privkey.bytes, isCompressed = false)
     val pubkey = notCompressedKey.publicKeyBytes
-    assert(CryptoUtil.isValidPubKey(pubkey.bytes))
     assert(!pubkey.isCompressed)
 
     val compressed = privkey.publicKeyBytes
-    assert(CryptoUtil.isValidPubKey(compressed.bytes))
     assert(compressed.isCompressed)
 
     val converted = pubkey.compressed
-    assert(CryptoUtil.isValidPubKey(converted.bytes))
     assert(converted.isCompressed)
 
     val decompressed = compressed.decompressed
-    assert(CryptoUtil.isValidPubKey(decompressed.bytes))
     assert(!decompressed.isCompressed)
 
     assert(pubkey.bytes != converted.bytes)
