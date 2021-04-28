@@ -1,12 +1,11 @@
 package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
-import org.bitcoins.node.{Node, NodeType}
 import org.bitcoins.node.models.Peer
+import org.bitcoins.node.{Node, NodeType}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.node.NodeUnitTest.{createPeer, syncNeutrinoNode}
 import org.bitcoins.testkit.node.fixture.{
   NeutrinoNodeConnectedWithBitcoind,
@@ -146,8 +145,6 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
     val destroyNodeF = NodeUnitTest.destroyNode(node)
     for {
       _ <- destroyNodeF
-      _ <- ChainUnitTest.destroyAllTables()(node.chainAppConfig,
-                                            system.dispatcher)
       //need to stop chainAppConfig too since this is a test
       _ <- node.chainAppConfig.stop()
     } yield ()

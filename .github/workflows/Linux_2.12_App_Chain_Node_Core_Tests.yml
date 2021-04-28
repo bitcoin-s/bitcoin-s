@@ -29,3 +29,4 @@ jobs:
           key: ${{ runner.os }}-cache
       - name: run tests
         run: sbt ++2.12.12 downloadBitcoind coverage chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoJVM/test cryptoTestJVM/test cryptoJVM/coverageReport cryptoJVM/coverageAggregate cryptoJVM/coveralls coreTestJVM/test coreJVM/coverageReport coreJVM/coverageAggregate coreJVM/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls appCommonsTest/test appServerTest/test oracleServerTest/test
+>chainTest/test;nodeTest/test;cryptoJVM/test;cryptoTestJVM/test;coreTestJVM/test;secp256k1jni/test;zmq/test;appCommonsTest/test;appServerTest/test;oracleServerTest/test

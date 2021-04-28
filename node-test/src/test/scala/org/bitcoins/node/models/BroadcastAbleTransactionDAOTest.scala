@@ -1,16 +1,10 @@
 package org.bitcoins.node.models
 
-import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.fixtures.NodeDAOFixture
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.TransactionGenerators
-import org.bitcoins.testkit.fixtures.NodeDAOFixture
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 
-class BroadcastAbleTransactionDAOTest extends NodeDAOFixture with EmbeddedPg {
-
-  /** Wallet config with data directory set to user temp directory */
-  override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, Vector.empty)
+class BroadcastAbleTransactionDAOTest extends NodeDAOFixture {
 
   behavior of "BroadcastAbleTransactionDAO"
 

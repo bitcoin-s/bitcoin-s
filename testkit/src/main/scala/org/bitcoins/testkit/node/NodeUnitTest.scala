@@ -246,6 +246,7 @@ object NodeUnitTest extends P2PLogger {
   def destroyNode(node: Node)(implicit ec: ExecutionContext): Future[Unit] = {
     for {
       _ <- node.stop()
+      _ <- node.chainAppConfig.stop()
     } yield {
       ()
     }
