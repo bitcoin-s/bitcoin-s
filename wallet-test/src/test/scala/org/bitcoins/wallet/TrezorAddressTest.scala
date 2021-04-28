@@ -241,7 +241,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       case other                   => fail(s"unknown purpose: $other")
     }
 
-    for {
+    val assertionsF: Future[Seq[Assertion]] = for {
       wallet <- getWallet(conf)
       existingAccounts <- wallet.listAccounts(purpose)
       _ <- createNeededAccounts(wallet,
@@ -290,9 +290,11 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
           }
         nestedAssertions.flatten
       }
+      assertions
+    }
 
-      wallet.stop()
-      assert(assertions.forall(_.isCompleted))
+    assertionsF.flatMap { _ =>
+      conf.stop().map(_ => succeed)
     }
   }
 
