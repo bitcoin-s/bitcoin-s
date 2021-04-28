@@ -557,6 +557,13 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
             Server.httpSuccess(ujson.Null)
           }
       }
+
+    case ServerCommand("estimatefee", _) =>
+      complete {
+        wallet.getFeeRate.map { fee =>
+          Server.httpSuccess(fee.toString)
+        }
+      }
   }
 
   /** Returns information about the state of our wallet */

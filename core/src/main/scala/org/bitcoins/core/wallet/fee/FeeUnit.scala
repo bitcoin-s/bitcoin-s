@@ -2,6 +2,7 @@ package org.bitcoins.core.wallet.fee
 
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.crypto.StringFactory
 
 /** This is meant to be an abstract type that represents different fee unit measurements for
   * blockchains
@@ -32,9 +33,14 @@ sealed abstract class FeeUnit {
   /** Calculates the fee for the transaction using this fee rate, rounds down satoshis */
   final def calc(tx: Transaction): CurrencyUnit = this * txSizeForCalc(tx)
   def toLong: Long = currencyUnit.satoshis.toLong
+
+  override def toString: String = s"$toLong ${factory.unitString}"
 }
 
 trait FeeUnitFactory[+T <: FeeUnit] {
+
+  /** String to identify this fee unit, for example "sats/byte" */
+  def unitString: String
 
   /** The coefficient the denominator in the unit is multiplied by,
     * for example sats/kilobyte -> 1000
@@ -78,8 +84,6 @@ case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
   }
 
   override def factory: FeeUnitFactory[SatoshisPerByte] = SatoshisPerByte
-
-  override def toString: String = s"$toLong sats/byte"
 }
 
 object SatoshisPerByte extends FeeUnitFactory[SatoshisPerByte] {
@@ -99,6 +103,8 @@ object SatoshisPerByte extends FeeUnitFactory[SatoshisPerByte] {
 
   val zero: SatoshisPerByte = SatoshisPerByte(Satoshis.zero)
   val one: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
+
+  override val unitString: String = "sats/byte"
 }
 
 /** KiloBytes here are defined as 1000 bytes.
@@ -129,7 +135,6 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
   override def factory: FeeUnitFactory[SatoshisPerKiloByte] =
     SatoshisPerKiloByte
 
-  override def toString: String = s"$toLong sats/kb"
 }
 
 object SatoshisPerKiloByte extends FeeUnitFactory[SatoshisPerKiloByte] {
@@ -149,6 +154,8 @@ object SatoshisPerKiloByte extends FeeUnitFactory[SatoshisPerKiloByte] {
 
   val zero: SatoshisPerKiloByte = SatoshisPerKiloByte(Satoshis.zero)
   val one: SatoshisPerKiloByte = SatoshisPerKiloByte(Satoshis.one)
+
+  override val unitString: String = "sats/kb"
 }
 
 /** A 'virtual byte' (also known as virtual size) is a new weight measurement that
@@ -184,6 +191,8 @@ object SatoshisPerVirtualByte extends FeeUnitFactory[SatoshisPerVirtualByte] {
 
   val zero: SatoshisPerVirtualByte = SatoshisPerVirtualByte(CurrencyUnits.zero)
   val one: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis.one)
+
+  override val unitString: String = "sats/vbyte"
 }
 
 /** Weight is used to indicate how 'expensive' the transaction is on the blockchain.
@@ -220,4 +229,30 @@ object SatoshisPerKW extends FeeUnitFactory[SatoshisPerKW] {
 
   val zero: SatoshisPerKW = SatoshisPerKW(CurrencyUnits.zero)
   val one: SatoshisPerKW = SatoshisPerKW(Satoshis.one)
+
+  override val unitString: String = "sats/kw"
+}
+
+object FeeUnit extends StringFactory[FeeUnit] {
+
+  val factories = Vector(SatoshisPerVirtualByte,
+                         SatoshisPerByte,
+                         SatoshisPerKiloByte,
+                         SatoshisPerKW)
+
+  override def fromString(string: String): FeeUnit = {
+    val arr = string.split(" ")
+
+    val unit = arr.last
+    val feeUnitOpt = factories.find(_.unitString == unit).map { fac =>
+      val long = arr.head.toLong
+      fac.fromLong(long)
+    }
+
+    feeUnitOpt match {
+      case Some(feeUnit) => feeUnit
+      case None =>
+        sys.error(s"Could not parse $string as a fee unit")
+    }
+  }
 }

@@ -245,6 +245,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `nrequired` - The number of required signatures out of the n keys.
     - `keys` - The hex-encoded public keys.
     - `address_type` -The address type to use. Options are "legacy", "p2sh-segwit", and "bech32"
+ - `estimatefee` - Returns the recommended fee rate using the fee provider
 
 ## Sign PSBT with Wallet Example
 
