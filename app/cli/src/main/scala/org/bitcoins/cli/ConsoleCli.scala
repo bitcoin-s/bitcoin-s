@@ -813,13 +813,13 @@ object ConsoleCli {
                   lockUnspent.copy(unlock = unlock)
                 case other => other
               })),
-          arg[Seq[LockUnspentOutputParameter]]("transactions")
-            .text("The transaction outpoints to unlock/lock")
-            .required()
+          arg[Vector[LockUnspentOutputParameter]]("transactions")
+            .text("The transaction outpoints to unlock/lock, empty to apply to all utxos")
+            .optional()
             .action((outPoints, conf) =>
               conf.copy(command = conf.command match {
                 case lockUnspent: LockUnspent =>
-                  lockUnspent.copy(outPoints = outPoints.toVector)
+                  lockUnspent.copy(outPoints = outPoints)
                 case other => other
               }))
         ),

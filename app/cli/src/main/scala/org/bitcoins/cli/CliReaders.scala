@@ -263,13 +263,20 @@ object CliReaders {
       val reads: String => Sha256DigestBE = Sha256DigestBE.fromHex
     }
 
-  implicit val lockUnspentOutputParameterReads: Read[
-    LockUnspentOutputParameter] =
-    new Read[LockUnspentOutputParameter] {
-      val arity: Int = 1
+  implicit val lockUnspentOutputParametersReads: Read[
+    Vector[LockUnspentOutputParameter]] =
+    new Read[Vector[LockUnspentOutputParameter]] {
+      override val arity: Int = 1
 
-      val reads: String => LockUnspentOutputParameter =
-        LockUnspentOutputParameter.fromJsonString
+      override val reads: String => Vector[LockUnspentOutputParameter] = { s =>
+        val json = ujson.read(s)
+        json.objOpt match {
+          case Some(value) =>
+            Vector(LockUnspentOutputParameter.fromJson(value))
+          case None =>
+            json.arr.toVector.map(LockUnspentOutputParameter.fromJson)
+        }
+      }
     }
 
   implicit val sha256DigestReads: Read[Sha256Digest] =

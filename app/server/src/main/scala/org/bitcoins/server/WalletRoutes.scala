@@ -156,24 +156,19 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
               }
 
             for {
-              utxos <- {
+              utxos <-
+                if (unlock) {
+                  wallet.listUtxos(TxoState.Reserved)
+                } else wallet.listUtxos()
+
+              filtered =
                 if (outputParams.nonEmpty) {
-                  wallet
-                    .listUtxos()
-                    .map(_.filter(utxo =>
-                      outputParams.exists(_.outPoint == utxo.outPoint)))
-                } else {
-                  wallet.listUtxos()
-                }
-              }
-              reserved <- func(utxos)
-            } yield {
-              if (reserved.nonEmpty) {
-                Server.httpSuccess(true)
-              } else {
-                Server.httpSuccess(false)
-              }
-            }
+                  utxos.filter(utxo =>
+                    outputParams.exists(_.outPoint == utxo.outPoint))
+                } else utxos
+
+              reserved <- func(filtered)
+            } yield Server.httpSuccess(reserved.nonEmpty)
           }
       }
 

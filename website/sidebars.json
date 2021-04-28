@@ -55,7 +55,8 @@
       "wallet/address-tagging",
       "wallet/dlc",
       "wallet/wallet-rescan",
-      "wallet/wallet-sync"
+      "wallet/wallet-sync",
+      "wallet/wallet-rpc"
     ],
     "RPC Clients": [
       "rpc/rpc-clients-intro",
