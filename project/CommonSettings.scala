@@ -73,21 +73,16 @@ object CommonSettings {
     // scaladoc settings end
     ////
     Compile / compile / javacOptions ++= {
-      if (isCI) {
-        //jdk11 is used on CI, we need to use the --release flag to make sure
-        //byte code is compatible with jdk 8
-        //https://github.com/eclipse/jetty.project/issues/3244#issuecomment-495322586
-        Seq("--release", "8")
-      } else {
-        Seq("-source", "1.8", "-target", "1.8")
-      }
+      //https://github.com/eclipse/jetty.project/issues/3244#issuecomment-495322586
+      Seq("--release", "8")
     }
   )
 
   private val commonCompilerOpts = {
     List(
-      "-Xsource:2.13",
-      "-target:jvm-1.8"
+      //https://stackoverflow.com/a/43103038/967713
+      "-release",
+      "8"
     )
   }
 
