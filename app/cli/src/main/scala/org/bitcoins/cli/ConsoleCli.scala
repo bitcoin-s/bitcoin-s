@@ -1333,6 +1333,9 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("estimatefee")
+        .action((_, conf) => conf.copy(command = EstimateFee))
+        .text("Returns the recommended fee rate using the fee provider"),
       checkConfig {
         case Config(NoCommand, _, _, _) =>
           failure("You need to provide a command!")
@@ -1614,6 +1617,7 @@ object ConsoleCli {
                      Seq(up.writeJs(requiredKeys),
                          up.writeJs(keys),
                          up.writeJs(addressType)))
+      case EstimateFee => RequestParam("estimatefee")
 
       case GetVersion =>
         // skip sending to server and just return version number of cli
@@ -1928,11 +1932,14 @@ object CliCommand {
   case class ConvertToPSBT(transaction: Transaction) extends AppServerCliCommand
   case class AnalyzePSBT(psbt: PSBT) extends AppServerCliCommand
 
+  // Util
   case class CreateMultisig(
       requiredKeys: Int,
       keys: Vector[ECPublicKey],
       addressType: AddressType)
       extends AppServerCliCommand
+
+  case object EstimateFee extends AppServerCliCommand
 
   // Oracle
   case object GetPublicKey extends OracleServerCliCommand
