@@ -162,6 +162,11 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
   }
 
   override def toString = s"multi($requiredSigs,${publicKeys.mkString(",")})"
+
+  def toBIP67MultiSignatureScriptPubKey: MultiSignatureScriptPubKey = {
+    val sortedKeys = publicKeys.sortBy(_.hex)
+    MultiSignatureScriptPubKey(requiredSigs, sortedKeys)
+  }
 }
 
 object MultiSignatureScriptPubKey
