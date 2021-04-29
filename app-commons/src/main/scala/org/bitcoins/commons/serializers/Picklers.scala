@@ -154,8 +154,7 @@ object Picklers {
 
   implicit val lockUnspentOutputParameterPickler: ReadWriter[
     LockUnspentOutputParameter] =
-    readwriter[String].bimap(_.toJson.render(),
-                             LockUnspentOutputParameter.fromJsonString)
+    readwriter[Value].bimap(_.toJson, LockUnspentOutputParameter.fromJson)
 
   implicit val offeredW: Writer[Offered] =
     writer[Obj].comap { offered =>
