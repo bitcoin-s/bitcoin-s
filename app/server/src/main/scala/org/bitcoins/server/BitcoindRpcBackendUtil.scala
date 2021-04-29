@@ -193,6 +193,10 @@ object BitcoindRpcBackendUtil extends Logging {
       bitcoindRpcClient: V19BlockFilterRpc,
       wallet: Wallet)(implicit system: ActorSystem): Future[Unit] = {
     import system.dispatcher
+
+    logger.info("Starting filter sync")
+    val start = System.currentTimeMillis()
+
     val numParallelism = Runtime.getRuntime.availableProcessors()
     val runStream: Future[Done] = Source(blockHashes)
       .mapAsync(parallelism = numParallelism) { hash =>
@@ -205,7 +209,9 @@ object BitcoindRpcBackendUtil extends Logging {
         wallet.processCompactFilters(filterRes)
       }
       .run()
-    runStream.map(_ => ())
+    runStream.map(_ =>
+      logger.info(s"Synced ${blockHashes.size} filters, it took ${System
+        .currentTimeMillis() - start}ms"))
   }
 
   private def getNodeApiWalletCallback(
