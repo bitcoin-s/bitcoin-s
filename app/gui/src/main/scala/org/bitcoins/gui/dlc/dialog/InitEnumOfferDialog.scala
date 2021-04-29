@@ -132,6 +132,13 @@ object InitEnumOfferDialog {
     // When the OK button is clicked, convert the result to a CreateDLCOffer.
     dialog.resultConverter = dialogButton =>
       if (dialogButton == ButtonType.OK) {
+        val missingOutcomes = fields.values.filter(_._2.text.value.isEmpty)
+        if (missingOutcomes.nonEmpty) {
+          val missing = missingOutcomes.map(_._1.text.value).mkString(", ")
+          throw new RuntimeException(
+            s"You missed outcomes $missing. Please enter payouts for these situations")
+        }
+
         val inputs = fields.values.flatMap { case (str, value) =>
           if (str.text.value.nonEmpty && value.text.value.nonEmpty) {
             val amount = numberFormatter.parse(value.text.value).doubleValue()
