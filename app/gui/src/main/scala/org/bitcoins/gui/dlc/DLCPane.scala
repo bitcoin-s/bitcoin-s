@@ -130,18 +130,10 @@ class DLCPane(glassPane: VBox) {
     buttons = Seq(refundButton, executeButton)
   }
 
-  private val spaceRegion = new Region()
-  private val spaceRegion2 = new Region()
-
-  private val buttonSpacer = new GridPane {
-    hgap = 10
+  private val buttonSpacer = new HBox {
+    spacing = 100
     alignment = Pos.Center
-
-    add(initButtonBar, 0, 0)
-    add(spaceRegion, 1, 0)
-    add(acceptButtonBar, 2, 0)
-    add(spaceRegion2, 3, 0)
-    add(execButtonBar, 4, 0)
+    children = Vector(initButtonBar, acceptButtonBar, execButtonBar)
   }
 
   private val textAreaHBox = new HBox {
@@ -168,8 +160,6 @@ class DLCPane(glassPane: VBox) {
   demoOracleVBox.prefHeight <== (borderPane.height * 2) / 3
   demoOracleArea.prefHeight <== demoOracleVBox.height * 0.9
 
-  spaceRegion.prefWidth <== (borderPane.width - initButtonBar.width - acceptButtonBar.width - execButtonBar.width - 100) / 2
-  spaceRegion2.prefWidth <== spaceRegion.prefWidth
   tableView.prefHeight <== borderPane.height / 3
 
   private val taskRunner = new TaskRunner(buttonSpacer, glassPane)
