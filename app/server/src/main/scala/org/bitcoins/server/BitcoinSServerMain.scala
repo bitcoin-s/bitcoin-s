@@ -33,177 +33,166 @@ class BitcoinSServerMain(override val args: Array[String])
   implicit lazy val conf: BitcoinSAppConfig =
     BitcoinSAppConfig(datadir, baseConfig)
 
-  def startup: Future[Unit] = {
+  implicit lazy val walletConf: WalletAppConfig = conf.walletConf
+  implicit lazy val nodeConf: NodeAppConfig = conf.nodeConf
+  implicit lazy val chainConf: ChainAppConfig = conf.chainConf
+  implicit lazy val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
 
-    implicit val walletConf: WalletAppConfig = conf.walletConf
-    implicit val nodeConf: NodeAppConfig = conf.nodeConf
-    implicit val chainConf: ChainAppConfig = conf.chainConf
-    implicit val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
+  override def start(): Future[Unit] = {
+    val startedConfigF = conf.start()
 
-    def startBitcoinSBackend(): Future[Unit] = {
-      if (nodeConf.peers.isEmpty) {
-        throw new IllegalArgumentException(
-          "No peers specified, unable to start node")
-      }
-
-      val peerSocket =
-        NetworkUtil.parseInetSocketAddress(nodeConf.peers.head,
-                                           nodeConf.network.port)
-      val peer = Peer.fromSocket(peerSocket)
-
-      //initialize the config, run migrations
-      val configInitializedF = conf.start()
-
-      //run chain work migration
-      val chainApiF = configInitializedF.flatMap { _ =>
-        runChainWorkCalc(forceChainWorkRecalc || chainConf.forceRecalcChainWork)
-      }
-
-      //get a node that isn't started
-      val nodeF = configInitializedF.flatMap { _ =>
-        nodeConf.createNode(peer)(chainConf, system)
-      }
-
-      //get our wallet
-      val configuredWalletF = for {
-        _ <- configInitializedF
-        node <- nodeF
-        chainApi <- chainApiF
-        _ = logger.info("Initialized chain api")
-        feeProvider = getFeeProviderOrElse(MempoolSpaceProvider(HourFeeTarget))
-        wallet <- walletConf.createHDWallet(node, chainApi, feeProvider)
-        callbacks <- createCallbacks(wallet)
-        _ = nodeConf.addCallbacks(callbacks)
-      } yield {
-        logger.info(s"Done configuring wallet")
-        wallet
-      }
-
-      //add callbacks to our uninitialized node
-      val configuredNodeF = for {
-        node <- nodeF
-        wallet <- configuredWalletF
-        initNode <- setBloomFilter(node, wallet)
-      } yield {
-        logger.info(s"Done configuring node")
-        initNode
-      }
-
-      //start our http server now that we are synced
-      for {
-        node <- configuredNodeF
-        wallet <- configuredWalletF
-        _ <- node.start()
-        _ <- wallet.start().recoverWith {
-          //https://github.com/bitcoin-s/bitcoin-s/issues/2917
-          //https://github.com/bitcoin-s/bitcoin-s/pull/2918
-          case err: IllegalArgumentException
-              if err.getMessage.contains("If we have spent a spendinginfodb") =>
-            handleMissingSpendingInfoDb(err, wallet)
-        }
-        cachedChainApi <- node.chainApiFromDb()
-        chainApi = ChainHandler.fromChainHandlerCached(cachedChainApi)
-        binding <- startHttpServer(nodeApi = node,
-                                   chainApi = chainApi,
-                                   wallet = wallet,
-                                   rpcbindOpt = rpcBindOpt,
-                                   rpcPortOpt = rpcPortOpt)
-        _ = {
-          logger.info(s"Starting ${nodeConf.nodeType.shortName} node sync")
-        }
-        _ = BitcoinSServer.startedFP.success(Future.successful(binding))
-
-        _ <- node.sync()
-      } yield {
-        logger.info(s"Done starting Main!")
-        sys.addShutdownHook {
-          logger.error(s"Exiting process")
-
-          wallet.stop()
-
-          node
-            .stop()
-            .foreach(_ =>
-              logger.info(s"Stopped ${nodeConf.nodeType.shortName} node"))
-          system
-            .terminate()
-            .foreach(_ => logger.info(s"Actor system terminated"))
-        }
-        ()
-      }
+    startedConfigF.failed.foreach { err =>
+      logger.error(s"Failed to initialize configuration for BicoinServerMain",
+                   err)
     }
 
-    def startBitcoindBackend(): Future[Unit] = {
-      val bitcoind = bitcoindRpcConf.client
-
-      for {
-        _ <- conf.start()
-        _ = logger.info("Starting bitcoind")
-        _ <- bitcoindRpcConf.start()
-        _ = logger.info("Creating wallet")
-        feeProvider = getFeeProviderOrElse(bitcoind)
-        tmpWallet <- walletConf.createHDWallet(nodeApi = bitcoind,
-                                               chainQueryApi = bitcoind,
-                                               feeRateApi = feeProvider)
-        wallet = BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
-          bitcoind,
-          tmpWallet)
-        _ = logger.info("Starting wallet")
-        _ <- wallet.start().recoverWith {
-          //https://github.com/bitcoin-s/bitcoin-s/issues/2917
-          //https://github.com/bitcoin-s/bitcoin-s/pull/2918
-          case err: IllegalArgumentException
-              if err.getMessage.contains("If we have spent a spendinginfodb") =>
-            handleMissingSpendingInfoDb(err, wallet)
+    for {
+      _ <- startedConfigF
+      start <- {
+        nodeConf.nodeType match {
+          case _: InternalImplementationNodeType =>
+            startBitcoinSBackend()
+          case NodeType.BitcoindBackend =>
+            startBitcoindBackend()
         }
-        _ = BitcoindRpcBackendUtil
-          .syncWalletToBitcoind(bitcoind, wallet)
-          .flatMap { _ =>
-            if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
-              BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet, bitcoind)
-            } else Future.unit
-          }
 
-        // Create callbacks for processing new blocks
-        _ =
-          if (bitcoindRpcConf.zmqConfig != ZmqConfig.empty) {
-            BitcoindRpcBackendUtil.startZMQWalletCallbacks(wallet)
-          }
-
-        binding <- startHttpServer(nodeApi = bitcoind,
-                                   chainApi = bitcoind,
-                                   wallet = wallet,
-                                   rpcbindOpt = rpcBindOpt,
-                                   rpcPortOpt = rpcPortOpt)
-        _ = BitcoinSServer.startedFP.success(Future.successful(binding))
-      } yield {
-        logger.info(s"Done starting Main!")
-        sys.addShutdownHook {
-          logger.error(s"Exiting process")
-
-          wallet.stop()
-
-          system
-            .terminate()
-            .foreach(_ => logger.info(s"Actor system terminated"))
-        }
-        ()
       }
+    } yield start
+  }
+
+  override def stop(): Future[Unit] = {
+    logger.error(s"Exiting process")
+    for {
+      _ <- walletConf.stop()
+      _ <- nodeConf.stop()
+      _ <- chainConf.stop()
+      _ = logger.info(s"Stopped ${nodeConf.nodeType.shortName} node")
+      _ <- system.terminate()
+    } yield {
+      logger.info(s"Actor system terminated")
+      ()
+    }
+  }
+
+  def startBitcoinSBackend(): Future[Unit] = {
+    if (nodeConf.peers.isEmpty) {
+      throw new IllegalArgumentException(
+        "No peers specified, unable to start node")
     }
 
-    val startFut = nodeConf.nodeType match {
-      case _: InternalImplementationNodeType =>
-        startBitcoinSBackend()
-      case NodeType.BitcoindBackend =>
-        startBitcoindBackend()
+    val peerSocket =
+      NetworkUtil.parseInetSocketAddress(nodeConf.peers.head,
+                                         nodeConf.network.port)
+    val peer = Peer.fromSocket(peerSocket)
+
+    //run chain work migration
+    val chainApiF = runChainWorkCalc(
+      forceChainWorkRecalc || chainConf.forceRecalcChainWork)
+
+    //get a node that isn't started
+    val nodeF = nodeConf.createNode(peer)(chainConf, system)
+
+    //get our wallet
+    val configuredWalletF = for {
+      node <- nodeF
+      chainApi <- chainApiF
+      _ = logger.info("Initialized chain api")
+      feeProvider = getFeeProviderOrElse(MempoolSpaceProvider(HourFeeTarget))
+      wallet <- walletConf.createHDWallet(node, chainApi, feeProvider)
+      callbacks <- createCallbacks(wallet)
+      _ = nodeConf.addCallbacks(callbacks)
+    } yield {
+      logger.info(s"Done configuring wallet")
+      wallet
     }
 
-    startFut.failed.foreach { err =>
-      logger.error(s"Error on server startup!", err)
-      err.printStackTrace()
-      throw err
+    //add callbacks to our uninitialized node
+    val configuredNodeF = for {
+      node <- nodeF
+      wallet <- configuredWalletF
+      initNode <- setBloomFilter(node, wallet)
+    } yield {
+      logger.info(s"Done configuring node")
+      initNode
     }
-    startFut
+
+    //start our http server now that we are synced
+    for {
+      node <- configuredNodeF
+      wallet <- configuredWalletF
+      _ <- node.start()
+      _ <- wallet.start().recoverWith {
+        //https://github.com/bitcoin-s/bitcoin-s/issues/2917
+        //https://github.com/bitcoin-s/bitcoin-s/pull/2918
+        case err: IllegalArgumentException
+            if err.getMessage.contains("If we have spent a spendinginfodb") =>
+          handleMissingSpendingInfoDb(err, wallet)
+      }
+      cachedChainApi <- node.chainApiFromDb()
+      chainApi = ChainHandler.fromChainHandlerCached(cachedChainApi)
+      binding <- startHttpServer(nodeApi = node,
+                                 chainApi = chainApi,
+                                 wallet = wallet,
+                                 rpcbindOpt = rpcBindOpt,
+                                 rpcPortOpt = rpcPortOpt)
+      _ = {
+        logger.info(s"Starting ${nodeConf.nodeType.shortName} node sync")
+      }
+      _ = BitcoinSServer.startedFP.success(Future.successful(binding))
+
+      _ <- node.sync()
+    } yield {
+      logger.info(s"Done starting Main!")
+      ()
+    }
+  }
+
+  def startBitcoindBackend(): Future[Unit] = {
+    val bitcoind = bitcoindRpcConf.client
+
+    for {
+      _ <- bitcoindRpcConf.start()
+      _ = logger.info("Started bitcoind")
+      _ = logger.info("Creating wallet")
+      feeProvider = getFeeProviderOrElse(bitcoind)
+      tmpWallet <- walletConf.createHDWallet(nodeApi = bitcoind,
+                                             chainQueryApi = bitcoind,
+                                             feeRateApi = feeProvider)
+      wallet = BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
+        bitcoind,
+        tmpWallet)
+      _ = logger.info("Starting wallet")
+      _ <- wallet.start().recoverWith {
+        //https://github.com/bitcoin-s/bitcoin-s/issues/2917
+        //https://github.com/bitcoin-s/bitcoin-s/pull/2918
+        case err: IllegalArgumentException
+            if err.getMessage.contains("If we have spent a spendinginfodb") =>
+          handleMissingSpendingInfoDb(err, wallet)
+      }
+      _ = BitcoindRpcBackendUtil
+        .syncWalletToBitcoind(bitcoind, wallet)
+        .flatMap { _ =>
+          if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
+            BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet, bitcoind)
+          } else Future.unit
+        }
+
+      // Create callbacks for processing new blocks
+      _ =
+        if (bitcoindRpcConf.zmqConfig != ZmqConfig.empty) {
+          BitcoindRpcBackendUtil.startZMQWalletCallbacks(wallet)
+        }
+
+      binding <- startHttpServer(nodeApi = bitcoind,
+                                 chainApi = bitcoind,
+                                 wallet = wallet,
+                                 rpcbindOpt = rpcBindOpt,
+                                 rpcPortOpt = rpcPortOpt)
+      _ = BitcoinSServer.startedFP.success(Future.successful(binding))
+    } yield {
+      logger.info(s"Done starting Main!")
+      ()
+    }
   }
 
   private def createCallbacks(wallet: Wallet)(implicit
@@ -265,14 +254,13 @@ class BitcoinSServerMain(override val args: Array[String])
 
   /** This is needed for migrations V2/V3 on the chain project to re-calculate the total work for the chain */
   private def runChainWorkCalc(force: Boolean)(implicit
-      chainAppConfig: ChainAppConfig,
       system: ActorSystem): Future[ChainApi] = {
     val blockEC =
       system.dispatchers.lookup(Dispatchers.DefaultBlockingDispatcherId)
     val chainApi = ChainHandler.fromDatabase(
-      blockHeaderDAO = BlockHeaderDAO()(blockEC, chainAppConfig),
-      CompactFilterHeaderDAO()(blockEC, chainAppConfig),
-      CompactFilterDAO()(blockEC, chainAppConfig))
+      blockHeaderDAO = BlockHeaderDAO()(blockEC, chainConf),
+      CompactFilterHeaderDAO()(blockEC, chainConf),
+      CompactFilterDAO()(blockEC, chainConf))
     for {
       isMissingChainWork <- chainApi.isMissingChainWork
       chainApiWithWork <-

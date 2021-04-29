@@ -14,7 +14,7 @@ class ZipDatadir(override val args: Array[String]) extends BitcoinSRunner {
   implicit lazy val conf: BitcoinSAppConfig =
     BitcoinSAppConfig(datadir, baseConfig)
 
-  override def startup: Future[Unit] = {
+  override def start(): Future[Unit] = {
 
     //replace the line below with where you want to zip too
     val path = Paths.get("/tmp", "bitcoin-s.zip")
@@ -24,6 +24,8 @@ class ZipDatadir(override val args: Array[String]) extends BitcoinSRunner {
       _ <- system.terminate()
     } yield sys.exit(0)
   }
+
+  override def stop(): Future[Unit] = Future.unit
 }
 
 object Zip extends App {

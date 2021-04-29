@@ -21,7 +21,7 @@ class ScanBitcoind(override val args: Array[String]) extends BitcoinSRunner {
   implicit val rpcAppConfig: BitcoindRpcAppConfig =
     BitcoindRpcAppConfig(datadir, baseConfig)
 
-  override def startup: Future[Unit] = {
+  override def start(): Future[Unit] = {
 
     val bitcoind = rpcAppConfig.client
 
@@ -31,11 +31,15 @@ class ScanBitcoind(override val args: Array[String]) extends BitcoinSRunner {
     for {
       endHeight <- endHeightF
       _ <- countSegwitTxs(bitcoind, startHeight, endHeight)
-      _ <- system.terminate()
     } yield {
       sys.exit(0)
     }
+  }
 
+  override def stop(): Future[Unit] = {
+    system
+      .terminate()
+      .map(_ => ())
   }
 
   /** Searches a given Source[Int] that represents block heights applying f to them and returning a Seq[T] with the results */
