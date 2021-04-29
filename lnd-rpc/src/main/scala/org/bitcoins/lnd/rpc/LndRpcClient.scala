@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.grpc.{GrpcClientSettings, SSLContextUtils}
 import com.google.protobuf.ByteString
 import grizzled.slf4j.Logging
+import io.grpc.{CallCredentials, Metadata}
 import lnrpc._
 import org.bitcoins.commons.jsonmodels.lnd._
 import org.bitcoins.core.currency._
@@ -34,6 +35,7 @@ import walletrpc.{SendOutputsRequest, WalletKitClient}
 
 import java.io.{File, FileInputStream}
 import java.net.InetSocketAddress
+import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -61,11 +63,31 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
 
   private[this] lazy val certStream = new FileInputStream(instance.certFile)
 
+  private lazy val callCredentials = new CallCredentials {
+
+    def applyRequestMetadata(
+        requestInfo: CallCredentials.RequestInfo,
+        appExecutor: Executor,
+        applier: CallCredentials.MetadataApplier
+    ): Unit = {
+      appExecutor.execute(() => {
+        val metadata = new Metadata()
+        val key =
+          Metadata.Key.of(macaroonKey, Metadata.ASCII_STRING_MARSHALLER)
+        metadata.put(key, instance.macaroon)
+        applier(metadata)
+      })
+    }
+
+    def thisUsesUnstableApi(): Unit = ()
+  }
+
   // Configure the client
   private lazy val clientSettings: GrpcClientSettings =
     GrpcClientSettings
       .connectToServiceAt(instance.rpcUri.getHost, instance.rpcUri.getPort)
       .withTrustManager(SSLContextUtils.trustManagerFromStream(certStream))
+      .withCallCredentials(callCredentials)
 
   // Create a client-side stub for the services
   lazy val lnd: LightningClient = LightningClient(clientSettings)
@@ -77,8 +99,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
 
     val req = GenSeedRequest()
     unlocker
-      .genSeed()
-      .invoke(req)
+      .genSeed(req)
   }
 
   def initWallet(password: String): Future[ByteString] = {
@@ -102,9 +123,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       UnlockWalletRequest(walletPassword = byteStrPass)
 
     unlocker
-      .unlockWallet()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(req)
+      .unlockWallet(req)
       .map(_ => ())
   }
 
@@ -113,10 +132,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
 
     val req = GetInfoRequest()
 
-    lnd
-      .getInfo()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(req)
+    lnd.getInfo(req)
   }
 
   def nodeId: Future[NodeId] = {
@@ -129,10 +145,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     val byteStr = ByteString.copyFrom(rHash.toArray)
     val req: PaymentHash = PaymentHash(rHash = byteStr)
 
-    lnd
-      .lookupInvoice()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(req)
+    lnd.lookupInvoice(req)
   }
 
   def addInvoice(
@@ -159,9 +172,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     logger.trace("lnd calling addinvoice")
 
     lnd
-      .addInvoice()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(invoice)
+      .addInvoice(invoice)
       .map { res =>
         AddInvoiceResult(
           ByteVector(res.rHash.toByteArray),
@@ -179,9 +190,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       AddressType.WITNESS_PUBKEY_HASH)
 
     lnd
-      .newAddress()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(req)
+      .newAddress(req)
       .map(r => BitcoinAddress.fromString(r.address))
   }
 
@@ -189,9 +198,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     logger.trace("lnd calling listunspent")
 
     lnd
-      .listUnspent()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(ListUnspentRequest())
+      .listUnspent(ListUnspentRequest())
       .map(_.utxos.toVector.map { utxo =>
         val outPointOpt = utxo.outpoint.map { out =>
           val txId = DoubleSha256DigestBE(out.txidStr)
@@ -234,9 +241,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     logger.trace("lnd calling connectpeer")
 
     lnd
-      .connectPeer()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(request)
+      .connectPeer(request)
       .map(_ => ())
   }
 
@@ -252,9 +257,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     val request: ListPeersRequest = ListPeersRequest()
 
     lnd
-      .listPeers()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(request)
+      .listPeers(request)
       .map(_.peers.toVector)
   }
 
@@ -294,9 +297,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     logger.trace("lnd calling openchannel")
 
     lnd
-      .openChannelSync()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(request)
+      .openChannelSync(request)
       .map { point =>
         point.fundingTxid.fundingTxidBytes match {
           case Some(bytesStr) =>
@@ -313,9 +314,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     logger.trace("lnd calling listchannels")
 
     lnd
-      .listChannels()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(request)
+      .listChannels(request)
       .map(_.channels.toVector)
   }
 
@@ -337,9 +336,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     logger.trace("lnd calling walletbalance")
 
     lnd
-      .walletBalance()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(WalletBalanceRequest())
+      .walletBalance(WalletBalanceRequest())
       .map { bals =>
         WalletBalances(balance = Satoshis(bals.totalBalance),
                        unconfirmedBalance = Satoshis(bals.unconfirmedBalance),
@@ -351,9 +348,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     logger.trace("lnd calling channelbalance")
 
     lnd
-      .channelBalance()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(ChannelBalanceRequest())
+      .channelBalance(ChannelBalanceRequest())
       .map { bals =>
         ChannelBalances(
           localBalance = Satoshis(bals.localBalance.map(_.sat).getOrElse(0L)),
@@ -390,9 +385,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     logger.trace("lnd calling sendpayment")
 
     lnd
-      .sendPaymentSync()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(request)
+      .sendPaymentSync(request)
   }
 
   def sendOutputs(
@@ -421,9 +414,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     logger.trace("lnd calling sendoutputs")
 
     wallet
-      .sendOutputs()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(request)
+      .sendOutputs(request)
       .map { res =>
         val bytes = ByteVector(res.rawTx.toByteArray)
         Tx(bytes)
@@ -439,9 +430,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     val request = walletrpc.Transaction(ByteString.copyFrom(tx.bytes.toArray))
 
     wallet
-      .publishTransaction()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(request)
+      .publishTransaction(request)
       .map { res =>
         if (res.publishError.isEmpty) None
         else Some(res.publishError)
@@ -472,9 +461,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     logger.trace("lnd calling gettransactions")
 
     lnd
-      .getTransactions()
-      .addHeader(macaroonKey, instance.macaroon)
-      .invoke(request)
+      .getTransactions(request)
       .map {
         _.transactions.map { details =>
           val blockHashOpt = if (details.blockHash.isEmpty) {
@@ -574,9 +561,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
 
     val stopF =
       lnd
-        .stopDaemon()
-        .addHeader(macaroonKey, instance.macaroon)
-        .invoke(StopRequest())
+        .stopDaemon(StopRequest())
         .flatMap(_ => lnd.close())
 
     for {
