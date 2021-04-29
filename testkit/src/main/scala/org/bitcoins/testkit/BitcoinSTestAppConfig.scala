@@ -181,7 +181,8 @@ object BitcoinSTestAppConfig {
         case ProjectType.Test   => "test"
       }
 
-      val poolName = s"bitcoin-s-$projectString-pool"
+      val poolName =
+        s"bitcoin-s-$projectString-pool-${System.currentTimeMillis()}"
 
       s""" $name.profile = "slick.jdbc.PostgresProfile$$"
          | $name.db {
