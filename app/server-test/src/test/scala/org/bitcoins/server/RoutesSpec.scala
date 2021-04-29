@@ -1054,8 +1054,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[
-            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+          responseAs[String] == s"""{"result":"${EmptyTransaction.txIdBE.hex}","error":null}""")
       }
     }
 
@@ -1074,8 +1073,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[
-            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+          responseAs[String] == s"""{"result":"${EmptyTransaction.txIdBE.hex}","error":null}""")
       }
     }
 
@@ -1096,8 +1094,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[
-            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+          responseAs[String] == s"""{"result":"${EmptyTransaction.txIdBE.hex}","error":null}""")
       }
     }
 
@@ -1121,8 +1118,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[
-            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+          responseAs[String] == s"""{"result":"${EmptyTransaction.txIdBE.hex}","error":null}""")
       }
     }
 
@@ -1139,8 +1135,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[
-            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+          responseAs[String] == s"""{"result":"${EmptyTransaction.txIdBE.hex}","error":null}""")
       }
     }
 
@@ -1162,8 +1157,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[
-            String] == s"""{"result":"${EmptyTransaction.hex}","error":null}""")
+          responseAs[String] == s"""{"result":"${EmptyTransaction.txIdBE.hex}","error":null}""")
       }
     }
 
