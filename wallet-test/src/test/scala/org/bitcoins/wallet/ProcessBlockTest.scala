@@ -20,9 +20,10 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
-      futOutcome = withNewWalletAndBitcoindCachedV19(test,
-                                                     getBIP39PasswordOpt(),
-                                                     bitcoind)
+      futOutcome = withNewWalletAndBitcoindCachedV19(
+        test,
+        getBIP39PasswordOpt(),
+        bitcoind)(getFreshWalletAppConfig)
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)

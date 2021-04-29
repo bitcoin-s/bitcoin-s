@@ -21,7 +21,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   type FixtureParam = FundedWallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWallet(test, getBIP39PasswordOpt())
+    withFundedWallet(test, getBIP39PasswordOpt())(getFreshWalletAppConfig)
   }
 
   behavior of "AddressHandling"

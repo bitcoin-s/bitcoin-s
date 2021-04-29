@@ -52,7 +52,8 @@ object BitcoinSTestAppConfig {
 
   def getSpvWithEmbeddedDbTestConfig(
       pgUrl: () => Option[String],
-      config: Config*)(implicit ec: ExecutionContext): BitcoinSAppConfig = {
+      config: Vector[Config])(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory
       .parseString {
         """

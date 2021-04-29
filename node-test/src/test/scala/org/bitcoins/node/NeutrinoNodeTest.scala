@@ -4,7 +4,6 @@ import akka.actor.Cancellable
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.fixtures.UsesExperimentalBitcoind
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
 import org.bitcoins.testkit.node.{
   NodeTestUtil,
@@ -35,7 +34,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindNewest {
 
   behavior of "NeutrinoNode"
 
-  it must "receive notification that a block occurred on the p2p network" taggedAs UsesExperimentalBitcoind in {
+  it must "receive notification that a block occurred on the p2p network for neutrino" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       val node = nodeConnectedWithBitcoind.node
 
@@ -62,7 +61,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindNewest {
       }
   }
 
-  it must "stay in sync with a bitcoind instance" taggedAs UsesExperimentalBitcoind in {
+  it must "stay in sync with a bitcoind instance for neutrino" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoind

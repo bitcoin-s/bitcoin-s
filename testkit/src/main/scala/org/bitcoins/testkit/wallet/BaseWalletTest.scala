@@ -14,7 +14,7 @@ import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.AsyncTestSuite
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /** Base test trait for all the tests in our walletTest module */
 trait BaseWalletTest extends EmbeddedPg { _: AsyncTestSuite =>
@@ -39,10 +39,10 @@ trait BaseWalletTest extends EmbeddedPg { _: AsyncTestSuite =>
     "00000000496dcc754fabd97f3e2df0a7337eab417d75537fecf97a7ebb0e7c75")
 
   /** Wallet config with data directory set to user temp directory */
-  implicit protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl)
+  protected def getFreshConfig: BitcoinSAppConfig =
+    BaseWalletTest.getFreshConfig(pgUrl, Vector.empty)
 
-  implicit protected def getFreshWalletAppConfig: WalletAppConfig = {
+  protected def getFreshWalletAppConfig: WalletAppConfig = {
     getFreshConfig.walletConf
   }
 
@@ -121,5 +121,21 @@ trait BaseWalletTest extends EmbeddedPg { _: AsyncTestSuite =>
       override def epochSecondToBlockHeight(time: Long): Future[Int] =
         Future.successful(0)
     }
+
+}
+
+object BaseWalletTest {
+
+  def getFreshConfig(pgUrl: () => Option[String], config: Vector[Config])(
+      implicit ec: ExecutionContext): BitcoinSAppConfig = {
+    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, config)
+  }
+
+  def getFreshWalletAppConfig(
+      pgUrl: () => Option[String],
+      config: Vector[Config])(implicit
+      ec: ExecutionContext): WalletAppConfig = {
+    getFreshConfig(pgUrl, config).walletConf
+  }
 
 }

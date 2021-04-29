@@ -580,7 +580,11 @@ object ChainUnitTest extends ChainVerificationLogger {
     val stopBitcoindF =
       BitcoindRpcTestUtil.stopServer(bitcoindChainHandler.bitcoindRpc)
     val dropTableF = ChainUnitTest.destroyAllTables()
-    stopBitcoindF.flatMap(_ => dropTableF)
+    val stoppedChainAppConfigF = dropTableF.flatMap(_ => chainAppConfig.stop())
+    for {
+      _ <- stopBitcoindF
+      _ <- stoppedChainAppConfigF
+    } yield ()
   }
 
   def destroyBitcoind(bitcoind: BitcoindRpcClient)(implicit

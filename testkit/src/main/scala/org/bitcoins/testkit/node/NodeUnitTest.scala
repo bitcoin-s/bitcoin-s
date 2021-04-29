@@ -246,6 +246,7 @@ object NodeUnitTest extends P2PLogger {
   def destroyNode(node: Node)(implicit ec: ExecutionContext): Future[Unit] = {
     for {
       _ <- node.stop()
+      _ <- node.chainAppConfig.stop()
     } yield {
       ()
     }
@@ -303,6 +304,7 @@ object NodeUnitTest extends P2PLogger {
     require(appConfig.nodeType == NodeType.SpvNode)
     for {
       node <- createSpvNode(createPeer(bitcoind))
+      _ <- appConfig.walletConf.start()
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoind,
         node,
