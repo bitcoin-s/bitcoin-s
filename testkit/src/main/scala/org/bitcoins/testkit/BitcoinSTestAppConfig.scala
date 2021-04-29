@@ -173,6 +173,16 @@ object BitcoinSTestAppConfig {
       val str = parts(3)
       val endOfPortStr = str.indexOf('/')
       val (port, _) = str.splitAt(endOfPortStr)
+      val projectString = project match {
+        case ProjectType.Wallet => "wallet"
+        case ProjectType.Chain  => "chain"
+        case ProjectType.Node   => "node"
+        case ProjectType.Oracle => "oracle"
+        case ProjectType.Test   => "test"
+      }
+
+      val poolName = s"bitcoin-s-$projectString-pool"
+
       s""" $name.profile = "slick.jdbc.PostgresProfile$$"
          | $name.db {
          |   driverName = postgres
@@ -181,7 +191,7 @@ object BitcoinSTestAppConfig {
          |   driver = "org.postgresql.Driver"
          |   user = "postgres"
          |   password = "postgres"
-         |   poolName = "bitcoin-s-db-pool"
+         |   poolName = "$poolName"
          |   port = $port
          |   numThreads = 1
          |   keepAliveConnection = true
