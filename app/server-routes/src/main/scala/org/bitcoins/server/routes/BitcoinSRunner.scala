@@ -9,7 +9,7 @@ import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.safePathToString
 
 import java.nio.file.{Path, Paths}
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Properties
 
 trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
@@ -129,10 +129,9 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
     logger.info(s"version=${EnvUtil.getVersion}")
 
     logger.info(s"using directory ${usedDir.toAbsolutePath.toString}")
-    val runner = start()
+    val runner: Future[Unit] = start()
     runner.failed.foreach { err =>
       logger.error(s"Failed to startup server!", err)
-      sys.exit(1)
     }(scala.concurrent.ExecutionContext.Implicits.global)
   }
 }

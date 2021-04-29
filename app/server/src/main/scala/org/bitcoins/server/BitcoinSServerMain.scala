@@ -23,8 +23,7 @@ import org.bitcoins.server.routes.{BitcoinSRunner, Server}
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val args: Array[String])
     extends BitcoinSRunner {
@@ -40,19 +39,25 @@ class BitcoinSServerMain(override val args: Array[String])
   implicit lazy val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
 
   override def start(): Future[Unit] = {
-    val startFut = nodeConf.nodeType match {
-      case _: InternalImplementationNodeType =>
-        startBitcoinSBackend()
-      case NodeType.BitcoindBackend =>
-        startBitcoindBackend()
+    val startedConfigF = conf.start()
+
+    startedConfigF.failed.foreach { err =>
+      logger.error(s"Failed to initialize configuration for BicoinServerMain",
+                   err)
     }
 
-    startFut.failed.foreach { err =>
-      logger.error(s"Error on server startup!", err)
-      err.printStackTrace()
-      throw err
-    }
-    startFut
+    for {
+      _ <- startedConfigF
+      start <- {
+        nodeConf.nodeType match {
+          case _: InternalImplementationNodeType =>
+            startBitcoinSBackend()
+          case NodeType.BitcoindBackend =>
+            startBitcoindBackend()
+        }
+
+      }
+    } yield start
   }
 
   override def stop(): Future[Unit] = {
@@ -80,22 +85,15 @@ class BitcoinSServerMain(override val args: Array[String])
                                          nodeConf.network.port)
     val peer = Peer.fromSocket(peerSocket)
 
-    //initialize the config, run migrations
-    val configInitializedF = conf.start()
-
     //run chain work migration
-    val chainApiF = configInitializedF.flatMap { _ =>
-      runChainWorkCalc(forceChainWorkRecalc || chainConf.forceRecalcChainWork)
-    }
+    val chainApiF = runChainWorkCalc(
+      forceChainWorkRecalc || chainConf.forceRecalcChainWork)
 
     //get a node that isn't started
-    val nodeF = configInitializedF.flatMap { _ =>
-      nodeConf.createNode(peer)(chainConf, system)
-    }
+    val nodeF = nodeConf.createNode(peer)(chainConf, system)
 
     //get our wallet
     val configuredWalletF = for {
-      _ <- configInitializedF
       node <- nodeF
       chainApi <- chainApiF
       _ = logger.info("Initialized chain api")
@@ -145,9 +143,6 @@ class BitcoinSServerMain(override val args: Array[String])
       _ <- node.sync()
     } yield {
       logger.info(s"Done starting Main!")
-      sys.addShutdownHook {
-        Await.result(stop(), 10.seconds)
-      }
       ()
     }
   }
@@ -156,9 +151,8 @@ class BitcoinSServerMain(override val args: Array[String])
     val bitcoind = bitcoindRpcConf.client
 
     for {
-      _ <- conf.start()
-      _ = logger.info("Starting bitcoind")
       _ <- bitcoindRpcConf.start()
+      _ = logger.info("Started bitcoind")
       _ = logger.info("Creating wallet")
       feeProvider = getFeeProviderOrElse(bitcoind)
       tmpWallet <- walletConf.createHDWallet(nodeApi = bitcoind,
@@ -197,15 +191,6 @@ class BitcoinSServerMain(override val args: Array[String])
       _ = BitcoinSServer.startedFP.success(Future.successful(binding))
     } yield {
       logger.info(s"Done starting Main!")
-      sys.addShutdownHook {
-        logger.error(s"Exiting process")
-
-        wallet.stop()
-
-        system
-          .terminate()
-          .foreach(_ => logger.info(s"Actor system terminated"))
-      }
       ()
     }
   }
