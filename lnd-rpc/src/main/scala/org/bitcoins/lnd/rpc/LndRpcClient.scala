@@ -63,29 +63,31 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
 
   private[this] lazy val certStream = new FileInputStream(instance.certFile)
 
+  private lazy val callCredentials = new CallCredentials {
+
+    def applyRequestMetadata(
+        requestInfo: CallCredentials.RequestInfo,
+        appExecutor: Executor,
+        applier: CallCredentials.MetadataApplier
+    ): Unit = {
+      appExecutor.execute(() => {
+        val metadata = new Metadata()
+        val key =
+          Metadata.Key.of(macaroonKey, Metadata.ASCII_STRING_MARSHALLER)
+        metadata.put(key, instance.macaroon)
+        applier(metadata)
+      })
+    }
+
+    def thisUsesUnstableApi(): Unit = ()
+  }
+
   // Configure the client
   private lazy val clientSettings: GrpcClientSettings =
     GrpcClientSettings
       .connectToServiceAt(instance.rpcUri.getHost, instance.rpcUri.getPort)
       .withTrustManager(SSLContextUtils.trustManagerFromStream(certStream))
-      .withCallCredentials(new CallCredentials {
-
-        def applyRequestMetadata(
-            requestInfo: CallCredentials.RequestInfo,
-            appExecutor: Executor,
-            applier: CallCredentials.MetadataApplier
-        ): Unit = {
-          appExecutor.execute(() => {
-            val metadata = new Metadata()
-            val key =
-              Metadata.Key.of(macaroonKey, Metadata.ASCII_STRING_MARSHALLER)
-            metadata.put(key, instance.macaroon)
-            applier(metadata)
-          })
-        }
-
-        def thisUsesUnstableApi(): Unit = ()
-      })
+      .withCallCredentials(callCredentials)
 
   // Create a client-side stub for the services
   lazy val lnd: LightningClient = LightningClient(clientSettings)
