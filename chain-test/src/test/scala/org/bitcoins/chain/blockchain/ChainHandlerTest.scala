@@ -272,7 +272,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
           prevHeaderHash = ChainUnitTest.genesisFilterHeaderDb.hashBE.flip)
         newChainHandler <-
           chainHandler.processFilterHeader(firstFilterHeader, blockHashBE)
-        process <- newChainHandler.processFilter(firstFilter)
+        process <- newChainHandler.processFilters(Vector(firstFilter))
       } yield {
         process
       }

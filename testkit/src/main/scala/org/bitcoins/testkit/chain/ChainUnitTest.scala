@@ -211,7 +211,8 @@ trait ChainUnitTest
         ChainUnitTest.genesisFilterHeaderDb.filterHeader,
         ChainUnitTest.genesisHeaderDb.hashBE)
       filterChainApi <-
-        filterHeaderChainApi.processFilter(ChainUnitTest.genesisFilterMessage)
+        filterHeaderChainApi.processFilters(
+          Vector(ChainUnitTest.genesisFilterMessage))
     } yield filterChainApi.asInstanceOf[ChainHandler]
   }
 
@@ -223,7 +224,8 @@ trait ChainUnitTest
         ChainUnitTest.genesisFilterHeaderDb.filterHeader,
         ChainUnitTest.genesisHeaderDb.hashBE)
       filterChainApi <-
-        filterHeaderChainApi.processFilter(ChainUnitTest.genesisFilterMessage)
+        filterHeaderChainApi.processFilters(
+          Vector(ChainUnitTest.genesisFilterMessage))
     } yield filterChainApi.asInstanceOf[ChainHandlerCached]
   }
 

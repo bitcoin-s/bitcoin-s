@@ -11,7 +11,7 @@ import org.bitcoins.chain.models.{
 }
 import org.bitcoins.core.api.chain._
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.p2p.TypeIdentifier
+import org.bitcoins.core.p2p.{DataPayload, ServiceIdentifier, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
@@ -23,15 +23,15 @@ import org.bitcoins.node.models.{
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.{DataMessageHandler, PeerMessageSender}
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ArrayBlockingQueue, TimeUnit, TimeoutException}
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Random, Success}
 
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
-trait Node extends NodeApi with ChainQueryApi with P2PLogger {
+trait Node extends NodeApi with ChainQueryApi with P2PLogger { self: Node =>
 
   implicit def system: ActorSystem
 
@@ -41,7 +41,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def executionContext: ExecutionContext = system.dispatcher
 
-  protected def peers: Vector[Peer]
+  def getPeers: Vector[Peer]
 
   /** The current data message handler.
     * It should be noted that the dataMessageHandler contains
@@ -49,7 +49,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * make sure we update the [[DataMessageHandler]] via [[updateDataMessageHandler()]]
     * to make sure we don't corrupt our chainstate cache
     */
-  def dataMessageHandler: DataMessageHandler
+  def getDataMessageHandler: DataMessageHandler
 
   def nodeCallbacks: NodeCallbacks = nodeAppConfig.nodeCallbacks
 
@@ -60,6 +60,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def addPeer(peer: Peer): Unit
 
   def removePeer(peer: Peer): Peer
+
+  def setPeerServices(peer: Peer, serviceIdentifier: ServiceIdentifier): Unit
 
   /** This is constructing a chain api from disk every time we call this method
     * This involves database calls which can be slow and expensive to construct
@@ -78,17 +80,39 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
     * the [[ChainApi chain api]] is updated inside of the p2p client
     */
-  def clients: Vector[P2PClient]
+  def getClients: Vector[P2PClient]
 
-  def peerMsgSenders: Vector[PeerMessageSender]
+  def getPeerMsgSenders: Vector[PeerMessageSender]
+
+  def getPeerServices: Map[Peer, ServiceIdentifier]
 
   def randomPeer: PeerMessageSender = {
+    val peerMsgSenders = getPeerMsgSenders
     peerMsgSenders(Random.nextInt(peerMsgSenders.size))
+  }
+
+  def getPeerWithService(f: ServiceIdentifier => Boolean): PeerMessageSender = {
+    val peers = getPeerServices.filter(p => f(p._2))
+    val peer = peers.toVector(Random.nextInt(peers.size))._1
+    getPeerMsgSenders
+      .find(_.client.peer == peer)
+      .getOrElse(throw new RuntimeException("No peers matching service filter"))
+  }
+
+  def getPeerWithBlocks: PeerMessageSender = {
+    val filter = { s: ServiceIdentifier =>
+      s.nodeWitness && s.nodeNetwork
+    }
+    getPeerWithService(filter)
+  }
+
+  def getPeerWithFilters: PeerMessageSender = {
+    getPeerWithService(_.nodeCompactFilters)
   }
 
   /** Checks if we have a tcp connection with all of our peers */
   def isConnected: Future[Boolean] = {
-    val connectedFs = peerMsgSenders.map(_.isConnected())
+    val connectedFs = getPeerMsgSenders.map(_.isConnected())
     Future.sequence(connectedFs).map(_.forall(_ == true))
   }
 
@@ -98,14 +122,14 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * @return
     */
   def isInitialized: Future[Boolean] = {
-    val initFs = peerMsgSenders.map(_.isInitialized())
+    val initFs = getPeerMsgSenders.map(_.isInitialized())
     Future.sequence(initFs).map(_.forall(_ == true))
   }
 
   /** Checks if we are disconnected from all of our peers
     */
   def isDisconnected: Future[Boolean] = {
-    val disconnectedFs = peerMsgSenders.map(_.isDisconnected())
+    val disconnectedFs = getPeerMsgSenders.map(_.isDisconnected())
     Future.sequence(disconnectedFs).map(_.forall(_ == true))
   }
 
@@ -122,7 +146,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val chainApiF = startConfsF.flatMap(_ => chainApiFromDb())
 
     val startNodeF = {
-      val initFs = peerMsgSenders.map { peerMsgSender =>
+      val initFs = getPeerMsgSenders.map { peerMsgSender =>
         val peer = peerMsgSender.client.peer
         peerMsgSender.connect()
         val isInitializedF = for {
@@ -145,8 +169,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         logger.info(s"Our node has been full started. It took=${System
           .currentTimeMillis() - start}ms")
 
-        scheduler
-          .scheduleAtFixedRate(ManagePeersRunnable, 5, 5, TimeUnit.SECONDS)
+        nodeAppConfig.startManagePeersScheduler(this)
 
         this
       }
@@ -176,7 +199,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   /** Stops our node */
   def stop(): Future[Node] = {
     logger.info(s"Stopping node")
-    val disconnectFs = peerMsgSenders.map(_.disconnect())
+    val disconnectFs = getPeerMsgSenders.map(_.disconnect())
 
     val disconnectF = for {
       disconnect <- Future.sequence(disconnectFs)
@@ -245,7 +268,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     def attemptBroadcast(attemptedPeers: Vector[PeerMessageSender] =
       Vector.empty): Future[Unit] = {
       val peerOpt =
-        Random.shuffle(peerMsgSenders).diff(attemptedPeers).headOption
+        Random.shuffle(getPeerMsgSenders).diff(attemptedPeers).headOption
 
       peerOpt match {
         case Some(peer) =>
@@ -262,8 +285,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
             }
           } yield res
         case None =>
-          Future.failed(new RuntimeException(
-            s"Error broadcasting transaction $txIds, peers are disconnected $peers"))
+          Future.failed(
+            new RuntimeException(
+              s"Error broadcasting transaction $txIds, peers are disconnected ${getClients
+                .map(_.peer)}"))
       }
     }
 
@@ -280,8 +305,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     if (blockHashes.isEmpty) {
       Future.unit
     } else {
-      randomPeer.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
-                                    blockHashes: _*)
+      getPeerWithBlocks.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
+                                           blockHashes: _*)
     }
   }
 
@@ -302,27 +327,71 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   override def epochSecondToBlockHeight(time: Long): Future[Int] =
     chainApiFromDb().flatMap(_.epochSecondToBlockHeight(time))
 
-  case object ManagePeersRunnable extends Runnable {
+  lazy val dataPayloadQueueThread: Thread = {
+    val t = new Thread(DataPayloadQueueRunnable)
+    t.setName(s"bitcoin-s-data-payload-queue-${System.currentTimeMillis()}")
+    t
+  }
+
+  /** A queue of [[DataPayload DataPayloads]] that need to be handled/processed.
+    * These are done in a queue so we can handle receiving messages from different peers at once.
+    */
+  lazy val dataPayloadQueue: ArrayBlockingQueue[
+    (DataPayload, PeerMessageSender)] = {
+    val queue = new java.util.concurrent.ArrayBlockingQueue[(
+        DataPayload,
+        PeerMessageSender)](
+      nodeAppConfig.dataPayloadQueueSize
+    )
+
+    //uses the wallet background thread to query addresses
+    scheduler.scheduleAtFixedRate(DataPayloadQueueRunnable,
+                                  0,
+                                  10,
+                                  TimeUnit.MILLISECONDS)
+
+    queue
+  }
+
+  /** A runnable that drains [[dataPayloadQueue]]. Currently polls every 10ms
+    * seeing if things are in the queue. This is needed so we process messages in
+    * order from multiple peers.
+    */
+  private case object DataPayloadQueueRunnable extends Runnable {
 
     override def run(): Unit = {
+      while (!dataPayloadQueueThread.isInterrupted) {
+        val (payload, peerMsgSender) =
+          try {
+            dataPayloadQueue.take()
+          } catch {
+            case _: java.lang.InterruptedException =>
+              return ()
+            case err: Throwable => throw err
+          }
+        logger.debug(s"Processing $payload in our data payload queue")
 
-      peerMsgSenders.foreach { peer =>
-        peer.isDisconnected().foreach {
-          case true  => removePeer(peer.client.peer)
-          case false => ()
+        val resultF = for {
+          updated <- getDataMessageHandler.handleDataPayload(payload,
+                                                             peerMsgSender,
+                                                             self)
+        } yield {
+          updateDataMessageHandler(updated)
         }
-      }
+        //make sure this is completed before we iterate to the next one
+        //otherwise we will possibly have a race condition
 
-      val diffMillis =
-        System.currentTimeMillis() - dataMessageHandler.lastMessageReceived
-
-      // if it's been 5 seconds since last message
-      if (dataMessageHandler.syncing && diffMillis >= 5000) {
-        // restart syncing
-        logger.warn(
-          s"No message from peers for ${diffMillis}ms, restarting syncing")
-        sync()
-        ()
+        try {
+          Await.result(resultF, nodeAppConfig.dataPayloadQueueTimeout)
+        } catch {
+          case timeout: TimeoutException =>
+            logger.error(
+              s"Timeout for processing $payload from peer $peerMsgSender",
+              timeout)
+          //continue executing
+          case scala.util.control.NonFatal(err) =>
+            logger.error(s"Failed to handle data payload=$payload", err)
+        }
       }
     }
   }

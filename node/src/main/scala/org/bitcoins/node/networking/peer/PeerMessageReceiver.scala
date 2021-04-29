@@ -45,7 +45,7 @@ class PeerMessageReceiver(
 
         val peerMsgSender = PeerMessageSender(client)
 
-        peerMsgSender.sendVersionMessage(node.dataMessageHandler.chainApi)
+        peerMsgSender.sendVersionMessage(node.getDataMessageHandler.chainApi)
 
         val newRecv = toState(newState)
 
@@ -88,8 +88,8 @@ class PeerMessageReceiver(
   private[networking] def isInitialized: Boolean = state.isInitialized
 
   def handleNetworkMessageReceived(
-      networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived,
-      otherPeers: Vector[PeerMessageSender]): Future[PeerMessageReceiver] = {
+      networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived): Future[
+    PeerMessageReceiver] = {
 
     val client = networkMsgRecv.client
 
@@ -102,9 +102,7 @@ class PeerMessageReceiver(
       case controlPayload: ControlPayload =>
         handleControlPayload(payload = controlPayload, sender = peerMsgSender)
       case dataPayload: DataPayload =>
-        handleDataPayload(payload = dataPayload,
-                          sender = peerMsgSender,
-                          otherPeers = otherPeers)
+        handleDataPayload(payload = dataPayload, sender = peerMsgSender)
     }
   }
 
@@ -117,16 +115,11 @@ class PeerMessageReceiver(
     */
   private def handleDataPayload(
       payload: DataPayload,
-      sender: PeerMessageSender,
-      otherPeers: Vector[PeerMessageSender]): Future[PeerMessageReceiver] = {
+      sender: PeerMessageSender): Future[PeerMessageReceiver] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
-    node.dataMessageHandler
-      .handleDataPayload(payload, sender, otherPeers)
-      .map { handler =>
-        val newNode = node.updateDataMessageHandler(handler)
-        new PeerMessageReceiver(newNode, state, peer)
-      }
+    node.dataPayloadQueue.add((payload, sender))
+    Future.successful(this)
   }
 
   /** Handles control payloads defined here https://bitcoin.org/en/developer-reference#control-messages
@@ -152,6 +145,7 @@ class PeerMessageReceiver(
           case good: Initializing =>
             val newState = good.withVersionMsg(versionMsg)
 
+            node.setPeerServices(peer, versionMsg.services)
             sender.sendVerackMessage()
 
             val newRecv = toState(newState)

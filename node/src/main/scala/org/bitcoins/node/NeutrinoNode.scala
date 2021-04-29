@@ -4,12 +4,14 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
+import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer._
 
+import scala.collection.mutable
 import scala.concurrent.Future
 
 case class NeutrinoNode(
@@ -29,9 +31,13 @@ case class NeutrinoNode(
 
   implicit override val chainAppConfig: ChainAppConfig = chainConfig
 
-  protected var peers: Vector[Peer] = _nodePeers
+  private var peers: Vector[Peer] = _nodePeers
 
-  var dataMessageHandler: DataMessageHandler = _dataMessageHandler
+  override def getPeers: Vector[Peer] = peers
+
+  private[this] var dataMessageHandler: DataMessageHandler = _dataMessageHandler
+
+  override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): NeutrinoNode = {
@@ -39,7 +45,7 @@ case class NeutrinoNode(
     this
   }
 
-  var clients: Vector[P2PClient] = {
+  private[this] var clients: Vector[P2PClient] = {
     peers.map { peer =>
       val peerMsgRecv: PeerMessageReceiver =
         PeerMessageReceiver.newReceiver(node = this, peer = peer)
@@ -49,13 +55,21 @@ case class NeutrinoNode(
     }
   }
 
-  var peerMsgSenders: Vector[PeerMessageSender] = {
-    clients.map { client =>
-      PeerMessageSender(client)
-    }
+  private[this] var peerMsgSenders: Vector[PeerMessageSender] = {
+    clients.map(PeerMessageSender(_))
   }
 
-  def addPeer(peer: Peer): Unit = {
+  private[this] val peerServices: mutable.Map[Peer, ServiceIdentifier] =
+    mutable.Map.empty
+
+  override def getClients: Vector[P2PClient] = clients
+
+  override def getPeerMsgSenders: Vector[PeerMessageSender] = peerMsgSenders
+
+  override def getPeerServices: Map[Peer, ServiceIdentifier] =
+    peerServices.toMap
+
+  override def addPeer(peer: Peer): Unit = {
     if (!peers.contains(peer)) {
       val peerMsgRecv: PeerMessageReceiver =
         PeerMessageReceiver.newReceiver(node = this, peer = peer)
@@ -64,17 +78,28 @@ case class NeutrinoNode(
                              peerMessageReceiver = peerMsgRecv)
       val peerMsgSender = PeerMessageSender(client)
 
+      peerMsgSender.connect()
+
       this.peers = peers :+ peer
       this.clients = clients :+ client
       this.peerMsgSenders = peerMsgSenders :+ peerMsgSender
     } else ()
   }
 
-  def removePeer(peer: Peer): Peer = {
-    this.peers = peers.filter(_ != peer)
-    this.clients = clients.filter(_.peer != peer)
+  override def removePeer(peer: Peer): Peer = {
     this.peerMsgSenders = peerMsgSenders.filter(_.client.peer != peer)
+    this.clients = clients.filter(_.peer != peer)
+    this.peerServices.remove(peer)
+    this.peers = peers.filter(_ != peer)
     peer
+  }
+
+  override def setPeerServices(
+      peer: Peer,
+      serviceIdentifier: ServiceIdentifier): Unit = {
+    logger.info(s"Setting peer $peer with services $serviceIdentifier")
+    peerServices.put(peer, serviceIdentifier)
+    ()
   }
 
   override def start(): Future[NeutrinoNode] = {
@@ -109,24 +134,16 @@ case class NeutrinoNode(
       filterHeaderCount <- chainApi.getFilterHeaderCount()
       filterCount <- chainApi.getFilterCount()
       blockchains <- blockchainsF
-    } yield {
+
       // Get all of our cached headers in case of a reorg
-      val cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      randomPeer.sendGetHeadersMessage(cachedHeaders)
-
-      // If we have started syncing filters headers
-      if (filterHeaderCount != 0) {
-        randomPeer.sendNextGetCompactFilterHeadersCommand(
-          chainApi = chainApi,
-          filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
-          prevStopHash = header.hashBE)
-
-        // If we have started syncing filters
-        if (filterCount != filterHeaderCount && filterCount != 0)
-          randomPeer.sendNextGetCompactFilterCommand(
-            chainApi = chainApi,
-            filterBatchSize = chainConfig.filterBatchSize,
-            startHeight = filterCount)
+      cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
+      _ <- randomPeer.sendGetHeadersMessage(cachedHeaders)
+    } yield {
+      val height = header.height
+      if (
+        header.height == 0 || height != filterHeaderCount || height != filterCount
+      ) {
+        updateDataMessageHandler(getDataMessageHandler.copy(syncing = true))
       }
 
       logger.info(

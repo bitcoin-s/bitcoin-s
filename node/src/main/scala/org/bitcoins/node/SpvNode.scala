@@ -5,6 +5,7 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.Mutable
@@ -13,11 +14,12 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer._
 
+import scala.collection.mutable
 import scala.concurrent.Future
 
 case class SpvNode(
     private val _nodePeers: Vector[Peer],
-    private val _dataMessageHandler: DataMessageHandler,
+    private var _dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem)
@@ -31,7 +33,9 @@ case class SpvNode(
 
   override def chainAppConfig: ChainAppConfig = chainConfig
 
-  protected var peers: Vector[Peer] = _nodePeers
+  private[this] var peers: Vector[Peer] = _nodePeers
+
+  override def getPeers: Vector[Peer] = peers
 
   private val _bloomFilter = new Mutable(BloomFilter.empty)
 
@@ -42,15 +46,15 @@ case class SpvNode(
     this
   }
 
-  var dataMessageHandler: DataMessageHandler = _dataMessageHandler
+  override def getDataMessageHandler: DataMessageHandler = _dataMessageHandler
 
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): SpvNode = {
-    this.dataMessageHandler = dataMessageHandler
+    this._dataMessageHandler = dataMessageHandler
     this
   }
 
-  var clients: Vector[P2PClient] = {
+  private[this] var clients: Vector[P2PClient] = {
     peers.map { peer =>
       val peerMsgRecv: PeerMessageReceiver =
         PeerMessageReceiver.newReceiver(node = this, peer = peer)
@@ -60,13 +64,23 @@ case class SpvNode(
     }
   }
 
-  var peerMsgSenders: Vector[PeerMessageSender] = {
+  private[this] var peerMsgSenders: Vector[PeerMessageSender] = {
     clients.map { client =>
       PeerMessageSender(client)
     }
   }
 
-  def addPeer(peer: Peer): Unit = {
+  private[this] val peerServices: mutable.Map[Peer, ServiceIdentifier] =
+    mutable.Map.empty
+
+  override def getClients: Vector[P2PClient] = clients
+
+  override def getPeerMsgSenders: Vector[PeerMessageSender] = peerMsgSenders
+
+  override def getPeerServices: Map[Peer, ServiceIdentifier] =
+    peerServices.toMap
+
+  override def addPeer(peer: Peer): Unit = {
     if (!peers.contains(peer)) {
       val peerMsgRecv: PeerMessageReceiver =
         PeerMessageReceiver.newReceiver(node = this, peer = peer)
@@ -75,17 +89,27 @@ case class SpvNode(
                              peerMessageReceiver = peerMsgRecv)
       val peerMsgSender = PeerMessageSender(client)
 
+      peerMsgSender.connect()
+
       this.peers = peers :+ peer
       this.clients = clients :+ client
       this.peerMsgSenders = peerMsgSenders :+ peerMsgSender
     } else ()
   }
 
-  def removePeer(peer: Peer): Peer = {
-    this.peers = peers.filter(_ != peer)
-    this.clients = clients.filter(_.peer != peer)
+  override def removePeer(peer: Peer): Peer = {
     this.peerMsgSenders = peerMsgSenders.filter(_.client.peer != peer)
+    this.clients = clients.filter(_.peer != peer)
+    this.peerServices.remove(peer)
+    this.peers = peers.filter(_ != peer)
     peer
+  }
+
+  override def setPeerServices(
+      peer: Peer,
+      serviceIdentifier: ServiceIdentifier): Unit = {
+    peerServices.put(peer, serviceIdentifier)
+    ()
   }
 
   /** Updates our bloom filter to match the given TX

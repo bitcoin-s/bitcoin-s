@@ -1,12 +1,12 @@
 package org.bitcoins.testkit.node
 
 import akka.actor.{ActorSystem, Cancellable}
-import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi, FilterSyncMarker}
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
   CompactFilterDb,
   CompactFilterHeaderDb
 }
+import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi, FilterSyncMarker}
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -103,6 +103,10 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
         startHeight: Int,
         batchSize: Int): Future[Option[FilterSyncMarker]] =
       Future.successful(None)
+
+    override def processFilter(
+        message: CompactFilterMessage): Future[ChainApi] =
+      Future.successful(this)
 
     override def processFilters(
         message: Vector[CompactFilterMessage]): Future[ChainApi] =

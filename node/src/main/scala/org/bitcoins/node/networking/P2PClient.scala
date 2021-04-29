@@ -10,10 +10,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.{
-  PeerMessageReceiver,
-  PeerMessageSender
-}
+import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.util.BitcoinSNodeUtil
 import scodec.bits.ByteVector
@@ -71,9 +68,6 @@ case class P2PClientActor(
   val network: NetworkParameters = config.network
 
   private val timeout = 1000.seconds
-
-  def otherPeers: Vector[PeerMessageSender] =
-    currentPeerMsgHandlerRecv.node.peerMsgSenders
 
   /** TODO: this comment seems wrong?
     *
@@ -213,7 +207,7 @@ case class P2PClientActor(
           case (peerMsgRecv: PeerMessageReceiver, m: NetworkMessage) =>
             logger.trace(s"Processing message=${m}")
             val msg = NetworkMessageReceived(m, P2PClient(self, peer))
-            peerMsgRecv.handleNetworkMessageReceived(msg, otherPeers)
+            peerMsgRecv.handleNetworkMessageReceived(msg)
         }
 
         logger.trace(s"About to process ${messages.length} messages")

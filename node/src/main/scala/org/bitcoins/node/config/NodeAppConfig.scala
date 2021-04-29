@@ -2,6 +2,7 @@ package org.bitcoins.node.config
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
@@ -18,7 +19,8 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
 
 import java.nio.file.Path
-import java.util.concurrent.Executors
+import java.util.concurrent.{Executors, ScheduledFuture, TimeUnit}
+import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S node
@@ -51,6 +53,44 @@ case class NodeAppConfig(
     callbacks.atomicUpdate(newCallbacks)(_ + _)
   }
 
+  private[this] var managePeersThreadCancelOpt: Option[ScheduledFuture[_]] =
+    None
+
+  /** Starts the node's manage peers scheduler */
+  def startManagePeersScheduler(node: Node): Unit = synchronized {
+    managePeersThreadCancelOpt match {
+      case Some(_) =>
+        //already scheduled, do nothing
+        ()
+      case None =>
+        logger.info(s"Starting node's manage peers task")
+
+        val future =
+          scheduler
+            .scheduleAtFixedRate(ManagePeersRunnable(node),
+                                 30,
+                                 30,
+                                 TimeUnit.SECONDS)
+        managePeersThreadCancelOpt = Some(future)
+        ()
+    }
+  }
+
+  /** Kills the node's manage peers scheduler */
+  def stopManagePeersScheduler(): Unit = synchronized {
+    managePeersThreadCancelOpt match {
+      case Some(cancel) =>
+        if (!cancel.isCancelled) {
+          logger.info(s"Stopping node's manage peers task")
+          cancel.cancel(true)
+        } else {
+          managePeersThreadCancelOpt = None
+        }
+        ()
+      case None => ()
+    }
+  }
+
   private[node] lazy val scheduler = Executors.newScheduledThreadPool(
     1,
     AsyncUtil.getNewThreadFactory(
@@ -78,6 +118,7 @@ case class NodeAppConfig(
 
   override def stop(): Future[Unit] = {
     val _ = stopHikariLogger()
+    stopManagePeersScheduler()
     super.stop()
   }
 
@@ -92,6 +133,24 @@ case class NodeAppConfig(
       .until(list.size())
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
     strs.map(_.replace("localhost", "127.0.0.1"))
+  }
+
+  lazy val dataPayloadQueueSize: Int = {
+    if (config.hasPath(s"bitcoin-s.$moduleName.dataPayloadQueueSize")) {
+      config.getInt(s"bitcoin-s.$moduleName.dataPayloadQueueSize")
+    } else {
+      2000
+    }
+  }
+
+  lazy val dataPayloadQueueTimeout: Duration = {
+    if (config.hasPath(s"bitcoin-s.$moduleName.dataPayloadQueueTimeout")) {
+      val javaDuration =
+        config.getDuration(s"bitcoin-s.$moduleName.dataPayloadQueueTimeout")
+      new FiniteDuration(javaDuration.toNanos, TimeUnit.NANOSECONDS)
+    } else {
+      20.seconds
+    }
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
@@ -137,6 +196,33 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
         Future.failed(new RuntimeException("Not implemented"))
       case NodeType.BitcoindBackend =>
         Future.failed(new RuntimeException("Use a BitcoindRpcClient instead"))
+    }
+  }
+}
+
+case class ManagePeersRunnable(node: Node)(implicit ec: ExecutionContext)
+    extends Runnable
+    with Logging {
+
+  override def run(): Unit = {
+    node.getPeerMsgSenders.foreach { peer =>
+      peer.isDisconnected().foreach {
+        case true  => node.removePeer(peer.client.peer)
+        case false => ()
+      }
+    }
+
+    val diffMillis =
+      System
+        .currentTimeMillis() - node.getDataMessageHandler.lastMessageReceived
+
+    // if it's been 30 seconds since last message
+    if (node.getDataMessageHandler.syncing && diffMillis >= 30000) {
+      // restart syncing
+      logger.warn(
+        s"No message from peers for ${diffMillis}ms, restarting syncing")
+      node.sync()
+      ()
     }
   }
 }

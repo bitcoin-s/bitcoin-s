@@ -4,12 +4,12 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{
   ChainDbUnitTest,
   ChainTestUtil,
   ChainUnitTest
 }
-import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.util.FileUtil
 import org.scalatest.FutureOutcome
 import play.api.libs.json.Json
