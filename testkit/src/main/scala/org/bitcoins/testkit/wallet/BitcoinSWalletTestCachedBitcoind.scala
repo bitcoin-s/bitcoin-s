@@ -17,6 +17,7 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   destroyWallet,
   fundWalletWithBitcoind
 }
+import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -42,7 +43,8 @@ trait BitcoinSWalletTestCachedBitcoind
   def withFundedWalletAndBitcoindCached(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String],
-      bitcoind: BitcoindRpcClient): FutureOutcome = {
+      bitcoind: BitcoindRpcClient)(implicit
+      walletAppConfig: WalletAppConfig): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = { () =>
       for {
         walletWithBitcoind <- createWalletWithBitcoindCallbacks(
@@ -65,7 +67,8 @@ trait BitcoinSWalletTestCachedBitcoind
   def withNewWalletAndBitcoindCached(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String],
-      bitcoind: BitcoindRpcClient): FutureOutcome = {
+      bitcoind: BitcoindRpcClient)(implicit
+      walletAppConfig: WalletAppConfig): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
       builder = { () =>
         Future.successful(bitcoind)
@@ -86,7 +89,8 @@ trait BitcoinSWalletTestCachedBitcoind
 
   def withFundedWalletAndBitcoind(
       test: OneArgAsyncTest,
-      bip39PasswordOpt: Option[String]): FutureOutcome = {
+      bip39PasswordOpt: Option[String])(implicit
+      walletAppConfig: WalletAppConfig): FutureOutcome = {
     val bitcoindF = BitcoinSFixture
       .createBitcoindWithFunds(None)
 
@@ -157,7 +161,8 @@ trait BitcoinSWalletTestCachedBitcoinV19
   def withFundedWalletAndBitcoindCachedV19(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String],
-      bitcoind: BitcoindV19RpcClient): FutureOutcome = {
+      bitcoind: BitcoindV19RpcClient)(implicit
+      walletAppConfig: WalletAppConfig): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoindV19] = { () =>
       for {
         walletWithBitcoind <- createWalletWithBitcoindCallbacks(
@@ -183,7 +188,8 @@ trait BitcoinSWalletTestCachedBitcoinV19
   def withNewWalletAndBitcoindCachedV19(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String],
-      bitcoind: BitcoindV19RpcClient): FutureOutcome = {
+      bitcoind: BitcoindV19RpcClient)(implicit
+      walletAppConfig: WalletAppConfig): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
       builder = { () =>
         Future.successful(bitcoind)
@@ -207,9 +213,10 @@ trait BitcoinSWalletTestCachedBitcoinV19
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
-      futOutcome = withFundedWalletAndBitcoindCachedV19(test,
-                                                        getBIP39PasswordOpt(),
-                                                        bitcoind)
+      futOutcome = withFundedWalletAndBitcoindCachedV19(
+        test,
+        getBIP39PasswordOpt(),
+        bitcoind)(getFreshWalletAppConfig)
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)

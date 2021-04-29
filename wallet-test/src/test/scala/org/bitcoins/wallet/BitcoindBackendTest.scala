@@ -2,43 +2,18 @@ package org.bitcoins.wallet
 
 import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
-import org.bitcoins.db.AppConfig
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
-import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesFundedCached,
-  CachedBitcoindNewest
+import org.bitcoins.server.BitcoindRpcBackendUtil
+import org.bitcoins.testkit.wallet.{
+  BitcoinSWalletTest,
+  WalletAppConfigWithBitcoindNewestFixtures
 }
-import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 
-class BitcoindBackendTest
-    extends BitcoinSAsyncFixtureTest
-    with BitcoindFixturesFundedCached
-    with CachedBitcoindNewest
-    with EmbeddedPg {
+class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
-  override type FixtureParam = BitcoindRpcClient
-
-  /** Wallet config with data directory set to user temp directory */
-
-  implicit protected def config: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
-
-  override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(config.walletConf)
-    super[EmbeddedPg].beforeAll()
-  }
-
-  override def afterAll(): Unit = {
-    super[CachedBitcoindNewest].afterAll()
-    super[EmbeddedPg].afterAll()
-  }
-
-  it must "correctly catch up to bitcoind" in { bitcoind =>
+  it must "correctly catch up to bitcoind" in { walletAppConfigWithBitcoind =>
+    val bitcoind = walletAppConfigWithBitcoind.bitcoind
+    implicit val walletAppConfig = walletAppConfigWithBitcoind.walletAppConfig
     val amountToSend = Bitcoins.one
-
     for {
       header <- bitcoind.getBestBlockHeader()
 

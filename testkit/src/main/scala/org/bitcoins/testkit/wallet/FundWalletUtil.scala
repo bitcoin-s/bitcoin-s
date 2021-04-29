@@ -2,19 +2,19 @@ package org.bitcoins.testkit.wallet
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import grizzled.slf4j.Logging
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import grizzled.slf4j.Logging
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkitcore.util.TransactionTestUtil
 import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -129,7 +129,7 @@ object FundWalletUtil extends FundWalletUtil {
       chainQueryApi: ChainQueryApi,
       bip39PasswordOpt: Option[String],
       extraConfig: Option[Config] = None)(implicit
-      config: BitcoinSAppConfig,
+      config: WalletAppConfig,
       system: ActorSystem): Future[FundedWallet] = {
 
     import system.dispatcher

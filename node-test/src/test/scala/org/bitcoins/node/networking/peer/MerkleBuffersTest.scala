@@ -78,6 +78,10 @@ class MerkleBuffersTest extends BitcoinSAsyncTest with CachedBitcoinSAppConfig {
       }
 
     }
+  }
 
+  override def afterAll(): Unit = {
+    super[CachedBitcoinSAppConfig].afterAll()
+    super[BitcoinSAsyncTest].afterAll()
   }
 }

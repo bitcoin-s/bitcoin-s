@@ -7,6 +7,9 @@ import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest._
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.scalatest.Assertion
+
+import scala.concurrent.Future
 
 class MultiWalletTest extends BitcoinSAsyncTest with EmbeddedPg {
 
@@ -24,18 +27,26 @@ class MultiWalletTest extends BitcoinSAsyncTest with EmbeddedPg {
     val configA = BitcoinSAppConfig(dir, walletNameConfA.withFallback(dbConf))
     val configB = BitcoinSAppConfig(dir, walletNameConfB.withFallback(dbConf))
 
-    for {
-      walletA <- BitcoinSWalletTest.createDefaultWallet(
-        MockNodeApi,
-        MockChainQueryApi,
-        bip39PasswordOpt)(configA, system.dispatcher)
+    val walletAF = BitcoinSWalletTest.createDefaultWallet(
+      MockNodeApi,
+      MockChainQueryApi,
+      bip39PasswordOpt)(configA, system.dispatcher)
+
+    val walletBF = BitcoinSWalletTest.createDefaultWallet(
+      MockNodeApi,
+      MockChainQueryApi,
+      bip39PasswordOpt)(configB, system.dispatcher)
+
+    val assertionF: Future[Assertion] = for {
+      walletA <- walletAF
       accountA <- walletA.getDefaultAccount()
 
-      walletB <- BitcoinSWalletTest.createDefaultWallet(
-        MockNodeApi,
-        MockChainQueryApi,
-        bip39PasswordOpt)(configB, system.dispatcher)
+      walletB <- walletBF
       accountB <- walletB.getDefaultAccount()
+      _ <- walletA.walletConfig.stop()
+      _ <- walletB.walletConfig.stop()
     } yield assert(accountA.xpub != accountB.xpub)
+
+    assertionF
   }
 }

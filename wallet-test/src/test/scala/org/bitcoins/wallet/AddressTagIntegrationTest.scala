@@ -18,7 +18,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
   override type FixtureParam = WalletWithBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNewWalletAndBitcoind(test)
+    withNewWalletAndBitcoind(test)(getFreshWalletAppConfig)
 
   behavior of "Address Tag - integration test"
 
