@@ -20,18 +20,10 @@ class DLCPane(glassPane: VBox) {
     wrapText = true
   }
 
-  private val exportButton = new Button("Export Result") {
-    alignmentInParent = Pos.BottomLeft
-    onAction = _ => model.exportResult(resultTextArea.text.value)
-  }
-
   private val resultArea = new BorderPane() {
     padding = Insets(10)
     center = resultTextArea
-    bottom = exportButton
   }
-
-  BorderPane.setMargin(exportButton, Insets(10))
 
   private val demoOracleArea = new TextArea {
     editable = false
@@ -74,6 +66,9 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onOffer()
     }
+    tooltip = Tooltip(
+      "Initiates a DLC with the given oracle and contract parameters, generating an Offer message.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val acceptButton = new Button {
@@ -81,6 +76,8 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onAccept()
     }
+    tooltip = Tooltip("In response to an Offer, generates an Accept message.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val signButton = new Button {
@@ -88,6 +85,8 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onSign()
     }
+    tooltip = Tooltip("In response to an Accept, generates a Sign message.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val addSigsButton = new Button {
@@ -95,6 +94,8 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onAddSigs()
     }
+    tooltip = Tooltip("In response to a Sign, saves signatures.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val getFundingButton = new Button {
@@ -102,6 +103,9 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onGetFunding()
     }
+    tooltip = Tooltip(
+      "After adding signatures, generates and broadcasts the DLC to the blockchain.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val refundButton = new Button {
@@ -109,6 +113,9 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onRefund()
     }
+    tooltip = Tooltip(
+      "After the refund timeout, broadcasts the refund transaction to the blockchain.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val executeButton = new Button {
@@ -116,6 +123,9 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onExecute()
     }
+    tooltip = Tooltip(
+      "Given an oracle attestation, broadcasts the closing transaction to the blockchain.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val initButtonBar = new ButtonBar {
