@@ -344,7 +344,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger { self: Node =>
       nodeAppConfig.dataPayloadQueueSize
     )
 
-    //uses the wallet background thread to query addresses
+    // uses the node background thread to process data payloads
     scheduler.scheduleAtFixedRate(DataPayloadQueueRunnable,
                                   0,
                                   10,
@@ -377,6 +377,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger { self: Node =>
                                                              self)
         } yield {
           updateDataMessageHandler(updated)
+          ()
         }
         //make sure this is completed before we iterate to the next one
         //otherwise we will possibly have a race condition
