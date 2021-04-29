@@ -10,5 +10,5 @@ crossPaths := false // drop off Scala suffix from artifact names.
 //to avoid double publishing
 //https://www.scala-sbt.org/1.x/docs/Cross-Build.html
 crossScalaVersions := {
-  List("2.12.12")
+  List("2.12.13")
 }
