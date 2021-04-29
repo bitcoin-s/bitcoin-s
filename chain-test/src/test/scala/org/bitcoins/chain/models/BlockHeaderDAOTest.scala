@@ -398,6 +398,8 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         blockchains <- blockchainsF
       } yield {
         assert(blockchains.length == 1)
+        assert(blockchains.head.length == 1)
+        assert(blockchains.head.headers.head.hashBE == genesisHeaderDb.hashBE)
       }
   }
 

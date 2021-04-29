@@ -91,6 +91,9 @@ trait BitcoindRpcTestUtil extends Logging {
       blockFilterIndex: Boolean = false): BitcoindConfig = {
     val pass = FileUtil.randomDirName
     val username = "random_user_name"
+
+    /* pruning and txindex are not compatible */
+    val txindex = if (pruneMode) 0 else 1
     val conf = s"""
                   |regtest=1
                   |daemon=1
@@ -103,8 +106,7 @@ trait BitcoindRpcTestUtil extends Logging {
                   |walletbroadcast=1
                   |peerbloomfilters=1
                   |fallbackfee=0.0002
-                  |txindex=${if (pruneMode) 0
-    else 1 /* pruning and txindex are not compatible */}
+                  |txindex=$txindex
                   |zmqpubhashtx=tcp://${zmqConfig.hashTx.get.getHostString}:${zmqConfig.hashTx.get.getPort}
                   |zmqpubhashblock=tcp://${zmqConfig.hashBlock.get.getHostString}:${zmqConfig.hashBlock.get.getPort}
                   |zmqpubrawtx=tcp://${zmqConfig.rawTx.get.getHostString}:${zmqConfig.rawTx.get.getPort}

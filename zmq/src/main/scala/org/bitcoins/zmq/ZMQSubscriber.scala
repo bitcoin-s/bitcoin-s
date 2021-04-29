@@ -3,6 +3,7 @@ package org.bitcoins.zmq
 import grizzled.slf4j.Logging
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.StartStop
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.zeromq.{SocketType, ZMQ, ZMQException, ZMsg}
 import scodec.bits.ByteVector
@@ -26,7 +27,8 @@ class ZMQSubscriber(
     hashBlockListener: Option[DoubleSha256DigestBE => Unit],
     rawTxListener: Option[Transaction => Unit],
     rawBlockListener: Option[Block => Unit])
-    extends Logging {
+    extends Logging
+    with StartStop[Unit] {
 
   private var running = true
   private val context = ZMQ.context(1)
@@ -96,7 +98,7 @@ class ZMQSubscriber(
     s"ZMQSubscriber-thread-${System.currentTimeMillis()}")
   subscriberThread.setDaemon(true)
 
-  def start(): Unit = {
+  override def start(): Unit = {
     logger.info("starting zmq")
     subscriberThread.start()
   }
@@ -104,7 +106,7 @@ class ZMQSubscriber(
   /** Stops running the zmq subscriber and cleans up after zmq
     * http://zguide.zeromq.org/java:psenvsub
     */
-  def stop(): Unit = {
+  override def stop(): Unit = {
     logger.info(s"Stopping zmq")
     //i think this could technically not work, because currently we are blocking
     //on Zmsg.recvMsg in our while loop. If we don't get another message we won't
@@ -113,6 +115,7 @@ class ZMQSubscriber(
     subscriber.close()
     logger.info("Attempting to terminate context")
     context.term()
+    subscriberThread.interrupt()
     logger.info(s"Done with closing zmq")
     ()
   }

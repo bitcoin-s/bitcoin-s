@@ -1,9 +1,11 @@
 package org.bitcoins.chain.blockchain
 
-import org.bitcoins.rpc.util.RpcUtil
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.testkit.chain.ChainDbUnitTest
 import org.bitcoins.testkit.chain.fixture.BitcoindChainHandlerViaZmq
 import org.scalatest.FutureOutcome
+
+import scala.concurrent.duration.DurationInt
 
 class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
 
@@ -20,11 +22,13 @@ class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
 
       val chainHandler = bitcoindChainHandler.chainHandler
 
+      val bitcoindBlockCountF = bitcoind.getBlockCount
       for {
-        _ <-
+        bitcoinSBlockCount <-
           chainHandler
             .getBlockCount()
-            .map(count => assert(count == 0))
+        bitcoindCount <- bitcoindBlockCountF
+        _ = assert(bitcoindCount == bitcoinSBlockCount)
         address <- bitcoind.getNewAddress
         hash +: _ <- bitcoind.generateToAddress(1, address)
         _ <- {
@@ -32,10 +36,10 @@ class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
           //can't monitor processing flow for zmq
           //so we just need to await until we
           //have fully processed the header
-          RpcUtil.awaitConditionF(() =>
-            chainHandler.getHeader(hash).map(_.isDefined))
+          AsyncUtil.awaitConditionF(
+            () => chainHandler.getHeader(hash).map(_.isDefined),
+            interval = 250.millis)
         }
-
         header <- chainHandler.getHeader(hash)
       } yield assert(header.get.hashBE == hash)
   }
