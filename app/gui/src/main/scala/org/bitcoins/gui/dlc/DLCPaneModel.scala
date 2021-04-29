@@ -343,11 +343,14 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
   def cancelDLC(status: DLCStatus): Unit = {
     status.state match {
       case DLCState.Offered | DLCState.Accepted =>
+        val eventId =
+          status.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
         val confirmed = new Alert(AlertType.Confirmation) {
           initOwner(owner)
           headerText = "Confirm Canceling DLC"
-          contentText = "Are you sure you want to cancel this DLC?\n" +
-            "This cannot be undone."
+          contentText =
+            s"Are you sure you want to cancel this DLC for $eventId?\n" +
+              "This cannot be undone."
         }.showAndWait() match {
           case Some(ButtonType.OK) => true
           case None | Some(_)      => false
