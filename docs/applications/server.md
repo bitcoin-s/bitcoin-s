@@ -205,7 +205,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `txid` - The transaction id
  - `lockunspent` `unlock` `transactions` - Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.
     - `unlock` - Whether to unlock (true) or lock (false) the specified transactions
-    - `transactions` - The transaction outpoints to unlock/lock
+    - `transactions` - The transaction outpoints to unlock/lock, empty to apply to all utxos
 - `importseed` `walletname` `words` `passphrase` - Imports a mnemonic seed as a new seed file
    - `walletname` - Name to associate with this seed
    - `words` - Mnemonic seed words, space separated
