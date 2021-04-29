@@ -209,9 +209,11 @@ object BitcoindRpcBackendUtil extends Logging {
         wallet.processCompactFilters(filterRes)
       }
       .run()
-    runStream.map(_ =>
+    runStream.map { _ =>
       logger.info(s"Synced ${blockHashes.size} filters, it took ${System
-        .currentTimeMillis() - start}ms"))
+        .currentTimeMillis() - start}ms")
+      logger.info("We are synced!")
+    }
   }
 
   private def getNodeApiWalletCallback(
