@@ -1,8 +1,10 @@
 package org.bitcoins.rpc.util
 
 import org.bitcoins.asyncutil.AsyncUtil
-import java.net.ServerSocket
+
+import java.net.{InetSocketAddress, ServerSocket}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.config.ZmqConfig
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,6 +38,16 @@ abstract class RpcUtil extends AsyncUtil {
       case Success(value) => value
       case Failure(_)     => randomPort
     }
+  }
+
+  /** Genreates a zmq config with unused ports */
+  def zmqConfig: ZmqConfig = {
+    ZmqConfig(
+      hashBlock = Some(new InetSocketAddress(randomPort)),
+      hashTx = Some(new InetSocketAddress(randomPort)),
+      rawTx = Some(new InetSocketAddress(randomPort)),
+      rawBlock = Some(new InetSocketAddress(randomPort))
+    )
   }
 }
 

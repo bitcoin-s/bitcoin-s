@@ -23,7 +23,11 @@ import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
+import org.bitcoins.rpc.config.{
+  BitcoindAuthCredentials,
+  BitcoindInstance,
+  ZmqConfig
+}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -65,41 +69,13 @@ trait EclairRpcTestUtil extends Logging {
   def bitcoindInstance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      zmqPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       bitcoindV: BitcoindVersion =
         EclairRpcClient.bitcoindV): BitcoindInstance = {
-    bitcoindV match {
-      case BitcoindVersion.V21 =>
-        BitcoindRpcTestUtil.v21Instance(port = port,
-                                        rpcPort = rpcPort,
-                                        zmqPort = zmqPort)
-      case BitcoindVersion.V20 =>
-        BitcoindRpcTestUtil.v20Instance(port = port,
-                                        rpcPort = rpcPort,
-                                        zmqPort = zmqPort)
-      case BitcoindVersion.V19 =>
-        BitcoindRpcTestUtil.v19Instance(port = port,
-                                        rpcPort = rpcPort,
-                                        zmqPort = zmqPort)
-      case BitcoindVersion.V18 =>
-        BitcoindRpcTestUtil.v18Instance(port = port,
-                                        rpcPort = rpcPort,
-                                        zmqPort = zmqPort)
-      case BitcoindVersion.V17 =>
-        BitcoindRpcTestUtil.v17Instance(port = port,
-                                        rpcPort = rpcPort,
-                                        zmqPort = zmqPort)
-      case BitcoindVersion.V16 =>
-        BitcoindRpcTestUtil.v16Instance(port = port,
-                                        rpcPort = rpcPort,
-                                        zmqPort = zmqPort)
-      case BitcoindVersion.Experimental =>
-        BitcoindRpcTestUtil.vExperimentalInstance(port = port,
-                                                  rpcPort = rpcPort,
-                                                  zmqPort = zmqPort)
-      case BitcoindVersion.Unknown =>
-        sys.error(s"Cannot start eclair with an unknown instance of bitcoind")
-    }
+    BitcoindRpcTestUtil.getInstance(bitcoindVersion = bitcoindV,
+                                    port = port,
+                                    rpcPort = rpcPort,
+                                    zmqConfig = zmqConfig)
   }
 
   //cribbed from https://github.com/Christewart/eclair/blob/bad02e2c0e8bd039336998d318a861736edfa0ad/eclair-core/src/test/scala/fr/acinq/eclair/integration/IntegrationSpec.scala#L140-L153
