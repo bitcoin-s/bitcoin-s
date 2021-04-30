@@ -3,10 +3,10 @@ package org.bitcoins.testkit
 import com.typesafe.config._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkitcore.Implicits.GeneratorOps
-import org.bitcoins.testkitcore.gen.{NumberGenerator, StringGenerators}
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkitcore.Implicits.GeneratorOps
+import org.bitcoins.testkitcore.gen.{NumberGenerator, StringGenerators}
 
 import java.nio.file._
 import scala.concurrent.ExecutionContext
@@ -180,6 +180,7 @@ object BitcoinSTestAppConfig {
         case ProjectType.Node   => "node"
         case ProjectType.Oracle => "oracle"
         case ProjectType.Test   => "test"
+        case ProjectType.DLC    => "dlc"
       }
 
       val poolName =

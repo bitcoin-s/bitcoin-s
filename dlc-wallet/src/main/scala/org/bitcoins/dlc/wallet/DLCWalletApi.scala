@@ -89,6 +89,8 @@ trait DLCWalletApi { self: WalletApi =>
   def listDLCs(): Future[Vector[DLCStatus]]
 
   def findDLC(paramHash: Sha256DigestBE): Future[Option[DLCStatus]]
+
+  def cancelDLC(paramHash: Sha256DigestBE): Future[Unit]
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */

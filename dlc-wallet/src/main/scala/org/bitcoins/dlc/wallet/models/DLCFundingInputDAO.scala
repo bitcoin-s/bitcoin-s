@@ -54,6 +54,11 @@ case class DLCFundingInputDAO()(implicit
     Seq] =
     findByPrimaryKeys(dlcs.map(_.outPoint))
 
+  def deleteByParamHash(paramHash: Sha256DigestBE): Future[Int] = {
+    val q = table.filter(_.paramHash === paramHash)
+    safeDatabase.run(q.delete)
+  }
+
   def findByParamHash(
       paramHash: Sha256DigestBE): Future[Vector[DLCFundingInputDb]] = {
     val q = table.filter(_.paramHash === paramHash)

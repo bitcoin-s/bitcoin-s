@@ -44,6 +44,11 @@ case class DLCOfferDAO()(implicit
       dlcs: Vector[DLCOfferDb]): Query[DLCOfferTable, DLCOfferDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.paramHash))
 
+  def deleteByParamHash(paramHash: Sha256DigestBE): Future[Int] = {
+    val q = table.filter(_.paramHash === paramHash)
+    safeDatabase.run(q.delete)
+  }
+
   def findByParamHash(paramHash: Sha256DigestBE): Future[Option[DLCOfferDb]] = {
     val q = table.filter(_.paramHash === paramHash)
 
