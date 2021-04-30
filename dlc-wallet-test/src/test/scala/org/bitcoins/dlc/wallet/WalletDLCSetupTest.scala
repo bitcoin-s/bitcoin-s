@@ -420,6 +420,33 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       }
   }
 
+  it must "fail to cancel a signed DLC" in {
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
+
+      val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
+
+      for {
+        offer <- walletA.createDLCOffer(
+          offerData.contractInfo,
+          offerData.totalCollateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          offerData.timeouts.contractTimeout.toUInt32
+        )
+        accept <- walletB.acceptDLCOffer(offer)
+        sign <- walletA.signDLC(accept)
+        _ <- walletB.addDLCSigs(sign)
+
+        _ <- recoverToSucceededIf[IllegalArgumentException](
+          walletA.cancelDLC(offer.paramHash))
+
+        _ <- recoverToSucceededIf[IllegalArgumentException](
+          walletB.cancelDLC(offer.paramHash))
+      } yield succeed
+  }
+
   it must "setup and execute with oracle example" in {
     FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
       val walletA = FundedDLCWallets._1.wallet
