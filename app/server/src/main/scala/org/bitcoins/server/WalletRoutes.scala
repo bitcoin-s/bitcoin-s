@@ -272,6 +272,18 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("canceldlc", arr) =>
+      GetDLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetDLC(paramHash)) =>
+          complete {
+            wallet.cancelDLC(paramHash).map { _ =>
+              Server.httpSuccess("Success")
+            }
+          }
+      }
+
     case ServerCommand("createdlcoffer", arr) =>
       CreateDLCOffer.fromJsArr(arr) match {
         case Failure(exception) =>

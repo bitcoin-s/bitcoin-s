@@ -411,6 +411,32 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
     }
   }
 
+  override def cancelDLC(paramHash: Sha256DigestBE): Future[Unit] = {
+    for {
+      dlcOpt <- findDLC(paramHash)
+      isInit = dlcOpt match {
+        case Some(db) =>
+          require(db.state == DLCState.Offered || db.state == DLCState.Accepted,
+                  "Cannot cancel a DLC after it has been signed")
+          db.isInitiator
+        case None =>
+          throw new IllegalArgumentException(
+            s"No DLC Found with param hash ${paramHash.hex}")
+      }
+
+      inputs <- dlcInputsDAO.findByParamHash(paramHash, isInit)
+      dbs <- spendingInfoDAO.findByOutPoints(inputs.map(_.outPoint))
+      _ <- unmarkUTXOsAsReserved(dbs)
+
+      _ <- dlcSigsDAO.deleteByParamHash(paramHash)
+      _ <- dlcRefundSigDAO.deleteByParamHash(paramHash)
+      _ <- dlcInputsDAO.deleteByParamHash(paramHash)
+      _ <- dlcAcceptDAO.deleteByParamHash(paramHash)
+      _ <- dlcOfferDAO.deleteByParamHash(paramHash)
+      _ <- dlcDAO.deleteByParamHash(paramHash)
+    } yield ()
+  }
+
   /** Creates a DLCOffer, if one has already been created
     * with the given parameters then that one will be returned instead.
     *

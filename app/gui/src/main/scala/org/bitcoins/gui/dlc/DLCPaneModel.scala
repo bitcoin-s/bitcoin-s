@@ -13,7 +13,8 @@ import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.beans.property.ObjectProperty
 import scalafx.collections.ObservableBuffer
-import scalafx.scene.control.TextArea
+import scalafx.scene.control.Alert.AlertType
+import scalafx.scene.control.{Alert, ButtonType, TextArea}
 import scalafx.stage.FileChooser.ExtensionFilter
 import scalafx.stage.{FileChooser, Window}
 import upickle.default._
@@ -337,6 +338,46 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
     ViewDLCDialog.showAndWait(parentWindow.value,
                               updatedStatus.getOrElse(status),
                               this)
+  }
+
+  def cancelDLC(status: DLCStatus): Unit = {
+    status.state match {
+      case DLCState.Offered | DLCState.Accepted =>
+        val eventId =
+          status.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
+        val confirmed = new Alert(AlertType.Confirmation) {
+          initOwner(owner)
+          headerText = "Confirm Canceling DLC"
+          contentText =
+            s"Are you sure you want to cancel this DLC for $eventId?\n" +
+              "This cannot be undone."
+        }.showAndWait() match {
+          case Some(ButtonType.OK) => true
+          case None | Some(_)      => false
+        }
+
+        if (confirmed) {
+          taskRunner.run(
+            caption = "Canceling DLC",
+            op = {
+              ConsoleCli.exec(CancelDLC(status.paramHash),
+                              GlobalData.consoleCliConfig) match {
+                case Success(_)   => ()
+                case Failure(err) => throw err
+              }
+              updateDLCs()
+            }
+          )
+        }
+      case DLCState.Signed | DLCState.Broadcasted | DLCState.Confirmed |
+          DLCState.Claimed | DLCState.RemoteClaimed | DLCState.Refunded =>
+        new Alert(AlertType.Error) {
+          initOwner(owner)
+          headerText = "Failed to Cancel DLC"
+          contentText = "Cannot cancel a DLC after it has been signed"
+        }.showAndWait()
+        ()
+    }
   }
 
   def exportResult(result: String): Unit = {

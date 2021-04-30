@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
@@ -353,6 +354,97 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           accept.copy(
             cetSigs = CETSignatures(accept.cetSigs.outcomeSigs,
                                     DLCWalletUtil.dummyPartialSig)))
+  }
+
+  it must "cancel an offered DLC" in {
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+
+      val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
+
+      for {
+        oldBalance <- walletA.getBalance()
+        oldReserved <- walletA.spendingInfoDAO.findByTxoState(TxoState.Reserved)
+        _ = assert(oldReserved.isEmpty)
+
+        offer <- walletA.createDLCOffer(
+          offerData.contractInfo,
+          offerData.totalCollateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          offerData.timeouts.contractTimeout.toUInt32
+        )
+
+        _ <- walletA.cancelDLC(offer.paramHash)
+
+        balance <- walletA.getBalance()
+        reserved <- walletA.spendingInfoDAO.findByTxoState(TxoState.Reserved)
+        dlcOpt <- walletA.findDLC(offer.paramHash)
+      } yield {
+        assert(balance == oldBalance)
+        assert(reserved.isEmpty)
+        assert(dlcOpt.isEmpty)
+      }
+  }
+
+  it must "cancel an accepted DLC" in {
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
+
+      val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
+
+      for {
+        oldBalance <- walletB.getBalance()
+        oldReserved <- walletB.spendingInfoDAO.findByTxoState(TxoState.Reserved)
+        _ = assert(oldReserved.isEmpty)
+
+        offer <- walletA.createDLCOffer(
+          offerData.contractInfo,
+          offerData.totalCollateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          offerData.timeouts.contractTimeout.toUInt32
+        )
+        _ <- walletB.acceptDLCOffer(offer)
+
+        _ <- walletB.cancelDLC(offer.paramHash)
+
+        balance <- walletB.getBalance()
+        reserved <- walletB.spendingInfoDAO.findByTxoState(TxoState.Reserved)
+        dlcOpt <- walletB.findDLC(offer.paramHash)
+      } yield {
+        assert(balance == oldBalance)
+        assert(reserved.isEmpty)
+        assert(dlcOpt.isEmpty)
+      }
+  }
+
+  it must "fail to cancel a signed DLC" in {
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
+
+      val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
+
+      for {
+        offer <- walletA.createDLCOffer(
+          offerData.contractInfo,
+          offerData.totalCollateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          offerData.timeouts.contractTimeout.toUInt32
+        )
+        accept <- walletB.acceptDLCOffer(offer)
+        sign <- walletA.signDLC(accept)
+        _ <- walletB.addDLCSigs(sign)
+
+        _ <- recoverToSucceededIf[IllegalArgumentException](
+          walletA.cancelDLC(offer.paramHash))
+
+        _ <- recoverToSucceededIf[IllegalArgumentException](
+          walletB.cancelDLC(offer.paramHash))
+      } yield succeed
   }
 
   it must "setup and execute with oracle example" in {

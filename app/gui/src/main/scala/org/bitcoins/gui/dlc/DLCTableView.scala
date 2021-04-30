@@ -119,8 +119,15 @@ class DLCTableView(model: DLCPaneModel) {
         }
       }
 
+      val cancelDLCItem: MenuItem = new MenuItem("Cancel Id") {
+        onAction = _ => {
+          val dlc = selectionModel.value.getSelectedItem
+          model.cancelDLC(dlc)
+        }
+      }
+
       contextMenu = new ContextMenu() {
-        items ++= Vector(infoItem, copyIdItem)
+        items ++= Vector(infoItem, copyIdItem, cancelDLCItem)
       }
     }
   }
