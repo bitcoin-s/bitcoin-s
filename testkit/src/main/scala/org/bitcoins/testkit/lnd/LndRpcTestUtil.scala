@@ -10,7 +10,11 @@ import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.lnd.rpc.LndRpcClient
 import org.bitcoins.lnd.rpc.config.LndInstance
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
+import org.bitcoins.rpc.config.{
+  BitcoindAuthCredentials,
+  BitcoindInstance,
+  ZmqConfig
+}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -45,40 +49,12 @@ trait LndRpcTestUtil extends Logging {
   def bitcoindInstance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      zmqPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       bitcoindV: BitcoindVersion = BitcoindVersion.V21): BitcoindInstance = {
-    bitcoindV match {
-      case BitcoindVersion.V21 =>
-        BitcoindRpcTestUtil.v21Instance(port = port,
-                                        rpcPort = rpcPort,
-                                        zmqPort = zmqPort)
-      case BitcoindVersion.V20 =>
-        BitcoindRpcTestUtil.v20Instance(port = port,
-                                        rpcPort = rpcPort,
-                                        zmqPort = zmqPort)
-      case BitcoindVersion.V19 =>
-        BitcoindRpcTestUtil.v19Instance(port = port,
-                                        rpcPort = rpcPort,
-                                        zmqPort = zmqPort)
-      case BitcoindVersion.V18 =>
-        BitcoindRpcTestUtil.v18Instance(port = port,
-                                        rpcPort = rpcPort,
-                                        zmqPort = zmqPort)
-      case BitcoindVersion.V17 =>
-        BitcoindRpcTestUtil.v17Instance(port = port,
-                                        rpcPort = rpcPort,
-                                        zmqPort = zmqPort)
-      case BitcoindVersion.V16 =>
-        BitcoindRpcTestUtil.v16Instance(port = port,
-                                        rpcPort = rpcPort,
-                                        zmqPort = zmqPort)
-      case BitcoindVersion.Experimental =>
-        BitcoindRpcTestUtil.vExperimentalInstance(port = port,
-                                                  rpcPort = rpcPort,
-                                                  zmqPort = zmqPort)
-      case BitcoindVersion.Unknown =>
-        sys.error(s"Cannot start lnd with an unknown instance of bitcoind")
-    }
+    BitcoindRpcTestUtil.getInstance(bitcoindVersion = bitcoindV,
+                                    port = port,
+                                    rpcPort = rpcPort,
+                                    zmqConfig = zmqConfig)
   }
 
   def commonConfig(

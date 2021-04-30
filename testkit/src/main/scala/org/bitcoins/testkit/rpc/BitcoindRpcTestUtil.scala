@@ -42,7 +42,7 @@ import org.bitcoins.testkit.util.{BitcoindRpcTestClient, FileUtil}
 import org.bitcoins.util.ListUtil
 
 import java.io.File
-import java.net.URI
+import java.net.{InetSocketAddress, URI}
 import java.nio.file.{Files, Path}
 import scala.collection.immutable.Map
 import scala.collection.mutable
@@ -59,20 +59,34 @@ trait BitcoindRpcTestUtil extends Logging {
   type RpcClientAccum =
     mutable.Builder[BitcoindRpcClient, Vector[BitcoindRpcClient]]
 
+  private def newUri: URI = new URI(s"http://localhost:${RpcUtil.randomPort}")
+
+  private def newInetSocketAddres: InetSocketAddress = {
+    new InetSocketAddress(RpcUtil.randomPort)
+  }
+
   /** Standard config used for testing purposes
     */
   def standardConfig: BitcoindConfig = {
-    def newUri: URI = new URI(s"http://localhost:${RpcUtil.randomPort}")
+
+    val hashBlock = newInetSocketAddres
+    val hashTx = newInetSocketAddres
+    val rawBlock = newInetSocketAddres
+    val rawTx = newInetSocketAddres
+    val zmqConfig = ZmqConfig(hashBlock = Some(hashBlock),
+                              rawBlock = Some(rawBlock),
+                              hashTx = Some(hashTx),
+                              rawTx = Some(rawTx))
     config(uri = newUri,
            rpcUri = newUri,
-           zmqPort = RpcUtil.randomPort,
+           zmqConfig = zmqConfig,
            pruneMode = false)
   }
 
   def config(
       uri: URI,
       rpcUri: URI,
-      zmqPort: Int,
+      zmqConfig: ZmqConfig,
       pruneMode: Boolean,
       blockFilterIndex: Boolean = false): BitcoindConfig = {
     val pass = FileUtil.randomDirName
@@ -91,10 +105,10 @@ trait BitcoindRpcTestUtil extends Logging {
                   |fallbackfee=0.0002
                   |txindex=${if (pruneMode) 0
     else 1 /* pruning and txindex are not compatible */}
-                  |zmqpubhashtx=tcp://127.0.0.1:$zmqPort
-                  |zmqpubhashblock=tcp://127.0.0.1:${zmqPort + 1}
-                  |zmqpubrawtx=tcp://127.0.0.1:${zmqPort + 2}
-                  |zmqpubrawblock=tcp://127.0.0.1:${zmqPort + 3}
+                  |zmqpubhashtx=tcp://${zmqConfig.hashTx.get.getHostString}:${zmqConfig.hashTx.get.getPort}
+                  |zmqpubhashblock=tcp://${zmqConfig.hashBlock.get.getHostString}:${zmqConfig.hashBlock.get.getPort}
+                  |zmqpubrawtx=tcp://${zmqConfig.rawTx.get.getHostString}:${zmqConfig.rawTx.get.getPort}
+                  |zmqpubrawblock=tcp://${zmqConfig.rawBlock.get.getHostString}:${zmqConfig.rawBlock.get.getPort}
                   |prune=${if (pruneMode) 1 else 0}
     """.stripMargin
     val config =
@@ -115,11 +129,15 @@ trait BitcoindRpcTestUtil extends Logging {
   def writtenConfig(
       uri: URI,
       rpcUri: URI,
-      zmqPort: Int,
+      zmqConfig: ZmqConfig,
       pruneMode: Boolean,
       blockFilterIndex: Boolean = false
   ): Path = {
-    val conf = config(uri, rpcUri, zmqPort, pruneMode, blockFilterIndex)
+    val conf = config(uri = uri,
+                      rpcUri = rpcUri,
+                      zmqConfig = zmqConfig,
+                      pruneMode = pruneMode,
+                      blockFilterIndex = blockFilterIndex)
 
     val datadir = conf.datadir
     val written = BitcoindConfig.writeConfigToFile(conf, datadir)
@@ -174,7 +192,7 @@ trait BitcoindRpcTestUtil extends Logging {
   def instance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      zmqPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       versionOpt: Option[BitcoindVersion] = None,
       binaryDirectory: Path =
@@ -191,7 +209,7 @@ trait BitcoindRpcTestUtil extends Logging {
     val configFile =
       writtenConfig(uri,
                     rpcUri,
-                    zmqPort,
+                    zmqConfig,
                     pruneMode,
                     blockFilterIndex = hasNeutrinoSupport)
     val conf = BitcoindConfig(configFile)
@@ -214,13 +232,13 @@ trait BitcoindRpcTestUtil extends Logging {
   def v16Instance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      zmqPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
-             zmqPort = zmqPort,
+             zmqConfig = zmqConfig,
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.V16),
              binaryDirectory = binaryDirectory)
@@ -228,13 +246,13 @@ trait BitcoindRpcTestUtil extends Logging {
   def v17Instance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      zmqPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
-             zmqPort = zmqPort,
+             zmqConfig = zmqConfig,
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.V17),
              binaryDirectory = binaryDirectory)
@@ -242,13 +260,13 @@ trait BitcoindRpcTestUtil extends Logging {
   def v18Instance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      zmqPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
-             zmqPort = zmqPort,
+             zmqConfig = zmqConfig,
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.V18),
              binaryDirectory = binaryDirectory)
@@ -256,13 +274,13 @@ trait BitcoindRpcTestUtil extends Logging {
   def v19Instance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      zmqPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
-             zmqPort = zmqPort,
+             zmqConfig = zmqConfig,
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.V19),
              binaryDirectory = binaryDirectory)
@@ -270,13 +288,13 @@ trait BitcoindRpcTestUtil extends Logging {
   def v20Instance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      zmqPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
-             zmqPort = zmqPort,
+             zmqConfig = zmqConfig,
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.V20),
              binaryDirectory = binaryDirectory)
@@ -284,13 +302,13 @@ trait BitcoindRpcTestUtil extends Logging {
   def v21Instance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      zmqPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
-             zmqPort = zmqPort,
+             zmqConfig = zmqConfig,
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.V21),
              binaryDirectory = binaryDirectory)
@@ -298,13 +316,13 @@ trait BitcoindRpcTestUtil extends Logging {
   def vExperimentalInstance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      zmqPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   ): BitcoindInstance =
     instance(port = port,
              rpcPort = rpcPort,
-             zmqPort = zmqPort,
+             zmqConfig = zmqConfig,
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.Experimental),
              binaryDirectory = binaryDirectory)
@@ -314,7 +332,7 @@ trait BitcoindRpcTestUtil extends Logging {
       bitcoindVersion: BitcoindVersion,
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
-      zmqPort: Int = RpcUtil.randomPort,
+      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path =
         BitcoindRpcTestClient.sbtBinaryDirectory): BitcoindInstance = {
@@ -322,43 +340,43 @@ trait BitcoindRpcTestUtil extends Logging {
       case BitcoindVersion.V16 =>
         BitcoindRpcTestUtil.v16Instance(port,
                                         rpcPort,
-                                        zmqPort,
+                                        zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
       case BitcoindVersion.V17 =>
         BitcoindRpcTestUtil.v17Instance(port,
                                         rpcPort,
-                                        zmqPort,
+                                        zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
       case BitcoindVersion.V18 =>
         BitcoindRpcTestUtil.v18Instance(port,
                                         rpcPort,
-                                        zmqPort,
+                                        zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
       case BitcoindVersion.V19 =>
         BitcoindRpcTestUtil.v19Instance(port,
                                         rpcPort,
-                                        zmqPort,
+                                        zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
       case BitcoindVersion.V20 =>
         BitcoindRpcTestUtil.v20Instance(port,
                                         rpcPort,
-                                        zmqPort,
+                                        zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
       case BitcoindVersion.V21 =>
         BitcoindRpcTestUtil.v21Instance(port,
                                         rpcPort,
-                                        zmqPort,
+                                        zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
       case BitcoindVersion.Experimental =>
         BitcoindRpcTestUtil.vExperimentalInstance(port,
                                                   rpcPort,
-                                                  zmqPort,
+                                                  zmqConfig,
                                                   pruneMode,
                                                   binaryDirectory =
                                                     binaryDirectory)
