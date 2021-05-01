@@ -975,6 +975,18 @@ object ChainHandler {
                      blockFilterCheckpoints = Map.empty)
   }
 
+  def fromDatabase()(implicit
+      ec: ExecutionContext,
+      chainConfig: ChainAppConfig): ChainHandler = {
+    lazy val blockHeaderDAO = BlockHeaderDAO()
+    lazy val filterHeaderDAO = CompactFilterHeaderDAO()
+    lazy val filterDAO = CompactFilterDAO()
+
+    ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
+                              filterHeaderDAO = filterHeaderDAO,
+                              filterDAO = filterDAO)
+  }
+
   /** Converts a [[ChainHandler]] to [[ChainHandlerCached]] by calling [[BlockHeaderDAO.getBlockchains()]] */
   def toChainHandlerCached(chainHandler: ChainHandler)(implicit
       ec: ExecutionContext): Future[ChainHandlerCached] = {

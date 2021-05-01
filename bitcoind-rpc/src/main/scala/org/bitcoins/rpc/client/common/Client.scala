@@ -145,7 +145,7 @@ trait Client
         _ = isStartedFlag.set(true)
         _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
                                             interval = 1.seconds,
-                                            maxTries = 60)
+                                            maxTries = 120)
       } yield this.asInstanceOf[BitcoindRpcClient]
     }
 

@@ -2,6 +2,7 @@ package org.bitcoins.testkit.chain
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.blockchain.sync.ChainSync
 import org.bitcoins.chain.blockchain.{ChainHandler, ChainHandlerCached}
@@ -26,7 +27,7 @@ import org.bitcoins.testkit.chain.models.{
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.CachedChainAppConfig
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.{AkkaUtil, ScalaTestUtil}
+import org.bitcoins.testkit.util.ScalaTestUtil
 import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.zmq.ZMQSubscriber
 import org.scalatest._
@@ -231,18 +232,18 @@ trait ChainUnitTest
                 () => ChainUnitTest.destroyAllTables())(test)
   }
 
-  def createChainHandlerWithBitcoindZmq(
-      bitcoind: BitcoindRpcClient): Future[(ChainHandler, ZMQSubscriber)] = {
-    val handlerWithGenesisHeaderF =
-      ChainUnitTest.setupHeaderTableWithGenesisHeader()
-
-    val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
-
+  def createChainHandlerWithBitcoindZmq(bitcoind: BitcoindRpcClient)(implicit
+      chainAppConfig: ChainAppConfig): Future[(ChainHandler, ZMQSubscriber)] = {
     val zmqRawBlockUriOpt: Option[InetSocketAddress] =
       bitcoind.instance.zmqConfig.rawBlock
-
     val handleRawBlock: Block => Unit = { block: Block =>
-      chainHandlerF.flatMap(_.processHeader(block.blockHeader))
+      val chainApiF =
+        ChainHandler.fromDatabase()(executionContext, chainAppConfig)
+
+      val processF = chainApiF.processHeader(block.blockHeader)
+      processF.failed.foreach { err =>
+        logger.error(s"Failed to parse handleRawBlock callback", err)
+      }
       ()
     }
 
@@ -255,10 +256,25 @@ trait ChainUnitTest
                         rawBlockListener = Some(handleRawBlock))
     zmqSubscriber.start()
 
-    for {
-      _ <- AkkaUtil.nonBlockingSleep(1.second)
+    val handlerWithGenesisHeaderF =
+      ChainUnitTest.setupHeaderTableWithGenesisHeader()(executionContext,
+                                                        chainAppConfig)
+
+    val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
+
+    //generate a block and make sure we see it so we know the subscription is complete
+    val subscribedF = for {
       chainHandler <- chainHandlerF
+      addr <- bitcoind.getNewAddress
+      hash +: _ <- bitcoind.generateToAddress(1, addr)
+      //wait until we see the hash, to make sure the subscription is started
+      _ <- AsyncUtil.retryUntilSatisfiedF(
+        () => {
+          chainHandler.getHeader(hash).map(_.isDefined)
+        },
+        250.millis)
     } yield (chainHandler, zmqSubscriber)
+    subscribedF
   }
 
   def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
@@ -288,12 +304,16 @@ trait ChainUnitTest
     * @return
     */
   def withBitcoindChainHandlerViaZmq(test: OneArgAsyncTest)(implicit
-      system: ActorSystem): FutureOutcome = {
+      system: ActorSystem,
+      chainAppConfig: ChainAppConfig): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaZmq] =
-      composeBuildersAndWrap(builder = () => BitcoinSFixture.createBitcoind(),
-                             dependentBuilder =
-                               createChainHandlerWithBitcoindZmq,
-                             wrap = BitcoindChainHandlerViaZmq.apply)
+      composeBuildersAndWrap(
+        builder = () => BitcoinSFixture.createBitcoind(),
+        dependentBuilder = { rpc: BitcoindRpcClient =>
+          createChainHandlerWithBitcoindZmq(rpc)(chainAppConfig)
+        },
+        wrap = BitcoindChainHandlerViaZmq.apply
+      )
 
     makeDependentFixture(builder, destroyBitcoindChainHandlerViaZmq)(test)
   }
