@@ -5,6 +5,7 @@ name := "bitcoin-s-lnd-rpc"
 
 libraryDependencies ++= Deps.lndRpc
 
+
 CommonSettings.prodSettings
 
 enablePlugins(AkkaGrpcPlugin)
