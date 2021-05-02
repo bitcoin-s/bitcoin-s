@@ -9,6 +9,7 @@ set "block_hash" = (
     select "txo_spending_info"."block_hash"
     from "txo_spending_info"
     where "txo_spending_info"."txid" = "tx_table"."txIdBE"
+    limit 1
 );
 
 -- Delete block_hash column, add spending_txid column
