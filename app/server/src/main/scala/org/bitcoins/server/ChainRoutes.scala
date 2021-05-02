@@ -12,14 +12,13 @@ import scodec.bits.ByteVector
 import ujson._
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
 case class ChainRoutes(chain: ChainApi, network: BitcoinNetwork)(implicit
     system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
 
-  def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
+  def handleCommand: PartialFunction[ServerCommand, Route] = {
     case ServerCommand("getblockcount", _) =>
       complete {
         chain.getBlockCount().map { count =>
@@ -46,10 +45,8 @@ case class ChainRoutes(chain: ChainApi, network: BitcoinNetwork)(implicit
       }
 
     case ServerCommand("getblockheader", arr) =>
-      GetBlockHeader.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetBlockHeader(hash)) =>
+      withValidServerCommand(GetBlockHeader.fromJsArr(arr)) {
+        case GetBlockHeader(hash) =>
           complete {
             chain.getHeader(hash).flatMap {
               case None => Future.successful(Server.httpSuccess(ujson.Null))

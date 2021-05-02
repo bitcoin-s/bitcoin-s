@@ -22,6 +22,7 @@ project/plugins/project/
 .idea/*
 *.iml
 .bsp
+.vscode
 
 # secp256k1 ignore files
 bench_inv

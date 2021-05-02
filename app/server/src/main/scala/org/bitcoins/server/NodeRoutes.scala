@@ -10,13 +10,12 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 
 import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Success}
 
 case class NodeRoutes(nodeApi: NodeApi)(implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
 
-  def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
+  def handleCommand: PartialFunction[ServerCommand, Route] = {
     case ServerCommand("getpeers", _) =>
       complete {
         Server.httpSuccess("TODO implement getpeers")
@@ -45,10 +44,8 @@ case class NodeRoutes(nodeApi: NodeApi)(implicit system: ActorSystem)
       }
 
     case ServerCommand("sendrawtransaction", arr) =>
-      SendRawTransaction.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(SendRawTransaction(tx)) =>
+      withValidServerCommand(SendRawTransaction.fromJsArr(arr)) {
+        case SendRawTransaction(tx) =>
           complete {
             nodeApi.broadcastTransaction(tx).map { _ =>
               Server.httpSuccess(tx.txIdBE)

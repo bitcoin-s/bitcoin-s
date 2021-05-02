@@ -67,7 +67,7 @@ case class Server(
         pathSingleSlash {
           post {
             entity(as[ServerCommand]) { cmd =>
-              val init = PartialFunction.empty[ServerCommand, StandardRoute]
+              val init = PartialFunction.empty[ServerCommand, Route]
               val handler = handlers.foldLeft(init) { case (accum, curr) =>
                 accum.orElse(curr.handleCommand)
               }

@@ -18,7 +18,6 @@ import ujson._
 
 import java.time.Instant
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
 case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
     system: ActorSystem,
@@ -45,7 +44,7 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
     }
   }
 
-  def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
+  def handleCommand: PartialFunction[ServerCommand, Route] = {
 
     case ServerCommand("isempty", _) =>
       complete {
@@ -62,64 +61,47 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("getbalance", arr) =>
-      GetBalance.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetBalance(isSats)) =>
+      withValidServerCommand(GetBalance.fromJsArr(arr)) {
+        case GetBalance(isSats) =>
           complete {
             wallet.getBalance().map { balance =>
               Server.httpSuccess(
-                if (isSats) {
-                  balance.satoshis.toString
-                } else {
-                  Bitcoins(balance.satoshis).toString
-                }
+                if (isSats) balance.satoshis.toString
+                else Bitcoins(balance.satoshis).toString
               )
             }
           }
       }
 
     case ServerCommand("getconfirmedbalance", arr) =>
-      GetBalance.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetBalance(isSats)) =>
+      withValidServerCommand(GetBalance.fromJsArr(arr)) {
+        case GetBalance(isSats) =>
           complete {
             wallet.getConfirmedBalance().map { balance =>
               Server.httpSuccess(
-                if (isSats) {
-                  balance.satoshis.toString
-                } else {
-                  Bitcoins(balance.satoshis).toString
-                }
+                if (isSats) balance.satoshis.toString
+                else Bitcoins(balance.satoshis).toString
               )
             }
           }
       }
 
     case ServerCommand("getunconfirmedbalance", arr) =>
-      GetBalance.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetBalance(isSats)) =>
+      withValidServerCommand(GetBalance.fromJsArr(arr)) {
+        case GetBalance(isSats) =>
           complete {
             wallet.getUnconfirmedBalance().map { balance =>
               Server.httpSuccess(
-                if (isSats) {
-                  balance.satoshis.toString
-                } else {
-                  Bitcoins(balance.satoshis).toString
-                }
+                if (isSats) balance.satoshis.toString
+                else Bitcoins(balance.satoshis).toString
               )
             }
           }
       }
 
     case ServerCommand("getnewaddress", arr) =>
-      GetNewAddress.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetNewAddress(labelOpt)) =>
+      withValidServerCommand(GetNewAddress.fromJsArr(arr)) {
+        case GetNewAddress(labelOpt) =>
           complete {
             val labelVec = Vector(labelOpt).flatten
             wallet.getNewAddress(labelVec).map { address =>
@@ -129,10 +111,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("gettransaction", arr) =>
-      GetTransaction.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetTransaction(txId)) =>
+      withValidServerCommand(GetTransaction.fromJsArr(arr)) {
+        case GetTransaction(txId) =>
           complete {
             wallet.findTransaction(txId).map {
               case None =>
@@ -144,10 +124,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("lockunspent", arr) =>
-      LockUnspent.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(LockUnspent(unlock, outputParams)) =>
+      withValidServerCommand(LockUnspent.fromJsArr(arr)) {
+        case LockUnspent(unlock, outputParams) =>
           complete {
             val func: Vector[SpendingInfoDb] => Future[Vector[SpendingInfoDb]] =
               utxos => {
@@ -173,10 +151,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("labeladdress", arr) =>
-      LabelAddress.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(LabelAddress(address, label)) =>
+      withValidServerCommand(LabelAddress.fromJsArr(arr)) {
+        case LabelAddress(address, label) =>
           complete {
             wallet.tagAddress(address, label).map { tagDb =>
               Server.httpSuccess(
@@ -186,10 +162,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("getaddresstags", arr) =>
-      GetAddressTags.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetAddressTags(address)) =>
+      withValidServerCommand(GetAddressTags.fromJsArr(arr)) {
+        case GetAddressTags(address) =>
           complete {
             wallet.getAddressTags(address).map { tagDbs =>
               val retStr = tagDbs.map(_.tagName.name)
@@ -199,10 +173,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("getaddresslabels", arr) =>
-      GetAddressLabels.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetAddressLabels(address)) =>
+      withValidServerCommand(GetAddressLabels.fromJsArr(arr)) {
+        case GetAddressLabels(address) =>
           complete {
             wallet.getAddressTags(address, AddressLabelTagType).map { tagDbs =>
               val retStr = tagDbs.map(_.tagName.name)
@@ -212,10 +184,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("dropaddresslabels", arr) =>
-      DropAddressLabels.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(DropAddressLabels(address)) =>
+      withValidServerCommand(DropAddressLabels.fromJsArr(arr)) {
+        case DropAddressLabels(address) =>
           complete {
             wallet.dropAddressTagType(address, AddressLabelTagType).map {
               numDropped =>
@@ -231,15 +201,11 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("sendtoaddress", arr) =>
-      // TODO create custom directive for this?
-      SendToAddress.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(
-              SendToAddress(address,
-                            bitcoins,
-                            satoshisPerVirtualByteOpt,
-                            noBroadcast)) =>
+      withValidServerCommand(SendToAddress.fromJsArr(arr)) {
+        case SendToAddress(address,
+                           bitcoins,
+                           satoshisPerVirtualByteOpt,
+                           noBroadcast) =>
           complete {
             for {
               tx <- wallet.sendToAddress(address,
@@ -253,14 +219,11 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("sendfromoutpoints", arr) =>
-      SendFromOutpoints.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(
-              SendFromOutpoints(outPoints,
-                                address,
-                                bitcoins,
-                                satoshisPerVirtualByteOpt)) =>
+      withValidServerCommand(SendFromOutpoints.fromJsArr(arr)) {
+        case SendFromOutpoints(outPoints,
+                               address,
+                               bitcoins,
+                               satoshisPerVirtualByteOpt) =>
           complete {
             for {
               tx <- wallet.sendFromOutPoints(outPoints,
@@ -273,14 +236,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("sendwithalgo", arr) =>
-      SendWithAlgo.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(
-              SendWithAlgo(address,
-                           bitcoins,
-                           satoshisPerVirtualByteOpt,
-                           algo)) =>
+      withValidServerCommand(SendWithAlgo.fromJsArr(arr)) {
+        case SendWithAlgo(address, bitcoins, satoshisPerVirtualByteOpt, algo) =>
           complete {
             for {
               tx <- wallet.sendWithAlgo(address,
@@ -293,25 +250,17 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("signpsbt", arr) =>
-      SignPSBT.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(SignPSBT(psbt)) =>
-          complete {
-            wallet.signPSBT(psbt).map { signed =>
-              Server.httpSuccess(signed.base64)
-            }
+      withValidServerCommand(SignPSBT.fromJsArr(arr)) { case SignPSBT(psbt) =>
+        complete {
+          wallet.signPSBT(psbt).map { signed =>
+            Server.httpSuccess(signed.base64)
           }
+        }
       }
 
     case ServerCommand("opreturncommit", arr) =>
-      OpReturnCommit.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(
-              OpReturnCommit(message,
-                             hashMessage,
-                             satoshisPerVirtualByteOpt)) =>
+      withValidServerCommand(OpReturnCommit.fromJsArr(arr)) {
+        case OpReturnCommit(message, hashMessage, satoshisPerVirtualByteOpt) =>
           complete {
             for {
               tx <- wallet.makeOpReturnCommitment(message,
@@ -325,10 +274,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("bumpfeerbf", arr) =>
-      BumpFee.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(BumpFee(txId, feeRate)) =>
+      withValidServerCommand(BumpFee.fromJsArr(arr)) {
+        case BumpFee(txId, feeRate) =>
           complete {
             for {
               tx <- wallet.bumpFeeRBF(txId, feeRate)
@@ -338,10 +285,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("bumpfeecpfp", arr) =>
-      BumpFee.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(BumpFee(txId, feeRate)) =>
+      withValidServerCommand(BumpFee.fromJsArr(arr)) {
+        case BumpFee(txId, feeRate) =>
           complete {
             for {
               tx <- wallet.bumpFeeCPFP(txId, feeRate)
@@ -351,15 +296,12 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("rescan", arr) =>
-      Rescan.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(
-              Rescan(batchSize,
-                     startBlock,
-                     endBlock,
-                     force,
-                     ignoreCreationTime)) =>
+      withValidServerCommand(Rescan.fromJsArr(arr)) {
+        case Rescan(batchSize,
+                    startBlock,
+                    endBlock,
+                    force,
+                    ignoreCreationTime) =>
           complete {
             val res = for {
               empty <- wallet.isEmpty()
@@ -448,10 +390,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("getaddressinfo", arr) =>
-      GetAddressInfo.fromJsArr(arr) match {
-        case Failure(err) =>
-          reject(ValidationRejection("failure", Some(err)))
-        case Success(GetAddressInfo(address)) =>
+      withValidServerCommand(GetAddressInfo.fromJsArr(arr)) {
+        case GetAddressInfo(address) =>
           complete {
             wallet.getAddressInfo(address).map {
               case Some(addressInfo) =>
@@ -478,10 +418,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("keymanagerpassphrasechange", arr) =>
-      KeyManagerPassphraseChange.fromJsArr(arr) match {
-        case Failure(err) =>
-          reject(ValidationRejection("failure", Some(err)))
-        case Success(KeyManagerPassphraseChange(oldPassword, newPassword)) =>
+      withValidServerCommand(KeyManagerPassphraseChange.fromJsArr(arr)) {
+        case KeyManagerPassphraseChange(oldPassword, newPassword) =>
           complete {
             val path = walletConf.seedPath
             WalletStorage.changeAesPassword(path,
@@ -493,10 +431,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("keymanagerpassphraseset", arr) =>
-      KeyManagerPassphraseSet.fromJsArr(arr) match {
-        case Failure(err) =>
-          reject(ValidationRejection("failure", Some(err)))
-        case Success(KeyManagerPassphraseSet(password)) =>
+      withValidServerCommand(KeyManagerPassphraseSet.fromJsArr(arr)) {
+        case KeyManagerPassphraseSet(password) =>
           complete {
             val path = walletConf.seedPath
             WalletStorage.changeAesPassword(path, None, Some(password))
@@ -506,10 +442,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("importseed", arr) =>
-      ImportSeed.fromJsArr(arr) match {
-        case Failure(err) =>
-          reject(ValidationRejection("failure", Some(err)))
-        case Success(ImportSeed(walletName, mnemonic, passwordOpt)) =>
+      withValidServerCommand(ImportSeed.fromJsArr(arr)) {
+        case ImportSeed(walletName, mnemonic, passwordOpt) =>
           complete {
             val seedPath = kmConf.seedFolder.resolve(
               s"$walletName-${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
@@ -530,10 +464,8 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
       }
 
     case ServerCommand("importxprv", arr) =>
-      ImportXprv.fromJsArr(arr) match {
-        case Failure(err) =>
-          reject(ValidationRejection("failure", Some(err)))
-        case Success(ImportXprv(walletName, xprv, passwordOpt)) =>
+      withValidServerCommand(ImportXprv.fromJsArr(arr)) {
+        case ImportXprv(walletName, xprv, passwordOpt) =>
           complete {
             val seedPath = kmConf.seedFolder.resolve(
               s"$walletName-${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
