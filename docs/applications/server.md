@@ -175,6 +175,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `getaddressinfo` `address` - Returns list of all wallet accounts
     - `address` - Address to get information about
  - `getnewaddress` - Get a new address
+ - `listreservedutxos` - lists all utxos that are reserved in the wallet
  - `sendtoaddress` `address` `amount` `[options]` - Send money to the given address
     - `address` - Address to send to
     - `amount` - Amount to send in BTC
