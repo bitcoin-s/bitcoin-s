@@ -141,7 +141,6 @@ time of this writing
 1. `ScanBitcoind` - scans against bitcoind with a height range. You need bitcoind connection configured in your `bitcoin-s.conf`
 2. `ZipDatadir` - compresses the bitcoin-s datadir into a `.zip` file  
 
-
 9ecea9f7103 2021 04 24 bitcoin s scripts (#2961)
 
 136d6f50f9c 2021 04 19 Zip Bitcoin-s datadir (#2927)
@@ -150,7 +149,8 @@ time of this writing
 
 #### App server
 
-The primary changes in `appServer` are 
+The primary changes in `appServer` are  api bug fixes, adding new endpoints (`estimateee`)
+and using akka streams to improve efficiency when processing blocks from bitcoind.
 
 84661bd122a Refactor BitcoinSRunner to use StartStop[Async] (#2986)
 
@@ -166,8 +166,16 @@ bf831ae32ec Fix lockunspent RPC (#2984)
 
 b1be3347c99 Fix ZMQ Config with bitcoind backend (#2897)
 
-
 #### Crypto
+
+The primary changes in the crypto module are adding support for [ecdsa adaptor signatures](https://github.com/discreetlogcontracts/dlcspecs/pull/114)
+which are a fundamental primitive discreet log contracts. 
+
+The other major change in the crypto module is adding support for scalajs. To implement
+this we decided to use [`bcrypto`](https://github.com/bcoin-org/bcrypto/) as the javascript implementation of crypto.
+
+To do this, we now have a `CryptoRuntime` trait that gives an interface to be implemented against
+for generic crypto runtimes support in bitcoin-s.
 
 7fd9aca3047 Add Schnorr and Adaptor Secp Bindings and Update Adaptor (#2885)
 
@@ -196,6 +204,12 @@ c90f318fd77 Refactor crypto module to be compatible with Scala.js part 1 (#2719)
 b1fc575ff54 CryptoRuntime abstraction (#2658)
 
 #### Core
+
+This release begins incorporating discreet log contract data structures in our core module.
+
+This module also now supports scalajs.
+
+There are also performance improvements and bug fixes in this release for `core`
 
 279b93f9e0d Rework P2SHScriptSignature.isStandardNonP2SH() (#2963)
 
@@ -247,8 +261,9 @@ bbd1dbc15d2 Do cheap checks in predicates first before more expensive ones (#262
 
 0d38721b3d6 Added utilities to created linear approximations of Long => Long functions (#2537)
 
-
 #### Chain
+
+Bug fixes and usage of caching of bitcoind for `chain` tests.
 
 a27d4acd9f1 Get FilterSync test working with cached bitcoind in chainTest project (#2952)
 
@@ -256,15 +271,21 @@ a27d4acd9f1 Get FilterSync test working with cached bitcoind in chainTest projec
 
 #### Db commons
 
+Unique naming of database connection pools and reduce the amount of logging.
+
 db45ef9ca20 Name each database connection pool uniquely (#2973)
 
 4f1f53e7ada Bump hikari logging interval to 10 minutes (#2888)
 
 #### Fee Provider 
 
+Small quality of live improvements. 
+
 c7b717fa910 Allow HttpFeeRateProvider to have a specified return type (#2970)
 
 #### Node
+
+Some refactoring and improvements to get CI passing reliability. 
 
 e3017fd17d7 Peer Message Receiver Refactor (#2938)
 
@@ -273,6 +294,13 @@ e3017fd17d7 Peer Message Receiver Refactor (#2938)
 7764828b3a7 Bump timeout on bind to avoid spurious ci failures hopefully (#2791)
 
 #### Wallet
+
+This wallet release moves all OS resources such as threads into `WalleAppConfig`. 
+Now you need to call `WalletAppConfig.stop()` to free those resources.
+Now you can treat the `Wallet` data structure as any old Scala/Java object rather
+than having to worry about leaking resources.
+
+There are also a variety of bug fixes and performance improvements in this release.
 
 27afb662206 2021 04 23 issue Move rebroadcast scheduling into WalletAppConfig (#2957)
 
@@ -301,6 +329,16 @@ b63333327fb Allow implicit execution context to be passed in to RescanHandling.f
 a5252b20baa Bump the timeout for address queue exception test to make sure we get correct exception (#2697)
 
 #### Testkit
+
+This release for testkit focuses on fixing resource leaks in the fixture code.
+There were multiple places we were not shutting down threads and connection pools
+through out the testkit project. 
+
+This project also introduces the `CachedBitcoind` abstraction. Previously we would
+spin up a new bitcoind for EVERY test that is ran. This is obviously inefficient.
+
+Now we cache a bitcoind and re-use it for the entire test suite.
+This improves CI reliability greatly, and reduces required resources to run our test suites.
 
 a2911f31edf Fix race condition with BitcoindChainHandlerViaZmqTest (#2990)
 
