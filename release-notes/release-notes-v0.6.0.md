@@ -1,17 +1,42 @@
 ## Docker support
 
-//write blurb about how docker is supported now
+We now support docker for our oracleServer and appServer projects.
+Follow these links for docker builds for [`appServer`](https://bitcoin-s.org/docs/next/applications/server#docker-configuration)
+and [`oracleServer`](https://bitcoin-s.org/docs/next/oracle/build-oracle-server#docker-configuration)
+
 ## New modules
-//provide high level definitions of the new modules
+
+We added a few new modules in the 0.6. We will provide brief descriptions for
+the new modules below.
+
 ### CoreJS & CryptoJS
+
+This are scalajs compatible modules for our `crypto` and `core` projects.
+This means that you can now use the `crypto` and `core` modules in both
+the browser and nodejs runtimes.
 
 ### TestkitCore
 
+We split `testkit` into two modules this release. Now `testkitcore` is scalajs
+compatible, while `testkit` still takes in heavier weight JVM dependencies. `testkitcore` is
+used to test the scalajs projects like `cryptoJS` and `coreJS`.
+
 ### Lnd rpc client
+
+This is a new lnd rpc client for the bitcoin-s project. You can now interact with a lnd daemon
+using bitcoin-s.
 
 ### AsyncUtil
 
+This is basic async functionality that is compatible with scalajs. This is used by `testkitcore`
+to test async code.
+
 ### Suredbits Oracle Explorer Client
+
+This is an implementation of our API for the oracle server. You can now use this to
+post announcements, and attestations to the oracle explorer. For more information
+on the API please see the [docs](https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f).
+
 
 ## App server
 
