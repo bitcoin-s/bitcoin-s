@@ -1,6 +1,8 @@
 package org.bitcoin;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.BlockJUnit4ClassRunner;
 
 import java.math.BigInteger;
 
@@ -10,6 +12,8 @@ import static org.bitcoin.NativeSecp256k1Util.assertEquals;
 /**
  * This class holds test cases defined for testing this library.
  */
+
+@RunWith(BlockJUnit4ClassRunner.class)
 public class NativeSecp256k1Test {
 
     //TODO improve comments/add more tests
