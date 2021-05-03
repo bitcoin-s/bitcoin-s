@@ -56,55 +56,113 @@ https://repo1.maven.org/maven2/org/bitcoin-s/
 
 https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
-## Docker support
+## Executive Summary
+
+This release support scalajs for both the `crypto` and `core` module. You can now use these modules from javascript.
 
 We now support docker for our oracleServer and appServer projects.
 Follow these links for docker builds for [`appServer`](https://bitcoin-s.org/docs/next/applications/server#docker-configuration)
 and [`oracleServer`](https://bitcoin-s.org/docs/next/oracle/build-oracle-server#docker-configuration)
 
-## New modules
+We support the latest bitcoind rpc client (`0.21.1`) that has the taproot activation code baked into it.
+
+### New modules
 
 We added a few new modules in the 0.6. We will provide brief descriptions for
 the new modules below.
 
-### CoreJS & CryptoJS
+#### CoreJS & CryptoJS
 
 This are scalajs compatible modules for our `crypto` and `core` projects.
 This means that you can now use the `crypto` and `core` modules in both
 the browser and nodejs runtimes.
 
-### TestkitCore
+#### TestkitCore
 
 We split `testkit` into two modules this release. Now `testkitcore` is scalajs
 compatible, while `testkit` still takes in heavier weight JVM dependencies. `testkitcore` is
 used to test the scalajs projects like `cryptoJS` and `coreJS`.
 
-### Lnd rpc client
+c6c4e83e9eb Remove logging from testkit core (#2813)
+
+1959495cec2 Add testkit-core module (#2726)
+
+#### Lnd rpc client
 
 This is a new lnd rpc client for the bitcoin-s project. You can now interact with a lnd daemon
 using bitcoin-s.
 
-### AsyncUtil
+Not all lnd rpc functions are implemented as of this release.
+
+8ec93c66322 Add protoc exception for apples new chip arch. This requires protoc to be built manually as they do not natively ship m1 support yet (#3013)
+
+b874c1c54db Add Lnd macaroon to GRPC client settings (#2996)
+
+07e0b19ec63 Add GetTransactions funciton to lnd (#2959)
+
+be14de459ed Fix lnd build warning (#2899)
+
+5310efc5aa0 Fix parsing comments in LndConfig (#2864)
+
+825024fa1a0 Add sendouputs function to lnd rpc (#2858)
+
+4055de7690f Inital LND rpc with some tests (#2836)
+
+#### AsyncUtil
 
 This is basic async functionality that is compatible with scalajs. This is used by `testkitcore`
 to test async code.
 
-### Suredbits Oracle Explorer Client
+65cb0d16155 Move tests out of bitcoindRpcTest that belong in async-utils (#2796)
+
+e06c9e44cc2 2021 03 09 async utils tests (#2781)
+
+7a068ac036b 2021 02 25 async utils (#2725)
+
+#### Suredbits Oracle Explorer Client
 
 This is an implementation of our API for the oracle server. You can now use this to
 post announcements, and attestations to the oracle explorer. For more information
 on the API please see the [docs](https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f).
 
+eab5e51f34f Fix ExplorerEnv from string (#2968)
 
-## App server
+7b600bb5baf Add get oracle name to explorer client (#2969)
+
+3916a0b58e5 2021 04 07 issue 2875 (#2879)
+
+ac495647d9e Add website url to ExplorerEnv (#2868)
+
+7968b234b77 Rework oracle explorer client to use new api paths (#2866)
+
+a4454e83a18 Add helper functions for hashing annoucements for SbExplorerClient (#2861)
+
+49b6d39ab46 Implement Oracle Explorer Client (#2838)
+
+#### Scripts
+
+This is a new module that provides useful scripts to run with bitcoin-s. We have two as of the
+time of this writing
+
+1. `ScanBitcoind` - scans against bitcoind with a height range. You need bitcoind connection configured in your `bitcoin-s.conf`
+2. `ZipDatadir` - compresses the bitcoin-s datadir into a `.zip` file  
+
+9ecea9f7103 2021 04 24 bitcoin s scripts (#2961)
+
+136d6f50f9c 2021 04 19 Zip Bitcoin-s datadir (#2927)
+
+### Existing modules 
+
+#### App server
+
+The primary changes in `appServer` are  api bug fixes, adding new endpoints (`estimateee`)
+and using akka streams to improve efficiency when processing blocks from bitcoind.
 
 84661bd122a Refactor BitcoinSRunner to use StartStop[Async] (#2986)
 
 bf831ae32ec Fix lockunspent RPC (#2984)
 
 6fbaf9f9ceb Add estimate fee cli command (#2983)
-
-136d6f50f9c 2021 04 19 Zip Bitcoin-s datadir (#2927)
 
 105942efa29 Use filters for bitcoind backend syncing if available (#2926)
 
@@ -114,15 +172,16 @@ bf831ae32ec Fix lockunspent RPC (#2984)
 
 b1be3347c99 Fix ZMQ Config with bitcoind backend (#2897)
 
-## Async Util
+#### Crypto
 
-65cb0d16155 Move tests out of bitcoindRpcTest that belong in async-utils (#2796)
+The primary changes in the crypto module are adding support for [ecdsa adaptor signatures](https://github.com/discreetlogcontracts/dlcspecs/pull/114)
+which are a fundamental primitive discreet log contracts. 
 
-e06c9e44cc2 2021 03 09 async utils tests (#2781)
+The other major change in the crypto module is adding support for scalajs. To implement
+this we decided to use [`bcrypto`](https://github.com/bcoin-org/bcrypto/) as the javascript implementation of crypto.
 
-7a068ac036b 2021 02 25 async utils (#2725)
-
-## Crypto
+To do this, we now have a `CryptoRuntime` trait that gives an interface to be implemented against
+for generic crypto runtimes support in bitcoin-s.
 
 7fd9aca3047 Add Schnorr and Adaptor Secp Bindings and Update Adaptor (#2885)
 
@@ -150,7 +209,13 @@ c90f318fd77 Refactor crypto module to be compatible with Scala.js part 1 (#2719)
 
 b1fc575ff54 CryptoRuntime abstraction (#2658)
 
-## Core
+#### Core
+
+This release begins incorporating discreet log contract data structures in our core module.
+
+This module also now supports scalajs.
+
+There are also performance improvements and bug fixes in this release for `core`
 
 279b93f9e0d Rework P2SHScriptSignature.isStandardNonP2SH() (#2963)
 
@@ -202,24 +267,31 @@ bbd1dbc15d2 Do cheap checks in predicates first before more expensive ones (#262
 
 0d38721b3d6 Added utilities to created linear approximations of Long => Long functions (#2537)
 
+#### Chain
 
-## Chain
+Bug fixes and usage of caching of bitcoind for `chain` tests.
 
 a27d4acd9f1 Get FilterSync test working with cached bitcoind in chainTest project (#2952)
 
 85087b0f70d Refactoring `chain` (#2662)
 
-## Db commons
+#### Db commons
+
+Unique naming of database connection pools and reduce the amount of logging.
 
 db45ef9ca20 Name each database connection pool uniquely (#2973)
 
 4f1f53e7ada Bump hikari logging interval to 10 minutes (#2888)
 
-## Fee Provider 
+#### Fee Provider 
+
+Small quality of live improvements. 
 
 c7b717fa910 Allow HttpFeeRateProvider to have a specified return type (#2970)
 
-## Node
+#### Node
+
+Some refactoring and improvements to get CI passing reliability. 
 
 e3017fd17d7 Peer Message Receiver Refactor (#2938)
 
@@ -227,7 +299,14 @@ e3017fd17d7 Peer Message Receiver Refactor (#2938)
 
 7764828b3a7 Bump timeout on bind to avoid spurious ci failures hopefully (#2791)
 
-## Wallet
+#### Wallet
+
+This wallet release moves all OS resources such as threads into `WalleAppConfig`. 
+Now you need to call `WalletAppConfig.stop()` to free those resources.
+Now you can treat the `Wallet` data structure as any old Scala/Java object rather
+than having to worry about leaking resources.
+
+There are also a variety of bug fixes and performance improvements in this release.
 
 27afb662206 2021 04 23 issue Move rebroadcast scheduling into WalletAppConfig (#2957)
 
@@ -255,14 +334,23 @@ b63333327fb Allow implicit execution context to be passed in to RescanHandling.f
 
 a5252b20baa Bump the timeout for address queue exception test to make sure we get correct exception (#2697)
 
+#### Secp256k1jni
 
-## Testkit core
+libsecp256k1 natives for the new `osx_arm64` used by the m1 chip.
 
-c6c4e83e9eb Remove logging from testkit core (#2813)
+1339abe410e 2021 05 02 m1 secp256k1 natives (#3014)
 
-1959495cec2 Add testkit-core module (#2726)
+#### Testkit
 
-## Testkit
+This release for testkit focuses on fixing resource leaks in the fixture code.
+There were multiple places we were not shutting down threads and connection pools
+through out the testkit project. 
+
+This project also introduces the `CachedBitcoind` abstraction. Previously we would
+spin up a new bitcoind for EVERY test that is ran. This is obviously inefficient.
+
+Now we cache a bitcoind and re-use it for the entire test suite.
+This improves CI reliability greatly, and reduces required resources to run our test suites.
 
 a2911f31edf Fix race condition with BitcoindChainHandlerViaZmqTest (#2990)
 
@@ -286,47 +374,50 @@ de5f7fc7f9d Reduce number of threads in postgres connection pool for tests  (#29
 
 392eb316f66 Add guard for the case when listFiles returns null (#2696)
 
-## DLC oracle
+#### DLC oracle
+
+This release makes the oracle have its own directory `$HOME/.bitcoin-s/oracle`
+
+We also now provide the ability to delete and oracle's signatures.
+This is useful for when you accidentally submit signatures for an attestment, but don't publish it anywhere.
+
+** DELETING SIGNATURES AND RE-ATTESTING CAN BE DANGEROUS, YOU CAN LEAK YOUR PRIVATE KEY IF YOU BROADCAST THE PREVIOUS ATTESTATIONS **
+
+3dbeac276ee Add ability to delete Oracle signatures (#2851)
 
 2a6da6a4eae Fix DLCOracle to be Network Agnostic (#2749)
 
 a0180884c51 Make sure DLCOracleAppConfig creates the oracle directory (#2720)
 
-d94a4ed87ec 2021 02 15 appserver docker (#2673)
-
 93ec7ed4cbc Change oracle db to have its own directory (#2667)
 
-a78de18815b Fix docs to use correct oracle server port (#2666)
+#### Oracle Server
 
-931a528723a Give oracle server its own port (#2653)
+The theme for the oracle server release is segregating 
+the `oracleServer` configuration from the `appServer` configuration.
 
-## Oracle Server
-
-ac495647d9e Add website url to ExplorerEnv (#2868)
-
-3dbeac276ee Add ability to delete Oracle signatures (#2851)
+There is also simplifications and bug fixes included in this release for the oracle server.
 
 4bf4f0a0276 Add signed outcome to `getevent` rpc, fix other small api bugs (#2757)
 
 7aa68998f1e Correct log location and logs for oracle server (#2722)
 
+d94a4ed87ec 2021 02 15 appserver docker (#2673)
+
+a78de18815b Fix docs to use correct oracle server port (#2666)
+
+931a528723a Give oracle server its own port (#2653)
+
 86566c575d2 Simplify oracle server RPC api (#2656)
 
-## Oracle Explorer Client
+#### Bitcoind rpc
 
-eab5e51f34f Fix ExplorerEnv from string (#2968)
+This release includes a rpc client compatible with the `0.21.1` release of bitcoin core
+that includes taproot activation logic.
 
-7b600bb5baf Add get oracle name to explorer client (#2969)
+There are also various bug fixes included in this release.
 
-3916a0b58e5 2021 04 07 issue 2875 (#2879)
-
-7968b234b77 Rework oracle explorer client to use new api paths (#2866)
-
-a4454e83a18 Add helper functions for hashing annoucements for SbExplorerClient (#2861)
-
-49b6d39ab46 Implement Oracle Explorer Client (#2838)
-
-## Bitcoind rpc
+52f609e235b Use bitcoind v0.21.1 (#3006)
 
 e064cd77eaf Fix missing teardown code for MultiWalletRpcTest (#2946)
 
@@ -340,27 +431,17 @@ bfe7b3fb6f4 Create NativeProcessFactory, extend it in both Client.scala & Eclair
 
 be18b1baf27 Cache httpClient in bitcoind, rename Test.akkaHttp -> Test.akkaHttpTestkit (#2702)
 
-## Eclair rpc
+#### Documentation / Website
 
-## Lnd Rpc
+ff399457776 More release notes updates, mostly add boiler plate (#3018)
 
-b874c1c54db Add Lnd macaroon to GRPC client settings (#2996)
+2e8790f3e5b Add descriptions for new projects (#3016)
 
-07e0b19ec63 Add GetTransactions funciton to lnd (#2959)
+7dc6acdce64 Add missing list resevedutxos docs (#3015)
 
-be14de459ed Fix lnd build warning (#2899)
+d6f275b359d Redo release notes draft as we rewrote the git history (#3011)
 
-5310efc5aa0 Fix parsing comments in LndConfig (#2864)
-
-825024fa1a0 Add sendouputs function to lnd rpc (#2858)
-
-4055de7690f Inital LND rpc with some tests (#2836)
-
-## Scripts
-
-9ecea9f7103 2021 04 24 bitcoin s scripts (#2961)
-
-## Documentation / Website
+93822c71ec2 Make sure call ci matrixs run on java11 (#2985)
 
 acac751c5b1 Updated links in adaptor signature doc (#2950)
 
@@ -390,9 +471,7 @@ f8694eb097d Fix/typos (#2633)
 
 593b1e2ce15 Update README to have correct latest version (#2631)
 
-## Build
-
-93822c71ec2 Make sure call ci matrixs run on java11 (#2985)
+#### Build
 
 991ce382085 Use release flag rather than target flag as that is what is intended (#2976)
 
@@ -441,8 +520,7 @@ d27f24e1908 Make sure dynver versions use '-' instead of '+' (#2681)
 89745c201a8 Add --depth 100 restriction when cloning bitcoin-s repo to speed up clone time (#2674)
 
 
-### Other
-
+#### Dependencies
 
 e7d34a9ba93 Update metrics-core to 4.1.21 (#3003)
 
