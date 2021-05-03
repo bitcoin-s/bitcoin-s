@@ -1,0 +1,286 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Application Server · bitcoin-s</title><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="generator" content="Docusaurus"/><meta name="description" content="### App server"/><meta name="docsearch:version" content="0.5.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Application Server · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="### App server"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
+              (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+              (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+              m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+              })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+              ga('create', 'UA-61958686-2', 'auto');
+              ga('send', 'pageview');
+            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>0.5.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/0.5.0/core/core-intro" target="_self">Docs</a></li><li class=""><a href="download" target="_self">Download</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Applications</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/getting-started">Intro and Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/bips">Supported BIPs</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Setup</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/getting-setup">Getting Bitcoin-S installed on your machine</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/applications/cli">CLI</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/0.5.0/applications/server">Application Server</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/applications/gui">GUI</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/applications/server-systemd">Systemd installation</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Chain</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/chain/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/chain/filter-sync">Syncing Blockfilters</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/chain/chain-query-api">Chain Query API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Configuration</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/config/configuration">Application Configuration</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/core/core-intro">Core Module</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/core/addresses">Generating Addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/core/hd-keys">HD Key Generation</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/core/adding-spks">Adding New Script Types</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/core/spending-info">Signing Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/core/psbts">Partially Signed Bitcoin Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/core/dlc">Discreet Log Contract Data Structures</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/core/txbuilder">TxBuilder Example</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/core/lightning-network">Lightning Network Data Types</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Crypto Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/crypto/crypto-intro">Crypto Module</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/crypto/sign">Sign API</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/crypto/adaptor-signatures">Adaptor Signatures</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Fee Provider</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/fee-provider/fee-provider">Fee Provider</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key Manager</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/key-manager/server-key-manager">Server Key Manager</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Node</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/node/node">Light Client</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/node/node-api">Node API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Wallet</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/wallet/wallet">Wallet</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/wallet/wallet-callbacks">Wallet Callbacks</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/wallet/wallet-get-address">Wallet Get Address APIs</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/wallet/address-tagging">Address and UTXO tagging</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/wallet/dlc">Executing A DLC with Bitcoin-S</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/wallet/wallet-rescan">Wallet Rescans</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/wallet/wallet-sync">Wallet Sync</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC Clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Secp256k1</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/secp256k1/secp256k1">Secp256k1</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/secp256k1/jni-modify">Adding to Secp256k1 JNI</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Testkit</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/testkit/testkit">Testkit</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">DLC Oracle</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/oracle/build-oracle-server">Building the Oracle Server</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/oracle/oracle-server">Oracle Server</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/oracle/oracle-election-example">Election Example</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/oracle/oracle-price-example">Price Example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/0.5.0/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.5.0/security">Security</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/applications/server.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">Application Server</h1></header><article><div><span><h3><a class="anchor" aria-hidden="true" id="app-server"></a><a href="#app-server" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>App server</h3>
+<p>The server project is the aggregation of these three sub projects</p>
+<ol>
+<li><a href="/docs/0.5.0/wallet/wallet">Wallet</a></li>
+<li><a href="/docs/0.5.0/chain/chain">Chain</a></li>
+<li><a href="/docs/0.5.0/node/node">Node</a></li>
+</ol>
+<p>The server project provides a away to access information from these three projects via a JSON RPC.</p>
+<h3><a class="anchor" aria-hidden="true" id="building-the-server"></a><a href="#building-the-server" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Building the server</h3>
+<p>You can build the server with the <a href="https://github.com/sbt/sbt-native-packager">sbt native packager</a>.
+The native packager offers <a href="https://github.com/sbt/sbt-native-packager#examples">numerous ways to package the project</a>.</p>
+<p>In this example we are going to use <code>stage</code> which will produce bash scripts we can easily execute. You can stage the server with the following command.</p>
+<pre><code class="hljs css language-bash">sbt appServer/universal:stage
+</code></pre>
+<p>This will produce a script to execute bitcoin-s which you can start with</p>
+<pre><code class="hljs css language-bash">./app/server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-server
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="configuration"></a><a href="#configuration" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Configuration</h3>
+<p>If you would like to pass in a custom datadir for your server, you can do</p>
+<pre><code class="hljs css language-bash">./app/server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-server --datadir /path/to/datadir/
+</code></pre>
+<p>To use a config file that is not the <code>bitcoin-s.conf</code> file in your datadir, you can do</p>
+<pre><code class="hljs css language-bash">./app/server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-server --conf /path/to/file.conf
+</code></pre>
+<p>You can also pass in a custom <code>rpcport</code> to bind to</p>
+<pre><code class="hljs css language-bash">./app/server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-server --rpcport 12345
+</code></pre>
+<p>For more information on configuring the server please see our [configuration](/docs/0.5.0/config/configuration title: Application Configuration) document</p>
+<p>For more information on how to use our built in <code>cli</code> to interact with the server please see <a href="/docs/0.5.0/applications/cli">/docs/0.5.0/applications/cli</a></p>
+<h3><a class="anchor" aria-hidden="true" id="server-endpoints"></a><a href="#server-endpoints" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Server Endpoints</h3>
+<h4><a class="anchor" aria-hidden="true" id="blockchain"></a><a href="#blockchain" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Blockchain</h4>
+<ul>
+<li><code>getblockcount</code> - Get the current block height</li>
+<li><code>getfiltercount</code> - Get the number of filters</li>
+<li><code>getfilterheadercount</code> - Get the number of filter headers</li>
+<li><code>getbestblockhash</code> - Get the best block hash</li>
+<li><code>decoderawtransaction</code> <code>tx</code> - <code>Decode the given raw hex transaction</code>
+<ul>
+<li><code>tx</code> - Transaction encoded in hex to decode</li>
+</ul></li>
+</ul>
+<h4><a class="anchor" aria-hidden="true" id="wallet"></a><a href="#wallet" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Wallet</h4>
+<ul>
+<li><code>rescan</code> <code>[options]</code> - Rescan for wallet UTXOs
+<ul>
+<li><code>--force</code> - Clears existing wallet records. Warning! Use with caution!</li>
+<li><code>--batch-size &lt;value&gt;</code> - Number of filters that can be matched in one batch</li>
+<li><code>--start &lt;value&gt;</code> - Start height</li>
+<li><code>--end &lt;value&gt;</code> - End height</li>
+<li><code>--ignorecreationtime</code> - Ignores the wallet creation date and will instead do a full rescan</li>
+</ul></li>
+<li><code>isempty</code> - Checks if the wallet contains any data</li>
+<li><code>walletinfo</code> - Returns data about the current wallet being used</li>
+<li><code>getbalance</code> <code>[options]</code> - Get the wallet balance
+<ul>
+<li><code>--sats</code> - Display balance in satoshis</li>
+</ul></li>
+<li><code>getconfirmedbalance</code> <code>[options]</code> - Get the wallet balance of confirmed utxos
+<ul>
+<li><code>--sats</code> - Display balance in satoshis</li>
+</ul></li>
+<li><code>getunconfirmedbalance</code> <code>[options]</code> - Get the wallet balance of unconfirmed utxos
+<ul>
+<li><code>--sats</code> - Display balance in satoshis</li>
+</ul></li>
+<li><code>getutxos</code> - Returns list of all wallet utxos</li>
+<li><code>getaddresses</code> - Returns list of all wallet addresses currently being watched</li>
+<li><code>getspentaddresses</code> - Returns list of all wallet addresses that have received funds and been spent</li>
+<li><code>getfundedaddresses</code> - Returns list of all wallet addresses that are holding funds</li>
+<li><code>getunusedaddresses</code> - Returns list of all wallet addresses that have not been used</li>
+<li><code>getaccounts</code> - Returns list of all wallet accounts</li>
+<li><code>walletinfo</code> - Returns meta information about the wallet</li>
+<li><code>createnewaccount</code> - Creates a new wallet account</li>
+<li><code>getaddressinfo</code> <code>address</code> - Returns list of all wallet accounts
+<ul>
+<li><code>address</code> - Address to get information about</li>
+</ul></li>
+<li><code>getnewaddress</code> - Get a new address</li>
+<li><code>sendtoaddress</code> <code>address</code> <code>amount</code> <code>[options]</code> - Send money to the given address
+<ul>
+<li><code>address</code> - Address to send to</li>
+<li><code>amount</code> - Amount to send in BTC</li>
+<li><code>--feerate &lt;value&gt;</code> - Fee rate in sats per virtual byte</li>
+</ul></li>
+<li><code>sendfromoutpoints</code> <code>outpoints</code> <code>address</code> <code>amount</code> <code>[options]</code> - Send money to the given address
+<ul>
+<li><code>outpoints</code> - Out Points to send from</li>
+<li><code>address</code> - Address to send to</li>
+<li><code>amount</code> - Amount to send in BTC</li>
+<li><code>--feerate &lt;value&gt;</code> - Fee rate in sats per virtual byte</li>
+</ul></li>
+<li><code>sendwithalgo</code> <code>address</code> <code>amount</code> <code>algo</code> <code>[options]</code> - Send money to the given address using a specific coin selection algo
+<ul>
+<li><code>address</code> - Address to send to</li>
+<li><code>amount</code> - Amount to send in BTC</li>
+<li><code>algo</code> - Coin selection algo</li>
+<li><code>--feerate &lt;value&gt;</code> - Fee rate in sats per virtual byte</li>
+</ul></li>
+<li><code>signpsbt</code> <code>psbt</code> - Signs the PSBT's inputs with keys that are associated with the wallet
+<ul>
+<li><code>psbt</code> - PSBT to sign</li>
+</ul></li>
+<li><code>opreturncommit</code> <code>message</code> <code>[options]</code> - Creates OP_RETURN commitment transaction
+<ul>
+<li><code>message</code> - message to put into OP_RETURN commitment</li>
+<li><code>--hashMessage</code> - should the message be hashed before commitment</li>
+<li><code>--feerate &lt;value&gt;</code> - Fee rate in sats per virtual byte</li>
+</ul></li>
+<li><code>bumpfeecpfp</code> <code>txid</code> <code>feerate</code> - Bump the fee of the given transaction id with a child tx using the given fee rate
+<ul>
+<li><code>txid</code> - Id of transaction to bump fee</li>
+<li><code>feerate</code> - Fee rate in sats per virtual byte of the child transaction</li>
+</ul></li>
+<li><code>bumpfeerbf</code> <code>txid</code> <code>feerate</code> - Replace given transaction with one with the new fee rate
+<ul>
+<li><code>txid</code> - Id of transaction to bump fee</li>
+<li><code>feerate</code> - New fee rate in sats per virtual byte</li>
+</ul></li>
+<li><code>gettransaction</code> <code>txid</code> - Get detailed information about in-wallet transaction <txid>
+<ul>
+<li><code>txid</code> - The transaction id</li>
+</ul></li>
+<li><code>lockunspent</code> <code>unlock</code> <code>transactions</code> - Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.
+<ul>
+<li><code>unlock</code> - Whether to unlock (true) or lock (false) the specified transactions</li>
+<li><code>transactions</code> - The transaction outpoints to unlock/lock</li>
+</ul></li>
+<li><code>importseed</code> <code>walletname</code> <code>words</code> <code>passphrase</code> - Imports a mnemonic seed as a new seed file
+<ul>
+<li><code>walletname</code> - Name to associate with this seed</li>
+<li><code>words</code> - Mnemonic seed words, space separated</li>
+<li><code>passphrase</code> - Passphrase to encrypt this seed with</li>
+</ul></li>
+<li><code>importxprv</code> <code>walletname</code> <code>xprv</code> <code>passphrase</code> - Imports a mnemonic seed as a new seed file
+<ul>
+<li><code>walletname</code> - Name to associate with this seed</li>
+<li><code>xprv</code> - base58 encoded extended private key</li>
+<li><code>passphrase</code> - Passphrase to encrypt this seed with</li>
+</ul></li>
+<li><code>keymanagerpassphrasechange</code> <code>oldpassphrase</code> <code>newpassphrase</code> - Changes the wallet passphrase
+<ul>
+<li><code>oldpassphrase</code> - The current passphrase</li>
+<li><code>newpassphrase</code> - The new passphrase</li>
+</ul></li>
+<li><code>keymanagerpassphraseset</code> <code>passphrase</code> - Encrypts the wallet with the given passphrase
+<ul>
+<li><code>passphrase</code> - The passphrase to encrypt the wallet with</li>
+</ul></li>
+</ul>
+<h4><a class="anchor" aria-hidden="true" id="network"></a><a href="#network" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Network</h4>
+<ul>
+<li><code>getpeers</code> - List the connected peers</li>
+<li><code>stop</code> - Request a graceful shutdown of Bitcoin-S</li>
+<li><code>sendrawtransaction</code> <code>tx</code> <code>Broadcasts the raw transaction</code>
+<ul>
+<li><code>tx</code> - Transaction serialized in hex</li>
+</ul></li>
+</ul>
+<h4><a class="anchor" aria-hidden="true" id="psbt"></a><a href="#psbt" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>PSBT</h4>
+<ul>
+<li><code>decodepsbt</code> <code>psbt</code> - Return a JSON object representing the serialized, base64-encoded partially signed Bitcoin transaction.
+<ul>
+<li><code>psbt</code> - PSBT serialized in hex or base64 format</li>
+</ul></li>
+<li><code>combinepsbts</code> <code>psbts</code> - Combines all the given PSBTs
+<ul>
+<li><code>psbts</code> - PSBTs serialized in hex or base64 format</li>
+</ul></li>
+<li><code>joinpsbts</code> <code>psbts</code> - Combines all the given PSBTs
+<ul>
+<li><code>psbts</code> - PSBTs serialized in hex or base64 format</li>
+</ul></li>
+<li><code>finalizepsbt</code> <code>psbt</code> - Finalizes the given PSBT if it can
+<ul>
+<li><code>psbt</code> - PSBT serialized in hex or base64 format</li>
+</ul></li>
+<li><code>extractfrompsbt</code> <code>psbt</code> - Extracts a transaction from the given PSBT if it can
+<ul>
+<li><code>psbt</code> - PSBT serialized in hex or base64 format</li>
+</ul></li>
+<li><code>converttopsbt</code> <code>unsignedTx</code> - Creates an empty psbt from the given transaction
+<ul>
+<li><code>unsignedTx</code> - serialized unsigned transaction in hex</li>
+</ul></li>
+</ul>
+<h4><a class="anchor" aria-hidden="true" id="util"></a><a href="#util" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Util</h4>
+<ul>
+<li><code>createmultisig</code> <code>nrequired</code> <code>keys</code> <code>[address_type]</code> - Creates a multi-signature address with n signature of m keys required.
+<ul>
+<li><code>nrequired</code> - The number of required signatures out of the n keys.</li>
+<li><code>keys</code> - The hex-encoded public keys.</li>
+<li><code>address_type</code> -The address type to use. Options are &quot;legacy&quot;, &quot;p2sh-segwit&quot;, and &quot;bech32&quot;</li>
+</ul></li>
+</ul>
+<h3><a class="anchor" aria-hidden="true" id="sign-psbt-with-wallet-example"></a><a href="#sign-psbt-with-wallet-example" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Sign PSBT with Wallet Example</h3>
+<p>Bitcoin-S CLI:</p>
+<pre><code class="hljs css language-bash">$ bitcoin<span class="hljs-_">-s</span>-cli signpsbt cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA
+cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA
+</code></pre>
+<p>CURL:</p>
+<pre><code class="hljs css language-bash">$ curl --data-binary <span class="hljs-string">'{"jsonrpc": "1.0", "id": "curltest", "method": "signpsbt", "params": ["cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA"]}'</span> -H <span class="hljs-string">"Content-Type: application/json"</span> http://127.0.0.1:9999/
+{<span class="hljs-string">"result"</span>:<span class="hljs-string">"cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA"</span>,<span class="hljs-string">"error"</span>:null}
+</code></pre>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2/11/2021 by Chris Stewart</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/0.5.0/applications/cli"><span class="arrow-prev">← </span><span>CLI</span></a><a class="docs-next button" href="/docs/0.5.0/applications/gui"><span>GUI</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2021 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '0a510688bf8448e19aeb380377d328d3',
+                indexName: 'bitcoin-s',
+                inputSelector: '#search_input_react'
+              });
+            </script></body></html>
