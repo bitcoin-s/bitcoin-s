@@ -127,6 +127,8 @@ eab5e51f34f Fix ExplorerEnv from string (#2968)
 
 3916a0b58e5 2021 04 07 issue 2875 (#2879)
 
+ac495647d9e Add website url to ExplorerEnv (#2868)
+
 7968b234b77 Rework oracle explorer client to use new api paths (#2866)
 
 a4454e83a18 Add helper functions for hashing annoucements for SbExplorerClient (#2861)
@@ -364,31 +366,46 @@ de5f7fc7f9d Reduce number of threads in postgres connection pool for tests  (#29
 
 #### DLC oracle
 
+This release makes the oracle have its own directory `$HOME/.bitcoin-s/oracle`
+
+We also now provide the ability to delete and oracle's signatures.
+This is useful for when you accidentally submit signatures for an attestment, but don't publish it anywhere.
+
+** DELETING SIGNATURES AND RE-ATTESTING CAN BE DANGEROUS, YOU CAN LEAK YOUR PRIVATE KEY IF YOU BROADCAST THE PREVIOUS ATTESTATIONS **
+
+3dbeac276ee Add ability to delete Oracle signatures (#2851)
+
 2a6da6a4eae Fix DLCOracle to be Network Agnostic (#2749)
 
 a0180884c51 Make sure DLCOracleAppConfig creates the oracle directory (#2720)
 
-d94a4ed87ec 2021 02 15 appserver docker (#2673)
-
 93ec7ed4cbc Change oracle db to have its own directory (#2667)
-
-a78de18815b Fix docs to use correct oracle server port (#2666)
-
-931a528723a Give oracle server its own port (#2653)
 
 #### Oracle Server
 
-ac495647d9e Add website url to ExplorerEnv (#2868)
+The theme for the oracle server release is segregating 
+the `oracleServer` configuration from the `appServer` configuration.
 
-3dbeac276ee Add ability to delete Oracle signatures (#2851)
+There is also simplifications and bug fixes included in this release for the oracle server.
 
 4bf4f0a0276 Add signed outcome to `getevent` rpc, fix other small api bugs (#2757)
 
 7aa68998f1e Correct log location and logs for oracle server (#2722)
 
+d94a4ed87ec 2021 02 15 appserver docker (#2673)
+
+a78de18815b Fix docs to use correct oracle server port (#2666)
+
+931a528723a Give oracle server its own port (#2653)
+
 86566c575d2 Simplify oracle server RPC api (#2656)
 
 #### Bitcoind rpc
+
+This release includes a rpc client compatible with the `0.21.1` release of bitcoin core
+that includes taproot activation logic.
+
+There are also various bug fixes included in this release.
 
 e064cd77eaf Fix missing teardown code for MultiWalletRpcTest (#2946)
 
@@ -404,7 +421,7 @@ be18b1baf27 Cache httpClient in bitcoind, rename Test.akkaHttp -> Test.akkaHttpT
 
 #### Eclair rpc
 
-## Documentation / Website
+#### Documentation / Website
 
 acac751c5b1 Updated links in adaptor signature doc (#2950)
 
@@ -434,7 +451,7 @@ f8694eb097d Fix/typos (#2633)
 
 593b1e2ce15 Update README to have correct latest version (#2631)
 
-## Build
+#### Build
 
 93822c71ec2 Make sure call ci matrixs run on java11 (#2985)
 
@@ -485,8 +502,7 @@ d27f24e1908 Make sure dynver versions use '-' instead of '+' (#2681)
 89745c201a8 Add --depth 100 restriction when cloning bitcoin-s repo to speed up clone time (#2674)
 
 
-### Other
-
+#### Dependencies
 
 e7d34a9ba93 Update metrics-core to 4.1.21 (#3003)
 
