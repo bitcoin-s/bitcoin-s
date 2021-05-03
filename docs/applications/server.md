@@ -164,6 +164,8 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `--sats ` - Display balance in satoshis
  - `getunconfirmedbalance` `[options]` - Get the wallet balance of unconfirmed utxos
     - `--sats ` - Display balance in satoshis
+ - `getbalances` `[options]` - Get the wallet balance by utxo state
+    - `--sats ` - Display balance in satoshis
  - `getutxos` - Returns list of all wallet utxos
  - `getaddresses` - Returns list of all wallet addresses currently being watched
  - `getspentaddresses` - Returns list of all wallet addresses that have received funds and been spent
