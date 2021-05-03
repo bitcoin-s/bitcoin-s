@@ -92,6 +92,8 @@ c6c4e83e9eb Remove logging from testkit core (#2813)
 This is a new lnd rpc client for the bitcoin-s project. You can now interact with a lnd daemon
 using bitcoin-s.
 
+Not all lnd rpc functions are implemented as of this release.
+
 b874c1c54db Add Lnd macaroon to GRPC client settings (#2996)
 
 07e0b19ec63 Add GetTransactions funciton to lnd (#2959)
