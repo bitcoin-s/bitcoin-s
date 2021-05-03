@@ -3,18 +3,11 @@ import com.typesafe.sbt.SbtNativePackager.Docker
 import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 
 import java.nio.file.Paths
-import com.typesafe.sbt.packager.Keys.{
-  daemonUser,
-  daemonUserUid,
-  dockerAlias,
-  dockerAliases,
-  dockerRepository,
-  dockerUpdateLatest,
-  maintainer
-}
+import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerRepository, dockerUpdateLatest, maintainer}
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.dockerBaseImage
 import sbt._
 import sbt.Keys._
+import sbtprotoc.ProtocPlugin.autoImport.PB
 
 import scala.util.Properties
 
@@ -54,7 +47,16 @@ object CommonSettings {
       s == "-Xfatal-warnings")),
     Test / console / scalacOptions ++= (Compile / console / scalacOptions).value,
     Test / scalacOptions ++= testCompilerOpts(scalaVersion.value),
-    licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+    licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
+    //you need to build protoc manually to get it working on the new
+    //mac m1 chip. For instructions on how to do so see
+    //see: https://github.com/scalapb/ScalaPB/issues/1024
+      PB.protocExecutable := (
+    if (protocbridge.SystemDetector.detectedClassifier()=="osx-aarch_64")
+      file("/usr/local/bin/protoc") // to change if needed, this is where protobuf manual compilation put it for me
+    else
+      PB.protocExecutable.value
+    )
   )
 
   lazy val jvmSettings: Seq[Setting[_]] = List(
