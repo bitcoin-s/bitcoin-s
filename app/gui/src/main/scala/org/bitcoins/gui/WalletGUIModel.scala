@@ -111,16 +111,16 @@ class WalletGUIModel() {
         val unconfirmedBalance =
           GUIUtil.numberFormatter.format(
             json("unconfirmed").str.split(' ').head.toLong)
-        val lockedBalance =
+        val reservedBalance =
           GUIUtil.numberFormatter.format(
-            json("locked").str.split(' ').head.toLong)
+            json("reserved").str.split(' ').head.toLong)
         val totalBalance =
           GUIUtil.numberFormatter.format(
             json("total").str.split(' ').head.toLong)
 
         GlobalData.currentConfirmedBalance.value = confirmedBalance
         GlobalData.currentUnconfirmedBalance.value = unconfirmedBalance
-        GlobalData.currentLockedBalance.value = lockedBalance
+        GlobalData.currentReservedBalance.value = reservedBalance
         GlobalData.currentTotalBalance.value = totalBalance
       case Failure(err) =>
         err.printStackTrace()

@@ -10,7 +10,7 @@ import scalafx.beans.property.StringProperty
 object GlobalData {
   val currentConfirmedBalance: StringProperty = StringProperty("0")
   val currentUnconfirmedBalance: StringProperty = StringProperty("0")
-  val currentLockedBalance: StringProperty = StringProperty("0")
+  val currentReservedBalance: StringProperty = StringProperty("0")
   val currentTotalBalance: StringProperty = StringProperty("0")
 
   var network: BitcoinNetwork = _
