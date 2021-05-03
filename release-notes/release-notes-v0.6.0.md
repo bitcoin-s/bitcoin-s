@@ -94,6 +94,8 @@ using bitcoin-s.
 
 Not all lnd rpc functions are implemented as of this release.
 
+8ec93c66322 Add protoc exception for apples new chip arch. This requires protoc to be built manually as they do not natively ship m1 support yet (#3013)
+
 b874c1c54db Add Lnd macaroon to GRPC client settings (#2996)
 
 07e0b19ec63 Add GetTransactions funciton to lnd (#2959)
@@ -332,6 +334,12 @@ b63333327fb Allow implicit execution context to be passed in to RescanHandling.f
 
 a5252b20baa Bump the timeout for address queue exception test to make sure we get correct exception (#2697)
 
+#### Secp256k1jni
+
+libsecp256k1 natives for the new `osx_arm64` used by the m1 chip.
+
+1339abe410e 2021 05 02 m1 secp256k1 natives (#3014)
+
 #### Testkit
 
 This release for testkit focuses on fixing resource leaks in the fixture code.
@@ -409,6 +417,8 @@ that includes taproot activation logic.
 
 There are also various bug fixes included in this release.
 
+52f609e235b Use bitcoind v0.21.1 (#3006)
+
 e064cd77eaf Fix missing teardown code for MultiWalletRpcTest (#2946)
 
 d726c498d07 Have BitcoindV21RpcClientTest wait for indexes to sync (#2855)
@@ -421,9 +431,17 @@ bfe7b3fb6f4 Create NativeProcessFactory, extend it in both Client.scala & Eclair
 
 be18b1baf27 Cache httpClient in bitcoind, rename Test.akkaHttp -> Test.akkaHttpTestkit (#2702)
 
-#### Eclair rpc
-
 #### Documentation / Website
+
+ff399457776 More release notes updates, mostly add boiler plate (#3018)
+
+2e8790f3e5b Add descriptions for new projects (#3016)
+
+7dc6acdce64 Add missing list resevedutxos docs (#3015)
+
+d6f275b359d Redo release notes draft as we rewrote the git history (#3011)
+
+93822c71ec2 Make sure call ci matrixs run on java11 (#2985)
 
 acac751c5b1 Updated links in adaptor signature doc (#2950)
 
@@ -454,8 +472,6 @@ f8694eb097d Fix/typos (#2633)
 593b1e2ce15 Update README to have correct latest version (#2631)
 
 #### Build
-
-93822c71ec2 Make sure call ci matrixs run on java11 (#2985)
 
 991ce382085 Use release flag rather than target flag as that is what is intended (#2976)
 
