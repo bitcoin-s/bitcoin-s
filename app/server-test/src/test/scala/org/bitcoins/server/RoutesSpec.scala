@@ -337,6 +337,42 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    val spendingInfoDb = SegwitV0SpendingInfo(
+      outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
+      output = EmptyTransactionOutput,
+      privKeyPath =
+        SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
+      scriptWitness = EmptyScriptWitness,
+      txid = DoubleSha256DigestBE.empty,
+      state = TxoState.PendingConfirmationsSpent,
+      spendingTxIdOpt = Some(DoubleSha256DigestBE.empty)
+    )
+
+    "return the wallet's balances in sats" in {
+      (mockWalletApi.getConfirmedBalance: () => Future[CurrencyUnit])
+        .expects()
+        .returning(Future.successful(Bitcoins(50)))
+
+      (mockWalletApi.getUnconfirmedBalance: () => Future[CurrencyUnit])
+        .expects()
+        .returning(Future.successful(Bitcoins(50)))
+
+      (mockWalletApi
+        .listUtxos(_: TxoState))
+        .expects(TxoState.Reserved)
+        .returning(Future.successful(Vector(spendingInfoDb)))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getbalances", Arr(Bool(true))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":{"confirmed":"5000000000 sats","unconfirmed":"5000000000 sats","locked":"-1 sat","total":"9999999999 sats"},"error":null}""")
+      }
+    }
+
     "return the wallet's unconfirmed balance in sats" in {
       (mockWalletApi.getUnconfirmedBalance: () => Future[CurrencyUnit])
         .expects()
@@ -366,17 +402,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         assert(responseAs[String] == """{"result":true,"error":null}""")
       }
     }
-
-    val spendingInfoDb = SegwitV0SpendingInfo(
-      outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
-      output = EmptyTransactionOutput,
-      privKeyPath =
-        SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
-      scriptWitness = EmptyScriptWitness,
-      txid = DoubleSha256DigestBE.empty,
-      state = TxoState.PendingConfirmationsSpent,
-      spendingTxIdOpt = Some(DoubleSha256DigestBE.empty)
-    )
 
     "return the wallet utxos" in {
 

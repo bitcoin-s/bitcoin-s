@@ -115,6 +115,36 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("getbalances", arr) =>
+      GetBalance.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetBalance(isSats)) =>
+          complete {
+            for {
+              confirmed <- wallet.getConfirmedBalance()
+              unconfirmed <- wallet.getUnconfirmedBalance()
+              lockedUtxos <- wallet.listUtxos(TxoState.Reserved)
+            } yield {
+              def balToStr(bal: CurrencyUnit): String = {
+                if (isSats) bal.satoshis.toString
+                else Bitcoins(bal.satoshis).toString
+              }
+
+              val locked = lockedUtxos.map(_.output.value).sum
+              val total = confirmed + unconfirmed + locked
+
+              val json = Obj(
+                "confirmed" -> Str(balToStr(confirmed)),
+                "unconfirmed" -> Str(balToStr(unconfirmed)),
+                "locked" -> Str(balToStr(locked)),
+                "total" -> Str(balToStr(total))
+              )
+              Server.httpSuccess(json)
+            }
+          }
+      }
+
     case ServerCommand("getnewaddress", arr) =>
       GetNewAddress.fromJsArr(arr) match {
         case Failure(exception) =>
