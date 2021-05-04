@@ -438,6 +438,20 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("getbalances")
+        .action((_, conf) => conf.copy(command = GetBalances(false)))
+        .text("Get the wallet balance by utxo state")
+        .children(
+          opt[Unit]("sats")
+            .optional()
+            .text("Display balance in satoshis")
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case getBalances: GetBalances =>
+                  getBalances.copy(isSats = true)
+                case other => other
+              }))
+        ),
       cmd("getutxos")
         .action((_, conf) => conf.copy(command = GetUtxos))
         .text("Returns list of all wallet utxos"),
@@ -1437,6 +1451,8 @@ object ConsoleCli {
       // Wallet
       case GetBalance(isSats) =>
         RequestParam("getbalance", Seq(up.writeJs(isSats)))
+      case GetBalances(isSats) =>
+        RequestParam("getbalances", Seq(up.writeJs(isSats)))
       case GetConfirmedBalance(isSats) =>
         RequestParam("getconfirmedbalance", Seq(up.writeJs(isSats)))
       case GetUnconfirmedBalance(isSats) =>
@@ -1873,6 +1889,7 @@ object CliCommand {
   case class GetBalance(isSats: Boolean) extends AppServerCliCommand
   case class GetConfirmedBalance(isSats: Boolean) extends AppServerCliCommand
   case class GetUnconfirmedBalance(isSats: Boolean) extends AppServerCliCommand
+  case class GetBalances(isSats: Boolean) extends AppServerCliCommand
   case class GetAddressInfo(address: BitcoinAddress) extends AppServerCliCommand
 
   case class GetTransaction(txId: DoubleSha256DigestBE)

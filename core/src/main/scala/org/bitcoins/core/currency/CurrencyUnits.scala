@@ -100,7 +100,7 @@ sealed abstract class Satoshis extends CurrencyUnit {
 
   override def toString: String = {
     val num = toLong
-    val postFix = if (num == 1) "sat" else "sats"
+    val postFix = if (num == 1 || num == -1) "sat" else "sats"
     s"$num $postFix"
   }
 
