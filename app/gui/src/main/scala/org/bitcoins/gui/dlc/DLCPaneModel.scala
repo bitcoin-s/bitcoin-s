@@ -10,8 +10,8 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
 import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.{GlobalData, TaskRunner}
+import org.bitcoins.gui.dlc.GlobalDLCData.dlcs
 import scalafx.beans.property.ObjectProperty
-import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.Alert.AlertType
 import scalafx.scene.control.{Alert, ButtonType, TextArea}
 import scalafx.stage.FileChooser.ExtensionFilter
@@ -30,9 +30,6 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
   // constructors to signal that you want some default
   val parentWindow: ObjectProperty[Window] =
     ObjectProperty[Window](null.asInstanceOf[Window])
-
-  val dlcs: ObservableBuffer[DLCStatus] =
-    new ObservableBuffer[DLCStatus]()
 
   def getDLCs: Vector[DLCStatus] = {
     ConsoleCli.exec(GetDLCs, Config.empty) match {
@@ -325,7 +322,25 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
   }
 
   def onSign(): Unit = {
-    printDLCDialogResult("SignDLC", new SignDLCDialog)
+    val result = SignDLCDialog.showAndWait(parentWindow.value)
+
+    result match {
+      case Some(command) =>
+        taskRunner.run(
+          caption = "Sign DLC",
+          op = {
+            ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
+              case Success(commandReturn) =>
+                resultArea.text = commandReturn
+              case Failure(err) =>
+                err.printStackTrace()
+                resultArea.text = s"Error executing command:\n${err.getMessage}"
+            }
+            updateDLCs()
+          }
+        )
+      case None => ()
+    }
   }
 
   def onAddSigs(): Unit = {

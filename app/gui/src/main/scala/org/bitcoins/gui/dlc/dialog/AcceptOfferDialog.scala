@@ -53,41 +53,12 @@ object AcceptOfferDialog {
           throw new RuntimeException("This is impossible.")
       }
 
-      gridPane.add(new Label("Fee Rate"), 0, nextRow)
-      gridPane.add(new TextField() {
-                     text = offer.feeRate.toString
-                     editable = false
-                   },
-                   1,
-                   nextRow)
-      nextRow += 1
-
-      gridPane.add(new Label("Refund Date"), 0, nextRow)
-      gridPane.add(new TextField() {
-                     text = GUIUtil.epochToDateString(offer.contractTimeout)
-                     editable = false
-                   },
-                   1,
-                   nextRow)
-      nextRow += 1
-
       val (oracleKey, eventId) = offer.contractInfo.oracleInfo match {
         case OracleInfoV0TLV(announcement) =>
           (announcement.publicKey.hex, announcement.eventTLV.eventId)
         case _: MultiOracleInfoTLV =>
           throw new RuntimeException("This is impossible.")
       }
-
-      gridPane.add(new Label("Oracle Key"), 0, nextRow)
-      gridPane.add(
-        new TextField() {
-          text = oracleKey
-          editable = false
-        },
-        1,
-        nextRow
-      )
-      nextRow += 1
 
       gridPane.add(new Label("Event Id"), 0, nextRow)
       gridPane.add(
@@ -100,12 +71,32 @@ object AcceptOfferDialog {
       )
       nextRow += 1
 
-      val needed =
+      gridPane.add(new Label("Oracle Public Key"), 0, nextRow)
+      gridPane.add(
+        new TextField() {
+          text = oracleKey
+          editable = false
+        },
+        1,
+        nextRow
+      )
+      nextRow += 1
+
+      val yourCol =
         offer.contractInfo.totalCollateral - offer.totalCollateralSatoshis
 
-      gridPane.add(new Label("Needed Collateral"), 0, nextRow)
+      gridPane.add(new Label("Your Collateral"), 0, nextRow)
       gridPane.add(new TextField() {
-                     text = needed.satoshis.toString
+                     text = yourCol.satoshis.toString
+                     editable = false
+                   },
+                   1,
+                   nextRow)
+      nextRow += 1
+
+      gridPane.add(new Label("Counter Party Collateral"), 0, nextRow)
+      gridPane.add(new TextField() {
+                     text = offer.totalCollateralSatoshis.toString
                      editable = false
                    },
                    1,
@@ -131,6 +122,24 @@ object AcceptOfferDialog {
                      nextRow)
         nextRow += 1
       }
+
+      gridPane.add(new Label("Fee Rate"), 0, nextRow)
+      gridPane.add(new TextField() {
+                     text = offer.feeRate.toString
+                     editable = false
+                   },
+                   1,
+                   nextRow)
+      nextRow += 1
+
+      gridPane.add(new Label("Refund Date"), 0, nextRow)
+      gridPane.add(new TextField() {
+                     text = GUIUtil.epochToDateString(offer.contractTimeout)
+                     editable = false
+                   },
+                   1,
+                   nextRow)
+      nextRow += 1
     }
 
     offerTLVTF.onKeyTyped = _ => {
