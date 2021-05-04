@@ -5,8 +5,6 @@ import org.bitcoins.core.util.{BytesUtil, NumberUtil}
 import org.bitcoins.crypto.{CryptoBytesUtil, Factory, NetworkElement}
 import scodec.bits.{ByteOrdering, ByteVector}
 
-import scala.util.{Failure, Success, Try}
-
 /** Created by chris on 6/4/16.
   */
 /** This abstract class is meant to represent a signed and unsigned number in C
