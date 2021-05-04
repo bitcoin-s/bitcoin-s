@@ -124,20 +124,20 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
             for {
               confirmed <- wallet.getConfirmedBalance()
               unconfirmed <- wallet.getUnconfirmedBalance()
-              lockedUtxos <- wallet.listUtxos(TxoState.Reserved)
+              reservedUtxos <- wallet.listUtxos(TxoState.Reserved)
             } yield {
               def balToStr(bal: CurrencyUnit): String = {
                 if (isSats) bal.satoshis.toString
                 else Bitcoins(bal.satoshis).toString
               }
 
-              val locked = lockedUtxos.map(_.output.value).sum
-              val total = confirmed + unconfirmed + locked
+              val reserved = reservedUtxos.map(_.output.value).sum
+              val total = confirmed + unconfirmed + reserved
 
               val json = Obj(
                 "confirmed" -> Str(balToStr(confirmed)),
                 "unconfirmed" -> Str(balToStr(unconfirmed)),
-                "locked" -> Str(balToStr(locked)),
+                "reserved" -> Str(balToStr(reserved)),
                 "total" -> Str(balToStr(total))
               )
               Server.httpSuccess(json)

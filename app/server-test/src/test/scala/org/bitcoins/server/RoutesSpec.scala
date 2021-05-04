@@ -369,7 +369,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":{"confirmed":"5000000000 sats","unconfirmed":"5000000000 sats","locked":"-1 sat","total":"9999999999 sats"},"error":null}""")
+          responseAs[String] == """{"result":{"confirmed":"5000000000 sats","unconfirmed":"5000000000 sats","reserved":"-1 sat","total":"9999999999 sats"},"error":null}""")
       }
     }
 
