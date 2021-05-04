@@ -50,9 +50,8 @@ sealed abstract class Number[T <: Number[T]]
   def >>(num: Int): T = this.>>(apply(num))
 
   def <<(num: T): T = {
-    checkIfInt(num).map { _ =>
-      apply((underlying << num.toInt) & andMask)
-    }.get
+    val toInt = num.toInt
+    apply((underlying << toInt) & andMask)
   }
 
   def >>(num: T): T = {
@@ -60,9 +59,8 @@ sealed abstract class Number[T <: Number[T]]
     //https://stackoverflow.com/questions/47519140/bitwise-shift-right-with-long-not-equaling-zero/47519728#47519728
     if (num.toLong > 63) apply(0)
     else {
-      checkIfInt(num).map { _ =>
-        apply(underlying >> num.toInt)
-      }.get
+      val toInt = num.toInt
+      apply(underlying >> toInt)
     }
   }
 
@@ -70,16 +68,6 @@ sealed abstract class Number[T <: Number[T]]
   def &(num: T): T = apply(underlying & num.underlying)
   def unary_- : T = apply(-underlying)
 
-  /** Checks if the given nubmer is within range of a Int */
-  private def checkIfInt(num: T): Try[Unit] = {
-    if (num.toBigInt >= Int.MaxValue || num.toBigInt <= Int.MinValue) {
-      Failure(
-        new IllegalArgumentException(
-          "Num was not in range of int, got: " + num))
-    } else {
-      Success(())
-    }
-  }
 }
 
 /** Represents a signed number in our number system
