@@ -2,6 +2,7 @@ package org.bitcoins.gui.dlc
 
 import breeze.plot.{plot, Figure}
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.CETCalculator.CETOutcome
 import org.bitcoins.core.protocol.dlc.{
   CETCalculator,
@@ -153,6 +154,14 @@ object DLCPlotUtil {
     cetPlot.xlabel = "Outcome"
     cetPlot.ylabel = "Payout (sats)"
     cetPlot.legend = true
+
+    val maxVal = Math.pow(base, numDigits).toInt
+    val segmentLength = math.ceil(maxVal / 100.0).toInt
+    val adjustedMaxVal = maxVal + segmentLength
+    val dust = Policy.dustThreshold.satoshis.toLong.toInt
+    val dustXs = 0.until(adjustedMaxVal, segmentLength)
+    val dustYs = dustXs.map(_ => dust)
+    cetPlot += plot(dustXs, dustYs, '.', name = "Dust Threshold")
 
     figure
   }
