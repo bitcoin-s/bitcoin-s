@@ -17,7 +17,6 @@ import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import ujson._
 
 import scala.collection.mutable
-import scala.util.{Failure, Success}
 
 case class CoreRoutes(core: CoreApi)(implicit
     system: ActorSystem,
@@ -25,72 +24,60 @@ case class CoreRoutes(core: CoreApi)(implicit
     extends ServerRoute {
   import system.dispatcher
 
-  def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
+  def handleCommand: PartialFunction[ServerCommand, Route] = {
     case ServerCommand("finalizepsbt", arr) =>
-      FinalizePSBT.fromJsArr(arr) match {
-        case Success(FinalizePSBT(psbt)) =>
+      withValidServerCommand(FinalizePSBT.fromJsArr(arr)) {
+        case FinalizePSBT(psbt) =>
           complete {
             core
               .finalizePSBT(psbt)
               .map(finalized => Server.httpSuccess(finalized.base64))
           }
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
       }
 
     case ServerCommand("extractfrompsbt", arr) =>
-      ExtractFromPSBT.fromJsArr(arr) match {
-        case Success(ExtractFromPSBT(psbt)) =>
+      withValidServerCommand(ExtractFromPSBT.fromJsArr(arr)) {
+        case ExtractFromPSBT(psbt) =>
           complete {
             core
               .extractFromPSBT(psbt)
               .map(tx => Server.httpSuccess(tx.hex))
           }
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
       }
 
     case ServerCommand("converttopsbt", arr) =>
-      ConvertToPSBT.fromJsArr(arr) match {
-        case Success(ConvertToPSBT(tx)) =>
+      withValidServerCommand(ConvertToPSBT.fromJsArr(arr)) {
+        case ConvertToPSBT(tx) =>
           complete {
             core
               .convertToPSBT(tx)
               .map(psbt => Server.httpSuccess(psbt.base64))
           }
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
       }
 
     case ServerCommand("combinepsbts", arr) =>
-      CombinePSBTs.fromJsArr(arr) match {
-        case Success(CombinePSBTs(psbts)) =>
+      withValidServerCommand(CombinePSBTs.fromJsArr(arr)) {
+        case CombinePSBTs(psbts) =>
           complete {
             core
               .combinePSBTs(psbts)
               .map(psbt => Server.httpSuccess(psbt.base64))
           }
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
       }
 
     case ServerCommand("joinpsbts", arr) =>
-      JoinPSBTs.fromJsArr(arr) match {
-        case Success(JoinPSBTs(psbts)) =>
+      withValidServerCommand(JoinPSBTs.fromJsArr(arr)) {
+        case JoinPSBTs(psbts) =>
           complete {
             core
               .joinPSBTs(psbts)
               .map(psbt => Server.httpSuccess(psbt.base64))
           }
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
       }
 
     case ServerCommand("decoderawtransaction", arr) =>
-      DecodeRawTransaction.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(DecodeRawTransaction(tx)) =>
+      withValidServerCommand(DecodeRawTransaction.fromJsArr(arr)) {
+        case DecodeRawTransaction(tx) =>
           complete {
             val decoded = SerializedTransaction.decodeRawTransaction(tx)
             val uJson = ujson.read(decoded.toJson.toString())
@@ -99,10 +86,8 @@ case class CoreRoutes(core: CoreApi)(implicit
       }
 
     case ServerCommand("decodepsbt", arr) =>
-      DecodePSBT.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(DecodePSBT(psbt)) =>
+      withValidServerCommand(DecodePSBT.fromJsArr(arr)) {
+        case DecodePSBT(psbt) =>
           complete {
             val decoded = SerializedPSBT.decodePSBT(psbt)
             val uJson = ujson.read(decoded.toJson.toString())
@@ -111,10 +96,8 @@ case class CoreRoutes(core: CoreApi)(implicit
       }
 
     case ServerCommand("analyzepsbt", arr) =>
-      AnalyzePSBT.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(AnalyzePSBT(psbt)) =>
+      withValidServerCommand(AnalyzePSBT.fromJsArr(arr)) {
+        case AnalyzePSBT(psbt) =>
           complete {
             val inputs = psbt.inputMaps.zipWithIndex.map {
               case (inputMap, index) =>
@@ -168,10 +151,8 @@ case class CoreRoutes(core: CoreApi)(implicit
       }
 
     case ServerCommand("createmultisig", arr) =>
-      CreateMultisig.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(CreateMultisig(requiredKeys, keys, addressType)) =>
+      withValidServerCommand(CreateMultisig.fromJsArr(arr)) {
+        case CreateMultisig(requiredKeys, keys, addressType) =>
           complete {
             val sorted = keys.sortBy(_.hex)
             val spk = MultiSignatureScriptPubKey(requiredKeys, sorted)
