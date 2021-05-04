@@ -66,8 +66,11 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
     with UtilRpc {
 
   override def version: BitcoindVersion = instance.getVersion
-  require(version == BitcoindVersion.Unknown || version == instance.getVersion,
-          s"bitcoind version must be $version, got ${instance.getVersion}")
+
+  require(
+    instance.isRemote ||
+      version == BitcoindVersion.Unknown || version == instance.getVersion,
+    s"bitcoind version must be $version, got ${instance.getVersion}")
 
   // Fee Rate Provider
 
