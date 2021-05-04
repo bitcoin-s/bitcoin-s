@@ -52,8 +52,11 @@ case class DLCTxSigner(
           DLCFundingInput.fromInputSigningInfo(utxo, fund.inputSerialId)
         }
         .sortBy(_.inputSerialId)
-    require(fundingUtxosAsInputs == offer.fundingInputs.sortBy(_.inputSerialId),
-            "Funding ScriptSignatureParams did not match offer funding inputs")
+    require(
+      fundingUtxosAsInputs == offer.fundingInputs.sortBy(_.inputSerialId),
+      s"Funding ScriptSignatureParams did not match offer funding inputs, fundingUtxosAsInputs=$fundingUtxosAsInputs, offerInputs=${offer.fundingInputs
+        .sortBy(_.inputSerialId)}"
+    )
   } else {
     require(
       fundingKey.publicKey == accept.pubKeys.fundingKey &&
@@ -69,7 +72,9 @@ case class DLCTxSigner(
         .sortBy(_.inputSerialId)
     require(
       fundingUtxosAsInputs == accept.fundingInputs.sortBy(_.inputSerialId),
-      "Funding ScriptSignatureParams did not match accept funding inputs")
+      s"Funding ScriptSignatureParams did not match accept funding inputs,fundingUtxosAsInputs=$fundingUtxosAsInputs, offerInputs=${offer.fundingInputs
+        .sortBy(_.inputSerialId)}"
+    )
   }
 
   /** Return's this party's payout for a given oracle signature */
