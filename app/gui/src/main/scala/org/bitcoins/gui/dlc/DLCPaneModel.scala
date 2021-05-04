@@ -259,7 +259,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
 
         val (kValues, oracleInfo) = announcementOpt match {
           case Some(announcement) =>
-            (Vector.empty, EnumSingleOracleInfo(announcement))
+            (Vector.empty, NumericSingleOracleInfo(announcement))
           case None =>
             val kValues =
               0.until(contractDescriptor.numDigits)
