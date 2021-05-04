@@ -18,6 +18,7 @@ import ujson._
 
 import java.time.Instant
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
     system: ActorSystem,
