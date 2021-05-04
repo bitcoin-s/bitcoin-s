@@ -161,7 +161,7 @@ object DLCPlotUtil {
     val dust = Policy.dustThreshold.satoshis.toLong.toInt
     val dustXs = 0.until(adjustedMaxVal, segmentLength)
     val dustYs = dustXs.map(_ => dust)
-    cetPlot += plot(dustXs, dustYs, '-', name = "Dust Threshold")
+    cetPlot += plot(dustXs, dustYs, '.', name = "Dust Threshold")
 
     figure
   }
