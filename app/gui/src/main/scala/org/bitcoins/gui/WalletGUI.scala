@@ -74,8 +74,11 @@ object WalletGUI extends JFXApp {
     editable = false
     wrapText = true
     text <== StringProperty(
-      "Your current balance is: ") + GlobalData.currentBalance + StringProperty(
-      s" sats\n\n${(0 until 60).map(_ => "-").mkString}\n\n") + GlobalData.log
+      "Confirmed balance:\t\t") + GlobalData.currentConfirmedBalance + StringProperty(
+      s" sats\nUnconfirmed balance:\t") + GlobalData.currentUnconfirmedBalance + StringProperty(
+      s" sats\nReserved balance:\t\t") + GlobalData.currentReservedBalance + StringProperty(
+      s" sats\n${(0 until 60).map(_ => "-").mkString}\nTotal balance:\t\t\t") + GlobalData.currentTotalBalance + StringProperty(
+      s"\n${(0 until 30).map(_ => "=").mkString}\n\n") + GlobalData.log
   }
 
   private val model = new WalletGUIModel()

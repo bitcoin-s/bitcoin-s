@@ -8,7 +8,10 @@ import org.bitcoins.gui.settings.Themes
 import scalafx.beans.property.StringProperty
 
 object GlobalData {
-  val currentBalance: StringProperty = StringProperty("0")
+  val currentConfirmedBalance: StringProperty = StringProperty("0")
+  val currentUnconfirmedBalance: StringProperty = StringProperty("0")
+  val currentReservedBalance: StringProperty = StringProperty("0")
+  val currentTotalBalance: StringProperty = StringProperty("0")
 
   var network: BitcoinNetwork = _
 
