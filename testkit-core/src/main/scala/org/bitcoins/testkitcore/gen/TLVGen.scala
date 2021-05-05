@@ -1,12 +1,13 @@
 package org.bitcoins.testkitcore.gen
 
-import org.bitcoins.core.protocol.dlc.DLCMessage.DLCOffer
 import org.bitcoins.core.config.Networks
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
+import org.bitcoins.core.protocol.dlc.DLCMessage.DLCOffer
 import org.bitcoins.core.protocol.dlc.{
   ContractInfo,
   DLCFundingInputP2WPKHV0,
+  DLCMessage,
   EnumContractDescriptor
 }
 import org.bitcoins.core.protocol.tlv._
@@ -117,38 +118,6 @@ trait TLVGen {
 
   def contractDescriptorV0TLVWithTotalCollateral: Gen[
     (ContractDescriptorV0TLV, Satoshis)] = {
-    def genValues(size: Int, totalAmount: CurrencyUnit): Vector[Satoshis] = {
-      val vals = if (size < 2) {
-        throw new IllegalArgumentException(
-          s"Size must be at least two, got $size")
-      } else if (size == 2) {
-        Vector(totalAmount.satoshis, Satoshis.zero)
-      } else {
-        (0 until size - 2).map { _ =>
-          Satoshis(NumberUtil.randomLong(totalAmount.satoshis.toLong))
-        }.toVector :+ totalAmount.satoshis :+ Satoshis.zero
-      }
-
-      val valsWithOrder = vals.map(_ -> scala.util.Random.nextDouble())
-      valsWithOrder.sortBy(_._2).map(_._1)
-    }
-
-    def genContractDescriptors(
-        outcomes: Vector[String],
-        totalInput: CurrencyUnit): (
-        EnumContractDescriptor,
-        EnumContractDescriptor) = {
-      val outcomeMap =
-        outcomes
-          .map(EnumOutcome.apply)
-          .zip(genValues(outcomes.length, totalInput))
-
-      val info = EnumContractDescriptor(outcomeMap)
-      val remoteInfo = info.flip(totalInput.satoshis)
-
-      (info, remoteInfo)
-    }
-
     for {
       numOutcomes <- Gen.choose(2, 10)
       outcomes <- Gen.listOfN(numOutcomes, StringGenerators.genString)
@@ -156,8 +125,31 @@ trait TLVGen {
         Gen
           .choose(numOutcomes + 1, Long.MaxValue / 10000L)
           .map(Satoshis.apply)
-      (contractDescriptor, _) =
-        genContractDescriptors(outcomes.toVector, totalInput)
+      contractDescriptor = {
+        //DLCTestUtil.genContractDescriptors(outcomes.toVector, totalInput)
+        val satVals = {
+          val vals = if (outcomes.length < 2) {
+            throw new IllegalArgumentException(
+              s"Size must be at least two, got ${outcomes.length}")
+          } else if (outcomes.length == 2) {
+            Vector(totalInput, Satoshis.zero)
+          } else {
+            (0 until outcomes.length - 2).map { _ =>
+              Satoshis(NumberUtil.randomLong(totalInput.toLong))
+            }.toVector :+ totalInput :+ Satoshis.zero
+          }
+
+          val valsWithOrder = vals.map(_ -> scala.util.Random.nextDouble())
+          valsWithOrder.sortBy(_._2).map(_._1)
+        }
+
+        val outcomeMap =
+          outcomes.toVector
+            .map(EnumOutcome.apply)
+            .zip(satVals)
+
+        EnumContractDescriptor(outcomeMap)
+      }
     } yield {
       (contractDescriptor.toTLV, totalInput)
     }
@@ -167,25 +159,30 @@ trait TLVGen {
     contractDescriptorV0TLVWithTotalCollateral.map(_._1)
   }
 
-  def oracleInfoV0TLV: Gen[OracleInfoV0TLV] = {
+  def oracleInfoV0TLV(outcomes: Vector[String]): Gen[OracleInfoV0TLV] = {
     for {
       privKey <- CryptoGenerators.privateKey
       rValue <- CryptoGenerators.schnorrNonce
-      outcomes <- Gen.listOf(StringGenerators.genUTF8String)
     } yield {
       OracleInfoV0TLV(
         OracleAnnouncementV0TLV.dummyForEventsAndKeys(
           privKey,
           rValue,
-          outcomes.toVector.map(EnumOutcome.apply)))
+          outcomes.map(EnumOutcome.apply)))
     }
+  }
+
+  def oracleInfoV0TLV: Gen[OracleInfoV0TLV] = {
+    Gen
+      .listOf(StringGenerators.genUTF8String)
+      .flatMap(outcomes => oracleInfoV0TLV(outcomes.toVector))
   }
 
   def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
     for {
       (descriptor, totalCollateral) <-
         contractDescriptorV0TLVWithTotalCollateral
-      oracleInfo <- oracleInfoV0TLV
+      oracleInfo <- oracleInfoV0TLV(descriptor.outcomes.map(_._1))
     } yield {
       ContractInfoV0TLV(totalCollateral, descriptor, oracleInfo)
     }
@@ -208,7 +205,8 @@ trait TLVGen {
     }
   }
 
-  def fundingInputP2WPKHTLV: Gen[FundingInputV0TLV] = {
+  def fundingInputP2WPKHTLV(ignoreSerialIds: Vector[UInt64] =
+    Vector.empty): Gen[FundingInputV0TLV] = {
     for {
       prevTx <- TransactionGenerators.realisticTransactionWitnessOut
       prevTxVout <- Gen.choose(0, prevTx.outputs.length - 1)
@@ -225,20 +223,26 @@ trait TLVGen {
           wtx.copy(outputs = wtx.outputs.updated(prevTxVout, newOutput))
       }
     } yield {
-      DLCFundingInputP2WPKHV0(newPrevTx, UInt32(prevTxVout), sequence).toTLV
+      DLCFundingInputP2WPKHV0(DLCMessage.genSerialId(ignoreSerialIds),
+                              newPrevTx,
+                              UInt32(prevTxVout),
+                              sequence).toTLV
     }
   }
 
-  def fundingInputV0TLV: Gen[FundingInputV0TLV] = {
-    fundingInputP2WPKHTLV // Soon to be Gen.oneOf
+  def fundingInputV0TLV(ignoreSerialIds: Vector[UInt64] = Vector.empty): Gen[
+    FundingInputV0TLV] = {
+    fundingInputP2WPKHTLV(ignoreSerialIds) // Soon to be Gen.oneOf
   }
 
   def fundingInputV0TLVs(
-      collateralNeeded: CurrencyUnit): Gen[Vector[FundingInputV0TLV]] = {
+      collateralNeeded: CurrencyUnit,
+      ignoreSerialIds: Vector[UInt64] = Vector.empty): Gen[
+    Vector[FundingInputV0TLV]] = {
     for {
       numInputs <- Gen.choose(0, 5)
-      inputs <- Gen.listOfN(numInputs, fundingInputV0TLV)
-      input <- fundingInputV0TLV
+      inputs <- Gen.listOfN(numInputs, fundingInputV0TLV(ignoreSerialIds))
+      input <- fundingInputV0TLV(ignoreSerialIds)
     } yield {
       val totalFunding =
         inputs.foldLeft[CurrencyUnit](Satoshis.zero)(_ + _.output.value)
@@ -296,9 +300,12 @@ trait TLVGen {
       contractInfo <- contractInfoV0TLV
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress
+      payoutSerialId <- NumberGenerator.uInt64
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
       fundingInputs <- fundingInputV0TLVs(totalCollateralSatoshis)
       changeAddress <- AddressGenerator.bitcoinAddress
+      changeSerialId <- NumberGenerator.uInt64
+      fundOutputSerialId <- NumberGenerator.uInt64.suchThat(_ != changeSerialId)
       feeRate <- CurrencyUnitGenerator.positiveRealistic.map(
         SatoshisPerVirtualByte.apply)
       timeout1 <- NumberGenerator.uInt32s
@@ -311,17 +318,20 @@ trait TLVGen {
       }
 
       DLCOfferTLV(
-        0.toByte,
-        chainHash,
-        contractInfo,
-        fundingPubKey,
-        payoutAddress.scriptPubKey,
-        totalCollateralSatoshis,
-        fundingInputs,
-        changeAddress.scriptPubKey,
-        feeRate,
-        contractMaturityBound,
-        contractTimeout
+        contractFlags = 0.toByte,
+        chainHash = chainHash,
+        contractInfo = contractInfo,
+        fundingPubKey = fundingPubKey,
+        payoutSPK = payoutAddress.scriptPubKey,
+        payoutSerialId = payoutSerialId,
+        totalCollateralSatoshis = totalCollateralSatoshis,
+        fundingInputs = fundingInputs,
+        changeSPK = changeAddress.scriptPubKey,
+        changeSerialId = changeSerialId,
+        fundOutputSerialId = fundOutputSerialId,
+        feeRate = feeRate,
+        contractMaturityBound = contractMaturityBound,
+        contractTimeout = contractTimeout
       )
     }
   }
@@ -345,8 +355,10 @@ trait TLVGen {
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress
+      payoutSerialId <- NumberGenerator.uInt64
       fundingInputs <- fundingInputV0TLVs(totalCollateralSatoshis)
       changeAddress <- AddressGenerator.bitcoinAddress
+      changeSerialId <- NumberGenerator.uInt64
       cetSigs <- cetSignaturesV0TLV
       refundSig <- CryptoGenerators.digitalSignature
     } yield {
@@ -355,8 +367,10 @@ trait TLVGen {
         totalCollateralSatoshis,
         fundingPubKey,
         payoutAddress.scriptPubKey,
+        payoutSerialId,
         fundingInputs,
         changeAddress.scriptPubKey,
+        changeSerialId,
         cetSigs,
         refundSig,
         NoNegotiationFieldsTLV
@@ -370,12 +384,18 @@ trait TLVGen {
     for {
       fundingPubKey <- CryptoGenerators.publicKey
       payoutAddress <- AddressGenerator.bitcoinAddress
+      payoutSerialId <- NumberGenerator.uInt64.suchThat(
+        _ != offer.payoutSerialId)
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
       totalCollateral = scala.math.max(
         (contractInfo.max - offer.totalCollateralSatoshis).satoshis.toLong,
         totalCollateralSatoshis.toLong)
-      fundingInputs <- fundingInputV0TLVs(Satoshis(totalCollateral))
+      fundingInputs <- fundingInputV0TLVs(
+        Satoshis(totalCollateral),
+        offer.fundingInputs.map(_.inputSerialId))
       changeAddress <- AddressGenerator.bitcoinAddress
+      changeSerialId <- NumberGenerator.uInt64.suchThat(num =>
+        num != offer.changeSerialId && num != offer.fundOutputSerialId)
       cetSigs <- cetSignaturesV0TLV(contractInfo.allOutcomes.length)
       refundSig <- CryptoGenerators.digitalSignature
     } yield {
@@ -384,8 +404,10 @@ trait TLVGen {
         Satoshis(totalCollateral),
         fundingPubKey,
         payoutAddress.scriptPubKey,
+        payoutSerialId,
         fundingInputs,
         changeAddress.scriptPubKey,
+        changeSerialId,
         cetSigs,
         refundSig,
         NoNegotiationFieldsTLV
@@ -430,7 +452,7 @@ trait TLVGen {
       oracleAnnouncementV0TLV,
       contractInfoV0TLV,
       oracleInfoV0TLV,
-      fundingInputV0TLV,
+      fundingInputV0TLV(),
       cetSignaturesV0TLV,
       fundingSignaturesV0TLV,
       dlcOfferTLV,
