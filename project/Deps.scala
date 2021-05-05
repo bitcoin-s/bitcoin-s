@@ -100,13 +100,20 @@ object Deps {
     val scalaFx =
       "org.scalafx" %% "scalafx" % V.scalaFxV withSources () withJavadoc ()
 
+    lazy val arch = System.getProperty("os.arch")
     lazy val osName = System.getProperty("os.name") match {
       case n if n.startsWith("Linux")   => "linux"
-      case n if n.startsWith("Mac")     => "mac"
+      case n if n.startsWith("Mac")     =>
+        if (arch == "aarch64" ) {
+          //needed to accommodate the different chip
+          //arch for M1
+          s"mac-${arch}"
+        } else {
+          "mac"
+        }
       case n if n.startsWith("Windows") => "win"
-      case _                            => throw new Exception("Unknown platform!")
+      case x                            => throw new Exception(s"Unknown platform $x!")
     }
-
     // Not sure if all of these are needed, some might be possible to remove
     lazy val javaFxBase =
       "org.openjfx" % s"javafx-base" % V.javaFxV classifier osName withSources () withJavadoc ()
