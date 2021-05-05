@@ -14,7 +14,7 @@ sealed abstract class BaseECKey extends NetworkElement
   */
 sealed abstract class ECPrivateKey
     extends BaseECKey
-    with Sign
+    with AdaptorSign
     with MaskedToString {
 
   /** Signs a given sequence of bytes with the signingKey
@@ -50,14 +50,7 @@ sealed abstract class ECPrivateKey
     CryptoUtil.schnorrSignWithNonce(dataToSign, this, nonce)
   }
 
-  def adaptorSign(
-      adaptorPoint: ECPublicKey,
-      msg: ByteVector): ECAdaptorSignature = {
-    val auxRand = ECPrivateKey.freshPrivateKey.bytes
-    adaptorSign(adaptorPoint, msg, auxRand)
-  }
-
-  def adaptorSign(
+  override def adaptorSign(
       adaptorPoint: ECPublicKey,
       msg: ByteVector,
       auxRand: ByteVector): ECAdaptorSignature = {
