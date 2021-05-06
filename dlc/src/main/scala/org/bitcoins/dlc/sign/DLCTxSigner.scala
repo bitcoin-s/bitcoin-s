@@ -194,9 +194,11 @@ case class DLCTxSigner(
   def createCETSigsAsync()(implicit
       ec: ExecutionContext): Future[CETSignatures] = {
     val outcomes = builder.contractInfo.allOutcomes
-
     //divide and conquer
-    val size = outcomes.length / Runtime.getRuntime.availableProcessors()
+
+    //we want a batch size of at least 1
+    val size =
+      Math.max(outcomes.length / Runtime.getRuntime.availableProcessors(), 1)
 
     val computeBatchFn: Vector[OracleOutcome] => Future[
       Vector[(OracleOutcome, ECAdaptorSignature)]] = {
