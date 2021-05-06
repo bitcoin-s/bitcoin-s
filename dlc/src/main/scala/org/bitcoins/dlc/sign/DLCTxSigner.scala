@@ -20,6 +20,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /** Responsible for constructing all DLC signatures
@@ -186,6 +187,44 @@ case class DLCTxSigner(
     val refundSig = signRefundTx
 
     CETSignatures(cetSigs, refundSig)
+  }
+
+  /** Computes the CET sigs asynchronously */
+  def createCETSigsAsync()(implicit
+      ec: ExecutionContext): Future[CETSignatures] = {
+    val startOutcomes = System.currentTimeMillis()
+    val outcomes = builder.contractInfo.allOutcomes
+    val startSigning = System.currentTimeMillis()
+
+    //divide and conquer
+    val size = outcomes.length % Runtime.getRuntime.availableProcessors()
+
+    //this gives us a iterator of size Runtime.getRuntime.availableProcess()
+    val dividedOutcomes: Iterator[Vector[OracleOutcome]] = {
+      outcomes.grouped(size)
+    }
+
+    //compute all the cets async
+    val cetSigsAsyncNested: Iterator[
+      Future[Vector[(OracleOutcome, ECAdaptorSignature)]]] = {
+      dividedOutcomes.map { o =>
+        Future {
+          signCETs(o)
+        }
+      }
+    }
+
+    //aggregate everything
+    val cetSigsF: Future[Vector[(OracleOutcome, ECAdaptorSignature)]] = {
+      Future
+        .sequence(cetSigsAsyncNested)
+        .map(_.flatten.toVector)
+    }
+
+    for {
+      cetSigs <- cetSigsF
+      refundSig = signRefundTx
+    } yield CETSignatures(cetSigs, refundSig)
   }
 
   /** Creates all of this party's CETSignatures */

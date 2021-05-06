@@ -744,7 +744,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       _ <- scriptPubKeyDAO.create(spkDb)
 
       _ = logger.info(s"Creating CET Sigs for ${contractId.toHex}")
-      cetSigs = signer.createCETSigs()
+      cetSigs <- signer.createCETSigsAsync()
 
       _ = logger.debug(
         s"DLC Accept data collected, creating database entry, ${dlc.paramHash.hex}")
@@ -962,14 +962,16 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       cetSigs <-
         if (mySigs.isEmpty) {
           logger.info(s"Creating CET Sigs for contract ${contractId.toHex}")
-          val sigs = signer.createCETSigs()
-          val sigDbs = sigs.outcomeSigs.map(sig =>
-            DLCCETSignatureDb(dlc.paramHash,
-                              isInitiator = true,
-                              sig._1.sigPoint,
-                              sig._2))
+          for {
+            sigs <- signer.createCETSigsAsync()
+            sigDbs = sigs.outcomeSigs.map(sig =>
+              DLCCETSignatureDb(dlc.paramHash,
+                                isInitiator = true,
+                                sig._1.sigPoint,
+                                sig._2))
+            _ <- dlcSigsDAO.createAll(sigDbs)
+          } yield sigs
 
-          dlcSigsDAO.createAll(sigDbs).map(_ => sigs)
         } else {
           logger.debug(s"CET Sigs already created for ${contractId.toHex}")
           val outcomeSigs = mySigs.map { dbSig =>
