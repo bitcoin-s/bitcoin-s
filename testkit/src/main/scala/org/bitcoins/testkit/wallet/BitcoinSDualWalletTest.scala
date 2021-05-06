@@ -66,28 +66,35 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
       test: OneArgAsyncTest,
       contractOraclePair: ContractOraclePair): FutureOutcome = {
     makeDependentFixture(
-      build = () =>
-        for {
-          walletA <-
-            FundWalletUtil.createFundedDLCWallet(nodeApi,
-                                                 chainQueryApi,
-                                                 getBIP39PasswordOpt(),
-                                                 Some(segwitWalletConf))
-          walletB <- FundWalletUtil.createFundedDLCWallet(
+      build = () => {
+        val walletAF = {
+          FundWalletUtil.createFundedDLCWallet(nodeApi,
+                                               chainQueryApi,
+                                               getBIP39PasswordOpt(),
+                                               Some(segwitWalletConf))
+        }
+        val walletBF = {
+          FundWalletUtil.createFundedDLCWallet(
             nodeApi,
             chainQueryApi,
             getBIP39PasswordOpt(),
             Some(segwitWalletConf))(config2, system)
+        }
 
+        for {
+          walletA <- walletAF
+          walletB <- walletBF
           contractInfo = ContractInfo(Satoshis(10000), contractOraclePair)
-
           (dlcWalletA, dlcWalletB) <-
             DLCWalletUtil.initDLC(walletA, walletB, contractInfo)
-        } yield (dlcWalletA, dlcWalletB),
+        } yield (dlcWalletA, dlcWalletB)
+      },
       destroy = { dlcWallets: (InitializedDLCWallet, InitializedDLCWallet) =>
         for {
           _ <- destroyWallet(dlcWallets._1.wallet)
           _ <- destroyWallet(dlcWallets._2.wallet)
+          _ <- dlcWallets._1.wallet.dlcConfig.stop()
+          _ <- dlcWallets._2.wallet.dlcConfig.stop()
         } yield ()
       }
     )(test)
