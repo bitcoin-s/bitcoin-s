@@ -217,6 +217,7 @@ lazy val `bitcoin-s` = project
     lndRpc,
     lndRpcTest,
     tor,
+    torTest,
     scripts
   )
   .dependsOn(
@@ -265,6 +266,7 @@ lazy val `bitcoin-s` = project
     lndRpc,
     lndRpcTest,
     tor,
+    torTest,
     scripts
   )
   .settings(CommonSettings.settings: _*)

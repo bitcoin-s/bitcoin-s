@@ -1,19 +1,3 @@
-/*
- * Copyright 2019 ACINQ SAS
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.bitcoins.tor
 
 import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
@@ -240,18 +224,6 @@ case class Socks5ProxyParams(
     useForTor: Boolean)
 
 object Socks5ProxyParams {
-
-//  def proxyAddress(
-//      socketAddress: InetSocketAddress,
-//      proxyParams: Socks5ProxyParams): Option[InetSocketAddress] =
-//    NodeAddress
-//      .fromParts(socketAddress.getHostString, socketAddress.getPort)
-//      .toOption collect {
-//      case _: IPv4 if proxyParams.useForIPv4 => proxyParams.address
-//      case _: IPv6 if proxyParams.useForIPv6 => proxyParams.address
-//      case _: Tor2 if proxyParams.useForTor  => proxyParams.address
-//      case _: Tor3 if proxyParams.useForTor  => proxyParams.address
-//    }
 
   def proxyCredentials(
       proxyParams: Socks5ProxyParams): Option[Socks5Connection.Credentials] =
