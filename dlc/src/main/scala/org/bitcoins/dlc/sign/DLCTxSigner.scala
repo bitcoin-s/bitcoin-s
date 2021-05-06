@@ -14,6 +14,7 @@ import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
@@ -189,7 +190,7 @@ case class DLCTxSigner(
     CETSignatures(cetSigs, refundSig)
   }
 
-  /** Computes the CET sigs asynchronously */
+  /** Creates CET signatures async */
   def createCETSigsAsync()(implicit
       ec: ExecutionContext): Future[CETSignatures] = {
     val outcomes = builder.contractInfo.allOutcomes
@@ -197,27 +198,19 @@ case class DLCTxSigner(
     //divide and conquer
     val size = outcomes.length / Runtime.getRuntime.availableProcessors()
 
-    //this gives us a iterator of size Runtime.getRuntime.availableProcess()
-    val dividedOutcomes: Iterator[Vector[OracleOutcome]] = {
-      outcomes.grouped(size)
-    }
-
-    //compute all the cets async
-    val cetSigsAsyncNested: Iterator[
-      Future[Vector[(OracleOutcome, ECAdaptorSignature)]]] = {
-      dividedOutcomes.map { o =>
+    val computeBatchFn: Vector[OracleOutcome] => Future[
+      Vector[(OracleOutcome, ECAdaptorSignature)]] = {
+      case outcomes: Vector[OracleOutcome] =>
         Future {
-          signCETs(o)
+          signCETs(outcomes)
         }
-      }
     }
 
-    //aggregate everything
     val cetSigsF: Future[Vector[(OracleOutcome, ECAdaptorSignature)]] = {
-      Future
-        .sequence(cetSigsAsyncNested)
-        .map(_.flatten.toVector)
-    }
+      FutureUtil.batchAndParallelExecute(elements = outcomes,
+                                         f = computeBatchFn,
+                                         batchSize = size)
+    }.map(_.flatten)
 
     for {
       cetSigs <- cetSigsF
