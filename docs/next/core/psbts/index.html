@@ -141,10 +141,10 @@ and transaction extraction.</p>
 <span class="hljs-comment">// correctly in an application</span>
 <span class="hljs-comment">// Here we use the relevant private keys to sign the first input</span>
 <span class="hljs-keyword">val</span> privKey0 = <span class="hljs-type">ECPrivateKeyUtil</span>.fromWIFToPrivateKey(
-    <span class="hljs-string">"cP53pDbR5WtAD8dYAW9hhTjuvvTVaEiQBdrz9XPrgLBeRFiyCbQr"</span>)
+    <span class="hljs-string">"cP53pDbR5WtAD8dYAW9hhTjuvvTVaEiQBdrz9XPrgLBeRFiyCbQr"</span>).toPrivateKey
 
 <span class="hljs-keyword">val</span> privKey1 = <span class="hljs-type">ECPrivateKeyUtil</span>.fromWIFToPrivateKey(
-    <span class="hljs-string">"cR6SXDoyfQrcp4piaiHE97Rsgta9mNhGTen9XeonVgwsh4iSgw6d"</span>)
+    <span class="hljs-string">"cR6SXDoyfQrcp4piaiHE97Rsgta9mNhGTen9XeonVgwsh4iSgw6d"</span>).toPrivateKey
 
 <span class="hljs-keyword">val</span> psbtFirstSig =
     psbtWithSigHashFlags
