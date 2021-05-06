@@ -192,9 +192,7 @@ case class DLCTxSigner(
   /** Computes the CET sigs asynchronously */
   def createCETSigsAsync()(implicit
       ec: ExecutionContext): Future[CETSignatures] = {
-    val startOutcomes = System.currentTimeMillis()
     val outcomes = builder.contractInfo.allOutcomes
-    val startSigning = System.currentTimeMillis()
 
     //divide and conquer
     val size = outcomes.length / Runtime.getRuntime.availableProcessors()
