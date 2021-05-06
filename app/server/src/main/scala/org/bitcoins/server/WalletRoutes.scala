@@ -30,8 +30,10 @@ case class WalletRoutes(wallet: AnyHDWalletApi)(implicit
 
   private def spendingInfoDbToJson(spendingInfoDb: SpendingInfoDb): Value = {
     Obj(
-      "outpoint" -> Str(
-        s"${spendingInfoDb.outPoint.txIdBE.hex}:${spendingInfoDb.outPoint.vout.toBigInt}"),
+      "outpoint" -> Obj(
+        "txid" -> Str(spendingInfoDb.txid.hex),
+        "vout" -> Num(spendingInfoDb.outPoint.vout.toLong.toDouble)
+      ),
       "value" -> Num(spendingInfoDb.output.value.satoshis.toLong.toDouble)
     )
   }
