@@ -9,7 +9,12 @@ import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
 import org.bitcoins.core.util.BitcoinScriptUtil
-import org.bitcoins.crypto.{DERSignatureUtil, ECDigitalSignature, ECPublicKey}
+import org.bitcoins.crypto.{
+  DERSignatureUtil,
+  ECDigitalSignature,
+  ECPublicKey,
+  ECPublicKeyBytes
+}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -19,6 +24,13 @@ import scala.annotation.tailrec
   * public keys
   */
 trait TransactionSignatureChecker {
+
+  def checkSignature(
+      txSignatureComponent: TxSigComponent,
+      pubKeyBytes: ECPublicKeyBytes,
+      signature: ECDigitalSignature): TransactionSignatureCheckerResult =
+    checkSignature(txSignatureComponent,
+                   PartialSignature(pubKeyBytes, signature))
 
   def checkSignature(
       txSignatureComponent: TxSigComponent,
@@ -58,7 +70,7 @@ trait TransactionSignatureChecker {
   def checkSignature(
       txSignatureComponent: TxSigComponent,
       script: Seq[ScriptToken],
-      pubKey: ECPublicKey,
+      pubKey: ECPublicKeyBytes,
       signature: ECDigitalSignature,
       flags: Seq[ScriptFlag] =
         Policy.standardFlags): TransactionSignatureCheckerResult = {
@@ -147,7 +159,7 @@ trait TransactionSignatureChecker {
       txSignatureComponent: TxSigComponent,
       script: Seq[ScriptToken],
       sigs: List[ECDigitalSignature],
-      pubKeys: List[ECPublicKey],
+      pubKeys: List[ECPublicKeyBytes],
       flags: Seq[ScriptFlag],
       requiredSigs: Long): TransactionSignatureCheckerResult = {
     require(requiredSigs >= 0,

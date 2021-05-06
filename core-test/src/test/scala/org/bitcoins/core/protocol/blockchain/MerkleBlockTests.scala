@@ -4,7 +4,7 @@ import org.bitcoins.core.bloom._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
+import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKeyBytes}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 /** Created by chris on 8/9/16.
@@ -136,7 +136,7 @@ class MerkleBlockTests extends BitcoinSUnitTest {
     // Match an output from the second transaction (the pubkey for address 1DZTzaBHUDM7T3QvUKBz4qXMRpkg8jsfB5)
     // This should not match the third transaction though it spends the output matched
     // It will match the fourth transaction, which has another pay-to-pubkey output to the same address
-    val pubKey = ECPublicKey(
+    val pubKey = ECPublicKeyBytes(
       "044a656f065871a353f216ca26cef8dde2f03e8c16202d2e8ad769f02032cb86a5eb5e56842e92e19141d60a01928f8dd2c875a390f67c1f6c94cfc617c0ea45af")
     val filterWithPubKey = filter.insert(pubKey.bytes)
 

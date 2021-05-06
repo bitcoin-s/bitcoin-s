@@ -83,11 +83,6 @@ trait CryptoUtil extends CryptoRuntime {
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey =
     cryptoRuntime.publicKey(privateKey)
 
-  override def publicKeyConvert(
-      key: ECPublicKey,
-      compressed: Boolean): ECPublicKey =
-    cryptoRuntime.publicKeyConvert(key, compressed)
-
   override def sign(
       privateKey: ECPrivateKey,
       dataToSign: ByteVector): ECDigitalSignature =
@@ -103,12 +98,12 @@ trait CryptoUtil extends CryptoRuntime {
     cryptoRuntime.secKeyVerify(privateKeybytes)
 
   override def verify(
-      publicKey: ECPublicKey,
+      publicKey: PublicKey[_],
       data: ByteVector,
       signature: ECDigitalSignature): Boolean =
     cryptoRuntime.verify(publicKey, data, signature)
 
-  override def decompressed(publicKey: ECPublicKey): ECPublicKey =
+  override def decompressed[PK <: PublicKey[PK]](publicKey: PK): PK =
     cryptoRuntime.decompressed(publicKey)
 
   override def tweakMultiply(
@@ -122,8 +117,14 @@ trait CryptoUtil extends CryptoRuntime {
   override def add(pk1: ByteVector, pk2: ECPrivateKey): ByteVector =
     cryptoRuntime.add(pk1, pk2)
 
+  override def add(point1: SecpPoint, point2: SecpPoint): SecpPoint =
+    cryptoRuntime.add(point1, point2)
+
   override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey =
     cryptoRuntime.add(pk1, pk2)
+
+  override def combinePubKeys(pubKeys: Vector[ECPublicKey]): ECPublicKey =
+    cryptoRuntime.combinePubKeys(pubKeys)
 
   override def pubKeyTweakAdd(
       pubkey: ECPublicKey,
@@ -197,7 +198,7 @@ trait CryptoUtil extends CryptoRuntime {
   override def sipHash(item: ByteVector, key: SipHashKey): Long =
     cryptoRuntime.sipHash(item, key)
 
-  override def decodePoint(bytes: ByteVector): ECPoint =
+  override def decodePoint(bytes: ByteVector): SecpPoint =
     cryptoRuntime.decodePoint(bytes)
 
   override def randomBytes(n: Int): ByteVector = cryptoRuntime.randomBytes(n)

@@ -25,9 +25,6 @@ case class LnRoute(
     cltvExpiryDelta: Short)
     extends NetworkElement {
 
-  require(pubkey.isCompressed,
-          s"Can only use a compressed public key in routing")
-
   override def bytes: ByteVector = {
 
     val cltvExpiryDeltaHex = BytesUtil.encodeHex(cltvExpiryDelta)

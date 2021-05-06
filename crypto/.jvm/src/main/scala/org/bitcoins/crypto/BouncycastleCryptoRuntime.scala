@@ -1,6 +1,5 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.crypto
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator
@@ -10,6 +9,7 @@ import org.bouncycastle.crypto.params.{
   ECPrivateKeyParameters,
   KeyParameter
 }
+import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.ByteVector
 
 import java.math.BigInteger
@@ -34,16 +34,14 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
       keypair.getPrivate.asInstanceOf[ECPrivateKeyParameters]
     val priv: BigInteger = privParams.getD
     val bytes = ByteVector(priv.toByteArray)
-    ECPrivateKey.fromBytes(bytes)
+    ECPrivateKey.fromBytes(bytes.padLeft(33))
   }
 
   /** @param x x coordinate
     * @return a tuple (p1, p2) where p1 and p2 are points on the curve and p1.x = p2.x = x
     *         p1.y is even, p2.y is odd
     */
-  def recoverPoint(x: BigInteger): (
-      org.bouncycastle.math.ec.ECPoint,
-      org.bouncycastle.math.ec.ECPoint) = {
+  def recoverPoint(x: BigInteger): (ECPoint, ECPoint) = {
     val bytes = ByteVector(x.toByteArray)
 
     val bytes32 = if (bytes.length < 32) {
@@ -148,18 +146,13 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
   }
 
   override def verify(
-      publicKey: ECPublicKey,
+      publicKey: PublicKey[_],
       data: ByteVector,
       signature: ECDigitalSignature): Boolean =
     BouncyCastleUtil.verifyDigitalSignature(data, publicKey, signature)
 
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey =
     BouncyCastleUtil.computePublicKey(privateKey)
-
-  override def publicKeyConvert(
-      key: ECPublicKey,
-      compressed: Boolean): ECPublicKey =
-    BouncyCastleUtil.publicKeyConvert(key, compressed)
 
   override def tweakMultiply(
       publicKey: ECPublicKey,
@@ -200,14 +193,14 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     sh.doFinal()
   }
 
-  override def decodePoint(bytes: ByteVector): crypto.ECPoint = {
+  override def decodePoint(bytes: ByteVector): SecpPoint = {
     val decoded = BouncyCastleUtil.decodePoint(bytes)
 
     if (decoded.isInfinity)
-      crypto.ECPointInfinity
+      SecpPointInfinity
     else
-      crypto.ECPoint(decoded.getRawXCoord.getEncoded,
-                     decoded.getRawYCoord.getEncoded)
+      SecpPoint(decoded.getRawXCoord.getEncoded,
+                decoded.getRawYCoord.getEncoded)
   }
 
   override def pbkdf2WithSha512(

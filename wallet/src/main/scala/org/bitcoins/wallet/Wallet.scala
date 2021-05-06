@@ -822,7 +822,10 @@ abstract class Wallet
             keyPaths.foldLeft(withData) { (accum, hdPath) =>
               val sign = keyManager.toSign(hdPath)
               // Only sign if that key doesn't have a signature yet
-              if (!input.partialSignatures.exists(_.pubKey == sign.publicKey)) {
+              if (
+                !input.partialSignatures.exists(
+                  _.pubKey.toPublicKey == sign.publicKey)
+              ) {
                 logger.debug(
                   s"Signing input $index with key ${sign.publicKey.hex}")
                 accum.sign(index, sign)

@@ -214,7 +214,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
     } yield {
       assert(signed != psbt)
       assert(
-        signed.inputMaps.head.partialSignatures.exists(_.pubKey == walletKey))
+        signed.inputMaps.head.partialSignatures
+          .exists(_.pubKey.toPublicKey == walletKey))
     }
   }
 
@@ -236,7 +237,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
       } yield {
         assert(signed != psbt)
         assert(
-          signed.inputMaps.head.partialSignatures.exists(_.pubKey == walletKey))
+          signed.inputMaps.head.partialSignatures
+            .exists(_.pubKey.toPublicKey == walletKey))
       }
   }
 
@@ -258,7 +260,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
       } yield {
         assert(signed != psbt)
         assert(
-          signed.inputMaps.head.partialSignatures.exists(_.pubKey == walletKey))
+          signed.inputMaps.head.partialSignatures
+            .exists(_.pubKey.toPublicKey == walletKey))
       }
   }
 
@@ -281,7 +284,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
       } yield {
         assert(signed != psbt)
         assert(
-          signed.inputMaps.head.partialSignatures.exists(_.pubKey == walletKey))
+          signed.inputMaps.head.partialSignatures
+            .exists(_.pubKey.toPublicKey == walletKey))
       }
   }
 

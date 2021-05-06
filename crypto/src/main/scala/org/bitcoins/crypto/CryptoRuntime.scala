@@ -170,11 +170,6 @@ trait CryptoRuntime {
 
   def publicKey(privateKey: ECPrivateKey): ECPublicKey
 
-  /** Converts the given public key from its current representation to compressed/not compressed
-    * depending upon how [[compressed]] is set
-    */
-  def publicKeyConvert(key: ECPublicKey, compressed: Boolean): ECPublicKey
-
   def sign(privateKey: ECPrivateKey, dataToSign: ByteVector): ECDigitalSignature
 
   def signWithEntropy(
@@ -185,20 +180,20 @@ trait CryptoRuntime {
   def secKeyVerify(privateKeybytes: ByteVector): Boolean
 
   def verify(
-      publicKey: ECPublicKey,
+      publicKey: PublicKey[_],
       data: ByteVector,
       signature: ECDigitalSignature): Boolean
 
-  def decompressed(publicKey: ECPublicKey): ECPublicKey = {
+  def decompressed[PK <: PublicKey[PK]](publicKey: PK): PK = {
     if (publicKey.isCompressed) {
       decodePoint(publicKey.bytes) match {
-        case ECPointInfinity => ECPublicKey.fromHex("00")
-        case point: ECPointImpl =>
+        case SecpPointInfinity => publicKey.fromHex("00")
+        case point: SecpPointFinite =>
           val decompressedBytes =
             ByteVector.fromHex("04").get ++
               point.x.bytes ++
               point.y.bytes
-          ECPublicKey(decompressedBytes)
+          publicKey.fromBytes(decompressedBytes)
       }
     } else publicKey
   }
@@ -213,16 +208,50 @@ trait CryptoRuntime {
     sum.bytes
   }
 
+  /** Adds two SecpPoints together and correctly handles the point at infinity (0x00). */
+  def add(point1: SecpPoint, point2: SecpPoint): SecpPoint = {
+    (point1, point2) match {
+      case (SecpPointInfinity, p) => p
+      case (p, SecpPointInfinity) => p
+      case (p1: SecpPointFinite, p2: SecpPointFinite) =>
+        val pk1 = p1.toPublicKey
+        val pk2 = p2.toPublicKey
+
+        if (
+          (pk1.bytes.head ^ pk2.bytes.head) == 0x01 && pk1.bytes.tail == pk2.bytes.tail
+        ) {
+          SecpPointInfinity
+        } else {
+          add(pk1, pk2).toPoint
+        }
+    }
+  }
+
+  /** Adds two public keys together, failing if the sum is 0x00 (the point at infinity). */
   def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey
+
+  /** Adds a Vector of public keys together, failing only if the total sum is 0x00
+    * (the point at infinity), but still succeeding if sub-sums are 0x00.
+    */
+  def combinePubKeys(pubKeys: Vector[ECPublicKey]): ECPublicKey = {
+    val summandPoints = pubKeys.map(_.toPoint)
+    val sumPoint = summandPoints.reduce[SecpPoint](add(_, _))
+    sumPoint match {
+      case SecpPointInfinity =>
+        throw new IllegalArgumentException(
+          "Sum result was 0x00, an invalid public key.")
+      case p: SecpPointFinite => p.toPublicKey
+    }
+  }
 
   def pubKeyTweakAdd(pubkey: ECPublicKey, privkey: ECPrivateKey): ECPublicKey
 
   def isValidPubKey(bytes: ByteVector): Boolean
 
-  def decodePoint(bytes: ByteVector): ECPoint
+  def decodePoint(bytes: ByteVector): SecpPoint
 
-  def decodePoint(pubKey: ECPublicKey): ECPoint = {
-    decodePoint(pubKey.bytes)
+  def decodePoint(pubKey: ECPublicKey): SecpPoint = {
+    decodePoint(pubKey.decompressedBytes)
   }
 
   def schnorrSign(
@@ -268,11 +297,12 @@ trait CryptoRuntime {
 
         val sigPoint = s.publicKey
         val challengePoint = schnorrPubKey.publicKey.tweakMultiply(negE)
-        val computedR = challengePoint.add(sigPoint)
-        decodePoint(computedR) match {
-          case ECPointInfinity => false
-          case ECPointImpl(_, yCoord) =>
-            !yCoord.toBigInteger.testBit(0) && computedR.schnorrNonce == rx
+        val computedR = challengePoint.toPoint.add(sigPoint.toPoint)
+        computedR match {
+          case SecpPointInfinity => false
+          case point: SecpPointFinite =>
+            !point.y.toBigInteger.testBit(
+              0) && point.toPublicKey.schnorrNonce == rx
         }
       case Failure(_) => false
     }

@@ -256,7 +256,7 @@ object BitcoinSigner extends SignerUtils {
       psbt
         .inputMaps(inputIndex)
         .partialSignatures
-        .exists(_.pubKey == signer.publicKey)
+        .exists(_.pubKey.toPublicKey == signer.publicKey)
     ) {
       throw new IllegalArgumentException(
         "Input has already been signed with this key")
@@ -331,7 +331,7 @@ sealed abstract class RawSingleKeyBitcoinSigner[-InputType <: RawInputInfo]
       signSingle(spendingInfo.toSingle(0), unsignedTx, isDummySignature)
 
     val scriptSig =
-      keyAndSigToScriptSig(partialSignature.pubKey,
+      keyAndSigToScriptSig(partialSignature.pubKey.toPublicKey,
                            partialSignature.signature,
                            spendingInfoToSatisfy)
 

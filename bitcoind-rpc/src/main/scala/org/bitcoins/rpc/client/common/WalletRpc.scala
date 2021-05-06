@@ -18,7 +18,7 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
-  ECPrivateKey,
+  ECPrivateKeyBytes,
   ECPublicKey
 }
 import org.bitcoins.rpc.client.common.BitcoindVersion._
@@ -41,7 +41,7 @@ trait WalletRpc { self: Client =>
 
   def dumpPrivKey(
       address: BitcoinAddress,
-      walletNameOpt: Option[String] = None): Future[ECPrivateKey] = {
+      walletNameOpt: Option[String] = None): Future[ECPrivateKeyBytes] = {
     bitcoindCall[String]("dumpprivkey",
                          List(JsString(address.value)),
                          uriExtensionOpt = walletNameOpt.map(walletExtension))
@@ -197,7 +197,7 @@ trait WalletRpc { self: Client =>
   }
 
   def importPrivKey(
-      key: ECPrivateKey,
+      key: ECPrivateKeyBytes,
       account: String = "",
       rescan: Boolean = true,
       walletNameOpt: Option[String] = None): Future[Unit] = {

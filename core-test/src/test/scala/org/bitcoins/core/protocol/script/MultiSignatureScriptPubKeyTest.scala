@@ -1,8 +1,7 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.crypto.ECPublicKey
-import org.bitcoins.testkitcore.util.TestUtil
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.bitcoins.crypto.ECPublicKeyBytes
+import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TestUtil}
 
 /** Created by chris on 3/8/16.
   */
@@ -36,11 +35,11 @@ class MultiSignatureScriptPubKeyTest extends BitcoinSUnitTest {
 
     multiSigScriptPubKey.publicKeys must be(
       Seq(
-        ECPublicKey(
+        ECPublicKeyBytes(
           "025878e270211662a27181cf4d6ad4d2cf0e69a98a3815c086f587c7e9388d8718"),
-        ECPublicKey(
+        ECPublicKeyBytes(
           "03fc85980e3fac1f3d8a5c3223c3ef5bffc1bd42d2cc42add8c3899cc66e7f1906"),
-        ECPublicKey(
+        ECPublicKeyBytes(
           "0215b5bd050869166a70a7341b4f216e268b7c6c7504576dcea2cce7d11cc9a35f")
       ))
 

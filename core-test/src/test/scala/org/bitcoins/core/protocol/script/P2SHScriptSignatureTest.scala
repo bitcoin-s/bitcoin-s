@@ -5,7 +5,7 @@ import org.bitcoins.core.script.constant.{
   OP_0,
   ScriptConstant
 }
-import org.bitcoins.crypto.ECPublicKey
+import org.bitcoins.crypto.ECPublicKeyBytes
 import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TestUtil}
 
 /** Created by chris on 3/8/16.
@@ -21,9 +21,9 @@ class P2SHScriptSignatureTest extends BitcoinSJvmTest {
       }
     p2shScriptSig.publicKeys must be(
       Seq(
-        ECPublicKey(
+        ECPublicKeyBytes(
           "0369d26ebd086523384a0f89f293d4c327a65fa73332d8efd1097cb35231295b83"),
-        ECPublicKey(
+        ECPublicKeyBytes(
           "02480863e5c4a4e9763f5380c44fcfe6a3b7787397076cf9ea1049303a9d34f721")
       ))
 

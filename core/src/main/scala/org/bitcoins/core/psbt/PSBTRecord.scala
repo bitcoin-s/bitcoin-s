@@ -157,7 +157,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
   }
 
   case class PartialSignature(
-      pubKey: ECPublicKey,
+      pubKey: ECPublicKeyBytes,
       signature: ECDigitalSignature)
       extends InputPSBTRecord {
     require(pubKey.byteSize == 33,
@@ -171,6 +171,12 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
   }
 
   object PartialSignature extends Factory[PartialSignature] {
+
+    def apply(
+        pubKey: ECPublicKey,
+        signature: ECDigitalSignature): PartialSignature = {
+      PartialSignature(pubKey.toPublicKeyBytes(), signature)
+    }
 
     def dummyPartialSig(
         pubKey: ECPublicKey = ECPublicKey.freshPublicKey): PartialSignature = {

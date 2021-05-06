@@ -102,10 +102,10 @@ val psbtWithSigHashFlags = psbtWithUpdatedSecondInput
 // correctly in an application
 // Here we use the relevant private keys to sign the first input
 val privKey0 = ECPrivateKeyUtil.fromWIFToPrivateKey(
-    "cP53pDbR5WtAD8dYAW9hhTjuvvTVaEiQBdrz9XPrgLBeRFiyCbQr")
+    "cP53pDbR5WtAD8dYAW9hhTjuvvTVaEiQBdrz9XPrgLBeRFiyCbQr").toPrivateKey
 
 val privKey1 = ECPrivateKeyUtil.fromWIFToPrivateKey(
-    "cR6SXDoyfQrcp4piaiHE97Rsgta9mNhGTen9XeonVgwsh4iSgw6d")
+    "cR6SXDoyfQrcp4piaiHE97Rsgta9mNhGTen9XeonVgwsh4iSgw6d").toPrivateKey
 
 val psbtFirstSig =
     psbtWithSigHashFlags

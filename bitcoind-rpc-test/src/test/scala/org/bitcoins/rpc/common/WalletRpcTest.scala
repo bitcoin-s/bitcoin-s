@@ -399,18 +399,23 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
     val address = P2PKHAddress(publicKey, networkParam)
 
     for {
-      _ <- client.importPrivKey(ecPrivateKey, rescan = false)
+      _ <- client.importPrivKey(ecPrivateKey.toPrivateKeyBytes(),
+                                rescan = false)
       key <- client.dumpPrivKey(address)
       result <-
         client
           .dumpWallet(
             client.getDaemon.datadir.getAbsolutePath + "/wallet_dump.dat")
     } yield {
-      assert(key == ecPrivateKey)
+      assert(key.toPrivateKey == ecPrivateKey)
       val reader = new Scanner(result.filename)
       var found = false
       while (reader.hasNext) {
-        if (reader.next == ECPrivateKeyUtil.toWIF(ecPrivateKey, networkParam)) {
+        if (
+          reader.next == ECPrivateKeyUtil.toWIF(
+            ecPrivateKey.toPrivateKeyBytes(),
+            networkParam)
+        ) {
           found = true
         }
       }
@@ -580,13 +585,15 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
           BitcoinAddress.fromScriptPubKey(output.scriptPubKey, RegTest))
       } yield {
         val partialSig = BitcoinSigner.signSingle(
-          ECSignatureParams(
-            P2WPKHV0InputInfo(outPoint, output.value, privKey.publicKey),
-            prevTx,
-            privKey,
-            HashType.sigHashAll),
+          ECSignatureParams(P2WPKHV0InputInfo(outPoint,
+                                              output.value,
+                                              privKey.toPrivateKey.publicKey),
+                            prevTx,
+                            privKey.toPrivateKey,
+                            HashType.sigHashAll),
           transaction,
-          isDummySignature = false)
+          isDummySignature = false
+        )
 
         signedTx match {
           case btx: NonWitnessTransaction =>

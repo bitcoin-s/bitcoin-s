@@ -63,8 +63,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def toPublicKey(privateKey: ECPrivateKey): ECPublicKey = {
     val buffer = CryptoJsUtil.toNodeBuffer(privateKey.bytes)
     val pubKeyBuffer =
-      SECP256k1.publicKeyCreate(key = buffer,
-                                compressed = privateKey.isCompressed)
+      SECP256k1.publicKeyCreate(key = buffer, compressed = false)
     val privKeyByteVec = CryptoJsUtil.toByteVector(pubKeyBuffer)
     ECPublicKey.fromBytes(privKeyByteVec)
   }
@@ -151,8 +150,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
 
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey = {
     val buffer = CryptoJsUtil.toNodeBuffer(privateKey.bytes)
-    val bufferPubKey =
-      SECP256k1.publicKeyCreate(buffer, privateKey.isCompressed)
+    val bufferPubKey = SECP256k1.publicKeyCreate(buffer, compressed = false)
     val byteVec = CryptoJsUtil.toByteVector(bufferPubKey)
     ECPublicKey.fromBytes(byteVec)
   }
@@ -178,7 +176,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   }
 
   override def verify(
-      publicKey: ECPublicKey,
+      publicKey: PublicKey[_],
       data: ByteVector,
       signature: ECDigitalSignature): Boolean = {
     val dataBuffer = CryptoJsUtil.toNodeBuffer(data)
@@ -190,7 +188,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def tweakMultiply(
       publicKey: ECPublicKey,
       tweak: FieldElement): ECPublicKey = {
-    val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(publicKey.bytes)
+    val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(publicKey.decompressedBytes)
     val tweakBuffer = CryptoJsUtil.toNodeBuffer(tweak.bytes)
     val keyBuffer =
       SECP256k1.publicKeyTweakMul(pubKeyBuffer, tweakBuffer, compress = true)
@@ -198,23 +196,9 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     ECPublicKey.fromBytes(keyByteVec)
   }
 
-  def publicKeyConvert(buffer: ByteVector, compressed: Boolean): ByteVector = {
-    val pubKeyBuffer =
-      publicKeyConvert(CryptoJsUtil.toNodeBuffer(buffer), compressed)
-    CryptoJsUtil.toByteVector(pubKeyBuffer)
-  }
-
-  def publicKeyConvert(buffer: Buffer, compressed: Boolean): Buffer =
-    SECP256k1.publicKeyConvert(buffer, compressed)
-
-  override def publicKeyConvert(
-      key: ECPublicKey,
-      compressed: Boolean): ECPublicKey =
-    ECPublicKey(publicKeyConvert(key.bytes, compressed))
-
   override def add(pk1: ECPublicKey, pk2: ECPublicKey): ECPublicKey = {
-    val pk1Buffer = CryptoJsUtil.toNodeBuffer(pk1.bytes)
-    val pk2Buffer = CryptoJsUtil.toNodeBuffer(pk2.bytes)
+    val pk1Buffer = CryptoJsUtil.toNodeBuffer(pk1.decompressedBytes)
+    val pk2Buffer = CryptoJsUtil.toNodeBuffer(pk2.decompressedBytes)
     try {
       val keyBuffer =
         SECP256k1.publicKeyCombine(js.Array(pk1Buffer, pk2Buffer),
@@ -223,21 +207,13 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
       ECPublicKey.fromBytes(keyBytes)
     } catch {
       case ex: JavaScriptException =>
+        val k1: ByteVector = pk1.bytes
+        val k2: ByteVector = pk2.bytes
+
         // check for infinity
-        val k1: ByteVector =
-          if (pk1.isCompressed) pk1.bytes
-          else publicKeyConvert(pk1.bytes, compressed = true)
-
-        val k2: ByteVector =
-          if (pk2.isCompressed) pk2.bytes
-          else publicKeyConvert(pk2.bytes, compressed = true)
-
-        if (
-          ((k1.head == 0x02 && k2.head == 0x03) ||
-            (k1.head == 0x03 && k2.head == 0x02)) &&
-          k1.tail == k2.tail
-        ) {
-          ECPublicKey.infinity
+        if ((k1.head ^ k2.head) == 0x01 && k1.tail == k2.tail) {
+          throw new IllegalArgumentException(
+            s"Invalid public key sum, got 0x00 = $pk1 + $pk2")
         } else {
           throw ex
         }
@@ -247,7 +223,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   override def pubKeyTweakAdd(
       pubkey: ECPublicKey,
       privkey: ECPrivateKey): ECPublicKey = {
-    val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(pubkey.bytes)
+    val pubKeyBuffer = CryptoJsUtil.toNodeBuffer(pubkey.decompressedBytes)
     val privKeyBuffer = CryptoJsUtil.toNodeBuffer(privkey.bytes)
     val keyBuffer =
       SECP256k1.publicKeyTweakAdd(pubKeyBuffer, privKeyBuffer, compress = true)
@@ -269,19 +245,19 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     hi | lo
   }
 
-  override def decodePoint(bytes: ByteVector): ECPoint = {
+  override def decodePoint(bytes: ByteVector): SecpPoint = {
     if (bytes.size == 1 && bytes(0) == 0x00) {
-      ECPointInfinity
+      SecpPointInfinity
     } else {
       val decoded = SECP256k1.curve
         .applyDynamic("decodePoint")(CryptoJsUtil.toNodeBuffer(bytes))
         .asInstanceOf[Point]
 
       if (decoded.isInfinity())
-        ECPointInfinity
+        SecpPointInfinity
       else
-        ECPoint(new BigInteger(decoded.getX().toString()),
-                new BigInteger(decoded.getY().toString()))
+        SecpPoint(new BigInteger(decoded.getX().toString()),
+                  new BigInteger(decoded.getY().toString()))
     }
   }
 

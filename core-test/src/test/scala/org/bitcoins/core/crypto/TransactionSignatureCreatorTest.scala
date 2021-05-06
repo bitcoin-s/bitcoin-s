@@ -53,7 +53,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
       "cTPg4Zc5Jis2EZXy3NXShgbn487GWBTapbU63BerLDZM3w2hQSjC")
     val txSignature =
       TransactionSignatureCreator.createSig(txSignatureComponent,
-                                            privateKey,
+                                            privateKey.toPrivateKey,
                                             HashType.sigHashAll)
     txSignature.r must be(expectedSig.r)
     txSignature.s must be(expectedSig.s)
@@ -81,7 +81,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
       "cTTh7jNtZhg3vHTjvYK8zcHkLfsMAS8iqL7pfZ6eVAVHHF8fN1qy")
     val txSignature =
       TransactionSignatureCreator.createSig(txSignatureComponent,
-                                            privateKey,
+                                            privateKey.toPrivateKey,
                                             HashType.sigHashAll)
     txSignature.r must be(expectedSig.r)
     txSignature.s must be(expectedSig.s)
@@ -97,8 +97,10 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
     val transaction = Transaction(rawTx)
     val prevTransaction = Transaction(
       "0100000001e4dbac0d73f4e3a9e99e70596a5f81b35a75f95b0474d051fbfd9dc249a5b67e000000006a4730440220486f112aee12997f6e484754d53d5c2158c18cc6d1d3f13aefcdf0ed19c47b290220136133d934d9e79a57408166c39fbce38e217ea9d417cabc20744134f04f06960121021f8cb5c3d611cf24dd665adff3fd540e4c155a05adaa6b672bfa7897c126d9b6feffffff0293d22a00000000001976a914cd0385f813ec73f8fc340b7069daf566878a0d6b88ac40420f000000000017a91480f7a6c14a8407da3546b4abfc3086876ca9a0668700000000")
-    val privateKey = ECPrivateKeyUtil.fromWIFToPrivateKey(
-      "cTTh7jNtZhg3vHTjvYK8zcHkLfsMAS8iqL7pfZ6eVAVHHF8fN1qy")
+    val privateKey = ECPrivateKeyUtil
+      .fromWIFToPrivateKey(
+        "cTTh7jNtZhg3vHTjvYK8zcHkLfsMAS8iqL7pfZ6eVAVHHF8fN1qy")
+      .toPrivateKey
 
     val inputInfo =
       P2PKHInputInfo(TransactionOutPoint(prevTransaction.txId, UInt32.zero),

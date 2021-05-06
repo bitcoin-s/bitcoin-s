@@ -35,7 +35,7 @@ object AdaptorUtil {
     val randHash = CryptoUtil.sha256ECDSAAdaptorAux(auxRand).bytes
     val maskedKey = randHash.xor(privKey.bytes)
 
-    val bytesToHash = maskedKey ++ adaptorPoint.compressed.bytes ++ message
+    val bytesToHash = maskedKey ++ adaptorPoint.bytes ++ message
     val nonceHash = algoName match {
       case "DLEQ"             => CryptoUtil.sha256DLEQ(bytesToHash)
       case "ECDSAadaptor/non" => CryptoUtil.sha256ECDSAAdaptorNonce(bytesToHash)
@@ -55,10 +55,10 @@ object AdaptorUtil {
       r: ECPublicKey,
       privateKey: ECPrivateKey): FieldElement = {
     CryptoUtil.decodePoint(r) match {
-      case ECPointInfinity =>
+      case SecpPointInfinity =>
         throw new IllegalArgumentException(
-          s"Invalid point, got=$ECPointInfinity")
-      case point: ECPointImpl =>
+          s"Invalid point, got=$SecpPointInfinity")
+      case point: SecpPointFinite =>
         val rx = FieldElement(point.x.toBigInteger)
         val x = privateKey.fieldElement
         val m = FieldElement(dataToSign)
@@ -106,7 +106,7 @@ object AdaptorUtil {
     val untweakedPoint =
       m.getPublicKey.add(pubKey.tweakMultiply(rx)).tweakMultiply(s.inverse)
 
-    FieldElement(untweakedPoint.compressed.bytes.tail)
+    FieldElement(untweakedPoint.bytes.tail)
   }
 
   /** https://github.com/discreetlogcontracts/dlcspecs/blob/d01595b70269d4204b05510d19bba6a4f4fcff23/ECDSA-adaptor.md#encryption-verification */
@@ -163,9 +163,8 @@ object AdaptorUtil {
 
     val secretOrNeg = adaptorSig.adaptedS.multInv(FieldElement(sig.s))
 
-    require(
-      secretOrNeg.getPublicKey.compressed.bytes.tail == adaptor.compressed.bytes.tail,
-      s"Invalid inputs: $sig, $adaptorSig, and $adaptor")
+    require(secretOrNeg.getPublicKey.bytes.tail == adaptor.bytes.tail,
+            s"Invalid inputs: $sig, $adaptorSig, and $adaptor")
 
     if (secretOrNeg.getPublicKey == adaptor) {
       secretOrNeg.toPrivateKey

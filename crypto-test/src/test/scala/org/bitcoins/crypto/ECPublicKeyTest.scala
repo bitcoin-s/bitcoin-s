@@ -2,8 +2,6 @@ package org.bitcoins.crypto
 
 import scodec.bits._
 
-import scala.concurrent.ExecutionContext
-
 class ECPublicKeyTest extends BitcoinSCryptoTest {
 
   it must "be able to decompress keys" in {
@@ -30,17 +28,17 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
 
   it must "decompress keys correctly" in {
     forAll(CryptoGenerators.privateKey) { privKey =>
-      val pubKey = privKey.publicKey
+      val privKeyBytes = ECPrivateKeyBytes(privKey.bytes)
+      val pubKey = privKeyBytes.publicKeyBytes
 
-      assert(privKey.isCompressed)
+      assert(privKeyBytes.isCompressed)
       assert(pubKey.isCompressed)
 
       val decompressedPrivKey =
-        ECPrivateKey(privKey.bytes, isCompressed = false)(
-          ExecutionContext.global)
+        ECPrivateKeyBytes(privKey.bytes, isCompressed = false)
       val decompressedPubKey = pubKey.decompressed
 
-      assert(decompressedPrivKey.publicKey == decompressedPubKey)
+      assert(decompressedPrivKey.publicKeyBytes == decompressedPubKey)
       assert(pubKey.bytes.tail == decompressedPubKey.bytes.splitAt(33)._1.tail)
     }
   }
@@ -53,27 +51,25 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
   }
 
   it must "be able to compress/decompress public keys" in {
-    val privkey = ECPrivateKey.freshPrivateKey
+    val privkey = ECPrivateKeyBytes.freshPrivateKey
     assert(CryptoUtil.secKeyVerify(privkey.bytes))
     assert(privkey.isCompressed)
 
     val notCompressedKey =
-      ECPrivateKey(bytes = privkey.bytes, isCompressed = false)
-    val pubkey = CryptoUtil.toPublicKey(notCompressedKey)
+      ECPrivateKeyBytes(bytes = privkey.bytes, isCompressed = false)
+    val pubkey = notCompressedKey.publicKeyBytes
     assert(CryptoUtil.isValidPubKey(pubkey.bytes))
     assert(!pubkey.isCompressed)
 
-    val compressed = privkey.publicKey
+    val compressed = privkey.publicKeyBytes
     assert(CryptoUtil.isValidPubKey(compressed.bytes))
     assert(compressed.isCompressed)
 
-    val converted =
-      CryptoUtil.publicKeyConvert(pubkey, compressed = true)
+    val converted = pubkey.compressed
     assert(CryptoUtil.isValidPubKey(converted.bytes))
     assert(converted.isCompressed)
 
-    val decompressed =
-      CryptoUtil.publicKeyConvert(compressed, compressed = false)
+    val decompressed = compressed.decompressed
     assert(CryptoUtil.isValidPubKey(decompressed.bytes))
     assert(!decompressed.isCompressed)
 
@@ -84,8 +80,7 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
   }
 
   it must "not be able to add opposite public keys" in {
-    val privkey = ECPrivateKey.freshPrivateKey
-    val pubkey1 = privkey.publicKey
+    val pubkey1 = ECPublicKey.freshPublicKey
     val firstByte: Byte =
       if (pubkey1.bytes.head == 0x02) 0x03
       else if (pubkey1.bytes.head == 0x03) 0x02
@@ -93,21 +88,37 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     val pubkey2 =
       ECPublicKey.fromBytes(ByteVector(firstByte) ++ pubkey1.bytes.tail)
 
-    assertThrows[Exception] {
-      val sumKey = CryptoUtil.add(pubkey1, pubkey2)
-      if (sumKey == ECPublicKey.infinity) fail()
-    }
+    assertThrows[Exception](CryptoUtil.add(pubkey1, pubkey2))
+    assertThrows[Exception](
+      CryptoUtil.add(pubkey1.compressed, pubkey2.compressed))
+    assertThrows[Exception](
+      CryptoUtil.add(pubkey1.decompressed, pubkey2.decompressed))
+  }
 
-    val decompressedPubkey1 =
-      CryptoUtil.publicKeyConvert(pubkey1, compressed = false)
+  it must "be able to add multiple public keys together with sub-sums of 0x00" in {
+    val pubkey1 = ECPublicKey.freshPublicKey
+    val firstByte: Byte =
+      if (pubkey1.bytes.head == 0x02) 0x03
+      else if (pubkey1.bytes.head == 0x03) 0x02
+      else pubkey1.bytes.head
+    val pubkey2 =
+      ECPublicKey.fromBytes(ByteVector(firstByte) ++ pubkey1.bytes.tail)
+    val pubkey3 = ECPublicKey.freshPublicKey
+    val firstByte2: Byte =
+      if (pubkey3.bytes.head == 0x02) 0x03
+      else if (pubkey3.bytes.head == 0x03) 0x02
+      else pubkey3.bytes.head
+    val pubkey4 =
+      ECPublicKey.fromBytes(ByteVector(firstByte2) ++ pubkey3.bytes.tail)
 
-    val decompressedPubkey2 =
-      CryptoUtil.publicKeyConvert(pubkey2, compressed = false)
-
-    assertThrows[Exception] {
-      val sumKey = CryptoUtil.add(decompressedPubkey1, decompressedPubkey2)
-      if (sumKey == ECPublicKey.infinity) fail()
-    }
+    assert(
+      CryptoUtil.combinePubKeys(Vector(pubkey1, pubkey2, pubkey3)) == pubkey3)
+    assert(
+      CryptoUtil.combinePubKeys(Vector(pubkey3, pubkey1, pubkey2)) == pubkey3)
+    assertThrows[Exception](
+      CryptoUtil.combinePubKeys(Vector(pubkey1, pubkey2, pubkey3, pubkey4)))
+    assertThrows[Exception](
+      CryptoUtil.combinePubKeys(Vector(pubkey1, pubkey3, pubkey2, pubkey4)))
   }
 
   it must "correctly compress keys" in {
@@ -116,16 +127,22 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
       val pubKeyCompressed = pubKey.compressed
       val pubKeyDecompressed = pubKey.decompressed
 
-      if (privKey.isCompressed) {
-        assert(pubKey == pubKeyCompressed)
-      } else {
-        assert(pubKey == pubKeyDecompressed)
-      }
+      assert(!pubKey.isCompressed)
+      assert(pubKeyCompressed.isFullyValid)
+      assert(pubKeyDecompressed.isFullyValid)
 
-      assert(pubKeyCompressed.decompressed == pubKeyDecompressed)
-      assert(pubKeyCompressed.compressed == pubKeyCompressed)
-      assert(pubKeyDecompressed.compressed == pubKeyCompressed)
-      assert(pubKeyDecompressed.decompressed == pubKeyDecompressed)
+      assert(pubKeyCompressed == pubKeyDecompressed)
+      assert(!pubKeyCompressed.decompressed.isCompressed)
+      assert(pubKeyCompressed.compressed.isCompressed)
+      assert(pubKeyDecompressed.compressed.isCompressed)
+      assert(!pubKeyDecompressed.decompressed.isCompressed)
+      assert(pubKeyCompressed == pubKey)
+      assert(pubKeyDecompressed == pubKey)
+      assert(
+        pubKeyCompressed.bytes.tail == pubKeyDecompressed.decompressedBytes
+          .splitAt(33)
+          ._1
+          .tail)
     }
   }
 

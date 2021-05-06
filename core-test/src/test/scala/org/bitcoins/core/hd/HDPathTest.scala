@@ -387,8 +387,10 @@ class HDPathTest extends BitcoinSUnitTest {
       val spk = P2WPKHWitnessSPKV0(derivedPub)
       val address = Bech32Address(spk, MainNet)
 
-      val expectedPriv = ECPrivateKeyUtil.fromWIFToPrivateKey(
-        "KyZpNDKnfs94vbrwhJneDi77V6jF64PWPF8x5cdJb8ifgg2DUc9d")
+      val expectedPriv = ECPrivateKeyUtil
+        .fromWIFToPrivateKey(
+          "KyZpNDKnfs94vbrwhJneDi77V6jF64PWPF8x5cdJb8ifgg2DUc9d")
+        .toPrivateKey
       val expectedPub = ECPublicKey(
         hex"0330d54fd0dd420a6e5f8d3624f5f3482cae350f79d5f0753bf5beef9c2d91af3c")
       val expectedAddress =
@@ -407,8 +409,10 @@ class HDPathTest extends BitcoinSUnitTest {
       val spk = P2WPKHWitnessSPKV0(derivedPub)
       val address = Bech32Address(spk, MainNet)
 
-      val expectedPriv = ECPrivateKeyUtil.fromWIFToPrivateKey(
-        "Kxpf5b8p3qX56DKEe5NqWbNUP9MnqoRFzZwHRtsFqhzuvUJsYZCy")
+      val expectedPriv = ECPrivateKeyUtil
+        .fromWIFToPrivateKey(
+          "Kxpf5b8p3qX56DKEe5NqWbNUP9MnqoRFzZwHRtsFqhzuvUJsYZCy")
+        .toPrivateKey
       val expectedPub = ECPublicKey(
         hex"03e775fd51f0dfb8cd865d9ff1cca2a158cf651fe997fdc9fee9c1d3b5e995ea77")
       val expectedAddress =
@@ -427,8 +431,10 @@ class HDPathTest extends BitcoinSUnitTest {
       val spk = P2WPKHWitnessSPKV0(derivedPub)
       val address = Bech32Address(spk, MainNet)
 
-      val expectedPriv = ECPrivateKeyUtil.fromWIFToPrivateKey(
-        "KxuoxufJL5csa1Wieb2kp29VNdn92Us8CoaUG3aGtPtcF3AzeXvF")
+      val expectedPriv = ECPrivateKeyUtil
+        .fromWIFToPrivateKey(
+          "KxuoxufJL5csa1Wieb2kp29VNdn92Us8CoaUG3aGtPtcF3AzeXvF")
+        .toPrivateKey
       val expectedPub = ECPublicKey(
         hex"03025324888e429ab8e3dbaf1f7802648b9cd01e9b418485c5fa4c1b9b5700e1a6")
       val expectedAddress =

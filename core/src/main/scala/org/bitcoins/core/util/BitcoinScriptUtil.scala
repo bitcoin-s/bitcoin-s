@@ -35,7 +35,7 @@ import org.bitcoins.core.script.{
 }
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
+import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKeyBytes}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -308,11 +308,13 @@ trait BitcoinScriptUtil {
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202]].
     */
   def checkPubKeyEncoding(
-      key: ECPublicKey,
+      key: ECPublicKeyBytes,
       program: ExecutionInProgressScriptProgram): Boolean =
     checkPubKeyEncoding(key, program.flags)
 
-  def checkPubKeyEncoding(key: ECPublicKey, flags: Seq[ScriptFlag]): Boolean = {
+  def checkPubKeyEncoding(
+      key: ECPublicKeyBytes,
+      flags: Seq[ScriptFlag]): Boolean = {
     if (
       ScriptFlagUtil.requireStrictEncoding(flags) &&
       !isCompressedOrUncompressedPubKey(key)
@@ -325,7 +327,7 @@ trait BitcoinScriptUtil {
     * @param key the public key that is being checked
     * @return true if the key is compressed/uncompressed otherwise false
     */
-  def isCompressedOrUncompressedPubKey(key: ECPublicKey): Boolean = {
+  def isCompressedOrUncompressedPubKey(key: ECPublicKeyBytes): Boolean = {
     if (key.bytes.size < 33) {
       //  Non-canonical public key: too short
       return false
@@ -345,7 +347,7 @@ trait BitcoinScriptUtil {
   }
 
   /** Checks if the given public key is a compressed public key */
-  def isCompressedPubKey(key: ECPublicKey): Boolean = {
+  def isCompressedPubKey(key: ECPublicKeyBytes): Boolean = {
     (key.bytes.size == 33) && (key.bytes.head == 0x02 || key.bytes.head == 0x03)
   }
 
@@ -361,7 +363,7 @@ trait BitcoinScriptUtil {
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L214-L223]]
     */
   def isValidPubKeyEncoding(
-      pubKey: ECPublicKey,
+      pubKey: ECPublicKeyBytes,
       sigVersion: SignatureVersion,
       flags: Seq[ScriptFlag]): Option[ScriptError] = {
     if (

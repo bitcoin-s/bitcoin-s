@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
+import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey, ECPublicKeyBytes}
 
 sealed abstract class RpcPsbtResult
 
@@ -89,7 +89,7 @@ final case class AnalyzePsbtInput(
 ) extends RpcPsbtResult
 
 final case class PsbtMissingData(
-    pubkeys: Option[Vector[ECPublicKey]],
+    pubkeys: Option[Vector[ECPublicKeyBytes]],
     signatures: Option[Vector[ECDigitalSignature]],
     redeemscript: Option[RpcPsbtScript],
     witnessscript: Option[RpcPsbtScript]

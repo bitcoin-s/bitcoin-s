@@ -109,7 +109,10 @@ class BitcoindV17RpcClientTest extends BitcoindFixturesCachedPairV17 {
       for {
         rawTx <- client.createRawTransaction(inputs, outputs)
         signed <-
-          client.signRawTransactionWithKey(rawTx, privkeys.toVector, utxoDeps)
+          client.signRawTransactionWithKey(
+            rawTx,
+            privkeys.toVector.map(_.toPrivateKey),
+            utxoDeps)
       } yield assert(signed.complete)
   }
 

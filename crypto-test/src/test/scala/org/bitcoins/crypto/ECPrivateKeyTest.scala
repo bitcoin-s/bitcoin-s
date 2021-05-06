@@ -27,7 +27,7 @@ class ECPrivateKeyTest extends BitcoinSCryptoTest {
   }
 
   it must "not serialize a ECPrivateKey toString" in {
-    ECPrivateKey().toString must be("Masked(ECPrivateKeyImpl)")
+    ECPrivateKey().toString must be("Masked(ECPrivateKey)")
   }
 
   it must "successfully negate itself" in {

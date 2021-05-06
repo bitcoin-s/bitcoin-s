@@ -38,7 +38,7 @@ object ECAdaptorSignature extends Factory[ECAdaptorSignature] {
       dleqProofE: FieldElement,
       dleqProofS: FieldElement): ECAdaptorSignature = {
     fromBytes(
-      tweakedNonce.compressed.bytes ++ untweakedNonce.compressed.bytes ++
+      tweakedNonce.bytes ++ untweakedNonce.bytes ++
         adaptedS.bytes ++ dleqProofE.bytes ++ dleqProofS.bytes
     )
   }

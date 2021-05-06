@@ -10,6 +10,7 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.{
   ECPublicKey,
+  ECPublicKeyBytes,
   LowRDummyECDigitalSignature,
   NetworkElement,
   Sign
@@ -352,8 +353,10 @@ object RawInputInfo {
       case p2pk: P2PKScriptPubKey =>
         P2PKInputInfo(outPoint, amount, p2pk)
       case p2pkh: P2PKHScriptPubKey =>
-        hashPreImages.collectFirst { case pubKey: ECPublicKey =>
-          pubKey
+        hashPreImages.collectFirst {
+          case pubKey: ECPublicKey =>
+            pubKey
+          case pubKeyBytes: ECPublicKeyBytes => pubKeyBytes.toPublicKey
         } match {
           case None =>
             throw new IllegalArgumentException(
@@ -418,7 +421,8 @@ case class P2PKInputInfo(
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoCondition
 
-  override def pubKeys: Vector[ECPublicKey] = Vector(scriptPubKey.publicKey)
+  override def pubKeys: Vector[ECPublicKey] = Vector(
+    scriptPubKey.publicKey.toPublicKey)
 
   override def requiredSigs: Int = 1
 }
@@ -454,7 +458,8 @@ case class P2PKWithTimeoutInputInfo(
   }
 
   override def pubKeys: Vector[ECPublicKey] =
-    Vector(scriptPubKey.pubKey, scriptPubKey.timeoutPubKey)
+    Vector(scriptPubKey.pubKey.toPublicKey,
+           scriptPubKey.timeoutPubKey.toPublicKey)
 
   override def requiredSigs: Int = 1
 }
@@ -468,7 +473,8 @@ case class MultiSignatureInputInfo(
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoCondition
 
-  override def pubKeys: Vector[ECPublicKey] = scriptPubKey.publicKeys.toVector
+  override def pubKeys: Vector[ECPublicKey] =
+    scriptPubKey.publicKeys.map(_.toPublicKey).toVector
 
   override def requiredSigs: Int = scriptPubKey.requiredSigs
 }
@@ -545,7 +551,7 @@ object SegwitV0NativeInputInfo {
         Vector.empty): SegwitV0NativeInputInfo = {
     scriptWitness match {
       case p2wpkh: P2WPKHWitnessV0 =>
-        P2WPKHV0InputInfo(outPoint, amount, p2wpkh.pubKey)
+        P2WPKHV0InputInfo(outPoint, amount, p2wpkh.pubKey.toPublicKey)
       case p2wsh: P2WSHWitnessV0 =>
         P2WSHV0InputInfo(outPoint,
                          amount,

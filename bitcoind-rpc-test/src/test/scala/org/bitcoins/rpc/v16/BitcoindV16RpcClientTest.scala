@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
-import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey}
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKeyBytes}
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairV16,
@@ -85,7 +85,7 @@ class BitcoindV16RpcClientTest extends BitcoindFixturesCachedPairV16 {
   it should "be able to sign a raw transaction with private keys" in {
     nodePair: FixtureParam =>
       val client = nodePair.node1
-      val privkeys: List[ECPrivateKey] =
+      val privkeys: List[ECPrivateKeyBytes] =
         List("cUeKHd5orzT3mz8P9pxyREHfsWtVfgsfDjiZZBcjUBAaGk1BTj7N",
              "cVKpPfVKSJxKqVpE9awvXNWuLHCa5j5tiE7K6zbUSptFpTEtiFrA")
           .map(ECPrivateKeyUtil.fromWIFToPrivateKey)
@@ -121,7 +121,10 @@ class BitcoindV16RpcClientTest extends BitcoindFixturesCachedPairV16 {
 
       for {
         rawTx <- client.createRawTransaction(inputs, outputs)
-        signed <- client.signRawTransaction(rawTx, utxoDeps, privkeys.toVector)
+        signed <- client.signRawTransaction(
+          rawTx,
+          utxoDeps,
+          privkeys.toVector.map(_.toPrivateKey))
       } yield assert(signed.complete)
   }
 

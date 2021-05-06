@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint
 }
 import org.bitcoins.commons.serializers.JsonWriters._
-import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey}
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKeyBytes}
 import play.api.libs.json.{Json, Writes}
 import ujson.{Num, Str, Value}
 
@@ -108,7 +108,7 @@ object RpcOpts {
       timestamp: UInt32,
       redeemscript: Option[ScriptPubKey] = None,
       pubkeys: Option[Vector[ScriptPubKey]] = None,
-      keys: Option[Vector[ECPrivateKey]] = None,
+      keys: Option[Vector[ECPrivateKeyBytes]] = None,
       internal: Option[Boolean] = None,
       watchonly: Option[Boolean] = None,
       label: Option[String] = None)

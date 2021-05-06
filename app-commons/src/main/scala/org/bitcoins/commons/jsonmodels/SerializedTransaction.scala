@@ -12,7 +12,7 @@ import org.bitcoins.core.script.constant.{
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECDigitalSignature,
-  ECPublicKey
+  ECPublicKeyBytes
 }
 import play.api.libs.json._
 import scodec.bits.ByteVector
@@ -43,7 +43,7 @@ case class SerializedTransactionWitness(
     hex: String,
     scriptType: Option[String],
     script: Option[Vector[ScriptToken]],
-    pubKey: Option[ECPublicKey],
+    pubKey: Option[ECPublicKeyBytes],
     signature: Option[ECDigitalSignature],
     stack: Option[Vector[ByteVector]])
 

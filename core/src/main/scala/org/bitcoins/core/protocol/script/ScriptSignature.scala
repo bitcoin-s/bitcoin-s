@@ -4,7 +4,7 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
 import org.bitcoins.core.wallet.utxo.ConditionalPath
-import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
+import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey, ECPublicKeyBytes}
 
 import scala.annotation.tailrec
 import scala.util.Try
@@ -79,7 +79,7 @@ sealed trait P2PKHScriptSignature extends ScriptSignature {
   def signature: ECDigitalSignature = signatures.head
 
   /** Gives us the public key inside of a p2pkh script signature */
-  def publicKey: ECPublicKey = ECPublicKey(asm.last.bytes)
+  def publicKey: ECPublicKeyBytes = ECPublicKeyBytes(asm.last.bytes)
 
   override def signatures: Seq[ECDigitalSignature] = {
     Seq(ECDigitalSignature(asm(1).hex))
@@ -103,20 +103,27 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
     )
   }
 
+  /** Builds a P2PKH ScriptSig from a signature and raw ECPublicKeyBytes (may be invalid). */
+  private[core] def apply(
+      signature: ECDigitalSignature,
+      pubKeyBytes: ECPublicKeyBytes): P2PKHScriptSignature = {
+    val signatureBytesToPushOntoStack =
+      BitcoinScriptUtil.calculatePushOp(signature.bytes)
+    val pubKeyBytesToPushOntoStack =
+      BitcoinScriptUtil.calculatePushOp(pubKeyBytes.bytes)
+    val asm: Seq[ScriptToken] =
+      signatureBytesToPushOntoStack ++ Seq(ScriptConstant(signature.bytes)) ++
+        pubKeyBytesToPushOntoStack ++ Seq(ScriptConstant(pubKeyBytes.bytes))
+    fromAsm(asm)
+  }
+
   /** Builds a script signature from a digital signature and a public key
     * this is a pay to public key hash script sig
     */
   def apply(
       signature: ECDigitalSignature,
       pubKey: ECPublicKey): P2PKHScriptSignature = {
-    val signatureBytesToPushOntoStack =
-      BitcoinScriptUtil.calculatePushOp(signature.bytes)
-    val pubKeyBytesToPushOntoStack =
-      BitcoinScriptUtil.calculatePushOp(pubKey.bytes)
-    val asm: Seq[ScriptToken] =
-      signatureBytesToPushOntoStack ++ Seq(ScriptConstant(signature.hex)) ++
-        pubKeyBytesToPushOntoStack ++ Seq(ScriptConstant(pubKey.hex))
-    fromAsm(asm)
+    P2PKHScriptSignature(signature, pubKey.toPublicKeyBytes())
   }
 
   /** Determines if the given asm matches a [[P2PKHScriptSignature]] */
@@ -180,11 +187,11 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
   }
 
   /** Returns the public keys for the p2sh scriptSignature */
-  def publicKeys: Seq[ECPublicKey] = {
+  def publicKeys: Seq[ECPublicKeyBytes] = {
     val pubKeys: Seq[ScriptToken] = redeemScript.asm
       .filter(_.isInstanceOf[ScriptConstant])
       .filterNot(_.isInstanceOf[ScriptNumberOperation])
-    pubKeys.map(k => ECPublicKey(k.hex))
+    pubKeys.map(k => ECPublicKeyBytes(k.bytes))
   }
 
   /** The digital signatures inside of the scriptSig */

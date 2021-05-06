@@ -2,17 +2,17 @@ package org.bitcoins.core.crypto
 
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.util.{Base58, BytesUtil}
-import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey}
+import org.bitcoins.crypto.{CryptoUtil, ECPrivateKeyBytes}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
 object ECPrivateKeyUtil {
 
-  /** Converts a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] to
+  /** Converts a [[org.bitcoins.crypto.ECPrivateKeyBytes ECPrivateKey]] to
     * [[https://en.bitcoin.it/wiki/Wallet_import_format WIF]]
     */
-  def toWIF(privKey: ECPrivateKey, network: NetworkParameters): String = {
+  def toWIF(privKey: ECPrivateKeyBytes, network: NetworkParameters): String = {
     val networkByte = network.privateKey
     //append 1 byte to the end of the priv key byte representation if we need a compressed pub key
     val fullBytes =
@@ -31,10 +31,10 @@ object ECPrivateKeyUtil {
     * @param WIF Wallet Import Format. Encoded in Base58
     * @return
     */
-  def fromWIFToPrivateKey(WIF: String): ECPrivateKey = {
+  def fromWIFToPrivateKey(WIF: String): ECPrivateKeyBytes = {
     val isCompressed = ECPrivateKeyUtil.isCompressed(WIF)
     val privateKeyBytes = trimFunction(WIF)
-    ECPrivateKey.fromBytes(privateKeyBytes, isCompressed)
+    ECPrivateKeyBytes(privateKeyBytes, isCompressed)
   }
 
   /** Takes in WIF private key as a sequence of bytes and determines if it corresponds to a compressed public key.
@@ -49,7 +49,7 @@ object ECPrivateKeyUtil {
     val validCompressedBytesInHex: Seq[String] =
       validCompressedBytes.map(b => BytesUtil.encodeHex(b))
     val firstByteHex = BytesUtil.encodeHex(bytes.head)
-    if (validCompressedBytesInHex.contains(firstByteHex))
+    if (validCompressedBytesInHex.contains(firstByteHex) && bytes.length == 38)
       bytes(bytes.length - 5) == 0x01.toByte
     else false
   }
