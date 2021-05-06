@@ -48,6 +48,12 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     val badHex =
       "02020202020202020202020202020202020202020202020202020202020202"
     assertThrows[RuntimeException](ECPublicKey(badHex))
+    assertThrows[RuntimeException](
+      ECPublicKey(
+        "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
+    assertThrows[RuntimeException](
+      ECPublicKey(
+        "03FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
   }
 
   it must "be able to compress/decompress public keys" in {
@@ -140,6 +146,16 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
           ._1
           .tail)
     }
+  }
+
+  it must "succeed with valid coordinates above the curve order" in {
+    val _ = {
+      ECPublicKey(
+        "02fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2c").toPoint
+      ECPublicKey(
+        "03fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2c").toPoint
+    }
+    succeed
   }
 
 }

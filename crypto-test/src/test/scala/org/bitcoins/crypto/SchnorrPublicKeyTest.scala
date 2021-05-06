@@ -27,6 +27,12 @@ class SchnorrPublicKeyTest extends BitcoinSCryptoTest {
         "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
   }
 
+  it must "succeed for valid large x coordinates above the curve order" in {
+    val _ = SchnorrPublicKey(
+      "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2c").xCoord
+    succeed
+  }
+
   it must "have serialization symmetry" in {
     forAll(CryptoGenerators.schnorrPublicKey) { pubKey =>
       assert(SchnorrPublicKey(pubKey.bytes) == pubKey)

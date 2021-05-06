@@ -27,6 +27,12 @@ class SchnorrNonceTest extends BitcoinSCryptoTest {
         "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
   }
 
+  it must "succeed for valid large x coordinates above the curve order" in {
+    val _ = SchnorrNonce(
+      "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2c").xCoord
+    succeed
+  }
+
   it must "have serialization symmetry" in {
     forAll(CryptoGenerators.schnorrNonce) { pubKey =>
       assert(SchnorrNonce(pubKey.bytes) == pubKey)
