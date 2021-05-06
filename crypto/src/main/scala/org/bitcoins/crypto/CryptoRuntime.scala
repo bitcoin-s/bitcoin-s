@@ -254,7 +254,8 @@ trait CryptoRuntime {
   def pubKeyTweakAdd(pubkey: ECPublicKey, privkey: ECPrivateKey): ECPublicKey
 
   def isValidPubKey(pubKey: PublicKey): Boolean = {
-    pubKey.decompressedBytesT.isSuccess
+    pubKey.decompressedBytesT.isSuccess &&
+    pubKey.decompressedBytesT.get != ByteVector(0x00)
   }
 
   def decodePoint(bytes: ByteVector): SecpPoint

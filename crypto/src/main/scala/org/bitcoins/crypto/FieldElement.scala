@@ -3,7 +3,7 @@ package org.bitcoins.crypto
 import scodec.bits.ByteVector
 
 import java.math.BigInteger
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /** Represents integers modulo the secp256k1 field size: pow(2,256) - 0x1000003D1.
   *
@@ -15,8 +15,12 @@ case class FieldElement(bytes: ByteVector) extends NetworkElement {
 
   private val privKeyT: Try[ECPrivateKey] = Try(ECPrivateKey(bytes))
 
+  private val privKeyOverT: Try[ECPrivateKey] = Try(
+    ECPrivateKey(
+      ByteVector(toBigInteger.mod(FieldElement.N).toByteArray).padLeft(32)))
+
   require(
-    privKeyT.isSuccess || isZero,
+    privKeyT.isSuccess || isZero || privKeyOverT.isSuccess,
     s"$bytes is not a valid field element: ${privKeyT.failed.get.getMessage}")
 
   def isZero: Boolean = bytes.toArray.forall(_ == 0.toByte)
@@ -29,7 +33,10 @@ case class FieldElement(bytes: ByteVector) extends NetworkElement {
 
   def toPrivateKey: ECPrivateKey =
     if (!isZero) {
-      privKeyT.get
+      privKeyT match {
+        case Success(privKey) => privKey
+        case Failure(_)       => privKeyOverT.get
+      }
     } else {
       throw new RuntimeException("Cannot turn zero into a private key")
     }
