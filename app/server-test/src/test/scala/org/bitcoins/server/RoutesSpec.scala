@@ -415,7 +415,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":[{"outpoint":"000000000000000000000000000000000000000000000000000000000000000000000000","value":-1}],"error":null}""")
+          responseAs[String] == """{"result":[{"outpoint":"0000000000000000000000000000000000000000000000000000000000000000:0","value":-1}],"error":null}""")
       }
     }
 
@@ -432,7 +432,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":[{"outpoint":"000000000000000000000000000000000000000000000000000000000000000000000000","value":-1}],"error":null}""")
+          responseAs[String] == """{"result":[{"outpoint":"0000000000000000000000000000000000000000000000000000000000000000:0","value":-1}],"error":null}""")
       }
     }
 
