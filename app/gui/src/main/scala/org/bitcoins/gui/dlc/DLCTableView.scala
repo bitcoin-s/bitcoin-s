@@ -90,7 +90,7 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    new TableView[DLCStatus](model.dlcs) {
+    new TableView[DLCStatus](GlobalDLCData.dlcs) {
       columns ++= Seq(eventIdCol,
                       contractIdCol,
                       statusCol,
