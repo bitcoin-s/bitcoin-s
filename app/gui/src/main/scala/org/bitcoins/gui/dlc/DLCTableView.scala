@@ -119,7 +119,7 @@ class DLCTableView(model: DLCPaneModel) {
         }
       }
 
-      val cancelDLCItem: MenuItem = new MenuItem("Cancel Id") {
+      val cancelDLCItem: MenuItem = new MenuItem("Cancel DLC") {
         onAction = _ => {
           val dlc = selectionModel.value.getSelectedItem
           model.cancelDLC(dlc)
