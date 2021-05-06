@@ -62,7 +62,7 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
     ECPublicKey(pubKeyBytes)
   }
 
-  def xCoord: FieldElement = FieldElement(bytes)
+  def xCoord: CurveCoordinate = CurveCoordinate(bytes)
 }
 
 object SchnorrPublicKey extends Factory[SchnorrPublicKey] {
@@ -87,7 +87,7 @@ object SchnorrPublicKey extends Factory[SchnorrPublicKey] {
     }
   }
 
-  def apply(xCoor: FieldElement): SchnorrPublicKey = {
+  def apply(xCoor: CurveCoordinate): SchnorrPublicKey = {
     SchnorrPublicKey(xCoor.bytes)
   }
 }

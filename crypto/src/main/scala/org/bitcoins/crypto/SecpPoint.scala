@@ -27,7 +27,8 @@ case object SecpPointInfinity extends SecpPoint {
 
 /** A non-identity point, (x, y), on the secp256k1 elliptic curve.
   */
-case class SecpPointFinite(x: FieldElement, y: FieldElement) extends SecpPoint {
+case class SecpPointFinite(x: CurveCoordinate, y: CurveCoordinate)
+    extends SecpPoint {
 
   override def bytes: ByteVector = {
     ByteVector(0x04) ++ x.bytes ++ y.bytes
@@ -42,22 +43,22 @@ object SecpPoint {
 
   def fromPublicKey(key: ECPublicKey): SecpPointFinite = {
     val (x, y) = key.decompressedBytes.tail.splitAt(32)
-    SecpPointFinite(FieldElement.fromBytes(x), FieldElement.fromBytes(y))
+    SecpPointFinite(CurveCoordinate.fromBytes(x), CurveCoordinate.fromBytes(y))
   }
 
   def apply(x: ByteVector, y: ByteVector): SecpPointFinite =
-    SecpPointFinite(FieldElement.fromBytes(x), FieldElement.fromBytes(y))
+    SecpPointFinite(CurveCoordinate.fromBytes(x), CurveCoordinate.fromBytes(y))
 
   def apply(x: Array[Byte], y: Array[Byte]): SecpPointFinite =
-    SecpPointFinite(FieldElement.fromByteArray(x),
-                    FieldElement.fromByteArray(y))
+    SecpPointFinite(CurveCoordinate.fromByteArray(x),
+                    CurveCoordinate.fromByteArray(y))
 
   def apply(x: BigInteger, y: BigInteger): SecpPointFinite =
-    SecpPointFinite(FieldElement(x), FieldElement(y))
+    SecpPointFinite(CurveCoordinate(x), CurveCoordinate(y))
 
   def apply(x: BigInt, y: BigInt): SecpPointFinite =
-    SecpPointFinite(FieldElement(x), FieldElement(y))
+    SecpPointFinite(CurveCoordinate(x), CurveCoordinate(y))
 
   def apply(x: String, y: String): SecpPointFinite =
-    SecpPointFinite(FieldElement.fromHex(x), FieldElement.fromHex(y))
+    SecpPointFinite(CurveCoordinate.fromHex(x), CurveCoordinate.fromHex(y))
 }

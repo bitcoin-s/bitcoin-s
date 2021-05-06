@@ -124,7 +124,8 @@ object AdaptorUtil {
     )
 
     if (validProof) {
-      val tweakedNoncex = FieldElement(adaptorSig.tweakedNonce.bytes.tail)
+      val tweakedNoncex = FieldElement(
+        CurveCoordinate(adaptorSig.tweakedNonce.bytes.tail).toBigInteger)
       val untweakedNoncex = FieldElement(adaptorSig.untweakedNonce.bytes.tail)
 
       if (tweakedNoncex.isZero || untweakedNoncex.isZero) {

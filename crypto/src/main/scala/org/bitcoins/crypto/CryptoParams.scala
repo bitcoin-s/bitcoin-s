@@ -9,6 +9,12 @@ import java.math.BigInteger
   */
 sealed abstract class CryptoParams {
 
+  private val curvePrimeConstant =
+    "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F"
+
+  val getCurvePrime: BigInteger =
+    new BigInteger(1, ByteVector.fromValidHex(curvePrimeConstant).toArray)
+
   /** Hex constant for curve group constant
     */
   private val nConstant =
