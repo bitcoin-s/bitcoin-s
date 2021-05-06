@@ -197,7 +197,7 @@ case class DLCTxSigner(
     val startSigning = System.currentTimeMillis()
 
     //divide and conquer
-    val size = outcomes.length % Runtime.getRuntime.availableProcessors()
+    val size = outcomes.length / Runtime.getRuntime.availableProcessors()
 
     //this gives us a iterator of size Runtime.getRuntime.availableProcess()
     val dividedOutcomes: Iterator[Vector[OracleOutcome]] = {
