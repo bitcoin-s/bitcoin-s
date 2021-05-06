@@ -14,12 +14,14 @@ import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /** Responsible for constructing all DLC signatures
@@ -186,6 +188,36 @@ case class DLCTxSigner(
     val refundSig = signRefundTx
 
     CETSignatures(cetSigs, refundSig)
+  }
+
+  /** Creates CET signatures async */
+  def createCETSigsAsync()(implicit
+      ec: ExecutionContext): Future[CETSignatures] = {
+    val outcomes = builder.contractInfo.allOutcomes
+    //divide and conquer
+
+    //we want a batch size of at least 1
+    val size =
+      Math.max(outcomes.length / Runtime.getRuntime.availableProcessors(), 1)
+
+    val computeBatchFn: Vector[OracleOutcome] => Future[
+      Vector[(OracleOutcome, ECAdaptorSignature)]] = {
+      case outcomes: Vector[OracleOutcome] =>
+        Future {
+          signCETs(outcomes)
+        }
+    }
+
+    val cetSigsF: Future[Vector[(OracleOutcome, ECAdaptorSignature)]] = {
+      FutureUtil.batchAndParallelExecute(elements = outcomes,
+                                         f = computeBatchFn,
+                                         batchSize = size)
+    }.map(_.flatten)
+
+    for {
+      cetSigs <- cetSigsF
+      refundSig = signRefundTx
+    } yield CETSignatures(cetSigs, refundSig)
   }
 
   /** Creates all of this party's CETSignatures */
