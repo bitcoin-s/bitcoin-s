@@ -11,7 +11,6 @@ Test / flywayClean / aggregate := true
 
 lazy val Benchmark = config("bench") extend Test
 
-
 lazy val benchSettings: Seq[Def.SettingsDefinition] = {
   //for scalameter
   //https://scalameter.github.io/home/download/
@@ -148,6 +147,14 @@ lazy val lndRpc = project
   .in(file("lnd-rpc"))
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
+lazy val tor = project
+  .in(file("tor"))
+  .dependsOn(cryptoJVM)
+
+lazy val torTest = project
+  .in(file("tor-test"))
+  .dependsOn(tor, testkit)
+
 lazy val jsProjects: Vector[ProjectReference] =
   Vector(asyncUtilsJS,
          asyncUtilsTestJS,
@@ -209,6 +216,8 @@ lazy val `bitcoin-s` = project
     serverRoutes,
     lndRpc,
     lndRpcTest,
+    tor,
+    torTest,
     scripts
   )
   .dependsOn(
@@ -256,6 +265,8 @@ lazy val `bitcoin-s` = project
     serverRoutes,
     lndRpc,
     lndRpcTest,
+    tor,
+    torTest,
     scripts
   )
   .settings(CommonSettings.settings: _*)

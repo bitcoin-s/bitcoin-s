@@ -623,10 +623,10 @@ object AddrV2Message extends Factory[AddrV2Message] {
   final val IPV6_ADDR_LENGTH: Int = 16
 
   final val TOR_V2_NETWORK_BYTE: Byte = 0x03
-  final val TOR_V2_ADDR_LENGTH: Int = 10
+  final val TOR_V2_ADDR_LENGTH: Int = TorAddress.TOR_V2_ADDR_LENGTH
 
   final val TOR_V3_NETWORK_BYTE: Byte = 0x04
-  final val TOR_V3_ADDR_LENGTH: Int = 32
+  final val TOR_V3_ADDR_LENGTH: Int = TorAddress.TOR_V3_ADDR_LENGTH
 
   final val I2P_NETWORK_BYTE: Byte = 0x05
   final val I2P_ADDR_LENGTH: Int = 32

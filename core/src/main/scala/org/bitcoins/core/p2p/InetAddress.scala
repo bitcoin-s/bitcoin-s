@@ -33,3 +33,32 @@ object InetAddress {
     InetAddressImpl(bytes)
   }
 }
+
+trait TorAddress extends InetAddress {
+
+  override def ipv4Bytes: ByteVector = throw new IllegalArgumentException(
+    "Tor address cannot be an IPv4 address")
+}
+
+object TorAddress {
+  val TOR_V2_ADDR_LENGTH = 10
+  val TOR_V3_ADDR_LENGTH = 32
+}
+
+trait Tor2Address extends TorAddress
+
+object Tor2Address {
+
+  private case class Tor2AddressImpl(bytes: ByteVector) extends Tor2Address {
+    require(bytes.size == TorAddress.TOR_V2_ADDR_LENGTH)
+  }
+}
+
+trait Tor3Address extends TorAddress
+
+object Tor3Address {
+
+  private case class Tor3AddressImpl(bytes: ByteVector) extends Tor2Address {
+    require(bytes.size == TorAddress.TOR_V3_ADDR_LENGTH)
+  }
+}
