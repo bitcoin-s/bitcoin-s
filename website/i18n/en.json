@@ -629,6 +629,9 @@
       "version-0.6.0/core/version-0.6.0-addresses": {
         "title": "Generating Addresses"
       },
+      "version-0.6.0/core/version-0.6.0-core-intro": {
+        "title": "Core Module"
+      },
       "version-0.6.0/core/version-0.6.0-dlc": {
         "title": "Discreet Log Contract Data Structures"
       },
@@ -697,6 +700,9 @@
       },
       "version-0.6.0/wallet/version-0.6.0-wallet-rescan": {
         "title": "Wallet Rescans"
+      },
+      "version-0.6.0/wallet/version-0.6.0-wallet-rpc": {
+        "title": "Wallet RPC Examples"
       },
       "version-0.6.0/wallet/version-0.6.0-wallet": {
         "title": "Wallet"

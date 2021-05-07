@@ -68,16 +68,16 @@ Here is an example of calling bouncy castle methods in `ECKey`
 
 ```scala
 val privKey = ECPrivateKey.freshPrivateKey
-// privKey: ECPrivateKey = Masked(ECPrivateKeyImpl)
+// privKey: ECPrivateKey = Masked(ECPrivateKey)
 // calls bouncy castle indirectly via CryptoContext
 val publicKey = privKey.publicKey
-// publicKey: ECPublicKey = ECPublicKey(0393d4b6b67065c1b536f0015c729df1fc97fbe1f25115e2426ad220a4268dac39)
+// publicKey: ECPublicKey = ECPublicKey(02b0d8755575c0c507aec37de8a49ffa3aac059d2a5defb489b1b25e3a4bdf8da1)
 val dataToSign = DoubleSha256Digest.empty
 // dataToSign: DoubleSha256Digest = DoubleSha256Digest(0000000000000000000000000000000000000000000000000000000000000000)
 
 // calls bouncy castle indirectly via CryptoContext
 val signature = privKey.sign(dataToSign.bytes)
-// signature: ECDigitalSignature = ECDigitalSignature(30440220445169f62426fed42ed12a5e9861dad034e86da1e71f1a069ff7709a69603d1e0220651b2a4937673d3e908e690e90a458e46dffaefcc899ae32aaacd76133ffec2d)
+// signature: ECDigitalSignature = ECDigitalSignature(3044022071b183533330f988f55ab6a6444d4c35070e805941a8ce1b0b18a5e93bec15a102202e644ef01026416828890dbf20bf43c906cde677be8df3bc22c4dd910a43708f)
 
 // calls bouncy castle indirectly via CryptoContext
 val verified = publicKey.verify(dataToSign.bytes, signature)

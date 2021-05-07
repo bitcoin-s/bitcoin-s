@@ -165,6 +165,8 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `--sats ` - Display balance in satoshis
  - `getunconfirmedbalance` `[options]` - Get the wallet balance of unconfirmed utxos
     - `--sats ` - Display balance in satoshis
+ - `getbalances` `[options]` - Get the wallet balance by utxo state
+    - `--sats ` - Display balance in satoshis
  - `getutxos` - Returns list of all wallet utxos
  - `getaddresses` - Returns list of all wallet addresses currently being watched
  - `getspentaddresses` - Returns list of all wallet addresses that have received funds and been spent
@@ -176,6 +178,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `getaddressinfo` `address` - Returns list of all wallet accounts
     - `address` - Address to get information about
  - `getnewaddress` - Get a new address
+ - `listreservedutxos` - lists all utxos that are reserved in the wallet
  - `sendtoaddress` `address` `amount` `[options]` - Send money to the given address
     - `address` - Address to send to
     - `amount` - Amount to send in BTC
@@ -206,7 +209,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `txid` - The transaction id
  - `lockunspent` `unlock` `transactions` - Temporarily lock (unlock=false) or unlock (unlock=true) specified transaction outputs.
     - `unlock` - Whether to unlock (true) or lock (false) the specified transactions
-    - `transactions` - The transaction outpoints to unlock/lock
+    - `transactions` - The transaction outpoints to unlock/lock, empty to apply to all utxos
 - `importseed` `walletname` `words` `passphrase` - Imports a mnemonic seed as a new seed file
    - `walletname` - Name to associate with this seed
    - `words` - Mnemonic seed words, space separated
@@ -246,6 +249,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `nrequired` - The number of required signatures out of the n keys.
     - `keys` - The hex-encoded public keys.
     - `address_type` -The address type to use. Options are "legacy", "p2sh-segwit", and "bech32"
+ - `estimatefee` - Returns the recommended fee rate using the fee provider
 
 ## Sign PSBT with Wallet Example
 
