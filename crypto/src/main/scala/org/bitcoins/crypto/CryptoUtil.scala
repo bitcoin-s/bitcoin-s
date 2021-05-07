@@ -98,12 +98,15 @@ trait CryptoUtil extends CryptoRuntime {
     cryptoRuntime.secKeyVerify(privateKeybytes)
 
   override def verify(
-      publicKey: PublicKey[_],
+      publicKey: PublicKey,
       data: ByteVector,
       signature: ECDigitalSignature): Boolean =
     cryptoRuntime.verify(publicKey, data, signature)
 
-  override def decompressed[PK <: PublicKey[PK]](publicKey: PK): PK =
+  override def decompressed(pubKeyBytes: ByteVector): ByteVector =
+    cryptoRuntime.decompressed(pubKeyBytes)
+
+  override def decompressed[PK <: PublicKey](publicKey: PK): publicKey.type =
     cryptoRuntime.decompressed(publicKey)
 
   override def tweakMultiply(
@@ -131,8 +134,8 @@ trait CryptoUtil extends CryptoRuntime {
       privkey: ECPrivateKey): ECPublicKey =
     cryptoRuntime.pubKeyTweakAdd(pubkey, privkey)
 
-  override def isValidPubKey(bytes: ByteVector): Boolean =
-    cryptoRuntime.isValidPubKey(bytes)
+  override def isValidPubKey(pubKey: PublicKey): Boolean =
+    cryptoRuntime.isValidPubKey(pubKey)
 
   override def schnorrSign(
       dataToSign: ByteVector,

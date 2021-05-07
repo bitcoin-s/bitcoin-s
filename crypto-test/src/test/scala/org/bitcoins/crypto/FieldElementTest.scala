@@ -74,9 +74,11 @@ class FieldElementTest extends BitcoinSCryptoTest {
   }
 
   it must "wrap around correctly" in {
-    assert(FieldElement.nMinusOne.add(FieldElement.one) == FieldElement.zero)
     assert(
-      FieldElement.zero.subtract(FieldElement.one) == FieldElement.nMinusOne)
+      FieldElement.orderMinusOne.add(FieldElement.one) == FieldElement.zero)
+    assert(
+      FieldElement.zero.subtract(
+        FieldElement.one) == FieldElement.orderMinusOne)
   }
 
   it must "multiply small numbers correctly" in {

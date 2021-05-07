@@ -46,10 +46,6 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     val pubKeyBytes: Array[Byte] =
       NativeSecp256k1.computePubkey(privateKey.bytes.toArray, false)
     val pubBytes = ByteVector(pubKeyBytes)
-    require(
-      ECPublicKey.isFullyValid(pubBytes),
-      s"secp256k1 failed to generate a valid public key, got: ${CryptoBytesUtil
-        .encodeHex(pubBytes)}")
     ECPublicKey(pubBytes)
   }
 
@@ -76,7 +72,7 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     NativeSecp256k1.secKeyVerify(privateKeyBytes.toArray)
 
   override def verify(
-      publicKey: PublicKey[_],
+      publicKey: PublicKey,
       data: ByteVector,
       signature: ECDigitalSignature): Boolean = {
     val result =
@@ -95,21 +91,15 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     } else result
   }
 
-  override def decompressed[PK <: PublicKey[PK]](publicKey: PK): PK = {
-    if (publicKey.isCompressed) {
-      val decompressed = NativeSecp256k1.decompress(publicKey.bytes.toArray)
-      publicKey.fromBytes(ByteVector(decompressed))
-    } else publicKey
+  override def decompressed(pubKeyBytes: ByteVector): ByteVector = {
+    val decompressed = NativeSecp256k1.decompress(pubKeyBytes.toArray)
+    ByteVector(decompressed)
   }
 
   override def publicKey(privateKey: ECPrivateKey): ECPublicKey = {
     val pubKeyBytes: Array[Byte] =
       NativeSecp256k1.computePubkey(privateKey.bytes.toArray, false)
     val pubBytes = ByteVector(pubKeyBytes)
-    require(
-      ECPublicKey.isFullyValid(pubBytes),
-      s"secp256k1 failed to generate a valid public key, got: ${CryptoBytesUtil
-        .encodeHex(pubBytes)}")
     ECPublicKey(pubBytes)
   }
 
@@ -158,15 +148,6 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
       privkey.bytes.toArray,
       false)
     ECPublicKey(ByteVector(tweaked))
-  }
-
-  override def isValidPubKey(bytes: ByteVector): Boolean = {
-    try {
-      NativeSecp256k1.isValidPubKey(bytes.toArray)
-    } catch {
-      case scala.util.control.NonFatal(_) =>
-        false
-    }
   }
 
   override def schnorrSign(

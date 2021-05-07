@@ -9,8 +9,8 @@ case class SchnorrNonce(bytes: ByteVector) extends NetworkElement {
 
   val publicKey: ECPublicKey = schnorrPublicKey.publicKey
 
-  def xCoord: FieldElement = {
-    FieldElement(bytes)
+  def xCoord: CurveCoordinate = {
+    CurveCoordinate(bytes)
   }
 }
 
@@ -48,7 +48,7 @@ object SchnorrNonce extends Factory[SchnorrNonce] {
     k.publicKey.schnorrNonce
   }
 
-  def apply(xCoor: FieldElement): SchnorrNonce = {
+  def apply(xCoor: CurveCoordinate): SchnorrNonce = {
     SchnorrNonce(xCoor.bytes)
   }
 }

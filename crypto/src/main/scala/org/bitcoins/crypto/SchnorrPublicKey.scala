@@ -59,16 +59,10 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   def publicKey: ECPublicKey = {
     val pubKeyBytes = ByteVector.fromByte(2) ++ bytes
 
-    val validPubKey = CryptoUtil.isValidPubKey(pubKeyBytes)
-
-    require(
-      validPubKey,
-      s"Cannot construct schnorr public key from invalid x coordinate: $bytes")
-
     ECPublicKey(pubKeyBytes)
   }
 
-  def xCoord: FieldElement = FieldElement(bytes)
+  def xCoord: CurveCoordinate = CurveCoordinate(bytes)
 }
 
 object SchnorrPublicKey extends Factory[SchnorrPublicKey] {
@@ -93,7 +87,7 @@ object SchnorrPublicKey extends Factory[SchnorrPublicKey] {
     }
   }
 
-  def apply(xCoor: FieldElement): SchnorrPublicKey = {
+  def apply(xCoor: CurveCoordinate): SchnorrPublicKey = {
     SchnorrPublicKey(xCoor.bytes)
   }
 }

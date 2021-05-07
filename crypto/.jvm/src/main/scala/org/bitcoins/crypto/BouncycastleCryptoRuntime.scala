@@ -146,7 +146,7 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
   }
 
   override def verify(
-      publicKey: PublicKey[_],
+      publicKey: PublicKey,
       data: ByteVector,
       signature: ECDigitalSignature): Boolean =
     BouncyCastleUtil.verifyDigitalSignature(data, publicKey, signature)
@@ -172,9 +172,6 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     val tweak = privkey.publicKey
     pubkey.add(tweak)
   }
-
-  override def isValidPubKey(bytes: ByteVector): Boolean =
-    BouncyCastleUtil.validatePublicKey(bytes)
 
   override def sipHash(item: ByteVector, key: SipHashKey): Long = {
     val sipHashCParam = 2

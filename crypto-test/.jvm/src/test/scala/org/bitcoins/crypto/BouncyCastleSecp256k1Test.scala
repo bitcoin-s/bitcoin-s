@@ -1,7 +1,7 @@
 package org.bitcoins.crypto
 
-import org.scalacheck.Gen
 import org.scalatest.{Assertion, Outcome, Succeeded}
+import scodec.bits.ByteVector
 
 class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
 
@@ -41,19 +41,16 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
     }
   }
 
-  it must "validate keys the same" in {
-    val keyOrGarbageGen =
-      Gen.oneOf(CryptoGenerators.publicKey.map(_.bytes),
-                NumberGenerator.bytevector(33))
-    forAll(keyOrGarbageGen) { bytes =>
-      testCompatibility(_.isValidPubKey(bytes))
-    }
-  }
-
   it must "decompress keys the same" in {
     forAll(CryptoGenerators.publicKey) { pubKey =>
       testCompatibility(_.decompressed(pubKey))
     }
+  }
+
+  it must "decompress edge case keys the same" in {
+    val pubKeyBytes = ByteVector.fromValidHex(
+      "03fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2c")
+    testCompatibility(_.decompressed(pubKeyBytes))
   }
 
   it must "compute public keys the same" in {
