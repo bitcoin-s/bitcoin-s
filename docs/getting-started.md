@@ -109,10 +109,10 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## Building JARs yourself
 
-Please see [getting-setup.md](getting-setup.md)
+Please see [our setup docs](getting-setup.md)
 
 ## If you want to setup Bitcoin-S locally for development
 
-Please see [getting-setup.md](getting-setup.md)
+Please see [our setup docs](getting-setup.md)
 
 

@@ -149,10 +149,12 @@ lazy val lndRpc = project
 
 lazy val tor = project
   .in(file("tor"))
+  .settings(CommonSettings.prodSettings:_*)
   .dependsOn(cryptoJVM)
 
 lazy val torTest = project
   .in(file("tor-test"))
+  .settings(CommonSettings.testSettings:_*)
   .dependsOn(tor, testkit)
 
 lazy val jsProjects: Vector[ProjectReference] =

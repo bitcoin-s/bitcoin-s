@@ -82,7 +82,7 @@ libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-zmq" % "0.5.0"
 
 You can also run on the bleeding edge of Bitcoin-S, by
 adding a snapshot build to your `build.sbt`. The most
-recent snapshot published is `0.5.0-190-ca06b80e-20210428-0903-SNAPSHOT`.
+recent snapshot published is `0.0.0-2781-02c45059-20210507-1710-SNAPSHOT`.
 
 
 
@@ -105,10 +105,10 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## Building JARs yourself
 
-Please see [getting-setup.md](getting-setup.md)
+Please see [our setup docs](getting-setup)
 
 ## If you want to setup Bitcoin-S locally for development
 
-Please see [getting-setup.md](getting-setup.md)
+Please see [our setup docs](getting-setup)
 
 
