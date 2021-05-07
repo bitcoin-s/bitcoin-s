@@ -181,7 +181,6 @@ object BitcoinSTestAppConfig {
         case ProjectType.Oracle => "oracle"
         case ProjectType.DLC    => "dlc"
         case ProjectType.Test   => "test"
-        case ProjectType.DLC    => "dlc"
       }
 
       val poolName =
