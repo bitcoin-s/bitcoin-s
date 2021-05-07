@@ -79,7 +79,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .settings(name := "bitcoin-s-core")
   .settings(libraryDependencies ++= Deps.core.value)
-  .settings(CommonSettings.settings: _*)
+  .settings(CommonSettings.prodSettings: _*)
   .jvmSettings(CommonSettings.jvmSettings: _*)
   .jsSettings(commonJsSettings: _*)
   .in(file("core"))
@@ -141,10 +141,12 @@ lazy val bitcoindRpc = project
 
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))
+  .settings(CommonSettings.prodSettings: _*)
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
 lazy val lndRpc = project
   .in(file("lnd-rpc"))
+  .settings(CommonSettings.prodSettings: _*)
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
 lazy val tor = project
@@ -359,7 +361,7 @@ lazy val oracleServer = project
 
 lazy val oracleServerTest = project
   .in(file("app/oracle-server-test"))
-  .settings(CommonSettings.testSettings)
+  .settings(CommonSettings.testSettings: _*)
   .settings(libraryDependencies ++= Deps.walletServerTest)
   .dependsOn(
     oracleServer,
@@ -391,7 +393,7 @@ lazy val appServer = project
 
 lazy val appServerTest = project
   .in(file("app/server-test"))
-  .settings(CommonSettings.testSettings)
+  .settings(CommonSettings.testSettings: _*)
   .settings(libraryDependencies ++= Deps.walletServerTest)
   .dependsOn(
     appServer,
