@@ -152,6 +152,9 @@
       "wallet/wallet-rescan": {
         "title": "Wallet Rescans"
       },
+      "wallet/wallet-rpc": {
+        "title": "Wallet RPC Examples"
+      },
       "wallet/wallet-sync": {
         "title": "Wallet Sync"
       },
@@ -612,6 +615,90 @@
         "title": "Wallet Sync"
       },
       "version-0.5.0/wallet/version-0.5.0-wallet": {
+        "title": "Wallet"
+      },
+      "version-0.6.0/applications/version-0.6.0-server": {
+        "title": "Application Server"
+      },
+      "version-0.6.0/chain/version-0.6.0-filter-sync": {
+        "title": "Syncing Blockfilters"
+      },
+      "version-0.6.0/config/version-0.6.0-configuration title: Application Configuration": {
+        "title": "configuration title: Application Configuration"
+      },
+      "version-0.6.0/core/version-0.6.0-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-0.6.0/core/version-0.6.0-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-0.6.0/core/version-0.6.0-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-0.6.0/core/version-0.6.0-psbts": {
+        "title": "Partially Signed Bitcoin Transactions"
+      },
+      "version-0.6.0/core/version-0.6.0-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-0.6.0/crypto/version-0.6.0-adaptor-signatures": {
+        "title": "Adaptor Signatures"
+      },
+      "version-0.6.0/crypto/version-0.6.0-sign": {
+        "title": "Sign API"
+      },
+      "version-0.6.0/version-0.6.0-getting-setup": {
+        "title": "Getting Bitcoin-S installed on your machine"
+      },
+      "version-0.6.0/version-0.6.0-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-0.6.0/key-manager/version-0.6.0-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-0.6.0/node/version-0.6.0-node-api title: Node API": {
+        "title": "node-api title: Node API"
+      },
+      "version-0.6.0/node/version-0.6.0-node": {
+        "title": "Light Client"
+      },
+      "version-0.6.0/oracle-explorer-client/version-0.6.0-oracle-explorer-client": {
+        "title": "Oracle Explorer Client"
+      },
+      "version-0.6.0/oracle/version-0.6.0-build-oracle-server": {
+        "title": "Building the Oracle Server"
+      },
+      "version-0.6.0/oracle/version-0.6.0-oracle-election-example": {
+        "title": "Election Example"
+      },
+      "version-0.6.0/oracle/version-0.6.0-oracle-price-example": {
+        "title": "Price Example"
+      },
+      "version-0.6.0/oracle/version-0.6.0-oracle-server": {
+        "title": "Oracle Server"
+      },
+      "version-0.6.0/rpc/version-0.6.0-lnd-rpc": {
+        "title": "LND"
+      },
+      "version-0.6.0/rpc/version-0.6.0-rpc-clients-intro": {
+        "title": "Introduction"
+      },
+      "version-0.6.0/secp256k1/version-0.6.0-jni-modify": {
+        "title": "Adding to Secp256k1 JNI"
+      },
+      "version-0.6.0/secp256k1/version-0.6.0-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-0.6.0/testkit/version-0.6.0-testkit-core": {
+        "title": "Testkit Core"
+      },
+      "version-0.6.0/testkit/version-0.6.0-testkit": {
+        "title": "Testkit"
+      },
+      "version-0.6.0/wallet/version-0.6.0-wallet-rescan": {
+        "title": "Wallet Rescans"
+      },
+      "version-0.6.0/wallet/version-0.6.0-wallet": {
         "title": "Wallet"
       }
     },

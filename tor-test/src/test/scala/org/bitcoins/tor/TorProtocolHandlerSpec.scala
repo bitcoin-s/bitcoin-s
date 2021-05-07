@@ -44,7 +44,7 @@ class TorProtocolHandlerSpec
     super.withFixture(test) // Invoke the test function
   }
 
-  ignore("connect to real tor daemon") {
+  /*  ignore("connect to real tor daemon") {
     val promiseOnionAddress = Promise[InetSocketAddress]()
 
     val protocolHandlerProps =
@@ -61,7 +61,7 @@ class TorProtocolHandlerSpec
 
     val address = Await.result(promiseOnionAddress.future, 30.seconds)
     println(address)
-  }
+  }*/
 
   test("happy path v2") {
     val promiseOnionAddress = Promise[InetSocketAddress]()
@@ -318,7 +318,7 @@ class TorProtocolHandlerSpec
       "513 Invalid argument\r\n"
     )
 
-    val t = intercept[TorException] {
+    intercept[TorException] {
       Await.result(promiseOnionAddress.future, 3.seconds)
     }
 
