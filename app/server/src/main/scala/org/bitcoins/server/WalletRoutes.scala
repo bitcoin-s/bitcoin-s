@@ -150,36 +150,6 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
-    case ServerCommand("getbalances", arr) =>
-      GetBalance.fromJsArr(arr) match {
-        case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetBalance(isSats)) =>
-          complete {
-            for {
-              confirmed <- wallet.getConfirmedBalance()
-              unconfirmed <- wallet.getUnconfirmedBalance()
-              reservedUtxos <- wallet.listUtxos(TxoState.Reserved)
-            } yield {
-              def balToStr(bal: CurrencyUnit): String = {
-                if (isSats) bal.satoshis.toString
-                else Bitcoins(bal.satoshis).toString
-              }
-
-              val reserved = reservedUtxos.map(_.output.value).sum
-              val total = confirmed + unconfirmed + reserved
-
-              val json = Obj(
-                "confirmed" -> Str(balToStr(confirmed)),
-                "unconfirmed" -> Str(balToStr(unconfirmed)),
-                "reserved" -> Str(balToStr(reserved)),
-                "total" -> Str(balToStr(total))
-              )
-              Server.httpSuccess(json)
-            }
-          }
-      }
-
     case ServerCommand("getnewaddress", arr) =>
       withValidServerCommand(GetNewAddress.fromJsArr(arr)) {
         case GetNewAddress(labelOpt) =>
