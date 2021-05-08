@@ -58,17 +58,7 @@ lazy val crypto = crossProject(JVMPlatform, JSPlatform)
 
 lazy val cryptoJS = crypto.js
   .settings(Compile / scalacOptions += {
-    //Added to supress all of the dead code and unused variable warnings
-    //inside of org.bitcoins.crypto.facade which is used with scalajs
-    //see: https://www.scala-lang.org/2021/01/12/configuring-and-suppressing-warnings.html
-    //see: https://github.com/bitcoin-s/bitcoin-s/pull/2822
-    if (scalaVersion.value.startsWith("2.13")) {
-      "-Wconf:cat=unused:site=org\\.bitcoins\\.crypto\\.facade\\..*:silent,cat=w-flag-dead-code:site=org\\.bitcoins\\.crypto\\.facade\\..*:silent"
-    } else {
-      //-Wconf doesn't work on Scala 2.12.x until we get 2.12.13
-      //which is currently blocked on a scoverage bug
-      ""
-    }
+    "-Wconf:cat=unused:site=org\\.bitcoins\\.crypto\\.facade\\..*:silent,cat=w-flag-dead-code:site=org\\.bitcoins\\.crypto\\.facade\\..*:silent"
   })
   .enablePlugins(ScalaJSBundlerPlugin)
 
@@ -79,7 +69,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
   .crossType(CrossType.Pure)
   .settings(name := "bitcoin-s-core")
   .settings(libraryDependencies ++= Deps.core.value)
-  .settings(CommonSettings.settings: _*)
+  .settings(CommonSettings.prodSettings: _*)
   .jvmSettings(CommonSettings.jvmSettings: _*)
   .jsSettings(commonJsSettings: _*)
   .in(file("core"))
@@ -141,10 +131,12 @@ lazy val bitcoindRpc = project
 
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))
+  .settings(CommonSettings.prodSettings: _*)
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
 lazy val lndRpc = project
   .in(file("lnd-rpc"))
+  .settings(CommonSettings.prodSettings: _*)
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
 lazy val tor = project
@@ -359,7 +351,7 @@ lazy val oracleServer = project
 
 lazy val oracleServerTest = project
   .in(file("app/oracle-server-test"))
-  .settings(CommonSettings.testSettings)
+  .settings(CommonSettings.testSettings: _*)
   .settings(libraryDependencies ++= Deps.walletServerTest)
   .dependsOn(
     oracleServer,
@@ -391,7 +383,7 @@ lazy val appServer = project
 
 lazy val appServerTest = project
   .in(file("app/server-test"))
-  .settings(CommonSettings.testSettings)
+  .settings(CommonSettings.testSettings: _*)
   .settings(libraryDependencies ++= Deps.walletServerTest)
   .dependsOn(
     appServer,
