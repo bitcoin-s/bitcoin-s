@@ -12,17 +12,7 @@ enablePlugins(AkkaGrpcPlugin)
 
 // Disable deprecation warning otherwise protobuf deprecation warnings will cause errors
 Compile / scalacOptions += {
-  //Added to supress all of the deprecation warnings inside of the
-  //generated scala code by the grpc plugin. Two packages have deprecations
-  //inside of them, 'signrpc' and 'lnrpc'
-  //see: https://www.scala-lang.org/2021/01/12/configuring-and-suppressing-warnings.html
-  if (scalaVersion.value.startsWith("2.13")) {
-    "-Wconf:cat=deprecation:site=lnrpc\\..*:silent,cat=deprecation:site=signrpc\\..*:silent"
-  } else {
-    //-Wconf doesn't work on Scala 2.12.x until we get 2.12.13
-    //which is currently blocked on a scoverage bug
-    ""
-  }
+  "-Wconf:cat=deprecation:site=lnrpc\\..*:silent,cat=deprecation:site=signrpc\\..*:silent"
 }
 
 TaskKeys.downloadLnd := {
