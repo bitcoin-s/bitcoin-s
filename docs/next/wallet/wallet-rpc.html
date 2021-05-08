@@ -69,11 +69,17 @@ unreserve them with <code>lockunspent</code> or they are spent in the blockchain
 <pre><code class="hljs css language-bash">bitcoin<span class="hljs-_">-s</span>-cli listreservedutxos
 [
   {
-    <span class="hljs-string">"outpoint"</span>: <span class="hljs-string">"1c22634fa282e71866a8b8c6732ec89eb5c46d30f9773486b0ae32770e8109e1"</span>,
+    <span class="hljs-string">"outpoint"</span>: {
+        <span class="hljs-string">"txid"</span>: <span class="hljs-string">"1c22634fa282e71866a8b8c6732ec89eb5c46d30f9773486b0ae32770e8109e1"</span>,
+        <span class="hljs-string">"vout"</span>: 1,
+    },
     <span class="hljs-string">"value"</span>: 2000
   },
   {
-    <span class="hljs-string">"outpoint"</span>: <span class="hljs-string">"2b12634fa282e71866a8b8c6732ec89eb5c46d30f9773486b0ae32770e810901"</span>,
+    <span class="hljs-string">"outpoint"</span>: {
+        <span class="hljs-string">"txid"</span>: <span class="hljs-string">"2b12634fa282e71866a8b8c6732ec89eb5c46d30f9773486b0ae32770e810901"</span>,
+        <span class="hljs-string">"vout"</span>: 0,
+    },
     <span class="hljs-string">"value"</span>: 1000
   }
 ]
