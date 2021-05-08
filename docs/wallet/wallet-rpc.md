@@ -13,11 +13,17 @@ unreserve them with `lockunspent` or they are spent in the blockchain
 bitcoin-s-cli listreservedutxos
 [
   {
-    "outpoint": "1c22634fa282e71866a8b8c6732ec89eb5c46d30f9773486b0ae32770e8109e1",
+    "outpoint": {
+        "txid": "1c22634fa282e71866a8b8c6732ec89eb5c46d30f9773486b0ae32770e8109e1",
+        "vout": 1,
+    },
     "value": 2000
   },
   {
-    "outpoint": "2b12634fa282e71866a8b8c6732ec89eb5c46d30f9773486b0ae32770e810901",
+    "outpoint": {
+        "txid": "2b12634fa282e71866a8b8c6732ec89eb5c46d30f9773486b0ae32770e810901",
+        "vout": 0,
+    },
     "value": 1000
   }
 ]
