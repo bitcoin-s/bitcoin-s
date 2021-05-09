@@ -188,7 +188,7 @@ case class SpendingInfoDAO()(implicit
     * the given TX
     */
   def findTx(tx: Transaction): Future[Vector[SpendingInfoDb]] =
-    findTx(tx.txIdBE)
+    findOutputsReceived(tx.txIdBE)
 
   /** Finds all the outputs being spent in the given
     * transaction
@@ -246,14 +246,16 @@ case class SpendingInfoDAO()(implicit
     safeDatabase.runVec(query.result)
   }
 
+  /** Joins the spk table on the spending info table with the spk id */
+  private val spkJoinQuery = table
+    .join(spkTable)
+    .on(_.scriptPubKeyId === _.id)
+
   /** Fetches all the incoming TXOs in our DB that are in
     * the transaction with the given TXID
     */
-  def findTx(txid: DoubleSha256DigestBE): Future[Vector[SpendingInfoDb]] = {
-    val query = table
-      .join(spkTable)
-      .on(_.scriptPubKeyId === _.id)
-    val filtered = query.filter(_._1.txid === txid)
+  def findOutputsReceived(txid: DoubleSha256DigestBE): Future[Vector[SpendingInfoDb]] = {
+    val filtered = spkJoinQuery.filter(_._1.txid === txid)
     safeDatabase
       .runVec(filtered.result)
       .map(res =>
@@ -264,10 +266,7 @@ case class SpendingInfoDAO()(implicit
 
   def findByScriptPubKey(
       scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]] = {
-    val query = table
-      .join(spkTable)
-      .on(_.scriptPubKeyId === _.id)
-    val filtered = query.filter(_._2.scriptPubKey === scriptPubKey)
+    val filtered = spkJoinQuery.filter(_._2.scriptPubKey === scriptPubKey)
     safeDatabase
       .runVec(filtered.result)
       .map(res =>

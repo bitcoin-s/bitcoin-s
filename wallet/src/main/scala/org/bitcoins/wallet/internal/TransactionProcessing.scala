@@ -191,40 +191,43 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       }
     }
 
-  protected def processIncomingUtxos(
+  /** Processes received utxos that are contained in the given transaction
+    * @param transaction the transaction that we are receiving utxos from
+    * @param blockHashOpt the block hash that contains this tx
+    * @param spendingInfoDbs the spending info dbs that are relevant for this transaction
+    * @param newTags tags associated with this tx
+    * @return
+    */
+  protected def processReceivedUtxos(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
-      newTags: Vector[AddressTag]): Future[Vector[SpendingInfoDb]] =
-    spendingInfoDAO
-      .findTx(transaction)
-      .flatMap {
-        // no existing elements found
-        case Vector() =>
-          processNewIncomingTx(transaction, blockHashOpt, newTags)
-            .map(_.toVector)
-
-        case txos: Vector[SpendingInfoDb] =>
-          val processedVec = txos.map { txo =>
-            processExistingIncomingTxo(transaction, blockHashOpt, txo)
-          }
-          Future.sequence(processedVec)
+      spendingInfoDbs: Vector[SpendingInfoDb],
+      newTags: Vector[AddressTag]): Future[Vector[SpendingInfoDb]] = {
+    if (spendingInfoDbs.isEmpty) {
+      processNewReceivedTx(transaction, blockHashOpt, newTags)
+        .map(_.toVector)
+    } else {
+      val processedVec = spendingInfoDbs.map { txo =>
+        processExistingReceivedTxo(transaction, blockHashOpt, txo)
       }
+      Future.sequence(processedVec)
+    }
+  }
 
   /** Searches for outputs on the given transaction that are
     * being spent from our wallet
     */
   protected def processSpentUtxos(
       transaction: Transaction,
+      outputsBeingSpent: Seq[SpendingInfoDb],
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[
     Vector[SpendingInfoDb]] = {
     for {
-      outputsBeingSpent <- spendingInfoDAO.findOutputsBeingSpent(transaction)
-
-      _ <-
+      _ <- {
         if (outputsBeingSpent.nonEmpty)
           insertTransaction(transaction, blockHashOpt)
         else Future.unit
-
+      }
       processed <- Future
         .sequence {
           outputsBeingSpent.map(markAsSpent(_, transaction.txIdBE))
@@ -249,9 +252,24 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       s"Processing transaction=${transaction.txIdBE.hex} with blockHash=${blockHashOpt
         .map(_.hex)}")
 
+    val receivedSpendingInfoDbsF: Future[Vector[SpendingInfoDb]] = {
+      spendingInfoDAO.findTx(transaction)
+    }
+    val spentSpendingInfoDbsF: Future[Seq[SpendingInfoDb]] = {
+      spendingInfoDAO.findOutputsBeingSpent(transaction)
+    }
+
     for {
-      incoming <- processIncomingUtxos(transaction, blockHashOpt, newTags)
-      outgoing <- processSpentUtxos(transaction, blockHashOpt)
+      receivedSpendingInfoDbs <- receivedSpendingInfoDbsF
+      incoming <- processReceivedUtxos(transaction = transaction,
+                                       blockHashOpt = blockHashOpt,
+                                       spendingInfoDbs =
+                                         receivedSpendingInfoDbs,
+                                       newTags = newTags)
+      spentSpendingInfoDbs <- spentSpendingInfoDbsF
+      outgoing <- processSpentUtxos(transaction = transaction,
+                                    outputsBeingSpent = spentSpendingInfoDbs,
+                                    blockHashOpt = blockHashOpt)
       _ <- walletCallbacks.executeOnTransactionProcessed(logger, transaction)
     } yield {
       ProcessTxResult(incoming, outgoing)
@@ -331,7 +349,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     * If the incoming transaction has more confirmations than what we
     * have in the DB, we update the TX
     */
-  private def processExistingIncomingTxo(
+  private def processExistingReceivedTxo(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       foundTxo: SpendingInfoDb): Future[SpendingInfoDb] = {
@@ -449,11 +467,12 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     *
     * @return A list of inserted transaction outputs
     */
-  private def processNewIncomingTx(
+  private def processNewReceivedTx(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       newTags: Vector[AddressTag]): Future[Seq[SpendingInfoDb]] = {
-    getRelevantOutputs(transaction).flatMap {
+    val outputsF = getRelevantOutputs(transaction)
+    outputsF.flatMap {
       case Nil =>
         logger.trace(
           s"Found no outputs relevant to us in transaction${transaction.txIdBE.hex}")
