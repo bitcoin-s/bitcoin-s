@@ -255,7 +255,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     val receivedSpendingInfoDbsF: Future[Vector[SpendingInfoDb]] = {
       spendingInfoDAO.findTx(transaction)
     }
-    val spentSpendingInfoDbsF: Future[Seq[SpendingInfoDb]] = {
+    val spentSpendingInfoDbsF: Future[Vector[SpendingInfoDb]] = {
       spendingInfoDAO.findOutputsBeingSpent(transaction)
     }
 
