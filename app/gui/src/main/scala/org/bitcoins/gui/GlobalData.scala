@@ -5,10 +5,13 @@ import org.bitcoins.core.config._
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.gui.settings.Themes
-import scalafx.beans.property.{LongProperty, StringProperty}
+import scalafx.beans.property.StringProperty
 
 object GlobalData {
-  val currentBalance: LongProperty = LongProperty(0)
+  val currentConfirmedBalance: StringProperty = StringProperty("0")
+  val currentUnconfirmedBalance: StringProperty = StringProperty("0")
+  val currentReservedBalance: StringProperty = StringProperty("0")
+  val currentTotalBalance: StringProperty = StringProperty("0")
 
   var network: BitcoinNetwork = _
 
@@ -16,7 +19,7 @@ object GlobalData {
 
   val statusText: StringProperty = StringProperty("")
 
-  val darkThemeEnabled: Boolean = true
+  var darkThemeEnabled: Boolean = true
 
   def currentStyleSheets: Seq[String] =
     if (GlobalData.darkThemeEnabled) {
