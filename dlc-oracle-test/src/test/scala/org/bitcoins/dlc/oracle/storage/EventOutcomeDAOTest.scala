@@ -2,7 +2,7 @@ package org.bitcoins.dlc.oracle.storage
 
 import org.bitcoins.core.api.dlcoracle.db.{EventDb, EventOutcomeDb, RValueDb}
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
-import org.bitcoins.core.protocol.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto._

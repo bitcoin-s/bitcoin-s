@@ -1,8 +1,11 @@
 package org.bitcoins.gui.dlc
 
-import org.bitcoins.core.protocol.dlc.SingleOracleInfo
-import org.bitcoins.core.protocol.dlc.DLCStatus._
-import org.bitcoins.core.protocol.dlc.{AcceptedDLCStatus, DLCStatus}
+import org.bitcoins.core.protocol.dlc.models.DLCStatus._
+import org.bitcoins.core.protocol.dlc.models.{
+  AcceptedDLCStatus,
+  DLCStatus,
+  SingleOracleInfo
+}
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.{ContextMenu, MenuItem, TableColumn, TableView}

@@ -4,7 +4,7 @@ import org.bitcoins.core.api.dlcoracle.db.EventDb
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
-import org.bitcoins.core.protocol.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto.{SchnorrNonce, SchnorrPublicKey}
 

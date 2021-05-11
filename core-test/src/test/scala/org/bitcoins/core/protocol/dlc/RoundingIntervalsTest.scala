@@ -1,7 +1,8 @@
 package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.RoundingIntervals.IntervalStart
+import org.bitcoins.core.protocol.dlc.models.RoundingIntervals
+import org.bitcoins.core.protocol.dlc.models.RoundingIntervals.IntervalStart
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 

@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.util
 
-import org.bitcoins.core.protocol.dlc.{CETSignatures, FundingSignatures}
+import org.bitcoins.core.protocol.dlc.models.{CETSignatures, FundingSignatures}
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
   P2WPKHWitnessV0,

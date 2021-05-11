@@ -2,7 +2,7 @@ package org.bitcoins.dlc.oracle.util
 
 import org.bitcoins.core.api.dlcoracle.db._
 import org.bitcoins.core.api.dlcoracle._
-import org.bitcoins.core.protocol.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto.SchnorrNonce
 

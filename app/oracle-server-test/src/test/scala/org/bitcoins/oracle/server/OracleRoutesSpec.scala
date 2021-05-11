@@ -7,7 +7,7 @@ import org.bitcoins.core.api.dlcoracle.db.EventDb
 import org.bitcoins.core.config._
 import org.bitcoins.core.number.{Int32, UInt16}
 import org.bitcoins.core.protocol.Bech32Address
-import org.bitcoins.core.protocol.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv.{
   EnumEventDescriptorV0TLV,
   NormalizedString,

@@ -1,7 +1,7 @@
 package org.bitcoins.core.api.dlcoracle.db
 
 import org.bitcoins.core.api.dlcoracle.OracleEvent
-import org.bitcoins.core.protocol.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
 import org.bitcoins.crypto.{
   FieldElement,

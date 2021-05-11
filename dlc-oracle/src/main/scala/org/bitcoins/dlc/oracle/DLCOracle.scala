@@ -9,7 +9,7 @@ import org.bitcoins.core.crypto.{ExtPrivateKeyHardened, MnemonicCode}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
-import org.bitcoins.core.protocol.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.{FutureUtil, NumberUtil, TimeUtil}

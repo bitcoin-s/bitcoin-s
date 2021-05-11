@@ -2,8 +2,8 @@ package org.bitcoins.core.protocol.tlv
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
-import org.bitcoins.core.protocol.dlc.SigningVersion
-import org.bitcoins.core.protocol.dlc.SigningVersion.DLCOracleV0SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion.DLCOracleV0SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.TLV.{
   DecodeTLVResult,

@@ -2,7 +2,7 @@ package org.bitcoins.core.api.dlcoracle
 
 import org.bitcoins.core.api.dlcoracle.db.EventDb
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.crypto._
