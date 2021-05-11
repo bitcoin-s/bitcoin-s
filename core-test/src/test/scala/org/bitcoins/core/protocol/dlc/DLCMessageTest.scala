@@ -80,11 +80,12 @@ class DLCMessageTest extends BitcoinSJvmTest {
         dummyAddress,
         payoutSerialId = UInt64.zero,
         changeSerialId = UInt64.one,
-        CETSignatures(Vector(
-                        EnumOracleOutcome(
-                          Vector(dummyOracle),
-                          EnumOutcome(dummyStr)) -> ECAdaptorSignature.dummy),
-                      dummySig),
+        CETSignatures(
+          Vector(
+            EnumOracleOutcome(
+              Vector(dummyOracle),
+              EnumOutcome(dummyStr)).sigPoint -> ECAdaptorSignature.dummy),
+          dummySig),
         DLCAccept.NoNegotiationFields,
         Sha256Digest.empty
       )

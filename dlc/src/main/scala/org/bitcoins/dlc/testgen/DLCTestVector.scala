@@ -187,6 +187,7 @@ case class ValidTestInputs(
         .map(_.preImage)
         .map(EnumOutcome.apply)
         .map(outcome => EnumOracleOutcome(Vector(params.oracleInfo), outcome))
+        .map(_.sigPoint)
         .map(builder.buildCET)
     val refundTx = builder.buildRefundTx
 

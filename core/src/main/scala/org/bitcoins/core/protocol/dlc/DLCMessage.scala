@@ -275,10 +275,10 @@ object DLCMessage {
     def fromTLV(
         accept: DLCAcceptTLV,
         network: NetworkParameters,
-        outcomes: Vector[OracleOutcome]): DLCAccept = {
+        adaptorPoints: Vector[ECPublicKey]): DLCAccept = {
       val outcomeSigs = accept.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
-          outcomes.zip(sigs)
+          adaptorPoints.zip(sigs)
       }
 
       DLCAccept(
@@ -308,7 +308,9 @@ object DLCMessage {
         accept: DLCAcceptTLV,
         network: NetworkParameters,
         contractInfo: ContractInfo): DLCAccept = {
-      fromTLV(accept, network, contractInfo.allOutcomes)
+      fromTLV(accept,
+              network,
+              DLCAdaptorPointComputer.computeAdaptorPoints(contractInfo))
     }
 
     def fromTLV(accept: DLCAcceptTLV, offer: DLCOffer): DLCAccept = {
@@ -348,11 +350,11 @@ object DLCMessage {
     def fromTLV(
         sign: DLCSignTLV,
         fundingPubKey: ECPublicKey,
-        outcomes: Vector[OracleOutcome],
+        adaptorPoints: Vector[ECPublicKey],
         fundingOutPoints: Vector[TransactionOutPoint]): DLCSign = {
       val outcomeSigs = sign.cetSignatures match {
         case CETSignaturesV0TLV(sigs) =>
-          outcomes.zip(sigs)
+          adaptorPoints.zip(sigs)
       }
 
       val sigs = sign.fundingSignatures match {
@@ -376,7 +378,7 @@ object DLCMessage {
     def fromTLV(sign: DLCSignTLV, offer: DLCOffer): DLCSign = {
       fromTLV(sign,
               offer.pubKeys.fundingKey,
-              offer.contractInfo.allOutcomes,
+              DLCAdaptorPointComputer.computeAdaptorPoints(offer.contractInfo),
               offer.fundingInputs.map(_.outPoint))
     }
 

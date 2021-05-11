@@ -99,7 +99,7 @@ case class TestDLCClient(
       }
       cetSigs =
         dlcTxSigner.createCETSigs(setupDLCWithoutFundingTxSigs.cets.map {
-          case (msg, info) => OutcomeCETPair(msg, info.tx)
+          case (msg, info) => AdaptorPointCETPair(msg, info.tx)
         })
       localFundingSigs <- Future.fromTry {
         dlcTxSigner.signFundingTx()

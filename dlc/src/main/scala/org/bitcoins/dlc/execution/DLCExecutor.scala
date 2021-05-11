@@ -122,7 +122,7 @@ object DLCExecutor {
     * a valid set of expected oracle signatures as per the oracle announcements in the ContractInfo.
     */
   def executeDLC(
-      remoteCETInfos: Vector[(OracleOutcome, CETInfo)],
+      remoteCETInfos: Vector[(ECPublicKey, CETInfo)],
       oracleSigs: Vector[OracleSignatures],
       fundingKey: AdaptorSign,
       remoteFundingPubKey: ECPublicKey,
@@ -140,7 +140,9 @@ object DLCExecutor {
     }
 
     val msgAndCETInfoOpt = msgOpt.flatMap { msg =>
-      remoteCETInfos.find(_._1 == msg)
+      remoteCETInfos
+        .find(_._1 == msg.sigPoint)
+        .map { case (_, info) => (msg, info) }
     }
 
     val (msg, ucet, remoteAdaptorSig) = msgAndCETInfoOpt match {

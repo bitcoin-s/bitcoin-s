@@ -7,11 +7,7 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.dlc.{
-  DLCFundingInput,
-  FundingSignatures,
-  OracleOutcome
-}
+import org.bitcoins.core.protocol.dlc.{DLCFundingInput, FundingSignatures}
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
@@ -37,15 +33,17 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
   }
 
   /** Verifies remote's CET signature for a given outcome hash */
-  def verifyCETSig(outcome: OracleOutcome, sig: ECAdaptorSignature): Boolean = {
+  def verifyCETSig(
+      adaptorPoint: ECPublicKey,
+      sig: ECAdaptorSignature): Boolean = {
     val remoteFundingPubKey = if (isInitiator) {
       builder.acceptFundingKey
     } else {
       builder.offerFundingKey
     }
-    val cet = builder.buildCET(outcome)
+    val cet = builder.buildCET(adaptorPoint)
 
-    DLCSignatureVerifier.validateCETSignature(outcome,
+    DLCSignatureVerifier.validateCETSignature(adaptorPoint,
                                               sig,
                                               remoteFundingPubKey,
                                               fundingTx,
@@ -53,13 +51,13 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
                                               cet)
   }
 
-  def verifyCETSigs(sigs: Vector[(OracleOutcome, ECAdaptorSignature)])(implicit
+  def verifyCETSigs(sigs: Vector[(ECPublicKey, ECAdaptorSignature)])(implicit
       ec: ExecutionContext): Future[Boolean] = {
     val correctNumberOfSigs =
       sigs.size >= builder.contractInfo.allOutcomes.length
 
     def runVerify(
-        outcomeSigs: Vector[(OracleOutcome, ECAdaptorSignature)]): Future[
+        outcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)]): Future[
       Boolean] = {
       Future {
         outcomeSigs.foldLeft(true) { case (ret, (outcome, sig)) =>
@@ -89,15 +87,13 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
 object DLCSignatureVerifier {
 
   def validateCETSignature(
-      outcome: OracleOutcome,
+      adaptorPoint: ECPublicKey,
       sig: ECAdaptorSignature,
       remoteFundingPubKey: ECPublicKey,
       fundingTx: Transaction,
       fundOutputIndex: Int,
       cet: WitnessTransaction
   ): Boolean = {
-    val adaptorPoint = outcome.sigPoint
-
     val sigComponent = WitnessTxSigComponentRaw(
       transaction = cet,
       inputIndex = UInt32.zero,

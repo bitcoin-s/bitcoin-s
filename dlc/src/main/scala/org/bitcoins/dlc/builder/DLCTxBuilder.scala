@@ -167,14 +167,15 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
   /** Constructs the unsigned Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(msg: OracleOutcome): WitnessTransaction = {
-    buildCETs(Vector(msg)).head
+  def buildCET(adaptorPoint: ECPublicKey): WitnessTransaction = {
+    buildCETs(Vector(adaptorPoint)).head
   }
 
-  def buildCETsMap(msgs: Vector[OracleOutcome]): Vector[OutcomeCETPair] = {
+  def buildCETsMap(
+      adaptorPoints: Vector[ECPublicKey]): Vector[AdaptorPointCETPair] = {
     DLCTxBuilder
       .buildCETs(
-        msgs,
+        adaptorPoints,
         contractInfo,
         offerFundingKey,
         offerFinalAddress.scriptPubKey,
@@ -188,8 +189,9 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
       )
   }
 
-  def buildCETs(msgs: Vector[OracleOutcome]): Vector[WitnessTransaction] = {
-    buildCETsMap(msgs).map(_.wtx)
+  def buildCETs(
+      adaptorPoints: Vector[ECPublicKey]): Vector[WitnessTransaction] = {
+    buildCETsMap(adaptorPoints).map(_.wtx)
   }
 
   /** Constructs the unsigned refund transaction */
@@ -313,7 +315,7 @@ object DLCTxBuilder {
   }
 
   def buildCET(
-      outcome: OracleOutcome,
+      adaptorPoint: ECPublicKey,
       contractInfo: ContractInfo,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
@@ -323,22 +325,24 @@ object DLCTxBuilder {
       acceptSerialId: UInt64,
       timeouts: DLCTimeouts,
       fundingOutputRef: OutputReference): WitnessTransaction = {
-    val Vector(OutcomeCETPair(_, cet)) = buildCETs(Vector(outcome),
-                                                   contractInfo,
-                                                   offerFundingKey,
-                                                   offerFinalSPK,
-                                                   offerSerialId,
-                                                   acceptFundingKey,
-                                                   acceptFinalSPK,
-                                                   acceptSerialId,
-                                                   timeouts,
-                                                   fundingOutputRef)
+    val Vector(AdaptorPointCETPair(_, cet)) = buildCETs(
+      Vector(adaptorPoint),
+      contractInfo,
+      offerFundingKey,
+      offerFinalSPK,
+      offerSerialId,
+      acceptFundingKey,
+      acceptFinalSPK,
+      acceptSerialId,
+      timeouts,
+      fundingOutputRef
+    )
 
     cet
   }
 
   def buildCETs(
-      outcomes: Vector[OracleOutcome],
+      adaptorPoints: Vector[ECPublicKey],
       contractInfo: ContractInfo,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
@@ -347,7 +351,7 @@ object DLCTxBuilder {
       acceptFinalSPK: ScriptPubKey,
       acceptSerialId: UInt64,
       timeouts: DLCTimeouts,
-      fundingOutputRef: OutputReference): Vector[OutcomeCETPair] = {
+      fundingOutputRef: OutputReference): Vector[AdaptorPointCETPair] = {
     val builder =
       DLCCETBuilder(contractInfo,
                     offerFundingKey,
@@ -359,13 +363,14 @@ object DLCTxBuilder {
                     timeouts,
                     fundingOutputRef)
 
-    outcomes.map { outcome =>
-      OutcomeCETPair(outcome, builder.buildCET(outcome))
+    adaptorPoints.zip(contractInfo.allOutcomes).map {
+      case (sigPoint, outcome) =>
+        AdaptorPointCETPair(sigPoint, builder.buildCET(outcome))
     }
   }
 
   def buildCETs(
-      outcomes: Vector[OracleOutcome],
+      adaptorPoints: Vector[ECPublicKey],
       contractInfo: ContractInfo,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
@@ -375,13 +380,13 @@ object DLCTxBuilder {
       acceptSerialId: UInt64,
       timeouts: DLCTimeouts,
       fundingTx: Transaction,
-      fundOutputIndex: Int): Vector[OutcomeCETPair] = {
+      fundOutputIndex: Int): Vector[AdaptorPointCETPair] = {
     val fundingOutPoint =
       TransactionOutPoint(fundingTx.txId, UInt32(fundOutputIndex))
     val fundingOutputRef =
       OutputReference(fundingOutPoint, fundingTx.outputs(fundOutputIndex))
 
-    buildCETs(outcomes,
+    buildCETs(adaptorPoints,
               contractInfo,
               offerFundingKey,
               offerFinalSPK,

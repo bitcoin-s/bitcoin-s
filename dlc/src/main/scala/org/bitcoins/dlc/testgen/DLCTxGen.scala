@@ -259,14 +259,14 @@ object DLCTxGen {
 
       val offerSignedCET = offerSigner.completeCET(
         outcome,
-        accpetCETSigs(outcome),
+        accpetCETSigs(outcome.sigPoint),
         Vector(
           EnumOracleSignature(inputs.params.oracleInfo,
                               inputs.params.oracleSignature)))
 
       val acceptSignedCET = acceptSigner.completeCET(
         outcome,
-        offerCETSigs(outcome),
+        offerCETSigs(outcome.sigPoint),
         Vector(
           EnumOracleSignature(inputs.params.oracleInfo,
                               inputs.params.oracleSignature)))

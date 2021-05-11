@@ -1,12 +1,11 @@
 package org.bitcoins.dlc.execution
 
-import org.bitcoins.core.protocol.dlc.OracleOutcome
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
-import org.bitcoins.crypto.ECAdaptorSignature
+import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey}
 
 case class SetupDLC(
     fundingTx: Transaction,
-    cets: Vector[(OracleOutcome, CETInfo)],
+    cets: Vector[(ECPublicKey, CETInfo)],
     refundTx: WitnessTransaction) {
   cets.foreach { case (msg, cetInfo) =>
     require(
@@ -25,12 +24,12 @@ case class SetupDLC(
     s"RefundTx is not spending the funding tx, ${refundTx.inputs.head}"
   )
 
-  def getCETInfo(outcome: OracleOutcome): CETInfo = {
-    cets.find(_._1 == outcome) match {
+  def getCETInfo(adaptorPoint: ECPublicKey): CETInfo = {
+    cets.find(_._1 == adaptorPoint) match {
       case Some((_, info)) => info
       case None =>
         throw new IllegalArgumentException(
-          s"No CET found for the given outcome $outcome")
+          s"No CET found for the given adaptor point $adaptorPoint")
     }
   }
 }

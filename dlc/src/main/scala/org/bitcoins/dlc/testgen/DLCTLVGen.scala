@@ -202,7 +202,7 @@ object DLCTLVGen {
         ECPublicKey.freshPublicKey): CETSignatures = {
     CETSignatures(
       outcomes.map(outcome =>
-        EnumOracleOutcome(Vector(oracleInfo), outcome) -> adaptorSig),
+        EnumOracleOutcome(Vector(oracleInfo), outcome).sigPoint -> adaptorSig),
       partialSig(fundingPubKey, sigHashByte = false))
   }
 

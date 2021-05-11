@@ -51,9 +51,10 @@ class SetupDLCTest extends BitcoinSJvmTest {
       refundTx: WitnessTransaction = validRefundTx): SetupDLC = {
     SetupDLC(
       fundingTx = fundingTx,
-      cets = Vector(
-        EnumOracleOutcome(Vector(oracleInfo), EnumOutcome("WIN")) -> cet0,
-        EnumOracleOutcome(Vector(oracleInfo), EnumOutcome("LOSE")) -> cet1),
+      cets = Vector(EnumOracleOutcome(Vector(oracleInfo),
+                                      EnumOutcome("WIN")).sigPoint -> cet0,
+                    EnumOracleOutcome(Vector(oracleInfo),
+                                      EnumOutcome("LOSE")).sigPoint -> cet1),
       refundTx = refundTx
     )
   }
