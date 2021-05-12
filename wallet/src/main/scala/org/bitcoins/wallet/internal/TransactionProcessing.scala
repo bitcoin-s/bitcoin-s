@@ -450,7 +450,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   }
 
   private def getRelevantOutputs(
-      transaction: Transaction): Future[Seq[OutputWithIndex]] = {
+      transaction: Transaction): Future[Vector[OutputWithIndex]] = {
     val spks = transaction.outputs.map(_.scriptPubKey)
     scriptPubKeyDAO.findScriptPubKeys(spks.toVector).map { addrs =>
       val withIndex =
@@ -459,7 +459,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
         case (out, idx)
             if addrs.map(_.scriptPubKey).contains(out.scriptPubKey) =>
           OutputWithIndex(out, idx)
-      }
+      }.toVector
     }
   }
 
