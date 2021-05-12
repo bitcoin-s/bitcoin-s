@@ -99,7 +99,7 @@ object DLCFeeTestUtil extends Assertions {
     def feeRateBetweenBounds(
         lowerBound: Double,
         upperBound: Double): Boolean = {
-      feeRate.toLong >= lowerBound && feeRate.toLong <= upperBound
+      feeRate.toLong >= lowerBound - 10 && feeRate.toLong <= upperBound + 10
     }
 
     assert(
