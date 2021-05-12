@@ -44,6 +44,8 @@ checkout [this page](build-oracle-server.md).
   - `outcome` - Number to sign for this event
 - `getsignatures` `event` - Get the signatures from a signed event
   - `eventName` - The event's name
+- `signmessage` `message` - Signs the SHA256 hash of the given string using the oracle's signing key
+  - `message` - Message to hash and sign
   
 ### Create Event Example
 

@@ -13,6 +13,28 @@ import java.time.Instant
 import scala.util.control.NonFatal
 import scala.util.{Failure, Try}
 
+case class SignMessage(message: String)
+
+object SignMessage extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SignMessage] = {
+    jsArr.arr.toList match {
+      case strJs :: Nil =>
+        Try {
+          val message = strJs.str
+
+          SignMessage(message)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing message argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
 case class CreateEvent(
     label: String,
     maturationTime: Instant,
