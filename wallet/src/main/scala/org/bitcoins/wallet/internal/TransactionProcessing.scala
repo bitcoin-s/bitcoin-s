@@ -473,7 +473,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       newTags: Vector[AddressTag]): Future[Seq[SpendingInfoDb]] = {
     val outputsF = getRelevantOutputs(transaction)
     outputsF.flatMap {
-      case Nil =>
+      case Vector() =>
         logger.trace(
           s"Found no outputs relevant to us in transaction${transaction.txIdBE.hex}")
         Future.successful(Vector.empty)
