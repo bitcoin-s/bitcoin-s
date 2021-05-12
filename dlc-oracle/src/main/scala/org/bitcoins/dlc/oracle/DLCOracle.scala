@@ -18,6 +18,7 @@ import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.dlc.oracle.util.EventDbUtil
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
+import scodec.bits.ByteVector
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -371,6 +372,12 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
       signSig <- signSigF
       digitSigs <- Future.sequence(digitSigFs)
     } yield OracleEvent.fromEventDbs(signSig ++ digitSigs)
+  }
+
+  /** @inheritdoc */
+  def signMessage(message: ByteVector): SchnorrDigitalSignature = {
+    val hash = CryptoUtil.sha256(message)
+    signingKey.schnorrSign(hash.bytes)
   }
 
   /** Deletes attestations for the given event

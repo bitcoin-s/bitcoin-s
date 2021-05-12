@@ -60,6 +60,13 @@ class DLCOracleTest extends DLCOracleFixture {
     }
   }
 
+  it must "correctly sign a message" in { dlcOracle: DLCOracle =>
+    val message = "hello world"
+    val signature = dlcOracle.signMessage(message)
+    assert(
+      dlcOracle.publicKey.verify(CryptoUtil.sha256(message).bytes, signature))
+  }
+
   it must "get the correctly sorted nonces in an announcement " in {
     dlcOracle: DLCOracle =>
       val eventName = "test"

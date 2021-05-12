@@ -6,7 +6,8 @@ import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.dlc.SigningVersion
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.crypto.{SchnorrNonce, SchnorrPublicKey}
+import org.bitcoins.crypto._
+import scodec.bits.ByteVector
 
 import java.time.Instant
 import scala.concurrent.Future
@@ -76,4 +77,12 @@ trait DLCOracleApi {
     * the oracle private key will be revealed.
     */
   def deleteAttestations(oracleEventTLV: OracleEventTLV): Future[OracleEvent]
+
+  /** Signs the SHA256 hash of the given string using the oracle's signing key */
+  def signMessage(message: String): SchnorrDigitalSignature = {
+    signMessage(CryptoUtil.serializeForHash(message))
+  }
+
+  /** Signs the SHA256 hash of the given bytes using the oracle's signing key */
+  def signMessage(message: ByteVector): SchnorrDigitalSignature
 }

@@ -232,6 +232,17 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
           }
       }
 
+    case ServerCommand("signmessage", arr) =>
+      SignMessage.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(SignMessage(message)) =>
+          complete {
+            val signature = oracle.signMessage(message)
+            Server.httpSuccess(signature.hex)
+          }
+      }
+
     case ServerCommand("keymanagerpassphrasechange", arr) =>
       KeyManagerPassphraseChange.fromJsArr(arr) match {
         case Failure(err) =>

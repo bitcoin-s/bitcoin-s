@@ -319,5 +319,22 @@ class OracleRoutesSpec
           String] == s"""{"result":"${dummyAttestmentTLV.hex}","error":null}""")
       }
     }
+
+    "sign message" in {
+      (mockOracleApi
+        .signMessage(_: String))
+        .expects("message")
+        .returning(sig)
+
+      val route =
+        oracleRoutes.handleCommand(
+          ServerCommand("signmessage", Arr(Str("message"))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == s"""{"result":"${sig.hex}","error":null}""")
+      }
+    }
   }
 }

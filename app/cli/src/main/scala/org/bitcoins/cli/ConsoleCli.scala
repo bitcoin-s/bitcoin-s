@@ -1313,6 +1313,20 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("signmessage")
+        .action((_, conf) => conf.copy(command = SignMessage("")))
+        .text("Signs the SHA256 hash of the given string using the oracle's signing key")
+        .children(
+          arg[String]("message")
+            .text("Message to hash and sign")
+            .required()
+            .action((msg, conf) =>
+              conf.copy(command = conf.command match {
+                case signMessage: SignMessage =>
+                  signMessage.copy(message = msg)
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== Util ==="),
       cmd("createmultisig")
         .action((_, conf) =>
@@ -1627,6 +1641,9 @@ object ConsoleCli {
         RequestParam("signdigits", Seq(up.writeJs(eventName), up.writeJs(num)))
       case GetSignatures(eventName) =>
         RequestParam("getsignatures", Seq(up.writeJs(eventName)))
+
+      case SignMessage(message) =>
+        RequestParam("signmessage", Seq(up.writeJs(message)))
 
       case CreateMultisig(requiredKeys, keys, addressType) =>
         RequestParam("createmultisig",
@@ -1997,4 +2014,6 @@ object CliCommand {
       extends OracleServerCliCommand
 
   case class GetSignatures(eventName: String) extends OracleServerCliCommand
+
+  case class SignMessage(message: String) extends OracleServerCliCommand
 }
