@@ -61,7 +61,8 @@ abstract class CachedHttpFeeRateProvider[T <: FeeUnit]
         updateFeeRate()
       case Some((cachedFeeRate, time)) =>
         val now = TimeUtil.now
-        if (time.plus(cacheDuration).isAfter(now)) {
+        val timeout = time.plus(cacheDuration)
+        if (now.isAfter(timeout)) {
           updateFeeRate()
         } else {
           Future.successful(cachedFeeRate)
