@@ -181,7 +181,7 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
     for {
       utxo <- WalletTestUtil.insertLegacyUTXO(daos,
                                               state = TxoState.DoesNotExist)
-      foundTxos <- spendingInfoDAO.findTx(utxo.txid)
+      foundTxos <- spendingInfoDAO.findOutputsReceived(utxo.txid)
     } yield assert(foundTxos.contains(utxo))
 
   }

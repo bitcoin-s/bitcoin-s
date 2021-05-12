@@ -188,24 +188,24 @@ case class SpendingInfoDAO()(implicit
     * the given TX
     */
   def findTx(tx: Transaction): Future[Vector[SpendingInfoDb]] =
-    findTx(tx.txIdBE)
+    findOutputsReceived(tx.txIdBE)
+
+  private def _findOutputsBeingSpent(
+      tx: Transaction): Future[Vector[UTXORecord]] = {
+    val filtered = table
+      .filter { case txo =>
+        txo.outPoint.inSet(tx.inputs.map(_.previousOutput))
+      }
+
+    safeDatabase.runVec(filtered.result)
+  }
 
   /** Finds all the outputs being spent in the given
     * transaction
     */
-  def findOutputsBeingSpent(tx: Transaction): Future[Seq[SpendingInfoDb]] = {
-
-    def _findOutputsBeingSpent: Future[Seq[UTXORecord]] = {
-      val filtered = table
-        .filter { case txo =>
-          txo.outPoint.inSet(tx.inputs.map(_.previousOutput))
-        }
-
-      safeDatabase.run(filtered.result)
-    }
-
+  def findOutputsBeingSpent(tx: Transaction): Future[Vector[SpendingInfoDb]] = {
     for {
-      utxos <- _findOutputsBeingSpent
+      utxos <- _findOutputsBeingSpent(tx)
       spks <- findScriptPubKeysByUtxos(utxos)
     } yield {
       utxos.map(utxo =>
@@ -246,14 +246,17 @@ case class SpendingInfoDAO()(implicit
     safeDatabase.runVec(query.result)
   }
 
+  /** Joins the spk table on the spending info table with the spk id */
+  private val spkJoinQuery = table
+    .join(spkTable)
+    .on(_.scriptPubKeyId === _.id)
+
   /** Fetches all the incoming TXOs in our DB that are in
     * the transaction with the given TXID
     */
-  def findTx(txid: DoubleSha256DigestBE): Future[Vector[SpendingInfoDb]] = {
-    val query = table
-      .join(spkTable)
-      .on(_.scriptPubKeyId === _.id)
-    val filtered = query.filter(_._1.txid === txid)
+  def findOutputsReceived(
+      txid: DoubleSha256DigestBE): Future[Vector[SpendingInfoDb]] = {
+    val filtered = spkJoinQuery.filter(_._1.txid === txid)
     safeDatabase
       .runVec(filtered.result)
       .map(res =>
@@ -264,10 +267,7 @@ case class SpendingInfoDAO()(implicit
 
   def findByScriptPubKey(
       scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]] = {
-    val query = table
-      .join(spkTable)
-      .on(_.scriptPubKeyId === _.id)
-    val filtered = query.filter(_._2.scriptPubKey === scriptPubKey)
+    val filtered = spkJoinQuery.filter(_._2.scriptPubKey === scriptPubKey)
     safeDatabase
       .runVec(filtered.result)
       .map(res =>
@@ -424,7 +424,7 @@ case class SpendingInfoDAO()(implicit
   }
 
   private def findScriptPubKeysByUtxos(
-      utxos: Seq[UTXORecord]): Future[Map[Long, ScriptPubKeyDb]] = {
+      utxos: Vector[UTXORecord]): Future[Map[Long, ScriptPubKeyDb]] = {
     val ids = utxos.map(_.scriptPubKeyId)
     findScriptPubKeys(ids)
   }
