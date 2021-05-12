@@ -49,7 +49,15 @@ object InitEnumOfferDialog {
       hgap = 5
       vgap = 5
 
-      add(new Label("Oracle Announcement"), 0, 0)
+      add(
+        new Label("Oracle Announcement") {
+          tooltip = Tooltip(
+            "Announcement given by an oracle, this will dictate the rest of the contract.")
+          tooltip.value.setShowDelay(new javafx.util.Duration(100))
+        },
+        0,
+        0
+      )
       add(announcementTF, 1, 0)
     }
 
@@ -62,6 +70,9 @@ object InitEnumOfferDialog {
       }
       val amtTF = new TextField() {
         promptText = "Bitcoins"
+        tooltip = Tooltip(
+          s"""Amount you will win if the oracle signs for "$outcomeText".""")
+        tooltip.value.setShowDelay(new javafx.util.Duration(100))
       }
       setNumericInput(amtTF)
 
@@ -86,15 +97,39 @@ object InitEnumOfferDialog {
     val refundDatePicker = new DatePicker()
 
     def addRemainingFields(): Unit = {
-      gridPane.add(new Label("Your Collateral"), 0, nextRow)
+      gridPane.add(
+        new Label("Your Collateral") {
+          tooltip =
+            Tooltip("How much funds you will be putting up for this DLC.")
+          tooltip.value.setShowDelay(new javafx.util.Duration(100))
+        },
+        0,
+        nextRow
+      )
       gridPane.add(collateralTF, 1, nextRow)
       nextRow += 1
 
-      gridPane.add(new Label("Fee Rate (sats/vbyte)"), 0, nextRow)
+      gridPane.add(
+        new Label("Fee Rate (sats/vbyte)") {
+          tooltip = Tooltip(
+            "Fee rate to be used for both funding and closing transactions.")
+          tooltip.value.setShowDelay(new javafx.util.Duration(100))
+        },
+        0,
+        nextRow
+      )
       gridPane.add(feeRateTF, 1, nextRow)
       nextRow += 1
 
-      gridPane.add(new Label("Refund Date"), 0, nextRow)
+      gridPane.add(
+        new Label("Refund Date") {
+          tooltip = Tooltip(
+            "If no oracle signatures are given, the DLC can be refunded after this date.")
+          tooltip.value.setShowDelay(new javafx.util.Duration(100))
+        },
+        0,
+        nextRow
+      )
       gridPane.add(refundDatePicker, 1, nextRow)
       nextRow += 1
     }
