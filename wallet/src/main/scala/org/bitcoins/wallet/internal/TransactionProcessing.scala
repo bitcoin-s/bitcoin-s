@@ -219,7 +219,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     */
   protected def processSpentUtxos(
       transaction: Transaction,
-      outputsBeingSpent: Seq[SpendingInfoDb],
+      outputsBeingSpent: Vector[SpendingInfoDb],
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[
     Vector[SpendingInfoDb]] = {
     for {
