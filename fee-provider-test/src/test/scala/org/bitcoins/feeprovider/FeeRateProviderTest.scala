@@ -1,5 +1,6 @@
 package org.bitcoins.feeprovider
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -8,6 +9,7 @@ import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class FeeRateProviderTest extends BitcoinSAsyncTest {
 
@@ -42,9 +44,10 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
   }
 
   it must "get a cached fee rate from a cachedHttpFeeRateProvider" in {
-    val provider = BitcoinerLiveFeeRateProvider(60)
+    val provider = MempoolSpaceProvider(FastestFeeTarget)
     for {
       feeRate <- provider.getFeeRate
+      _ <- AsyncUtil.nonBlockingSleep(20.seconds)
       cached <- provider.getFeeRate
     } yield assert(feeRate == cached)
   }
