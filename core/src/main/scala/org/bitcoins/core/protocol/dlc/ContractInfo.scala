@@ -134,19 +134,16 @@ case class ContractInfo(
 
   /** Maps adpator points to their corresponding OracleOutcomes (which correspond to CETs) */
   lazy val sigPointMap: Map[ECPublicKey, OracleOutcome] =
-    allOutcomes.zipWithIndex.map { case (outcome, index) =>
-      adaptorPoints(index) -> outcome
-    }.toMap
+    adaptorPoints.zip(allOutcomes).toMap
 
   /** Map OracleOutcomes (which correspond to CETs) to their adpator point and payouts */
   lazy val outcomeMap: Map[OracleOutcome, (ECPublicKey, Satoshis, Satoshis)] = {
     val builder =
       HashMap.newBuilder[OracleOutcome, (ECPublicKey, Satoshis, Satoshis)]
 
-    allOutcomesAndPayouts.zipWithIndex.foreach {
-      case ((outcome, offerPayout), index) =>
+    allOutcomesAndPayouts.zip(adaptorPoints).foreach {
+      case ((outcome, offerPayout), adaptorPoint) =>
         val acceptPayout = (totalCollateral - offerPayout).satoshis
-        val adaptorPoint = adaptorPoints(index)
 
         builder.+=((outcome, (adaptorPoint, offerPayout, acceptPayout)))
     }

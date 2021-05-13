@@ -108,7 +108,5 @@ object NumericOracleOutcome {
   }
 }
 
-/** An oracle outcome and it's corresponding CET */
-case class OutcomeCETPair(outcome: OracleOutcome, wtx: WitnessTransaction)
-
+/** An adaptor point and it's corresponding CET */
 case class AdaptorPointCETPair(sigPoint: ECPublicKey, wtx: WitnessTransaction)

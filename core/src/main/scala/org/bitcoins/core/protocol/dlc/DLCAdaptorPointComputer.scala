@@ -13,10 +13,15 @@ import org.bitcoins.crypto.{
 }
 import scodec.bits.ByteVector
 
+/** Responsible for optimized computation of DLC adaptor point batches. */
 object DLCAdaptorPointComputer {
 
   private val base: Int = 2
 
+  /** Computes:
+    *     nonce + outcomeHash*pubKey
+    * where outcomeHash is as specified in the DLC spec.
+    */
   def computePoint(
       pubKey: SchnorrPublicKey,
       nonce: ECPublicKey,
@@ -31,7 +36,11 @@ object DLCAdaptorPointComputer {
     nonce.add(pubKey.publicKey.tweakMultiply(FieldElement(hash)))
   }
 
+  /** Efficiently computes all adaptor points, in order, for a given ContractInfo.
+    * @see https://medium.com/crypto-garage/optimizing-numeric-outcome-dlc-creation-6d6091ac0e47
+    */
   def computeAdaptorPoints(contractInfo: ContractInfo): Vector[ECPublicKey] = {
+    // The possible messages a single nonce may be used to sign
     val possibleOutcomes: Vector[ByteVector] =
       contractInfo.contractDescriptor match {
         case enum: EnumContractDescriptor =>
@@ -45,6 +54,7 @@ object DLCAdaptorPointComputer {
       }
 
     // Oracle -> Nonce -> Outcome -> SubSigPoint
+    // These are the points that are then combined to construct aggregate points.
     val preComputeTable: Vector[Vector[Vector[ECPublicKey]]] =
       contractInfo.oracleInfo.singleOracleInfos.map { info =>
         val announcement = info.announcement
@@ -61,6 +71,7 @@ object DLCAdaptorPointComputer {
     val oraclesAndOutcomes = contractInfo.allOutcomes.map(_.oraclesAndOutcomes)
 
     oraclesAndOutcomes.map { oracleAndOutcome =>
+      // For the given oracleAndOutcome, look up the point in the preComputeTable
       val subSigPoints = oracleAndOutcome.flatMap { case (info, outcome) =>
         val oracleIndex =
           contractInfo.oracleInfo.singleOracleInfos.indexOf(info)
@@ -70,7 +81,8 @@ object DLCAdaptorPointComputer {
               contractInfo.contractDescriptor
                 .asInstanceOf[EnumContractDescriptor]
                 .keys
-                .indexOf(outcome))
+                .indexOf(outcome)
+            )
           case UnsignedNumericOutcome(digits) => digits
           case _: SignedNumericOutcome =>
             throw new UnsupportedOperationException(
@@ -82,6 +94,7 @@ object DLCAdaptorPointComputer {
         }
       }
 
+      // TODO: Memoization of sub-combinations for further optimization!
       CryptoUtil.combinePubKeys(subSigPoints)
     }
   }
