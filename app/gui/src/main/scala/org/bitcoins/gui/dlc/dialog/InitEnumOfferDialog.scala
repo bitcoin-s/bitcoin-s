@@ -127,7 +127,9 @@ object InitEnumOfferDialog {
       }
     }
 
-    dialog.dialogPane().content = new VBox(gridPane)
+    dialog.dialogPane().content = new ScrollPane {
+      content = new VBox(gridPane)
+    }
 
     // When the OK button is clicked, convert the result to a CreateDLCOffer.
     dialog.resultConverter = dialogButton =>
