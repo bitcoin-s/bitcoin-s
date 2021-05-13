@@ -297,24 +297,20 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           val offer = offerDb.toDLCOffer(fundingInputs)
           val accept = acceptDbOpt
             .map(
-              _.toDLCAccept(
-                fundingInputs,
-                sigDbs
-                  .filter(!_.isInitiator)
-                  .map(dbSig =>
-                    (offerDb.contractInfo.sigPointMap(dbSig.sigPoint),
-                     dbSig.signature)),
-                acceptRefundSigOpt.get))
+              _.toDLCAccept(fundingInputs,
+                            sigDbs
+                              .filter(!_.isInitiator)
+                              .map(dbSig => (dbSig.sigPoint, dbSig.signature)),
+                            acceptRefundSigOpt.get))
             .get
 
           val initSigs = sigDbs.filter(_.isInitiator)
 
           val sign: DLCSign = {
             val cetSigs: CETSignatures =
-              CETSignatures(initSigs.map(dbSig =>
-                              (offerDb.contractInfo.sigPointMap(dbSig.sigPoint),
-                               dbSig.signature)),
-                            offerRefundSigOpt.get)
+              CETSignatures(
+                initSigs.map(dbSig => (dbSig.sigPoint, dbSig.signature)),
+                offerRefundSigOpt.get)
 
             val contractId = dlcDb.contractIdOpt.get
             val fundingSigs =
@@ -660,12 +656,9 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             val inputRefs = matchPrevTxsWithInputs(fundingInputs, prevTxs)
             val outcomeSigs = outcomeSigDbs.map(_.toTuple)
 
-            dlcAcceptDb.toDLCAccept(
-              inputRefs,
-              outcomeSigs.map { case (sigPoint, sig) =>
-                offer.contractInfo.sigPointMap(sigPoint) -> sig
-              },
-              refundSigDb.get.refundSig)
+            dlcAcceptDb.toDLCAccept(inputRefs,
+                                    outcomeSigs,
+                                    refundSigDb.get.refundSig)
           }
         case None =>
           createNewDLCAccept(dlc, account, collateral, offer)
@@ -761,10 +754,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
       )
 
       sigsDbs = cetSigs.outcomeSigs.map(sig =>
-        DLCCETSignatureDb(dlc.paramHash,
-                          isInitiator = false,
-                          sig._1.sigPoint,
-                          sig._2))
+        DLCCETSignatureDb(dlc.paramHash, isInitiator = false, sig._1, sig._2))
 
       refundSigDb =
         DLCRefundSigDb(dlc.paramHash, isInitiator = false, cetSigs.refundSig)
@@ -867,10 +857,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
         val sigsDbs = accept.cetSigs.outcomeSigs
           .map(sig =>
-            DLCCETSignatureDb(paramHash,
-                              isInitiator = false,
-                              sig._1.sigPoint,
-                              sig._2))
+            DLCCETSignatureDb(paramHash, isInitiator = false, sig._1, sig._2))
 
         val refundSigDb = DLCRefundSigDb(paramHash,
                                          isInitiator = false,
@@ -967,7 +954,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
             sigDbs = sigs.outcomeSigs.map(sig =>
               DLCCETSignatureDb(dlc.paramHash,
                                 isInitiator = true,
-                                sig._1.sigPoint,
+                                sig._1,
                                 sig._2))
             _ <- dlcSigsDAO.createAll(sigDbs)
           } yield sigs
@@ -975,8 +962,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         } else {
           logger.debug(s"CET Sigs already created for ${contractId.toHex}")
           val outcomeSigs = mySigs.map { dbSig =>
-            signer.builder.contractInfo.sigPointMap(
-              dbSig.sigPoint) -> dbSig.signature
+            dbSig.sigPoint -> dbSig.signature
           }
           dlcRefundSigDAO
             .findByParamHash(dlc.paramHash, isInit = true)
@@ -1002,12 +988,12 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
 
   def verifyCETSigs(accept: DLCAccept): Future[Boolean] = {
     verifierFromAccept(accept).flatMap(
-      _.verifyCETSigs(accept.cetSigs.outcomeSigs))
+      _.verifyCETSigs(accept.cetSigs.indexedOutcomeSigs))
   }
 
   def verifyCETSigs(sign: DLCSign): Future[Boolean] = {
     verifierFromDb(sign.contractId).flatMap(
-      _.verifyCETSigs(sign.cetSigs.outcomeSigs))
+      _.verifyCETSigs(sign.cetSigs.indexedOutcomeSigs))
   }
 
   def verifyRefundSig(accept: DLCAccept): Future[Boolean] = {
@@ -1111,7 +1097,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
           .map(sig =>
             DLCCETSignatureDb(dlc.paramHash,
                               isInitiator = true,
-                              sig._1.sigPoint,
+                              sig._1,
                               sig._2))
 
         logger.info(
@@ -1408,9 +1394,7 @@ abstract class DLCWallet extends Wallet with AnyDLCHDWalletApi {
         // Filter for only counter party's outcome sigs
         val outcomeSigs = outcomeSigDbs
           .filter(_.isInitiator == !dlcDb.isInitiator)
-          .map { dbSig =>
-            dlcOffer.contractInfo.sigPointMap(dbSig.sigPoint) -> dbSig.signature
-          }
+          .map { dbSig => dbSig.sigPoint -> dbSig.signature }
 
         val refundSig =
           refundSigs.find(_.isInitiator == !dlcDb.isInitiator).get.refundSig

@@ -4,7 +4,7 @@ import org.bitcoins.core.protocol.script.ScriptWitnessV0
 import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.util.SeqWrapper
+import org.bitcoins.core.util.{Indexed, SeqWrapper}
 import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey}
 
 sealed trait DLCSignatures
@@ -40,6 +40,12 @@ case class CETSignatures(
     extends DLCSignatures {
   lazy val keys: Vector[ECPublicKey] = outcomeSigs.map(_._1)
   lazy val adaptorSigs: Vector[ECAdaptorSignature] = outcomeSigs.map(_._2)
+
+  def indexedOutcomeSigs: Vector[(Indexed[ECPublicKey], ECAdaptorSignature)] = {
+    outcomeSigs.zipWithIndex.map { case ((adaptorPoint, sig), index) =>
+      (Indexed(adaptorPoint, index), sig)
+    }
+  }
 
   def apply(key: ECPublicKey): ECAdaptorSignature = {
     outcomeSigs

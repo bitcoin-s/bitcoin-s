@@ -20,7 +20,7 @@ case class DLCAcceptDb(
 
   def toDLCAccept(
       fundingInputs: Vector[DLCFundingInput],
-      outcomeSigs: Vector[(OracleOutcome, ECAdaptorSignature)],
+      outcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)],
       refundSig: PartialSignature): DLCAccept = {
     val pubKeys =
       DLCPublicKeys(fundingKey, finalAddress)

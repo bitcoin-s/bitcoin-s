@@ -895,10 +895,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     val dummyOutcomeSigs =
       Vector(
-        EnumOracleOutcome(Vector(oracleInfo),
-                          EnumOutcome(winStr)) -> ECAdaptorSignature.dummy,
-        EnumOracleOutcome(Vector(oracleInfo),
-                          EnumOutcome(loseStr)) -> ECAdaptorSignature.dummy
+        EnumOracleOutcome(
+          Vector(oracleInfo),
+          EnumOutcome(winStr)).sigPoint -> ECAdaptorSignature.dummy,
+        EnumOracleOutcome(
+          Vector(oracleInfo),
+          EnumOutcome(loseStr)).sigPoint -> ECAdaptorSignature.dummy
       )
 
     val contractInfo = ContractInfo(contractDesc, oracleInfo)

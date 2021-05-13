@@ -155,12 +155,14 @@ object DLCWalletUtil {
   lazy val sampleDLCParamHash: Sha256DigestBE =
     DLCMessage.calcParamHash(sampleContractInfo, dummyTimeouts)
 
-  lazy val dummyOutcomeSigs: Vector[(EnumOracleOutcome, ECAdaptorSignature)] =
+  lazy val dummyOutcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)] =
     Vector(
-      EnumOracleOutcome(Vector(sampleOracleInfo),
-                        EnumOutcome(winStr)) -> ECAdaptorSignature.dummy,
-      EnumOracleOutcome(Vector(sampleOracleInfo),
-                        EnumOutcome(loseStr)) -> ECAdaptorSignature.dummy
+      EnumOracleOutcome(
+        Vector(sampleOracleInfo),
+        EnumOutcome(winStr)).sigPoint -> ECAdaptorSignature.dummy,
+      EnumOracleOutcome(
+        Vector(sampleOracleInfo),
+        EnumOutcome(loseStr)).sigPoint -> ECAdaptorSignature.dummy
     )
 
   lazy val dummyCETSigs: CETSignatures =
