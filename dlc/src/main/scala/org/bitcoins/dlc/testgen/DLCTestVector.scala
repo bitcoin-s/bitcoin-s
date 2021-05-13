@@ -17,6 +17,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.util.Indexed
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
@@ -182,13 +183,13 @@ case class ValidTestInputs(
   def buildTransactions: DLCTransactions = {
     val builder = this.builder
     val fundingTx = builder.buildFundingTx
-    val cets =
+    val adaptorPoints =
       params.contractInfo
         .map(_.preImage)
         .map(EnumOutcome.apply)
         .map(outcome => EnumOracleOutcome(Vector(params.oracleInfo), outcome))
         .map(_.sigPoint)
-        .map(builder.buildCET)
+    val cets = builder.buildCETs(Indexed(adaptorPoints))
     val refundTx = builder.buildRefundTx
 
     DLCTransactions(fundingTx, cets, refundTx)

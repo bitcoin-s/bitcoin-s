@@ -4,6 +4,7 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
+import org.bitcoins.core.util.Indexed
 import org.bitcoins.crypto.{AdaptorSign, ECPublicKey}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
@@ -50,7 +51,7 @@ case class DLCExecutor(signer: DLCTxSigner) {
     }
 
     val CETSignatures(outcomeSigs, refundSig) = cetSigs
-    val msgs = outcomeSigs.map(_._1)
+    val msgs = Indexed(outcomeSigs.map(_._1))
     val cets = cetsOpt match {
       case Some(cets) => cets
       case None       => builder.buildCETs(msgs)

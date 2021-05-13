@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, Indexed}
 import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey}
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
@@ -34,7 +34,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
 
   /** Verifies remote's CET signature for a given outcome hash */
   def verifyCETSig(
-      adaptorPoint: ECPublicKey,
+      adaptorPoint: Indexed[ECPublicKey],
       sig: ECAdaptorSignature): Boolean = {
     val remoteFundingPubKey = if (isInitiator) {
       builder.acceptFundingKey
@@ -43,7 +43,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
     }
     val cet = builder.buildCET(adaptorPoint)
 
-    DLCSignatureVerifier.validateCETSignature(adaptorPoint,
+    DLCSignatureVerifier.validateCETSignature(adaptorPoint.element,
                                               sig,
                                               remoteFundingPubKey,
                                               fundingTx,
@@ -51,14 +51,14 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
                                               cet)
   }
 
-  def verifyCETSigs(sigs: Vector[(ECPublicKey, ECAdaptorSignature)])(implicit
-      ec: ExecutionContext): Future[Boolean] = {
+  def verifyCETSigs(sigs: Vector[(Indexed[ECPublicKey], ECAdaptorSignature)])(
+      implicit ec: ExecutionContext): Future[Boolean] = {
     val correctNumberOfSigs =
       sigs.size >= builder.contractInfo.allOutcomes.length
 
     def runVerify(
-        outcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)]): Future[
-      Boolean] = {
+        outcomeSigs: Vector[
+          (Indexed[ECPublicKey], ECAdaptorSignature)]): Future[Boolean] = {
       Future {
         outcomeSigs.foldLeft(true) { case (ret, (outcome, sig)) =>
           ret && verifyCETSig(outcome, sig)

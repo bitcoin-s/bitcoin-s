@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.dlc._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
+import org.bitcoins.core.util.Indexed
 import org.bitcoins.core.wallet.builder.DualFundingTxFinalizer
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
@@ -167,12 +168,16 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
   /** Constructs the unsigned Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(adaptorPoint: ECPublicKey): WitnessTransaction = {
+  def buildCET(adaptorPoint: Indexed[ECPublicKey]): WitnessTransaction = {
     buildCETs(Vector(adaptorPoint)).head
   }
 
-  def buildCETsMap(
-      adaptorPoints: Vector[ECPublicKey]): Vector[AdaptorPointCETPair] = {
+  def buildCET(adaptorPoint: ECPublicKey, index: Int): WitnessTransaction = {
+    buildCET(Indexed(adaptorPoint, index))
+  }
+
+  def buildCETsMap(adaptorPoints: Vector[Indexed[ECPublicKey]]): Vector[
+    AdaptorPointCETPair] = {
     DLCTxBuilder
       .buildCETs(
         adaptorPoints,
@@ -189,8 +194,8 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
       )
   }
 
-  def buildCETs(
-      adaptorPoints: Vector[ECPublicKey]): Vector[WitnessTransaction] = {
+  def buildCETs(adaptorPoints: Vector[Indexed[ECPublicKey]]): Vector[
+    WitnessTransaction] = {
     buildCETsMap(adaptorPoints).map(_.wtx)
   }
 
@@ -315,7 +320,7 @@ object DLCTxBuilder {
   }
 
   def buildCET(
-      adaptorPoint: ECPublicKey,
+      adaptorPoint: Indexed[ECPublicKey],
       contractInfo: ContractInfo,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
@@ -342,7 +347,7 @@ object DLCTxBuilder {
   }
 
   def buildCETs(
-      adaptorPoints: Vector[ECPublicKey],
+      adaptorPoints: Vector[Indexed[ECPublicKey]],
       contractInfo: ContractInfo,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
@@ -363,14 +368,17 @@ object DLCTxBuilder {
                     timeouts,
                     fundingOutputRef)
 
-    adaptorPoints.zip(contractInfo.allOutcomes).map {
-      case (sigPoint, outcome) =>
-        AdaptorPointCETPair(sigPoint, builder.buildCET(outcome))
+    val outcomes = adaptorPoints.map { case Indexed(_, index) =>
+      contractInfo.allOutcomes(index)
+    }
+
+    adaptorPoints.zip(outcomes).map { case (Indexed(sigPoint, _), outcome) =>
+      AdaptorPointCETPair(sigPoint, builder.buildCET(outcome))
     }
   }
 
   def buildCETs(
-      adaptorPoints: Vector[ECPublicKey],
+      adaptorPoints: Vector[Indexed[ECPublicKey]],
       contractInfo: ContractInfo,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,

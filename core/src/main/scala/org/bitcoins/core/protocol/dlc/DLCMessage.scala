@@ -308,9 +308,7 @@ object DLCMessage {
         accept: DLCAcceptTLV,
         network: NetworkParameters,
         contractInfo: ContractInfo): DLCAccept = {
-      fromTLV(accept,
-              network,
-              DLCAdaptorPointComputer.computeAdaptorPoints(contractInfo))
+      fromTLV(accept, network, contractInfo.adaptorPoints)
     }
 
     def fromTLV(accept: DLCAcceptTLV, offer: DLCOffer): DLCAccept = {
@@ -378,7 +376,7 @@ object DLCMessage {
     def fromTLV(sign: DLCSignTLV, offer: DLCOffer): DLCSign = {
       fromTLV(sign,
               offer.pubKeys.fundingKey,
-              DLCAdaptorPointComputer.computeAdaptorPoints(offer.contractInfo),
+              offer.contractInfo.adaptorPoints,
               offer.fundingInputs.map(_.outPoint))
     }
 

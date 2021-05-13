@@ -73,8 +73,7 @@ object DLCUtil {
       localAdaptorSigs: Vector[(ECPublicKey, ECAdaptorSignature)],
       cet: WitnessTransaction): Option[
     (SchnorrDigitalSignature, OracleOutcome)] = {
-    val allAdaptorPoints =
-      DLCAdaptorPointComputer.computeAdaptorPoints(contractInfo)
+    val allAdaptorPoints = contractInfo.adaptorPoints
 
     val cetSigs = cet.witness.head
       .asInstanceOf[P2WSHWitnessV0]
@@ -99,12 +98,7 @@ object DLCUtil {
         Math.abs((amts.head - outcomeValues.head).satoshis.toLong) <= 1 && Math
           .abs((amts.last - outcomeValues.last).satoshis.toLong) <= 1
       }
-      .map { case ((outcome, _), index) =>
-        val sigPoint = allAdaptorPoints(index)
-        require(outcome.sigPoint == sigPoint, "Something went wrong.")
-
-        sigPoint
-      }
+      .map { case (_, index) => allAdaptorPoints(index) }
 
     val (offerCETSig, acceptCETSig) =
       if (offerFundingKey.hex.compareTo(acceptFundingKey.hex) > 0) {
@@ -126,7 +120,6 @@ object DLCUtil {
     computeOutcome(cetSig, outcomeSigs).map { case (s, adaptorPoint) =>
       val index = allAdaptorPoints.indexOf(adaptorPoint)
       val outcome: OracleOutcome = contractInfo.allOutcomes(index)
-      require(outcome.sigPoint == adaptorPoint, "Something went wrong.")
 
       (SchnorrDigitalSignature(outcome.aggregateNonce, s), outcome)
     }
