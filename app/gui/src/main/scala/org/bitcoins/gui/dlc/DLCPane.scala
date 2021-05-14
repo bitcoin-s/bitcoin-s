@@ -1,22 +1,17 @@
 package org.bitcoins.gui.dlc
 
 import javafx.event.{ActionEvent, EventHandler}
-import org.bitcoins.gui.{GlobalData, TaskRunner}
+import org.bitcoins.gui.TaskRunner
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
 class DLCPane(glassPane: VBox) {
 
-  private val statusLabel = new Label {
-    maxWidth = Double.MaxValue
-    padding = Insets(0, 10, 10, 10)
-    text <== GlobalData.statusText
-  }
-
   private val resultTextArea = new TextArea {
     editable = false
-    text = "Click on Offer or Accept to begin."
+    text =
+      "Welcome to the Bitcoin-S DLC Wallet. To set up a new DLC, click Offer, if you have received an Offer, click Accept."
     wrapText = true
   }
 
@@ -159,9 +154,9 @@ class DLCPane(glassPane: VBox) {
   }
 
   val borderPane: BorderPane = new BorderPane {
+    padding = Insets(top = 10, right = 10, bottom = 0, left = 10)
     top = buttonSpacer
     center = textAreasAndTableViewVBox
-    bottom = statusLabel
   }
 
   resultArea.prefWidth <== (borderPane.width * 2) / 3
