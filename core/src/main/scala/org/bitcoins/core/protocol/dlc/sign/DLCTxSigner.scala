@@ -194,11 +194,6 @@ case class DLCTxSigner(
   def createCETSigsAsync()(implicit
       ec: ExecutionContext): Future[CETSignatures] = {
     val outcomes = builder.contractInfo.allOutcomes
-    //divide and conquer
-
-    //we want a batch size of at least 1
-    val size =
-      Math.max(outcomes.length / Runtime.getRuntime.availableProcessors(), 1)
 
     val computeBatchFn: Vector[OracleOutcome] => Future[
       Vector[(OracleOutcome, ECAdaptorSignature)]] = {
@@ -210,8 +205,7 @@ case class DLCTxSigner(
 
     val cetSigsF: Future[Vector[(OracleOutcome, ECAdaptorSignature)]] = {
       FutureUtil.batchAndParallelExecute(elements = outcomes,
-                                         f = computeBatchFn,
-                                         batchSize = size)
+                                         f = computeBatchFn)
     }.map(_.flatten)
 
     for {
@@ -232,11 +226,6 @@ case class DLCTxSigner(
   def createCETsAndCETSigsAsync()(implicit
   ec: ExecutionContext): Future[(CETSignatures, Vector[WitnessTransaction])] = {
     val outcomes = builder.contractInfo.allOutcomes
-    val outcomeBatchSize =
-      outcomes.length / Runtime.getRuntime.availableProcessors()
-    val batchSize =
-      Math.max(outcomeBatchSize, 1) //we have to at least have batchSize of 1
-
     val cetsAndSigsF: Future[Vector[
       Vector[(OracleOutcome, WitnessTransaction, ECAdaptorSignature)]]] = {
       FutureUtil.batchAndParallelExecute[OracleOutcome,
@@ -248,8 +237,7 @@ case class DLCTxSigner(
         f = outcomes =>
           Future {
             buildAndSignCETs(outcomes)
-          },
-        batchSize = batchSize)
+          })
     }
 
     val refundSig = signRefundTx
