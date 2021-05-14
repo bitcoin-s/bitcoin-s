@@ -54,7 +54,7 @@ object Deps {
     // obviously has to be changed before this is
     // merged.
 
-    val sourcecodeV = "0.2.6"
+    val sourcecodeV = "0.2.7"
 
     val scalaJsStubsV = "1.0.0"
     // CLI deps
