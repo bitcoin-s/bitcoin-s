@@ -226,18 +226,20 @@ case class DLCTxSigner(
   def createCETsAndCETSigsAsync()(implicit
   ec: ExecutionContext): Future[(CETSignatures, Vector[WitnessTransaction])] = {
     val outcomes = builder.contractInfo.allOutcomes
+    val fn = { outcomes: Vector[OracleOutcome] =>
+      Future {
+        buildAndSignCETs(outcomes)
+      }
+    }
     val cetsAndSigsF: Future[Vector[
       Vector[(OracleOutcome, WitnessTransaction, ECAdaptorSignature)]]] = {
       FutureUtil.batchAndParallelExecute[OracleOutcome,
                                          Vector[(
                                              OracleOutcome,
                                              WitnessTransaction,
-                                             ECAdaptorSignature)]](
-        elements = outcomes,
-        f = outcomes =>
-          Future {
-            buildAndSignCETs(outcomes)
-          })
+                                             ECAdaptorSignature)]](elements =
+                                                                     outcomes,
+                                                                   f = fn)
     }
 
     val refundSig = signRefundTx
