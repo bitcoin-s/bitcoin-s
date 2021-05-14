@@ -28,8 +28,8 @@ sealed trait OracleOutcome {
   protected def computeSigPoint: ECPublicKey
 
   /** The adaptor point used to encrypt the signatures for this corresponding CET. */
-  def sigPoint: ECPublicKey = {
-    SigPointComputer(() => computeSigPoint).compute
+  lazy val sigPoint: ECPublicKey = {
+    computeSigPoint
   }
 
   /** The sum of all oracle nonces used in execution with this OracleOutcome. */

@@ -194,11 +194,6 @@ case class DLCTxSigner(
   def createCETSigsAsync()(implicit
       ec: ExecutionContext): Future[CETSignatures] = {
     val outcomes = builder.contractInfo.allOutcomes
-    //divide and conquer
-
-    //we want a batch size of at least 1
-    val size =
-      Math.max(outcomes.length / Runtime.getRuntime.availableProcessors(), 1)
 
     val computeBatchFn: Vector[OracleOutcome] => Future[
       Vector[(OracleOutcome, ECAdaptorSignature)]] = {
@@ -210,8 +205,7 @@ case class DLCTxSigner(
 
     val cetSigsF: Future[Vector[(OracleOutcome, ECAdaptorSignature)]] = {
       FutureUtil.batchAndParallelExecute(elements = outcomes,
-                                         f = computeBatchFn,
-                                         batchSize = size)
+                                         f = computeBatchFn)
     }.map(_.flatten)
 
     for {
@@ -225,8 +219,36 @@ case class DLCTxSigner(
     val cetsAndSigs = buildAndSignCETs(builder.contractInfo.allOutcomes)
     val (msgs, cets, sigs) = cetsAndSigs.unzip3
     val refundSig = signRefundTx
-
     (CETSignatures(msgs.zip(sigs), refundSig), cets)
+  }
+
+  /** The equivalent of [[createCETsAndCETSigs()]] but async */
+  def createCETsAndCETSigsAsync()(implicit
+  ec: ExecutionContext): Future[(CETSignatures, Vector[WitnessTransaction])] = {
+    val outcomes = builder.contractInfo.allOutcomes
+    val fn = { outcomes: Vector[OracleOutcome] =>
+      Future {
+        buildAndSignCETs(outcomes)
+      }
+    }
+    val cetsAndSigsF: Future[Vector[
+      Vector[(OracleOutcome, WitnessTransaction, ECAdaptorSignature)]]] = {
+      FutureUtil.batchAndParallelExecute[OracleOutcome,
+                                         Vector[(
+                                             OracleOutcome,
+                                             WitnessTransaction,
+                                             ECAdaptorSignature)]](elements =
+                                                                     outcomes,
+                                                                   f = fn)
+    }
+
+    val refundSig = signRefundTx
+
+    for {
+      cetsAndSigsNested <- cetsAndSigsF
+      cetsAndSigs = cetsAndSigsNested.flatten
+      (msgs, cets, sigs) = cetsAndSigs.unzip3
+    } yield (CETSignatures(msgs.zip(sigs), refundSig), cets)
   }
 
   /** Creates this party's CETSignatures given the outcomes and their unsigned CETs */
