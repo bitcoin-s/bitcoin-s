@@ -4,7 +4,8 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
-import org.bitcoins.core.protocol.dlc.DLCMessage._
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCOffer}
+import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte

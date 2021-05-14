@@ -9,7 +9,7 @@ import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol._
-import org.bitcoins.core.protocol.dlc.{ContractInfo, OracleInfo}
+import org.bitcoins.core.protocol.dlc.models.{ContractInfo, OracleInfo}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature

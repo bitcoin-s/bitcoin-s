@@ -4,7 +4,7 @@ import org.bitcoins.core.api.dlcoracle.db.RValueDb
 
 import java.time.Instant
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
-import org.bitcoins.core.protocol.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.fixtures.DLCOracleDAOFixture

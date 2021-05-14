@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.{
+import org.bitcoins.core.protocol.dlc.models.{
   DLCPayoutCurve,
   NumericContractDescriptor,
   OutcomePayoutPoint,

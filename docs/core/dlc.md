@@ -15,8 +15,9 @@ Let's now cover the main data structures and interfaces supported.
 ```scala mdoc:invisible
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.dlc._
-import org.bitcoins.core.protocol.dlc.RoundingIntervals.IntervalStart
+import org.bitcoins.core.protocol.dlc.compute._
+import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.dlc.models.RoundingIntervals.IntervalStart
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.tlv._

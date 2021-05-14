@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.oracle.storage
 
 import org.bitcoins.core.api.dlcoracle.db.{EventDb, RValueDb}
-import org.bitcoins.core.protocol.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv.{
   EventDescriptorTLV,
   OracleEventTLV,

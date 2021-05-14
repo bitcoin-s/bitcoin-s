@@ -5,7 +5,16 @@ import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.protocol.dlc._
+import org.bitcoins.core.protocol.dlc.models.{
+  ContractInfo,
+  ContractOraclePair,
+  DLCStatus,
+  EnumContractDescriptor,
+  EnumSingleOracleInfo,
+  NumericContractDescriptor,
+  NumericSingleOracleInfo,
+  SingleOracleInfo
+}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}

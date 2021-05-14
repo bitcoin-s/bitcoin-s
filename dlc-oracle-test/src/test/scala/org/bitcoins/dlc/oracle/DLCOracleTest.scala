@@ -6,7 +6,7 @@ import org.bitcoins.core.api.dlcoracle.db._
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
-import org.bitcoins.core.protocol.dlc.SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.TimeUtil

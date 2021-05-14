@@ -141,12 +141,12 @@ lazy val lndRpc = project
 
 lazy val tor = project
   .in(file("tor"))
-  .settings(CommonSettings.prodSettings:_*)
+  .settings(CommonSettings.prodSettings: _*)
   .dependsOn(cryptoJVM)
 
 lazy val torTest = project
   .in(file("tor-test"))
-  .settings(CommonSettings.testSettings:_*)
+  .settings(CommonSettings.testSettings: _*)
   .dependsOn(tor, testkit)
 
 lazy val jsProjects: Vector[ProjectReference] =
@@ -183,6 +183,7 @@ lazy val `bitcoin-s` = project
     feeProviderTest,
     dlcOracle,
     dlcOracleTest,
+    dlcTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -234,6 +235,7 @@ lazy val `bitcoin-s` = project
     feeProviderTest,
     dlcOracle,
     dlcOracleTest,
+    dlcTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -717,6 +719,18 @@ lazy val scripts = project
   )
   .dependsOn(appServer)
   .enablePlugins(JavaAppPackaging)
+
+lazy val dlcTest = project
+  .in(file("dlc-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-test",
+    libraryDependencies ++= Deps.dlcTest
+  )
+  .dependsOn(
+    coreJVM % testAndCompile,
+    testkitCoreJVM
+  )
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet)
