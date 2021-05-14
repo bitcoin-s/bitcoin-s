@@ -198,7 +198,9 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
       // Create callbacks for processing new blocks
       _ =
         if (bitcoindRpcConf.zmqConfig != ZmqConfig.empty) {
-          BitcoindRpcBackendUtil.startZMQWalletCallbacks(wallet)
+          BitcoindRpcBackendUtil.startZMQWalletCallbacks(
+            wallet,
+            bitcoindRpcConf.zmqConfig)
         }
 
       binding <- startHttpServer(nodeApi = bitcoind,
