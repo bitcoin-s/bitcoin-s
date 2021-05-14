@@ -14,7 +14,10 @@ import org.bitcoins.crypto.{
   CryptoUtil,
   ECPublicKey,
   FieldElement,
-  SchnorrPublicKey
+  SchnorrPublicKey,
+  SecpPoint,
+  SecpPointFinite,
+  SecpPointInfinity
 }
 import scodec.bits.ByteVector
 
@@ -50,6 +53,44 @@ object DLCAdaptorPointComputer {
     nonce.add(pubKey.publicKey.tweakMultiply(FieldElement(hash)))
   }
 
+  case class AdditionTrieNode(
+      preComputeTable: Vector[Vector[ECPublicKey]], // Nonce -> Outcome -> Point
+      depth: Int = 0,
+      var children: Vector[AdditionTrieNode] = Vector.empty,
+      var pointOpt: Option[SecpPoint] = None) {
+
+    def initChildren(): Unit = {
+      children = 0
+        .until(base)
+        .toVector
+        .map(_ => AdditionTrieNode(preComputeTable, depth + 1))
+    }
+
+    def computeSum(digits: Vector[Int]): ECPublicKey = {
+      val point = pointOpt.get
+
+      if (digits.isEmpty) {
+        point match {
+          case SecpPointInfinity =>
+            throw new IllegalArgumentException(
+              "Sum cannot be point at infinity.")
+          case point: SecpPointFinite => point.toPublicKey
+        }
+      } else {
+        val digit = digits.head
+        if (children.isEmpty) initChildren()
+        val child = children(digit)
+        child.pointOpt match {
+          case Some(_) => child.computeSum(digits.tail)
+          case None =>
+            val pointToAdd = preComputeTable(depth)(digit).toPoint
+            child.pointOpt = Some(point.add(pointToAdd))
+            child.computeSum(digits.tail)
+        }
+      }
+    }
+  }
+
   /** Efficiently computes all adaptor points, in order, for a given ContractInfo.
     * @see https://medium.com/crypto-garage/optimizing-numeric-outcome-dlc-creation-6d6091ac0e47
     */
@@ -77,33 +118,34 @@ object DLCAdaptorPointComputer {
         }
       }
 
+    val additionTries = preComputeTable.map { table =>
+      AdditionTrieNode(table, pointOpt = Some(SecpPointInfinity))
+    }
+
     val oraclesAndOutcomes = contractInfo.allOutcomes.map(_.oraclesAndOutcomes)
 
     oraclesAndOutcomes.map { oracleAndOutcome =>
       // For the given oracleAndOutcome, look up the point in the preComputeTable
-      val subSigPoints = oracleAndOutcome.flatMap { case (info, outcome) =>
+      val subSigPoints = oracleAndOutcome.map { case (info, outcome) =>
         val oracleIndex =
           contractInfo.oracleInfo.singleOracleInfos.indexOf(info)
-        val outcomeIndices = outcome match {
+
+        outcome match {
           case outcome: EnumOutcome =>
-            Vector(
-              contractInfo.contractDescriptor
-                .asInstanceOf[EnumContractDescriptor]
-                .keys
-                .indexOf(outcome)
-            )
-          case UnsignedNumericOutcome(digits) => digits
+            val outcomeIndex = contractInfo.contractDescriptor
+              .asInstanceOf[EnumContractDescriptor]
+              .keys
+              .indexOf(outcome)
+
+            preComputeTable(oracleIndex)(0)(outcomeIndex)
+          case UnsignedNumericOutcome(digits) =>
+            additionTries(oracleIndex).computeSum(digits)
           case _: SignedNumericOutcome =>
             throw new UnsupportedOperationException(
               "Signed numeric outcomes not supported!")
         }
-
-        outcomeIndices.zipWithIndex.map { case (outcomeIndex, nonceIndex) =>
-          preComputeTable(oracleIndex)(nonceIndex)(outcomeIndex)
-        }
       }
 
-      // TODO: Memoization of sub-combinations for further optimization!
       CryptoUtil.combinePubKeys(subSigPoints)
     }
   }
