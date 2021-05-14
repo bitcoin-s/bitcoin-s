@@ -29,7 +29,7 @@ sealed trait OracleOutcome {
 
   /** The adaptor point used to encrypt the signatures for this corresponding CET. */
   def sigPoint: ECPublicKey = {
-    SigPointComputer(() => computeSigPoint).compute
+    computeSigPoint
   }
 
   /** The sum of all oracle nonces used in execution with this OracleOutcome. */
