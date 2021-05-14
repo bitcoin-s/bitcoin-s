@@ -39,7 +39,12 @@ object AcceptOfferDialog {
       hgap = 5
       vgap = 5
 
-      add(new Label("DLC Offer"), 0, 0)
+      add(new Label("DLC Offer") {
+            tooltip = Tooltip("Offer message given from your counter party.")
+            tooltip.value.setShowDelay(new javafx.util.Duration(100))
+          },
+          0,
+          0)
       add(offerTLVTF, 1, 0)
     }
 
@@ -71,7 +76,12 @@ object AcceptOfferDialog {
       )
       nextRow += 1
 
-      gridPane.add(new Label("Oracle Public Key"), 0, nextRow)
+      gridPane.add(new Label("Oracle Public Key") {
+                     tooltip = Tooltip("The oracle's public key.")
+                     tooltip.value.setShowDelay(new javafx.util.Duration(100))
+                   },
+                   0,
+                   nextRow)
       gridPane.add(
         new TextField() {
           text = oracleKey
@@ -85,7 +95,15 @@ object AcceptOfferDialog {
       val yourCol =
         offer.contractInfo.totalCollateral - offer.totalCollateralSatoshis
 
-      gridPane.add(new Label("Your Collateral"), 0, nextRow)
+      gridPane.add(
+        new Label("Your Collateral") {
+          tooltip =
+            Tooltip("How much funds you will be putting up for this DLC.")
+          tooltip.value.setShowDelay(new javafx.util.Duration(100))
+        },
+        0,
+        nextRow
+      )
       gridPane.add(new TextField() {
                      text = yourCol.satoshis.toString
                      editable = false
@@ -108,22 +126,32 @@ object AcceptOfferDialog {
       nextRow += 1
 
       descriptor.foreach { case (str, satoshis) =>
-        gridPane.add(new TextField() {
-                       text = str.outcome
-                       editable = false
-                     },
-                     0,
-                     nextRow)
-        gridPane.add(new TextField() {
-                       text = satoshis.toString
-                       editable = false
-                     },
-                     1,
-                     nextRow)
+        val outcomeTF = new TextField() {
+          text = str.outcome
+          editable = false
+        }
+        val valueTF = new TextField() {
+          text = satoshis.toString
+          editable = false
+          tooltip =
+            Tooltip(s"""Amount you will win if the oracle signs for "$str".""")
+          tooltip.value.setShowDelay(new javafx.util.Duration(100))
+        }
+
+        gridPane.add(outcomeTF, 0, nextRow)
+        gridPane.add(valueTF, 1, nextRow)
         nextRow += 1
       }
 
-      gridPane.add(new Label("Fee Rate"), 0, nextRow)
+      gridPane.add(
+        new Label("Fee Rate") {
+          tooltip = Tooltip(
+            "Fee rate to be used for both funding and closing transactions.")
+          tooltip.value.setShowDelay(new javafx.util.Duration(100))
+        },
+        0,
+        nextRow
+      )
       gridPane.add(new TextField() {
                      text = offer.feeRate.toString
                      editable = false
@@ -132,7 +160,15 @@ object AcceptOfferDialog {
                    nextRow)
       nextRow += 1
 
-      gridPane.add(new Label("Refund Date"), 0, nextRow)
+      gridPane.add(
+        new Label("Refund Date") {
+          tooltip = Tooltip(
+            "If no oracle signatures are given, the DLC can be refunded after this date.")
+          tooltip.value.setShowDelay(new javafx.util.Duration(100))
+        },
+        0,
+        nextRow
+      )
       gridPane.add(new TextField() {
                      text = GUIUtil.epochToDateString(offer.contractTimeout)
                      editable = false
