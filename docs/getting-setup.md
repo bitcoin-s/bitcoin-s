@@ -82,8 +82,6 @@ blockfilterindex=1
 peerblockfilters=1
 debug=1
 txindex=1
-zmqpubrawblock=tcp://127.0.0.1:29000
-zmqpubrawtx=tcp://127.0.0.1:29000
 ```
 
 ## Step 4: Setting Up A Bitcoin-S Node
@@ -153,11 +151,8 @@ bitcoin-s {
         rpcbind = localhost
         # bitcoind rpc port
         rpcport = 8332
-        # bitcoind zmq raw tx
-        zmqpubrawtx = "tcp://127.0.0.1:28332"
-        # bitcoind zmq raw block
-        zmqpubrawblock = "tcp://127.0.0.1:28333"
     }
+}
 ```
 
 </details>
