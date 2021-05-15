@@ -18,9 +18,18 @@ object DLCAdaptorPointComputer {
 
   private val base: Int = 2
 
+  private lazy val numericPossibleOutcomes: Vector[ByteVector] = {
+    0
+      .until(base)
+      .toVector
+      .map(_.toString)
+      .map(CryptoUtil.serializeForHash)
+  }
+
   /** Computes:
     *     nonce + outcomeHash*pubKey
     * where outcomeHash is as specified in the DLC spec.
+    * @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Oracle.md#signing-algorithm
     */
   def computePoint(
       pubKey: SchnorrPublicKey,
@@ -45,12 +54,7 @@ object DLCAdaptorPointComputer {
       contractInfo.contractDescriptor match {
         case enum: EnumContractDescriptor =>
           enum.keys.map(_.outcome).map(CryptoUtil.serializeForHash)
-        case _: NumericContractDescriptor =>
-          0
-            .until(base)
-            .toVector
-            .map(_.toString)
-            .map(CryptoUtil.serializeForHash)
+        case _: NumericContractDescriptor => numericPossibleOutcomes
       }
 
     // Oracle -> Nonce -> Outcome -> SubSigPoint
