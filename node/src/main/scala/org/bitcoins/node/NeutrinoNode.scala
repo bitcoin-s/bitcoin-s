@@ -3,7 +3,9 @@ package org.bitcoins.node
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
+import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.chain.db.CompactFilterHeaderDb
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -59,36 +61,52 @@ case class NeutrinoNode(
     * @return
     */
   override def sync(): Future[Unit] = {
-    val blockchainsF =
-      BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
     for {
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
-      filterHeaderCount <- chainApi.getFilterHeaderCount()
+      bestFilterHeaderOpt <- chainApi.getBestFilterHeader()
       filterCount <- chainApi.getFilterCount()
-      blockchains <- blockchainsF
-    } yield {
+      blockchains <-
+        BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
       // Get all of our cached headers in case of a reorg
-      val cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      peerMsgSender.sendGetHeadersMessage(cachedHeaders)
-
-      // If we have started syncing filters headers
-      if (filterHeaderCount != 0) {
-        peerMsgSender.sendNextGetCompactFilterHeadersCommand(
-          chainApi = chainApi,
-          filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
-          prevStopHash = header.hashBE)
-
-        // If we have started syncing filters
-        if (filterCount != filterHeaderCount && filterCount != 0)
-          peerMsgSender.sendNextGetCompactFilterCommand(
-            chainApi = chainApi,
-            filterBatchSize = chainConfig.filterBatchSize,
-            startHeight = filterCount)
-      }
-
+      cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
+      _ <- peerMsgSender.sendGetHeadersMessage(cachedHeaders)
+      _ <- syncFilters(bestFilterHeaderOpt, chainApi, filterCount)
+    } yield {
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE.hex}")
+    }
+  }
+
+  private def syncFilters(
+      bestFilterHeaderOpt: Option[CompactFilterHeaderDb],
+      chainApi: ChainApi,
+      filterCount: Int): Future[Unit] = {
+    // If we have started syncing filters headers
+    bestFilterHeaderOpt match {
+      case None =>
+        //do nothing if we haven't started syncing
+        Future.unit
+      case Some(bestFilterHeader) =>
+        val sendCompactFilterHeaderMsgF = {
+          peerMsgSender.sendNextGetCompactFilterHeadersCommand(
+            chainApi = chainApi,
+            filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
+            prevStopHash = bestFilterHeader.blockHashBE)
+        }
+        sendCompactFilterHeaderMsgF.flatMap { _ =>
+          // If we have started syncing filters
+          if (filterCount != bestFilterHeader.height && filterCount != 0) {
+            peerMsgSender
+              .sendNextGetCompactFilterCommand(chainApi = chainApi,
+                                               filterBatchSize =
+                                                 chainConfig.filterBatchSize,
+                                               startHeight = filterCount)
+              .map(_ => ())
+          } else {
+            Future.unit
+          }
+        }
     }
   }
 
