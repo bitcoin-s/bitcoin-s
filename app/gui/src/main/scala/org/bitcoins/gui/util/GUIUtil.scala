@@ -9,9 +9,6 @@ import java.time.{Instant, ZoneOffset}
 import scala.util.control.NonFatal
 import scala.util.matching.Regex
 
-import java.text.NumberFormat
-import scala.util.matching.Regex
-
 object GUIUtil {
 
   val numericRegex: Regex = "-?([1-9,][0-9,]*)?".r
