@@ -232,7 +232,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
         .sequence {
           outputsBeingSpent.map(markAsSpent(_, transaction.txIdBE))
         }
-        .map(_.toVector.flatten)
+        .map(_.flatten)
 
       _ <- updateUtxoConfirmedStates(processed)
     } yield processed

@@ -21,7 +21,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.BlockHashWithConfs
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -168,24 +168,39 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   private[wallet] def updateUtxoConfirmedStates(
       spendingInfoDbs: Vector[SpendingInfoDb]): Future[
     Vector[SpendingInfoDb]] = {
+    val relevantBlocksF: Future[
+      Map[Option[DoubleSha256DigestBE], Vector[SpendingInfoDb]]] = {
+      getDbsByRelevantBlock(spendingInfoDbs)
+    }
 
-    val toUpdateF = getDbsByRelevantBlock(spendingInfoDbs).flatMap {
-      txsByBlock =>
-        val toUpdateFs = txsByBlock.map {
-          case (Some(blockHash), txos) =>
-            chainQueryApi.getNumberOfConfirmations(blockHash).map {
-              case None =>
-                logger.warn(
-                  s"Given txos exist in block (${blockHash.hex}) that we do not have or that has been reorged! $txos")
-                Vector.empty
-              case Some(confs) => txos.map(updateTxoWithConfs(_, confs))
-            }
-          case (None, txos) =>
-            logger.debug(
-              s"Currently have ${txos.size} transactions in the mempool")
-            Future.successful(Vector.empty)
-        }
-        FutureUtil.collect(toUpdateFs)
+    //fetch all confirmations for those blocks, do it in parallel
+    //as an optimzation, previously we would fetch sequentially
+    val blocksWithConfsF: Future[
+      Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]] = {
+      for {
+        relevantBlocks <- relevantBlocksF
+        blocksWithConfirmations <- getConfirmationsForBlocks(relevantBlocks)
+      } yield blocksWithConfirmations
+    }
+
+    val toUpdateF = blocksWithConfsF.map { txsByBlock =>
+      val toUpdateFs: Vector[SpendingInfoDb] = txsByBlock.flatMap {
+        case (Some(blockHashWithConfs), txos) =>
+          blockHashWithConfs.confirmationsOpt match {
+            case None =>
+              logger.warn(
+                s"Given txos exist in block (${blockHashWithConfs.blockHash.hex}) that we do not have or that has been reorged! $txos")
+              Vector.empty
+            case Some(confs) =>
+              txos.map(updateTxoWithConfs(_, confs))
+          }
+        case (None, txos) =>
+          logger.debug(
+            s"Currently have ${txos.size} transactions in the mempool")
+          Vector.empty
+      }.toVector
+
+      toUpdateFs
     }
 
     for {
@@ -194,8 +209,33 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         if (toUpdate.nonEmpty)
           logger.info(s"${toUpdate.size} txos are now confirmed!")
         else logger.trace("No txos to be confirmed")
-      updated <- spendingInfoDAO.upsertAllSpendingInfoDb(toUpdate.flatten)
+      updated <- spendingInfoDAO.upsertAllSpendingInfoDb(toUpdate)
     } yield updated
+  }
+
+  /** Fetches confirmations for the given blocks in parallel */
+  private def getConfirmationsForBlocks(
+      relevantBlocks: Map[
+        Option[DoubleSha256DigestBE],
+        Vector[SpendingInfoDb]]): Future[
+    Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]] = {
+
+    val blockHashesWithConfsVec = relevantBlocks.map {
+      case (blockHashOpt, spendingInfoDbs) =>
+        blockHashOpt match {
+          case Some(blockHash) =>
+            chainQueryApi
+              .getNumberOfConfirmations(blockHash)
+              .map(confs => Some(BlockHashWithConfs(blockHash, confs)))
+              .map(blockWithConfsOpt => (blockWithConfsOpt, spendingInfoDbs))
+          case None =>
+            Future.successful((None, spendingInfoDbs))
+        }
+    }
+
+    Future
+      .sequence(blockHashesWithConfsVec)
+      .map(_.toMap)
   }
 
   /** Tries to convert the provided spk to an address, and then checks if we have
