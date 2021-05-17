@@ -3,7 +3,7 @@ package org.bitcoins.gui.dlc.dialog
 import org.bitcoins.cli.CliCommand.CreateDLCOffer
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.dlc.{
+import org.bitcoins.core.protocol.dlc.models.{
   ContractInfo,
   EnumContractDescriptor,
   EnumSingleOracleInfo
