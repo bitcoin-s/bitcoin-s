@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand._
-import org.bitcoins.core.protocol.dlc.{DLCStatus, EnumContractDescriptor}
+import org.bitcoins.core.protocol.dlc.models.{DLCStatus, EnumContractDescriptor}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.GlobalDLCData.dlcs

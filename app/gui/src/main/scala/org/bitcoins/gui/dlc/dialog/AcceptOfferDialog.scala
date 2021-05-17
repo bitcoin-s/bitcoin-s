@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand.{AcceptDLCCliCommand, AcceptDLCOffer}
-import org.bitcoins.core.protocol.dlc.EnumContractDescriptor
+import org.bitcoins.core.protocol.dlc.models.EnumContractDescriptor
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.util.GUIUtil
