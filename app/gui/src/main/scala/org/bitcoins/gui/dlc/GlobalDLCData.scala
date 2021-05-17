@@ -1,6 +1,6 @@
 package org.bitcoins.gui.dlc
 
-import org.bitcoins.core.protocol.dlc.DLCStatus
+import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import scalafx.collections.ObservableBuffer
 
 object GlobalDLCData {
