@@ -61,7 +61,7 @@ object Deps {
     val scoptV = "4.0.1"
     val sttpV = "1.7.2"
     val codehausV = "3.1.4"
-    val scalaJsTimeV = "2.2.2"
+    val scalaJsTimeV = "2.3.0"
   }
 
   object Compile {
