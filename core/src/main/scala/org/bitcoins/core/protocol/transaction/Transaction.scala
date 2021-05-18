@@ -252,6 +252,13 @@ case class WitnessTransaction(
 
 object WitnessTransaction extends Factory[WitnessTransaction] {
 
+  val empty: WitnessTransaction = WitnessTransaction(
+    TransactionConstants.version,
+    Vector.empty,
+    Vector.empty,
+    UInt32.zero,
+    EmptyWitness.fromN(0))
+
   /** This read function is unique to BaseTransaction.fromBytes
     * in the fact that it reads a 'marker' and 'flag' byte to indicate that this tx is a
     * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]].
