@@ -5,7 +5,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   WalletCreateFundedPsbtOptions
 }
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.number.{UInt32, UInt64}
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}

@@ -15,7 +15,7 @@ import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, Indexed}
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
@@ -125,28 +125,28 @@ case class DLCTxSigner(
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcome */
-  def signCET(outcome: OracleOutcome): ECAdaptorSignature = {
-    signCETs(Vector(outcome)).head._2
+  def signCET(adaptorPoint: ECPublicKey, index: Int): ECAdaptorSignature = {
+    signCETs(Vector(Indexed(adaptorPoint, index))).head._2
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes */
-  def buildAndSignCETs(outcomes: Vector[OracleOutcome]): Vector[
-    (OracleOutcome, WitnessTransaction, ECAdaptorSignature)] = {
-    val outcomesAndCETs = builder.buildCETsMap(outcomes)
+  def buildAndSignCETs(adaptorPoints: Vector[Indexed[ECPublicKey]]): Vector[
+    (ECPublicKey, WitnessTransaction, ECAdaptorSignature)] = {
+    val outcomesAndCETs = builder.buildCETsMap(adaptorPoints)
     DLCTxSigner.buildAndSignCETs(outcomesAndCETs, cetSigningInfo, fundingKey)
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes */
-  def signCETs(outcomes: Vector[OracleOutcome]): Vector[
-    (OracleOutcome, ECAdaptorSignature)] = {
-    buildAndSignCETs(outcomes).map { case (outcome, _, sig) =>
+  def signCETs(adaptorPoints: Vector[Indexed[ECPublicKey]]): Vector[
+    (ECPublicKey, ECAdaptorSignature)] = {
+    buildAndSignCETs(adaptorPoints).map { case (outcome, _, sig) =>
       outcome -> sig
     }
   }
 
   /** Signs remote's Contract Execution Transaction (CET) for a given outcomes and their corresponding CETs */
-  def signGivenCETs(outcomesAndCETs: Vector[OutcomeCETPair]): Vector[
-    (OracleOutcome, ECAdaptorSignature)] = {
+  def signGivenCETs(outcomesAndCETs: Vector[AdaptorPointCETPair]): Vector[
+    (ECPublicKey, ECAdaptorSignature)] = {
     DLCTxSigner.signCETs(outcomesAndCETs, cetSigningInfo, fundingKey)
   }
 
@@ -154,12 +154,14 @@ case class DLCTxSigner(
       outcome: OracleOutcome,
       remoteAdaptorSig: ECAdaptorSignature,
       oracleSigs: Vector[OracleSignatures]): WitnessTransaction = {
+    val index = builder.contractInfo.allOutcomes.indexOf(outcome)
+
     DLCTxSigner.completeCET(
       outcome,
       cetSigningInfo,
       builder.fundingMultiSig,
       builder.buildFundingTx,
-      builder.buildCET(outcome),
+      builder.buildCET(outcome.sigPoint, index),
       remoteAdaptorSig,
       remoteFundingPubKey,
       oracleSigs
@@ -184,7 +186,8 @@ case class DLCTxSigner(
 
   /** Creates all of this party's CETSignatures */
   def createCETSigs(): CETSignatures = {
-    val cetSigs = signCETs(builder.contractInfo.allOutcomes)
+    val adaptorPoints = builder.contractInfo.adaptorPointsIndexed
+    val cetSigs = signCETs(adaptorPoints)
     val refundSig = signRefundTx
 
     CETSignatures(cetSigs, refundSig)
@@ -193,19 +196,26 @@ case class DLCTxSigner(
   /** Creates CET signatures async */
   def createCETSigsAsync()(implicit
       ec: ExecutionContext): Future[CETSignatures] = {
-    val outcomes = builder.contractInfo.allOutcomes
+    val adaptorPoints = builder.contractInfo.adaptorPointsIndexed
+    //divide and conquer
 
-    val computeBatchFn: Vector[OracleOutcome] => Future[
-      Vector[(OracleOutcome, ECAdaptorSignature)]] = {
-      case outcomes: Vector[OracleOutcome] =>
+    //we want a batch size of at least 1
+    val size =
+      Math.max(adaptorPoints.length / Runtime.getRuntime.availableProcessors(),
+               1)
+
+    val computeBatchFn: Vector[Indexed[ECPublicKey]] => Future[
+      Vector[(ECPublicKey, ECAdaptorSignature)]] = {
+      adaptorPoints: Vector[Indexed[ECPublicKey]] =>
         Future {
-          signCETs(outcomes)
+          signCETs(adaptorPoints)
         }
     }
 
-    val cetSigsF: Future[Vector[(OracleOutcome, ECAdaptorSignature)]] = {
-      FutureUtil.batchAndParallelExecute(elements = outcomes,
-                                         f = computeBatchFn)
+    val cetSigsF: Future[Vector[(ECPublicKey, ECAdaptorSignature)]] = {
+      FutureUtil.batchAndParallelExecute(elements = adaptorPoints,
+                                         f = computeBatchFn,
+                                         batchSize = size)
     }.map(_.flatten)
 
     for {
@@ -216,30 +226,32 @@ case class DLCTxSigner(
 
   /** Creates all of this party's CETSignatures */
   def createCETsAndCETSigs(): (CETSignatures, Vector[WitnessTransaction]) = {
-    val cetsAndSigs = buildAndSignCETs(builder.contractInfo.allOutcomes)
+    val adaptorPoints = builder.contractInfo.adaptorPointsIndexed
+    val cetsAndSigs = buildAndSignCETs(adaptorPoints)
     val (msgs, cets, sigs) = cetsAndSigs.unzip3
     val refundSig = signRefundTx
+
     (CETSignatures(msgs.zip(sigs), refundSig), cets)
   }
 
   /** The equivalent of [[createCETsAndCETSigs()]] but async */
   def createCETsAndCETSigsAsync()(implicit
   ec: ExecutionContext): Future[(CETSignatures, Vector[WitnessTransaction])] = {
-    val outcomes = builder.contractInfo.allOutcomes
-    val fn = { outcomes: Vector[OracleOutcome] =>
+    val adaptorPoints = builder.contractInfo.adaptorPointsIndexed
+    val fn = { adaptorPoints: Vector[Indexed[ECPublicKey]] =>
       Future {
-        buildAndSignCETs(outcomes)
+        buildAndSignCETs(adaptorPoints)
       }
     }
-    val cetsAndSigsF: Future[Vector[
-      Vector[(OracleOutcome, WitnessTransaction, ECAdaptorSignature)]]] = {
-      FutureUtil.batchAndParallelExecute[OracleOutcome,
+    val cetsAndSigsF: Future[
+      Vector[Vector[(ECPublicKey, WitnessTransaction, ECAdaptorSignature)]]] = {
+      FutureUtil.batchAndParallelExecute[Indexed[ECPublicKey],
                                          Vector[(
-                                             OracleOutcome,
+                                             ECPublicKey,
                                              WitnessTransaction,
-                                             ECAdaptorSignature)]](elements =
-                                                                     outcomes,
-                                                                   f = fn)
+                                             ECAdaptorSignature)]](
+        elements = adaptorPoints,
+        f = fn)
     }
 
     val refundSig = signRefundTx
@@ -252,7 +264,8 @@ case class DLCTxSigner(
   }
 
   /** Creates this party's CETSignatures given the outcomes and their unsigned CETs */
-  def createCETSigs(outcomesAndCETs: Vector[OutcomeCETPair]): CETSignatures = {
+  def createCETSigs(
+      outcomesAndCETs: Vector[AdaptorPointCETPair]): CETSignatures = {
     val cetSigs = signGivenCETs(outcomesAndCETs)
     val refundSig = signRefundTx
 
@@ -296,38 +309,37 @@ object DLCTxSigner {
   }
 
   def signCET(
-      outcome: OracleOutcome,
+      sigPoint: ECPublicKey,
       cet: WitnessTransaction,
       cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
       fundingKey: AdaptorSign): ECAdaptorSignature = {
-    signCETs(Vector(OutcomeCETPair(outcome, cet)),
+    signCETs(Vector(AdaptorPointCETPair(sigPoint, cet)),
              cetSigningInfo,
              fundingKey).head._2
   }
 
   def signCETs(
-      outcomesAndCETs: Vector[OutcomeCETPair],
+      outcomesAndCETs: Vector[AdaptorPointCETPair],
       cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
-      fundingKey: AdaptorSign): Vector[(OracleOutcome, ECAdaptorSignature)] = {
+      fundingKey: AdaptorSign): Vector[(ECPublicKey, ECAdaptorSignature)] = {
     buildAndSignCETs(outcomesAndCETs, cetSigningInfo, fundingKey).map {
       case (outcome, _, sig) => outcome -> sig
     }
   }
 
   def buildAndSignCETs(
-      outcomesAndCETs: Vector[OutcomeCETPair],
+      outcomesAndCETs: Vector[AdaptorPointCETPair],
       cetSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
       fundingKey: AdaptorSign): Vector[
-    (OracleOutcome, WitnessTransaction, ECAdaptorSignature)] = {
-    outcomesAndCETs.map { case OutcomeCETPair(outcome, cet) =>
-      val adaptorPoint = outcome.sigPoint
+    (ECPublicKey, WitnessTransaction, ECAdaptorSignature)] = {
+    outcomesAndCETs.map { case AdaptorPointCETPair(sigPoint, cet) =>
       val hashToSign =
         TransactionSignatureSerializer.hashForSignature(cet,
                                                         cetSigningInfo,
                                                         HashType.sigHashAll)
 
-      val adaptorSig = fundingKey.adaptorSign(adaptorPoint, hashToSign.bytes)
-      (outcome, cet, adaptorSig)
+      val adaptorSig = fundingKey.adaptorSign(sigPoint, hashToSign.bytes)
+      (sigPoint, cet, adaptorSig)
     }
   }
 
@@ -371,7 +383,7 @@ object DLCTxSigner {
       .map(_.asInstanceOf[WitnessTransaction])
 
     cetT match {
-      case Success(cet) => cet.asInstanceOf[WitnessTransaction]
+      case Success(cet) => cet
       case Failure(err) => throw err
     }
   }

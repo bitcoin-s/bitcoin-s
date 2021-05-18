@@ -4,8 +4,8 @@ import org.bitcoins.core.protocol.script.ScriptWitnessV0
 import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.util.SeqWrapper
-import org.bitcoins.crypto.ECAdaptorSignature
+import org.bitcoins.core.util.{Indexed, SeqWrapper}
+import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey}
 
 sealed trait DLCSignatures
 
@@ -35,13 +35,19 @@ case class FundingSignatures(
 }
 
 case class CETSignatures(
-    outcomeSigs: Vector[(OracleOutcome, ECAdaptorSignature)],
+    outcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)],
     refundSig: PartialSignature)
     extends DLCSignatures {
-  lazy val keys: Vector[OracleOutcome] = outcomeSigs.map(_._1)
+  lazy val keys: Vector[ECPublicKey] = outcomeSigs.map(_._1)
   lazy val adaptorSigs: Vector[ECAdaptorSignature] = outcomeSigs.map(_._2)
 
-  def apply(key: OracleOutcome): ECAdaptorSignature = {
+  def indexedOutcomeSigs: Vector[(Indexed[ECPublicKey], ECAdaptorSignature)] = {
+    outcomeSigs.zipWithIndex.map { case ((adaptorPoint, sig), index) =>
+      (Indexed(adaptorPoint, index), sig)
+    }
+  }
+
+  def apply(key: ECPublicKey): ECAdaptorSignature = {
     outcomeSigs
       .find(_._1 == key)
       .map(_._2)

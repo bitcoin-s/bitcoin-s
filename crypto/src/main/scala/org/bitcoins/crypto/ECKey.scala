@@ -102,6 +102,10 @@ sealed trait PublicKey extends NetworkElement {
       fromBytes(x.+:(leadByte))
     }
   }
+
+  override def hashCode: Int = {
+    bytes.hashCode
+  }
 }
 
 /** Wraps raw ECPublicKey bytes without doing any validation or deserialization (may be invalid). */
