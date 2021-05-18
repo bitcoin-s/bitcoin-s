@@ -43,7 +43,7 @@ class AcceptDLCDialog
         // TODO figure how to validate when using a file
         offerDLCFile = None // reset
         offerFileChosenLabel.text = "" // reset
-        AcceptDLCOfferFromFile(file.toPath)
+        AcceptDLCOfferFromFile(file.toPath, None)
       case None =>
         val offerHex = readStringFromNode(inputs(dlcOfferStr))
         val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerHex)

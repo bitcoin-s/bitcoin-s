@@ -14,6 +14,7 @@ import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
+import org.bitcoins.core.util.Indexed
 import org.bitcoins.core.wallet.builder.DualFundingTxFinalizer
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
@@ -172,14 +173,19 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
   /** Constructs the unsigned Contract Execution Transaction (CET)
     * for a given outcome hash
     */
-  def buildCET(msg: OracleOutcome): WitnessTransaction = {
-    buildCETs(Vector(msg)).head
+  def buildCET(adaptorPoint: Indexed[ECPublicKey]): WitnessTransaction = {
+    buildCETs(Vector(adaptorPoint)).head
   }
 
-  def buildCETsMap(msgs: Vector[OracleOutcome]): Vector[OutcomeCETPair] = {
+  def buildCET(adaptorPoint: ECPublicKey, index: Int): WitnessTransaction = {
+    buildCET(Indexed(adaptorPoint, index))
+  }
+
+  def buildCETsMap(adaptorPoints: Vector[Indexed[ECPublicKey]]): Vector[
+    AdaptorPointCETPair] = {
     DLCTxBuilder
       .buildCETs(
-        msgs,
+        adaptorPoints,
         contractInfo,
         offerFundingKey,
         offerFinalAddress.scriptPubKey,
@@ -193,8 +199,9 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
       )
   }
 
-  def buildCETs(msgs: Vector[OracleOutcome]): Vector[WitnessTransaction] = {
-    buildCETsMap(msgs).map(_.wtx)
+  def buildCETs(adaptorPoints: Vector[Indexed[ECPublicKey]]): Vector[
+    WitnessTransaction] = {
+    buildCETsMap(adaptorPoints).map(_.wtx)
   }
 
   /** Constructs the unsigned refund transaction */
@@ -318,7 +325,7 @@ object DLCTxBuilder {
   }
 
   def buildCET(
-      outcome: OracleOutcome,
+      adaptorPoint: Indexed[ECPublicKey],
       contractInfo: ContractInfo,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
@@ -328,22 +335,24 @@ object DLCTxBuilder {
       acceptSerialId: UInt64,
       timeouts: DLCTimeouts,
       fundingOutputRef: OutputReference): WitnessTransaction = {
-    val Vector(OutcomeCETPair(_, cet)) = buildCETs(Vector(outcome),
-                                                   contractInfo,
-                                                   offerFundingKey,
-                                                   offerFinalSPK,
-                                                   offerSerialId,
-                                                   acceptFundingKey,
-                                                   acceptFinalSPK,
-                                                   acceptSerialId,
-                                                   timeouts,
-                                                   fundingOutputRef)
+    val Vector(AdaptorPointCETPair(_, cet)) = buildCETs(
+      Vector(adaptorPoint),
+      contractInfo,
+      offerFundingKey,
+      offerFinalSPK,
+      offerSerialId,
+      acceptFundingKey,
+      acceptFinalSPK,
+      acceptSerialId,
+      timeouts,
+      fundingOutputRef
+    )
 
     cet
   }
 
   def buildCETs(
-      outcomes: Vector[OracleOutcome],
+      adaptorPoints: Vector[Indexed[ECPublicKey]],
       contractInfo: ContractInfo,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
@@ -352,7 +361,7 @@ object DLCTxBuilder {
       acceptFinalSPK: ScriptPubKey,
       acceptSerialId: UInt64,
       timeouts: DLCTimeouts,
-      fundingOutputRef: OutputReference): Vector[OutcomeCETPair] = {
+      fundingOutputRef: OutputReference): Vector[AdaptorPointCETPair] = {
     val builder =
       DLCCETBuilder(contractInfo,
                     offerFundingKey,
@@ -364,13 +373,17 @@ object DLCTxBuilder {
                     timeouts,
                     fundingOutputRef)
 
-    outcomes.map { outcome =>
-      OutcomeCETPair(outcome, builder.buildCET(outcome))
+    val outcomes = adaptorPoints.map { case Indexed(_, index) =>
+      contractInfo.allOutcomes(index)
+    }
+
+    adaptorPoints.zip(outcomes).map { case (Indexed(sigPoint, _), outcome) =>
+      AdaptorPointCETPair(sigPoint, builder.buildCET(outcome))
     }
   }
 
   def buildCETs(
-      outcomes: Vector[OracleOutcome],
+      adaptorPoints: Vector[Indexed[ECPublicKey]],
       contractInfo: ContractInfo,
       offerFundingKey: ECPublicKey,
       offerFinalSPK: ScriptPubKey,
@@ -380,13 +393,13 @@ object DLCTxBuilder {
       acceptSerialId: UInt64,
       timeouts: DLCTimeouts,
       fundingTx: Transaction,
-      fundOutputIndex: Int): Vector[OutcomeCETPair] = {
+      fundOutputIndex: Int): Vector[AdaptorPointCETPair] = {
     val fundingOutPoint =
       TransactionOutPoint(fundingTx.txId, UInt32(fundOutputIndex))
     val fundingOutputRef =
       OutputReference(fundingOutPoint, fundingTx.outputs(fundOutputIndex))
 
-    buildCETs(outcomes,
+    buildCETs(adaptorPoints,
               contractInfo,
               offerFundingKey,
               offerFinalSPK,

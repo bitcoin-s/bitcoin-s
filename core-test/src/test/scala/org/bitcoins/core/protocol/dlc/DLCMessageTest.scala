@@ -4,12 +4,17 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
-import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCOffer}
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
+  DLCAccept,
+  DLCOffer,
+  DLCSign
+}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv.EnumOutcome
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
+import org.bitcoins.testkitcore.gen.{LnMessageGen, TLVGen}
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
 class DLCMessageTest extends BitcoinSJvmTest {
@@ -80,14 +85,41 @@ class DLCMessageTest extends BitcoinSJvmTest {
         dummyAddress,
         payoutSerialId = UInt64.zero,
         changeSerialId = UInt64.one,
-        CETSignatures(Vector(
-                        EnumOracleOutcome(
-                          Vector(dummyOracle),
-                          EnumOutcome(dummyStr)) -> ECAdaptorSignature.dummy),
-                      dummySig),
+        CETSignatures(
+          Vector(
+            EnumOracleOutcome(
+              Vector(dummyOracle),
+              EnumOutcome(dummyStr)).sigPoint -> ECAdaptorSignature.dummy),
+          dummySig),
         DLCAccept.NoNegotiationFields,
         Sha256Digest.empty
       )
     )
+  }
+
+  it must "be able to go back and forth between TLV and deserialized" in {
+    forAll(TLVGen.dlcOfferTLVAcceptTLVSignTLV) {
+      case (offerTLV, acceptTLV, signTLV) =>
+        val offer = DLCOffer.fromTLV(offerTLV)
+        val accept = DLCAccept.fromTLV(acceptTLV, offer)
+        val sign = DLCSign.fromTLV(signTLV, offer)
+
+        assert(offer.toTLV == offerTLV)
+        assert(accept.toTLV == acceptTLV)
+        assert(sign.toTLV == signTLV)
+    }
+  }
+
+  it must "be able to go back and forth between LN Message and deserialized" in {
+    forAll(LnMessageGen.dlcOfferMessageAcceptMessageSignMessage) {
+      case (offerMsg, acceptMsg, signMsg) =>
+        val offer = DLCOffer.fromMessage(offerMsg)
+        val accept = DLCAccept.fromMessage(acceptMsg, offer)
+        val sign = DLCSign.fromMessage(signMsg, offer)
+
+        assert(offer.toMessage == offerMsg)
+        assert(accept.toMessage == acceptMsg)
+        assert(sign.toMessage == signMsg)
+    }
   }
 }

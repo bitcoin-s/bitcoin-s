@@ -3,10 +3,10 @@ package org.bitcoins.testkit
 import com.typesafe.config._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkitcore.Implicits.GeneratorOps
-import org.bitcoins.testkitcore.gen.{NumberGenerator, StringGenerators}
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkitcore.Implicits.GeneratorOps
+import org.bitcoins.testkitcore.gen.{NumberGenerator, StringGenerators}
 
 import java.nio.file._
 import scala.concurrent.ExecutionContext
@@ -149,9 +149,10 @@ object BitcoinSTestAppConfig {
     case object Node extends ProjectType
     case object Chain extends ProjectType
     case object Oracle extends ProjectType
+    case object DLC extends ProjectType
     case object Test extends ProjectType
 
-    val all = List(Wallet, Node, Chain, Oracle, Test)
+    val all = List(Wallet, Node, Chain, Oracle, DLC, Test)
   }
 
   /** Generates a Typesafe config with DBs set to memory
@@ -178,6 +179,7 @@ object BitcoinSTestAppConfig {
         case ProjectType.Chain  => "chain"
         case ProjectType.Node   => "node"
         case ProjectType.Oracle => "oracle"
+        case ProjectType.DLC    => "dlc"
         case ProjectType.Test   => "test"
       }
 

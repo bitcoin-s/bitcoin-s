@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.dlc.sign.DLCTxSigner
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
+import org.bitcoins.core.util.Indexed
 import org.bitcoins.crypto.{AdaptorSign, ECPublicKey}
 
 import scala.util.{Success, Try}
@@ -51,7 +52,7 @@ case class DLCExecutor(signer: DLCTxSigner) {
     }
 
     val CETSignatures(outcomeSigs, refundSig) = cetSigs
-    val msgs = outcomeSigs.map(_._1)
+    val msgs = Indexed(outcomeSigs.map(_._1))
     val cets = cetsOpt match {
       case Some(cets) => cets
       case None       => builder.buildCETs(msgs)
@@ -123,7 +124,7 @@ object DLCExecutor {
     * a valid set of expected oracle signatures as per the oracle announcements in the ContractInfo.
     */
   def executeDLC(
-      remoteCETInfos: Vector[(OracleOutcome, CETInfo)],
+      remoteCETInfos: Vector[(ECPublicKey, CETInfo)],
       oracleSigs: Vector[OracleSignatures],
       fundingKey: AdaptorSign,
       remoteFundingPubKey: ECPublicKey,
@@ -141,7 +142,9 @@ object DLCExecutor {
     }
 
     val msgAndCETInfoOpt = msgOpt.flatMap { msg =>
-      remoteCETInfos.find(_._1 == msg)
+      remoteCETInfos
+        .find(_._1 == msg.sigPoint)
+        .map { case (_, info) => (msg, info) }
     }
 
     val (msg, ucet, remoteAdaptorSig) = msgAndCETInfoOpt match {

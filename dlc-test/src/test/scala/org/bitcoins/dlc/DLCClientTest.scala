@@ -20,7 +20,7 @@ import org.bitcoins.core.protocol.tlv.{
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.{BitcoinScriptUtil, NumberUtil}
+import org.bitcoins.core.util.{BitcoinScriptUtil, Indexed, NumberUtil}
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.testkitcore.dlc.{DLCFeeTestUtil, DLCTest, TestDLCClient}
@@ -334,6 +334,39 @@ class DLCClientTest extends BitcoinSJvmTest with DLCTest {
     assert(!acceptVerifier.verifyRemoteFundingSigs(acceptFundingSigs))
   }
 
+  it should "succeed on valid CET signatures" in {
+    val (offerClient, acceptClient, outcomes) =
+      constructDLCClients(numOutcomesOrDigits = 2,
+                          isNumeric = false,
+                          oracleThreshold = 1,
+                          numOracles = 1,
+                          paramsOpt = None)
+    val builder = offerClient.dlcTxBuilder
+    val offerVerifier = DLCSignatureVerifier(builder, isInitiator = true)
+    val acceptVerifier = DLCSignatureVerifier(builder, isInitiator = false)
+
+    val offerCETSigs = offerClient.dlcTxSigner.createCETSigs()
+    val acceptCETSigs = acceptClient.dlcTxSigner.createCETSigs()
+
+    outcomes.zipWithIndex.foreach { case (outcomeUncast, index) =>
+      val outcome = EnumOracleOutcome(
+        Vector(offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo]),
+        outcomeUncast.asInstanceOf[EnumOutcome])
+
+      assert(
+        offerVerifier.verifyCETSig(Indexed(outcome.sigPoint, index),
+                                   acceptCETSigs(outcome.sigPoint)))
+      assert(
+        acceptVerifier.verifyCETSig(Indexed(outcome.sigPoint, index),
+                                    offerCETSigs(outcome.sigPoint)))
+    }
+
+    assert(offerVerifier.verifyRefundSig(acceptCETSigs.refundSig))
+    assert(offerVerifier.verifyRefundSig(offerCETSigs.refundSig))
+    assert(acceptVerifier.verifyRefundSig(offerCETSigs.refundSig))
+    assert(acceptVerifier.verifyRefundSig(acceptCETSigs.refundSig))
+  }
+
   it should "fail on invalid CET signatures" in {
     val (offerClient, acceptClient, outcomes) =
       constructDLCClients(numOutcomesOrDigits = 3,
@@ -360,15 +393,16 @@ class DLCClientTest extends BitcoinSJvmTest with DLCTest {
       val oracleSig = genEnumOracleSignature(oracleInfo, outcome.outcome)
 
       assertThrows[RuntimeException] {
-        offerClient.dlcTxSigner.completeCET(oracleOutcome,
-                                            badAcceptCETSigs(oracleOutcome),
-                                            Vector(oracleSig))
+        offerClient.dlcTxSigner.completeCET(
+          oracleOutcome,
+          badAcceptCETSigs(oracleOutcome.sigPoint),
+          Vector(oracleSig))
       }
 
       assertThrows[RuntimeException] {
         acceptClient.dlcTxSigner
           .completeCET(oracleOutcome,
-                       badOfferCETSigs(oracleOutcome),
+                       badOfferCETSigs(oracleOutcome.sigPoint),
                        Vector(oracleSig))
       }
     }
@@ -381,34 +415,60 @@ class DLCClientTest extends BitcoinSJvmTest with DLCTest {
       acceptClient.dlcTxSigner.completeRefundTx(badOfferCETSigs.refundSig)
     }
 
-    outcomes.foreach { outcomeUncast =>
+    outcomes.zipWithIndex.foreach { case (outcomeUncast, index) =>
       val outcome = EnumOracleOutcome(
         Vector(offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo]),
         outcomeUncast.asInstanceOf[EnumOutcome])
+      val adaptorPoint = Indexed(outcome.sigPoint, index)
 
-      assert(offerVerifier.verifyCETSig(outcome, acceptCETSigs(outcome)))
-      assert(acceptVerifier.verifyCETSig(outcome, offerCETSigs(outcome)))
-    }
-    assert(offerVerifier.verifyRefundSig(acceptCETSigs.refundSig))
-    assert(offerVerifier.verifyRefundSig(offerCETSigs.refundSig))
-    assert(acceptVerifier.verifyRefundSig(offerCETSigs.refundSig))
-    assert(acceptVerifier.verifyRefundSig(acceptCETSigs.refundSig))
+      assert(
+        !offerVerifier.verifyCETSig(adaptorPoint,
+                                    badAcceptCETSigs(outcome.sigPoint)))
+      assert(
+        !acceptVerifier.verifyCETSig(adaptorPoint,
+                                     badOfferCETSigs(outcome.sigPoint)))
 
-    outcomes.foreach { outcomeUncast =>
-      val outcome = EnumOracleOutcome(
-        Vector(offerClient.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo]),
-        outcomeUncast.asInstanceOf[EnumOutcome])
-
-      assert(!offerVerifier.verifyCETSig(outcome, badAcceptCETSigs(outcome)))
-      assert(!acceptVerifier.verifyCETSig(outcome, badOfferCETSigs(outcome)))
-
-      assert(!offerVerifier.verifyCETSig(outcome, offerCETSigs(outcome)))
-      assert(!acceptVerifier.verifyCETSig(outcome, acceptCETSigs(outcome)))
+      assert(
+        !offerVerifier.verifyCETSig(adaptorPoint,
+                                    offerCETSigs(outcome.sigPoint)))
+      assert(
+        !acceptVerifier.verifyCETSig(adaptorPoint,
+                                     acceptCETSigs(outcome.sigPoint)))
     }
     assert(!offerVerifier.verifyRefundSig(badAcceptCETSigs.refundSig))
     assert(!offerVerifier.verifyRefundSig(badOfferCETSigs.refundSig))
     assert(!acceptVerifier.verifyRefundSig(badOfferCETSigs.refundSig))
     assert(!acceptVerifier.verifyRefundSig(badAcceptCETSigs.refundSig))
+  }
+
+  it should "compute sigpoints correctly" in {
+    runTestsForParam(Vector(4, 6, 8)) { numDigitsOrOutcomes =>
+      runTestsForParam(Vector(true, false)) { isNumeric =>
+        runTestsForParam(Vector((1, 1), (2, 3), (3, 5))) {
+          case (threshold, numOracles) =>
+            runTestsForParam(
+              Vector(None,
+                     Some(
+                       OracleParamsV0TLV(numDigitsOrOutcomes / 2 + 1,
+                                         numDigitsOrOutcomes / 2,
+                                         maximizeCoverage = true)))) {
+              oracleParams =>
+                val (client, _, _) = constructDLCClients(numDigitsOrOutcomes,
+                                                         isNumeric,
+                                                         threshold,
+                                                         numOracles,
+                                                         oracleParams)
+                val contract = client.offer.contractInfo
+                val outcomes = contract.allOutcomes
+
+                val adaptorPoints = contract.adaptorPoints
+                val expectedAdaptorPoints = outcomes.map(_.sigPoint)
+
+                assert(adaptorPoints == expectedAdaptorPoints)
+            }
+        }
+      }
+    }
   }
 
   def assertCorrectSigDerivation(

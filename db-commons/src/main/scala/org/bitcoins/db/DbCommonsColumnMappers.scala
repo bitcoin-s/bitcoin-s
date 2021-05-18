@@ -153,14 +153,16 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   }
 
   implicit val uint64Mapper: BaseColumnType[UInt64] = {
-    MappedColumnType.base[UInt64, BigDecimal](
+    MappedColumnType.base[UInt64, String](
       { u64: UInt64 =>
-        BigDecimal(u64.toBigInt.bigInteger)
+        val bytes = u64.bytes
+        val padded = if (bytes.length <= 8) {
+          bytes.padLeft(8)
+        } else bytes
+
+        padded.toHex
       },
-      //this has the potential to throw
-      { bigDec: BigDecimal =>
-        UInt64(bigDec.toBigIntExact.get)
-      }
+      UInt64.fromHex
     )
   }
 

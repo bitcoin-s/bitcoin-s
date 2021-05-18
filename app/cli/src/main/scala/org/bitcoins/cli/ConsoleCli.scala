@@ -22,12 +22,7 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto.{
-  AesPassword,
-  DoubleSha256DigestBE,
-  ECPublicKey,
-  Sha256DigestBE
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import scopt.OParser
 import ujson._
@@ -238,7 +233,8 @@ object ConsoleCli {
         ),
       cmd("acceptdlcofferfromfile")
         .action((_, conf) =>
-          conf.copy(command = AcceptDLCOfferFromFile(new File("").toPath)))
+          conf.copy(command =
+            AcceptDLCOfferFromFile(new File("").toPath, None)))
         .text("Accepts a DLC offer given from another party")
         .children(
           arg[Path]("path")
@@ -247,6 +243,14 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case accept: AcceptDLCOfferFromFile =>
                   accept.copy(path = path)
+                case other => other
+              })),
+          arg[Path]("destination")
+            .optional()
+            .action((dest, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOfferFromFile =>
+                  accept.copy(destination = Some(dest))
                 case other => other
               }))
         ),
@@ -265,7 +269,7 @@ object ConsoleCli {
         ),
       cmd("signdlcfromfile")
         .action((_, conf) =>
-          conf.copy(command = SignDLCFromFile(new File("").toPath)))
+          conf.copy(command = SignDLCFromFile(new File("").toPath, None)))
         .text("Signs a DLC")
         .children(
           arg[Path]("path")
@@ -274,6 +278,14 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case signDLC: SignDLCFromFile =>
                   signDLC.copy(path = path)
+                case other => other
+              })),
+          arg[Path]("destination")
+            .optional()
+            .action((dest, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: SignDLCFromFile =>
+                  accept.copy(destination = Some(dest))
                 case other => other
               }))
         ),
@@ -380,6 +392,20 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case executeDLCRefund: ExecuteDLCRefund =>
                   executeDLCRefund.copy(noBroadcast = true)
+                case other => other
+              }))
+        ),
+      cmd("canceldlc")
+        .action((_, conf) =>
+          conf.copy(command = CancelDLC(Sha256DigestBE.empty)))
+        .text("Cancels a DLC and unreserves used utxos")
+        .children(
+          arg[Sha256DigestBE]("paramhash")
+            .required()
+            .action((paramHash, conf) =>
+              conf.copy(command = conf.command match {
+                case cancelDLC: CancelDLC =>
+                  cancelDLC.copy(paramHash = paramHash)
                 case other => other
               }))
         ),
@@ -1440,12 +1466,13 @@ object ConsoleCli {
         )
       case AcceptDLCOffer(offer) =>
         RequestParam("acceptdlcoffer", Seq(up.writeJs(offer)))
-      case AcceptDLCOfferFromFile(path) =>
-        RequestParam("acceptdlcofferfromfile", Seq(up.writeJs(path)))
+      case AcceptDLCOfferFromFile(path, dest) =>
+        RequestParam("acceptdlcofferfromfile",
+                     Seq(up.writeJs(path), up.writeJs(dest)))
       case SignDLC(accept) =>
         RequestParam("signdlc", Seq(up.writeJs(accept)))
-      case SignDLCFromFile(path) =>
-        RequestParam("signdlcfromfile", Seq(up.writeJs(path)))
+      case SignDLCFromFile(path, dest) =>
+        RequestParam("signdlcfromfile", Seq(up.writeJs(path), up.writeJs(dest)))
       case AddDLCSigs(sigs) =>
         RequestParam("adddlcsigs", Seq(up.writeJs(sigs)))
       case AddDLCSigsFromFile(path) =>
@@ -1462,6 +1489,8 @@ object ConsoleCli {
       case ExecuteDLCRefund(contractId, noBroadcast) =>
         RequestParam("executedlcrefund",
                      Seq(up.writeJs(contractId), up.writeJs(noBroadcast)))
+      case CancelDLC(paramHash) =>
+        RequestParam("canceldlc", Seq(up.writeJs(paramHash)))
       // Wallet
       case GetBalance(isSats) =>
         RequestParam("getbalance", Seq(up.writeJs(isSats)))
@@ -1800,13 +1829,15 @@ object CliCommand {
   case class AcceptDLCOffer(offer: LnMessage[DLCOfferTLV])
       extends AcceptDLCCliCommand
 
-  case class AcceptDLCOfferFromFile(path: Path) extends AcceptDLCCliCommand
+  case class AcceptDLCOfferFromFile(path: Path, destination: Option[Path])
+      extends AcceptDLCCliCommand
 
   sealed trait SignDLCCliCommand extends AppServerCliCommand
 
   case class SignDLC(accept: LnMessage[DLCAcceptTLV]) extends SignDLCCliCommand
 
-  case class SignDLCFromFile(path: Path) extends SignDLCCliCommand
+  case class SignDLCFromFile(path: Path, destination: Option[Path])
+      extends SignDLCCliCommand
 
   sealed trait AddDLCSigsCliCommand extends AppServerCliCommand
 
@@ -1830,6 +1861,8 @@ object CliCommand {
   case class ExecuteDLCRefund(contractId: ByteVector, noBroadcast: Boolean)
       extends AppServerCliCommand
       with Broadcastable
+
+  case class CancelDLC(paramHash: Sha256DigestBE) extends AppServerCliCommand
 
   case object GetDLCs extends AppServerCliCommand
   case class GetDLC(paramHash: Sha256DigestBE) extends AppServerCliCommand

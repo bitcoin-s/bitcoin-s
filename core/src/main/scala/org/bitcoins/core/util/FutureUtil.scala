@@ -103,11 +103,17 @@ object FutureUtil {
       elements: Vector[T],
       f: Vector[T] => Future[U],
       batchSize: Int)(implicit ec: ExecutionContext): Future[Vector[U]] = {
-    require(batchSize > 0, s"Cannot have batch size 0 or less, got=$batchSize")
-    val batches = elements.grouped(batchSize).toVector
-    val execute: Vector[Future[U]] = batches.map(b => f(b))
-    val doneF = Future.sequence(execute)
-    doneF
+    require(
+      batchSize > 0,
+      s"Cannot have batch size less than or equal to zero, got=$batchSize")
+    if (elements.isEmpty) {
+      Future.successful(Vector.empty)
+    } else {
+      val batches = elements.grouped(batchSize).toVector
+      val execute: Vector[Future[U]] = batches.map(b => f(b))
+      val doneF = Future.sequence(execute)
+      doneF
+    }
   }
 
   /** Same as [[batchAndParallelExecute()]], but computes the batchSize based on the
