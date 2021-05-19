@@ -1,11 +1,11 @@
 name: Release
 on:
   push:
-    branches: [master, main, adaptor-dlc,2021-05-19-jpackage-bundle-release]
+    branches: [master, main, adaptor-dlc, 2021-05-19-jpackage-bundle-release]
     tags: ["*"]
 
 env:
-  pkg-assembly: 'krystal-bull-assembly-0.1.jar'
+  pkg-assembly: 'bitcoin-s-bundle.jar'
   pkg-name: 'bitcoin-s'
 
 jobs:
