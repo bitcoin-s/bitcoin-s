@@ -33,6 +33,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
@@ -109,6 +111,8 @@ jobs:
     runs-on: [ ubuntu-latest ]
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
@@ -123,7 +127,7 @@ jobs:
       - name: Package jar as debian package
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
-        run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.icns"
+        run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.png"
       - name: View Artifacts
         run: ls -l
       - name: Print working dir
