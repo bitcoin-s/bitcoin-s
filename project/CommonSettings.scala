@@ -8,7 +8,7 @@ import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.dockerBaseImage
 import sbt._
 import sbt.Keys._
 import sbtprotoc.ProtocPlugin.autoImport.PB
-
+import sbtassembly.AssemblyKeys._
 import scala.util.Properties
 
 object CommonSettings {
@@ -56,7 +56,8 @@ object CommonSettings {
       file("/usr/local/bin/protoc") // to change if needed, this is where protobuf manual compilation put it for me
     else
       PB.protocExecutable.value
-    )
+    ),
+    assembly / test := {}
   )
 
   lazy val jvmSettings: Seq[Setting[_]] = List(
