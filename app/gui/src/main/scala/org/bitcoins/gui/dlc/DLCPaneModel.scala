@@ -278,7 +278,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
   }
 
   def onOffer(): Unit = {
-    val result = InitEnumOfferDialog.showAndWait(parentWindow.value)
+    val result = new CreateDLCOfferDialog().showAndWait(parentWindow.value)
 
     result match {
       case Some(command) =>
@@ -300,7 +300,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
   }
 
   def onAccept(): Unit = {
-    val result = AcceptOfferDialog.showAndWait(parentWindow.value)
+    val result = new AcceptOfferDialog().showAndWait(parentWindow.value)
 
     result match {
       case Some(command) =>

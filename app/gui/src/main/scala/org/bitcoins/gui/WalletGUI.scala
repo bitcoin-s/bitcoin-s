@@ -177,6 +177,7 @@ object WalletGUI extends JFXApp {
   model.taskRunner = taskRunner
 
   override def stopApp(): Unit = {
+    model.updateBalanceThread.interrupt()
     sys.exit(0) // Kills the server if GUI is closed in AppBundle
   }
 }
