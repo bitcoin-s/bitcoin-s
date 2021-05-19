@@ -1,108 +1,138 @@
-CREATE TABLE "wallet_dlcs"
+CREATE TABLE "global_dlc_data"
 (
-    "param_hash"       TEXT    NOT NULL UNIQUE,
-    "temp_contract_id" TEXT    NOT NULL UNIQUE,
-    "contract_id"      TEXT UNIQUE,
-    "state"            TEXT    NOT NULL,
-    "is_initiator"     BOOLEAN NOT NULL,
-    "account"          TEXT    NOT NULL,
-    "key_index"        INTEGER NOT NULL,
-    "oracle_sigs"      TEXT,
-    "funding_outpoint" TEXT,
-    "funding_tx_id"    TEXT,
-    "closing_tx_id"    TEXT,
-    "outcomes"         TEXT,
-    "oracles_used"     TEXT,
-    constraint "pk_dlc" primary key ("param_hash")
+    "dlc_id"                TEXT PRIMARY KEY,
+    "temp_contract_id"      TEXT    NOT NULL UNIQUE,
+    "contract_id"           TEXT UNIQUE,
+    "protocol_version"      INTEGER NOT NULL,
+    "state"                 TEXT    NOT NULL,
+    "is_initiator"          INTEGER NOT NULL,
+    "account"               TEXT    NOT NULL,
+    "change_index"          INTEGER NOT NULL,
+    "key_index"             INTEGER NOT NULL,
+
+    "oracle_threshold"      INTEGER NOT NULL,
+    "oracle_params"         TEXT,
+    "contract_descriptor"   TEXT    NOT NULL,
+    "contract_maturity"     INTEGER NOT NULL,
+    "contract_timeout"      INTEGER NOT NULL,
+    "total_collateral"      INTEGER NOT NULL,
+    "fee_rate"              TEXT    NOT NULL,
+    "fund_output_serial_id" INTEGER NOT NULL,
+
+    "funding_outpoint"      TEXT,
+    "funding_tx_id"         TEXT,
+    "closing_tx_id"         TEXT,
+    "aggregate_signature"   TEXT
+);
+
+CREATE TABLE "oracle_announcement_data"
+(
+    "id"                     SERIAL PRIMARY KEY NOT NULL,
+    "announcement_signature" TEXT               NOT NULL UNIQUE,
+    "pub_key"                TEXT               NOT NULL,
+    "signing_pub_key"        TEXT               NOT NULL,
+    "event_maturity"         INTEGER            NOT NULL,
+    "event_id"               TEXT               NOT NULL,
+    "event_descriptor"       TEXT               NOT NULL
 );
 CREATE
-INDEX "wallet_dlcs_param_hash_index" on "wallet_dlcs" ("param_hash");
+    INDEX "oracle_announcements_pub_key_index" on "oracle_announcement_data" ("pub_key");
 
-CREATE TABLE "oracle_announcements"
+CREATE TABLE "dlc_announcements"
 (
-    "announcement" TEXT NOT NULL PRIMARY KEY,
-    "pub_key"      TEXT NOT NULL
+    "dlc_id"          TEXT    NOT NULL,
+    "announcement_id" INTEGER NOT NULL,
+    "index"           INTEGER NOT NULL,
+    "used"            INTEGER, -- if signatures used for execution
+    constraint "pk_announcement_id_index" primary key ("dlc_id", "announcement_id"),
+    constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION,
+    constraint "fk_announcement_id" foreign key ("announcement_id") references "oracle_announcement_data" ("id") on update NO ACTION on delete NO ACTION
 );
 CREATE
-INDEX "oracle_announcements_pub_key_index" on "oracle_announcements" ("pub_key");
+    INDEX "dlc_announcements_dlc_id_index" on "dlc_announcements" ("dlc_id");
+CREATE
+    INDEX "dlc_announcements_announcement_id_index" on "dlc_announcements" ("announcement_id");
 
-CREATE TABLE "wallet_dlc_offers"
+CREATE TABLE "oracle_nonces"
 (
-    "param_hash"        VARCHAR(254) NOT NULL UNIQUE,
-    "temp_contract_id"  TEXT         NOT NULL UNIQUE,
-    "contract_info"     TEXT         NOT NULL,
-    "contract_maturity" TEXT         NOT NULL,
-    "contract_timeout"  TEXT         NOT NULL,
-    "funding_key"       TEXT         NOT NULL,
-    "payout_address"    TEXT         NOT NULL,
-    "total_collateral"  INTEGER      NOT NULL,
-    "fee_rate"          TEXT,
-    "change_address"    TEXT         NOT NULL,
-    constraint "pk_dlc_offer" primary key ("param_hash"),
-    constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash"),
-    constraint "fk_temp_contract_id" foreign key ("temp_contract_id") references "wallet_dlcs" ("temp_contract_id") on update NO ACTION on delete NO ACTION
+    "announcement_id"        INTEGER NOT NULL,
+    "index"                  INTEGER NOT NULL,
+    "announcement_signature" TEXT    NOT NULL,
+    "nonce"                  TEXT    NOT NULL UNIQUE,
+    "signature"              TEXT,
+    "outcome"                TEXT,
+    constraint "pk_oracle_nonces" primary key ("announcement_id", "index"),
+    constraint "fk_announcement_id" foreign key ("announcement_id") references "oracle_announcement_data" ("id") on update NO ACTION on delete NO ACTION
 );
 CREATE
-INDEX "wallet_dlc_offers_param_hash_index" on "wallet_dlc_offers" ("param_hash");
+    INDEX "oracle_nonces_index" on "oracle_nonces" ("nonce");
 
-CREATE TABLE "wallet_dlc_accepts"
+CREATE TABLE "offer_dlc_data"
 (
-    "param_hash"       VARCHAR(254) NOT NULL UNIQUE,
-    "temp_contract_id" TEXT         NOT NULL UNIQUE,
-    "funding_key"      TEXT         NOT NULL,
-    "payout_address"   TEXT         NOT NULL,
-    "total_collateral" INTEGER      NOT NULL,
-    "change_address"   TEXT         NOT NULL,
-    constraint "pk_dlc_accept" primary key ("param_hash"),
-    constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash"),
-    constraint "fk_temp_contract_id" foreign key ("temp_contract_id") references "wallet_dlcs" ("temp_contract_id") on update NO ACTION on delete NO ACTION
+    "dlc_id"           TEXT PRIMARY KEY,
+    "funding_pub_key"  TEXT    NOT NULL,
+    "payout_address"   TEXT    NOT NULL,
+    "payout_serial_id" INTEGER NOT NULL,
+    "collateral"       INTEGER NOT NULL,
+    "change_address"   TEXT    NOT NULL,
+    "change_serial_id" INTEGER NOT NULL,
+    constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
-CREATE
-INDEX "wallet_dlc_accepts_param_hash_index" on "wallet_dlc_accepts" ("param_hash");
 
-CREATE TABLE "wallet_dlc_funding_inputs"
+CREATE TABLE "accept_dlc_data"
 (
-    "param_hash"         VARCHAR(254) NOT NULL UNIQUE,
-    "is_initiator"       BOOLEAN      NOT NULL,
-    "input_serial_id"    INTEGER      NOT NULL,
-    "out_point"          TEXT         NOT NULL UNIQUE,
-    "output"             TEXT         NOT NULL,
+    "dlc_id"           TEXT PRIMARY KEY,
+    "funding_pub_key"  TEXT    NOT NULL,
+    "payout_address"   TEXT    NOT NULL,
+    "payout_serial_id" INTEGER NOT NULL,
+    "collateral"       INTEGER NOT NULL,
+    "change_address"   TEXT    NOT NULL,
+    "change_serial_id" INTEGER NOT NULL,
+    constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
+);
+
+CREATE TABLE "funding_inputs"
+(
+    "out_point"          TEXT PRIMARY KEY,
+    "dlc_id"             TEXT    NOT NULL,
+    "is_initiator"       INTEGER NOT NULL,
+    "input_serial_id"    INTEGER NOT NULL,
+    "output"             TEXT    NOT NULL,
+    "max_witness_length" INTEGER NOT NULL,
     "redeem_script_opt"  TEXT,
     "witness_script_opt" TEXT,
-    constraint "pk_dlc_input" primary key ("out_point"),
-    constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash") on update NO ACTION on delete NO ACTION
+    constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 
-CREATE TABLE "wallet_dlc_cet_sigs"
+CREATE TABLE "cet_sigs"
 (
-    "param_hash"   TEXT    NOT NULL,
-    "is_initiator" INTEGER NOT NULL,
-    "sig_point"    TEXT    NOT NULL,
-    "signature"    TEXT    NOT NULL,
-    constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash") on update NO ACTION on delete NO ACTION
+    "dlc_id"        TEXT    NOT NULL,
+    "index"         INTEGER NOT NULL,
+    "sig_point"     TEXT    NOT NULL,
+    "accept_sig"    TEXT    NOT NULL,
+    "initiator_sig" TEXT,
+    constraint "pk_cet_sigs" primary key ("dlc_id", "index"),
+    constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 
-CREATE TABLE "wallet_dlc_refund_sigs"
+CREATE TABLE "refund_sigs"
 (
-    "param_hash"   TEXT    NOT NULL,
-    "is_initiator" INTEGER NOT NULL,
-    "refund_sig"   TEXT    NOT NULL,
-    constraint "fk_param_hash" foreign key ("param_hash") references "wallet_dlcs" ("param_hash") on update NO ACTION on delete NO ACTION
+    "dlc_id"        TEXT PRIMARY KEY,
+    "accept_sig"    TEXT NOT NULL,
+    "initiator_sig" TEXT,
+    constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
-CREATE
-INDEX "wallet_dlc_refund_sigs_param_hash_index" on "wallet_dlc_accepts" ("param_hash");
 
-CREATE TABLE tx_table
+CREATE TABLE "watch_only_tx_table"
 (
-    "txIdBE"         TEXT    NOT NULL,
+    "txIdBE"         TEXT    NOT NULL PRIMARY KEY,
     "transaction"    TEXT    NOT NULL,
     "unsignedTxIdBE" TEXT    NOT NULL,
     "unsignedTx"     TEXT    NOT NULL,
     "wTxIdBE"        TEXT,
-    "totalOutput"    BIGINT  NOT NULL,
+    "totalOutput"    INTEGER NOT NULL,
     "numInputs"      INTEGER NOT NULL,
     "numOutputs"     INTEGER NOT NULL,
-    locktime         BIGINT  NOT NULL,
-    "block_hash"     TEXT,
-    constraint pk_tx primary key ("txIdBE")
+    "locktime"       INTEGER NOT NULL,
+    "block_hash"     TEXT
 );

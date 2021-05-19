@@ -23,7 +23,7 @@ import scala.util.{Failure, Success, Try}
   * confirmation counts and marking UTXOs as spent when
   * spending from our wallet
   */
-private[wallet] trait TransactionProcessing extends WalletLogger {
+trait TransactionProcessing extends WalletLogger {
   self: Wallet =>
 
   /////////////////////

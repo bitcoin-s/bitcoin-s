@@ -13,11 +13,19 @@ trait DLCDbManagement extends DbManagement {
   def ec: ExecutionContext
 
   private lazy val announcementTable: TableQuery[Table[_]] = {
-    OracleAnnouncementDAO()(ec, appConfig).table
+    OracleAnnouncementDataDAO()(ec, appConfig).table
+  }
+
+  private lazy val nonceTable: TableQuery[Table[_]] = {
+    OracleNonceDAO()(ec, appConfig).table
   }
 
   private lazy val dlcTable: TableQuery[Table[_]] = {
     DLCDAO()(ec, appConfig).table
+  }
+
+  private lazy val dlcAnnouncementTable: TableQuery[Table[_]] = {
+    DLCAnnouncementDAO()(ec, appConfig).table
   }
 
   private lazy val dlcOfferTable: TableQuery[Table[_]] = {
@@ -49,7 +57,9 @@ trait DLCDbManagement extends DbManagement {
   override lazy val allTables: List[TableQuery[Table[_]]] = {
     List(
       announcementTable,
+      nonceTable,
       dlcTable,
+      dlcAnnouncementTable,
       dlcOfferTable,
       dlcAcceptTable,
       dlcFundingInputsTable,

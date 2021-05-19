@@ -1,9 +1,9 @@
 package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.crypto.Sha256DigestBE
+import org.bitcoins.crypto.Sha256Digest
 
 case class DLCRefundSigDb(
-    paramHash: Sha256DigestBE,
-    isInitiator: Boolean,
-    refundSig: PartialSignature)
+    dlcId: Sha256Digest,
+    acceptSig: PartialSignature,
+    initiatorSig: Option[PartialSignature])

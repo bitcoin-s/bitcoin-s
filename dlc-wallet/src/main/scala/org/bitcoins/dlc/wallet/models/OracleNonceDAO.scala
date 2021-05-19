@@ -1,0 +1,113 @@
+package org.bitcoins.dlc.wallet.models
+
+import org.bitcoins.crypto._
+import org.bitcoins.db._
+import org.bitcoins.dlc.wallet.DLCAppConfig
+import slick.lifted._
+
+import scala.concurrent.{ExecutionContext, Future}
+
+case class OracleNonceDAO()(implicit
+    val ec: ExecutionContext,
+    override val appConfig: DLCAppConfig)
+    extends CRUD[OracleNonceDb, (Long, Long)]
+    with SlickUtil[OracleNonceDb, (Long, Long)] {
+  private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+  import mappers._
+  import profile.api._
+
+  override val table: TableQuery[OracleNoncesTable] =
+    TableQuery[OracleNoncesTable]
+
+  private lazy val announcementDataTable: slick.lifted.TableQuery[
+    OracleAnnouncementDataDAO#OracleAnnouncementsTable] = {
+    OracleAnnouncementDataDAO().table
+  }
+
+  override def createAll(
+      ts: Vector[OracleNonceDb]): Future[Vector[OracleNonceDb]] =
+    createAllNoAutoInc(ts, safeDatabase)
+
+  override protected def findByPrimaryKeys(
+      ids: Vector[(Long, Long)]): profile.api.Query[
+    profile.api.Table[OracleNonceDb],
+    OracleNonceDb,
+    Seq] = {
+
+    // is there a better way to do this?
+    val starting = table.filterNot(_.announcementId === -1L)
+
+    ids.foldLeft(starting) { case (accum, (announcementId, index)) =>
+      accum.flatMap(_ =>
+        table.filter(t =>
+          t.announcementId === announcementId && t.index === index))
+    }
+  }
+
+  override protected def findByPrimaryKey(id: (Long, Long)): profile.api.Query[
+    profile.api.Table[_],
+    OracleNonceDb,
+    Seq] = {
+    table.filter(t => t.announcementId === id._1 && t.index === id._2)
+  }
+
+  override def find(t: OracleNonceDb): Query[Table[_], OracleNonceDb, Seq] = {
+    findByPrimaryKey((t.announcementId, t.index))
+  }
+
+  override protected def findAll(
+      ts: Vector[OracleNonceDb]): Query[Table[_], OracleNonceDb, Seq] =
+    findByPrimaryKeys(ts.map(t => (t.announcementId, t.index)))
+
+  def findByNonce(nonce: SchnorrNonce): Future[Option[OracleNonceDb]] = {
+    findByNonces(Vector(nonce)).map(_.headOption)
+  }
+
+  def findByNonces(
+      nonces: Vector[SchnorrNonce]): Future[Vector[OracleNonceDb]] = {
+    val query = table.filter(_.nonce.inSet(nonces))
+
+    safeDatabase.runVec(query.result)
+  }
+
+  def findByAnnouncementId(id: Long): Future[Vector[OracleNonceDb]] = {
+    findByAnnouncementIds(Vector(id))
+  }
+
+  def findByAnnouncementIds(
+      ids: Vector[Long]): Future[Vector[OracleNonceDb]] = {
+    val query = table.filter(_.announcementId.inSet(ids))
+
+    safeDatabase.runVec(query.result)
+  }
+
+  class OracleNoncesTable(tag: Tag)
+      extends Table[OracleNonceDb](tag, schemaName, "oracle_nonces") {
+
+    def announcementId: Rep[Long] = column("announcement_id")
+
+    def index: Rep[Long] = column("index")
+
+    def announcementSignature: Rep[SchnorrDigitalSignature] = column(
+      "announcement_signature")
+
+    def nonce: Rep[SchnorrNonce] = column("nonce", O.Unique)
+
+    def signature: Rep[Option[SchnorrDigitalSignature]] = column("signature")
+
+    def outcome: Rep[Option[String]] = column("outcome")
+
+    override def * : ProvenShape[OracleNonceDb] =
+      (announcementId, index, announcementSignature, nonce, signature, outcome)
+        .<>(OracleNonceDb.tupled, OracleNonceDb.unapply)
+
+    def pk: PrimaryKey =
+      primaryKey(name = "pk_oracle_nonces",
+                 sourceColumns = (announcementId, index))
+
+    def fk =
+      foreignKey("fk_announcement_id",
+                 sourceColumns = announcementId,
+                 targetTableQuery = announcementDataTable)(_.id)
+  }
+}

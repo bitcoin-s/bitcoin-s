@@ -7,14 +7,15 @@ import org.bitcoins.core.protocol.dlc.models.{
 }
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.crypto.Sha256DigestBE
+import org.bitcoins.crypto.Sha256Digest
 
 case class DLCFundingInputDb(
-    paramHash: Sha256DigestBE,
+    dlcId: Sha256Digest,
     isInitiator: Boolean,
     inputSerialId: UInt64,
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
+    maxWitnessLength: Long,
     redeemScriptOpt: Option[ScriptPubKey],
     witnessScriptOpt: Option[ScriptWitness]) {
 

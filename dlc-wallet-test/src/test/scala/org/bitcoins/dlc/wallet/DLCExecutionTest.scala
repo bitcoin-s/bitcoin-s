@@ -83,13 +83,13 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
     for {
       contractId <- getContractId(dlcA)
-      offerDb <- getInitialOffer(dlcA)
-      paramHash = offerDb.paramHash
-      offerOpt <- dlcA.dlcOfferDAO.findByParamHash(paramHash)
-      acceptOpt <- dlcB.dlcAcceptDAO.findByParamHash(paramHash)
+      status <- getDLCStatus(dlcA)
+      dlcId = status.dlcId
+      offerOpt <- dlcA.dlcOfferDAO.findByDLCId(dlcId)
+      acceptOpt <- dlcB.dlcAcceptDAO.findByDLCId(dlcId)
 
-      inputsA <- dlcA.dlcInputsDAO.findByParamHash(paramHash)
-      inputsB <- dlcB.dlcInputsDAO.findByParamHash(paramHash)
+      inputsA <- dlcA.dlcInputsDAO.findByDLCId(dlcId)
+      inputsB <- dlcB.dlcInputsDAO.findByDLCId(dlcId)
 
       fundingTx <- dlcB.getDLCFundingTx(contractId)
     } yield {
@@ -144,8 +144,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   it must "do a unilateral close as the initiator" in { wallets =>
     for {
       contractId <- getContractId(wallets._1.wallet)
-      offer <- getInitialOffer(wallets._1.wallet)
-      (sig, _) = getSigs(offer.contractInfo)
+      status <- getDLCStatus(wallets._1.wallet)
+      (sig, _) = getSigs(status.contractInfo)
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
       result <- dlcExecutionTest(wallets = wallets,
@@ -158,10 +158,10 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
-      paramHash = dlcDbAOpt.get.paramHash
+      dlcId = status.dlcId
 
-      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
-      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+      statusAOpt <- wallets._1.wallet.findDLC(dlcId)
+      statusBOpt <- wallets._2.wallet.findDLC(dlcId)
 
       _ = {
         (statusAOpt, statusBOpt) match {
@@ -183,8 +183,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   it must "do a unilateral close as the recipient" in { wallets =>
     for {
       contractId <- getContractId(wallets._1.wallet)
-      offer <- getInitialOffer(wallets._2.wallet)
-      (_, sig) = getSigs(offer.contractInfo)
+      status <- getDLCStatus(wallets._2.wallet)
+      (_, sig) = getSigs(status.contractInfo)
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
       result <- dlcExecutionTest(wallets = wallets,
@@ -197,10 +197,10 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
-      paramHash = dlcDbAOpt.get.paramHash
+      dlcId = status.dlcId
 
-      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
-      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+      statusAOpt <- wallets._1.wallet.findDLC(dlcId)
+      statusBOpt <- wallets._2.wallet.findDLC(dlcId)
 
       _ = {
         (statusAOpt, statusBOpt) match {
@@ -224,9 +224,9 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
     for {
       contractId <- getContractId(wallets._1.wallet)
-      offer <- getInitialOffer(dlcA)
+      status <- getDLCStatus(dlcA)
       // use dlcB winning sigs
-      (_, sig) = getSigs(offer.contractInfo)
+      (_, sig) = getSigs(status.contractInfo)
 
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
@@ -240,10 +240,10 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
-      paramHash = dlcDbAOpt.get.paramHash
+      dlcId = status.dlcId
 
-      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
-      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+      statusAOpt <- wallets._1.wallet.findDLC(dlcId)
+      statusBOpt <- wallets._2.wallet.findDLC(dlcId)
 
       _ = {
         (statusAOpt, statusBOpt) match {
@@ -265,6 +265,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   it must "do a refund on a dlc as the initiator" in { wallets =>
     for {
       contractId <- getContractId(wallets._1.wallet)
+      status <- getDLCStatus(wallets._1.wallet)
       func = (wallet: DLCWallet) => wallet.executeDLCRefund(contractId)
 
       result <- dlcExecutionTest(wallets = wallets,
@@ -277,10 +278,10 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
-      paramHash = dlcDbAOpt.get.paramHash
+      dlcId = status.dlcId
 
-      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
-      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+      statusAOpt <- wallets._1.wallet.findDLC(dlcId)
+      statusBOpt <- wallets._2.wallet.findDLC(dlcId)
 
       _ = {
         (statusAOpt, statusBOpt) match {
@@ -302,6 +303,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   it must "do a refund on a dlc as the recipient" in { wallets =>
     for {
       contractId <- getContractId(wallets._1.wallet)
+      status <- getDLCStatus(wallets._1.wallet)
       func = (wallet: DLCWallet) => wallet.executeDLCRefund(contractId)
 
       result <- dlcExecutionTest(wallets = wallets,
@@ -314,10 +316,10 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
-      paramHash = dlcDbAOpt.get.paramHash
+      dlcId = status.dlcId
 
-      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
-      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+      statusAOpt <- wallets._1.wallet.findDLC(dlcId)
+      statusBOpt <- wallets._2.wallet.findDLC(dlcId)
 
       _ = {
         (statusAOpt, statusBOpt) match {

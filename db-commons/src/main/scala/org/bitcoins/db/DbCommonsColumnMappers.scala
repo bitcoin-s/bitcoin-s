@@ -275,6 +275,17 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       .base[ContractInfoV0TLV, String](_.hex, ContractInfoV0TLV.fromHex)
   }
 
+  implicit val contractDescriptorTLVMapper: BaseColumnType[
+    ContractDescriptorTLV] = {
+    MappedColumnType
+      .base[ContractDescriptorTLV, String](_.hex, ContractDescriptorTLV.fromHex)
+  }
+
+  implicit val oracleParamsV0TLVMapper: BaseColumnType[OracleParamsV0TLV] = {
+    MappedColumnType
+      .base[OracleParamsV0TLV, String](_.hex, OracleParamsV0TLV.fromHex)
+  }
+
   implicit val dlcOutcomeTypeMapper: BaseColumnType[DLCOutcomeType] = {
     val enumStr = "Enum:"
     val unsignedNumStr = "Unsigned:"

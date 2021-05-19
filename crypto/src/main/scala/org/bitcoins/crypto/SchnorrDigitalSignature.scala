@@ -15,4 +15,8 @@ object SchnorrDigitalSignature extends Factory[SchnorrDigitalSignature] {
     SchnorrDigitalSignature(SchnorrNonce(bytes.take(32)),
                             FieldElement(bytes.drop(32)))
   }
+
+  lazy val dummy: SchnorrDigitalSignature =
+    SchnorrDigitalSignature(FieldElement.one.getPublicKey.schnorrNonce,
+                            FieldElement.one)
 }

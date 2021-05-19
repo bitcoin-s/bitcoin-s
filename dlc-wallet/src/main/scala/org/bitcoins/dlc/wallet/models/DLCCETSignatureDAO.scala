@@ -3,15 +3,15 @@ package org.bitcoins.dlc.wallet.models
 import org.bitcoins.crypto._
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.dlc.wallet.DLCAppConfig
-import slick.lifted.{ForeignKeyQuery, PrimaryKey, ProvenShape}
+import slick.lifted._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCCETSignatureDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCCETSignatureDb, (Sha256DigestBE, ECPublicKey)]
-    with SlickUtil[DLCCETSignatureDb, (Sha256DigestBE, ECPublicKey)] {
+    extends CRUD[DLCCETSignatureDb, (Sha256Digest, Long)]
+    with SlickUtil[DLCCETSignatureDb, (Sha256Digest, Long)] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -27,75 +27,78 @@ case class DLCCETSignatureDAO()(implicit
       ts: Vector[DLCCETSignatureDb]): Future[Vector[DLCCETSignatureDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override protected def findByPrimaryKeys(ids: Vector[(
-      Sha256DigestBE,
-      ECPublicKey)]): Query[DLCCETSignatureTable, DLCCETSignatureDb, Seq] =
-    table
-      .filter(_.paramHash.inSet(ids.map(_._1)))
-      .filter(_.sigPoint.inSet(ids.map(_._2)))
-
-  override def findByPrimaryKey(id: (Sha256DigestBE, ECPublicKey)): Query[
+  override protected def findByPrimaryKeys(
+      ids: Vector[(Sha256Digest, Long)]): Query[
     DLCCETSignatureTable,
     DLCCETSignatureDb,
     Seq] = {
-    table
-      .filter(_.paramHash === id._1)
-      .filter(_.sigPoint === id._2)
+    // is there a better way to do this?
+    val starting = table.filter(_.dlcId =!= Sha256Digest.empty)
+
+    val group = ids.groupBy(_._1)
+
+    group
+      .foldLeft(starting) { case (accum, (dlcId, vec)) =>
+        accum.flatMap { _ =>
+          table.filter(t => t.dlcId === dlcId && t.index.inSet(vec.map(_._2)))
+        }
+      }
+  }
+
+  override def findByPrimaryKey(id: (Sha256Digest, Long)): Query[
+    DLCCETSignatureTable,
+    DLCCETSignatureDb,
+    Seq] = {
+    table.filter(t => t.dlcId === id._1 && t.index === id._2)
+  }
+
+  override def find(t: DLCCETSignatureDb): Query[
+    DLCCETSignatureTable,
+    DLCCETSignatureDb,
+    Seq] = {
+    findByPrimaryKey((t.dlcId, t.index))
   }
 
   override def findAll(dlcs: Vector[DLCCETSignatureDb]): Query[
     DLCCETSignatureTable,
     DLCCETSignatureDb,
     Seq] =
-    findByPrimaryKeys(dlcs.map(sig => (sig.paramHash, sig.sigPoint)))
+    findByPrimaryKeys(dlcs.map(sig => (sig.dlcId, sig.index)))
 
-  def findByParamHash(
-      paramHash: Sha256DigestBE): Future[Vector[DLCCETSignatureDb]] = {
-    val q = table.filter(_.paramHash === paramHash)
+  def findByDLCId(dlcId: Sha256Digest): Future[Vector[DLCCETSignatureDb]] = {
+    val q = table.filter(_.dlcId === dlcId)
     safeDatabase.runVec(q.result)
   }
 
-  def findByParamHash(
-      paramHash: Sha256DigestBE,
-      isInit: Boolean): Future[Vector[DLCCETSignatureDb]] = {
-    val q = table
-      .filter(_.paramHash === paramHash)
-      .filter(_.isInitiator === isInit)
-    safeDatabase.runVec(q.result)
-  }
-
-  def findByParamHash(
-      paramHash: Sha256Digest): Future[Vector[DLCCETSignatureDb]] =
-    findByParamHash(paramHash.flip)
-
-  def deleteByParamHash(paramHash: Sha256DigestBE): Future[Int] = {
-    val q = table.filter(_.paramHash === paramHash)
+  def deleteByDLCId(dlcId: Sha256Digest): Future[Int] = {
+    val q = table.filter(_.dlcId === dlcId)
     safeDatabase.run(q.delete)
   }
 
   class DLCCETSignatureTable(tag: Tag)
-      extends Table[DLCCETSignatureDb](tag, "wallet_dlc_cet_sigs") {
+      extends Table[DLCCETSignatureDb](tag, schemaName, "cet_sigs") {
 
-    def paramHash: Rep[Sha256DigestBE] = column("param_hash")
+    def dlcId: Rep[Sha256Digest] = column("dlc_id")
 
-    def isInitiator: Rep[Boolean] = column("is_initiator")
+    def index: Rep[Long] = column("index")
 
     def sigPoint: Rep[ECPublicKey] = column("sig_point")
 
-    def signature: Rep[ECAdaptorSignature] = column("signature")
+    def acceptSig: Rep[ECAdaptorSignature] = column("accept_sig")
+
+    def initiatorSig: Rep[Option[ECAdaptorSignature]] = column("initiator_sig")
 
     def * : ProvenShape[DLCCETSignatureDb] =
-      (paramHash, isInitiator, sigPoint, signature).<>(
+      (dlcId, index, sigPoint, acceptSig, initiatorSig).<>(
         DLCCETSignatureDb.tupled,
         DLCCETSignatureDb.unapply)
 
-    def primaryKey: PrimaryKey =
-      primaryKey(name = "pk_dlc_cet_sigs",
-                 sourceColumns = (paramHash, isInitiator, sigPoint))
+    def pk: PrimaryKey =
+      primaryKey(name = "pk_cet_sigs", sourceColumns = (dlcId, index))
 
-    def fk: ForeignKeyQuery[_, DLCDb] =
-      foreignKey("fk_param_hash",
-                 sourceColumns = paramHash,
-                 targetTableQuery = dlcTable)(_.paramHash)
+    def fk =
+      foreignKey("fk_dlc_id",
+                 sourceColumns = dlcId,
+                 targetTableQuery = dlcTable)(_.dlcId)
   }
 }
