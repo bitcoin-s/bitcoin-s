@@ -3,6 +3,11 @@ on:
   push:
     branches: [master, main, adaptor-dlc,2021-05-19-jpackage-bundle-release]
     tags: ["*"]
+
+env:
+  pkg-assembly: 'krystal-bull-assembly-0.1.jar'
+  pkg-name: 'bitcoin-s'
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -45,7 +50,7 @@ jobs:
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           keychain-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
       - name: Build fat jar
-        run: sbt assembly
+        run: sbt "bundle/assembly"
       - name: Add cert to keychain and unlock keychain & build and sign dmg
         env:
           pkg-version: "1.0.0"
@@ -70,12 +75,12 @@ jobs:
           security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
           echo "===========jpackage app image begin================"
-          jpackage --verbose --name ${{ env.pkg-name }} --app-version 1.0.0 --mac-package-name ${{ env.pkg-name }} --type app-image -i target/scala-2.13/ --main-class com.krystal.bull.gui.GUI --main-jar ${{ env.pkg-assembly }} --icon src/main/resources/icons/krystal_bull.icns --mac-sign --mac-signing-keychain /Users/runner/Library/Keychains/signing_temp.keychain-db --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
+          jpackage --verbose --name ${{ env.pkg-name }} --app-version 1.0.0 --mac-package-name ${{ env.pkg-name }} --type app-image -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bidtcoins-S.ico --mac-sign --mac-signing-keychain /Users/runner/Library/Keychains/signing_temp.keychain-db --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
           echo "===========jpackage dmg begin================"
-          jpackage --verbose --name ${{ env.pkg-name }} --app-version 1.0.0 --mac-package-name ${{ env.pkg-name }} --type dmg --app-image krystalbull.app --mac-sign --mac-signing-keychain /Users/runner/Library/Keychains/signing_temp.keychain-db --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
+          jpackage --verbose --name ${{ env.pkg-name }} --app-version 1.0.0 --mac-package-name ${{ env.pkg-name }} --type dmg --app-image bitcoin-s.app --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
           echo "Signing dmg with code sign"
           codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep ${{ env.pkg-name }}-1.0.0.dmg
-          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "com.krystal.bull" --username "stewart.chris1234@gmail.com" --password "$MAC_NOTARIZATION_PW"  --file ${{ env.pkg-name }}-1.0.0.dmg | grep RequestUUID | awk '{print $3}')
+          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" --username "stewart.chris1234@gmail.com" --password "$MAC_NOTARIZATION_PW"  --file ${{ env.pkg-name }}-1.0.0.dmg | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
           sleep 5
           xcrun altool --notarization-info "$REQUEST_UUID" -u "stewart.chris1234@gmail.com" -p "$MAC_NOTARIZATION_PW"
@@ -114,11 +119,11 @@ jobs:
           with:
             fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
         - name: Build fat jar
-          run: sbt assembly
+          run: sbt "bundle/assembly"
         - name: Package jar as debian package
           env:
             pkg-version: ${{steps.previoustag.outputs.tag}}
-          run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version 1.0.0 --type deb -i target/scala-2.13/ --main-class com.krystal.bull.gui.GUI --main-jar ${{ env.pkg-assembly }} --icon src/main/resources/icons/krystal_bull.png"
+          run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version 1.0.0 --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }}"
         - name: View Artifacts
           run: ls -l
         - name: Print working dir
