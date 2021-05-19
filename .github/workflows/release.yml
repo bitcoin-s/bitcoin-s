@@ -123,7 +123,7 @@ jobs:
       - name: Package jar as debian package
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
-        run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version 1.0.0 --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.png"
+        run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version 1.0.0 --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.icns"
       - name: View Artifacts
         run: ls -l
       - name: Print working dir
