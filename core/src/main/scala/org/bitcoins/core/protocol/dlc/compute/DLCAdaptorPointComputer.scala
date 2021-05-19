@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.tlv.{
   UnsignedNumericOutcome
 }
 import org.bitcoins.crypto.{
+  CryptoContext,
   CryptoUtil,
   ECPublicKey,
   FieldElement,
@@ -118,7 +119,7 @@ object DLCAdaptorPointComputer {
         }
       }
 
-    val additionTries = preComputeTable.map { table =>
+    lazy val additionTries = preComputeTable.map { table =>
       AdditionTrieNode(table, pointOpt = Some(SecpPointInfinity))
     }
 
@@ -126,24 +127,49 @@ object DLCAdaptorPointComputer {
 
     oraclesAndOutcomes.map { oracleAndOutcome =>
       // For the given oracleAndOutcome, look up the point in the preComputeTable
-      val subSigPoints = oracleAndOutcome.map { case (info, outcome) =>
-        val oracleIndex =
-          contractInfo.oracleInfo.singleOracleInfos.indexOf(info)
+      val subSigPoints = CryptoUtil.cryptoContext match {
+        case CryptoContext.LibSecp256k1 =>
+          oracleAndOutcome.flatMap { case (info, outcome) =>
+            val oracleIndex =
+              contractInfo.oracleInfo.singleOracleInfos.indexOf(info)
+            val outcomeIndices = outcome match {
+              case outcome: EnumOutcome =>
+                Vector(
+                  contractInfo.contractDescriptor
+                    .asInstanceOf[EnumContractDescriptor]
+                    .keys
+                    .indexOf(outcome)
+                )
+              case UnsignedNumericOutcome(digits) => digits
+              case _: SignedNumericOutcome =>
+                throw new UnsupportedOperationException(
+                  "Signed numeric outcomes not supported!")
+            }
 
-        outcome match {
-          case outcome: EnumOutcome =>
-            val outcomeIndex = contractInfo.contractDescriptor
-              .asInstanceOf[EnumContractDescriptor]
-              .keys
-              .indexOf(outcome)
+            outcomeIndices.zipWithIndex.map { case (outcomeIndex, nonceIndex) =>
+              preComputeTable(oracleIndex)(nonceIndex)(outcomeIndex)
+            }
+          }
+        case CryptoContext.BouncyCastle | CryptoContext.BCrypto =>
+          oracleAndOutcome.map { case (info, outcome) =>
+            val oracleIndex =
+              contractInfo.oracleInfo.singleOracleInfos.indexOf(info)
 
-            preComputeTable(oracleIndex)(0)(outcomeIndex)
-          case UnsignedNumericOutcome(digits) =>
-            additionTries(oracleIndex).computeSum(digits)
-          case _: SignedNumericOutcome =>
-            throw new UnsupportedOperationException(
-              "Signed numeric outcomes not supported!")
-        }
+            outcome match {
+              case outcome: EnumOutcome =>
+                val outcomeIndex = contractInfo.contractDescriptor
+                  .asInstanceOf[EnumContractDescriptor]
+                  .keys
+                  .indexOf(outcome)
+
+                preComputeTable(oracleIndex)(0)(outcomeIndex)
+              case UnsignedNumericOutcome(digits) =>
+                additionTries(oracleIndex).computeSum(digits)
+              case _: SignedNumericOutcome =>
+                throw new UnsupportedOperationException(
+                  "Signed numeric outcomes not supported!")
+            }
+          }
       }
 
       CryptoUtil.combinePubKeys(subSigPoints)
