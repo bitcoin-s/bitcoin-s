@@ -3,6 +3,11 @@ on:
   push:
     branches: [master, main, adaptor-dlc]
     tags: ["*"]
+
+env:
+  pkg-assembly: 'bitcoin-s-bundle.jar'
+  pkg-name: 'bitcoin-s'
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -23,3 +28,115 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           GITHUB_DEPLOY_KEY: ${{ secrets.GITHUB_TOKEN }}
           GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
+  osx:
+    runs-on: [ macos-latest ]
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: openjdk@1.15.0-2
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: 0.0.0 # Optional fallback tag to use when no tag can be found
+      - name: Import developer cert to keychain
+        uses: apple-actions/import-codesign-certs@v1
+        with:
+          create-keychain: true
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+          keychain-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+      - name: Build fat jar
+        run: sbt "bundle/assembly"
+      - name: Add cert to keychain and unlock keychain & build and sign dmg
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+          MAC_NOTARIZATION_PW: ${{secrets.MAC_NOTARIZATION_PW}}
+        # Steps to build a fully signed and notarized krystal bull dmg
+        # 1. Unlock the OS x keychain so we don't have to input passwords via GUI prompts
+        # 2. Build krystalbull.app that is recursively signed with jpackage --mac-sign
+        # 3. Build an unsigned dmg that contains krystalbull.app inside of it (no idea why --mac-sign doesn't work with --type dmg)
+        # 4. Sign the dmg with codesign (jpackage dmg signing is broken for some reason)
+        # 5. Submit the dmg to apple's notarization service so can get it whitelisted for installation (see: https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution)
+        # 6. Sleep until apple notorization is done
+        # 7. Retrieve the signature and staple it to the dmg to so network requests do not need to be made to open the dmg
+        # 8. Check all signatures on krystalbull.app (see: https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues#3087735)
+        # 9. Check all dmg signatures
+        # 10. Display information about signed dmg
+        run: |
+          echo "Hello world"
+          java -version
+          jpackage --version
+          ls -l
+          security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
+          echo "===========jpackage app image begin================"
+          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type app-image -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.icns --mac-sign --mac-signing-keychain /Users/runner/Library/Keychains/signing_temp.keychain-db --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
+          echo "===========jpackage dmg begin================"
+          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image bitcoin-s.app --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
+          echo "Signing dmg with code sign"
+          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
+          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" --username "stewart.chris1234@gmail.com" --password "$MAC_NOTARIZATION_PW"  --file ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg | grep RequestUUID | awk '{print $3}')
+          echo "Waiting for notarization from Apple for $REQUEST_UUID"
+          sleep 5
+          xcrun altool --notarization-info "$REQUEST_UUID" -u "stewart.chris1234@gmail.com" -p "$MAC_NOTARIZATION_PW"
+          echo "Start while loop"
+          while xcrun altool --notarization-info "$REQUEST_UUID" -u "stewart.chris1234@gmail.com" -p "$MAC_NOTARIZATION_PW" | grep "Status: in progress" > /dev/null; do
+            echo "Verification in progress..."
+            sleep 30
+          done
+          xcrun stapler staple ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
+          echo "Done stapling"
+          spctl -vvv --assess --type exec bitcoin-s.app
+          echo "Done inspecting app with spctl"
+          codesign -vvv --deep --strict ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
+          echo "Done verifying code signing deep"
+          codesign -dvv ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
+          echo "Done verifying artifacts"
+          ls -l
+      - name: 'Echo download path'
+        run: echo ${{steps.download.outputs.download-path}}
+      - name: Upload dmg
+        uses: actions/upload-artifact@v1
+        with:
+          name: "bitcoin-s-dmg-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
+          path: ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
+  linux:
+    runs-on: [ ubuntu-latest ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: openjdk@1.16.0-1
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+      - name: Build fat jar
+        run: sbt "bundle/assembly"
+      - name: Package jar as debian package
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.png"
+      - name: View Artifacts
+        run: ls -l
+      - name: Print working dir
+        run: pwd
+      - name: Upload deb
+        uses: actions/upload-artifact@v1
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "bitcoin-s-deb-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
+          path: "${{ env.pkg-name }}_${{ steps.previoustag.outputs.tag }}-1_amd64.deb"
+
