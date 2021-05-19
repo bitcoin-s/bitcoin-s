@@ -53,7 +53,7 @@ jobs:
         run: sbt "bundle/assembly"
       - name: Add cert to keychain and unlock keychain & build and sign dmg
         env:
-          pkg-version: "1.0.0"
+          pkg-version: ${{steps.previoustag.outputs.tag}}
           MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           MAC_NOTARIZATION_PW: ${{secrets.MAC_NOTARIZATION_PW}}
         # Steps to build a fully signed and notarized krystal bull dmg
@@ -75,12 +75,12 @@ jobs:
           security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
           echo "===========jpackage app image begin================"
-          jpackage --verbose --name ${{ env.pkg-name }} --app-version 1.0.0 --mac-package-name ${{ env.pkg-name }} --type app-image -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.icns --mac-sign --mac-signing-keychain /Users/runner/Library/Keychains/signing_temp.keychain-db --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
+          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type app-image -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.icns --mac-sign --mac-signing-keychain /Users/runner/Library/Keychains/signing_temp.keychain-db --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
           echo "===========jpackage dmg begin================"
-          jpackage --verbose --name ${{ env.pkg-name }} --app-version 1.0.0 --mac-package-name ${{ env.pkg-name }} --type dmg --app-image bitcoin-s.app --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
+          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image bitcoin-s.app --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
           echo "Signing dmg with code sign"
-          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep ${{ env.pkg-name }}-1.0.0.dmg
-          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" --username "stewart.chris1234@gmail.com" --password "$MAC_NOTARIZATION_PW"  --file ${{ env.pkg-name }}-1.0.0.dmg | grep RequestUUID | awk '{print $3}')
+          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
+          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" --username "stewart.chris1234@gmail.com" --password "$MAC_NOTARIZATION_PW"  --file ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
           sleep 5
           xcrun altool --notarization-info "$REQUEST_UUID" -u "stewart.chris1234@gmail.com" -p "$MAC_NOTARIZATION_PW"
@@ -89,13 +89,13 @@ jobs:
             echo "Verification in progress..."
             sleep 30
           done
-          xcrun stapler staple ${{ env.pkg-name }}-1.0.0.dmg
+          xcrun stapler staple ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
           echo "Done stapling"
           spctl -vvv --assess --type exec bitcoin-s.app
           echo "Done inspecting app with spctl"
-          codesign -vvv --deep --strict ${{ env.pkg-name }}-1.0.0.dmg
+          codesign -vvv --deep --strict ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
           echo "Done verifying code signing deep"
-          codesign -dvv ${{ env.pkg-name }}-1.0.0.dmg
+          codesign -dvv ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
           echo "Done verifying artifacts"
           ls -l
       - name: 'Echo download path'
@@ -103,8 +103,8 @@ jobs:
       - name: Upload dmg
         uses: actions/upload-artifact@v1
         with:
-          name: "bitcoin-s-dmg-1.0.0-${{github.sha}}"
-          path: ${{ env.pkg-name }}-1.0.0.dmg
+          name: "bitcoin-s-dmg-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
+          path: ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
   linux:
     runs-on: [ ubuntu-latest ]
     steps:
@@ -123,7 +123,7 @@ jobs:
       - name: Package jar as debian package
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
-        run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version 1.0.0 --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.icns"
+        run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.icns"
       - name: View Artifacts
         run: ls -l
       - name: Print working dir
@@ -134,5 +134,5 @@ jobs:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: "bitcoin-s-deb-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
-          path: "${{ env.pkg-name }}_1.0.0-1_amd64.deb"
+          path: "${{ env.pkg-name }}_${{ steps.previoustag.outputs.tag }}-1_amd64.deb"
 
