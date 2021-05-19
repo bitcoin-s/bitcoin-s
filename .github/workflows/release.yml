@@ -105,34 +105,34 @@ jobs:
         with:
           name: "krystal-bull-dmg-1.0.0-${{github.sha}}"
           path: ${{ env.pkg-name }}-1.0.0.dmg
-    linux:
-      runs-on: [ ubuntu-latest ]
-      steps:
-        - uses: actions/checkout@v2
-        - name: Setup Scala
-          uses: olafurpg/setup-scala@v10
-          with:
-            java-version: openjdk@1.15.0-2
-        - name: 'Get Previous tag'
-          id: previoustag
-          uses: "WyriHaximus/github-action-get-previous-tag@v1"
-          with:
-            fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-        - name: Build fat jar
-          run: sbt "bundle/assembly"
-        - name: Package jar as debian package
-          env:
-            pkg-version: ${{steps.previoustag.outputs.tag}}
-          run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version 1.0.0 --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }}"
-        - name: View Artifacts
-          run: ls -l
-        - name: Print working dir
-          run: pwd
-        - name: Upload deb
-          uses: actions/upload-artifact@v1
-          env:
-            pkg-version: ${{steps.previoustag.outputs.tag}}
-          with:
-            name: "krystal-bull-deb-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
-            path: "${{ env.pkg-name }}_1.0.0-1_amd64.deb"
+  linux:
+    runs-on: [ ubuntu-latest ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: openjdk@1.15.0-2
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+      - name: Build fat jar
+        run: sbt "bundle/assembly"
+      - name: Package jar as debian package
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version 1.0.0 --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }}"
+      - name: View Artifacts
+        run: ls -l
+      - name: Print working dir
+        run: pwd
+      - name: Upload deb
+        uses: actions/upload-artifact@v1
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "krystal-bull-deb-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
+          path: "${{ env.pkg-name }}_1.0.0-1_amd64.deb"
 
