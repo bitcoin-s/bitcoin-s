@@ -91,7 +91,7 @@ jobs:
           done
           xcrun stapler staple ${{ env.pkg-name }}-1.0.0.dmg
           echo "Done stapling"
-          spctl -vvv --assess --type exec krystalbull.app
+          spctl -vvv --assess --type exec bitcoin-s.app
           echo "Done inspecting app with spctl"
           codesign -vvv --deep --strict ${{ env.pkg-name }}-1.0.0.dmg
           echo "Done verifying code signing deep"
@@ -103,7 +103,7 @@ jobs:
       - name: Upload dmg
         uses: actions/upload-artifact@v1
         with:
-          name: "krystal-bull-dmg-1.0.0-${{github.sha}}"
+          name: "bitcoin-s-dmg-1.0.0-${{github.sha}}"
           path: ${{ env.pkg-name }}-1.0.0.dmg
   linux:
     runs-on: [ ubuntu-latest ]
@@ -133,6 +133,6 @@ jobs:
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
-          name: "krystal-bull-deb-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
+          name: "bitcoin-s-deb-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
           path: "${{ env.pkg-name }}_1.0.0-1_amd64.deb"
 
