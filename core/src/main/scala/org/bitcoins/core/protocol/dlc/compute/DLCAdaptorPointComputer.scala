@@ -10,16 +10,7 @@ import org.bitcoins.core.protocol.tlv.{
   SignedNumericOutcome,
   UnsignedNumericOutcome
 }
-import org.bitcoins.crypto.{
-  CryptoContext,
-  CryptoUtil,
-  ECPublicKey,
-  FieldElement,
-  SchnorrPublicKey,
-  SecpPoint,
-  SecpPointFinite,
-  SecpPointInfinity
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 /** Responsible for optimized computation of DLC adaptor point batches. */
@@ -54,12 +45,29 @@ object DLCAdaptorPointComputer {
     nonce.add(pubKey.publicKey.tweakMultiply(FieldElement(hash)))
   }
 
+  /** This trie is used for computing adaptor points for a single oracle corresponding
+    * to digit prefixes while memoizing partial sums.
+    *
+    * For example the point corresponding to 0110 and 01111010 both begin with
+    * the 011 sub-sum.
+    *
+    * This trie stores all already computed sub-sums and new points are computed
+    * by extending this Trie.
+    *
+    * Note that this method should not be used if you have access to LibSecp256k1CryptoRuntime
+    * because calling CryptoUtil.combinePubKeys will outperform memoization in that case.
+    */
   case class AdditionTrieNode(
       preComputeTable: Vector[Vector[ECPublicKey]], // Nonce -> Outcome -> Point
       depth: Int = 0,
       var children: Vector[AdditionTrieNode] = Vector.empty,
       var pointOpt: Option[SecpPoint] = None) {
 
+    /** Populates children field with base empty nodes.
+      *
+      * To avoid unnecessary computation (and recursion),
+      * this should be called lazily only when children are needed.
+      */
     def initChildren(): Unit = {
       children = 0
         .until(base)
@@ -67,10 +75,17 @@ object DLCAdaptorPointComputer {
         .map(_ => AdditionTrieNode(preComputeTable, depth + 1))
     }
 
+    /** Uses the preComputeTable to calculate the adaptor point
+      * for the given digit prefix.
+      *
+      * This is done by traversing (and where need be extending) the
+      * Trie according to the digits until the point corresponding to
+      * the input digits is reached.
+      */
     def computeSum(digits: Vector[Int]): ECPublicKey = {
       val point = pointOpt.get
 
-      if (digits.isEmpty) {
+      if (digits.isEmpty) { // Then we have arrived at our result
         point match {
           case SecpPointInfinity =>
             throw new IllegalArgumentException(
@@ -81,13 +96,15 @@ object DLCAdaptorPointComputer {
         val digit = digits.head
         if (children.isEmpty) initChildren()
         val child = children(digit)
+        // If child is not defined, extend the trie
         child.pointOpt match {
-          case Some(_) => child.computeSum(digits.tail)
+          case Some(_) => ()
           case None =>
             val pointToAdd = preComputeTable(depth)(digit).toPoint
             child.pointOpt = Some(point.add(pointToAdd))
-            child.computeSum(digits.tail)
         }
+        // Then move down and continue computation
+        child.computeSum(digits.tail)
       }
     }
   }
