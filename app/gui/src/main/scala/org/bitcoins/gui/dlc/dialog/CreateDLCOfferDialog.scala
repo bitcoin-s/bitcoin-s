@@ -1,5 +1,6 @@
 package org.bitcoins.gui.dlc.dialog
 
+import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand.CreateDLCOffer
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
@@ -9,7 +10,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.DLCPlotUtil
 import org.bitcoins.gui.dlc.dialog.CreateDLCOfferDialog.getNumericContractInfo
-import org.bitcoins.gui.util.GUIUtil.{numberFormatter, setNumericInput}
+import org.bitcoins.gui.util.GUIUtil._
 import scalafx.Includes._
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
@@ -20,7 +21,7 @@ import java.time.ZoneOffset
 import scala.collection._
 import scala.util.{Failure, Success, Try}
 
-class CreateDLCOfferDialog {
+class CreateDLCOfferDialog extends Logging {
 
   def showAndWait(parentWindow: Window): Option[CreateDLCOffer] = {
     val dialog = new Dialog[Option[CreateDLCOffer]]() {
@@ -92,11 +93,10 @@ class CreateDLCOfferDialog {
       nextRow += 1
     }
 
-    val pointVec: scala.collection.mutable.Seq[(
-        TextField,
-        TextField,
-        CheckBox)] =
-      scala.collection.mutable.Seq.empty
+    val pointMap: scala.collection.mutable.Map[
+      Int,
+      (TextField, TextField, CheckBox)] =
+      scala.collection.mutable.Map.empty
 
     var nextPointRow: Int = 2
     val pointGrid: GridPane = new GridPane {
@@ -150,7 +150,7 @@ class CreateDLCOfferDialog {
       setNumericInput(xTF)
       setNumericInput(yTF)
 
-      pointVec :+ ((xTF, yTF, endPointBox))
+      pointMap.put(row, (xTF, yTF, endPointBox))
 
       pointGrid.add(xTF, 0, row)
       pointGrid.add(yTF, 1, row)
@@ -160,8 +160,8 @@ class CreateDLCOfferDialog {
       dialog.dialogPane().getScene.getWindow.sizeToScene()
     }
 
-    val roundingVec: scala.collection.mutable.Seq[(TextField, TextField)] =
-      scala.collection.mutable.Seq.empty
+    val roundingMap: scala.collection.mutable.Map[Int, (TextField, TextField)] =
+      scala.collection.mutable.Map.empty
 
     var nextRoundingRow: Int = 2
     val roundingGrid: GridPane = new GridPane {
@@ -186,7 +186,7 @@ class CreateDLCOfferDialog {
       setNumericInput(roundingLevelTF)
 
       val row = nextRoundingRow
-      roundingVec :+ ((outcomeTF, roundingLevelTF))
+      roundingMap.put(row, (outcomeTF, roundingLevelTF))
 
       roundingGrid.add(outcomeTF, 0, row)
       roundingGrid.add(roundingLevelTF, 1, row)
@@ -240,8 +240,8 @@ class CreateDLCOfferDialog {
     val previewGraphButton: Button = new Button("Preview Graph") {
       onAction = _ => {
         getNumericContractInfo(decompOpt,
-                               pointVec.toVector,
-                               roundingVec.toVector) match {
+                               pointMap.values.toVector,
+                               roundingMap.values.toVector) match {
           case Failure(_) => ()
           case Success((totalCollateral, descriptor)) =>
             DLCPlotUtil.plotCETsWithOriginalCurve(base = 2,
@@ -317,7 +317,7 @@ class CreateDLCOfferDialog {
                 outcomes.foreach(str => addEnumOutcomeRow(str.normStr))
                 nextRow = 3
                 addRemainingFields()
-              case digitDecomp: DigitDecompositionEventDescriptorV0TLV =>
+              case digitDecomp: UnsignedDigitDecompositionEventDescriptor =>
                 decompOpt = Some(digitDecomp)
 
                 val addPointButton: Button = new Button("+") {
@@ -340,6 +340,7 @@ class CreateDLCOfferDialog {
                                      previewGraphButton)
                 nextRow = 4
                 addRemainingFields()
+              case _: SignedDigitDecompositionEventDescriptor => ()
             }
             dialog.dialogPane().getScene.getWindow.sizeToScene()
         }
@@ -398,8 +399,8 @@ class CreateDLCOfferDialog {
             ContractInfo(descriptor, oracleInfo).toTLV
           case oracleInfo: NumericSingleOracleInfo =>
             getNumericContractInfo(decompOpt,
-                                   pointVec.toVector,
-                                   roundingVec.toVector) match {
+                                   pointMap.values.toVector,
+                                   roundingMap.values.toVector) match {
               case Failure(exception) => throw exception
               case Success((totalCol, numeric)) =>
                 ContractInfo(totalCol, numeric, oracleInfo).toTLV
