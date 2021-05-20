@@ -12,11 +12,12 @@ case class DLCDAOs(
     nonceDAO: OracleNonceDAO,
     dlcAnnouncementDAO: DLCAnnouncementDAO,
     dlcDAO: DLCDAO,
+    contractDataDAO: DLCContractDataDAO,
     dlcOfferDAO: DLCOfferDAO,
     dlcAcceptDAO: DLCAcceptDAO,
     dlcInputsDAO: DLCFundingInputDAO,
-    dlcSigsDAO: DLCCETSignatureDAO,
-    dlcRefundSigDAO: DLCRefundSigDAO,
+    dlcSigsDAO: DLCCETSignaturesDAO,
+    dlcRefundSigDAO: DLCRefundSigsDAO,
     dlcRemoteTxDAO: DLCRemoteTxDAO)
 
 trait DLCDAOFixture extends BitcoinSWalletTest {
@@ -26,17 +27,19 @@ trait DLCDAOFixture extends BitcoinSWalletTest {
     val nonceDAO = OracleNonceDAO()
     val dlcAnnouncementDAO = DLCAnnouncementDAO()
     val dlc = DLCDAO()
+    val contractDataDAO = DLCContractDataDAO()
     val dlcOfferDAO = DLCOfferDAO()
     val dlcAcceptDAO = DLCAcceptDAO()
     val dlcInputsDAO = DLCFundingInputDAO()
-    val dlcSigsDAO = DLCCETSignatureDAO()
-    val dlcRefundSigDAO = DLCRefundSigDAO()
+    val dlcSigsDAO = DLCCETSignaturesDAO()
+    val dlcRefundSigDAO = DLCRefundSigsDAO()
     val dlcRemoteTxDAO = DLCRemoteTxDAO()
     DLCDAOs(
       announcementDAO = announcementDAO,
       nonceDAO = nonceDAO,
       dlcAnnouncementDAO = dlcAnnouncementDAO,
       dlcDAO = dlc,
+      contractDataDAO = contractDataDAO,
       dlcOfferDAO = dlcOfferDAO,
       dlcAcceptDAO = dlcAcceptDAO,
       dlcInputsDAO = dlcInputsDAO,

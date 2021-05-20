@@ -3,6 +3,7 @@ package org.bitcoins.dlc.wallet.models
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.tlv.NegotiationFieldsTLV
 import org.bitcoins.crypto._
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.dlc.wallet.DLCAppConfig
@@ -78,6 +79,9 @@ case class DLCAcceptDAO()(implicit
 
     def changeSerialId: Rep[UInt64] = column("change_serial_id")
 
+    def negotiationFields: Rep[NegotiationFieldsTLV] = column(
+      "negotiation_fields")
+
     def * : ProvenShape[DLCAcceptDb] =
       (dlcId,
        fundingPubKey,
@@ -85,7 +89,8 @@ case class DLCAcceptDAO()(implicit
        payoutSerialId,
        collateral,
        changeAddress,
-       changeSerialId).<>(DLCAcceptDb.tupled, DLCAcceptDb.unapply)
+       changeSerialId,
+       negotiationFields).<>(DLCAcceptDb.tupled, DLCAcceptDb.unapply)
 
     def fk: ForeignKeyQuery[_, DLCDb] =
       foreignKey("fk_dlc_id",

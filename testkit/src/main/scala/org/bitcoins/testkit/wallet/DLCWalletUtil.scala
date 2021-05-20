@@ -205,6 +205,14 @@ object DLCWalletUtil {
     account = HDAccount.fromPath(BIP32Path.fromString("m/84'/0'/0'")).get,
     changeIndex = HDChainType.External,
     keyIndex = 0,
+    fundingOutPointOpt = None,
+    fundingTxIdOpt = None,
+    closingTxIdOpt = None,
+    aggregateSignatureOpt = None
+  )
+
+  lazy val sampleContractDataDb: DLCContractDataDb = DLCContractDataDb(
+    dlcId = sampleDLCDb.dlcId,
     oracleThreshold = 1,
     oracleParamsTLVOpt = None,
     contractDescriptorTLV = sampleContractDescriptor.toTLV,
@@ -212,11 +220,7 @@ object DLCWalletUtil {
     contractTimeout = BlockTimeStamp(1),
     totalCollateral = Satoshis(10000),
     feeRate = SatoshisPerVirtualByte.fromLong(3),
-    fundOutputSerialId = UInt64.one,
-    fundingOutPointOpt = None,
-    fundingTxIdOpt = None,
-    closingTxIdOpt = None,
-    aggregateSignatureOpt = None
+    fundOutputSerialId = UInt64.one
   )
 
   def initDLC(

@@ -166,7 +166,7 @@ trait DbManagement extends Logging {
           err)
         //maybe we have an existing database, so attempt to baseline the existing
         //database and then apply migrations again
-//        flyway.baseline()
+        flyway.baseline()
         flyway.migrate()
     }
   }

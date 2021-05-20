@@ -1,15 +1,24 @@
 CREATE TABLE "global_dlc_data"
 (
-    "dlc_id"                TEXT PRIMARY KEY,
-    "temp_contract_id"      TEXT    NOT NULL UNIQUE,
-    "contract_id"           TEXT UNIQUE,
-    "protocol_version"      INTEGER NOT NULL,
-    "state"                 TEXT    NOT NULL,
-    "is_initiator"          INTEGER NOT NULL,
-    "account"               TEXT    NOT NULL,
-    "change_index"          INTEGER NOT NULL,
-    "key_index"             INTEGER NOT NULL,
+    "dlc_id"              TEXT PRIMARY KEY,
+    "temp_contract_id"    TEXT    NOT NULL UNIQUE,
+    "contract_id"         TEXT UNIQUE,
+    "protocol_version"    INTEGER NOT NULL,
+    "state"               TEXT    NOT NULL,
+    "is_initiator"        INTEGER NOT NULL,
+    "account"             TEXT    NOT NULL,
+    "change_index"        INTEGER NOT NULL,
+    "key_index"           INTEGER NOT NULL,
 
+    "funding_outpoint"    TEXT,
+    "funding_tx_id"       TEXT,
+    "closing_tx_id"       TEXT,
+    "aggregate_signature" TEXT
+);
+
+CREATE TABLE "contract_data"
+(
+    "dlc_id"                TEXT PRIMARY KEY,
     "oracle_threshold"      INTEGER NOT NULL,
     "oracle_params"         TEXT,
     "contract_descriptor"   TEXT    NOT NULL,
@@ -18,11 +27,7 @@ CREATE TABLE "global_dlc_data"
     "total_collateral"      INTEGER NOT NULL,
     "fee_rate"              TEXT    NOT NULL,
     "fund_output_serial_id" INTEGER NOT NULL,
-
-    "funding_outpoint"      TEXT,
-    "funding_tx_id"         TEXT,
-    "closing_tx_id"         TEXT,
-    "aggregate_signature"   TEXT
+    constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 
 CREATE TABLE "oracle_announcement_data"
@@ -81,13 +86,14 @@ CREATE TABLE "offer_dlc_data"
 
 CREATE TABLE "accept_dlc_data"
 (
-    "dlc_id"           TEXT PRIMARY KEY,
-    "funding_pub_key"  TEXT    NOT NULL,
-    "payout_address"   TEXT    NOT NULL,
-    "payout_serial_id" INTEGER NOT NULL,
-    "collateral"       INTEGER NOT NULL,
-    "change_address"   TEXT    NOT NULL,
-    "change_serial_id" INTEGER NOT NULL,
+    "dlc_id"             TEXT PRIMARY KEY,
+    "funding_pub_key"    TEXT    NOT NULL,
+    "payout_address"     TEXT    NOT NULL,
+    "payout_serial_id"   INTEGER NOT NULL,
+    "collateral"         INTEGER NOT NULL,
+    "change_address"     TEXT    NOT NULL,
+    "change_serial_id"   INTEGER NOT NULL,
+    "negotiation_fields" TEXT    NOT NULL,
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 
@@ -109,7 +115,7 @@ CREATE TABLE "cet_sigs"
     "dlc_id"        TEXT    NOT NULL,
     "index"         INTEGER NOT NULL,
     "sig_point"     TEXT    NOT NULL,
-    "accept_sig"    TEXT    NOT NULL,
+    "accepter_sig"  TEXT    NOT NULL,
     "initiator_sig" TEXT,
     constraint "pk_cet_sigs" primary key ("dlc_id", "index"),
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
@@ -118,7 +124,7 @@ CREATE TABLE "cet_sigs"
 CREATE TABLE "refund_sigs"
 (
     "dlc_id"        TEXT PRIMARY KEY,
-    "accept_sig"    TEXT NOT NULL,
+    "accepter_sig"  TEXT NOT NULL,
     "initiator_sig" TEXT,
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );

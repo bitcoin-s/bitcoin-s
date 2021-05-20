@@ -98,7 +98,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       assert(refundSigsB.isDefined)
       assert(refundSigsA.get.initiatorSig.isDefined)
       assert(refundSigsA.get.initiatorSig == refundSigsB.get.initiatorSig)
-      assert(refundSigsA.get.acceptSig == refundSigsB.get.acceptSig)
+      assert(refundSigsA.get.accepterSig == refundSigsB.get.accepterSig)
 
       assert(sign.cetSigs.outcomeSigs.forall { case (outcome, sig) =>
         outcomeSigs.exists(dbSig =>
@@ -195,7 +195,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         assert(refundSigsB.isDefined)
         assert(refundSigsA.get.initiatorSig.isDefined)
         assert(refundSigsA.get.initiatorSig == refundSigsB.get.initiatorSig)
-        assert(refundSigsA.get.acceptSig == refundSigsB.get.acceptSig)
+        assert(refundSigsA.get.accepterSig == refundSigsB.get.accepterSig)
 
         assert(sign.cetSigs.outcomeSigs.forall { case (outcome, sig) =>
           outcomeSigs.exists(dbSig =>
@@ -536,7 +536,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           assert(refundSigsB.isDefined)
           assert(refundSigsA.get.initiatorSig.isDefined)
           assert(refundSigsA.get.initiatorSig == refundSigsB.get.initiatorSig)
-          assert(refundSigsA.get.acceptSig == refundSigsB.get.acceptSig)
+          assert(refundSigsA.get.accepterSig == refundSigsB.get.accepterSig)
 
           assert(sign.cetSigs.outcomeSigs.forall { case (outcome, sig) =>
             outcomeSigs.exists(dbSig =>

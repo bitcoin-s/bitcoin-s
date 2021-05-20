@@ -20,7 +20,7 @@ sealed trait DLCMessage
 object DLCMessage {
 
   def calcDLCId(outPoints: Vector[TransactionOutPoint]): Sha256Digest = {
-    val bytes = outPoints.sortBy(_.hex).foldLeft(ByteVector.empty)(_ ++ _.bytes)
+    val bytes = outPoints.map(_.bytes).sorted.foldLeft(ByteVector.empty)(_ ++ _)
     CryptoUtil.sha256(bytes)
   }
 

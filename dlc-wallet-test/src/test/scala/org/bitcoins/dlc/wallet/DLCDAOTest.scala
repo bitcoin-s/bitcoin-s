@@ -83,7 +83,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     verifyDatabaseInsertion(input, input.outPoint, inputsDAO, dlcDAO)
   }
 
-  it should "correctly find funding inputs by eventId and isInitiator" in {
+  it should "correctly find funding inputs by dlcId and isInitiator" in {
     daos =>
       val inputsDAO = daos.dlcInputsDAO
       val dlcDAO = daos.dlcDAO
@@ -134,11 +134,11 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       val dlcDAO = daos.dlcDAO
       val sigsDAO = daos.dlcSigsDAO
 
-      val sig = DLCCETSignatureDb(
+      val sig = DLCCETSignaturesDb(
         dlcId = dlcId,
         sigPoint = ECPublicKey.freshPublicKey,
         index = 0,
-        acceptSig = ECAdaptorSignature.dummy,
+        accepterSig = ECAdaptorSignature.dummy,
         initiatorSig = None
       )
 
@@ -150,34 +150,34 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       val dlcDAO = daos.dlcDAO
       val sigsDAO = daos.dlcSigsDAO
 
-      val sig = DLCCETSignatureDb(
+      val sig = DLCCETSignaturesDb(
         dlcId = dlcId,
         sigPoint = ECPublicKey.freshPublicKey,
         index = 1,
-        acceptSig = ECAdaptorSignature.dummy,
+        accepterSig = ECAdaptorSignature.dummy,
         initiatorSig = None
       )
 
       verifyDatabaseInsertion(sig, (sig.dlcId, sig.index), sigsDAO, dlcDAO)
   }
 
-  it should "correctly find CET signatures by eventId" in { daos =>
+  it should "correctly find CET signatures by dlcId" in { daos =>
     val dlcDAO = daos.dlcDAO
     val sigsDAO = daos.dlcSigsDAO
 
     val sigs = Vector(
-      DLCCETSignatureDb(
+      DLCCETSignaturesDb(
         dlcId = dlcId,
         sigPoint = ECPublicKey.freshPublicKey,
         index = 2,
-        acceptSig = ECAdaptorSignature.dummy,
+        accepterSig = ECAdaptorSignature.dummy,
         initiatorSig = Some(ECAdaptorSignature.dummy)
       ),
-      DLCCETSignatureDb(
+      DLCCETSignaturesDb(
         dlcId = dlcId,
         sigPoint = ECPublicKey.freshPublicKey,
         index = 3,
-        acceptSig = ECAdaptorSignature.dummy,
+        accepterSig = ECAdaptorSignature.dummy,
         initiatorSig = Some(ECAdaptorSignature.dummy)
       )
     )

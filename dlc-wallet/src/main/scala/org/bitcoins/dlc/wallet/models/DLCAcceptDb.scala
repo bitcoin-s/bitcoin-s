@@ -3,8 +3,10 @@ package org.bitcoins.dlc.wallet.models
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCAccept.NegotiationFields
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.tlv.NegotiationFieldsTLV
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.crypto._
 
@@ -15,7 +17,11 @@ case class DLCAcceptDb(
     payoutSerialId: UInt64,
     collateral: CurrencyUnit,
     changeAddress: BitcoinAddress,
-    changeSerialId: UInt64) {
+    changeSerialId: UInt64,
+    negotiationFieldsTLV: NegotiationFieldsTLV) {
+
+  lazy val negotiationFields: NegotiationFields =
+    NegotiationFields.fromTLV(negotiationFieldsTLV)
 
   def toDLCAccept(
       tempContractId: Sha256Digest,
@@ -33,7 +39,7 @@ case class DLCAcceptDb(
       payoutSerialId = payoutSerialId,
       changeSerialId = changeSerialId,
       cetSigs = cetSigs,
-      negotiationFields = DLCAccept.NoNegotiationFields,
+      negotiationFields = negotiationFields,
       tempContractId = tempContractId
     )
   }
@@ -51,7 +57,7 @@ case class DLCAcceptDb(
       changeAddress = changeAddress,
       payoutSerialId = payoutSerialId,
       changeSerialId = changeSerialId,
-      negotiationFields = DLCAccept.NoNegotiationFields,
+      negotiationFields = negotiationFields,
       tempContractId = tempContractId
     )
   }
@@ -67,7 +73,8 @@ object DLCAcceptDbHelper {
       accept.payoutSerialId,
       accept.totalCollateral,
       accept.changeAddress,
-      accept.changeSerialId
+      accept.changeSerialId,
+      accept.negotiationFields.toTLV
     )
   }
 }

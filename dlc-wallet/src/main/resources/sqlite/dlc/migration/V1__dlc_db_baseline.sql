@@ -1,15 +1,24 @@
 CREATE TABLE "global_dlc_data"
 (
-    "dlc_id"                VARCHAR(254) PRIMARY KEY,
-    "temp_contract_id"      VARCHAR(254) NOT NULL UNIQUE,
-    "contract_id"           VARCHAR(254) UNIQUE,
-    "protocol_version"      INTEGER      NOT NULL,
-    "state"                 VARCHAR(254) NOT NULL,
-    "is_initiator"          INTEGER      NOT NULL,
-    "account"               VARCHAR(254) NOT NULL,
-    "change_index"          INTEGER      NOT NULL,
-    "key_index"             INTEGER      NOT NULL,
+    "dlc_id"              VARCHAR(254) PRIMARY KEY,
+    "temp_contract_id"    VARCHAR(254) NOT NULL UNIQUE,
+    "contract_id"         VARCHAR(254) UNIQUE,
+    "protocol_version"    INTEGER      NOT NULL,
+    "state"               VARCHAR(254) NOT NULL,
+    "is_initiator"        INTEGER      NOT NULL,
+    "account"             VARCHAR(254) NOT NULL,
+    "change_index"        INTEGER      NOT NULL,
+    "key_index"           INTEGER      NOT NULL,
 
+    "funding_outpoint"    VARCHAR(254),
+    "funding_tx_id"       VARCHAR(254),
+    "closing_tx_id"       VARCHAR(254),
+    "aggregate_signature" VARCHAR(254)
+);
+
+CREATE TABLE "contract_data"
+(
+    "dlc_id"                VARCHAR(254) PRIMARY KEY,
     "oracle_threshold"      INTEGER      NOT NULL,
     "oracle_params"         VARCHAR(254),
     "contract_descriptor"   VARCHAR(254) NOT NULL,
@@ -18,25 +27,21 @@ CREATE TABLE "global_dlc_data"
     "total_collateral"      INTEGER      NOT NULL,
     "fee_rate"              VARCHAR(254) NOT NULL,
     "fund_output_serial_id" INTEGER      NOT NULL,
-
-    "funding_outpoint"      VARCHAR(254),
-    "funding_tx_id"         VARCHAR(254),
-    "closing_tx_id"         VARCHAR(254),
-    "aggregate_signature"   VARCHAR(254)
+    constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 
 CREATE TABLE "oracle_announcement_data"
 (
     "id"                     INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    "announcement_signature" VARCHAR(254) NOT NULL UNIQUE,
-    "pub_key"                VARCHAR(254) NOT NULL,
-    "signing_pub_key"        VARCHAR(254) NOT NULL,
-    "event_maturity"         INTEGER      NOT NULL,
-    "event_id"               VARCHAR(254) NOT NULL,
-    "event_descriptor"       VARCHAR(254) NOT NULL
+    "announcement_signature" VARCHAR(254)                      NOT NULL UNIQUE,
+    "pub_key"                VARCHAR(254)                      NOT NULL,
+    "signing_pub_key"        VARCHAR(254)                      NOT NULL,
+    "event_maturity"         INTEGER                           NOT NULL,
+    "event_id"               VARCHAR(254)                      NOT NULL,
+    "event_descriptor"       VARCHAR(254)                      NOT NULL
 );
 CREATE
-INDEX "oracle_announcements_pub_key_index" on "oracle_announcement_data" ("pub_key");
+    INDEX "oracle_announcements_pub_key_index" on "oracle_announcement_data" ("pub_key");
 
 CREATE TABLE "dlc_announcements"
 (
@@ -49,9 +54,9 @@ CREATE TABLE "dlc_announcements"
     constraint "fk_announcement_id" foreign key ("announcement_id") references "oracle_announcement_data" ("id") on update NO ACTION on delete NO ACTION
 );
 CREATE
-INDEX "dlc_announcements_dlc_id_index" on "dlc_announcements" ("dlc_id");
+    INDEX "dlc_announcements_dlc_id_index" on "dlc_announcements" ("dlc_id");
 CREATE
-INDEX "dlc_announcements_announcement_id_index" on "dlc_announcements" ("announcement_id");
+    INDEX "dlc_announcements_announcement_id_index" on "dlc_announcements" ("announcement_id");
 
 CREATE TABLE "oracle_nonces"
 (
@@ -65,7 +70,7 @@ CREATE TABLE "oracle_nonces"
     constraint "fk_announcement_id" foreign key ("announcement_id") references "oracle_announcement_data" ("id") on update NO ACTION on delete NO ACTION
 );
 CREATE
-INDEX "oracle_nonces_index" on "oracle_nonces" ("nonce");
+    INDEX "oracle_nonces_index" on "oracle_nonces" ("nonce");
 
 CREATE TABLE "offer_dlc_data"
 (
@@ -81,13 +86,14 @@ CREATE TABLE "offer_dlc_data"
 
 CREATE TABLE "accept_dlc_data"
 (
-    "dlc_id"           VARCHAR(254) PRIMARY KEY,
-    "funding_pub_key"  VARCHAR(254) NOT NULL,
-    "payout_address"   VARCHAR(254) NOT NULL,
-    "payout_serial_id" INTEGER      NOT NULL,
-    "collateral"       INTEGER      NOT NULL,
-    "change_address"   VARCHAR(254) NOT NULL,
-    "change_serial_id" INTEGER      NOT NULL,
+    "dlc_id"             VARCHAR(254) PRIMARY KEY,
+    "funding_pub_key"    VARCHAR(254) NOT NULL,
+    "payout_address"     VARCHAR(254) NOT NULL,
+    "payout_serial_id"   INTEGER      NOT NULL,
+    "collateral"         INTEGER      NOT NULL,
+    "change_address"     VARCHAR(254) NOT NULL,
+    "change_serial_id"   INTEGER      NOT NULL,
+    "negotiation_fields" VARCHAR(254) NOT NULL,
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 
@@ -109,7 +115,7 @@ CREATE TABLE "cet_sigs"
     "dlc_id"        VARCHAR(254) NOT NULL,
     "index"         INTEGER      NOT NULL,
     "sig_point"     VARCHAR(254) NOT NULL,
-    "accept_sig"    VARCHAR(254) NOT NULL,
+    "accepter_sig"  VARCHAR(254) NOT NULL,
     "initiator_sig" VARCHAR(254),
     constraint "pk_cet_sigs" primary key ("dlc_id", "index"),
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
@@ -118,7 +124,7 @@ CREATE TABLE "cet_sigs"
 CREATE TABLE "refund_sigs"
 (
     "dlc_id"        VARCHAR(254) PRIMARY KEY,
-    "accept_sig"    VARCHAR(254) NOT NULL,
+    "accepter_sig"  VARCHAR(254) NOT NULL,
     "initiator_sig" VARCHAR(254),
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );

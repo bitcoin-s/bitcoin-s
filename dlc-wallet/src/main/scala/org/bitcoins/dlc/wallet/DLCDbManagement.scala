@@ -24,6 +24,10 @@ trait DLCDbManagement extends DbManagement {
     DLCDAO()(ec, appConfig).table
   }
 
+  private lazy val contractDataTable: TableQuery[Table[_]] = {
+    DLCContractDataDAO()(ec, appConfig).table
+  }
+
   private lazy val dlcAnnouncementTable: TableQuery[Table[_]] = {
     DLCAnnouncementDAO()(ec, appConfig).table
   }
@@ -41,11 +45,11 @@ trait DLCDbManagement extends DbManagement {
   }
 
   private lazy val dlcCETSigTable: TableQuery[Table[_]] = {
-    DLCCETSignatureDAO()(ec, appConfig).table
+    DLCCETSignaturesDAO()(ec, appConfig).table
   }
 
   private lazy val dlcRefundSigTable: TableQuery[Table[_]] = {
-    DLCRefundSigDAO()(ec, appConfig).table
+    DLCRefundSigsDAO()(ec, appConfig).table
   }
 
   private lazy val dlcRemoteTxTable: TableQuery[Table[_]] = {
@@ -59,6 +63,7 @@ trait DLCDbManagement extends DbManagement {
       announcementTable,
       nonceTable,
       dlcTable,
+      contractDataTable,
       dlcAnnouncementTable,
       dlcOfferTable,
       dlcAcceptTable,

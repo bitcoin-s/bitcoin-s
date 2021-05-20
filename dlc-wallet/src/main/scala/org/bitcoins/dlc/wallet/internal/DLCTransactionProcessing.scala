@@ -16,10 +16,15 @@ import org.bitcoins.wallet.internal.TransactionProcessing
 import scala.concurrent._
 import scala.util.Try
 
-trait DLCTransactionProcessing extends TransactionProcessing {
+/** Overrides TransactionProcessing from Wallet to add extra logic to
+  * process transactions that could from our own DLC.
+  */
+private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   self: DLCWallet =>
 
-  /** Calculates the new state of the DLCDb based on the closing transaction */
+  /** Calculates the new state of the DLCDb based on the closing transaction,
+    * will delete old CET sigs that are no longer needed after execution
+    */
   def calculateAndSetState(dlcDb: DLCDb): Future[DLCDb] = {
     (dlcDb.contractIdOpt, dlcDb.closingTxIdOpt) match {
       case (Some(id), Some(txId)) =>
@@ -64,23 +69,26 @@ trait DLCTransactionProcessing extends TransactionProcessing {
     }
   }
 
+  /** Calculates the outcome used for execution
+    *  based on the closing transaction
+    */
   def calculateAndSetOutcome(dlcDb: DLCDb): Future[DLCDb] = {
     if (dlcDb.state == DLCState.RemoteClaimed) {
       val dlcId = dlcDb.dlcId
       for {
+        // .get should be safe here
+        contractData <- contractDataDAO.read(dlcId).map(_.get)
         offerDbOpt <- dlcOfferDAO.findByDLCId(dlcId)
         acceptDbOpt <- dlcAcceptDAO.findByDLCId(dlcId)
         fundingInputDbs <- dlcInputsDAO.findByDLCId(dlcId)
         txIds = fundingInputDbs.map(_.outPoint.txIdBE)
         remotePrevTxs <- remoteTxDAO.findByTxIdBEs(txIds)
         localPrevTxs <- transactionDAO.findByTxIdBEs(txIds)
-        refundSigDb <- dlcRefundSigDAO.findByDLCId(dlcId)
+        refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlcId)
         sigDbs <- dlcSigsDAO.findByDLCId(dlcId)
 
-        announcements <- dlcAnnouncementDAO.findByDLCId(dlcDb.dlcId)
-        announcementIds = announcements.map(_.announcementId)
-        announcementData <- announcementDAO.findByIds(announcementIds)
-        nonceDbs <- oracleNonceDAO.findByAnnouncementIds(announcementIds)
+        (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
+          dlcDb.dlcId)
 
         cet <-
           transactionDAO
@@ -97,19 +105,23 @@ trait DLCTransactionProcessing extends TransactionProcessing {
           val fundingInputs = fundingInputDbs.map(input =>
             input.toFundingInput(txs(input.outPoint.txIdBE).head))
 
-          val offerRefundSigOpt = refundSigDb.flatMap(_.initiatorSig)
-          val acceptRefundSigOpt = refundSigDb.map(_.acceptSig)
+          val offerRefundSigOpt = refundSigsDb.flatMap(_.initiatorSig)
+          val acceptRefundSigOpt = refundSigsDb.map(_.accepterSig)
 
           val contractInfo =
-            getContractInfo(dlcDb, announcements, announcementData, nonceDbs)
+            getContractInfo(contractData,
+                            announcements,
+                            announcementData,
+                            nonceDbs)
 
-          val offer = offerDb.toDLCOffer(contractInfo, fundingInputs, dlcDb)
+          val offer =
+            offerDb.toDLCOffer(contractInfo, fundingInputs, contractData)
           val accept = acceptDbOpt
             .map(
               _.toDLCAccept(dlcDb.tempContractId,
                             fundingInputs,
                             sigDbs.map(dbSig =>
-                              (dbSig.sigPoint, dbSig.acceptSig)),
+                              (dbSig.sigPoint, dbSig.accepterSig)),
                             acceptRefundSigOpt.get))
             .get
 
@@ -255,7 +267,7 @@ trait DLCTransactionProcessing extends TransactionProcessing {
       Vector[SingleOracleInfo]) = {
     oracleOutcome match {
       case EnumOracleOutcome(oracles, outcome) =>
-        (Vector(outcome), oracles)
+        (Vector.fill(oracles.length)(outcome), oracles)
       case numeric: NumericOracleOutcome =>
         (numeric.outcomes, numeric.oracles)
     }
