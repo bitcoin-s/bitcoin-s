@@ -7,11 +7,15 @@ import slick.lifted._
 
 import scala.concurrent.{ExecutionContext, Future}
 
+private case class DLCCETSignaturesPrimaryKey(
+    dlcId: Sha256Digest,
+    contractIndex: Long)
+
 case class DLCCETSignaturesDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCCETSignaturesDb, (Sha256Digest, Long)]
-    with SlickUtil[DLCCETSignaturesDb, (Sha256Digest, Long)] {
+    extends CRUD[DLCCETSignaturesDb, DLCCETSignaturesPrimaryKey]
+    with SlickUtil[DLCCETSignaturesDb, DLCCETSignaturesPrimaryKey] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -28,42 +32,44 @@ case class DLCCETSignaturesDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[(Sha256Digest, Long)]): Query[
+      ids: Vector[DLCCETSignaturesPrimaryKey]): Query[
     DLCCETSignatureTable,
     DLCCETSignaturesDb,
     Seq] = {
     // is there a better way to do this?
     val starting = table.filter(_.dlcId =!= Sha256Digest.empty)
 
-    val group = ids.groupBy(_._1)
+    val group = ids.groupBy(_.dlcId)
 
     group
       .foldLeft(starting) { case (accum, (dlcId, vec)) =>
         accum.flatMap { _ =>
-          table.filter(t => t.dlcId === dlcId && t.index.inSet(vec.map(_._2)))
+          table.filter(t =>
+            t.dlcId === dlcId && t.index.inSet(vec.map(_.contractIndex)))
         }
       }
   }
 
-  override def findByPrimaryKey(id: (Sha256Digest, Long)): Query[
+  override def findByPrimaryKey(id: DLCCETSignaturesPrimaryKey): Query[
     DLCCETSignatureTable,
     DLCCETSignaturesDb,
     Seq] = {
-    table.filter(t => t.dlcId === id._1 && t.index === id._2)
+    table.filter(t => t.dlcId === id.dlcId && t.index === id.contractIndex)
   }
 
   override def find(t: DLCCETSignaturesDb): Query[
     DLCCETSignatureTable,
     DLCCETSignaturesDb,
     Seq] = {
-    findByPrimaryKey((t.dlcId, t.index))
+    findByPrimaryKey(DLCCETSignaturesPrimaryKey(t.dlcId, t.index))
   }
 
   override def findAll(dlcs: Vector[DLCCETSignaturesDb]): Query[
     DLCCETSignatureTable,
     DLCCETSignaturesDb,
     Seq] =
-    findByPrimaryKeys(dlcs.map(sig => (sig.dlcId, sig.index)))
+    findByPrimaryKeys(
+      dlcs.map(sig => DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index)))
 
   def findByDLCId(dlcId: Sha256Digest): Future[Vector[DLCCETSignaturesDb]] = {
     val q = table.filter(_.dlcId === dlcId)

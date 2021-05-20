@@ -7,11 +7,13 @@ import slick.lifted._
 
 import scala.concurrent.{ExecutionContext, Future}
 
+private case class OracleNoncePrimaryKey(announcementId: Long, index: Long)
+
 case class OracleNonceDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[OracleNonceDb, (Long, Long)]
-    with SlickUtil[OracleNonceDb, (Long, Long)] {
+    extends CRUD[OracleNonceDb, OracleNoncePrimaryKey]
+    with SlickUtil[OracleNonceDb, OracleNoncePrimaryKey] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -29,7 +31,7 @@ case class OracleNonceDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[(Long, Long)]): profile.api.Query[
+      ids: Vector[OracleNoncePrimaryKey]): profile.api.Query[
     profile.api.Table[OracleNonceDb],
     OracleNonceDb,
     Seq] = {
@@ -37,27 +39,31 @@ case class OracleNonceDAO()(implicit
     // is there a better way to do this?
     val starting = table.filterNot(_.announcementId === -1L)
 
-    ids.foldLeft(starting) { case (accum, (announcementId, index)) =>
-      accum.flatMap(_ =>
-        table.filter(t =>
-          t.announcementId === announcementId && t.index === index))
+    ids.foldLeft(starting) {
+      case (accum, OracleNoncePrimaryKey(announcementId, index)) =>
+        accum.flatMap(_ =>
+          table.filter(t =>
+            t.announcementId === announcementId && t.index === index))
     }
   }
 
-  override protected def findByPrimaryKey(id: (Long, Long)): profile.api.Query[
+  override protected def findByPrimaryKey(
+      id: OracleNoncePrimaryKey): profile.api.Query[
     profile.api.Table[_],
     OracleNonceDb,
     Seq] = {
-    table.filter(t => t.announcementId === id._1 && t.index === id._2)
+    table.filter(t =>
+      t.announcementId === id.announcementId && t.index === id.index)
   }
 
   override def find(t: OracleNonceDb): Query[Table[_], OracleNonceDb, Seq] = {
-    findByPrimaryKey((t.announcementId, t.index))
+    findByPrimaryKey(OracleNoncePrimaryKey(t.announcementId, t.index))
   }
 
   override protected def findAll(
       ts: Vector[OracleNonceDb]): Query[Table[_], OracleNonceDb, Seq] =
-    findByPrimaryKeys(ts.map(t => (t.announcementId, t.index)))
+    findByPrimaryKeys(
+      ts.map(t => OracleNoncePrimaryKey(t.announcementId, t.index)))
 
   def findByNonce(nonce: SchnorrNonce): Future[Option[OracleNonceDb]] = {
     findByNonces(Vector(nonce)).map(_.headOption)

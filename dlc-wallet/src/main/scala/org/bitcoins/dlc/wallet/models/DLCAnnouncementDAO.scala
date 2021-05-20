@@ -7,11 +7,15 @@ import slick.lifted._
 
 import scala.concurrent.{ExecutionContext, Future}
 
+private case class DLCAnnouncementPrimaryKey(
+    dlcId: Sha256Digest,
+    announcementId: Long)
+
 case class DLCAnnouncementDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCAnnouncementDb, (Sha256Digest, Long)]
-    with SlickUtil[DLCAnnouncementDb, (Sha256Digest, Long)] {
+    extends CRUD[DLCAnnouncementDb, DLCAnnouncementPrimaryKey]
+    with SlickUtil[DLCAnnouncementDb, DLCAnnouncementPrimaryKey] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -33,7 +37,7 @@ case class DLCAnnouncementDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[(Sha256Digest, Long)]): profile.api.Query[
+      ids: Vector[DLCAnnouncementPrimaryKey]): profile.api.Query[
     DLCAnnouncementTable,
     DLCAnnouncementDb,
     Seq] = {
@@ -41,32 +45,35 @@ case class DLCAnnouncementDAO()(implicit
     // is there a better way to do this?
     val starting = table.filterNot(_.dlcId === Sha256Digest.empty)
 
-    ids.foldLeft(starting) { case (accum, (dlcId, announcementId)) =>
-      accum.flatMap(_ =>
-        table.filter(t =>
-          t.dlcId === dlcId &&
-            t.announcementId === announcementId))
+    ids.foldLeft(starting) {
+      case (accum, DLCAnnouncementPrimaryKey(dlcId, announcementId)) =>
+        accum.flatMap(_ =>
+          table.filter(t =>
+            t.dlcId === dlcId &&
+              t.announcementId === announcementId))
     }
   }
 
-  override def findByPrimaryKey(id: (Sha256Digest, Long)): Query[
+  override def findByPrimaryKey(id: DLCAnnouncementPrimaryKey): Query[
     DLCAnnouncementTable,
     DLCAnnouncementDb,
     Seq] = {
-    table.filter(t => t.dlcId === id._1 && t.announcementId === id._2)
+    table.filter(t =>
+      t.dlcId === id.dlcId && t.announcementId === id.announcementId)
   }
 
   override def find(t: DLCAnnouncementDb): profile.api.Query[
     Table[_],
     DLCAnnouncementDb,
     Seq] = {
-    findByPrimaryKey((t.dlcId, t.announcementId))
+    findByPrimaryKey(DLCAnnouncementPrimaryKey(t.dlcId, t.announcementId))
   }
 
   override protected def findAll(ts: Vector[DLCAnnouncementDb]): Query[
     DLCAnnouncementTable,
     DLCAnnouncementDb,
-    Seq] = findByPrimaryKeys(ts.map(t => (t.dlcId, t.announcementId)))
+    Seq] = findByPrimaryKeys(
+    ts.map(t => DLCAnnouncementPrimaryKey(t.dlcId, t.announcementId)))
 
   def findByAnnouncementIds(
       ids: Vector[Long]): Future[Vector[DLCAnnouncementDb]] = {
