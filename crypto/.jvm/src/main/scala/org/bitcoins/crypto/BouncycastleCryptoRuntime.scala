@@ -18,7 +18,9 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
 
   override val cryptoContext: CryptoContext = CryptoContext.BouncyCastle
 
-  /** Cribbed from ECKeyPairGenerator::generateKeyPair */
+  /** Cribbed from ECKeyPairGenerator::generateKeyPair
+    * @see https://github.com/bcgit/bc-java/blob/63b18eb973f5731e403f655ee81d6b8456f5b256/core/src/main/java/org/bouncycastle/crypto/generators/ECKeyPairGenerator.java#L39
+    */
   override def freshPrivateKey: ECPrivateKey = {
     val n = CryptoParams.getN
     val bitLength = n.bitLength()
@@ -29,11 +31,13 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     while (!foundNum) {
       priv = BigIntegers.createRandomBigInteger(bitLength, secureRandom)
 
-      if (
-        priv.compareTo(BigInteger.ONE) >= 0 && priv.compareTo(n) < 0 && WNafUtil
-          .getNafWeight(priv) >= minWeight
-      )
+      if (priv.compareTo(BigInteger.ONE) < 0 || (priv.compareTo(n) >= 0)) {
+        () //do nothing, keep iterating
+      } else if (WNafUtil.getNafWeight(priv) < minWeight) {
+        () //do nothing, keep iterating
+      } else {
         foundNum = true
+      }
     }
     val bytes = ByteVector(priv.toByteArray)
     ECPrivateKey.fromBytes(bytes.padLeft(33))
