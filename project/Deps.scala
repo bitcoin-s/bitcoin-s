@@ -388,7 +388,6 @@ object Deps {
     List(
       Compile.sttp,
       Compile.newMicroPickle.value,
-      Compile.logback,
       Compile.scopt,
       //we can remove this dependency when this is fixed
       //https://github.com/oracle/graal/issues/1943
