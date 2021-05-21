@@ -173,6 +173,8 @@ abstract class Wallet
     Wallet] = {
     val utxosF = listUtxos()
     val spksF = listScriptPubKeys()
+    val hash = blockFilters.last._1.flip
+    val heightF = chainQueryApi.getBlockHeight(hash)
     for {
       utxos <- utxosF
       scripts <- spksF
@@ -194,7 +196,7 @@ abstract class Wallet
         }
       }
       hash = blockFilters.last._1.flip
-      height <- chainQueryApi.getBlockHeight(hash)
+      height <- heightF
       _ <- stateDescriptorDAO.updateSyncHeight(hash, height.get)
     } yield {
       this
