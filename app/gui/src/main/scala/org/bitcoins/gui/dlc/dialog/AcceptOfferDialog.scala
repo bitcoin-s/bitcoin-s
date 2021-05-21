@@ -1,9 +1,10 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand.{AcceptDLCCliCommand, AcceptDLCOffer}
-import org.bitcoins.core.protocol.dlc.models.EnumContractDescriptor
+import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.gui.GlobalData
+import org.bitcoins.gui.dlc.DLCPlotUtil
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.Includes._
 import scalafx.geometry.{Insets, Pos}
@@ -14,7 +15,7 @@ import scalafx.stage.Window
 import scala.collection._
 import scala.util.{Failure, Success, Try}
 
-object AcceptOfferDialog {
+class AcceptOfferDialog {
 
   def showAndWait(parentWindow: Window): Option[AcceptDLCCliCommand] = {
     val dialog = new Dialog[Option[AcceptDLCCliCommand]]() {
@@ -49,15 +50,6 @@ object AcceptOfferDialog {
     }
 
     def showOfferTerms(offer: DLCOfferTLV): Unit = {
-      val descriptor = offer.contractInfo.contractDescriptor match {
-        case v0: ContractDescriptorV0TLV =>
-          EnumContractDescriptor
-            .fromTLV(v0)
-            .flip(offer.contractInfo.totalCollateral)
-        case _: ContractDescriptorV1TLV =>
-          throw new RuntimeException("This is impossible.")
-      }
-
       val (oracleKey, eventId) = offer.contractInfo.oracleInfo match {
         case OracleInfoV0TLV(announcement) =>
           (announcement.publicKey.hex, announcement.eventTLV.eventId)
@@ -121,26 +113,55 @@ object AcceptOfferDialog {
                    nextRow)
       nextRow += 1
 
-      gridPane.add(new Label("Potential Outcome"), 0, nextRow)
-      gridPane.add(new Label("Payouts"), 1, nextRow)
-      nextRow += 1
+      offer.contractInfo.contractDescriptor match {
+        case v0: ContractDescriptorV0TLV =>
+          gridPane.add(new Label("Potential Outcome"), 0, nextRow)
+          gridPane.add(new Label("Payouts"), 1, nextRow)
+          nextRow += 1
 
-      descriptor.foreach { case (str, satoshis) =>
-        val outcomeTF = new TextField() {
-          text = str.outcome
-          editable = false
-        }
-        val valueTF = new TextField() {
-          text = satoshis.toString
-          editable = false
-          tooltip =
-            Tooltip(s"""Amount you will win if the oracle signs for "$str".""")
-          tooltip.value.setShowDelay(new javafx.util.Duration(100))
-        }
+          val descriptor = EnumContractDescriptor
+            .fromTLV(v0)
+            .flip(offer.contractInfo.totalCollateral)
+          descriptor.foreach { case (str, satoshis) =>
+            gridPane.add(new TextField() {
+                           text = str.outcome
+                           editable = false
+                         },
+                         0,
+                         nextRow)
+            gridPane.add(
+              new TextField() {
+                text = satoshis.toString
+                editable = false
+                tooltip = Tooltip(
+                  s"""Amount you will win if the oracle signs for "$str".""")
+                tooltip.value.setShowDelay(new javafx.util.Duration(100))
+              },
+              1,
+              nextRow
+            )
+            nextRow += 1
+          }
+        case v1: ContractDescriptorV1TLV =>
+          val descriptor = NumericContractDescriptor
+            .fromTLV(v1)
+            .flip(offer.contractInfo.totalCollateral)
 
-        gridPane.add(outcomeTF, 0, nextRow)
-        gridPane.add(valueTF, 1, nextRow)
-        nextRow += 1
+          val previewGraphButton: Button = new Button("Preview Graph") {
+            onAction = _ => {
+              DLCPlotUtil.plotCETsWithOriginalCurve(
+                base = 2,
+                descriptor.numDigits,
+                descriptor.outcomeValueFunc,
+                offer.contractInfo.totalCollateral,
+                RoundingIntervals.fromTLV(v1.roundingIntervals))
+              ()
+            }
+          }
+
+          gridPane.add(new Label("Payout Curve"), 0, nextRow)
+          gridPane.add(previewGraphButton, 1, nextRow)
+          nextRow += 1
       }
 
       gridPane.add(
@@ -184,14 +205,9 @@ object AcceptOfferDialog {
           LnMessageFactory(DLCOfferTLV).fromHex(offerTLVTF.text.value)) match {
           case Failure(_) => ()
           case Success(lnMessage) =>
-            lnMessage.tlv.contractInfo.contractDescriptor match {
-              case _: ContractDescriptorV0TLV =>
-                dlcDetailsShown = true
-                showOfferTerms(lnMessage.tlv)
-                dialog.dialogPane().getScene.getWindow.sizeToScene()
-              case _: ContractDescriptorV1TLV =>
-                () // todo not supported
-            }
+            dlcDetailsShown = true
+            showOfferTerms(lnMessage.tlv)
+            dialog.dialogPane().getScene.getWindow.sizeToScene()
         }
       }
     }

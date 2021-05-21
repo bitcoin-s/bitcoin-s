@@ -20,15 +20,7 @@ class DLCPane(glassPane: VBox) {
     center = resultTextArea
   }
 
-  private val demoOracleArea = new TextArea {
-    editable = false
-    text =
-      "Click on Init Demo Oracle to generate example oracle and contract information"
-    wrapText = true
-  }
-
-  private val model =
-    new DLCPaneModel(resultTextArea, demoOracleArea)
+  private val model = new DLCPaneModel(resultTextArea)
 
   // This is commented out because it will cause the GUI startup to fail on master
   // It should be uncommented when on the adaptor-dlc branch

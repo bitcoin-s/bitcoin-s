@@ -1,12 +1,12 @@
 package org.bitcoins.gui.util
 
+import javafx.beans.value.ObservableValue
 import org.bitcoins.core.protocol.BlockTimeStamp
-import scalafx.scene.control.{TextField, TextFormatter}
+import scalafx.scene.control.TextField
 
 import java.text.NumberFormat
 import java.time.format.{DateTimeFormatter, FormatStyle}
 import java.time.{Instant, ZoneOffset}
-import scala.util.control.NonFatal
 import scala.util.matching.Regex
 
 object GUIUtil {
@@ -15,35 +15,11 @@ object GUIUtil {
   val numberFormatter: NumberFormat = java.text.NumberFormat.getIntegerInstance
 
   def setNumericInput(textField: TextField): Unit = {
-    textField.textFormatter =
-      new TextFormatter[String]((change: TextFormatter.Change) => {
-        if (change.isContentChange) {
-          val newText = change.getControlNewText
-          if (
-            newText.isEmpty || (!numericRegex.pattern.matcher(newText).matches)
-          ) {
-            change
-          } else {
-            val formatted = {
-              try {
-                val num = numberFormatter.parse(newText)
-                numberFormatter.format(num)
-              } catch {
-                case NonFatal(_) => newText // allow input if error
-              }
-            }
-
-            // replace with modified text
-            change.setRange(0, change.getRangeEnd)
-            change.setText(formatted)
-            change.setCaretPosition(formatted.length)
-            change.setAnchor(formatted.length)
-            change
-          }
-        } else {
-          change // no need for modification, if only the selection changes
-        }
-      })
+    textField.text.addListener {
+      (_: ObservableValue[_ <: String], _: String, newVal: String) =>
+        if (!newVal.matches(numericRegex.regex))
+          textField.setText(newVal.replaceAll(numericRegex.regex, ""))
+    }
   }
 
   def epochToDateString(epoch: BlockTimeStamp): String = {
