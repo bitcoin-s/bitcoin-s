@@ -1,27 +1,23 @@
 package org.bitcoins.dlc.wallet.models
 
-import org.bitcoins.core.hd.HDAccount
-import org.bitcoins.core.protocol.dlc.models.{DLCState, SingleOracleInfo}
-import org.bitcoins.core.protocol.tlv.DLCOutcomeType
+import org.bitcoins.core.hd.{HDAccount, HDChainType}
+import org.bitcoins.core.number.UInt64
+import org.bitcoins.core.protocol.dlc.models.DLCState
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import org.bitcoins.crypto.{
-  DoubleSha256DigestBE,
-  SchnorrDigitalSignature,
-  Sha256Digest,
-  Sha256DigestBE
-}
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.crypto._
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import scodec.bits.ByteVector
-import slick.lifted.{PrimaryKey, ProvenShape}
+import slick.lifted._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCDAO()(implicit
     val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
-    extends CRUD[DLCDb, Sha256DigestBE]
-    with SlickUtil[DLCDb, Sha256DigestBE] {
+    extends CRUD[DLCDb, Sha256Digest]
+    with SlickUtil[DLCDb, Sha256Digest] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -32,20 +28,20 @@ case class DLCDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[Sha256DigestBE]): Query[DLCTable, DLCDb, Seq] =
-    table.filter(_.paramHash.inSet(ids))
+      ids: Vector[Sha256Digest]): Query[DLCTable, DLCDb, Seq] =
+    table.filter(_.dlcId.inSet(ids))
 
   override def findByPrimaryKey(
-      id: Sha256DigestBE): Query[DLCTable, DLCDb, Seq] = {
+      id: Sha256Digest): Query[DLCTable, DLCDb, Seq] = {
     table
-      .filter(_.paramHash === id)
+      .filter(_.dlcId === id)
   }
 
   override def findAll(dlcs: Vector[DLCDb]): Query[DLCTable, DLCDb, Seq] =
-    findByPrimaryKeys(dlcs.map(_.paramHash))
+    findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  def deleteByParamHash(paramHash: Sha256DigestBE): Future[Int] = {
-    val q = table.filter(_.paramHash === paramHash)
+  def deleteByDLCId(dlcId: Sha256Digest): Future[Int] = {
+    val q = table.filter(_.dlcId === dlcId)
     safeDatabase.run(q.delete)
   }
 
@@ -82,8 +78,8 @@ case class DLCDAO()(implicit
     }
   }
 
-  def findByParamHash(paramHash: Sha256DigestBE): Future[Option[DLCDb]] = {
-    val q = table.filter(_.paramHash === paramHash)
+  def findByDLCId(dlcId: Sha256Digest): Future[Option[DLCDb]] = {
+    val q = table.filter(_.dlcId === dlcId)
 
     safeDatabase.run(q.result).map {
       case h +: Vector() =>
@@ -92,12 +88,9 @@ case class DLCDAO()(implicit
         None
       case dlcs: Vector[DLCDb] =>
         throw new RuntimeException(
-          s"More than one DLC per paramHash (${paramHash.hex}), got: $dlcs")
+          s"More than one DLC per dlcId (${dlcId.hex}), got: $dlcs")
     }
   }
-
-  def findByParamHash(paramHash: Sha256Digest): Future[Option[DLCDb]] =
-    findByParamHash(paramHash.flip)
 
   def findByFundingOutPoint(
       outPoint: TransactionOutPoint): Future[Option[DLCDb]] = {
@@ -113,16 +106,16 @@ case class DLCDAO()(implicit
     safeDatabase.runVec(q.result)
   }
 
-  def findByFundingTxIds(
-      txIds: Vector[DoubleSha256DigestBE]): Future[Vector[DLCDb]] = {
-    val q = table.filter(_.fundingTxIdOpt.inSet(txIds))
+  def findByFundingTxId(txId: DoubleSha256DigestBE): Future[Vector[DLCDb]] = {
+    val q = table.filter(_.fundingTxIdOpt === txId)
 
     safeDatabase.runVec(q.result)
   }
 
-  class DLCTable(tag: Tag) extends Table[DLCDb](tag, "wallet_dlcs") {
+  class DLCTable(tag: Tag)
+      extends Table[DLCDb](tag, schemaName, "global_dlc_data") {
 
-    def paramHash: Rep[Sha256DigestBE] = column("param_hash", O.PrimaryKey)
+    def dlcId: Rep[Sha256Digest] = column("dlc_id", O.PrimaryKey)
 
     def tempContractId: Rep[Sha256Digest] =
       column("temp_contract_id", O.Unique)
@@ -130,16 +123,21 @@ case class DLCDAO()(implicit
     def contractId: Rep[Option[ByteVector]] =
       column("contract_id", O.Unique)
 
+    def protocolVersion: Rep[Int] = column("protocol_version")
+
     def state: Rep[DLCState] = column("state")
 
     def isInitiator: Rep[Boolean] = column("is_initiator")
 
     def account: Rep[HDAccount] = column("account")
 
+    def changeIndex: Rep[HDChainType] = column("change_index")
+
     def keyIndex: Rep[Int] = column("key_index")
 
-    def oracleSigsOpt: Rep[Option[Vector[SchnorrDigitalSignature]]] =
-      column("oracle_sigs")
+    def feeRate: Rep[SatoshisPerVirtualByte] = column("fee_rate")
+
+    def fundOutputSerialId: Rep[UInt64] = column("fund_output_serial_id")
 
     def fundingOutPointOpt: Rep[Option[TransactionOutPoint]] =
       column("funding_outpoint")
@@ -150,27 +148,24 @@ case class DLCDAO()(implicit
     def closingTxIdOpt: Rep[Option[DoubleSha256DigestBE]] =
       column("closing_tx_id")
 
-    def outcomesOpt: Rep[Option[Vector[DLCOutcomeType]]] = column("outcomes")
-
-    def oraclesUsedOpt: Rep[Option[Vector[SingleOracleInfo]]] =
-      column("oracles_used")
+    def aggregateSignatureOpt: Rep[Option[SchnorrDigitalSignature]] = column(
+      "aggregate_signature")
 
     def * : ProvenShape[DLCDb] =
-      (paramHash,
+      (dlcId,
        tempContractId,
        contractId,
+       protocolVersion,
        state,
        isInitiator,
        account,
+       changeIndex,
        keyIndex,
-       oracleSigsOpt,
+       feeRate,
+       fundOutputSerialId,
        fundingOutPointOpt,
        fundingTxIdOpt,
        closingTxIdOpt,
-       outcomesOpt,
-       oraclesUsedOpt).<>(DLCDb.tupled, DLCDb.unapply)
-
-    def primaryKey: PrimaryKey =
-      primaryKey(name = "pk_dlc", sourceColumns = paramHash)
+       aggregateSignatureOpt).<>(DLCDb.tupled, DLCDb.unapply)
   }
 }

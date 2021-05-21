@@ -15,8 +15,8 @@ import org.bitcoins.core.protocol.dlc.models.{
 }
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.crypto.Sha256DigestBE
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.wallet.models.DLCDb
 import scodec.bits.ByteVector
 
@@ -27,7 +27,7 @@ trait DLCWalletApi { self: WalletApi =>
   def createDLCOffer(
       contractInfoTLV: ContractInfoV0TLV,
       collateral: Satoshis,
-      feeRateOpt: Option[FeeUnit],
+      feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
       refundLT: UInt32): Future[DLCOffer] = {
     val contractInfo = ContractInfo.fromTLV(contractInfoTLV)
@@ -37,7 +37,7 @@ trait DLCWalletApi { self: WalletApi =>
   def createDLCOffer(
       contractInfo: ContractInfo,
       collateral: Satoshis,
-      feeRateOpt: Option[FeeUnit],
+      feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
       refundLT: UInt32): Future[DLCOffer]
 
@@ -96,9 +96,9 @@ trait DLCWalletApi { self: WalletApi =>
 
   def listDLCs(): Future[Vector[DLCStatus]]
 
-  def findDLC(paramHash: Sha256DigestBE): Future[Option[DLCStatus]]
+  def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]]
 
-  def cancelDLC(paramHash: Sha256DigestBE): Future[Unit]
+  def cancelDLC(dlcId: Sha256Digest): Future[Unit]
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */

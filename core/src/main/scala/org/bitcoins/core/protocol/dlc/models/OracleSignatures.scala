@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.dlc.models
 
 import org.bitcoins.core.protocol.dlc.compute.CETCalculator
-import org.bitcoins.core.protocol.tlv.{DLCOutcomeType, UnsignedNumericOutcome}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, SchnorrDigitalSignature}
 
@@ -29,6 +29,9 @@ sealed trait OracleSignatures extends SeqWrapper[SchnorrDigitalSignature] {
       .reduce(_.add(_))
       .toPrivateKey
   }
+
+  /** Computes the full outcome that was signed */
+  def getOutcome: DLCOutcomeType
 }
 
 object OracleSignatures {
@@ -75,6 +78,26 @@ case class EnumOracleSignature(
     extends OracleSignatures {
   override def sigs: Vector[SchnorrDigitalSignature] = Vector(sig)
 
+  lazy val getOutcome: EnumOutcome = {
+    // cast is safe, EnumSingleOracleInfo enforces this
+    val potentialOutcomes = oracle.announcement.eventTLV.eventDescriptor
+      .asInstanceOf[EnumEventDescriptorV0TLV]
+      .outcomes
+
+    val outcome = potentialOutcomes
+      .find { potentialOutcome =>
+        oracle.publicKey
+          .verify(CryptoUtil
+                    .sha256DLCAttestation(potentialOutcome.toString)
+                    .bytes,
+                  sig)
+      }
+      .getOrElse(throw new IllegalArgumentException(
+        s"Signature $sig does not match any outcome $potentialOutcomes"))
+
+    EnumOutcome(outcome)
+  }
+
   override def toString: String =
     s"EnumOracleSignature(${oracle.announcement.publicKey}, $sig)"
 }
@@ -85,12 +108,14 @@ case class NumericOracleSignatures(
     sigs: Vector[SchnorrDigitalSignature])
     extends OracleSignatures {
 
-  /** Computes the NumericOutcome to which these signatures correspond. */
-  def computeOutcome(
-      base: Int,
-      possibleOutcomes: Vector[DLCOutcomeType]): Option[
-    UnsignedNumericOutcome] = {
-    val digitsSigned = sigs.map { sig =>
+  lazy val getOutcome: UnsignedNumericOutcome = {
+    // cast is safe, NumericSingleOracleInfo enforces this
+    val base = oracle.announcement.eventTLV.eventDescriptor
+      .asInstanceOf[NumericEventDescriptorTLV]
+      .base
+      .toInt
+
+    val digits = sigs.map { sig =>
       (0 until base)
         .find { possibleDigit =>
           oracle.publicKey
@@ -102,6 +127,13 @@ case class NumericOracleSignatures(
         .getOrElse(throw new IllegalArgumentException(
           s"Signature $sig does not match any digit 0-${base - 1}"))
     }
+    UnsignedNumericOutcome(digits)
+  }
+
+  /** Computes the NumericOutcome to which these signatures correspond. */
+  def computeOutcome(possibleOutcomes: Vector[DLCOutcomeType]): Option[
+    UnsignedNumericOutcome] = {
+    val digitsSigned = getOutcome.digits
 
     CETCalculator.searchForNumericOutcome(digitsSigned, possibleOutcomes)
   }

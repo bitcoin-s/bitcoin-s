@@ -2,42 +2,45 @@ package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt64
-import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCOffer
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.core.protocol.tlv.ContractInfoV0TLV
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 
 case class DLCOfferDb(
-    paramHash: Sha256DigestBE,
-    tempContractId: Sha256Digest,
-    contractInfoTLV: ContractInfoV0TLV,
-    contractMaturity: BlockTimeStamp,
-    contractTimeout: BlockTimeStamp,
+    dlcId: Sha256Digest,
     fundingKey: ECPublicKey,
     payoutAddress: BitcoinAddress,
     payoutSerialId: UInt64,
-    totalCollateral: CurrencyUnit,
-    feeRate: SatoshisPerVirtualByte,
+    collateral: CurrencyUnit,
     changeAddress: BitcoinAddress,
-    changeSerialId: UInt64,
-    fundOutputSerialId: UInt64) {
+    changeSerialId: UInt64) {
 
-  lazy val contractInfo: ContractInfo = ContractInfo.fromTLV(contractInfoTLV)
+  val dlcPubKeys: DLCPublicKeys = DLCPublicKeys(fundingKey, payoutAddress)
 
-  lazy val oracleInfo: OracleInfo = contractInfo.oracleInfo
+  def toDLCOffer(
+      contractInfo: ContractInfo,
+      fundingInputs: Vector[DLCFundingInput],
+      dlcDb: DLCDb,
+      contractDataDb: DLCContractDataDb): DLCOffer = {
+    toDLCOffer(contractInfo,
+               fundingInputs,
+               dlcDb.fundOutputSerialId,
+               dlcDb.feeRate,
+               contractDataDb.dlcTimeouts)
+  }
 
-  lazy val dlcPubKeys: DLCPublicKeys = DLCPublicKeys(fundingKey, payoutAddress)
-
-  lazy val dlcTimeouts: DLCTimeouts =
-    DLCTimeouts(contractMaturity, contractTimeout)
-
-  def toDLCOffer(fundingInputs: Vector[DLCFundingInput]): DLCOffer = {
+  def toDLCOffer(
+      contractInfo: ContractInfo,
+      fundingInputs: Vector[DLCFundingInput],
+      fundOutputSerialId: UInt64,
+      feeRate: SatoshisPerVirtualByte,
+      dlcTimeouts: DLCTimeouts): DLCOffer = {
     DLCOffer(
       contractInfo = contractInfo,
       pubKeys = dlcPubKeys,
-      totalCollateral = totalCollateral.satoshis,
+      totalCollateral = collateral.satoshis,
       fundingInputs = fundingInputs,
       changeAddress = changeAddress,
       payoutSerialId = payoutSerialId,
@@ -51,21 +54,15 @@ case class DLCOfferDb(
 
 object DLCOfferDbHelper {
 
-  def fromDLCOffer(offer: DLCOffer): DLCOfferDb = {
+  def fromDLCOffer(id: Sha256Digest, offer: DLCOffer): DLCOfferDb = {
     DLCOfferDb(
-      offer.paramHash,
-      offer.tempContractId,
-      offer.contractInfo.toTLV,
-      offer.timeouts.contractMaturity,
-      offer.timeouts.contractTimeout,
+      id,
       offer.pubKeys.fundingKey,
       offer.pubKeys.payoutAddress,
       offer.payoutSerialId,
       offer.totalCollateral,
-      offer.feeRate,
       offer.changeAddress,
-      offer.changeSerialId,
-      offer.fundOutputSerialId
+      offer.changeSerialId
     )
   }
 }

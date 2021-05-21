@@ -141,8 +141,8 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
   it must "execute as the initiator" in { wallets =>
     for {
       contractId <- getContractId(wallets._1.wallet)
-      offer <- getInitialOffer(wallets._1.wallet)
-      (sigs, _) = getSigs(offer.contractInfo)
+      status <- getDLCStatus(wallets._1.wallet)
+      (sigs, _) = getSigs(status.contractInfo)
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sigs)
 
       result <- dlcExecutionTest(wallets = wallets,
@@ -155,10 +155,10 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
-      paramHash = dlcDbAOpt.get.paramHash
+      dlcId = status.dlcId
 
-      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
-      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+      statusAOpt <- wallets._1.wallet.findDLC(dlcId)
+      statusBOpt <- wallets._2.wallet.findDLC(dlcId)
 
       _ = {
         (statusAOpt, statusBOpt) match {
@@ -180,8 +180,8 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
   it must "execute as the recipient" in { wallets =>
     for {
       contractId <- getContractId(wallets._1.wallet)
-      offer <- getInitialOffer(wallets._2.wallet)
-      (_, sigs) = getSigs(offer.contractInfo)
+      status <- getDLCStatus(wallets._2.wallet)
+      (_, sigs) = getSigs(status.contractInfo)
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sigs)
 
       result <- dlcExecutionTest(wallets = wallets,
@@ -194,10 +194,10 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
-      paramHash = dlcDbAOpt.get.paramHash
+      dlcId = status.dlcId
 
-      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
-      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+      statusAOpt <- wallets._1.wallet.findDLC(dlcId)
+      statusBOpt <- wallets._2.wallet.findDLC(dlcId)
 
       _ = {
         (statusAOpt, statusBOpt) match {

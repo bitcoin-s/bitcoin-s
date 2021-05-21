@@ -396,16 +396,15 @@ object ConsoleCli {
               }))
         ),
       cmd("canceldlc")
-        .action((_, conf) =>
-          conf.copy(command = CancelDLC(Sha256DigestBE.empty)))
+        .action((_, conf) => conf.copy(command = CancelDLC(Sha256Digest.empty)))
         .text("Cancels a DLC and unreserves used utxos")
         .children(
-          arg[Sha256DigestBE]("paramhash")
+          arg[Sha256Digest]("dlcId")
             .required()
-            .action((paramHash, conf) =>
+            .action((dlcId, conf) =>
               conf.copy(command = conf.command match {
                 case cancelDLC: CancelDLC =>
-                  cancelDLC.copy(paramHash = paramHash)
+                  cancelDLC.copy(dlcId = dlcId)
                 case other => other
               }))
         ),
@@ -413,13 +412,13 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetDLCs))
         .text("Returns all dlcs in the wallet"),
       cmd("getdlc")
-        .action((_, conf) => conf.copy(command = GetDLC(Sha256DigestBE.empty)))
+        .action((_, conf) => conf.copy(command = GetDLC(Sha256Digest.empty)))
         .text("Gets a specific dlc in the wallet")
-        .children(arg[Sha256DigestBE]("paramhash")
+        .children(arg[Sha256Digest]("dlcId")
           .required()
-          .action((paramHash, conf) =>
+          .action((dlcId, conf) =>
             conf.copy(command = conf.command match {
-              case _: GetDLC => GetDLC(paramHash)
+              case _: GetDLC => GetDLC(dlcId)
               case other     => other
             }))),
       cmd("getbalance")
@@ -1447,8 +1446,8 @@ object ConsoleCli {
         RequestParam("walletinfo")
       // DLCs
       case GetDLCs => RequestParam("getdlcs")
-      case GetDLC(paramHash) =>
-        RequestParam("getdlc", Seq(up.writeJs(paramHash)))
+      case GetDLC(dlcId) =>
+        RequestParam("getdlc", Seq(up.writeJs(dlcId)))
       case CreateDLCOffer(contractInfo,
                           collateral,
                           feeRateOpt,
@@ -1489,8 +1488,8 @@ object ConsoleCli {
       case ExecuteDLCRefund(contractId, noBroadcast) =>
         RequestParam("executedlcrefund",
                      Seq(up.writeJs(contractId), up.writeJs(noBroadcast)))
-      case CancelDLC(paramHash) =>
-        RequestParam("canceldlc", Seq(up.writeJs(paramHash)))
+      case CancelDLC(dlcId) =>
+        RequestParam("canceldlc", Seq(up.writeJs(dlcId)))
       // Wallet
       case GetBalance(isSats) =>
         RequestParam("getbalance", Seq(up.writeJs(isSats)))
@@ -1862,10 +1861,10 @@ object CliCommand {
       extends AppServerCliCommand
       with Broadcastable
 
-  case class CancelDLC(paramHash: Sha256DigestBE) extends AppServerCliCommand
+  case class CancelDLC(dlcId: Sha256Digest) extends AppServerCliCommand
 
   case object GetDLCs extends AppServerCliCommand
-  case class GetDLC(paramHash: Sha256DigestBE) extends AppServerCliCommand
+  case class GetDLC(dlcId: Sha256Digest) extends AppServerCliCommand
 
   // Wallet
   case class SendToAddress(
