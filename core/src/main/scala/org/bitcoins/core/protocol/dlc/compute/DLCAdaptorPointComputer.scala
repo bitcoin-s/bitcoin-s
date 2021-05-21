@@ -60,8 +60,8 @@ object DLCAdaptorPointComputer {
   case class AdditionTrieNode(
       preComputeTable: Vector[Vector[ECPublicKey]], // Nonce -> Outcome -> Point
       depth: Int = 0,
-      var children: Vector[AdditionTrieNode] = Vector.empty,
-      var pointOpt: Option[SecpPoint] = None) {
+      private var children: Vector[AdditionTrieNode] = Vector.empty,
+      private var pointOpt: Option[SecpPoint] = None) {
 
     /** Populates children field with base empty nodes.
       *
@@ -109,6 +109,15 @@ object DLCAdaptorPointComputer {
     }
   }
 
+  object AdditionTrieNode {
+
+    /** Creates a fresh AdditionTreeNode for a given preComputeTable */
+    def makeRoot(
+        preComputeTable: Vector[Vector[ECPublicKey]]): AdditionTrieNode = {
+      AdditionTrieNode(preComputeTable, pointOpt = Some(SecpPointInfinity))
+    }
+  }
+
   /** Efficiently computes all adaptor points, in order, for a given ContractInfo.
     * @see https://medium.com/crypto-garage/optimizing-numeric-outcome-dlc-creation-6d6091ac0e47
     */
@@ -137,7 +146,7 @@ object DLCAdaptorPointComputer {
       }
 
     lazy val additionTries = preComputeTable.map { table =>
-      AdditionTrieNode(table, pointOpt = Some(SecpPointInfinity))
+      AdditionTrieNode.makeRoot(table)
     }
 
     val oraclesAndOutcomes = contractInfo.allOutcomes.map(_.oraclesAndOutcomes)
