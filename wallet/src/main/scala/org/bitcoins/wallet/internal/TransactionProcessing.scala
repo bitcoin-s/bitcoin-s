@@ -46,16 +46,28 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   override def processBlock(block: Block): Future[Wallet] = {
     logger.info(s"Processing block=${block.blockHeader.hash.flip.hex}")
     val start = TimeUtil.currentEpochMs
+    val isEmptyF = isEmpty()
     val resF = for {
-      newWallet <- block.transactions.foldLeft(Future.successful(this)) {
-        (acc, transaction) =>
-          for {
-            _ <- acc
-            newWallet <-
-              processTransaction(transaction, Some(block.blockHeader.hash.flip))
-          } yield {
-            newWallet
+      isEmpty <- isEmptyF
+      newWallet <- {
+        if (!isEmpty) {
+          block.transactions.foldLeft(Future.successful(this)) {
+            (acc, transaction) =>
+              for {
+                _ <- acc
+                newWallet <-
+                  processTransaction(transaction,
+                                     Some(block.blockHeader.hash.flip))
+              } yield {
+                newWallet
+              }
           }
+        } else {
+          //do nothing if the wallet is empty as an optimization
+          //this is for users first downloading bitcoin-s
+          //and syncing their node
+          Future.successful(this)
+        }
       }
     } yield newWallet
 
