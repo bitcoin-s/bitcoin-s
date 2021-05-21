@@ -1,32 +1,33 @@
 CREATE TABLE "global_dlc_data"
 (
-    "dlc_id"              VARCHAR(254) PRIMARY KEY,
-    "temp_contract_id"    VARCHAR(254) NOT NULL UNIQUE,
-    "contract_id"         VARCHAR(254) UNIQUE,
-    "protocol_version"    INTEGER      NOT NULL,
-    "state"               VARCHAR(254) NOT NULL,
-    "is_initiator"        INTEGER      NOT NULL,
-    "account"             VARCHAR(254) NOT NULL,
-    "change_index"        INTEGER      NOT NULL,
-    "key_index"           INTEGER      NOT NULL,
+    "dlc_id"                VARCHAR(254) PRIMARY KEY,
+    "temp_contract_id"      VARCHAR(254) NOT NULL UNIQUE,
+    "contract_id"           VARCHAR(254) UNIQUE,
+    "protocol_version"      INTEGER      NOT NULL,
+    "state"                 VARCHAR(254) NOT NULL,
+    "is_initiator"          INTEGER      NOT NULL,
+    "account"               VARCHAR(254) NOT NULL,
+    "change_index"          INTEGER      NOT NULL,
+    "key_index"             INTEGER      NOT NULL,
 
-    "funding_outpoint"    VARCHAR(254),
-    "funding_tx_id"       VARCHAR(254),
-    "closing_tx_id"       VARCHAR(254),
-    "aggregate_signature" VARCHAR(254)
+    "fee_rate"              VARCHAR(254) NOT NULL,
+    "fund_output_serial_id" INTEGER      NOT NULL,
+
+    "funding_outpoint"      VARCHAR(254),
+    "funding_tx_id"         VARCHAR(254),
+    "closing_tx_id"         VARCHAR(254),
+    "aggregate_signature"   VARCHAR(254)
 );
 
 CREATE TABLE "contract_data"
 (
-    "dlc_id"                VARCHAR(254) PRIMARY KEY,
-    "oracle_threshold"      INTEGER      NOT NULL,
-    "oracle_params"         VARCHAR(254),
-    "contract_descriptor"   VARCHAR(254) NOT NULL,
-    "contract_maturity"     INTEGER      NOT NULL,
-    "contract_timeout"      INTEGER      NOT NULL,
-    "total_collateral"      INTEGER      NOT NULL,
-    "fee_rate"              VARCHAR(254) NOT NULL,
-    "fund_output_serial_id" INTEGER      NOT NULL,
+    "dlc_id"              VARCHAR(254) PRIMARY KEY,
+    "oracle_threshold"    INTEGER      NOT NULL,
+    "oracle_params"       VARCHAR(254),
+    "contract_descriptor" VARCHAR(254) NOT NULL,
+    "contract_maturity"   INTEGER      NOT NULL,
+    "contract_timeout"    INTEGER      NOT NULL,
+    "total_collateral"    INTEGER      NOT NULL,
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 

@@ -1,11 +1,8 @@
 package org.bitcoins.dlc.wallet.models
 
-import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.number.UInt64
-import org.bitcoins.core.protocol.BlockTimeStamp
 import org.bitcoins.core.protocol.dlc.models.DLCState
-import org.bitcoins.core.protocol.tlv.{ContractDescriptorTLV, OracleParamsV0TLV}
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -138,20 +135,6 @@ case class DLCDAO()(implicit
 
     def keyIndex: Rep[Int] = column("key_index")
 
-    def oracleThreshold: Rep[Int] = column("oracle_threshold")
-
-    def oracleParamsOpt: Rep[Option[OracleParamsV0TLV]] = column(
-      "oracle_params")
-
-    def contractDescriptor: Rep[ContractDescriptorTLV] = column(
-      "contract_descriptor")
-
-    def contractMaturity: Rep[BlockTimeStamp] = column("contract_maturity")
-
-    def contractTimeout: Rep[BlockTimeStamp] = column("contract_timeout")
-
-    def totalCollateral: Rep[CurrencyUnit] = column("total_collateral")
-
     def feeRate: Rep[SatoshisPerVirtualByte] = column("fee_rate")
 
     def fundOutputSerialId: Rep[UInt64] = column("fund_output_serial_id")
@@ -178,6 +161,8 @@ case class DLCDAO()(implicit
        account,
        changeIndex,
        keyIndex,
+       feeRate,
+       fundOutputSerialId,
        fundingOutPointOpt,
        fundingTxIdOpt,
        closingTxIdOpt,

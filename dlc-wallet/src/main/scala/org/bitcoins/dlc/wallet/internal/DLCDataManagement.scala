@@ -324,9 +324,11 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         matchPrevTxsWithInputs(localFundingInputs, prevTxs)
 
       val builder =
-        DLCTxBuilder(
-          dlcOffer.toDLCOffer(contractInfo, offerFundingInputs, contractData),
-          accept.withoutSigs)
+        DLCTxBuilder(dlcOffer.toDLCOffer(contractInfo,
+                                         offerFundingInputs,
+                                         dlcDb,
+                                         contractData),
+                     accept.withoutSigs)
 
       DLCSignatureVerifier(builder, dlcDb.isInitiator)
     }
@@ -387,8 +389,8 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
 
       val offer = dlcOffer.toDLCOffer(contractInfo,
                                       offerFundingInputs,
-                                      contractDataDb.fundOutputSerialId,
-                                      contractDataDb.feeRate,
+                                      dlcDb.fundOutputSerialId,
+                                      dlcDb.feeRate,
                                       contractDataDb.dlcTimeouts)
 
       val accept = dlcAccept.toDLCAcceptWithoutSigs(dlcDb.tempContractId,

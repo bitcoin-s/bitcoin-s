@@ -1,8 +1,10 @@
 package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.hd._
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
@@ -19,6 +21,8 @@ case class DLCDb(
     account: HDAccount,
     changeIndex: HDChainType,
     keyIndex: Int,
+    feeRate: SatoshisPerVirtualByte,
+    fundOutputSerialId: UInt64,
     fundingOutPointOpt: Option[TransactionOutPoint],
     fundingTxIdOpt: Option[DoubleSha256DigestBE],
     closingTxIdOpt: Option[DoubleSha256DigestBE],

@@ -205,6 +205,8 @@ object DLCWalletUtil {
     account = HDAccount.fromPath(BIP32Path.fromString("m/84'/0'/0'")).get,
     changeIndex = HDChainType.External,
     keyIndex = 0,
+    feeRate = SatoshisPerVirtualByte.fromLong(3),
+    fundOutputSerialId = UInt64.one,
     fundingOutPointOpt = None,
     fundingTxIdOpt = None,
     closingTxIdOpt = None,
@@ -218,9 +220,7 @@ object DLCWalletUtil {
     contractDescriptorTLV = sampleContractDescriptor.toTLV,
     contractMaturity = BlockTimeStamp(0),
     contractTimeout = BlockTimeStamp(1),
-    totalCollateral = Satoshis(10000),
-    feeRate = SatoshisPerVirtualByte.fromLong(3),
-    fundOutputSerialId = UInt64.one
+    totalCollateral = Satoshis(10000)
   )
 
   def initDLC(

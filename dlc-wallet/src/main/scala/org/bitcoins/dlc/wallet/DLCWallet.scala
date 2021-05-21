@@ -364,8 +364,10 @@ abstract class DLCWallet
         state = DLCState.Offered,
         isInitiator = true,
         account = account.hdAccount,
-        keyIndex = nextIndex,
         changeIndex = chainType,
+        keyIndex = nextIndex,
+        feeRate = feeRate,
+        fundOutputSerialId = fundOutputSerialId,
         fundingOutPointOpt = None,
         fundingTxIdOpt = None,
         closingTxIdOpt = None,
@@ -379,9 +381,7 @@ abstract class DLCWallet
         contractDescriptorTLV = contractInfo.contractDescriptor.toTLV,
         contractMaturity = timeouts.contractMaturity,
         contractTimeout = timeouts.contractTimeout,
-        totalCollateral = contractInfo.totalCollateral,
-        feeRate = feeRate,
-        fundOutputSerialId = fundOutputSerialId
+        totalCollateral = contractInfo.totalCollateral
       )
 
       _ <- dlcDAO.create(dlcDb)
@@ -443,8 +443,10 @@ abstract class DLCWallet
               state = DLCState.Accepted,
               isInitiator = false,
               account = account.hdAccount,
-              keyIndex = nextIndex,
               changeIndex = chainType,
+              keyIndex = nextIndex,
+              feeRate = offer.feeRate,
+              fundOutputSerialId = offer.fundOutputSerialId,
               fundingOutPointOpt = None,
               fundingTxIdOpt = None,
               closingTxIdOpt = None,
@@ -461,9 +463,7 @@ abstract class DLCWallet
               contractDescriptorTLV = contractInfo.contractDescriptor.toTLV,
               contractMaturity = offer.timeouts.contractMaturity,
               contractTimeout = offer.timeouts.contractTimeout,
-              totalCollateral = contractInfo.totalCollateral,
-              feeRate = offer.feeRate,
-              fundOutputSerialId = offer.fundOutputSerialId
+              totalCollateral = contractInfo.totalCollateral
             )
           }
 
@@ -785,6 +785,7 @@ abstract class DLCWallet
           offer =
             offerDb.toDLCOffer(contractInfo,
                                matchPrevTxsWithInputs(offerInputs, prevTxs),
+                               dlc,
                                contractData)
 
           dlcDb <- updateDLCContractIds(offer, accept)
@@ -985,7 +986,10 @@ abstract class DLCWallet
                                      announcementData,
                                      nonceDbs)
 
-      offer = offerDb.toDLCOffer(contractInfo, fundingInputs, contractData)
+      offer = offerDb.toDLCOffer(contractInfo,
+                                 fundingInputs,
+                                 dlcDb,
+                                 contractData)
 
       sign = DLCSign.fromTLV(signTLV, offer)
       result <- addDLCSigs(sign)
@@ -1234,7 +1238,7 @@ abstract class DLCWallet
               dlcDb.tempContractId,
               contractInfo,
               contractData.dlcTimeouts,
-              contractData.feeRate,
+              dlcDb.feeRate,
               totalCollateral,
               localCollateral
             )
@@ -1246,7 +1250,7 @@ abstract class DLCWallet
               dlcDb.contractIdOpt.get,
               contractInfo,
               contractData.dlcTimeouts,
-              contractData.feeRate,
+              dlcDb.feeRate,
               totalCollateral,
               localCollateral
             )
@@ -1258,7 +1262,7 @@ abstract class DLCWallet
               dlcDb.contractIdOpt.get,
               contractInfo,
               contractData.dlcTimeouts,
-              contractData.feeRate,
+              dlcDb.feeRate,
               totalCollateral,
               localCollateral
             )
@@ -1270,7 +1274,7 @@ abstract class DLCWallet
               dlcDb.contractIdOpt.get,
               contractInfo,
               contractData.dlcTimeouts,
-              contractData.feeRate,
+              dlcDb.feeRate,
               totalCollateral,
               localCollateral,
               dlcDb.fundingTxIdOpt.get
@@ -1283,7 +1287,7 @@ abstract class DLCWallet
               dlcDb.contractIdOpt.get,
               contractInfo,
               contractData.dlcTimeouts,
-              contractData.feeRate,
+              dlcDb.feeRate,
               totalCollateral,
               localCollateral,
               dlcDb.fundingTxIdOpt.get
@@ -1296,7 +1300,7 @@ abstract class DLCWallet
               dlcDb.contractIdOpt.get,
               contractInfo,
               contractData.dlcTimeouts,
-              contractData.feeRate,
+              dlcDb.feeRate,
               totalCollateral,
               localCollateral,
               dlcDb.fundingTxIdOpt.get,
@@ -1312,7 +1316,7 @@ abstract class DLCWallet
               dlcDb.contractIdOpt.get,
               contractInfo,
               contractData.dlcTimeouts,
-              contractData.feeRate,
+              dlcDb.feeRate,
               totalCollateral,
               localCollateral,
               dlcDb.fundingTxIdOpt.get,
@@ -1328,7 +1332,7 @@ abstract class DLCWallet
               dlcDb.contractIdOpt.get,
               contractInfo,
               contractData.dlcTimeouts,
-              contractData.feeRate,
+              dlcDb.feeRate,
               totalCollateral,
               localCollateral,
               dlcDb.fundingTxIdOpt.get,

@@ -1,10 +1,8 @@
 package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BlockTimeStamp
 import org.bitcoins.core.protocol.tlv.{ContractDescriptorTLV, OracleParamsV0TLV}
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.dlc.wallet.DLCAppConfig
@@ -88,10 +86,6 @@ case class DLCContractDataDAO()(implicit
 
     def totalCollateral: Rep[CurrencyUnit] = column("total_collateral")
 
-    def feeRate: Rep[SatoshisPerVirtualByte] = column("fee_rate")
-
-    def fundOutputSerialId: Rep[UInt64] = column("fund_output_serial_id")
-
     def * : ProvenShape[DLCContractDataDb] =
       (dlcId,
        oracleThreshold,
@@ -99,10 +93,7 @@ case class DLCContractDataDAO()(implicit
        contractDescriptor,
        contractMaturity,
        contractTimeout,
-       totalCollateral,
-       feeRate,
-       fundOutputSerialId).<>(DLCContractDataDb.tupled,
-                              DLCContractDataDb.unapply)
+       totalCollateral).<>(DLCContractDataDb.tupled, DLCContractDataDb.unapply)
 
     def fk =
       foreignKey("fk_dlc_id",

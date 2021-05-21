@@ -115,7 +115,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                             nonceDbs)
 
           val offer =
-            offerDb.toDLCOffer(contractInfo, fundingInputs, contractData)
+            offerDb.toDLCOffer(contractInfo, fundingInputs, dlcDb, contractData)
           val accept = acceptDbOpt
             .map(
               _.toDLCAccept(dlcDb.tempContractId,

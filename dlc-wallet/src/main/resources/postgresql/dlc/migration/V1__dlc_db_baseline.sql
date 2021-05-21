@@ -10,6 +10,9 @@ CREATE TABLE "global_dlc_data"
     "change_index"        INTEGER NOT NULL,
     "key_index"           INTEGER NOT NULL,
 
+    "fee_rate"              VARCHAR(254) NOT NULL,
+    "fund_output_serial_id" INTEGER      NOT NULL,
+
     "funding_outpoint"    TEXT,
     "funding_tx_id"       TEXT,
     "closing_tx_id"       TEXT,
@@ -25,8 +28,6 @@ CREATE TABLE "contract_data"
     "contract_maturity"     INTEGER NOT NULL,
     "contract_timeout"      INTEGER NOT NULL,
     "total_collateral"      INTEGER NOT NULL,
-    "fee_rate"              TEXT    NOT NULL,
-    "fund_output_serial_id" INTEGER NOT NULL,
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 

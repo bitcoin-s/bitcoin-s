@@ -1,11 +1,9 @@
 package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BlockTimeStamp
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv.{ContractDescriptorTLV, OracleParamsV0TLV}
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 
 /** This table contains all the meta information about a DLC.
@@ -18,9 +16,7 @@ case class DLCContractDataDb(
     contractDescriptorTLV: ContractDescriptorTLV,
     contractMaturity: BlockTimeStamp,
     contractTimeout: BlockTimeStamp,
-    totalCollateral: CurrencyUnit,
-    feeRate: SatoshisPerVirtualByte,
-    fundOutputSerialId: UInt64
+    totalCollateral: CurrencyUnit
 ) {
 
   lazy val dlcTimeouts: DLCTimeouts =
