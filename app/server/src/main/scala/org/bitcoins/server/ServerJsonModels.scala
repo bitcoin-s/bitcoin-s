@@ -622,7 +622,7 @@ object SendToAddress extends ServerJsonModels {
 
 }
 
-case class GetDLC(paramHash: Sha256DigestBE)
+case class GetDLC(dlcId: Sha256Digest)
 
 object GetDLC extends ServerJsonModels {
 
@@ -630,7 +630,7 @@ object GetDLC extends ServerJsonModels {
     jsArr.arr.toList match {
       case paramHashJs :: Nil =>
         Try {
-          val paramHash = Sha256DigestBE(paramHashJs.str)
+          val paramHash = Sha256Digest(paramHashJs.str)
           GetDLC(paramHash)
         }
       case Nil =>

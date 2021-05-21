@@ -37,11 +37,11 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
-import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.node.Node
 import org.bitcoins.server.BitcoinSAppConfig.implicitToWalletConf
 import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.wallet.DLCWalletUtil
 import org.bitcoins.wallet.MockWalletApi
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
@@ -925,7 +925,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       (mockWalletApi
         .createDLCOffer(_: ContractInfoV0TLV,
                         _: Satoshis,
-                        _: Option[FeeUnit],
+                        _: Option[SatoshisPerVirtualByte],
                         _: UInt32,
                         _: UInt32))
         .expects(
@@ -1009,25 +1009,11 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "add dlc sigs" in {
-
       (mockWalletApi
         .addDLCSigs(_: DLCSignTLV))
         .expects(sign.toTLV)
-        .returning(Future.successful(DLCDb(
-          paramHash = paramHash,
-          tempContractId = Sha256Digest.empty,
-          contractIdOpt = Some(contractId),
-          state = DLCState.Signed,
-          isInitiator = false,
-          account = HDAccount(HDCoin(HDPurpose(89), HDCoinType.Testnet), 0),
-          keyIndex = 0,
-          oracleSigsOpt = None,
-          fundingOutPointOpt = None,
-          fundingTxIdOpt = None,
-          closingTxIdOpt = None,
-          outcomesOpt = None,
-          oraclesUsedOpt = None
-        )))
+        .returning(Future.successful(
+          DLCWalletUtil.sampleDLCDb.copy(contractIdOpt = Some(contractId))))
 
       val route = walletRoutes.handleCommand(
         ServerCommand("adddlcsigs", Arr(Str(LnMessage(sign.toTLV).hex))))

@@ -161,7 +161,7 @@ object Picklers {
       import offered._
       Obj(
         "state" -> Str(statusString),
-        "paramHash" -> Str(paramHash.hex),
+        "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractInfo" -> Str(contractInfo.hex),
@@ -180,7 +180,7 @@ object Picklers {
     import accepted._
     Obj(
       "state" -> Str(statusString),
-      "paramHash" -> Str(paramHash.hex),
+      "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
@@ -200,7 +200,7 @@ object Picklers {
     import signed._
     Obj(
       "state" -> Str(statusString),
-      "paramHash" -> Str(paramHash.hex),
+      "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
@@ -221,7 +221,7 @@ object Picklers {
       import broadcasted._
       Obj(
         "state" -> Str(statusString),
-        "paramHash" -> Str(paramHash.hex),
+        "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
@@ -243,7 +243,7 @@ object Picklers {
       import confirmed._
       Obj(
         "state" -> Str(statusString),
-        "paramHash" -> Str(paramHash.hex),
+        "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
@@ -273,7 +273,7 @@ object Picklers {
 
     Obj(
       "state" -> Str(statusString),
-      "paramHash" -> Str(paramHash.hex),
+      "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
@@ -308,7 +308,7 @@ object Picklers {
 
       Obj(
         "state" -> Str(statusString),
-        "paramHash" -> Str(paramHash.hex),
+        "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
@@ -333,7 +333,7 @@ object Picklers {
     import refunded._
     Obj(
       "state" -> Str(statusString),
-      "paramHash" -> Str(paramHash.hex),
+      "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
@@ -371,7 +371,7 @@ object Picklers {
   }
 
   implicit val dlcStatusR: Reader[DLCStatus] = reader[Obj].map { obj =>
-    val paramHash = Sha256DigestBE(obj("paramHash").str)
+    val dlcId = Sha256Digest(obj("dlcId").str)
     val state = DLCState.fromString(obj("state").str)
     val isInitiator = obj("isInitiator").bool
     val tempContractId = Sha256Digest(obj("tempContractId").str)
@@ -424,7 +424,7 @@ object Picklers {
     state match {
       case DLCState.Offered =>
         Offered(
-          paramHash,
+          dlcId,
           isInitiator,
           tempContractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -435,7 +435,7 @@ object Picklers {
         )
       case DLCState.Accepted =>
         Accepted(
-          paramHash,
+          dlcId,
           isInitiator,
           tempContractId,
           contractId,
@@ -447,7 +447,7 @@ object Picklers {
         )
       case DLCState.Signed =>
         Signed(
-          paramHash,
+          dlcId,
           isInitiator,
           tempContractId,
           contractId,
@@ -459,7 +459,7 @@ object Picklers {
         )
       case DLCState.Broadcasted =>
         Broadcasted(
-          paramHash,
+          dlcId,
           isInitiator,
           tempContractId,
           contractId,
@@ -472,7 +472,7 @@ object Picklers {
         )
       case DLCState.Confirmed =>
         Confirmed(
-          paramHash,
+          dlcId,
           isInitiator,
           tempContractId,
           contractId,
@@ -485,7 +485,7 @@ object Picklers {
         )
       case DLCState.Claimed =>
         Claimed(
-          paramHash,
+          dlcId,
           isInitiator,
           tempContractId,
           contractId,
@@ -503,7 +503,7 @@ object Picklers {
         require(oracleSigs.size == 1,
                 "Remote claimed should only have one oracle sig")
         RemoteClaimed(
-          paramHash,
+          dlcId,
           isInitiator,
           tempContractId,
           contractId,
@@ -519,7 +519,7 @@ object Picklers {
         )
       case DLCState.Refunded =>
         Refunded(
-          paramHash,
+          dlcId,
           isInitiator,
           tempContractId,
           contractId,

@@ -3,44 +3,43 @@ package org.bitcoins.dlc.wallet.models
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
-  DLCAccept,
-  DLCAcceptWithoutSigs
-}
-import org.bitcoins.core.protocol.dlc.models.{
-  CETSignatures,
-  DLCFundingInput,
-  DLCPublicKeys
-}
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCAccept.NegotiationFields
+import org.bitcoins.core.protocol.dlc.models.DLCMessage._
+import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.tlv.NegotiationFieldsTLV
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.crypto._
 
 case class DLCAcceptDb(
-    paramHash: Sha256DigestBE,
-    tempContractId: Sha256Digest,
+    dlcId: Sha256Digest,
     fundingKey: ECPublicKey,
-    finalAddress: BitcoinAddress,
+    payoutAddress: BitcoinAddress,
     payoutSerialId: UInt64,
-    totalCollateral: CurrencyUnit,
+    collateral: CurrencyUnit,
     changeAddress: BitcoinAddress,
-    changeSerialId: UInt64) {
+    changeSerialId: UInt64,
+    negotiationFieldsTLV: NegotiationFieldsTLV) {
 
-  private[wallet] def toDLCAccept(
+  lazy val negotiationFields: NegotiationFields =
+    NegotiationFields.fromTLV(negotiationFieldsTLV)
+
+  def toDLCAccept(
+      tempContractId: Sha256Digest,
       fundingInputs: Vector[DLCFundingInput],
       outcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)],
       refundSig: PartialSignature): DLCAccept = {
     val pubKeys =
-      DLCPublicKeys(fundingKey, finalAddress)
+      DLCPublicKeys(fundingKey, payoutAddress)
     val cetSigs = CETSignatures(outcomeSigs, refundSig)
     DLCAccept(
-      totalCollateral = totalCollateral.satoshis,
+      totalCollateral = collateral.satoshis,
       pubKeys = pubKeys,
       fundingInputs = fundingInputs,
       changeAddress = changeAddress,
       payoutSerialId = payoutSerialId,
       changeSerialId = changeSerialId,
       cetSigs = cetSigs,
-      negotiationFields = DLCAccept.NoNegotiationFields,
+      negotiationFields = negotiationFields,
       tempContractId = tempContractId
     )
   }
@@ -49,16 +48,16 @@ case class DLCAcceptDb(
       tempContractId: Sha256Digest,
       fundingInputs: Vector[DLCFundingInput]): DLCAcceptWithoutSigs = {
     val pubKeys =
-      DLCPublicKeys(fundingKey, finalAddress)
+      DLCPublicKeys(fundingKey, payoutAddress)
 
     DLCAcceptWithoutSigs(
-      totalCollateral = totalCollateral.satoshis,
+      totalCollateral = collateral.satoshis,
       pubKeys = pubKeys,
       fundingInputs = fundingInputs,
       changeAddress = changeAddress,
       payoutSerialId = payoutSerialId,
       changeSerialId = changeSerialId,
-      negotiationFields = DLCAccept.NoNegotiationFields,
+      negotiationFields = negotiationFields,
       tempContractId = tempContractId
     )
   }
@@ -66,18 +65,16 @@ case class DLCAcceptDb(
 
 object DLCAcceptDbHelper {
 
-  def fromDLCAccept(
-      paramHash: Sha256DigestBE,
-      accept: DLCAccept): DLCAcceptDb = {
+  def fromDLCAccept(id: Sha256Digest, accept: DLCAccept): DLCAcceptDb = {
     DLCAcceptDb(
-      paramHash = paramHash,
-      tempContractId = accept.tempContractId,
-      fundingKey = accept.pubKeys.fundingKey,
-      finalAddress = accept.pubKeys.payoutAddress,
-      payoutSerialId = accept.payoutSerialId,
-      totalCollateral = accept.totalCollateral,
-      changeAddress = accept.changeAddress,
-      changeSerialId = accept.changeSerialId
+      id,
+      accept.pubKeys.fundingKey,
+      accept.pubKeys.payoutAddress,
+      accept.payoutSerialId,
+      accept.totalCollateral,
+      accept.changeAddress,
+      accept.changeSerialId,
+      accept.negotiationFields.toTLV
     )
   }
 }

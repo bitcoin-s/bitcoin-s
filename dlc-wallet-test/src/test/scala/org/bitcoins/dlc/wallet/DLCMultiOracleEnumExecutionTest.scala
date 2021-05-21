@@ -110,6 +110,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
     for {
       contractId <- getContractId(wallets._1.wallet)
       (sig, _) = getSigs
+      status <- getDLCStatus(wallets._2.wallet)
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
       result <- dlcExecutionTest(wallets = wallets,
@@ -122,10 +123,10 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
-      paramHash = dlcDbAOpt.get.paramHash
+      dlcId = status.dlcId
 
-      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
-      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+      statusAOpt <- wallets._1.wallet.findDLC(dlcId)
+      statusBOpt <- wallets._2.wallet.findDLC(dlcId)
 
       _ = {
         (statusAOpt, statusBOpt) match {
@@ -148,6 +149,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
     for {
       contractId <- getContractId(wallets._1.wallet)
       (_, sig) = getSigs
+      status <- getDLCStatus(wallets._2.wallet)
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
       result <- dlcExecutionTest(wallets = wallets,
@@ -160,10 +162,10 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
-      paramHash = dlcDbAOpt.get.paramHash
+      dlcId = status.dlcId
 
-      statusAOpt <- wallets._1.wallet.findDLC(paramHash)
-      statusBOpt <- wallets._2.wallet.findDLC(paramHash)
+      statusAOpt <- wallets._1.wallet.findDLC(dlcId)
+      statusBOpt <- wallets._2.wallet.findDLC(dlcId)
 
       _ = {
         (statusAOpt, statusBOpt) match {

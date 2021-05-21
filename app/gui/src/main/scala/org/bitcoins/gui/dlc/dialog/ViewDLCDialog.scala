@@ -37,9 +37,9 @@ object ViewDLCDialog {
       padding = Insets(20, 100, 10, 10)
 
       private var row = 0
-      add(new Label("Param Hash:"), 0, row)
+      add(new Label("DLC Id:"), 0, row)
       add(new TextField() {
-            text = status.paramHash.hex
+            text = status.dlcId.hex
             editable = false
           },
           columnIndex = 1,

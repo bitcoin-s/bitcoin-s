@@ -2,7 +2,7 @@ package org.bitcoins.testkit.wallet
 
 import org.bitcoins.core.crypto.WitnessTxSigComponent
 import org.bitcoins.core.currency._
-import org.bitcoins.core.hd.{BIP32Path, HDAccount}
+import org.bitcoins.core.hd.{BIP32Path, HDAccount, HDChainType}
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
@@ -156,9 +156,6 @@ object DLCWalletUtil {
   lazy val sampleMultiNonceDLCOffer: DLCOffer =
     sampleDLCOffer.copy(contractInfo = multiNonceContractInfo)
 
-  lazy val sampleDLCParamHash: Sha256DigestBE =
-    DLCMessage.calcParamHash(sampleContractInfo, dummyTimeouts)
-
   lazy val dummyOutcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)] =
     Vector(
       EnumOracleOutcome(
@@ -198,19 +195,32 @@ object DLCWalletUtil {
     DLCSign(dummyCETSigs, dummyFundingSignatures, ByteVector.empty)
 
   lazy val sampleDLCDb: DLCDb = DLCDb(
-    paramHash = sampleDLCParamHash,
+    dlcId = Sha256Digest(
+      "9da9922b9067007f8d9c56c37f202a568f0cdb104e5ef9752ad6cbc1834f0334"),
     tempContractId = sampleDLCOffer.tempContractId,
     contractIdOpt = None,
+    protocolVersion = 0,
     state = DLCState.Offered,
     isInitiator = true,
     account = HDAccount.fromPath(BIP32Path.fromString("m/84'/0'/0'")).get,
+    changeIndex = HDChainType.External,
     keyIndex = 0,
-    oracleSigsOpt = Some(Vector(sampleOracleLoseSig)),
+    feeRate = SatoshisPerVirtualByte.fromLong(3),
+    fundOutputSerialId = UInt64.one,
     fundingOutPointOpt = None,
     fundingTxIdOpt = None,
     closingTxIdOpt = None,
-    outcomesOpt = None,
-    oraclesUsedOpt = None
+    aggregateSignatureOpt = None
+  )
+
+  lazy val sampleContractDataDb: DLCContractDataDb = DLCContractDataDb(
+    dlcId = sampleDLCDb.dlcId,
+    oracleThreshold = 1,
+    oracleParamsTLVOpt = None,
+    contractDescriptorTLV = sampleContractDescriptor.toTLV,
+    contractMaturity = BlockTimeStamp(0),
+    contractTimeout = BlockTimeStamp(1),
+    totalCollateral = Satoshis(10000)
   )
 
   def initDLC(
@@ -245,12 +255,14 @@ object DLCWalletUtil {
     val wallet: DLCWallet = funded.wallet
   }
 
-  def getInitialOffer(wallet: DLCWallet)(implicit
-      ec: ExecutionContext): Future[DLCOfferDb] = {
-    wallet.dlcOfferDAO.findAll().map { all =>
-      require(all.size == 1, "There should only be one dlc initialized")
-      all.head
-    }
+  def getDLCStatus(wallet: DLCWallet)(implicit
+      ec: ExecutionContext): Future[DLCStatus] = {
+    for {
+      dbs <- wallet.dlcDAO.findAll()
+      _ = require(dbs.size == 1, "There should only be one dlc initialized")
+      db = dbs.head
+      status <- wallet.findDLC(db.dlcId)
+    } yield status.get
   }
 
   def getContractId(wallet: DLCWallet)(implicit

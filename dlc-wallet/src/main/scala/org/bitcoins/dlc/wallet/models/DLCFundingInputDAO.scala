@@ -6,10 +6,10 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.crypto.{Sha256Digest, Sha256DigestBE}
+import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.dlc.wallet.DLCAppConfig
-import slick.lifted.{ForeignKeyQuery, PrimaryKey, ProvenShape}
+import slick.lifted.{ForeignKeyQuery, ProvenShape}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -54,49 +54,41 @@ case class DLCFundingInputDAO()(implicit
     Seq] =
     findByPrimaryKeys(dlcs.map(_.outPoint))
 
-  def deleteByParamHash(paramHash: Sha256DigestBE): Future[Int] = {
-    val q = table.filter(_.paramHash === paramHash)
+  def deleteByDLCId(dlcId: Sha256Digest): Future[Int] = {
+    val q = table.filter(_.dlcId === dlcId)
     safeDatabase.run(q.delete)
   }
 
-  def findByParamHash(
-      paramHash: Sha256DigestBE): Future[Vector[DLCFundingInputDb]] = {
-    val q = table.filter(_.paramHash === paramHash)
+  def findByDLCId(dlcId: Sha256Digest): Future[Vector[DLCFundingInputDb]] = {
+    val q = table.filter(_.dlcId === dlcId)
 
     safeDatabase.run(q.result).map(_.toVector)
   }
 
-  def findByParamHash(
-      paramHash: Sha256Digest): Future[Vector[DLCFundingInputDb]] =
-    findByParamHash(paramHash.flip)
-
-  def findByParamHash(
-      paramHash: Sha256DigestBE,
+  def findByDLCId(
+      dlcId: Sha256Digest,
       isInitiator: Boolean): Future[Vector[DLCFundingInputDb]] = {
     val q = table
-      .filter(_.paramHash === paramHash)
+      .filter(_.dlcId === dlcId)
       .filter(_.isInitiator === isInitiator)
 
     safeDatabase.run(q.result).map(_.toVector)
   }
 
-  def findByParamHash(
-      paramHash: Sha256Digest,
-      isInitiator: Boolean): Future[Vector[DLCFundingInputDb]] =
-    findByParamHash(paramHash.flip, isInitiator)
-
   class DLCFundingInputsTable(tag: Tag)
-      extends Table[DLCFundingInputDb](tag, "wallet_dlc_funding_inputs") {
+      extends Table[DLCFundingInputDb](tag, schemaName, "funding_inputs") {
 
-    def paramHash: Rep[Sha256DigestBE] = column("param_hash")
+    def outPoint: Rep[TransactionOutPoint] = column("out_point", O.PrimaryKey)
+
+    def dlcId: Rep[Sha256Digest] = column("dlc_id")
 
     def inputSerialId: Rep[UInt64] = column("input_serial_id")
 
     def isInitiator: Rep[Boolean] = column("is_initiator")
 
-    def outPoint: Rep[TransactionOutPoint] = column("out_point", O.Unique)
-
     def output: Rep[TransactionOutput] = column("output")
+
+    def maxWitnessLength: Rep[Long] = column("max_witness_length")
 
     def redeemScriptOpt: Rep[Option[ScriptPubKey]] = column("redeem_script_opt")
 
@@ -104,20 +96,18 @@ case class DLCFundingInputDAO()(implicit
       column("witness_script_opt")
 
     def * : ProvenShape[DLCFundingInputDb] =
-      (paramHash,
+      (dlcId,
        isInitiator,
        inputSerialId,
        outPoint,
        output,
+       maxWitnessLength,
        redeemScriptOpt,
        witnessScriptOpt).<>(DLCFundingInputDb.tupled, DLCFundingInputDb.unapply)
 
-    def primaryKey: PrimaryKey =
-      primaryKey(name = "pk_dlc_input", sourceColumns = outPoint)
-
     def fk: ForeignKeyQuery[_, DLCDb] =
-      foreignKey("fk_param_hash",
-                 sourceColumns = paramHash,
-                 targetTableQuery = dlcTable)(_.paramHash)
+      foreignKey("fk_dlc_id",
+                 sourceColumns = dlcId,
+                 targetTableQuery = dlcTable)(_.dlcId)
   }
 }

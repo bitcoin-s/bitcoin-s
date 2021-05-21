@@ -1,31 +1,32 @@
 package org.bitcoins.dlc.wallet.models
 
-import org.bitcoins.core.hd.HDAccount
-import org.bitcoins.core.protocol.dlc.models.{DLCState, SingleOracleInfo}
-import org.bitcoins.core.protocol.tlv.DLCOutcomeType
+import org.bitcoins.core.hd._
+import org.bitcoins.core.number.UInt64
+import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import org.bitcoins.crypto.{
-  DoubleSha256DigestBE,
-  SchnorrDigitalSignature,
-  Sha256Digest,
-  Sha256DigestBE
-}
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
+/** This table contains all the meta information about a DLC.
+  * This includes various identifiers as well as state and a BIP 32 key path.
+  */
 case class DLCDb(
-    paramHash: Sha256DigestBE,
+    dlcId: Sha256Digest,
     tempContractId: Sha256Digest,
     contractIdOpt: Option[ByteVector],
+    protocolVersion: Int,
     state: DLCState,
     isInitiator: Boolean,
     account: HDAccount,
+    changeIndex: HDChainType,
     keyIndex: Int,
-    oracleSigsOpt: Option[Vector[SchnorrDigitalSignature]],
+    feeRate: SatoshisPerVirtualByte,
+    fundOutputSerialId: UInt64,
     fundingOutPointOpt: Option[TransactionOutPoint],
     fundingTxIdOpt: Option[DoubleSha256DigestBE],
     closingTxIdOpt: Option[DoubleSha256DigestBE],
-    outcomesOpt: Option[Vector[DLCOutcomeType]],
-    oraclesUsedOpt: Option[Vector[SingleOracleInfo]]
+    aggregateSignatureOpt: Option[SchnorrDigitalSignature]
 ) {
 
   def updateState(newState: DLCState): DLCDb = {

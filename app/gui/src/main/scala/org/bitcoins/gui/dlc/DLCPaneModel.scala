@@ -8,7 +8,7 @@ import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256DigestBE}
+import org.bitcoins.crypto._
 import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.beans.property.ObjectProperty
@@ -69,12 +69,12 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
     dlcs ++= getDLCs
   }
 
-  def updateDLC(paramHash: Sha256DigestBE): Unit = {
-    ConsoleCli.exec(GetDLC(paramHash), Config.empty) match {
+  def updateDLC(dlcId: Sha256Digest): Unit = {
+    ConsoleCli.exec(GetDLC(dlcId), Config.empty) match {
       case Failure(exception) => throw exception
       case Success(dlcStatus) =>
         dlcs += read[DLCStatus](ujson.read(dlcStatus))
-        dlcs.find(_.paramHash == paramHash).foreach(dlcs -= _)
+        dlcs.find(_.dlcId == dlcId).foreach(dlcs -= _)
     }
   }
 
@@ -360,7 +360,7 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
           taskRunner.run(
             caption = "Canceling DLC",
             op = {
-              ConsoleCli.exec(CancelDLC(status.paramHash),
+              ConsoleCli.exec(CancelDLC(status.dlcId),
                               GlobalData.consoleCliConfig) match {
                 case Success(_)   => ()
                 case Failure(err) => throw err

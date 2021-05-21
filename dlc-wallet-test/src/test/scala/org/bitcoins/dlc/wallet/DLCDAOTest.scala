@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey, Sha256DigestBE}
+import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey, Sha256Digest}
 import org.bitcoins.db.CRUD
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.testkit.fixtures.DLCDAOFixture
@@ -23,7 +23,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
 
   val dlcDb: DLCDb = DLCWalletUtil.sampleDLCDb
 
-  val paramHash: Sha256DigestBE = dlcDb.paramHash
+  val dlcId: Sha256Digest = dlcDb.dlcId
 
   def verifyDatabaseInsertion[ElementType, KeyType](
       element: ElementType,
@@ -42,7 +42,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
 
   it should "correctly insert a DLC into the database" in { daos =>
     val dlcDAO = daos.dlcDAO
-    verifyDatabaseInsertion(dlcDb, paramHash, dlcDAO, dlcDAO)
+    verifyDatabaseInsertion(dlcDb, dlcId, dlcDAO, dlcDAO)
   }
 
   it should "correctly insert a DLCOffer into the database" in { daos =>
@@ -50,9 +50,9 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     val offerDAO = daos.dlcOfferDAO
 
     val offerDb =
-      DLCOfferDbHelper.fromDLCOffer(DLCWalletUtil.sampleDLCOffer)
+      DLCOfferDbHelper.fromDLCOffer(dlcId, DLCWalletUtil.sampleDLCOffer)
 
-    verifyDatabaseInsertion(offerDb, paramHash, offerDAO, dlcDAO)
+    verifyDatabaseInsertion(offerDb, dlcId, offerDAO, dlcDAO)
   }
 
   it should "correctly insert a DLCAccept into the database" in { daos =>
@@ -60,9 +60,9 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     val acceptDAO = daos.dlcAcceptDAO
 
     val acceptDb =
-      DLCAcceptDbHelper.fromDLCAccept(paramHash, DLCWalletUtil.sampleDLCAccept)
+      DLCAcceptDbHelper.fromDLCAccept(dlcId, DLCWalletUtil.sampleDLCAccept)
 
-    verifyDatabaseInsertion(acceptDb, paramHash, acceptDAO, dlcDAO)
+    verifyDatabaseInsertion(acceptDb, dlcId, acceptDAO, dlcDAO)
   }
 
   it should "correctly insert funding inputs into the database" in { daos =>
@@ -70,11 +70,12 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     val inputsDAO = daos.dlcInputsDAO
 
     val input = DLCFundingInputDb(
-      paramHash = paramHash,
+      dlcId = dlcId,
       isInitiator = true,
       inputSerialId = UInt64.zero,
       outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
       output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
+      maxWitnessLength = 107,
       redeemScriptOpt = None,
       witnessScriptOpt = Some(DLCWalletUtil.dummyScriptWitness)
     )
@@ -82,36 +83,39 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     verifyDatabaseInsertion(input, input.outPoint, inputsDAO, dlcDAO)
   }
 
-  it should "correctly find funding inputs by eventId and isInitiator" in {
+  it should "correctly find funding inputs by dlcId and isInitiator" in {
     daos =>
       val inputsDAO = daos.dlcInputsDAO
       val dlcDAO = daos.dlcDAO
 
       val inputs = Vector(
         DLCFundingInputDb(
-          paramHash = paramHash,
+          dlcId = dlcId,
           isInitiator = true,
           inputSerialId = UInt64.zero,
           outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
+          maxWitnessLength = 107,
           redeemScriptOpt = None,
           witnessScriptOpt = Some(DLCWalletUtil.dummyScriptWitness)
         ),
         DLCFundingInputDb(
-          paramHash = paramHash,
+          dlcId = dlcId,
           isInitiator = false,
           inputSerialId = UInt64.one,
           outPoint = TransactionOutPoint(testBlockHash, UInt32.one),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
+          maxWitnessLength = 107,
           redeemScriptOpt = None,
           witnessScriptOpt = Some(DLCWalletUtil.dummyScriptWitness)
         ),
         DLCFundingInputDb(
-          paramHash = paramHash,
+          dlcId = dlcId,
           isInitiator = true,
           inputSerialId = UInt64(2),
           outPoint = TransactionOutPoint(testBlockHash, UInt32(3)),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
+          maxWitnessLength = 107,
           redeemScriptOpt = None,
           witnessScriptOpt = Some(DLCWalletUtil.dummyScriptWitness)
         )
@@ -121,7 +125,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
         _ <- dlcDAO.create(dlcDb)
         _ <- inputsDAO.createAll(inputs)
 
-        readInput <- inputsDAO.findByParamHash(paramHash, isInitiator = true)
+        readInput <- inputsDAO.findByDLCId(dlcId, isInitiator = true)
       } yield assert(readInput.size == 2)
   }
 
@@ -130,15 +134,16 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       val dlcDAO = daos.dlcDAO
       val sigsDAO = daos.dlcSigsDAO
 
-      val sig = DLCCETSignatureDb(
-        paramHash = paramHash,
-        isInitiator = true,
+      val sig = DLCCETSignaturesDb(
+        dlcId = dlcId,
         sigPoint = ECPublicKey.freshPublicKey,
-        signature = ECAdaptorSignature.dummy
+        index = 0,
+        accepterSig = ECAdaptorSignature.dummy,
+        initiatorSig = None
       )
 
       verifyDatabaseInsertion(sig,
-                              (sig.paramHash, sig.sigPoint),
+                              DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index),
                               sigsDAO,
                               dlcDAO)
   }
@@ -148,35 +153,38 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       val dlcDAO = daos.dlcDAO
       val sigsDAO = daos.dlcSigsDAO
 
-      val sig = DLCCETSignatureDb(
-        paramHash = paramHash,
-        isInitiator = true,
+      val sig = DLCCETSignaturesDb(
+        dlcId = dlcId,
         sigPoint = ECPublicKey.freshPublicKey,
-        signature = ECAdaptorSignature.dummy
+        index = 1,
+        accepterSig = ECAdaptorSignature.dummy,
+        initiatorSig = None
       )
 
       verifyDatabaseInsertion(sig,
-                              (sig.paramHash, sig.sigPoint),
+                              DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index),
                               sigsDAO,
                               dlcDAO)
   }
 
-  it should "correctly find CET signatures by eventId" in { daos =>
+  it should "correctly find CET signatures by dlcId" in { daos =>
     val dlcDAO = daos.dlcDAO
     val sigsDAO = daos.dlcSigsDAO
 
     val sigs = Vector(
-      DLCCETSignatureDb(
-        paramHash = paramHash,
-        isInitiator = true,
+      DLCCETSignaturesDb(
+        dlcId = dlcId,
         sigPoint = ECPublicKey.freshPublicKey,
-        signature = ECAdaptorSignature.dummy
+        index = 2,
+        accepterSig = ECAdaptorSignature.dummy,
+        initiatorSig = Some(ECAdaptorSignature.dummy)
       ),
-      DLCCETSignatureDb(
-        paramHash = paramHash,
-        isInitiator = false,
+      DLCCETSignaturesDb(
+        dlcId = dlcId,
         sigPoint = ECPublicKey.freshPublicKey,
-        signature = ECAdaptorSignature.dummy
+        index = 3,
+        accepterSig = ECAdaptorSignature.dummy,
+        initiatorSig = Some(ECAdaptorSignature.dummy)
       )
     )
 
@@ -184,7 +192,7 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       _ <- dlcDAO.create(dlcDb)
       _ <- sigsDAO.createAll(sigs)
 
-      readInput <- sigsDAO.findByParamHash(paramHash)
+      readInput <- sigsDAO.findByDLCId(dlcId)
     } yield {
       assert(readInput.size == 2)
       // Do it this way so ordering doesn't matter
