@@ -142,7 +142,10 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
         initiatorSig = None
       )
 
-      verifyDatabaseInsertion(sig, (sig.dlcId, sig.index), sigsDAO, dlcDAO)
+      verifyDatabaseInsertion(sig,
+                              DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index),
+                              sigsDAO,
+                              dlcDAO)
   }
 
   it should "correctly insert unsigned numeric outcome CET signatures into the database" in {
@@ -158,7 +161,10 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
         initiatorSig = None
       )
 
-      verifyDatabaseInsertion(sig, (sig.dlcId, sig.index), sigsDAO, dlcDAO)
+      verifyDatabaseInsertion(sig,
+                              DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index),
+                              sigsDAO,
+                              dlcDAO)
   }
 
   it should "correctly find CET signatures by dlcId" in { daos =>

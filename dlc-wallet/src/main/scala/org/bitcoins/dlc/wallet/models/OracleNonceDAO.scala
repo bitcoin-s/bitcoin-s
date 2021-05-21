@@ -7,7 +7,7 @@ import slick.lifted._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-private case class OracleNoncePrimaryKey(announcementId: Long, index: Long)
+case class OracleNoncePrimaryKey(announcementId: Long, index: Long)
 
 case class OracleNonceDAO()(implicit
     val ec: ExecutionContext,

@@ -7,9 +7,7 @@ import slick.lifted._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-private case class DLCAnnouncementPrimaryKey(
-    dlcId: Sha256Digest,
-    announcementId: Long)
+case class DLCAnnouncementPrimaryKey(dlcId: Sha256Digest, announcementId: Long)
 
 case class DLCAnnouncementDAO()(implicit
     val ec: ExecutionContext,

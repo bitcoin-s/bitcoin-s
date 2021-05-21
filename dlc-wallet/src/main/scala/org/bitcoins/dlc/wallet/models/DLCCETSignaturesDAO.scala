@@ -7,9 +7,7 @@ import slick.lifted._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-private case class DLCCETSignaturesPrimaryKey(
-    dlcId: Sha256Digest,
-    contractIndex: Long)
+case class DLCCETSignaturesPrimaryKey(dlcId: Sha256Digest, contractIndex: Long)
 
 case class DLCCETSignaturesDAO()(implicit
     val ec: ExecutionContext,
