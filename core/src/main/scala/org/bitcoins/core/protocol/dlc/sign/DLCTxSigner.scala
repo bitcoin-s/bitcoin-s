@@ -207,9 +207,7 @@ case class DLCTxSigner(
     val computeBatchFn: Vector[Indexed[ECPublicKey]] => Future[
       Vector[(ECPublicKey, ECAdaptorSignature)]] = {
       adaptorPoints: Vector[Indexed[ECPublicKey]] =>
-        Future {
-          signCETs(adaptorPoints)
-        }
+        FutureUtil.makeAsync(() => signCETs(adaptorPoints))
     }
 
     val cetSigsF: Future[Vector[(ECPublicKey, ECAdaptorSignature)]] = {
@@ -239,9 +237,7 @@ case class DLCTxSigner(
   ec: ExecutionContext): Future[(CETSignatures, Vector[WitnessTransaction])] = {
     val adaptorPoints = builder.contractInfo.adaptorPointsIndexed
     val fn = { adaptorPoints: Vector[Indexed[ECPublicKey]] =>
-      Future {
-        buildAndSignCETs(adaptorPoints)
-      }
+      FutureUtil.makeAsync(() => buildAndSignCETs(adaptorPoints))
     }
     val cetsAndSigsF: Future[
       Vector[Vector[(ECPublicKey, WitnessTransaction, ECAdaptorSignature)]]] = {
