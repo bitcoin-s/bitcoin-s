@@ -171,17 +171,27 @@ abstract class Wallet
   override def processCompactFilters(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
     Wallet] = {
+    val utxosF = listUtxos()
+    val spksF = listScriptPubKeys()
     for {
-      utxos <- listUtxos()
-      scripts <- listScriptPubKeys()
+      utxos <- utxosF
+      scripts <- spksF
       scriptPubKeys =
         utxos.flatMap(_.redeemScriptOpt).toSet ++ scripts.map(_.scriptPubKey)
-      _ <- FutureUtil.sequentially(blockFilters) {
-        case (blockHash, blockFilter) =>
-          val matcher = SimpleFilterMatcher(blockFilter)
-          if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
-            nodeApi.downloadBlocks(Vector(blockHash))
-          } else Future.unit
+      _ <- {
+        if (scriptPubKeys.isEmpty) {
+          //do nothing as an optimization, if we have nothing in the wallet
+          //we don't need to search the filters
+          Future.unit
+        } else {
+          FutureUtil.sequentially(blockFilters) {
+            case (blockHash, blockFilter) =>
+              val matcher = SimpleFilterMatcher(blockFilter)
+              if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
+                nodeApi.downloadBlocks(Vector(blockHash))
+              } else Future.unit
+          }
+        }
       }
       hash = blockFilters.last._1.flip
       height <- chainQueryApi.getBlockHeight(hash)
