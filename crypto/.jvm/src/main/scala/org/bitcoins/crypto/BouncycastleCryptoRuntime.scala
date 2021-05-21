@@ -1,15 +1,10 @@
 package org.bitcoins.crypto
 
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
-import org.bouncycastle.crypto.generators.ECKeyPairGenerator
 import org.bouncycastle.crypto.macs.{HMac, SipHash}
-import org.bouncycastle.crypto.params.{
-  ECKeyGenerationParameters,
-  ECPrivateKeyParameters,
-  KeyParameter
-}
-import org.bouncycastle.math.ec.ECPoint
+import org.bouncycastle.crypto.params.KeyParameter
+import org.bouncycastle.math.ec.{ECPoint, WNafUtil}
+import org.bouncycastle.util.BigIntegers
 import scodec.bits.ByteVector
 
 import java.math.BigInteger
@@ -23,16 +18,27 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
 
   override val cryptoContext: CryptoContext = CryptoContext.BouncyCastle
 
+  /** Cribbed from ECKeyPairGenerator::generateKeyPair
+    * @see https://github.com/bcgit/bc-java/blob/63b18eb973f5731e403f655ee81d6b8456f5b256/core/src/main/java/org/bouncycastle/crypto/generators/ECKeyPairGenerator.java#L39
+    */
   override def freshPrivateKey: ECPrivateKey = {
-    val generator: ECKeyPairGenerator = new ECKeyPairGenerator
-    val keyGenParams: ECKeyGenerationParameters =
-      new ECKeyGenerationParameters(BouncyCastleCryptoParams.curve,
-                                    secureRandom)
-    generator.init(keyGenParams)
-    val keypair: AsymmetricCipherKeyPair = generator.generateKeyPair
-    val privParams: ECPrivateKeyParameters =
-      keypair.getPrivate.asInstanceOf[ECPrivateKeyParameters]
-    val priv: BigInteger = privParams.getD
+    val n = CryptoParams.getN
+    val bitLength = n.bitLength()
+    val minWeight = bitLength >>> 2
+
+    var priv: BigInteger = BigInteger.ZERO
+    var foundNum: Boolean = false
+    while (!foundNum) {
+      priv = BigIntegers.createRandomBigInteger(bitLength, secureRandom)
+
+      if (priv.compareTo(BigInteger.ONE) < 0 || (priv.compareTo(n) >= 0)) {
+        () //do nothing, keep iterating
+      } else if (WNafUtil.getNafWeight(priv) < minWeight) {
+        () //do nothing, keep iterating
+      } else {
+        foundNum = true
+      }
+    }
     val bytes = ByteVector(priv.toByteArray)
     ECPrivateKey.fromBytes(bytes.padLeft(33))
   }
