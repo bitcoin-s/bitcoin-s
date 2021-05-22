@@ -44,4 +44,67 @@ class FutureUtilTest extends BitcoinSJvmTest {
 
     futs.map(xs => assert(List(1, 2) == xs)).flatMap(_ => assertionF)
   }
+
+  it must "execute futures in synchronous fashion with batchAndSyncExecute" in {
+    val vec = 0.until(5).toVector
+
+    val f: Vector[Int] => Future[Vector[Int]] = { vec =>
+      Future {
+        Thread.sleep(1000)
+        vec
+      }
+    }
+    val start = TimeUtil.now
+    val doneF =
+      FutureUtil.batchAndSyncExecute(elements = vec, f = f, batchSize = 1)
+
+    //here is how this test case works:
+    //the vector above has 5 elements in it, and the batchSize is 1
+    //each function sleeps for 1000ms (1 second). If things are
+    //not run in parallel, the total time should be 5 seconds (5 elements * 1 second sleep)
+    for {
+      _ <- doneF
+      stop = TimeUtil.now
+    } yield {
+      val difference = stop.getEpochSecond - start.getEpochSecond
+      if (difference >= 5) {
+        succeed
+      } else {
+        fail(
+          s"Batch did not execute in parallel! difference=${difference} seconds")
+      }
+    }
+  }
+
+  it must "execute futures in parallel with batchAndParallelExecute" in {
+    val vec = 0.until(5).toVector
+
+    val f: Vector[Int] => Future[Vector[Int]] = { vec =>
+      Future {
+        Thread.sleep(1000)
+        vec
+      }
+    }
+    val start = TimeUtil.now
+    val doneF =
+      FutureUtil.batchAndParallelExecute(elements = vec, f = f, batchSize = 1)
+
+    //here is how this test case works:
+    //the vector above has 5 elements in it, and the batchSize is 1
+    //each function sleeps for 1000ms (1 second).
+    //if things are run in parallel, it should take ~1 second to run all these in parallel
+    for {
+      _ <- doneF
+      stop = TimeUtil.now
+    } yield {
+      val difference = stop.getEpochSecond - start.getEpochSecond
+      if (difference < 2) {
+        succeed
+      } else {
+        fail(
+          s"Batch did not execute in parallel! difference=${difference} seconds")
+      }
+    }
+  }
+
 }
