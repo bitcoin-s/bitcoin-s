@@ -1,6 +1,6 @@
 package org.bitcoins.core.util
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 object FutureUtil {
 
@@ -94,6 +94,17 @@ object FutureUtil {
         }
       }
     } yield batchExecution
+  }
+
+  def makeAsync[T](func: () => T)(implicit ec: ExecutionContext): Future[T] = {
+    val resultP = Promise[T]()
+
+    ec.execute { () =>
+      val result = func()
+      resultP.success(result)
+    }
+
+    resultP.future
   }
 
   /** Batches the [[elements]] by [[batchSize]] and then calls [[f]] on them in parallel
