@@ -3,6 +3,7 @@ package org.bitcoins.core.util
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalatest.compatible.Assertion
 
+import java.time.temporal.ChronoUnit
 import scala.concurrent._
 
 class FutureUtilTest extends BitcoinSJvmTest {
@@ -66,8 +67,8 @@ class FutureUtilTest extends BitcoinSJvmTest {
       _ <- doneF
       stop = TimeUtil.now
     } yield {
-      val difference = stop.getEpochSecond - start.getEpochSecond
-      if (difference >= Runtime.getRuntime.availableProcessors()) {
+      val difference = ChronoUnit.MILLIS.between(start, stop)
+      if (difference >= Runtime.getRuntime.availableProcessors() * 1000) {
         succeed
       } else {
         fail(
@@ -97,8 +98,8 @@ class FutureUtilTest extends BitcoinSJvmTest {
       _ <- doneF
       stop = TimeUtil.now
     } yield {
-      val difference = stop.getEpochSecond - start.getEpochSecond
-      if (difference < 2) {
+      val difference = ChronoUnit.MILLIS.between(start, stop)
+      if (difference < 2000) {
         succeed
       } else {
         fail(
