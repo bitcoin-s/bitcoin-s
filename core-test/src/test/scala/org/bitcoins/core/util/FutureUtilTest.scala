@@ -46,7 +46,7 @@ class FutureUtilTest extends BitcoinSJvmTest {
   }
 
   it must "execute futures in synchronous fashion with batchAndSyncExecute" in {
-    val vec = 0.until(5).toVector
+    val vec = 0.until(Runtime.getRuntime.availableProcessors()).toVector
 
     val f: Vector[Int] => Future[Vector[Int]] = { vec =>
       Future {
@@ -59,7 +59,7 @@ class FutureUtilTest extends BitcoinSJvmTest {
       FutureUtil.batchAndSyncExecute(elements = vec, f = f, batchSize = 1)
 
     //here is how this test case works:
-    //the vector above has 5 elements in it, and the batchSize is 1
+    //the vector above has the same number of elements as available processors in it, and the batchSize is 1
     //each function sleeps for 1000ms (1 second). If things are
     //not run in parallel, the total time should be 5 seconds (5 elements * 1 second sleep)
     for {
@@ -67,7 +67,7 @@ class FutureUtilTest extends BitcoinSJvmTest {
       stop = TimeUtil.now
     } yield {
       val difference = stop.getEpochSecond - start.getEpochSecond
-      if (difference >= 5) {
+      if (difference >= Runtime.getRuntime.availableProcessors()) {
         succeed
       } else {
         fail(
@@ -77,7 +77,7 @@ class FutureUtilTest extends BitcoinSJvmTest {
   }
 
   it must "execute futures in parallel with batchAndParallelExecute" in {
-    val vec = 0.until(5).toVector
+    val vec = 0.until(Runtime.getRuntime.availableProcessors()).toVector
 
     val f: Vector[Int] => Future[Vector[Int]] = { vec =>
       Future {
@@ -90,7 +90,7 @@ class FutureUtilTest extends BitcoinSJvmTest {
       FutureUtil.batchAndParallelExecute(elements = vec, f = f, batchSize = 1)
 
     //here is how this test case works:
-    //the vector above has 5 elements in it, and the batchSize is 1
+    //the vector above has the same number of elements as available processors, and the batchSize is 1
     //each function sleeps for 1000ms (1 second).
     //if things are run in parallel, it should take ~1 second to run all these in parallel
     for {
