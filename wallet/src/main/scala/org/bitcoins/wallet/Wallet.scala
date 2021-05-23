@@ -173,6 +173,12 @@ abstract class Wallet
     Wallet] = {
     val utxosF = listUtxos()
     val spksF = listScriptPubKeys()
+    val blockHashOpt = blockFilters.lastOption.map(_._1.flip)
+    val heightOptF = blockHashOpt match {
+      case Some(blockHash) =>
+        chainQueryApi.getBlockHeight(blockHash)
+      case None => Future.successful(None)
+    }
     for {
       utxos <- utxosF
       scripts <- spksF
@@ -194,8 +200,17 @@ abstract class Wallet
         }
       }
       hash = blockFilters.last._1.flip
-      height <- chainQueryApi.getBlockHeight(hash)
-      _ <- stateDescriptorDAO.updateSyncHeight(hash, height.get)
+      heightOpt <- heightOptF
+      _ <- {
+        heightOpt match {
+          case Some(height) =>
+            stateDescriptorDAO
+              .updateSyncHeight(hash, height)
+              .map(_ => ())
+          case None =>
+            Future.unit
+        }
+      }
     } yield {
       this
     }
