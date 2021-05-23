@@ -103,7 +103,8 @@ class FutureUtilTest extends BitcoinSJvmTest {
         succeed
       } else {
         fail(
-          s"Batch did not execute in parallel! difference=${difference} seconds")
+          s"Batch did not execute in parallel! difference=${difference} seconds processors=${Runtime.getRuntime
+            .availableProcessors()}")
       }
     }
   }
