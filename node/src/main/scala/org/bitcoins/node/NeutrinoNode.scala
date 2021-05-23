@@ -94,9 +94,14 @@ case class NeutrinoNode(
             filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
             prevStopHash = bestFilterHeader.blockHashBE)
         }
-        sendCompactFilterHeaderMsgF.flatMap { _ =>
+        sendCompactFilterHeaderMsgF.flatMap { isSyncFilterHeaders =>
           // If we have started syncing filters
-          if (filterCount != bestFilterHeader.height && filterCount != 0) {
+          if (
+            !isSyncFilterHeaders &&
+            filterCount != bestFilterHeader.height
+            && filterCount != 0
+          ) {
+            logger.info(s"Starting sync filters in NeutrinoNode.sync()")
             peerMsgSender
               .sendNextGetCompactFilterCommand(chainApi = chainApi,
                                                filterBatchSize =

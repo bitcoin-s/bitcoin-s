@@ -69,9 +69,8 @@ case class DataMessageHandler(
                 peerMsgSender,
                 filterHeader.stopHash.flip).map(_ => syncing)
             } else {
-              logger.debug(
-                s"Received filter headers=${filterHeaders.size} in one message, " +
-                  "which is less than max. This means we are synced.")
+              logger.info(
+                s"Done syncing filter headers, beginning to sync filters in datamessagehandler")
               sendFirstGetCompactFilterCommand(peerMsgSender).map { synced =>
                 if (!synced) logger.info("We are synced")
                 syncing
@@ -226,6 +225,8 @@ case class DataMessageHandler(
                     (filterHeaderHeightOpt.isEmpty &&
                       filterHeightOpt.isEmpty))
                 ) {
+                  logger.info(
+                    s"Starting to fetch filter headers in data message handler")
                   sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
                 } else {
                   Try(initialSyncDone.map(_.success(Done)))
