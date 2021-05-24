@@ -105,7 +105,7 @@ class WalletGUIModel() {
   }
 
   private def updateBalance(): Unit = {
-    ConsoleCli.exec(GetBalance(isSats = true),
+    ConsoleCli.exec(GetBalances(isSats = true),
                     GlobalData.consoleCliConfig) match {
       case Success(commandReturn) =>
         val json = ujson.read(commandReturn).obj
