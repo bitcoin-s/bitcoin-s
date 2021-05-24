@@ -27,6 +27,15 @@ case class OracleAnnouncementDataDAO()(implicit
     safeDatabase.runVec(query.result)
   }
 
+  def findByAnnouncementSignatures(
+      signatures: Vector[SchnorrDigitalSignature]): Future[
+    Vector[OracleAnnouncementDataDb]] = {
+    val query = table.filter(_.announcementSignature.inSet(signatures))
+
+    safeDatabase
+      .runVec(query.result)
+  }
+
   def findByIds(ids: Vector[Long]): Future[Vector[OracleAnnouncementDataDb]] = {
     val query = table.filter(_.id.inSet(ids))
 

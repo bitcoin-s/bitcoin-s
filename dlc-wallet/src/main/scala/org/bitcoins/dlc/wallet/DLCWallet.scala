@@ -288,24 +288,32 @@ abstract class DLCWallet
     val announcements =
       contractInfo.oracleInfo.singleOracleInfos.map(_.announcement)
 
-    val announcementDataDbs =
-      OracleAnnouncementDbHelper.fromAnnouncements(announcements)
+    //hack for now to get around https://github.com/bitcoin-s/bitcoin-s/issues/3127
+    //filter announcements that we already have in the db
+    val groupedAnnouncementsF: Future[AnnouncementGrouping] = {
+      groupByExistingAnnouncements(announcements)
+    }
+
+    val feeRateF = determineFeeRate(feeRateOpt).map { fee =>
+      SatoshisPerVirtualByte(fee.currencyUnit)
+    }
 
     for {
-      feeRate <- determineFeeRate(feeRateOpt).map { fee =>
-        SatoshisPerVirtualByte(fee.currencyUnit)
-      }
-
-      announcementDataDbs <- announcementDAO.createAll(announcementDataDbs)
+      feeRate <- feeRateF
+      groupedAnnouncements <- groupedAnnouncementsF
+      announcementDataDbs <- announcementDAO.createAll(
+        groupedAnnouncements.newAnnouncements)
+      allAnnouncementDbs =
+        announcementDataDbs ++ groupedAnnouncements.existingAnnouncements
       announcementsWithId = announcements.map { tlv =>
-        val idOpt = announcementDataDbs
-          .find(_.announcementSignature == tlv.announcementSignature)
-          .flatMap(_.id)
+        val idOpt: Option[Long] =
+          allAnnouncementDbs
+            .find(_.announcementSignature == tlv.announcementSignature)
+            .flatMap(_.id)
         (tlv, idOpt.get)
       }
       nonceDbs = OracleNonceDbHelper.fromAnnouncements(announcementsWithId)
       _ <- oracleNonceDAO.upsertAll(nonceDbs)
-
       chainType = HDChainType.External
 
       account <- getDefaultAccountForType(AddressType.SegWit)
@@ -326,7 +334,7 @@ abstract class DLCWallet
       }
 
       dlcId = calcDLCId(utxos.map(_.outPoint))
-      dlcAnnouncementDbs = announcementDataDbs.zipWithIndex.map {
+      dlcAnnouncementDbs = allAnnouncementDbs.zipWithIndex.map {
         case (a, index) =>
           DLCAnnouncementDb(dlcId = dlcId,
                             announcementId = a.id.get,
@@ -398,7 +406,6 @@ abstract class DLCWallet
       _ <- dlcDAO.create(dlcDb)
       _ <- contractDataDAO.create(contractDataDb)
       _ <- dlcAnnouncementDAO.createAll(dlcAnnouncementDbs)
-
       dlcOfferDb = DLCOfferDbHelper.fromDLCOffer(dlcId, offer)
 
       dlcInputs = spendingInfos.zip(utxos).map { case (utxo, fundingInput) =>
@@ -1211,7 +1218,6 @@ abstract class DLCWallet
       dlcDbOpt <- dlcDAO.read(dlcId)
       contractDataOpt <- contractDataDAO.read(dlcId)
       offerDbOpt <- dlcOfferDAO.read(dlcId)
-
       (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
         dlcId)
     } yield (dlcDbOpt, contractDataOpt, offerDbOpt) match {
@@ -1353,6 +1359,50 @@ abstract class DLCWallet
 
         Some(status)
       case (_, _, _) => None
+    }
+  }
+
+  /** @param newAnnouncements announcements we do not have in our db
+    * @param existingAnnouncements announcements we already have in our db
+    */
+  private case class AnnouncementGrouping(
+      newAnnouncements: Vector[OracleAnnouncementDataDb],
+      existingAnnouncements: Vector[OracleAnnouncementDataDb]) {
+    require(existingAnnouncements.forall(_.id.isDefined))
+    require(newAnnouncements.forall(_.id.isEmpty),
+            s"announcmeent had id defined=${newAnnouncements.map(_.id)}")
+  }
+
+  /** This is needed because our upserts do not work
+    * we need to filter announcements we already have in the database
+    * to avoid issues below
+    * @see https://github.com/bitcoin-s/bitcoin-s/issues/1623
+    * @see https://github.com/bitcoin-s/bitcoin-s/issues/3127
+    * @param announcementDataDbs
+    */
+  private def groupByExistingAnnouncements(
+      announcementTLVs: Vector[OracleAnnouncementTLV]): Future[
+    AnnouncementGrouping] = {
+
+    val announcementSignatures: Vector[SchnorrDigitalSignature] = {
+      announcementTLVs.map(a => a.announcementSignature)
+    }
+
+    val existingAnnouncementsInDbF: Future[Vector[OracleAnnouncementDataDb]] =
+      announcementDAO
+        .findByAnnouncementSignatures(announcementSignatures)
+
+    for {
+      existingAnnouncementsDb <- existingAnnouncementsInDbF
+      newAnnouncements = announcementTLVs.filterNot(a =>
+        existingAnnouncementsDb.exists(
+          _.announcementSignature == a.announcementSignature))
+    } yield {
+      val newAnnouncementsDb =
+        OracleAnnouncementDbHelper.fromAnnouncements(newAnnouncements)
+
+      AnnouncementGrouping(newAnnouncements = newAnnouncementsDb,
+                           existingAnnouncements = existingAnnouncementsDb)
     }
   }
 }
