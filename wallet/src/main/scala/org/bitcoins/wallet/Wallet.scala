@@ -218,7 +218,7 @@ abstract class Wallet
 
   private def searchFilterMatches(spks: Vector[ScriptPubKey])(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
-    Vector[DoubleSha256Digest]] = Future {
+    Vector[DoubleSha256Digest]] = FutureUtil.makeAsync { () =>
     blockFilters.flatMap { case (blockHash, blockFilter) =>
       val matcher = SimpleFilterMatcher(blockFilter)
       if (matcher.matchesAny(spks.map(_.asmBytes))) {
