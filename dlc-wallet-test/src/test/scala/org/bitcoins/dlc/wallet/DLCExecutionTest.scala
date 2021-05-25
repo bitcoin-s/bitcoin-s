@@ -1,6 +1,8 @@
 package org.bitcoins.dlc.wallet
 
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCOffer
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.{
   Claimed,
   Refunded,
@@ -13,15 +15,20 @@ import org.bitcoins.core.protocol.dlc.models.{
   NumericContractDescriptor
 }
 import org.bitcoins.core.protocol.tlv.{
+  ContractInfoV0TLV,
   OracleAttestmentTLV,
   OracleAttestmentV0TLV,
-  OracleEventV0TLV
+  OracleEventV0TLV,
+  OracleInfoV0TLV
 }
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.FutureOutcome
+
+import scala.concurrent.Future
 
 class DLCExecutionTest extends BitcoinSDualWalletTest {
   type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
@@ -348,5 +355,42 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     } yield tx
 
     recoverToSucceededIf[IllegalArgumentException](executeDLCForceCloseF)
+  }
+
+  it must "create 2 offers with the same contract info" in { wallets =>
+    //test for: https://github.com/bitcoin-s/bitcoin-s/issues/3127
+    val walletA = wallets._1.wallet
+
+    //https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/12fb3e5f091086329ed0d2a12c3fcfa80111a36ef3fc1ac9c2567076a57d6a73
+    val contractInfo = ContractInfoV0TLV.fromHex(
+      "fdd82eeb00000000000186a0fda71026030359455300000000000186a0024e4f0000000000000000056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342")
+    val announcement =
+      contractInfo.oracleInfo.asInstanceOf[OracleInfoV0TLV].announcement
+    val feeRateOpt = Some(SatoshisPerVirtualByte(Satoshis.one))
+    val totalCollateral = Satoshis(50000)
+
+    //helper method to make an offer
+    def makeOffer(): Future[DLCOffer] = {
+      walletA.createDLCOffer(contractInfoTLV = contractInfo,
+                             collateral = totalCollateral,
+                             feeRateOpt = feeRateOpt,
+                             locktime = UInt32.zero,
+                             refundLT = UInt32.one)
+    }
+
+    //simply try to make 2 offers with the same contract info
+    //if this works, we are good
+    for {
+      _ <- makeOffer()
+      announcementVec1 <- walletA.announcementDAO.findByAnnouncementSignatures(
+        Vector(announcement.announcementSignature))
+      _ = assert(announcementVec1.length == 1,
+                 s"Got length=${announcementVec1.length}")
+      _ <- makeOffer()
+      announcementVec2 <- walletA.announcementDAO.findByAnnouncementSignatures(
+        Vector(announcement.announcementSignature))
+      _ = assert(announcementVec2.length == 1,
+                 s"Got length=${announcementVec2.length}")
+    } yield succeed
   }
 }
