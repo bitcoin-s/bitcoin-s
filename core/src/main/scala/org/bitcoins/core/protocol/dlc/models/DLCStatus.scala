@@ -15,7 +15,7 @@ import scodec.bits.ByteVector
 sealed trait DLCStatus {
 
   /** The flipped sha256 hash of oracleInfo ++ contractInfo ++ timeoutes */
-  def paramHash: Sha256DigestBE
+  def dlcId: Sha256Digest
   def isInitiator: Boolean
   def state: DLCState
   def tempContractId: Sha256Digest
@@ -50,7 +50,7 @@ sealed trait ClaimedDLCStatus extends ClosedDLCStatus {
 object DLCStatus {
 
   case class Offered(
-      paramHash: Sha256DigestBE,
+      dlcId: Sha256Digest,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractInfo: ContractInfo,
@@ -63,7 +63,7 @@ object DLCStatus {
   }
 
   case class Accepted(
-      paramHash: Sha256DigestBE,
+      dlcId: Sha256Digest,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
@@ -77,7 +77,7 @@ object DLCStatus {
   }
 
   case class Signed(
-      paramHash: Sha256DigestBE,
+      dlcId: Sha256Digest,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
@@ -91,7 +91,7 @@ object DLCStatus {
   }
 
   case class Broadcasted(
-      paramHash: Sha256DigestBE,
+      dlcId: Sha256Digest,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
@@ -106,7 +106,7 @@ object DLCStatus {
   }
 
   case class Confirmed(
-      paramHash: Sha256DigestBE,
+      dlcId: Sha256Digest,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
@@ -121,7 +121,7 @@ object DLCStatus {
   }
 
   case class Claimed(
-      paramHash: Sha256DigestBE,
+      dlcId: Sha256Digest,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
@@ -139,7 +139,7 @@ object DLCStatus {
   }
 
   case class RemoteClaimed(
-      paramHash: Sha256DigestBE,
+      dlcId: Sha256Digest,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
@@ -158,7 +158,7 @@ object DLCStatus {
   }
 
   case class Refunded(
-      paramHash: Sha256DigestBE,
+      dlcId: Sha256Digest,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,

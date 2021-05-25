@@ -705,6 +705,7 @@ sealed trait OracleEventTLV extends TLV {
   def eventDescriptor: EventDescriptorTLV
   def nonces: Vector[SchnorrNonce]
   def eventId: NormalizedString
+  def eventMaturityEpoch: UInt32
 }
 
 case class OracleEventV0TLV(

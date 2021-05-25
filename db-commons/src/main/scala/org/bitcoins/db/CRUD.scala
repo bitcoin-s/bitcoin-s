@@ -84,20 +84,15 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     }
   }
 
-  // FIXME: This is a temporary fix for https://github.com/bitcoin-s/bitcoin-s/issues/1586
-  // This is an inefficient solution that does each update individually
   def updateAll(ts: Vector[T]): Future[Vector[T]] = {
-    def oldUpdateAll(ts: Vector[T]): Future[Vector[T]] = {
-      val query = findAll(ts)
-      val actions = ts.map(query.update)
+    if (ts.isEmpty) {
+      Future.successful(ts)
+    } else {
+      val actions = ts.map(t => find(t).update(t))
       for {
         _ <- safeDatabase.runVec(DBIO.sequence(actions).transactionally)
         result <- safeDatabase.runVec(findAll(ts).result)
       } yield result
-    }
-
-    FutureUtil.foldLeftAsync(Vector.empty[T], ts) { (accum, t) =>
-      oldUpdateAll(Vector(t)).map(accum ++ _)
     }
   }
 

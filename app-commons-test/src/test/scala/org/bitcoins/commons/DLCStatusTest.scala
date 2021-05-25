@@ -4,6 +4,7 @@ import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models.{DLCState, DLCStatus}
+import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator, TLVGen}
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalacheck.Gen
@@ -20,7 +21,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         val totalCollateral = offer.contractInfo.max
 
         val status =
-          DLCStatus.Offered(offer.paramHash,
+          DLCStatus.Offered(Sha256Digest.empty,
                             isInit,
                             offer.tempContractId,
                             offer.contractInfo,
@@ -47,7 +48,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val status =
           DLCStatus.Accepted(
-            offer.paramHash,
+            Sha256Digest.empty,
             isInit,
             offer.tempContractId,
             contractId,
@@ -76,7 +77,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val status =
           DLCStatus.Signed(
-            offer.paramHash,
+            Sha256Digest.empty,
             isInit,
             offer.tempContractId,
             contractId,
@@ -106,7 +107,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val status =
           DLCStatus.Broadcasted(
-            offer.paramHash,
+            Sha256Digest.empty,
             isInit,
             offer.tempContractId,
             contractId,
@@ -137,7 +138,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val status =
           DLCStatus.Confirmed(
-            offer.paramHash,
+            Sha256Digest.empty,
             isInit,
             offer.tempContractId,
             contractId,
@@ -175,7 +176,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
       val status =
         DLCStatus.Claimed(
-          offer.paramHash,
+          Sha256Digest.empty,
           isInit,
           offer.tempContractId,
           contractId,
@@ -217,7 +218,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
       val status =
         DLCStatus.RemoteClaimed(
-          offer.paramHash,
+          Sha256Digest.empty,
           isInit,
           offer.tempContractId,
           contractId,
@@ -254,7 +255,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
       val status =
         DLCStatus.Refunded(
-          offer.paramHash,
+          Sha256Digest.empty,
           isInit,
           offer.tempContractId,
           contractId,
