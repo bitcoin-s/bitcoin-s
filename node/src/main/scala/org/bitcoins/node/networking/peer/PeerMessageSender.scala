@@ -198,18 +198,30 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       filterBatchSize: Int,
       walletCreationTimeOpt: Option[Instant])(implicit
       ec: ExecutionContext): Future[Boolean] = {
-
-    val filterSyncMarkerOptF = walletCreationTimeOpt match {
-      case Some(walletCreationTime) =>
-        chainApi.nextFilterHeaderBatchRange(walletCreationTimestamp =
-                                              walletCreationTime,
-                                            batchSize = filterBatchSize,
-                                            forceSyncFilters = false)
-      case None =>
-        val startHeightF = chainApi.getFilterCount()
-        startHeightF.flatMap(h =>
-          chainApi.nextFilterHeaderBatchRange(startHeight = h,
-                                              batchSize = filterBatchSize))
+    val filterStartHeight = chainApi.getFilterCount()
+    val filterSyncMarkerOptF = {
+      for {
+        filterStartHeight <- filterStartHeight
+        filterSyncMarkerOpt <- {
+          walletCreationTimeOpt match {
+            case Some(walletCreationTime) =>
+              if (filterStartHeight == 0) {
+                chainApi.nextFilterHeaderBatchRange(walletCreationTimestamp =
+                                                      walletCreationTime,
+                                                    batchSize = filterBatchSize,
+                                                    forceSyncFilters = false)
+              } else {
+                chainApi.nextFilterHeaderBatchRange(startHeight =
+                                                      filterStartHeight,
+                                                    batchSize = filterBatchSize)
+              }
+            case None =>
+              chainApi.nextFilterHeaderBatchRange(startHeight =
+                                                    filterStartHeight,
+                                                  batchSize = filterBatchSize)
+          }
+        }
+      } yield filterSyncMarkerOpt
     }
 
     for {
