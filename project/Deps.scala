@@ -295,6 +295,18 @@ object Deps {
     }
   }
 
+  val dlcWallet =
+    List(
+      Compile.newMicroJson,
+      Compile.logback
+    )
+
+  val dlcWalletTest =
+    List(
+      Test.akkaTestkit,
+      Test.pgEmbedded
+    )
+
   val secp256k1jni = List(
     Compile.nativeLoader,
     Test.junitInterface

@@ -19,12 +19,9 @@ sealed trait DLCMessage
 
 object DLCMessage {
 
-  def calcParamHash(
-      contractInfo: ContractInfo,
-      timeouts: DLCTimeouts): Sha256DigestBE = {
-    CryptoUtil
-      .sha256(contractInfo.bytes ++ timeouts.bytes)
-      .flip
+  def calcDLCId(outPoints: Vector[TransactionOutPoint]): Sha256Digest = {
+    val bytes = outPoints.map(_.bytes).sorted.foldLeft(ByteVector.empty)(_ ++ _)
+    CryptoUtil.sha256(bytes)
   }
 
   @tailrec
@@ -103,7 +100,7 @@ object DLCMessage {
     val oracleInfo: OracleInfo = contractInfo.oracleInfo
     val contractDescriptor: ContractDescriptor = contractInfo.contractDescriptor
 
-    lazy val paramHash: Sha256DigestBE = calcParamHash(contractInfo, timeouts)
+    lazy val dlcId: Sha256Digest = calcDLCId(fundingInputs.map(_.outPoint))
 
     val tempContractId: Sha256Digest =
       CryptoUtil.sha256(toMessage.bytes)

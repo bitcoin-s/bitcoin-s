@@ -38,6 +38,19 @@ object OracleInfo
       case tlv: OracleInfoV2TLV => NumericMultiOracleInfo.fromTLV(tlv)
     }
   }
+
+  def getOracleParamsOpt(oracleInfo: OracleInfo): Option[OracleParamsV0TLV] = {
+    oracleInfo match {
+      case _: SingleOracleInfo | _: NumericExactMultiOracleInfo |
+          _: EnumMultiOracleInfo =>
+        None
+      case numeric: NumericMultiOracleInfo =>
+        Some(
+          OracleParamsV0TLV(numeric.maxErrorExp,
+                            numeric.minFailExp,
+                            numeric.maximizeCoverage))
+    }
+  }
 }
 
 /** Specifies a single oracles' information through an announcement */
