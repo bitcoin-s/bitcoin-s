@@ -17,6 +17,7 @@ import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.P2PClient
 
+import java.time.Instant
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -195,10 +196,24 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   private[node] def sendNextGetCompactFilterCommand(
       chainApi: ChainApi,
       filterBatchSize: Int,
-      startHeight: Int)(implicit ec: ExecutionContext): Future[Boolean] = {
+      walletCreationTimeOpt: Option[Instant])(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+
+    val filterSyncMarkerOptF = walletCreationTimeOpt match {
+      case Some(walletCreationTime) =>
+        chainApi.nextFilterHeaderBatchRange(walletCreationTimestamp =
+                                              walletCreationTime,
+                                            batchSize = filterBatchSize,
+                                            forceSyncFilters = false)
+      case None =>
+        val startHeightF = chainApi.getFilterCount()
+        startHeightF.flatMap(h =>
+          chainApi.nextFilterHeaderBatchRange(startHeight = h,
+                                              batchSize = filterBatchSize))
+    }
+
     for {
-      filterSyncMarkerOpt <-
-        chainApi.nextFilterHeaderBatchRange(startHeight, filterBatchSize)
+      filterSyncMarkerOpt <- filterSyncMarkerOptF
       res <- filterSyncMarkerOpt match {
         case Some(filterSyncMarker) =>
           logger.info(s"Requesting compact filters from $filterSyncMarker")

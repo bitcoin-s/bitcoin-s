@@ -30,6 +30,7 @@ import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
 
 import java.io.File
+import java.time.Instant
 import scala.concurrent.Future
 
 /** This class is not guaranteed to be compatible with any particular
@@ -177,6 +178,15 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
     Future.failed(
       new UnsupportedOperationException(
         s"Bitcoind chainApi doesn't allow you fetch filter header batch range"))
+
+  override def nextFilterHeaderBatchRange(
+      walletCreationTimestamp: Instant,
+      batchSize: Int,
+      forceSyncFilters: Boolean): Future[Option[FilterSyncMarker]] = {
+    Future.failed(
+      new UnsupportedOperationException(
+        s"Bitcoind chainApi doesn't allow you fetch filter header batch range"))
+  }
 
   override def processFilters(
       message: Vector[CompactFilterMessage]): Future[ChainApi] =

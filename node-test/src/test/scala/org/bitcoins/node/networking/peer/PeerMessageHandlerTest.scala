@@ -55,7 +55,7 @@ class PeerMessageHandlerTest
 
   it must "be able to fully initialize a PeerMessageReceiver" in { peer =>
     for {
-      peerHandler <- NodeUnitTest.buildPeerHandler(peer)
+      peerHandler <- NodeUnitTest.buildPeerHandler(peer, None)
       peerMsgSender = peerHandler.peerMsgSender
       p2pClient = peerHandler.p2pClient
 

@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
+import java.time.Instant
 import scala.concurrent.Future
 
 /** Entry api to the chain project for adding new things to our blockchain
@@ -79,6 +80,17 @@ trait ChainApi extends ChainQueryApi {
   def nextFilterHeaderBatchRange(
       startHeight: Int,
       batchSize: Int): Future[Option[FilterSyncMarker]]
+
+  /** Fetches the next filter header batch range by using the wallet's creation time.
+    * This optimizes IBD as filters are the bottleneck. We do not need filters older than the wallet
+    * @param walletCreationTimestamp when the wallet was created
+    * @batchSize how large of filter batches we should fetch from our peer
+    * @forceSyncFilters ignore optimization logic, sync all compact filters
+    */
+  def nextFilterHeaderBatchRange(
+      walletCreationTimestamp: Instant,
+      batchSize: Int,
+      forceSyncFilters: Boolean): Future[Option[FilterSyncMarker]]
 
   /** Adds a compact filter into the filter database.
     */

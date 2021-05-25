@@ -173,7 +173,7 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
     val remote = peer.socket
     val peerMessageReceiverF =
       for {
-        node <- NodeUnitTest.buildNode(peer)
+        node <- NodeUnitTest.buildNode(peer, None)
       } yield PeerMessageReceiver.preConnection(peer, node)
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =

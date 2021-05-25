@@ -17,6 +17,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
 
 import java.nio.file.Path
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S node
@@ -88,10 +89,12 @@ case class NodeAppConfig(
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peer: Peer)(
+  def createNode(peer: Peer, walletCreationTimeOpt: Option[Instant])(
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
-    NodeAppConfig.createNode(peer)(this, chainConf, system)
+    NodeAppConfig.createNode(
+      peer = peer,
+      walletCreationTimeOpt = walletCreationTimeOpt)(this, chainConf, system)
   }
 }
 
@@ -106,8 +109,12 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
       ec: ExecutionContext): NodeAppConfig =
     NodeAppConfig(datadir, confs: _*)
 
-  /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peer: Peer)(implicit
+  /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given
+    * @param peer the peer to connect to
+    * @param walletCreationTime when the wallet was created, this is used for syncing compact filters
+    *                           if None, syncs all filters
+    */
+  def createNode(peer: Peer, walletCreationTimeOpt: Option[Instant])(implicit
       nodeConf: NodeAppConfig,
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
@@ -119,7 +126,7 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
 
     val dmhF = ChainHandlerCached
       .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO)
-      .map(handler => DataMessageHandler(handler))
+      .map(handler => DataMessageHandler(handler, walletCreationTimeOpt))
 
     nodeConf.nodeType match {
       case NodeType.SpvNode =>

@@ -7,6 +7,7 @@ import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -15,6 +16,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
 
+import java.time.{Instant, LocalDate, ZoneOffset}
 import scala.annotation.tailrec
 import scala.concurrent._
 
@@ -324,6 +326,59 @@ class ChainHandler(
         None
       else
         Some(FilterSyncMarker(startHeight, stopBlock.blockHashBE.flip))
+    }
+  }
+
+  /** @inheritdoc */
+  override def nextFilterHeaderBatchRange(
+      walletCreationTimestamp: Instant,
+      batchSize: Int,
+      forceSyncFilters: Boolean): Future[Option[FilterSyncMarker]] = {
+    chainConfig.network match {
+      case network @ (TestNet3 | RegTest | SigNet) =>
+        //not supported on other networks, just start from 0
+        logger.warn(
+          s" Ignoring wallet creation timestamp when syncing filters on $network. Syncing from genesis")
+        nextFilterHeaderBatchRange(0, batchSize)
+      case MainNet =>
+        //some crude rounding to optimize syncing filters as they
+        val twenty21 = LocalDate
+          .now(ZoneOffset.UTC)
+          .withYear(2021)
+          .withDayOfYear(1)
+          .withMonth(1)
+          .atStartOfDay()
+        val twenty20 = twenty21.minusYears(1)
+        val twenty19 = twenty20.minusYears(1)
+        val height =
+          if (
+            walletCreationTimestamp.isAfter(
+              twenty21.toInstant(ZoneOffset.UTC)) && !forceSyncFilters
+          ) {
+            //wallet created in 2021, as an optimization only sync filters from 2021
+            //start syncing from https://blockstream.info/block/0000000000000000000a09d64158eae68e4e61019df5b87d7a1eb0153e89ef2f
+            663000
+          } else if (
+            walletCreationTimestamp.isAfter(
+              twenty20.toInstant(ZoneOffset.UTC)) && !forceSyncFilters
+          ) {
+            //wallet created in 2020, as an optimization only sync filters from 2020+
+            //start syncing from https://blockstream.info/block/0000000000000000000a6f607f74db48dae0a94022c10354536394c17672b7f7
+            610000
+          } else if (
+            walletCreationTimestamp.isAfter(
+              twenty19.toInstant(ZoneOffset.UTC)) && !forceSyncFilters
+          ) {
+            //wallet created in 2019, as an optimization only sync filters from 2019
+            //start syncing from https://blockstream.info/block/00000000000000000012d1c9c6b151ba554364ccf56b9ec7bd0e45dbece8c00c
+            555000
+          } else {
+            //just do full IBD for filters
+            0
+          }
+
+        logger.info(s"Beginning filter sync from height=$height")
+        nextFilterHeaderBatchRange(height, batchSize)
     }
   }
 

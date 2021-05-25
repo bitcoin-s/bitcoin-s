@@ -84,9 +84,11 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
       NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeType == NodeType.NeutrinoNode)
       for {
-        node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
-                                                          appConfig.chainConf,
-                                                          appConfig.nodeConf)
+        node <- NodeUnitTest.createNeutrinoNode(bitcoind = bitcoind,
+                                                walletCreationTimeOpt = None)(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf)
         startedNode <- node.start()
         syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
       } yield NeutrinoNodeConnectedWithBitcoind(syncedNode, bitcoind)

@@ -15,6 +15,8 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.feeprovider.FeeProviderName._
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
+import org.bitcoins.keymanager.ReadMnemonicError
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -23,6 +25,7 @@ import org.bitcoins.server.routes.{BitcoinSRunner, Server}
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val args: Array[String])
@@ -89,8 +92,33 @@ class BitcoinSServerMain(override val args: Array[String])
     val chainApiF = runChainWorkCalc(
       forceChainWorkRecalc || chainConf.forceRecalcChainWork)
 
+    val kmParams = walletConf.kmParams
+    val aesPasswordOpt = walletConf.aesPasswordOpt
+    val bip39PasswordOpt = walletConf.bip39PasswordOpt
+    val creationTimeE: Either[ReadMnemonicError, Instant] = {
+      BIP39KeyManager
+        .fromParams(kmParams,
+                    passwordOpt = aesPasswordOpt,
+                    bip39PasswordOpt = bip39PasswordOpt)
+        .map(_.creationTime)
+    }
+
     //get a node that isn't started
-    val nodeF = nodeConf.createNode(peer)(chainConf, system)
+    val nodeF = {
+      creationTimeE match {
+        case Right(walletCreationTime) =>
+          nodeConf.createNode(
+            peer = peer,
+            walletCreationTimeOpt = Some(walletCreationTime))(chainConf, system)
+        case Left(err) =>
+          logger.error(
+            s"failed to unlock mey manager, syncing compact filters from genesis, err=$err")
+          nodeConf.createNode(peer = peer, walletCreationTimeOpt = None)(
+            chainConf,
+            system)
+      }
+
+    }
 
     //get our wallet
     val configuredWalletF = for {

@@ -10,6 +10,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.node.{NodeType, P2PLogger}
 
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -23,6 +24,7 @@ import scala.util.control.NonFatal
   */
 case class DataMessageHandler(
     chainApi: ChainApi,
+    walletCreationTimeOpt: Option[Instant],
     initialSyncDone: Option[Promise[Done]] = None,
     currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
     filterHeaderHeightOpt: Option[Int] = None,
@@ -71,9 +73,11 @@ case class DataMessageHandler(
             } else {
               logger.info(
                 s"Done syncing filter headers, beginning to sync filters in datamessagehandler")
-              sendFirstGetCompactFilterCommand(peerMsgSender).map { synced =>
-                if (!synced) logger.info("We are synced")
-                syncing
+              sendFirstGetCompactFilterCommand(peerMsgSender,
+                                               walletCreationTimeOpt).map {
+                synced =>
+                  if (!synced) logger.info("We are synced")
+                  syncing
               }
             }
           newFilterHeaderHeight <- filterHeaderHeightOpt match {
@@ -135,7 +139,8 @@ case class DataMessageHandler(
             if (batchSizeFull) {
               logger.info(
                 s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
-              sendNextGetCompactFilterCommand(peerMsgSender, newFilterHeight)
+              sendNextGetCompactFilterCommand(peerMsgSender = peerMsgSender,
+                                              walletCreationTimeOpt = None)
             } else Future.unit
         } yield {
           this.copy(
@@ -352,17 +357,18 @@ case class DataMessageHandler(
 
   private def sendNextGetCompactFilterCommand(
       peerMsgSender: PeerMessageSender,
-      startHeight: Int): Future[Boolean] =
-    peerMsgSender.sendNextGetCompactFilterCommand(chainApi = chainApi,
-                                                  filterBatchSize =
-                                                    chainConfig.filterBatchSize,
-                                                  startHeight = startHeight)
+      walletCreationTimeOpt: Option[Instant]): Future[Boolean] =
+    peerMsgSender.sendNextGetCompactFilterCommand(
+      chainApi = chainApi,
+      filterBatchSize = chainConfig.filterBatchSize,
+      walletCreationTimeOpt = walletCreationTimeOpt)
 
   private def sendFirstGetCompactFilterCommand(
-      peerMsgSender: PeerMessageSender): Future[Boolean] =
+      peerMsgSender: PeerMessageSender,
+      walletCreationTimeOpt: Option[Instant]): Future[Boolean] =
     for {
-      filterCount <- chainApi.getFilterCount()
-      res <- sendNextGetCompactFilterCommand(peerMsgSender, filterCount)
+      res <- sendNextGetCompactFilterCommand(peerMsgSender,
+                                             walletCreationTimeOpt)
     } yield res
 
   private def handleInventoryMsg(

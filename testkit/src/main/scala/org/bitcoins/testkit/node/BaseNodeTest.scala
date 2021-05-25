@@ -21,6 +21,7 @@ import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 
+import java.time.Instant
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
@@ -103,6 +104,13 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
         startHeight: Int,
         batchSize: Int): Future[Option[FilterSyncMarker]] =
       Future.successful(None)
+
+    override def nextFilterHeaderBatchRange(
+        walletCreationTimestamp: Instant,
+        batchSize: Int,
+        forceSyncFilters: Boolean): Future[Option[FilterSyncMarker]] = {
+      Future.successful(None)
+    }
 
     override def processFilters(
         message: Vector[CompactFilterMessage]): Future[ChainApi] =

@@ -136,7 +136,7 @@ case class NeutrinoNode(
           .sendNextGetCompactFilterCommand(chainApi = chainApi,
                                            filterBatchSize =
                                              chainConfig.filterBatchSize,
-                                           startHeight = filterCount)
+                                           walletCreationTimeOpt = None)
           .map(_ => ())
       } else {
         Future.unit
