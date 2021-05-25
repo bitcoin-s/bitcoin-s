@@ -184,21 +184,21 @@ abstract class Wallet
       scripts <- spksF
       scriptPubKeys =
         utxos.flatMap(_.redeemScriptOpt).toSet ++ scripts.map(_.scriptPubKey)
-      _ <- {
+      blockHashToDownload <- {
         if (scriptPubKeys.isEmpty) {
           //do nothing as an optimization, if we have nothing in the wallet
           //we don't need to search the filters
-          Future.unit
+          Future.successful(Vector.empty)
         } else {
-          FutureUtil.sequentially(blockFilters) {
-            case (blockHash, blockFilter) =>
-              val matcher = SimpleFilterMatcher(blockFilter)
-              if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
-                nodeApi.downloadBlocks(Vector(blockHash))
-              } else Future.unit
-          }
+          FutureUtil
+            .batchAndParallelExecute(
+              blockFilters,
+              searchFilterMatches(scriptPubKeys.toVector)
+            )
+            .map(_.flatten)
         }
       }
+      _ <- nodeApi.downloadBlocks(blockHashToDownload)
       hash = blockFilters.last._1.flip
       heightOpt <- heightOptF
       _ <- {
@@ -213,6 +213,20 @@ abstract class Wallet
       }
     } yield {
       this
+    }
+  }
+
+  private def searchFilterMatches(spks: Vector[ScriptPubKey])(
+      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
+    Vector[DoubleSha256Digest]] = FutureUtil.makeAsync { () =>
+    val asmVec = spks.map(_.asmBytes)
+    blockFilters.flatMap { case (blockHash, blockFilter) =>
+      val matcher = SimpleFilterMatcher(blockFilter)
+      if (matcher.matchesAny(asmVec)) {
+        Vector(blockHash)
+      } else {
+        Vector.empty
+      }
     }
   }
 
