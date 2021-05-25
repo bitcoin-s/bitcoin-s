@@ -165,9 +165,6 @@ object BitcoindRpcBackendUtil extends Logging {
   def createDLCWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
       wallet: DLCWallet)(implicit system: ActorSystem): DLCWallet = {
-    // Kill the old wallet
-    wallet.stop()
-
     // We need to create a promise so we can inject the wallet with the callback
     // after we have created it into SyncUtil.getNodeApiWalletCallback
     // so we don't lose the internal state of the wallet

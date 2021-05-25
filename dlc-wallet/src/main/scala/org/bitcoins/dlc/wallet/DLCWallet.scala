@@ -64,6 +64,7 @@ abstract class DLCWallet
     builder.calcContractId
   }
 
+  /** Updates the contract Id in the wallet database for the given offer and accept */
   private def updateDLCContractIds(
       offer: DLCOffer,
       accept: DLCAccept): Future[DLCDb] = {
@@ -87,6 +88,7 @@ abstract class DLCWallet
     } yield updated
   }
 
+  /** Updates the [[DLCState]] of a DLC with the given contractId in the wallet's database */
   private def updateDLCState(
       contractId: ByteVector,
       state: DLCState): Future[DLCDb] = {
@@ -162,6 +164,7 @@ abstract class DLCWallet
     } yield updated
   }
 
+  /** Updates the signatures in the oracle nonce database */
   private def updateDLCOracleSigs(
       sigs: Vector[OracleSignatures]): Future[Vector[OracleNonceDb]] = {
     val outcomeAndSigByNonce = sigs.flatMap {
@@ -198,6 +201,7 @@ abstract class DLCWallet
     } yield updates
   }
 
+  /** Calculates a [[DLCPublicKeys]] from the wallet's [[BIP39KeyManager]] */
   private def calcDLCPubKeys(
       xpub: ExtPublicKey,
       chainType: HDChainType,
@@ -222,6 +226,9 @@ abstract class DLCWallet
     }
   }
 
+  /** Writes the addresses corresponding to wallet's keys in a DLC to the
+    * address database, this includes the address associated with the funding public key
+    */
   private def writeDLCKeysToAddressDb(
       account: AccountDb,
       chainType: HDChainType,
@@ -235,6 +242,10 @@ abstract class DLCWallet
     }
   }
 
+  /** If the DLC has not reached the Signed state, it can be canceled.
+    * Canceling a DLC deletes all data about it from the database,
+    * as well as unreserves the utxos associated with it.
+    */
   override def cancelDLC(dlcId: Sha256Digest): Future[Unit] = {
     for {
       inputs <- dlcInputsDAO.findByDLCId(dlcId)
