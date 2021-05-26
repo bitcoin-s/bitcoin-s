@@ -8,12 +8,23 @@ import scalafx.geometry._
 import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout._
+import scalafx.scene.text.TextAlignment
 
 import scala.util.Try
 
 class BitcoindConfigPane(
     appConfig: BitcoinSAppConfig,
     model: LandingPaneModel) {
+
+  private val bitcoindExplainer: Label = new Label() {
+    margin = Insets(10)
+    text = "This will fetch block data from the Bitcoin Core RPC." +
+      " This does not require Bitcoin-S to do an initial block download but" +
+      " Bitcoin Core will need to be synced."
+    maxWidth = 600
+    wrapText = true
+    textAlignment = TextAlignment.Center
+  }
 
   private val hostTF: TextField = new TextField() {
     text = appConfig.rpcBind.toString
@@ -72,12 +83,13 @@ class BitcoindConfigPane(
   }
 
   val launchButton: Button = new Button("Launch Wallet") {
+    margin = Insets(top = 80, right = 0, bottom = 0, left = 0)
     onAction = _ => model.launchWallet(getConfig, appConfig)
   }
 
   val view: Node = new VBox() {
-    children = Vector(gridPane, launchButton)
-    spacing = 100
+    children = Vector(bitcoindExplainer, gridPane, launchButton)
+    spacing = 20
     alignment = Pos.TopCenter
   }
 

@@ -11,7 +11,7 @@ assembly / mainClass := Some("org.bitcoins.bundle.BundleGUI")
 
 assembly / assemblyJarName := s"${name.value}.jar"
 
-assemblyMergeStrategy in assembly := {
+assembly / assemblyMergeStrategy := {
   case PathList("META-INF", _ @_*)       => MergeStrategy.discard
   case PathList("reference.conf", _ @_*) => MergeStrategy.concat
   case _                                 => MergeStrategy.first
