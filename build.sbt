@@ -419,6 +419,7 @@ lazy val bundle = project
   .in(file("app/bundle"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(appServer, gui)
+  .enablePlugins(JavaAppPackaging)
 
 lazy val gui = project
   .in(file("app/gui"))
