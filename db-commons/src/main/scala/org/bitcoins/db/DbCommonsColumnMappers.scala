@@ -155,15 +155,19 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   implicit val uint64Mapper: BaseColumnType[UInt64] = {
     MappedColumnType.base[UInt64, String](
       { u64: UInt64 =>
-        val bytes = u64.bytes
-        val padded = if (bytes.length <= 8) {
-          bytes.padLeft(8)
-        } else bytes
-
-        padded.toHex
+        uInt64ToHex(u64)
       },
       UInt64.fromHex
     )
+  }
+
+  def uInt64ToHex(u64: UInt64): String = {
+    val bytes = u64.bytes
+    val padded = if (bytes.length <= 8) {
+      bytes.padLeft(8)
+    } else bytes
+
+    padded.toHex
   }
 
   implicit val transactionOutPointMapper: BaseColumnType[
