@@ -1,13 +1,13 @@
 name := "bitcoin-s-bundle"
 
-mainClass := Some("org.bitcoins.bundle.BundleGUI")
+mainClass := Some("org.bitcoins.bundle.gui.BundleGUI")
 
 publish / skip := true
 
 // Fork a new JVM for 'run' and 'test:run' to avoid JavaFX double initialization problems
 fork := true
 
-assembly / mainClass := Some("org.bitcoins.bundle.BundleGUI")
+assembly / mainClass := Some("org.bitcoins.bundle.gui.BundleGUI")
 
 assembly / assemblyJarName := s"${name.value}.jar"
 
