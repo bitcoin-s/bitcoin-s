@@ -1,6 +1,7 @@
 package org.bitcoins.bundle.gui
 
 import org.bitcoins.gui._
+import org.bitcoins.node.NodeType
 import org.bitcoins.server.BitcoinSAppConfig
 import scalafx.geometry._
 import scalafx.scene.control.TabPane.TabClosingPolicy
@@ -9,6 +10,7 @@ import scalafx.scene.layout._
 import scalafx.scene.text._
 
 import scala.concurrent.ExecutionContext.global
+import scala.util.Try
 
 class LandingPane(glassPane: VBox) {
 
@@ -37,8 +39,15 @@ class LandingPane(glassPane: VBox) {
     content = neutrinoConfigPane.view
   }
 
+  val isNeutrino: Boolean =
+    Try(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode).getOrElse(false)
+
   val tabPane: TabPane = new TabPane() {
-    tabs = Vector(bitcoindTab, neutrinoTab)
+    tabs =
+      if (isNeutrino) // if neutrino config, open at that tab
+        Vector(neutrinoTab, bitcoindTab)
+      else Vector(bitcoindTab, neutrinoTab)
+
     tabClosingPolicy = TabClosingPolicy.Unavailable
   }
 
