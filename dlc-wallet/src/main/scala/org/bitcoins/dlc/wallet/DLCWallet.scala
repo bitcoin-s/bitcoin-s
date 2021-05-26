@@ -256,8 +256,9 @@ abstract class DLCWallet
       dlcOpt <- dlcDAO.read(dlcId)
       _ = dlcOpt match {
         case Some(db) =>
-          require(db.state == DLCState.Offered || db.state == DLCState.Accepted,
-                  "Cannot cancel a DLC after it has been signed")
+          require(
+            db.state == DLCState.Offered || db.state == DLCState.Accepted || db.state == DLCState.Signed,
+            "Cannot cancel a DLC after it has been signed")
         case None =>
           throw new IllegalArgumentException(
             s"No DLC Found with dlc id ${dlcId.hex}")
