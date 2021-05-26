@@ -777,7 +777,7 @@ abstract class DLCWallet
           _ = logger.debug(
             s"CET Signatures for tempContractId ${accept.tempContractId.hex} were valid, adding to database")
 
-          _ <- remoteTxDAO.createAll(acceptPrevTxs)
+          _ <- remoteTxDAO.upsertAll(acceptPrevTxs)
           _ <- dlcInputsDAO.createAll(acceptInputs)
           _ <- dlcSigsDAO.createAll(sigsDbs)
           _ <- dlcRefundSigDAO.upsert(refundSigsDb)
