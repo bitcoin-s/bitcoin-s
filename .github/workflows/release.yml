@@ -77,7 +77,7 @@ jobs:
           security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
           echo "===========jpackage app image begin================"
-          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type app-image -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.icns --mac-sign --mac-signing-keychain /Users/runner/Library/Keychains/signing_temp.keychain-db --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
+          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type app-image -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.gui.BundleGUI --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.icns --mac-sign --mac-signing-keychain /Users/runner/Library/Keychains/signing_temp.keychain-db --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
           echo "===========jpackage dmg begin================"
           jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image bitcoin-s.app --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
           echo "Signing dmg with code sign"
@@ -127,7 +127,7 @@ jobs:
       - name: Package jar as debian package
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
-        run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.AppBundle --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.png"
+        run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.gui.BundleGUI --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.png"
       - name: View Artifacts
         run: ls -l
       - name: Print working dir

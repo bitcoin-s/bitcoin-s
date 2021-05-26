@@ -1,6 +1,6 @@
 name := "bitcoin-s-bundle"
 
-mainClass := Some("org.bitcoins.bundle.BundleGUI")
+mainClass := Some("org.bitcoins.bundle.gui.BundleGUI")
 
 publish / skip := true
 
