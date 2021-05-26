@@ -45,7 +45,7 @@ trait DLCDbManagement extends DbManagement {
   }
 
   private lazy val dlcCETSigTable: TableQuery[Table[_]] = {
-    DLCCETSignaturesDAO()(ec, appConfig).table
+    DLCCETSignatureDAO()(ec, appConfig).table
   }
 
   private lazy val dlcRefundSigTable: TableQuery[Table[_]] = {

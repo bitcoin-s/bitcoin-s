@@ -1,33 +1,33 @@
 CREATE TABLE "global_dlc_data"
 (
-    "dlc_id"              TEXT PRIMARY KEY,
-    "temp_contract_id"    TEXT    NOT NULL UNIQUE,
-    "contract_id"         TEXT UNIQUE,
-    "protocol_version"    INTEGER NOT NULL,
-    "state"               TEXT    NOT NULL,
-    "is_initiator"        INTEGER NOT NULL,
-    "account"             TEXT    NOT NULL,
-    "change_index"        INTEGER NOT NULL,
-    "key_index"           INTEGER NOT NULL,
+    "dlc_id"                TEXT PRIMARY KEY,
+    "temp_contract_id"      TEXT         NOT NULL UNIQUE,
+    "contract_id"           TEXT UNIQUE,
+    "protocol_version"      INTEGER      NOT NULL,
+    "state"                 TEXT         NOT NULL,
+    "is_initiator"          INTEGER      NOT NULL,
+    "account"               TEXT         NOT NULL,
+    "change_index"          INTEGER      NOT NULL,
+    "key_index"             INTEGER      NOT NULL,
 
     "fee_rate"              VARCHAR(254) NOT NULL,
     "fund_output_serial_id" INTEGER      NOT NULL,
 
-    "funding_outpoint"    TEXT,
-    "funding_tx_id"       TEXT,
-    "closing_tx_id"       TEXT,
-    "aggregate_signature" TEXT
+    "funding_outpoint"      TEXT,
+    "funding_tx_id"         TEXT,
+    "closing_tx_id"         TEXT,
+    "aggregate_signature"   TEXT
 );
 
 CREATE TABLE "contract_data"
 (
-    "dlc_id"                TEXT PRIMARY KEY,
-    "oracle_threshold"      INTEGER NOT NULL,
-    "oracle_params"         TEXT,
-    "contract_descriptor"   TEXT    NOT NULL,
-    "contract_maturity"     INTEGER NOT NULL,
-    "contract_timeout"      INTEGER NOT NULL,
-    "total_collateral"      INTEGER NOT NULL,
+    "dlc_id"              TEXT PRIMARY KEY,
+    "oracle_threshold"    INTEGER NOT NULL,
+    "oracle_params"       TEXT,
+    "contract_descriptor" TEXT    NOT NULL,
+    "contract_maturity"   INTEGER NOT NULL,
+    "contract_timeout"    INTEGER NOT NULL,
+    "total_collateral"    INTEGER NOT NULL,
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 
@@ -113,12 +113,12 @@ CREATE TABLE "funding_inputs"
 
 CREATE TABLE "cet_sigs"
 (
-    "dlc_id"        TEXT    NOT NULL,
-    "index"         INTEGER NOT NULL,
-    "sig_point"     TEXT    NOT NULL,
-    "accepter_sig"  TEXT    NOT NULL,
-    "initiator_sig" TEXT,
-    constraint "pk_cet_sigs" primary key ("dlc_id", "index"),
+    "dlc_id"       TEXT    NOT NULL,
+    "index"        INTEGER NOT NULL,
+    "is_initiator" INTEGER NOT NULL,
+    "sig_point"    TEXT    NOT NULL,
+    "adaptor_sig"  TEXT    NOT NULL,
+    constraint "pk_cet_sigs" primary key ("dlc_id", "index", "is_initiator"),
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 

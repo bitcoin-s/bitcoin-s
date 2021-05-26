@@ -238,7 +238,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         DLCRefundSigsDb,
         ContractInfo,
         Vector[DLCFundingInputDb],
-        Vector[DLCCETSignaturesDb])] = {
+        Vector[DLCCETSignatureDb])] = {
     for {
       dlcDbOpt <- dlcDAO.findByContractId(contractId)
       dlcDb = dlcDbOpt.get
@@ -270,7 +270,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         DLCRefundSigsDb,
         ContractInfo,
         Vector[DLCFundingInputDb],
-        Vector[DLCCETSignaturesDb])] = {
+        Vector[DLCCETSignatureDb])] = {
     for {
       (dlcDb, contractData, dlcOffer, dlcAccept, fundingInputs, contractInfo) <-
         getDLCFundingData(dlcId)
@@ -543,7 +543,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       refundSigsDb: DLCRefundSigsDb,
       contractInfo: ContractInfo,
       fundingInputs: Vector[DLCFundingInputDb],
-      outcomeSigsDbs: Vector[DLCCETSignaturesDb]): Future[
+      outcomeSigsDbs: Vector[DLCCETSignatureDb]): Future[
     (DLCExecutor, SetupDLC)] = {
 
     executorFromDb(dlcDb,
@@ -557,13 +557,15 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         val outcomeSigs =
           if (dlcDb.isInitiator) {
             outcomeSigsDbs
+              .filterNot(_.isInitiator)
               .map { dbSig =>
-                dbSig.sigPoint -> dbSig.accepterSig
+                dbSig.sigPoint -> dbSig.adaptorSig
               }
           } else {
             outcomeSigsDbs
+              .filter(_.isInitiator)
               .map { dbSig =>
-                dbSig.sigPoint -> dbSig.initiatorSig.get
+                dbSig.sigPoint -> dbSig.adaptorSig
               }
           }
 

@@ -55,7 +55,7 @@ abstract class DLCWallet
   private[bitcoins] val contractDataDAO: DLCContractDataDAO =
     DLCContractDataDAO()
   private[bitcoins] val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
-  private[bitcoins] val dlcSigsDAO: DLCCETSignaturesDAO = DLCCETSignaturesDAO()
+  private[bitcoins] val dlcSigsDAO: DLCCETSignatureDAO = DLCCETSignatureDAO()
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
 
@@ -536,7 +536,7 @@ abstract class DLCWallet
               dlcInputsDAO.findByDLCId(dlc.dlcId, isInitiator = false)
             prevTxs <-
               transactionDAO.findByTxIdBEs(fundingInputs.map(_.outPoint.txIdBE))
-            outcomeSigsDbs <- dlcSigsDAO.findByDLCId(dlcId)
+            outcomeSigsDbs <- dlcSigsDAO.findByDLCId(dlcId, isInitiator = false)
             refundSigsDb <- dlcRefundSigDAO.read(dlcId)
           } yield {
             val inputRefs = matchPrevTxsWithInputs(fundingInputs, prevTxs)
@@ -544,7 +544,7 @@ abstract class DLCWallet
             dlcAcceptDb.toDLCAccept(offer.tempContractId,
                                     inputRefs,
                                     outcomeSigsDbs.map { db =>
-                                      db.sigPoint -> db.accepterSig
+                                      db.sigPoint -> db.adaptorSig
                                     },
                                     refundSigsDb.get.accepterSig)
           }
@@ -645,8 +645,13 @@ abstract class DLCWallet
         negotiationFieldsTLV = NoNegotiationFields.toTLV
       )
 
-      sigsDbs = cetSigs.outcomeSigs.zipWithIndex.map { case (sig, index) =>
-        DLCCETSignaturesDb(dlc.dlcId, index = index, sig._1, sig._2, None)
+      sigsDbs = cetSigs.outcomeSigs.zipWithIndex.map {
+        case ((point, sig), index) =>
+          DLCCETSignatureDb(dlcId = dlc.dlcId,
+                            index = index,
+                            isInitiator = false,
+                            sigPoint = point,
+                            adaptorSig = sig)
       }
 
       refundSigsDb =
@@ -710,8 +715,7 @@ abstract class DLCWallet
     } yield accept
   }
 
-  def registerDLCAccept(
-      accept: DLCAccept): Future[(DLCDb, Vector[DLCCETSignaturesDb])] = {
+  def registerDLCAccept(accept: DLCAccept): Future[DLCDb] = {
     logger.debug(
       s"Checking if DLC Accept with tempContractId ${accept.tempContractId.hex} has already been registered")
     val dbsF = for {
@@ -755,8 +759,12 @@ abstract class DLCWallet
         }
 
         lazy val sigsDbs = accept.cetSigs.outcomeSigs.zipWithIndex.map {
-          case (sig, index) =>
-            DLCCETSignaturesDb(dlc.dlcId, index = index, sig._1, sig._2, None)
+          case ((point, sig), index) =>
+            DLCCETSignatureDb(dlcId = dlc.dlcId,
+                              index = index,
+                              isInitiator = false,
+                              sigPoint = point,
+                              adaptorSig = sig)
         }
 
         lazy val refundSigsDb =
@@ -823,11 +831,11 @@ abstract class DLCWallet
 
           updatedDLCDb <-
             updateFundingOutPoint(dlcDb.contractIdOpt.get, outPoint)
-        } yield (updatedDLCDb, sigsDbs)
+        } yield updatedDLCDb
       case (dlc, Some(_)) =>
         logger.debug(
           s"DLC Accept (${dlc.contractIdOpt.get.toHex}) has already been registered")
-        dlcSigsDAO.findByDLCId(dlc.dlcId).map((dlc, _))
+        Future.successful(dlc)
     }
   }
 
@@ -856,32 +864,36 @@ abstract class DLCWallet
     */
   override def signDLC(accept: DLCAccept): Future[DLCSign] = {
     for {
-      (dlc, cetSigsDbs) <- registerDLCAccept(accept)
+      dlc <- registerDLCAccept(accept)
       // .get should be safe now
       contractId = dlc.contractIdOpt.get
 
       signer <- signerFromDb(dlc.dlcId)
 
-      mySigs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
+      mySigs <- dlcSigsDAO.findByDLCId(dlc.dlcId, isInitiator = true)
       refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.get)
       cetSigs <-
-        if (mySigs.forall(_.initiatorSig.isEmpty)) {
+        if (mySigs.isEmpty) {
           logger.info(s"Creating CET Sigs for contract ${contractId.toHex}")
           for {
             sigs <- signer.createCETSigsAsync()
 
-            sigsDbs: Vector[DLCCETSignaturesDb] = sigs.outcomeSigs
-              .zip(cetSigsDbs.sortBy(_.index))
-              .map { case (sig, db) =>
-                db.copy(initiatorSig = Some(sig._2))
-              }
-            _ <- dlcSigsDAO.updateAll(sigsDbs)
+            sigDbs = sigs.outcomeSigs.zipWithIndex.map {
+              case ((point, sig), index) =>
+                DLCCETSignatureDb(dlc.dlcId,
+                                  index = index,
+                                  isInitiator = true,
+                                  sigPoint = point,
+                                  sig)
+            }
+
+            _ <- dlcSigsDAO.createAll(sigDbs)
           } yield sigs
 
         } else {
           logger.debug(s"CET Sigs already created for ${contractId.toHex}")
           val outcomeSigs = mySigs.map { dbSig =>
-            dbSig.sigPoint -> dbSig.initiatorSig.get
+            dbSig.sigPoint -> dbSig.adaptorSig
           }
 
           val signatures = refundSigsDb.initiatorSig match {
@@ -1035,22 +1047,24 @@ abstract class DLCWallet
               s"CET sigs provided are not valid! got ${sign.cetSigs.outcomeSigs}")
 
           refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.get)
-          sigsDbs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
 
           updatedRefund = refundSigsDb.copy(initiatorSig =
             Some(sign.cetSigs.refundSig))
-          updatedSigsDbs = sigsDbs
-            .sortBy(_.index)
-            .zip(sign.cetSigs.outcomeSigs)
-            .map { case (db, (_, sig)) =>
-              db.copy(initiatorSig = Some(sig))
-            }
+
+          sigDbs = sign.cetSigs.outcomeSigs.zipWithIndex.map {
+            case ((point, sig), index) =>
+              DLCCETSignatureDb(dlc.dlcId,
+                                index = index,
+                                isInitiator = true,
+                                sigPoint = point,
+                                sig)
+          }
 
           _ = logger.info(
             s"CET Signatures are valid for contract ${sign.contractId.toHex}")
 
           _ <- addFundingSigs(sign)
-          _ <- dlcSigsDAO.updateAll(updatedSigsDbs)
+          _ <- dlcSigsDAO.createAll(sigDbs)
           _ <- dlcRefundSigDAO.update(updatedRefund)
           updated <- dlcDAO.update(dlc.updateState(DLCState.Signed))
           _ = logger.info(

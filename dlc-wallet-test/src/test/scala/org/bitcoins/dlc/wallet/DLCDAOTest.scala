@@ -134,18 +134,19 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       val dlcDAO = daos.dlcDAO
       val sigsDAO = daos.dlcSigsDAO
 
-      val sig = DLCCETSignaturesDb(
+      val sig = DLCCETSignatureDb(
         dlcId = dlcId,
         sigPoint = ECPublicKey.freshPublicKey,
         index = 0,
-        accepterSig = ECAdaptorSignature.dummy,
-        initiatorSig = None
+        isInitiator = true,
+        adaptorSig = ECAdaptorSignature.dummy
       )
 
-      verifyDatabaseInsertion(sig,
-                              DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index),
-                              sigsDAO,
-                              dlcDAO)
+      verifyDatabaseInsertion(
+        sig,
+        DLCCETSignaturePrimaryKey(sig.dlcId, sig.index, sig.isInitiator),
+        sigsDAO,
+        dlcDAO)
   }
 
   it should "correctly insert unsigned numeric outcome CET signatures into the database" in {
@@ -153,18 +154,19 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       val dlcDAO = daos.dlcDAO
       val sigsDAO = daos.dlcSigsDAO
 
-      val sig = DLCCETSignaturesDb(
+      val sig = DLCCETSignatureDb(
         dlcId = dlcId,
         sigPoint = ECPublicKey.freshPublicKey,
         index = 1,
-        accepterSig = ECAdaptorSignature.dummy,
-        initiatorSig = None
+        isInitiator = true,
+        adaptorSig = ECAdaptorSignature.dummy
       )
 
-      verifyDatabaseInsertion(sig,
-                              DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index),
-                              sigsDAO,
-                              dlcDAO)
+      verifyDatabaseInsertion(
+        sig,
+        DLCCETSignaturePrimaryKey(sig.dlcId, sig.index, sig.isInitiator),
+        sigsDAO,
+        dlcDAO)
   }
 
   it should "correctly find CET signatures by dlcId" in { daos =>
@@ -172,19 +174,19 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
     val sigsDAO = daos.dlcSigsDAO
 
     val sigs = Vector(
-      DLCCETSignaturesDb(
+      DLCCETSignatureDb(
         dlcId = dlcId,
         sigPoint = ECPublicKey.freshPublicKey,
         index = 2,
-        accepterSig = ECAdaptorSignature.dummy,
-        initiatorSig = Some(ECAdaptorSignature.dummy)
+        isInitiator = true,
+        adaptorSig = ECAdaptorSignature.dummy
       ),
-      DLCCETSignaturesDb(
+      DLCCETSignatureDb(
         dlcId = dlcId,
         sigPoint = ECPublicKey.freshPublicKey,
-        index = 3,
-        accepterSig = ECAdaptorSignature.dummy,
-        initiatorSig = Some(ECAdaptorSignature.dummy)
+        index = 2,
+        isInitiator = false,
+        adaptorSig = ECAdaptorSignature.dummy
       )
     )
 

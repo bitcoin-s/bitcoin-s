@@ -2,10 +2,10 @@ package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey, Sha256Digest}
 
-case class DLCCETSignaturesDb(
+case class DLCCETSignatureDb(
     dlcId: Sha256Digest,
     index: Long,
+    isInitiator: Boolean,
     sigPoint: ECPublicKey,
-    accepterSig: ECAdaptorSignature,
-    initiatorSig: Option[ECAdaptorSignature]
+    adaptorSig: ECAdaptorSignature
 )

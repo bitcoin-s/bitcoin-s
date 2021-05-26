@@ -16,7 +16,7 @@ case class DLCDAOs(
     dlcOfferDAO: DLCOfferDAO,
     dlcAcceptDAO: DLCAcceptDAO,
     dlcInputsDAO: DLCFundingInputDAO,
-    dlcSigsDAO: DLCCETSignaturesDAO,
+    dlcSigsDAO: DLCCETSignatureDAO,
     dlcRefundSigDAO: DLCRefundSigsDAO,
     dlcRemoteTxDAO: DLCRemoteTxDAO)
 
@@ -31,7 +31,7 @@ trait DLCDAOFixture extends BitcoinSWalletTest {
     val dlcOfferDAO = DLCOfferDAO()
     val dlcAcceptDAO = DLCAcceptDAO()
     val dlcInputsDAO = DLCFundingInputDAO()
-    val dlcSigsDAO = DLCCETSignaturesDAO()
+    val dlcSigsDAO = DLCCETSignatureDAO()
     val dlcRefundSigDAO = DLCRefundSigsDAO()
     val dlcRemoteTxDAO = DLCRemoteTxDAO()
     DLCDAOs(

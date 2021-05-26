@@ -113,12 +113,12 @@ CREATE TABLE "funding_inputs"
 
 CREATE TABLE "cet_sigs"
 (
-    "dlc_id"        VARCHAR(254) NOT NULL,
-    "index"         INTEGER      NOT NULL,
-    "sig_point"     VARCHAR(254) NOT NULL,
-    "accepter_sig"  VARCHAR(254) NOT NULL,
-    "initiator_sig" VARCHAR(254),
-    constraint "pk_cet_sigs" primary key ("dlc_id", "index"),
+    "dlc_id"       VARCHAR(254) NOT NULL,
+    "index"        INTEGER      NOT NULL,
+    "is_initiator" INTEGER      NOT NULL,
+    "sig_point"    VARCHAR(254) NOT NULL,
+    "adaptor_sig"          VARCHAR(254) NOT NULL,
+    constraint "pk_cet_sigs" primary key ("dlc_id", "index", is_initiator),
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 

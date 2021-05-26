@@ -120,16 +120,18 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             .map(
               _.toDLCAccept(dlcDb.tempContractId,
                             fundingInputs,
-                            sigDbs.map(dbSig =>
-                              (dbSig.sigPoint, dbSig.accepterSig)),
+                            sigDbs
+                              .filterNot(_.isInitiator)
+                              .map(dbSig => (dbSig.sigPoint, dbSig.adaptorSig)),
                             acceptRefundSigOpt.get))
             .get
 
           val sign: DLCSign = {
             val cetSigs: CETSignatures =
-              CETSignatures(
-                sigDbs.map(dbSig => (dbSig.sigPoint, dbSig.initiatorSig.get)),
-                offerRefundSigOpt.get)
+              CETSignatures(sigDbs
+                              .filter(_.isInitiator)
+                              .map(dbSig => (dbSig.sigPoint, dbSig.adaptorSig)),
+                            offerRefundSigOpt.get)
 
             val contractId = dlcDb.contractIdOpt.get
             val fundingSigs =
