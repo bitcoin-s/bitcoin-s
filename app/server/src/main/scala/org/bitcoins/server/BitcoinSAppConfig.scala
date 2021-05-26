@@ -79,6 +79,14 @@ case class BitcoinSAppConfig(
     }
   }
 
+  def exists(): Boolean = {
+    directory.resolve("bitcoin-s.conf").toFile.isFile
+  }
+
+  def withOverrides(configs: Config*): BitcoinSAppConfig = {
+    BitcoinSAppConfig(directory, configs ++ confs: _*)
+  }
+
   /** Zips $HOME/.bitcoin-s
     */
   def zipDatadir(target: Path): Path = {

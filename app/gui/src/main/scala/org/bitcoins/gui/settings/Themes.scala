@@ -1,6 +1,6 @@
 package org.bitcoins.gui.settings
 
-import org.bitcoins.gui.WalletGUI.stage
+import org.bitcoins.gui.GUI.stage
 
 sealed abstract class Theme {
   def fileLocation: String

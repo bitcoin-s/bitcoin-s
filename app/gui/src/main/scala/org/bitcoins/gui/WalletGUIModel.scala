@@ -20,7 +20,7 @@ class WalletGUIModel() {
 
   // Sadly, it is a Java "pattern" to pass null into
   // constructors to signal that you want some default
-  val parentWindow: ObjectProperty[Window] =
+  lazy val parentWindow: ObjectProperty[Window] =
     ObjectProperty[Window](null.asInstanceOf[Window])
 
   private case object UpdateBalanceRunnable extends Runnable {
@@ -42,8 +42,6 @@ class WalletGUIModel() {
     updateBalanceThread.start()
   }
 
-  startBalanceThread()
-
   def updateFeeRate(): Try[FeeUnit] = {
     ConsoleCli.exec(EstimateFee, GlobalData.consoleCliConfig).map { feeStr =>
       val feeUnit = FeeUnit.fromString(feeStr)
@@ -51,8 +49,6 @@ class WalletGUIModel() {
       feeUnit
     }
   }
-
-  updateFeeRate()
 
   def onGetNewAddress(): Unit = {
     val address = StringProperty("")

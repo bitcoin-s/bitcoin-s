@@ -291,7 +291,9 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] {
   /** The newest version of `bitcoind` we support */
   val newest: BitcoindVersion = V21
 
-  val known = Vector(V16, V17, V18, V19, V20, V21, Experimental)
+  val standard: Vector[BitcoindVersion] = Vector(V16, V17, V18, V19, V20, V21)
+
+  val known: Vector[BitcoindVersion] = standard :+ Experimental
 
   case object V16 extends BitcoindVersion {
     override def toString: String = "v0.16"
