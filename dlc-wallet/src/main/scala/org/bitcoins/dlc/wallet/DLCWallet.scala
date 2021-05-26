@@ -440,8 +440,10 @@ abstract class DLCWallet
         val announcements =
           offer.contractInfo.oracleInfo.singleOracleInfos.map(_.announcement)
 
-        val announcementDataDbs =
-          OracleAnnouncementDbHelper.fromAnnouncements(announcements)
+        //filter announcements that we already have in the db
+        val groupedAnnouncementsF: Future[AnnouncementGrouping] = {
+          groupByExistingAnnouncements(announcements)
+        }
 
         val contractInfo = offer.contractInfo
 
@@ -489,7 +491,13 @@ abstract class DLCWallet
           writtenDLC <- dlcDAO.create(dlc)
           _ <- contractDataDAO.create(contractDataDb)
 
-          announcementDataDbs <- announcementDAO.createAll(announcementDataDbs)
+          groupedAnnouncements <- groupedAnnouncementsF
+          createdDbs <- announcementDAO.createAll(
+            groupedAnnouncements.newAnnouncements)
+
+          announcementDataDbs =
+            createdDbs ++ groupedAnnouncements.existingAnnouncements
+
           announcementsWithId = announcements.map { tlv =>
             val idOpt = announcementDataDbs
               .find(_.announcementSignature == tlv.announcementSignature)
