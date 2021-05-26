@@ -54,7 +54,8 @@ sealed trait TestDAOFixture
 
   val updatedDb: TestDb = testDb.copy(data = hex"0000")
 
-  val updatedDbs: Vector[TestDb] = testDbs.map(_.copy(data = hex"0000"))
+  val updatedDbs: Vector[TestDb] =
+    testDbs.init.map(_.copy(data = hex"0000")).:+(testDbs.last)
 
   def testCreate(testDAO: TestDAO): Future[Boolean] = {
     for {

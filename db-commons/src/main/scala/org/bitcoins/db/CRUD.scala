@@ -90,9 +90,15 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     } else {
       val actions = ts.map(t => find(t).update(t))
       for {
-        _ <- safeDatabase.runVec(DBIO.sequence(actions).transactionally)
-        result <- safeDatabase.runVec(findAll(ts).result)
-      } yield result
+        numUpdated <- safeDatabase.runVec(
+          DBIO.sequence(actions).transactionally)
+        tsUpdated <- {
+          if (numUpdated.sum == ts.length) Future.successful(ts)
+          else
+            Future.failed(new RuntimeException(
+              s"Unexpected number of updates completed ${numUpdated.sum} of ${ts.length}"))
+        }
+      } yield tsUpdated
     }
   }
 
