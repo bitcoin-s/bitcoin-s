@@ -1,9 +1,12 @@
 package org.bitcoins.gui.util
 
-import scalafx.Includes._
+import javafx.beans.value.ObservableValue
+import org.bitcoins.core.protocol.BlockTimeStamp
 import scalafx.scene.control.TextField
 
 import java.text.NumberFormat
+import java.time.format.{DateTimeFormatter, FormatStyle}
+import java.time.{Instant, ZoneOffset}
 import scala.util.matching.Regex
 
 object GUIUtil {
@@ -13,12 +16,17 @@ object GUIUtil {
 
   def setNumericInput(textField: TextField): Unit = {
     textField.text.addListener {
-      (
-          _: javafx.beans.value.ObservableValue[_ <: String],
-          _: String,
-          newVal: String) =>
-        if (!newVal.matches("-?\\d*"))
-          textField.setText(newVal.replaceAll("[^-?\\d]", ""))
+      (_: ObservableValue[_ <: String], _: String, newVal: String) =>
+        if (!newVal.matches(numericRegex.regex))
+          textField.setText(newVal.replaceAll(numericRegex.regex, ""))
     }
+  }
+
+  def epochToDateString(epoch: BlockTimeStamp): String = {
+    val long = epoch.toUInt32.toLong
+    val instant = Instant.ofEpochSecond(long).atOffset(ZoneOffset.UTC)
+    DateTimeFormatter
+      .ofLocalizedDate(FormatStyle.MEDIUM)
+      .format(instant)
   }
 }

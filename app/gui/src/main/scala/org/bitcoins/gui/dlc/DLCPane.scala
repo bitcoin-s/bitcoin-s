@@ -20,41 +20,11 @@ class DLCPane(glassPane: VBox) {
     center = resultTextArea
   }
 
-  private val demoOracleArea = new TextArea {
-    editable = false
-    text =
-      "Click on Init Demo Oracle to generate example oracle and contract information"
-    wrapText = true
-  }
-
-  private val model =
-    new DLCPaneModel(resultTextArea, demoOracleArea)
+  private val model = new DLCPaneModel(resultTextArea)
 
   // This is commented out because it will cause the GUI startup to fail on master
   // It should be uncommented when on the adaptor-dlc branch
   model.setUp()
-
-  private val enumContractButton = new Button {
-    text = "Enum Contract"
-    onAction = _ => model.onInitEnumContractDialog()
-  }
-
-  private val numericContractButton = new Button {
-    text = "Numeric Contract"
-    onAction = _ => model.onInitNumericContractDialog()
-  }
-
-  private val oracleButtonHBox = new HBox {
-    alignment = Pos.Center
-    children = Seq(enumContractButton, numericContractButton)
-    spacing = 15
-  }
-
-  private val demoOracleVBox = new VBox {
-    padding = Insets(10)
-    children = Seq(demoOracleArea, oracleButtonHBox)
-    spacing = 15
-  }
 
   private val offerButton = new Button {
     text = "Offer"
@@ -142,7 +112,7 @@ class DLCPane(glassPane: VBox) {
   }
 
   private val textAreaHBox = new HBox {
-    children = Seq(resultArea, demoOracleVBox)
+    children = Seq(resultArea)
     spacing = 10
   }
 
@@ -159,11 +129,8 @@ class DLCPane(glassPane: VBox) {
     center = textAreasAndTableViewVBox
   }
 
-  resultArea.prefWidth <== (borderPane.width * 2) / 3
-  demoOracleVBox.prefWidth <== (borderPane.width / 3)
+  resultArea.prefWidth <== borderPane.width
   resultArea.prefHeight <== (borderPane.height * 2) / 3
-  demoOracleVBox.prefHeight <== (borderPane.height * 2) / 3
-  demoOracleArea.prefHeight <== demoOracleVBox.height * 0.9
 
   tableView.prefHeight <== borderPane.height / 3
 

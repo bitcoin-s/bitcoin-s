@@ -4,15 +4,12 @@ import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.serializers.Picklers._
-import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto._
+import org.bitcoins.gui.dlc.GlobalDLCData.dlcs
 import org.bitcoins.gui.dlc.dialog._
 import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.beans.property.ObjectProperty
-import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.Alert.AlertType
 import scalafx.scene.control.{Alert, ButtonType, TextArea}
 import scalafx.stage.FileChooser.ExtensionFilter
@@ -21,40 +18,15 @@ import upickle.default._
 
 import java.io.File
 import java.nio.file.Files
-import scala.util.{Failure, Properties, Success, Try}
+import scala.util.{Failure, Properties, Success}
 
-class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
-    extends Logging {
+class DLCPaneModel(resultArea: TextArea) extends Logging {
   var taskRunner: TaskRunner = _
-
-  lazy val txPrintFunc: String => String = str => {
-    // See if it was an error or not
-    Try(Transaction.fromHex(str)) match {
-      case Failure(_) =>
-        // if it was print the error
-        str
-      case Success(tx) =>
-        s"""|TxId: ${tx.txIdBE.hex}
-            |
-            |url: ${GlobalData.buildTxUrl(tx.txIdBE)}
-            |
-            |If the tx doesn't show up after a few minutes at this url you may need to manually
-            |broadcast the tx with the full hex below
-            |
-            |Link to broadcast: ${GlobalData.broadcastUrl}
-            |
-            |Transaction: ${tx.hex}
-      """.stripMargin
-    }
-  }
 
   // Sadly, it is a Java "pattern" to pass null into
   // constructors to signal that you want some default
   val parentWindow: ObjectProperty[Window] =
     ObjectProperty[Window](null.asInstanceOf[Window])
-
-  val dlcs: ObservableBuffer[DLCStatus] =
-    new ObservableBuffer[DLCStatus]()
 
   def getDLCs: Vector[DLCStatus] = {
     ConsoleCli.exec(GetDLCs, Config.empty) match {
@@ -111,207 +83,70 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
     }
   }
 
-  private def printDummyOracleInfo(
-      builder: StringBuilder,
-      privKey: ECPrivateKey,
-      oracleInfo: SingleOracleInfo,
-      kValues: Vector[ECPrivateKey],
-      contractInfo: ContractInfo): StringBuilder = {
-    if (GlobalData.network != MainNet && kValues.nonEmpty) {
-      val eventId = oracleInfo.announcement.eventTLV match {
-        case v0: OracleEventV0TLV => v0.eventId
-      }
-
-      builder.append(
-        s"Oracle Public Key: ${oracleInfo.publicKey.hex}\nEvent R values: ${oracleInfo.nonces.map(_.hex).mkString(",")}\n\n")
-
-      builder.append(
-        s"Serialized Oracle Announcement: ${oracleInfo.announcement.hex}\n\n")
-
-      contractInfo.contractDescriptor match {
-        case descriptor: EnumContractDescriptor =>
-          builder.append("Outcomes and oracle sigs in order of entry:\n")
-          descriptor.keys.foreach { outcome =>
-            val bytes = outcome.serialized.head
-            val hash = CryptoUtil
-              .sha256DLCAttestation(bytes)
-              .bytes
-            val sig = privKey.schnorrSignWithNonce(hash, kValues.head)
-            val sigTlv =
-              OracleAttestmentV0TLV(eventId,
-                                    privKey.schnorrPublicKey,
-                                    Vector(sig),
-                                    Vector(outcome.outcome))
-
-            builder.append(s"$outcome - ${sigTlv.hex}\n")
-          }
-        case _: NumericContractDescriptor =>
-          builder.append("Oracle sigs:\n")
-
-          val sortedOutcomes =
-            contractInfo.allOutcomesAndPayouts.sortBy(_._2)
-
-          val max = sortedOutcomes.last._1.outcome
-            .asInstanceOf[UnsignedNumericOutcome]
-          val middle = sortedOutcomes(sortedOutcomes.size / 2)._1.outcome
-            .asInstanceOf[UnsignedNumericOutcome]
-          val min = sortedOutcomes.head._1.outcome
-            .asInstanceOf[UnsignedNumericOutcome]
-
-          val sigsMax =
-            max.serialized.zip(kValues.take(max.digits.size)).map {
-              case (bytes, kValue) =>
-                val hash = CryptoUtil
-                  .sha256DLCAttestation(bytes)
-                  .bytes
-                privKey.schnorrSignWithNonce(hash, kValue)
-            }
-
-          val sigsMiddle =
-            middle.serialized.zip(kValues.take(middle.digits.size)).map {
-              case (bytes, kValue) =>
-                val hash = CryptoUtil
-                  .sha256DLCAttestation(bytes)
-                  .bytes
-                privKey.schnorrSignWithNonce(hash, kValue)
-            }
-
-          val sigsMin =
-            min.serialized.zip(kValues.take(min.digits.size)).map {
-              case (bytes, kValue) =>
-                val hash = CryptoUtil
-                  .sha256DLCAttestation(bytes)
-                  .bytes
-                privKey.schnorrSignWithNonce(hash, kValue)
-            }
-
-          val maxSigsStr =
-            OracleAttestmentV0TLV(eventId,
-                                  privKey.schnorrPublicKey,
-                                  sigsMax,
-                                  max.digits.map(_.toString)).hex
-          builder.append(s"local win sigs - $maxSigsStr\n\n\n")
-
-          val middleSigsStr =
-            OracleAttestmentV0TLV(eventId,
-                                  privKey.schnorrPublicKey,
-                                  sigsMiddle,
-                                  middle.digits.map(_.toString)).hex
-          builder.append(s"tie sigs - $middleSigsStr\n\n\n")
-
-          val minSigsStr =
-            OracleAttestmentV0TLV(eventId,
-                                  privKey.schnorrPublicKey,
-                                  sigsMin,
-                                  min.digits.map(_.toString)).hex
-          builder.append(s"remote win sigs - $minSigsStr")
-      }
-
-      GlobalDLCData.lastOracleAnnouncement = oracleInfo.announcement.hex
-    }
-    builder
-  }
-
-  def onInitEnumContractDialog(): Unit = {
-    val result = InitEnumContractDialog.showAndWait(parentWindow.value)
-
-    result match {
-      case Some((contractDescriptor, announcementOpt)) =>
-        val privKey = ECPrivateKey.freshPrivateKey
-
-        val (kValues, oracleInfo) = announcementOpt match {
-          case Some(announcement) =>
-            (Vector.empty, EnumSingleOracleInfo(announcement))
-          case None =>
-            val kValue = ECPrivateKey.freshPrivateKey
-            val rValue = kValue.schnorrNonce
-            val oracleInfo = EnumSingleOracleInfo(
-              OracleAnnouncementV0TLV
-                .dummyForEventsAndKeys(privKey,
-                                       rValue,
-                                       contractDescriptor.map(_._1).toVector))
-
-            (Vector(kValue), oracleInfo)
-        }
-        val builder = new StringBuilder()
-
-        val contractInfo = ContractInfo(contractDescriptor, oracleInfo)
-        builder.append(s"Serialized Contract Info:\n${contractInfo.hex}\n\n")
-        GlobalDLCData.lastContractInfo = contractInfo.hex
-
-        printDummyOracleInfo(builder,
-                             privKey,
-                             oracleInfo,
-                             kValues,
-                             contractInfo)
-
-        oracleInfoArea.text = builder.result()
-      case None => ()
-    }
-  }
-
-  def onInitNumericContractDialog(): Unit = {
-    val result = InitNumericContractDialog.showAndWait(parentWindow.value)
-
-    result match {
-      case Some((totalCol, contractDescriptor, announcementOpt)) =>
-        val privKey = ECPrivateKey.freshPrivateKey
-
-        val (kValues, oracleInfo) = announcementOpt match {
-          case Some(announcement) =>
-            (Vector.empty, NumericSingleOracleInfo(announcement))
-          case None =>
-            val kValues =
-              0.until(contractDescriptor.numDigits)
-                .map(_ => ECPrivateKey.freshPrivateKey)
-                .toVector
-            val rValues = kValues.map(_.schnorrNonce)
-            val oracleInfo = NumericSingleOracleInfo(
-              OracleAnnouncementV0TLV.dummyForKeys(privKey, rValues))
-
-            (kValues, oracleInfo)
-        }
-        val builder = new StringBuilder()
-
-        val pairOpt = ContractOraclePair.fromDescriptorOracleOpt(
-          contractDescriptor,
-          oracleInfo)
-        pairOpt match {
-          case Some(pair) =>
-            val contractInfo =
-              ContractInfo(totalCol, pair)
-            builder.append(
-              s"Serialized Contract Info:\n${contractInfo.hex}\n\n")
-            GlobalDLCData.lastContractInfo = contractInfo.hex
-
-            printDummyOracleInfo(builder,
-                                 privKey,
-                                 oracleInfo,
-                                 kValues,
-                                 contractInfo)
-
-            oracleInfoArea.text = builder.result()
-          case None =>
-            //i think doing nothing is right here?
-            logger.warn(
-              s"Invalid contract/oracle pairing, contract=$contractDescriptor oracle=$oracleInfo")
-            ()
-        }
-
-      case None => ()
-    }
-  }
-
   def onOffer(): Unit = {
-    printDLCDialogResult("CreateDLCOffer", new OfferDLCDialog)
+    val result = new CreateDLCOfferDialog().showAndWait(parentWindow.value)
+
+    result match {
+      case Some(command) =>
+        taskRunner.run(
+          caption = "Create DLC Offer",
+          op = {
+            ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
+              case Success(commandReturn) =>
+                resultArea.text = commandReturn
+              case Failure(err) =>
+                err.printStackTrace()
+                resultArea.text = s"Error executing command:\n${err.getMessage}"
+            }
+            updateDLCs()
+          }
+        )
+      case None => ()
+    }
   }
 
   def onAccept(): Unit = {
-    printDLCDialogResult("AcceptDLCOffer", new AcceptDLCDialog)
+    val result = new AcceptOfferDialog().showAndWait(parentWindow.value)
+
+    result match {
+      case Some(command) =>
+        taskRunner.run(
+          caption = "Accept DLC Offer",
+          op = {
+            ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
+              case Success(commandReturn) =>
+                resultArea.text = commandReturn
+              case Failure(err) =>
+                err.printStackTrace()
+                resultArea.text = s"Error executing command:\n${err.getMessage}"
+            }
+            updateDLCs()
+          }
+        )
+      case None => ()
+    }
   }
 
   def onSign(): Unit = {
-    printDLCDialogResult("SignDLC", new SignDLCDialog)
+    val result = SignDLCDialog.showAndWait(parentWindow.value)
+
+    result match {
+      case Some(command) =>
+        taskRunner.run(
+          caption = "Sign DLC",
+          op = {
+            ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
+              case Success(commandReturn) =>
+                resultArea.text = commandReturn
+              case Failure(err) =>
+                err.printStackTrace()
+                resultArea.text = s"Error executing command:\n${err.getMessage}"
+            }
+            updateDLCs()
+          }
+        )
+      case None => ()
+    }
   }
 
   def onAddSigs(): Unit = {
@@ -319,17 +154,15 @@ class DLCPaneModel(resultArea: TextArea, oracleInfoArea: TextArea)
   }
 
   def onGetFunding(): Unit = {
-    printDLCDialogResult("GetDLCFundingTx",
-                         new GetFundingDLCDialog,
-                         txPrintFunc)
+    printDLCDialogResult("GetDLCFundingTx", new GetFundingDLCDialog)
   }
 
   def onExecute(): Unit = {
-    printDLCDialogResult("ExecuteDLC", new ExecuteDLCDialog, txPrintFunc)
+    printDLCDialogResult("ExecuteDLC", new ExecuteDLCDialog)
   }
 
   def onRefund(): Unit = {
-    printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog, txPrintFunc)
+    printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog)
   }
 
   def viewDLC(status: DLCStatus): Unit = {
