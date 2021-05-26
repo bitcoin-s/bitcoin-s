@@ -1,79 +1,39 @@
 package org.bitcoins.gui.dlc
 
 import javafx.event.{ActionEvent, EventHandler}
-import org.bitcoins.gui.{GlobalData, TaskRunner}
+import org.bitcoins.gui.TaskRunner
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
 class DLCPane(glassPane: VBox) {
 
-  private val statusLabel = new Label {
-    maxWidth = Double.MaxValue
-    padding = Insets(0, 10, 10, 10)
-    text <== GlobalData.statusText
-  }
-
   private val resultTextArea = new TextArea {
     editable = false
-    text = "Click on Offer or Accept to begin."
+    text =
+      "Welcome to the Bitcoin-S DLC Wallet. To set up a new DLC, click Offer, if you have received an Offer, click Accept."
     wrapText = true
-  }
-
-  private val exportButton = new Button("Export Result") {
-    alignmentInParent = Pos.BottomLeft
-    onAction = _ => model.exportResult(resultTextArea.text.value)
   }
 
   private val resultArea = new BorderPane() {
     padding = Insets(10)
     center = resultTextArea
-    bottom = exportButton
   }
 
-  BorderPane.setMargin(exportButton, Insets(10))
-
-  private val demoOracleArea = new TextArea {
-    editable = false
-    text =
-      "Click on Init Demo Oracle to generate example oracle and contract information"
-    wrapText = true
-  }
-
-  private val model =
-    new DLCPaneModel(resultTextArea, demoOracleArea)
+  private val model = new DLCPaneModel(resultTextArea)
 
   // This is commented out because it will cause the GUI startup to fail on master
   // It should be uncommented when on the adaptor-dlc branch
-  //model.setUp()
-
-  private val enumContractButton = new Button {
-    text = "Enum Contract"
-    onAction = _ => model.onInitEnumContractDialog()
-  }
-
-  private val numericContractButton = new Button {
-    text = "Numeric Contract"
-    onAction = _ => model.onInitNumericContractDialog()
-  }
-
-  private val oracleButtonHBox = new HBox {
-    alignment = Pos.Center
-    children = Seq(enumContractButton, numericContractButton)
-    spacing = 15
-  }
-
-  private val demoOracleVBox = new VBox {
-    padding = Insets(10)
-    children = Seq(demoOracleArea, oracleButtonHBox)
-    spacing = 15
-  }
+  model.setUp()
 
   private val offerButton = new Button {
     text = "Offer"
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onOffer()
     }
+    tooltip = Tooltip(
+      "Initiates a DLC with the given oracle and contract parameters, generating an Offer message.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val acceptButton = new Button {
@@ -81,6 +41,8 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onAccept()
     }
+    tooltip = Tooltip("In response to an Offer, generates an Accept message.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val signButton = new Button {
@@ -88,6 +50,8 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onSign()
     }
+    tooltip = Tooltip("In response to an Accept, generates a Sign message.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val addSigsButton = new Button {
@@ -95,6 +59,8 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onAddSigs()
     }
+    tooltip = Tooltip("In response to a Sign, saves signatures.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val getFundingButton = new Button {
@@ -102,6 +68,9 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onGetFunding()
     }
+    tooltip = Tooltip(
+      "After adding signatures, generates and broadcasts the DLC to the blockchain.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val refundButton = new Button {
@@ -109,6 +78,9 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onRefund()
     }
+    tooltip = Tooltip(
+      "After the refund timeout, broadcasts the refund transaction to the blockchain.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val executeButton = new Button {
@@ -116,6 +88,9 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onExecute()
     }
+    tooltip = Tooltip(
+      "Given an oracle attestation, broadcasts the closing transaction to the blockchain.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val initButtonBar = new ButtonBar {
@@ -130,22 +105,14 @@ class DLCPane(glassPane: VBox) {
     buttons = Seq(refundButton, executeButton)
   }
 
-  private val spaceRegion = new Region()
-  private val spaceRegion2 = new Region()
-
-  private val buttonSpacer = new GridPane {
-    hgap = 10
+  private val buttonSpacer = new HBox {
+    spacing = 100
     alignment = Pos.Center
-
-    add(initButtonBar, 0, 0)
-    add(spaceRegion, 1, 0)
-    add(acceptButtonBar, 2, 0)
-    add(spaceRegion2, 3, 0)
-    add(execButtonBar, 4, 0)
+    children = Vector(initButtonBar, acceptButtonBar, execButtonBar)
   }
 
   private val textAreaHBox = new HBox {
-    children = Seq(resultArea, demoOracleVBox)
+    children = Seq(resultArea)
     spacing = 10
   }
 
@@ -157,19 +124,14 @@ class DLCPane(glassPane: VBox) {
   }
 
   val borderPane: BorderPane = new BorderPane {
+    padding = Insets(top = 10, right = 10, bottom = 0, left = 10)
     top = buttonSpacer
     center = textAreasAndTableViewVBox
-    bottom = statusLabel
   }
 
-  resultArea.prefWidth <== (borderPane.width * 2) / 3
-  demoOracleVBox.prefWidth <== (borderPane.width / 3)
+  resultArea.prefWidth <== borderPane.width
   resultArea.prefHeight <== (borderPane.height * 2) / 3
-  demoOracleVBox.prefHeight <== (borderPane.height * 2) / 3
-  demoOracleArea.prefHeight <== demoOracleVBox.height * 0.9
 
-  spaceRegion.prefWidth <== (borderPane.width - initButtonBar.width - acceptButtonBar.width - execButtonBar.width - 100) / 2
-  spaceRegion2.prefWidth <== spaceRegion.prefWidth
   tableView.prefHeight <== borderPane.height / 3
 
   private val taskRunner = new TaskRunner(buttonSpacer, glassPane)

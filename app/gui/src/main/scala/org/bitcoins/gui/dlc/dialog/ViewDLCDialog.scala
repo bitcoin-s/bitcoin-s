@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.tlv.{
 }
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.{DLCPaneModel, DLCPlotUtil, GlobalDLCData}
+import org.bitcoins.gui.util.GUIUtil
 import scalafx.Includes._
 import scalafx.geometry.Insets
 import scalafx.scene.Node
@@ -44,6 +45,17 @@ object ViewDLCDialog {
           },
           columnIndex = 1,
           rowIndex = row)
+      add(new Label("Event Id:"), 0, row)
+      add(
+        new TextField() {
+          text =
+            status.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
+          editable = false
+          minWidth = 300
+        },
+        columnIndex = 1,
+        rowIndex = row
+      )
 
       row += 1
       add(new Label("Initiator:"), 0, row)
@@ -64,15 +76,6 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
-      add(new Label("Temp Contract Id:"), 0, row)
-      add(new TextField() {
-            text = status.tempContractId.hex
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
-
-      row += 1
       add(new Label("Contract Id:"), 0, row)
       val contractId: String = DLCStatus
         .getContractId(status)
@@ -81,24 +84,6 @@ object ViewDLCDialog {
 
       add(new TextField() {
             text = contractId
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
-
-      row += 1
-      add(new Label("Oracle Info:"), 0, row)
-      add(new TextField() {
-            text = status.oracleInfo.hex
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
-
-      row += 1
-      add(new Label("Contract Info:"), 0, row)
-      add(new TextField() {
-            text = status.contractInfo.hex
             editable = false
           },
           columnIndex = 1,
@@ -114,22 +99,15 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
-      add(new Label("Contract Maturity:"), 0, row)
-      add(new TextField() {
-            text = status.timeouts.contractMaturity.toUInt32.toLong.toString
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
-
-      row += 1
       add(new Label("Contract Timeout:"), 0, row)
-      add(new TextField() {
-            text = status.timeouts.contractTimeout.toUInt32.toLong.toString
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
+      add(
+        new TextField() {
+          text = GUIUtil.epochToDateString(status.timeouts.contractTimeout)
+          editable = false
+        },
+        columnIndex = 1,
+        rowIndex = row
+      )
 
       row += 1
       add(new Label("Collateral:"), 0, row)
