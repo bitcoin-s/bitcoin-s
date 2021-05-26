@@ -37,7 +37,7 @@ class CreateDLCOfferDialog extends Logging {
     val fields: mutable.Map[Int, (TextField, TextField)] = mutable.Map.empty
 
     var announcementDetailsShown = false
-    val announcementTF = new TextField()
+    val announcementOrContractInfoTF = new TextField()
     var decompOpt: Option[DigitDecompositionEventDescriptorV0TLV] = None
 
     var nextRow: Int = 3
@@ -48,15 +48,15 @@ class CreateDLCOfferDialog extends Logging {
       vgap = 5
 
       add(
-        new Label("Oracle Announcement") {
+        new Label("Oracle Announcement/Contract Info") {
           tooltip = Tooltip(
-            "Announcement given by an oracle, this will dictate the rest of the contract.")
+            "An oracle announcement or a contract info can be entered here.")
           tooltip.value.setShowDelay(new javafx.util.Duration(100))
         },
         0,
         0
       )
-      add(announcementTF, 1, 0)
+      add(announcementOrContractInfoTF, 1, 0)
     }
     val detailsGridPane = new GridPane {
       alignment = Pos.Center
@@ -69,7 +69,9 @@ class CreateDLCOfferDialog extends Logging {
       spacing = 10
     }
 
-    def addEnumOutcomeRow(outcomeText: String): Unit = {
+    def addEnumOutcomeRow(
+        outcomeText: String,
+        amtOpt: Option[Satoshis]): Unit = {
 
       val outcomeTF = new TextField() {
         text = outcomeText
@@ -81,6 +83,10 @@ class CreateDLCOfferDialog extends Logging {
         tooltip = Tooltip(
           s"""Amount you will win if the oracle signs for "$outcomeText".""")
         tooltip.value.setShowDelay(new javafx.util.Duration(100))
+        text = amtOpt match {
+          case Some(amt) => numberFormatter.format(amt.toLong)
+          case None      => ""
+        }
       }
       setNumericInput(amtTF)
 
@@ -125,6 +131,7 @@ class CreateDLCOfferDialog extends Logging {
     def addPointRow(
         xOpt: Option[String] = None,
         yOpt: Option[String] = None,
+        isEndPoint: Boolean = true,
         row: Int = nextPointRow): Unit = {
 
       val xTF = new TextField() {
@@ -144,7 +151,7 @@ class CreateDLCOfferDialog extends Logging {
         case None => ()
       }
       val endPointBox = new CheckBox() {
-        selected = true
+        selected = isEndPoint
         alignmentInParent = Pos.Center
       }
       setNumericInput(xTF)
@@ -174,13 +181,20 @@ class CreateDLCOfferDialog extends Logging {
       add(new Label("Rounding Level"), 1, 0)
     }
 
-    def addRoundingRow(): Unit = {
+    def addRoundingRow(
+        outcomeOpt: Option[Long],
+        levelOpt: Option[Satoshis]): Unit = {
 
       val outcomeTF = new TextField() {
         promptText = "Outcome"
+        text = outcomeOpt.map(_.toString).getOrElse("")
       }
       val roundingLevelTF = new TextField() {
         promptText = "Satoshis"
+        text = levelOpt match {
+          case Some(level) => level.toLong.toString
+          case None        => ""
+        }
       }
       setNumericInput(outcomeTF)
       setNumericInput(roundingLevelTF)
@@ -195,11 +209,8 @@ class CreateDLCOfferDialog extends Logging {
       dialog.dialogPane().getScene.getWindow.sizeToScene()
     }
 
-    addRoundingRow()
-    addRoundingRow()
-
     val addRoundingRowButton: Button = new Button("+") {
-      onAction = _ => addRoundingRow()
+      onAction = _ => addRoundingRow(None, None)
     }
 
     val roundingIntervals = new ScrollPane() {
@@ -296,66 +307,161 @@ class CreateDLCOfferDialog extends Logging {
       ()
     }
 
-    announcementTF.onKeyTyped = _ => {
+    announcementOrContractInfoTF.onKeyTyped = _ => {
       if (!announcementDetailsShown) {
-        Try(OracleAnnouncementV0TLV.fromHex(announcementTF.text.value)) match {
-          case Failure(_) => ()
-          case Success(announcement) =>
-            announcementDetailsShown = true
-            gridPane.add(new Label("Event Id"), 0, 1)
-            gridPane.add(new TextField() {
-                           text = announcement.eventTLV.eventId
-                           editable = false
-                         },
-                         1,
-                         1)
-
-            announcement.eventTLV.eventDescriptor match {
-              case EnumEventDescriptorV0TLV(outcomes) =>
-                gridPane.add(new Label("Outcomes"), 0, 2)
-                gridPane.add(new Label("Values"), 1, 2)
-                outcomes.foreach(str => addEnumOutcomeRow(str.normStr))
-                nextRow = 3
-                addRemainingFields()
-              case digitDecomp: UnsignedDigitDecompositionEventDescriptor =>
-                decompOpt = Some(digitDecomp)
-
-                val addPointButton: Button = new Button("+") {
-                  onAction = _ => addPointRow()
+        Try(
+          OracleAnnouncementV0TLV.fromHex(
+            announcementOrContractInfoTF.text.value)) match {
+          case Failure(_) =>
+            Try(
+              ContractInfoV0TLV.fromHex(
+                announcementOrContractInfoTF.text.value)) match {
+              case Failure(_) => ()
+              case Success(contractInfo) =>
+                contractInfo.oracleInfo match {
+                  case OracleInfoV0TLV(announcement) =>
+                    onAnnouncementEntered(
+                      announcement.asInstanceOf[OracleAnnouncementV0TLV],
+                      Some(contractInfo))
+                  case multi: MultiOracleInfoTLV =>
+                    // todo display all oracles
+                    onAnnouncementEntered(
+                      multi.oracles.head.asInstanceOf[OracleAnnouncementV0TLV],
+                      Some(contractInfo))
                 }
-                val label: HBox = new HBox {
-                  alignment = Pos.Center
-                  spacing = 10
-                  children = Vector(new Label("Points"), addPointButton)
-                }
-                addPointRow(Some("0"))
-                addPointRow(Some(numberFormatter.format(digitDecomp.maxNum)),
-                            row = 9999)
-                nextPointRow -= 1 // do this so the max is the last row
-
-                vbox.children.addAll(new Separator(),
-                                     label,
-                                     pointGrid,
-                                     roundingAccordion,
-                                     previewGraphButton)
-                nextRow = 4
-                addRemainingFields()
-              case _: SignedDigitDecompositionEventDescriptor => ()
             }
-            dialog.dialogPane().getScene.getWindow.sizeToScene()
+          case Success(announcement) =>
+            onAnnouncementEntered(announcement, None)
         }
       }
+    }
+
+    def onAnnouncementEntered(
+        announcement: OracleAnnouncementV0TLV,
+        contractInfoOpt: Option[ContractInfoV0TLV]): Unit = {
+      announcementDetailsShown = true
+      announcementOrContractInfoTF.disable = true
+      gridPane.add(new Label("Event Id"), 0, 1)
+      gridPane.add(new TextField() {
+                     text = announcement.eventTLV.eventId
+                     editable = false
+                   },
+                   1,
+                   1)
+
+      announcement.eventTLV.eventDescriptor match {
+        case EnumEventDescriptorV0TLV(outcomes) =>
+          gridPane.add(new Label("Outcomes"), 0, 2)
+          gridPane.add(new Label("Values"), 1, 2)
+          contractInfoOpt match {
+            case Some(contractInfo) =>
+              contractInfo.contractDescriptor match {
+                case ContractDescriptorV0TLV(outcomes) =>
+                  outcomes.foreach(outcome =>
+                    addEnumOutcomeRow(outcome._1, Some(outcome._2)))
+                case _: ContractDescriptorV1TLV =>
+                  throw new RuntimeException(
+                    "Got incompatible contract info and announcement")
+              }
+            case None =>
+              outcomes.foreach(str => addEnumOutcomeRow(str.normStr, None))
+          }
+          nextRow = 3
+          addRemainingFields()
+        case digitDecomp: UnsignedDigitDecompositionEventDescriptor =>
+          decompOpt = Some(digitDecomp)
+
+          val addPointButton: Button = new Button("+") {
+            onAction = _ => addPointRow()
+          }
+          val label: HBox = new HBox {
+            alignment = Pos.Center
+            spacing = 10
+            children = Vector(new Label("Points"), addPointButton)
+          }
+
+          contractInfoOpt match {
+            case Some(contractInfo) =>
+              contractInfo.contractDescriptor match {
+                case ContractDescriptorV0TLV(_) =>
+                  throw new RuntimeException(
+                    "Got incompatible contract info and announcement")
+                case descriptor: ContractDescriptorV1TLV =>
+                  descriptor.payoutFunction.points.init.foreach { point =>
+                    addPointRow(
+                      xOpt = Some(numberFormatter.format(point.outcome)),
+                      yOpt = Some(numberFormatter.format(point.value.toLong)),
+                      isEndPoint = point.isEndpoint)
+                  }
+                  // handle last specially so user can add more rows
+                  val last = descriptor.payoutFunction.points.last
+
+                  addPointRow(xOpt = Some(numberFormatter.format(last.outcome)),
+                              yOpt =
+                                Some(numberFormatter.format(last.value.toLong)),
+                              isEndPoint = last.isEndpoint,
+                              row = 9999)
+                  nextPointRow -= 1 // do this so the max is the last row
+
+                  // add rounding intervals
+                  if (descriptor.roundingIntervals.intervalStarts.nonEmpty) {
+                    descriptor.roundingIntervals.intervalStarts.foreach {
+                      case (outcome, value) =>
+                        addRoundingRow(Some(outcome), Some(value))
+                    }
+                  } else {
+                    // add empty rounding intervals
+                    addRoundingRow(None, None)
+                    addRoundingRow(None, None)
+                  }
+              }
+            case None =>
+              addPointRow(Some("0"))
+              addPointRow(Some(numberFormatter.format(digitDecomp.maxNum)),
+                          row = 9999)
+              nextPointRow -= 1 // do this so the max is the last row
+
+              // add empty rounding intervals
+              addRoundingRow(None, None)
+              addRoundingRow(None, None)
+          }
+
+          vbox.children.addAll(new Separator(),
+                               label,
+                               pointGrid,
+                               roundingAccordion,
+                               previewGraphButton)
+          nextRow = 4
+          addRemainingFields()
+        case _: SignedDigitDecompositionEventDescriptor => ()
+      }
+      dialog.dialogPane().getScene.getWindow.sizeToScene()
     }
 
     dialog.dialogPane().content = new ScrollPane {
       content = vbox
     }
 
+    def getOracleInfo: Option[OracleInfo] = {
+      Try(
+        OracleAnnouncementV0TLV.fromHex(
+          announcementOrContractInfoTF.text.value)) match {
+        case Failure(_) =>
+          Try(
+            ContractInfoV0TLV.fromHex(
+              announcementOrContractInfoTF.text.value)) match {
+            case Failure(_) => None
+            case Success(contractInfo) =>
+              Some(OracleInfo.fromTLV(contractInfo.oracleInfo))
+          }
+        case Success(announcement) => Some(SingleOracleInfo(announcement))
+      }
+    }
+
     // When the OK button is clicked, convert the result to a CreateDLCOffer.
     dialog.resultConverter = dialogButton =>
       if (dialogButton == ButtonType.OK) {
-        val announcement = OracleAnnouncementV0TLV(announcementTF.text.value)
-        val oracleInfo = SingleOracleInfo(announcement)
+        val oracleInfo = getOracleInfo.get
 
         val collateralLong =
           numberFormatter.parse(collateralTF.text.value).longValue()
@@ -375,7 +481,7 @@ class CreateDLCOfferDialog extends Logging {
         }
 
         val contractInfo = oracleInfo match {
-          case oracleInfo: EnumSingleOracleInfo =>
+          case oracleInfo: EnumOracleInfo =>
             val missingOutcomes = fields.values.filter(_._2.text.value.isEmpty)
             if (missingOutcomes.nonEmpty) {
               val missing = missingOutcomes.map(_._1.text.value).mkString(", ")
@@ -397,7 +503,7 @@ class CreateDLCOfferDialog extends Logging {
             val descriptor = EnumContractDescriptor(contractMap)
 
             ContractInfo(descriptor, oracleInfo).toTLV
-          case oracleInfo: NumericSingleOracleInfo =>
+          case oracleInfo: NumericOracleInfo =>
             getNumericContractInfo(decompOpt,
                                    pointMap.values.toVector,
                                    roundingMap.values.toVector) match {
