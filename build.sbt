@@ -290,7 +290,11 @@ lazy val secp256k1jni = project
     //since this is not a scala module, we have no code coverage
     //this also doesn't place nice with scoverage, see
     //https://github.com/scoverage/sbt-scoverage/issues/275
-    coverageEnabled := false
+    coverageEnabled := false,
+    Compile / compile / javacOptions ++= {
+      //https://github.com/eclipse/jetty.project/issues/3244#issuecomment-495322586
+      Seq("--release", "8")
+    }
   )
 
 val testAndCompile = "compile->compile;test->test"
