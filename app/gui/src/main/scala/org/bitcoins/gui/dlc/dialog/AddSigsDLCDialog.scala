@@ -12,12 +12,14 @@ class AddSigsDLCDialog
                                               DLCDialog.dlcSigStr -> DLCDialog
                                                 .textArea(),
                                               DLCDialog.dlcSignFileStr ->
-                                                DLCDialog.fileChooserButton { file =>
-                                                  DLCDialog.signDLCFile =
-                                                    Some(file)
-                                                  DLCDialog.signFileChosenLabel.text =
-                                                    file.toString
-                                                },
+                                                DLCDialog.fileChooserButton(
+                                                  open = true,
+                                                  { file =>
+                                                    DLCDialog.signDLCFile =
+                                                      Some(file)
+                                                    DLCDialog.signFileChosenLabel.text =
+                                                      file.toString
+                                                  }),
                                               DLCDialog.fileChosenStr -> DLCDialog.signFileChosenLabel
                                             ),
                                             Vector(DLCDialog.dlcSigStr,
