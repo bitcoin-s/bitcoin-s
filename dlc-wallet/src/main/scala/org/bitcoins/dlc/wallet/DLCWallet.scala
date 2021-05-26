@@ -250,7 +250,8 @@ abstract class DLCWallet
     for {
       inputs <- dlcInputsDAO.findByDLCId(dlcId)
       dbs <- spendingInfoDAO.findByOutPoints(inputs.map(_.outPoint))
-      _ <- unmarkUTXOsAsReserved(dbs)
+      // allow this to fail in the case they have already been unreserved
+      _ <- unmarkUTXOsAsReserved(dbs).recover { case _: Throwable => () }
 
       dlcOpt <- dlcDAO.read(dlcId)
       _ = dlcOpt match {
