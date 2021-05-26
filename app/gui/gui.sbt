@@ -2,7 +2,7 @@ name := "bitcoin-s-gui"
 
 libraryDependencies ++= Deps.gui
 
-mainClass := Some("org.bitcoins.gui.WalletGUI")
+mainClass := Some("org.bitcoins.gui.GUI")
 
 enablePlugins(JavaAppPackaging)
 

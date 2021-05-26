@@ -20,11 +20,7 @@ class DLCPane(glassPane: VBox) {
     center = resultTextArea
   }
 
-  private val model = new DLCPaneModel(resultTextArea)
-
-  // This is commented out because it will cause the GUI startup to fail on master
-  // It should be uncommented when on the adaptor-dlc branch
-  model.setUp()
+  val model = new DLCPaneModel(resultTextArea)
 
   private val offerButton = new Button {
     text = "Offer"

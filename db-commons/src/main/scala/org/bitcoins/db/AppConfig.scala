@@ -1,10 +1,10 @@
 package org.bitcoins.db
 
 import com.typesafe.config._
+import grizzled.slf4j.Logging
 import org.bitcoins.core.config._
 import org.bitcoins.core.protocol.blockchain.BitcoinChainParams
 import org.bitcoins.core.util.StartStopAsync
-import grizzled.slf4j.Logging
 
 import java.nio.file.{Files, Path, Paths}
 import scala.concurrent.Future
@@ -180,10 +180,17 @@ object AppConfig extends Logging {
         ConfigFactory.empty()
       }
 
+      val extraFile = baseDatadir.resolve("bitcoin-s-bundle.conf")
+      val extraConfig = if (Files.isReadable(extraFile)) {
+        ConfigFactory.parseFile(extraFile.toFile, configOptions)
+      } else {
+        ConfigFactory.empty()
+      }
+
       val withDatadir =
         ConfigFactory.parseString(
           s"bitcoin-s.datadir = ${safePathToString(baseDatadir)}")
-      withDatadir.withFallback(config)
+      withDatadir.withFallback(extraConfig.withFallback(config))
     }
 
     // we want to NOT resolve substitutions in the configuration until the user

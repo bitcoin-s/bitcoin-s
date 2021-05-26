@@ -3,6 +3,7 @@ package org.bitcoins.gui.util
 import javafx.beans.value.ObservableValue
 import org.bitcoins.core.protocol.BlockTimeStamp
 import scalafx.scene.control.TextField
+import scalafx.scene.image.Image
 
 import java.text.NumberFormat
 import java.time.format.{DateTimeFormatter, FormatStyle}
@@ -29,4 +30,9 @@ object GUIUtil {
       .ofLocalizedDate(FormatStyle.MEDIUM)
       .format(instant)
   }
+
+  val logo = new Image("/icons/bitcoin-s.png")
+  val logoTestnet = new Image("/icons/bitcoin-s-testnet.png")
+  val logoSignet = new Image("/icons/bitcoin-s-signet.png")
+  val logoRegtest = new Image("/icons/bitcoin-s-regtest.png")
 }
