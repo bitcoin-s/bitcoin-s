@@ -417,7 +417,59 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       }
   }
 
-  it must "fail to cancel a signed DLC" in {
+  it must "cancel a signed DLC" in {
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
+
+      val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
+
+      for {
+        oldBalanceA <- walletA.getBalance()
+        oldReservedA <- walletA.spendingInfoDAO.findByTxoState(
+          TxoState.Reserved)
+        _ = assert(oldReservedA.isEmpty)
+
+        oldBalanceB <- walletB.getBalance()
+        oldReservedB <- walletB.spendingInfoDAO.findByTxoState(
+          TxoState.Reserved)
+        _ = assert(oldReservedB.isEmpty)
+
+        offer <- walletA.createDLCOffer(
+          offerData.contractInfo,
+          offerData.totalCollateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          offerData.timeouts.contractTimeout.toUInt32
+        )
+        accept <- walletB.acceptDLCOffer(offer)
+        sign <- walletA.signDLC(accept)
+        _ <- walletB.addDLCSigs(sign)
+
+        dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
+
+        _ <- walletA.cancelDLC(dlcId)
+        _ <- walletB.cancelDLC(dlcId)
+
+        balanceA <- walletA.getBalance()
+        reservedA <- walletA.spendingInfoDAO.findByTxoState(TxoState.Reserved)
+        dlcAOpt <- walletA.findDLC(dlcId)
+
+        balanceB <- walletB.getBalance()
+        reservedB <- walletB.spendingInfoDAO.findByTxoState(TxoState.Reserved)
+        dlcBOpt <- walletB.findDLC(dlcId)
+      } yield {
+        assert(balanceA == oldBalanceA)
+        assert(reservedA.isEmpty)
+        assert(dlcAOpt.isEmpty)
+
+        assert(balanceB == oldBalanceB)
+        assert(reservedB.isEmpty)
+        assert(dlcBOpt.isEmpty)
+      }
+  }
+
+  it must "fail to cancel a broadcasted DLC" in {
     FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
@@ -435,6 +487,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         accept <- walletB.acceptDLCOffer(offer)
         sign <- walletA.signDLC(accept)
         _ <- walletB.addDLCSigs(sign)
+
+        tx <- walletB.broadcastDLCFundingTx(sign.contractId)
+        // make sure other wallet sees it
+        _ <- walletA.processTransaction(tx, None)
 
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 

@@ -250,16 +250,18 @@ abstract class DLCWallet
     for {
       inputs <- dlcInputsDAO.findByDLCId(dlcId)
       dbs <- spendingInfoDAO.findByOutPoints(inputs.map(_.outPoint))
-      _ <- unmarkUTXOsAsReserved(dbs)
+      // allow this to fail in the case they have already been unreserved
+      _ <- unmarkUTXOsAsReserved(dbs).recover { case _: Throwable => () }
 
-      dlcOpt <- findDLC(dlcId)
+      dlcOpt <- dlcDAO.read(dlcId)
       _ = dlcOpt match {
         case Some(db) =>
-          require(db.state == DLCState.Offered || db.state == DLCState.Accepted,
-                  "Cannot cancel a DLC after it has been signed")
+          require(
+            db.state == DLCState.Offered || db.state == DLCState.Accepted || db.state == DLCState.Signed,
+            "Cannot cancel a DLC after it has been signed")
         case None =>
           throw new IllegalArgumentException(
-            s"No DLC Found with param hash ${dlcId.hex}")
+            s"No DLC Found with dlc id ${dlcId.hex}")
       }
 
       _ <- dlcSigsDAO.deleteByDLCId(dlcId)
