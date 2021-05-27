@@ -91,6 +91,17 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       walletBChange <- walletB.addressDAO.read(accept.changeAddress)
       walletBFinal <- walletB.addressDAO.read(accept.pubKeys.payoutAddress)
 
+      (announcementsA, announcementDataA, nonceDbsA) <- walletA
+        .getDLCAnnouncementDbs(dlcDb.dlcId)
+      announcementTLVsA = walletA.getOracleAnnouncements(announcementsA,
+                                                         announcementDataA,
+                                                         nonceDbsA)
+
+      (announcementsB, announcementDataB, nonceDbsB) <- walletA
+        .getDLCAnnouncementDbs(dlcDb.dlcId)
+      announcementTLVsB = walletB.getOracleAnnouncements(announcementsB,
+                                                         announcementDataB,
+                                                         nonceDbsB)
     } yield {
       assert(dlcDb.contractIdOpt.get == sign.contractId)
 
@@ -104,6 +115,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         outcomeSigs.exists(dbSig =>
           (dbSig.sigPoint, dbSig.initiatorSig.get) == ((outcome, sig)))
       })
+
+      assert(announcementTLVsA == announcementTLVsB)
 
       // Test that the Addresses are in the wallet's database
       assert(walletAChange.isDefined)
@@ -355,6 +368,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
 
+      val announcementTLVs =
+        offerData.contractInfo.oracleInfo.singleOracleInfos.map(_.announcement)
+      assert(announcementTLVs.size == 1)
+      val announcementTLV = announcementTLVs.head
+
       for {
         oldBalance <- walletA.getBalance()
         oldReserved <- walletA.spendingInfoDAO.findByTxoState(TxoState.Reserved)
@@ -372,6 +390,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
         _ <- walletA.cancelDLC(dlcId)
 
+        announcementData <- walletA.announcementDAO.findByPublicKey(
+          announcementTLV.publicKey)
+        nonceDbs <- walletA.oracleNonceDAO.findByAnnouncementIds(
+          announcementData.map(_.id.get))
+
         balance <- walletA.getBalance()
         reserved <- walletA.spendingInfoDAO.findByTxoState(TxoState.Reserved)
         dlcOpt <- walletA.findDLC(dlcId)
@@ -379,6 +402,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         assert(balance == oldBalance)
         assert(reserved.isEmpty)
         assert(dlcOpt.isEmpty)
+
+        // Check we persist the announcements
+        assert(announcementData.nonEmpty)
+        assert(nonceDbs.nonEmpty)
       }
   }
 
