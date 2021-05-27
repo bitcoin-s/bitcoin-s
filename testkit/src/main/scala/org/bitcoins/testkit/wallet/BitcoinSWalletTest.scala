@@ -126,6 +126,7 @@ trait BitcoinSWalletTest
     withNewConfiguredWallet(segwitWalletConf)(test)
   }
 
+  /** Fixture for a wallet with default configuration with no funds in it */
   def withNewWallet(test: OneArgAsyncTest, bip39PasswordOpt: Option[String])(
       implicit walletAppConfig: WalletAppConfig): FutureOutcome =
     makeDependentFixture(

@@ -2,9 +2,20 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.currency._
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script.ScriptSignature
+import org.bitcoins.core.protocol.transaction.{
+  BaseTransaction,
+  Transaction,
+  TransactionConstants,
+  TransactionInput,
+  TransactionOutPoint,
+  TransactionOutput
+}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkitcore.Implicits._
-import org.bitcoins.testkitcore.gen.TransactionGenerators
+import org.bitcoins.testkitcore.gen.{CryptoGenerators, TransactionGenerators}
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 
@@ -134,6 +145,51 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         assert(balance == 0.sats)
         assert(unconfirmed == 0.sats)
       }
+  }
 
+  it must "spend and receive funds in the same transaction" in { wallet =>
+    val fundingAddressF = wallet.getNewAddress()
+    val receivingAddressF = wallet.getNewAddress()
+    val amount = Bitcoins.one
+
+    //build funding tx
+    val fundingTxF: Future[(Transaction, UInt32)] = for {
+      fundingAddr <- fundingAddressF
+      fundingTx = TransactionGenerators.buildCreditingTransaction(
+        fundingAddr.scriptPubKey,
+        amount)
+    } yield fundingTx
+
+    val processedFundingTxF: Future[WalletApi] = for {
+      (fundingTx, _) <- fundingTxF
+      //make sure wallet is empty
+      balance <- wallet.getBalance()
+      _ = assert(balance == Bitcoins.zero)
+      processed <- wallet.processTransaction(fundingTx,
+                                             Some(DoubleSha256DigestBE.empty))
+      balance <- wallet.getBalance()
+      _ = assert(balance == amount)
+    } yield processed
+
+    //build spending tx
+    val spendingTxF = for {
+      receivingAddress <- receivingAddressF
+      (fundingTx, outputIdx) <- fundingTxF
+      outPoint = TransactionOutPoint(fundingTx.txIdBE, outputIdx)
+      inputs = Vector(
+        TransactionInput(outPoint, ScriptSignature.empty, UInt32.zero))
+      outputs = Vector(TransactionOutput(amount, receivingAddress.scriptPubKey))
+      spendingTx = BaseTransaction(TransactionConstants.version,
+                                   inputs,
+                                   outputs,
+                                   UInt32.zero)
+      wallet <- processedFundingTxF
+      processedSpendingTx <- wallet.processTransaction(
+        transaction = spendingTx,
+        blockHash = Some(CryptoGenerators.doubleSha256DigestBE.sampleSome))
+      balance <- processedSpendingTx.getBalance()
+    } yield assert(balance == amount)
+
+    spendingTxF
   }
 }
