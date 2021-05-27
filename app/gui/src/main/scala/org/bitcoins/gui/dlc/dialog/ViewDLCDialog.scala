@@ -90,6 +90,16 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
+      add(new Label("Contract Info:"), 0, row)
+
+      add(new TextField() {
+            text = status.contractInfo.toTLV.hex
+            editable = false
+          },
+          columnIndex = 1,
+          rowIndex = row)
+
+      row += 1
       add(new Label("Fee Rate:"), 0, row)
       add(new TextField() {
             text = s"${status.feeRate.toLong} sats/vbyte"
