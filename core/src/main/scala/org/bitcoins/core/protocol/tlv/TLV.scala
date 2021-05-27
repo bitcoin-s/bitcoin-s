@@ -1127,6 +1127,7 @@ object OracleInfoV0TLV extends TLVFactory[OracleInfoV0TLV] {
 
 sealed trait MultiOracleInfoTLV extends OracleInfoTLV {
   def threshold: Int
+  def oracles: Vector[OracleAnnouncementTLV]
 }
 
 case class OracleInfoV1TLV(
