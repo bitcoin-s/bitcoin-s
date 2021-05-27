@@ -9,16 +9,18 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.dialog._
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.application.Platform
-import scalafx.beans.property.{ObjectProperty, StringProperty}
+import scalafx.beans.property._
 import scalafx.scene.control.Alert
 import scalafx.scene.control.Alert.AlertType
 import scalafx.stage.Window
 
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Promise}
 import scala.util.{Failure, Success, Try}
 
 class WalletGUIModel()(implicit system: ActorSystem) {
   var taskRunner: TaskRunner = _
+  import system.dispatcher
 
   // Sadly, it is a Java "pattern" to pass null into
   // constructors to signal that you want some default
@@ -35,7 +37,6 @@ class WalletGUIModel()(implicit system: ActorSystem) {
   }
 
   def startWalletInfoScheduler(): Cancellable = {
-    import system.dispatcher
     system.scheduler.scheduleAtFixedRate(0.seconds, 10.seconds)(
       UpdateWalletInfoRunnable)
   }
@@ -49,19 +50,22 @@ class WalletGUIModel()(implicit system: ActorSystem) {
   }
 
   def onGetNewAddress(): Unit = {
-    val address = StringProperty("")
+    val addressP = Promise[String]()
 
     taskRunner.run(
       caption = "Get New Address",
       op = {
         ConsoleCli.exec(GetNewAddress(None),
                         GlobalData.consoleCliConfig) match {
-          case Success(commandReturn) => address.value = commandReturn
-          case Failure(err)           => throw err
+          case Success(commandReturn) => addressP.success(commandReturn)
+          case Failure(err) =>
+            addressP.failure(err)
+            throw err
         }
       }
     )
 
+    val address = Await.result(addressP.future, 15.seconds)
     GetNewAddressDialog.showAndWait(parentWindow.value, address)
   }
 

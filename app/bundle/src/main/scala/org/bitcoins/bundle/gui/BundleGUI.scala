@@ -72,6 +72,7 @@ object BundleGUI extends WalletGUI with JFXApp {
     scene = guiScene
     icons.add(GUIUtil.logo)
   }
+  taskRunner
 
   def changeToWalletGUIScene(): Unit = {
     Platform.runLater(

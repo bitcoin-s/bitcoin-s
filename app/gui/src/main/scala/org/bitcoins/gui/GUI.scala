@@ -95,4 +95,5 @@ object GUI extends WalletGUI with JFXApp {
   }
 
   fetchStartingData()
+  taskRunner
 }
