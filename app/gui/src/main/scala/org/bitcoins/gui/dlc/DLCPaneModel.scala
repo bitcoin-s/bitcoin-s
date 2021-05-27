@@ -115,7 +115,11 @@ class DLCPaneModel(resultArea: TextArea) extends Logging {
           op = {
             ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
               case Success(commandReturn) =>
-                resultArea.text = commandReturn
+                val string = if (commandReturn.isEmpty) {
+                  "Accepting DLC Offer timed out! Try again in a bit."
+                } else commandReturn
+
+                resultArea.text = string
               case Failure(err) =>
                 err.printStackTrace()
                 resultArea.text = s"Error executing command:\n${err.getMessage}"
@@ -137,7 +141,10 @@ class DLCPaneModel(resultArea: TextArea) extends Logging {
           op = {
             ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
               case Success(commandReturn) =>
-                resultArea.text = commandReturn
+                val string = if (commandReturn.isEmpty) {
+                  "Signing DLC timed out! Try again in a bit."
+                } else commandReturn
+                resultArea.text = string
               case Failure(err) =>
                 err.printStackTrace()
                 resultArea.text = s"Error executing command:\n${err.getMessage}"
@@ -150,7 +157,12 @@ class DLCPaneModel(resultArea: TextArea) extends Logging {
   }
 
   def onAddSigs(): Unit = {
-    printDLCDialogResult("AddDLCSigs", new AddSigsDLCDialog)
+    val processStr: String => String = str => {
+      if (str.isEmpty) {
+        "Broadcasting DLC timed out! Try again in a bit."
+      } else str
+    }
+    printDLCDialogResult("AddDLCSigs", new AddSigsDLCDialog, processStr)
   }
 
   def onGetFunding(): Unit = {
