@@ -156,17 +156,13 @@ class DLCPaneModel(resultArea: TextArea) extends Logging {
     }
   }
 
-  def onAddSigs(): Unit = {
+  def onBroadcastDLC(): Unit = {
     val processStr: String => String = str => {
       if (str.isEmpty) {
         "Broadcasting DLC timed out! Try again in a bit."
       } else str
     }
-    printDLCDialogResult("AddDLCSigs", new AddSigsDLCDialog, processStr)
-  }
-
-  def onGetFunding(): Unit = {
-    printDLCDialogResult("GetDLCFundingTx", new GetFundingDLCDialog)
+    printDLCDialogResult("Broadcast DLC", new BroadcastDLCDialog, processStr)
   }
 
   def onExecute(): Unit = {

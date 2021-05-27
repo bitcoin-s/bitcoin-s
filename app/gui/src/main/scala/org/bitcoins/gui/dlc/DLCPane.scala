@@ -50,10 +50,10 @@ class DLCPane(glassPane: VBox) {
     tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
-  private val addSigsButton = new Button {
-    text = "Add Sigs"
+  private val broadcastDLCButton = new Button {
+    text = "Broadcast DLC"
     onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onAddSigs()
+      override def handle(event: ActionEvent): Unit = model.onBroadcastDLC()
     }
     tooltip = Tooltip(
       "In response to a Sign, saves signatures and broadcasts the funding transaction.")
@@ -85,7 +85,7 @@ class DLCPane(glassPane: VBox) {
   }
 
   private val acceptButtonBar = new ButtonBar {
-    buttons = Seq(acceptButton, addSigsButton)
+    buttons = Seq(acceptButton, broadcastDLCButton)
   }
 
   private val execButtonBar = new ButtonBar {
