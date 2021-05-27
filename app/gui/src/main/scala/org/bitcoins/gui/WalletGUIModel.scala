@@ -17,16 +17,13 @@ import scalafx.stage.Window
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
-class WalletGUIModel() {
+class WalletGUIModel()(implicit system: ActorSystem) {
   var taskRunner: TaskRunner = _
 
   // Sadly, it is a Java "pattern" to pass null into
   // constructors to signal that you want some default
   lazy val parentWindow: ObjectProperty[Window] =
     ObjectProperty[Window](null.asInstanceOf[Window])
-
-  val system: ActorSystem = ActorSystem(
-    s"bitcoin-s-gui-${System.currentTimeMillis()}")
 
   private case object UpdateWalletInfoRunnable extends Runnable {
 

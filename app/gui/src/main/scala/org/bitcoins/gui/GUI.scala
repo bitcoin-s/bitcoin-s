@@ -1,5 +1,6 @@
 package org.bitcoins.gui
 
+import akka.actor.ActorSystem
 import org.bitcoins.cli.CliCommand.GetInfo
 import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.commons.jsonmodels.BitcoinSServerInfo
@@ -16,6 +17,9 @@ import scalafx.scene.layout.VBox
 import scala.util._
 
 object GUI extends WalletGUI with JFXApp {
+
+  implicit val system: ActorSystem = ActorSystem(
+    s"bitcoin-s-gui-${System.currentTimeMillis()}")
 
   // Catch unhandled exceptions on FX Application thread
   Thread
