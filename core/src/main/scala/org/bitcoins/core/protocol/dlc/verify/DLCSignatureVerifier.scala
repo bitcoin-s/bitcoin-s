@@ -59,19 +59,18 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
     val correctNumberOfSigs =
       sigs.size >= builder.contractInfo.allOutcomes.length
 
-    def runVerify(
-        outcomeSigs: Vector[
-          (Indexed[ECPublicKey], ECAdaptorSignature)]): Future[Boolean] = {
-      Future {
-        outcomeSigs.foldLeft(true) { case (ret, (outcome, sig)) =>
-          ret && verifyCETSig(outcome, sig)
+    val verifyFn: Vector[(Indexed[ECPublicKey], ECAdaptorSignature)] => Future[
+      Boolean] = { outcomeSigs =>
+      FutureUtil.makeAsync { () =>
+        outcomeSigs.forall { case (outcome, sig) =>
+          verifyCETSig(outcome, sig)
         }
       }
     }
 
     if (correctNumberOfSigs) {
       FutureUtil
-        .batchAndParallelExecute(sigs, runVerify, 25)
+        .batchAndParallelExecute(sigs, verifyFn)
         .map(_.forall(res => res))
     } else Future.successful(false)
   }
