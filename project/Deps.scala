@@ -408,7 +408,9 @@ object Deps {
     )
   }
 
-  val gui = List(Compile.breezeViz, Compile.scalaFx) ++ Compile.javaFxDeps
+  val gui = List(Compile.akkaActor,
+                 Compile.breezeViz,
+                 Compile.scalaFx) ++ Compile.javaFxDeps
 
   val server = Def.setting {
     List(

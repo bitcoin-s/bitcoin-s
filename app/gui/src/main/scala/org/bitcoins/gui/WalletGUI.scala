@@ -1,5 +1,6 @@
 package org.bitcoins.gui
 
+import akka.actor.ActorSystem
 import org.bitcoins.gui.dlc.DLCPane
 import scalafx.beans.property.StringProperty
 import scalafx.geometry._
@@ -10,6 +11,8 @@ abstract class WalletGUI {
 
   def glassPane: VBox
 
+  implicit val system: ActorSystem
+
   private lazy val statusLabel = new Label {
     maxWidth = Double.MaxValue
     padding = Insets(0, 10, 10, 10)
@@ -17,7 +20,7 @@ abstract class WalletGUI {
   }
 
   def fetchStartingData(): Unit = {
-    model.startBalanceThread()
+    model.startWalletInfoScheduler()
     model.updateFeeRate()
     dlcPane.model.setUp()
   }

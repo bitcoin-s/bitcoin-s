@@ -1,21 +1,23 @@
 package org.bitcoins.gui
 
+import akka.actor.{ActorSystem, Cancellable}
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.dialog._
-import org.bitcoins.gui.dialog.{GetNewAddressDialog, SendDialog}
 import org.bitcoins.gui.util.GUIUtil
+import scalafx.application.Platform
 import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.scene.control.Alert
 import scalafx.scene.control.Alert.AlertType
 import scalafx.stage.Window
 
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
-class WalletGUIModel() {
+class WalletGUIModel()(implicit system: ActorSystem) {
   var taskRunner: TaskRunner = _
 
   // Sadly, it is a Java "pattern" to pass null into
@@ -23,23 +25,19 @@ class WalletGUIModel() {
   lazy val parentWindow: ObjectProperty[Window] =
     ObjectProperty[Window](null.asInstanceOf[Window])
 
-  private case object UpdateBalanceRunnable extends Runnable {
+  private case object UpdateWalletInfoRunnable extends Runnable {
 
     override def run(): Unit = {
-      while (true) {
+      Platform.runLater {
         updateBalance()
-        // wait 10 seconds
-        Thread.sleep(10000)
       }
     }
   }
-  lazy val updateBalanceThread = new Thread(UpdateBalanceRunnable)
 
-  def startBalanceThread(): Unit = {
-    updateBalanceThread.setDaemon(true)
-    updateBalanceThread.setName(
-      s"bitcoin-s-gui-balance-${System.currentTimeMillis()}")
-    updateBalanceThread.start()
+  def startWalletInfoScheduler(): Cancellable = {
+    import system.dispatcher
+    system.scheduler.scheduleAtFixedRate(0.seconds, 10.seconds)(
+      UpdateWalletInfoRunnable)
   }
 
   def updateFeeRate(): Try[FeeUnit] = {

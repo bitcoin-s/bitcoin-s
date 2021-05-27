@@ -1,5 +1,6 @@
 package org.bitcoins.bundle.gui
 
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.DEFAULT_BITCOIN_S_DATADIR
@@ -29,6 +30,9 @@ object BundleGUI extends WalletGUI with JFXApp {
         contentText = Option(ex.getMessage).getOrElse("")
       }.showAndWait()
     })
+
+  implicit val system: ActorSystem = ActorSystem(
+    s"bitcoin-s-gui-${System.currentTimeMillis()}")
 
   lazy val args = parameters.raw
 
