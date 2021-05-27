@@ -17,7 +17,7 @@ abstract class WalletGUI {
   }
 
   def fetchStartingData(): Unit = {
-    model.startBalanceThread()
+    model.startWalletInfoScheduler()
     model.updateFeeRate()
     dlcPane.model.setUp()
   }
