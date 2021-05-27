@@ -10,6 +10,8 @@ import scalafx.stage.Window
 
 import java.nio.file.Files
 import scala.concurrent.ExecutionContext.global
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Promise}
 import scala.jdk.CollectionConverters._
 
 class LandingPaneModel() {
@@ -40,11 +42,15 @@ class LandingPaneModel() {
         Files.write(file, confStr.getBytes)
 
         // Launch wallet
+        val promise = Promise[Unit]()
         BitcoinSServer.startedF.map { _ =>
           fetchStartingData()
           changeToWalletGUIScene()
+          promise.success(())
         }(global)
         BitcoinSServerMain.main(args.toArray)
+
+        Await.result(promise.future, 60.seconds)
       }
     )
   }
