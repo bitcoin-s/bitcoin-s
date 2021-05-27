@@ -41,7 +41,7 @@ class AddSigsDLCDialog
 
         GlobalDLCData.lastContractId = sign.tlv.contractId.toHex
 
-        AddDLCSigs(sign)
+        AddDLCSigsAndBroadcast(sign)
     }
   }
 }

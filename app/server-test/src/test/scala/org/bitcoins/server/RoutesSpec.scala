@@ -1025,6 +1025,29 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    "add dlc sigs and broadcast" in {
+      (mockWalletApi
+        .addDLCSigs(_: DLCSignTLV))
+        .expects(sign.toTLV)
+        .returning(Future.successful(
+          DLCWalletUtil.sampleDLCDb.copy(contractIdOpt = Some(contractId))))
+
+      (mockWalletApi
+        .broadcastDLCFundingTx(_: ByteVector))
+        .expects(contractId)
+        .returning(Future.successful(EmptyTransaction))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("adddlcsigsandbroadcast",
+                      Arr(Str(LnMessage(sign.toTLV).hex))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == s"""{"result":"${EmptyTransaction.txIdBE.hex}","error":null}""")
+      }
+    }
+
     "get dlc funding tx" in {
       (mockWalletApi
         .getDLCFundingTx(_: ByteVector))

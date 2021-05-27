@@ -420,6 +420,19 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("adddlcsigsandbroadcast", arr) =>
+      AddDLCSigs.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(AddDLCSigs(sigs)) =>
+          complete {
+            for {
+              db <- wallet.addDLCSigs(sigs.tlv)
+              tx <- wallet.broadcastDLCFundingTx(db.contractIdOpt.get)
+            } yield Server.httpSuccess(tx.txIdBE.hex)
+          }
+      }
+
     case ServerCommand("getdlcfundingtx", arr) =>
       GetDLCFundingTx.fromJsArr(arr) match {
         case Failure(exception) =>

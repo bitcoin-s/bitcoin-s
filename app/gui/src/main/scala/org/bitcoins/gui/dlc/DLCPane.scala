@@ -55,17 +55,8 @@ class DLCPane(glassPane: VBox) {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onAddSigs()
     }
-    tooltip = Tooltip("In response to a Sign, saves signatures.")
-    tooltip.value.setShowDelay(new javafx.util.Duration(100))
-  }
-
-  private val getFundingButton = new Button {
-    text = "Get Funding Tx"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onGetFunding()
-    }
     tooltip = Tooltip(
-      "After adding signatures, generates and broadcasts the DLC to the blockchain.")
+      "In response to a Sign, saves signatures and broadcasts the funding transaction.")
     tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
@@ -94,7 +85,7 @@ class DLCPane(glassPane: VBox) {
   }
 
   private val acceptButtonBar = new ButtonBar {
-    buttons = Seq(acceptButton, addSigsButton, getFundingButton)
+    buttons = Seq(acceptButton, addSigsButton)
   }
 
   private val execButtonBar = new ButtonBar {
