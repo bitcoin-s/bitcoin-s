@@ -10,6 +10,7 @@ import java.nio.file.Files
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.zip.ZipEntry
+import scala.util.matching.Regex
 
 object FileUtil extends Logging {
 
@@ -19,8 +20,8 @@ object FileUtil extends Logging {
   def zipDirectory(
       source: Path,
       target: Path,
-      fileNameFilter: Vector[String]): Path = {
-    val zos = new ZipOutputStream(new FileOutputStream(target.toFile()))
+      fileNameFilter: Vector[Regex]): Path = {
+    val zos = new ZipOutputStream(new FileOutputStream(target.toFile))
     Files.walkFileTree(
       source,
       new SimpleFileVisitor[Path]() {
@@ -28,7 +29,10 @@ object FileUtil extends Logging {
         override def visitFile(
             file: Path,
             attrs: BasicFileAttributes): FileVisitResult = {
-          if (fileNameFilter.exists(fileName => file.endsWith(fileName))) {
+          if (
+            fileNameFilter.exists(reg =>
+              file.toAbsolutePath.toString.matches(reg.regex))
+          ) {
             logger.info(s"Skipping ${file.toAbsolutePath} for zip")
             FileVisitResult.CONTINUE
           } else {
@@ -45,6 +49,7 @@ object FileUtil extends Logging {
     )
 
     zos.close()
+    logger.info("Zipping complete!")
     target
   }
 }

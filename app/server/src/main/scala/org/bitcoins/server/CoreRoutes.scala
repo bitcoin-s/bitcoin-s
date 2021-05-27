@@ -6,12 +6,12 @@ import akka.http.scaladsl.server._
 import org.bitcoins.commons.jsonmodels.{SerializedPSBT, SerializedTransaction}
 import org.bitcoins.core.api.core.CoreApi
 import org.bitcoins.core.hd.AddressType
-import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
   P2SHScriptPubKey,
   P2WSHWitnessSPKV0
 }
+import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
 import org.bitcoins.server.BitcoinSAppConfig.toChainConf
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import ujson._
@@ -175,6 +175,15 @@ case class CoreRoutes(core: CoreApi)(implicit
               "redeemScript" -> Str(spk.hex)
             )
             Server.httpSuccess(json)
+          }
+      }
+
+    case ServerCommand("zipdatadir", arr) =>
+      withValidServerCommand(ZipDataDir.fromJsArr(arr)) {
+        case ZipDataDir(path) =>
+          complete {
+            config.zipDatadir(path)
+            Server.httpSuccess(ujson.Null)
           }
       }
   }

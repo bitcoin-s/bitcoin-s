@@ -1,8 +1,15 @@
 package org.bitcoins.gui
 
+import org.bitcoins.cli.CliCommand.ZipDataDir
+import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.gui.settings.Themes
 import scalafx.scene.control._
 import scalafx.scene.input.{KeyCode, KeyCodeCombination, KeyCombination}
+import scalafx.stage.FileChooser
+import scalafx.stage.FileChooser.ExtensionFilter
+
+import java.io.File
+import scala.util.Properties
 
 object AppMenuBar {
 
@@ -16,6 +23,24 @@ object AppMenuBar {
 
 private class FileMenu() {
 
+  private val backup: MenuItem = new MenuItem("_Save Backup") {
+    mnemonicParsing = true
+    onAction = _ => {
+      val zipExtensionFilter = new ExtensionFilter("zip", "*.zip")
+      val allExtensionFilter = new ExtensionFilter("All Files", "*")
+      val fileChooser = new FileChooser() {
+        extensionFilters.addAll(zipExtensionFilter, allExtensionFilter)
+        selectedExtensionFilter = zipExtensionFilter
+        initialDirectory = new File(Properties.userHome)
+        initialFileName = "bitcoin-s-backup.zip"
+      }
+      val chosenFile = fileChooser.showSaveDialog(null)
+      ConsoleCli.exec(ZipDataDir(chosenFile.toPath),
+                      GlobalData.consoleCliConfig)
+      ()
+    }
+  }
+
   private val quit: MenuItem = new MenuItem("_Quit") {
     mnemonicParsing = true
     accelerator =
@@ -26,7 +51,7 @@ private class FileMenu() {
   val fileMenu: Menu =
     new Menu("_File") {
       mnemonicParsing = true
-      items = List(quit)
+      items = List(backup, quit)
     }
 }
 
