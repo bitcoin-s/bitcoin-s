@@ -1,33 +1,33 @@
 CREATE TABLE "global_dlc_data"
 (
-    "dlc_id"              TEXT PRIMARY KEY,
-    "temp_contract_id"    TEXT    NOT NULL UNIQUE,
-    "contract_id"         TEXT UNIQUE,
-    "protocol_version"    INTEGER NOT NULL,
-    "state"               TEXT    NOT NULL,
-    "is_initiator"        INTEGER NOT NULL,
-    "account"             TEXT    NOT NULL,
-    "change_index"        INTEGER NOT NULL,
-    "key_index"           INTEGER NOT NULL,
+    "dlc_id"                TEXT PRIMARY KEY,
+    "temp_contract_id"      TEXT    NOT NULL UNIQUE,
+    "contract_id"           TEXT UNIQUE,
+    "protocol_version"      INTEGER NOT NULL,
+    "state"                 TEXT    NOT NULL,
+    "is_initiator"          INTEGER NOT NULL,
+    "account"               TEXT    NOT NULL,
+    "change_index"          INTEGER NOT NULL,
+    "key_index"             INTEGER NOT NULL,
 
-    "fee_rate"              VARCHAR(254) NOT NULL,
-    "fund_output_serial_id" INTEGER      NOT NULL,
+    "fee_rate"              TEXT    NOT NULL,
+    "fund_output_serial_id" TEXT    NOT NULL,
 
-    "funding_outpoint"    TEXT,
-    "funding_tx_id"       TEXT,
-    "closing_tx_id"       TEXT,
-    "aggregate_signature" TEXT
+    "funding_outpoint"      TEXT,
+    "funding_tx_id"         TEXT,
+    "closing_tx_id"         TEXT,
+    "aggregate_signature"   TEXT
 );
 
 CREATE TABLE "contract_data"
 (
-    "dlc_id"                TEXT PRIMARY KEY,
-    "oracle_threshold"      INTEGER NOT NULL,
-    "oracle_params"         TEXT,
-    "contract_descriptor"   TEXT    NOT NULL,
-    "contract_maturity"     INTEGER NOT NULL,
-    "contract_timeout"      INTEGER NOT NULL,
-    "total_collateral"      INTEGER NOT NULL,
+    "dlc_id"              TEXT PRIMARY KEY,
+    "oracle_threshold"    INTEGER NOT NULL,
+    "oracle_params"       TEXT,
+    "contract_descriptor" TEXT    NOT NULL,
+    "contract_maturity"   INTEGER NOT NULL,
+    "contract_timeout"    INTEGER NOT NULL,
+    "total_collateral"    INTEGER NOT NULL,
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 
@@ -78,10 +78,10 @@ CREATE TABLE "offer_dlc_data"
     "dlc_id"           TEXT PRIMARY KEY,
     "funding_pub_key"  TEXT    NOT NULL,
     "payout_address"   TEXT    NOT NULL,
-    "payout_serial_id" INTEGER NOT NULL,
+    "payout_serial_id" TEXT    NOT NULL,
     "collateral"       INTEGER NOT NULL,
     "change_address"   TEXT    NOT NULL,
-    "change_serial_id" INTEGER NOT NULL,
+    "change_serial_id" TEXT    NOT NULL,
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 
@@ -90,10 +90,10 @@ CREATE TABLE "accept_dlc_data"
     "dlc_id"             TEXT PRIMARY KEY,
     "funding_pub_key"    TEXT    NOT NULL,
     "payout_address"     TEXT    NOT NULL,
-    "payout_serial_id"   INTEGER NOT NULL,
+    "payout_serial_id"   TEXT    NOT NULL,
     "collateral"         INTEGER NOT NULL,
     "change_address"     TEXT    NOT NULL,
-    "change_serial_id"   INTEGER NOT NULL,
+    "change_serial_id"   TEXT    NOT NULL,
     "negotiation_fields" TEXT    NOT NULL,
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
@@ -103,7 +103,7 @@ CREATE TABLE "funding_inputs"
     "out_point"          TEXT PRIMARY KEY,
     "dlc_id"             TEXT    NOT NULL,
     "is_initiator"       INTEGER NOT NULL,
-    "input_serial_id"    INTEGER NOT NULL,
+    "input_serial_id"    TEXT    NOT NULL,
     "output"             TEXT    NOT NULL,
     "max_witness_length" INTEGER NOT NULL,
     "redeem_script_opt"  TEXT,

@@ -11,7 +11,7 @@ CREATE TABLE "global_dlc_data"
     "key_index"             INTEGER      NOT NULL,
 
     "fee_rate"              VARCHAR(254) NOT NULL,
-    "fund_output_serial_id" INTEGER      NOT NULL,
+    "fund_output_serial_id" VARCHAR(254) NOT NULL,
 
     "funding_outpoint"      VARCHAR(254),
     "funding_tx_id"         VARCHAR(254),
@@ -78,10 +78,10 @@ CREATE TABLE "offer_dlc_data"
     "dlc_id"           VARCHAR(254) PRIMARY KEY,
     "funding_pub_key"  VARCHAR(254) NOT NULL,
     "payout_address"   VARCHAR(254) NOT NULL,
-    "payout_serial_id" INTEGER      NOT NULL,
+    "payout_serial_id" VARCHAR(254) NOT NULL,
     "collateral"       INTEGER      NOT NULL,
     "change_address"   VARCHAR(254) NOT NULL,
-    "change_serial_id" INTEGER      NOT NULL,
+    "change_serial_id" VARCHAR(254) NOT NULL,
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
 
@@ -90,10 +90,10 @@ CREATE TABLE "accept_dlc_data"
     "dlc_id"             VARCHAR(254) PRIMARY KEY,
     "funding_pub_key"    VARCHAR(254) NOT NULL,
     "payout_address"     VARCHAR(254) NOT NULL,
-    "payout_serial_id"   INTEGER      NOT NULL,
+    "payout_serial_id"   VARCHAR(254) NOT NULL,
     "collateral"         INTEGER      NOT NULL,
     "change_address"     VARCHAR(254) NOT NULL,
-    "change_serial_id"   INTEGER      NOT NULL,
+    "change_serial_id"   VARCHAR(254) NOT NULL,
     "negotiation_fields" VARCHAR(254) NOT NULL,
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION
 );
@@ -103,7 +103,7 @@ CREATE TABLE "funding_inputs"
     "out_point"          VARCHAR(254) PRIMARY KEY,
     "dlc_id"             VARCHAR(254) NOT NULL,
     "is_initiator"       INTEGER      NOT NULL,
-    "input_serial_id"    INTEGER      NOT NULL,
+    "input_serial_id"    VARCHAR(254) NOT NULL,
     "output"             VARCHAR(254) NOT NULL,
     "max_witness_length" INTEGER      NOT NULL,
     "redeem_script_opt"  VARCHAR(254),
