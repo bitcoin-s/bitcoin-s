@@ -62,6 +62,8 @@ object Deps {
     val sttpV = "1.7.2"
     val codehausV = "3.1.4"
     val scalaJsTimeV = "2.3.0"
+    val zxingV = "3.4.1"
+
   }
 
   object Compile {
@@ -216,6 +218,12 @@ object Deps {
 
     val dropwizardMetrics =
       "io.dropwizard.metrics" % "metrics-core" % V.dropwizardMetricsV withSources () withJavadoc ()
+
+    val zxingCore =
+      "com.google.zxing" % "core" % V.zxingV withSources () withJavadoc ()
+
+    val zxingJ2SE =
+      "com.google.zxing" % "javase" % V.zxingV withSources () withJavadoc ()
   }
 
   object Test {
@@ -410,7 +418,9 @@ object Deps {
 
   val gui = List(Compile.akkaActor,
                  Compile.breezeViz,
-                 Compile.scalaFx) ++ Compile.javaFxDeps
+                 Compile.scalaFx,
+                 Compile.zxingCore,
+                 Compile.zxingJ2SE) ++ Compile.javaFxDeps
 
   val server = Def.setting {
     List(
