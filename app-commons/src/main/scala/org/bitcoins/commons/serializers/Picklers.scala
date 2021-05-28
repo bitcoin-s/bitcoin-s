@@ -302,7 +302,7 @@ object Picklers {
           (Arr.from(oracles.map(o => Str(o.announcement.hex))),
            Str(outcome.outcome))
         case numeric: NumericOracleOutcome =>
-          (Arr.from(numeric.oracles.map(_.hex)),
+          (Arr.from(numeric.oracles.map(_.announcement.hex)),
            Arr.from(numeric.outcomes.map(o => Arr.from(o.digits))))
       }
 
