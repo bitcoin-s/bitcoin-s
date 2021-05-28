@@ -5,9 +5,14 @@ import org.bitcoins.gui.TaskRunner
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
 import scalafx.scene.layout._
+import scalafx.stage.FileChooser
+import scalafx.stage.FileChooser.ExtensionFilter
 
 import java.awt.Toolkit.getDefaultToolkit
 import java.awt.datatransfer.StringSelection
+import java.io.File
+import java.nio.file.Files
+import scala.util.Properties
 
 class DLCPane(glassPane: VBox) {
 
@@ -117,16 +122,36 @@ class DLCPane(glassPane: VBox) {
 
   val exportResultButton: Button = new Button("Export Result") {
     onAction = _ => {
+      val txtExtensionFilter = new ExtensionFilter("Text Files", "*.txt")
+      val allExtensionFilter = new ExtensionFilter("All Files", "*")
+      val fileChooser = new FileChooser() {
+        extensionFilters.addAll(txtExtensionFilter, allExtensionFilter)
+        selectedExtensionFilter = txtExtensionFilter
+        initialDirectory = new File(Properties.userHome)
+      }
+      val chosenFile = fileChooser.showSaveDialog(null)
+      Files.write(chosenFile.toPath, resultTextArea.text.value.getBytes)
+      ()
+    }
+  }
+
+  val copyResultButton: Button = new Button("Copy Result") {
+    onAction = _ => {
       val clipboard = getDefaultToolkit.getSystemClipboard
       val sel = new StringSelection(resultTextArea.text.value)
       clipboard.setContents(sel, sel)
     }
   }
 
+  val resultButtonHBox: HBox = new HBox() {
+    spacing = 10
+    children = Vector(exportResultButton, copyResultButton)
+  }
+
   private val tableView = new DLCTableView(model).tableView
 
   private val textAreasAndTableViewVBox = new VBox {
-    children = Seq(textAreaHBox, exportResultButton, tableView)
+    children = Seq(textAreaHBox, resultButtonHBox, tableView)
     spacing = 10
   }
 
