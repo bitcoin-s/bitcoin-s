@@ -136,6 +136,31 @@ trait TLVGen {
     contractDescriptorV0TLVWithTotalCollateral.map(_._1)
   }
 
+  def contractDescriptorV1TLVWithTotalCollateral: Gen[
+    (ContractDescriptorV1TLV, Satoshis)] = {
+    for {
+      numDigits <- Gen.choose(3, 7)
+      totalInput <-
+        Gen
+          .choose(numDigits + 1, Long.MaxValue / 10000L)
+          .map(Satoshis.apply)
+      (contractDescriptor, _) =
+        DLCTestUtil.genMultiDigitContractInfo(numDigits, totalInput)
+    } yield {
+      (contractDescriptor.toTLV, totalInput)
+    }
+  }
+
+  def contractDescriptorV1TLV: Gen[ContractDescriptorV1TLV] = {
+    contractDescriptorV1TLVWithTotalCollateral.map(_._1)
+  }
+
+  def contractDescriptorTLVWithTotalCollateral: Gen[
+    (ContractDescriptorTLV, Satoshis)] = {
+    Gen.oneOf(contractDescriptorV0TLVWithTotalCollateral,
+              contractDescriptorV1TLVWithTotalCollateral)
+  }
+
   def oracleInfoV0TLV(outcomes: Vector[String]): Gen[OracleInfoV0TLV] = {
     for {
       privKey <- CryptoGenerators.privateKey
@@ -149,17 +174,89 @@ trait TLVGen {
     }
   }
 
+  def oracleInfoV1TLV(outcomes: Vector[String]): Gen[OracleInfoV1TLV] = {
+    for {
+      numOracles <- Gen.choose(2, 10)
+      threshold <- Gen.choose(1, numOracles)
+      oracles <- Gen.listOfN(numOracles, oracleInfoV0TLV(outcomes))
+    } yield {
+      val announcements = oracles.map(_.announcement).toVector
+      OracleInfoV1TLV(threshold, announcements)
+    }
+  }
+
+  def oracleInfoTLV(outcomes: Vector[String]): Gen[OracleInfoTLV] = {
+    Gen.oneOf(oracleInfoV0TLV(outcomes), oracleInfoV1TLV(outcomes))
+  }
+
+  def oracleInfoV0TLV(numDigits: Int): Gen[OracleInfoV0TLV] = {
+    for {
+      privKey <- CryptoGenerators.privateKey
+      rValues <- Gen.listOfN(numDigits, CryptoGenerators.schnorrNonce)
+    } yield {
+      OracleInfoV0TLV(
+        OracleAnnouncementV0TLV.dummyForKeys(privKey, rValues.toVector))
+    }
+  }
+
+  def oracleInfoV1TLV(numDigits: Int): Gen[OracleInfoV1TLV] = {
+    for {
+      numOracles <- Gen.choose(2, 10)
+      threshold <- Gen.choose(1, numOracles)
+      oracles <- Gen.listOfN(numOracles, oracleInfoV0TLV(numDigits))
+    } yield {
+      val announcements = oracles.map(_.announcement).toVector
+      OracleInfoV1TLV(threshold, announcements)
+    }
+  }
+
+  def oracleInfoTLV(numDigits: Int): Gen[OracleInfoTLV] = {
+    Gen.oneOf(oracleInfoV0TLV(numDigits), oracleInfoV1TLV(numDigits))
+  }
+
   def oracleInfoV0TLV: Gen[OracleInfoV0TLV] = {
-    Gen
-      .listOf(StringGenerators.genUTF8String)
-      .flatMap(outcomes => oracleInfoV0TLV(outcomes.toVector))
+    for {
+      isEnum <- NumberGenerator.bool
+      oracleInfoV0TLV <-
+        if (isEnum) {
+          Gen
+            .listOf(StringGenerators.genUTF8String)
+            .flatMap(outcomes => oracleInfoV0TLV(outcomes.toVector))
+        } else {
+          Gen.choose(3, 7).flatMap(numDigits => oracleInfoV0TLV(numDigits))
+        }
+    } yield oracleInfoV0TLV
+  }
+
+  def oracleInfoV1TLV: Gen[OracleInfoV1TLV] = {
+    for {
+      isEnum <- NumberGenerator.bool
+      oracleInfo <-
+        if (isEnum) {
+          Gen
+            .listOf(StringGenerators.genUTF8String)
+            .flatMap(outcomes => oracleInfoV1TLV(outcomes.toVector))
+        } else {
+          Gen.choose(3, 7).flatMap(numDigits => oracleInfoV1TLV(numDigits))
+        }
+    } yield oracleInfo
+  }
+
+  def oracleInfoTLV: Gen[OracleInfoTLV] = {
+    Gen.oneOf(oracleInfoV0TLV, oracleInfoV1TLV)
   }
 
   def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
     for {
       (descriptor, totalCollateral) <-
-        contractDescriptorV0TLVWithTotalCollateral
-      oracleInfo <- oracleInfoV0TLV(descriptor.outcomes.map(_._1))
+        contractDescriptorTLVWithTotalCollateral
+      oracleInfo <- descriptor match {
+        case ContractDescriptorV0TLV(outcomeAndValues) =>
+          val outcomes = outcomeAndValues.map(_._1)
+          oracleInfoTLV(outcomes)
+        case ContractDescriptorV1TLV(numDigits, _, _) =>
+          oracleInfoTLV(numDigits)
+      }
     } yield {
       ContractInfoV0TLV(totalCollateral, descriptor, oracleInfo)
     }
