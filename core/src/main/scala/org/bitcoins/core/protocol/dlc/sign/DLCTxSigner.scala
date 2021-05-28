@@ -49,7 +49,8 @@ case class DLCTxSigner(
             "Given keys do not match public key and address in offer")
     val fundingUtxosAsInputs =
       fundingUtxos
-        .zip(offer.fundingInputs)
+        .sortBy(_.outPoint.bytes)
+        .zip(offer.fundingInputs.sortBy(_.outPoint.bytes))
         .map { case (utxo, fund) =>
           DLCFundingInput.fromInputSigningInfo(utxo, fund.inputSerialId)
         }
@@ -64,7 +65,8 @@ case class DLCTxSigner(
     )
     val fundingUtxosAsInputs =
       fundingUtxos
-        .zip(accept.fundingInputs)
+        .sortBy(_.outPoint.bytes)
+        .zip(accept.fundingInputs.sortBy(_.outPoint.bytes))
         .map { case (utxo, fund) =>
           DLCFundingInput.fromInputSigningInfo(utxo, fund.inputSerialId)
         }
