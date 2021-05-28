@@ -6,6 +6,9 @@ import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
+import java.awt.Toolkit.getDefaultToolkit
+import java.awt.datatransfer.StringSelection
+
 class DLCPane(glassPane: VBox) {
 
   private val resultTextArea = new TextArea {
@@ -112,10 +115,18 @@ class DLCPane(glassPane: VBox) {
     spacing = 10
   }
 
+  val exportResultButton: Button = new Button("Export Result") {
+    onAction = _ => {
+      val clipboard = getDefaultToolkit.getSystemClipboard
+      val sel = new StringSelection(resultTextArea.text.value)
+      clipboard.setContents(sel, sel)
+    }
+  }
+
   private val tableView = new DLCTableView(model).tableView
 
   private val textAreasAndTableViewVBox = new VBox {
-    children = Seq(textAreaHBox, tableView)
+    children = Seq(textAreaHBox, exportResultButton, tableView)
     spacing = 10
   }
 
