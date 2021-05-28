@@ -104,9 +104,34 @@ class TLVTest extends BitcoinSUnitTest {
     }
   }
 
+  "ContractDescriptorV0TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.contractDescriptorV0TLV) { contractDescriptorV0TLV =>
+      assert(
+        ContractDescriptorV0TLV(
+          contractDescriptorV0TLV.bytes) == contractDescriptorV0TLV)
+      assert(TLV(contractDescriptorV0TLV.bytes) == contractDescriptorV0TLV)
+    }
+  }
+
+  "ContractDescriptorV1TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.contractDescriptorV1TLV) { contractDescriptorV1TLV =>
+      assert(
+        ContractDescriptorV1TLV(
+          contractDescriptorV1TLV.bytes) == contractDescriptorV1TLV)
+      assert(TLV(contractDescriptorV1TLV.bytes) == contractDescriptorV1TLV)
+    }
+  }
+
   "OracleInfoV0TLV" must "have serialization symmetry" in {
     forAll(TLVGen.oracleInfoV0TLV) { oracleInfo =>
       assert(OracleInfoV0TLV(oracleInfo.bytes) == oracleInfo)
+      assert(TLV(oracleInfo.bytes) == oracleInfo)
+    }
+  }
+
+  "OracleInfoV1TLV" must "have serialization symmetry" in {
+    forAll(TLVGen.oracleInfoV1TLV) { oracleInfo =>
+      assert(OracleInfoV1TLV(oracleInfo.bytes) == oracleInfo)
       assert(TLV(oracleInfo.bytes) == oracleInfo)
     }
   }
