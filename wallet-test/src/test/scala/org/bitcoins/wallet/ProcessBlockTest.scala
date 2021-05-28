@@ -1,8 +1,13 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.protocol.script.EmptyScriptSignature
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.wallet.{
@@ -114,5 +119,50 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
       assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
     }
+  }
+
+  it must "receive and spend funds in the same block" in { param =>
+    val WalletWithBitcoindV19(wallet, bitcoind) = param
+    val recvAmount = Bitcoins.one
+    val sendAmount = Bitcoins(0.5)
+
+    for {
+      startBal <- wallet.getBalance()
+      recvAddr <- wallet.getNewChangeAddress()
+      recvAddr2 <- wallet.getNewChangeAddress()
+      bitcoindAddr <- bitcoind.getNewAddress
+      recvTxId <- bitcoind.sendToAddress(recvAddr, recvAmount)
+      recvTx <- bitcoind.getRawTransactionRaw(recvTxId)
+
+      // Make sure we didn't process the tx
+      afterBal <- wallet.getBalance()
+      _ = assert(startBal == afterBal)
+
+      index = recvTx.outputs.zipWithIndex
+        .find(_._1.scriptPubKey == recvAddr.scriptPubKey)
+        .get
+        ._2
+
+      input =
+        TransactionInput(TransactionOutPoint(recvTx.txId, UInt32(index)),
+                         EmptyScriptSignature,
+                         UInt32.max)
+      output0 =
+        TransactionOutput(recvAmount - sendAmount - Satoshis(500),
+                          recvAddr2.scriptPubKey)
+      output1 =
+        TransactionOutput(sendAmount, bitcoindAddr.scriptPubKey)
+
+      spendTx = BaseTransaction(Int32.two,
+                                Vector(input),
+                                Vector(output0, output1),
+                                UInt32.zero)
+
+      block = Block(RegTest.chainParams.genesisBlock.blockHeader,
+                    Seq(recvTx, spendTx))
+      _ <- wallet.processBlock(block)
+
+      balance <- wallet.getBalance()
+    } yield assert(balance == output0.value)
   }
 }
