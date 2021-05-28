@@ -937,7 +937,7 @@ abstract class DLCWallet
   def verifyFundingSigs(
       inputs: Vector[DLCFundingInputDb],
       sign: DLCSign): Future[Boolean] = {
-    if (inputs.count(!_.isInitiator) == sign.fundingSigs.length) {
+    if (inputs.count(_.isInitiator) == sign.fundingSigs.length) {
       verifierFromDb(sign.contractId).map { verifier =>
         verifier.verifyRemoteFundingSigs(sign.fundingSigs)
       }
