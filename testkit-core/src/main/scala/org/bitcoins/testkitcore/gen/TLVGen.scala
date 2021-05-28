@@ -139,7 +139,7 @@ trait TLVGen {
   def contractDescriptorV1TLVWithTotalCollateral: Gen[
     (ContractDescriptorV1TLV, Satoshis)] = {
     for {
-      numDigits <- Gen.choose(3, 16)
+      numDigits <- Gen.choose(3, 7)
       totalInput <-
         Gen
           .choose(numDigits + 1, Long.MaxValue / 10000L)
@@ -223,7 +223,7 @@ trait TLVGen {
             .listOf(StringGenerators.genUTF8String)
             .flatMap(outcomes => oracleInfoV0TLV(outcomes.toVector))
         } else {
-          Gen.choose(3, 16).flatMap(numDigits => oracleInfoV0TLV(numDigits))
+          Gen.choose(3, 7).flatMap(numDigits => oracleInfoV0TLV(numDigits))
         }
     } yield oracleInfoV0TLV
   }
@@ -237,7 +237,7 @@ trait TLVGen {
             .listOf(StringGenerators.genUTF8String)
             .flatMap(outcomes => oracleInfoV1TLV(outcomes.toVector))
         } else {
-          Gen.choose(3, 16).flatMap(numDigits => oracleInfoV1TLV(numDigits))
+          Gen.choose(3, 7).flatMap(numDigits => oracleInfoV1TLV(numDigits))
         }
     } yield oracleInfo
   }
