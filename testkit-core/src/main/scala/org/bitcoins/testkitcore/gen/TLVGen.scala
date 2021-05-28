@@ -136,6 +136,31 @@ trait TLVGen {
     contractDescriptorV0TLVWithTotalCollateral.map(_._1)
   }
 
+  def contractDescriptorV1TLVWithTotalCollateral: Gen[
+    (ContractDescriptorV1TLV, Satoshis)] = {
+    for {
+      numDigits <- Gen.choose(3, 16)
+      totalInput <-
+        Gen
+          .choose(numDigits + 1, Long.MaxValue / 10000L)
+          .map(Satoshis.apply)
+      (contractDescriptor, _) =
+        DLCTestUtil.genMultiDigitContractInfo(numDigits, totalInput)
+    } yield {
+      (contractDescriptor.toTLV, totalInput)
+    }
+  }
+
+  def contractDescriptorV1TLV: Gen[ContractDescriptorV1TLV] = {
+    contractDescriptorV1TLVWithTotalCollateral.map(_._1)
+  }
+
+  def contractDescriptorTLVWithTotalCollateral: Gen[
+    (ContractDescriptorTLV, Satoshis)] = {
+    Gen.oneOf(contractDescriptorV0TLVWithTotalCollateral,
+              contractDescriptorV1TLVWithTotalCollateral)
+  }
+
   def oracleInfoV0TLV(outcomes: Vector[String]): Gen[OracleInfoV0TLV] = {
     for {
       privKey <- CryptoGenerators.privateKey
@@ -149,6 +174,16 @@ trait TLVGen {
     }
   }
 
+  def oracleInfoV0TLV(numDigits: Int): Gen[OracleInfoV0TLV] = {
+    for {
+      privKey <- CryptoGenerators.privateKey
+      rValues <- Gen.listOfN(numDigits, CryptoGenerators.schnorrNonce)
+    } yield {
+      OracleInfoV0TLV(
+        OracleAnnouncementV0TLV.dummyForKeys(privKey, rValues.toVector))
+    }
+  }
+
   def oracleInfoV0TLV: Gen[OracleInfoV0TLV] = {
     Gen
       .listOf(StringGenerators.genUTF8String)
@@ -158,8 +193,13 @@ trait TLVGen {
   def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
     for {
       (descriptor, totalCollateral) <-
-        contractDescriptorV0TLVWithTotalCollateral
-      oracleInfo <- oracleInfoV0TLV(descriptor.outcomes.map(_._1))
+        contractDescriptorTLVWithTotalCollateral
+      oracleInfo <- descriptor match {
+        case ContractDescriptorV0TLV(outcomes) =>
+          oracleInfoV0TLV(outcomes.map(_._1))
+        case ContractDescriptorV1TLV(numDigits, _, _) =>
+          oracleInfoV0TLV(numDigits)
+      }
     } yield {
       ContractInfoV0TLV(totalCollateral, descriptor, oracleInfo)
     }
