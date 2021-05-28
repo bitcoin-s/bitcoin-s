@@ -174,6 +174,21 @@ trait TLVGen {
     }
   }
 
+  def oracleInfoV1TLV(outcomes: Vector[String]): Gen[OracleInfoV1TLV] = {
+    for {
+      numOracles <- Gen.choose(2, 10)
+      threshold <- Gen.choose(1, numOracles)
+      oracles <- Gen.listOfN(numOracles, oracleInfoV0TLV(outcomes))
+    } yield {
+      val announcements = oracles.map(_.announcement).toVector
+      OracleInfoV1TLV(threshold, announcements)
+    }
+  }
+
+  def oracleInfoTLV(outcomes: Vector[String]): Gen[OracleInfoTLV] = {
+    Gen.oneOf(oracleInfoV0TLV(outcomes), oracleInfoV1TLV(outcomes))
+  }
+
   def oracleInfoV0TLV(numDigits: Int): Gen[OracleInfoV0TLV] = {
     for {
       privKey <- CryptoGenerators.privateKey
@@ -184,10 +199,51 @@ trait TLVGen {
     }
   }
 
+  def oracleInfoV1TLV(numDigits: Int): Gen[OracleInfoV1TLV] = {
+    for {
+      numOracles <- Gen.choose(2, 10)
+      threshold <- Gen.choose(1, numOracles)
+      oracles <- Gen.listOfN(numOracles, oracleInfoV0TLV(numDigits))
+    } yield {
+      val announcements = oracles.map(_.announcement).toVector
+      OracleInfoV1TLV(threshold, announcements)
+    }
+  }
+
+  def oracleInfoTLV(numDigits: Int): Gen[OracleInfoTLV] = {
+    Gen.oneOf(oracleInfoV0TLV(numDigits), oracleInfoV1TLV(numDigits))
+  }
+
   def oracleInfoV0TLV: Gen[OracleInfoV0TLV] = {
-    Gen
-      .listOf(StringGenerators.genUTF8String)
-      .flatMap(outcomes => oracleInfoV0TLV(outcomes.toVector))
+    for {
+      isEnum <- NumberGenerator.bool
+      oracleInfoV0TLV <-
+        if (isEnum) {
+          Gen
+            .listOf(StringGenerators.genUTF8String)
+            .flatMap(outcomes => oracleInfoV0TLV(outcomes.toVector))
+        } else {
+          Gen.choose(3, 16).flatMap(numDigits => oracleInfoV0TLV(numDigits))
+        }
+    } yield oracleInfoV0TLV
+  }
+
+  def oracleInfoV1TLV: Gen[OracleInfoV1TLV] = {
+    for {
+      isEnum <- NumberGenerator.bool
+      oracleInfo <-
+        if (isEnum) {
+          Gen
+            .listOf(StringGenerators.genUTF8String)
+            .flatMap(outcomes => oracleInfoV1TLV(outcomes.toVector))
+        } else {
+          Gen.choose(3, 16).flatMap(numDigits => oracleInfoV1TLV(numDigits))
+        }
+    } yield oracleInfo
+  }
+
+  def oracleInfoTLV: Gen[OracleInfoTLV] = {
+    Gen.oneOf(oracleInfoV0TLV, oracleInfoV1TLV)
   }
 
   def contractInfoV0TLV: Gen[ContractInfoV0TLV] = {
@@ -195,10 +251,11 @@ trait TLVGen {
       (descriptor, totalCollateral) <-
         contractDescriptorTLVWithTotalCollateral
       oracleInfo <- descriptor match {
-        case ContractDescriptorV0TLV(outcomes) =>
-          oracleInfoV0TLV(outcomes.map(_._1))
+        case ContractDescriptorV0TLV(outcomeAndValues) =>
+          val outcomes = outcomeAndValues.map(_._1)
+          oracleInfoTLV(outcomes)
         case ContractDescriptorV1TLV(numDigits, _, _) =>
-          oracleInfoV0TLV(numDigits)
+          oracleInfoTLV(numDigits)
       }
     } yield {
       ContractInfoV0TLV(totalCollateral, descriptor, oracleInfo)
