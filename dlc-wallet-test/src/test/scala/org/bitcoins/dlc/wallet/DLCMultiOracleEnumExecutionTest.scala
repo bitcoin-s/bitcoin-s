@@ -27,7 +27,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
   val outcomes: Vector[String] = DLCTestUtil.genOutcomes(numOutcomes)
 
   val (contractDescriptor, _) =
-    DLCTestUtil.genContractDescriptors(outcomes, Satoshis(10000))
+    DLCTestUtil.genContractDescriptors(outcomes, total)
 
   val announcements: Vector[OracleAnnouncementTLV] =
     privateKeys.zip(kValues).map { case (priv, kValue) =>

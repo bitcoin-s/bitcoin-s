@@ -155,8 +155,8 @@ object DLCSignatureVerifier {
 
     val psbt = PSBT.fromUnsignedTxWithP2SHScript(fundingTx)
 
-    fundingSigs.zipWithIndex
-      .foldLeft(true) { case (ret, ((outPoint, witness), index)) =>
+    fundingSigs
+      .foldLeft(true) { case (ret, (outPoint, witness)) =>
         val serialId = serialIdMap(outPoint)
         val idx = serialIds.indexOf(serialId)
         if (ret) {
@@ -167,7 +167,13 @@ object DLCSignatureVerifier {
             false
           } else {
             Try {
-              val fundingInput = remoteFundingInputs(index)
+              val fundingInput =
+                remoteFundingInputs.find(_.outPoint == outPoint) match {
+                  case Some(input) => input
+                  case None =>
+                    throw new RuntimeException(
+                      s"Could not find fundingInput for outpoint $outPoint")
+                }
 
               psbt
                 .addUTXOToInput(fundingInput.prevTx, idx)
@@ -178,7 +184,7 @@ object DLCSignatureVerifier {
             }.flatten match {
               case Success(finalized) =>
                 finalized.verifyFinalizedInput(idx)
-              case Failure(_) =>
+              case Failure(err) =>
                 false
             }
           }

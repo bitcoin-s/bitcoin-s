@@ -84,7 +84,8 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
         for {
           walletA <- walletAF
           walletB <- walletBF
-          contractInfo = ContractInfo(Satoshis(10000), contractOraclePair)
+          amt = expectedDefaultAmt / Satoshis(2)
+          contractInfo = ContractInfo(amt.satoshis, contractOraclePair)
           (dlcWalletA, dlcWalletB) <-
             DLCWalletUtil.initDLC(walletA, walletB, contractInfo)
         } yield (dlcWalletA, dlcWalletB)
