@@ -19,6 +19,11 @@ abstract class WalletGUI {
     text <== GlobalData.statusText
   }
 
+  private lazy val infoLabel = new Label {
+    padding = Insets(top = 0, right = 0, bottom = 10, left = 0)
+    text <== StringProperty("Sync Height: ") + GlobalData.syncHeight
+  }
+
   def fetchStartingData(): Unit = {
     model.startWalletInfoScheduler()
     model.updateFeeRate()
@@ -82,11 +87,15 @@ abstract class WalletGUI {
     children = Vector(balanceBox, getNewAddressButton, sendButton)
   }
 
+  lazy val bottomStack: StackPane = new StackPane() {
+    children = Vector(statusLabel, infoLabel)
+  }
+
   lazy val borderPane: BorderPane = new BorderPane {
     top = AppMenuBar.menuBar(model)
     left = sidebar
     center = dlcPane.borderPane
-    bottom = statusLabel
+    bottom = bottomStack
   }
 
   lazy val rootView: StackPane = new StackPane {
