@@ -184,7 +184,7 @@ object DLCSignatureVerifier {
             }.flatten match {
               case Success(finalized) =>
                 finalized.verifyFinalizedInput(idx)
-              case Failure(err) =>
+              case Failure(_) =>
                 false
             }
           }
