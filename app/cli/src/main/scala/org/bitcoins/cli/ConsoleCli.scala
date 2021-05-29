@@ -1389,6 +1389,21 @@ object ConsoleCli {
       cmd("estimatefee")
         .action((_, conf) => conf.copy(command = EstimateFee))
         .text("Returns the recommended fee rate using the fee provider"),
+      cmd("zipdatadir")
+        .action((_, conf) =>
+          conf.copy(command = ZipDataDir(new File("").toPath)))
+        .text(
+          "zips the bitcoin-s datadir and places the file at the given path")
+        .children(
+          arg[Path]("path")
+            .text("Location of final zip file")
+            .required()
+            .action((path, conf) =>
+              conf.copy(command = conf.command match {
+                case zipDataDir: ZipDataDir =>
+                  zipDataDir.copy(path = path)
+                case other => other
+              }))),
       checkConfig {
         case Config(NoCommand, _, _, _) =>
           failure("You need to provide a command!")
@@ -1679,6 +1694,8 @@ object ConsoleCli {
                          up.writeJs(keys),
                          up.writeJs(addressType)))
       case EstimateFee => RequestParam("estimatefee")
+      case ZipDataDir(path) =>
+        RequestParam("zipdatadir", Seq(up.writeJs(path)))
 
       case GetVersion =>
         // skip sending to server and just return version number of cli
@@ -2004,6 +2021,8 @@ object CliCommand {
       keys: Vector[ECPublicKey],
       addressType: AddressType)
       extends AppServerCliCommand
+
+  case class ZipDataDir(path: Path) extends AppServerCliCommand
 
   case object EstimateFee extends AppServerCliCommand
 

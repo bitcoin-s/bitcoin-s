@@ -1003,6 +1003,28 @@ object BumpFee extends ServerJsonModels {
   }
 }
 
+case class ZipDataDir(path: Path)
+
+object ZipDataDir extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ZipDataDir] = {
+    jsArr.arr.toList match {
+      case pathJs :: Nil =>
+        Try {
+          val path = new File(pathJs.str).toPath
+          ZipDataDir(path)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing path argument"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
 trait ServerJsonModels {
 
   def jsToOracleAnnouncementTLV(js: Value): OracleAnnouncementTLV =
