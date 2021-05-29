@@ -423,7 +423,17 @@ lazy val bundle = project
   .in(file("app/bundle"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(appServer, gui)
-  .enablePlugins(JavaAppPackaging)
+  .settings(
+    Compile / doc := (target.value / "none"),
+    // general package information (can be scoped to Windows)
+    maintainer := "Chris Stewart <stewart.chris1234@gmail.com>",
+    packageSummary := "A discreet log contract oracle",
+    packageDescription := "A discreet log contract oracle",
+    // wix build information
+    wixProductId := "ce07be71-510d-414a-92d4-dff47631848a",
+    wixProductUpgradeId := "4552fb0e-e257-4dbd-9ecb-dba9dbacf424"
+  )
+  .enablePlugins(JavaAppPackaging, WindowsPlugin)
 
 lazy val gui = project
   .in(file("app/gui"))
