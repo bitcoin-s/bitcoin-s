@@ -316,6 +316,19 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("adddlcsigsandbroadcast")
+        .action((_, conf) => conf.copy(command = AddDLCSigsAndBroadcast(null)))
+        .text("Adds DLC Signatures into the database and broadcasts the funding transaction")
+        .children(
+          arg[LnMessage[DLCSignTLV]]("sigs")
+            .required()
+            .action((sigs, conf) =>
+              conf.copy(command = conf.command match {
+                case addDLCSigs: AddDLCSigsAndBroadcast =>
+                  addDLCSigs.copy(sigs = sigs)
+                case other => other
+              }))
+        ),
       cmd("getdlcfundingtx")
         .action((_, conf) => conf.copy(command = GetDLCFundingTx(null)))
         .text("Returns the Funding Tx corresponding to the DLC with the given contractId")
@@ -1491,6 +1504,8 @@ object ConsoleCli {
         RequestParam("adddlcsigs", Seq(up.writeJs(sigs)))
       case AddDLCSigsFromFile(path) =>
         RequestParam("adddlcsigsfromfile", Seq(up.writeJs(path)))
+      case AddDLCSigsAndBroadcast(sigs) =>
+        RequestParam("adddlcsigsandbroadcast", Seq(up.writeJs(sigs)))
       case ExecuteDLC(contractId, oracleSigs, noBroadcast) =>
         RequestParam("executedlc",
                      Seq(up.writeJs(contractId),
@@ -1861,6 +1876,9 @@ object CliCommand {
       extends AddDLCSigsCliCommand
 
   case class AddDLCSigsFromFile(path: Path) extends AddDLCSigsCliCommand
+
+  case class AddDLCSigsAndBroadcast(sigs: LnMessage[DLCSignTLV])
+      extends AddDLCSigsCliCommand
 
   case class GetDLCFundingTx(contractId: ByteVector) extends AppServerCliCommand
 

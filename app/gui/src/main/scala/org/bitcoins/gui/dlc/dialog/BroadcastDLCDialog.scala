@@ -5,7 +5,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.gui.dlc.GlobalDLCData
 import scalafx.scene.Node
 
-class AddSigsDLCDialog
+class BroadcastDLCDialog
     extends DLCDialog[AddDLCSigsCliCommand]("Add DLC Signatures",
                                             "Enter DLC signatures message",
                                             Vector(
@@ -41,7 +41,7 @@ class AddSigsDLCDialog
 
         GlobalDLCData.lastContractId = sign.tlv.contractId.toHex
 
-        AddDLCSigs(sign)
+        AddDLCSigsAndBroadcast(sign)
     }
   }
 }
