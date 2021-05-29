@@ -154,7 +154,7 @@ jobs:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
       - name: Build msi
         shell: bash
-        run: sbt windows:packageBin
+        run: sbt bundle/windows:packageBin
       - name: View artifacts
         run: ls -R .
       - name: Upload installer
