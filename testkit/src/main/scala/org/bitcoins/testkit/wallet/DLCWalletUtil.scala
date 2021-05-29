@@ -22,6 +22,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.dlc.wallet.models._
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.expectedDefaultAmt
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.testkitcore.dlc.DLCTestUtil
 import org.scalatest.Assertions.fail
@@ -48,8 +49,11 @@ object DLCWalletUtil {
   lazy val loseHash: Sha256Digest =
     CryptoUtil.sha256DLCAttestation(loseStr)
 
+  val total: Satoshis = (expectedDefaultAmt / Satoshis(2)).satoshis
+  val half: Satoshis = (total / Satoshis(2)).satoshis
+
   val sampleOutcomes: Vector[(EnumOutcome, Satoshis)] = Vector(
-    EnumOutcome(winStr) -> Satoshis(10000),
+    EnumOutcome(winStr) -> (expectedDefaultAmt / Satoshis(2)).satoshis,
     EnumOutcome(loseStr) -> Satoshis.zero)
 
   lazy val sampleContractDescriptor: EnumContractDescriptor =
@@ -64,7 +68,7 @@ object DLCWalletUtil {
     ContractOraclePair.EnumPair(sampleContractDescriptor, sampleOracleInfo)
 
   lazy val sampleContractInfo: ContractInfo =
-    ContractInfo(Satoshis(10000), sampleContractOraclePair)
+    ContractInfo(half, sampleContractOraclePair)
 
   lazy val sampleOracleWinSig: SchnorrDigitalSignature =
     oraclePrivKey.schnorrSignWithNonce(winHash.bytes, kValue)
@@ -75,7 +79,7 @@ object DLCWalletUtil {
   val numDigits: Int = 6
 
   lazy val multiNonceContractDescriptor: NumericContractDescriptor =
-    DLCTestUtil.genMultiDigitContractInfo(numDigits, Satoshis(10000))._1
+    DLCTestUtil.genMultiDigitContractInfo(numDigits, total)._1
 
   lazy val multiNonceOracleInfo: NumericSingleOracleInfo =
     NumericSingleOracleInfo(
@@ -88,7 +92,7 @@ object DLCWalletUtil {
   }
 
   lazy val multiNonceContractInfo: ContractInfo =
-    ContractInfo(Satoshis(10000), multiNonceContractOraclePair)
+    ContractInfo(total, multiNonceContractOraclePair)
 
   lazy val dummyContractMaturity: BlockTimeStamp = BlockTimeStamp(1666335)
   lazy val dummyContractTimeout: BlockTimeStamp = BlockTimeStamp(1666337)
@@ -119,8 +123,7 @@ object DLCWalletUtil {
   val dummyPrevTx: BaseTransaction = BaseTransaction(
     TransactionConstants.validLockVersion,
     Vector.empty,
-    Vector.fill(2)(
-      TransactionOutput(Satoshis(5000), P2WPKHWitnessSPKV0(dummyKey))),
+    Vector.fill(2)(TransactionOutput(half, P2WPKHWitnessSPKV0(dummyKey))),
     UInt32.zero)
 
   val dummyFundingInputs = Vector(
@@ -143,7 +146,7 @@ object DLCWalletUtil {
   lazy val sampleDLCOffer: DLCOffer = DLCOffer(
     contractInfo = sampleContractInfo,
     pubKeys = dummyDLCKeys,
-    totalCollateral = Satoshis(5000),
+    totalCollateral = half,
     fundingInputs = Vector(dummyFundingInputs.head),
     changeAddress = dummyAddress,
     payoutSerialId = sampleOfferPayoutSerialId,
@@ -176,7 +179,7 @@ object DLCWalletUtil {
     Vector(sampleOfferChangeSerialId, sampleFundOutputSerialId))
 
   lazy val sampleDLCAccept: DLCAccept = DLCAccept(
-    totalCollateral = Satoshis(5000),
+    totalCollateral = half,
     pubKeys = dummyDLCKeys,
     fundingInputs = Vector(dummyFundingInputs.last),
     changeAddress = dummyAddress,
@@ -220,7 +223,7 @@ object DLCWalletUtil {
     contractDescriptorTLV = sampleContractDescriptor.toTLV,
     contractMaturity = BlockTimeStamp(0),
     contractTimeout = BlockTimeStamp(1),
-    totalCollateral = Satoshis(10000)
+    totalCollateral = total
   )
 
   def initDLC(
@@ -234,8 +237,8 @@ object DLCWalletUtil {
     for {
       offer <- walletA.createDLCOffer(
         contractInfo = contractInfo,
-        collateral = Satoshis(5000),
-        feeRateOpt = None,
+        collateral = half,
+        feeRateOpt = Some(SatoshisPerVirtualByte.fromLong(10)),
         locktime = dummyTimeouts.contractMaturity.toUInt32,
         refundLocktime = dummyTimeouts.contractTimeout.toUInt32
       )

@@ -937,7 +937,7 @@ abstract class DLCWallet
   def verifyFundingSigs(
       inputs: Vector[DLCFundingInputDb],
       sign: DLCSign): Future[Boolean] = {
-    if (inputs.count(!_.isInitiator) == sign.fundingSigs.length) {
+    if (inputs.count(_.isInitiator) == sign.fundingSigs.length) {
       verifierFromDb(sign.contractId).map { verifier =>
         verifier.verifyRemoteFundingSigs(sign.fundingSigs)
       }
@@ -994,16 +994,16 @@ abstract class DLCWallet
       contractData <- contractDataDAO.read(dlcDb.dlcId).map(_.get)
       offerDbOpt <- dlcOfferDAO.findByDLCId(dlcDb.dlcId)
       offerDb = offerDbOpt.get
-      fundingInputDbs <- dlcInputsDAO.findByDLCId(dlcDb.dlcId)
+      fundingInputDbs <- dlcInputsDAO.findByDLCId(dlcDb.dlcId,
+                                                  isInitiator = true)
 
       txIds = fundingInputDbs.map(_.outPoint.txIdBE)
       remotePrevTxs <- remoteTxDAO.findByTxIdBEs(txIds)
-      localPrevTxs <- transactionDAO.findByTxIdBEs(txIds)
 
       (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
         dlcDb.dlcId)
 
-      prevTxs = (remotePrevTxs ++ localPrevTxs).map(_.transaction)
+      prevTxs = remotePrevTxs.map(_.transaction)
       txs = prevTxs.groupBy(_.txIdBE)
 
       fundingInputs = fundingInputDbs.map(input =>

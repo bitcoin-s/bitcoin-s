@@ -48,10 +48,14 @@ case class DLCTxSigner(
               finalAddress == offer.pubKeys.payoutAddress,
             "Given keys do not match public key and address in offer")
     val fundingUtxosAsInputs =
-      fundingUtxos.zip(offer.fundingInputs).map { case (utxo, fund) =>
-        DLCFundingInput.fromInputSigningInfo(utxo, fund.inputSerialId)
-      }
-    require(fundingUtxosAsInputs == offer.fundingInputs,
+      fundingUtxos
+        .sortBy(_.outPoint.bytes)
+        .zip(offer.fundingInputs.sortBy(_.outPoint.bytes))
+        .map { case (utxo, fund) =>
+          DLCFundingInput.fromInputSigningInfo(utxo, fund.inputSerialId)
+        }
+        .sortBy(_.inputSerialId)
+    require(fundingUtxosAsInputs == offer.fundingInputs.sortBy(_.inputSerialId),
             "Funding ScriptSignatureParams did not match offer funding inputs")
   } else {
     require(
@@ -60,11 +64,17 @@ case class DLCTxSigner(
       "Given keys do not match public key and address in accept"
     )
     val fundingUtxosAsInputs =
-      fundingUtxos.zip(accept.fundingInputs).map { case (utxo, fund) =>
-        DLCFundingInput.fromInputSigningInfo(utxo, fund.inputSerialId)
-      }
-    require(fundingUtxosAsInputs == accept.fundingInputs,
-            "Funding ScriptSignatureParams did not match accept funding inputs")
+      fundingUtxos
+        .sortBy(_.outPoint.bytes)
+        .zip(accept.fundingInputs.sortBy(_.outPoint.bytes))
+        .map { case (utxo, fund) =>
+          DLCFundingInput.fromInputSigningInfo(utxo, fund.inputSerialId)
+        }
+        .sortBy(_.inputSerialId)
+    require(
+      fundingUtxosAsInputs == accept.fundingInputs.sortBy(_.inputSerialId),
+      "Funding ScriptSignatureParams did not match accept funding inputs"
+    )
   }
 
   /** Return's this party's payout for a given oracle signature */
