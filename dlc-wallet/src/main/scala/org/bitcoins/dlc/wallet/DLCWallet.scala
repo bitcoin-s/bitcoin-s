@@ -1223,15 +1223,28 @@ abstract class DLCWallet
     }
   }
 
+  private def getClosingTxIdOpt(dlcDb: DLCDb): Future[Option[TransactionDb]] = {
+    val result = dlcDb.closingTxIdOpt.map(txid => remoteTxDAO.findByTxId(txid))
+    result match {
+      case None    => Future.successful(None)
+      case Some(r) => r
+    }
+  }
+
   override def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]] = {
     for {
       dlcDbOpt <- dlcDAO.read(dlcId)
       contractDataOpt <- contractDataDAO.read(dlcId)
       offerDbOpt <- dlcOfferDAO.read(dlcId)
+      acceptDbOpt <- dlcAcceptDAO.read(dlcId)
       (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
         dlcId)
-    } yield (dlcDbOpt, contractDataOpt, offerDbOpt) match {
-      case (Some(dlcDb), Some(contractData), Some(offerDb)) =>
+      closingTxFOpt <- dlcDbOpt.map(dlcDb => getClosingTxIdOpt(dlcDb)) match {
+        case None                 => Future.successful(None)
+        case Some(closingTxIdOpt) => closingTxIdOpt
+      }
+    } yield (dlcDbOpt, contractDataOpt, offerDbOpt, acceptDbOpt) match {
+      case (Some(dlcDb), Some(contractData), Some(offerDb), Some(acceptDb)) =>
         val totalCollateral = contractData.totalCollateral
 
         val localCollateral = if (dlcDb.isInitiator) {
@@ -1320,6 +1333,9 @@ abstract class DLCWallet
               dlcDb.fundingTxIdOpt.get
             )
           case DLCState.Claimed =>
+            val closingTxDb = closingTxFOpt.get
+            val accounting: DlcAccounting =
+              calculatePnl(dlcDb, offerDb, acceptDb, closingTxDb)
             Claimed(
               dlcId,
               dlcDb.isInitiator,
@@ -1333,9 +1349,13 @@ abstract class DLCWallet
               dlcDb.fundingTxIdOpt.get,
               dlcDb.closingTxIdOpt.get,
               sigs,
-              oracleOutcome
+              oracleOutcome,
+              accounting.pnl
             )
           case DLCState.RemoteClaimed =>
+            val closingTxDb = closingTxFOpt.get
+            val accounting: DlcAccounting =
+              calculatePnl(dlcDb, offerDb, acceptDb, closingTxDb)
             RemoteClaimed(
               dlcId,
               dlcDb.isInitiator,
@@ -1349,9 +1369,13 @@ abstract class DLCWallet
               dlcDb.fundingTxIdOpt.get,
               dlcDb.closingTxIdOpt.get,
               dlcDb.aggregateSignatureOpt.get,
-              oracleOutcome
+              oracleOutcome,
+              accounting.pnl
             )
           case DLCState.Refunded =>
+            val closingTxDb = closingTxFOpt.get
+            val accounting: DlcAccounting =
+              calculatePnl(dlcDb, offerDb, acceptDb, closingTxDb)
             Refunded(
               dlcId,
               dlcDb.isInitiator,
@@ -1363,13 +1387,66 @@ abstract class DLCWallet
               totalCollateral,
               localCollateral,
               dlcDb.fundingTxIdOpt.get,
-              dlcDb.closingTxIdOpt.get
+              dlcDb.closingTxIdOpt.get,
+              accounting.pnl
             )
         }
 
         Some(status)
-      case (_, _, _) => None
+      case (_, _, _, _) => None
     }
+  }
+
+  private def calculatePnl(
+      dlcDb: DLCDb,
+      offerDb: DLCOfferDb,
+      acceptDb: DLCAcceptDb,
+      closingTxDb: TransactionDb): DlcAccounting = {
+    val (myCollateral, theirCollateral, myPayoutAddress, theirPayoutAddress) = {
+      if (dlcDb.isInitiator) {
+        val myCollateral = offerDb.collateral
+        val theirCollateral = acceptDb.collateral
+        val myPayoutAddress = offerDb.payoutAddress
+        val theirPayoutAddress = acceptDb.payoutAddress
+        (myCollateral, theirCollateral, myPayoutAddress, theirPayoutAddress)
+
+      } else {
+        val myCollateral = acceptDb.collateral
+        val theirCollateral = offerDb.collateral
+        val myPayoutAddress = acceptDb.payoutAddress
+        val theirPayoutAddress = offerDb.payoutAddress
+        (myCollateral, theirCollateral, myPayoutAddress, theirPayoutAddress)
+      }
+    }
+
+    val myPayout = closingTxDb.transaction.outputs
+      .filter(_.scriptPubKey == myPayoutAddress.scriptPubKey)
+      .map(_.value)
+      .sum
+    val theirPayout = closingTxDb.transaction.outputs
+      .filter(_.scriptPubKey == theirPayoutAddress.scriptPubKey)
+      .map(_.value)
+      .sum
+    DlcAccounting(
+      dlcId = dlcDb.dlcId,
+      myCollateral = myCollateral,
+      theirCollateral = theirCollateral,
+      myPayoutAddress = myPayoutAddress,
+      theirPayoutAddress = theirPayoutAddress,
+      myPayout = myPayout,
+      theirPayout = theirPayout
+    )
+  }
+
+  case class DlcAccounting(
+      dlcId: Sha256Digest,
+      myCollateral: CurrencyUnit,
+      theirCollateral: CurrencyUnit,
+      myPayoutAddress: BitcoinAddress,
+      theirPayoutAddress: BitcoinAddress,
+      myPayout: CurrencyUnit,
+      theirPayout: CurrencyUnit) {
+    val pnl: CurrencyUnit = myCollateral - theirCollateral
   }
 
   /** @param newAnnouncements announcements we do not have in our db

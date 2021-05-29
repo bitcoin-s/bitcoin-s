@@ -260,6 +260,8 @@ object Picklers {
       )
     }
 
+  private val pnlKey: String = "pnl"
+
   implicit val claimedW: Writer[Claimed] = writer[Obj].comap { claimed =>
     import claimed._
     val (oraclesJs, outcomesJs) = oracleOutcome match {
@@ -290,7 +292,8 @@ object Picklers {
       "closingTxId" -> Str(closingTxId.hex),
       "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
       "outcomes" -> outcomesJs,
-      "oracles" -> oraclesJs
+      "oracles" -> oraclesJs,
+      pnlKey -> Num(claimed.pnl.satoshis.toLong.toDouble)
     )
   }
 
@@ -325,7 +328,8 @@ object Picklers {
         "closingTxId" -> Str(closingTxId.hex),
         "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
         "outcomes" -> outcomesJs,
-        "oracles" -> oraclesJs
+        "oracles" -> oraclesJs,
+        pnlKey -> Num(remoteClaimed.pnl.satoshis.toLong.toDouble)
       )
     }
 
@@ -347,7 +351,8 @@ object Picklers {
       "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
       "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
       "fundingTxId" -> Str(fundingTxId.hex),
-      "closingTxId" -> Str(closingTxId.hex)
+      "closingTxId" -> Str(closingTxId.hex),
+      pnlKey -> Num(refunded.pnl.satoshis.toLong.toDouble)
     )
   }
 
@@ -420,6 +425,9 @@ object Picklers {
       case signed: SignedNumericOutcome =>
         throw new IllegalArgumentException(s"Unexpected outcome $signed")
     }
+
+    lazy val pnlJs = obj("pnl")
+    lazy val pnlOpt = pnlJs.numOpt.map(sats => Satoshis(sats.toLong))
 
     state match {
       case DLCState.Offered =>
@@ -497,7 +505,8 @@ object Picklers {
           fundingTxId,
           closingTxId,
           oracleSigs,
-          oracleOutcome
+          oracleOutcome,
+          pnlOpt.get
         )
       case DLCState.RemoteClaimed =>
         require(oracleSigs.size == 1,
@@ -515,7 +524,8 @@ object Picklers {
           fundingTxId,
           closingTxId,
           oracleSigs.head,
-          oracleOutcome
+          oracleOutcome,
+          pnlOpt.get
         )
       case DLCState.Refunded =>
         Refunded(
@@ -529,7 +539,8 @@ object Picklers {
           totalCollateral,
           localCollateral,
           fundingTxId,
-          closingTxId
+          closingTxId,
+          pnlOpt.get
         )
     }
   }
