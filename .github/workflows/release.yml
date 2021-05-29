@@ -161,4 +161,4 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: bitcoin-s-msi-${{steps.previoustag.outputs.tag}}-${{github.sha}}
-          path: "D:\\a\\bitcoin-s\\bitcoin-s\\target\\windows\\bitcoin-s-bundle.msi"
+          path: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
