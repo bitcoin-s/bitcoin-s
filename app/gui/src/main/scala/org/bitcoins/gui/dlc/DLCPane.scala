@@ -16,7 +16,7 @@ class DLCPane(glassPane: VBox) {
   }
 
   private val resultArea = new BorderPane() {
-    padding = Insets(10)
+    padding = Insets(top = 10, right = 0, bottom = 10, left = 0)
     center = resultTextArea
   }
 

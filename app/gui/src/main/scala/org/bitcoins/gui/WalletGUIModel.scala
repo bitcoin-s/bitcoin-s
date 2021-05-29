@@ -32,6 +32,7 @@ class WalletGUIModel()(implicit system: ActorSystem) {
     override def run(): Unit = {
       Platform.runLater {
         updateBalance()
+        updateWalletInfo()
       }
     }
   }
@@ -101,6 +102,15 @@ class WalletGUIModel()(implicit system: ActorSystem) {
 
   def onAbout(): Unit = {
     AboutDialog.showAndWait(parentWindow.value)
+  }
+
+  private def updateWalletInfo(): Unit = {
+    ConsoleCli.exec(WalletInfo, GlobalData.consoleCliConfig) match {
+      case Failure(_) => ()
+      case Success(commandReturn) =>
+        val json = ujson.read(commandReturn).obj("wallet").obj
+        GlobalData.syncHeight.value = json("height").num.toLong
+    }
   }
 
   private def updateBalance(): Unit = {
