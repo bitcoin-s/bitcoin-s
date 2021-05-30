@@ -430,8 +430,8 @@ lazy val bundle = project
     packageSummary := "A discreet log contract oracle",
     packageDescription := "A discreet log contract oracle",
     // wix build information
-    wixProductId := "ce07be71-510d-414a-92d4-dff47631848a",
-    wixProductUpgradeId := "4552fb0e-e257-4dbd-9ecb-dba9dbacf424",
+    wixProductId := java.util.UUID.randomUUID().toString,
+    wixProductUpgradeId := java.util.UUID.randomUUID().toString,
     Windows / version := "0.0.0.1"
   )
   .enablePlugins(JavaAppPackaging, WindowsPlugin)
