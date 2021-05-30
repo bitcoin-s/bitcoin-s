@@ -5,7 +5,7 @@ CREATE TABLE "global_dlc_data"
     "contract_id"           TEXT UNIQUE,
     "protocol_version"      INTEGER NOT NULL,
     "state"                 TEXT    NOT NULL,
-    "is_initiator"          INTEGER NOT NULL,
+    "is_initiator"          BOOLEAN NOT NULL,
     "account"               TEXT    NOT NULL,
     "change_index"          INTEGER NOT NULL,
     "key_index"             INTEGER NOT NULL,
@@ -102,7 +102,7 @@ CREATE TABLE "funding_inputs"
 (
     "out_point"          TEXT PRIMARY KEY,
     "dlc_id"             TEXT    NOT NULL,
-    "is_initiator"       INTEGER NOT NULL,
+    "is_initiator"       BOOLEAN NOT NULL,
     "input_serial_id"    TEXT    NOT NULL,
     "output"             TEXT    NOT NULL,
     "max_witness_length" INTEGER NOT NULL,

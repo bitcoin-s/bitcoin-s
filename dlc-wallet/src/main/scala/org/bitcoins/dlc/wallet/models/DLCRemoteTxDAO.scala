@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.wallet.models.TxDAO
-import slick.lifted.{PrimaryKey, ProvenShape}
+import slick.lifted.ProvenShape
 
 import scala.concurrent.ExecutionContext
 
@@ -56,8 +56,5 @@ case class DLCRemoteTxDAO()(implicit
        numOutputs,
        locktime,
        blockHash).<>(TransactionDb.tupled, TransactionDb.unapply)
-
-    def primaryKey: PrimaryKey =
-      primaryKey("pk_tx", sourceColumns = txIdBE)
   }
 }
