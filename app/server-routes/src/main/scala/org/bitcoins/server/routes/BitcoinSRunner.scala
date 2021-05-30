@@ -3,10 +3,10 @@ package org.bitcoins.server.routes
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
+import org.bitcoins.core.config._
 import org.bitcoins.core.util.{EnvUtil, StartStopAsync}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.safePathToString
-import org.bitcoins.server.util.DatadirUtil
 
 import java.nio.file.{Path, Paths}
 import scala.concurrent.{ExecutionContext, Future}
@@ -92,8 +92,33 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
   final def run(customFinalDirOpt: Option[String] = None): Unit = {
 
     /** Directory specific for current network or custom dir */
-    val usedDir: Path =
-      DatadirUtil.getFinalDatadir(datadir, baseConfig, customFinalDirOpt)
+    val usedDir: Path = customFinalDirOpt match {
+      case Some(dir) => datadir.resolve(dir)
+      case None =>
+        val networkStr: String =
+          baseConfig.getString("bitcoin-s.network")
+
+        val network: BitcoinNetwork = networkStr.toLowerCase match {
+          case "mainnet"  => MainNet
+          case "main"     => MainNet
+          case "testnet3" => TestNet3
+          case "testnet"  => TestNet3
+          case "test"     => TestNet3
+          case "regtest"  => RegTest
+          case "signet"   => SigNet
+          case "sig"      => SigNet
+          case _: String =>
+            throw new IllegalArgumentException(s"Invalid network $networkStr")
+        }
+
+        val lastDirname = network match {
+          case MainNet  => "mainnet"
+          case TestNet3 => "testnet3"
+          case RegTest  => "regtest"
+          case SigNet   => "signet"
+        }
+        datadir.resolve(lastDirname)
+    }
 
     //We need to set the system property before any logger instances
     //are in instantiated. If we don't do this, we will not log to

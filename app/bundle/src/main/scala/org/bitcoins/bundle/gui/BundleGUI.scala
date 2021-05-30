@@ -2,11 +2,11 @@ package org.bitcoins.bundle.gui
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.bitcoins.core.config._
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.DEFAULT_BITCOIN_S_DATADIR
 import org.bitcoins.gui._
 import org.bitcoins.gui.util.GUIUtil
-import org.bitcoins.server.util.DatadirUtil
 import scalafx.application.{JFXApp, Platform}
 import scalafx.geometry.Pos
 import scalafx.scene.Scene
@@ -45,7 +45,30 @@ object BundleGUI extends WalletGUI with JFXApp {
     val datadir: Path =
       Paths.get(baseConfig.getString("bitcoin-s.datadir"))
 
-    val usedDir = DatadirUtil.getFinalDatadir(datadir, baseConfig, None)
+    val networkStr: String =
+      baseConfig.getString("bitcoin-s.network")
+
+    val network: BitcoinNetwork = networkStr.toLowerCase match {
+      case "mainnet"  => MainNet
+      case "main"     => MainNet
+      case "testnet3" => TestNet3
+      case "testnet"  => TestNet3
+      case "test"     => TestNet3
+      case "regtest"  => RegTest
+      case "signet"   => SigNet
+      case "sig"      => SigNet
+      case _: String =>
+        throw new IllegalArgumentException(s"Invalid network $networkStr")
+    }
+
+    val lastDirname = network match {
+      case MainNet  => "mainnet"
+      case TestNet3 => "testnet3"
+      case RegTest  => "regtest"
+      case SigNet   => "signet"
+    }
+
+    val usedDir = datadir.resolve(lastDirname)
 
     System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
   }
