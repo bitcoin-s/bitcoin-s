@@ -31,11 +31,6 @@ object BundleGUI extends WalletGUI with JFXApp {
       }.showAndWait()
     })
 
-  implicit val system: ActorSystem = ActorSystem(
-    s"bitcoin-s-gui-${System.currentTimeMillis()}")
-
-  lazy val args = parameters.raw
-
   // Set log location
   {
     val baseConfig: Config = AppConfig
@@ -49,6 +44,11 @@ object BundleGUI extends WalletGUI with JFXApp {
 
     System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
   }
+
+  implicit lazy val system: ActorSystem = ActorSystem(
+    s"bitcoin-s-gui-${System.currentTimeMillis()}")
+
+  lazy val args = parameters.raw
 
   val landingPane = new LandingPane(glassPane)
   rootView.children = Vector(landingPane.view, glassPane)
