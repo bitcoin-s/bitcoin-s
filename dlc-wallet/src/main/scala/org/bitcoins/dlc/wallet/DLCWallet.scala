@@ -27,6 +27,7 @@ import org.bitcoins.dlc.wallet.internal._
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.TransactionDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
 
@@ -58,6 +59,7 @@ abstract class DLCWallet
   private[bitcoins] val dlcSigsDAO: DLCCETSignaturesDAO = DLCCETSignaturesDAO()
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
+  private[bitcoins] val txDAO: TransactionDAO = TransactionDAO()
 
   private def calcContractId(offer: DLCOffer, accept: DLCAccept): ByteVector = {
     val builder = DLCTxBuilder(offer, accept.withoutSigs)
@@ -138,8 +140,8 @@ abstract class DLCWallet
             new IllegalArgumentException(
               s"No DLCDb found with contractId ${contractId.toHex}"))
       }
-      _ = logger.debug(
-        s"Updating DLC (${contractId.toHex}) closing txId to ${txId.hex}")
+      _ = logger.info(
+        s"Updating DLC (${contractId.toHex}) closing txId to txIdBE=${txId.hex}")
       updated <- dlcDAO.update(dlcDb.copy(closingTxIdOpt = Some(txId)))
     } yield updated
   }
@@ -1224,7 +1226,7 @@ abstract class DLCWallet
   }
 
   private def getClosingTxOpt(dlcDb: DLCDb): Future[Option[TransactionDb]] = {
-    val result = dlcDb.closingTxIdOpt.map(txid => remoteTxDAO.findByTxId(txid))
+    val result = dlcDb.closingTxIdOpt.map(txid => txDAO.findByTxId(txid))
     result match {
       case None    => Future.successful(None)
       case Some(r) => r

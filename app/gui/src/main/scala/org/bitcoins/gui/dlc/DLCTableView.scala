@@ -1,7 +1,12 @@
 package org.bitcoins.gui.dlc
 
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
-import org.bitcoins.core.protocol.dlc.models.{AcceptedDLCStatus, DLCStatus}
+import org.bitcoins.core.protocol.dlc.models.{
+  AcceptedDLCStatus,
+  BroadcastedDLCStatus,
+  ClosedDLCStatus,
+  DLCStatus
+}
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
@@ -90,10 +95,24 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
+    val pnlCol = new TableColumn[DLCStatus, String] {
+      text = "PNL"
+      prefWidth = 150
+      cellValueFactory = { status =>
+        status.value match {
+          case closed: ClosedDLCStatus =>
+            new StringProperty(status, "PNL", s"${closed.pnl}")
+          case _: BroadcastedDLCStatus | _: AcceptedDLCStatus | _: Offered =>
+            new StringProperty(status, "PNL", "In progress")
+        }
+      }
+    }
+
     new TableView[DLCStatus](GlobalDLCData.dlcs) {
       columns ++= Seq(eventIdCol,
                       contractIdCol,
                       statusCol,
+                      pnlCol,
                       initiatorCol,
                       collateralCol,
                       otherCollateralCol,
