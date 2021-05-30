@@ -316,7 +316,6 @@ object DLCWalletUtil {
       }
 
       dlcDb <- dlcA.dlcDAO.findByContractId(contractId)
-
       _ <- verifyProperlySetTxIds(dlcA)
       _ <- verifyProperlySetTxIds(dlcB)
     } yield {

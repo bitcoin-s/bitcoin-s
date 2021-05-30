@@ -1223,7 +1223,7 @@ abstract class DLCWallet
     }
   }
 
-  private def getClosingTxIdOpt(dlcDb: DLCDb): Future[Option[TransactionDb]] = {
+  private def getClosingTxOpt(dlcDb: DLCDb): Future[Option[TransactionDb]] = {
     val result = dlcDb.closingTxIdOpt.map(txid => remoteTxDAO.findByTxId(txid))
     result match {
       case None    => Future.successful(None)
@@ -1239,12 +1239,12 @@ abstract class DLCWallet
       acceptDbOpt <- dlcAcceptDAO.read(dlcId)
       (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
         dlcId)
-      closingTxFOpt <- dlcDbOpt.map(dlcDb => getClosingTxIdOpt(dlcDb)) match {
+      closingTxFOpt <- dlcDbOpt.map(dlcDb => getClosingTxOpt(dlcDb)) match {
         case None                 => Future.successful(None)
         case Some(closingTxIdOpt) => closingTxIdOpt
       }
-    } yield (dlcDbOpt, contractDataOpt, offerDbOpt, acceptDbOpt) match {
-      case (Some(dlcDb), Some(contractData), Some(offerDb), Some(acceptDb)) =>
+    } yield (dlcDbOpt, contractDataOpt, offerDbOpt) match {
+      case (Some(dlcDb), Some(contractData), Some(offerDb)) =>
         val totalCollateral = contractData.totalCollateral
 
         val localCollateral = if (dlcDb.isInitiator) {
@@ -1333,9 +1333,11 @@ abstract class DLCWallet
               dlcDb.fundingTxIdOpt.get
             )
           case DLCState.Claimed =>
+            require(acceptDbOpt.isDefined,
+                    s"Must have acceptDb to be in state=${DLCState.Claimed}")
             val closingTxDb = closingTxFOpt.get
             val accounting: DlcAccounting =
-              calculatePnl(dlcDb, offerDb, acceptDb, closingTxDb)
+              calculatePnl(dlcDb, offerDb, acceptDbOpt.get, closingTxDb)
             Claimed(
               dlcId,
               dlcDb.isInitiator,
@@ -1353,9 +1355,12 @@ abstract class DLCWallet
               accounting.pnl
             )
           case DLCState.RemoteClaimed =>
+            require(
+              acceptDbOpt.isDefined,
+              s"Must have acceptDb to be in state=${DLCState.RemoteClaimed}")
             val closingTxDb = closingTxFOpt.get
             val accounting: DlcAccounting =
-              calculatePnl(dlcDb, offerDb, acceptDb, closingTxDb)
+              calculatePnl(dlcDb, offerDb, acceptDbOpt.get, closingTxDb)
             RemoteClaimed(
               dlcId,
               dlcDb.isInitiator,
@@ -1373,9 +1378,12 @@ abstract class DLCWallet
               accounting.pnl
             )
           case DLCState.Refunded =>
+            require(acceptDbOpt.isDefined,
+                    s"Must have acceptDb to be in state=${DLCState.Refunded}")
+
             val closingTxDb = closingTxFOpt.get
             val accounting: DlcAccounting =
-              calculatePnl(dlcDb, offerDb, acceptDb, closingTxDb)
+              calculatePnl(dlcDb, offerDb, acceptDbOpt.get, closingTxDb)
             Refunded(
               dlcId,
               dlcDb.isInitiator,
@@ -1393,7 +1401,7 @@ abstract class DLCWallet
         }
 
         Some(status)
-      case (_, _, _, _) => None
+      case (_, _, _) => None
     }
   }
 
