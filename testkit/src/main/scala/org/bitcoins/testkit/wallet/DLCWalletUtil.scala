@@ -311,13 +311,10 @@ object DLCWalletUtil extends Logging {
       fundingTx <- dlcB.getDLCFundingTx(contractId)
       tx <-
         if (asInitiator) {
-          logger.info(s"Applying func to dlcA")
           func(dlcA)
         } else {
-          logger.info(s"Applying func to dlcB")
           func(dlcB)
         }
-
       _ <- {
         if (asInitiator) dlcB.processTransaction(tx, None)
         else dlcA.processTransaction(tx, None)

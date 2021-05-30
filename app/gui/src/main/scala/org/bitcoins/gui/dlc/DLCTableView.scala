@@ -96,7 +96,7 @@ class DLCTableView(model: DLCPaneModel) {
     }
 
     val pnlCol = new TableColumn[DLCStatus, String] {
-      text = "PNL"
+      text = "Realized PNL"
       prefWidth = 150
       cellValueFactory = { status =>
         status.value match {

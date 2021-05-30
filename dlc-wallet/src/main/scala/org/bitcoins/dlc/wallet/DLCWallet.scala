@@ -7,6 +7,7 @@ import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
+import org.bitcoins.core.dlc.accounting.DlcAccounting
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol._
@@ -1446,17 +1447,6 @@ abstract class DLCWallet
       myPayout = myPayout,
       theirPayout = theirPayout
     )
-  }
-
-  case class DlcAccounting(
-      dlcId: Sha256Digest,
-      myCollateral: CurrencyUnit,
-      theirCollateral: CurrencyUnit,
-      myPayoutAddress: BitcoinAddress,
-      theirPayoutAddress: BitcoinAddress,
-      myPayout: CurrencyUnit,
-      theirPayout: CurrencyUnit) {
-    val pnl: CurrencyUnit = myCollateral - theirCollateral
   }
 
   /** @param newAnnouncements announcements we do not have in our db
