@@ -261,6 +261,7 @@ object Picklers {
     }
 
   private val pnlKey: String = "pnl"
+  private val rateOfReturnKey: String = "rateOfReturn"
 
   implicit val claimedW: Writer[Claimed] = writer[Obj].comap { claimed =>
     import claimed._
@@ -293,7 +294,8 @@ object Picklers {
       "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
       "outcomes" -> outcomesJs,
       "oracles" -> oraclesJs,
-      pnlKey -> Num(claimed.pnl.satoshis.toLong.toDouble)
+      pnlKey -> Num(claimed.pnl.satoshis.toLong.toDouble),
+      rateOfReturnKey -> Num(claimed.rateOfReturn.toDouble)
     )
   }
 
@@ -329,7 +331,8 @@ object Picklers {
         "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
         "outcomes" -> outcomesJs,
         "oracles" -> oraclesJs,
-        pnlKey -> Num(remoteClaimed.pnl.satoshis.toLong.toDouble)
+        pnlKey -> Num(remoteClaimed.pnl.satoshis.toLong.toDouble),
+        rateOfReturnKey -> Num(remoteClaimed.rateOfReturn.toDouble)
       )
     }
 
@@ -352,7 +355,8 @@ object Picklers {
       "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
       "fundingTxId" -> Str(fundingTxId.hex),
       "closingTxId" -> Str(closingTxId.hex),
-      pnlKey -> Num(refunded.pnl.satoshis.toLong.toDouble)
+      pnlKey -> Num(refunded.pnl.satoshis.toLong.toDouble),
+      rateOfReturnKey -> Num(refunded.rateOfReturn.toDouble)
     )
   }
 
@@ -426,8 +430,12 @@ object Picklers {
         throw new IllegalArgumentException(s"Unexpected outcome $signed")
     }
 
-    lazy val pnlJs = obj("pnl")
+    lazy val pnlJs = obj(pnlKey)
     lazy val pnlOpt = pnlJs.numOpt.map(sats => Satoshis(sats.toLong))
+
+    lazy val rateOfReturnJs = obj(rateOfReturnKey)
+
+    lazy val rateOfReturnOpt = rateOfReturnJs.numOpt.map(ror => BigDecimal(ror))
 
     state match {
       case DLCState.Offered =>
@@ -506,7 +514,8 @@ object Picklers {
           closingTxId,
           oracleSigs,
           oracleOutcome,
-          pnlOpt.get
+          pnlOpt.get,
+          rateOfReturnOpt.get
         )
       case DLCState.RemoteClaimed =>
         require(oracleSigs.size == 1,
@@ -525,7 +534,8 @@ object Picklers {
           closingTxId,
           oracleSigs.head,
           oracleOutcome,
-          pnlOpt.get
+          pnlOpt.get,
+          rateOfReturnOpt.get
         )
       case DLCState.Refunded =>
         Refunded(
@@ -540,7 +550,8 @@ object Picklers {
           localCollateral,
           fundingTxId,
           closingTxId,
-          pnlOpt.get
+          pnlOpt.get,
+          rateOfReturnOpt.get
         )
     }
   }

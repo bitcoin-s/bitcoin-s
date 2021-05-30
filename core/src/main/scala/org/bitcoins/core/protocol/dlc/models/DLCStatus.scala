@@ -41,6 +41,7 @@ sealed trait BroadcastedDLCStatus extends AcceptedDLCStatus {
 sealed trait ClosedDLCStatus extends BroadcastedDLCStatus {
   def closingTxId: DoubleSha256DigestBE
   def pnl: CurrencyUnit
+  def rateOfReturn: BigDecimal
 }
 
 sealed trait ClaimedDLCStatus extends ClosedDLCStatus {
@@ -135,7 +136,8 @@ object DLCStatus {
       closingTxId: DoubleSha256DigestBE,
       oracleSigs: Vector[SchnorrDigitalSignature],
       oracleOutcome: OracleOutcome,
-      pnl: CurrencyUnit)
+      pnl: CurrencyUnit,
+      rateOfReturn: BigDecimal)
       extends ClaimedDLCStatus {
     override val state: DLCState.Claimed.type = DLCState.Claimed
   }
@@ -154,7 +156,8 @@ object DLCStatus {
       closingTxId: DoubleSha256DigestBE,
       oracleSig: SchnorrDigitalSignature,
       oracleOutcome: OracleOutcome,
-      pnl: CurrencyUnit)
+      pnl: CurrencyUnit,
+      rateOfReturn: BigDecimal)
       extends ClaimedDLCStatus {
     override val state: DLCState.RemoteClaimed.type = DLCState.RemoteClaimed
     override val oracleSigs: Vector[SchnorrDigitalSignature] = Vector(oracleSig)
@@ -172,7 +175,8 @@ object DLCStatus {
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE,
       closingTxId: DoubleSha256DigestBE,
-      pnl: CurrencyUnit)
+      pnl: CurrencyUnit,
+      rateOfReturn: BigDecimal)
       extends ClosedDLCStatus {
     override val state: DLCState.Refunded.type = DLCState.Refunded
   }

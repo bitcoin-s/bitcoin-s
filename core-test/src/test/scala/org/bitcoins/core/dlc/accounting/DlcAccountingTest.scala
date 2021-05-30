@@ -35,6 +35,7 @@ class DlcAccountingTest extends BitcoinSUnitTest {
 
     //we make 50,000 sats (their collateral) is the profit
     assert(accounting1.pnl == theirCollateral)
+    assert(accounting1.rorPrettyPrint == "100%")
   }
 
   it must "calculate basic pnl where we lose all funds" in {
@@ -53,6 +54,8 @@ class DlcAccountingTest extends BitcoinSUnitTest {
 
     //we lose 50,000 sats (my collateral) is the loss
     assert(accounting1.pnl == Satoshis(-50000))
+    assert(accounting1.rateOfReturn == -1)
+    assert(accounting1.rorPrettyPrint == "-100%")
   }
 
   it must "calculate basic pnl where funds are refunded" in {
@@ -71,5 +74,7 @@ class DlcAccountingTest extends BitcoinSUnitTest {
 
     //collateral refunded, so no pnl
     assert(accounting1.pnl == Satoshis.zero)
+    assert(accounting1.rateOfReturn == 0)
+    assert(accounting1.rorPrettyPrint == "0%")
   }
 }

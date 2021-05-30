@@ -12,5 +12,18 @@ case class DlcAccounting(
     theirPayoutAddress: BitcoinAddress,
     myPayout: CurrencyUnit,
     theirPayout: CurrencyUnit) {
+
+  /** Profit and loss for the DLC
+    * @see https://www.investopedia.com/terms/p/plstatement.asp
+    */
   val pnl: CurrencyUnit = myPayout - myCollateral
+
+  /** Rate of return for the DLC
+    * @see https://www.investopedia.com/terms/r/rateofreturn.asp
+    */
+  val rateOfReturn: BigDecimal = pnl.toBigDecimal / myCollateral.toBigDecimal
+
+  val rorPrettyPrint: String = {
+    RateOfReturnUtil.prettyPrint(rateOfReturn)
+  }
 }

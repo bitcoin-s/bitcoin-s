@@ -174,6 +174,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
     ) { case (isInit, offerTLV, contractId, fundingTxId, closingTxId, sigs) =>
       //cannot extend forParallel to have any more args, so just do this
       val pnl = CurrencyUnitGenerator.positiveRealistic.sampleSome
+      val ror = Gen.double.sampleSome
 
       val offer = DLCOffer.fromTLV(offerTLV)
 
@@ -198,7 +199,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
           closingTxId,
           sigs.toVector,
           outcome,
-          pnl
+          pnl,
+          ror
         )
 
       assert(status.state == DLCState.Claimed)
@@ -220,6 +222,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
     ) { case (isInit, offerTLV, contractId, fundingTxId, closingTxId, sig) =>
       //cannot extend forParallel to have any more args, so just do this
       val pnl = CurrencyUnitGenerator.positiveRealistic.sampleSome
+      val ror = Gen.double.sampleSome
+
       val offer = DLCOffer.fromTLV(offerTLV)
 
       val totalCollateral = offer.contractInfo.max
@@ -243,7 +247,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
           closingTxId,
           sig,
           outcome,
-          pnl
+          pnl,
+          ror
         )
 
       assert(status.state == DLCState.RemoteClaimed)
@@ -264,6 +269,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
     ) { case (isInit, offerTLV, contractId, fundingTxId, closingTxId) =>
       //cannot extend forParallel to have any more args, so just do this
       val pnl = CurrencyUnitGenerator.positiveRealistic.sampleSome
+      val ror = Gen.double.sampleSome
 
       val offer = DLCOffer.fromTLV(offerTLV)
 
@@ -282,7 +288,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
           offer.totalCollateral,
           fundingTxId,
           closingTxId,
-          pnl
+          pnl,
+          ror
         )
 
       assert(status.state == DLCState.Refunded)

@@ -1,5 +1,6 @@
 package org.bitcoins.gui.dlc
 
+import org.bitcoins.core.dlc.accounting.RateOfReturnUtil
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models.{
   AcceptedDLCStatus,
@@ -108,11 +109,28 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
+    val rorCol = new TableColumn[DLCStatus, String] {
+      text = "Rate of Return"
+      prefWidth = 150
+      cellValueFactory = { status =>
+        status.value match {
+          case closed: ClosedDLCStatus =>
+            new StringProperty(
+              status,
+              "Rate of Return",
+              s"${RateOfReturnUtil.prettyPrint(closed.rateOfReturn)}")
+          case _: BroadcastedDLCStatus | _: AcceptedDLCStatus | _: Offered =>
+            new StringProperty(status, "Rate of Return", "In progress")
+        }
+      }
+    }
+
     new TableView[DLCStatus](GlobalDLCData.dlcs) {
       columns ++= Seq(eventIdCol,
                       contractIdCol,
                       statusCol,
                       pnlCol,
+                      rorCol,
                       initiatorCol,
                       collateralCol,
                       otherCollateralCol,
