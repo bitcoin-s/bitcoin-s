@@ -38,7 +38,7 @@ abstract class WalletGUI {
 
   private lazy val unconfirmedText = new Label() {
     text <== StringProperty(
-      "Unconfirmed balance:\t") + GlobalData.currentReservedBalance + StringProperty(
+      "Unconfirmed balance:\t") + GlobalData.currentUnconfirmedBalance + StringProperty(
       " sats")
   }
 
