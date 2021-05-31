@@ -194,7 +194,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           sigs.toVector,
           outcome,
           myPayout = myPayout,
-          theirPayout = theirPayout
+          counterPartyPayout = theirPayout
         )
 
       assert(status.state == DLCState.Claimed)
@@ -243,7 +243,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           sig,
           outcome,
           myPayout = myPayout,
-          theirPayout = theirPayout
+          counterPartyPayout = theirPayout
         )
 
       assert(status.state == DLCState.RemoteClaimed)
@@ -285,7 +285,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           fundingTxId,
           closingTxId,
           myPayout = myPayout,
-          theirPayout = theirPayout
+          counterPartyPayout = theirPayout
         )
 
       assert(status.state == DLCState.Refunded)

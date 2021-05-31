@@ -111,9 +111,9 @@ object ViewDLCDialog {
               rowIndex = row)
 
           row += 1
-          add(new Label("Their payout:"), 0, row)
+          add(new Label("Counter party payout:"), 0, row)
           add(new TextField() {
-                text = s"${closed.theirPayout}"
+                text = s"${closed.counterPartyPayout}"
                 editable = false
               },
               columnIndex = 1,

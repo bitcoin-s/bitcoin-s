@@ -7,7 +7,7 @@ import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
-import org.bitcoins.core.dlc.accounting.DlcAccounting
+import org.bitcoins.core.dlc.accounting.DLCAccounting
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol._
@@ -1339,8 +1339,11 @@ abstract class DLCWallet
             require(acceptDbOpt.isDefined,
                     s"Must have acceptDb to be in state=${DLCState.Claimed}")
             val closingTxDb = closingTxFOpt.get
-            val accounting: DlcAccounting =
-              calculatePnl(dlcDb, offerDb, acceptDbOpt.get, closingTxDb)
+            val accounting: DLCAccounting =
+              calculatePnl(dlcDb,
+                           offerDb,
+                           acceptDbOpt.get,
+                           closingTxDb.transaction)
             Claimed(
               dlcId,
               dlcDb.isInitiator,
@@ -1356,15 +1359,18 @@ abstract class DLCWallet
               sigs,
               oracleOutcome,
               myPayout = accounting.myPayout,
-              theirPayout = accounting.theirPayout
+              counterPartyPayout = accounting.theirPayout
             )
           case DLCState.RemoteClaimed =>
             require(
               acceptDbOpt.isDefined,
               s"Must have acceptDb to be in state=${DLCState.RemoteClaimed}")
             val closingTxDb = closingTxFOpt.get
-            val accounting: DlcAccounting =
-              calculatePnl(dlcDb, offerDb, acceptDbOpt.get, closingTxDb)
+            val accounting: DLCAccounting =
+              calculatePnl(dlcDb,
+                           offerDb,
+                           acceptDbOpt.get,
+                           closingTxDb.transaction)
             RemoteClaimed(
               dlcId,
               dlcDb.isInitiator,
@@ -1380,15 +1386,18 @@ abstract class DLCWallet
               dlcDb.aggregateSignatureOpt.get,
               oracleOutcome,
               myPayout = accounting.myPayout,
-              theirPayout = accounting.theirPayout
+              counterPartyPayout = accounting.theirPayout
             )
           case DLCState.Refunded =>
             require(acceptDbOpt.isDefined,
                     s"Must have acceptDb to be in state=${DLCState.Refunded}")
 
             val closingTxDb = closingTxFOpt.get
-            val accounting: DlcAccounting =
-              calculatePnl(dlcDb, offerDb, acceptDbOpt.get, closingTxDb)
+            val accounting: DLCAccounting =
+              calculatePnl(dlcDb,
+                           offerDb,
+                           acceptDbOpt.get,
+                           closingTxDb.transaction)
             Refunded(
               dlcId,
               dlcDb.isInitiator,
@@ -1402,7 +1411,7 @@ abstract class DLCWallet
               dlcDb.fundingTxIdOpt.get,
               dlcDb.closingTxIdOpt.get,
               myPayout = accounting.myPayout,
-              theirPayout = accounting.theirPayout
+              counterPartyPayout = accounting.theirPayout
             )
         }
 
@@ -1415,7 +1424,7 @@ abstract class DLCWallet
       dlcDb: DLCDb,
       offerDb: DLCOfferDb,
       acceptDb: DLCAcceptDb,
-      closingTxDb: TransactionDb): DlcAccounting = {
+      closingTx: Transaction): DLCAccounting = {
     val (myCollateral, theirCollateral, myPayoutAddress, theirPayoutAddress) = {
       if (dlcDb.isInitiator) {
         val myCollateral = offerDb.collateral
@@ -1433,15 +1442,15 @@ abstract class DLCWallet
       }
     }
 
-    val myPayout = closingTxDb.transaction.outputs
+    val myPayout = closingTx.outputs
       .filter(_.scriptPubKey == myPayoutAddress.scriptPubKey)
       .map(_.value)
       .sum
-    val theirPayout = closingTxDb.transaction.outputs
+    val theirPayout = closingTx.outputs
       .filter(_.scriptPubKey == theirPayoutAddress.scriptPubKey)
       .map(_.value)
       .sum
-    DlcAccounting(
+    DLCAccounting(
       dlcId = dlcDb.dlcId,
       myCollateral = myCollateral,
       theirCollateral = theirCollateral,

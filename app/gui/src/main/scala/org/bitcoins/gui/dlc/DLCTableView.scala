@@ -33,7 +33,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val contractIdCol = new TableColumn[DLCStatus, String] {
       text = "Contract Id"
-      prefWidth = 150
+      prefWidth = 100
       cellValueFactory = { status =>
         val contractIdStr = status.value match {
           case _: Offered => ""
@@ -47,7 +47,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val statusCol = new TableColumn[DLCStatus, String] {
       text = "Status"
-      prefWidth = 150
+      prefWidth = 75
       cellValueFactory = { status =>
         new StringProperty(status, "Status", status.value.statusString)
       }
@@ -98,7 +98,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val pnlCol = new TableColumn[DLCStatus, String] {
       text = "Realized PNL"
-      prefWidth = 150
+      prefWidth = 100
       cellValueFactory = { status =>
         status.value match {
           case closed: ClosedDLCStatus =>
@@ -111,7 +111,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val rorCol = new TableColumn[DLCStatus, String] {
       text = "Rate of Return"
-      prefWidth = 150
+      prefWidth = 100
       cellValueFactory = { status =>
         status.value match {
           case closed: ClosedDLCStatus =>

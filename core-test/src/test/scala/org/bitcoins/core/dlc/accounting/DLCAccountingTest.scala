@@ -4,14 +4,14 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
-class DlcAccountingTest extends BitcoinSUnitTest {
+class DLCAccountingTest extends BitcoinSUnitTest {
   behavior of "DlcAccounting"
 
   it must "calculate basic pnl where we win all funds" in {
     val myCollateral = Satoshis(50000)
     val theirCollateral = myCollateral //symmetrical collateral
 
-    val accounting1 = DlcAccounting(
+    val accounting1 = DLCAccounting(
       dlcId = Sha256Digest.empty,
       myCollateral = myCollateral,
       theirCollateral = theirCollateral,
@@ -28,7 +28,7 @@ class DlcAccountingTest extends BitcoinSUnitTest {
     val myCollateral = Satoshis(50000)
     val theirCollateral = myCollateral //symmetrical collateral
 
-    val accounting1 = DlcAccounting(
+    val accounting1 = DLCAccounting(
       dlcId = Sha256Digest.empty,
       myCollateral = Satoshis(50000),
       theirCollateral = Satoshis(50000),
@@ -46,7 +46,7 @@ class DlcAccountingTest extends BitcoinSUnitTest {
     val myCollateral = Satoshis(50000)
     val theirCollateral = myCollateral //symmetrical collateral
 
-    val accounting1 = DlcAccounting(
+    val accounting1 = DLCAccounting(
       dlcId = Sha256Digest.empty,
       myCollateral = Satoshis(50000),
       theirCollateral = Satoshis(50000),
