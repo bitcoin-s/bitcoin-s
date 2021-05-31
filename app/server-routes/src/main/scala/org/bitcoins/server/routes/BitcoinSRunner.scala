@@ -95,6 +95,10 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
     val usedDir: Path =
       DatadirUtil.getFinalDatadir(datadir, baseConfig, customFinalDirOpt)
 
+    if (Properties.isWin) {
+      System.setProperty("HOME", datadir.getParent.toAbsolutePath.toString)
+    }
+
     //We need to set the system property before any logger instances
     //are in instantiated. If we don't do this, we will not log to
     //the correct location

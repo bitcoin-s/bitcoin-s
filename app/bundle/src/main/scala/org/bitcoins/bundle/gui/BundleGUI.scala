@@ -15,6 +15,7 @@ import scalafx.scene.control._
 import scalafx.scene.layout.VBox
 
 import java.nio.file.{Path, Paths}
+import scala.util.Properties
 
 object BundleGUI extends WalletGUI with JFXApp {
 
@@ -43,6 +44,10 @@ object BundleGUI extends WalletGUI with JFXApp {
     val usedDir = DatadirUtil.getFinalDatadir(datadir, baseConfig, None)
 
     System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
+
+    if (Properties.isWin) {
+      System.setProperty("HOME", datadir.getParent.toAbsolutePath.toString)
+    }
   }
 
   implicit lazy val system: ActorSystem = ActorSystem(
