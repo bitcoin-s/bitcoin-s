@@ -174,7 +174,7 @@ class DLCPaneModel(resultArea: TextArea) extends Logging {
   }
 
   def viewDLC(status: DLCStatus): Unit = {
-    updateDLCs()
+    updateDLC(status.dlcId)
     val updatedStatus = dlcs.find(_.tempContractId == status.tempContractId)
     ViewDLCDialog.showAndWait(parentWindow.value,
                               updatedStatus.getOrElse(status),
