@@ -99,6 +99,47 @@ object ViewDLCDialog {
           columnIndex = 1,
           rowIndex = row)
 
+      status match {
+        case closed: ClosedDLCStatus =>
+          row += 1
+          add(new Label("My payout:"), 0, row)
+          add(new TextField() {
+                text = s"${closed.myPayout}"
+                editable = false
+              },
+              columnIndex = 1,
+              rowIndex = row)
+
+          row += 1
+          add(new Label("Counter party payout:"), 0, row)
+          add(new TextField() {
+                text = s"${closed.counterPartyPayout}"
+                editable = false
+              },
+              columnIndex = 1,
+              rowIndex = row)
+
+          row += 1
+          add(new Label("PNL:"), 0, row)
+          add(new TextField() {
+                text = s"${closed.pnl}"
+                editable = false
+              },
+              columnIndex = 1,
+              rowIndex = row)
+
+          row += 1
+          add(new Label("Rate of Return:"), 0, row)
+          add(new TextField() {
+                text = s"${closed.rateOfReturnPrettyPrint}"
+                editable = false
+              },
+              columnIndex = 1,
+              rowIndex = row)
+        case _: AcceptedDLCStatus | _: Offered =>
+        //do nothing as that stats aren't available
+      }
+
       row += 1
       add(new Label("Fee Rate:"), 0, row)
       add(new TextField() {

@@ -2,6 +2,7 @@ package org.bitcoins.commons
 
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.commons.serializers.Picklers._
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models.{DLCState, DLCStatus}
 import org.bitcoins.crypto.Sha256Digest
@@ -169,7 +170,11 @@ class DLCStatusTest extends BitcoinSJvmTest {
       val offer = DLCOffer.fromTLV(offerTLV)
 
       val totalCollateral = offer.contractInfo.max
+      val randomMyPayout =
+        Math.abs(scala.util.Random.nextLong() % totalCollateral.toLong)
+      val myPayout: CurrencyUnit = Satoshis(randomMyPayout)
 
+      val theirPayout: CurrencyUnit = totalCollateral - myPayout
       val rand =
         scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
       val outcome = offer.contractInfo.allOutcomes(rand)
@@ -188,7 +193,9 @@ class DLCStatusTest extends BitcoinSJvmTest {
           fundingTxId,
           closingTxId,
           sigs.toVector,
-          outcome
+          outcome,
+          myPayout = myPayout,
+          counterPartyPayout = theirPayout
         )
 
       assert(status.state == DLCState.Claimed)
@@ -212,6 +219,12 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
       val totalCollateral = offer.contractInfo.max
 
+      val randomMyPayout =
+        Math.abs(scala.util.Random.nextLong() % totalCollateral.toLong)
+      val myPayout: CurrencyUnit = Satoshis(randomMyPayout)
+
+      val theirPayout: CurrencyUnit = totalCollateral - myPayout
+
       val rand =
         scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
       val outcome = offer.contractInfo.allOutcomes(rand)
@@ -230,7 +243,9 @@ class DLCStatusTest extends BitcoinSJvmTest {
           fundingTxId,
           closingTxId,
           sig,
-          outcome
+          outcome,
+          myPayout = myPayout,
+          counterPartyPayout = theirPayout
         )
 
       assert(status.state == DLCState.RemoteClaimed)
@@ -253,6 +268,13 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
       val totalCollateral = offer.contractInfo.max
 
+      val randomMyPayout =
+        Math.abs(scala.util.Random.nextLong() % totalCollateral.toLong)
+      val myPayout: CurrencyUnit =
+        Satoshis(randomMyPayout)
+
+      val theirPayout: CurrencyUnit = totalCollateral - myPayout
+
       val status =
         DLCStatus.Refunded(
           Sha256Digest.empty,
@@ -265,7 +287,9 @@ class DLCStatusTest extends BitcoinSJvmTest {
           totalCollateral,
           offer.totalCollateral,
           fundingTxId,
-          closingTxId
+          closingTxId,
+          myPayout = myPayout,
+          counterPartyPayout = theirPayout
         )
 
       assert(status.state == DLCState.Refunded)

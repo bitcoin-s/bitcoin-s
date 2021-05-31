@@ -1,5 +1,6 @@
 package org.bitcoins.testkit.wallet
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.crypto.WitnessTxSigComponent
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{BIP32Path, HDAccount, HDChainType}
@@ -30,7 +31,7 @@ import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object DLCWalletUtil {
+object DLCWalletUtil extends Logging {
   lazy val oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
 
   lazy val kValues: Vector[ECPrivateKey] =
@@ -308,15 +309,18 @@ object DLCWalletUtil {
     for {
       contractId <- getContractId(dlcA)
       fundingTx <- dlcB.getDLCFundingTx(contractId)
-      tx <- if (asInitiator) func(dlcA) else func(dlcB)
-
+      tx <-
+        if (asInitiator) {
+          func(dlcA)
+        } else {
+          func(dlcB)
+        }
       _ <- {
         if (asInitiator) dlcB.processTransaction(tx, None)
         else dlcA.processTransaction(tx, None)
       }
 
       dlcDb <- dlcA.dlcDAO.findByContractId(contractId)
-
       _ <- verifyProperlySetTxIds(dlcA)
       _ <- verifyProperlySetTxIds(dlcB)
     } yield {

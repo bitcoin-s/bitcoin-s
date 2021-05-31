@@ -161,15 +161,12 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                  expectedOutputs = 1)
 
       _ = assert(result)
-
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
       dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
 
       dlcId = status.dlcId
-
       statusAOpt <- wallets._1.wallet.findDLC(dlcId)
       statusBOpt <- wallets._2.wallet.findDLC(dlcId)
-
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: Claimed), Some(statusB: RemoteClaimed)) =>

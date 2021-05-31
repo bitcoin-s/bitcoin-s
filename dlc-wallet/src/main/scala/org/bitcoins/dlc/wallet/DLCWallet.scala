@@ -7,6 +7,7 @@ import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
+import org.bitcoins.core.dlc.accounting.DLCAccounting
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol._
@@ -27,6 +28,7 @@ import org.bitcoins.dlc.wallet.internal._
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.TransactionDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
 
@@ -58,6 +60,7 @@ abstract class DLCWallet
   private[bitcoins] val dlcSigsDAO: DLCCETSignaturesDAO = DLCCETSignaturesDAO()
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
+  private[bitcoins] val txDAO: TransactionDAO = TransactionDAO()
 
   private def calcContractId(offer: DLCOffer, accept: DLCAccept): ByteVector = {
     val builder = DLCTxBuilder(offer, accept.withoutSigs)
@@ -138,8 +141,8 @@ abstract class DLCWallet
             new IllegalArgumentException(
               s"No DLCDb found with contractId ${contractId.toHex}"))
       }
-      _ = logger.debug(
-        s"Updating DLC (${contractId.toHex}) closing txId to ${txId.hex}")
+      _ = logger.info(
+        s"Updating DLC (${contractId.toHex}) closing txId to txIdBE=${txId.hex}")
       updated <- dlcDAO.update(dlcDb.copy(closingTxIdOpt = Some(txId)))
     } yield updated
   }
@@ -1223,13 +1226,26 @@ abstract class DLCWallet
     }
   }
 
+  private def getClosingTxOpt(dlcDb: DLCDb): Future[Option[TransactionDb]] = {
+    val result = dlcDb.closingTxIdOpt.map(txid => txDAO.findByTxId(txid))
+    result match {
+      case None    => Future.successful(None)
+      case Some(r) => r
+    }
+  }
+
   override def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]] = {
     for {
       dlcDbOpt <- dlcDAO.read(dlcId)
       contractDataOpt <- contractDataDAO.read(dlcId)
       offerDbOpt <- dlcOfferDAO.read(dlcId)
+      acceptDbOpt <- dlcAcceptDAO.read(dlcId)
       (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
         dlcId)
+      closingTxFOpt <- dlcDbOpt.map(dlcDb => getClosingTxOpt(dlcDb)) match {
+        case None                 => Future.successful(None)
+        case Some(closingTxIdOpt) => closingTxIdOpt
+      }
     } yield (dlcDbOpt, contractDataOpt, offerDbOpt) match {
       case (Some(dlcDb), Some(contractData), Some(offerDb)) =>
         val totalCollateral = contractData.totalCollateral
@@ -1320,6 +1336,14 @@ abstract class DLCWallet
               dlcDb.fundingTxIdOpt.get
             )
           case DLCState.Claimed =>
+            require(acceptDbOpt.isDefined,
+                    s"Must have acceptDb to be in state=${DLCState.Claimed}")
+            val closingTxDb = closingTxFOpt.get
+            val accounting: DLCAccounting =
+              calculatePnl(dlcDb,
+                           offerDb,
+                           acceptDbOpt.get,
+                           closingTxDb.transaction)
             Claimed(
               dlcId,
               dlcDb.isInitiator,
@@ -1333,9 +1357,20 @@ abstract class DLCWallet
               dlcDb.fundingTxIdOpt.get,
               dlcDb.closingTxIdOpt.get,
               sigs,
-              oracleOutcome
+              oracleOutcome,
+              myPayout = accounting.myPayout,
+              counterPartyPayout = accounting.theirPayout
             )
           case DLCState.RemoteClaimed =>
+            require(
+              acceptDbOpt.isDefined,
+              s"Must have acceptDb to be in state=${DLCState.RemoteClaimed}")
+            val closingTxDb = closingTxFOpt.get
+            val accounting: DLCAccounting =
+              calculatePnl(dlcDb,
+                           offerDb,
+                           acceptDbOpt.get,
+                           closingTxDb.transaction)
             RemoteClaimed(
               dlcId,
               dlcDb.isInitiator,
@@ -1349,9 +1384,20 @@ abstract class DLCWallet
               dlcDb.fundingTxIdOpt.get,
               dlcDb.closingTxIdOpt.get,
               dlcDb.aggregateSignatureOpt.get,
-              oracleOutcome
+              oracleOutcome,
+              myPayout = accounting.myPayout,
+              counterPartyPayout = accounting.theirPayout
             )
           case DLCState.Refunded =>
+            require(acceptDbOpt.isDefined,
+                    s"Must have acceptDb to be in state=${DLCState.Refunded}")
+
+            val closingTxDb = closingTxFOpt.get
+            val accounting: DLCAccounting =
+              calculatePnl(dlcDb,
+                           offerDb,
+                           acceptDbOpt.get,
+                           closingTxDb.transaction)
             Refunded(
               dlcId,
               dlcDb.isInitiator,
@@ -1363,13 +1409,54 @@ abstract class DLCWallet
               totalCollateral,
               localCollateral,
               dlcDb.fundingTxIdOpt.get,
-              dlcDb.closingTxIdOpt.get
+              dlcDb.closingTxIdOpt.get,
+              myPayout = accounting.myPayout,
+              counterPartyPayout = accounting.theirPayout
             )
         }
 
         Some(status)
       case (_, _, _) => None
     }
+  }
+
+  private def calculatePnl(
+      dlcDb: DLCDb,
+      offerDb: DLCOfferDb,
+      acceptDb: DLCAcceptDb,
+      closingTx: Transaction): DLCAccounting = {
+    val (myCollateral, theirCollateral, myPayoutAddress, theirPayoutAddress) = {
+      if (dlcDb.isInitiator) {
+        val myCollateral = offerDb.collateral
+        val theirCollateral = acceptDb.collateral
+        val myPayoutAddress = offerDb.payoutAddress
+        val theirPayoutAddress = acceptDb.payoutAddress
+        (myCollateral, theirCollateral, myPayoutAddress, theirPayoutAddress)
+
+      } else {
+        val myCollateral = acceptDb.collateral
+        val theirCollateral = offerDb.collateral
+        val myPayoutAddress = acceptDb.payoutAddress
+        val theirPayoutAddress = offerDb.payoutAddress
+        (myCollateral, theirCollateral, myPayoutAddress, theirPayoutAddress)
+      }
+    }
+
+    val myPayout = closingTx.outputs
+      .filter(_.scriptPubKey == myPayoutAddress.scriptPubKey)
+      .map(_.value)
+      .sum
+    val theirPayout = closingTx.outputs
+      .filter(_.scriptPubKey == theirPayoutAddress.scriptPubKey)
+      .map(_.value)
+      .sum
+    DLCAccounting(
+      dlcId = dlcDb.dlcId,
+      myCollateral = myCollateral,
+      theirCollateral = theirCollateral,
+      myPayout = myPayout,
+      theirPayout = theirPayout
+    )
   }
 
   /** @param newAnnouncements announcements we do not have in our db

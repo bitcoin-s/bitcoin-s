@@ -260,6 +260,11 @@ object Picklers {
       )
     }
 
+  private val myPayoutKey: String = "myPayout"
+  private val counterPartyPayoutKey: String = "counterPartyPayout"
+  private val pnlKey: String = "pnl"
+  private val rateOfReturnKey: String = "rateOfReturn"
+
   implicit val claimedW: Writer[Claimed] = writer[Obj].comap { claimed =>
     import claimed._
     val (oraclesJs, outcomesJs) = oracleOutcome match {
@@ -290,7 +295,12 @@ object Picklers {
       "closingTxId" -> Str(closingTxId.hex),
       "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
       "outcomes" -> outcomesJs,
-      "oracles" -> oraclesJs
+      "oracles" -> oraclesJs,
+      myPayoutKey -> Num(claimed.myPayout.satoshis.toLong.toDouble),
+      counterPartyPayoutKey -> Num(
+        claimed.counterPartyPayout.satoshis.toLong.toDouble),
+      pnlKey -> Num(claimed.pnl.satoshis.toLong.toDouble),
+      rateOfReturnKey -> Num(claimed.rateOfReturn.toDouble)
     )
   }
 
@@ -325,7 +335,12 @@ object Picklers {
         "closingTxId" -> Str(closingTxId.hex),
         "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
         "outcomes" -> outcomesJs,
-        "oracles" -> oraclesJs
+        "oracles" -> oraclesJs,
+        myPayoutKey -> Num(remoteClaimed.myPayout.satoshis.toLong.toDouble),
+        counterPartyPayoutKey -> Num(
+          remoteClaimed.counterPartyPayout.satoshis.toLong.toDouble),
+        pnlKey -> Num(remoteClaimed.pnl.satoshis.toLong.toDouble),
+        rateOfReturnKey -> Num(remoteClaimed.rateOfReturn.toDouble)
       )
     }
 
@@ -347,7 +362,12 @@ object Picklers {
       "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
       "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
       "fundingTxId" -> Str(fundingTxId.hex),
-      "closingTxId" -> Str(closingTxId.hex)
+      "closingTxId" -> Str(closingTxId.hex),
+      myPayoutKey -> Num(refunded.myPayout.satoshis.toLong.toDouble),
+      counterPartyPayoutKey -> Num(
+        refunded.counterPartyPayout.satoshis.toLong.toDouble),
+      pnlKey -> Num(refunded.pnl.satoshis.toLong.toDouble),
+      rateOfReturnKey -> Num(refunded.rateOfReturn.toDouble)
     )
   }
 
@@ -420,6 +440,12 @@ object Picklers {
       case signed: SignedNumericOutcome =>
         throw new IllegalArgumentException(s"Unexpected outcome $signed")
     }
+
+    lazy val myPayoutJs = obj(myPayoutKey)
+    lazy val myPayoutOpt = myPayoutJs.numOpt.map(sats => Satoshis(sats.toLong))
+    lazy val theirPayoutJs = obj(counterPartyPayoutKey)
+    lazy val theirPayoutOpt =
+      theirPayoutJs.numOpt.map(sats => Satoshis(sats.toLong))
 
     state match {
       case DLCState.Offered =>
@@ -497,7 +523,9 @@ object Picklers {
           fundingTxId,
           closingTxId,
           oracleSigs,
-          oracleOutcome
+          oracleOutcome,
+          myPayout = myPayoutOpt.get,
+          counterPartyPayout = theirPayoutOpt.get
         )
       case DLCState.RemoteClaimed =>
         require(oracleSigs.size == 1,
@@ -515,7 +543,9 @@ object Picklers {
           fundingTxId,
           closingTxId,
           oracleSigs.head,
-          oracleOutcome
+          oracleOutcome,
+          myPayout = myPayoutOpt.get,
+          counterPartyPayout = theirPayoutOpt.get
         )
       case DLCState.Refunded =>
         Refunded(
@@ -529,7 +559,9 @@ object Picklers {
           totalCollateral,
           localCollateral,
           fundingTxId,
-          closingTxId
+          closingTxId,
+          myPayout = myPayoutOpt.get,
+          counterPartyPayout = theirPayoutOpt.get
         )
     }
   }

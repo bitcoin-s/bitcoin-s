@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.dlc.models
 
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.dlc.accounting.{DLCAccounting, RateOfReturnUtil}
 import org.bitcoins.core.protocol.dlc.compute.DLCUtil
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
   DLCAccept,
@@ -40,6 +41,22 @@ sealed trait BroadcastedDLCStatus extends AcceptedDLCStatus {
 
 sealed trait ClosedDLCStatus extends BroadcastedDLCStatus {
   def closingTxId: DoubleSha256DigestBE
+  def myPayout: CurrencyUnit
+  def counterPartyPayout: CurrencyUnit
+
+  private def accounting: DLCAccounting = {
+    DLCAccounting(dlcId,
+                  localCollateral,
+                  remoteCollateral,
+                  myPayout,
+                  counterPartyPayout)
+  }
+
+  def pnl: CurrencyUnit = accounting.pnl
+  def rateOfReturn: BigDecimal = accounting.rateOfReturn
+
+  def rateOfReturnPrettyPrint: String =
+    RateOfReturnUtil.prettyPrint(rateOfReturn)
 }
 
 sealed trait ClaimedDLCStatus extends ClosedDLCStatus {
@@ -133,7 +150,9 @@ object DLCStatus {
       fundingTxId: DoubleSha256DigestBE,
       closingTxId: DoubleSha256DigestBE,
       oracleSigs: Vector[SchnorrDigitalSignature],
-      oracleOutcome: OracleOutcome)
+      oracleOutcome: OracleOutcome,
+      myPayout: CurrencyUnit,
+      counterPartyPayout: CurrencyUnit)
       extends ClaimedDLCStatus {
     override val state: DLCState.Claimed.type = DLCState.Claimed
   }
@@ -151,7 +170,9 @@ object DLCStatus {
       fundingTxId: DoubleSha256DigestBE,
       closingTxId: DoubleSha256DigestBE,
       oracleSig: SchnorrDigitalSignature,
-      oracleOutcome: OracleOutcome)
+      oracleOutcome: OracleOutcome,
+      myPayout: CurrencyUnit,
+      counterPartyPayout: CurrencyUnit)
       extends ClaimedDLCStatus {
     override val state: DLCState.RemoteClaimed.type = DLCState.RemoteClaimed
     override val oracleSigs: Vector[SchnorrDigitalSignature] = Vector(oracleSig)
@@ -168,7 +189,9 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE,
-      closingTxId: DoubleSha256DigestBE)
+      closingTxId: DoubleSha256DigestBE,
+      myPayout: CurrencyUnit,
+      counterPartyPayout: CurrencyUnit)
       extends ClosedDLCStatus {
     override val state: DLCState.Refunded.type = DLCState.Refunded
   }

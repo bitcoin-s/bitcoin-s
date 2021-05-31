@@ -1,7 +1,13 @@
 package org.bitcoins.gui.dlc
 
+import org.bitcoins.core.dlc.accounting.RateOfReturnUtil
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
-import org.bitcoins.core.protocol.dlc.models.{AcceptedDLCStatus, DLCStatus}
+import org.bitcoins.core.protocol.dlc.models.{
+  AcceptedDLCStatus,
+  BroadcastedDLCStatus,
+  ClosedDLCStatus,
+  DLCStatus
+}
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
@@ -27,7 +33,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val contractIdCol = new TableColumn[DLCStatus, String] {
       text = "Contract Id"
-      prefWidth = 150
+      prefWidth = 100
       cellValueFactory = { status =>
         val contractIdStr = status.value match {
           case _: Offered => ""
@@ -41,22 +47,9 @@ class DLCTableView(model: DLCPaneModel) {
 
     val statusCol = new TableColumn[DLCStatus, String] {
       text = "Status"
-      prefWidth = 150
+      prefWidth = 125
       cellValueFactory = { status =>
         new StringProperty(status, "Status", status.value.statusString)
-      }
-    }
-
-    val initiatorCol = new TableColumn[DLCStatus, String] {
-      text = "Initiator"
-      prefWidth = 80
-      cellValueFactory = { status =>
-        val str = if (status.value.isInitiator) {
-          "Yes"
-        } else {
-          "No"
-        }
-        new StringProperty(status, "Initiator", str)
       }
     }
 
@@ -82,7 +75,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val totalCollateralCol = new TableColumn[DLCStatus, String] {
       text = "Total Collateral"
-      prefWidth = 150
+      prefWidth = 125
       cellValueFactory = { status =>
         val amt = GUIUtil.numberFormatter.format(
           status.value.totalCollateral.satoshis.toLong)
@@ -90,11 +83,41 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
+    val pnlCol = new TableColumn[DLCStatus, String] {
+      text = "Realized PNL"
+      prefWidth = 100
+      cellValueFactory = { status =>
+        status.value match {
+          case closed: ClosedDLCStatus =>
+            new StringProperty(status, "PNL", s"${closed.pnl}")
+          case _: BroadcastedDLCStatus | _: AcceptedDLCStatus | _: Offered =>
+            new StringProperty(status, "PNL", "In progress")
+        }
+      }
+    }
+
+    val rorCol = new TableColumn[DLCStatus, String] {
+      text = "Rate of Return"
+      prefWidth = 125
+      cellValueFactory = { status =>
+        status.value match {
+          case closed: ClosedDLCStatus =>
+            new StringProperty(
+              status,
+              "Rate of Return",
+              s"${RateOfReturnUtil.prettyPrint(closed.rateOfReturn)}")
+          case _: BroadcastedDLCStatus | _: AcceptedDLCStatus | _: Offered =>
+            new StringProperty(status, "Rate of Return", "In progress")
+        }
+      }
+    }
+
     new TableView[DLCStatus](GlobalDLCData.dlcs) {
       columns ++= Seq(eventIdCol,
                       contractIdCol,
                       statusCol,
-                      initiatorCol,
+                      pnlCol,
+                      rorCol,
                       collateralCol,
                       otherCollateralCol,
                       totalCollateralCol)
