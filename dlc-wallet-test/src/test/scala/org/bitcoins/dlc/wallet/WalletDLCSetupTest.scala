@@ -529,6 +529,39 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       } yield succeed
   }
 
+  it must "fail to refund a DLC that hasn't reached its timeout" in {
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
+
+      val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
+
+      for {
+        offer <- walletA.createDLCOffer(
+          offerData.contractInfo,
+          offerData.totalCollateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          UInt32.max
+        )
+        accept <- walletB.acceptDLCOffer(offer)
+        sign <- walletA.signDLC(accept)
+        _ <- walletB.addDLCSigs(sign)
+
+        tx <- walletB.broadcastDLCFundingTx(sign.contractId)
+        // make sure other wallet sees it
+        _ <- walletA.processTransaction(tx, None)
+
+        dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
+
+        _ <- recoverToSucceededIf[IllegalArgumentException](
+          walletA.executeDLCRefund(sign.contractId))
+
+        _ <- recoverToSucceededIf[IllegalArgumentException](
+          walletB.executeDLCRefund(sign.contractId))
+      } yield succeed
+  }
+
   it must "setup and execute with oracle example" in {
     FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
       val walletA = FundedDLCWallets._1.wallet

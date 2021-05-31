@@ -95,8 +95,8 @@ object DLCWalletUtil extends Logging {
   lazy val multiNonceContractInfo: ContractInfo =
     ContractInfo(total, multiNonceContractOraclePair)
 
-  lazy val dummyContractMaturity: BlockTimeStamp = BlockTimeStamp(1666335)
-  lazy val dummyContractTimeout: BlockTimeStamp = BlockTimeStamp(1666337)
+  lazy val dummyContractMaturity: BlockTimeStamp = BlockTimeStamp(0)
+  lazy val dummyContractTimeout: BlockTimeStamp = BlockTimeStamp(1)
 
   lazy val dummyTimeouts: DLCTimeouts =
     DLCTimeouts(dummyContractMaturity, dummyContractTimeout)
