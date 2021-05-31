@@ -1,22 +1,16 @@
 // these two imports are needed for sbt syntax to work
-import com.typesafe.sbt.SbtNativePackager.Docker
+import com.typesafe.sbt.SbtNativePackager.{Docker, Windows}
 import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 
 import java.nio.file.Paths
-import com.typesafe.sbt.packager.Keys.{
-  daemonUser,
-  daemonUserUid,
-  dockerAlias,
-  dockerAliases,
-  dockerRepository,
-  dockerUpdateLatest,
-  maintainer
-}
+import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerRepository, dockerUpdateLatest, maintainer}
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.dockerBaseImage
 import sbt._
 import sbt.Keys._
 import sbtprotoc.ProtocPlugin.autoImport.PB
 import sbtassembly.AssemblyKeys._
+import sbtdynver.DynVerPlugin.autoImport.previousStableVersion
+
 import scala.util.Properties
 
 object CommonSettings {

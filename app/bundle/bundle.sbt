@@ -1,3 +1,5 @@
+import com.typesafe.sbt.SbtNativePackager.Windows
+
 name := "bitcoin-s-bundle"
 
 mainClass := Some("org.bitcoins.bundle.gui.BundleGUI")
@@ -10,6 +12,10 @@ fork := true
 assembly / mainClass := Some("org.bitcoins.bundle.gui.BundleGUI")
 
 assembly / assemblyJarName := s"${name.value}.jar"
+
+//need compatability with windows versioning scheme which is
+//w.x.y.z
+Windows / version := previousStableVersion.value.get
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", _ @_*)       => MergeStrategy.discard
