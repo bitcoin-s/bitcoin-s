@@ -109,7 +109,11 @@ class WalletGUIModel()(implicit system: ActorSystem) {
       case Failure(_) => ()
       case Success(commandReturn) =>
         val json = ujson.read(commandReturn).obj("wallet").obj
-        GlobalData.syncHeight.value = json("height").num.toLong
+        val height = json("height").num.toLong
+
+        // Only update once we start syncing filters
+        if (height != 0)
+          GlobalData.syncHeight.value = height.toString
     }
   }
 

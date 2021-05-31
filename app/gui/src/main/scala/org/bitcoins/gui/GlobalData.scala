@@ -5,7 +5,7 @@ import org.bitcoins.core.config._
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.gui.settings.Themes
-import scalafx.beans.property.{LongProperty, StringProperty}
+import scalafx.beans.property.StringProperty
 
 object GlobalData {
   val currentConfirmedBalance: StringProperty = StringProperty("0")
@@ -13,7 +13,7 @@ object GlobalData {
   val currentReservedBalance: StringProperty = StringProperty("0")
   val currentTotalBalance: StringProperty = StringProperty("0")
 
-  val syncHeight: LongProperty = LongProperty(0L)
+  val syncHeight: StringProperty = StringProperty("Syncing headers...")
 
   var network: BitcoinNetwork = _
 
