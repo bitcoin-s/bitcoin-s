@@ -2,7 +2,7 @@ package org.bitcoins.gui.dlc
 
 import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
-import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
+import org.bitcoins.cli.{CliCommand, ConsoleCli}
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.crypto._
@@ -29,7 +29,7 @@ class DLCPaneModel(resultArea: TextArea) extends Logging {
     ObjectProperty[Window](null.asInstanceOf[Window])
 
   def getDLCs: Vector[DLCStatus] = {
-    ConsoleCli.exec(GetDLCs, Config.empty) match {
+    ConsoleCli.exec(GetDLCs, GlobalData.consoleCliConfig) match {
       case Failure(exception) => throw exception
       case Success(dlcsStr) =>
         ujson.read(dlcsStr).arr.map(read[DLCStatus](_)).toVector
@@ -42,7 +42,7 @@ class DLCPaneModel(resultArea: TextArea) extends Logging {
   }
 
   def updateDLC(dlcId: Sha256Digest): Unit = {
-    ConsoleCli.exec(GetDLC(dlcId), Config.empty) match {
+    ConsoleCli.exec(GetDLC(dlcId), GlobalData.consoleCliConfig) match {
       case Failure(exception) => throw exception
       case Success(dlcStatus) =>
         dlcs += read[DLCStatus](ujson.read(dlcStatus))

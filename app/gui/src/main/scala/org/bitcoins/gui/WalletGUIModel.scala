@@ -7,6 +7,7 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.dialog._
+import org.bitcoins.gui.dlc.DLCPaneModel
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.application.Platform
 import scalafx.beans.property._
@@ -18,7 +19,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Promise}
 import scala.util.{Failure, Success, Try}
 
-class WalletGUIModel()(implicit system: ActorSystem) {
+class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem) {
   var taskRunner: TaskRunner = _
   import system.dispatcher
 
@@ -33,6 +34,7 @@ class WalletGUIModel()(implicit system: ActorSystem) {
       Platform.runLater {
         updateBalance()
         updateWalletInfo()
+        dlcModel.updateDLCs()
       }
     }
   }
