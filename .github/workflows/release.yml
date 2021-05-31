@@ -143,6 +143,8 @@ jobs:
     runs-on: [windows-latest]
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
