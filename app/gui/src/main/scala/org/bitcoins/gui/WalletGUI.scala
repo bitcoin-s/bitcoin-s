@@ -54,8 +54,8 @@ abstract class WalletGUI {
       " sats")
   }
 
-  private lazy val model = new WalletGUIModel()
   private lazy val dlcPane = new DLCPane(glassPane)
+  private lazy val model = new WalletGUIModel(dlcPane.model)
 
   private lazy val balanceBox = new VBox {
     spacing = 10
