@@ -11,7 +11,7 @@ abstract class WalletGUI {
 
   def glassPane: VBox
 
-  implicit val system: ActorSystem
+  implicit def system: ActorSystem
 
   private lazy val statusLabel = new Label {
     maxWidth = Double.MaxValue

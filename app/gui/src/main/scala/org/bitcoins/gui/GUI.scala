@@ -18,7 +18,7 @@ import scala.util._
 
 object GUI extends WalletGUI with JFXApp {
 
-  implicit val system: ActorSystem = ActorSystem(
+  implicit lazy val system: ActorSystem = ActorSystem(
     s"bitcoin-s-gui-${System.currentTimeMillis()}")
 
   // Catch unhandled exceptions on FX Application thread
