@@ -250,9 +250,10 @@ class CreateDLCOfferDialog extends Logging {
 
     val previewGraphButton: Button = new Button("Preview Graph") {
       onAction = _ => {
-        getNumericContractInfo(decompOpt,
-                               pointMap.values.toVector,
-                               roundingMap.values.toVector) match {
+        getNumericContractInfo(
+          decompOpt,
+          pointMap.toVector.sortBy(_._1).map(_._2),
+          roundingMap.toVector.sortBy(_._1).map(_._2)) match {
           case Failure(_) => ()
           case Success((totalCollateral, descriptor)) =>
             DLCPlotUtil.plotCETsWithOriginalCurve(base = 2,
@@ -504,9 +505,10 @@ class CreateDLCOfferDialog extends Logging {
 
             ContractInfo(descriptor, oracleInfo).toTLV
           case oracleInfo: NumericOracleInfo =>
-            getNumericContractInfo(decompOpt,
-                                   pointMap.values.toVector,
-                                   roundingMap.values.toVector) match {
+            getNumericContractInfo(
+              decompOpt,
+              pointMap.toVector.sortBy(_._1).map(_._2),
+              roundingMap.toVector.sortBy(_._1).map(_._2)) match {
               case Failure(exception) => throw exception
               case Success((totalCol, numeric)) =>
                 ContractInfo(totalCol, numeric, oracleInfo).toTLV
@@ -573,7 +575,8 @@ object CreateDLCOfferDialog {
           }
 
           val sorted = outcomesValuePoints.sortBy(_.outcome)
-          require(sorted == outcomesValuePoints, "Must be sorted by outcome")
+          require(sorted == outcomesValuePoints,
+                  s"Must be sorted by outcome, got $sorted")
 
           val func = DLCPayoutCurve(outcomesValuePoints)
           (totalCollateral,
