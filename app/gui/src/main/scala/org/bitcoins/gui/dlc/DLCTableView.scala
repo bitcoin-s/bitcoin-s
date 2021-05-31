@@ -53,19 +53,6 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val initiatorCol = new TableColumn[DLCStatus, String] {
-      text = "Initiator"
-      prefWidth = 50
-      cellValueFactory = { status =>
-        val str = if (status.value.isInitiator) {
-          "Yes"
-        } else {
-          "No"
-        }
-        new StringProperty(status, "Initiator", str)
-      }
-    }
-
     val collateralCol = new TableColumn[DLCStatus, String] {
       text = "Collateral"
       prefWidth = 110
@@ -78,7 +65,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val otherCollateralCol = new TableColumn[DLCStatus, String] {
       text = "Counter Party Collateral"
-      prefWidth = 150
+      prefWidth = 200
       cellValueFactory = { status =>
         val amt = GUIUtil.numberFormatter.format(
           status.value.remoteCollateral.satoshis.toLong)
@@ -88,7 +75,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val totalCollateralCol = new TableColumn[DLCStatus, String] {
       text = "Total Collateral"
-      prefWidth = 150
+      prefWidth = 125
       cellValueFactory = { status =>
         val amt = GUIUtil.numberFormatter.format(
           status.value.totalCollateral.satoshis.toLong)
@@ -131,7 +118,6 @@ class DLCTableView(model: DLCPaneModel) {
                       statusCol,
                       pnlCol,
                       rorCol,
-                      initiatorCol,
                       collateralCol,
                       otherCollateralCol,
                       totalCollateralCol)
