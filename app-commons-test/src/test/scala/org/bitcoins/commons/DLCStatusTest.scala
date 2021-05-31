@@ -2,16 +2,11 @@ package org.bitcoins.commons
 
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.commons.serializers.Picklers._
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models.{DLCState, DLCStatus}
 import org.bitcoins.crypto.Sha256Digest
-import org.bitcoins.testkitcore.Implicits.GeneratorOps
-import org.bitcoins.testkitcore.gen.{
-  CryptoGenerators,
-  CurrencyUnitGenerator,
-  NumberGenerator,
-  TLVGen
-}
+import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator, TLVGen}
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalacheck.Gen
 import upickle.default._
@@ -172,14 +167,13 @@ class DLCStatusTest extends BitcoinSJvmTest {
       CryptoGenerators.doubleSha256DigestBE,
       Gen.listOf(CryptoGenerators.schnorrDigitalSignature)
     ) { case (isInit, offerTLV, contractId, fundingTxId, closingTxId, sigs) =>
-      //cannot extend forParallel to have any more args, so just do this
-      val pnl = CurrencyUnitGenerator.positiveRealistic.sampleSome
-      val ror = Gen.double.sampleSome
-
       val offer = DLCOffer.fromTLV(offerTLV)
 
       val totalCollateral = offer.contractInfo.max
+      val myPayout: CurrencyUnit =
+        Satoshis(scala.util.Random.nextLong(totalCollateral.toLong))
 
+      val theirPayout: CurrencyUnit = totalCollateral - myPayout
       val rand =
         scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
       val outcome = offer.contractInfo.allOutcomes(rand)
@@ -199,8 +193,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
           closingTxId,
           sigs.toVector,
           outcome,
-          pnl,
-          ror
+          myPayout = myPayout,
+          theirPayout = theirPayout
         )
 
       assert(status.state == DLCState.Claimed)
@@ -220,13 +214,14 @@ class DLCStatusTest extends BitcoinSJvmTest {
       CryptoGenerators.doubleSha256DigestBE,
       CryptoGenerators.schnorrDigitalSignature
     ) { case (isInit, offerTLV, contractId, fundingTxId, closingTxId, sig) =>
-      //cannot extend forParallel to have any more args, so just do this
-      val pnl = CurrencyUnitGenerator.positiveRealistic.sampleSome
-      val ror = Gen.double.sampleSome
-
       val offer = DLCOffer.fromTLV(offerTLV)
 
       val totalCollateral = offer.contractInfo.max
+
+      val myPayout: CurrencyUnit =
+        Satoshis(scala.util.Random.nextLong(totalCollateral.toLong))
+
+      val theirPayout: CurrencyUnit = totalCollateral - myPayout
 
       val rand =
         scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
@@ -247,8 +242,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
           closingTxId,
           sig,
           outcome,
-          pnl,
-          ror
+          myPayout = myPayout,
+          theirPayout = theirPayout
         )
 
       assert(status.state == DLCState.RemoteClaimed)
@@ -267,13 +262,14 @@ class DLCStatusTest extends BitcoinSJvmTest {
       CryptoGenerators.doubleSha256DigestBE,
       CryptoGenerators.doubleSha256DigestBE
     ) { case (isInit, offerTLV, contractId, fundingTxId, closingTxId) =>
-      //cannot extend forParallel to have any more args, so just do this
-      val pnl = CurrencyUnitGenerator.positiveRealistic.sampleSome
-      val ror = Gen.double.sampleSome
-
       val offer = DLCOffer.fromTLV(offerTLV)
 
       val totalCollateral = offer.contractInfo.max
+
+      val myPayout: CurrencyUnit =
+        Satoshis(scala.util.Random.nextLong(totalCollateral.toLong))
+
+      val theirPayout: CurrencyUnit = totalCollateral - myPayout
 
       val status =
         DLCStatus.Refunded(
@@ -288,8 +284,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
           offer.totalCollateral,
           fundingTxId,
           closingTxId,
-          pnl,
-          ror
+          myPayout = myPayout,
+          theirPayout = theirPayout
         )
 
       assert(status.state == DLCState.Refunded)

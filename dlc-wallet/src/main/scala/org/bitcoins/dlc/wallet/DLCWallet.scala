@@ -1355,8 +1355,8 @@ abstract class DLCWallet
               dlcDb.closingTxIdOpt.get,
               sigs,
               oracleOutcome,
-              accounting.pnl,
-              accounting.rateOfReturn
+              myPayout = accounting.myPayout,
+              theirPayout = accounting.theirPayout
             )
           case DLCState.RemoteClaimed =>
             require(
@@ -1379,8 +1379,8 @@ abstract class DLCWallet
               dlcDb.closingTxIdOpt.get,
               dlcDb.aggregateSignatureOpt.get,
               oracleOutcome,
-              accounting.pnl,
-              accounting.rateOfReturn
+              myPayout = accounting.myPayout,
+              theirPayout = accounting.theirPayout
             )
           case DLCState.Refunded =>
             require(acceptDbOpt.isDefined,
@@ -1401,8 +1401,8 @@ abstract class DLCWallet
               localCollateral,
               dlcDb.fundingTxIdOpt.get,
               dlcDb.closingTxIdOpt.get,
-              accounting.pnl,
-              accounting.rateOfReturn
+              myPayout = accounting.myPayout,
+              theirPayout = accounting.theirPayout
             )
         }
 
@@ -1445,8 +1445,6 @@ abstract class DLCWallet
       dlcId = dlcDb.dlcId,
       myCollateral = myCollateral,
       theirCollateral = theirCollateral,
-      myPayoutAddress = myPayoutAddress,
-      theirPayoutAddress = theirPayoutAddress,
       myPayout = myPayout,
       theirPayout = theirPayout
     )

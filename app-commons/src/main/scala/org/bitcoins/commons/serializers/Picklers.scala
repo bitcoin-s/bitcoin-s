@@ -260,6 +260,8 @@ object Picklers {
       )
     }
 
+  private val myPayoutKey: String = "myPayout"
+  private val theirPayoutKey: String = "theirPayout"
   private val pnlKey: String = "pnl"
   private val rateOfReturnKey: String = "rateOfReturn"
 
@@ -294,6 +296,8 @@ object Picklers {
       "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
       "outcomes" -> outcomesJs,
       "oracles" -> oraclesJs,
+      myPayoutKey -> Num(claimed.myPayout.satoshis.toLong.toDouble),
+      theirPayoutKey -> Num(claimed.theirPayout.satoshis.toLong.toDouble),
       pnlKey -> Num(claimed.pnl.satoshis.toLong.toDouble),
       rateOfReturnKey -> Num(claimed.rateOfReturn.toDouble)
     )
@@ -331,6 +335,9 @@ object Picklers {
         "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
         "outcomes" -> outcomesJs,
         "oracles" -> oraclesJs,
+        myPayoutKey -> Num(remoteClaimed.myPayout.satoshis.toLong.toDouble),
+        theirPayoutKey -> Num(
+          remoteClaimed.theirPayout.satoshis.toLong.toDouble),
         pnlKey -> Num(remoteClaimed.pnl.satoshis.toLong.toDouble),
         rateOfReturnKey -> Num(remoteClaimed.rateOfReturn.toDouble)
       )
@@ -355,6 +362,8 @@ object Picklers {
       "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
       "fundingTxId" -> Str(fundingTxId.hex),
       "closingTxId" -> Str(closingTxId.hex),
+      myPayoutKey -> Num(refunded.myPayout.satoshis.toLong.toDouble),
+      theirPayoutKey -> Num(refunded.theirPayout.satoshis.toLong.toDouble),
       pnlKey -> Num(refunded.pnl.satoshis.toLong.toDouble),
       rateOfReturnKey -> Num(refunded.rateOfReturn.toDouble)
     )
@@ -430,12 +439,11 @@ object Picklers {
         throw new IllegalArgumentException(s"Unexpected outcome $signed")
     }
 
-    lazy val pnlJs = obj(pnlKey)
-    lazy val pnlOpt = pnlJs.numOpt.map(sats => Satoshis(sats.toLong))
-
-    lazy val rateOfReturnJs = obj(rateOfReturnKey)
-
-    lazy val rateOfReturnOpt = rateOfReturnJs.numOpt.map(ror => BigDecimal(ror))
+    lazy val myPayoutJs = obj(myPayoutKey)
+    lazy val myPayoutOpt = myPayoutJs.numOpt.map(sats => Satoshis(sats.toLong))
+    lazy val theirPayoutJs = obj(theirPayoutKey)
+    lazy val theirPayoutOpt =
+      theirPayoutJs.numOpt.map(sats => Satoshis(sats.toLong))
 
     state match {
       case DLCState.Offered =>
@@ -514,8 +522,8 @@ object Picklers {
           closingTxId,
           oracleSigs,
           oracleOutcome,
-          pnlOpt.get,
-          rateOfReturnOpt.get
+          myPayout = myPayoutOpt.get,
+          theirPayout = theirPayoutOpt.get
         )
       case DLCState.RemoteClaimed =>
         require(oracleSigs.size == 1,
@@ -534,8 +542,8 @@ object Picklers {
           closingTxId,
           oracleSigs.head,
           oracleOutcome,
-          pnlOpt.get,
-          rateOfReturnOpt.get
+          myPayout = myPayoutOpt.get,
+          theirPayout = theirPayoutOpt.get
         )
       case DLCState.Refunded =>
         Refunded(
@@ -550,8 +558,8 @@ object Picklers {
           localCollateral,
           fundingTxId,
           closingTxId,
-          pnlOpt.get,
-          rateOfReturnOpt.get
+          myPayout = myPayoutOpt.get,
+          theirPayout = theirPayoutOpt.get
         )
     }
   }
