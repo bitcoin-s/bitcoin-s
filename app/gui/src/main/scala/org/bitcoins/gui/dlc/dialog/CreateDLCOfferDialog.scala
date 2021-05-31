@@ -576,7 +576,7 @@ object CreateDLCOfferDialog {
 
           val sorted = outcomesValuePoints.sortBy(_.outcome)
           require(sorted == outcomesValuePoints,
-                  s"Must be sorted by outcome, got $sorted")
+                  s"Must be sorted by outcome, got $outcomesValuePoints")
 
           val func = DLCPayoutCurve(outcomesValuePoints)
           (totalCollateral,
