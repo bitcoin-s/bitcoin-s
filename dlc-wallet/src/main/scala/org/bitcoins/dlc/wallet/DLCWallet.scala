@@ -1234,7 +1234,6 @@ abstract class DLCWallet
   }
 
   override def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]] = {
-    logger.debug(s"Finding dlcId=$dlcId")
     val start = System.currentTimeMillis()
     val dlcDbOptF = dlcDAO.read(dlcId)
     val contractDataOptF = contractDataDAO.read(dlcId)

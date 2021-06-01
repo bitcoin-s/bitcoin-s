@@ -29,6 +29,7 @@ import org.bitcoins.dlc.wallet.models.{
   OracleNonceDb
 }
 
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
 object DLCStatusBuilder {
@@ -235,12 +236,26 @@ object DLCStatusBuilder {
     Future {
       dlcDb.aggregateSignatureOpt match {
         case Some(aggSig) =>
-          val outcome =
-            contractInfo.sigPointMap(aggSig.sig.toPrivateKey.publicKey)
+          val oracleOutcome = sigPointCache.get(aggSig) match {
+            case Some(outcome) => outcome //return cached outcome
+            case None =>
+              val o =
+                contractInfo.sigPointMap(aggSig.sig.toPrivateKey.publicKey)
+              sigPointCache.+=((aggSig, o))
+              o
+          }
           val sigs = nonceDbs.flatMap(_.signatureOpt)
-          Some((outcome, sigs))
+          Some((oracleOutcome, sigs))
         case None => None
       }
     }
   }
+
+  /** A performance optimization to cache sigpoints we know map to oracle outcomes.
+    * This is needed as a workaround for issue 3213
+    * @see https://github.com/bitcoin-s/bitcoin-s/issues/3213
+    */
+  private val sigPointCache: mutable.Map[
+    SchnorrDigitalSignature,
+    OracleOutcome] = mutable.Map.empty[SchnorrDigitalSignature, OracleOutcome]
 }
