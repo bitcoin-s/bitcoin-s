@@ -26,11 +26,21 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       Vector[DLCAnnouncementDb],
       Vector[OracleAnnouncementDataDb],
       Vector[OracleNonceDb])] = {
-    for {
-      announcements <- dlcAnnouncementDAO.findByDLCId(dlcId)
+    val announcementsF = dlcAnnouncementDAO.findByDLCId(dlcId)
+    val announcementIdsF = for {
+      announcements <- announcementsF
       announcementIds = announcements.map(_.announcementId)
-      announcementData <- announcementDAO.findByIds(announcementIds)
-      nonceDbs <- oracleNonceDAO.findByAnnouncementIds(announcementIds)
+    } yield announcementIds
+
+    val announcementDataF =
+      announcementIdsF.flatMap(ids => announcementDAO.findByIds(ids))
+    val nonceDbsF =
+      announcementIdsF.flatMap(ids => oracleNonceDAO.findByAnnouncementIds(ids))
+
+    for {
+      announcements <- announcementsF
+      announcementData <- announcementDataF
+      nonceDbs <- nonceDbsF
     } yield (announcements, announcementData, nonceDbs)
   }
 

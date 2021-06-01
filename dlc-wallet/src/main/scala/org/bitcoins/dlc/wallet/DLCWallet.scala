@@ -7,14 +7,12 @@ import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
-import org.bitcoins.core.dlc.accounting.DLCAccounting
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCAccept._
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
-import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.dlc.sign._
 import org.bitcoins.core.protocol.script._
@@ -26,6 +24,7 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.wallet.internal._
 import org.bitcoins.dlc.wallet.models._
+import org.bitcoins.dlc.wallet.util.DLCStatusBuilder
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.TransactionDAO
@@ -1235,228 +1234,102 @@ abstract class DLCWallet
   }
 
   override def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]] = {
-    for {
-      dlcDbOpt <- dlcDAO.read(dlcId)
-      contractDataOpt <- contractDataDAO.read(dlcId)
-      offerDbOpt <- dlcOfferDAO.read(dlcId)
-      acceptDbOpt <- dlcAcceptDAO.read(dlcId)
-      (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
-        dlcId)
-      closingTxFOpt <- dlcDbOpt.map(dlcDb => getClosingTxOpt(dlcDb)) match {
-        case None                 => Future.successful(None)
-        case Some(closingTxIdOpt) => closingTxIdOpt
+    val dlcDbOptF = dlcDAO.read(dlcId)
+    val contractDataOptF = contractDataDAO.read(dlcId)
+    val offerDbOptF = dlcOfferDAO.read(dlcId)
+    val acceptDbOptF = dlcAcceptDAO.read(dlcId)
+    val closingTxOptF: Future[Option[TransactionDb]] = for {
+      dlcDbOpt <- dlcDbOptF
+      closingTxFOpt <- {
+        dlcDbOpt.map(dlcDb => getClosingTxOpt(dlcDb)) match {
+          case None                 => Future.successful(None)
+          case Some(closingTxIdOpt) => closingTxIdOpt
+        }
       }
-    } yield (dlcDbOpt, contractDataOpt, offerDbOpt) match {
-      case (Some(dlcDb), Some(contractData), Some(offerDb)) =>
-        val totalCollateral = contractData.totalCollateral
+    } yield closingTxFOpt
 
-        val localCollateral = if (dlcDb.isInitiator) {
-          offerDb.collateral
-        } else {
-          totalCollateral - offerDb.collateral
-        }
-
-        val contractInfo =
-          getContractInfo(contractData,
-                          announcements,
-                          announcementData,
-                          nonceDbs)
-
-        // Only called when safe
-        lazy val (oracleOutcome, sigs) = {
-          val aggSig = dlcDb.aggregateSignatureOpt.get
-          val outcome =
-            contractInfo.sigPointMap(aggSig.sig.toPrivateKey.publicKey)
-
-          val sigs = nonceDbs.flatMap(_.signatureOpt)
-
-          (outcome, sigs)
-        }
-
-        val status = dlcDb.state match {
-          case DLCState.Offered =>
-            Offered(
-              dlcId,
-              dlcDb.isInitiator,
-              dlcDb.tempContractId,
-              contractInfo,
-              contractData.dlcTimeouts,
-              dlcDb.feeRate,
-              totalCollateral,
-              localCollateral
-            )
-          case DLCState.Accepted =>
-            Accepted(
-              dlcId,
-              dlcDb.isInitiator,
-              dlcDb.tempContractId,
-              dlcDb.contractIdOpt.get,
-              contractInfo,
-              contractData.dlcTimeouts,
-              dlcDb.feeRate,
-              totalCollateral,
-              localCollateral
-            )
-          case DLCState.Signed =>
-            Signed(
-              dlcId,
-              dlcDb.isInitiator,
-              dlcDb.tempContractId,
-              dlcDb.contractIdOpt.get,
-              contractInfo,
-              contractData.dlcTimeouts,
-              dlcDb.feeRate,
-              totalCollateral,
-              localCollateral
-            )
-          case DLCState.Broadcasted =>
-            Broadcasted(
-              dlcId,
-              dlcDb.isInitiator,
-              dlcDb.tempContractId,
-              dlcDb.contractIdOpt.get,
-              contractInfo,
-              contractData.dlcTimeouts,
-              dlcDb.feeRate,
-              totalCollateral,
-              localCollateral,
-              dlcDb.fundingTxIdOpt.get
-            )
-          case DLCState.Confirmed =>
-            Confirmed(
-              dlcId,
-              dlcDb.isInitiator,
-              dlcDb.tempContractId,
-              dlcDb.contractIdOpt.get,
-              contractInfo,
-              contractData.dlcTimeouts,
-              dlcDb.feeRate,
-              totalCollateral,
-              localCollateral,
-              dlcDb.fundingTxIdOpt.get
-            )
-          case DLCState.Claimed =>
-            require(acceptDbOpt.isDefined,
-                    s"Must have acceptDb to be in state=${DLCState.Claimed}")
-            val closingTxDb = closingTxFOpt.get
-            val accounting: DLCAccounting =
-              calculatePnl(dlcDb,
+    for {
+      dlcDbOpt <- dlcDbOptF
+      contractDataOpt <- contractDataOptF
+      offerDbOpt <- offerDbOptF
+      acceptDbOpt <- acceptDbOptF
+      closingTxOpt <- closingTxOptF
+      result <- {
+        (dlcDbOpt, contractDataOpt, offerDbOpt) match {
+          case (Some(dlcDb), Some(contractData), Some(offerDb)) =>
+            buildDLCStatus(dlcDb,
+                           contractData,
                            offerDb,
-                           acceptDbOpt.get,
-                           closingTxDb.transaction)
-            Claimed(
-              dlcId,
-              dlcDb.isInitiator,
-              dlcDb.tempContractId,
-              dlcDb.contractIdOpt.get,
-              contractInfo,
-              contractData.dlcTimeouts,
-              dlcDb.feeRate,
-              totalCollateral,
-              localCollateral,
-              dlcDb.fundingTxIdOpt.get,
-              dlcDb.closingTxIdOpt.get,
-              sigs,
-              oracleOutcome,
-              myPayout = accounting.myPayout,
-              counterPartyPayout = accounting.theirPayout
-            )
-          case DLCState.RemoteClaimed =>
-            require(
-              acceptDbOpt.isDefined,
-              s"Must have acceptDb to be in state=${DLCState.RemoteClaimed}")
-            val closingTxDb = closingTxFOpt.get
-            val accounting: DLCAccounting =
-              calculatePnl(dlcDb,
-                           offerDb,
-                           acceptDbOpt.get,
-                           closingTxDb.transaction)
-            RemoteClaimed(
-              dlcId,
-              dlcDb.isInitiator,
-              dlcDb.tempContractId,
-              dlcDb.contractIdOpt.get,
-              contractInfo,
-              contractData.dlcTimeouts,
-              dlcDb.feeRate,
-              totalCollateral,
-              localCollateral,
-              dlcDb.fundingTxIdOpt.get,
-              dlcDb.closingTxIdOpt.get,
-              dlcDb.aggregateSignatureOpt.get,
-              oracleOutcome,
-              myPayout = accounting.myPayout,
-              counterPartyPayout = accounting.theirPayout
-            )
-          case DLCState.Refunded =>
-            require(acceptDbOpt.isDefined,
-                    s"Must have acceptDb to be in state=${DLCState.Refunded}")
-
-            val closingTxDb = closingTxFOpt.get
-            val accounting: DLCAccounting =
-              calculatePnl(dlcDb,
-                           offerDb,
-                           acceptDbOpt.get,
-                           closingTxDb.transaction)
-            Refunded(
-              dlcId,
-              dlcDb.isInitiator,
-              dlcDb.tempContractId,
-              dlcDb.contractIdOpt.get,
-              contractInfo,
-              contractData.dlcTimeouts,
-              dlcDb.feeRate,
-              totalCollateral,
-              localCollateral,
-              dlcDb.fundingTxIdOpt.get,
-              dlcDb.closingTxIdOpt.get,
-              myPayout = accounting.myPayout,
-              counterPartyPayout = accounting.theirPayout
-            )
+                           acceptDbOpt,
+                           closingTxOpt)
+          case (_, _, _) => Future.successful(None)
         }
-
-        Some(status)
-      case (_, _, _) => None
-    }
+      }
+    } yield result
   }
 
-  private def calculatePnl(
+  /** Helper method to assemble a [[DLCStatus]] */
+  private def buildDLCStatus(
       dlcDb: DLCDb,
+      contractData: DLCContractDataDb,
       offerDb: DLCOfferDb,
-      acceptDb: DLCAcceptDb,
-      closingTx: Transaction): DLCAccounting = {
-    val (myCollateral, theirCollateral, myPayoutAddress, theirPayoutAddress) = {
-      if (dlcDb.isInitiator) {
-        val myCollateral = offerDb.collateral
-        val theirCollateral = acceptDb.collateral
-        val myPayoutAddress = offerDb.payoutAddress
-        val theirPayoutAddress = acceptDb.payoutAddress
-        (myCollateral, theirCollateral, myPayoutAddress, theirPayoutAddress)
+      acceptDbOpt: Option[DLCAcceptDb],
+      closingTxOpt: Option[TransactionDb]): Future[Option[DLCStatus]] = {
+    val dlcId = dlcDb.dlcId
+    val aggregatedF: Future[(
+        Vector[DLCAnnouncementDb],
+        Vector[OracleAnnouncementDataDb],
+        Vector[OracleNonceDb])] = getDLCAnnouncementDbs(dlcDb.dlcId)
 
-      } else {
-        val myCollateral = acceptDb.collateral
-        val theirCollateral = offerDb.collateral
-        val myPayoutAddress = acceptDb.payoutAddress
-        val theirPayoutAddress = offerDb.payoutAddress
-        (myCollateral, theirCollateral, myPayoutAddress, theirPayoutAddress)
+    val contractInfoF: Future[ContractInfo] = {
+      aggregatedF.map { case (announcements, announcementData, nonceDbs) =>
+        getContractInfo(contractData, announcements, announcementData, nonceDbs)
       }
     }
 
-    val myPayout = closingTx.outputs
-      .filter(_.scriptPubKey == myPayoutAddress.scriptPubKey)
-      .map(_.value)
-      .sum
-    val theirPayout = closingTx.outputs
-      .filter(_.scriptPubKey == theirPayoutAddress.scriptPubKey)
-      .map(_.value)
-      .sum
-    DLCAccounting(
-      dlcId = dlcDb.dlcId,
-      myCollateral = myCollateral,
-      theirCollateral = theirCollateral,
-      myPayout = myPayout,
-      theirPayout = theirPayout
-    )
+    val statusF: Future[DLCStatus] = for {
+      contractInfo <- contractInfoF
+      (_, _, nonceDbs) <- aggregatedF
+      status <- {
+        dlcDb.state match {
+          case state: DLCState.InProgressState =>
+            val inProgress = DLCStatusBuilder.buildInProgressDLCStatus(
+              state = state,
+              dlcDb = dlcDb,
+              contractInfo = contractInfo,
+              contractData = contractData,
+              offerDb = offerDb)
+            Future.successful(inProgress)
+          case state: DLCState.ClosedState =>
+            (acceptDbOpt, closingTxOpt) match {
+              case (Some(acceptDb), Some(closingTx)) =>
+                val statusF = DLCStatusBuilder.buildClosedDLCStatus(
+                  state = state,
+                  dlcDb = dlcDb,
+                  contractInfo = contractInfo,
+                  contractData = contractData,
+                  nonceDbs = nonceDbs,
+                  offerDb = offerDb,
+                  acceptDb = acceptDb,
+                  closingTx = closingTx.transaction
+                )
+                statusF
+              case (None, None) =>
+                Future.failed(new RuntimeException(
+                  s"Could not find acceptDb or closingTx for closing state=$state dlcId=$dlcId"))
+              case (Some(_), None) =>
+                Future.failed(
+                  new RuntimeException(
+                    s"Could not find closingTx for state=$state dlcId=$dlcId"))
+              case (None, Some(_)) =>
+                Future.failed(new RuntimeException(
+                  s"Cannot find acceptDb for dlcId=$dlcId. This likely means we have data corruption"))
+            }
+        }
+      }
+    } yield status
+
+    statusF.map(Some(_))
   }
 
   /** @param newAnnouncements announcements we do not have in our db
