@@ -35,14 +35,14 @@ object DLCStatusBuilder {
 
   /** Helper method to convert a bunch of indepdendent datastructures into a in progress dlc status */
   def buildInProgressDLCStatus(
-      state: DLCState.InProgressState,
       dlcDb: DLCDb,
       contractInfo: ContractInfo,
       contractData: DLCContractDataDb,
       offerDb: DLCOfferDb): DLCStatus = {
     require(
-      dlcDb.state == state,
-      s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${state}")
+      dlcDb.state.isInstanceOf[DLCState.InProgressState],
+      s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
+    )
     val dlcId = dlcDb.dlcId
 
     val totalCollateral = contractData.totalCollateral
@@ -53,7 +53,7 @@ object DLCStatusBuilder {
       totalCollateral - offerDb.collateral
     }
 
-    val status = state match {
+    val status = dlcDb.state.asInstanceOf[DLCState.InProgressState] match {
       case DLCState.Offered =>
         Offered(
           dlcId,
@@ -121,7 +121,6 @@ object DLCStatusBuilder {
   }
 
   def buildClosedDLCStatus(
-      state: DLCState.ClosedState,
       dlcDb: DLCDb,
       contractInfo: ContractInfo,
       contractData: DLCContractDataDb,
@@ -131,8 +130,10 @@ object DLCStatusBuilder {
       closingTx: Transaction)(implicit
       ec: ExecutionContext): Future[ClosedDLCStatus] = {
     require(
-      dlcDb.state == state,
-      s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${state}")
+      dlcDb.state.isInstanceOf[DLCState.ClosedState],
+      s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
+    )
+
     val dlcId = dlcDb.dlcId
     val accounting: DLCAccounting =
       AccountingUtil.calculatePnl(dlcDb, offerDb, acceptDb, closingTx)
@@ -154,7 +155,7 @@ object DLCStatusBuilder {
     } else {
       totalCollateral - offerDb.collateral
     }
-    val statusF = state match {
+    val statusF = dlcDb.state.asInstanceOf[DLCState.ClosedState] match {
       case DLCState.Refunded =>
         //no oracle information in the refund case
         val refund = Refunded(

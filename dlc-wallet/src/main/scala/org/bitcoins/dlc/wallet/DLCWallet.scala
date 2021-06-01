@@ -1234,6 +1234,8 @@ abstract class DLCWallet
   }
 
   override def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]] = {
+    logger.debug(s"Finding dlcId=$dlcId")
+    val start = System.currentTimeMillis()
     val dlcDbOptF = dlcDAO.read(dlcId)
     val contractDataOptF = contractDataDAO.read(dlcId)
     val offerDbOptF = dlcOfferDAO.read(dlcId)
@@ -1248,7 +1250,7 @@ abstract class DLCWallet
       }
     } yield closingTxFOpt
 
-    for {
+    val dlcOptF: Future[Option[DLCStatus]] = for {
       dlcDbOpt <- dlcDbOptF
       contractDataOpt <- contractDataOptF
       offerDbOpt <- offerDbOptF
@@ -1266,6 +1268,11 @@ abstract class DLCWallet
         }
       }
     } yield result
+
+    dlcOptF.foreach(_ =>
+      logger.debug(
+        s"Done finding dlc=$dlcId, it took=${System.currentTimeMillis() - start}ms"))
+    dlcOptF
   }
 
   /** Helper method to assemble a [[DLCStatus]] */
@@ -1292,19 +1299,17 @@ abstract class DLCWallet
       (_, _, nonceDbs) <- aggregatedF
       status <- {
         dlcDb.state match {
-          case state: DLCState.InProgressState =>
+          case _: DLCState.InProgressState =>
             val inProgress = DLCStatusBuilder.buildInProgressDLCStatus(
-              state = state,
               dlcDb = dlcDb,
               contractInfo = contractInfo,
               contractData = contractData,
               offerDb = offerDb)
             Future.successful(inProgress)
-          case state: DLCState.ClosedState =>
+          case _: DLCState.ClosedState =>
             (acceptDbOpt, closingTxOpt) match {
               case (Some(acceptDb), Some(closingTx)) =>
                 val statusF = DLCStatusBuilder.buildClosedDLCStatus(
-                  state = state,
                   dlcDb = dlcDb,
                   contractInfo = contractInfo,
                   contractData = contractData,
@@ -1316,11 +1321,10 @@ abstract class DLCWallet
                 statusF
               case (None, None) =>
                 Future.failed(new RuntimeException(
-                  s"Could not find acceptDb or closingTx for closing state=$state dlcId=$dlcId"))
+                  s"Could not find acceptDb or closingTx for closing state=${dlcDb.state} dlcId=$dlcId"))
               case (Some(_), None) =>
-                Future.failed(
-                  new RuntimeException(
-                    s"Could not find closingTx for state=$state dlcId=$dlcId"))
+                Future.failed(new RuntimeException(
+                  s"Could not find closingTx for state=${dlcDb.state} dlcId=$dlcId"))
               case (None, Some(_)) =>
                 Future.failed(new RuntimeException(
                   s"Cannot find acceptDb for dlcId=$dlcId. This likely means we have data corruption"))
