@@ -1,5 +1,6 @@
 package org.bitcoins.bundle.gui
 
+import akka.actor.ActorSystem
 import org.bitcoins.gui._
 import org.bitcoins.node.NodeType
 import org.bitcoins.server.BitcoinSAppConfig
@@ -12,7 +13,7 @@ import scalafx.scene.text._
 import scala.concurrent.ExecutionContext.global
 import scala.util.Try
 
-class LandingPane(glassPane: VBox) {
+class LandingPane(glassPane: VBox)(implicit system: ActorSystem) {
 
   val appConfig: BitcoinSAppConfig =
     BitcoinSAppConfig.fromDefaultDatadir()(global)

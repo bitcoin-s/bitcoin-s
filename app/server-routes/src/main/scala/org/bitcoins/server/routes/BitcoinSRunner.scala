@@ -16,13 +16,8 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
 
   protected def args: Array[String]
 
-  def actorSystemName: String
+  implicit def system: ActorSystem
 
-  implicit lazy val system: ActorSystem = {
-    val system = ActorSystem(actorSystemName, baseConfig)
-    system.log.info("Akka started")
-    system
-  }
   implicit lazy val ec: ExecutionContext = system.dispatcher
 
   lazy val argsWithIndex: Vector[(String, Int)] = args.toVector.zipWithIndex

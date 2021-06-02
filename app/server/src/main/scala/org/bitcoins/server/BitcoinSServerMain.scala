@@ -21,15 +21,15 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.config.ZmqConfig
 import org.bitcoins.server.routes.{BitcoinSRunner, Server}
+import org.bitcoins.server.util.BitcoinSApp
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-class BitcoinSServerMain(override val args: Array[String])
+class BitcoinSServerMain(override val args: Array[String])(implicit
+    override val system: ActorSystem)
     extends BitcoinSRunner {
-
-  override val actorSystemName = "bitcoin-s-server"
 
   implicit lazy val conf: BitcoinSAppConfig =
     BitcoinSAppConfig(datadir, baseConfig)
@@ -374,7 +374,9 @@ class BitcoinSServerMain(override val args: Array[String])
   }
 }
 
-object BitcoinSServerMain extends App {
+object BitcoinSServerMain extends BitcoinSApp {
+  override val actorSystemName = "bitcoin-s-server"
+
   new BitcoinSServerMain(args).run()
 }
 

@@ -1,5 +1,6 @@
 package org.bitcoins.bundle.gui
 
+import akka.actor.ActorSystem
 import com.typesafe.config._
 import org.bitcoins.bundle.gui.BundleGUI._
 import org.bitcoins.gui._
@@ -14,7 +15,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Promise}
 import scala.jdk.CollectionConverters._
 
-class LandingPaneModel() {
+class LandingPaneModel()(implicit system: ActorSystem) {
   var taskRunner: TaskRunner = _
 
   // Sadly, it is a Java "pattern" to pass null into
@@ -48,7 +49,9 @@ class LandingPaneModel() {
           changeToWalletGUIScene()
           promise.success(())
         }(global)
-        BitcoinSServerMain.main(args.toArray)
+
+        //use class base constructor to share the actor system
+        new BitcoinSServerMain(args.toArray).run()
 
         Await.result(promise.future, 60.seconds)
       }
