@@ -133,28 +133,7 @@ class DLCPaneModel(resultArea: TextArea) extends Logging {
   }
 
   def onSign(): Unit = {
-    val result = SignDLCDialog.showAndWait(parentWindow.value)
-
-    result match {
-      case Some(command) =>
-        taskRunner.run(
-          caption = "Sign DLC",
-          op = {
-            ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
-              case Success(commandReturn) =>
-                val string = if (commandReturn.isEmpty) {
-                  "Signing DLC timed out! Try again in a bit."
-                } else commandReturn
-                resultArea.text = string
-              case Failure(err) =>
-                err.printStackTrace()
-                resultArea.text = s"Error executing command:\n${err.getMessage}"
-            }
-            updateDLCs()
-          }
-        )
-      case None => ()
-    }
+    printDLCDialogResult("Add DLC sigs", new SignDLCDialog)
   }
 
   def onBroadcastDLC(): Unit = {
