@@ -2,6 +2,7 @@ package org.bitcoins.bundle.gui
 
 import akka.actor.ActorSystem
 import com.typesafe.config._
+import grizzled.slf4j.Logging
 import org.bitcoins.bundle.gui.BundleGUI._
 import org.bitcoins.gui._
 import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
@@ -15,7 +16,8 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Promise}
 import scala.jdk.CollectionConverters._
 
-class LandingPaneModel()(implicit system: ActorSystem) {
+class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
+
   var taskRunner: TaskRunner = _
 
   // Sadly, it is a Java "pattern" to pass null into
@@ -45,7 +47,10 @@ class LandingPaneModel()(implicit system: ActorSystem) {
         // Launch wallet
         val promise = Promise[Unit]()
         BitcoinSServer.startedF.map { _ =>
+          val start = System.currentTimeMillis()
           fetchStartingData()
+          logger.info(
+            s"fetchStartingData took=${System.currentTimeMillis() - start}ms")
           changeToWalletGUIScene()
           promise.success(())
         }(global)

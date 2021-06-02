@@ -5,6 +5,7 @@ import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, ConsoleCli}
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto._
 import org.bitcoins.gui._
 import org.bitcoins.gui.dlc.GlobalDLCData.dlcs
@@ -19,9 +20,11 @@ import upickle.default._
 
 import java.io.File
 import java.nio.file.Files
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Properties, Success}
 
-class DLCPaneModel(val resultArea: TextArea) extends Logging {
+class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
+    extends Logging {
   var taskRunner: TaskRunner = _
 
   // Sadly, it is a Java "pattern" to pass null into
@@ -29,17 +32,30 @@ class DLCPaneModel(val resultArea: TextArea) extends Logging {
   val parentWindow: ObjectProperty[Window] =
     ObjectProperty[Window](null.asInstanceOf[Window])
 
-  def getDLCs: Vector[DLCStatus] = {
-    ConsoleCli.exec(GetDLCs, GlobalData.consoleCliConfig) match {
-      case Failure(exception) => throw exception
-      case Success(dlcsStr) =>
-        ujson.read(dlcsStr).arr.map(read[DLCStatus](_)).toVector
+  def getDLCs: Future[Vector[DLCStatus]] = {
+    FutureUtil.makeAsync[Vector[DLCStatus]] { () =>
+      ConsoleCli.exec(GetDLCs, GlobalData.consoleCliConfig) match {
+        case Failure(exception) => throw exception
+        case Success(dlcsStr) =>
+          ujson.read(dlcsStr).arr.map(read[DLCStatus](_)).toVector
+      }
     }
   }
 
   def setUp(): Unit = {
     dlcs.clear()
-    dlcs ++= getDLCs
+    val start = System.currentTimeMillis()
+    logger.info("Starting getDlcs")
+    getDLCs.map { walletDlcs =>
+      dlcs ++= walletDlcs
+      logger.info(
+        s"Done getDLCs async, it took=${System.currentTimeMillis() - start}ms")
+    }
+    logger.info(
+      s"Done getDLCs, it took=${System.currentTimeMillis() - start}ms")
+    //purposely drop the future on the floor for now
+    //as our GUI is not async safe at all
+    ()
   }
 
   def updateDLC(dlcId: Sha256Digest): Unit = {
@@ -52,11 +68,21 @@ class DLCPaneModel(val resultArea: TextArea) extends Logging {
   }
 
   def updateDLCs(): Unit = {
-    val newDLCs = getDLCs
-    val toAdd = newDLCs.diff(dlcs)
-    val toRemove = dlcs.diff(newDLCs)
-    dlcs ++= toAdd
-    dlcs --= toRemove
+    val newDLCsF = getDLCs
+    val toAddF = newDLCsF.map(_.diff(dlcs))
+    val toRemoveF = newDLCsF.map(dlcs.diff)
+    val _ = for {
+      toAdd <- toAddF
+      toRemove <- toRemoveF
+    } yield {
+      dlcs ++= toAdd
+      dlcs --= toRemove
+      ()
+    }
+
+    //purposely drop the future on the floor for now
+    //as our GUI code is not async safe at all
+    ()
   }
 
   def printDLCDialogResult[T <: CliCommand](

@@ -1,13 +1,14 @@
 package org.bitcoins.gui
 
 import akka.actor.ActorSystem
+import grizzled.slf4j.Logging
 import org.bitcoins.gui.dlc.DLCPane
 import scalafx.beans.property.StringProperty
 import scalafx.geometry._
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
-abstract class WalletGUI {
+abstract class WalletGUI extends Logging {
 
   def glassPane: VBox
 
@@ -26,7 +27,10 @@ abstract class WalletGUI {
 
   def fetchStartingData(): Unit = {
     model.startWalletInfoScheduler()
+    val start = System.currentTimeMillis()
     model.updateFeeRate()
+    logger.info(
+      s"update fee rate, it took=${System.currentTimeMillis() - start}ms")
     dlcPane.model.setUp()
   }
 
@@ -61,7 +65,7 @@ abstract class WalletGUI {
     text <== StringProperty("Rate of Return:\t\t\t") + GlobalData.rateOfReturn
   }
 
-  private[gui] lazy val dlcPane = new DLCPane(glassPane)
+  private[gui] lazy val dlcPane = new DLCPane(glassPane)(system.dispatcher)
   private[gui] lazy val model = new WalletGUIModel(dlcPane.model)
 
   private lazy val balanceBox = new VBox {
