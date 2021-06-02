@@ -316,6 +316,21 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("adddlcsigsandbroadcastfromfile")
+        .action((_, conf) =>
+          conf.copy(command =
+            AddDLCSigsAndBroadcastFromFile(new File("").toPath)))
+        .text("Adds DLC Signatures into the database")
+        .children(
+          arg[Path]("path")
+            .required()
+            .action((path, conf) =>
+              conf.copy(command = conf.command match {
+                case addDLCSigs: AddDLCSigsAndBroadcastFromFile =>
+                  addDLCSigs.copy(path = path)
+                case other => other
+              }))
+        ),
       cmd("adddlcsigsandbroadcast")
         .action((_, conf) => conf.copy(command = AddDLCSigsAndBroadcast(null)))
         .text("Adds DLC Signatures into the database and broadcasts the funding transaction")
@@ -1506,6 +1521,8 @@ object ConsoleCli {
         RequestParam("adddlcsigsfromfile", Seq(up.writeJs(path)))
       case AddDLCSigsAndBroadcast(sigs) =>
         RequestParam("adddlcsigsandbroadcast", Seq(up.writeJs(sigs)))
+      case AddDLCSigsAndBroadcastFromFile(path) =>
+        RequestParam("adddlcsigsandbroadcastfromfile", Seq(up.writeJs(path)))
       case ExecuteDLC(contractId, oracleSigs, noBroadcast) =>
         RequestParam("executedlc",
                      Seq(up.writeJs(contractId),
@@ -1876,6 +1893,9 @@ object CliCommand {
       extends AddDLCSigsCliCommand
 
   case class AddDLCSigsFromFile(path: Path) extends AddDLCSigsCliCommand
+
+  case class AddDLCSigsAndBroadcastFromFile(path: Path)
+      extends AddDLCSigsCliCommand
 
   case class AddDLCSigsAndBroadcast(sigs: LnMessage[DLCSignTLV])
       extends AddDLCSigsCliCommand

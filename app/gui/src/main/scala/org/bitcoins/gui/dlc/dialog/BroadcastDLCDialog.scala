@@ -33,7 +33,7 @@ class BroadcastDLCDialog
       case Some(file) =>
         signDLCFile = None // reset
         signFileChosenLabel.text = "" // reset
-        AddDLCSigsFromFile(file.toPath)
+        AddDLCSigsAndBroadcastFromFile(file.toPath)
       case None =>
         val signHex = readStringFromNode(inputs(dlcSigStr))
 

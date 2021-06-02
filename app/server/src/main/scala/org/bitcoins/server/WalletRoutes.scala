@@ -11,7 +11,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.{AddressLabelTagType, TxoState}
 import org.bitcoins.crypto.NetworkElement
-import org.bitcoins.dlc.wallet.AnyDLCHDWalletApi
+import org.bitcoins.dlc.wallet.{AnyDLCHDWalletApi, DLCWalletApi}
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
@@ -420,6 +420,19 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("adddlcsigsandbroadcastfromfile", arr) =>
+      DLCDataFromFile.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DLCDataFromFile(path, _)) =>
+          complete {
+            val hex = Files.readAllLines(path).get(0)
+            val signMessage = LnMessageFactory(DLCSignTLV).fromHex(hex)
+            for {
+              tx <- addDLCSigsAndBroadcastTx(wallet, signMessage.tlv)
+            } yield Server.httpSuccess(tx.txIdBE.hex)
+          }
+      }
     case ServerCommand("adddlcsigsandbroadcast", arr) =>
       AddDLCSigs.fromJsArr(arr) match {
         case Failure(exception) =>
@@ -427,8 +440,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
         case Success(AddDLCSigs(sigs)) =>
           complete {
             for {
-              db <- wallet.addDLCSigs(sigs.tlv)
-              tx <- wallet.broadcastDLCFundingTx(db.contractIdOpt.get)
+              tx <- addDLCSigsAndBroadcastTx(wallet, sigs.tlv)
             } yield Server.httpSuccess(tx.txIdBE.hex)
           }
       }
@@ -800,5 +812,15 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           )
       )
     }
+  }
+
+  /** Adds dlc sigs to the wallet and then broadcasts the tx */
+  private def addDLCSigsAndBroadcastTx(
+      wallet: DLCWalletApi,
+      signMessage: DLCSignTLV): Future[Transaction] = {
+    for {
+      db <- wallet.addDLCSigs(signMessage)
+      tx <- wallet.broadcastDLCFundingTx(db.contractIdOpt.get)
+    } yield tx
   }
 }
