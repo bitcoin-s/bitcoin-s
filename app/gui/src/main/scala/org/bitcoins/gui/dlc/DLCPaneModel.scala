@@ -8,7 +8,8 @@ import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.crypto._
 import org.bitcoins.gui.dlc.GlobalDLCData.dlcs
 import org.bitcoins.gui.dlc.dialog._
-import org.bitcoins.gui.{GlobalData, TaskRunner}
+import org.bitcoins.gui._
+import scalafx.application.Platform
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.Alert.AlertType
 import scalafx.scene.control.{Alert, ButtonType, TextArea}
@@ -229,6 +230,7 @@ class DLCPaneModel(resultArea: TextArea) extends Logging {
             case Failure(err) => throw err
           }
           updateDLCs()
+          Platform.runLater(GUI.model.updateBalance())
         }
       )
     }

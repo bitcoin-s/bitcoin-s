@@ -119,7 +119,7 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem) {
     }
   }
 
-  private def updateBalance(): Unit = {
+  private[gui] def updateBalance(): Unit = {
     ConsoleCli.exec(GetBalances(isSats = true),
                     GlobalData.consoleCliConfig) match {
       case Success(commandReturn) =>
