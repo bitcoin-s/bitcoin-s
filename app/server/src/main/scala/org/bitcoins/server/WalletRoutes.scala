@@ -433,6 +433,22 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("adddlcsigsandbroadcastfromfile", arr) =>
+      DLCDataFromFile.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DLCDataFromFile(path, _)) =>
+          val hex = Files.readAllLines(path).get(0)
+
+          val signMessage = LnMessageFactory(DLCSignTLV).fromHex(hex)
+          complete {
+            for {
+              db <- wallet.addDLCSigs(signMessage.tlv)
+              tx <- wallet.broadcastDLCFundingTx(db.contractIdOpt.get)
+            } yield Server.httpSuccess(tx.txIdBE.hex)
+          }
+      }
+
     case ServerCommand("getdlcfundingtx", arr) =>
       GetDLCFundingTx.fromJsArr(arr) match {
         case Failure(exception) =>
