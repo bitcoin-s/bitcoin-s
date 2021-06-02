@@ -4,11 +4,6 @@ import scala.util.Properties
 
 Global / cancelable := true
 
-//don't allow us to wipe all of our prod databases
-flywayClean / aggregate := false
-//allow us to wipe our test databases
-Test / flywayClean / aggregate := true
-
 lazy val Benchmark = config("bench") extend Test
 
 lazy val benchSettings: Seq[Def.SettingsDefinition] = {
@@ -432,29 +427,23 @@ lazy val gui = project
     cli
   )
 
-lazy val chainDbSettings = dbFlywaySettings("chaindb")
-
 lazy val chain = project
   .in(file("chain"))
   .settings(CommonSettings.prodSettings: _*)
-  .settings(chainDbSettings: _*)
   .settings(
     name := "bitcoin-s-chain",
     libraryDependencies ++= Deps.chain
   )
   .dependsOn(coreJVM, dbCommons)
-  .enablePlugins(FlywayPlugin)
 
 lazy val chainTest = project
   .in(file("chain-test"))
   .settings(CommonSettings.testSettings: _*)
-  .settings(chainDbSettings: _*)
   .settings(
     name := "bitcoin-s-chain-test",
     libraryDependencies ++= Deps.chainTest
   )
   .dependsOn(chain, coreJVM % testAndCompile, testkit, zmq)
-  .enablePlugins(FlywayPlugin)
 
 lazy val dbCommons = project
   .in(file("db-commons"))
@@ -544,13 +533,10 @@ lazy val lndRpcTest = project
   )
   .dependsOn(coreJVM % testAndCompile, testkit, lndRpc)
 
-lazy val nodeDbSettings = dbFlywaySettings("nodedb")
-
 lazy val node =
   project
     .in(file("node"))
     .settings(CommonSettings.prodSettings: _*)
-    .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node",
       libraryDependencies ++= Deps.node
@@ -562,13 +548,11 @@ lazy val node =
       dbCommons,
       bitcoindRpc
     )
-    .enablePlugins(FlywayPlugin)
 
 lazy val nodeTest =
   project
     .in(file("node-test"))
     .settings(CommonSettings.testSettings: _*)
-    .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node-test",
       // There's a weird issue with forking
@@ -585,7 +569,6 @@ lazy val nodeTest =
       node,
       testkit
     )
-    .enablePlugins(FlywayPlugin)
 
 lazy val testkit = project
   .in(file("testkit"))
@@ -670,29 +653,23 @@ lazy val keyManagerTest = project
             libraryDependencies ++= Deps.keyManagerTest)
   .dependsOn(keyManager, testkit)
 
-lazy val walletDbSettings = dbFlywaySettings("walletdb")
-
 lazy val wallet = project
   .in(file("wallet"))
   .settings(CommonSettings.prodSettings: _*)
-  .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
   .dependsOn(coreJVM, appCommons, dbCommons, keyManager, asyncUtilsJVM)
-  .enablePlugins(FlywayPlugin)
 
 lazy val walletTest = project
   .in(file("wallet-test"))
   .settings(CommonSettings.testSettings: _*)
-  .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet-test",
     libraryDependencies ++= Deps.walletTest
   )
   .dependsOn(coreJVM % testAndCompile, testkit, wallet)
-  .enablePlugins(FlywayPlugin)
 
 lazy val dlcWallet = project
   .in(file("dlc-wallet"))
@@ -760,60 +737,3 @@ lazy val dlcTest = project
     coreJVM % testAndCompile,
     testkitCoreJVM
   )
-
-/** Given a database name, returns the appropriate
-  * Flyway settings we apply to a project (chain, node, wallet)
-  */
-def dbFlywaySettings(dbName: String): List[Setting[_]] = {
-  lazy val DB_HOST = "localhost"
-  lazy val DB_NAME = s"${dbName}.sqlite"
-  lazy val network = "unittest" //mainnet, testnet3, regtest, unittest
-
-  lazy val mainnetDir = s"${System.getenv("HOME")}/.bitcoin-s/mainnet/"
-  lazy val testnetDir = s"${System.getenv("HOME")}/.bitcoin-s/testnet3/"
-  lazy val regtestDir = s"${System.getenv("HOME")}/.bitcoin-s/regtest/"
-  lazy val signetDir = s"${System.getenv("HOME")}/.bitcoin-s/signet/"
-  lazy val unittestDir = s"${System.getenv("HOME")}/.bitcoin-s/unittest/"
-
-  lazy val dirs =
-    List(mainnetDir, testnetDir, regtestDir, signetDir, unittestDir)
-
-  //create directies if they DNE
-  dirs.foreach { d =>
-    val file = new File(d)
-    file.mkdirs()
-    val db = new File(d + DB_NAME)
-    db.createNewFile()
-  }
-
-  def makeNetworkSettings(directoryPath: String): List[Setting[_]] =
-    List(
-      Test / flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
-      Test / flywayLocations := List("nodedb/migration"),
-      Test / flywayUser := "nodedb",
-      Test / flywayPassword := "",
-      flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
-      flywayUser := "nodedb",
-      flywayPassword := ""
-    )
-
-  lazy val mainnet = makeNetworkSettings(mainnetDir)
-
-  lazy val testnet3 = makeNetworkSettings(testnetDir)
-
-  lazy val regtest = makeNetworkSettings(regtestDir)
-
-  lazy val signet = makeNetworkSettings(signetDir)
-
-  lazy val unittest = makeNetworkSettings(unittestDir)
-
-  network match {
-    case "mainnet"  => mainnet
-    case "testnet3" => testnet3
-    case "regtest"  => regtest
-    case "signet"   => signet
-    case "unittest" => unittest
-    case unknown: String =>
-      throw new IllegalArgumentException(s"Unknown network=${unknown}")
-  }
-}
