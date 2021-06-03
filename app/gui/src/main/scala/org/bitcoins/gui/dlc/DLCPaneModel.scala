@@ -44,15 +44,9 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
 
   def setUp(): Unit = {
     dlcs.clear()
-    val start = System.currentTimeMillis()
-    logger.info("Starting getDlcs")
     getDLCs.map { walletDlcs =>
       dlcs ++= walletDlcs
-      logger.info(
-        s"Done getDLCs async, it took=${System.currentTimeMillis() - start}ms")
     }
-    logger.info(
-      s"Done getDLCs, it took=${System.currentTimeMillis() - start}ms")
     //purposely drop the future on the floor for now
     //as our GUI is not async safe at all
     ()
