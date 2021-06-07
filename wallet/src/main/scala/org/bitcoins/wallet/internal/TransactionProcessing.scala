@@ -289,8 +289,8 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
 
   /** If the given UTXO is marked as unspent and returns it so it can be updated
     * Otherwise returns None.
-   *
-   * If the utxo is transitioning into an invalid state it throws ane exception.
+    *
+    * If the utxo is transitioning into an invalid state it throws ane exception.
     */
   private def markAsSpent(
       out: SpendingInfoDb,
