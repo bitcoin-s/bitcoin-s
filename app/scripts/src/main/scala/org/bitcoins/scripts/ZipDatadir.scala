@@ -31,6 +31,8 @@ class ZipDatadir(override val args: Array[String])(implicit
 }
 
 object Zip extends BitcoinSApp {
-  override val actorSystemName: String = "zip-datadir"
+
+  override val actorSystemName: String =
+    s"zip-datadir-${System.currentTimeMillis()}"
   new ZipDatadir(args).run()
 }

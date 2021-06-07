@@ -97,6 +97,8 @@ class ScanBitcoind(override val args: Array[String])(implicit
 }
 
 object ScanBitcoind extends BitcoinSApp {
-  override val actorSystemName: String = "scan-bitcoind"
+
+  override val actorSystemName: String =
+    s"scan-bitcoind-${System.currentTimeMillis()}"
   new ScanBitcoind(args).run()
 }

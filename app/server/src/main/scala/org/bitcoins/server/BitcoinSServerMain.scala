@@ -375,7 +375,9 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
 }
 
 object BitcoinSServerMain extends BitcoinSApp {
-  override val actorSystemName = "bitcoin-s-server"
+
+  override val actorSystemName =
+    s"bitcoin-s-server-${System.currentTimeMillis()}"
 
   new BitcoinSServerMain(args).run()
 }

@@ -60,6 +60,8 @@ class OracleServerMain(override val args: Array[String])(implicit
 }
 
 object OracleServerMain extends BitcoinSApp {
-  override val actorSystemName = "bitcoin-s-oracle"
+
+  override val actorSystemName =
+    s"bitcoin-s-oracle-${System.currentTimeMillis()}"
   new OracleServerMain(args).run(Some("oracle"))
 }
