@@ -241,12 +241,10 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           insertTransaction(transaction, blockHashOpt)
         else Future.unit
       }
-      processed <- Future
-        .sequence {
-          outputsBeingSpent.map(markAsSpent(_, transaction.txIdBE))
-        }
-        .map(_.flatten)
-
+      toBeUpdated = outputsBeingSpent
+        .map(markAsSpent(_, transaction.txIdBE))
+        .flatten
+      processed <- spendingInfoDAO.updateAllSpendingInfoDb(toBeUpdated)
       _ <- updateUtxoConfirmedStates(processed)
     } yield processed
   }
@@ -289,12 +287,14 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     }
   }
 
-  /** If the given UTXO is marked as unspent, updates
-    * its spending status. Otherwise returns an error.
+  /** If the given UTXO is marked as unspent and returns it so it can be updated
+    * Otherwise returns None.
+   *
+   * If the utxo is transitioning into an invalid state it throws ane exception.
     */
   private def markAsSpent(
       out: SpendingInfoDb,
-      spendingTxId: DoubleSha256DigestBE): Future[Option[SpendingInfoDb]] = {
+      spendingTxId: DoubleSha256DigestBE): Option[SpendingInfoDb] = {
     out.state match {
       case ConfirmedReceived | PendingConfirmationsReceived |
           BroadcastReceived =>
@@ -302,19 +302,16 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           out
             .copyWithSpendingTxId(spendingTxId)
             .copyWithState(state = BroadcastSpent)
-        val updatedF =
-          spendingInfoDAO.update(updated)
-        updatedF.foreach(updated =>
-          logger.debug(
-            s"Marked utxo=${updated.toHumanReadableString} as state=${updated.state}"))
-        updatedF.map(Some(_))
+        logger.debug(
+          s"Marked utxo=${updated.toHumanReadableString} as state=${updated.state}")
+        Some(updated)
       case TxoState.Reserved =>
         val updated =
           out
             .copyWithSpendingTxId(spendingTxId)
             .copyWithState(state = BroadcastSpent)
-        val updatedF = spendingInfoDAO.update(updated)
-        updatedF.map(Some(_))
+
+        Some(updated)
       case TxoState.BroadcastSpent =>
         logger.warn(
           s"Updating the spendingTxId of a transaction that is already spent, " +
@@ -322,19 +319,21 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
               .map(_.hex)} new spendingTxId=${spendingTxId.hex}")
         val updated =
           out.copyWithSpendingTxId(spendingTxId)
-        val updatedF = spendingInfoDAO.update(updated)
-        updatedF.map(Some(_))
+        Some(updated)
       case TxoState.ImmatureCoinbase =>
-        Future.failed(new RuntimeException(
-          s"Attempting to spend an ImmatureCoinbase ${out.outPoint.hex}, this should not be possible until it is confirmed."))
+        throw new RuntimeException(
+          s"Attempting to spend an ImmatureCoinbase ${out.outPoint.hex}, this should not be possible until it is confirmed.")
       case TxoState.ConfirmedSpent | TxoState.PendingConfirmationsSpent =>
         if (!out.spendingTxIdOpt.contains(spendingTxId)) {
-          Future.failed(new RuntimeException(
-            s"Attempted to mark an already spent utxo ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}"))
-        } else Future.successful(Some(out))
+          throw new RuntimeException(
+            s"Attempted to mark an already spent utxo ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}")
+        } else {
+          //do not want to update again
+          None
+        }
       case TxoState.DoesNotExist =>
-        Future.failed(new RuntimeException(
-          s"Attempted to process a transaction for a utxo that does not exist ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}"))
+        throw new RuntimeException(
+          s"Attempted to process a transaction for a utxo that does not exist ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}")
     }
   }
 
