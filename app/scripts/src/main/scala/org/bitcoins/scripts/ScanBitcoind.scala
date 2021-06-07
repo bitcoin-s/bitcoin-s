@@ -1,12 +1,14 @@
 package org.bitcoins.scripts
 
 import akka.NotUsed
+import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoindRpcAppConfig
 import org.bitcoins.server.routes.BitcoinSRunner
+import org.bitcoins.server.util.BitcoinSApp
 
 import scala.concurrent.Future
 
@@ -15,8 +17,9 @@ import scala.concurrent.Future
   * between bitcoin-s and bitcoind inside of bitcoin-s.conf
   * @see https://bitcoin-s.org/docs/config/configuration#example-configuration-file
   */
-class ScanBitcoind(override val args: Array[String]) extends BitcoinSRunner {
-  override val actorSystemName = "scan-bitcoind"
+class ScanBitcoind(override val args: Array[String])(implicit
+    override val system: ActorSystem)
+    extends BitcoinSRunner {
 
   implicit val rpcAppConfig: BitcoindRpcAppConfig =
     BitcoindRpcAppConfig(datadir, baseConfig)
@@ -93,6 +96,9 @@ class ScanBitcoind(override val args: Array[String]) extends BitcoinSRunner {
   }
 }
 
-object ScanBitcoind extends App {
+object ScanBitcoind extends BitcoinSApp {
+
+  override val actorSystemName: String =
+    s"scan-bitcoind-${System.currentTimeMillis()}"
   new ScanBitcoind(args).run()
 }

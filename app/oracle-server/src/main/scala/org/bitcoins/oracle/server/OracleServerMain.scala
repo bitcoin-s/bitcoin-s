@@ -1,14 +1,15 @@
 package org.bitcoins.oracle.server
 
+import akka.actor.ActorSystem
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.routes.{BitcoinSRunner, Server}
+import org.bitcoins.server.util.BitcoinSApp
 
 import scala.concurrent.Future
 
-class OracleServerMain(override val args: Array[String])
+class OracleServerMain(override val args: Array[String])(implicit
+    override val system: ActorSystem)
     extends BitcoinSRunner {
-
-  override val actorSystemName = "bitcoin-s-oracle"
 
   implicit val conf: DLCOracleAppConfig =
     DLCOracleAppConfig(datadir, baseConfig)
@@ -58,6 +59,9 @@ class OracleServerMain(override val args: Array[String])
   }
 }
 
-object OracleServerMain extends App {
+object OracleServerMain extends BitcoinSApp {
+
+  override val actorSystemName =
+    s"bitcoin-s-oracle-${System.currentTimeMillis()}"
   new OracleServerMain(args).run(Some("oracle"))
 }
