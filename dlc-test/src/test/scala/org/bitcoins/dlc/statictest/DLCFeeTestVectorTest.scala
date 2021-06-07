@@ -1,11 +1,16 @@
 package org.bitcoins.dlc.statictest
 
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.dlc.testgen._
 import org.bitcoins.testkitcore.gen.FeeUnitGen
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalacheck.Gen
+import org.scalatest.Assertion
+import play.api.libs.json.JsResult
 
-class DLCFeeTestVectorTest extends BitcoinSUnitTest {
+import scala.concurrent.Future
+
+class DLCFeeTestVectorTest extends BitcoinSJvmTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
@@ -46,11 +51,21 @@ class DLCFeeTestVectorTest extends BitcoinSUnitTest {
   }
 
   it should "pass dlc_fee_test" in {
-    val vecResult = DLCFeeTestVectorGen.readFromDefaultTestFile()
+    val vecResult: JsResult[Vector[DLCFeeTestVector]] =
+      DLCFeeTestVectorGen.readFromDefaultTestFile()
     assert(vecResult.isSuccess)
 
-    vecResult.get.foldLeft(succeed) { case (_, testVec) =>
-      assert(DLCFeeTestVector(testVec.inputs) == testVec)
-    }
+    def assertBatch(vec: Vector[DLCFeeTestVector]): Future[Vector[Assertion]] =
+      Future {
+        vec.map { case testVec =>
+          assert(DLCFeeTestVector.apply(testVec.inputs) == testVec)
+        }
+      }
+
+    val assertionsF = FutureUtil
+      .batchAndParallelExecute(vecResult.get, assertBatch)
+      .map(_.flatten)
+
+    assertionsF.map(_ => succeed)
   }
 }

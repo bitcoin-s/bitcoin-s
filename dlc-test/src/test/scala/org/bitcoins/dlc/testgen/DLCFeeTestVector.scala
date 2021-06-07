@@ -91,7 +91,7 @@ object DLCFeeTestVectorInput {
 object DLCFeeTestVector extends TestVectorParser[DLCFeeTestVector] {
 
   def apply(inputs: DLCFeeTestVectorInput): DLCFeeTestVector = {
-    DLCFeeTestVector(
+    DLCFeeTestVector.apply(
       inputs,
       inputs.offerFundingFee.satoshis,
       inputs.offerClosingFee.satoshis,
