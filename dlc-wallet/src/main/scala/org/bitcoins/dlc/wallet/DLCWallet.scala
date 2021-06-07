@@ -7,6 +7,7 @@ import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
+import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol._
@@ -1211,6 +1212,18 @@ abstract class DLCWallet
 
       _ <- processTransaction(refundTx, blockHashOpt = None)
     } yield refundTx
+  }
+
+  override def getWalletAccounting: Future[DLCWalletAccounting] = {
+    val dlcsF = listDLCs()
+    for {
+      dlcs <- dlcsF
+      closed = dlcs.collect { case c: ClosedDLCStatus =>
+        c
+      } //only get closed dlcs for accounting
+      accountings = closed.map(_.accounting)
+      walletAccounting = DLCWalletAccounting.fromDLCAccounting(accountings)
+    } yield walletAccounting
   }
 
   override def listDLCs(): Future[Vector[DLCStatus]] = {

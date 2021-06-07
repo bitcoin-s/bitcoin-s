@@ -2,6 +2,7 @@ package org.bitcoins.dlc.wallet
 
 import org.bitcoins.core.api.wallet._
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
   DLCAccept,
@@ -17,7 +18,6 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.Sha256Digest
-import org.bitcoins.dlc.wallet.accounting.wallet.WalletAccounting
 import org.bitcoins.dlc.wallet.models.DLCDb
 import scodec.bits.ByteVector
 
@@ -102,7 +102,7 @@ trait DLCWalletApi { self: WalletApi =>
   def cancelDLC(dlcId: Sha256Digest): Future[Unit]
 
   /** Retrieves accounting and financial metrics for the entire dlc wallet */
-  def getWalletAccounting: WalletAccounting
+  def getWalletAccounting: Future[DLCWalletAccounting]
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */

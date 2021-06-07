@@ -794,6 +794,13 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           Server.httpSuccess(fee.toString)
         }
       }
+
+    case ServerCommand("getdlcwalletaccounting", _) =>
+      complete {
+        wallet.getWalletAccounting.map { accounting =>
+          Server.httpSuccess(writeJs(accounting))
+        }
+      }
   }
 
   /** Returns information about the state of our wallet */

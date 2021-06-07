@@ -13,6 +13,9 @@ object GlobalData {
   val currentReservedBalance: StringProperty = StringProperty("0")
   val currentTotalBalance: StringProperty = StringProperty("0")
 
+  val currentPNL: StringProperty = StringProperty("0")
+  val rateOfReturn: StringProperty = StringProperty("0%")
+
   val syncHeight: StringProperty = StringProperty("Syncing headers...")
 
   var network: BitcoinNetwork = _

@@ -1,22 +1,21 @@
-package org.bitcoins.dlc.wallet.accounting.wallet
+package org.bitcoins.core.dlc.accounting
 
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
-import org.bitcoins.core.dlc.accounting.{DLCAccounting, PayoutAccounting}
 
 /** Similar to [[org.bitcoins.core.dlc.accounting.DLCAccounting]], but
   * represents the entire accounting for the wallet
   */
-case class WalletAccounting(
+case class DLCWalletAccounting(
     myCollateral: CurrencyUnit,
     theirCollateral: CurrencyUnit,
     myPayout: CurrencyUnit,
     theirPayout: CurrencyUnit)
     extends PayoutAccounting
 
-object WalletAccounting {
+object DLCWalletAccounting {
 
   def fromDLCAccounting(
-      accountings: Vector[DLCAccounting]): WalletAccounting = {
+      accountings: Vector[DLCAccounting]): DLCWalletAccounting = {
     val myCollateral =
       accountings.foldLeft(CurrencyUnits.zero)(_ + _.myCollateral)
     val theirCollateral =
@@ -26,6 +25,6 @@ object WalletAccounting {
     val theirPayouts =
       accountings.foldLeft(CurrencyUnits.zero)(_ + _.theirPayout)
 
-    WalletAccounting(myCollateral, theirCollateral, myPayouts, theirPayouts)
+    DLCWalletAccounting(myCollateral, theirCollateral, myPayouts, theirPayouts)
   }
 }

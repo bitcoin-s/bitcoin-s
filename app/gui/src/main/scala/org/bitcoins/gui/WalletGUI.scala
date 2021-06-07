@@ -30,28 +30,35 @@ abstract class WalletGUI {
     dlcPane.model.setUp()
   }
 
+  private val satsProperty = StringProperty(" sats")
+
   private lazy val confirmedText = new Label() {
     text <== StringProperty(
-      "Confirmed balance:\t\t") + GlobalData.currentConfirmedBalance + StringProperty(
-      " sats")
+      "Confirmed balance:\t\t") + GlobalData.currentConfirmedBalance + satsProperty
   }
 
   private lazy val unconfirmedText = new Label() {
     text <== StringProperty(
-      "Unconfirmed balance:\t") + GlobalData.currentUnconfirmedBalance + StringProperty(
-      " sats")
+      "Unconfirmed balance:\t") + GlobalData.currentUnconfirmedBalance + satsProperty
   }
 
   private lazy val reservedText = new Label() {
     text <== StringProperty(
-      "Reserved balance:\t\t") + GlobalData.currentReservedBalance + StringProperty(
-      " sats")
+      "Reserved balance:\t\t") + GlobalData.currentReservedBalance + satsProperty
   }
 
   private lazy val totalBalanceText = new Label() {
     text <== StringProperty(
-      "Total balance:\t\t\t") + GlobalData.currentTotalBalance + StringProperty(
-      " sats")
+      "Total balance:\t\t\t") + GlobalData.currentTotalBalance + satsProperty
+  }
+
+  private lazy val pnlText = new Label() {
+    text <== StringProperty(
+      "Profit and Loss:\t\t\t") + GlobalData.currentPNL + satsProperty
+  }
+
+  private lazy val rateOfReturnText = new Label() {
+    text <== StringProperty("Rate of Return:\t\t\t") + GlobalData.rateOfReturn
   }
 
   private[gui] lazy val dlcPane = new DLCPane(glassPane)
@@ -64,6 +71,11 @@ abstract class WalletGUI {
                       reservedText,
                       new Separator(),
                       totalBalanceText)
+  }
+
+  private lazy val walletAccountingBox = new VBox {
+    spacing = 10
+    children = Vector(pnlText, rateOfReturnText)
   }
 
   private lazy val getNewAddressButton = new Button {
@@ -84,7 +96,8 @@ abstract class WalletGUI {
     sendButton.prefWidth <== width
     getNewAddressButton.maxWidth = 300
     sendButton.maxWidth = 300
-    children = Vector(balanceBox, getNewAddressButton, sendButton)
+    children =
+      Vector(balanceBox, walletAccountingBox, getNewAddressButton, sendButton)
   }
 
   lazy val bottomStack: StackPane = new StackPane() {

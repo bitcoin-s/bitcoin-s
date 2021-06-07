@@ -1729,6 +1729,8 @@ object ConsoleCli {
       case ZipDataDir(path) =>
         RequestParam("zipdatadir", Seq(up.writeJs(path)))
 
+      case GetDLCWalletAccounting =>
+        RequestParam("getdlcwalletaccounting")
       case GetVersion =>
         // skip sending to server and just return version number of cli
         return Success(EnvUtil.getVersion)
@@ -1995,6 +1997,7 @@ object CliCommand {
   case class GetUnconfirmedBalance(isSats: Boolean) extends AppServerCliCommand
   case class GetBalances(isSats: Boolean) extends AppServerCliCommand
   case class GetAddressInfo(address: BitcoinAddress) extends AppServerCliCommand
+  case object GetDLCWalletAccounting extends AppServerCliCommand
 
   case class GetTransaction(txId: DoubleSha256DigestBE)
       extends AppServerCliCommand
