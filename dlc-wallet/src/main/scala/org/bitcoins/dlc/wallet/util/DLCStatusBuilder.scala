@@ -114,8 +114,9 @@ object DLCStatusBuilder {
     )
 
     val dlcId = dlcDb.dlcId
+    val financials = Financials(dlcDb, offerDb, acceptDb, closingTx)
     val accounting: DLCAccounting =
-      AccountingUtil.calculatePnl(dlcDb, offerDb, acceptDb, closingTx)
+      AccountingUtil.calculatePnl(financials)
 
     val totalCollateral = contractData.totalCollateral
 

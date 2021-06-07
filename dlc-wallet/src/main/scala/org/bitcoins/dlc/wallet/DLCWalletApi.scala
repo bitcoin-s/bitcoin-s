@@ -17,6 +17,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.dlc.wallet.accounting.wallet.WalletAccounting
 import org.bitcoins.dlc.wallet.models.DLCDb
 import scodec.bits.ByteVector
 
@@ -99,6 +100,9 @@ trait DLCWalletApi { self: WalletApi =>
   def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]]
 
   def cancelDLC(dlcId: Sha256Digest): Future[Unit]
+
+  /** Retrieves accounting and financial metrics for the entire dlc wallet */
+  def getWalletAccounting: WalletAccounting
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */
