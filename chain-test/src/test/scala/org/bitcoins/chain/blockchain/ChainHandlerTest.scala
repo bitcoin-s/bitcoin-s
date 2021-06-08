@@ -618,6 +618,19 @@ class ChainHandlerTest extends ChainDbUnitTest {
       } yield assert(result)
   }
 
+  it must "get best filter" in { chainHandler: ChainHandler =>
+    val bestFilterOptF = chainHandler.getBestFilter()
+    val bestFilterHeaderOptF = chainHandler.getBestFilterHeader()
+    for {
+      bestFilterHeaderOpt <- bestFilterHeaderOptF
+      bestFilterOpt <- bestFilterOptF
+    } yield {
+      assert(bestFilterHeaderOpt.isDefined)
+      assert(bestFilterOpt.isDefined)
+      assert(bestFilterOpt.get.hashBE == bestFilterHeaderOpt.get.filterHashBE)
+    }
+  }
+
   /** Checks that
     * 1. The header1 & header2 have the same chainwork
     * 2. Checks that header1 and header2 have the same time

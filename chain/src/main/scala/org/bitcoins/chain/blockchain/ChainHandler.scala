@@ -552,11 +552,7 @@ class ChainHandler(
   }
 
   override def getBestFilter(): Future[Option[CompactFilterDb]] = {
-    getFilterCount()
-      .flatMap { count =>
-        getFiltersAtHeight(count)
-      }
-      .map(_.headOption)
+    filterDAO.getBestFilter
   }
 
   /** This method retrieves the best [[CompactFilterHeaderDb]] from the database
