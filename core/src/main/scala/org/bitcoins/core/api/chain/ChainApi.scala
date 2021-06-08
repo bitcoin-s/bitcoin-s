@@ -119,6 +119,8 @@ trait ChainApi extends ChainQueryApi {
     */
   def getBestFilterHeader(): Future[Option[CompactFilterHeaderDb]]
 
+  def getBestFilter(): Future[Option[CompactFilterDb]]
+
   /** Looks up a compact filter header by its hash.
     */
   def getFilterHeader(

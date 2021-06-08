@@ -505,8 +505,6 @@ object NodeUnitTest extends P2PLogger {
       _ <- node.sync()
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
-      addr <- bitcoind.getNewAddress
-      _ <- bitcoind.generateToAddress(1, addr)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
     } yield node
   }

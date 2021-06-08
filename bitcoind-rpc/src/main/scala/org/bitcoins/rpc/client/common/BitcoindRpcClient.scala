@@ -200,6 +200,8 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
       blockHash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] =
     filterHeadersUnsupported
 
+  override def getBestFilter(): Future[Option[CompactFilterDb]] = ???
+
   override def getFilter(
       hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = ???
 

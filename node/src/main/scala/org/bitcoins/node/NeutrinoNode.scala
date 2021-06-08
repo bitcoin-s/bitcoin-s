@@ -5,7 +5,11 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.chain.db.{BlockHeaderDb, CompactFilterHeaderDb}
+import org.bitcoins.core.api.chain.db.{
+  BlockHeaderDb,
+  CompactFilterDb,
+  CompactFilterHeaderDb
+}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -65,7 +69,7 @@ case class NeutrinoNode(
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
       bestFilterHeaderOpt <- chainApi.getBestFilterHeader()
-      filterCount <- chainApi.getFilterCount()
+      bestFilterOpt <- chainApi.getBestFilter()
       blockchains <-
         BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
       // Get all of our cached headers in case of a reorg
@@ -74,7 +78,10 @@ case class NeutrinoNode(
       tip = blockchains
         .map(_.tip)
         .head //should be safe since we have genesis header inserted in db
-      _ <- syncFilters(bestFilterHeaderOpt, tip, chainApi, filterCount)
+      _ <- syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
+                       bestFilterOpt = bestFilterOpt,
+                       bestBlockHeader = tip,
+                       chainApi = chainApi)
     } yield {
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE.hex}")
@@ -83,33 +90,33 @@ case class NeutrinoNode(
 
   private def syncFilters(
       bestFilterHeaderOpt: Option[CompactFilterHeaderDb],
+      bestFilterOpt: Option[CompactFilterDb],
       bestBlockHeader: BlockHeaderDb,
-      chainApi: ChainApi,
-      filterCount: Int): Future[Unit] = {
+      chainApi: ChainApi): Future[Unit] = {
     // If we have started syncing filters headers
-    bestFilterHeaderOpt match {
-      case None =>
+    (bestFilterHeaderOpt, bestFilterOpt) match {
+      case (None, None) | (None, Some(_)) =>
         //do nothing if we haven't started syncing
         Future.unit
-      case Some(bestFilterHeader) =>
+      case (Some(bestFilterHeader), bestFilterOpt) =>
         val isFilterHeaderSynced =
           bestFilterHeader.blockHashBE == bestBlockHeader.hashBE
-        if (isFilterHeaderSynced) {
-          //means we are in sync, with filter heads and block headers
+        val isFiltersSynced = {
+          //check if we have started syncing filters,
+          //and if so, see if filter headers and filters
+          //were in sync
+          bestFilterOpt.isDefined &&
+          bestFilterOpt.get.hashBE == bestFilterHeader.filterHashBE
+        }
+        if (isFilterHeaderSynced && isFiltersSynced) {
+          //means we are in sync, with filter heads & block headers & filters
           //if there _both_ filter headers and block headers are on
           //an old tip, our event driven node will start syncing
           //filters after block headers are in sync
           //do nothing
-
-          //the shortcoming of this case is if you
-          //1. fully sync your block headers & filter headers
-          //2. start syncing compact filters
-          //3. stop your node
-          //4. restart your node before a block occurs on the network
-          //5. You won't begin syncing compact filters until a header occurs on the network
           Future.unit
         } else {
-          syncCompactFilters(bestFilterHeader, chainApi, filterCount)
+          syncCompactFilters(bestFilterHeader, chainApi, bestFilterOpt)
         }
     }
   }
@@ -117,7 +124,7 @@ case class NeutrinoNode(
   private def syncCompactFilters(
       bestFilterHeader: CompactFilterHeaderDb,
       chainApi: ChainApi,
-      filterCount: Int): Future[Unit] = {
+      bestFilterOpt: Option[CompactFilterDb]): Future[Unit] = {
     val sendCompactFilterHeaderMsgF = {
       peerMsgSender.sendNextGetCompactFilterHeadersCommand(
         chainApi = chainApi,
@@ -128,15 +135,15 @@ case class NeutrinoNode(
       // If we have started syncing filters
       if (
         !isSyncFilterHeaders &&
-        filterCount != bestFilterHeader.height
-        && filterCount != 0
+        bestFilterOpt.isDefined &&
+        bestFilterOpt.get.hashBE != bestFilterHeader.filterHashBE
       ) {
         logger.info(s"Starting sync filters in NeutrinoNode.sync()")
         peerMsgSender
-          .sendNextGetCompactFilterCommand(chainApi = chainApi,
-                                           filterBatchSize =
-                                             chainConfig.filterBatchSize,
-                                           startHeight = filterCount)
+          .sendNextGetCompactFilterCommand(
+            chainApi = chainApi,
+            filterBatchSize = chainConfig.filterBatchSize,
+            startHeight = bestFilterOpt.get.height)
           .map(_ => ())
       } else {
         Future.unit
