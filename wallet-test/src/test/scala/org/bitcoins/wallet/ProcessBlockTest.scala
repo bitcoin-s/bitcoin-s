@@ -3,6 +3,11 @@ package org.bitcoins.wallet
 import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
+import org.bitcoins.core.hd.{HDCoin, LegacyHDPath}
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.script.EmptyScriptSignature
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.wallet.{
@@ -114,5 +119,73 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
       assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
     }
+  }
+
+  it must "receive and spend funds in the same block" in { param =>
+    val WalletWithBitcoindV19(wallet, bitcoind) = param
+    val recvAmount = Bitcoins.one
+    val sendAmount = Bitcoins(0.5)
+
+    for {
+      startBal <- wallet.getBalance()
+      recvAddr <- wallet.getNewAddress()
+      changeAddr <- wallet.getNewChangeAddress()
+
+      bitcoindAddr <- bitcoind.getNewAddress
+      recvTxId <- bitcoind.sendToAddress(recvAddr, recvAmount)
+      recvTx <- bitcoind.getRawTransactionRaw(recvTxId)
+
+      // Make sure we didn't process the tx
+      afterBal <- wallet.getBalance()
+      _ = assert(startBal == afterBal)
+
+      index = recvTx.outputs.zipWithIndex
+        .find(_._1.scriptPubKey == recvAddr.scriptPubKey)
+        .get
+        ._2
+
+      input =
+        TransactionInput(TransactionOutPoint(recvTx.txId, UInt32(index)),
+                         EmptyScriptSignature,
+                         UInt32.max)
+      output0 =
+        TransactionOutput(recvAmount - sendAmount - Satoshis(500),
+                          changeAddr.scriptPubKey)
+      output1 =
+        TransactionOutput(sendAmount, bitcoindAddr.scriptPubKey)
+
+      unsignedTx = BaseTransaction(Int32.two,
+                                   Vector(input),
+                                   Vector(output0, output1),
+                                   UInt32.zero)
+
+      addrDb <- wallet.addressDAO.read(recvAddr).map(_.get)
+      coin = HDCoin(addrDb.purpose, addrDb.accountCoin)
+      accountDb <- wallet.accountDAO
+        .read((coin, addrDb.accountIndex))
+        .map(_.get)
+
+      bip32Path = LegacyHDPath(addrDb.accountCoin,
+                               addrDb.accountIndex,
+                               addrDb.accountChain,
+                               addrDb.addressIndex)
+
+      psbt = PSBT
+        .fromUnsignedTx(unsignedTx)
+        .addUTXOToInput(recvTx, 0)
+        .addKeyPathToInput(accountDb.xpub, bip32Path, addrDb.pubKey, 0)
+
+      signed <- wallet.signPSBT(psbt)
+      tx <- Future.fromTry(
+        signed.finalizePSBT.flatMap(_.extractTransactionAndValidate))
+
+      _ <- bitcoind.sendRawTransaction(tx)
+      hash <- bitcoind.generateToAddress(1, bitcoindAddr).map(_.head)
+      block <- bitcoind.getBlockRaw(hash)
+
+      _ <- wallet.processBlock(block)
+
+      balance <- wallet.getBalance()
+    } yield assert(balance == output0.value)
   }
 }
