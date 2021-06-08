@@ -1,6 +1,7 @@
 package org.bitcoins.gui
 
 import akka.actor.{ActorSystem, Cancellable}
+import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.commons.serializers.PicklerKeys
@@ -21,7 +22,8 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Promise}
 import scala.util.{Failure, Success, Try}
 
-class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem) {
+class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
+    extends Logging {
   var taskRunner: TaskRunner = _
   import system.dispatcher
 
@@ -158,13 +160,7 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem) {
   private def updateWalletAccounting(): Unit = {
     ConsoleCli.exec(GetDLCWalletAccounting, GlobalData.consoleCliConfig) match {
       case Failure(err) =>
-        err.printStackTrace()
-        val _ = new Alert(AlertType.Error) {
-          initOwner(owner)
-          title = "Could not retrieve dlc wallet accounting"
-          headerText = s"Operation failed. Exception: ${err.getClass}"
-          contentText = err.getMessage
-        }.showAndWait()
+        logger.error(s"Error fetching accounting", err)
       case Success(commandReturn) =>
         val json = ujson.read(commandReturn).obj
         val pnl = json(PicklerKeys.pnl).num.toLong.toString

@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.SchnorrDigitalSignature
 import org.bitcoins.dlc.wallet.accounting.AccountingUtil
 import org.bitcoins.dlc.wallet.models._
-import org.bitcoins.dlc.wallet.accounting.Financials
+import org.bitcoins.dlc.wallet.accounting.DLCAccountingDbs
 
 object DLCStatusBuilder {
 
@@ -115,7 +115,7 @@ object DLCStatusBuilder {
     )
 
     val dlcId = dlcDb.dlcId
-    val financials = Financials(dlcDb, offerDb, acceptDb, closingTx)
+    val financials = DLCAccountingDbs(dlcDb, offerDb, acceptDb, closingTx)
     val accounting: DLCAccounting =
       AccountingUtil.calculatePnl(financials)
 

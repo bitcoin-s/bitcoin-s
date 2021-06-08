@@ -3,7 +3,7 @@ package org.bitcoins.dlc.wallet.accounting
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.dlc.wallet.models.{DLCAcceptDb, DLCDb, DLCOfferDb}
 
-case class Financials(
+case class DLCAccountingDbs(
     dlcDb: DLCDb,
     offerDb: DLCOfferDb,
     acceptDb: DLCAcceptDb,

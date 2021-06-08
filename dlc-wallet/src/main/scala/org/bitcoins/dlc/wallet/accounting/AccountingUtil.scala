@@ -5,7 +5,7 @@ import org.bitcoins.core.dlc.accounting.DLCAccounting
 object AccountingUtil {
 
   /** Calculates the profit and loss for the given dlc */
-  def calculatePnl(financials: Financials): DLCAccounting = {
+  def calculatePnl(financials: DLCAccountingDbs): DLCAccounting = {
     val dlcDb = financials.dlcDb
     val offerDb = financials.offerDb
     val acceptDb = financials.acceptDb
