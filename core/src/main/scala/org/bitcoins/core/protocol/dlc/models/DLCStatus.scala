@@ -44,7 +44,7 @@ sealed trait ClosedDLCStatus extends BroadcastedDLCStatus {
   def myPayout: CurrencyUnit
   def counterPartyPayout: CurrencyUnit
 
-  private def accounting: DLCAccounting = {
+  def accounting: DLCAccounting = {
     DLCAccounting(dlcId,
                   localCollateral,
                   remoteCollateral,

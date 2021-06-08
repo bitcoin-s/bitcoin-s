@@ -1,17 +1,15 @@
 package org.bitcoins.dlc.wallet.accounting
 
 import org.bitcoins.core.dlc.accounting.DLCAccounting
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.dlc.wallet.models.{DLCAcceptDb, DLCDb, DLCOfferDb}
 
 object AccountingUtil {
 
   /** Calculates the profit and loss for the given dlc */
-  def calculatePnl(
-      dlcDb: DLCDb,
-      offerDb: DLCOfferDb,
-      acceptDb: DLCAcceptDb,
-      closingTx: Transaction): DLCAccounting = {
+  def calculatePnl(financials: DLCAccountingDbs): DLCAccounting = {
+    val dlcDb = financials.dlcDb
+    val offerDb = financials.offerDb
+    val acceptDb = financials.acceptDb
+    val closingTx = financials.closingTx
     val (myCollateral, theirCollateral, myPayoutAddress, theirPayoutAddress) = {
       if (dlcDb.isInitiator) {
         val myCollateral = offerDb.collateral
@@ -45,4 +43,5 @@ object AccountingUtil {
       theirPayout = theirPayout
     )
   }
+
 }

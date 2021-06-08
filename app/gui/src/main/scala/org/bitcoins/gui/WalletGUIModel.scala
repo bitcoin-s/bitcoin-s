@@ -1,9 +1,12 @@
 package org.bitcoins.gui
 
 import akka.actor.{ActorSystem, Cancellable}
+import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.ConsoleCli
+import org.bitcoins.commons.serializers.PicklerKeys
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.dlc.accounting.RateOfReturnUtil
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.dialog._
@@ -19,7 +22,8 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Promise}
 import scala.util.{Failure, Success, Try}
 
-class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem) {
+class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
+    extends Logging {
   var taskRunner: TaskRunner = _
   import system.dispatcher
 
@@ -33,6 +37,7 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem) {
     override def run(): Unit = {
       Platform.runLater {
         updateBalance()
+        updateWalletAccounting()
         updateWalletInfo()
         dlcModel.updateDLCs()
       }
@@ -149,6 +154,21 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem) {
           headerText = s"Operation failed. Exception: ${err.getClass}"
           contentText = err.getMessage
         }.showAndWait()
+    }
+  }
+
+  private def updateWalletAccounting(): Unit = {
+    ConsoleCli.exec(GetDLCWalletAccounting, GlobalData.consoleCliConfig) match {
+      case Failure(err) =>
+        logger.error(s"Error fetching accounting", err)
+      case Success(commandReturn) =>
+        val json = ujson.read(commandReturn).obj
+        val pnl = json(PicklerKeys.pnl).num.toLong.toString
+        val rateOfReturn = json(PicklerKeys.rateOfReturn).num
+        val rorPrettyPrint = RateOfReturnUtil.prettyPrint(rateOfReturn)
+        GlobalData.currentPNL.value = pnl
+        GlobalData.rateOfReturn.value = rorPrettyPrint
+        ()
     }
   }
 }

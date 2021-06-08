@@ -9,6 +9,7 @@ import org.bitcoins.core.crypto.{
   MnemonicCode
 }
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
@@ -260,10 +261,7 @@ object Picklers {
       )
     }
 
-  private val myPayoutKey: String = "myPayout"
   private val counterPartyPayoutKey: String = "counterPartyPayout"
-  private val pnlKey: String = "pnl"
-  private val rateOfReturnKey: String = "rateOfReturn"
 
   implicit val claimedW: Writer[Claimed] = writer[Obj].comap { claimed =>
     import claimed._
@@ -296,11 +294,11 @@ object Picklers {
       "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
       "outcomes" -> outcomesJs,
       "oracles" -> oraclesJs,
-      myPayoutKey -> Num(claimed.myPayout.satoshis.toLong.toDouble),
+      PicklerKeys.myPayout -> Num(claimed.myPayout.satoshis.toLong.toDouble),
       counterPartyPayoutKey -> Num(
         claimed.counterPartyPayout.satoshis.toLong.toDouble),
-      pnlKey -> Num(claimed.pnl.satoshis.toLong.toDouble),
-      rateOfReturnKey -> Num(claimed.rateOfReturn.toDouble)
+      PicklerKeys.pnl -> Num(claimed.pnl.satoshis.toLong.toDouble),
+      PicklerKeys.rateOfReturn -> Num(claimed.rateOfReturn.toDouble)
     )
   }
 
@@ -336,11 +334,12 @@ object Picklers {
         "oracleSigs" -> oracleSigs.map(sig => Str(sig.hex)),
         "outcomes" -> outcomesJs,
         "oracles" -> oraclesJs,
-        myPayoutKey -> Num(remoteClaimed.myPayout.satoshis.toLong.toDouble),
+        PicklerKeys.myPayout -> Num(
+          remoteClaimed.myPayout.satoshis.toLong.toDouble),
         counterPartyPayoutKey -> Num(
           remoteClaimed.counterPartyPayout.satoshis.toLong.toDouble),
-        pnlKey -> Num(remoteClaimed.pnl.satoshis.toLong.toDouble),
-        rateOfReturnKey -> Num(remoteClaimed.rateOfReturn.toDouble)
+        PicklerKeys.pnl -> Num(remoteClaimed.pnl.satoshis.toLong.toDouble),
+        PicklerKeys.rateOfReturn -> Num(remoteClaimed.rateOfReturn.toDouble)
       )
     }
 
@@ -363,11 +362,11 @@ object Picklers {
       "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
       "fundingTxId" -> Str(fundingTxId.hex),
       "closingTxId" -> Str(closingTxId.hex),
-      myPayoutKey -> Num(refunded.myPayout.satoshis.toLong.toDouble),
+      PicklerKeys.myPayout -> Num(refunded.myPayout.satoshis.toLong.toDouble),
       counterPartyPayoutKey -> Num(
         refunded.counterPartyPayout.satoshis.toLong.toDouble),
-      pnlKey -> Num(refunded.pnl.satoshis.toLong.toDouble),
-      rateOfReturnKey -> Num(refunded.rateOfReturn.toDouble)
+      PicklerKeys.pnl -> Num(refunded.pnl.satoshis.toLong.toDouble),
+      PicklerKeys.rateOfReturn -> Num(refunded.rateOfReturn.toDouble)
     )
   }
 
@@ -441,7 +440,7 @@ object Picklers {
         throw new IllegalArgumentException(s"Unexpected outcome $signed")
     }
 
-    lazy val myPayoutJs = obj(myPayoutKey)
+    lazy val myPayoutJs = obj(PicklerKeys.myPayout)
     lazy val myPayoutOpt = myPayoutJs.numOpt.map(sats => Satoshis(sats.toLong))
     lazy val theirPayoutJs = obj(counterPartyPayoutKey)
     lazy val theirPayoutOpt =
@@ -563,6 +562,23 @@ object Picklers {
           myPayout = myPayoutOpt.get,
           counterPartyPayout = theirPayoutOpt.get
         )
+    }
+  }
+
+  implicit val dlcWalletAccountingWriter: Writer[DLCWalletAccounting] = {
+    writer[Obj].comap { walletAccounting: DLCWalletAccounting =>
+      Obj(
+        PicklerKeys.myCollateral -> Num(
+          walletAccounting.myCollateral.satoshis.toLong.toDouble),
+        PicklerKeys.theirCollateral -> Num(
+          walletAccounting.theirCollateral.satoshis.toLong.toDouble),
+        PicklerKeys.myPayout -> Num(
+          walletAccounting.myPayout.satoshis.toLong.toDouble),
+        PicklerKeys.theirPayout -> Num(
+          walletAccounting.theirPayout.satoshis.toLong.toDouble),
+        PicklerKeys.pnl -> Num(walletAccounting.pnl.satoshis.toLong.toDouble),
+        PicklerKeys.rateOfReturn -> Num(walletAccounting.rateOfReturn.toDouble)
+      )
     }
   }
 

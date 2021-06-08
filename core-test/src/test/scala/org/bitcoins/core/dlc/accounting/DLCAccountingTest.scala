@@ -21,7 +21,7 @@ class DLCAccountingTest extends BitcoinSUnitTest {
 
     //we make 50,000 sats (their collateral) is the profit
     assert(accounting1.pnl == theirCollateral)
-    assert(accounting1.rorPrettyPrint == "100%")
+    assert(accounting1.rorPrettyPrint == "100.00%")
   }
 
   it must "calculate basic pnl where we lose all funds" in {
@@ -30,16 +30,16 @@ class DLCAccountingTest extends BitcoinSUnitTest {
 
     val accounting1 = DLCAccounting(
       dlcId = Sha256Digest.empty,
-      myCollateral = Satoshis(50000),
-      theirCollateral = Satoshis(50000),
+      myCollateral = myCollateral,
+      theirCollateral = theirCollateral,
       myPayout = Satoshis.zero,
       theirPayout = myCollateral + theirCollateral
     )
 
     //we lose 50,000 sats (my collateral) is the loss
-    assert(accounting1.pnl == Satoshis(-50000))
+    assert(accounting1.pnl == -myCollateral)
     assert(accounting1.rateOfReturn == -1)
-    assert(accounting1.rorPrettyPrint == "-100%")
+    assert(accounting1.rorPrettyPrint == "-100.00%")
   }
 
   it must "calculate basic pnl where funds are refunded" in {
@@ -48,8 +48,8 @@ class DLCAccountingTest extends BitcoinSUnitTest {
 
     val accounting1 = DLCAccounting(
       dlcId = Sha256Digest.empty,
-      myCollateral = Satoshis(50000),
-      theirCollateral = Satoshis(50000),
+      myCollateral = myCollateral,
+      theirCollateral = theirCollateral,
       myPayout = myCollateral,
       theirPayout = theirCollateral
     )
@@ -57,6 +57,6 @@ class DLCAccountingTest extends BitcoinSUnitTest {
     //collateral refunded, so no pnl
     assert(accounting1.pnl == Satoshis.zero)
     assert(accounting1.rateOfReturn == 0)
-    assert(accounting1.rorPrettyPrint == "0%")
+    assert(accounting1.rorPrettyPrint == "0.00%")
   }
 }
