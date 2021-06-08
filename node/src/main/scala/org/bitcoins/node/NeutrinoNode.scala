@@ -98,15 +98,14 @@ case class NeutrinoNode(
       case (None, None) | (None, Some(_)) =>
         //do nothing if we haven't started syncing
         Future.unit
-      case (Some(bestFilterHeader), bestFilterOpt) =>
+      case (Some(bestFilterHeader), Some(bestFilter)) =>
         val isFilterHeaderSynced =
           bestFilterHeader.blockHashBE == bestBlockHeader.hashBE
         val isFiltersSynced = {
           //check if we have started syncing filters,
           //and if so, see if filter headers and filters
           //were in sync
-          bestFilterOpt.isDefined &&
-          bestFilterOpt.get.hashBE == bestFilterHeader.filterHashBE
+          bestFilter.hashBE == bestFilterHeader.filterHashBE
         }
         if (isFilterHeaderSynced && isFiltersSynced) {
           //means we are in sync, with filter heads & block headers & filters
@@ -116,11 +115,16 @@ case class NeutrinoNode(
           //do nothing
           Future.unit
         } else {
-          syncCompactFilters(bestFilterHeader, chainApi, bestFilterOpt)
+          syncCompactFilters(bestFilterHeader, chainApi, Some(bestFilter))
         }
+      case (Some(bestFilterHeader), None) =>
+        syncCompactFilters(bestFilterHeader, chainApi, None)
     }
   }
 
+  /** Starts sync compact filer headers.
+    * Only starts syncing compact filters if our compact filter headers are in sync with block headers
+    */
   private def syncCompactFilters(
       bestFilterHeader: CompactFilterHeaderDb,
       chainApi: ChainApi,
@@ -138,6 +142,8 @@ case class NeutrinoNode(
         bestFilterOpt.isDefined &&
         bestFilterOpt.get.hashBE != bestFilterHeader.filterHashBE
       ) {
+        //means we are not syncing filter headers, and our filters are NOT
+        //in sync with our compact filter headers
         logger.info(s"Starting sync filters in NeutrinoNode.sync()")
         peerMsgSender
           .sendNextGetCompactFilterCommand(
