@@ -14,8 +14,8 @@ import org.bitcoins.gui.dlc.DLCPaneModel
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.application.Platform
 import scalafx.beans.property._
-import scalafx.scene.control.Alert
 import scalafx.scene.control.Alert.AlertType
+import scalafx.scene.control.{Alert, TextArea}
 import scalafx.stage.Window
 
 import scala.concurrent.duration.DurationInt
@@ -24,6 +24,7 @@ import scala.util.{Failure, Success, Try}
 
 class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
     extends Logging {
+  val textArea: TextArea = dlcModel.resultArea
   var taskRunner: TaskRunner = _
   import system.dispatcher
 
@@ -95,8 +96,7 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
               GlobalData.consoleCliConfig
             ) match {
               case Success(txid) =>
-                GlobalData.log.value =
-                  s"Sent $amount to $address in tx: $txid\n\n${GlobalData.log()}"
+                textArea.text = s"Transaction sent! $txid"
               case Failure(err) => throw err
             }
           }

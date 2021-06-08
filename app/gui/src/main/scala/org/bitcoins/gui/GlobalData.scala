@@ -20,8 +20,6 @@ object GlobalData {
 
   var network: BitcoinNetwork = _
 
-  val log: StringProperty = StringProperty("")
-
   val statusText: StringProperty = StringProperty("")
 
   var darkThemeEnabled: Boolean = true
