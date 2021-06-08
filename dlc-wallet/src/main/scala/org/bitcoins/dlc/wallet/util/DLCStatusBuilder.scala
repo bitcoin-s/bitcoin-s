@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.SchnorrDigitalSignature
 import org.bitcoins.dlc.wallet.accounting.AccountingUtil
 import org.bitcoins.dlc.wallet.models._
+import org.bitcoins.dlc.wallet.accounting.Financials
 
 object DLCStatusBuilder {
 
