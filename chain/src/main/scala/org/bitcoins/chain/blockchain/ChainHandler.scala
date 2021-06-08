@@ -551,6 +551,10 @@ class ChainHandler(
     }
   }
 
+  override def getBestFilter(): Future[Option[CompactFilterDb]] = {
+    filterDAO.getBestFilter
+  }
+
   /** This method retrieves the best [[CompactFilterHeaderDb]] from the database
     * without any blockchain context, and then uses the [[CompactFilterHeaderDb.blockHashBE]]
     * to query our block headers database looking for a filter header that is in the best chain
