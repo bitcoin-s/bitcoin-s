@@ -102,7 +102,7 @@ trait DLCWalletApi { self: WalletApi =>
   def cancelDLC(dlcId: Sha256Digest): Future[Unit]
 
   /** Retrieves accounting and financial metrics for the entire dlc wallet */
-  def getWalletAccounting: Future[DLCWalletAccounting]
+  def getWalletAccounting(): Future[DLCWalletAccounting]
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */

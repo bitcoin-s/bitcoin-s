@@ -11,6 +11,7 @@ import org.bitcoins.core.api.wallet.{AddressInfo, CoinSelectionAlgo}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
+import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.BlockStamp.{
@@ -1702,6 +1703,28 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         assert(contentType == `application/json`)
         assert(
           responseAs[String] == """{"result":"Rescan started.","error":null}""")
+      }
+    }
+
+    "get wallet accounting" in {
+      val accounting = DLCWalletAccounting(myCollateral = Satoshis.one,
+                                           theirCollateral = Satoshis.one,
+                                           myPayout = Satoshis(2),
+                                           theirPayout = Satoshis.zero)
+
+      (mockWalletApi.getWalletAccounting: () => Future[DLCWalletAccounting])
+        .expects()
+        .returning(Future.successful(accounting))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("getdlcwalletaccounting", Arr()))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        val str = responseAs[String]
+        val expected =
+          s"""{"result":{"myCollateral":1,"theirCollateral":1,"myPayout":2,"theirPayout":0,"pnl":1,"rateOfReturn":1},"error":null}""".stripMargin
+        assert(str == expected)
       }
     }
 

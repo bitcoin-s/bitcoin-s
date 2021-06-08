@@ -1214,7 +1214,7 @@ abstract class DLCWallet
     } yield refundTx
   }
 
-  override def getWalletAccounting: Future[DLCWalletAccounting] = {
+  override def getWalletAccounting(): Future[DLCWalletAccounting] = {
     val dlcsF = listDLCs()
     for {
       dlcs <- dlcsF
