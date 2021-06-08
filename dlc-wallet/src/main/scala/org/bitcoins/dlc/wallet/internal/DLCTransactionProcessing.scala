@@ -14,7 +14,6 @@ import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.wallet.internal.TransactionProcessing
 
 import scala.concurrent._
-import scala.util.Try
 
 /** Overrides TransactionProcessing from Wallet to add extra logic to
   * process transactions that could from our own DLC.
@@ -157,38 +156,43 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         }
         (outcomes, oracleInfos) = getOutcomeDbInfo(outcome)
 
-        sortedNonces = nonceDbs
+        noncesByAnnouncement = nonceDbs
           .groupBy(_.announcementId)
-          .values
-          .map(_.sortBy(_.index))
-          .toVector
 
-        updatedNonces =
-          sortedNonces.flatMap(_.zip(outcomes).zipWithIndex.map {
-            case ((db, outcome), idx) =>
-              outcome match {
-                case EnumOutcome(outcome) =>
-                  db.copy(outcomeOpt = Some(outcome))
-                case numeric: UnsignedNumericOutcome =>
-                  // Use try because it can be truncated
-                  db.copy(outcomeOpt =
-                    Try(numeric.digits(idx).toString).toOption)
-                case _: SignedNumericOutcome =>
-                  throw new RuntimeException("Not supported")
-              }
-          })
-        _ <- oracleNonceDAO.updateAll(updatedNonces)
+        announcementsWithId = getOracleAnnouncementsWithId(announcements,
+                                                           announcementData,
+                                                           nonceDbs)
 
-        usedIds =
-          getOracleAnnouncementsWithId(announcements,
-                                       announcementData,
-                                       nonceDbs)
-            .filter(t => oracleInfos.exists(_.announcement == t._1))
-            .map(_._2)
+        usedIds = announcementsWithId
+          .filter(t => oracleInfos.exists(_.announcement == t._1))
+          .map(_._2)
 
         updatedAnnouncements = announcements
           .filter(t => usedIds.contains(t.announcementId))
           .map(_.copy(used = true))
+
+        updatedNonces = {
+          usedIds.flatMap { id =>
+            outcome match {
+              case enum: EnumOracleOutcome =>
+                val nonces = noncesByAnnouncement(id).sortBy(_.index)
+                nonces.map(_.copy(outcomeOpt = Some(enum.outcome.outcome)))
+              case numeric: NumericOracleOutcome =>
+                numeric.oraclesAndOutcomes.flatMap { case (oracle, outcome) =>
+                  val id = announcementsWithId
+                    .find(_._1 == oracle.announcement)
+                    .map(_._2)
+                    .get
+                  val nonces = noncesByAnnouncement(id).sortBy(_.index)
+                  outcome.digits.zip(nonces).map { case (digit, nonceDb) =>
+                    nonceDb.copy(outcomeOpt = Some(digit.toString))
+                  }
+                }
+            }
+
+          }
+        }
+        _ <- oracleNonceDAO.updateAll(updatedNonces)
 
         _ <- dlcAnnouncementDAO.updateAll(updatedAnnouncements)
       } yield dlcDb.copy(aggregateSignatureOpt = Some(sig))

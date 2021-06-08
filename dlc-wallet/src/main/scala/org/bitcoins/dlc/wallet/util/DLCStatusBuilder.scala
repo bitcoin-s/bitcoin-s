@@ -1,36 +1,13 @@
 package org.bitcoins.dlc.wallet.util
 
 import org.bitcoins.core.dlc.accounting.DLCAccounting
-import org.bitcoins.core.protocol.dlc.models.{
-  ClosedDLCStatus,
-  ContractInfo,
-  DLCState,
-  DLCStatus,
-  OracleOutcome
-}
-import org.bitcoins.core.protocol.dlc.models.DLCStatus.{
-  Accepted,
-  Broadcasted,
-  Claimed,
-  Confirmed,
-  Offered,
-  Refunded,
-  RemoteClaimed,
-  Signed
-}
+import org.bitcoins.core.protocol.dlc.models.DLCStatus._
+import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.SchnorrDigitalSignature
 import org.bitcoins.dlc.wallet.accounting.AccountingUtil
-import org.bitcoins.dlc.wallet.models.{
-  DLCAcceptDb,
-  DLCContractDataDb,
-  DLCDb,
-  DLCOfferDb,
-  OracleNonceDb
-}
-
-import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.dlc.wallet.models._
 
 object DLCStatusBuilder {
 
@@ -126,10 +103,11 @@ object DLCStatusBuilder {
       contractInfo: ContractInfo,
       contractData: DLCContractDataDb,
       nonceDbs: Vector[OracleNonceDb],
+      announcementsWithId: Vector[(OracleAnnouncementV0TLV, Long)],
+      announcementIds: Vector[DLCAnnouncementDb],
       offerDb: DLCOfferDb,
       acceptDb: DLCAcceptDb,
-      closingTx: Transaction)(implicit
-      ec: ExecutionContext): Future[ClosedDLCStatus] = {
+      closingTx: Transaction): ClosedDLCStatus = {
     require(
       dlcDb.state.isInstanceOf[DLCState.ClosedState],
       s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
@@ -139,16 +117,6 @@ object DLCStatusBuilder {
     val accounting: DLCAccounting =
       AccountingUtil.calculatePnl(dlcDb, offerDb, acceptDb, closingTx)
 
-    //start calculation up here in parallel as this is a bottleneck currently
-    val outcomesOptF: Future[
-      Option[(OracleOutcome, Vector[SchnorrDigitalSignature])]] =
-      for {
-        oracleOutcomeSigsOpt <- getOracleOutcomeAndSigs(dlcDb = dlcDb,
-                                                        contractInfo =
-                                                          contractInfo,
-                                                        nonceDbs = nonceDbs)
-      } yield oracleOutcomeSigsOpt
-
     val totalCollateral = contractData.totalCollateral
 
     val localCollateral = if (dlcDb.isInitiator) {
@@ -156,7 +124,7 @@ object DLCStatusBuilder {
     } else {
       totalCollateral - offerDb.collateral
     }
-    val statusF = dlcDb.state.asInstanceOf[DLCState.ClosedState] match {
+    val status = dlcDb.state.asInstanceOf[DLCState.ClosedState] match {
       case DLCState.Refunded =>
         //no oracle information in the refund case
         val refund = Refunded(
@@ -174,88 +142,102 @@ object DLCStatusBuilder {
           myPayout = accounting.myPayout,
           counterPartyPayout = accounting.theirPayout
         )
-        Future.successful(refund)
+        refund
       case oracleOutcomeState: DLCState.ClosedViaOracleOutcomeState =>
-        //a state that requires an oracle outcome
-        //the .get below should always be valid
-        for {
-          outcomesOpt <- outcomesOptF
-          (oracleOutcome, sigs) = outcomesOpt.get
-        } yield {
-          oracleOutcomeState match {
-            case DLCState.Claimed =>
-              Claimed(
-                dlcId,
-                dlcDb.isInitiator,
-                dlcDb.tempContractId,
-                dlcDb.contractIdOpt.get,
-                contractInfo,
-                contractData.dlcTimeouts,
-                dlcDb.feeRate,
-                totalCollateral,
-                localCollateral,
-                dlcDb.fundingTxIdOpt.get,
-                closingTx.txIdBE,
-                sigs,
-                oracleOutcome,
-                myPayout = accounting.myPayout,
-                counterPartyPayout = accounting.theirPayout
-              )
-            case DLCState.RemoteClaimed =>
-              RemoteClaimed(
-                dlcId,
-                dlcDb.isInitiator,
-                dlcDb.tempContractId,
-                dlcDb.contractIdOpt.get,
-                contractInfo,
-                contractData.dlcTimeouts,
-                dlcDb.feeRate,
-                totalCollateral,
-                localCollateral,
-                dlcDb.fundingTxIdOpt.get,
-                closingTx.txIdBE,
-                dlcDb.aggregateSignatureOpt.get,
-                oracleOutcome,
-                myPayout = accounting.myPayout,
-                counterPartyPayout = accounting.theirPayout
-              )
-          }
+        val (oracleOutcome, sigs) = getOracleOutcomeAndSigs(
+          announcementIds = announcementIds,
+          announcementsWithId = announcementsWithId,
+          nonceDbs = nonceDbs)
+
+        oracleOutcomeState match {
+          case DLCState.Claimed =>
+            Claimed(
+              dlcId,
+              dlcDb.isInitiator,
+              dlcDb.tempContractId,
+              dlcDb.contractIdOpt.get,
+              contractInfo,
+              contractData.dlcTimeouts,
+              dlcDb.feeRate,
+              totalCollateral,
+              localCollateral,
+              dlcDb.fundingTxIdOpt.get,
+              closingTx.txIdBE,
+              sigs,
+              oracleOutcome,
+              myPayout = accounting.myPayout,
+              counterPartyPayout = accounting.theirPayout
+            )
+          case DLCState.RemoteClaimed =>
+            RemoteClaimed(
+              dlcId,
+              dlcDb.isInitiator,
+              dlcDb.tempContractId,
+              dlcDb.contractIdOpt.get,
+              contractInfo,
+              contractData.dlcTimeouts,
+              dlcDb.feeRate,
+              totalCollateral,
+              localCollateral,
+              dlcDb.fundingTxIdOpt.get,
+              closingTx.txIdBE,
+              dlcDb.aggregateSignatureOpt.get,
+              oracleOutcome,
+              myPayout = accounting.myPayout,
+              counterPartyPayout = accounting.theirPayout
+            )
         }
     }
-    statusF
+    status
   }
 
   /** Calculates oracle outcome and signatures. Returns none if the dlc is not in a valid state to
     * calculate the outcome
     */
   def getOracleOutcomeAndSigs(
-      dlcDb: DLCDb,
-      contractInfo: ContractInfo,
-      nonceDbs: Vector[OracleNonceDb])(implicit ec: ExecutionContext): Future[
-    Option[(OracleOutcome, Vector[SchnorrDigitalSignature])]] = {
-    Future {
-      dlcDb.aggregateSignatureOpt match {
-        case Some(aggSig) =>
-          val oracleOutcome = sigPointCache.get(aggSig) match {
-            case Some(outcome) => outcome //return cached outcome
-            case None =>
-              val o =
-                contractInfo.sigPointMap(aggSig.sig.toPrivateKey.publicKey)
-              sigPointCache.+=((aggSig, o))
-              o
+      announcementIds: Vector[DLCAnnouncementDb],
+      announcementsWithId: Vector[(OracleAnnouncementV0TLV, Long)],
+      nonceDbs: Vector[OracleNonceDb]): (
+      OracleOutcome,
+      Vector[SchnorrDigitalSignature]) = {
+    val noncesByAnnouncement =
+      nonceDbs.sortBy(_.index).groupBy(_.announcementId)
+    val oracleOutcome = {
+      val usedOracleIds = announcementIds.filter(_.used)
+      val usedOracles = usedOracleIds.sortBy(_.index).map { used =>
+        announcementsWithId.find(_._2 == used.announcementId).get
+      }
+      require(usedOracles.nonEmpty, "Error, no oracles used")
+      announcementsWithId.head._1.eventTLV.eventDescriptor match {
+        case _: EnumEventDescriptorV0TLV =>
+          val oracleInfos = usedOracles.map(t => EnumSingleOracleInfo(t._1))
+          val outcomes = usedOracles.map { case (_, id) =>
+            val nonces = noncesByAnnouncement(id)
+            require(nonces.size == 1,
+                    s"Only 1 outcome for enum, got ${nonces.size}")
+            EnumOutcome(nonces.head.outcomeOpt.get)
           }
-          val sigs = nonceDbs.flatMap(_.signatureOpt)
-          Some((oracleOutcome, sigs))
-        case None => None
+          require(outcomes.distinct.size == 1,
+                  s"Should only be one outcome for enum, got $outcomes")
+          EnumOracleOutcome(oracleInfos, outcomes.head)
+        case _: UnsignedDigitDecompositionEventDescriptor =>
+          val oraclesAndOutcomes = usedOracles.map { case (announcement, id) =>
+            val oracleInfo = NumericSingleOracleInfo(announcement)
+            val nonces = noncesByAnnouncement(id).sortBy(_.index)
+            // need to allow for some Nones because we don't always get
+            // all the digits because of prefixing
+            val digits = nonces.flatMap(_.outcomeOpt.map(_.toInt))
+            require(digits.nonEmpty, s"Got no digits for announcement id $id")
+            val outcome = UnsignedNumericOutcome(digits)
+            (oracleInfo, outcome)
+          }
+          NumericOracleOutcome(oraclesAndOutcomes)
+        case _: SignedDigitDecompositionEventDescriptor =>
+          throw new RuntimeException(s"SignedNumericOutcome not yet supported")
       }
     }
-  }
 
-  /** A performance optimization to cache sigpoints we know map to oracle outcomes.
-    * This is needed as a workaround for issue 3213
-    * @see https://github.com/bitcoin-s/bitcoin-s/issues/3213
-    */
-  private val sigPointCache: mutable.Map[
-    SchnorrDigitalSignature,
-    OracleOutcome] = mutable.Map.empty[SchnorrDigitalSignature, OracleOutcome]
+    val sigs = nonceDbs.flatMap(_.signatureOpt)
+    (oracleOutcome, sigs)
+  }
 }

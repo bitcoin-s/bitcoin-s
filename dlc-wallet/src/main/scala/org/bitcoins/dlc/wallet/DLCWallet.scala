@@ -1287,15 +1287,23 @@ abstract class DLCWallet
         Vector[OracleAnnouncementDataDb],
         Vector[OracleNonceDb])] = getDLCAnnouncementDbs(dlcDb.dlcId)
 
-    val contractInfoF: Future[ContractInfo] = {
+    val contractInfoAndAnnouncementsF: Future[
+      (ContractInfo, Vector[(OracleAnnouncementV0TLV, Long)])] = {
       aggregatedF.map { case (announcements, announcementData, nonceDbs) =>
-        getContractInfo(contractData, announcements, announcementData, nonceDbs)
+        val contractInfo = getContractInfo(contractData,
+                                           announcements,
+                                           announcementData,
+                                           nonceDbs)
+        val announcementsWithId = getOracleAnnouncementsWithId(announcements,
+                                                               announcementData,
+                                                               nonceDbs)
+        (contractInfo, announcementsWithId)
       }
     }
 
     val statusF: Future[DLCStatus] = for {
-      contractInfo <- contractInfoF
-      (_, _, nonceDbs) <- aggregatedF
+      (contractInfo, announcementsWithId) <- contractInfoAndAnnouncementsF
+      (announcementIds, _, nonceDbs) <- aggregatedF
       status <- {
         dlcDb.state match {
           case _: DLCState.InProgressState =>
@@ -1308,16 +1316,18 @@ abstract class DLCWallet
           case _: DLCState.ClosedState =>
             (acceptDbOpt, closingTxOpt) match {
               case (Some(acceptDb), Some(closingTx)) =>
-                val statusF = DLCStatusBuilder.buildClosedDLCStatus(
+                val status = DLCStatusBuilder.buildClosedDLCStatus(
                   dlcDb = dlcDb,
                   contractInfo = contractInfo,
                   contractData = contractData,
+                  announcementsWithId = announcementsWithId,
+                  announcementIds = announcementIds,
                   nonceDbs = nonceDbs,
                   offerDb = offerDb,
                   acceptDb = acceptDb,
                   closingTx = closingTx.transaction
                 )
-                statusF
+                Future.successful(status)
               case (None, None) =>
                 Future.failed(new RuntimeException(
                   s"Could not find acceptDb or closingTx for closing state=${dlcDb.state} dlcId=$dlcId"))
