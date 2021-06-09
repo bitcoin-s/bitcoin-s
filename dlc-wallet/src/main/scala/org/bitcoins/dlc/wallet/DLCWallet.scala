@@ -14,6 +14,7 @@ import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCAccept._
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
+import org.bitcoins.core.protocol.dlc.models.DLCState._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.dlc.sign._
 import org.bitcoins.core.protocol.script._
@@ -1034,41 +1035,52 @@ abstract class DLCWallet
   override def addDLCSigs(sign: DLCSign): Future[DLCDb] = {
     dlcDAO.findByContractId(sign.contractId).flatMap {
       case Some(dlc) =>
-        logger.info(
-          s"Verifying CET Signatures for contract ${sign.contractId.toHex}")
-        for {
-          isRefundSigValid <- verifyRefundSig(sign)
-          _ = if (!isRefundSigValid)
-            throw new IllegalArgumentException(
-              s"Refund sig provided is not valid! got ${sign.cetSigs.refundSig}")
+        dlc.state match {
+          case Offered =>
+            Future.failed(
+              new RuntimeException(
+                "Cannot add sigs to a DLC before it has been accepted"))
+          case Accepted =>
+            logger.info(
+              s"Verifying CET Signatures for contract ${sign.contractId.toHex}")
+            for {
+              isRefundSigValid <- verifyRefundSig(sign)
+              _ = if (!isRefundSigValid)
+                throw new IllegalArgumentException(
+                  s"Refund sig provided is not valid! got ${sign.cetSigs.refundSig}")
 
-          isCETSigsValid <- verifyCETSigs(sign)
-          _ = if (!isCETSigsValid)
-            throw new IllegalArgumentException(
-              s"CET sigs provided are not valid! got ${sign.cetSigs.outcomeSigs}")
+              isCETSigsValid <- verifyCETSigs(sign)
+              _ = if (!isCETSigsValid)
+                throw new IllegalArgumentException(
+                  s"CET sigs provided are not valid! got ${sign.cetSigs.outcomeSigs}")
 
-          refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.get)
-          sigsDbs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
+              refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.get)
+              sigsDbs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
 
-          updatedRefund = refundSigsDb.copy(initiatorSig =
-            Some(sign.cetSigs.refundSig))
-          updatedSigsDbs = sigsDbs
-            .sortBy(_.index)
-            .zip(sign.cetSigs.outcomeSigs)
-            .map { case (db, (_, sig)) =>
-              db.copy(initiatorSig = Some(sig))
-            }
+              updatedRefund = refundSigsDb.copy(initiatorSig =
+                Some(sign.cetSigs.refundSig))
+              updatedSigsDbs = sigsDbs
+                .sortBy(_.index)
+                .zip(sign.cetSigs.outcomeSigs)
+                .map { case (db, (_, sig)) =>
+                  db.copy(initiatorSig = Some(sig))
+                }
 
-          _ = logger.info(
-            s"CET Signatures are valid for contract ${sign.contractId.toHex}")
+              _ = logger.info(
+                s"CET Signatures are valid for contract ${sign.contractId.toHex}")
 
-          _ <- addFundingSigs(sign)
-          _ <- dlcSigsDAO.updateAll(updatedSigsDbs)
-          _ <- dlcRefundSigDAO.update(updatedRefund)
-          updated <- dlcDAO.update(dlc.updateState(DLCState.Signed))
-          _ = logger.info(
-            s"DLC ${sign.contractId.toHex} sigs are verified and stored, ready to broadcast")
-        } yield updated
+              _ <- addFundingSigs(sign)
+              _ <- dlcSigsDAO.updateAll(updatedSigsDbs)
+              _ <- dlcRefundSigDAO.update(updatedRefund)
+              updated <- dlcDAO.update(dlc.updateState(DLCState.Signed))
+              _ = logger.info(
+                s"DLC ${sign.contractId.toHex} sigs are verified and stored, ready to broadcast")
+            } yield updated
+          case _: DLCState.ClosedState | Broadcasted | Confirmed | Signed =>
+            logger.info(
+              s"DLC sigs already added for ${sign.contractId.toHex}, skipping..")
+            Future.successful(dlc)
+        }
       case None =>
         Future.failed(new NoSuchElementException(
           s"No DLC found with corresponding contractId ${sign.contractId.toHex}"))
