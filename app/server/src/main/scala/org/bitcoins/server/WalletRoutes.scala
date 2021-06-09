@@ -427,8 +427,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
         case Success(AddDLCSigs(sigs)) =>
           complete {
             for {
-              db <- wallet.addDLCSigs(sigs.tlv)
-              tx <- wallet.broadcastDLCFundingTx(db.contractIdOpt.get)
+              _ <- wallet.addDLCSigs(sigs.tlv)
+              tx <- wallet.broadcastDLCFundingTx(sigs.tlv.contractId)
             } yield Server.httpSuccess(tx.txIdBE.hex)
           }
       }
@@ -443,8 +443,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           val signMessage = LnMessageFactory(DLCSignTLV).fromHex(hex)
           complete {
             for {
-              db <- wallet.addDLCSigs(signMessage.tlv)
-              tx <- wallet.broadcastDLCFundingTx(db.contractIdOpt.get)
+              _ <- wallet.addDLCSigs(signMessage.tlv)
+              tx <- wallet.broadcastDLCFundingTx(signMessage.tlv.contractId)
             } yield Server.httpSuccess(tx.txIdBE.hex)
           }
       }
