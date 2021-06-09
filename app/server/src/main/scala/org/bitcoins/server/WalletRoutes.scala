@@ -1,7 +1,6 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.Materializer
