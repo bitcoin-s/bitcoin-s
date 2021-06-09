@@ -232,20 +232,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       .map(_.toMap)
   }
 
-  /** Tries to convert the provided spk to an address, and then checks if we have
-    * it in our address table
-    */
-  /*    private def findAddress(
-      spk: ScriptPubKey): Future[Either[AddUtxoError, AddressDb]] =
-    BitcoinAddress.fromScriptPubKeyT(spk, networkParameters) match {
-      case Success(address) =>
-        addressDAO.findAddress(address).map {
-          case Some(addrDb) => Right(addrDb)
-          case None         => Left(AddUtxoError.AddressNotFound)
-        }
-      case Failure(_) => Future.successful(Left(AddUtxoError.BadSPK))
-    }*/
-
   /** Constructs a DB level representation of the given UTXO, and persist it to disk */
   private def writeUtxo(
       tx: Transaction,
@@ -297,11 +283,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
   }
 
-  /*  private def getAddressDbEitherF(
-      output: TransactionOutput): Future[Either[AddUtxoError, AddressDb]] = {
-    findAddress(output.scriptPubKey)
-  }*/
-
   /** Adds the provided UTXO to the wallet
     */
   protected def addUtxo(
@@ -320,14 +301,14 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       val outPoint = TransactionOutPoint(transaction.txId, vout)
 
       // insert the UTXO into the DB
-      val x: Either[AddUtxoError, Future[SpendingInfoDb]] = for {
+      val insertedUtxoEF: Either[AddUtxoError, Future[SpendingInfoDb]] = for {
         addressDb <- addressDbE
       } yield writeUtxo(tx = transaction,
                         state = state,
                         output = output,
                         outPoint = outPoint,
                         addressDb = addressDb)
-      x match {
+      insertedUtxoEF match {
         case Right(utxoF) => utxoF.map(AddUtxoSuccess)
         case Left(e)      => Future.successful(e)
       }

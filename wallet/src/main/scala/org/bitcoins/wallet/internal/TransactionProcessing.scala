@@ -469,6 +469,9 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     nested.flatten
   }
 
+  /** Tries to convert the provided spk to an address, and then checks if we have
+    * it in our address table
+    */
   private def getAddressDbs(
       spks: Vector[ScriptPubKey]): Future[Vector[AddressDb]] = {
     val addressDbF: Future[Vector[AddressDb]] =
