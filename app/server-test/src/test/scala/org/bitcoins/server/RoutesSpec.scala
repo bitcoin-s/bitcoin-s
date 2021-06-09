@@ -1034,7 +1034,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       (mockWalletApi
         .broadcastDLCFundingTx(_: ByteVector))
-        .expects(contractId)
+        .expects(sign.contractId)
         .returning(Future.successful(EmptyTransaction))
 
       val route = walletRoutes.handleCommand(
