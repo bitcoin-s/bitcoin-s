@@ -7,6 +7,7 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -344,9 +345,13 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   private def processReceivedUtxo(
       transaction: Transaction,
       index: Int,
-      state: ReceivedState): Future[SpendingInfoDb] = {
+      state: ReceivedState,
+      addressDbE: Either[AddUtxoError, AddressDb]): Future[SpendingInfoDb] = {
     val addIncomingUtxoF =
-      addUtxo(transaction = transaction, vout = UInt32(index), state = state)
+      addUtxo(transaction = transaction,
+              vout = UInt32(index),
+              state = state,
+              addressDbE = addressDbE)
     addIncomingUtxoF.flatMap {
       case AddUtxoSuccess(utxo) => Future.successful(utxo)
       case err: AddUtxoError =>
@@ -437,16 +442,63 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         }
     }
 
-    stateF.flatMap { state =>
-      val outputsVec = outputsWithIndex.map { out =>
+    val addressDbsF: Future[Vector[AddressDb]] = {
+      getAddressDbs(outputsWithIndex.map(_.output.scriptPubKey).toVector)
+    }
+
+    val addressDbWithOutputF = for {
+      addressDbs <- addressDbsF
+    } yield matchAddressDbWithOutputs(addressDbs, outputsWithIndex.toVector)
+
+    val nested = for {
+      state <- stateF
+      addressDbWithOutput <- addressDbWithOutputF
+    } yield {
+      val outputsVec = addressDbWithOutput.map { case (addressDb, out) =>
+        require(addressDb.scriptPubKey == out.output.scriptPubKey)
         processReceivedUtxo(
           transaction,
           out.index,
-          state = state
+          state = state,
+          Right(addressDb)
         )
       }
       Future.sequence(outputsVec)
     }
+
+    nested.flatten
+  }
+
+  /** Tries to convert the provided spk to an address, and then checks if we have
+    * it in our address table
+    */
+  private def getAddressDbs(
+      spks: Vector[ScriptPubKey]): Future[Vector[AddressDb]] = {
+    val addressDbF: Future[Vector[AddressDb]] =
+      addressDAO.findByScriptPubKeys(spks)
+    addressDbF
+  }
+
+  /** Matches address dbs with outputs, drops addressDb/outputs that do not have matches */
+  private def matchAddressDbWithOutputs(
+      addressDbs: Vector[AddressDb],
+      outputsWithIndex: Vector[OutputWithIndex]): Vector[
+    (AddressDb, OutputWithIndex)] = {
+
+    val addressDbsWithOutputsOpt = outputsWithIndex.map { out =>
+      //find address associated with spk
+      val addressDbOpt =
+        addressDbs.find(_.scriptPubKey == out.output.scriptPubKey)
+      addressDbOpt match {
+        case None =>
+          logger.warn(s"Could not find address associated with output=${out}")
+          None
+        case Some(addressDb) =>
+          Some((addressDb, out))
+      }
+    }
+    //get rid of outputs we couldn't match to an address
+    addressDbsWithOutputsOpt.flatten
   }
 
   private[wallet] def insertIncomingTransaction(
