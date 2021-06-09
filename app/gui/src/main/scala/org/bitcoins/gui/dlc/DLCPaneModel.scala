@@ -21,7 +21,7 @@ import java.io.File
 import java.nio.file.Files
 import scala.util.{Failure, Properties, Success}
 
-class DLCPaneModel(resultArea: TextArea) extends Logging {
+class DLCPaneModel(val resultArea: TextArea) extends Logging {
   var taskRunner: TaskRunner = _
 
   // Sadly, it is a Java "pattern" to pass null into
