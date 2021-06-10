@@ -127,7 +127,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
             }
             _ = {
               //need to look if a received utxo is spent in the same block
-              //if so, we need to update our receivedSpent
+              //if so, we need to update our cachedSpentF
               val spentInSameBlock: Vector[SpendingInfoDb] = {
                 processTxResult.updatedIncoming.filter { spendingInfoDb =>
                   block.transactions.exists(
