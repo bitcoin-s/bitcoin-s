@@ -48,6 +48,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
     logger.info(s"Starting rescanning the wallet from ${startOpt} to ${endOpt}")
 
+    val start = System.currentTimeMillis()
     val res = for {
       start <- (startOpt, useCreationTime) match {
         case (Some(_), true) =>
@@ -64,7 +65,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
       _ <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
     } yield ()
 
-    res.onComplete(_ => logger.info("Finished rescanning the wallet"))
+    res.onComplete { _ =>
+      logger.info(
+        s"Finished rescanning the wallet. It took ${System.currentTimeMillis() - start}ms")
+    }
 
     res
   }

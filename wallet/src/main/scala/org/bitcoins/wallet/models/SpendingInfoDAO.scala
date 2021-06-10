@@ -196,10 +196,14 @@ case class SpendingInfoDAO()(implicit
   }
 
   private def _findOutputsBeingSpent(
-      tx: Transaction): Future[Vector[UTXORecord]] = {
+      txs: Vector[Transaction]): Future[Vector[UTXORecord]] = {
+    val outPoints = txs
+      .flatMap(_.inputs)
+      .map(_.previousOutput)
+
     val filtered = table
       .filter { case txo =>
-        txo.outPoint.inSet(tx.inputs.map(_.previousOutput))
+        txo.outPoint.inSet(outPoints)
       }
 
     safeDatabase.runVec(filtered.result)
@@ -209,8 +213,13 @@ case class SpendingInfoDAO()(implicit
     * transaction
     */
   def findOutputsBeingSpent(tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+    findOutputsBeingSpent(Vector(tx))
+  }
+
+  def findOutputsBeingSpent(
+      txs: Vector[Transaction]): Future[Vector[SpendingInfoDb]] = {
     for {
-      utxos <- _findOutputsBeingSpent(tx)
+      utxos <- _findOutputsBeingSpent(txs)
       spks <- findScriptPubKeysByUtxos(utxos)
     } yield {
       utxos.map(utxo =>
