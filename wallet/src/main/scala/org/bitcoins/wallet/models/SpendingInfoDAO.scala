@@ -184,11 +184,16 @@ case class SpendingInfoDAO()(implicit
       utxos <- utxoToInfo(all)
     } yield utxos
 
-  /** Fetches all the incoming TXOs in our DB that are in
+  /** Fetches all the received TXOs in our DB that are in
     * the given TX
     */
   def findTx(tx: Transaction): Future[Vector[SpendingInfoDb]] =
-    findOutputsReceived(tx.txIdBE)
+    findTxs(Vector(tx))
+
+  /** Fetches all received txos in our db that are in the given txs */
+  def findTxs(txs: Vector[Transaction]): Future[Vector[SpendingInfoDb]] = {
+    findOutputsReceived(txs.map(_.txIdBE))
+  }
 
   private def _findOutputsBeingSpent(
       tx: Transaction): Future[Vector[UTXORecord]] = {
@@ -255,8 +260,8 @@ case class SpendingInfoDAO()(implicit
     * the transaction with the given TXID
     */
   def findOutputsReceived(
-      txid: DoubleSha256DigestBE): Future[Vector[SpendingInfoDb]] = {
-    val filtered = spkJoinQuery.filter(_._1.txid === txid)
+      txids: Vector[DoubleSha256DigestBE]): Future[Vector[SpendingInfoDb]] = {
+    val filtered = spkJoinQuery.filter(_._1.txid.inSet(txids))
     safeDatabase
       .runVec(filtered.result)
       .map(res =>
