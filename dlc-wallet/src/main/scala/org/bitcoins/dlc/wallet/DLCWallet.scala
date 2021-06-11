@@ -1218,9 +1218,9 @@ abstract class DLCWallet
     val dlcsF = listDLCs()
     for {
       dlcs <- dlcsF
-      closed = dlcs.collect { case c: ClosedDLCStatus =>
+      closed = dlcs.collect { case c: ClaimedDLCStatus =>
         c
-      } //only get closed dlcs for accounting
+      } //only get claimed dlcs for accounting
       accountings = closed.map(_.accounting)
       walletAccounting = DLCWalletAccounting.fromDLCAccounting(accountings)
     } yield walletAccounting
