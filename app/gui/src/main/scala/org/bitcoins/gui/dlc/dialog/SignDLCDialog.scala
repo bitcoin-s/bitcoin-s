@@ -1,9 +1,11 @@
 package org.bitcoins.gui.dlc.dialog
 
+import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
-import org.bitcoins.core.protocol.dlc.models.{DLCStatus, EnumContractDescriptor}
+import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.gui.GlobalData
+import org.bitcoins.gui.dlc.DLCPlotUtil
 import org.bitcoins.gui.dlc.GlobalDLCData.dlcs
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.Includes._
@@ -17,7 +19,7 @@ import java.nio.file.Files
 import scala.collection._
 import scala.util.{Failure, Success, Try}
 
-object SignDLCDialog {
+object SignDLCDialog extends Logging {
 
   def showAndWait(parentWindow: Window): Option[SignDLCCliCommand] = {
     val dialog = new Dialog[Option[SignDLCCliCommand]]() {
@@ -48,6 +50,21 @@ object SignDLCDialog {
       children = Vector(new Separator(), new Label("or"), new Separator())
     }
 
+    val errorLabel = new Label("") {
+      style = "-fx-text-fill: red"
+    }
+
+    val fromFileHBox = new HBox() {
+      spacing = 5
+      children = Vector(new Label("DLC Accept File"))
+    }
+
+    val vbox = new VBox() {
+      margin = Insets(10)
+      spacing = 10
+      children = Vector(acceptTFHBox, separatorHBox, fromFileHBox)
+    }
+
     var nextRow: Int = 2
     val gridPane = new GridPane {
       alignment = Pos.Center
@@ -69,13 +86,13 @@ object SignDLCDialog {
     }
 
     def showDLCTerms(status: DLCStatus, isFromFile: Boolean): Unit = {
-      val descriptor = status.contractInfo.contractDescriptor.toTLV match {
-        case v0: ContractDescriptorV0TLV =>
-          EnumContractDescriptor
-            .fromTLV(v0)
-        case _: ContractDescriptorV1TLV =>
-          throw new RuntimeException("This is impossible.")
+      vbox.children.clear()
+      if (isFromFile) {
+        vbox.children.add(fromFileHBox)
+      } else {
+        vbox.children.addAll(acceptTFHBox)
       }
+      vbox.children.add(gridPane)
 
       val (oracleKey, eventId) = status.contractInfo.oracleInfo.toTLV match {
         case OracleInfoV0TLV(announcement) =>
@@ -125,24 +142,54 @@ object SignDLCDialog {
                    nextRow)
       nextRow += 1
 
-      gridPane.add(new Label("Potential Outcome"), 0, nextRow)
-      gridPane.add(new Label("Payouts"), 1, nextRow)
-      nextRow += 1
+      status.contractInfo.contractDescriptor.toTLV match {
+        case v0: ContractDescriptorV0TLV =>
+          gridPane.add(new Label("Potential Outcome"), 0, nextRow)
+          gridPane.add(new Label("Payouts"), 1, nextRow)
+          nextRow += 1
 
-      descriptor.foreach { case (str, satoshis) =>
-        gridPane.add(new TextField() {
-                       text = str.outcome
-                       editable = false
-                     },
-                     0,
-                     nextRow)
-        gridPane.add(new TextField() {
-                       text = satoshis.toString
-                       editable = false
-                     },
-                     1,
-                     nextRow)
-        nextRow += 1
+          val descriptor = EnumContractDescriptor.fromTLV(v0)
+
+          descriptor.foreach { case (str, satoshis) =>
+            gridPane.add(new TextField() {
+                           text = str.outcome
+                           editable = false
+                         },
+                         0,
+                         nextRow)
+            gridPane.add(new TextField() {
+                           text = satoshis.toString
+                           editable = false
+                         },
+                         1,
+                         nextRow)
+            nextRow += 1
+          }
+        case v1: ContractDescriptorV1TLV =>
+          val previewGraphButton: Button = new Button("Preview Graph") {
+            onAction = _ => {
+              val descriptor = NumericContractDescriptor.fromTLV(v1)
+              val payoutCurve = if (status.isInitiator) {
+                descriptor.outcomeValueFunc
+              } else {
+                descriptor
+                  .flip(status.totalCollateral.satoshis)
+                  .outcomeValueFunc
+              }
+
+              DLCPlotUtil.plotCETs(base = 2,
+                                   descriptor.numDigits,
+                                   payoutCurve,
+                                   status.contractInfo.totalCollateral,
+                                   descriptor.roundingIntervals,
+                                   None)
+              ()
+            }
+          }
+
+          gridPane.add(new Label("Payout Function"), 0, nextRow)
+          gridPane.add(previewGraphButton, 1, nextRow)
+          nextRow += 1
       }
 
       gridPane.add(new Label("Fee Rate"), 0, nextRow)
@@ -189,22 +236,35 @@ object SignDLCDialog {
       val tempId = lnMessage.tlv.tempContractId
       dlcs.find(_.tempContractId == tempId) match {
         case Some(dlc) =>
-          dlc.contractInfo.contractDescriptor.toTLV match {
-            case _: ContractDescriptorV0TLV =>
-              dlcDetailsShown = true
-              showDLCTerms(dlc, isFromFile)
-              dialog.dialogPane().getScene.getWindow.sizeToScene()
-            case _: ContractDescriptorV1TLV =>
-              () // todo not supported
-          }
-        case None => ()
+          dlcDetailsShown = true
+          showDLCTerms(dlc, isFromFile)
+        case None =>
+          val errMsg =
+            s"DLCAccept is not associated with a DLC in our DLC Table View"
+          logger.error(errMsg)
+          errorLabel.text = errMsg
+          vbox.children.add(errorLabel)
       }
+      dialog.dialogPane().getScene.getWindow.sizeToScene()
     }
 
     def handleFileChosen(file: File): Unit = {
-      val hex = Files.readAllLines(file.toPath).get(0)
-      val acceptMessage = LnMessageFactory(DLCAcceptTLV).fromHex(hex)
-      showDetails(acceptMessage, isFromFile = true)
+      val acceptMessageT = Try {
+        val hex = Files.readAllLines(file.toPath).get(0)
+        LnMessageFactory(DLCAcceptTLV).fromHex(hex)
+      }
+
+      acceptMessageT match {
+        case Failure(_) =>
+          val errMsg = "Error, file chosen as not a valid DLCAccept message"
+          logger.error(errMsg)
+          errorLabel.text = errMsg
+          vbox.children.add(errorLabel)
+          dialog.dialogPane().getScene.getWindow.sizeToScene()
+        case Success(acceptMessage) =>
+          showDetails(acceptMessage, isFromFile = true)
+      }
+      ()
     }
 
     val fileChooser = DLCDialog.fileChooserButton(
@@ -215,20 +275,11 @@ object SignDLCDialog {
         handleFileChosen(file)
       })
 
-    val fromFileHBox = new HBox() {
-      spacing = 5
-      children = Vector(new Label("DLC Accept File"),
-                        fileChooser,
-                        DLCDialog.acceptFileChosenLabel)
-    }
+    fromFileHBox.children.addAll(fileChooser, DLCDialog.acceptFileChosenLabel)
 
     dialog.dialogPane().content = new ScrollPane {
       margin = Insets(10)
-      content = new VBox() {
-        margin = Insets(10)
-        spacing = 10
-        children = Vector(acceptTFHBox, separatorHBox, fromFileHBox, gridPane)
-      }
+      content = vbox
     }
 
     // When the OK button is clicked, convert the result to a SignDLC.

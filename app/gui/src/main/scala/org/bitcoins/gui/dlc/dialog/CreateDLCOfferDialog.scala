@@ -260,7 +260,7 @@ class CreateDLCOfferDialog extends Logging {
                                                   descriptor.numDigits,
                                                   descriptor.outcomeValueFunc,
                                                   totalCollateral,
-                                                  RoundingIntervals.noRounding)
+                                                  descriptor.roundingIntervals)
             ()
         }
       }
