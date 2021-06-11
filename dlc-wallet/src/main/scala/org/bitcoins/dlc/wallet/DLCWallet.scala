@@ -251,21 +251,22 @@ abstract class DLCWallet
     */
   override def cancelDLC(dlcId: Sha256Digest): Future[Unit] = {
     for {
-      inputs <- dlcInputsDAO.findByDLCId(dlcId)
-      dbs <- spendingInfoDAO.findByOutPoints(inputs.map(_.outPoint))
-      // allow this to fail in the case they have already been unreserved
-      _ <- unmarkUTXOsAsReserved(dbs).recover { case _: Throwable => () }
-
       dlcOpt <- dlcDAO.read(dlcId)
-      _ = dlcOpt match {
+      dlcDb = dlcOpt match {
         case Some(db) =>
           require(
             db.state == DLCState.Offered || db.state == DLCState.Accepted || db.state == DLCState.Signed,
             "Cannot cancel a DLC after it has been signed")
+          db
         case None =>
           throw new IllegalArgumentException(
             s"No DLC Found with dlc id ${dlcId.hex}")
       }
+
+      inputs <- dlcInputsDAO.findByDLCId(dlcId, dlcDb.isInitiator)
+      dbs <- spendingInfoDAO.findByOutPoints(inputs.map(_.outPoint))
+      // allow this to fail in the case they have already been unreserved
+      _ <- unmarkUTXOsAsReserved(dbs).recover { case _: Throwable => () }
 
       _ <- dlcSigsDAO.deleteByDLCId(dlcId)
       _ <- dlcRefundSigDAO.deleteByDLCId(dlcId)
