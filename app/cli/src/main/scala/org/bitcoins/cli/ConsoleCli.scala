@@ -1896,11 +1896,13 @@ object CliCommand {
 
   case class AddDLCSigsFromFile(path: Path) extends AddDLCSigsCliCommand
 
+  sealed trait AddDLCSigsAndBroadcastCliCommand extends AddDLCSigsCliCommand
+
   case class AddDLCSigsAndBroadcast(sigs: LnMessage[DLCSignTLV])
-      extends AddDLCSigsCliCommand
+      extends AddDLCSigsAndBroadcastCliCommand
 
   case class AddDLCSigsAndBroadcastFromFile(path: Path)
-      extends AddDLCSigsCliCommand
+      extends AddDLCSigsAndBroadcastCliCommand
 
   case class GetDLCFundingTx(contractId: ByteVector) extends AppServerCliCommand
 

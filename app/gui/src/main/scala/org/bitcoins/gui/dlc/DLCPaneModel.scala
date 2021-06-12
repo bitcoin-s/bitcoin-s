@@ -6,9 +6,9 @@ import org.bitcoins.cli.{CliCommand, ConsoleCli}
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.crypto._
+import org.bitcoins.gui._
 import org.bitcoins.gui.dlc.GlobalDLCData.dlcs
 import org.bitcoins.gui.dlc.dialog._
-import org.bitcoins.gui._
 import scalafx.application.Platform
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.Alert.AlertType
@@ -158,12 +158,28 @@ class DLCPaneModel(val resultArea: TextArea) extends Logging {
   }
 
   def onBroadcastDLC(): Unit = {
-    val processStr: String => String = str => {
-      if (str.isEmpty) {
-        "Broadcasting DLC timed out! Try again in a bit."
-      } else str
+    val result = BroadcastDLCDialog.showAndWait(parentWindow.value)
+
+    result match {
+      case Some(command) =>
+        taskRunner.run(
+          caption = "Broadcast DLC",
+          op = {
+            ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
+              case Success(commandReturn) =>
+                val string = if (commandReturn.isEmpty) {
+                  "Broadcasting DLC timed out! Try again in a bit."
+                } else commandReturn
+                resultArea.text = string
+              case Failure(err) =>
+                err.printStackTrace()
+                resultArea.text = s"Error executing command:\n${err.getMessage}"
+            }
+            updateDLCs()
+          }
+        )
+      case None => ()
     }
-    printDLCDialogResult("Broadcast DLC", new BroadcastDLCDialog, processStr)
   }
 
   def onExecute(): Unit = {
