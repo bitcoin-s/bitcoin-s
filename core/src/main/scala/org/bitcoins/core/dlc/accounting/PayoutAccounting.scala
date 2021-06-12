@@ -1,6 +1,6 @@
 package org.bitcoins.core.dlc.accounting
 
-import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 
 /** Utility trait for metrics we need to do accounting */
 trait PayoutAccounting {
@@ -20,7 +20,9 @@ trait PayoutAccounting {
   /** Rate of return for the DLC
     * @see https://www.investopedia.com/terms/r/rateofreturn.asp
     */
-  def rateOfReturn: BigDecimal = pnl.toBigDecimal / myCollateral.toBigDecimal
+  def rateOfReturn: BigDecimal = if (myCollateral != Satoshis.zero)
+    pnl.toBigDecimal / myCollateral.toBigDecimal
+  else BigDecimal(0)
 
   def rorPrettyPrint: String = {
     RateOfReturnUtil.prettyPrint(rateOfReturn)
