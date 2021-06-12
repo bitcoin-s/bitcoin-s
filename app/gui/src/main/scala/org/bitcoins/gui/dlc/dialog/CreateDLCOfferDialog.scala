@@ -412,7 +412,7 @@ class CreateDLCOfferDialog extends Logging {
                     }
                   } else {
                     // add empty rounding intervals
-                    addRoundingRow(None, None)
+                    addRoundingRow(Some(0), Some(Satoshis(1000)))
                     addRoundingRow(None, None)
                   }
               }
