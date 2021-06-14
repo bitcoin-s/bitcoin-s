@@ -27,7 +27,6 @@ abstract class WalletGUI extends Logging {
 
   def fetchStartingData(): Unit = {
     model.startWalletInfoScheduler()
-    val start = System.currentTimeMillis()
     model.updateFeeRate()
     dlcPane.model.setUp()
   }
