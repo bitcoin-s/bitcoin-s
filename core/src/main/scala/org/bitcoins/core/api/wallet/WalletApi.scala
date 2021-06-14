@@ -65,6 +65,15 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def findTransaction(txId: DoubleSha256DigestBE): Future[Option[TransactionDb]]
 
+  /** Funds a transaction from the wallet.
+    * @return funded transaction send funds to desinations with the given fee rate
+    */
+  def fundRawTransaction(
+      destinations: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      fromTagOpt: Option[AddressTag],
+      markAsReserved: Boolean): Future[Transaction]
+
   def listTransactions(): Future[Vector[TransactionDb]]
 
   /** Takes in a block header and updates our TxoStates to the new chain tip

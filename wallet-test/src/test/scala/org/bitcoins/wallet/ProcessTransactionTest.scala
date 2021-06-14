@@ -2,6 +2,9 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.currency._
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.TransactionGenerators
@@ -134,6 +137,52 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         assert(balance == 0.sats)
         assert(unconfirmed == 0.sats)
       }
+  }
 
+  it must "spend and receive funds in the same transaction where the funding utxo is reserved" in {
+    wallet =>
+      val fundingAddressF = wallet.getNewAddress()
+      val receivingAddressF = wallet.getNewAddress()
+      val amount = Bitcoins.one
+
+      val amtWithFee = amount + Satoshis(175) //for fee
+
+      //build funding tx
+      val fundingTxF: Future[(Transaction, UInt32)] = for {
+        fundingAddr <- fundingAddressF
+        fundingTx = TransactionGenerators.buildCreditingTransaction(
+          fundingAddr.scriptPubKey,
+          amtWithFee)
+      } yield fundingTx
+
+      val processedFundingTxF: Future[WalletApi] = for {
+        (fundingTx, _) <- fundingTxF
+        //make sure wallet is empty
+        balance <- wallet.getBalance()
+        _ = assert(balance == Bitcoins.zero)
+        processed <- wallet.processTransaction(fundingTx, None)
+        balance <- wallet.getBalance()
+        _ = assert(balance == amtWithFee)
+      } yield processed
+
+      //build spending tx
+      val spendingTxF = for {
+        receivingAddress <- receivingAddressF
+        wallet <- processedFundingTxF
+        destinations = Vector(
+          TransactionOutput(amount, receivingAddress.scriptPubKey))
+        spendingTx <- wallet.fundRawTransaction(
+          destinations = destinations,
+          feeRate = SatoshisPerByte.one,
+          fromTagOpt = None,
+          markAsReserved = true
+        )
+        processedSpendingTx <- wallet.processTransaction(transaction =
+                                                           spendingTx,
+                                                         blockHash = None)
+        balance <- processedSpendingTx.getBalance()
+      } yield assert(balance == amount)
+
+      spendingTxF
   }
 }
