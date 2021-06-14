@@ -18,7 +18,7 @@ import scala.concurrent._
 trait DLCWalletApi { self: WalletApi =>
 
   def createDLCOffer(
-      contractInfoTLV: ContractInfoV0TLV,
+      contractInfoTLV: ContractInfoTLV,
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,

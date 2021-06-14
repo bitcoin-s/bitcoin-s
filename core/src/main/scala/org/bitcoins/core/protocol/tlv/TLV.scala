@@ -1187,7 +1187,9 @@ object OracleInfoV2TLV extends TLVFactory[OracleInfoV2TLV] {
   override val typeName: String = "OracleInfoV2TLV"
 }
 
-sealed trait ContractInfoTLV extends TLV
+sealed trait ContractInfoTLV extends TLV {
+  def totalCollateral: Satoshis
+}
 
 object ContractInfoTLV extends TLVParentFactory[ContractInfoTLV] {
 

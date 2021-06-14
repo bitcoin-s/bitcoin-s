@@ -48,7 +48,7 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
   def getSigs(contractInfo: ContractInfo): (
       Vector[OracleAttestmentTLV],
       Vector[OracleAttestmentTLV]) = {
-    contractInfo.contractDescriptor match {
+    contractInfo.contractDescriptors.head match {
       case _: NumericContractDescriptor => ()
       case _: EnumContractDescriptor =>
         throw new IllegalArgumentException("Unexpected Contract Info")
