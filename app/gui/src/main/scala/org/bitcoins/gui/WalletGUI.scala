@@ -29,8 +29,6 @@ abstract class WalletGUI extends Logging {
     model.startWalletInfoScheduler()
     val start = System.currentTimeMillis()
     model.updateFeeRate()
-    logger.info(
-      s"update fee rate, it took=${System.currentTimeMillis() - start}ms")
     dlcPane.model.setUp()
   }
 

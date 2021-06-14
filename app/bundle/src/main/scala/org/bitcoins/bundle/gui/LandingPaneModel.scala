@@ -47,10 +47,7 @@ class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
         // Launch wallet
         val promise = Promise[Unit]()
         BitcoinSServer.startedF.map { _ =>
-          val start = System.currentTimeMillis()
           fetchStartingData()
-          logger.info(
-            s"fetchStartingData took=${System.currentTimeMillis() - start}ms")
           changeToWalletGUIScene()
           promise.success(())
         }(global)
