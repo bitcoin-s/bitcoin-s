@@ -904,7 +904,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           EnumOutcome(loseStr)).sigPoint -> ECAdaptorSignature.dummy
       )
 
-    val contractInfo = ContractInfo(contractDesc, oracleInfo)
+    val contractInfo = SingleContractInfo(contractDesc, oracleInfo)
     val contractInfoTLV = contractInfo.toTLV
 
     val offer = DLCOffer(
@@ -924,7 +924,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "create a dlc offer" in {
       (mockWalletApi
-        .createDLCOffer(_: ContractInfoV0TLV,
+        .createDLCOffer(_: ContractInfoTLV,
                         _: Satoshis,
                         _: Option[SatoshisPerVirtualByte],
                         _: UInt32,

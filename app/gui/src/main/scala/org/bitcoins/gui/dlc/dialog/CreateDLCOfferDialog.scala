@@ -503,7 +503,7 @@ class CreateDLCOfferDialog extends Logging {
 
             val descriptor = EnumContractDescriptor(contractMap)
 
-            ContractInfo(descriptor, oracleInfo).toTLV
+            SingleContractInfo(descriptor, oracleInfo).toTLV
           case oracleInfo: NumericOracleInfo =>
             getNumericContractInfo(
               decompOpt,
@@ -511,7 +511,7 @@ class CreateDLCOfferDialog extends Logging {
               roundingMap.toVector.sortBy(_._1).map(_._2)) match {
               case Failure(exception) => throw exception
               case Success((totalCol, numeric)) =>
-                ContractInfo(totalCol, numeric, oracleInfo).toTLV
+                SingleContractInfo(totalCol, numeric, oracleInfo).toTLV
             }
         }
 

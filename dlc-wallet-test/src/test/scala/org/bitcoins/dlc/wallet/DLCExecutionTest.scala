@@ -42,11 +42,12 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   def getSigs(contractInfo: ContractInfo): (
       OracleAttestmentTLV,
       OracleAttestmentTLV) = {
-    val desc: EnumContractDescriptor = contractInfo.contractDescriptor match {
-      case desc: EnumContractDescriptor => desc
-      case _: NumericContractDescriptor =>
-        throw new IllegalArgumentException("Unexpected Contract Info")
-    }
+    val desc: EnumContractDescriptor =
+      contractInfo.contractDescriptors.head match {
+        case desc: EnumContractDescriptor => desc
+        case _: NumericContractDescriptor =>
+          throw new IllegalArgumentException("Unexpected Contract Info")
+      }
 
     // Get a hash that the initiator wins for
     val initiatorWinStr =

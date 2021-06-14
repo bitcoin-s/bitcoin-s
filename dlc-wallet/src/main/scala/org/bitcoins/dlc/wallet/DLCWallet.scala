@@ -293,7 +293,7 @@ abstract class DLCWallet
       refundLocktime: UInt32): Future[DLCOffer] = {
     logger.info("Creating DLC Offer")
     val announcements =
-      contractInfo.oracleInfo.singleOracleInfos.map(_.announcement)
+      contractInfo.oracleInfos.head.singleOracleInfos.map(_.announcement)
 
     //hack for now to get around https://github.com/bitcoin-s/bitcoin-s/issues/3127
     //filter announcements that we already have in the db
@@ -380,7 +380,8 @@ abstract class DLCWallet
         timeouts = timeouts
       )
 
-      oracleParamsOpt = OracleInfo.getOracleParamsOpt(contractInfo.oracleInfo)
+      oracleParamsOpt = OracleInfo.getOracleParamsOpt(
+        contractInfo.oracleInfos.head)
 
       dlcDb = DLCDb(
         dlcId = dlcId,
@@ -402,9 +403,9 @@ abstract class DLCWallet
 
       contractDataDb = DLCContractDataDb(
         dlcId = dlcId,
-        oracleThreshold = contractInfo.oracleInfo.threshold,
+        oracleThreshold = contractInfo.oracleInfos.head.threshold,
         oracleParamsTLVOpt = oracleParamsOpt,
-        contractDescriptorTLV = contractInfo.contractDescriptor.toTLV,
+        contractDescriptorTLV = contractInfo.contractDescriptors.head.toTLV,
         contractMaturity = timeouts.contractMaturity,
         contractTimeout = timeouts.contractTimeout,
         totalCollateral = contractInfo.totalCollateral
@@ -445,7 +446,8 @@ abstract class DLCWallet
           .map(account => (dlcDb, account.get))
       case None =>
         val announcements =
-          offer.contractInfo.oracleInfo.singleOracleInfos.map(_.announcement)
+          offer.contractInfo.oracleInfos.head.singleOracleInfos
+            .map(_.announcement)
 
         //filter announcements that we already have in the db
         val groupedAnnouncementsF: Future[AnnouncementGrouping] = {
@@ -482,12 +484,13 @@ abstract class DLCWallet
 
           contractDataDb = {
             val oracleParamsOpt =
-              OracleInfo.getOracleParamsOpt(contractInfo.oracleInfo)
+              OracleInfo.getOracleParamsOpt(contractInfo.oracleInfos.head)
             DLCContractDataDb(
               dlcId = dlcId,
-              oracleThreshold = contractInfo.oracleInfo.threshold,
+              oracleThreshold = contractInfo.oracleInfos.head.threshold,
               oracleParamsTLVOpt = oracleParamsOpt,
-              contractDescriptorTLV = contractInfo.contractDescriptor.toTLV,
+              contractDescriptorTLV =
+                contractInfo.contractDescriptors.head.toTLV,
               contractMaturity = offer.timeouts.contractMaturity,
               contractTimeout = offer.timeouts.contractTimeout,
               totalCollateral = contractInfo.totalCollateral

@@ -50,12 +50,13 @@ class AcceptOfferDialog {
     }
 
     def showOfferTerms(offer: DLCOfferTLV): Unit = {
-      val (oracleKey, eventId) = offer.contractInfo.oracleInfo match {
-        case OracleInfoV0TLV(announcement) =>
-          (announcement.publicKey.hex, announcement.eventTLV.eventId)
-        case _: MultiOracleInfoTLV =>
-          throw new RuntimeException("This is impossible.")
-      }
+      val (oracleKey, eventId) =
+        offer.contractInfo.asInstanceOf[ContractInfoV0TLV].oracleInfo match {
+          case OracleInfoV0TLV(announcement) =>
+            (announcement.publicKey.hex, announcement.eventTLV.eventId)
+          case _: MultiOracleInfoTLV =>
+            throw new RuntimeException("This is impossible.")
+        }
 
       gridPane.add(new Label("Event Id"), 0, nextRow)
       gridPane.add(
@@ -113,7 +114,9 @@ class AcceptOfferDialog {
                    nextRow)
       nextRow += 1
 
-      offer.contractInfo.contractDescriptor match {
+      offer.contractInfo
+        .asInstanceOf[ContractInfoV0TLV]
+        .contractDescriptor match {
         case v0: ContractDescriptorV0TLV =>
           gridPane.add(new Label("Potential Outcome"), 0, nextRow)
           gridPane.add(new Label("Payouts"), 1, nextRow)

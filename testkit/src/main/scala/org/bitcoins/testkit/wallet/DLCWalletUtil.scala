@@ -69,7 +69,7 @@ object DLCWalletUtil extends Logging {
     ContractOraclePair.EnumPair(sampleContractDescriptor, sampleOracleInfo)
 
   lazy val sampleContractInfo: ContractInfo =
-    ContractInfo(half, sampleContractOraclePair)
+    SingleContractInfo(half, sampleContractOraclePair)
 
   lazy val sampleOracleWinSig: SchnorrDigitalSignature =
     oraclePrivKey.schnorrSignWithNonce(winHash.bytes, kValue)
@@ -93,7 +93,7 @@ object DLCWalletUtil extends Logging {
   }
 
   lazy val multiNonceContractInfo: ContractInfo =
-    ContractInfo(total, multiNonceContractOraclePair)
+    SingleContractInfo(total, multiNonceContractOraclePair)
 
   lazy val dummyContractMaturity: BlockTimeStamp = BlockTimeStamp(1666335)
   lazy val dummyContractTimeout: BlockTimeStamp = BlockTimeStamp(1666337)

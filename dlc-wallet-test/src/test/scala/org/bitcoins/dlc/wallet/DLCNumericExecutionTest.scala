@@ -21,13 +21,13 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
   def getSigs(contractInfo: ContractInfo): (
       OracleAttestmentTLV,
       OracleAttestmentTLV) = {
-    contractInfo.contractDescriptor match {
+    contractInfo.contractDescriptors.head match {
       case _: NumericContractDescriptor => ()
       case _: EnumContractDescriptor =>
         throw new IllegalArgumentException("Unexpected Contract Info")
     }
 
-    val oracleInfo = DLCWalletUtil.multiNonceContractInfo.oracleInfo
+    val oracleInfo = DLCWalletUtil.multiNonceContractInfo.oracleInfos.head
       .asInstanceOf[NumericSingleOracleInfo]
 
     val initiatorWinVec =

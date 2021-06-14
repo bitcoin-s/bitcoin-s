@@ -149,7 +149,9 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
             EnumMultiOracleInfo(contractDataDb.oracleThreshold,
                                 announcementTLVs)
           }
-        ContractInfo(contractDataDb.totalCollateral.satoshis, enum, oracleInfo)
+        SingleContractInfo(contractDataDb.totalCollateral.satoshis,
+                           enum,
+                           oracleInfo)
       case numeric: NumericContractDescriptor =>
         val oracleInfo =
           if (announcementTLVs.size == 1) {
@@ -165,9 +167,9 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
                                             announcementTLVs)
             }
           }
-        ContractInfo(contractDataDb.totalCollateral.satoshis,
-                     numeric,
-                     oracleInfo)
+        SingleContractInfo(contractDataDb.totalCollateral.satoshis,
+                           numeric,
+                           oracleInfo)
     }
   }
 

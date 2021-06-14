@@ -84,12 +84,13 @@ object BroadcastDLCDialog extends Logging {
       }
       vbox.children.add(gridPane)
 
-      val (oracleKey, eventId) = status.contractInfo.oracleInfo.toTLV match {
-        case OracleInfoV0TLV(announcement) =>
-          (announcement.publicKey.hex, announcement.eventTLV.eventId)
-        case _: MultiOracleInfoTLV =>
-          throw new RuntimeException("This is impossible.")
-      }
+      val (oracleKey, eventId) =
+        status.contractInfo.oracleInfos.head.toTLV match {
+          case OracleInfoV0TLV(announcement) =>
+            (announcement.publicKey.hex, announcement.eventTLV.eventId)
+          case _: MultiOracleInfoTLV =>
+            throw new RuntimeException("This is impossible.")
+        }
 
       gridPane.add(new Label("Event Id"), 0, nextRow)
       gridPane.add(
@@ -132,7 +133,7 @@ object BroadcastDLCDialog extends Logging {
                    nextRow)
       nextRow += 1
 
-      status.contractInfo.contractDescriptor.toTLV match {
+      status.contractInfo.contractDescriptors.head.toTLV match {
         case v0: ContractDescriptorV0TLV =>
           gridPane.add(new Label("Potential Outcome"), 0, nextRow)
           gridPane.add(new Label("Payouts"), 1, nextRow)

@@ -1,7 +1,10 @@
 package org.bitcoins.testkit.wallet
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.dlc.models.{ContractInfo, ContractOraclePair}
+import org.bitcoins.core.protocol.dlc.models.{
+  ContractOraclePair,
+  SingleContractInfo
+}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
@@ -85,7 +88,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
           walletA <- walletAF
           walletB <- walletBF
           amt = expectedDefaultAmt / Satoshis(2)
-          contractInfo = ContractInfo(amt.satoshis, contractOraclePair)
+          contractInfo = SingleContractInfo(amt.satoshis, contractOraclePair)
           (dlcWalletA, dlcWalletB) <-
             DLCWalletUtil.initDLC(walletA, walletB, contractInfo)
         } yield (dlcWalletA, dlcWalletB)
