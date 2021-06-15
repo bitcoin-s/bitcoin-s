@@ -20,7 +20,7 @@ import org.bitcoins.core.protocol.dlc.sign._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
@@ -1208,6 +1208,20 @@ abstract class DLCWallet
     for {
       dlcDbOpt <- dlcDAO.findByContractId(contractId)
       dlcDb = dlcDbOpt.get
+      contractData <- contractDataDAO.read(dlcDb.dlcId).map(_.get)
+
+      currentHeight <- chainQueryApi.getBestHashBlockHeight()
+      _ = contractData.contractTimeout match {
+        case BlockStamp.BlockHeight(height) =>
+          require(
+            currentHeight >= height,
+            s"Refund transaction is not valid yet, current height: $currentHeight, refund valid at height $height")
+        case BlockStamp.BlockTime(time) =>
+          val currentTime = TimeUtil.currentEpochSecond
+          require(
+            currentTime >= time.toLong,
+            s"Refund transaction is not valid yet, current time: $currentTime, refund valid at time $time")
+      }
 
       executor <- executorFromDb(dlcDb.dlcId)
       refundSigsDbOpt <- dlcRefundSigDAO.findByDLCId(dlcDb.dlcId)
