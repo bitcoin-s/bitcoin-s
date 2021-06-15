@@ -312,15 +312,20 @@ abstract class DLCWallet
         groupedAnnouncements.newAnnouncements)
       allAnnouncementDbs =
         announcementDataDbs ++ groupedAnnouncements.existingAnnouncements
-      announcementsWithId = announcements.map { tlv =>
+
+      newAnnouncements = announcements.filter(a =>
+        groupedAnnouncements.newAnnouncements.exists(
+          _.announcementSignature == a.announcementSignature))
+
+      newAnnouncementsWithId = newAnnouncements.map { tlv =>
         val idOpt: Option[Long] =
-          allAnnouncementDbs
+          announcementDataDbs
             .find(_.announcementSignature == tlv.announcementSignature)
             .flatMap(_.id)
         (tlv, idOpt.get)
       }
-      nonceDbs = OracleNonceDbHelper.fromAnnouncements(announcementsWithId)
-      _ <- oracleNonceDAO.upsertAll(nonceDbs)
+      nonceDbs = OracleNonceDbHelper.fromAnnouncements(newAnnouncementsWithId)
+      _ <- oracleNonceDAO.createAll(nonceDbs)
       chainType = HDChainType.External
 
       account <- getDefaultAccountForType(AddressType.SegWit)
@@ -505,14 +510,19 @@ abstract class DLCWallet
           announcementDataDbs =
             createdDbs ++ groupedAnnouncements.existingAnnouncements
 
-          announcementsWithId = announcements.map { tlv =>
-            val idOpt = announcementDataDbs
+          newAnnouncements = announcements.filter(a =>
+            groupedAnnouncements.newAnnouncements.exists(
+              _.announcementSignature == a.announcementSignature))
+
+          newAnnouncementsWithId = newAnnouncements.map { tlv =>
+            val idOpt = createdDbs
               .find(_.announcementSignature == tlv.announcementSignature)
               .flatMap(_.id)
             (tlv, idOpt.get)
           }
-          nonceDbs = OracleNonceDbHelper.fromAnnouncements(announcementsWithId)
-          _ <- oracleNonceDAO.upsertAll(nonceDbs)
+          nonceDbs = OracleNonceDbHelper.fromAnnouncements(
+            newAnnouncementsWithId)
+          _ <- oracleNonceDAO.createAll(nonceDbs)
 
           dlcAnnouncementDbs = announcementDataDbs.zipWithIndex.map {
             case (a, index) =>

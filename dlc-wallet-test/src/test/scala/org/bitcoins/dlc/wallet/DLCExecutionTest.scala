@@ -14,13 +14,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   EnumContractDescriptor,
   NumericContractDescriptor
 }
-import org.bitcoins.core.protocol.tlv.{
-  ContractInfoV0TLV,
-  OracleAttestmentTLV,
-  OracleAttestmentV0TLV,
-  OracleEventV0TLV,
-  OracleInfoV0TLV
-}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.CryptoUtil
@@ -389,5 +383,32 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       _ = assert(announcementVec2.length == 1,
                  s"Got length=${announcementVec2.length}")
     } yield succeed
+  }
+
+  it must "be able to construct an offer of the same contract info of a closed DLC" in {
+    wallets =>
+      val walletA = wallets._1.wallet
+      val walletB = wallets._2.wallet
+
+      for {
+        contractId <- getContractId(walletA)
+        status <- getDLCStatus(walletB)
+        (_, sig) = getSigs(status.contractInfo)
+        func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
+
+        result <- dlcExecutionTest(wallets = wallets,
+                                   asInitiator = true,
+                                   func = func,
+                                   expectedOutputs = 1)
+        _ = assert(result)
+
+        _ <- walletA.createDLCOffer(status.contractInfo,
+                                    status.localCollateral.satoshis,
+                                    None,
+                                    UInt32.zero,
+                                    UInt32.one)
+
+        _ <- walletA.listDLCs()
+      } yield succeed
   }
 }
