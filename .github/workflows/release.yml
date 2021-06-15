@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main, adaptor-dlc]
+    branches: [master, main, adaptor-dlc,2021-06-15-issue-3266]
     tags: ["*"]
 
 env:
@@ -81,7 +81,7 @@ jobs:
           echo "===========jpackage dmg begin================"
           jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image bitcoin-s.app --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
           echo "Signing dmg with code sign"
-          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
+          codesign -s "9ZG3GPKHX8" --options runtime -vvvv --deep ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
           REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" --username "stewart.chris1234@gmail.com" --password "$MAC_NOTARIZATION_PW"  --file ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
           sleep 5
