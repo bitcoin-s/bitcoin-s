@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main, adaptor-dlc,2021-06-15-issue-3266]
+    branches: [master, main, adaptor-dlc, 2021-06-15-issue-3266]
     tags: ["*"]
 
 env:
@@ -81,13 +81,13 @@ jobs:
           echo "===========jpackage dmg begin================"
           jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image bitcoin-s.app --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
           echo "Signing dmg with code sign"
-          codesign -s "83bcb291-7797-4671-a605-97e333704ba7" --options runtime -vvvv --deep ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
-          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" --username "stewart.chris1234@gmail.com" --password "$MAC_NOTARIZATION_PW"  --file ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg | grep RequestUUID | awk '{print $3}')
+          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
+          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" --team-id "9ZG3GPKHX8" --password "$MAC_NOTARIZATION_PW"  --file ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
           sleep 5
-          xcrun altool --notarization-info "$REQUEST_UUID" -u "stewart.chris1234@gmail.com" -p "$MAC_NOTARIZATION_PW"
+          xcrun altool --notarization-info "$REQUEST_UUID" --team-id "9ZG3GPKHX8" -p "$MAC_NOTARIZATION_PW"
           echo "Start while loop"
-          while xcrun altool --notarization-info "$REQUEST_UUID" -u "stewart.chris1234@gmail.com" -p "$MAC_NOTARIZATION_PW" | grep "Status: in progress" > /dev/null; do
+          while xcrun altool --notarization-info "$REQUEST_UUID" --team-id "9ZG3GPKHX8" -p "$MAC_NOTARIZATION_PW" | grep "Status: in progress" > /dev/null; do
             echo "Verification in progress..."
             sleep 30
           done
