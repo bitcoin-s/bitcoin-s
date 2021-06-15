@@ -12,9 +12,10 @@ import java.awt.Toolkit.getDefaultToolkit
 import java.awt.datatransfer.StringSelection
 import java.io.File
 import java.nio.file.Files
+import scala.concurrent.ExecutionContext
 import scala.util.Properties
 
-class DLCPane(glassPane: VBox) {
+class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
   private val resultTextArea = new TextArea {
     editable = false

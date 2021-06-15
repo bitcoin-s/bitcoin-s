@@ -77,6 +77,7 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
   }
 
   def startBitcoinSBackend(): Future[Unit] = {
+    val start = System.currentTimeMillis()
     if (nodeConf.peers.isEmpty) {
       throw new IllegalArgumentException(
         "No peers specified, unable to start node")
@@ -94,17 +95,18 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
     //get a node that isn't started
     val nodeF = nodeConf.createNode(peer)(chainConf, system)
 
+    val feeProvider = getFeeProviderOrElse(MempoolSpaceProvider(HourFeeTarget))
     //get our wallet
     val configuredWalletF = for {
       node <- nodeF
       chainApi <- chainApiF
       _ = logger.info("Initialized chain api")
-      feeProvider = getFeeProviderOrElse(MempoolSpaceProvider(HourFeeTarget))
       wallet <- dlcConf.createDLCWallet(node, chainApi, feeProvider)
       callbacks <- createCallbacks(wallet)
       _ = nodeConf.addCallbacks(callbacks)
     } yield {
-      logger.info(s"Done configuring wallet")
+      logger.info(
+        s"Done configuring wallet, it took=${System.currentTimeMillis() - start}ms")
       wallet
     }
 
@@ -114,7 +116,8 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
       wallet <- configuredWalletF
       initNode <- setBloomFilter(node, wallet)
     } yield {
-      logger.info(s"Done configuring node")
+      logger.info(
+        s"Done configuring node, it took=${System.currentTimeMillis() - start}ms")
       initNode
     }
 
@@ -138,13 +141,16 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
                                  rpcbindOpt = rpcBindOpt,
                                  rpcPortOpt = rpcPortOpt)
       _ = {
-        logger.info(s"Starting ${nodeConf.nodeType.shortName} node sync")
+        logger.info(
+          s"Starting ${nodeConf.nodeType.shortName} node sync, it took=${System
+            .currentTimeMillis() - start}ms")
       }
       _ = BitcoinSServer.startedFP.success(Future.successful(binding))
 
       _ <- node.sync()
     } yield {
-      logger.info(s"Done starting Main!")
+      logger.info(
+        s"Done starting Main! It took ${System.currentTimeMillis() - start}ms")
       ()
     }
   }
