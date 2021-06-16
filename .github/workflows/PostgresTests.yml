@@ -21,12 +21,6 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: zulu@1.11
-      - name: 'Download Binary Artifacts'
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ runner.os }}-binary-artifacts
-          path: |
-            ~/.bitcoin-s/binaries
       - name: Cache
         uses: actions/cache@v2
         with:
