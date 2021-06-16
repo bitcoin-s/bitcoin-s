@@ -45,6 +45,8 @@ object ViewDLCDialog {
           },
           columnIndex = 1,
           rowIndex = row)
+
+      row += 1
       add(new Label("Event Id:"), 0, row)
       add(
         new TextField() {
