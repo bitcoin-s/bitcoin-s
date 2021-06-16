@@ -161,6 +161,12 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
     for {
       _ <- bitcoindRpcConf.start()
       _ = logger.info("Started bitcoind")
+
+      bitcoindNetwork <- bitcoind.getBlockChainInfo.map(_.chain)
+      _ = require(
+        bitcoindNetwork == walletConf.network,
+        s"bitcoind ($bitcoindNetwork) on different network than wallet (${walletConf.network})")
+
       _ = logger.info("Creating wallet")
       feeProvider = getFeeProviderOrElse(bitcoind)
       tmpWallet <- dlcConf.createDLCWallet(nodeApi = bitcoind,
