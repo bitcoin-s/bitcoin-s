@@ -9,8 +9,6 @@ title: Executing A DLC with Bitcoin-S
 
 See the [setup document](../getting-setup.md).
 
-Make sure to follow [Step 4](../getting-setup.md#step-4-optional-discreet-log-contract-branch) to checkout the `adaptor-dlc` feature branch.
-
 ### Using the GUI
 
 To first start up the GUI you first need to start your bitcoin-s server and gui with
