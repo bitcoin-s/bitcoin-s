@@ -898,7 +898,40 @@ object SendFromOutpoints extends ServerJsonModels {
             s"Bad number of arguments: ${other.length}. Expected: 4"))
     }
   }
+}
 
+case class SweepWallet(
+    address: BitcoinAddress,
+    satoshisPerVirtualByteOpt: Option[SatoshisPerVirtualByte])
+
+object SweepWallet extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SweepWallet] = {
+    jsArr.arr.toList match {
+      case addrJs :: satsPerVBytesJs :: Nil =>
+        Try {
+          val address = jsToBitcoinAddress(addrJs)
+          val satoshisPerVirtualByte =
+            nullToOpt(satsPerVBytesJs).map(satsPerVBytes =>
+              SatoshisPerVirtualByte(Satoshis(satsPerVBytes.num.toLong)))
+          SweepWallet(address, satoshisPerVirtualByte)
+        }
+      case addrJs :: Nil =>
+        Try {
+          val address = jsToBitcoinAddress(addrJs)
+          SweepWallet(address, None)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing address and fee rate arguments"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
 }
 
 case class SendWithAlgo(

@@ -5,24 +5,18 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.EmptyScriptSignature
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  EmptyTransaction,
-  TransactionConstants,
-  TransactionInput,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
-import org.bitcoins.testkitcore.Implicits.GeneratorOps
-import org.bitcoins.testkitcore.gen.FeeUnitGen
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.RandomFeeProvider
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
+import org.bitcoins.testkitcore.Implicits.GeneratorOps
+import org.bitcoins.testkitcore.gen.FeeUnitGen
 import org.scalatest.{Assertion, FutureOutcome}
 import scodec.bits.ByteVector
 
@@ -239,6 +233,53 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
       val inputAmount = utxos.map(_.output.value).sum
       val numInputs = outPoints.size
+
+      val defaultRange = expectedFeeRate.scaleFactor * numInputs
+
+      val (actualFeeRate, range) = expectedFeeRate match {
+        case _: SatoshisPerByte =>
+          (SatoshisPerByte.calc(inputAmount, tx), defaultRange)
+        case _: SatoshisPerVirtualByte =>
+          (SatoshisPerVirtualByte.calc(inputAmount, tx), defaultRange)
+        case _: SatoshisPerKiloByte =>
+          (SatoshisPerKiloByte.calc(inputAmount, tx), defaultRange)
+        case _: SatoshisPerKW =>
+          // multiply range by 4 because an extra byte on a sig counts as 4 weight units
+          (SatoshisPerKW.calc(inputAmount, tx), defaultRange * 4)
+      }
+
+      // +- range in case of rounding or unexpected signature sizes
+      assert(
+        actualFeeRate.toLong === expectedFeeRate.toLong +- range,
+        s"Expected fee rate: $expectedFeeRate, inputs: $numInputs input: $inputAmount, tx bytes: ${tx.byteSize} " +
+          s"vsize: ${tx.vsize} weight ${tx.weight}"
+      )
+
+      assert(tx.outputs.size == 1)
+      assert(tx.outputs.head.scriptPubKey == testAddress.scriptPubKey)
+    }
+  }
+
+  it should "correctly sweep the wallet" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+    for {
+      utxos <- wallet.listUtxos()
+      tx <- wallet.sweepWallet(testAddress, None)
+      balance <- wallet.getBalance()
+    } yield {
+      assert(balance == Satoshis.zero)
+
+      val expectedFeeRate =
+        wallet.feeRateApi.asInstanceOf[RandomFeeProvider].lastFeeRate.get
+      assert(
+        utxos
+          .map(_.outPoint)
+          .forall(outPoint => tx.inputs.exists(_.previousOutput == outPoint)),
+        "Every outpoint was not included included")
+      assert(tx.inputs.size == utxos.size, "An extra input was added")
+
+      val inputAmount = utxos.map(_.output.value).sum
+      val numInputs = utxos.size
 
       val defaultRange = expectedFeeRate.scaleFactor * numInputs
 

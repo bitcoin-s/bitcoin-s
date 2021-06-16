@@ -753,6 +753,29 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("sweepwallet")
+        .action((_, conf) => conf.copy(command = SweepWallet(null, None)))
+        .text("Sends the entire wallet balance to the given address")
+        .children(
+          arg[BitcoinAddress]("address")
+            .text("Address to send to")
+            .required()
+            .action((addr, conf) =>
+              conf.copy(command = conf.command match {
+                case sweep: SweepWallet =>
+                  sweep.copy(destination = addr)
+                case other => other
+              })),
+          opt[SatoshisPerVirtualByte]("feerate")
+            .text("Fee rate in sats per virtual byte")
+            .optional()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case sweep: SweepWallet =>
+                  sweep.copy(feeRateOpt = Some(feeRate))
+                case other => other
+              }))
+        ),
       cmd("signpsbt")
         .action((_, conf) => conf.copy(command = SignPSBT(PSBT.empty)))
         .text("Signs the PSBT's inputs with keys that are associated with the wallet")
@@ -1592,6 +1615,9 @@ object ConsoleCli {
                          up.writeJs(address),
                          up.writeJs(bitcoins),
                          up.writeJs(feeRateOpt)))
+      case SweepWallet(address, feeRateOpt) =>
+        RequestParam("sweepwallet",
+                     Seq(up.writeJs(address), up.writeJs(feeRateOpt)))
       case SendWithAlgo(address, bitcoins, feeRateOpt, algo) =>
         RequestParam("sendwithalgo",
                      Seq(up.writeJs(address),
@@ -1925,13 +1951,17 @@ object CliCommand {
   case object GetDLCs extends AppServerCliCommand
   case class GetDLC(dlcId: Sha256Digest) extends AppServerCliCommand
 
+  sealed trait SendCliCommand extends AppServerCliCommand {
+    def destination: BitcoinAddress
+  }
+
   // Wallet
   case class SendToAddress(
       destination: BitcoinAddress,
       amount: Bitcoins,
       satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
       noBroadcast: Boolean)
-      extends AppServerCliCommand
+      extends SendCliCommand
       with Broadcastable
 
   case class SendFromOutPoints(
@@ -1939,14 +1969,19 @@ object CliCommand {
       destination: BitcoinAddress,
       amount: Bitcoins,
       feeRateOpt: Option[SatoshisPerVirtualByte])
-      extends AppServerCliCommand
+      extends SendCliCommand
+
+  case class SweepWallet(
+      destination: BitcoinAddress,
+      feeRateOpt: Option[SatoshisPerVirtualByte])
+      extends SendCliCommand
 
   case class SendWithAlgo(
       destination: BitcoinAddress,
       amount: Bitcoins,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       algo: CoinSelectionAlgo)
-      extends AppServerCliCommand
+      extends SendCliCommand
 
   case class OpReturnCommit(
       message: String,

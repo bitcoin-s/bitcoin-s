@@ -278,15 +278,22 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     } yield tx
   }
 
-  def emptyWallet(address: BitcoinAddress, feeRateOpt: Option[FeeUnit])(implicit
+  /** Sends the entire wallet balance to the given address */
+  def sweepWallet(address: BitcoinAddress)(implicit
+      ec: ExecutionContext): Future[Transaction] = sweepWallet(address, None)
+
+  /** Sends the entire wallet balance to the given address */
+  def sweepWallet(address: BitcoinAddress, feeRateOpt: Option[FeeUnit])(implicit
       ec: ExecutionContext): Future[Transaction] = {
     for {
       feeRate <- determineFeeRate(feeRateOpt)
-      utxos <- listUtxos()
-      outPoints = utxos.map(_.outPoint)
-      tx <- sendFromOutPoints(outPoints, address, feeRate)
+      tx <- sweepWallet(address, feeRate)
     } yield tx
   }
+
+  /** Sends the entire wallet balance to the given address */
+  def sweepWallet(address: BitcoinAddress, feeRate: FeeUnit)(implicit
+      ec: ExecutionContext): Future[Transaction]
 
   def sendWithAlgo(
       address: BitcoinAddress,

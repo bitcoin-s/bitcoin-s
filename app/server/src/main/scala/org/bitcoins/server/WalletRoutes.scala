@@ -538,6 +538,17 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("sweepwallet", arr) =>
+      withValidServerCommand(SweepWallet.fromJsArr(arr)) {
+        case SweepWallet(address, feeRateOpt) =>
+          complete {
+            for {
+              tx <- wallet.sweepWallet(address, feeRateOpt)
+              _ <- wallet.broadcastTransaction(tx)
+            } yield Server.httpSuccess(tx.txIdBE)
+          }
+      }
+
     case ServerCommand("sendwithalgo", arr) =>
       withValidServerCommand(SendWithAlgo.fromJsArr(arr)) {
         case SendWithAlgo(address, bitcoins, satoshisPerVirtualByteOpt, algo) =>
