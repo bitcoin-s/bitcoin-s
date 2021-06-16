@@ -223,17 +223,20 @@ object BitcoindRpcBackendUtil extends Logging {
           blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
         logger.info(s"Fetching ${blockHashes.length} hashes from bitcoind")
         val numParallelism = Runtime.getRuntime.availableProcessors()
-        walletF.flatMap { wallet =>
-          val runStream: Future[Done] = Source(blockHashes)
-            .mapAsync(parallelism = numParallelism) { hash =>
-              bitcoindRpcClient.getBlockRaw(hash)
-            }
-            .foldAsync(wallet) { case (wallet, block) =>
-              wallet.processBlock(block)
-            }
-            .run()
-          runStream.map(_ => ())
-        }
+        walletF
+          .flatMap { wallet =>
+            val runStream: Future[Done] = Source(blockHashes)
+              .mapAsync(parallelism = numParallelism) { hash =>
+                bitcoindRpcClient.getBlockRaw(hash)
+              }
+              .foldAsync(wallet) { case (wallet, block) =>
+                wallet.processBlock(block)
+              }
+              .run()
+            runStream.map(_ => wallet)
+          }
+          .flatMap(_.updateUtxoPendingStates())
+          .map(_ => ())
       }
 
       /** Broadcasts the given transaction over the P2P network
