@@ -5,9 +5,7 @@ import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.commons.serializers.PicklerKeys
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.dlc.accounting.RateOfReturnUtil
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.dialog._
 import org.bitcoins.gui.dlc.DLCPaneModel
@@ -82,21 +80,17 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
     val result = SendDialog.showAndWait(parentWindow.value)
 
     result match {
-      case Some((address, amount)) =>
+      case Some(cmd) =>
         taskRunner.run(
-          caption = s"Send $amount to $address",
+          caption = s"Sending to ${cmd.destination}",
           op = {
-            val sats = Satoshis(amount.toLong)
-
-            ConsoleCli.exec(
-              SendToAddress(BitcoinAddress.fromString(address),
-                            Bitcoins(sats),
-                            satoshisPerVirtualByte = None,
-                            noBroadcast = false),
-              GlobalData.consoleCliConfig
-            ) match {
+            ConsoleCli.exec(cmd, GlobalData.consoleCliConfig) match {
               case Success(txid) =>
-                textArea.text = s"Transaction sent! $txid"
+                if (txid.isEmpty) {
+                  textArea.text = "Error, server did not return anything"
+                } else {
+                  textArea.text = s"Transaction sent! $txid"
+                }
               case Failure(err) => throw err
             }
           }

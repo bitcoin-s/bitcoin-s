@@ -187,6 +187,9 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `address` - Address to send to
     - `amount` - Amount to send in BTC
     - `--feerate <value>` - Fee rate in sats per virtual byte
+ - `sweepwallet` `address` `[options]` - Sends the entire wallet balance to the given address
+   - `address` - Address to send to
+   - `--feerate <value>` - Fee rate in sats per virtual byte
  - `sendwithalgo` `address` `amount` `algo` `[options]` - Send money to the given address using a specific coin selection algo
     - `address` - Address to send to
     - `amount` - Amount to send in BTC

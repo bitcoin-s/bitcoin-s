@@ -445,7 +445,7 @@ abstract class Wallet
     }
   }
 
-  def sendFromOutPoints(
+  override def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction] = {
@@ -542,6 +542,14 @@ abstract class Wallet
         changeAddr.scriptPubKey)
 
       tx <- finishSend(txBuilder, utxos, amount, feeRate, newTags)
+    } yield tx
+  }
+
+  override def sweepWallet(address: BitcoinAddress, feeRate: FeeUnit)(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    for {
+      outpoints <- listUtxos().map(_.map(_.outPoint))
+      tx <- sendFromOutPoints(outpoints, address, feeRate)
     } yield tx
   }
 

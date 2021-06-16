@@ -278,6 +278,20 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     } yield tx
   }
 
+  def sweepWallet(address: BitcoinAddress)(implicit
+      ec: ExecutionContext): Future[Transaction] = sweepWallet(address, None)
+
+  def sweepWallet(address: BitcoinAddress, feeRateOpt: Option[FeeUnit])(implicit
+      ec: ExecutionContext): Future[Transaction] = {
+    for {
+      feeRate <- determineFeeRate(feeRateOpt)
+      tx <- sweepWallet(address, feeRate)
+    } yield tx
+  }
+
+  def sweepWallet(address: BitcoinAddress, feeRate: FeeUnit)(implicit
+      ec: ExecutionContext): Future[Transaction]
+
   def emptyWallet(address: BitcoinAddress, feeRateOpt: Option[FeeUnit])(implicit
       ec: ExecutionContext): Future[Transaction] = {
     for {

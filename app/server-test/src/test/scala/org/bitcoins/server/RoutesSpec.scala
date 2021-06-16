@@ -1335,6 +1335,28 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    "sweep wallet" in {
+      (mockWalletApi
+        .sweepWallet(_: BitcoinAddress, _: Option[FeeUnit])(
+          _: ExecutionContext))
+        .expects(testAddress, *, executor)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockWalletApi.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(Future.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("sweepwallet", Arr(Str(testAddressStr), Num(4))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}""")
+      }
+    }
+
     "send with algo" in {
       // positive cases
 
