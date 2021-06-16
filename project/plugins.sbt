@@ -32,7 +32,7 @@ addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
 
 //https://github.com/scalameta/sbt-native-image
-addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.3.0")
+addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.3.1")
 
 // gRPC
 addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.0.0")
