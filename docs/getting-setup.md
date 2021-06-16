@@ -16,9 +16,8 @@ title: Getting Bitcoin-S installed on your machine
 - [Step 1: Java and Scala](#step-1-java-and-scala)
 - [Step 2: Bitcoin-S Repository](#step-2-bitcoin-s-repository)
 - [Step 3: Configuration](#step-3-configuration)
-- [Step 4 (Optional): Discreet Log Contract Branch](#step-4-optional-discreet-log-contract-branch)
-- [Step 5: Setting Up A Bitcoin-S Server (Neutrino Node)](#step-5-setting-up-a-bitcoin-s-server)
-- [Step 6 (Optional): Moving To Testnet](#step-6-optional-moving-to-testnet)
+- [Step 4: Setting Up A Bitcoin-S Node](#step-4-setting-up-a-bitcoin-s-node)
+- [Step 5: (Optional): Moving To Testnet](#step-5-optional-moving-to-testnet)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -157,7 +156,7 @@ bitcoin-s {
 
 </details>
 
-## Step 6 (Optional): Moving To Testnet
+## Step 5 (Optional): Moving To Testnet
 
 To run your Bitcoin-S Server on testnet, simply change `network = testnet3` and change
 your `peers = ["neutrino.testnet3.suredbits.com:18333"] ` in your `.bitcoin-s/bitcoin-s.conf` file.

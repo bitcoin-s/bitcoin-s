@@ -7,9 +7,6 @@ Bitcoin-S now has support for the basic data structures and algorithms involved 
 
 **Please note that this code is experimental as the [DLC specification](https://github.com/discreetlogcontracts/dlcspecs) is a work-in-progress and so this code is not stable and is subject to change. This means that the DLC code in the official release may be out-of-date and may conflict with other implementations' results.**
 
-> If you require the most up-to-date DLC data structures and algorithms, you should use the `master` branch.
-> If you are interested in actually setting up and executing DLCs, you should checkout the [`adaptor-dlc branch`](https://github.com/bitcoin-s/bitcoin-s/tree/adaptor-dlc).
-
 Let's now cover the main data structures and interfaces supported.
 
 ```scala mdoc:invisible

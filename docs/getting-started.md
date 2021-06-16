@@ -20,7 +20,9 @@ have feedback on how to make your lives easier, please reach out on [slack](http
 ### Java binaries
 
 <details>
-Please download these from our latest [release on github](https://github.com/bitcoin-s/bitcoin-s/releases/tag/v0.5.0)
+Please download these from our latest release on github 
+
+https://github.com/bitcoin-s/bitcoin-s/releases/tag/v0.6.0
 
 </details>
 
