@@ -179,6 +179,7 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
       }
       _ = BitcoindRpcBackendUtil
         .syncWalletToBitcoind(bitcoind, wallet)
+        .flatMap(_ => wallet.updateUtxoPendingStates())
         .flatMap { _ =>
           if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
             BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet, bitcoind)
