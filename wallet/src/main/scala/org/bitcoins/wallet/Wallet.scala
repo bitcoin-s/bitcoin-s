@@ -545,10 +545,14 @@ abstract class Wallet
     } yield tx
   }
 
+  /** Sends the entire wallet balance to the given address */
   override def sweepWallet(address: BitcoinAddress, feeRate: FeeUnit)(implicit
       ec: ExecutionContext): Future[Transaction] = {
     for {
-      outpoints <- listUtxos().map(_.map(_.outPoint))
+      utxos <- listUtxos()
+      balance = utxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
+      _ = logger.info(s"Sweeping wallet balance=$balance to address=$address")
+      outpoints = utxos.map(_.outPoint)
       tx <- sendFromOutPoints(outpoints, address, feeRate)
     } yield tx
   }
