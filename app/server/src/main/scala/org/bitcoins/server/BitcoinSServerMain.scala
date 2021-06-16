@@ -44,7 +44,7 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
     val startedConfigF = conf.start()
 
     startedConfigF.failed.foreach { err =>
-      logger.error(s"Failed to initialize configuration for BicoinServerMain",
+      logger.error(s"Failed to initialize configuration for BitcoinServerMain",
                    err)
     }
 

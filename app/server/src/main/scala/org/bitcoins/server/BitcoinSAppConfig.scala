@@ -31,6 +31,11 @@ case class BitcoinSAppConfig(
   lazy val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
   lazy val dlcConf: DLCAppConfig = DLCAppConfig(directory, confs: _*)
 
+  def copyWithConfig(newConfs: Config*): BitcoinSAppConfig = {
+    val configs = newConfs ++ confs
+    BitcoinSAppConfig(directory, configs: _*)
+  }
+
   lazy val kmConf: KeyManagerAppConfig =
     KeyManagerAppConfig(directory, confs: _*)
 

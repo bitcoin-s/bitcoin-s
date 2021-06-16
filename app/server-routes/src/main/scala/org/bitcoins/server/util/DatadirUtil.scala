@@ -8,6 +8,28 @@ import scala.util.Properties
 
 object DatadirUtil {
 
+  def networkStrToDirName(networkStr: String): String = {
+    val network: BitcoinNetwork = networkStr.toLowerCase match {
+      case "mainnet"  => MainNet
+      case "main"     => MainNet
+      case "testnet3" => TestNet3
+      case "testnet"  => TestNet3
+      case "test"     => TestNet3
+      case "regtest"  => RegTest
+      case "signet"   => SigNet
+      case "sig"      => SigNet
+      case _: String =>
+        throw new IllegalArgumentException(s"Invalid network $networkStr")
+    }
+
+    network match {
+      case MainNet  => "mainnet"
+      case TestNet3 => "testnet3"
+      case RegTest  => "regtest"
+      case SigNet   => "signet"
+    }
+  }
+
   /** Sets the final datadir for our applicatoin.
     * We allow useres to pass in a --datadir command line
     * flag that needs to be used instead of the [[datadir]]
@@ -29,25 +51,8 @@ object DatadirUtil {
         val networkStr: String =
           baseConfig.getString("bitcoin-s.network")
 
-        val network: BitcoinNetwork = networkStr.toLowerCase match {
-          case "mainnet"  => MainNet
-          case "main"     => MainNet
-          case "testnet3" => TestNet3
-          case "testnet"  => TestNet3
-          case "test"     => TestNet3
-          case "regtest"  => RegTest
-          case "signet"   => SigNet
-          case "sig"      => SigNet
-          case _: String =>
-            throw new IllegalArgumentException(s"Invalid network $networkStr")
-        }
+        val lastDirname = networkStrToDirName(networkStr)
 
-        val lastDirname = network match {
-          case MainNet  => "mainnet"
-          case TestNet3 => "testnet3"
-          case RegTest  => "regtest"
-          case SigNet   => "signet"
-        }
         datadir.resolve(lastDirname)
     }
 
