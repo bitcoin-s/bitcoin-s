@@ -13,7 +13,6 @@ import scalafx.beans.property.ObjectProperty
 import scalafx.stage.Window
 
 import java.nio.file.Files
-import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration.DurationInt
 import scala.concurrent._
 import scala.jdk.CollectionConverters._
@@ -32,7 +31,7 @@ class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
     taskRunner.run(
       "Launching Wallet",
       op = {
-        implicit val ec: ExecutionContextExecutor = global
+        import system.dispatcher
         val file = appConfig.baseDatadir.resolve("bitcoin-s-bundle.conf")
 
         // if the user made changes in the gui, write to file
@@ -48,9 +47,11 @@ class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
         Files.write(file, confStr.getBytes)
 
         val extraArgsF: Future[Vector[String]] = {
-          val usedConf = appConfig.copyWithConfig(config)
+          val usedConf = appConfig.copyWithConfig(Vector(config))
           usedConf.nodeType match {
             case _: InternalImplementationNodeType =>
+              // If we are connecting to a node we cannot
+              // know what network it is on now
               Future.successful(Vector.empty)
             case BitcoindBackend =>
               usedConf.bitcoindRpcConf.client.getBlockChainInfo.map { info =>
@@ -66,7 +67,7 @@ class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
           fetchStartingData()
           changeToWalletGUIScene()
           promise.success(())
-        }(global)
+        }
 
         extraArgsF.map { extraArgs =>
           val usedArgs = extraArgs ++ args
