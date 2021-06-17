@@ -3,6 +3,7 @@ package org.bitcoins.server.routes
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
+import org.bitcoins.core.config._
 import org.bitcoins.core.util.{EnvUtil, StartStopAsync}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.safePathToString
@@ -37,6 +38,25 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
     }
   }
 
+  lazy val networkOpt: Option[BitcoinNetwork] = {
+    val netOpt = argsWithIndex.find(_._1.toLowerCase == "--network")
+    netOpt.map { case (_, idx) =>
+      val string = args(idx + 1)
+      string.toLowerCase match {
+        case "mainnet"  => MainNet
+        case "main"     => MainNet
+        case "testnet3" => TestNet3
+        case "testnet"  => TestNet3
+        case "test"     => TestNet3
+        case "regtest"  => RegTest
+        case "signet"   => SigNet
+        case "sig"      => SigNet
+        case _: String =>
+          throw new IllegalArgumentException(s"Invalid network $string")
+      }
+    }
+  }
+
   lazy val forceChainWorkRecalc: Boolean =
     args.exists(_.toLowerCase == "--force-recalc-chainwork")
 
@@ -61,10 +81,17 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
     ConfigFactory.parseString(
       s"bitcoin-s.datadir = ${safePathToString(datadirPath)}")
 
+  lazy val networkConfig: Config = networkOpt match {
+    case Some(network) =>
+      val networkStr = DatadirUtil.networkStrToDirName(network.name)
+      ConfigFactory.parseString(s"bitcoin-s.network = $networkStr")
+    case None => ConfigFactory.empty()
+  }
+
   lazy val baseConfig: Config = configIndexOpt match {
     case None =>
       AppConfig
-        .getBaseConfig(datadirPath)
+        .getBaseConfig(datadirPath, List(networkConfig))
         .withFallback(datadirConfig)
         .resolve()
     case Some(configIndex) =>
@@ -74,7 +101,7 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
       ConfigFactory
         .parseFile(path.toFile)
         .withFallback(datadirConfig)
-        .resolve()
+        .resolveWith(networkConfig)
   }
 
   /** Base directory for all bitcoin-s data. This is the resulting datadir from
