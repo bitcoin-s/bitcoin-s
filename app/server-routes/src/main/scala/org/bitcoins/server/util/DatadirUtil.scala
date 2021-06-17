@@ -1,15 +1,10 @@
 package org.bitcoins.server.util
 
 import com.typesafe.config.Config
-import org.bitcoins.core.config.{
-  BitcoinNetwork,
-  MainNet,
-  RegTest,
-  SigNet,
-  TestNet3
-}
+import org.bitcoins.core.config._
 
 import java.nio.file.Path
+import scala.util.Properties
 
 object DatadirUtil {
 
@@ -22,6 +17,12 @@ object DatadirUtil {
       datadir: Path,
       baseConfig: Config,
       customFinalDirOpt: Option[String] = None): Path = {
+
+    // $HOME is not set for windows, need to manually set it
+    if (Properties.isWin) {
+      System.setProperty("HOME", datadir.getParent.toAbsolutePath.toString)
+    }
+
     val usedDir: Path = customFinalDirOpt match {
       case Some(dir) => datadir.resolve(dir)
       case None =>

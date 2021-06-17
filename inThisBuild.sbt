@@ -23,3 +23,7 @@ Global / excludeLintKeys ++= Set(
 //see: https://github.com/dwijnand/sbt-dynver#portable-version-strings
 //https://github.com/bitcoin-s/bitcoin-s/issues/2672
 ThisBuild / dynverSeparator := "-"
+
+//don't require the leading 'v' on dynver versioning
+//as that doesn't work with windows or mac versioning
+ThisBuild / dynverVTagPrefix := false

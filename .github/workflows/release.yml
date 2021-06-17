@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main, adaptor-dlc]
+    branches: [master, main]
     tags: ["*"]
 
 env:
@@ -58,15 +58,15 @@ jobs:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           MAC_NOTARIZATION_PW: ${{secrets.MAC_NOTARIZATION_PW}}
-        # Steps to build a fully signed and notarized krystal bull dmg
+        # Steps to build a fully signed and notarized bitcoin-s dmg
         # 1. Unlock the OS x keychain so we don't have to input passwords via GUI prompts
-        # 2. Build krystalbull.app that is recursively signed with jpackage --mac-sign
-        # 3. Build an unsigned dmg that contains krystalbull.app inside of it (no idea why --mac-sign doesn't work with --type dmg)
+        # 2. Build bitcoin-s.app that is recursively signed with jpackage --mac-sign
+        # 3. Build an unsigned dmg that contains bitcoin-s.app inside of it (no idea why --mac-sign doesn't work with --type dmg)
         # 4. Sign the dmg with codesign (jpackage dmg signing is broken for some reason)
         # 5. Submit the dmg to apple's notarization service so can get it whitelisted for installation (see: https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution)
         # 6. Sleep until apple notorization is done
         # 7. Retrieve the signature and staple it to the dmg to so network requests do not need to be made to open the dmg
-        # 8. Check all signatures on krystalbull.app (see: https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues#3087735)
+        # 8. Check all signatures on bitcoin-s.app (see: https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues#3087735)
         # 9. Check all dmg signatures
         # 10. Display information about signed dmg
         run: |
@@ -140,4 +140,30 @@ jobs:
         with:
           name: "bitcoin-s-deb-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
           path: "${{ env.pkg-name }}_${{ steps.previoustag.outputs.tag }}-1_amd64.deb"
+  windows:
+    runs-on: [windows-latest]
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.16.0-1
 
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+      - name: Build msi
+        shell: bash
+        run: sbt bundle/windows:packageBin
+      - name: View artifacts
+        run: ls -R .
+      - name: Upload installer
+        uses: actions/upload-artifact@v1
+        with:
+          name: bitcoin-s-msi-${{steps.previoustag.outputs.tag}}-${{github.sha}}
+          path: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
