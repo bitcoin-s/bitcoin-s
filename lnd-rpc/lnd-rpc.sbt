@@ -5,14 +5,13 @@ name := "bitcoin-s-lnd-rpc"
 
 libraryDependencies ++= Deps.lndRpc
 
-
 CommonSettings.prodSettings
 
 enablePlugins(AkkaGrpcPlugin)
 
 // Disable deprecation warning otherwise protobuf deprecation warnings will cause errors
 Compile / scalacOptions += {
-  "-Wconf:cat=deprecation:site=lnrpc\\..*:silent,cat=deprecation:site=signrpc\\..*:silent"
+  "-Wconf:cat=deprecation:site=lnrpc\\..*:silent,cat=deprecation:site=signrpc\\..*:silent,cat=deprecation:site=walletrpc\\..*:silent"
 }
 
 TaskKeys.downloadLnd := {
@@ -26,7 +25,7 @@ TaskKeys.downloadLnd := {
     Files.createDirectories(binaryDir)
   }
 
-  val version = "0.12.1-beta"
+  val version = "0.13.0-beta"
 
   val (platform, suffix) =
     if (Properties.isLinux) ("linux-amd64", "tar.gz")

@@ -6,7 +6,7 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.lnd.rpc.LndRpcClient
 import org.bitcoins.lnd.rpc.config.LndInstance
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
@@ -269,7 +269,7 @@ trait LndRpcTestUtil extends Logging {
         n1.openChannel(nodeId = nodeId2,
                        fundingAmount = amt,
                        pushAmt = pushAmt,
-                       satPerByte = SatoshisPerByte.fromLong(10),
+                       satPerVByte = SatoshisPerVirtualByte.fromLong(10),
                        privateChannel = false)
           .map(_.get)
       }
