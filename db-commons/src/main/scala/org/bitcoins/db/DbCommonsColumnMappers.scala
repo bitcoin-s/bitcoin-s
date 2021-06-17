@@ -16,6 +16,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   DLCState,
   SingleOracleInfo
 }
+import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
@@ -459,5 +460,9 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType.base[OracleAnnouncementTLV, String](
       _.hex,
       OracleAnnouncementTLV.fromHex)
+  }
+
+  implicit val lnInvoiceMapper: BaseColumnType[LnInvoice] = {
+    MappedColumnType.base[LnInvoice, String](_.toString, LnInvoice.fromString)
   }
 }
