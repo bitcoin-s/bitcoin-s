@@ -18,7 +18,7 @@ assembly / assemblyJarName := s"${name.value}.jar"
 
 //need compatibility with windows versioning scheme which is
 //w.x.y.z
-Windows / version := previousStableVersion.value.get
+Windows / version := CommonSettings.previousStableVersion
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", _ @_*)       => MergeStrategy.discard
