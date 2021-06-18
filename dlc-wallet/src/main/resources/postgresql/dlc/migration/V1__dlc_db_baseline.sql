@@ -49,7 +49,7 @@ CREATE TABLE "dlc_announcements"
     "dlc_id"          TEXT    NOT NULL,
     "announcement_id" INTEGER NOT NULL,
     "index"           INTEGER NOT NULL,
-    "used"            INTEGER, -- if signatures used for execution
+    "used"            BOOLEAN, -- if signatures used for execution
     constraint "pk_announcement_id_index" primary key ("dlc_id", "announcement_id"),
     constraint "fk_dlc_id" foreign key ("dlc_id") references "global_dlc_data" ("dlc_id") on update NO ACTION on delete NO ACTION,
     constraint "fk_announcement_id" foreign key ("announcement_id") references "oracle_announcement_data" ("id") on update NO ACTION on delete NO ACTION
