@@ -28,6 +28,9 @@ To get started you will need Java, Scala, and some other nice tools installed, l
 
 Simply follow the instructions in [this short blog](https://www.scala-lang.org/2020/06/29/one-click-install.html) to get started.
 
+>bitcoin-s requires java9+. If you do not have java9+ installed, you will not be able to build bitcoin-s.
+[You will run into this error if you are on java8 or lower](https://github.com/bitcoin-s/bitcoin-s/issues/3298)
+
 ## Step 2: Bitcoin-S Repository
 
 Now, it is time to clone the [Bitcoin-S repository](https://github.com/bitcoin-s/bitcoin-s/) by running
