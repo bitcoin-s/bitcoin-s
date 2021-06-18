@@ -116,7 +116,7 @@ After building your bitcoin-s server, properly configuring it to be in `neutrino
 and once this is done, you should be able to communicate with the server using
 
 ```bashrc
-./app/cli/target/universal/stage/bitcoin-s-cli getnewaddress
+./app/cli/target/universal/stage/bin/bitcoin-s-cli getnewaddress
 ```
 </details>
 
