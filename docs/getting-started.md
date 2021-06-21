@@ -20,9 +20,22 @@ have feedback on how to make your lives easier, please reach out on [slack](http
 ### Java binaries
 
 <details>
-Please download these from our latest release on github 
 
-https://github.com/bitcoin-s/bitcoin-s/releases/tag/v0.6.0
+#### Latest release
+
+Please see the release page on github, you can find it [here](https://github.com/bitcoin-s/bitcoin-s/releases)
+
+#### Master builds
+
+We build installers for mac, linux and windows everytime a PR is merged to master.
+
+You can find the latest builds at this link: 
+
+https://github.com/bitcoin-s/bitcoin-s/actions/workflows/release.yml
+
+Here is what the installers look like
+
+![installers](Screenshot%20from%202021-06-18%2013-10-40.png)
 
 </details>
 
