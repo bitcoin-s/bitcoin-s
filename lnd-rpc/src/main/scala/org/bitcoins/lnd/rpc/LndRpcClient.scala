@@ -20,11 +20,7 @@ import org.bitcoins.core.protocol.transaction.{
   Transaction => Tx
 }
 import org.bitcoins.core.util.StartStopAsync
-import org.bitcoins.core.wallet.fee.{
-  SatoshisPerByte,
-  SatoshisPerKW,
-  SatoshisPerVirtualByte
-}
+import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.config.LndInstance
@@ -264,13 +260,14 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
   def openChannel(
       nodeId: NodeId,
       fundingAmount: CurrencyUnit,
-      satPerByte: SatoshisPerByte,
+      satPerVByte: SatoshisPerVirtualByte,
       privateChannel: Boolean): Future[Option[TransactionOutPoint]] = {
-    val request = OpenChannelRequest(ByteString.copyFrom(nodeId.bytes.toArray),
-                                     localFundingAmount =
-                                       fundingAmount.satoshis.toLong,
-                                     satPerByte = satPerByte.toLong,
-                                     `private` = privateChannel)
+    val request = OpenChannelRequest(
+      nodePubkey = ByteString.copyFrom(nodeId.bytes.toArray),
+      localFundingAmount = fundingAmount.satoshis.toLong,
+      satPerVbyte = satPerVByte.toLong,
+      `private` = privateChannel
+    )
 
     openChannel(request)
   }
@@ -279,13 +276,13 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       nodeId: NodeId,
       fundingAmount: CurrencyUnit,
       pushAmt: CurrencyUnit,
-      satPerByte: SatoshisPerByte,
+      satPerVByte: SatoshisPerVirtualByte,
       privateChannel: Boolean): Future[Option[TransactionOutPoint]] = {
     val request = OpenChannelRequest(
-      ByteString.copyFrom(nodeId.bytes.toArray),
+      nodePubkey = ByteString.copyFrom(nodeId.bytes.toArray),
       localFundingAmount = fundingAmount.satoshis.toLong,
       pushSat = pushAmt.satoshis.toLong,
-      satPerByte = satPerByte.toLong,
+      satPerVbyte = satPerVByte.toLong,
       `private` = privateChannel
     )
 
@@ -586,7 +583,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
 object LndRpcClient {
 
   /** The current version we support of Lnd */
-  private[bitcoins] val version = "0.12.1"
+  private[bitcoins] val version = "0.13.0"
 
   /** Key used for adding the macaroon to the gRPC header */
   private[lnd] val macaroonKey = "macaroon"

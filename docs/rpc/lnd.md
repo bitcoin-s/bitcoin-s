@@ -5,22 +5,22 @@ title: LND
 
 This is an RPC client for [LND](https://github.com/LightningNetwork/lnd). It assumes that a bitcoind instance is running.
 
-Currently, this RPC client is written for [v0.12.1](https://github.com/lightningnetwork/lnd/releases/tag/v0.12.1-beta) version of LND.
+Currently, this RPC client is written for [v0.13.0](https://github.com/lightningnetwork/lnd/releases/tag/v0.13.0-beta) version of LND.
 
 ## Configuration of LND
 
-Please see the [sample configuration for LND](https://github.com/lightningnetwork/lnd/blob/v0.12.1-beta/sample-lnd.conf).
+Please see the [sample configuration for LND](https://github.com/lightningnetwork/lnd/blob/v0.13.0-beta/sample-lnd.conf).
 
 You can find the configuration we use for our testing infrastructure for lnd [here](https://github.com/bitcoin-s/bitcoin-s/blob/656e0928bf1bf4f511f60dec625699b454f29a1f/testkit/src/main/scala/org/bitcoins/testkit/lnd/LndRpcTestUtil.scala#L90).
 
 ## Starting LND
 
-You need to download the binaries from the [LND's github](https://github.com/lightningnetwork/lnd/releases/tag/v0.12.1-beta).
+You need to download the binaries from the [LND's github](https://github.com/lightningnetwork/lnd/releases/tag/v0.13.0-beta).
 
-To run lnd by unzipping the `lnd-linux-amd64-v0.12.1-beta.tar.gz` (or whichever platform you are on) and then running
+To run lnd by unzipping the `lnd-linux-amd64-v0.13.0-beta.tar.gz` (or whichever platform you are on) and then running
 
 ```bash
-$ ./lnd-linux-amd64-v0.12.1-beta/lnd
+$ ./lnd-linux-amd64-v0.13.0-beta/lnd
 ```
 
 If you wish to start lnd from the RPC client, you can construct a [`LndRpcClient.binary`](https://github.com/bitcoin-s/bitcoin-s/blob/656e0928bf1bf4f511f60dec625699b454f29a1f/lnd-rpc/src/main/scala/org/bitcoins/lnd/rpc/LndRpcClient.scala#L35) field set
@@ -42,7 +42,7 @@ implicit val system = ActorSystem(s"lnd-rpc-${System.currentTimeMillis}")
 implicit val ec = system.dispatcher
 
 val datadirPath = Paths.get("path", "to", "datadir")
-val binaryPath = Paths.get("path", "to", "lnd-linux-amd64-v0.12.1-beta", "lnd")
+val binaryPath = Paths.get("path", "to", "lnd-linux-amd64-v0.13.0-beta", "lnd")
 val instance = LndInstance.fromDataDir(datadirPath.toFile)
 val client = new LndRpcClient(instance, Some(binaryPath.toFile))
 
