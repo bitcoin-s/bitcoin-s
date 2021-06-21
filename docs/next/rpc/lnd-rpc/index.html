@@ -63,14 +63,14 @@
               }
             });
         </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/rpc/lnd.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">LND</h1></header><article><div><span><p>This is an RPC client for <a href="https://github.com/LightningNetwork/lnd">LND</a>. It assumes that a bitcoind instance is running.</p>
-<p>Currently, this RPC client is written for <a href="https://github.com/lightningnetwork/lnd/releases/tag/v0.12.1-beta">v0.12.1</a> version of LND.</p>
+<p>Currently, this RPC client is written for <a href="https://github.com/lightningnetwork/lnd/releases/tag/v0.13.0-beta">v0.13.0</a> version of LND.</p>
 <h2><a class="anchor" aria-hidden="true" id="configuration-of-lnd"></a><a href="#configuration-of-lnd" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Configuration of LND</h2>
-<p>Please see the <a href="https://github.com/lightningnetwork/lnd/blob/v0.12.1-beta/sample-lnd.conf">sample configuration for LND</a>.</p>
+<p>Please see the <a href="https://github.com/lightningnetwork/lnd/blob/v0.13.0-beta/sample-lnd.conf">sample configuration for LND</a>.</p>
 <p>You can find the configuration we use for our testing infrastructure for lnd <a href="https://github.com/bitcoin-s/bitcoin-s/blob/656e0928bf1bf4f511f60dec625699b454f29a1f/testkit/src/main/scala/org/bitcoins/testkit/lnd/LndRpcTestUtil.scala#L90">here</a>.</p>
 <h2><a class="anchor" aria-hidden="true" id="starting-lnd"></a><a href="#starting-lnd" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Starting LND</h2>
-<p>You need to download the binaries from the <a href="https://github.com/lightningnetwork/lnd/releases/tag/v0.12.1-beta">LND's github</a>.</p>
-<p>To run lnd by unzipping the <code>lnd-linux-amd64-v0.12.1-beta.tar.gz</code> (or whichever platform you are on) and then running</p>
-<pre><code class="hljs css language-bash">$ ./lnd-linux-amd64-v0.12.1-beta/lnd
+<p>You need to download the binaries from the <a href="https://github.com/lightningnetwork/lnd/releases/tag/v0.13.0-beta">LND's github</a>.</p>
+<p>To run lnd by unzipping the <code>lnd-linux-amd64-v0.13.0-beta.tar.gz</code> (or whichever platform you are on) and then running</p>
+<pre><code class="hljs css language-bash">$ ./lnd-linux-amd64-v0.13.0-beta/lnd
 </code></pre>
 <p>If you wish to start lnd from the RPC client, you can construct a <a href="https://github.com/bitcoin-s/bitcoin-s/blob/656e0928bf1bf4f511f60dec625699b454f29a1f/lnd-rpc/src/main/scala/org/bitcoins/lnd/rpc/LndRpcClient.scala#L35"><code>LndRpcClient.binary</code></a> field set</p>
 <p>We will default to using the <code>binary</code> field first when trying to start the jar, and the fallback to the default datadir (<code>~/.lnd</code>).</p>
@@ -79,7 +79,7 @@
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec = system.dispatcher
 
 <span class="hljs-keyword">val</span> datadirPath = <span class="hljs-type">Paths</span>.get(<span class="hljs-string">"path"</span>, <span class="hljs-string">"to"</span>, <span class="hljs-string">"datadir"</span>)
-<span class="hljs-keyword">val</span> binaryPath = <span class="hljs-type">Paths</span>.get(<span class="hljs-string">"path"</span>, <span class="hljs-string">"to"</span>, <span class="hljs-string">"lnd-linux-amd64-v0.12.1-beta"</span>, <span class="hljs-string">"lnd"</span>)
+<span class="hljs-keyword">val</span> binaryPath = <span class="hljs-type">Paths</span>.get(<span class="hljs-string">"path"</span>, <span class="hljs-string">"to"</span>, <span class="hljs-string">"lnd-linux-amd64-v0.13.0-beta"</span>, <span class="hljs-string">"lnd"</span>)
 <span class="hljs-keyword">val</span> instance = <span class="hljs-type">LndInstance</span>.fromDataDir(datadirPath.toFile)
 <span class="hljs-keyword">val</span> client = <span class="hljs-keyword">new</span> <span class="hljs-type">LndRpcClient</span>(instance, <span class="hljs-type">Some</span>(binaryPath.toFile))
 
