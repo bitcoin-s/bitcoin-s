@@ -10,7 +10,7 @@ import org.bitcoins.crypto.NetworkElement
   * In the case that you are using a SortedVec[T, T], you may use the type
   * alias SortedVector[T]
   */
-case class SortedVec[T, B >: T](vec: Vector[T])(implicit ord: Ordering[B])
+case class SortedVec[T, B >: T](vec: Vector[T])(implicit val ord: Ordering[B])
     extends SeqWrapper[T] {
   require(vec.init.zip(vec.tail).forall { case (x, y) => ord.lteq(x, y) },
           s"Vector must be sorted. $vec")
@@ -28,6 +28,16 @@ object SortedVec {
   implicit val networkElementOrd: Ordering[NetworkElement] = {
     case (x: NetworkElement, y: NetworkElement) =>
       x.bytes.compare(y.bytes)
+  }
+
+  /** For use with ordered lists so that changing order will not be allowed.
+    */
+  def forOrdered[T](vec: Vector[T]): SortedVector[T] = {
+    implicit val ord: Ordering[T] = { case (x, y) =>
+      vec.indexOf(x) - vec.indexOf(y)
+    }
+
+    SortedVec(vec)
   }
 
   def sort[T, B >: T](vec: Vector[T])(implicit

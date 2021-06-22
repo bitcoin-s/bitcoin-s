@@ -1,6 +1,6 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.crypto.{NetworkElement, SchnorrNonce}
+import org.bitcoins.crypto.{ECPublicKey, NetworkElement, SchnorrNonce}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class SortedVecTest extends BitcoinSUnitTest {
@@ -81,5 +81,16 @@ class SortedVecTest extends BitcoinSUnitTest {
 
     assertThrows[IllegalArgumentException](
       SortedVec(Vector(0.95, 5.55, 123.123)))
+  }
+
+  it should "correctly handle ordered list" in {
+    val nonce1 = ECPublicKey.freshPublicKey.schnorrNonce
+    val nonce2 = ECPublicKey.freshPublicKey.schnorrNonce
+    val nonce3 = ECPublicKey.freshPublicKey.schnorrNonce
+
+    val vec = SortedVec.forOrdered(Vector(nonce1, nonce2, nonce3))
+
+    assertThrows[IllegalArgumentException](
+      vec.copy(Vector(nonce2, nonce3, nonce1))(vec.ord))
   }
 }
