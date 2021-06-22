@@ -69,8 +69,8 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
       toAdd <- toAddF
       toRemove <- toRemoveF
     } yield {
-      dlcs ++= toAdd
       dlcs --= toRemove
+      dlcs ++= toAdd
       ()
     }
 
