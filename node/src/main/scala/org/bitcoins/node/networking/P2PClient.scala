@@ -282,6 +282,7 @@ case class P2PClientActor(
 
         val newMsgReceiver = Await.result(newMsgReceiverF, timeout)
         currentPeerMsgHandlerRecv = newMsgReceiver
+        peerConnection ! Tcp.ResumeReading
         newUnalignedBytes
     }
   }
