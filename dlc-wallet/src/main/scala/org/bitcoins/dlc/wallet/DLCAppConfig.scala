@@ -1,18 +1,18 @@
 package org.bitcoins.dlc.wallet
 
-import java.nio.file.{Files, Path}
-
 import com.typesafe.config.Config
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.keymanagement.KeyManagerInitializeError
-import org.bitcoins.db.{AppConfigFactory, DbAppConfig, JdbcProfileComponent}
+import org.bitcoins.db.DatabaseDriver._
+import org.bitcoins.db._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
+import java.nio.file._
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S wallet
@@ -51,6 +51,35 @@ case class DLCAppConfig(private val directory: Path, private val conf: Config*)(
     logger.info(s"Applied $numMigrations to the dlc project")
 
     FutureUtil.unit
+  }
+
+  lazy val walletConf: WalletAppConfig =
+    WalletAppConfig(directory, conf: _*)
+
+  lazy val walletNameOpt: Option[String] = walletConf.walletNameOpt
+
+  override lazy val dbPath: Path = {
+    val pathStrOpt =
+      config.getStringOrNone(s"bitcoin-s.$moduleName.db.path")
+    (pathStrOpt, walletNameOpt) match {
+      case (Some(pathStr), Some(walletName)) =>
+        Paths.get(pathStr).resolve(walletName)
+      case (Some(pathStr), None) =>
+        Paths.get(pathStr)
+      case (None, Some(_)) | (None, None) =>
+        sys.error(s"Could not find dbPath for $moduleName.db.path")
+    }
+  }
+
+  override lazy val schemaName: Option[String] = {
+    (driver, walletNameOpt) match {
+      case (PostgreSQL, Some(walletName)) =>
+        Some(s"${moduleName}_$walletName")
+      case (PostgreSQL, None) =>
+        Some(moduleName)
+      case (SQLite, None) | (SQLite, Some(_)) =>
+        None
+    }
   }
 
   def createDLCWallet(
