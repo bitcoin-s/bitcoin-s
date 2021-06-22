@@ -246,6 +246,37 @@ class ExtKeyTest extends BitcoinSUnitTest {
       "xpub68NZiKmJWnxxS6aaHmn81bvJeTESw724CRDs6HbuccFQN9Ku14VQrADWgqbhhTHBaohPX4CjNLf9fq9MYo6oDaPPLPxSb7gwQN3ih19Zm4Y")
   }
 
+  it must "pass test vector 4 in BIP32" in {
+    val seedBytes =
+      hex"3ddd5602285899a946114506157c7997e5444528f3003f6134712147db19b678"
+
+    val masterPrivKey =
+      ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), BIP32Path.empty)
+    masterPrivKey.toStringSensitive must be(
+      "xprv9s21ZrQH143K48vGoLGRPxgo2JNkJ3J3fqkirQC2zVdk5Dgd5w14S7fRDyHH4dWNHUgkvsvNDCkvAwcSHNAQwhwgNMgZhLtQC63zxwhQmRv")
+
+    val masterPubKey = masterPrivKey.extPublicKey
+    masterPubKey.toString must be(
+      "xpub661MyMwAqRbcGczjuMoRm6dXaLDEhW1u34gKenbeYqAix21mdUKJyuyu5F1rzYGVxyL6tmgBUAEPrEz92mBXjByMRiJdba9wpnN37RLLAXa")
+
+    val m0h = masterPrivKey.deriveChildPrivKey(BIP32Path.fromString("m/0'"))
+    m0h.toStringSensitive must be(
+      "xprv9vB7xEWwNp9kh1wQRfCCQMnZUEG21LpbR9NPCNN1dwhiZkjjeGRnaALmPXCX7SgjFTiCTT6bXes17boXtjq3xLpcDjzEuGLQBM5ohqkao9G")
+
+    val m0hPub = m0h.extPublicKey
+    m0hPub.toString must be(
+      "xpub69AUMk3qDBi3uW1sXgjCmVjJ2G6WQoYSnNHyzkmdCHEhSZ4tBok37xfFEqHd2AddP56Tqp4o56AePAgCjYdvpW2PU2jbUPFKsav5ut6Ch1m")
+
+    val m0h1h =
+      masterPrivKey.deriveChildPrivKey(BIP32Path.fromString("m/0'/1'"))
+    m0h1h.toStringSensitive must be(
+      "xprv9xJocDuwtYCMNAo3Zw76WENQeAS6WGXQ55RCy7tDJ8oALr4FWkuVoHJeHVAcAqiZLE7Je3vZJHxspZdFHfnBEjHqU5hG1Jaj32dVoS6XLT1")
+
+    val m0h1hPub = m0h1h.extPublicKey
+    m0h1hPub.toString must be(
+      "xpub6BJA1jSqiukeaesWfxe6sNK9CCGaujFFSJLomWHprUL9DePQ4JDkM5d88n49sMGJxrhpjazuXYWdMf17C9T5XnxkopaeS7jGk1GyyVziaMt")
+  }
+
   it must "have derivation symmetry with (1<<31)-1, last i before hardened keys" in {
     //xprv9s21ZrQH143K4QWHDnxmxUbzAQYiDavkg14kQcmZjP2KaSB1PZs5BUsyNGSrWXTzZ9qwyJo5yzvDe3fWybykc8CQPDZMaKupTeVbkfG7osL
     //actual priv key 68e5ed2b2c8fc5a6605107d29d074e3d6ccb119c2811007e32f48305176f814c
