@@ -392,10 +392,12 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
 
         Some(updated)
       case TxoState.BroadcastSpent =>
-        logger.warn(
-          s"Updating the spendingTxId of a transaction that is already spent, " +
-            s"old state=${TxoState.BroadcastSpent} old spendingTxId=${out.spendingTxIdOpt
-              .map(_.hex)} new spendingTxId=${spendingTxId.hex}")
+        if (!out.spendingTxIdOpt.contains(spendingTxId)) {
+          logger.warn(
+            s"Updating the spendingTxId of a transaction that is already spent, " +
+              s"old state=${TxoState.BroadcastSpent} old spendingTxId=${out.spendingTxIdOpt
+                .map(_.hex)} new spendingTxId=${spendingTxId.hex}")
+        }
         val updated =
           out.copyWithSpendingTxId(spendingTxId)
         Some(updated)
