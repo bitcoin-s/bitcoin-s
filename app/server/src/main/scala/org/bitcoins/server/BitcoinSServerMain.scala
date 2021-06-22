@@ -95,7 +95,8 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
     //get a node that isn't started
     val nodeF = nodeConf.createNode(peer)(chainConf, system)
 
-    val feeProvider = getFeeProviderOrElse(MempoolSpaceProvider(HourFeeTarget))
+    val feeProvider = getFeeProviderOrElse(
+      MempoolSpaceProvider(HourFeeTarget, walletConf.network))
     //get our wallet
     val configuredWalletF = for {
       node <- nodeF
@@ -347,9 +348,9 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
         case (Some(BitGo), targetOpt) =>
           BitGoFeeRateProvider(targetOpt)
         case (Some(MempoolSpace), None) =>
-          MempoolSpaceProvider(HourFeeTarget)
+          MempoolSpaceProvider(HourFeeTarget, walletConf.network)
         case (Some(MempoolSpace), Some(target)) =>
-          MempoolSpaceProvider.fromBlockTarget(target)
+          MempoolSpaceProvider.fromBlockTarget(target, walletConf.network)
         case (Some(Constant), Some(num)) =>
           ConstantFeeRateProvider(SatoshisPerVirtualByte.fromLong(num))
         case (Some(Constant), None) =>

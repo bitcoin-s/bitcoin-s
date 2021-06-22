@@ -2,6 +2,7 @@ package org.bitcoins.feeprovider
 
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.feeprovider.FeeRateApi
+import org.bitcoins.core.config._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.feeprovider.MempoolSpaceTarget._
@@ -29,22 +30,52 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
   }
 
   it must "get a valid fee rate from mempool.space using the fastest fee target" in {
-    val provider = MempoolSpaceProvider(FastestFeeTarget)
+    val provider = MempoolSpaceProvider(FastestFeeTarget, MainNet)
     testProvider(provider)
   }
 
   it must "get a valid fee rate from mempool.space using a half hour fee target" in {
-    val provider = MempoolSpaceProvider(HalfHourFeeTarget)
+    val provider = MempoolSpaceProvider(HalfHourFeeTarget, MainNet)
     testProvider(provider)
   }
 
   it must "get a valid fee rate from mempool.space using an hour fee target" in {
-    val provider = MempoolSpaceProvider(HourFeeTarget)
+    val provider = MempoolSpaceProvider(HourFeeTarget, MainNet)
+    testProvider(provider)
+  }
+
+  it must "get a valid fee rate from mempool.space/testnet using the fastest fee target" in {
+    val provider = MempoolSpaceProvider(FastestFeeTarget, TestNet3)
+    testProvider(provider)
+  }
+
+  it must "get a valid fee rate from mempool.space/testnet using a half hour fee target" in {
+    val provider = MempoolSpaceProvider(HalfHourFeeTarget, TestNet3)
+    testProvider(provider)
+  }
+
+  it must "get a valid fee rate from mempool.space/testnet using an hour fee target" in {
+    val provider = MempoolSpaceProvider(HourFeeTarget, TestNet3)
+    testProvider(provider)
+  }
+
+  it must "get a valid fee rate from mempool.space/signet using the fastest fee target" in {
+    val provider = MempoolSpaceProvider(FastestFeeTarget, SigNet)
+    testProvider(provider)
+  }
+
+  it must "get a valid fee rate from mempool.space/signet using a half hour fee target" in {
+    val provider = MempoolSpaceProvider(HalfHourFeeTarget, SigNet)
+    testProvider(provider)
+  }
+
+  it must "get a valid fee rate from mempool.space/signet using an hour fee target" in {
+    val provider = MempoolSpaceProvider(HourFeeTarget, SigNet)
     testProvider(provider)
   }
 
   it must "get a cached fee rate from a cachedHttpFeeRateProvider" in {
-    val provider = MempoolSpaceProvider(FastestFeeTarget)
+    val provider = MempoolSpaceProvider(FastestFeeTarget, MainNet)
     for {
       feeRate <- provider.getFeeRate
       _ <- AsyncUtil.nonBlockingSleep(20.seconds)
