@@ -56,8 +56,8 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
     ConsoleCli.exec(GetDLC(dlcId), GlobalData.consoleCliConfig) match {
       case Failure(exception) => throw exception
       case Success(dlcStatus) =>
-        dlcs += read[DLCStatus](ujson.read(dlcStatus))
         dlcs.find(_.dlcId == dlcId).foreach(dlcs -= _)
+        dlcs += read[DLCStatus](ujson.read(dlcStatus))
     }
   }
 
@@ -69,8 +69,8 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
       toAdd <- toAddF
       toRemove <- toRemoveF
     } yield {
-      dlcs ++= toAdd
       dlcs --= toRemove
+      dlcs ++= toAdd
       ()
     }
 
