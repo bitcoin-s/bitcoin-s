@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
 import org.bitcoins.node.models.Peer
+import org.bitcoins.node.networking.P2PClient.ConnectCommand
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.node.{
@@ -170,7 +171,6 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
   def connectAndDisconnect(peer: Peer): Future[Assertion] = {
 
     val probe = TestProbe()
-    val remote = peer.socket
     val peerMessageReceiverF =
       for {
         node <- NodeUnitTest.buildNode(peer)
@@ -187,7 +187,7 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
 
     val isConnectedF = for {
       p2pClient <- p2pClientF
-      _ = p2pClient.actor ! Tcp.Connect(remote)
+      _ = p2pClient.actor ! ConnectCommand
       isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected)
     } yield isConnected
 

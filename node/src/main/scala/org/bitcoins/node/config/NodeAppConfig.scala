@@ -15,7 +15,9 @@ import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.tor.Socks5ProxyParams
 
+import java.net.InetSocketAddress
 import java.nio.file.Path
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -85,6 +87,23 @@ case class NodeAppConfig(
       .until(list.size())
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
     strs.map(_.replace("localhost", "127.0.0.1"))
+  }
+
+  lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
+    if (config.getBoolean("bitcoin-s.node.socks5.enabled")) {
+      Some(
+        Socks5ProxyParams(
+          address = InetSocketAddress.createUnresolved(
+            config.getString("bitcoin-s.node.socks5.host"),
+            config.getInt("bitcoin-s.node.socks5.port")
+          ),
+          credentialsOpt = None,
+          randomizeCredentials = true
+        )
+      )
+    } else {
+      None
+    }
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */

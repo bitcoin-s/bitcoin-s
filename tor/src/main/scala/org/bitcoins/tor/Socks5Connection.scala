@@ -12,11 +12,11 @@ import org.bitcoins.crypto.CryptoUtil
   * Created by rorp
   *
   * @param connection      underlying TcpConnection
-  * @param credentials_opt optional username/password for authentication
+  * @param credentialsOpt optional username/password for authentication
   */
 class Socks5Connection(
     connection: ActorRef,
-    credentials_opt: Option[Credentials],
+    credentialsOpt: Option[Credentials],
     command: Socks5Connect)
     extends Actor
     with ActorLogging {
@@ -25,7 +25,7 @@ class Socks5Connection(
 
   context watch connection
 
-  val passwordAuth: Boolean = credentials_opt.isDefined
+  val passwordAuth: Boolean = credentialsOpt.isDefined
 
   var isConnected: Boolean = false
 
@@ -46,7 +46,7 @@ class Socks5Connection(
     } else {
       if (data(1) == PasswordAuth) {
         context become authenticate
-        val credentials = credentials_opt.getOrElse(
+        val credentials = credentialsOpt.getOrElse(
           throw Socks5Error("credentials are not defined"))
         connection ! Tcp.Write(
           socks5PasswordAuthenticationRequest(credentials.username,
@@ -172,12 +172,15 @@ object Socks5Connection {
 
   def socks5PasswordAuthenticationRequest(
       username: String,
-      password: String): ByteString =
+      password: String): ByteString = {
+    val usernameBytes = ByteString(username)
+    val passwordBytes = ByteString(password)
     ByteString(0x01, // version of username/password authentication
-               username.length.toByte) ++
-      ByteString(username) ++
-      ByteString(password.length.toByte) ++
-      ByteString(password)
+               usernameBytes.length.toByte) ++
+      usernameBytes ++
+      ByteString(passwordBytes.length.toByte) ++
+      passwordBytes
+  }
 
   def socks5ConnectionRequest(address: InetSocketAddress): ByteString = {
     ByteString(0x05, // SOCKS version
@@ -217,11 +220,8 @@ object Socks5Connection {
 
 case class Socks5ProxyParams(
     address: InetSocketAddress,
-    credentials_opt: Option[Credentials],
-    randomizeCredentials: Boolean,
-    useForIPv4: Boolean,
-    useForIPv6: Boolean,
-    useForTor: Boolean)
+    credentialsOpt: Option[Credentials],
+    randomizeCredentials: Boolean)
 
 object Socks5ProxyParams {
 
@@ -233,6 +233,6 @@ object Socks5ProxyParams {
         Socks5Connection.Credentials(CryptoUtil.randomBytes(16).toHex,
                                      CryptoUtil.randomBytes(16).toHex))
     } else {
-      proxyParams.credentials_opt
+      proxyParams.credentialsOpt
     }
 }

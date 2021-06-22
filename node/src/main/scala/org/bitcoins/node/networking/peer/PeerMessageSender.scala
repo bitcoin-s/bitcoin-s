@@ -27,8 +27,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
 
   /** Initiates a connection with the given peer */
   def connect(): Unit = {
-    logger.info(s"Attempting to connect to peer=$socket")
-    (client.actor ! Tcp.Connect(socket, timeout = Some(timeout.duration)))
+    client.actor ! P2PClient.ConnectCommand
   }
 
   def isConnected()(implicit ec: ExecutionContext): Future[Boolean] = {
@@ -73,14 +72,13 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   def sendVersionMessage(chainApi: ChainApi)(implicit
       ec: ExecutionContext): Future[Unit] = {
     chainApi.getBestHashBlockHeight().flatMap { height =>
-      val transmittingIpAddress = java.net.InetAddress.getLocalHost
-      val receivingIpAddress = client.peer.socket.getAddress
+      val localhost = java.net.InetAddress.getLocalHost
       val versionMsg =
         VersionMessage(conf.network,
-                       "/Bitcoin-S:0.5.0/",
+                       "/Bitcoin-S:0.6.0/",
                        Int32(height),
-                       InetAddress(receivingIpAddress.getAddress),
-                       InetAddress(transmittingIpAddress.getAddress))
+                       InetAddress(localhost.getAddress),
+                       InetAddress(localhost.getAddress))
 
       logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
       sendMsg(versionMsg)

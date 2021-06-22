@@ -99,8 +99,8 @@ abstract class NodeTestUtil extends P2PLogger {
     import sys.dispatcher
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestHash(node, rpc),
-                            1000.milliseconds,
-                            maxTries = 100)
+                            1.second,
+                            maxTries = 200)
   }
 
   /** Awaits sync between the given node and bitcoind client */
@@ -109,7 +109,8 @@ abstract class NodeTestUtil extends P2PLogger {
     import sys.dispatcher
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestFilterHeaderHeight(node, rpc),
-                            1000.milliseconds)
+                            1.second,
+                            maxTries = 200)
   }
 
   /** Awaits sync between the given node and bitcoind client */
@@ -118,7 +119,8 @@ abstract class NodeTestUtil extends P2PLogger {
     import sys.dispatcher
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestFilterHeight(node, rpc),
-                            1000.milliseconds)
+                            1.second,
+                            maxTries = 200)
   }
 
   /** The future doesn't complete until the nodes best hash is the given hash */

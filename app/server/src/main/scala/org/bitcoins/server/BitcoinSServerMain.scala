@@ -86,7 +86,8 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
     val peerSocket =
       NetworkUtil.parseInetSocketAddress(nodeConf.peers.head,
                                          nodeConf.network.port)
-    val peer = Peer.fromSocket(peerSocket)
+
+    val peer = Peer.fromSocket(peerSocket, nodeConf.socks5ProxyParams)
 
     //run chain work migration
     val chainApiF = runChainWorkCalc(

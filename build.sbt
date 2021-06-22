@@ -546,7 +546,8 @@ lazy val node =
       coreJVM,
       chain,
       dbCommons,
-      bitcoindRpc
+      bitcoindRpc,
+      tor
     )
 
 lazy val nodeTest =

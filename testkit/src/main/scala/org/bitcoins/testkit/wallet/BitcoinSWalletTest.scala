@@ -710,7 +710,8 @@ object BitcoinSWalletTest extends WalletLogger {
       system: ActorSystem): Future[Unit] = {
     AsyncUtil.retryUntilSatisfiedF(conditionF =
                                      () => isSameWalletBalances(fundedWallet),
-                                   interval = 1.seconds)(system.dispatcher)
+                                   interval = 1.seconds,
+                                   maxTries = 100)(system.dispatcher)
   }
 
   private def isSameWalletBalances(fundedWallet: WalletWithBitcoind)(implicit
