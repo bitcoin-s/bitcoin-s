@@ -23,9 +23,11 @@ import java.nio.file.Files
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Properties, Success}
 
-class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
+class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
     extends Logging {
   var taskRunner: TaskRunner = _
+
+  val resultArea: TextArea = pane.resultTextArea
 
   // Sadly, it is a Java "pattern" to pass null into
   // constructors to signal that you want some default
@@ -42,16 +44,12 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
     }
   }
 
-  private[gui] def setUpF(): Future[Unit] = {
+  def setUp(): Unit = {
     dlcs.clear()
     getDLCs.map { walletDlcs =>
       dlcs ++= walletDlcs
-      ()
+      pane.sortTable()
     }
-  }
-
-  def setUp(): Unit = {
-    setUpF()
     //purposely drop the future on the floor for now
     //as our GUI is not async safe at all
     ()
@@ -61,8 +59,9 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
     ConsoleCli.exec(GetDLC(dlcId), GlobalData.consoleCliConfig) match {
       case Failure(exception) => throw exception
       case Success(dlcStatus) =>
-        dlcs += read[DLCStatus](ujson.read(dlcStatus))
         dlcs.find(_.dlcId == dlcId).foreach(dlcs -= _)
+        dlcs += read[DLCStatus](ujson.read(dlcStatus))
+        pane.sortTable()
     }
   }
 
@@ -76,7 +75,7 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
     } yield {
       dlcs --= toRemove
       dlcs ++= toAdd
-      ()
+      pane.sortTable()
     }
 
     //purposely drop the future on the floor for now
