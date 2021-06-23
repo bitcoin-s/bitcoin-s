@@ -56,8 +56,8 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
     ConsoleCli.exec(GetDLC(dlcId), GlobalData.consoleCliConfig) match {
       case Failure(exception) => throw exception
       case Success(dlcStatus) =>
-        dlcs.find(_.dlcId == dlcId).foreach(dlcs -= _)
         dlcs += read[DLCStatus](ujson.read(dlcStatus))
+        dlcs.find(_.dlcId == dlcId).foreach(dlcs -= _)
     }
   }
 
