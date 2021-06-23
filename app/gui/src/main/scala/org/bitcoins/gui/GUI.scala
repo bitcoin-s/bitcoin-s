@@ -6,7 +6,7 @@ import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.commons.jsonmodels.BitcoinSServerInfo
 import org.bitcoins.core.config._
 import org.bitcoins.gui.util.GUIUtil._
-import scalafx.application.JFXApp
+import scalafx.application.JFXApp3
 import scalafx.geometry.Pos
 import scalafx.scene.Scene
 import scalafx.scene.control.Alert.AlertType
@@ -16,7 +16,7 @@ import scalafx.scene.layout.VBox
 
 import scala.util._
 
-object GUI extends WalletGUI with JFXApp {
+object GUI extends WalletGUI with JFXApp3 {
 
   implicit lazy val system: ActorSystem = ActorSystem(
     s"bitcoin-s-gui-${System.currentTimeMillis()}")
@@ -88,7 +88,7 @@ object GUI extends WalletGUI with JFXApp {
       (logoSignet, "Bitcoin-S Wallet - [signet]")
   }
 
-  stage = new JFXApp.PrimaryStage {
+  stage = new JFXApp3.PrimaryStage {
     title = titleStr
     scene = walletScene
     icons.add(img)
