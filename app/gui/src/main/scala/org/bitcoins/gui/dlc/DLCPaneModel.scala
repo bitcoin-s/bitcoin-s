@@ -42,11 +42,16 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
     }
   }
 
-  def setUp(): Unit = {
+  private[gui] def setUpF(): Future[Unit] = {
     dlcs.clear()
     getDLCs.map { walletDlcs =>
       dlcs ++= walletDlcs
+      ()
     }
+  }
+
+  def setUp(): Unit = {
+    setUpF()
     //purposely drop the future on the floor for now
     //as our GUI is not async safe at all
     ()

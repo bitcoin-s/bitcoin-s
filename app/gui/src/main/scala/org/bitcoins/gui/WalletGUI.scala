@@ -28,7 +28,12 @@ abstract class WalletGUI extends Logging {
   def fetchStartingData(): Unit = {
     model.startWalletInfoScheduler()
     model.updateFeeRate()
-    dlcPane.model.setUp()
+    dlcPane.model
+      .setUpF()
+      .map { _ =>
+        dlcPane.tableView.sort()
+      }(system.dispatcher)
+    ()
   }
 
   private val satsProperty = StringProperty(" sats")

@@ -1,6 +1,7 @@
 package org.bitcoins.gui.dlc
 
 import javafx.event.{ActionEvent, EventHandler}
+import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.gui.TaskRunner
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
@@ -140,7 +141,7 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
     children = Vector(exportResultButton, copyResultButton)
   }
 
-  private val tableView = new DLCTableView(model).tableView
+  val tableView: TableView[DLCStatus] = new DLCTableView(model).tableView
 
   private val textAreasAndTableViewVBox = new VBox {
     children = Seq(textAreaHBox, resultButtonHBox, tableView)
