@@ -42,7 +42,7 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
         case err: JsError =>
           Future.failed(
             new RuntimeException(
-              s"Failed to parse response for listevents, err=$err"))
+              s"Failed to parse response for listAnnouncements, err=$err"))
       }
     }
   }
@@ -72,7 +72,7 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
         case err: JsError =>
           Future.failed(
             new RuntimeException(
-              s"Failed to parse response for listevents, err=$err"))
+              s"Failed to parse response for getAnnouncement, err=$err"))
       }
     }
   }
