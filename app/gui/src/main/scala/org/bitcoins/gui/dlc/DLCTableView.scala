@@ -7,6 +7,7 @@ import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.TableColumn.SortType
+import scalafx.scene.control.TableView.TableViewFocusModel
 import scalafx.scene.control.{ContextMenu, MenuItem, TableColumn, TableView}
 
 import java.awt.Toolkit.getDefaultToolkit
@@ -125,8 +126,10 @@ class DLCTableView(model: DLCPaneModel) {
 
       val infoItem: MenuItem = new MenuItem("View DLC") {
         onAction = _ => {
-          val dlc = selectionModel.value.getSelectedItem
+          val selected = selectionModel.value
+          val dlc = selected.getSelectedItem
           model.viewDLC(dlc)
+          focusModel = new TableViewFocusModel(tableView)
         }
       }
 

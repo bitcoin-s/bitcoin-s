@@ -59,8 +59,15 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
     ConsoleCli.exec(GetDLC(dlcId), GlobalData.consoleCliConfig) match {
       case Failure(exception) => throw exception
       case Success(dlcStatus) =>
-        dlcs.find(_.dlcId == dlcId).foreach(dlcs -= _)
-        dlcs += read[DLCStatus](ujson.read(dlcStatus))
+        val indexOpt = dlcs.zipWithIndex.find(_._1.dlcId == dlcId).map(_._2)
+        val status = read[DLCStatus](dlcStatus)
+
+        indexOpt match {
+          case Some(index) =>
+            dlcs.update(index, status)
+          case None =>
+            dlcs += status
+        }
         pane.sortTable()
     }
   }
