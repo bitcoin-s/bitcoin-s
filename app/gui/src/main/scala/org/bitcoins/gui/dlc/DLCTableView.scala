@@ -27,15 +27,6 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    // Don't show but use for sorting in background
-    val dlcIdCol = new TableColumn[DLCStatus, String] {
-      text = "DLC Id"
-      prefWidth = 0
-      cellValueFactory = { status =>
-        new StringProperty(status, "DLC Id", status.value.dlcId.hex)
-      }
-    }
-
     val contractIdCol = new TableColumn[DLCStatus, String] {
       text = "Contract Id"
       prefWidth = 100
@@ -130,7 +121,7 @@ class DLCTableView(model: DLCPaneModel) {
                       otherCollateralCol,
                       totalCollateralCol)
       margin = Insets(10, 0, 10, 0)
-      sortOrder.addAll(statusCol, eventIdCol, dlcIdCol)
+      sortOrder.addAll(statusCol, eventIdCol, contractIdCol)
 
       val infoItem: MenuItem = new MenuItem("View DLC") {
         onAction = _ => {
