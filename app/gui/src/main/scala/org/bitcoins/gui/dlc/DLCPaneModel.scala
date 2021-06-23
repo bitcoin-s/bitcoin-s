@@ -55,33 +55,31 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
     ()
   }
 
+  def updateDLCInList(status: DLCStatus): Unit = {
+    val indexOpt = dlcs.zipWithIndex.find(_._1.dlcId == status.dlcId).map(_._2)
+
+    indexOpt match {
+      case Some(index) =>
+        dlcs.update(index, status)
+      case None =>
+        dlcs += status
+    }
+  }
+
   def updateDLC(dlcId: Sha256Digest): Unit = {
     ConsoleCli.exec(GetDLC(dlcId), GlobalData.consoleCliConfig) match {
       case Failure(exception) => throw exception
       case Success(dlcStatus) =>
-        val indexOpt = dlcs.zipWithIndex.find(_._1.dlcId == dlcId).map(_._2)
         val status = read[DLCStatus](dlcStatus)
 
-        indexOpt match {
-          case Some(index) =>
-            dlcs.update(index, status)
-          case None =>
-            dlcs += status
-        }
+        updateDLCInList(status)
         pane.sortTable()
     }
   }
 
   def updateDLCs(): Unit = {
-    val newDLCsF = getDLCs
-    val toAddF = newDLCsF.map(_.diff(dlcs))
-    val toRemoveF = newDLCsF.map(dlcs.diff)
-    val _ = for {
-      toAdd <- toAddF
-      toRemove <- toRemoveF
-    } yield {
-      dlcs --= toRemove
-      dlcs ++= toAdd
+    getDLCs.map { dlcs =>
+      dlcs.foreach(updateDLCInList)
       pane.sortTable()
     }
 
