@@ -7,7 +7,7 @@ import org.bitcoins.db.AppConfig.DEFAULT_BITCOIN_S_DATADIR
 import org.bitcoins.gui._
 import org.bitcoins.gui.util.GUIUtil
 import org.bitcoins.server.util.DatadirUtil
-import scalafx.application.{JFXApp, Platform}
+import scalafx.application.{JFXApp3, Platform}
 import scalafx.geometry.Pos
 import scalafx.scene.Scene
 import scalafx.scene.control.Alert.AlertType
@@ -16,7 +16,7 @@ import scalafx.scene.layout.VBox
 
 import java.nio.file.{Path, Paths}
 
-object BundleGUI extends WalletGUI with JFXApp {
+object BundleGUI extends WalletGUI with JFXApp3 {
 
   // Catch unhandled exceptions on FX Application thread
   Thread
@@ -31,8 +31,13 @@ object BundleGUI extends WalletGUI with JFXApp {
       }.showAndWait()
     })
 
-  // Set log location
-  {
+  implicit override lazy val system: ActorSystem = ActorSystem(
+    s"bitcoin-s-gui-${System.currentTimeMillis()}")
+
+  lazy val args = parameters.raw
+
+  override def start(): Unit = {
+    // Set log location
     val baseConfig: Config = AppConfig
       .getBaseConfig(DEFAULT_BITCOIN_S_DATADIR)
       .resolve()
@@ -43,22 +48,26 @@ object BundleGUI extends WalletGUI with JFXApp {
     val usedDir = DatadirUtil.getFinalDatadir(datadir, baseConfig, None)
 
     System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
+
+    val landingPane = new LandingPane(glassPane)
+    rootView.children = Vector(landingPane.view, glassPane)
+
+    lazy val guiScene: Scene = new Scene(1400, 600) {
+      root = rootView
+      stylesheets = GlobalData.currentStyleSheets
+    }
+
+    stage = new JFXApp3.PrimaryStage {
+      title = "Bitcoin-S Wallet"
+      scene = guiScene
+      icons.add(GUIUtil.logo)
+    }
+    taskRunner
+
+    ()
   }
 
-  implicit lazy val system: ActorSystem = ActorSystem(
-    s"bitcoin-s-gui-${System.currentTimeMillis()}")
-
-  lazy val args = parameters.raw
-
-  val landingPane = new LandingPane(glassPane)
-  rootView.children = Vector(landingPane.view, glassPane)
-
-  lazy val guiScene: Scene = new Scene(1400, 600) {
-    root = rootView
-    stylesheets = GlobalData.currentStyleSheets
-  }
-
-  lazy val glassPane: VBox = new VBox {
+  override lazy val glassPane: VBox = new VBox {
     children = new ProgressIndicator {
       progress = ProgressIndicator.IndeterminateProgress
       visible = true
@@ -66,13 +75,6 @@ object BundleGUI extends WalletGUI with JFXApp {
     alignment = Pos.Center
     visible = false
   }
-
-  stage = new JFXApp.PrimaryStage {
-    title = "Bitcoin-S Wallet"
-    scene = guiScene
-    icons.add(GUIUtil.logo)
-  }
-  taskRunner
 
   def changeToWalletGUIScene(): Unit = {
     Platform.runLater(
