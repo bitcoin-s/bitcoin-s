@@ -1,4 +1,4 @@
-package org.bitcoins.explorer.env
+package org.bitcoins.commons.jsonmodels
 
 import org.bitcoins.crypto.StringFactory
 
