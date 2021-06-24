@@ -1,19 +1,17 @@
 package org.bitcoins.commons.serializers
 
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
-  AddressType,
-  WalletCreateFundedPsbtOptions
-}
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts._
+import org.bitcoins.core.currency._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.psbt._
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto._
 import play.api.libs.json._
 
 import scala.collection.mutable
@@ -54,6 +52,14 @@ object JsonWriters {
   implicit object DoubleSha256DigestBEWrites
       extends Writes[DoubleSha256DigestBE] {
     override def writes(o: DoubleSha256DigestBE): JsValue = JsString(o.hex)
+  }
+
+  implicit object Sha256DigestWrites extends Writes[Sha256Digest] {
+    override def writes(o: Sha256Digest): JsValue = JsString(o.hex)
+  }
+
+  implicit object Sha256DigestBEWrites extends Writes[Sha256DigestBE] {
+    override def writes(o: Sha256DigestBE): JsValue = JsString(o.hex)
   }
 
   implicit object ScriptPubKeyWrites extends Writes[ScriptPubKey] {
@@ -102,12 +108,22 @@ object JsonWriters {
         Json.toJson(o.map { case (k, v) => (keyString(k), v) })
     }
 
+  implicit object SatoshisWrites extends Writes[Satoshis] {
+    override def writes(o: Satoshis): JsValue = JsNumber(o.toBigDecimal)
+  }
+
   implicit object MilliSatoshisWrites extends Writes[MilliSatoshis] {
     override def writes(o: MilliSatoshis): JsValue = JsNumber(o.toBigDecimal)
   }
 
   implicit object AddressTypeWrites extends Writes[AddressType] {
     override def writes(addr: AddressType): JsValue = JsString(addr.toString)
+  }
+
+  implicit object LnInvoiceWrites extends Writes[LnInvoice] {
+
+    override def writes(invoice: LnInvoice): JsValue = JsString(
+      invoice.toString)
   }
 
   implicit object WalletCreateFundedPsbtOptionsWrites

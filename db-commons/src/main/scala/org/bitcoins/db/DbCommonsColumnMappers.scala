@@ -239,6 +239,10 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType
       .base[CurrencyUnit, Long](_.satoshis.toLong, l => Satoshis(l))
 
+  implicit val satoshisMapper: BaseColumnType[Satoshis] =
+    MappedColumnType
+      .base[Satoshis, Long](_.toLong, l => Satoshis(l))
+
   implicit val filterTypeMapper: BaseColumnType[FilterType] =
     MappedColumnType
       .base[FilterType, Short](FilterType.getCode, FilterType.byCode)
