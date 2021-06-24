@@ -1,10 +1,16 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.core.util.sorted.SortedVec
 import org.bitcoins.crypto.{ECPublicKey, NetworkElement, SchnorrNonce}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class SortedVecTest extends BitcoinSUnitTest {
   behavior of "SortedVec"
+
+  implicit val networkElementOrd: Ordering[NetworkElement] = {
+    case (x: NetworkElement, y: NetworkElement) =>
+      x.bytes.compare(y.bytes)
+  }
 
   it should "sort correctly on construction with normal orderings" in {
     assert(SortedVec.sort(Vector(1, 2, 3)) == SortedVec(Vector(1, 2, 3)))
@@ -23,13 +29,12 @@ class SortedVecTest extends BitcoinSUnitTest {
           "c4b89873c8753de3f0a9e94c4a6190badaa983513a6624a3469eb4577904bfea"),
         SchnorrNonce(
           "92efe81609c773d97da2b084eb691f48ef5e926acc6eecd629f80fb1184711bc")
-      ))(SortedVec.networkElementOrd) == SortedVec[SchnorrNonce,
-                                                   NetworkElement](Vector(
+      )) == SortedVec[SchnorrNonce, NetworkElement](Vector(
         SchnorrNonce(
           "92efe81609c773d97da2b084eb691f48ef5e926acc6eecd629f80fb1184711bc"),
         SchnorrNonce(
           "c4b89873c8753de3f0a9e94c4a6190badaa983513a6624a3469eb4577904bfea")
-      ))(SortedVec.networkElementOrd))
+      )))
   }
 
   it should "fail to construct with unsorted vector under normal orderings" in {
@@ -44,7 +49,7 @@ class SortedVecTest extends BitcoinSUnitTest {
           "c4b89873c8753de3f0a9e94c4a6190badaa983513a6624a3469eb4577904bfea"),
         SchnorrNonce(
           "92efe81609c773d97da2b084eb691f48ef5e926acc6eecd629f80fb1184711bc")
-      ))(SortedVec.networkElementOrd))
+      )))
   }
 
   it should "sort correctly on construction with custom orderings" in {
@@ -87,10 +92,11 @@ class SortedVecTest extends BitcoinSUnitTest {
     val nonce1 = ECPublicKey.freshPublicKey.schnorrNonce
     val nonce2 = ECPublicKey.freshPublicKey.schnorrNonce
     val nonce3 = ECPublicKey.freshPublicKey.schnorrNonce
+    val nonces = Vector(nonce1, nonce2, nonce3)
+    val wrongOrder = Vector(nonce2, nonce3, nonce1)
 
-    val vec = SortedVec.forOrdered(Vector(nonce1, nonce2, nonce3))
-
+    val _ = SortedVec(nonces)(SortedVec.forOrdered(nonces))
     assertThrows[IllegalArgumentException](
-      vec.copy(Vector(nonce2, nonce3, nonce1))(vec.ord))
+      SortedVec(wrongOrder)(SortedVec.forOrdered(nonces)))
   }
 }
