@@ -9,9 +9,9 @@ import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer._
-import org.bitcoins.rpc.client.common.BitcoindVersion.{V18, V19}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{V18, V21}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
@@ -26,7 +26,7 @@ import org.bitcoins.testkit.node.fixture.{
   NeutrinoNodeConnectedWithBitcoind,
   NodeConnectedWithBitcoind,
   SpvNodeConnectedWithBitcoind,
-  SpvNodeConnectedWithBitcoindV19
+  SpvNodeConnectedWithBitcoindV21
 }
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.bitcoins.testkitcore.node.P2PMessageTestUtil
@@ -93,24 +93,24 @@ trait NodeUnitTest extends BaseNodeTest {
     )(test)
   }
 
-  def withSpvNodeConnectedToBitcoindV19(test: OneArgAsyncTest)(implicit
+  def withSpvNodeConnectedToBitcoindV21(test: OneArgAsyncTest)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
-      SpvNodeConnectedWithBitcoindV19] = { () =>
+      SpvNodeConnectedWithBitcoindV21] = { () =>
       require(appConfig.nodeType == NodeType.SpvNode)
       for {
         bitcoind <-
           BitcoinSFixture
-            .createBitcoindWithFunds(Some(V19))
-            .map(_.asInstanceOf[BitcoindV19RpcClient])
+            .createBitcoindWithFunds(Some(V21))
+            .map(_.asInstanceOf[BitcoindV21RpcClient])
         node <- NodeUnitTest.createSpvNode(createPeer(bitcoind))(
           system,
           appConfig.chainConf,
           appConfig.nodeConf)
         started <- node.start()
         _ <- NodeUnitTest.syncSpvNode(started, bitcoind)
-      } yield SpvNodeConnectedWithBitcoindV19(node, bitcoind)
+      } yield SpvNodeConnectedWithBitcoindV21(node, bitcoind)
     }
 
     makeDependentFixture(
@@ -429,8 +429,9 @@ object NodeUnitTest extends P2PLogger {
   }
 
   def createPeer(bitcoind: BitcoindRpcClient): Peer = {
-    val socket = peerSocketAddress(bitcoind)
-    Peer(id = None, socket = socket)
+    NodeTestUtil.getBitcoindPeer(bitcoind)
+//    val socket = peerSocketAddress(bitcoind)
+//    Peer(id = None, socket = socket)
   }
 
   def emptyPeer: Peer = {

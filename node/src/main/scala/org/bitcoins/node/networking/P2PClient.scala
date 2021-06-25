@@ -121,7 +121,7 @@ case class P2PClientActor(
   def connecting(proxyParams: Option[Socks5ProxyParams]): Receive = {
     case Tcp.CommandFailed(c: Tcp.Connect) =>
       val peerOrProxyAddress = c.remoteAddress
-      logger.error(s"connection failed to ${peerOrProxyAddress}")
+      logger.error(s"connection failed to ${peerOrProxyAddress} ${proxyParams}")
 //      context stop self
 
     case event @ Tcp.Connected(peerOrProxyAddress, _) =>
@@ -153,6 +153,8 @@ case class P2PClientActor(
               val _ = handleEvent(event, proxy, ByteVector.empty)
             case Terminated(actor) if actor == proxy =>
               context stop self
+            case metaMsg: P2PClient.MetaMsg =>
+              sender() ! handleMetaMsgDisconnected(metaMsg)
           }
         case None =>
           val peerAddress = peerOrProxyAddress
