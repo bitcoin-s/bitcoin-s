@@ -1,5 +1,12 @@
 package org.bitcoins.commons.jsonmodels
 
+import org.bitcoins.core.config.{
+  BitcoinNetwork,
+  MainNet,
+  RegTest,
+  SigNet,
+  TestNet3
+}
 import org.bitcoins.crypto.StringFactory
 
 sealed trait ExplorerEnv {
@@ -33,6 +40,13 @@ object ExplorerEnv extends StringFactory[ExplorerEnv] {
       case Some(env) => env
       case None =>
         sys.error(s"Failed to parse explorer env from str=$string")
+    }
+  }
+
+  def fromBitcoinNetwork(network: BitcoinNetwork): ExplorerEnv = {
+    network match {
+      case MainNet                     => Production
+      case TestNet3 | RegTest | SigNet => Test
     }
   }
 }
