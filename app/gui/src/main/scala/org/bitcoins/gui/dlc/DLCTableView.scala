@@ -1,8 +1,10 @@
 package org.bitcoins.gui.dlc
 
+import org.bitcoins.commons.jsonmodels.ExplorerEnv
 import org.bitcoins.core.dlc.accounting.RateOfReturnUtil
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.gui.GUI
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
@@ -133,6 +135,18 @@ class DLCTableView(model: DLCPaneModel) {
         }
       }
 
+      val viewOnExplorer: MenuItem = new MenuItem("View on Oracle Explorer") {
+        onAction = _ => {
+          val status = selectionModel.value.getSelectedItem
+          val primaryOracle =
+            status.oracleInfo.singleOracleInfos.head.announcement
+          val baseUrl = ExplorerEnv.Production.siteUrl
+          val url =
+            s"${baseUrl}announcement/${primaryOracle.sha256.hex}"
+          GUI.hostServices.showDocument(url)
+        }
+      }
+
       val copyIdItem: MenuItem = new MenuItem("Copy Contract Id") {
         onAction = _ => {
           val dlc = selectionModel.value.getSelectedItem
@@ -154,7 +168,7 @@ class DLCTableView(model: DLCPaneModel) {
       }
 
       contextMenu = new ContextMenu() {
-        items ++= Vector(infoItem, copyIdItem, cancelDLCItem)
+        items ++= Vector(infoItem, viewOnExplorer, copyIdItem, cancelDLCItem)
       }
     }
   }
