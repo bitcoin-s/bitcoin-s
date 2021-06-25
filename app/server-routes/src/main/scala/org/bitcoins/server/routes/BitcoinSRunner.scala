@@ -98,10 +98,10 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
       val str = args(configIndex + 1)
       val usableStr = str.replace("~", Properties.userHome)
       val path = Paths.get(usableStr)
-      ConfigFactory
+      val conf = ConfigFactory
         .parseFile(path.toFile)
         .withFallback(datadirConfig)
-        .resolveWith(networkConfig)
+      networkConfig.withFallback(conf)
   }
 
   /** Base directory for all bitcoin-s data. This is the resulting datadir from

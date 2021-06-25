@@ -43,6 +43,8 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
   override def start(): Future[Unit] = {
     val startedConfigF = conf.start()
 
+    logger.info(s"Start on network ${walletConf.network}")
+
     startedConfigF.failed.foreach { err =>
       logger.error(s"Failed to initialize configuration for BitcoinServerMain",
                    err)
