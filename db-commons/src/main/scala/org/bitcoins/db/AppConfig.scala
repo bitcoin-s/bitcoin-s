@@ -2,13 +2,13 @@ package org.bitcoins.db
 
 import com.typesafe.config._
 import grizzled.slf4j.Logging
+import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config._
 import org.bitcoins.core.protocol.blockchain.BitcoinChainParams
 import org.bitcoins.core.util.StartStopAsync
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file._
 import scala.concurrent.Future
-import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Properties
 import scala.util.matching.Regex
 
