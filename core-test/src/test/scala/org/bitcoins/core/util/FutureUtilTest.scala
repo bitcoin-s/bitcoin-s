@@ -1,10 +1,12 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalatest.compatible.Assertion
 
 import java.time.temporal.ChronoUnit
 import scala.concurrent._
+import scala.concurrent.duration.DurationInt
 
 class FutureUtilTest extends BitcoinSJvmTest {
   it must "execute futures sequentially in the correct order" in {
@@ -50,10 +52,9 @@ class FutureUtilTest extends BitcoinSJvmTest {
     val vec = 0.until(Runtime.getRuntime.availableProcessors()).toVector
 
     val f: Vector[Int] => Future[Vector[Int]] = { vec =>
-      Future {
-        Thread.sleep(1000)
-        vec
-      }
+      AsyncUtil
+        .nonBlockingSleep(1.second)
+        .map(_ => vec)
     }
     val start = TimeUtil.now
     val doneF =
@@ -81,10 +82,9 @@ class FutureUtilTest extends BitcoinSJvmTest {
     val vec = 0.until(Runtime.getRuntime.availableProcessors()).toVector
 
     val f: Vector[Int] => Future[Vector[Int]] = { vec =>
-      Future {
-        Thread.sleep(1000)
-        vec
-      }
+      AsyncUtil
+        .nonBlockingSleep(1.second)
+        .map(_ => vec)
     }
     val start = TimeUtil.now
     val doneF =

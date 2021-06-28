@@ -24,9 +24,9 @@ class CallbackTest extends BitcoinSJvmTest {
             new RuntimeException("2nd callback did not start before timeout"))
         }
       }
-      AsyncUtil.scheduler.schedule(runnable,
-                                   testTimeout.toMillis,
-                                   TimeUnit.MILLISECONDS)
+      AsyncUtil.scheduler.scheduleOnce(testTimeout.toMillis,
+                                       TimeUnit.MILLISECONDS,
+                                       runnable)
       promise.future.map(_ => ())
     }
 

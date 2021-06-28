@@ -224,6 +224,10 @@ object Deps {
 
     val zxingJ2SE =
       "com.google.zxing" % "javase" % V.zxingV withSources () withJavadoc ()
+
+    val monixExecution =
+      Def.setting(
+        "io.monix" %%% "monix-execution" % "3.4.0" withSources () withJavadoc ())
   }
 
   object Test {
@@ -264,6 +268,10 @@ object Deps {
 
     val pgEmbedded =
       "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV % "test" withSources () withJavadoc ()
+  }
+
+  def asyncUtils = Def.setting {
+    Vector(Compile.monixExecution.value)
   }
 
   val chain = List(
