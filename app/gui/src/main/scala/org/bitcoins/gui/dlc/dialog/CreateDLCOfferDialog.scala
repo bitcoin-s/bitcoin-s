@@ -13,6 +13,7 @@ import org.bitcoins.gui.dlc.dialog.CreateDLCOfferDialog.getNumericContractInfo
 import org.bitcoins.gui.util.GUIUtil._
 import scalafx.Includes._
 import scalafx.geometry.{Insets, Pos}
+import scalafx.scene.control.Alert.AlertType
 import scalafx.scene.control._
 import scalafx.scene.layout._
 import scalafx.stage.Window
@@ -250,19 +251,17 @@ class CreateDLCOfferDialog extends Logging {
 
     val previewGraphButton: Button = new Button("Preview Graph") {
       onAction = _ => {
-        getNumericContractInfo(
+        val (totalCollateral, descriptor) = getNumericContractInfo(
           decompOpt,
           pointMap.toVector.sortBy(_._1).map(_._2),
-          roundingMap.toVector.sortBy(_._1).map(_._2)) match {
-          case Failure(_) => ()
-          case Success((totalCollateral, descriptor)) =>
-            DLCPlotUtil.plotCETsWithOriginalCurve(base = 2,
-                                                  descriptor.numDigits,
-                                                  descriptor.outcomeValueFunc,
-                                                  totalCollateral,
-                                                  descriptor.roundingIntervals)
-            ()
-        }
+          roundingMap.toVector.sortBy(_._1).map(_._2))
+
+        DLCPlotUtil.plotCETsWithOriginalCurve(base = 2,
+                                              descriptor.numDigits,
+                                              descriptor.outcomeValueFunc,
+                                              totalCollateral,
+                                              descriptor.roundingIntervals)
+        ()
       }
     }
 
@@ -505,14 +504,12 @@ class CreateDLCOfferDialog extends Logging {
 
             ContractInfo(descriptor, oracleInfo).toTLV
           case oracleInfo: NumericOracleInfo =>
-            getNumericContractInfo(
+            val (totalCol, numeric) = getNumericContractInfo(
               decompOpt,
               pointMap.toVector.sortBy(_._1).map(_._2),
-              roundingMap.toVector.sortBy(_._1).map(_._2)) match {
-              case Failure(exception) => throw exception
-              case Success((totalCol, numeric)) =>
-                ContractInfo(totalCol, numeric, oracleInfo).toTLV
-            }
+              roundingMap.toVector.sortBy(_._1).map(_._2))
+
+            ContractInfo(totalCol, numeric, oracleInfo).toTLV
         }
 
         Some(
@@ -539,11 +536,12 @@ object CreateDLCOfferDialog {
   def getNumericContractInfo(
       decompOpt: Option[DigitDecompositionEventDescriptorV0TLV],
       pointVec: Vector[(TextField, TextField, CheckBox)],
-      roundingVec: Vector[(TextField, TextField)]): Try[
-    (Satoshis, NumericContractDescriptor)] = {
+      roundingVec: Vector[(TextField, TextField)]): (
+      Satoshis,
+      NumericContractDescriptor) = {
     decompOpt match {
       case Some(decomp) =>
-        Try {
+        val contractInfoT = Try {
           val numDigits = decomp.numDigits.toInt
 
           val outcomesValuePoints = pointVec.flatMap {
@@ -585,8 +583,19 @@ object CreateDLCOfferDialog {
              numDigits,
              RoundingIntervals(roundingIntervalsStarts)))
         }
-      case None => Failure(new RuntimeException("No announcement"))
+        contractInfoT match {
+          case Success(contractInfo) => contractInfo
+          case Failure(err) =>
+            val errorMsg = err.getMessage.replace("requirement failed: ", "")
+            new Alert(AlertType.Error) {
+              initOwner(owner)
+              title = "Error construction Contract Info"
+              headerText = errorMsg
+              dialogPane().stylesheets = GlobalData.currentStyleSheets
+            }.showAndWait()
+            throw err
+        }
+      case None => throw new RuntimeException("No announcement")
     }
   }
-
 }
