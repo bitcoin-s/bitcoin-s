@@ -123,6 +123,8 @@ object LnTag {
     override val encoded: Vector[UInt5] = {
       Bech32.from8bitTo5bit(hash.bytes)
     }
+
+    val bytes: ByteVector = hash.bytes
   }
 
   case class SecretTag(secret: PaymentSecret) extends LnTag {
