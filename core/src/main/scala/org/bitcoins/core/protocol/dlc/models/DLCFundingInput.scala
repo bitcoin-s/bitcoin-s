@@ -119,7 +119,7 @@ object DLCFundingInput {
   def fromInputSigningInfo(
       info: ScriptSignatureParams[InputInfo],
       inputSerialId: UInt64,
-      sequence: UInt32 = TransactionConstants.sequence): DLCFundingInput = {
+      sequence: UInt32): DLCFundingInput = {
     DLCFundingInput(
       inputSerialId,
       info.prevTransaction,
@@ -180,5 +180,7 @@ case class SpendingInfoWithSerialId(
     serialId: UInt64) {
 
   def toDLCFundingInput: DLCFundingInput =
-    DLCFundingInput.fromInputSigningInfo(spendingInfo, serialId)
+    DLCFundingInput.fromInputSigningInfo(spendingInfo,
+                                         serialId,
+                                         TransactionConstants.enableRBFSequence)
 }

@@ -7,7 +7,7 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.scalatest._
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 case class DLCDAOs(
     announcementDAO: OracleAnnouncementDataDAO,
@@ -75,16 +75,17 @@ trait DLCDAOFixture extends BitcoinSFixture with EmbeddedPg {
   implicit private val dlcConfig: DLCAppConfig = config.dlcConf
 
   override def afterAll(): Unit = {
-    super.afterAll()
+    val stoppedF = config.stop()
+    val _ = Await.ready(stoppedF, akkaTimeout.duration)
+    super[EmbeddedPg].afterAll()
   }
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
     makeFixture(build = () => Future(dlcConfig.migrate()).map(_ => daos),
                 destroy = () => dropAll())(test)
 
-  def dropAll(): Future[Unit] = {
+  private def dropAll(): Future[Unit] = {
     val res = for {
-      _ <- dlcConfig.dropTable("flyway_schema_history")
       _ <- FutureUtil.sequentially(daos.list.reverse)(dao => dao.deleteAll())
     } yield ()
     res.failed.foreach { ex =>
@@ -92,5 +93,4 @@ trait DLCDAOFixture extends BitcoinSFixture with EmbeddedPg {
     }
     res
   }
-
 }

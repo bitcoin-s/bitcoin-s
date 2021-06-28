@@ -342,7 +342,10 @@ abstract class DLCWallet
 
       serialIds = DLCMessage.genSerialIds(spendingInfos.size)
       utxos = spendingInfos.zip(serialIds).map { case (utxo, id) =>
-        DLCFundingInput.fromInputSigningInfo(utxo, id)
+        DLCFundingInput.fromInputSigningInfo(
+          utxo,
+          id,
+          TransactionConstants.enableRBFSequence)
       }
 
       dlcId = calcDLCId(utxos.map(_.outPoint))
@@ -427,6 +430,7 @@ abstract class DLCWallet
           inputSerialId = fundingInput.inputSerialId,
           outPoint = utxo.outPoint,
           output = utxo.output,
+          nSequence = fundingInput.sequence,
           maxWitnessLength = fundingInput.maxWitnessLen.toLong,
           redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
           witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
@@ -600,7 +604,10 @@ abstract class DLCWallet
         spendingInfos.size,
         offer.fundingInputs.map(_.inputSerialId))
       utxos = spendingInfos.zip(serialIds).map { case (utxo, id) =>
-        DLCFundingInput.fromInputSigningInfo(utxo, id)
+        DLCFundingInput.fromInputSigningInfo(
+          utxo,
+          id,
+          TransactionConstants.enableRBFSequence)
       }
 
       changeSPK = txBuilder.finalizer.changeSPK.asInstanceOf[P2WPKHWitnessSPKV0]
@@ -686,6 +693,7 @@ abstract class DLCWallet
           inputSerialId = funding.inputSerialId,
           outPoint = funding.outPoint,
           output = funding.output,
+          nSequence = funding.sequence,
           maxWitnessLength = funding.maxWitnessLen.toLong,
           redeemScriptOpt = funding.redeemScriptOpt,
           witnessScriptOpt = None
@@ -702,6 +710,7 @@ abstract class DLCWallet
           inputSerialId = fundingInput.inputSerialId,
           outPoint = utxo.outPoint,
           output = utxo.output,
+          nSequence = fundingInput.sequence,
           maxWitnessLength = fundingInput.maxWitnessLen.toLong,
           redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
           witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
@@ -769,6 +778,7 @@ abstract class DLCWallet
             inputSerialId = funding.inputSerialId,
             outPoint = funding.outPoint,
             output = funding.output,
+            nSequence = funding.sequence,
             maxWitnessLength = funding.maxWitnessLen.toLong,
             redeemScriptOpt = funding.redeemScriptOpt,
             witnessScriptOpt = None

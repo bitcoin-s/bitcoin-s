@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.wallet.models
 
-import org.bitcoins.core.number.UInt64
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.dlc.models.{
   DLCFundingInput,
   DLCFundingInputP2WPKHV0
@@ -15,6 +15,7 @@ case class DLCFundingInputDb(
     inputSerialId: UInt64,
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
+    nSequence: UInt32,
     maxWitnessLength: Long,
     redeemScriptOpt: Option[ScriptPubKey],
     witnessScriptOpt: Option[ScriptWitness]) {
@@ -28,9 +29,6 @@ case class DLCFundingInputDb(
       s"Provided previous transaction didn't match database outpoint outpoint=${outPoint.txIdBE.hex} prevTx.txId=${prevTx.txIdBE.hex}"
     )
 
-    DLCFundingInputP2WPKHV0(inputSerialId,
-                            prevTx,
-                            outPoint.vout,
-                            TransactionConstants.sequence)
+    DLCFundingInputP2WPKHV0(inputSerialId, prevTx, outPoint.vout, nSequence)
   }
 }
