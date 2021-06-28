@@ -26,7 +26,6 @@ assembly / assemblyMergeStrategy := {
   case _                                 => MergeStrategy.first
 }
 
-Compile / doc := (target.value / "none")
 // general package information (can be scoped to Windows)
 maintainer := "Chris Stewart <stewart.chris1234@gmail.com>"
 // Will say "Welcome to the <packageSummary> Setup Wizard"
