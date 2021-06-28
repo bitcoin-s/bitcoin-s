@@ -53,7 +53,7 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
       NumericContractDescriptor(func, 2, RoundingIntervals.noRounding))
   }
 
-  it should "fail for starting below the maximum" in {
+  it should "fail for ending below the maximum" in {
     val func = DLCPayoutCurve(
       Vector(
         OutcomePayoutPoint(0, Satoshis(0), isEndpoint = true),
@@ -63,7 +63,7 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
       NumericContractDescriptor(func, 2, RoundingIntervals.noRounding))
   }
 
-  it should "fail for starting above the maximum" in {
+  it should "fail for ending above the maximum" in {
     val func = DLCPayoutCurve(
       Vector(
         OutcomePayoutPoint(0, Satoshis(0), isEndpoint = true),
