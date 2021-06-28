@@ -1,6 +1,7 @@
 package org.bitcoins.bundle.gui
 
 import akka.actor.ActorSystem
+import grizzled.slf4j.Logging
 import org.bitcoins.gui._
 import org.bitcoins.node.NodeType
 import org.bitcoins.server.BitcoinSAppConfig
@@ -10,13 +11,15 @@ import scalafx.scene.control._
 import scalafx.scene.layout._
 import scalafx.scene.text._
 
-import scala.concurrent.ExecutionContext.global
 import scala.util.Try
 
-class LandingPane(glassPane: VBox)(implicit system: ActorSystem) {
+class LandingPane(glassPane: VBox)(implicit system: ActorSystem)
+    extends Logging {
+
+  import system.dispatcher
 
   val appConfig: BitcoinSAppConfig =
-    BitcoinSAppConfig.fromDefaultDatadir()(global)
+    BitcoinSAppConfig.fromDefaultDatadirWithBundleConf()
 
   val model = new LandingPaneModel()
 

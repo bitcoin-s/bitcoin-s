@@ -1,6 +1,7 @@
 package org.bitcoins.server
 
 import com.typesafe.config.{Config, ConfigFactory}
+import grizzled.slf4j.Logging
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.core.util.StartStopAsync
@@ -10,7 +11,7 @@ import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 import scala.concurrent.{ExecutionContext, Future}
 
 /** A unified config class for all submodules of Bitcoin-S
@@ -109,7 +110,7 @@ case class BitcoinSAppConfig(
 /** Implicit conversions that allow a unified configuration
   * to be passed in wherever a specializes one is required
   */
-object BitcoinSAppConfig {
+object BitcoinSAppConfig extends Logging {
 
   def fromConfig(config: Config)(implicit
       ec: ExecutionContext): BitcoinSAppConfig = {
@@ -128,6 +129,24 @@ object BitcoinSAppConfig {
   def fromDefaultDatadir(confs: Config*)(implicit
       ec: ExecutionContext): BitcoinSAppConfig =
     BitcoinSAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
+
+  def fromDefaultDatadirWithBundleConf(confs: Vector[Config] = Vector.empty)(
+      implicit ec: ExecutionContext): BitcoinSAppConfig = {
+    val baseConf: BitcoinSAppConfig =
+      BitcoinSAppConfig.fromDefaultDatadir()
+
+    // Grab saved bundle config
+    val bundleConfFile =
+      toChainConf(baseConf).baseDatadir.resolve("bitcoin-s-bundle.conf")
+    val extraConfig = if (Files.isReadable(bundleConfFile)) {
+      ConfigFactory.parseFile(bundleConfFile.toFile)
+    } else {
+      logger.debug("No saved bundle config found")
+      ConfigFactory.empty()
+    }
+
+    baseConf.copyWithConfig(extraConfig +: confs)
+  }
 
   import scala.language.implicitConversions
 
