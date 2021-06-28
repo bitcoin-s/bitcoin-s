@@ -1,10 +1,9 @@
 package org.bitcoins.asyncutil
 
-import org.bitcoins.asyncutil.AsyncUtil.scheduler
 import org.bitcoins.core.api.asyncutil.AsyncUtilApi
 
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{Executors, ThreadFactory, TimeUnit}
+import java.util.concurrent.{ThreadFactory, TimeUnit}
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
@@ -95,8 +94,9 @@ abstract class AsyncUtil extends AsyncUtilApi {
         val p = Promise[Boolean]()
         val runnable = retryRunnable(condition, p)
 
-        AsyncUtil.scheduler
-          .schedule(runnable, interval.toMillis, TimeUnit.MILLISECONDS)
+        AsyncUtil.scheduler.scheduleOnce(interval.toMillis,
+                                         TimeUnit.MILLISECONDS,
+                                         runnable)
 
         p.future.flatMap {
           case true => Future.unit
@@ -147,17 +147,16 @@ abstract class AsyncUtil extends AsyncUtilApi {
   override def nonBlockingSleep(duration: FiniteDuration): Future[Unit] = {
     val p = Promise[Unit]()
     val r: Runnable = () => p.success(())
-    scheduler.schedule(r, duration.toMillis, TimeUnit.MILLISECONDS)
+    AsyncUtil.scheduler.scheduleOnce(duration.toMillis,
+                                     TimeUnit.MILLISECONDS,
+                                     r)
     p.future
   }
 }
 
 object AsyncUtil extends AsyncUtil {
 
-  private[this] val threadFactory = getNewThreadFactory("bitcoin-s-async-util")
-
-  private[bitcoins] val scheduler =
-    Executors.newScheduledThreadPool(2, threadFactory)
+  private[bitcoins] val scheduler = monix.execution.Scheduler.global
 
   /** The default interval between async attempts
     */

@@ -64,6 +64,7 @@ object Deps {
     val scalaJsTimeV = "2.3.0"
     val zxingV = "3.4.1"
 
+    val monixV = "3.4.0"
   }
 
   object Compile {
@@ -224,6 +225,10 @@ object Deps {
 
     val zxingJ2SE =
       "com.google.zxing" % "javase" % V.zxingV withSources () withJavadoc ()
+
+    val monixExecution =
+      Def.setting(
+        "io.monix" %%% "monix-execution" % V.monixV withSources () withJavadoc ())
   }
 
   object Test {
@@ -264,6 +269,10 @@ object Deps {
 
     val pgEmbedded =
       "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV % "test" withSources () withJavadoc ()
+  }
+
+  def asyncUtils = Def.setting {
+    Vector(Compile.monixExecution.value)
   }
 
   val chain = List(
