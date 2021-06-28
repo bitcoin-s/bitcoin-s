@@ -122,14 +122,19 @@ class AsyncUtilTest extends BitcoinSJvmTest {
   }
 
   it must "handle blocking tasks ok" in {
+    //schedule a blocking task first
+    val start = TimeUtil.currentEpochMs
     val sleepMs = 10000
+    val stop = start + sleepMs
     def blockingTask(): Boolean = {
-      Thread.sleep(sleepMs)
+      while (stop < System.currentTimeMillis()) {
+        //do nothing, block until 10 seconds has passed
+        //can't do the dumb thing and use Thread.sleep()
+        //as that isn't available on scalajs
+      }
       true
     }
 
-    //schedule a blocking task first
-    val start = TimeUtil.currentEpochMs
     val _ =
       AsyncUtil.awaitCondition(blockingTask)
 
@@ -148,10 +153,10 @@ class AsyncUtilTest extends BitcoinSJvmTest {
   }
 
   it must "handle async blocking tasks ok" in {
-    val sleepMs = 10000
-    def blockingTask(): Future[Boolean] = Future {
-      Thread.sleep(sleepMs)
-      true
+    def blockingTask(): Future[Boolean] = {
+      AsyncUtil
+        .nonBlockingSleep(10.seconds)
+        .map(_ => true)
     }
 
     //schedule a blocking task first

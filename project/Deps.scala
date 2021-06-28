@@ -64,6 +64,7 @@ object Deps {
     val scalaJsTimeV = "2.3.0"
     val zxingV = "3.4.1"
 
+    val monixV = "3.4.0"
   }
 
   object Compile {
@@ -227,7 +228,7 @@ object Deps {
 
     val monixExecution =
       Def.setting(
-        "io.monix" %%% "monix-execution" % "3.4.0" withSources () withJavadoc ())
+        "io.monix" %%% "monix-execution" % V.monixV withSources () withJavadoc ())
   }
 
   object Test {
