@@ -90,12 +90,12 @@ case class NodeAppConfig(
   }
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
-    if (config.getBoolean("bitcoin-s.node.socks5.enabled")) {
+    if (config.getBoolean("bitcoin-s.node.proxy.enabled")) {
       Some(
         Socks5ProxyParams(
           address = InetSocketAddress.createUnresolved(
-            config.getString("bitcoin-s.node.socks5.host"),
-            config.getInt("bitcoin-s.node.socks5.port")
+            config.getString("bitcoin-s.node.proxy.host"),
+            config.getInt("bitcoin-s.node.proxy.port")
           ),
           credentialsOpt = None,
           randomizeCredentials = true
