@@ -585,8 +585,12 @@ object CreateDLCOfferDialog {
         }
         contractInfoT match {
           case Success(contractInfo) => contractInfo
-          case Failure(err) =>
-            val errorMsg = err.getMessage.replace("requirement failed: ", "")
+          case Failure(err)          =>
+            // Do some basic processing of the message so it's prettier
+            val errorMsg = err.getMessage
+              .replace("requirement failed: ", "")
+              .replace(". You must define", ".\nYou must define")
+
             new Alert(AlertType.Error) {
               initOwner(owner)
               title = "Error construction Contract Info"
