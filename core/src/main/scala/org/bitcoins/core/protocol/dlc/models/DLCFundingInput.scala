@@ -179,8 +179,6 @@ case class SpendingInfoWithSerialId(
     spendingInfo: ScriptSignatureParams[InputInfo],
     serialId: UInt64) {
 
-  def toDLCFundingInput: DLCFundingInput =
-    DLCFundingInput.fromInputSigningInfo(spendingInfo,
-                                         serialId,
-                                         TransactionConstants.enableRBFSequence)
+  def toDLCFundingInput(sequence: UInt32): DLCFundingInput =
+    DLCFundingInput.fromInputSigningInfo(spendingInfo, serialId, sequence)
 }

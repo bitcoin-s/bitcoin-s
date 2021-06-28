@@ -137,6 +137,7 @@ object TestDLCClient {
       input: CurrencyUnit,
       remoteInput: CurrencyUnit,
       fundingUtxos: Vector[SpendingInfoWithSerialId],
+      fundingInputs: Vector[DLCFundingInput],
       remoteFundingInputs: Vector[DLCFundingInput],
       timeouts: DLCTimeouts,
       feeRate: SatoshisPerVirtualByte,
@@ -181,7 +182,7 @@ object TestDLCClient {
        pubKeys,
        payoutSerialId,
        input,
-       fundingUtxos.map(_.toDLCFundingInput),
+       fundingInputs,
        changeAddress,
        changeSerialId,
        remotePubKeys,
@@ -201,7 +202,7 @@ object TestDLCClient {
        pubKeys,
        payoutSerialId,
        input,
-       fundingUtxos.map(_.toDLCFundingInput),
+       fundingInputs,
        changeAddress,
        changeSerialId)
     }

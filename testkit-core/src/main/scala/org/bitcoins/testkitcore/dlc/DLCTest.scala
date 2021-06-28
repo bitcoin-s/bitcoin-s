@@ -123,12 +123,12 @@ trait DLCTest {
       DLCFundingInputP2WPKHV0(UInt64.zero,
                               offerFundingTx,
                               UInt32.zero,
-                              TransactionConstants.sequence),
+                              TransactionConstants.enableRBFSequence),
       DLCFundingInputP2WSHV0(
         UInt64.one,
         offerFundingTx2,
         UInt32.zero,
-        TransactionConstants.sequence,
+        TransactionConstants.enableRBFSequence,
         maxWitnessLen =
           UInt16(offerFundingUtxos.last.spendingInfo.maxWitnessLen))
     )
@@ -198,12 +198,12 @@ trait DLCTest {
       DLCFundingInputP2WPKHV0(UInt64(3),
                               acceptFundingTx,
                               UInt32.zero,
-                              TransactionConstants.sequence),
+                              TransactionConstants.enableRBFSequence),
       DLCFundingInputP2SHSegwit(
         inputSerialId = UInt64(4),
         prevTx = acceptFundingTx2,
         prevTxVout = UInt32.zero,
-        sequence = TransactionConstants.sequence,
+        sequence = TransactionConstants.enableRBFSequence,
         maxWitnessLen =
           UInt16(acceptFundingUtxos.last.spendingInfo.maxWitnessLen),
         redeemScript = P2WSHWitnessSPKV0(acceptNestedSPK)
@@ -269,6 +269,7 @@ trait DLCTest {
       input = offerInput,
       remoteInput = acceptInput,
       fundingUtxos = offerFundingUtxos,
+      fundingInputs = offerFundingInputs,
       remoteFundingInputs = acceptFundingInputs,
       timeouts = timeouts,
       feeRate = feeRate,
@@ -293,6 +294,7 @@ trait DLCTest {
       input = acceptInput,
       remoteInput = offerInput,
       fundingUtxos = acceptFundingUtxos,
+      fundingInputs = acceptFundingInputs,
       remoteFundingInputs = offerFundingInputs,
       timeouts = timeouts,
       feeRate = feeRate,
