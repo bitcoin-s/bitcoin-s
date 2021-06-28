@@ -27,6 +27,7 @@ object BitcoindRpcBackendUtil extends Logging {
   /** Has the wallet process all the blocks it has not seen up until bitcoind's chain tip */
   def syncWalletToBitcoind(bitcoind: BitcoindRpcClient, wallet: Wallet)(implicit
       system: ActorSystem): Future[Unit] = {
+    logger.info("Syncing wallet to bitcoind")
     import system.dispatcher
     for {
       bitcoindHeight <- bitcoind.getBlockCount
@@ -64,11 +65,13 @@ object BitcoindRpcBackendUtil extends Logging {
       bitcoind: BitcoindRpcClient,
       wallet: Wallet)(implicit system: ActorSystem): Future[Wallet] = {
     if (walletHeight > bitcoindHeight) {
-      Future.failed(
-        new RuntimeException(
-          s"Bitcoind and wallet are in incompatible states, " +
-            s"wallet height: $walletHeight, bitcoind height: $bitcoindHeight"))
+      val msg = s"Bitcoind and wallet are in incompatible states, " +
+        s"wallet height: $walletHeight, bitcoind height: $bitcoindHeight"
+      logger.error(msg)
+      Future.failed(new RuntimeException(msg))
     } else {
+      logger.info(s"Syncing from $walletHeight to $bitcoindHeight")
+
       import system.dispatcher
 
       val hasFiltersF = bitcoind
@@ -221,7 +224,7 @@ object BitcoindRpcBackendUtil extends Logging {
 
       override def downloadBlocks(
           blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
-        logger.info(s"Fetching ${blockHashes.length} hashes from bitcoind")
+        logger.info(s"Fetching ${blockHashes.length} blocks from bitcoind")
         val numParallelism = Runtime.getRuntime.availableProcessors()
         walletF
           .flatMap { wallet =>
