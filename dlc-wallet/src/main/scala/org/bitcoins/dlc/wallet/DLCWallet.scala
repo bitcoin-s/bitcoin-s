@@ -356,9 +356,7 @@ abstract class DLCWallet
 
       changeSPK =
         txBuilder.finalizer.changeSPK
-          .asInstanceOf[WitnessScriptPubKey]
-      network = networkParameters.asInstanceOf[BitcoinNetwork]
-      changeAddr = Bech32Address(changeSPK, network)
+      changeAddr = BitcoinAddress.fromScriptPubKey(changeSPK, networkParameters)
 
       dlcPubKeys = calcDLCPubKeys(account.xpub, chainType, nextIndex)
 
@@ -594,7 +592,6 @@ abstract class DLCWallet
         fromTagOpt = None,
         markAsReserved = true
       )
-      network = networkParameters.asInstanceOf[BitcoinNetwork]
 
       serialIds = DLCMessage.genSerialIds(
         spendingInfos.size,
@@ -603,8 +600,8 @@ abstract class DLCWallet
         DLCFundingInput.fromInputSigningInfo(utxo, id)
       }
 
-      changeSPK = txBuilder.finalizer.changeSPK.asInstanceOf[P2WPKHWitnessSPKV0]
-      changeAddr = Bech32Address(changeSPK, network)
+      changeSPK = txBuilder.finalizer.changeSPK
+      changeAddr = BitcoinAddress.fromScriptPubKey(changeSPK, networkParameters)
 
       bip32Path = BIP32Path(
         account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
