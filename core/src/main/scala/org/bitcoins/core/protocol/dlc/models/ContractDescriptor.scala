@@ -52,6 +52,8 @@ case class EnumContractDescriptor(
     with TLVSerializable[ContractDescriptorV0TLV]
     with SeqWrapper[(EnumOutcome, Satoshis)] {
 
+  require(outcomeValueMap.nonEmpty, "Cannot give an empty set of outcomes")
+
   override def wrapped: Vector[(EnumOutcome, Satoshis)] = outcomeValueMap
 
   def keys: Vector[EnumOutcome] = outcomeValueMap.map(_._1)
@@ -96,6 +98,26 @@ case class NumericContractDescriptor(
     roundingIntervals: RoundingIntervals)
     extends ContractDescriptor
     with TLVSerializable[ContractDescriptorV1TLV] {
+
+  private val minValue: Long = 0L
+  private val maxValue: Long = (Math.pow(2, numDigits) - 1).toLong
+
+  require(outcomeValueFunc.points.head.isEndpoint,
+          "Payout curve must start with an end point")
+  require(
+    outcomeValueFunc.points.head.outcome == 0,
+    s"Payout curve must start with its minimum value, $minValue, got ${outcomeValueFunc.points.head.outcome}. " +
+      s"You must define the payout curve from $minValue - $maxValue"
+  )
+
+  require(outcomeValueFunc.points.last.isEndpoint,
+          "Payout curve must end with an end point")
+
+  require(
+    outcomeValueFunc.points.last.outcome == maxValue,
+    s"Payout curve must end with its maximum value, $maxValue, got ${outcomeValueFunc.points.last.outcome}. " +
+      s"You must define the payout curve from $minValue - $maxValue"
+  )
 
   override def flip(totalCollateral: Satoshis): NumericContractDescriptor = {
 

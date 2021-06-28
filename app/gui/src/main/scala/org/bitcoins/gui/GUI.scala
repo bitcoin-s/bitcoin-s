@@ -21,19 +21,6 @@ object GUI extends WalletGUI with JFXApp3 {
   implicit override lazy val system: ActorSystem = ActorSystem(
     s"bitcoin-s-gui-${System.currentTimeMillis()}")
 
-  // Catch unhandled exceptions on FX Application thread
-  Thread
-    .currentThread()
-    .setUncaughtExceptionHandler((_: Thread, ex: Throwable) => {
-      ex.printStackTrace()
-      lazy val _ = new Alert(AlertType.Error) {
-        initOwner(owner)
-        title = "Unhandled exception"
-        headerText = "Exception: " + ex.getClass + ""
-        contentText = Option(ex.getMessage).getOrElse("")
-      }.showAndWait()
-    })
-
   override lazy val glassPane: VBox = new VBox {
     children = new ProgressIndicator {
       progress = ProgressIndicator.IndeterminateProgress
@@ -44,6 +31,19 @@ object GUI extends WalletGUI with JFXApp3 {
   }
 
   override def start(): Unit = {
+    // Catch unhandled exceptions on FX Application thread
+    Thread
+      .currentThread()
+      .setUncaughtExceptionHandler((_: Thread, ex: Throwable) => {
+        ex.printStackTrace()
+        lazy val _ = new Alert(AlertType.Error) {
+          initOwner(owner)
+          title = "Unhandled exception"
+          headerText = "Exception: " + ex.getClass + ""
+          contentText = Option(ex.getMessage).getOrElse("")
+        }.showAndWait()
+      })
+
     lazy val argsWithIndex: Vector[(String, Int)] =
       parameters.raw.zipWithIndex.toVector
 

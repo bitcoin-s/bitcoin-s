@@ -18,25 +18,25 @@ import java.nio.file.{Path, Paths}
 
 object BundleGUI extends WalletGUI with JFXApp3 {
 
-  // Catch unhandled exceptions on FX Application thread
-  Thread
-    .currentThread()
-    .setUncaughtExceptionHandler((_: Thread, ex: Throwable) => {
-      ex.printStackTrace()
-      lazy val _ = new Alert(AlertType.Error) {
-        initOwner(owner)
-        title = "Unhandled exception"
-        headerText = "Exception: " + ex.getClass + ""
-        contentText = Option(ex.getMessage).getOrElse("")
-      }.showAndWait()
-    })
-
   implicit override lazy val system: ActorSystem = ActorSystem(
     s"bitcoin-s-gui-${System.currentTimeMillis()}")
 
   lazy val args = parameters.raw
 
   override def start(): Unit = {
+    // Catch unhandled exceptions on FX Application thread
+    Thread
+      .currentThread()
+      .setUncaughtExceptionHandler((_: Thread, ex: Throwable) => {
+        ex.printStackTrace()
+        lazy val _ = new Alert(AlertType.Error) {
+          initOwner(owner)
+          title = "Unhandled exception"
+          headerText = "Exception: " + ex.getClass + ""
+          contentText = Option(ex.getMessage).getOrElse("")
+        }.showAndWait()
+      })
+
     // Set log location
     val baseConfig: Config = AppConfig
       .getBaseConfig(DEFAULT_BITCOIN_S_DATADIR)
