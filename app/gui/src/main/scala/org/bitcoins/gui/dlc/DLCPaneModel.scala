@@ -81,6 +81,8 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
   def updateDLCs(): Unit = {
     getDLCs.map { dlcs =>
       dlcs.foreach(updateDLCInList)
+      val toRemove = GlobalDLCData.dlcs.diff(dlcs)
+      GlobalDLCData.dlcs --= toRemove
       pane.sortTable()
     }
 
