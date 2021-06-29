@@ -140,6 +140,9 @@
       "wallet/address-tagging": {
         "title": "Address and UTXO tagging"
       },
+      "wallet/backups": {
+        "title": "Wallet Backups"
+      },
       "wallet/dlc": {
         "title": "Executing A DLC with Bitcoin-S"
       },
