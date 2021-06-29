@@ -13,7 +13,7 @@ title: Getting Bitcoin-S installed on your machine
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 <!-- END doctoc -->
 
-- [Step 1: Java and Scala](#step-1-java-and-scala)
+- [Step 1: Java and Scala](#step-1-developer-runtimes)
 - [Step 2: Bitcoin-S Repository](#step-2-bitcoin-s-repository)
 - [Step 3: Configuration](#step-3-configuration)
 - [Step 4: Setting Up A Bitcoin-S Node](#step-4-setting-up-a-bitcoin-s-node)
@@ -22,14 +22,29 @@ title: Getting Bitcoin-S installed on your machine
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
-## Step 1: Java and Scala
+## Step 1: Developer runtimes
 
+### Scala/Java
 To get started you will need Java, Scala, and some other nice tools installed, luckily the Scala team has an easy setup process!
 
 Simply follow the instructions in [this short blog](https://www.scala-lang.org/2020/06/29/one-click-install.html) to get started.
 
+If you don't like `curl`, you can use OS specific package managers to install coursier [here](https://get-coursier.io/docs/2.0.0-RC2/cli-overview.html#installation)
+
 >bitcoin-s requires java9+ for development environments. If you do not have java9+ installed, you will not be able to build bitcoin-s.
 [You will run into this error if you are on java8 or lower](https://github.com/bitcoin-s/bitcoin-s/issues/3298)
+
+If you follow the coursier route, [you can switch to a java11 version by running](https://get-coursier.io/docs/2.0.0-RC6-15/cli-java.html)
+
+>cs java --jvm adopt:11 --setup
+
+### Scala.js
+
+We support publishing of [scala.js](https://www.scala-js.org/) artifacts. 
+This library will compile Scala source code into javascript artifacts.
+
+To be able to run scala js tests, you need to have the Node.js installed.
+You can install it from [here](https://nodejs.org/en/)
 
 ## Step 2: Bitcoin-S Repository
 
