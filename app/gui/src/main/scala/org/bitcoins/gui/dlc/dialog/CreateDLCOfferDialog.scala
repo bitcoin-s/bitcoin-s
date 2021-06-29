@@ -309,13 +309,10 @@ class CreateDLCOfferDialog extends Logging {
 
     announcementOrContractInfoTF.onKeyTyped = _ => {
       if (!announcementDetailsShown) {
-        Try(
-          OracleAnnouncementV0TLV.fromHex(
-            announcementOrContractInfoTF.text.value)) match {
+        val text = announcementOrContractInfoTF.text.value.trim
+        Try(OracleAnnouncementV0TLV.fromHex(text)) match {
           case Failure(_) =>
-            Try(
-              ContractInfoV0TLV.fromHex(
-                announcementOrContractInfoTF.text.value)) match {
+            Try(ContractInfoV0TLV.fromHex(text)) match {
               case Failure(_) => ()
               case Success(contractInfo) =>
                 contractInfo.oracleInfo match {

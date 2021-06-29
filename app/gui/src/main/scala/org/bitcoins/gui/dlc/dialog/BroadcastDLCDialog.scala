@@ -206,7 +206,9 @@ object BroadcastDLCDialog extends Logging {
 
     signTLVTF.onKeyTyped = _ => {
       if (!dlcDetailsShown) {
-        Try(LnMessageFactory(DLCSignTLV).fromHex(signTLVTF.text.value)) match {
+        Try(
+          LnMessageFactory(DLCSignTLV).fromHex(
+            signTLVTF.text.value.trim)) match {
           case Failure(_) => ()
           case Success(lnMessage) =>
             showDetails(lnMessage, isFromFile = false)
