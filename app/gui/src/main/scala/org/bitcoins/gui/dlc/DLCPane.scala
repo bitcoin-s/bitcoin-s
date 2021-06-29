@@ -72,8 +72,9 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
   private val refundButton = new Button {
     text = "Refund"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onRefund()
+    onAction = _ => {
+      model.onRefund()
+      ()
     }
     tooltip = Tooltip(
       "After the refund timeout, broadcasts the refund transaction to the blockchain.")
@@ -82,8 +83,9 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
   private val executeButton = new Button {
     text = "Execute"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onExecute()
+    onAction = _ => {
+      model.onExecute()
+      ()
     }
     tooltip = Tooltip(
       "Given an oracle attestation, broadcasts the closing transaction to the blockchain.")
