@@ -28,8 +28,15 @@ To get started you will need Java, Scala, and some other nice tools installed, l
 
 Simply follow the instructions in [this short blog](https://www.scala-lang.org/2020/06/29/one-click-install.html) to get started.
 
+If you don't like `curl`, you can use OS specific package managers to install coursier [here](https://get-coursier.io/docs/2.0.0-RC2/cli-overview.html#installation)
+
 >bitcoin-s requires java9+ for development environments. If you do not have java9+ installed, you will not be able to build bitcoin-s.
 [You will run into this error if you are on java8 or lower](https://github.com/bitcoin-s/bitcoin-s/issues/3298)
+
+If you follow the coursier route, [you can switch to a java11 version by running](https://get-coursier.io/docs/2.0.0-RC6-15/cli-java.html)
+
+>cs java --jvm adopt:11 --setup
+
 
 ## Step 2: Bitcoin-S Repository
 
