@@ -1,16 +1,17 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.core.protocol.dlc.models.DLCStatus.Offered
+import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv.{
   EnumOutcome,
   SignedNumericOutcome,
   UnsignedNumericOutcome
 }
-import org.bitcoins.gui.GlobalData
+import org.bitcoins.gui._
 import org.bitcoins.gui.dlc.{DLCPaneModel, DLCPlotUtil, GlobalDLCData}
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.Includes._
+import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control._
@@ -27,6 +28,9 @@ object ViewDLCDialog {
       initOwner(parentWindow)
       title = "View DLC"
     }
+
+    val closingTxId: StringProperty = StringProperty(
+      DLCStatus.getClosingTxId(status).map(_.hex).getOrElse(""))
 
     dialog.dialogPane().buttonTypes = Seq(ButtonType.Close)
     dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
@@ -185,7 +189,7 @@ object ViewDLCDialog {
       row += 1
       add(new Label("Closing TxId:"), 0, row)
       add(new TextField() {
-            text = DLCStatus.getClosingTxId(status).map(_.hex).getOrElse("")
+            text <== closingTxId
             editable = false
           },
           columnIndex = 1,
@@ -210,7 +214,10 @@ object ViewDLCDialog {
               // Set data for this DLC
               GlobalDLCData.lastContractId = contractId
               GlobalDLCData.lastOracleSig = ""
-              model.onExecute()
+              val res = model.onExecute()
+
+              // Set closing txId in GUI
+              closingTxId.value = res
             }
           }
       }

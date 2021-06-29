@@ -20,7 +20,8 @@ import upickle.default._
 
 import java.io.File
 import java.nio.file.Files
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.{Failure, Properties, Success}
 
 class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
@@ -91,8 +92,10 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
   def printDLCDialogResult[T <: CliCommand](
       caption: String,
       dialog: DLCDialog[T],
-      postProcessStr: String => String = str => str): Unit = {
+      postProcessStr: String => String = str => str): String = {
     val result = dialog.showAndWait(parentWindow.value)
+
+    val promise = Promise[String]()
 
     result match {
       case Some(command) =>
@@ -102,15 +105,19 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
             ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
               case Success(commandReturn) =>
                 resultArea.text = postProcessStr(commandReturn)
+                promise.success(commandReturn)
               case Failure(err) =>
                 err.printStackTrace()
                 resultArea.text = s"Error executing command:\n${err.getMessage}"
+                promise.success("")
             }
             updateDLCs()
           }
         )
-      case None => ()
+      case None => promise.success("")
     }
+
+    Await.result(promise.future, 15.seconds)
   }
 
   def onOffer(): Unit = {
@@ -211,11 +218,11 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
     }
   }
 
-  def onExecute(): Unit = {
+  def onExecute(): String = {
     printDLCDialogResult("ExecuteDLC", new ExecuteDLCDialog)
   }
 
-  def onRefund(): Unit = {
+  def onRefund(): String = {
     printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog)
   }
 
