@@ -11,7 +11,7 @@ import org.bitcoins.core.api.wallet.{
   CoinSelectionAlgo
 }
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
-import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
@@ -64,7 +64,7 @@ abstract class Wallet
 
   val chainParams: ChainParams = walletConfig.chain
 
-  val networkParameters: NetworkParameters = walletConfig.network
+  val networkParameters: BitcoinNetwork = walletConfig.network
 
   override val discoveryBatchSize: Int = walletConfig.discoveryBatchSize
 
