@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.wallet.models
 
-import org.bitcoins.core.number.UInt64
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
@@ -88,6 +88,8 @@ case class DLCFundingInputDAO()(implicit
 
     def output: Rep[TransactionOutput] = column("output")
 
+    def nSequence: Rep[UInt32] = column("sequence")
+
     def maxWitnessLength: Rep[Long] = column("max_witness_length")
 
     def redeemScriptOpt: Rep[Option[ScriptPubKey]] = column("redeem_script_opt")
@@ -101,6 +103,7 @@ case class DLCFundingInputDAO()(implicit
        inputSerialId,
        outPoint,
        output,
+       nSequence,
        maxWitnessLength,
        redeemScriptOpt,
        witnessScriptOpt).<>(DLCFundingInputDb.tupled, DLCFundingInputDb.unapply)

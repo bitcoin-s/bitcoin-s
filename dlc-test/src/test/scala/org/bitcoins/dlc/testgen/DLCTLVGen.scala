@@ -137,7 +137,7 @@ object DLCTLVGen {
       inputSerialId: UInt64 = DLCMessage.genSerialId(),
       prevTx: Transaction = inputTransaction(),
       prevTxVout: UInt32 = UInt32.zero,
-      sequence: UInt32 = TransactionConstants.sequence,
+      sequence: UInt32 = TransactionConstants.enableRBFSequence,
       maxWitnessLen: UInt16 = UInt16(107),
       redeemScriptOpt: Option[WitnessScriptPubKey] = None): DLCFundingInput = {
     DLCFundingInput(inputSerialId,
@@ -152,7 +152,7 @@ object DLCTLVGen {
       inputSerialId: UInt64 = DLCMessage.genSerialId(),
       prevTx: Transaction = inputTransaction(),
       prevTxVout: UInt32 = UInt32.zero,
-      sequence: UInt32 = TransactionConstants.sequence,
+      sequence: UInt32 = TransactionConstants.enableRBFSequence,
       maxWitnessLen: UInt16 = UInt16(107),
       redeemScriptOpt: Option[WitnessScriptPubKey] =
         None): DLCParsingTestVector = {

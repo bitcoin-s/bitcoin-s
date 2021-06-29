@@ -298,7 +298,7 @@ object DLCTxBuilder {
         case None               => EmptyScriptSignature
       }
 
-      TransactionInput(ref.outPoint, scriptSig, TransactionConstants.sequence)
+      TransactionInput(ref.outPoint, scriptSig, ref.sequence)
     }
 
     val fundingValue =
