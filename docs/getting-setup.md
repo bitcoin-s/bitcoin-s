@@ -43,8 +43,8 @@ If you follow the coursier route, [you can switch to a java11 version by running
 We support publishing of [scala.js](https://www.scala-js.org/) artifacts. 
 This library will compile Scala source code into javascript artifacts.
 
-To be able to run scala js tests, you need to have a javascript runtime installed.
-Node.js is a very popular Javascript runtime that we recommend installing from [here](https://nodejs.org/en/)
+To be able to run scala js tests, you need to have the node.js javascript runtime installed.
+You can install it from [here](https://nodejs.org/en/)
 
 ## Step 2: Bitcoin-S Repository
 
