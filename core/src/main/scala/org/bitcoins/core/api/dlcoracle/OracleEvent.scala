@@ -5,6 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.NumberUtil
+import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.crypto._
 
 import java.time.Instant
@@ -16,7 +17,7 @@ import java.time.Instant
 sealed trait OracleEvent {
 
   /** The nonces the oracle is committing to for this event */
-  def nonces: Vector[SchnorrNonce]
+  def nonces: OrderedNonces
 
   /** The oracle's public key */
   def pubkey: SchnorrPublicKey
@@ -60,7 +61,7 @@ sealed trait CompletedOracleEvent extends OracleEvent {
           "Must have a signature for every nonce")
 
   def signatures: Vector[SchnorrDigitalSignature] =
-    nonces
+    nonces.vec
       .zip(attestations)
       .map(sigPieces => SchnorrDigitalSignature(sigPieces._1, sigPieces._2))
 
@@ -79,7 +80,7 @@ sealed trait EnumV0OracleEvent extends OracleEvent {
   override def eventDescriptorTLV: EnumEventDescriptorV0TLV
   def nonce: SchnorrNonce
 
-  final override def nonces: Vector[SchnorrNonce] = Vector(nonce)
+  final override def nonces: OrderedNonces = OrderedNonces(nonce)
 }
 
 case class PendingEnumV0OracleEvent(
@@ -123,7 +124,7 @@ sealed trait DigitDecompositionV0OracleEvent extends OracleEvent {
 
 case class PendingDigitDecompositionV0OracleEvent(
     pubkey: SchnorrPublicKey,
-    nonces: Vector[SchnorrNonce],
+    nonces: OrderedNonces,
     eventName: String,
     signingVersion: SigningVersion,
     maturationTime: Instant,
@@ -134,7 +135,7 @@ case class PendingDigitDecompositionV0OracleEvent(
 
 case class CompletedDigitDecompositionV0OracleEvent(
     pubkey: SchnorrPublicKey,
-    nonces: Vector[SchnorrNonce],
+    nonces: OrderedNonces,
     eventName: String,
     signingVersion: SigningVersion,
     maturationTime: Instant,
@@ -230,7 +231,7 @@ object OracleEvent {
 
         CompletedDigitDecompositionV0OracleEvent(
           eventDb.pubkey,
-          sortedEventDbs.map(_.nonce),
+          OrderedNonces(sortedEventDbs.map(_.nonce)),
           eventDb.eventName,
           eventDb.signingVersion,
           eventDb.maturationTime,
@@ -247,7 +248,7 @@ object OracleEvent {
 
         PendingDigitDecompositionV0OracleEvent(
           eventDb.pubkey,
-          sortedEventDbs.map(_.nonce),
+          OrderedNonces(sortedEventDbs.map(_.nonce)),
           eventDb.eventName,
           eventDb.signingVersion,
           eventDb.maturationTime,

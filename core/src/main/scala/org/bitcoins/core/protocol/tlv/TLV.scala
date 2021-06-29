@@ -2,8 +2,8 @@ package org.bitcoins.core.protocol.tlv
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
-import org.bitcoins.core.protocol.dlc.compute.SigningVersion.DLCOracleV0SigningVersion
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
+import org.bitcoins.core.protocol.dlc.compute.SigningVersion.DLCOracleV0SigningVersion
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.TLV.{
   DecodeTLVResult,
@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.tlv.TLV.{
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
+import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
@@ -703,25 +704,25 @@ object DigitDecompositionEventDescriptorV0TLV
 
 sealed trait OracleEventTLV extends TLV {
   def eventDescriptor: EventDescriptorTLV
-  def nonces: Vector[SchnorrNonce]
+  def nonces: OrderedNonces
   def eventId: NormalizedString
   def eventMaturityEpoch: UInt32
 }
 
 case class OracleEventV0TLV(
-    nonces: Vector[SchnorrNonce],
+    nonces: OrderedNonces,
     eventMaturityEpoch: UInt32,
     eventDescriptor: EventDescriptorTLV,
     eventId: NormalizedString
 ) extends OracleEventTLV {
 
-  require(eventDescriptor.noncesNeeded == nonces.size,
+  require(eventDescriptor.noncesNeeded == nonces.vec.size,
           "Not enough nonces for this event descriptor")
 
   override def tpe: BigSizeUInt = OracleEventV0TLV.tpe
 
   override val value: ByteVector = {
-    u16PrefixedList(nonces) ++
+    u16PrefixedList(nonces.vec) ++
       eventMaturityEpoch.bytes ++
       eventDescriptor.bytes ++
       strBytes(eventId)
@@ -744,7 +745,10 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
     val eventDescriptor = iter.take(EventDescriptorTLV)
     val eventId = iter.takeString()
 
-    OracleEventV0TLV(nonces, eventMaturity, eventDescriptor, eventId)
+    OracleEventV0TLV(OrderedNonces(nonces),
+                     eventMaturity,
+                     eventDescriptor,
+                     eventId)
   }
 
   override val typeName: String = "OracleEventV0TLV"
@@ -799,7 +803,7 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
 
   lazy val dummy: OracleAnnouncementV0TLV = {
     val priv = ECPrivateKey.freshPrivateKey
-    val event = OracleEventV0TLV(Vector(priv.schnorrNonce),
+    val event = OracleEventV0TLV(OrderedNonces(Vector(priv.schnorrNonce)),
                                  UInt32.zero,
                                  EnumEventDescriptorV0TLV.dummy,
                                  "dummy")
@@ -814,7 +818,7 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
       nonce: SchnorrNonce,
       events: Vector[EnumOutcome]): OracleAnnouncementTLV = {
     val event = OracleEventV0TLV(
-      Vector(nonce),
+      OrderedNonces(Vector(nonce)),
       UInt32.zero,
       EnumEventDescriptorV0TLV(events.map(outcome => outcome.outcome)),
       "dummy")
@@ -833,7 +837,10 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
                                                                  nonces.length,
                                                                  "dummy",
                                                                  Int32.zero)
-    val event = OracleEventV0TLV(nonces, UInt32.zero, eventDescriptor, "dummy")
+    val event = OracleEventV0TLV(OrderedNonces(nonces),
+                                 UInt32.zero,
+                                 eventDescriptor,
+                                 "dummy")
     val sig =
       privKey.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
 

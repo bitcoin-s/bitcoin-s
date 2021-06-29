@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.dlc.models
 
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.crypto._
 
 /** Specifies the set of oracles and their corresponding announcements
@@ -68,7 +69,7 @@ sealed trait SingleOracleInfo
   def publicKey: SchnorrPublicKey = announcement.publicKey
 
   /** The oracle's pre-committed nonces, in the correct order */
-  def nonces: Vector[SchnorrNonce] = announcement.eventTLV.nonces
+  def nonces: OrderedNonces = announcement.eventTLV.nonces
 
   /** The order of the given sigs should correspond to the given outcome. */
   def verifySigs(outcome: DLCOutcomeType, sigs: OracleSignatures): Boolean
@@ -77,7 +78,7 @@ sealed trait SingleOracleInfo
     * This point is used for adaptor signing.
     */
   def sigPoint(outcome: DLCOutcomeType): ECPublicKey = {
-    publicKey.computeSigPoint(outcome.serialized, nonces)
+    publicKey.computeSigPoint(outcome.serialized, nonces.vec)
   }
 
   /** Computes the sum of all nonces used in a given outcome */
