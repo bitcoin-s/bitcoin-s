@@ -80,7 +80,7 @@ reason to keep using legacy transaction formats.</p>
 <span class="hljs-keyword">val</span> privkey = <span class="hljs-type">ECPrivateKey</span>()
 <span class="hljs-comment">// privkey: ECPrivateKey = Masked(ECPrivateKey)</span>
 <span class="hljs-keyword">val</span> pubkey = privkey.publicKey
-<span class="hljs-comment">// pubkey: org.bitcoins.crypto.ECPublicKey = ECPublicKey(02b053ac04a9a81640a84941e7fc917caf09fc8a47e3e6a861b6bfbf282ba76f93)</span>
+<span class="hljs-comment">// pubkey: org.bitcoins.crypto.ECPublicKey = ECPublicKey(0362232c4c682d4a968b24436536f7f2b22690eb6d77aa200ee3581a12f4d3c44c)</span>
 
 <span class="hljs-keyword">val</span> segwitAddress = {
     <span class="hljs-comment">// see https://bitcoin.org/en/glossary/pubkey-script</span>
@@ -89,10 +89,10 @@ reason to keep using legacy transaction formats.</p>
     <span class="hljs-keyword">val</span> scriptPubKey = <span class="hljs-type">P2WPKHWitnessSPKV0</span>(pubkey)
     <span class="hljs-type">Bech32Address</span>(scriptPubKey, <span class="hljs-type">TestNet3</span>)
 }
-<span class="hljs-comment">// segwitAddress: Bech32Address = tb1qu5f4f0cu97sma4ce3nxvddf604g78f8tl84rng</span>
+<span class="hljs-comment">// segwitAddress: Bech32Address = tb1qe5qulh96qfy7ndhq2hzv0vfnau9ynmzgple8rf</span>
 
 println(segwitAddress.toString)
-<span class="hljs-comment">// tb1qu5f4f0cu97sma4ce3nxvddf604g78f8tl84rng</span>
+<span class="hljs-comment">// tb1qe5qulh96qfy7ndhq2hzv0vfnau9ynmzgple8rf</span>
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="generating-legacy-base58-addresses"></a><a href="#generating-legacy-base58-addresses" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Generating legacy (base58) addresses</h2>
 <p>If you need to generate legacy addresses for backwards
@@ -101,10 +101,10 @@ Take a look:</p>
 <pre><code class="hljs css language-scala"><span class="hljs-comment">// we're reusing the same private/public key pair</span>
 <span class="hljs-comment">// from before. don't do this in an actual application!</span>
 <span class="hljs-keyword">val</span> legacyAddress = <span class="hljs-type">P2PKHAddress</span>(pubkey, <span class="hljs-type">TestNet3</span>)
-<span class="hljs-comment">// legacyAddress: P2PKHAddress = n2QCC8M4dy7wdLfpNMAcCcXFDe9Ly5t3bc</span>
+<span class="hljs-comment">// legacyAddress: P2PKHAddress = mzCvzGzdPy4zoSejvJhCv1foRVLZAVKcU5</span>
 
 println(legacyAddress.toString)
-<span class="hljs-comment">// n2QCC8M4dy7wdLfpNMAcCcXFDe9Ly5t3bc</span>
+<span class="hljs-comment">// mzCvzGzdPy4zoSejvJhCv1foRVLZAVKcU5</span>
 </code></pre>
 </span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/core/core-intro"><span class="arrow-prev">← </span><span>Core Module</span></a><a class="docs-next button" href="/docs/next/core/hd-keys"><span>HD Key Generation</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#generating-segwit-bech32-addresses">Generating SegWit (bech32) addresses</a></li><li><a href="#generating-legacy-base58-addresses">Generating legacy (base58) addresses</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2021 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
