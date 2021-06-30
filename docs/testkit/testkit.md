@@ -13,11 +13,8 @@ We use this testkit to test bitcoin-s it self.
 
 ```scala mdoc:invisible
 import akka.actor.ActorSystem
-import org.bitcoins.node._
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.rpc.client.common._
-import org.bitcoins.testkit.node._
-import org.bitcoins.testkit.node.fixture._
 import org.bitcoins.testkit.rpc._
 import org.bitcoins.testkit.eclair.rpc._
 
@@ -186,4 +183,4 @@ You may find useful testkit functionality for other modules here
 4. [Node](/api/org/bitcoins/testkit/node/NodeUnitTest)
 
 In general, you will find constructors and destructors of fixtures that can be useful when testing your applications
-if yo uare using any of those modules.
+if you are using any of those modules.

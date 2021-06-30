@@ -23,7 +23,6 @@ import akka.actor.ActorSystem
 import org.bitcoins.explorer.client._
 import org.bitcoins.commons.jsonmodels._
 import org.bitcoins.explorer.model._
-import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.core.protocol.tlv.{OracleAnnouncementV0TLV,OracleAttestmentV0TLV}
 
 import scala.concurrent.Future

@@ -75,7 +75,7 @@ for {
   _ <- client.start()
   _ <- client.walletPassphrase("mypassword", 10000, Some("walletName"))
   balance <- client.getBalance("walletName")
-} yield ()
+} yield balance
 ```
 
 ## Connecting to a remote `bitcoind`
@@ -140,7 +140,7 @@ implicit val ec = ExecutionContext.global
 val cli = BitcoindRpcClient.fromDatadir(binary=new File("/path/to/bitcoind"), datadir=new File("/path/to/bitcoind-datadir"))
 
 // let's also assume you have a bitcoin address
-val address: BitcoinAddress = ???
+val address: BitcoinAddress = BitcoinAddress("bc1qm8kec4xvucdgtzppzvvr2n6wp4m4w0k8akhf98")
 
 val txid: Future[DoubleSha256DigestBE] =
   cli.sendToAddress(address, 3.bitcoins).recoverWith {

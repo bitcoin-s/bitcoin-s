@@ -26,7 +26,7 @@ import org.bitcoins.core.script.control._
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.util._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.script.{Script, ScriptPubKey, ScriptWitness, ScriptFactory, CSVScriptPubKey, MultiSignatureScriptPubKey, LockTimeScriptPubKey, EmptyScriptPubKey, ConditionalScriptSignature, P2PKScriptSignature, MultiSignatureScriptSignature}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature

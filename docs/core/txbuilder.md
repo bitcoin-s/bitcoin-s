@@ -7,11 +7,9 @@ Bitcoin-S features a transaction building API that allows you to construct and s
 
 ```scala mdoc:invisible
 import scala.concurrent._
-import scala.concurrent.duration._
 
 import org.bitcoins.core._
 import number._
-import config._
 import currency._
 import org.bitcoins.crypto._
 import script.crypto._

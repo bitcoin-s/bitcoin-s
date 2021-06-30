@@ -18,22 +18,16 @@ and transaction extraction.
 An example on a typical PSBT workflow:
 
 ```scala mdoc:invisible
-import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.signer.BitcoinSigner
-import org.bitcoins.core.wallet.utxo.{
-  ConditionalPath,
-  InputInfo,
-  ECSignatureParams
-}
+import org.bitcoins.core.wallet.utxo._
 import scodec.bits._
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
+import scala.concurrent._
 ```
 
 ```scala mdoc:compile-only

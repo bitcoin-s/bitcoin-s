@@ -23,7 +23,6 @@ import org.bitcoins.chain.models._
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.client.common._
 import org.bitcoins.testkit.chain._
 
 import scala.concurrent._
