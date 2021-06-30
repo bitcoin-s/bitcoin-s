@@ -28,7 +28,7 @@ class ServerRunTest extends BitcoinSAsyncTest {
                      "--rpcport",
                      randPort.toString)
 
-    val main = new BitcoinSServerMain(args)
+    val main = new BitcoinSServerMain(args, () => system)
     val runMainF = main.start()
     // Use Exception because different errors can occur
     val assertionF: Future[Assertion] = recoverToSucceededIf[Exception] {

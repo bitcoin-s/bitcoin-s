@@ -124,8 +124,10 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
     System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
 
     logger.info(s"version=${EnvUtil.getVersion}")
+    logger.info(
+      s"Set log location to: ${System.getProperty("bitcoins.log.location")}")
 
-    logger.info(s"using directory ${usedDir.toAbsolutePath.toString}")
+    logger.info(s"Using directory ${usedDir.toAbsolutePath.toString}")
     val runner: Future[Unit] = start()
     runner.failed.foreach { err =>
       logger.error(s"Failed to startup server!", err)

@@ -34,7 +34,7 @@ class LogLocationTest extends BitcoinSAsyncTest {
                    "--rpcport",
                    randPort.toString)
 
-      main = new BitcoinSServerMain(args)
+      main = new BitcoinSServerMain(args, () => system)
 
       // Start the server in a separate thread
       runnable = new Runnable {

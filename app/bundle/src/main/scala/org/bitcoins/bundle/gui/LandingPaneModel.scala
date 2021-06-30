@@ -82,7 +82,7 @@ class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
           val extraArgs = Vector("--conf", path.toAbsolutePath.toString)
           val usedArgs = extraArgs ++ args
           // use class base constructor to share the actor system
-          new BitcoinSServerMain(usedArgs.toArray).run()
+          new BitcoinSServerMain(usedArgs.toArray, () => system).run()
         }
 
         Await.result(promise.future, 60.seconds)

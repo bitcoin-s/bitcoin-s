@@ -27,9 +27,12 @@ import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-class BitcoinSServerMain(override val args: Array[String])(implicit
-    override val system: ActorSystem)
+class BitcoinSServerMain(
+    override val args: Array[String],
+    getSystem: () => ActorSystem)
     extends BitcoinSRunner {
+
+  implicit override lazy val system: ActorSystem = getSystem()
 
   implicit lazy val conf: BitcoinSAppConfig =
     BitcoinSAppConfig(datadir, baseConfig)
@@ -395,7 +398,7 @@ object BitcoinSServerMain extends BitcoinSApp {
   override val actorSystemName =
     s"bitcoin-s-server-${System.currentTimeMillis()}"
 
-  new BitcoinSServerMain(args).run()
+  new BitcoinSServerMain(args, () => system).run()
 }
 
 object BitcoinSServer {
