@@ -112,7 +112,7 @@ private[blockchain] trait BaseBlockChainCompObject
       findPrevBlockHeaderIdx(header, blockchain) match {
         case None =>
           logger.warn(
-            s"No common ancestor found in the chain with tip=${blockchain.tip.hashBE.hex} to connect to hash=${header.hashBE} prevHash=${header.previousBlockHashBE}")
+            s"No common ancestor found in the chain with tip=${blockchain.tip.hashBE.hex} to connect to hash=${header.hashBE.hex} prevHash=${header.previousBlockHashBE.hex}. This may be because we have a competing reorg!")
           val err = TipUpdateResult.BadPreviousBlockHash(header)
           val failed = ConnectTipResult.BadTip(err)
           failed
@@ -128,7 +128,7 @@ private[blockchain] trait BaseBlockChainCompObject
 
           tipResult match {
             case success: TipUpdateResult.Success =>
-              logger.debug(
+              logger.info(
                 s"Successfully verified=${success.header.hashBE.hex}, connecting to chain")
               val connectionIdx = blockchain.length - prevHeaderIdx
 
