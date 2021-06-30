@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.tlv.TLV.{
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
-import org.bitcoins.core.util.sorted.OrderedNonces
+import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
@@ -1134,18 +1134,16 @@ object OracleInfoV0TLV extends TLVFactory[OracleInfoV0TLV] {
 
 sealed trait MultiOracleInfoTLV extends OracleInfoTLV {
   def threshold: Int
-  def oracles: Vector[OracleAnnouncementTLV]
+  def oracles: OrderedAnnouncements
 }
 
-case class OracleInfoV1TLV(
-    threshold: Int,
-    oracles: Vector[OracleAnnouncementTLV])
+case class OracleInfoV1TLV(threshold: Int, oracles: OrderedAnnouncements)
     extends MultiOracleInfoTLV {
   override val tpe: BigSizeUInt = OracleInfoV1TLV.tpe
 
   override val value: ByteVector = {
     UInt16(threshold).bytes ++
-      u16PrefixedList(oracles)
+      u16PrefixedList(oracles.toVector)
   }
 }
 
@@ -1159,7 +1157,7 @@ object OracleInfoV1TLV extends TLVFactory[OracleInfoV1TLV] {
     val oracles =
       iter.takeU16PrefixedList(() => iter.take(OracleAnnouncementTLV))
 
-    OracleInfoV1TLV(threshold, oracles)
+    OracleInfoV1TLV(threshold, OrderedAnnouncements(oracles))
   }
 
   override val typeName: String = "OracleInfoV1TLV"
@@ -1199,13 +1197,13 @@ object OracleParamsV0TLV extends TLVFactory[OracleParamsV0TLV] {
 
 case class OracleInfoV2TLV(
     threshold: Int,
-    oracles: Vector[OracleAnnouncementTLV],
+    oracles: OrderedAnnouncements,
     params: OracleParamsTLV)
     extends MultiOracleInfoTLV {
   override val tpe: BigSizeUInt = OracleInfoV2TLV.tpe
 
   override val value: ByteVector = {
-    UInt16(threshold).bytes ++ u16PrefixedList(oracles) ++ params.bytes
+    UInt16(threshold).bytes ++ u16PrefixedList(oracles.toVector) ++ params.bytes
   }
 }
 
@@ -1220,7 +1218,7 @@ object OracleInfoV2TLV extends TLVFactory[OracleInfoV2TLV] {
       iter.takeU16PrefixedList(() => iter.take(OracleAnnouncementTLV))
     val params = iter.take(OracleParamsV0TLV)
 
-    OracleInfoV2TLV(threshold, oracles, params)
+    OracleInfoV2TLV(threshold, OrderedAnnouncements(oracles), params)
   }
 
   override val typeName: String = "OracleInfoV2TLV"
