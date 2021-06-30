@@ -35,7 +35,7 @@ https://github.com/bitcoin-s/bitcoin-s/actions/workflows/release.yml
 
 Here is what the installers look like
 
-![installers](Screenshot%20from%202021-06-18%2013-10-40.png)
+![installers](/img/doc-imgs/github-artifacts.png)
 
 </details>
 
@@ -129,5 +129,3 @@ Please see [our setup docs](getting-setup.md)
 ## If you want to setup Bitcoin-S locally for development
 
 Please see [our setup docs](getting-setup.md)
-
-

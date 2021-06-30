@@ -14,6 +14,8 @@ this data as it is not something that can be written down on a piece of paper.
 To create a backup from the GUI simply click the `File` menu, then select `Save Backup`.
 This will bring up a dialog to choose the save location for where to save the file to.
 
+![backup gui](/img/doc-imgs/backup-gui.png)
+
 This file with be a `zip` archive of your `.bitcoin-s` data folder, it will contain all
 of your wallet seeds, DLC data, oracle data, wallet history, and configuration.
 

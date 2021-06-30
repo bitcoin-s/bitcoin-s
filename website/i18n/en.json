@@ -29,8 +29,8 @@
       "chain/filter-sync": {
         "title": "Syncing Blockfilters"
       },
-      "config/configuration title: Application Configuration": {
-        "title": "config/configuration title: Application Configuration"
+      "config/configuration": {
+        "title": "Application Configuration"
       },
       "contributing-website": {
         "title": "Contributing to the website"
