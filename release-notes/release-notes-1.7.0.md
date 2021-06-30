@@ -1,7 +1,39 @@
-## 1.7.0 Installers!
+# 1.7.0 DLC wallet & Installers
 
 Last commit this was synced through was  0d2bc7a9270b93b32471fe014cd837693fced967
 
+# DLC Wallet
+
+This release merges our feature branch called `adaptor-dlc` into master. This means 
+that all DLC features are now in our `master` branch.
+
+# Installers
+
+We now support installers for mac, windows, and linux (deb) builds. Everytime a PR is merged into master, 
+we publish artifacts for that commit. For more information, please see our [website](https://bitcoin-s.org/docs/next/getting-started#java-binaries)
+
+With these installers, you can install the bitcoin-s wallet and start using DLCs with a rudimentary GUI.
+In future releases, we will be iterating and improving the GUI user experience.
+
+# Versioning changes
+
+To support publishing artifacts for both mac and windows, we had to drop the leading `v` on our version scheme.
+We also were required by apple to add a leading `1` to our version scheme. Thus, this release will be `1.7.0`
+rather than the expected version of `v0.7.0`.
+
+# New modules
+
+## DLC wallet 
+
+This new module contains all logic for our DLC Wallet
+
+## Tor
+
+We are beginning to integrate TOR support into bitcoin-s to for a variety of reasons.
+In this release, we have added bare bones support, in future releases we will be integrating
+this deeper into other modules.
+
+# Updates for modules
 
 ## App commons
 
@@ -10,6 +42,10 @@ c72c5f84e3d Add extranious json readers, writers, and column mappers (#3325)
 5a79acb59ce Fix DLCStatusPickler (#3190)
 
 ## App server
+
+This release optimizes the support for bitcoind as a backend in the app server.
+It also fixes a variety of bugs adds a few new endpoints. You can find all supported
+end points on our website [here](https://bitcoin-s.org/docs/next/applications/server#server-endpoints)
 
 af9bf210589 Improve logs in BitcoindRpcBackendUtil (#3339)
 
@@ -37,6 +73,9 @@ d6878b02269 Use same network as bitcoind backend (#3285)
 
 ## Build
 
+Most build related commits are related to automatically publishing installers everytime
+a commit is merged into master.
+
 d669bd58aec Resolve bundle config and read/write in tmp file (#3327)
 
 cb5ec20eacf Silence all scaladoc warnings (#3336)
@@ -61,6 +100,13 @@ aff2374f455 Update README.md (#3071)
 
 ## Bundle
 
+Bundle combines both the GUI and AppServer project and bundles them together to make a standalone application.
+One problem we encountered this release is how to allow users to configure their node from the GUI on first startup.
+
+In #3142 we added support for this by adding a new configuration file that is automatically generated and written
+to `.bitcoin-s/bitcoin-s-bundle.conf`. This file saves the user's configuration, and uses it the next
+time the bundle is started.
+
 bd877c80a9f Get logging working in bundle  (#3200)
 
 96fc5445727 Fix logging in bundle (#3167)
@@ -75,21 +121,20 @@ caf6c2e7243 Enable java app packaging on bundle project (#3144)
 
 ba91ba5596d Add assembly instructions for bundle project (#3104)
 
-## Crypto
-
-745e4c89fa2 Removed point multiplication from ECPrivateKey.freshPrivateKey (#3116)
-
-6bc0943a62f Call decompression on public keys less (#2988)
-
-78f4dfb8c66 Pubkey Refactor (#2936)
-
-63a6f9309dc Introduced AsyncAdaptorSign and AdaptorSign traits (#3037)
+## Chain
 
 ## Cli
 
 42966b3cbe6 Remove logback from the cli module (#3117)
 
 ## Core
+
+Most changes in the `core` module this release is related to optimizing adaptor point computations.
+This is very important as when doing numeric DLCs we have to generate thousands of points.
+We use parallelism to speed up this computation.
+
+The other notable change in `core` is adding `DLCAccounting`. This is used to caclulate things like PNL
+and rate of return for a DLC you were in.
 
 a9292fcad80 Add FutureUtil tests (#3126)
 
@@ -119,7 +164,19 @@ aacba1c077a Pulled down core diff from adaptor-dlc (#3038)
 
 a55a97ba6ff Optimize shift operations in Number (#3025)
 
-## Chain
+## Crypto
+
+This release for the `crypto` module reduces unnecessary computation that was being when
+instantiating a `ECPrivateKey` and `ECPublicKey` pair. This was done to improve performance
+when computing adaptor points, for which `ECPrivateKey` and `ECPublicKey` are used.
+
+745e4c89fa2 Removed point multiplication from ECPrivateKey.freshPrivateKey (#3116)
+
+6bc0943a62f Call decompression on public keys less (#2988)
+
+78f4dfb8c66 Pubkey Refactor (#2936)
+
+63a6f9309dc Introduced AsyncAdaptorSign and AdaptorSign traits (#3037)
 
 ## db commons
 
@@ -130,6 +187,8 @@ dee044eb4e2 2021 05 26 uint64 mapper (#3155)
 17d11455049 Removed extraneous findAll call from CRUD.updateAll (#3154)
 
 ## DLC Wallet
+
+Numerous optimization, bug fixes, and support for multi-wallet DLC wallet.
 
 0d2bc7a9270 Remove unneeded asInstanceOf calls in DLCWallet (#3345)
 
@@ -168,11 +227,21 @@ fb81552f6d0 Don't fetch all DLC data when canceling DLC (#3159)
 be8e965367d DLC Wallet pulldown (#3138)
 
 ## Fee rate provider
+
 a98a26c9296 Make mempool.space fee provider network specific (#3316)
 
 41f3cb4dbfc Fix CachedHttpFeeRateProvider (#3069)
 
 ## GUI
+
+Numerous improvements to the GUI. The most notable is the auto population of a 
+dialogs when files are attached to the dialog or announcements/contract infos
+are pasted into the dialog.
+
+There is also quality of life improvements such as showing the sync height of the wallet,
+showing wallet wide PNL and rate of return.
+
+1f43a1910fd Add ExplorerEnv.fromBitcoinNetwork() and use for View on Oracle Explorer siteUrl (#3332)
 
 88b99b03b5a Add view on oracle explorer button (#3328)
 
@@ -229,6 +298,9 @@ f8d5202974e Add contract info to ViewDLC (#3177)
 c7bb783b1a3 DLC GUI pulldown (#3148)
 
 ## Lnd rpc
+
+Upgrades to lnd-rpc to support the [latest release](https://github.com/lightningnetwork/lnd/releases/tag/v0.13.0-beta) `v0.13.0-beta`
+
 639adf1181d Use PaymentHashTag type in LndRpcClient (#3333)
 
 fafc564da81 Update LND to v0.13.0-beta (#3290)
@@ -236,6 +308,8 @@ fafc564da81 Update LND to v0.13.0-beta (#3290)
 db486163f97 Remove caveat for supressing 2.12.x warnings on lnd rpc (#3057)
 
 ## Node 
+
+This release for `node` fixes a bug where we had a race condition when syncing compact filters.
 
 7ba7f8b9ba5 Try to add block generate to address in fixture setup to get around compact filter sync edge case (#3231)
 
@@ -247,9 +321,7 @@ a104787985c Fix Node.sync() bug that was caused by not starting filter header sy
 
 2b8ac08cdcb Give oracle ability to sign messages with private key (#3070)
 
-## Oracle explorer Client 
-
-1f43a1910fd Add ExplorerEnv.fromBitcoinNetwork() and use for View on Oracle Explorer siteUrl (#3332)
+## Oracle explorer Client
 
 c3b982726e2 Fix error messages in SbExplorerClient (#3323)
 
@@ -266,6 +338,8 @@ b23b5ad55f9 Make sure secp256k1 is published for java8, not the class version of
 41468763695 Add DatadirUtil to centralize logic for finding our actual datadir (#3171)
 
 ## Wallet
+
+This release for the `wallet` was focused on optimizing performance when receiving a block.
 
 fdba5ad6bef Silence warning log if no error (#3314)
 
@@ -300,6 +374,7 @@ f86f90dc32a Add getbalances cli command (#3022)
 02c4505948a Initial Tor support (#3043)
 
 ## Website
+
 3ef842eca51 Adjust --depth doc from 100 -> 500 (#3300)
 
 97785561bad Add link to installers, add docs for requirement of java9+ for development environments (#3299)
@@ -317,82 +392,3 @@ cdee40b379d Fixed bitcoin-s-cli dir location under bin (#3293)
 4381b93afbd 2021 05 03 improve release notes (#3019)
 
 d25dff14b46 Add 0.6.0 website (#3020)
-
-
-## Dependencies
-
-ea26c8b3a31 2021 06 23 scalafx dep (#3324)
-
-04d937d4f4d Update sqlite-jdbc to 3.36.0 (#3334)
-
-027b72b7bab Bump set-getter from 0.1.0 to 0.1.1 in /website (#3308)
-
-5f5f1b2b1a7 Update metrics-core to 4.2.2 (#3317)
-
-a3e9275303b Update sbt-coveralls to 1.3.1 (#3297)
-
-6415b9c10a5 Update slf4j-api to 1.7.31 (#3294)
-
-5fbdf8297fe Bump postcss from 7.0.35 to 7.0.36 in /website (#3272)
-
-9be6cb11d54 Update postgresql to 42.2.22 (#3282)
-
-e9de8f30a8a Update metrics-core to 4.2.1 (#3284)
-
-afbc22af1cf Update sbt-native-image to 0.3.1 (#3270)
-
-3c8be6e8d90 Update sbt-coveralls to 1.3.0 (#3262)
-
-4f936b2cbf8 Update sbt to 1.5.4 (#3264)
-
-eeb4741d605 Update sbt-scalajs, scalajs-library, ... to 1.6.0 (#3233)
-
-4f4fd111e7b Update akka-actor, akka-discovery, ... to 2.6.15 (#3246)
-
-1215a228572 Update postgresql to 42.2.21 (#3248)
-
-4b2bc379e35 Update bcprov-jdk15on to 1.69 (#3238)
-
-4efe88fcbaa UPdate sbt and scoverage in conjunction (#3216)
-
-0f9024b7ae7 Update akka-grpc-runtime_2.12, ... to 2.0.0 (#3143)
-
-f958b4036c1 Bump otj-pg-embedded to 0.13.14 (#3228)
-
-a0ce337b22b Upgrade scala versions on ci to 2.12.14 and 2.13.6 (#3226)
-
-1402d1a381a Update scala-library to 2.12.14 (#3187)
-
-c605a02c28f Update sbt-assembly to 0.15.0 (#3109)
-
-ed7a44a1a54 Update sbt-scoverage to 1.8.1 (#3111)
-
-f460f0e79dc Update sbt-assembly to 0.14.10 (#3106)
-
-25852e48d8f Update scala-java-time to 2.3.0 (#3093)
-
-a0453ad660a Update scala-library to 2.13.6 (#3097)
-
-9dfc99cd403 Update scalatest to 3.2.9 (#3091)
-
-6f0fb0671e9 Update metrics-core to 4.2.0 (#3087)
-
-6f8ecf0654a Update scala-collection-compat to 2.4.4 (#3083)
-
-d9a8a38fafe Update sbt-mdoc to 2.2.21 (#3086)
-
-6fd869bd879 Update sourcecode to 0.2.7 (#3084)
-
-bb1eec39416 Update scodec-bits to 1.1.27 (#3085)
-
-b73607fbbb2 Update sbt-scoverage to 1.8.0 (#3066)
-
-d223829a373 Update sbt to 1.5.2 (#3062)
-
-526d8d345da Update scalacheck to 1.15.4 (#3060)
-
-3a0b1af7595 Update janino to 3.1.4 (#3058)
-
-0668ae541fe Update sbt-scoverage to 1.7.3 (#3061)
-
-b854f7b16a2 Fix javafx on mac osx new m1 arch (#3041)
