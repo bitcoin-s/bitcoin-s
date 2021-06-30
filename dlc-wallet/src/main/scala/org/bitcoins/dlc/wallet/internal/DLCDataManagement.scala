@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.dlc.verify.DLCSignatureVerifier
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.wallet.DLCWallet
@@ -63,7 +64,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
               .exists(_.used)
             if (used) {
               val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
-              val eventTLV = OracleEventV0TLV(nonces,
+              val eventTLV = OracleEventV0TLV(OrderedNonces(nonces),
                                               data.eventMaturity,
                                               data.eventDescriptor,
                                               data.eventId)
@@ -102,7 +103,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         announcementData.find(_.id.contains(id)) match {
           case Some(data) =>
             val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
-            val eventTLV = OracleEventV0TLV(nonces,
+            val eventTLV = OracleEventV0TLV(OrderedNonces(nonces),
                                             data.eventMaturity,
                                             data.eventDescriptor,
                                             data.eventId)

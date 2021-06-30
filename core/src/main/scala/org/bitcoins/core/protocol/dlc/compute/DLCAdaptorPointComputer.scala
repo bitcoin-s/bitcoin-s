@@ -136,7 +136,7 @@ object DLCAdaptorPointComputer {
       contractInfo.oracleInfo.singleOracleInfos.map { info =>
         val announcement = info.announcement
         val pubKey = announcement.publicKey
-        val nonces = announcement.eventTLV.nonces.map(_.publicKey)
+        val nonces = announcement.eventTLV.nonces.vec.map(_.publicKey)
 
         nonces.map { nonce =>
           possibleOutcomes.map { outcome =>

@@ -1,10 +1,10 @@
 package org.bitcoins.dlc.oracle.util
 
-import org.bitcoins.core.api.dlcoracle.db._
 import org.bitcoins.core.api.dlcoracle._
+import org.bitcoins.core.api.dlcoracle.db._
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.crypto.SchnorrNonce
+import org.bitcoins.core.util.sorted.OrderedNonces
 
 trait EventDbUtil {
 
@@ -13,7 +13,7 @@ trait EventDbUtil {
     */
   def toEventOutcomeDbs(
       descriptor: EventDescriptorTLV,
-      nonces: Vector[SchnorrNonce],
+      nonces: OrderedNonces,
       signingVersion: SigningVersion): Vector[EventOutcomeDb] = {
     descriptor match {
       case enum: EnumEventDescriptorV0TLV =>
@@ -70,7 +70,7 @@ trait EventDbUtil {
       eventName: String,
       signingVersion: SigningVersion = SigningVersion.latest): Vector[
     EventDb] = {
-    val nonces = oracleAnnouncementV0TLV.eventTLV.nonces
+    val nonces = oracleAnnouncementV0TLV.eventTLV.nonces.vec
     nonces.zipWithIndex.map { case (nonce, index) =>
       EventDb(
         nonce = nonce,

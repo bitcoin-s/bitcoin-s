@@ -6,3 +6,10 @@ import org.bitcoins.crypto.SchnorrNonce
 case class OrderedNonces(vec: Vector[SchnorrNonce])
     extends SortedVec[SchnorrNonce, SchnorrNonce](vec,
                                                   SortedVec.forOrdered(vec))
+
+object OrderedNonces {
+
+  def apply(single: SchnorrNonce): OrderedNonces = {
+    OrderedNonces(Vector(single))
+  }
+}
