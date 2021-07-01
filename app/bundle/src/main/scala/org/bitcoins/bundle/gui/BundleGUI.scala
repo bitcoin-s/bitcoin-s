@@ -1,12 +1,12 @@
 package org.bitcoins.bundle.gui
 
-import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.bitcoins.bundle.util.BitcoinSAppJFX3
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.DEFAULT_BITCOIN_S_DATADIR
+import org.bitcoins.db.util.DatadirUtil
 import org.bitcoins.gui._
 import org.bitcoins.gui.util.GUIUtil
-import org.bitcoins.server.util.DatadirUtil
 import scalafx.application.{JFXApp3, Platform}
 import scalafx.geometry.Pos
 import scalafx.scene.Scene
@@ -16,12 +16,14 @@ import scalafx.scene.layout.VBox
 
 import java.nio.file.{Path, Paths}
 
-object BundleGUI extends WalletGUI with JFXApp3 {
+object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
 
-  implicit override lazy val system: ActorSystem = ActorSystem(
-    s"bitcoin-s-gui-${System.currentTimeMillis()}")
+  override val customFinalDirOpt: Option[String] = None
 
-  lazy val args = parameters.raw
+  override val actorSystemName: String =
+    s"bitcoin-s-gui-${System.currentTimeMillis()}"
+
+  override lazy val commandLineArgs: Array[String] = parameters.raw.toArray
 
   override def start(): Unit = {
     // Catch unhandled exceptions on FX Application thread
@@ -49,7 +51,7 @@ object BundleGUI extends WalletGUI with JFXApp3 {
 
     System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
 
-    val landingPane = new LandingPane(glassPane)
+    val landingPane = new LandingPane(glassPane, commandLineArgs.toVector)
     rootView.children = Vector(landingPane.view, glassPane)
 
     lazy val guiScene: Scene = new Scene(1400, 600) {

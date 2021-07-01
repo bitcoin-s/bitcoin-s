@@ -13,7 +13,8 @@ import scalafx.scene.text._
 
 import scala.util.Try
 
-class LandingPane(glassPane: VBox)(implicit system: ActorSystem)
+class LandingPane(glassPane: VBox, commandLineArgs: Vector[String])(implicit
+    system: ActorSystem)
     extends Logging {
 
   import system.dispatcher
@@ -21,7 +22,7 @@ class LandingPane(glassPane: VBox)(implicit system: ActorSystem)
   val appConfig: BitcoinSAppConfig =
     BitcoinSAppConfig.fromDefaultDatadirWithBundleConf()
 
-  val model = new LandingPaneModel()
+  val model = new LandingPaneModel(commandLineArgs)
 
   private val label: Label = new Label("Welcome to Bitcoin-S") {
     alignmentInParent = Pos.BottomCenter
