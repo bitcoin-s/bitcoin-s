@@ -29,7 +29,7 @@ object BundleGUI extends WalletGUI with JFXApp3 {
       .currentThread()
       .setUncaughtExceptionHandler((_: Thread, ex: Throwable) => {
         ex.printStackTrace()
-        lazy val _ = new Alert(AlertType.Error) {
+        val _ = new Alert(AlertType.Error) {
           initOwner(owner)
           title = "Unhandled exception"
           headerText = "Exception: " + ex.getClass + ""
