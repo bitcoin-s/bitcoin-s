@@ -46,7 +46,7 @@ import org.bitcoins.testkit.wallet._
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 import akka.actor.ActorSystem
-import scala.concurrent.{ExecutionContext, Future, Await}
+import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 ```
 

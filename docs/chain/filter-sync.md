@@ -20,8 +20,6 @@ so we can query filters.
 Our internal infrastructure depends on one function to be implemented to be able to sync filters.
 
 ```scala mdoc:invisible
-import org.bitcoins.core.protocol.blockchain._
-import org.bitcoins.core.gcs._
 import scala.concurrent.Future
 
 import akka.actor.ActorSystem
@@ -33,8 +31,6 @@ import org.bitcoins.chain.blockchain.sync._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain._
 import org.bitcoins.testkit.chain.fixture.BitcoindV19ChainHandler
-
-import scala.concurrent._
 
 ```
 

@@ -5,7 +5,6 @@ title: Chain Query API
 
 ```scala mdoc:invisible
 import akka.actor.ActorSystem
-import org.bitcoins.core.api._
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.crypto._
@@ -17,7 +16,6 @@ import org.bitcoins.core.wallet.fee._
 import org.bitcoins.feeprovider._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.node._
-import org.bitcoins.node.networking.peer.DataMessageHandler._
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -160,7 +158,7 @@ val chainApi = new ChainQueryApi {
     }
 
     /** Gets the number of compact filters in the database */
-    override def getFilterCount: Future[Int] = {
+    override def getFilterCount(): Future[Int] = {
       // since bitcoind should have the filter for
       // every block we can just return the block height
       bitcoind.getBlockCount
