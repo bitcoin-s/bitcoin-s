@@ -183,7 +183,7 @@ want.</p>
     }
 
     <span class="hljs-comment">/** Gets the number of compact filters in the database */</span>
-    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">getFilterCount</span></span>: <span class="hljs-type">Future</span>[<span class="hljs-type">Int</span>] = {
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">getFilterCount</span></span>(): <span class="hljs-type">Future</span>[<span class="hljs-type">Int</span>] = {
       <span class="hljs-comment">// since bitcoind should have the filter for</span>
       <span class="hljs-comment">// every block we can just return the block height</span>
       bitcoind.getBlockCount

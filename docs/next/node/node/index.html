@@ -171,7 +171,7 @@ val genBlockF = for {
   bitcoind &lt;- bitcoindF
   addr &lt;- bitcoind.getNewAddress
   hashes &lt;- bitcoind.generateToAddress(1,addr)
-} yield ()
+} yield hashes
 
 //you should see our callback print a block hash
 //when running this code
