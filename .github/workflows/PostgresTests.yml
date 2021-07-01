@@ -23,6 +23,7 @@ jobs:
           java-version: zulu@1.11
       - name: 'Download Binary Artifacts'
         uses: actions/download-artifact@v2
+        continue-on-error: true
         with:
           name: ${{ runner.os }}-binary-artifacts
           path: |
