@@ -22,14 +22,7 @@ import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 
 import java.nio.file.{Files, Path, Paths}
-import java.util.concurrent.{
-  ExecutorService,
-  Executors,
-  ScheduledExecutorService,
-  ScheduledFuture,
-  ThreadFactory,
-  TimeUnit
-}
+import java.util.concurrent._
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Try
@@ -100,6 +93,9 @@ case class WalletAppConfig(
       case HDPurposes.Legacy       => AddressType.Legacy
       case HDPurposes.NestedSegWit => AddressType.NestedSegWit
       case HDPurposes.SegWit       => AddressType.SegWit
+      case HDPurposes.Taproot      =>
+        // todo, implement wallet support for taproot
+        sys.error("Taproot not yet supported in the wallet")
       // todo: validate this pre-app startup
       case other =>
         throw new RuntimeException(s"$other is not a valid account type!")
@@ -350,7 +346,10 @@ object WalletAppConfig
           case Right(km) =>
             val wallet =
               Wallet(km, nodeApi, chainQueryApi, feeRateApi, km.creationTime)
-            Future.successful(wallet)
+
+            // call initialize so we can create any missing HD accounts in the database
+            Wallet.initialize(wallet = wallet,
+                              bip39PasswordOpt = bip39PasswordOpt)
           case Left(err) =>
             sys.error(s"Error initializing key manager, err=${err}")
         }

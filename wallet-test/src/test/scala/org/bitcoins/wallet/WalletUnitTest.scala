@@ -3,7 +3,7 @@ package org.bitcoins.wallet
 import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.api.wallet.db.{AddressDb, TransactionDbHelper}
 import org.bitcoins.core.hd.HDChainType.{Change, External}
-import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType}
+import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.FutureUtil
@@ -38,7 +38,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
       accounts <- wallet.listAccounts()
       addresses <- wallet.listAddresses()
     } yield {
-      assert(accounts.length == 3) // legacy, segwit and nested segwit
+      assert(accounts.length == 4) // legacy, segwit, nested segwit, and taproot
+      assert(accounts.map(_.hdAccount.purpose) == HDPurposes.singleSigPurposes)
       assert(addresses.isEmpty)
     }
   }

@@ -62,6 +62,7 @@ object HDPath extends StringFactory[HDPath] {
       .fromStringT(string)
       .orElse(SegWitHDPath.fromStringT(string))
       .orElse(NestedSegWitHDPath.fromStringT(string))
+      .orElse(TaprootHDPath.fromStringT(string))
 
   override def fromString(string: String): HDPath = {
     fromStringT(string) match {

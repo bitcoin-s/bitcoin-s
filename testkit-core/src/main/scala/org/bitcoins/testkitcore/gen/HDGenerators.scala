@@ -1,7 +1,8 @@
 package org.bitcoins.testkitcore.gen
 
-import org.scalacheck.Gen
 import org.bitcoins.core.hd._
+import org.scalacheck.Gen
+
 import scala.util.Try
 
 /** Generators related to HD wallet functionality
@@ -60,7 +61,10 @@ object HDGenerators {
 
   /** Generates a valid HD purpose path */
   def hdPurpose: Gen[HDPurpose] =
-    Gen.oneOf(HDPurposes.Legacy, HDPurposes.NestedSegWit, HDPurposes.SegWit)
+    Gen.oneOf(HDPurposes.Legacy,
+              HDPurposes.NestedSegWit,
+              HDPurposes.SegWit,
+              HDPurposes.Taproot)
 
   def hdCoin: Gen[HDCoin] =
     for {
@@ -120,8 +124,19 @@ object HDGenerators {
                                accountIndex = accountIndex,
                                chainType = chainType)
 
+  def taprootHDPath: Gen[TaprootHDPath] =
+    for {
+      coinType <- hdCoinType
+      accountIndex <- NumberGenerator.positiveInts
+      addressIndex <- NumberGenerator.positiveInts
+      chainType <- hdChainType
+    } yield TaprootHDPath(coinType = coinType,
+                          addressIndex = addressIndex,
+                          accountIndex = accountIndex,
+                          chainType = chainType)
+
   def hdPath: Gen[HDPath] =
-    Gen.oneOf(legacyHdPath, segwithHdPath, nestedSegwithHdPath)
+    Gen.oneOf(legacyHdPath, segwithHdPath, nestedSegwithHdPath, taprootHDPath)
 
   type HDPathConstructor = Vector[BIP32Node] => Try[HDPath]
 
@@ -132,6 +147,7 @@ object HDGenerators {
       case legacy: LegacyHDPath       => (legacy, LegacyHDPath(_))
       case nested: NestedSegWitHDPath => (nested, NestedSegWitHDPath(_))
       case segwit: SegWitHDPath       => (segwit, SegWitHDPath(_))
+      case taproot: TaprootHDPath     => (taproot, TaprootHDPath(_))
     }
 
   /** Generates a pair of paths that can be diffed.

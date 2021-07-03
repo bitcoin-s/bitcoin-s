@@ -22,6 +22,7 @@ sealed abstract class HDAddress extends BIP32Path {
       case HDPurposes.Legacy       => LegacyHDPath(this)
       case HDPurposes.SegWit       => SegWitHDPath(this)
       case HDPurposes.NestedSegWit => NestedSegWitHDPath(this)
+      case HDPurposes.Taproot      => TaprootHDPath(this)
       case unknown: HDPurpose =>
         throw new IllegalArgumentException(s"Unknown HD purpose $unknown")
     }

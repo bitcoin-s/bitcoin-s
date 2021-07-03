@@ -13,6 +13,7 @@ package org.bitcoins.core.hd
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Purpose BIP44]]
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0045.mediawiki#Purpose BIP45]]
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0086.mediawiki BIP86]]
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki BIP49]]
   */
 case class HDPurpose(constant: Int) extends BIP32Path {
@@ -26,11 +27,12 @@ object HDPurposes {
   final val Multisig = HDPurpose(MultisigHDPath.PURPOSE)
   final val SegWit = HDPurpose(SegWitHDPath.PURPOSE)
   final val NestedSegWit = HDPurpose(NestedSegWitHDPath.PURPOSE)
+  final val Taproot = HDPurpose(TaprootHDPath.PURPOSE)
 
-  lazy val singleSigPurposes = Vector(Legacy, SegWit, NestedSegWit)
+  lazy val singleSigPurposes = Vector(Legacy, SegWit, NestedSegWit, Taproot)
 
   lazy val all: Vector[HDPurpose] =
-    Vector(Legacy, Multisig, SegWit, NestedSegWit)
+    Vector(Legacy, Multisig, SegWit, NestedSegWit, Taproot)
 
   /** Tries to turn the provided integer into a HD purpose path segment */
   def fromConstant(i: Int): Option[HDPurpose] = all.find(_.constant == i)

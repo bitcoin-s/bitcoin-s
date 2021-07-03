@@ -125,7 +125,11 @@ object DLCAppConfig extends AppConfigFactory[DLCAppConfig] with WalletLogger {
           case Right(km) =>
             val wallet =
               DLCWallet(km, nodeApi, chainQueryApi, feeRateApi, km.creationTime)
-            Future.successful(wallet)
+
+            // call initialize so we can create any missing HD accounts in the database
+            Wallet
+              .initialize(wallet = wallet, bip39PasswordOpt = bip39PasswordOpt)
+              .map(_.asInstanceOf[DLCWallet])
           case Left(err) =>
             sys.error(s"Error initializing key manager, err=${err}")
         }
