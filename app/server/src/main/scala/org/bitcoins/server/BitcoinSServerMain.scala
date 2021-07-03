@@ -12,7 +12,7 @@ import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.db.util.DatadirParser
+import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.dlc.wallet._
 import org.bitcoins.feeprovider.FeeProviderName._
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
@@ -21,17 +21,17 @@ import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.config.ZmqConfig
-import org.bitcoins.server.routes.{BitcoinSRunner, Server}
+import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-class BitcoinSServerMain(override val args: Array[String])(implicit
+class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
     val conf: BitcoinSAppConfig)
-    extends BitcoinSRunner {
+    extends BitcoinSServerRunner {
 
   implicit lazy val walletConf: WalletAppConfig = conf.walletConf
   implicit lazy val nodeConf: NodeAppConfig = conf.nodeConf
@@ -140,8 +140,7 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
       binding <- startHttpServer(nodeApi = node,
                                  chainApi = chainApi,
                                  wallet = wallet,
-                                 rpcbindOpt = None,
-                                 rpcPortOpt = None)
+                                 serverCmdLineArgs = serverArgParser)
       _ = {
         logger.info(
           s"Starting ${nodeConf.nodeType.shortName} node sync, it took=${System
@@ -205,8 +204,7 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
       binding <- startHttpServer(nodeApi = bitcoind,
                                  chainApi = bitcoind,
                                  wallet = wallet,
-                                 rpcbindOpt = None,
-                                 rpcPortOpt = None)
+                                 serverCmdLineArgs = serverArgParser)
       _ = BitcoinSServer.startedFP.success(Future.successful(binding))
     } yield {
       logger.info(s"Done starting Main!")
@@ -296,8 +294,7 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
       nodeApi: NodeApi,
       chainApi: ChainApi,
       wallet: DLCWallet,
-      rpcbindOpt: Option[String],
-      rpcPortOpt: Option[Int])(implicit
+      serverCmdLineArgs: ServerArgParser)(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
@@ -308,13 +305,13 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
     val chainRoutes = ChainRoutes(chainApi, nodeConf.network)
     val coreRoutes = CoreRoutes(Core)
 
-    val bindConfOpt = rpcbindOpt match {
+    val bindConfOpt = serverCmdLineArgs.rpcBindOpt match {
       case Some(rpcbind) => Some(rpcbind)
       case None          => conf.rpcBindOpt
     }
 
     val server = {
-      rpcPortOpt match {
+      serverCmdLineArgs.rpcPortOpt match {
         case Some(rpcport) =>
           Server(conf = nodeConf,
                  handlers =
@@ -399,8 +396,10 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
   /** Directory specific for current network or custom dir */
   override val customFinalDirOpt: Option[String] = None
 
+  val serverCmdLineArgs = ServerArgParser(args.toVector)
+
   val datadirParser =
-    DatadirParser(args.toVector, networkOpt, customFinalDirOpt)
+    DatadirParser(serverCmdLineArgs, customFinalDirOpt)
 
   System.setProperty("bitcoins.log.location", datadirParser.usedDir.toString)
 
@@ -408,7 +407,7 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
     BitcoinSAppConfig(datadirParser.datadir, datadirParser.baseConfig)(
       system.dispatcher)
 
-  new BitcoinSServerMain(args).run()
+  new BitcoinSServerMain(serverCmdLineArgs).run()
 }
 
 object BitcoinSServer {

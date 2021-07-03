@@ -1,20 +1,19 @@
 package org.bitcoins.scripts
 
 import akka.actor.ActorSystem
+import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.server.routes.BitcoinSRunner
-import org.bitcoins.server.util.BitcoinSApp
+import org.bitcoins.server.routes.{BitcoinSServerRunner}
+import org.bitcoins.server.util.{BitcoinSAppScalaDaemon}
 
 import java.nio.file.Paths
 import scala.concurrent.Future
 
 /** This script zips your $HOME/.bitcoin-s/ directory to a specified path, excluding chaindb.sqlite */
-class ZipDatadir(override val args: Array[String])(implicit
-    override val system: ActorSystem)
-    extends BitcoinSRunner {
-
-  implicit lazy val conf: BitcoinSAppConfig =
-    BitcoinSAppConfig(datadir, baseConfig)
+class ZipDatadir(override val serverArgParser: ServerArgParser)(implicit
+    override val system: ActorSystem,
+    conf: BitcoinSAppConfig)
+    extends BitcoinSServerRunner {
 
   override def start(): Future[Unit] = {
 
@@ -30,9 +29,23 @@ class ZipDatadir(override val args: Array[String])(implicit
   override def stop(): Future[Unit] = Future.unit
 }
 
-object Zip extends BitcoinSApp {
+object Zip extends BitcoinSAppScalaDaemon {
 
   override val actorSystemName: String =
     s"zip-datadir-${System.currentTimeMillis()}"
-  new ZipDatadir(args).run()
+
+  override val customFinalDirOpt = None
+
+  val serverCmdLineArgs = ServerArgParser(args.toVector)
+
+  val datadirParser =
+    DatadirParser(serverCmdLineArgs, customFinalDirOpt)
+
+  System.setProperty("bitcoins.log.location", datadirParser.usedDir.toString)
+
+  implicit lazy val conf: BitcoinSAppConfig =
+    BitcoinSAppConfig(datadirParser.datadir, datadirParser.baseConfig)(
+      system.dispatcher)
+
+  new ZipDatadir(serverCmdLineArgs).run()
 }

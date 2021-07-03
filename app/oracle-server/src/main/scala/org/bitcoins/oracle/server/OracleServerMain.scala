@@ -1,21 +1,21 @@
 package org.bitcoins.oracle.server
 
 import akka.actor.ActorSystem
-import org.bitcoins.db.util.DatadirParser
+import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
-import org.bitcoins.server.routes.{BitcoinSRunner, Server}
-import org.bitcoins.server.util.{BitcoinSApp, BitcoinSAppScalaDaemon}
+import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
+import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 
 import scala.concurrent.Future
 
-class OracleServerMain(override val args: Array[String])(implicit
+class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
     conf: DLCOracleAppConfig)
-    extends BitcoinSRunner {
+    extends BitcoinSServerRunner {
 
   override def start(): Future[Unit] = {
 
-    val bindConfOpt = conf.rpcBindOpt match {
+    val bindConfOpt = serverArgParser.rpcBindOpt match {
       case Some(rpcbind) => Some(rpcbind)
       case None          => conf.rpcBindOpt
     }
@@ -25,7 +25,7 @@ class OracleServerMain(override val args: Array[String])(implicit
       oracle <- conf.initialize()
 
       routes = Seq(OracleRoutes(oracle))
-      server = rpcPortOpt match {
+      server = serverArgParser.rpcPortOpt match {
         case Some(rpcport) =>
           Server(conf = conf,
                  handlers = routes,
@@ -66,8 +66,10 @@ object OracleServerMain extends BitcoinSAppScalaDaemon {
   /** Directory specific for current network or custom dir */
   override val customFinalDirOpt: Option[String] = Some("oracle")
 
+  val serverCmdLineArgs = ServerArgParser(args.toVector)
+
   val datadirParser =
-    DatadirParser(args.toVector, networkOpt, customFinalDirOpt)
+    DatadirParser(serverCmdLineArgs, customFinalDirOpt)
 
   System.setProperty("bitcoins.log.location", datadirParser.usedDir.toString)
 
@@ -75,5 +77,5 @@ object OracleServerMain extends BitcoinSAppScalaDaemon {
     DLCOracleAppConfig(datadirParser.datadir, datadirParser.baseConfig)(
       system.dispatcher)
 
-  new OracleServerMain(args).run()
+  new OracleServerMain(serverCmdLineArgs).run()
 }

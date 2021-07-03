@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import org.bitcoins.bundle.util.BitcoinSAppJFX3
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.AppConfig.DEFAULT_BITCOIN_S_DATADIR
-import org.bitcoins.db.util.DatadirUtil
+import org.bitcoins.db.util.{DatadirUtil, ServerArgParser}
 import org.bitcoins.gui._
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.application.{JFXApp3, Platform}
@@ -24,6 +24,8 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
     s"bitcoin-s-gui-${System.currentTimeMillis()}"
 
   override lazy val commandLineArgs: Array[String] = parameters.raw.toArray
+
+  private val serverArgParser = ServerArgParser(commandLineArgs.toVector)
 
   override def start(): Unit = {
     // Catch unhandled exceptions on FX Application thread
@@ -51,7 +53,7 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
 
     System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
 
-    val landingPane = new LandingPane(glassPane, commandLineArgs.toVector)
+    val landingPane = new LandingPane(glassPane, serverArgParser)
     rootView.children = Vector(landingPane.view, glassPane)
 
     lazy val guiScene: Scene = new Scene(1400, 600) {

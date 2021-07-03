@@ -3,12 +3,11 @@ package org.bitcoins.server.routes
 import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.core.util.{EnvUtil, StartStopAsync}
+import org.bitcoins.db.util.ServerArgParser
 
 import scala.concurrent.{ExecutionContext, Future}
 
 trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
-
-  protected def args: Array[String]
 
   implicit def system: ActorSystem
 
@@ -31,4 +30,8 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
       logger.error(s"Failed to startup server!", err)
     }(scala.concurrent.ExecutionContext.Implicits.global)
   }
+}
+
+trait BitcoinSServerRunner extends BitcoinSRunner {
+  protected def serverArgParser: ServerArgParser
 }

@@ -5,7 +5,7 @@ import com.typesafe.config._
 import grizzled.slf4j.Logging
 import org.bitcoins.bundle.gui.BundleGUI._
 import org.bitcoins.db.AppConfig
-import org.bitcoins.db.util.DatadirUtil
+import org.bitcoins.db.util.{DatadirUtil, ServerArgParser}
 import org.bitcoins.gui._
 import org.bitcoins.node.NodeType._
 import org.bitcoins.node._
@@ -18,7 +18,7 @@ import java.nio.file.{Files, Path}
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 
-class LandingPaneModel(commandLineArgs: Vector[String])(implicit
+class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
     system: ActorSystem)
     extends Logging {
 
@@ -82,9 +82,12 @@ class LandingPaneModel(commandLineArgs: Vector[String])(implicit
 
         finalConfF.map { path =>
           val extraArgs = Vector("--conf", path.toAbsolutePath.toString)
-          val usedArgs = extraArgs ++ commandLineArgs
+          //reparse server args with the new config
+          val usedArgs = extraArgs ++ serverArgParser.commandLineArgs
+          val serverArgWithCustomConfig = ServerArgParser(usedArgs)
           // use class base constructor to share the actor system
-          new BitcoinSServerMain(usedArgs.toArray)(system, appConfig).run()
+          new BitcoinSServerMain(serverArgWithCustomConfig)(system, appConfig)
+            .run()
         }
 
         Await.result(promise.future, 60.seconds)
