@@ -6,6 +6,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.db.AppConfig
+import org.bitcoins.db.util.ServerArgParser
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.node.config.NodeAppConfig
@@ -146,6 +147,13 @@ object BitcoinSAppConfig extends Logging {
     }
 
     baseConf.copyWithConfig(extraConfig +: confs)
+  }
+
+  /** Creates a BitcoinSAppConfig the the given daemon args to a server */
+  def fromDefaultDatadirWithServerArgs(serverArgParser: ServerArgParser)(
+      implicit ec: ExecutionContext): BitcoinSAppConfig = {
+    val config = serverArgParser.toConfig
+    fromDefaultDatadir(config)
   }
 
   import scala.language.implicitConversions

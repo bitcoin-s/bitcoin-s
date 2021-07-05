@@ -21,7 +21,7 @@ class LandingPane(glassPane: VBox, serverArgParser: ServerArgParser)(implicit
   import system.dispatcher
 
   val appConfig: BitcoinSAppConfig =
-    BitcoinSAppConfig.fromDefaultDatadirWithBundleConf()
+    BitcoinSAppConfig.fromDefaultDatadirWithServerArgs(serverArgParser)
 
   val model = new LandingPaneModel(serverArgParser)
 

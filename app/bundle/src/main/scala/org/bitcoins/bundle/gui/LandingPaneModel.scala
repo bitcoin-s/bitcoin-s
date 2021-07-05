@@ -85,8 +85,12 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
           //reparse server args with the new config
           val usedArgs = extraArgs ++ serverArgParser.commandLineArgs
           val serverArgWithCustomConfig = ServerArgParser(usedArgs)
+          val finalAppConfig = BitcoinSAppConfig.fromConfig(
+            bundleConf.withFallback(appConfig.config))
+
           // use class base constructor to share the actor system
-          new BitcoinSServerMain(serverArgWithCustomConfig)(system, appConfig)
+          new BitcoinSServerMain(serverArgWithCustomConfig)(system,
+                                                            finalAppConfig)
             .run()
         }
 

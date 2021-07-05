@@ -404,8 +404,9 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
   System.setProperty("bitcoins.log.location", datadirParser.usedDir.toString)
 
   implicit lazy val conf: BitcoinSAppConfig =
-    BitcoinSAppConfig(datadirParser.datadir, datadirParser.baseConfig)(
-      system.dispatcher)
+    BitcoinSAppConfig(datadirParser.datadir,
+                      datadirParser.baseConfig,
+                      serverCmdLineArgs.toConfig)(system.dispatcher)
 
   new BitcoinSServerMain(serverCmdLineArgs).run()
 }
