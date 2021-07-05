@@ -1,5 +1,6 @@
 package org.bitcoins.db.util
 
+import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config._
 
 import java.nio.file.{Path, Paths}
@@ -67,5 +68,35 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
     val str = commandLineArgs(idx + 1)
     val usableStr = str.replace("~", Properties.userHome)
     Paths.get(usableStr)
+  }
+
+  /** Converts the given command line args into a Config object.
+    * There is one exclusion to this, we cannot write the --conf
+    * flag to the config file as that is self referential
+    */
+  def toConfig: Config = {
+    val rpcPortString = rpcPortOpt match {
+      case Some(rpcPort) =>
+        s"bitcoin-s.server.rpcport=$rpcPort\n"
+      case None => s""
+    }
+
+    val rpcBindString = rpcBindOpt match {
+      case Some(rpcbind) =>
+        s"bitcoin-s.server.rpcbind=$rpcbind\n"
+      case None => s""
+    }
+
+    val datadirString = datadirOpt match {
+      case Some(datadir) =>
+        s"bitcoin-s.datadir=$datadir\n"
+      case None => s""
+    }
+
+    //omitting configOpt as i don't know if we can do anything with that?
+
+    val all = rpcPortString + rpcBindString + datadirString
+
+    ConfigFactory.parseString(all)
   }
 }
