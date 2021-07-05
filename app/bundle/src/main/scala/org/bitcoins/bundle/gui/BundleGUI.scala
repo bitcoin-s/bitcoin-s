@@ -25,7 +25,7 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
 
   override lazy val commandLineArgs: Array[String] = parameters.raw.toArray
 
-  private val serverArgParser = ServerArgParser(commandLineArgs.toVector)
+  private lazy val serverArgParser = ServerArgParser(commandLineArgs.toVector)
 
   override def start(): Unit = {
     // Catch unhandled exceptions on FX Application thread
@@ -52,6 +52,12 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
     val usedDir = DatadirUtil.getFinalDatadir(datadir, baseConfig, None)
 
     System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
+
+    //adjust the rpc port if one was specified
+    GlobalData.rpcPortOpt = serverArgParser.rpcPortOpt match {
+      case Some(rpcPort) => Some(rpcPort)
+      case None          => GlobalData.rpcPortOpt //keep previous setting
+    }
 
     val landingPane = new LandingPane(glassPane, serverArgParser)
     rootView.children = Vector(landingPane.view, glassPane)
