@@ -81,7 +81,7 @@ abstract class Wallet
     OutgoingTransactionDAO()
   private[bitcoins] val addressTagDAO: AddressTagDAO = AddressTagDAO()
 
-  private[wallet] val stateDescriptorDAO: WalletStateDescriptorDAO =
+  private[bitcoins] val stateDescriptorDAO: WalletStateDescriptorDAO =
     WalletStateDescriptorDAO()
 
   val nodeApi: NodeApi
