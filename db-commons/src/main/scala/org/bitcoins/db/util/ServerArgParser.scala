@@ -96,7 +96,13 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
 
     val datadirString = datadirOpt match {
       case Some(datadir) =>
-        s"bitcoin-s.datadir=$datadir\n"
+        if (Properties.isWin) {
+          //need to escape `:` that occur in windows paths
+          datadir.toAbsolutePath.toString.replaceAll(":", "\":\"")
+        } else {
+          s"bitcoin-s.datadir=$datadir\n"
+        }
+
       case None => s""
     }
 

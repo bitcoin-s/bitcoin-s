@@ -29,9 +29,11 @@ class ServerArgParserTest extends BitcoinSUnitTest {
 
     val config = parser.toConfig
 
-    assert(config.hasPath(s"bitcoin-s.datadir"))
+    val datadirPathConfigKey = s"bitcoin-s.datadir"
+    assert(config.hasPath(datadirPathConfigKey))
     assert(config.hasPath(s"bitcoin-s.server.rpcbind"))
     assert(config.hasPath(s"bitcoin-s.server.rpcport"))
     assert(config.hasPath(s"bitcoin-s.chain.force-recalc-chainwork"))
+    assert(config.getString(datadirPathConfigKey) == datadir)
   }
 }
