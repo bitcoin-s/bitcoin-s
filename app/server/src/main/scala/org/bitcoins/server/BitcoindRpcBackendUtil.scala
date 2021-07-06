@@ -38,7 +38,12 @@ object BitcoindRpcBackendUtil extends Logging {
             txDbs <- wallet.listTransactions()
             lastConfirmedOpt = txDbs.filter(_.blockHashOpt.isDefined).lastOption
             _ <- lastConfirmedOpt match {
-              case None => Future.unit
+              case None =>
+                for {
+                  header <- bitcoind.getBestBlockHeader()
+                  _ <- wallet.stateDescriptorDAO.updateSyncHeight(header.hashBE,
+                                                                  header.height)
+                } yield ()
               case Some(txDb) =>
                 for {
                   heightOpt <- bitcoind.getBlockHeight(txDb.blockHashOpt.get)
