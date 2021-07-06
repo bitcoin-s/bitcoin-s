@@ -1,8 +1,8 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency._
 import org.bitcoins.server.BitcoindRpcBackendUtil
+import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
   WalletAppConfigWithBitcoindNewestFixtures
@@ -45,9 +45,10 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       _ <- bitcoind.sendToAddress(addr, amountToSend)
 
       // Wait for it to process
-      _ <- AsyncUtil.awaitConditionF(
+      _ <- TestAsyncUtil.awaitConditionF(
         () => wallet.getUnconfirmedBalance().map(_ > Satoshis.zero),
-        1.second)
+        interval = 1.second,
+        maxTries = 100)
 
       unconfirmed <- wallet.getUnconfirmedBalance()
       _ = assert(unconfirmed == amountToSend)
@@ -58,9 +59,10 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       _ <- bitcoind.generateToAddress(6, bech32Address)
 
       // Wait for it to process
-      _ <- AsyncUtil.awaitConditionF(
+      _ <- TestAsyncUtil.awaitConditionF(
         () => wallet.getConfirmedBalance().map(_ > Satoshis.zero),
-        1.second)
+        interval = 1.second,
+        maxTries = 100)
 
       balance <- wallet.getConfirmedBalance()
 
