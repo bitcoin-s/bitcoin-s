@@ -24,6 +24,7 @@ class ServerArgParserTest extends BitcoinSUnitTest {
                       "--datadir",
                       s"${datadir}",
                       "--force-recalc-chainwork")
+    println(s"datadir=$datadir")
     val parser = ServerArgParser(args)
 
     val config = parser.toConfig

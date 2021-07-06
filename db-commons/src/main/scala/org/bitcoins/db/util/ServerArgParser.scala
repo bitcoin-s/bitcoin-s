@@ -55,12 +55,7 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
   /** The datadir passed in as a command line arg using --datadir */
   lazy val datadirOpt: Option[Path] = dataDirIndexOpt.map { case (_, idx) =>
     val str = commandLineArgs(idx + 1)
-    val usableStr = if (!Properties.isWin) {
-      //windows doesn't support ~
-      str.replace("~", Properties.userHome)
-    } else {
-      str
-    }
+    val usableStr = str.replace("~", Properties.userHome)
     Paths.get(usableStr)
   }
 
