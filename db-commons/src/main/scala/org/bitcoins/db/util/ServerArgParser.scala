@@ -55,7 +55,11 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
   /** The datadir passed in as a command line arg using --datadir */
   lazy val datadirOpt: Option[Path] = dataDirIndexOpt.map { case (_, idx) =>
     val str = commandLineArgs(idx + 1)
-    val usableStr = str.replace("~", Properties.userHome)
+    //we only want the replace ~ if it is first in the file path
+    //otherwise windows gets mangled as it can have parts of the file path containing ~
+    //https://stackoverflow.com/a/7163455/967713
+    //C:\Users\RUNNER~1\AppData\Local\Temp\bitcoin-s-13391384540028797275
+    val usableStr = str.replaceFirst("^~", Properties.userHome)
     Paths.get(usableStr)
   }
 
