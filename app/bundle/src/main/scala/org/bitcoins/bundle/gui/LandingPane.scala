@@ -15,13 +15,9 @@ import scalafx.scene.text._
 import scala.util.Try
 
 class LandingPane(glassPane: VBox, serverArgParser: ServerArgParser)(implicit
-    system: ActorSystem)
+    system: ActorSystem,
+    appConfig: BitcoinSAppConfig)
     extends Logging {
-
-  import system.dispatcher
-
-  val appConfig: BitcoinSAppConfig =
-    BitcoinSAppConfig.fromDefaultDatadirWithServerArgs(serverArgParser)
 
   val model = new LandingPaneModel(serverArgParser)
 

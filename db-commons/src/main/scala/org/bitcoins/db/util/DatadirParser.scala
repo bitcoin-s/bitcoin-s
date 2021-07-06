@@ -32,17 +32,19 @@ case class DatadirParser(
     case None => ConfigFactory.empty()
   }
 
-  lazy val baseConfig: Config = serverArgs.configOpt match {
-    case None =>
-      AppConfig
-        .getBaseConfig(datadirPath, List(networkConfig))
-        .withFallback(datadirConfig)
-        .resolve()
-    case Some(config) =>
-      val conf = ConfigFactory
-        .parseFile(config.toFile)
-        .withFallback(datadirConfig)
-      networkConfig.withFallback(conf)
+  lazy val baseConfig: Config = {
+    serverArgs.configOpt match {
+      case None =>
+        AppConfig
+          .getBaseConfig(datadirPath, List(networkConfig))
+          .withFallback(datadirConfig)
+          .resolve()
+      case Some(config) =>
+        val conf = ConfigFactory
+          .parseFile(config.toFile)
+          .withFallback(datadirConfig)
+        networkConfig.withFallback(conf)
+    }
   }
 
   /** Base directory for all bitcoin-s data. This is the resulting datadir from

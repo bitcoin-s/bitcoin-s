@@ -124,6 +124,18 @@ object BitcoinSAppConfig extends Logging {
     fromConfig(ConfigFactory.load())
   }
 
+  def fromDatadir(datadir: Path, confs: Config*)(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
+    BitcoinSAppConfig(datadir, confs: _*)
+  }
+
+  def fromDatadirWithServerArgs(
+      datadir: Path,
+      serverArgsParser: ServerArgParser)(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
+    fromDatadir(datadir, serverArgsParser.toConfig)
+  }
+
   /** Constructs an app configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */

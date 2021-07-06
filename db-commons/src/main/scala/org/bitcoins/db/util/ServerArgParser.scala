@@ -69,10 +69,12 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
   }
 
   /** A custom configuration file passed in as a command line arg with --conf */
-  lazy val configOpt: Option[Path] = configIndexOpt.map { idx =>
-    val str = commandLineArgs(idx + 1)
-    val usableStr = str.replace("~", Properties.userHome)
-    Paths.get(usableStr)
+  lazy val configOpt: Option[Path] = {
+    configIndexOpt.map { idx =>
+      val str = commandLineArgs(idx + 1)
+      val usableStr = str.replace("~", Properties.userHome)
+      Paths.get(usableStr)
+    }
   }
 
   lazy val forceChainWorkRecalc: Boolean =

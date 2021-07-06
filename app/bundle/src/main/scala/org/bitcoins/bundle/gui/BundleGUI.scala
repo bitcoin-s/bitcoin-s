@@ -1,20 +1,16 @@
 package org.bitcoins.bundle.gui
 
-import com.typesafe.config.Config
 import org.bitcoins.bundle.util.BitcoinSAppJFX3
-import org.bitcoins.db.AppConfig
-import org.bitcoins.db.AppConfig.DEFAULT_BITCOIN_S_DATADIR
-import org.bitcoins.db.util.{DatadirUtil, ServerArgParser}
+import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.gui._
 import org.bitcoins.gui.util.GUIUtil
+import org.bitcoins.server.BitcoinSAppConfig
 import scalafx.application.{JFXApp3, Platform}
 import scalafx.geometry.Pos
 import scalafx.scene.Scene
 import scalafx.scene.control.Alert.AlertType
 import scalafx.scene.control._
 import scalafx.scene.layout.VBox
-
-import java.nio.file.{Path, Paths}
 
 object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
 
@@ -24,8 +20,6 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
     s"bitcoin-s-gui-${System.currentTimeMillis()}"
 
   override lazy val commandLineArgs: Array[String] = parameters.raw.toArray
-
-  private lazy val serverArgParser = ServerArgParser(commandLineArgs.toVector)
 
   override def start(): Unit = {
     // Catch unhandled exceptions on FX Application thread
@@ -41,29 +35,12 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
         }.showAndWait()
       })
 
-    // Set log location
-    val baseConfig: Config = {
-      serverArgParser.datadirOpt match {
-        case Some(datadir) =>
-          AppConfig
-            .getBaseConfig(datadir)
-            .resolve()
-        case None =>
-          AppConfig
-            .getBaseConfig(DEFAULT_BITCOIN_S_DATADIR)
-            .resolve()
-      }
-    }
+    lazy val serverArgParser = ServerArgParser(commandLineArgs.toVector)
 
-    val datadir: Path = serverArgParser.datadirOpt match {
-      case Some(datadir) => datadir
-      case None =>
-        Paths.get(baseConfig.getString("bitcoin-s.datadir"))
-    }
+    val datadirParser = DatadirParser(serverArgParser, customFinalDirOpt)
 
-    val usedDir = DatadirUtil.getFinalDatadir(datadir, baseConfig, None)
-
-    System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
+    System.setProperty("bitcoins.log.location",
+                       datadirParser.usedDir.toAbsolutePath.toString)
 
     //adjust the rpc port if one was specified
     GlobalData.rpcPortOpt = serverArgParser.rpcPortOpt match {
@@ -71,7 +48,13 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
       case None          => GlobalData.rpcPortOpt //keep previous setting
     }
 
+    implicit val appConfig: BitcoinSAppConfig =
+      BitcoinSAppConfig.fromDatadirWithServerArgs(
+        datadirParser.datadir,
+        serverArgParser)(system.dispatcher)
+
     val landingPane = new LandingPane(glassPane, serverArgParser)
+
     rootView.children = Vector(landingPane.view, glassPane)
 
     lazy val guiScene: Scene = new Scene(1400, 600) {
