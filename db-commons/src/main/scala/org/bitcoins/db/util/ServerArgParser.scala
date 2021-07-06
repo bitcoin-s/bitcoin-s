@@ -96,7 +96,7 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
       case None => s""
     }
 
-    val forceChainWorkRecalc = if (forceChainWorkRecalc) {
+    val forceChainWorkRecalcString = if (forceChainWorkRecalc) {
       s"bitcoin-s.chain.force-recalc-chainwork=$forceChainWorkRecalc\n"
     } else {
       ""
@@ -105,7 +105,7 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
     //omitting configOpt as i don't know if we can do anything with that?
 
     val all =
-      rpcPortString + rpcBindString + datadirString + forceChainWorkRecalc
+      rpcPortString + rpcBindString + datadirString + forceChainWorkRecalcString
 
     ConfigFactory.parseString(all)
   }
