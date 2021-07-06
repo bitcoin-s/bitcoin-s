@@ -2,6 +2,7 @@ package org.bitcoins.db.util
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config._
+import org.bitcoins.db.AppConfig
 
 import java.nio.file.{Path, Paths}
 import scala.util.Properties
@@ -96,13 +97,7 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
 
     val datadirString = datadirOpt match {
       case Some(datadir) =>
-        if (Properties.isWin) {
-          //need to escape `:` that occur in windows paths
-          datadir.toAbsolutePath.toString.replaceAll(":", "\":\"")
-        } else {
-          s"bitcoin-s.datadir=$datadir\n"
-        }
-
+        s"bitcoin-s.datadir=" + AppConfig.safePathToString(datadir) + "\n"
       case None => s""
     }
 
