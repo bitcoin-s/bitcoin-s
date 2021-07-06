@@ -35,8 +35,9 @@ private class FileMenu() {
         initialFileName = "bitcoin-s-backup.zip"
       }
       val chosenFile = fileChooser.showSaveDialog(null)
-      ConsoleCli.exec(ZipDataDir(chosenFile.toPath),
-                      GlobalData.consoleCliConfig)
+      if (chosenFile != null)
+        ConsoleCli.exec(ZipDataDir(chosenFile.toPath),
+                        GlobalData.consoleCliConfig)
       ()
     }
   }

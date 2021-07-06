@@ -369,7 +369,7 @@ class CreateDLCOfferDialog extends Logging {
           decompOpt = Some(digitDecomp)
 
           val addPointButton: Button = new Button("+") {
-            onAction = _ => addPointRow()
+            onAction = _ => addPointRow(isEndPoint = false)
           }
           val label: HBox = new HBox {
             alignment = Pos.Center

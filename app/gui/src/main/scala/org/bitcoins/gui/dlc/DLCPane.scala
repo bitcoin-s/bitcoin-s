@@ -125,7 +125,8 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
         initialDirectory = new File(Properties.userHome)
       }
       val chosenFile = fileChooser.showSaveDialog(null)
-      Files.write(chosenFile.toPath, resultTextArea.text.value.getBytes)
+      if (chosenFile != null)
+        Files.write(chosenFile.toPath, resultTextArea.text.value.getBytes)
       ()
     }
   }
