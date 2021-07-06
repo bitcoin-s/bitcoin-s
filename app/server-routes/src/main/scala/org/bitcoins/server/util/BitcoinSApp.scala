@@ -9,9 +9,6 @@ trait BitcoinSApp {
 
   def commandLineArgs: Array[String]
 
-  lazy val forceChainWorkRecalc: Boolean =
-    commandLineArgs.exists(_.toLowerCase == "--force-recalc-chainwork")
-
   /** Useful for projects like the oracle server to specify a custom directory inside of ~./bitcoin-s */
   def customFinalDirOpt: Option[String]
 }

@@ -91,7 +91,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     //run chain work migration
     val chainApiF = runChainWorkCalc(
-      /*forceChainWorkRecalc ||*/ chainConf.forceRecalcChainWork)
+      serverArgParser.forceChainWorkRecalc || chainConf.forceRecalcChainWork)
 
     //get a node that isn't started
     val nodeF = nodeConf.createNode(peer)(chainConf, system)
