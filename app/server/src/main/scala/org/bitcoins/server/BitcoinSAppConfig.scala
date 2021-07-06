@@ -153,7 +153,7 @@ object BitcoinSAppConfig extends Logging {
   def fromDefaultDatadirWithServerArgs(serverArgParser: ServerArgParser)(
       implicit ec: ExecutionContext): BitcoinSAppConfig = {
     val config = serverArgParser.toConfig
-    fromDefaultDatadir(config)
+    fromConfig(config)
   }
 
   import scala.language.implicitConversions

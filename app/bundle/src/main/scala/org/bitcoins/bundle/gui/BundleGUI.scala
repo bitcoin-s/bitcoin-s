@@ -42,12 +42,24 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
       })
 
     // Set log location
-    val baseConfig: Config = AppConfig
-      .getBaseConfig(DEFAULT_BITCOIN_S_DATADIR)
-      .resolve()
+    val baseConfig: Config = {
+      serverArgParser.datadirOpt match {
+        case Some(datadir) =>
+          AppConfig
+            .getBaseConfig(datadir)
+            .resolve()
+        case None =>
+          AppConfig
+            .getBaseConfig(DEFAULT_BITCOIN_S_DATADIR)
+            .resolve()
+      }
+    }
 
-    val datadir: Path =
-      Paths.get(baseConfig.getString("bitcoin-s.datadir"))
+    val datadir: Path = serverArgParser.datadirOpt match {
+      case Some(datadir) => datadir
+      case None =>
+        Paths.get(baseConfig.getString("bitcoin-s.datadir"))
+    }
 
     val usedDir = DatadirUtil.getFinalDatadir(datadir, baseConfig, None)
 
