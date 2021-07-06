@@ -11,7 +11,7 @@ import org.bitcoins.core.protocol.dlc.verify.DLCSignatureVerifier
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.util.sorted.OrderedNonces
+import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.wallet.DLCWallet
@@ -86,9 +86,11 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
   private[wallet] def getOracleAnnouncements(
       announcementIds: Vector[DLCAnnouncementDb],
       announcementData: Vector[OracleAnnouncementDataDb],
-      nonceDbs: Vector[OracleNonceDb]): Vector[OracleAnnouncementV0TLV] = {
-    getOracleAnnouncementsWithId(announcementIds, announcementData, nonceDbs)
-      .map(_._1)
+      nonceDbs: Vector[OracleNonceDb]): OrderedAnnouncements = {
+    val announcements =
+      getOracleAnnouncementsWithId(announcementIds, announcementData, nonceDbs)
+        .map(_._1)
+    OrderedAnnouncements(announcements)
   }
 
   private[wallet] def getOracleAnnouncementsWithId(

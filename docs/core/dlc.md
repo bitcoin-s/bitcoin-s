@@ -21,6 +21,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.Indexed
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
+import org.bitcoins.core.util.sorted._
 ```
 
 ## DLCPayoutCurve
@@ -144,7 +145,7 @@ val announcements = 0.until(5).toVector.map { _ =>
 }
 val oracleInfo = NumericMultiOracleInfo(
     threshold = 3,
-    announcements,
+    announcements = OrderedAnnouncements(announcements),
     maxErrorExp = 5,
     minFailExp = 3,
     maximizeCoverage = false

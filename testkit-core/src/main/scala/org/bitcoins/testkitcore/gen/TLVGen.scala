@@ -5,15 +5,11 @@ import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCOffer}
-import org.bitcoins.core.protocol.dlc.models.{
-  ContractInfo,
-  DLCFundingInputP2WPKHV0,
-  DLCMessage
-}
+import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
-import org.bitcoins.core.util.sorted.OrderedNonces
+import org.bitcoins.core.util.sorted._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkitcore.dlc.DLCTestUtil
@@ -182,7 +178,7 @@ trait TLVGen {
       oracles <- Gen.listOfN(numOracles, oracleInfoV0TLV(outcomes))
     } yield {
       val announcements = oracles.map(_.announcement).toVector
-      OracleInfoV1TLV(threshold, announcements)
+      OracleInfoV1TLV(threshold, OrderedAnnouncements(announcements))
     }
   }
 
@@ -207,7 +203,7 @@ trait TLVGen {
       oracles <- Gen.listOfN(numOracles, oracleInfoV0TLV(numDigits))
     } yield {
       val announcements = oracles.map(_.announcement).toVector
-      OracleInfoV1TLV(threshold, announcements)
+      OracleInfoV1TLV(threshold, OrderedAnnouncements(announcements))
     }
   }
 

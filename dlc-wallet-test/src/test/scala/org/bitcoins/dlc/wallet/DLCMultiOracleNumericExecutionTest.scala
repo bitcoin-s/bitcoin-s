@@ -4,6 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.{Claimed, RemoteClaimed}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.util.sorted.OrderedAnnouncements
 import org.bitcoins.crypto._
 import org.bitcoins.testkitcore.dlc.DLCTest
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
@@ -41,7 +42,7 @@ class DLCMultiOracleNumericExecutionTest
 
   val oracleInfo: NumericMultiOracleInfo =
     NumericMultiOracleInfo(threshold = threshold,
-                           announcements = announcements,
+                           announcements = OrderedAnnouncements(announcements),
                            params = params)
 
   val contractOraclePair: ContractOraclePair.NumericPair =

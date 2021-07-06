@@ -3,6 +3,7 @@ package org.bitcoins.core.protocol.dlc.models
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.dlc.models.ContractOraclePair._
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.util.sorted.OrderedAnnouncements
 
 sealed trait DLCTemplate {
   def totalCollateral: CurrencyUnit
@@ -63,7 +64,7 @@ case class MultiOracleDLCTemplate(
 
   override val oracleInfo: NumericMultiOracleInfo =
     NumericMultiOracleInfo(threshold = oracleThreshold,
-                           announcements = oracles,
+                           announcements = OrderedAnnouncements(oracles),
                            maxErrorExp = maxErrorExp,
                            minFailExp = minFailExp,
                            maximizeCoverage = maximizeCoverage)
