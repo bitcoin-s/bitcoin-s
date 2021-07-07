@@ -75,7 +75,8 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
         }
 
         val startedF = networkConfigF.map { networkConfig =>
-          val finalAppConfig = BitcoinSAppConfig.fromConfig(networkConfig)
+          val finalAppConfig =
+            BitcoinSAppConfig.fromDatadir(appConfig.baseDatadir, networkConfig)
           // use class base constructor to share the actor system
 
           new BitcoinSServerMain(serverArgParser)(system, finalAppConfig)
