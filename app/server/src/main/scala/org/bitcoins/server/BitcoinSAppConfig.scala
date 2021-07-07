@@ -145,8 +145,15 @@ object BitcoinSAppConfig extends Logging {
 
   def fromDefaultDatadirWithBundleConf(confs: Vector[Config] = Vector.empty)(
       implicit ec: ExecutionContext): BitcoinSAppConfig = {
+    fromDatadirWithBundleConf(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs)
+  }
+
+  def fromDatadirWithBundleConf(
+      datadir: Path,
+      confs: Vector[Config] = Vector.empty)(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
     val baseConf: BitcoinSAppConfig =
-      BitcoinSAppConfig.fromDefaultDatadir()
+      fromDatadir(datadir, confs: _*)
 
     // Grab saved bundle config
     val bundleConfFile =
@@ -159,6 +166,20 @@ object BitcoinSAppConfig extends Logging {
     }
 
     baseConf.copyWithConfig(extraConfig +: confs)
+  }
+
+  /** Resolve BitcoinSAppConfig in the following order of precedence
+    * 1. Server args
+    * 2. bitcoin-s-bundle.conf
+    * 3. bitcoin-s.conf
+    * 4. application.conf
+    * 5. reference.conf
+    */
+  def fromDatadirWithBundleConfWithServerArgs(
+      datadir: Path,
+      serverArgParser: ServerArgParser)(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
+    fromDatadirWithBundleConf(datadir, Vector(serverArgParser.toConfig))
   }
 
   /** Creates a BitcoinSAppConfig the the given daemon args to a server */

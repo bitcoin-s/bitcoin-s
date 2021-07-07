@@ -49,7 +49,7 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
     }
 
     implicit val appConfig: BitcoinSAppConfig =
-      BitcoinSAppConfig.fromDatadirWithServerArgs(
+      BitcoinSAppConfig.fromDatadirWithBundleConfWithServerArgs(
         datadirParser.datadir,
         serverArgParser)(system.dispatcher)
 
