@@ -6,6 +6,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.db.AppConfig
+import org.bitcoins.db.util.ServerArgParser
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.node.config.NodeAppConfig
@@ -123,6 +124,18 @@ object BitcoinSAppConfig extends Logging {
     fromConfig(ConfigFactory.load())
   }
 
+  def fromDatadir(datadir: Path, confs: Config*)(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
+    BitcoinSAppConfig(datadir, confs: _*)
+  }
+
+  def fromDatadirWithServerArgs(
+      datadir: Path,
+      serverArgsParser: ServerArgParser)(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
+    fromDatadir(datadir, serverArgsParser.toConfig)
+  }
+
   /** Constructs an app configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
@@ -132,8 +145,15 @@ object BitcoinSAppConfig extends Logging {
 
   def fromDefaultDatadirWithBundleConf(confs: Vector[Config] = Vector.empty)(
       implicit ec: ExecutionContext): BitcoinSAppConfig = {
+    fromDatadirWithBundleConf(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs)
+  }
+
+  def fromDatadirWithBundleConf(
+      datadir: Path,
+      confs: Vector[Config] = Vector.empty)(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
     val baseConf: BitcoinSAppConfig =
-      BitcoinSAppConfig.fromDefaultDatadir()
+      fromDatadir(datadir, confs: _*)
 
     // Grab saved bundle config
     val bundleConfFile =
@@ -146,6 +166,27 @@ object BitcoinSAppConfig extends Logging {
     }
 
     baseConf.copyWithConfig(extraConfig +: confs)
+  }
+
+  /** Resolve BitcoinSAppConfig in the following order of precedence
+    * 1. Server args
+    * 2. bitcoin-s-bundle.conf
+    * 3. bitcoin-s.conf
+    * 4. application.conf
+    * 5. reference.conf
+    */
+  def fromDatadirWithBundleConfWithServerArgs(
+      datadir: Path,
+      serverArgParser: ServerArgParser)(implicit
+      ec: ExecutionContext): BitcoinSAppConfig = {
+    fromDatadirWithBundleConf(datadir, Vector(serverArgParser.toConfig))
+  }
+
+  /** Creates a BitcoinSAppConfig the the given daemon args to a server */
+  def fromDefaultDatadirWithServerArgs(serverArgParser: ServerArgParser)(
+      implicit ec: ExecutionContext): BitcoinSAppConfig = {
+    val config = serverArgParser.toConfig
+    fromConfig(config)
   }
 
   import scala.language.implicitConversions

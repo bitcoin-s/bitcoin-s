@@ -12,6 +12,7 @@ import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.dlc.wallet._
 import org.bitcoins.feeprovider.FeeProviderName._
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
@@ -20,19 +21,17 @@ import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.config.ZmqConfig
-import org.bitcoins.server.routes.{BitcoinSRunner, Server}
-import org.bitcoins.server.util.BitcoinSApp
+import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
+import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-class BitcoinSServerMain(override val args: Array[String])(implicit
-    override val system: ActorSystem)
-    extends BitcoinSRunner {
-
-  implicit lazy val conf: BitcoinSAppConfig =
-    BitcoinSAppConfig(datadir, baseConfig)
+class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
+    override val system: ActorSystem,
+    conf: BitcoinSAppConfig)
+    extends BitcoinSServerRunner {
 
   implicit lazy val walletConf: WalletAppConfig = conf.walletConf
   implicit lazy val nodeConf: NodeAppConfig = conf.nodeConf
@@ -92,7 +91,7 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
 
     //run chain work migration
     val chainApiF = runChainWorkCalc(
-      forceChainWorkRecalc || chainConf.forceRecalcChainWork)
+      serverArgParser.forceChainWorkRecalc || chainConf.forceRecalcChainWork)
 
     //get a node that isn't started
     val nodeF = nodeConf.createNode(peer)(chainConf, system)
@@ -141,8 +140,7 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
       binding <- startHttpServer(nodeApi = node,
                                  chainApi = chainApi,
                                  wallet = wallet,
-                                 rpcbindOpt = rpcBindOpt,
-                                 rpcPortOpt = rpcPortOpt)
+                                 serverCmdLineArgs = serverArgParser)
       _ = {
         logger.info(
           s"Starting ${nodeConf.nodeType.shortName} node sync, it took=${System
@@ -206,8 +204,7 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
       binding <- startHttpServer(nodeApi = bitcoind,
                                  chainApi = bitcoind,
                                  wallet = wallet,
-                                 rpcbindOpt = rpcBindOpt,
-                                 rpcPortOpt = rpcPortOpt)
+                                 serverCmdLineArgs = serverArgParser)
       _ = BitcoinSServer.startedFP.success(Future.successful(binding))
     } yield {
       logger.info(s"Done starting Main!")
@@ -297,8 +294,7 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
       nodeApi: NodeApi,
       chainApi: ChainApi,
       wallet: DLCWallet,
-      rpcbindOpt: Option[String],
-      rpcPortOpt: Option[Int])(implicit
+      serverCmdLineArgs: ServerArgParser)(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
@@ -309,13 +305,13 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
     val chainRoutes = ChainRoutes(chainApi, nodeConf.network)
     val coreRoutes = CoreRoutes(Core)
 
-    val bindConfOpt = rpcbindOpt match {
+    val bindConfOpt = serverCmdLineArgs.rpcBindOpt match {
       case Some(rpcbind) => Some(rpcbind)
       case None          => conf.rpcBindOpt
     }
 
     val server = {
-      rpcPortOpt match {
+      serverCmdLineArgs.rpcPortOpt match {
         case Some(rpcport) =>
           Server(conf = nodeConf,
                  handlers =
@@ -392,12 +388,27 @@ class BitcoinSServerMain(override val args: Array[String])(implicit
   }
 }
 
-object BitcoinSServerMain extends BitcoinSApp {
+object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
 
   override val actorSystemName =
     s"bitcoin-s-server-${System.currentTimeMillis()}"
 
-  new BitcoinSServerMain(args).run()
+  /** Directory specific for current network or custom dir */
+  override val customFinalDirOpt: Option[String] = None
+
+  val serverCmdLineArgs = ServerArgParser(args.toVector)
+
+  val datadirParser =
+    DatadirParser(serverCmdLineArgs, customFinalDirOpt)
+
+  System.setProperty("bitcoins.log.location", datadirParser.networkDir.toString)
+
+  implicit lazy val conf: BitcoinSAppConfig =
+    BitcoinSAppConfig(datadirParser.datadir,
+                      datadirParser.baseConfig,
+                      serverCmdLineArgs.toConfig)(system.dispatcher)
+
+  new BitcoinSServerMain(serverCmdLineArgs).run()
 }
 
 object BitcoinSServer {

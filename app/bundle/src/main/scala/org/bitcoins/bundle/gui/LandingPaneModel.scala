@@ -5,20 +5,22 @@ import com.typesafe.config._
 import grizzled.slf4j.Logging
 import org.bitcoins.bundle.gui.BundleGUI._
 import org.bitcoins.db.AppConfig
+import org.bitcoins.db.util.{DatadirUtil, ServerArgParser}
 import org.bitcoins.gui._
 import org.bitcoins.node.NodeType._
 import org.bitcoins.node._
 import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
 import org.bitcoins.server._
-import org.bitcoins.server.util.DatadirUtil
 import scalafx.beans.property.ObjectProperty
 import scalafx.stage.Window
 
-import java.nio.file.{Files, Path}
+import java.nio.file.Files
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 
-class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
+class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
+    system: ActorSystem)
+    extends Logging {
 
   var taskRunner: TaskRunner = _
 
@@ -40,13 +42,11 @@ class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
         logger.info(s"Writing bundle config to $file")
         Files.write(file, bundleConfStr.getBytes)
 
-        val tmpFile = Files.createTempFile("bitcoin-s-tmp-config", ".conf")
-
-        val finalConfF: Future[Path] = {
+        val networkConfigF: Future[Config] = {
           val tmpConf =
             BitcoinSAppConfig.fromConfig(
               bundleConf.withFallback(appConfig.config))
-          val netConfF = tmpConf.nodeType match {
+          val netConfF: Future[Config] = tmpConf.nodeType match {
             case _: InternalImplementationNodeType =>
               // If we are connecting to a node we cannot
               // know what network it is on now
@@ -60,13 +60,9 @@ class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
           }
 
           netConfF.map { netConf =>
-            val finalConf =
-              BitcoinSAppConfig.fromDefaultDatadirWithBundleConf(
-                Vector(netConf, bundleConf))
-
-            val totalConfStr = AppConfig.configToString(finalConf.config)
-            logger.info(s"Writing resolved config to $tmpFile")
-            Files.write(tmpFile, totalConfStr.getBytes)
+            serverArgParser.toConfig
+              .withFallback(netConf)
+              .withFallback(bundleConf)
           }
         }
 
@@ -78,11 +74,17 @@ class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
           promise.success(())
         }
 
-        finalConfF.map { path =>
-          val extraArgs = Vector("--conf", path.toAbsolutePath.toString)
-          val usedArgs = extraArgs ++ args
+        val startedF = networkConfigF.map { networkConfig =>
+          val finalAppConfig =
+            BitcoinSAppConfig.fromDatadir(appConfig.baseDatadir, networkConfig)
           // use class base constructor to share the actor system
-          new BitcoinSServerMain(usedArgs.toArray).run()
+
+          new BitcoinSServerMain(serverArgParser)(system, finalAppConfig)
+            .run()
+        }
+
+        startedF.failed.foreach { case err =>
+          throw err
         }
 
         Await.result(promise.future, 60.seconds)

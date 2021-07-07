@@ -130,7 +130,7 @@ abstract class Wallet
         if (account.xpub != xpub) {
           val errorMsg =
             s"Divergent xpubs for account=$account. Existing database xpub=${account.xpub}, key manager's xpub=$xpub. " +
-              s"It is possible we have a different key manager being used than expected, key manager=$keyManager"
+              s"It is possible we have a different key manager being used than expected, key manager=${keyManager.kmParams.seedPath.toAbsolutePath.toString}"
           Future.failed(new RuntimeException(errorMsg))
         } else {
           Future.unit
@@ -995,7 +995,7 @@ object Wallet extends WalletLogger {
         if (account.xpub != xpub) {
           val errorMsg =
             s"Divergent xpubs for account=${account}. Existing database xpub=${account.xpub}, new xpub=${xpub}. " +
-              s"It is possible we have a different key manager being used than expected, keymanager=${keyManager}"
+              s"It is possible we have a different key manager being used than expected, keymanager=${keyManager.kmParams.seedPath.toAbsolutePath.toString}"
           Future.failed(new RuntimeException(errorMsg))
         } else {
           logger.debug(

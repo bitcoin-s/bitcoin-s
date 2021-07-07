@@ -1,12 +1,10 @@
 package org.bitcoins.bundle.gui
 
-import akka.actor.ActorSystem
-import com.typesafe.config.Config
-import org.bitcoins.db.AppConfig
-import org.bitcoins.db.AppConfig.DEFAULT_BITCOIN_S_DATADIR
+import org.bitcoins.bundle.util.BitcoinSAppJFX3
+import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.gui._
 import org.bitcoins.gui.util.GUIUtil
-import org.bitcoins.server.util.DatadirUtil
+import org.bitcoins.server.BitcoinSAppConfig
 import scalafx.application.{JFXApp3, Platform}
 import scalafx.geometry.Pos
 import scalafx.scene.Scene
@@ -14,14 +12,14 @@ import scalafx.scene.control.Alert.AlertType
 import scalafx.scene.control._
 import scalafx.scene.layout.VBox
 
-import java.nio.file.{Path, Paths}
+object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
 
-object BundleGUI extends WalletGUI with JFXApp3 {
+  override val customFinalDirOpt: Option[String] = None
 
-  implicit override lazy val system: ActorSystem = ActorSystem(
-    s"bitcoin-s-gui-${System.currentTimeMillis()}")
+  override val actorSystemName: String =
+    s"bitcoin-s-gui-${System.currentTimeMillis()}"
 
-  lazy val args = parameters.raw
+  override lazy val commandLineArgs: Array[String] = parameters.raw.toArray
 
   override def start(): Unit = {
     // Catch unhandled exceptions on FX Application thread
@@ -37,19 +35,26 @@ object BundleGUI extends WalletGUI with JFXApp3 {
         }.showAndWait()
       })
 
-    // Set log location
-    val baseConfig: Config = AppConfig
-      .getBaseConfig(DEFAULT_BITCOIN_S_DATADIR)
-      .resolve()
+    lazy val serverArgParser = ServerArgParser(commandLineArgs.toVector)
 
-    val datadir: Path =
-      Paths.get(baseConfig.getString("bitcoin-s.datadir"))
+    val datadirParser = DatadirParser(serverArgParser, customFinalDirOpt)
 
-    val usedDir = DatadirUtil.getFinalDatadir(datadir, baseConfig, None)
+    System.setProperty("bitcoins.log.location",
+                       datadirParser.networkDir.toAbsolutePath.toString)
 
-    System.setProperty("bitcoins.log.location", usedDir.toAbsolutePath.toString)
+    //adjust the rpc port if one was specified
+    GlobalData.rpcPortOpt = serverArgParser.rpcPortOpt match {
+      case Some(rpcPort) => Some(rpcPort)
+      case None          => GlobalData.rpcPortOpt //keep previous setting
+    }
 
-    val landingPane = new LandingPane(glassPane)
+    implicit val appConfig: BitcoinSAppConfig =
+      BitcoinSAppConfig.fromDatadirWithBundleConfWithServerArgs(
+        datadirParser.datadir,
+        serverArgParser)(system.dispatcher)
+
+    val landingPane = new LandingPane(glassPane, serverArgParser)
+
     rootView.children = Vector(landingPane.view, glassPane)
 
     lazy val guiScene: Scene = new Scene(1400, 600) {

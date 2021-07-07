@@ -2,6 +2,7 @@ package org.bitcoins.bundle.gui
 
 import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
+import org.bitcoins.db.util.ServerArgParser
 import org.bitcoins.gui._
 import org.bitcoins.node.NodeType
 import org.bitcoins.server.BitcoinSAppConfig
@@ -13,15 +14,12 @@ import scalafx.scene.text._
 
 import scala.util.Try
 
-class LandingPane(glassPane: VBox)(implicit system: ActorSystem)
+class LandingPane(glassPane: VBox, serverArgParser: ServerArgParser)(implicit
+    system: ActorSystem,
+    appConfig: BitcoinSAppConfig)
     extends Logging {
 
-  import system.dispatcher
-
-  val appConfig: BitcoinSAppConfig =
-    BitcoinSAppConfig.fromDefaultDatadirWithBundleConf()
-
-  val model = new LandingPaneModel()
+  val model = new LandingPaneModel(serverArgParser)
 
   private val label: Label = new Label("Welcome to Bitcoin-S") {
     alignmentInParent = Pos.BottomCenter
