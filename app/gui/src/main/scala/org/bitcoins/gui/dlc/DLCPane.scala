@@ -124,9 +124,13 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
         selectedExtensionFilter = txtExtensionFilter
         initialDirectory = new File(Properties.userHome)
       }
-      val chosenFile = fileChooser.showSaveDialog(null)
-      Files.write(chosenFile.toPath, resultTextArea.text.value.getBytes)
-      ()
+      val chosenFileOpt = Option(fileChooser.showSaveDialog(null))
+      chosenFileOpt match {
+        case Some(chosenFile) =>
+          Files.write(chosenFile.toPath, resultTextArea.text.value.getBytes)
+          ()
+        case None => // User canceled in dialog
+      }
     }
   }
 

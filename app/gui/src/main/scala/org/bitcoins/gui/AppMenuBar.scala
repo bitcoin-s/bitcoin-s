@@ -34,10 +34,14 @@ private class FileMenu() {
         initialDirectory = new File(Properties.userHome)
         initialFileName = "bitcoin-s-backup.zip"
       }
-      val chosenFile = fileChooser.showSaveDialog(null)
-      ConsoleCli.exec(ZipDataDir(chosenFile.toPath),
-                      GlobalData.consoleCliConfig)
-      ()
+      val chosenFileOpt = Option(fileChooser.showSaveDialog(null))
+      chosenFileOpt match {
+        case Some(chosenFile) =>
+          ConsoleCli.exec(ZipDataDir(chosenFile.toPath),
+                          GlobalData.consoleCliConfig)
+          ()
+        case None => // User canceled in dialog
+      }
     }
   }
 
