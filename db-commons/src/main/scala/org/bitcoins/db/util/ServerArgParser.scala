@@ -118,3 +118,7 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
   }
 
 }
+
+object ServerArgParser {
+  val empty: ServerArgParser = ServerArgParser(Vector.empty)
+}

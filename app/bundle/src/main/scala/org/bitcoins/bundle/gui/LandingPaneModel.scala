@@ -14,9 +14,10 @@ import org.bitcoins.server._
 import scalafx.beans.property.ObjectProperty
 import scalafx.stage.Window
 
-import java.nio.file.{Files, Path}
+import java.nio.file.Files
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
+import scala.util.{Failure, Success}
 
 class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
     system: ActorSystem)
@@ -42,13 +43,11 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
         logger.info(s"Writing bundle config to $file")
         Files.write(file, bundleConfStr.getBytes)
 
-        val tmpFile = Files.createTempFile("bitcoin-s-tmp-config", ".conf")
-
-        val finalConfF: Future[Path] = {
+        val networkConfigF: Future[Config] = {
           val tmpConf =
             BitcoinSAppConfig.fromConfig(
               bundleConf.withFallback(appConfig.config))
-          val netConfF = tmpConf.nodeType match {
+          val netConfF: Future[Config] = tmpConf.nodeType match {
             case _: InternalImplementationNodeType =>
               // If we are connecting to a node we cannot
               // know what network it is on now
@@ -62,13 +61,9 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
           }
 
           netConfF.map { netConf =>
-            val finalConf =
-              BitcoinSAppConfig.fromDefaultDatadirWithBundleConf(
-                Vector(netConf, bundleConf))
-
-            val totalConfStr = AppConfig.configToString(finalConf.config)
-            logger.info(s"Writing resolved config to $tmpFile")
-            Files.write(tmpFile, totalConfStr.getBytes)
+            serverArgParser.toConfig
+              .withFallback(netConf)
+              .withFallback(bundleConf)
           }
         }
 
@@ -80,18 +75,16 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
           promise.success(())
         }
 
-        finalConfF.map { path =>
-          val extraArgs = Vector("--conf", path.toAbsolutePath.toString)
-          //reparse server args with the new config
-          val usedArgs = extraArgs ++ serverArgParser.commandLineArgs
-          val serverArgWithCustomConfig = ServerArgParser(usedArgs)
-          val finalAppConfig = BitcoinSAppConfig.fromConfig(
-            bundleConf.withFallback(appConfig.config))
-
+        val startedF = networkConfigF.map { networkConfig =>
+          val finalAppConfig = BitcoinSAppConfig.fromConfig(networkConfig)
           // use class base constructor to share the actor system
-          new BitcoinSServerMain(serverArgWithCustomConfig)(system,
-                                                            finalAppConfig)
+
+          new BitcoinSServerMain(serverArgParser)(system, finalAppConfig)
             .run()
+        }
+
+        startedF.failed.foreach { case err =>
+          throw err
         }
 
         Await.result(promise.future, 60.seconds)

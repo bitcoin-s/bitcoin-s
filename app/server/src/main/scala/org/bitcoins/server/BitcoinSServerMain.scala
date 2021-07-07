@@ -30,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
-    val conf: BitcoinSAppConfig)
+    conf: BitcoinSAppConfig)
     extends BitcoinSServerRunner {
 
   implicit lazy val walletConf: WalletAppConfig = conf.walletConf
