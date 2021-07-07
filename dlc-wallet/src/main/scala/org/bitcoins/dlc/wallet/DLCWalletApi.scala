@@ -1,7 +1,8 @@
 package org.bitcoins.dlc.wallet
 
 import org.bitcoins.core.api.wallet._
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.api.wallet.db.ContractTemplateDb
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
@@ -10,6 +11,7 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
   DLCSign
 }
 import org.bitcoins.core.protocol.dlc.models.{
+  ContractDescriptor,
   ContractInfo,
   DLCStatus,
   OracleSignatures
@@ -103,6 +105,21 @@ trait DLCWalletApi { self: WalletApi =>
 
   /** Retrieves accounting and financial metrics for the entire dlc wallet */
   def getWalletAccounting(): Future[DLCWalletAccounting]
+
+  def createContractTemplate(
+      label: String,
+      descriptor: ContractDescriptor,
+      totalCollateral: CurrencyUnit): Future[ContractTemplateDb] =
+    createContractTemplate(label, descriptor.toTLV, totalCollateral)
+
+  def createContractTemplate(
+      label: String,
+      descriptorTLV: ContractDescriptorTLV,
+      totalCollateral: CurrencyUnit): Future[ContractTemplateDb]
+
+  def findContractTemplate(label: String): Future[Option[ContractTemplateDb]]
+
+  def getContractTemplates: Future[Vector[ContractTemplateDb]]
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */

@@ -185,6 +185,12 @@ object CliReaders {
       val reads: String => ContractInfoV0TLV = ContractInfoV0TLV.fromHex
     }
 
+  implicit val contractDescriptorTLVReads: Read[ContractDescriptorTLV] =
+    new Read[ContractDescriptorTLV] {
+      val arity: Int = 1
+      val reads: String => ContractDescriptorTLV = ContractDescriptorTLV.fromHex
+    }
+
   implicit val blockStampReads: Read[BlockStamp] =
     new Read[BlockStamp] {
       val arity: Int = 1

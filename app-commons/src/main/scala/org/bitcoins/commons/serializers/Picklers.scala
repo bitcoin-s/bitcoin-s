@@ -2,6 +2,7 @@ package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
+import org.bitcoins.core.api.wallet.db.ContractTemplateDb
 import org.bitcoins.core.crypto.{
   ExtKey,
   ExtPrivateKey,
@@ -105,6 +106,9 @@ object Picklers {
 
   implicit val contractInfoTLVPickler: ReadWriter[ContractInfoV0TLV] =
     readwriter[String].bimap(_.hex, ContractInfoV0TLV.fromHex)
+
+  implicit val contractDescriptorTLVPickler: ReadWriter[ContractDescriptorTLV] =
+    readwriter[String].bimap(_.hex, ContractDescriptorTLV.fromHex)
 
   implicit val schnorrDigitalSignaturePickler: ReadWriter[
     SchnorrDigitalSignature] =
@@ -564,6 +568,15 @@ object Picklers {
         )
     }
   }
+
+  implicit val contractTemplateDbWriter: Writer[ContractTemplateDb] =
+    writer[Obj].comap { db: ContractTemplateDb =>
+      Obj(
+        "label" -> Str(db.label),
+        "descriptorTLV" -> Str(db.contractDescriptorTLV.hex),
+        "totalCollateral" -> Num(db.totalCollateral.satoshis.toLong.toDouble)
+      )
+    }
 
   implicit val dlcWalletAccountingWriter: Writer[DLCWalletAccounting] = {
     writer[Obj].comap { walletAccounting: DLCWalletAccounting =>

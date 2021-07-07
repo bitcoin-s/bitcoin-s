@@ -864,6 +864,36 @@ object ExecuteDLCRefund extends ServerJsonModels {
   }
 }
 
+case class CreateContractTemplate(
+    label: String,
+    descriptor: ContractDescriptorTLV,
+    totalCollateral: Satoshis)
+
+object CreateContractTemplate extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateContractTemplate] = {
+    jsArr.arr.toList match {
+      case labelJs :: descriptorJs :: totalCollateralJs :: Nil =>
+        Try {
+          val label = labelJs.str
+          val descriptor = jsToContractDescriptorTLV(descriptorJs)
+          val totalCollateral = jsToSatoshis(totalCollateralJs)
+
+          CreateContractTemplate(label, descriptor, totalCollateral)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing label, descriptor, and totalCollateral arguments"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
 case class SendFromOutpoints(
     outPoints: Vector[TransactionOutPoint],
     address: BitcoinAddress,
@@ -1076,6 +1106,16 @@ trait ServerJsonModels {
         ContractInfoV0TLV(str.value)
       case _: Value =>
         throw Value.InvalidData(js, "Expected a ContractInfo as a hex string")
+    }
+
+  def jsToContractDescriptorTLV(js: Value): ContractDescriptorTLV =
+    js match {
+      case str: Str =>
+        ContractDescriptorTLV(str.value)
+      case _: Value =>
+        throw Value.InvalidData(
+          js,
+          "Expected a ContractDescriptorTLV as a hex string")
     }
 
   def jsToSatoshisPerVirtualByteOpt(js: Value): Option[SatoshisPerVirtualByte] =

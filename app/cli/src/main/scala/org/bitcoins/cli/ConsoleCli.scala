@@ -449,6 +449,39 @@ object ConsoleCli {
               case _: GetDLC => GetDLC(dlcId)
               case other     => other
             }))),
+      cmd("createcontracttemplate")
+        .action((_, conf) =>
+          conf.copy(command = CreateContractTemplate("", null, Satoshis.zero)))
+        .text("Creates a contract template and inserts it into the wallet")
+        .children(
+          arg[String]("label")
+            .required()
+            .action((label, conf) =>
+              conf.copy(command = conf.command match {
+                case create: CreateContractTemplate =>
+                  create.copy(label = label)
+                case other => other
+              })),
+          arg[ContractDescriptorTLV]("descriptor")
+            .required()
+            .action((tlv, conf) =>
+              conf.copy(command = conf.command match {
+                case create: CreateContractTemplate =>
+                  create.copy(contractDescriptorTLV = tlv)
+                case other => other
+              })),
+          arg[Satoshis]("totalCollateral")
+            .required()
+            .action((totalCollateral, conf) =>
+              conf.copy(command = conf.command match {
+                case create: CreateContractTemplate =>
+                  create.copy(totalCollateral = totalCollateral)
+                case other => other
+              }))
+        ),
+      cmd("getcontracttemplates")
+        .action((_, conf) => conf.copy(command = GetContractTemplates))
+        .text("Returns all contract templates in the wallet"),
       cmd("getbalance")
         .action((_, conf) => conf.copy(command = GetBalance(false)))
         .text("Get the wallet balance")
@@ -1757,6 +1790,13 @@ object ConsoleCli {
 
       case GetDLCWalletAccounting =>
         RequestParam("getdlcwalletaccounting")
+      case GetContractTemplates =>
+        RequestParam("getcontracttemplates")
+      case CreateContractTemplate(label, tlv, totalCollateral) =>
+        RequestParam(
+          "createcontracttemplate",
+          Seq(up.writeJs(label), up.writeJs(tlv), up.writeJs(totalCollateral)))
+
       case GetVersion =>
         // skip sending to server and just return version number of cli
         return Success(EnvUtil.getVersion)
@@ -1950,6 +1990,14 @@ object CliCommand {
 
   case object GetDLCs extends AppServerCliCommand
   case class GetDLC(dlcId: Sha256Digest) extends AppServerCliCommand
+
+  case object GetContractTemplates extends AppServerCliCommand
+
+  case class CreateContractTemplate(
+      label: String,
+      contractDescriptorTLV: ContractDescriptorTLV,
+      totalCollateral: Satoshis)
+      extends AppServerCliCommand
 
   sealed trait SendCliCommand extends AppServerCliCommand {
     def destination: BitcoinAddress

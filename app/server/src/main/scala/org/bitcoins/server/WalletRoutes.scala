@@ -503,6 +503,27 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("createcontracttemplate", arr) =>
+      withValidServerCommand(CreateContractTemplate.fromJsArr(arr)) {
+        case CreateContractTemplate(label, descriptor, totalCollateral) =>
+          complete {
+            for {
+              template <- wallet.createContractTemplate(label,
+                                                        descriptor,
+                                                        totalCollateral)
+            } yield {
+              Server.httpSuccess(template)
+            }
+          }
+      }
+
+    case ServerCommand("getcontracttemplates", _) =>
+      complete {
+        wallet.getContractTemplates.map { templates =>
+          Server.httpSuccess(templates)
+        }
+      }
+
     case ServerCommand("sendtoaddress", arr) =>
       withValidServerCommand(SendToAddress.fromJsArr(arr)) {
         case SendToAddress(address,

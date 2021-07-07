@@ -41,7 +41,8 @@ abstract class DLCWallet
     extends Wallet
     with AnyDLCHDWalletApi
     with DLCDataManagement
-    with DLCTransactionProcessing {
+    with DLCTransactionProcessing
+    with ContractTemplateHandling {
 
   implicit val dlcConfig: DLCAppConfig
 
