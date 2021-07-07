@@ -21,7 +21,7 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: adopt@1.8-0
+          java-version: adopt@1.8.0-292
       - name: Cache
         uses: actions/cache@v2
         with:
