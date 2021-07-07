@@ -632,9 +632,6 @@
       "version-0.6.0/core/version-0.6.0-addresses": {
         "title": "Generating Addresses"
       },
-      "version-0.6.0/core/version-0.6.0-core-intro": {
-        "title": "Core Module"
-      },
       "version-0.6.0/core/version-0.6.0-dlc": {
         "title": "Discreet Log Contract Data Structures"
       },
@@ -704,11 +701,71 @@
       "version-0.6.0/wallet/version-0.6.0-wallet-rescan": {
         "title": "Wallet Rescans"
       },
-      "version-0.6.0/wallet/version-0.6.0-wallet-rpc": {
-        "title": "Wallet RPC Examples"
-      },
       "version-0.6.0/wallet/version-0.6.0-wallet": {
         "title": "Wallet"
+      },
+      "version-1.7.0/applications/version-1.7.0-server": {
+        "title": "Application Server"
+      },
+      "version-1.7.0/chain/version-1.7.0-chain-query-api": {
+        "title": "Chain Query API"
+      },
+      "version-1.7.0/config/version-1.7.0-configuration": {
+        "title": "Application Configuration"
+      },
+      "version-1.7.0/core/version-1.7.0-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-1.7.0/core/version-1.7.0-core-intro": {
+        "title": "Core Module"
+      },
+      "version-1.7.0/core/version-1.7.0-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-1.7.0/core/version-1.7.0-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-1.7.0/core/version-1.7.0-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-1.7.0/crypto/version-1.7.0-sign": {
+        "title": "Sign API"
+      },
+      "version-1.7.0/version-1.7.0-getting-setup": {
+        "title": "Getting Bitcoin-S installed on your machine"
+      },
+      "version-1.7.0/version-1.7.0-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-1.7.0/key-manager/version-1.7.0-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-1.7.0/node/version-1.7.0-node": {
+        "title": "Light Client"
+      },
+      "version-1.7.0/oracle/version-1.7.0-oracle-server": {
+        "title": "Oracle Server"
+      },
+      "version-1.7.0/rpc/version-1.7.0-rpc-bitcoind": {
+        "title": "bitcoind/Bitcoin Core"
+      },
+      "version-1.7.0/rpc/version-1.7.0-lnd-rpc": {
+        "title": "LND"
+      },
+      "version-1.7.0/secp256k1/version-1.7.0-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-1.7.0/testkit/version-1.7.0-testkit": {
+        "title": "Testkit"
+      },
+      "version-1.7.0/wallet/version-1.7.0-backups": {
+        "title": "Wallet Backups"
+      },
+      "version-1.7.0/wallet/version-1.7.0-dlc": {
+        "title": "Executing A DLC with Bitcoin-S"
+      },
+      "version-1.7.0/wallet/version-1.7.0-wallet-rpc": {
+        "title": "Wallet RPC Examples"
       }
     },
     "links": {
