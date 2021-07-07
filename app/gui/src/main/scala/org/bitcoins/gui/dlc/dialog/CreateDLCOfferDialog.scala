@@ -430,7 +430,9 @@ class CreateDLCOfferDialog extends Logging {
                                previewGraphButton)
           nextRow = 4
           addRemainingFields()
-        case _: SignedDigitDecompositionEventDescriptor => ()
+        case _: SignedDigitDecompositionEventDescriptor =>
+          throw new RuntimeException(
+            s"SignedDigitDecompositionEventDescriptors are not supported yet")
       }
       dialog.dialogPane().getScene.getWindow.sizeToScene()
     }
