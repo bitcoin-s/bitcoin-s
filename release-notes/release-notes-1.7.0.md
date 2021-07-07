@@ -1,7 +1,5 @@
 # 1.7.0 DLC wallet & Installers
 
-Last commit this was synced through was  0d2bc7a9270b93b32471fe014cd837693fced967
-
 # DLC Wallet
 
 This release merges our feature branch called `adaptor-dlc` into master. This means 
@@ -46,6 +44,8 @@ c72c5f84e3d Add extranious json readers, writers, and column mappers (#3325)
 This release optimizes the support for bitcoind as a backend in the app server.
 It also fixes a variety of bugs adds a few new endpoints. You can find all supported
 end points on our website [here](https://bitcoin-s.org/docs/next/applications/server#server-endpoints)
+
+629c2a2c31e Set sync height on new wallet (#3368)
 
 af9bf210589 Improve logs in BitcoindRpcBackendUtil (#3339)
 
@@ -104,8 +104,12 @@ Bundle combines both the GUI and AppServer project and bundles them together to 
 One problem we encountered this release is how to allow users to configure their node from the GUI on first startup.
 
 In #3142 we added support for this by adding a new configuration file that is automatically generated and written
-to `.bitcoin-s/bitcoin-s-bundle.conf`. This file saves the user's configuration, and uses it the next
+to `~/.bitcoin-s/bitcoin-s-bundle.conf`. This file saves the user's configuration, and uses it the next
 time the bundle is started.
+
+bc79a24f532 Get both bundle and app server logging working (#3362)
+
+2f7e5876d30 Set default neutrino peer based on network (#3360)
 
 bd877c80a9f Get logging working in bundle  (#3200)
 
@@ -123,6 +127,8 @@ ba91ba5596d Add assembly instructions for bundle project (#3104)
 
 ## Chain
 
+639043227c6 Add logs to make it more apparent that No Common Ancestors isn't necessarily bad (#3354)
+
 ## Cli
 
 42966b3cbe6 Remove logback from the cli module (#3117)
@@ -135,6 +141,10 @@ We use parallelism to speed up this computation.
 
 The other notable change in `core` is adding `DLCAccounting`. This is used to caclulate things like PNL
 and rate of return for a DLC you were in.
+
+e098aba6806 Create and implement OrderedAnnouncements type (#3356)
+
+78e2fceb908 Use OrderedNonces type in DLC data types (#3352)
 
 a9292fcad80 Add FutureUtil tests (#3126)
 
@@ -178,7 +188,7 @@ when computing adaptor points, for which `ECPrivateKey` and `ECPublicKey` are us
 
 63a6f9309dc Introduced AsyncAdaptorSign and AdaptorSign traits (#3037)
 
-## db commons
+## DB Commons
 
 88187abf1a9 Add LnInvoice db mapper (#3286)
 
@@ -187,6 +197,8 @@ dee044eb4e2 2021 05 26 uint64 mapper (#3155)
 17d11455049 Removed extraneous findAll call from CRUD.updateAll (#3154)
 
 ## DLC Wallet
+
+cada6fdc636 Fix DLC not storing nSequence for funding inputs (#3342)
 
 Numerous optimization, bug fixes, and support for multi-wallet DLC wallet.
 
@@ -240,6 +252,14 @@ are pasted into the dialog.
 
 There is also quality of life improvements such as showing the sync height of the wallet,
 showing wallet wide PNL and rate of return.
+
+6af9e47e389 Fix showing error popups in GUI (#3353)
+
+6414833111a Call trim on DLC message text boxes (#3348)
+
+81fe7d76eec Remove canceled DLCs from table (#3349)
+
+53cafa78984 Set closing txid on execute from View Dialog (#3340)
 
 1f43a1910fd Add ExplorerEnv.fromBitcoinNetwork() and use for View on Oracle Explorer siteUrl (#3332)
 
@@ -327,6 +347,8 @@ c3b982726e2 Fix error messages in SbExplorerClient (#3323)
 
 ## Secp256k1jni
 
+37a4b5c1ea8 Add secp256k1jni tests to Mac & Windows CI (#3367)
+
 8374ddf601c Removes dead symlinks for secp256k1 on osx_arm64 (#3279)
 
 b23b5ad55f9 Make sure secp256k1 is published for java8, not the class version of the jdk it was built on (#3145)
@@ -375,6 +397,16 @@ f86f90dc32a Add getbalances cli command (#3022)
 
 ## Website
 
+e47cee85d06 Add high level descriptions of what changed in modules
+
+0b5b2adb342 Add first draft for release notes for 1.7
+
+feeb3749bdb Fix most warnings in documentation code (#3358)
+
+50804fe999d Add docs for backing up the wallet (#3351)
+
+cc1cfe6594c Add more explicit instructions for install java9+ for getting-setup.md (#3347)
+
 3ef842eca51 Adjust --depth doc from 100 -> 500 (#3300)
 
 97785561bad Add link to installers, add docs for requirement of java9+ for development environments (#3299)
@@ -392,3 +424,7 @@ cdee40b379d Fixed bitcoin-s-cli dir location under bin (#3293)
 4381b93afbd 2021 05 03 improve release notes (#3019)
 
 d25dff14b46 Add 0.6.0 website (#3020)
+
+## zmq 
+
+5df7a8bdf32 Add test for ZMQ Polling backend (#3088)
