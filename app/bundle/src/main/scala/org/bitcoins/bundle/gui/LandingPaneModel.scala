@@ -17,7 +17,6 @@ import scalafx.stage.Window
 import java.nio.file.Files
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Success}
 
 class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
     system: ActorSystem)
