@@ -7,6 +7,7 @@ import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
   WalletAppConfigWithBitcoindNewestFixtures
 }
+import org.bitcoins.testkitcore.util.TestUtil.bech32Address
 
 import scala.concurrent.duration.DurationInt
 
@@ -43,14 +44,14 @@ class BitcoindBlockPollingTest
         _ = BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
                                                              bitcoind,
                                                              1.second)
-        _ <- bitcoind.generateToAddress(6, addr)
+        _ <- bitcoind.generateToAddress(6, bech32Address)
 
         // Wait for it to process
         _ <- AsyncUtil.awaitConditionF(
           () => wallet.getBalance().map(_ > Satoshis.zero),
           1.second)
 
-        balance <- wallet.getBalance()
+        balance <- wallet.getConfirmedBalance()
         //clean up
         _ <- wallet.walletConfig.stop()
       } yield assert(balance == amountToSend)

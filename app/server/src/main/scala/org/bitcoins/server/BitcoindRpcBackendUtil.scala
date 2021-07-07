@@ -131,12 +131,11 @@ object BitcoindRpcBackendUtil extends Logging {
     pairedWallet
   }
 
-  def startZMQWalletCallbacks(wallet: Wallet)(implicit
-      bitcoindRpcConf: BitcoindRpcAppConfig): Unit = {
-    require(bitcoindRpcConf.zmqConfig != ZmqConfig.empty,
+  def startZMQWalletCallbacks(wallet: Wallet, zmqConfig: ZmqConfig): Unit = {
+    require(zmqConfig != ZmqConfig.empty,
             "Must have the zmq raw configs defined to setup ZMQ callbacks")
 
-    bitcoindRpcConf.zmqRawTx.foreach { zmq =>
+    zmqConfig.rawTx.foreach { zmq =>
       val rawTxListener: Option[Transaction => Unit] = Some {
         { tx: Transaction =>
           logger.debug(s"Received tx ${tx.txIdBE.hex}, processing")
@@ -152,7 +151,7 @@ object BitcoindRpcBackendUtil extends Logging {
                         rawBlockListener = None).start()
     }
 
-    bitcoindRpcConf.zmqRawBlock.foreach { zmq =>
+    zmqConfig.rawBlock.foreach { zmq =>
       val rawBlockListener: Option[Block => Unit] = Some {
         { block: Block =>
           logger.debug(
