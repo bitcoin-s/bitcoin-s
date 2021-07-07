@@ -37,7 +37,9 @@ private class FileMenu() {
       val chosenFileOpt = Option(fileChooser.showSaveDialog(null))
       chosenFileOpt match {
         case Some(chosenFile) =>
-          ConsoleCli.exec(ZipDataDir(chosenFile.toPath),GlobalData.consoleCliConfig)
+          ConsoleCli.exec(ZipDataDir(chosenFile.toPath),
+                          GlobalData.consoleCliConfig)
+          ()
         case None => // User canceled in dialog
       }
     }

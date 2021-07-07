@@ -128,6 +128,7 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
       chosenFileOpt match {
         case Some(chosenFile) =>
           Files.write(chosenFile.toPath, resultTextArea.text.value.getBytes)
+          ()
         case None => // User canceled in dialog
       }
     }
