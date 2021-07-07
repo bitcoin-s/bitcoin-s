@@ -29,7 +29,6 @@ import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.dlc.wallet.util.DLCStatusBuilder
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.TransactionDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
 
