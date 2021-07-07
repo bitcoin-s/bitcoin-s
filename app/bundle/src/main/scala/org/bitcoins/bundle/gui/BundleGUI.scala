@@ -40,7 +40,7 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
     val datadirParser = DatadirParser(serverArgParser, customFinalDirOpt)
 
     System.setProperty("bitcoins.log.location",
-                       datadirParser.usedDir.toAbsolutePath.toString)
+                       datadirParser.networkDir.toAbsolutePath.toString)
 
     //adjust the rpc port if one was specified
     GlobalData.rpcPortOpt = serverArgParser.rpcPortOpt match {

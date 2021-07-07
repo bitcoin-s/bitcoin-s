@@ -53,7 +53,12 @@ case class DatadirParser(
   lazy val datadir: Path =
     Paths.get(baseConfig.getString("bitcoin-s.datadir"))
 
-  /** Directory specific for current network or custom dir */
-  def usedDir: Path =
+  /** Directory specific for current network or custom dir
+    * Examples are
+    * HOME/.bitcoin-s/mainnet
+    * HOME/.bitcoin-s/testnet3
+    * HOME/.bitcoin-s/oracle
+    */
+  def networkDir: Path =
     DatadirUtil.getFinalDatadir(datadir, baseConfig, customFinalDirOpt)
 }

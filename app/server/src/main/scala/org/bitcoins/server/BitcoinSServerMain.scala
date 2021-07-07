@@ -401,7 +401,7 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
   val datadirParser =
     DatadirParser(serverCmdLineArgs, customFinalDirOpt)
 
-  System.setProperty("bitcoins.log.location", datadirParser.usedDir.toString)
+  System.setProperty("bitcoins.log.location", datadirParser.networkDir.toString)
 
   implicit lazy val conf: BitcoinSAppConfig =
     BitcoinSAppConfig(datadirParser.datadir,
