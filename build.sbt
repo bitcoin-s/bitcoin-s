@@ -289,7 +289,7 @@ lazy val secp256k1jni = project
     coverageEnabled := false,
     Compile / compile / javacOptions ++= {
       //https://github.com/eclipse/jetty.project/issues/3244#issuecomment-495322586
-      Seq("--release", "8")
+      Seq.empty
     }
   )
 
