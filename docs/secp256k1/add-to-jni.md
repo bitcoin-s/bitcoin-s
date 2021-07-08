@@ -25,7 +25,7 @@ Bitcoin-S uses a Java Native Interface (JNI) to execute functions in [secp256k1-
 
 1. Add an `#include` import at the top (if applicable)
 
-   If your secp256k1 functions are not already included, you will need to `#include` the header file (should be in the `secp256k1/include` directory).
+   If your secp256k1 functions are not already included, you will need to `#include` the header file (should be in the `secp256k1-zkp/include` directory).
 
 2. Function signature
 
@@ -358,14 +358,14 @@ I normally first build the C binaries and add to Bitcoin-S before coming back to
 
 2. Configure and build `secp256k1`
 
-   You will need to go to the `bitcoin-s/secp256k1` directory in a terminal and running the following where you may need to add to the `./configure` command if you are introducing a new module.
+   You will need to go to the `bitcoin-s/secp256k1-zkp` directory in a terminal and running the following where you may need to add to the `./configure` command if you are introducing a new module.
 
    __For Linux or OSx (64-bit)__
 
    You will have to make sure `JAVA_HOME` is set, and build tools are installed, for Linux this requires:
 
    ```bashrc
-   echo JAVA_HOME
+   echo $JAVA_HOME
    sudo apt install build-essential autotools-dev libtool automake
    ```
 
@@ -407,7 +407,7 @@ I normally first build the C binaries and add to Bitcoin-S before coming back to
 
 3. Copy binaries into bitcoin-s natives for your system
 
-   You have now built the C binaries for your JNI bindings for your operating system and you should now find your operating system's directory in `bitcoin-s/secp256k1jni/natives` and replace its contents with the contents of `secp256k1/.libs` (which contains the compiled binaries).
+   You have now built the C binaries for your JNI bindings for your operating system and you should now find your operating system's directory in `bitcoin-s/secp256k1jni/natives` and replace its contents with the contents of `secp256k1-zkp/.libs` (which contains the compiled binaries).
 
 4. Run `secp256k1jni` tests
 
