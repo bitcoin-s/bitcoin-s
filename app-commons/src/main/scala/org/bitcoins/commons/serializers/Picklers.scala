@@ -162,6 +162,7 @@ object Picklers {
       import offered._
       Obj(
         "state" -> Str(statusString),
+        "label" -> Str(label),
         "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
@@ -181,6 +182,7 @@ object Picklers {
     import accepted._
     Obj(
       "state" -> Str(statusString),
+      "label" -> Str(label),
       "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
@@ -201,6 +203,7 @@ object Picklers {
     import signed._
     Obj(
       "state" -> Str(statusString),
+      "label" -> Str(label),
       "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
@@ -222,6 +225,7 @@ object Picklers {
       import broadcasted._
       Obj(
         "state" -> Str(statusString),
+        "label" -> Str(label),
         "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
@@ -244,6 +248,7 @@ object Picklers {
       import confirmed._
       Obj(
         "state" -> Str(statusString),
+        "label" -> Str(label),
         "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
@@ -276,6 +281,7 @@ object Picklers {
 
     Obj(
       "state" -> Str(statusString),
+      "label" -> Str(label),
       "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
@@ -316,6 +322,7 @@ object Picklers {
 
       Obj(
         "state" -> Str(statusString),
+        "label" -> Str(label),
         "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
         "tempContractId" -> Str(tempContractId.hex),
@@ -347,6 +354,7 @@ object Picklers {
     import refunded._
     Obj(
       "state" -> Str(statusString),
+      "label" -> Str(label),
       "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
       "tempContractId" -> Str(tempContractId.hex),
@@ -391,6 +399,7 @@ object Picklers {
 
   implicit val dlcStatusR: Reader[DLCStatus] = reader[Obj].map { obj =>
     val dlcId = Sha256Digest(obj("dlcId").str)
+    val label = obj("label").str
     val state = DLCState.fromString(obj("state").str)
     val isInitiator = obj("isInitiator").bool
     val tempContractId = Sha256Digest(obj("tempContractId").str)
@@ -450,6 +459,7 @@ object Picklers {
       case DLCState.Offered =>
         Offered(
           dlcId,
+          label,
           isInitiator,
           tempContractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -461,6 +471,7 @@ object Picklers {
       case DLCState.Accepted =>
         Accepted(
           dlcId,
+          label,
           isInitiator,
           tempContractId,
           contractId,
@@ -473,6 +484,7 @@ object Picklers {
       case DLCState.Signed =>
         Signed(
           dlcId,
+          label,
           isInitiator,
           tempContractId,
           contractId,
@@ -485,6 +497,7 @@ object Picklers {
       case DLCState.Broadcasted =>
         Broadcasted(
           dlcId,
+          label,
           isInitiator,
           tempContractId,
           contractId,
@@ -498,6 +511,7 @@ object Picklers {
       case DLCState.Confirmed =>
         Confirmed(
           dlcId,
+          label,
           isInitiator,
           tempContractId,
           contractId,
@@ -511,6 +525,7 @@ object Picklers {
       case DLCState.Claimed =>
         Claimed(
           dlcId,
+          label,
           isInitiator,
           tempContractId,
           contractId,
@@ -531,6 +546,7 @@ object Picklers {
                 "Remote claimed should only have one oracle sig")
         RemoteClaimed(
           dlcId,
+          label,
           isInitiator,
           tempContractId,
           contractId,
@@ -549,6 +565,7 @@ object Picklers {
       case DLCState.Refunded =>
         Refunded(
           dlcId,
+          label,
           isInitiator,
           tempContractId,
           contractId,

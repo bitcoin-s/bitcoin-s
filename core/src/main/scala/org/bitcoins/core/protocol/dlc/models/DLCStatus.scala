@@ -15,8 +15,9 @@ import scodec.bits.ByteVector
 
 sealed trait DLCStatus {
 
-  /** The flipped sha256 hash of oracleInfo ++ contractInfo ++ timeoutes */
+  /** The sha256 hash of lexicographically sorted outpoints */
   def dlcId: Sha256Digest
+  def label: String
   def isInitiator: Boolean
   def state: DLCState
   def tempContractId: Sha256Digest
@@ -68,6 +69,7 @@ object DLCStatus {
 
   case class Offered(
       dlcId: Sha256Digest,
+      label: String,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractInfo: ContractInfo,
@@ -81,6 +83,7 @@ object DLCStatus {
 
   case class Accepted(
       dlcId: Sha256Digest,
+      label: String,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
@@ -95,6 +98,7 @@ object DLCStatus {
 
   case class Signed(
       dlcId: Sha256Digest,
+      label: String,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
@@ -109,6 +113,7 @@ object DLCStatus {
 
   case class Broadcasted(
       dlcId: Sha256Digest,
+      label: String,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
@@ -124,6 +129,7 @@ object DLCStatus {
 
   case class Confirmed(
       dlcId: Sha256Digest,
+      label: String,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
@@ -139,6 +145,7 @@ object DLCStatus {
 
   case class Claimed(
       dlcId: Sha256Digest,
+      label: String,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
@@ -159,6 +166,7 @@ object DLCStatus {
 
   case class RemoteClaimed(
       dlcId: Sha256Digest,
+      label: String,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
@@ -180,6 +188,7 @@ object DLCStatus {
 
   case class Refunded(
       dlcId: Sha256Digest,
+      label: String,
       isInitiator: Boolean,
       tempContractId: Sha256Digest,
       contractId: ByteVector,

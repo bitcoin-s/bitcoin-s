@@ -284,6 +284,7 @@ abstract class DLCWallet
     * This is the first step of the initiator
     */
   override def createDLCOffer(
+      label: String,
       contractInfo: ContractInfo,
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
@@ -388,6 +389,7 @@ abstract class DLCWallet
 
       dlcDb = DLCDb(
         dlcId = dlcId,
+        label = label,
         tempContractId = offer.tempContractId,
         contractIdOpt = None,
         protocolVersion = 0,
@@ -440,7 +442,9 @@ abstract class DLCWallet
     } yield offer
   }
 
-  private def initDLCForAccept(offer: DLCOffer): Future[(DLCDb, AccountDb)] = {
+  private def initDLCForAccept(
+      label: String,
+      offer: DLCOffer): Future[(DLCDb, AccountDb)] = {
     logger.info(
       s"Initializing DLC from received offer with tempContractId ${offer.tempContractId.hex}")
     dlcDAO.findByTempContractId(offer.tempContractId).flatMap {
@@ -469,6 +473,7 @@ abstract class DLCWallet
           dlc =
             DLCDb(
               dlcId = dlcId,
+              label = label,
               tempContractId = offer.tempContractId,
               contractIdOpt = None,
               protocolVersion = 0,
@@ -541,7 +546,9 @@ abstract class DLCWallet
     *
     * This is the first step of the recipient
     */
-  override def acceptDLCOffer(offer: DLCOffer): Future[DLCAccept] = {
+  override def acceptDLCOffer(
+      label: String,
+      offer: DLCOffer): Future[DLCAccept] = {
     logger.debug("Calculating relevant wallet data for DLC Accept")
 
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
@@ -550,7 +557,7 @@ abstract class DLCWallet
 
     logger.debug(s"Checking if Accept (${dlcId.hex}) has already been made")
     for {
-      (dlc, account) <- initDLCForAccept(offer)
+      (dlc, account) <- initDLCForAccept(label, offer)
       dlcAcceptDbOpt <- dlcAcceptDAO.findByDLCId(dlcId)
       dlcAccept <- dlcAcceptDbOpt match {
         case Some(dlcAcceptDb) =>

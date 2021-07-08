@@ -51,6 +51,15 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
+      add(new Label("Label:"), 0, row)
+      add(new TextField() {
+            text = status.label
+            editable = false
+          },
+          columnIndex = 1,
+          rowIndex = row)
+
+      row += 1
       add(new Label("Event Id:"), 0, row)
       add(
         new TextField() {

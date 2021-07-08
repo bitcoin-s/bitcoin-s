@@ -13,6 +13,7 @@ import scodec.bits.ByteVector
   */
 case class DLCDb(
     dlcId: Sha256Digest,
+    label: String,
     tempContractId: Sha256Digest,
     contractIdOpt: Option[ByteVector],
     protocolVersion: Int,

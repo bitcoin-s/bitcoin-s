@@ -4,8 +4,8 @@ import org.bitcoins.commons.jsonmodels.ExplorerEnv
 import org.bitcoins.core.dlc.accounting.RateOfReturnUtil
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.gui.{GUI, GlobalData}
 import org.bitcoins.gui.util.GUIUtil
+import org.bitcoins.gui.{GUI, GlobalData}
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.TableColumn.SortType
@@ -30,17 +30,11 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
-    val contractIdCol = new TableColumn[DLCStatus, String] {
-      text = "Contract Id"
+    val labelCol = new TableColumn[DLCStatus, String] {
+      text = "Label"
       prefWidth = 100
       cellValueFactory = { status =>
-        val contractIdStr = status.value match {
-          case _: Offered => ""
-          case signed: AcceptedDLCStatus =>
-            signed.contractId.toHex
-        }
-
-        new StringProperty(status, "Contract Id", contractIdStr)
+        new StringProperty(status, "Label", status.value.label)
       }
     }
 
@@ -116,7 +110,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     new TableView[DLCStatus](GlobalDLCData.dlcs) {
       columns ++= Seq(eventIdCol,
-                      contractIdCol,
+                      labelCol,
                       statusCol,
                       pnlCol,
                       rorCol,
@@ -124,7 +118,7 @@ class DLCTableView(model: DLCPaneModel) {
                       otherCollateralCol,
                       totalCollateralCol)
       margin = Insets(10, 0, 10, 0)
-      sortOrder.addAll(statusCol, eventIdCol, contractIdCol)
+      sortOrder.addAll(statusCol)
 
       val infoItem: MenuItem = new MenuItem("View DLC") {
         onAction = _ => {

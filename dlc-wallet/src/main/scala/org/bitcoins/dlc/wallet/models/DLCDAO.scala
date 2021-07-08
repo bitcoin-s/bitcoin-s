@@ -117,6 +117,8 @@ case class DLCDAO()(implicit
 
     def dlcId: Rep[Sha256Digest] = column("dlc_id", O.PrimaryKey)
 
+    def label: Rep[String] = column("label")
+
     def tempContractId: Rep[Sha256Digest] =
       column("temp_contract_id", O.Unique)
 
@@ -153,6 +155,7 @@ case class DLCDAO()(implicit
 
     def * : ProvenShape[DLCDb] =
       (dlcId,
+       label,
        tempContractId,
        contractId,
        protocolVersion,

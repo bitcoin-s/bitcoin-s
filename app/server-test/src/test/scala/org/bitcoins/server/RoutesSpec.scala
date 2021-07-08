@@ -924,12 +924,14 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "create a dlc offer" in {
       (mockWalletApi
-        .createDLCOffer(_: ContractInfoV0TLV,
+        .createDLCOffer(_: String,
+                        _: ContractInfoV0TLV,
                         _: Satoshis,
                         _: Option[SatoshisPerVirtualByte],
                         _: UInt32,
                         _: UInt32))
         .expects(
+          "label",
           contractInfoTLV,
           Satoshis(2500),
           Some(SatoshisPerVirtualByte(Satoshis.one)),
@@ -942,6 +944,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         ServerCommand(
           "createdlcoffer",
           Arr(
+            Str("label"),
             Str(contractInfoTLV.hex),
             Num(2500),
             Num(1),
@@ -972,12 +975,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "accept a dlc offer" in {
       (mockWalletApi
-        .acceptDLCOffer(_: DLCOfferTLV))
-        .expects(offer.toTLV)
+        .acceptDLCOffer(_: String, _: DLCOfferTLV))
+        .expects("label", offer.toTLV)
         .returning(Future.successful(accept))
 
       val route = walletRoutes.handleCommand(
-        ServerCommand("acceptdlcoffer", Arr(Str(LnMessage(offer.toTLV).hex))))
+        ServerCommand("acceptdlcoffer",
+                      Arr(Str("label"), Str(LnMessage(offer.toTLV).hex))))
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)

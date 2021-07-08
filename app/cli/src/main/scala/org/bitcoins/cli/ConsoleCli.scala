@@ -170,13 +170,22 @@ object ConsoleCli {
       cmd("createdlcoffer")
         .action((_, conf) =>
           conf.copy(
-            command = CreateDLCOffer(ContractInfoV0TLV.dummy,
+            command = CreateDLCOffer("",
+                                     ContractInfoV0TLV.dummy,
                                      Satoshis.zero,
                                      None,
                                      UInt32.zero,
                                      UInt32.zero)))
         .text("Creates a DLC offer that another party can accept")
         .children(
+          arg[String]("label")
+            .required()
+            .action((label, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(label = label)
+                case other => other
+              })),
           arg[ContractInfoV0TLV]("contractInfo")
             .required()
             .action((info, conf) =>
@@ -219,9 +228,17 @@ object ConsoleCli {
               }))
         ),
       cmd("acceptdlcoffer")
-        .action((_, conf) => conf.copy(command = AcceptDLCOffer(null)))
+        .action((_, conf) => conf.copy(command = AcceptDLCOffer("", null)))
         .text("Accepts a DLC offer given from another party")
         .children(
+          arg[String]("label")
+            .required()
+            .action((label, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOffer =>
+                  accept.copy(label = label)
+                case other => other
+              })),
           arg[LnMessage[DLCOfferTLV]]("offer")
             .required()
             .action((offer, conf) =>
@@ -1514,7 +1531,8 @@ object ConsoleCli {
       case GetDLCs => RequestParam("getdlcs")
       case GetDLC(dlcId) =>
         RequestParam("getdlc", Seq(up.writeJs(dlcId)))
-      case CreateDLCOffer(contractInfo,
+      case CreateDLCOffer(label,
+                          contractInfo,
                           collateral,
                           feeRateOpt,
                           locktime,
@@ -1522,6 +1540,7 @@ object ConsoleCli {
         RequestParam(
           "createdlcoffer",
           Seq(
+            up.writeJs(label),
             up.writeJs(contractInfo),
             up.writeJs(collateral),
             up.writeJs(feeRateOpt),
@@ -1529,8 +1548,9 @@ object ConsoleCli {
             up.writeJs(refundLT)
           )
         )
-      case AcceptDLCOffer(offer) =>
-        RequestParam("acceptdlcoffer", Seq(up.writeJs(offer)))
+      case AcceptDLCOffer(label, offer) =>
+        RequestParam("acceptdlcoffer",
+                     Seq(up.writeJs(label), up.writeJs(offer)))
       case AcceptDLCOfferFromFile(path, dest) =>
         RequestParam("acceptdlcofferfromfile",
                      Seq(up.writeJs(path), up.writeJs(dest)))
@@ -1893,6 +1913,7 @@ object CliCommand {
 
   // DLC
   case class CreateDLCOffer(
+      label: String,
       contractInfo: ContractInfoV0TLV,
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
@@ -1902,7 +1923,7 @@ object CliCommand {
 
   sealed trait AcceptDLCCliCommand extends AppServerCliCommand
 
-  case class AcceptDLCOffer(offer: LnMessage[DLCOfferTLV])
+  case class AcceptDLCOffer(label: String, offer: LnMessage[DLCOfferTLV])
       extends AcceptDLCCliCommand
 
   case class AcceptDLCOfferFromFile(path: Path, destination: Option[Path])

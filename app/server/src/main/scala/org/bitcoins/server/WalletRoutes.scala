@@ -292,7 +292,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-              CreateDLCOffer(contractInfo,
+              CreateDLCOffer(label,
+                             contractInfo,
                              collateral,
                              feeRateOpt,
                              locktime,
@@ -310,7 +311,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
             }
 
             wallet
-              .createDLCOffer(contractInfo,
+              .createDLCOffer(label,
+                              contractInfo,
                               collateral,
                               feeRateOpt,
                               locktime,
@@ -325,10 +327,10 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       AcceptDLCOffer.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(AcceptDLCOffer(offer)) =>
+        case Success(AcceptDLCOffer(label, offer)) =>
           complete {
             wallet
-              .acceptDLCOffer(offer.tlv)
+              .acceptDLCOffer(label, offer.tlv)
               .map { accept =>
                 Server.httpSuccess(accept.toMessage.hex)
               }
@@ -347,7 +349,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
             val offerMessage = LnMessageFactory(DLCOfferTLV).fromHex(hex)
 
             wallet
-              .acceptDLCOffer(offerMessage.tlv)
+              .acceptDLCOffer("", offerMessage.tlv)
               .map { accept =>
                 val ret = handleDestinationOpt(accept.toMessage.hex, destOpt)
                 Server.httpSuccess(ret)

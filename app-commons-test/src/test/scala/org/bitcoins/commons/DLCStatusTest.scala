@@ -23,6 +23,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val status =
           DLCStatus.Offered(Sha256Digest.empty,
+                            "label",
                             isInit,
                             offer.tempContractId,
                             offer.contractInfo,
@@ -50,6 +51,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         val status =
           DLCStatus.Accepted(
             Sha256Digest.empty,
+            "label",
             isInit,
             offer.tempContractId,
             contractId,
@@ -79,6 +81,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         val status =
           DLCStatus.Signed(
             Sha256Digest.empty,
+            "label",
             isInit,
             offer.tempContractId,
             contractId,
@@ -109,6 +112,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         val status =
           DLCStatus.Broadcasted(
             Sha256Digest.empty,
+            "label",
             isInit,
             offer.tempContractId,
             contractId,
@@ -140,6 +144,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         val status =
           DLCStatus.Confirmed(
             Sha256Digest.empty,
+            "label",
             isInit,
             offer.tempContractId,
             contractId,
@@ -182,6 +187,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       val status =
         DLCStatus.Claimed(
           Sha256Digest.empty,
+          "label",
           isInit,
           offer.tempContractId,
           contractId,
@@ -232,6 +238,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       val status =
         DLCStatus.RemoteClaimed(
           Sha256Digest.empty,
+          "label",
           isInit,
           offer.tempContractId,
           contractId,
@@ -278,6 +285,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       val status =
         DLCStatus.Refunded(
           Sha256Digest.empty,
+          "label",
           isInit,
           offer.tempContractId,
           contractId,
