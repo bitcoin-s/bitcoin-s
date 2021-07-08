@@ -1,0 +1,161 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Node API · bitcoin-s</title><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="generator" content="Docusaurus"/><meta name="description" content="### NodeAPI"/><meta name="docsearch:version" content="0.6.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Node API · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="### NodeAPI"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
+              (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+              (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+              m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+              })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+              ga('create', 'UA-61958686-2', 'auto');
+              ga('send', 'pageview');
+            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>0.6.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/0.6.0/core/core-intro" target="_self">Docs</a></li><li class=""><a href="download" target="_self">Download</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Node</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/getting-started">Intro and Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/bips">Supported BIPs</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Setup</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/getting-setup">Getting Bitcoin-S installed on your machine</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/applications/cli">CLI</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/applications/server">Application Server</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/applications/gui">GUI</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/applications/server-systemd">Systemd installation</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Chain</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/chain/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/chain/filter-sync">Syncing Blockfilters</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/chain/chain-query-api">Chain Query API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Configuration</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/config/configuration">Application Configuration</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/core-intro">Core Module</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/addresses">Generating Addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/hd-keys">HD Key Generation</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/adding-spks">Adding New Script Types</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/spending-info">Signing Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/psbts">Partially Signed Bitcoin Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/dlc">Discreet Log Contract Data Structures</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/txbuilder">TxBuilder Example</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/lightning-network">Lightning Network Data Types</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Crypto Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/crypto/crypto-intro">Crypto Module</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/crypto/sign">Sign API</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/crypto/adaptor-signatures">Adaptor Signatures</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Fee Provider</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/fee-provider/fee-provider">Fee Provider</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key Manager</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/key-manager/server-key-manager">Server Key Manager</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Node</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/node/node">Light Client</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/0.6.0/node/node-api">Node API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Wallet</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/wallet">Wallet</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/wallet-callbacks">Wallet Callbacks</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/wallet-get-address">Wallet Get Address APIs</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/address-tagging">Address and UTXO tagging</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/dlc">Executing A DLC with Bitcoin-S</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/wallet-rescan">Wallet Rescans</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/wallet-sync">Wallet Sync</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC Clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/rpc/lnd-rpc">LND</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Secp256k1</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/secp256k1/secp256k1">Secp256k1</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/secp256k1/jni-modify">Adding to Secp256k1 JNI</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Testkit</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/testkit/testkit">Testkit</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/testkit/testkit-core">Testkit Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">DLC Oracle</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/oracle/build-oracle-server">Building the Oracle Server</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/oracle/oracle-server">Oracle Server</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/oracle/oracle-election-example">Election Example</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/oracle/oracle-price-example">Price Example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Oracle Explorer Client</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/oracle-explorer-client/oracle-explorer-client">Oracle Explorer Client</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/security">Security</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/node/node-api.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">Node API</h1></header><article><div><span><h3><a class="anchor" aria-hidden="true" id="nodeapi"></a><a href="#nodeapi" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>NodeAPI</h3>
+<p>The NodeApi is how the wallet project retrieves relevant node data like blocks.
+This allows the wallet for example to retrieve blocks for finding its relevant transactions.</p>
+<p>Since this is an API it can be hooked up to the <code>node</code> module of bitcoin-s but it can also be linked to
+any other implementation of your choosing. This allows you to use the bitcoin-s wallet in any schema that you
+want.</p>
+<p>The functions that the NodeApi supports are:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-class"><span class="hljs-keyword">trait</span> <span class="hljs-title">NodeApi</span> </span>{
+
+  <span class="hljs-comment">/** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]] */</span>
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">downloadBlocks</span></span>(blockHashes: <span class="hljs-type">Vector</span>[<span class="hljs-type">DoubleSha256Digest</span>]): <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>]
+}
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="downloading-blocks-with-bitcoind"></a><a href="#downloading-blocks-with-bitcoind" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Downloading blocks with bitcoind</h2>
+<p>As an example, we will show you how to use the <code>NodeApi</code> and bitcoind to download blocks for a wallet.</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system: <span class="hljs-type">ActorSystem</span> = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">s"node-api-example"</span>)
+<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContextExecutor</span> = system.dispatcher
+<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> walletConf: <span class="hljs-type">WalletAppConfig</span> =
+    <span class="hljs-type">BitcoinSTestAppConfig</span>.getSpvTestConfig().walletConf
+
+<span class="hljs-comment">// let's use a helper method to get a v19 bitcoind</span>
+<span class="hljs-comment">// and a ChainApi</span>
+<span class="hljs-keyword">val</span> bitcoind = <span class="hljs-type">BitcoindV19RpcClient</span>(<span class="hljs-type">BitcoindInstance</span>.fromConfigFile())
+<span class="hljs-keyword">val</span> chainApi = <span class="hljs-type">BitcoinSWalletTest</span>.<span class="hljs-type">MockChainQueryApi</span>
+<span class="hljs-keyword">val</span> aesPasswordOpt = <span class="hljs-type">Some</span>(<span class="hljs-type">AesPassword</span>.fromString(<span class="hljs-string">"password"</span>))
+
+<span class="hljs-comment">// Create our key manager</span>
+<span class="hljs-keyword">val</span> keyManagerE = <span class="hljs-type">BIP39KeyManager</span>.initialize(aesPasswordOpt = aesPasswordOpt,
+                                               kmParams = walletConf.kmParams,
+                                               bip39PasswordOpt = <span class="hljs-type">None</span>)
+
+<span class="hljs-keyword">val</span> keyManager = keyManagerE <span class="hljs-keyword">match</span> {
+    <span class="hljs-keyword">case</span> <span class="hljs-type">Right</span>(keyManager) =&gt; keyManager
+    <span class="hljs-keyword">case</span> <span class="hljs-type">Left</span>(err) =&gt;
+      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-type">RuntimeException</span>(<span class="hljs-string">s"Cannot initialize key manager err=<span class="hljs-subst">$err</span>"</span>)
+  }
+
+<span class="hljs-comment">// This function can be used to create a callback for when our node api calls downloadBlocks,</span>
+<span class="hljs-comment">// more specifically it will call the function every time we receive a block, the returned</span>
+<span class="hljs-comment">// NodeCallbacks will contain the necessary items to initialize the callbacks</span>
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">createCallback</span></span>(processBlock: <span class="hljs-type">Block</span> =&gt; <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>]): <span class="hljs-type">NodeCallbacks</span> = {
+    <span class="hljs-keyword">lazy</span> <span class="hljs-keyword">val</span> onBlock: <span class="hljs-type">OnBlockReceived</span> = { block =&gt;
+      processBlock(block)
+    }
+    <span class="hljs-type">NodeCallbacks</span>(onBlockReceived = <span class="hljs-type">Vector</span>(onBlock))
+  }
+
+<span class="hljs-comment">// Here is a super simple example of a callback, this could be replaced with anything, from</span>
+<span class="hljs-comment">// relaying the block on the network, finding relevant wallet transactions, verifying the block,</span>
+<span class="hljs-comment">// or writing it to disk</span>
+<span class="hljs-keyword">val</span> exampleProcessBlock = (block: <span class="hljs-type">Block</span>) =&gt;
+    <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s"Received block: <span class="hljs-subst">${block.blockHeader.hashBE}</span>"</span>))
+<span class="hljs-keyword">val</span> exampleCallback = createCallback(exampleProcessBlock)
+
+<span class="hljs-comment">// Here is where we are defining our actual node api, Ideally this could be it's own class</span>
+<span class="hljs-comment">// but for the examples sake we will keep it small.</span>
+  <span class="hljs-keyword">val</span> nodeApi = <span class="hljs-keyword">new</span> <span class="hljs-type">NodeApi</span> {
+
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">broadcastTransaction</span></span>(transaction: <span class="hljs-type">Transaction</span>): <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>] = {
+        bitcoind.sendRawTransaction(transaction).map(_ =&gt; ())
+    }
+
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">downloadBlocks</span></span>(
+        blockHashes: <span class="hljs-type">Vector</span>[<span class="hljs-type">DoubleSha256Digest</span>]): <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>] = {
+      <span class="hljs-keyword">val</span> blockFs = blockHashes.map(hash =&gt; bitcoind.getBlockRaw(hash))
+      <span class="hljs-type">Future</span>.sequence(blockFs).map(_ =&gt; ())
+    }
+  }
+
+<span class="hljs-comment">// Finally, we can initialize our wallet with our own node api</span>
+<span class="hljs-keyword">val</span> wallet =
+    <span class="hljs-type">Wallet</span>(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi, feeRateApi = <span class="hljs-type">ConstantFeeRateProvider</span>(<span class="hljs-type">SatoshisPerVirtualByte</span>.one), creationTime = <span class="hljs-type">Instant</span>.now)
+
+<span class="hljs-comment">// Then to trigger the event we can run</span>
+<span class="hljs-keyword">val</span> exampleBlock = <span class="hljs-type">DoubleSha256Digest</span>(
+    <span class="hljs-string">"000000000010dc23dc0d5acad64667a7a2b3010b6e02da4868bf392c90b6431d"</span>)
+wallet.nodeApi.downloadBlocks(<span class="hljs-type">Vector</span>(exampleBlock))
+</code></pre>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 3/13/2020 by Ben Carman</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/0.6.0/node/node"><span class="arrow-prev">← </span><span>Light Client</span></a><a class="docs-next button" href="/docs/0.6.0/wallet/wallet"><span>Wallet</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#downloading-blocks-with-bitcoind">Downloading blocks with bitcoind</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2021 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '0a510688bf8448e19aeb380377d328d3',
+                indexName: 'bitcoin-s',
+                inputSelector: '#search_input_react'
+              });
+            </script></body></html>

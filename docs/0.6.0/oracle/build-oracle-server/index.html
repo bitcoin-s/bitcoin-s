@@ -1,0 +1,178 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Building the Oracle Server · bitcoin-s</title><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="generator" content="Docusaurus"/><meta name="description" content="The Oracle Server is a DLC Oracle with functionality for creating events and attesting to them."/><meta name="docsearch:version" content="0.6.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Building the Oracle Server · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="The Oracle Server is a DLC Oracle with functionality for creating events and attesting to them."/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
+              (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+              (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+              m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+              })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+              ga('create', 'UA-61958686-2', 'auto');
+              ga('send', 'pageview');
+            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>0.6.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/0.6.0/core/core-intro" target="_self">Docs</a></li><li class=""><a href="download" target="_self">Download</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>DLC Oracle</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/getting-started">Intro and Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/bips">Supported BIPs</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Setup</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/getting-setup">Getting Bitcoin-S installed on your machine</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/applications/cli">CLI</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/applications/server">Application Server</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/applications/gui">GUI</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/applications/server-systemd">Systemd installation</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Chain</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/chain/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/chain/filter-sync">Syncing Blockfilters</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/chain/chain-query-api">Chain Query API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Configuration</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/config/configuration">Application Configuration</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/core-intro">Core Module</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/addresses">Generating Addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/hd-keys">HD Key Generation</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/adding-spks">Adding New Script Types</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/spending-info">Signing Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/psbts">Partially Signed Bitcoin Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/dlc">Discreet Log Contract Data Structures</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/txbuilder">TxBuilder Example</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/core/lightning-network">Lightning Network Data Types</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Crypto Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/crypto/crypto-intro">Crypto Module</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/crypto/sign">Sign API</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/crypto/adaptor-signatures">Adaptor Signatures</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Fee Provider</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/fee-provider/fee-provider">Fee Provider</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key Manager</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/key-manager/server-key-manager">Server Key Manager</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Node</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/node/node">Light Client</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/node/node-api">Node API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Wallet</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/wallet">Wallet</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/wallet-callbacks">Wallet Callbacks</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/wallet-get-address">Wallet Get Address APIs</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/address-tagging">Address and UTXO tagging</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/dlc">Executing A DLC with Bitcoin-S</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/wallet-rescan">Wallet Rescans</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/wallet/wallet-sync">Wallet Sync</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC Clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/rpc/lnd-rpc">LND</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Secp256k1</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/secp256k1/secp256k1">Secp256k1</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/secp256k1/jni-modify">Adding to Secp256k1 JNI</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Testkit</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/testkit/testkit">Testkit</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/testkit/testkit-core">Testkit Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">DLC Oracle</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/0.6.0/oracle/build-oracle-server">Building the Oracle Server</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/oracle/oracle-server">Oracle Server</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/oracle/oracle-election-example">Election Example</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/oracle/oracle-price-example">Price Example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Oracle Explorer Client</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/oracle-explorer-client/oracle-explorer-client">Oracle Explorer Client</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/0.6.0/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/0.6.0/security">Security</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/oracle/build-oracle-server.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">Building the Oracle Server</h1></header><article><div><span><p>The Oracle Server is a DLC Oracle with functionality for creating events and attesting to them.
+You can interact with the oracle server with <code>bitcoin-s-cli</code> or <code>curl</code></p>
+<p>The following a guide is for how to build the oracle server.
+If you are looking for the documentation on how to use the oracle server,
+checkout <a href="/docs/0.6.0/oracle/oracle-server">this page</a>.</p>
+<h2><a class="anchor" aria-hidden="true" id="step-1-java-and-scala"></a><a href="#step-1-java-and-scala" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Step 1: Java and Scala</h2>
+<p>To get started you will need Java, Scala, and some other nice tools installed, luckily the Scala team has an easy setup process!</p>
+<p>Simply follow the instructions in <a href="https://www.scala-lang.org/2020/06/29/one-click-install.html">this short blog</a> to get started.</p>
+<h2><a class="anchor" aria-hidden="true" id="step-2-bitcoin-s-repository"></a><a href="#step-2-bitcoin-s-repository" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Step 2: Bitcoin-S Repository</h2>
+<p>Now, it is time to clone the <a href="https://github.com/bitcoin-s/bitcoin-s/">Bitcoin-S repository</a> by running</p>
+<pre><code class="hljs css language-bashrc">git <span class="hljs-keyword">clone</span> <span class="hljs-title">--depth</span> <span class="hljs-number">100</span> --recursive git@github.com:bitcoin-s/bitcoin-s.git
+</code></pre>
+<p>or alternatively, if you do not have ssh setup with github, you can run</p>
+<pre><code class="hljs css language-bashrc">git <span class="hljs-keyword">clone</span> <span class="hljs-title">--depth</span> <span class="hljs-number">100</span> --recursive https://github.com/bitcoin-s/bitcoin-s.git
+</code></pre>
+<p>Next, you will want to execute the commands</p>
+<pre><code class="hljs css language-bashrc"><span class="hljs-symbol">cd</span> <span class="hljs-keyword">bitcoin-s
+</span><span class="hljs-symbol">git</span> <span class="hljs-keyword">submodule </span>update
+</code></pre>
+<p>to download the secp256k1 submodule, this is so cryptographic functions like signing will be faster.</p>
+<h2><a class="anchor" aria-hidden="true" id="step-3-building-the-oracle-server"></a><a href="#step-3-building-the-oracle-server" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Step 3: Building the Oracle Server</h2>
+<h3><a class="anchor" aria-hidden="true" id="java-binary"></a><a href="#java-binary" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Java Binary</h3>
+<p>You can build the oracle server with the <a href="https://github.com/sbt/sbt-native-packager">sbt native packager</a>.
+The native packager offers <a href="https://github.com/sbt/sbt-native-packager#examples">numerous ways to package the project</a>.</p>
+<p>In this example we are going to use <code>universal:stage</code> which will produce bash scripts we can easily execute. You can stage the server with the following command.</p>
+<pre><code class="hljs css language-bash">sbt oracleServer/universal:stage
+</code></pre>
+<p>This will produce a script to execute bitcoin-s which you can start with</p>
+<pre><code class="hljs css language-bash">./app/oracle-server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-oracle-server
+</code></pre>
+<p>Alternatively you can run the server by just using:</p>
+<pre><code class="hljs css language-bash">sbt oracleServer/run
+</code></pre>
+<h3><a class="anchor" aria-hidden="true" id="docker"></a><a href="#docker" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Docker</h3>
+<h4><a class="anchor" aria-hidden="true" id="using-an-existing-docker-image"></a><a href="#using-an-existing-docker-image" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Using an existing docker image</h4>
+<p>We publish docker images on every PR that is merged to bitcoin-s.</p>
+<p>You can find the docker repo for the oracle server <a href="https://hub.docker.com/r/bitcoinscala/bitcoin-s-oracle-server/tags?page=1&amp;ordering=last_updated">here</a></p>
+<h4><a class="anchor" aria-hidden="true" id="building-our-own-docker-image"></a><a href="#building-our-own-docker-image" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Building our own docker image</h4>
+<p>You can build a docker image with the following commands</p>
+<pre><code class="hljs"><span class="hljs-keyword">sbt </span><span class="hljs-string">"oracleServer/docker:stage"</span>
+</code></pre>
+<p>This will build a <code>Dockerfile</code> that is located in <code>app/oracle-server/target/docker/stage</code></p>
+<p>You can publish to your local docker repository by using <code>docker:publishLocal</code> instead of <code>docker:stage</code></p>
+<p>You can now build the docker image with</p>
+<pre><code class="hljs">docker build app<span class="hljs-regexp">/oracle-server/</span>target<span class="hljs-regexp">/docker/</span>stage/ -t bitcoin-s-oracle-<span class="hljs-string">server:</span>latest
+</code></pre>
+<p>Finally, let's run the image! It's important that you correctly configure port forwarding with the docker container so
+you can interact with the running container with <code>bitcoin-s-cli</code> or <code>curl</code>. By default, our oracle
+server listens for requests on port <code>9998</code>.</p>
+<p>This means we need to forward requests on the host machine to the docker container correctly.</p>
+<p>This can be done with the following command</p>
+<pre><code class="hljs">docker <span class="hljs-keyword">run</span><span class="bash"> -d -p 9998:9998 bitcoin<span class="hljs-_">-s</span>-oracle-server:latest</span>
+</code></pre>
+<p>Now you can send requests with <code>bitcoin-s-cli</code> or <code>curl</code>.
+Here is an example with <code>bitcoin-s-cli</code></p>
+<pre><code class="hljs">./bitcoin-s-cli getpublickey
+<span class="hljs-keyword">c</span><span class="hljs-number">9</span><span class="hljs-keyword">c</span><span class="hljs-number">9</span>fe<span class="hljs-number">2772330</span>b<span class="hljs-number">0</span>d<span class="hljs-number">61</span>a<span class="hljs-number">2</span>efbfacabf<span class="hljs-number">5</span>cab<span class="hljs-number">1137710</span>a<span class="hljs-number">69</span>f<span class="hljs-number">0e12</span>f<span class="hljs-number">1</span>eb<span class="hljs-number">3</span>dbb<span class="hljs-number">74</span>f<span class="hljs-number">7</span>ea<span class="hljs-number">54</span>
+</code></pre>
+<p>For more information on build configuration options with <code>sbt</code> please see the <a href="https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html#tasks">sbt native packager docs</a></p>
+<h2><a class="anchor" aria-hidden="true" id="step-4-configuration"></a><a href="#step-4-configuration" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Step 4: Configuration</h2>
+<h3><a class="anchor" aria-hidden="true" id="java-binary-configuration"></a><a href="#java-binary-configuration" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Java binary configuration</h3>
+<p>If you would like to pass in a custom datadir for your server, you can do</p>
+<pre><code class="hljs css language-bash">./app/oracle-server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-oracle-server --datadir /path/to/datadir/
+</code></pre>
+<p>To use a config file that is not the <code>bitcoin-s.conf</code> file in your datadir, you can do</p>
+<pre><code class="hljs css language-bash">./app/oracle-server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-oracle-server --conf /path/to/file.conf
+</code></pre>
+<p>You can also pass in a custom <code>rpcport</code> to bind to</p>
+<pre><code class="hljs css language-bash">./app/oracle-server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-oracle-server --rpcport 12345
+</code></pre>
+<p>For more information on configuring the server please see our <a href="/docs/0.6.0/config/configuration">configuration</a> document.</p>
+<p>For more information on how to use our built in <code>cli</code> to interact with the server please see the <a href="/docs/0.6.0/applications/cli">cli docs</a>.</p>
+<h3><a class="anchor" aria-hidden="true" id="docker-configuration"></a><a href="#docker-configuration" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Docker configuration</h3>
+<p>In this example, we are using the latest docker image published to our <a href="https://hub.docker.com/repository/docker/bitcoinscala/bitcoin-s-oracle-server/tags?page=1&amp;ordering=last_updated">docker hub</a>
+which is referenced by <code>bitcoinscala/bitcoin-s-oracle-server:latest</code></p>
+<p>You can use bitcoin-s with docker volumes. You can also pass in a custom configuration at container runtime.</p>
+<h4><a class="anchor" aria-hidden="true" id="using-a-docker-volume"></a><a href="#using-a-docker-volume" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Using a docker volume</h4>
+<pre><code class="hljs css language-basrc">docker <span class="hljs-keyword">volume</span><span class="bash"> create bitcoin<span class="hljs-_">-s</span></span>
+docker <span class="hljs-keyword">run</span><span class="bash"> -p 9998:9998 \
+--mount <span class="hljs-built_in">source</span>=bitcoin<span class="hljs-_">-s</span>,target=/home/bitcoin<span class="hljs-_">-s</span>/ bitcoinscala/bitcoin<span class="hljs-_">-s</span>-oracle-server:latest</span>
+</code></pre>
+<p>Now you can re-use this volume across container runs. It will keep the same oracle database
+and seeds directory located at <code>/home/bitcoin-s/.bitcoin-s/seeds</code> in the volume.</p>
+<h4><a class="anchor" aria-hidden="true" id="using-a-custom-bitcoin-s-configuration-with-docker"></a><a href="#using-a-custom-bitcoin-s-configuration-with-docker" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Using a custom bitcoin-s configuration with docker</h4>
+<p>You can also specify a custom bitcoin-s configuration at container runtime.
+You can mount the configuration file on the docker container and that
+configuration will be used in the docker container runtime rather than
+the default one we provide <a href="https://github.com/bitcoin-s/bitcoin-s/blob/master/app/oracle-server/src/universal/docker-application.conf">here</a></p>
+<p>You can do this with the following command</p>
+<pre><code class="hljs css language-bashrc">docker run -p <span class="hljs-number">9998</span>:<span class="hljs-number">9998</span> \
+--mount type=<span class="hljs-keyword">bind</span>,source=<span class="hljs-regexp">/my/new</span><span class="hljs-regexp">/config/</span>,target=<span class="hljs-regexp">/home/bitcoin</span>-<span class="hljs-regexp">s/.bitcoin-s/ \
+bitcoinscala/bitcoin</span>-<span class="hljs-keyword">s</span>-oracle-server:latest --conf /home/bitcoin-<span class="hljs-keyword">s</span>/.bitcoin-<span class="hljs-keyword">s</span>/bitcoin-s.conf
+</code></pre>
+<p>Note: If you adjust the <code>bitcoin-s.oracle.rpcport</code> setting you will need to adjust
+the <code>-p 9998:9998</code> port mapping on the docker container to adjust for this.</p>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 3/4/2021 by Chris Stewart</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/0.6.0/testkit/testkit-core"><span class="arrow-prev">← </span><span>Testkit Core</span></a><a class="docs-next button" href="/docs/0.6.0/oracle/oracle-server"><span>Oracle Server</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#step-1-java-and-scala">Step 1: Java and Scala</a></li><li><a href="#step-2-bitcoin-s-repository">Step 2: Bitcoin-S Repository</a></li><li><a href="#step-3-building-the-oracle-server">Step 3: Building the Oracle Server</a><ul class="toc-headings"><li><a href="#java-binary">Java Binary</a></li><li><a href="#docker">Docker</a></li></ul></li><li><a href="#step-4-configuration">Step 4: Configuration</a><ul class="toc-headings"><li><a href="#java-binary-configuration">Java binary configuration</a></li><li><a href="#docker-configuration">Docker configuration</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2021 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '0a510688bf8448e19aeb380377d328d3',
+                indexName: 'bitcoin-s',
+                inputSelector: '#search_input_react'
+              });
+            </script></body></html>
