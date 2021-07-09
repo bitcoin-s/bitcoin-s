@@ -27,7 +27,7 @@ addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.7")
 // write markdown files with type-checked Scala
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.21")
 
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.3")
 
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
 
