@@ -33,4 +33,8 @@ trait ContractTemplateHandling {
   override def getContractTemplates: Future[Vector[ContractTemplateDb]] = {
     contractTemplateDAO.findAll()
   }
+
+  override def deleteContractTemplate(label: String): Future[Unit] = {
+    contractTemplateDAO.deleteByLabel(label).map(_ => ())
+  }
 }

@@ -517,6 +517,18 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("deletecontracttemplate", arr) =>
+      withValidServerCommand(DeleteContractTemplate.fromJsArr(arr)) {
+        case DeleteContractTemplate(label) =>
+          complete {
+            for {
+              _ <- wallet.deleteContractTemplate(label)
+            } yield {
+              Server.httpSuccess(ujson.Null)
+            }
+          }
+      }
+
     case ServerCommand("getcontracttemplates", _) =>
       complete {
         wallet.getContractTemplates.map { templates =>

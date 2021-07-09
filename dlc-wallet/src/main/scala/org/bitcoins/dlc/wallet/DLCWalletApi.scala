@@ -120,6 +120,8 @@ trait DLCWalletApi { self: WalletApi =>
   def findContractTemplate(label: String): Future[Option[ContractTemplateDb]]
 
   def getContractTemplates: Future[Vector[ContractTemplateDb]]
+
+  def deleteContractTemplate(label: String): Future[Unit]
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */

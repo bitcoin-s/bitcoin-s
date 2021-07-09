@@ -479,6 +479,19 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("deletecontracttemplate")
+        .action((_, conf) => conf.copy(command = DeleteContractTemplate("")))
+        .text("Deletes a contract template from the wallet")
+        .children(
+          arg[String]("label")
+            .required()
+            .action((label, conf) =>
+              conf.copy(command = conf.command match {
+                case delete: DeleteContractTemplate =>
+                  delete.copy(label = label)
+                case other => other
+              }))
+        ),
       cmd("getcontracttemplates")
         .action((_, conf) => conf.copy(command = GetContractTemplates))
         .text("Returns all contract templates in the wallet"),
@@ -1796,6 +1809,8 @@ object ConsoleCli {
         RequestParam(
           "createcontracttemplate",
           Seq(up.writeJs(label), up.writeJs(tlv), up.writeJs(totalCollateral)))
+      case DeleteContractTemplate(label) =>
+        RequestParam("deletecontracttemplate", Seq(up.writeJs(label)))
 
       case GetVersion =>
         // skip sending to server and just return version number of cli
@@ -1998,6 +2013,8 @@ object CliCommand {
       contractDescriptorTLV: ContractDescriptorTLV,
       totalCollateral: Satoshis)
       extends AppServerCliCommand
+
+  case class DeleteContractTemplate(label: String) extends AppServerCliCommand
 
   sealed trait SendCliCommand extends AppServerCliCommand {
     def destination: BitcoinAddress
