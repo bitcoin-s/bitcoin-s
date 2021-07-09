@@ -110,6 +110,14 @@ jobs:
         with:
           name: "bitcoin-s-dmg-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
           path: ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
+      - name: Upload if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "bitcoin-s-dmg-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
+          files: ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   linux:
     runs-on: [ ubuntu-latest ]
     steps:
@@ -142,6 +150,15 @@ jobs:
         with:
           name: "bitcoin-s-deb-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
           path: "${{ env.pkg-name }}_${{ steps.previoustag.outputs.tag }}-1_amd64.deb"
+      - name: Upload if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "bitcoin-s-deb-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
+          files: "${{ env.pkg-name }}_${{ steps.previoustag.outputs.tag }}-1_amd64.deb"
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   windows:
     runs-on: [windows-latest]
     steps:
@@ -169,3 +186,11 @@ jobs:
         with:
           name: bitcoin-s-msi-${{steps.previoustag.outputs.tag}}-${{github.sha}}
           path: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
+      - name: Upload if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: bitcoin-s-msi-${{steps.previoustag.outputs.tag}}-${{github.sha}}
+          files: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
