@@ -82,7 +82,7 @@
 <h3><a class="anchor" aria-hidden="true" id="adding-to-srcjavaorg_bitcoin_nativesecp256k1c"></a><a href="#adding-to-srcjavaorg_bitcoin_nativesecp256k1c" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Adding to <code>src/java/org_bitcoin_NativeSecp256k1.c</code></h3>
 <ol>
 <li><p>Add an <code>#include</code> import at the top (if applicable)</p>
-<p>If your secp256k1 functions are not already included, you will need to <code>#include</code> the header file (should be in the <code>secp256k1/include</code> directory).</p></li>
+<p>If your secp256k1 functions are not already included, you will need to <code>#include</code> the header file (should be in the <code>secp256k1-zkp/include</code> directory).</p></li>
 <li><p>Function signature</p>
 <p>Your new function signature should begin with</p>
 <pre><code class="hljs css language-c">SECP256K1_API jint JNICALL Java_org_bitcoin_NativeSecp256k1_
@@ -277,10 +277,10 @@ r.lock();
 <li><p>Translate <code>NativeSecp256k1</code> and <code>NativeSecp256k1Test</code> to jni project</p>
 <p>By translate I mean to say that you must copy the functions from those files to the corresponding files in the <code>bitcoin-s/secp256k1jni</code> project. For tests this will require changing the methods to be non-<code>static</code> as well as adding the  <code>@Test</code> annotation above each method (rather than adding to a <code>main</code> method).</p></li>
 <li><p>Configure and build <code>secp256k1</code></p>
-<p>You will need to go to the <code>bitcoin-s/secp256k1</code> directory in a terminal and running the following where you may need to add to the <code>./configure</code> command if you are introducing a new module.</p>
+<p>You will need to go to the <code>bitcoin-s/secp256k1-zkp</code> directory in a terminal and running the following where you may need to add to the <code>./configure</code> command if you are introducing a new module.</p>
 <p><strong>For Linux or OSx (64-bit)</strong></p>
 <p>You will have to make sure <code>JAVA_HOME</code> is set, and build tools are installed, for Linux this requires:</p>
-<pre><code class="hljs css language-bashrc">echo <span class="hljs-keyword">JAVA_HOME
+<pre><code class="hljs css language-bashrc">echo $<span class="hljs-keyword">JAVA_HOME
 </span>sudo apt <span class="hljs-keyword">install </span><span class="hljs-keyword">build-essential </span>autotools-dev libtool automake
 </code></pre>
 <p>and for Mac this requires:</p>
@@ -308,7 +308,7 @@ make<span class="hljs-built_in"> check
 <li><code>redeclared without dllimport attribute: previous dllimport ignored</code></li>
 </ul></li>
 <li><p>Copy binaries into bitcoin-s natives for your system</p>
-<p>You have now built the C binaries for your JNI bindings for your operating system and you should now find your operating system's directory in <code>bitcoin-s/secp256k1jni/natives</code> and replace its contents with the contents of <code>secp256k1/.libs</code> (which contains the compiled binaries).</p></li>
+<p>You have now built the C binaries for your JNI bindings for your operating system and you should now find your operating system's directory in <code>bitcoin-s/secp256k1jni/natives</code> and replace its contents with the contents of <code>secp256k1-zkp/.libs</code> (which contains the compiled binaries).</p></li>
 <li><p>Run <code>secp256k1jni</code> tests</p>
 <p>If you have not yet implemented tests, you should now be able to go back and do so as calls to <code>NativeSecp256k1</code> should now succeed.</p>
 <p>Once you have tests implemented, and assuming you've copied them correctly to the <code>bitcoin-s/secp256k1jni</code> project, you should be able to run them using</p>
