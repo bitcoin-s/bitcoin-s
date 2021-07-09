@@ -578,6 +578,15 @@ object Picklers {
       )
     }
 
+  implicit val contractTemplateDbReader: Reader[ContractTemplateDb] =
+    reader[Obj].map { obj =>
+      val label = obj("label").str
+      val descriptorTLV = ContractDescriptorTLV(obj("descriptorTLV").str)
+      val totalCollateral = Satoshis(obj("totalCollateral").num.toLong)
+
+      ContractTemplateDb(label, descriptorTLV, totalCollateral)
+    }
+
   implicit val dlcWalletAccountingWriter: Writer[DLCWalletAccounting] = {
     writer[Obj].comap { walletAccounting: DLCWalletAccounting =>
       Obj(
