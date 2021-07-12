@@ -36,73 +36,33 @@ class Socks5Connection(
   override def receive: Receive = greetings
 
   def greetings: Receive = { case Tcp.Received(data) =>
-    if (data(0) != 0x05) {
-      throw Socks5Error("Invalid SOCKS5 proxy response")
-    } else if (
-      (!passwordAuth && data(1) != NoAuth) || (passwordAuth && data(
-        1) != PasswordAuth)
-    ) {
-      throw Socks5Error("Unrecognized SOCKS5 auth method")
+    if (parseGreetings(data, passwordAuth) == PasswordAuth) {
+      context become authenticate
+      val credentials = credentials_opt.getOrElse(
+        throw Socks5Error("Credentials are not defined"))
+      connection ! Tcp.Write(
+        socks5PasswordAuthenticationRequest(credentials.username,
+                                            credentials.password))
+      connection ! Tcp.ResumeReading
     } else {
-      if (data(1) == PasswordAuth) {
-        context become authenticate
-        val credentials = credentials_opt.getOrElse(
-          throw Socks5Error("credentials are not defined"))
-        connection ! Tcp.Write(
-          socks5PasswordAuthenticationRequest(credentials.username,
-                                              credentials.password))
-        connection ! Tcp.ResumeReading
-      } else {
-        context become connectionRequest
-        connection ! Tcp.Write(socks5ConnectionRequest(command.address))
-        connection ! Tcp.ResumeReading
-      }
+      context become connectionRequest
+      connection ! Tcp.Write(socks5ConnectionRequest(command.address))
+      connection ! Tcp.ResumeReading
     }
   }
 
   def authenticate: Receive = { case Tcp.Received(data) =>
-    if (data(0) != 0x01) {
-      throw Socks5Error("Invalid SOCKS5 proxy response")
-    } else if (data(1) != 0) {
-      throw Socks5Error("SOCKS5 authentication failed")
-    }
+    parseAuth(data)
     context become connectionRequest
     connection ! Tcp.Write(socks5ConnectionRequest(command.address))
     connection ! Tcp.ResumeReading
   }
 
   def connectionRequest: Receive = { case Tcp.Received(data) =>
-    if (data(0) != 0x05) {
-      throw Socks5Error("Invalid SOCKS5 proxy response")
-    } else {
-      val status = data(1)
-      if (status != 0) {
-        throw Socks5Error(
-          connectErrors.getOrElse(status, s"Unknown SOCKS5 error $status"))
-      }
-      val connectedAddress = data(3) match {
-        case 0x01 =>
-          val ip = Array(data(4), data(5), data(6), data(7))
-          val port = data(8).toInt << 8 | data(9)
-          new InetSocketAddress(InetAddress.getByAddress(ip), port)
-        case 0x03 =>
-          val len = data(4)
-          val start = 5
-          val end = start + len
-          val domain = data.slice(start, end).utf8String
-          val port = data(end).toInt << 8 | data(end + 1)
-          new InetSocketAddress(domain, port)
-        case 0x04 =>
-          val ip = Array.ofDim[Byte](16)
-          data.copyToArray(ip, 4, 4 + ip.length)
-          val port = data(4 + ip.length).toInt << 8 | data(4 + ip.length + 1)
-          new InetSocketAddress(InetAddress.getByAddress(ip), port)
-        case _ => throw Socks5Error(s"Unrecognized address type")
-      }
-      context become connected
-      context.parent ! Socks5Connected(connectedAddress)
-      isConnected = true
-    }
+    val connectedAddress = parseConnectedAddress(data)
+    context become connected
+    context.parent ! Socks5Connected(connectedAddress)
+    isConnected = true
   }
 
   def connected: Receive = { case Tcp.Register(handler, _, _) =>
@@ -213,6 +173,59 @@ object Socks5Connection {
 
   def portToByteString(port: Int): ByteString =
     ByteString((port & 0x0000ff00) >> 8, port & 0x000000ff)
+
+  def parseGreetings(data: ByteString, passwordAuth: Boolean): Byte = {
+    if (data(0) != 0x05) {
+      throw Socks5Error("Invalid SOCKS5 version")
+    } else if (
+      (!passwordAuth && data(1) != NoAuth) || (passwordAuth && data(
+        1) != PasswordAuth)
+    ) {
+      throw Socks5Error("Unsupported SOCKS5 auth method")
+    } else {
+      data(1)
+    }
+  }
+
+  def parseAuth(data: ByteString): Unit = {
+    if (data(0) != 0x01) {
+      throw Socks5Error("Invalid SOCKS5 auth method")
+    } else if (data(1) != 0) {
+      throw Socks5Error("SOCKS5 authentication failed")
+    }
+  }
+
+  def parseConnectedAddress(data: ByteString): InetSocketAddress = {
+    if (data(0) != 0x05) {
+      throw Socks5Error("Invalid proxy version")
+    } else {
+      val status = data(1)
+      if (status != 0) {
+        throw Socks5Error(
+          connectErrors.getOrElse(status, s"Unknown SOCKS5 error $status"))
+      }
+      data(3) match {
+        case 0x01 =>
+          val ip = Array(data(4), data(5), data(6), data(7))
+          val port = data(8).toInt << 8 | data(9)
+          new InetSocketAddress(InetAddress.getByAddress(ip), port)
+        case 0x03 =>
+          val len = data(4)
+          val start = 5
+          val end = start + len
+          val domain = data.slice(start, end).utf8String
+          val port = data(end).toInt << 8 | data(end + 1)
+          new InetSocketAddress(domain, port)
+        case 0x04 =>
+          val ip = Array.ofDim[Byte](16)
+          data.copyToArray(ip, 4, 4 + ip.length)
+          val port = data(4 + ip.length).toInt << 8 | data(4 + ip.length + 1)
+          new InetSocketAddress(InetAddress.getByAddress(ip), port)
+        case _ => throw Socks5Error(s"Unrecognized address type")
+      }
+    }
+  }
+
 }
 
 case class Socks5ProxyParams(
