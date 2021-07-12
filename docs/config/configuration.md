@@ -165,6 +165,13 @@ bitcoin-s {
         hikari-logging-interval = 10 minute
     }
 
+    proxy {
+        # You can configure SOCKS5 proxy to use Tor for outgoing connections
+        enabled = false
+        host = "127.0.0.1"
+        port = 9050
+    }
+    
     chain {
         force-recalc-chainwork = false
         neutrino {
