@@ -22,7 +22,7 @@ class Socks5ClientTransportSpec
     with AnyFunSuiteLike
     with ImplicitSender {
 
-  test("connect to real daemon") {
+  ignore("connect to real daemon") {
 
     val proxyParams = Socks5ProxyParams(
       address = InetSocketAddress.createUnresolved("127.0.0.1", 9050),
