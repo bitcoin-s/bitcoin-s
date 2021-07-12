@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoindRpcAppConfig
 import org.bitcoins.server.routes.BitcoinSRunner
-import org.bitcoins.server.util.BitcoinSApp
+import org.bitcoins.server.util.{BitcoinSAppScalaDaemon}
 
 import scala.concurrent.Future
 
@@ -17,12 +17,10 @@ import scala.concurrent.Future
   * between bitcoin-s and bitcoind inside of bitcoin-s.conf
   * @see https://bitcoin-s.org/docs/config/configuration#example-configuration-file
   */
-class ScanBitcoind(override val args: Array[String])(implicit
-    override val system: ActorSystem)
+class ScanBitcoind()(implicit
+    override val system: ActorSystem,
+    rpcAppConfig: BitcoindRpcAppConfig)
     extends BitcoinSRunner {
-
-  implicit val rpcAppConfig: BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig(datadir, baseConfig)
 
   override def start(): Future[Unit] = {
 
@@ -96,9 +94,15 @@ class ScanBitcoind(override val args: Array[String])(implicit
   }
 }
 
-object ScanBitcoind extends BitcoinSApp {
+object ScanBitcoind extends BitcoinSAppScalaDaemon {
 
   override val actorSystemName: String =
     s"scan-bitcoind-${System.currentTimeMillis()}"
-  new ScanBitcoind(args).run()
+
+  override val customFinalDirOpt = None
+
+  implicit val rpcAppConfig: BitcoindRpcAppConfig =
+    BitcoindRpcAppConfig.fromDefaultDatadir()(system.dispatcher)
+
+  new ScanBitcoind().run()
 }

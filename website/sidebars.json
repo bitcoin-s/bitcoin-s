@@ -56,7 +56,8 @@
       "wallet/dlc",
       "wallet/wallet-rescan",
       "wallet/wallet-sync",
-      "wallet/wallet-rpc"
+      "wallet/wallet-rpc",
+      "wallet/backups"
     ],
     "RPC Clients": [
       "rpc/rpc-clients-intro",

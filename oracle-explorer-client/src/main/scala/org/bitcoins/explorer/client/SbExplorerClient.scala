@@ -4,10 +4,10 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.util.ByteString
+import org.bitcoins.commons.jsonmodels.ExplorerEnv
 import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{SchnorrPublicKey, Sha256Digest}
-import org.bitcoins.explorer.env.ExplorerEnv
 import org.bitcoins.explorer.model.{
   CreateAnnouncementExplorer,
   CreateAttestations,
@@ -42,7 +42,7 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
         case err: JsError =>
           Future.failed(
             new RuntimeException(
-              s"Failed to parse response for listevents, err=$err"))
+              s"Failed to parse response for listAnnouncements, err=$err"))
       }
     }
   }
@@ -72,7 +72,7 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
         case err: JsError =>
           Future.failed(
             new RuntimeException(
-              s"Failed to parse response for listevents, err=$err"))
+              s"Failed to parse response for getAnnouncement, err=$err"))
       }
     }
   }

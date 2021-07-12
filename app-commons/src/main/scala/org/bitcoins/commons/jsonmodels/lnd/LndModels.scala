@@ -3,6 +3,7 @@ package org.bitcoins.commons.jsonmodels.lnd
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnInvoice
+import org.bitcoins.core.protocol.ln.LnTag.PaymentHashTag
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -11,7 +12,7 @@ import scodec.bits.ByteVector
 sealed abstract class LndModel
 
 case class AddInvoiceResult(
-    rHash: ByteVector,
+    rHash: PaymentHashTag,
     invoice: LnInvoice,
     addIndex: Long,
     paymentAddr: ByteVector)

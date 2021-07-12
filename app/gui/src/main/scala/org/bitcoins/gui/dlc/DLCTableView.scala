@@ -1,16 +1,15 @@
 package org.bitcoins.gui.dlc
 
+import org.bitcoins.commons.jsonmodels.ExplorerEnv
 import org.bitcoins.core.dlc.accounting.RateOfReturnUtil
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
-import org.bitcoins.core.protocol.dlc.models.{
-  AcceptedDLCStatus,
-  BroadcastedDLCStatus,
-  ClosedDLCStatus,
-  DLCStatus
-}
+import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.gui.{GUI, GlobalData}
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
+import scalafx.scene.control.TableColumn.SortType
+import scalafx.scene.control.TableView.TableViewFocusModel
 import scalafx.scene.control.{ContextMenu, MenuItem, TableColumn, TableView}
 
 import java.awt.Toolkit.getDefaultToolkit
@@ -51,6 +50,9 @@ class DLCTableView(model: DLCPaneModel) {
       cellValueFactory = { status =>
         new StringProperty(status, "Status", status.value.statusString)
       }
+      sortType = SortType.Ascending
+      comparator = (x: String, y: String) =>
+        DLCState.fromString(x).order compare DLCState.fromString(y).order
     }
 
     val collateralCol = new TableColumn[DLCStatus, String] {
@@ -122,11 +124,27 @@ class DLCTableView(model: DLCPaneModel) {
                       otherCollateralCol,
                       totalCollateralCol)
       margin = Insets(10, 0, 10, 0)
+      sortOrder.addAll(statusCol, eventIdCol, contractIdCol)
 
       val infoItem: MenuItem = new MenuItem("View DLC") {
         onAction = _ => {
-          val dlc = selectionModel.value.getSelectedItem
+          val selected = selectionModel.value
+          val dlc = selected.getSelectedItem
           model.viewDLC(dlc)
+          focusModel = new TableViewFocusModel(tableView)
+        }
+      }
+
+      val viewOnExplorer: MenuItem = new MenuItem("View on Oracle Explorer") {
+        onAction = _ => {
+          val dlc = selectionModel.value.getSelectedItem
+          val primaryOracle =
+            dlc.oracleInfo.singleOracleInfos.head.announcement
+          val baseUrl =
+            ExplorerEnv.fromBitcoinNetwork(GlobalData.network).siteUrl
+          val url =
+            s"${baseUrl}announcement/${primaryOracle.sha256.hex}"
+          GUI.hostServices.showDocument(url)
         }
       }
 
@@ -151,7 +169,7 @@ class DLCTableView(model: DLCPaneModel) {
       }
 
       contextMenu = new ContextMenu() {
-        items ++= Vector(infoItem, copyIdItem, cancelDLCItem)
+        items ++= Vector(infoItem, viewOnExplorer, copyIdItem, cancelDLCItem)
       }
     }
   }

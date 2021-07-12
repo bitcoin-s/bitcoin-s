@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.fixtures.DLCOracleFixture
 import org.bitcoins.testkitcore.Implicits._
@@ -205,7 +206,7 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(event.maturationTime.getEpochSecond == time.getEpochSecond)
 
         val expectedEventTLV =
-          OracleEventV0TLV(Vector(event.nonces.head),
+          OracleEventV0TLV(OrderedNonces(event.nonces.head),
                            UInt32(event.maturationTime.getEpochSecond),
                            testDescriptor,
                            eventName)

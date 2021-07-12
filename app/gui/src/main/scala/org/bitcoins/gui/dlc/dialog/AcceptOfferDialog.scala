@@ -202,7 +202,8 @@ class AcceptOfferDialog {
     offerTLVTF.onKeyTyped = _ => {
       if (!dlcDetailsShown) {
         Try(
-          LnMessageFactory(DLCOfferTLV).fromHex(offerTLVTF.text.value)) match {
+          LnMessageFactory(DLCOfferTLV).fromHex(
+            offerTLVTF.text.value.trim)) match {
           case Failure(_) => ()
           case Success(lnMessage) =>
             dlcDetailsShown = true

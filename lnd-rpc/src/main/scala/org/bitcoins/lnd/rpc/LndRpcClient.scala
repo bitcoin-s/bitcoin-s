@@ -11,6 +11,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnInvoice
+import org.bitcoins.core.protocol.ln.LnTag.PaymentHashTag
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -20,12 +21,8 @@ import org.bitcoins.core.protocol.transaction.{
   Transaction => Tx
 }
 import org.bitcoins.core.util.StartStopAsync
-import org.bitcoins.core.wallet.fee.{
-  SatoshisPerByte,
-  SatoshisPerKW,
-  SatoshisPerVirtualByte
-}
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
+import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.config.LndInstance
 import org.bitcoins.rpc.util.NativeProcessFactory
@@ -139,10 +136,10 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     getInfo.map(info => NodeId(info.identityPubkey))
   }
 
-  def lookupInvoice(rHash: ByteVector): Future[Invoice] = {
+  def lookupInvoice(rHash: PaymentHashTag): Future[Invoice] = {
     logger.trace("lnd calling lookupinvoice")
 
-    val byteStr = ByteString.copyFrom(rHash.toArray)
+    val byteStr = ByteString.copyFrom(rHash.bytes.toArray)
     val req: PaymentHash = PaymentHash(rHash = byteStr)
 
     lnd.lookupInvoice(req)
@@ -174,8 +171,9 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     lnd
       .addInvoice(invoice)
       .map { res =>
+        val paymentHashBytes = ByteVector(res.rHash.toByteArray)
         AddInvoiceResult(
-          ByteVector(res.rHash.toByteArray),
+          PaymentHashTag(Sha256Digest(paymentHashBytes)),
           LnInvoice.fromString(res.paymentRequest),
           res.addIndex,
           ByteVector(res.paymentAddr.toByteArray)
@@ -264,13 +262,14 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
   def openChannel(
       nodeId: NodeId,
       fundingAmount: CurrencyUnit,
-      satPerByte: SatoshisPerByte,
+      satPerVByte: SatoshisPerVirtualByte,
       privateChannel: Boolean): Future[Option[TransactionOutPoint]] = {
-    val request = OpenChannelRequest(ByteString.copyFrom(nodeId.bytes.toArray),
-                                     localFundingAmount =
-                                       fundingAmount.satoshis.toLong,
-                                     satPerByte = satPerByte.toLong,
-                                     `private` = privateChannel)
+    val request = OpenChannelRequest(
+      nodePubkey = ByteString.copyFrom(nodeId.bytes.toArray),
+      localFundingAmount = fundingAmount.satoshis.toLong,
+      satPerVbyte = satPerVByte.toLong,
+      `private` = privateChannel
+    )
 
     openChannel(request)
   }
@@ -279,13 +278,13 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       nodeId: NodeId,
       fundingAmount: CurrencyUnit,
       pushAmt: CurrencyUnit,
-      satPerByte: SatoshisPerByte,
+      satPerVByte: SatoshisPerVirtualByte,
       privateChannel: Boolean): Future[Option[TransactionOutPoint]] = {
     val request = OpenChannelRequest(
-      ByteString.copyFrom(nodeId.bytes.toArray),
+      nodePubkey = ByteString.copyFrom(nodeId.bytes.toArray),
       localFundingAmount = fundingAmount.satoshis.toLong,
       pushSat = pushAmt.satoshis.toLong,
-      satPerByte = satPerByte.toLong,
+      satPerVbyte = satPerVByte.toLong,
       `private` = privateChannel
     )
 
@@ -488,7 +487,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
   }
 
   def monitorInvoice(
-      rHash: ByteVector,
+      rHash: PaymentHashTag,
       interval: FiniteDuration = 1.second,
       maxAttempts: Int = 60): Future[Invoice] = {
     val p: Promise[Invoice] = Promise[Invoice]()
@@ -516,7 +515,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
             // complete the promise with an exception so the runnable will be canceled
             p.failure(new RuntimeException(
               s"LndApi.monitorInvoice() [${instance.datadir}] too many attempts: ${attempts
-                .get()} for invoice=${rHash.toHex}"))
+                .get()} for invoice=${rHash.hash.hex}"))
           }
         }
       }
@@ -586,7 +585,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
 object LndRpcClient {
 
   /** The current version we support of Lnd */
-  private[bitcoins] val version = "0.12.1"
+  private[bitcoins] val version = "0.13.0"
 
   /** Key used for adding the macaroon to the gRPC header */
   private[lnd] val macaroonKey = "macaroon"

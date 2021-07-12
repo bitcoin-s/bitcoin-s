@@ -1,6 +1,7 @@
 package org.bitcoins.gui.dlc
 
 import javafx.event.{ActionEvent, EventHandler}
+import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.gui.TaskRunner
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
@@ -17,7 +18,7 @@ import scala.util.Properties
 
 class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
-  private val resultTextArea = new TextArea {
+  val resultTextArea: TextArea = new TextArea {
     editable = false
     text =
       "Welcome to the Bitcoin-S DLC Wallet. To set up a new DLC, click Offer, if you have received an Offer, click Accept."
@@ -29,7 +30,7 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
     center = resultTextArea
   }
 
-  val model = new DLCPaneModel(resultTextArea)
+  val model = new DLCPaneModel(this)
 
   private val offerButton = new Button {
     text = "Offer"
@@ -71,8 +72,9 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
   private val refundButton = new Button {
     text = "Refund"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onRefund()
+    onAction = _ => {
+      model.onRefund()
+      ()
     }
     tooltip = Tooltip(
       "After the refund timeout, broadcasts the refund transaction to the blockchain.")
@@ -81,8 +83,9 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
   private val executeButton = new Button {
     text = "Execute"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onExecute()
+    onAction = _ => {
+      model.onExecute()
+      ()
     }
     tooltip = Tooltip(
       "Given an oracle attestation, broadcasts the closing transaction to the blockchain.")
@@ -121,9 +124,13 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
         selectedExtensionFilter = txtExtensionFilter
         initialDirectory = new File(Properties.userHome)
       }
-      val chosenFile = fileChooser.showSaveDialog(null)
-      Files.write(chosenFile.toPath, resultTextArea.text.value.getBytes)
-      ()
+      val chosenFileOpt = Option(fileChooser.showSaveDialog(null))
+      chosenFileOpt match {
+        case Some(chosenFile) =>
+          Files.write(chosenFile.toPath, resultTextArea.text.value.getBytes)
+          ()
+        case None => // User canceled in dialog
+      }
     }
   }
 
@@ -140,7 +147,9 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
     children = Vector(exportResultButton, copyResultButton)
   }
 
-  private val tableView = new DLCTableView(model).tableView
+  val tableView: TableView[DLCStatus] = new DLCTableView(model).tableView
+
+  def sortTable(): Unit = tableView.sort()
 
   private val textAreasAndTableViewVBox = new VBox {
     children = Seq(textAreaHBox, resultButtonHBox, tableView)

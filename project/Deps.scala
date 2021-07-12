@@ -5,7 +5,7 @@ object Deps {
 
   object V {
     val bouncyCastle = "1.69"
-    val dropwizardMetricsV = "4.2.1" //https://github.com/dropwizard/metrics
+    val dropwizardMetricsV = "4.2.2" //https://github.com/dropwizard/metrics
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.4"
@@ -13,7 +13,7 @@ object Deps {
 
     val scalaTestPlus =
       "3.2.1.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
-    val slf4j = "1.7.30"
+    val slf4j = "1.7.31"
     val spray = "1.3.6"
     val zeromq = "0.5.2"
     val akkav = "10.2.4"
@@ -24,20 +24,20 @@ object Deps {
     val nativeLoaderV = "2.3.5"
     val typesafeConfigV = "1.4.1"
 
-    val scalaFxV = "16.0.0-R22"
+    val scalaFxV = "16.0.0-R24"
     val javaFxV = "17-ea+8"
 
     val asyncNewScalaV = "0.10.0"
 
     val flywayV = "6.4.2"
-    val postgresV = "42.2.22"
+    val postgresV = "42.2.23"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.3"
-    val sqliteV = "3.34.0"
+    val sqliteV = "3.36.0.1"
 
     val scalameterV = "0.17"
     val scalamockV = "5.1.0"
-    val scalaCollectionCompatV = "2.4.4"
+    val scalaCollectionCompatV = "2.5.0"
     val pgEmbeddedV = "0.13.4"
 
     val breezeV = "1.2"
@@ -64,6 +64,7 @@ object Deps {
     val scalaJsTimeV = "2.3.0"
     val zxingV = "3.4.1"
 
+    val monixV = "3.4.0"
   }
 
   object Compile {
@@ -224,6 +225,10 @@ object Deps {
 
     val zxingJ2SE =
       "com.google.zxing" % "javase" % V.zxingV withSources () withJavadoc ()
+
+    val monixExecution =
+      Def.setting(
+        "io.monix" %%% "monix-execution" % V.monixV withSources () withJavadoc ())
   }
 
   object Test {
@@ -264,6 +269,10 @@ object Deps {
 
     val pgEmbedded =
       "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV % "test" withSources () withJavadoc ()
+  }
+
+  def asyncUtils = Def.setting {
+    Vector(Compile.monixExecution.value)
   }
 
   val chain = List(

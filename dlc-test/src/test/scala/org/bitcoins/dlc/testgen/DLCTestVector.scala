@@ -67,7 +67,9 @@ case class FundingInputTx(
   }
 
   def toFundingInput: DLCFundingInput = {
-    DLCFundingInput.fromInputSigningInfo(scriptSignatureParams, serialId)
+    DLCFundingInput.fromInputSigningInfo(scriptSignatureParams,
+                                         serialId,
+                                         tx.inputs(idx).sequence)
   }
 
   def toSerializedFundingInputTx: SerializedFundingInputTx = {

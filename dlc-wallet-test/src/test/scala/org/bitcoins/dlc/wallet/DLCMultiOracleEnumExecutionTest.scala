@@ -4,6 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.{Claimed, RemoteClaimed}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.util.sorted.OrderedAnnouncements
 import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, SchnorrDigitalSignature}
 import org.bitcoins.testkit.wallet.BitcoinSDualWalletTest
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
@@ -40,7 +41,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
   val threshold = 3
 
   val oracleInfo: EnumMultiOracleInfo =
-    EnumMultiOracleInfo(threshold, announcements)
+    EnumMultiOracleInfo(threshold, OrderedAnnouncements(announcements))
 
   val contractOraclePair: ContractOraclePair.EnumPair =
     ContractOraclePair.EnumPair(contractDescriptor, oracleInfo)

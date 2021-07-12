@@ -52,7 +52,9 @@ case class DLCTxSigner(
         .sortBy(_.outPoint.bytes)
         .zip(offer.fundingInputs.sortBy(_.outPoint.bytes))
         .map { case (utxo, fund) =>
-          DLCFundingInput.fromInputSigningInfo(utxo, fund.inputSerialId)
+          DLCFundingInput.fromInputSigningInfo(utxo,
+                                               fund.inputSerialId,
+                                               fund.sequence)
         }
         .sortBy(_.inputSerialId)
     require(fundingUtxosAsInputs == offer.fundingInputs.sortBy(_.inputSerialId),
@@ -68,7 +70,9 @@ case class DLCTxSigner(
         .sortBy(_.outPoint.bytes)
         .zip(accept.fundingInputs.sortBy(_.outPoint.bytes))
         .map { case (utxo, fund) =>
-          DLCFundingInput.fromInputSigningInfo(utxo, fund.inputSerialId)
+          DLCFundingInput.fromInputSigningInfo(utxo,
+                                               fund.inputSerialId,
+                                               fund.sequence)
         }
         .sortBy(_.inputSerialId)
     require(
@@ -476,13 +480,9 @@ object DLCTxSigner {
     sigsT.map { sigs =>
       val sigsMap = sigs.toMap
 
-      val fundingInputs: Vector[DLCFundingInput] =
-        fundingUtxos.map { case SpendingInfoWithSerialId(utxo, serialId) =>
-          DLCFundingInput.fromInputSigningInfo(utxo, serialId)
-        }
-
-      val sigsVec = fundingInputs.map { input =>
-        input.outPoint -> sigsMap(input.outPoint)
+      val sigsVec = fundingUtxos.map {
+        case SpendingInfoWithSerialId(input, _) =>
+          input.outPoint -> sigsMap(input.outPoint)
       }
 
       FundingSignatures(sigsVec)

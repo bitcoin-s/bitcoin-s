@@ -29,7 +29,6 @@ import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.dlc.wallet.util.DLCStatusBuilder
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.TransactionDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
 
@@ -61,7 +60,6 @@ abstract class DLCWallet
   private[bitcoins] val dlcSigsDAO: DLCCETSignaturesDAO = DLCCETSignaturesDAO()
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
-  private[bitcoins] val txDAO: TransactionDAO = TransactionDAO()
 
   private def calcContractId(offer: DLCOffer, accept: DLCAccept): ByteVector = {
     val builder = DLCTxBuilder(offer, accept.withoutSigs)
@@ -342,7 +340,10 @@ abstract class DLCWallet
 
       serialIds = DLCMessage.genSerialIds(spendingInfos.size)
       utxos = spendingInfos.zip(serialIds).map { case (utxo, id) =>
-        DLCFundingInput.fromInputSigningInfo(utxo, id)
+        DLCFundingInput.fromInputSigningInfo(
+          utxo,
+          id,
+          TransactionConstants.enableRBFSequence)
       }
 
       dlcId = calcDLCId(utxos.map(_.outPoint))
@@ -356,9 +357,7 @@ abstract class DLCWallet
 
       changeSPK =
         txBuilder.finalizer.changeSPK
-          .asInstanceOf[WitnessScriptPubKey]
-      network = networkParameters.asInstanceOf[BitcoinNetwork]
-      changeAddr = Bech32Address(changeSPK, network)
+      changeAddr = BitcoinAddress.fromScriptPubKey(changeSPK, networkParameters)
 
       dlcPubKeys = calcDLCPubKeys(account.xpub, chainType, nextIndex)
 
@@ -427,6 +426,7 @@ abstract class DLCWallet
           inputSerialId = fundingInput.inputSerialId,
           outPoint = utxo.outPoint,
           output = utxo.output,
+          nSequence = fundingInput.sequence,
           maxWitnessLength = fundingInput.maxWitnessLen.toLong,
           redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
           witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
@@ -594,17 +594,19 @@ abstract class DLCWallet
         fromTagOpt = None,
         markAsReserved = true
       )
-      network = networkParameters.asInstanceOf[BitcoinNetwork]
 
       serialIds = DLCMessage.genSerialIds(
         spendingInfos.size,
         offer.fundingInputs.map(_.inputSerialId))
       utxos = spendingInfos.zip(serialIds).map { case (utxo, id) =>
-        DLCFundingInput.fromInputSigningInfo(utxo, id)
+        DLCFundingInput.fromInputSigningInfo(
+          utxo,
+          id,
+          TransactionConstants.enableRBFSequence)
       }
 
-      changeSPK = txBuilder.finalizer.changeSPK.asInstanceOf[P2WPKHWitnessSPKV0]
-      changeAddr = Bech32Address(changeSPK, network)
+      changeSPK = txBuilder.finalizer.changeSPK
+      changeAddr = BitcoinAddress.fromScriptPubKey(changeSPK, networkParameters)
 
       bip32Path = BIP32Path(
         account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
@@ -686,6 +688,7 @@ abstract class DLCWallet
           inputSerialId = funding.inputSerialId,
           outPoint = funding.outPoint,
           output = funding.output,
+          nSequence = funding.sequence,
           maxWitnessLength = funding.maxWitnessLen.toLong,
           redeemScriptOpt = funding.redeemScriptOpt,
           witnessScriptOpt = None
@@ -702,6 +705,7 @@ abstract class DLCWallet
           inputSerialId = fundingInput.inputSerialId,
           outPoint = utxo.outPoint,
           output = utxo.output,
+          nSequence = fundingInput.sequence,
           maxWitnessLength = fundingInput.maxWitnessLen.toLong,
           redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
           witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
@@ -769,6 +773,7 @@ abstract class DLCWallet
             inputSerialId = funding.inputSerialId,
             outPoint = funding.outPoint,
             output = funding.output,
+            nSequence = funding.sequence,
             maxWitnessLength = funding.maxWitnessLen.toLong,
             redeemScriptOpt = funding.redeemScriptOpt,
             witnessScriptOpt = None
@@ -1276,7 +1281,8 @@ abstract class DLCWallet
   }
 
   private def getClosingTxOpt(dlcDb: DLCDb): Future[Option[TransactionDb]] = {
-    val result = dlcDb.closingTxIdOpt.map(txid => txDAO.findByTxId(txid))
+    val result =
+      dlcDb.closingTxIdOpt.map(txid => transactionDAO.findByTxId(txid))
     result match {
       case None    => Future.successful(None)
       case Some(r) => r

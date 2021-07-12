@@ -1,22 +1,21 @@
 package org.bitcoins.oracle.server
 
 import akka.actor.ActorSystem
+import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
-import org.bitcoins.server.routes.{BitcoinSRunner, Server}
-import org.bitcoins.server.util.BitcoinSApp
+import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
+import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 
 import scala.concurrent.Future
 
-class OracleServerMain(override val args: Array[String])(implicit
-    override val system: ActorSystem)
-    extends BitcoinSRunner {
-
-  implicit val conf: DLCOracleAppConfig =
-    DLCOracleAppConfig(datadir, baseConfig)
+class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
+    override val system: ActorSystem,
+    conf: DLCOracleAppConfig)
+    extends BitcoinSServerRunner {
 
   override def start(): Future[Unit] = {
 
-    val bindConfOpt = rpcBindOpt match {
+    val bindConfOpt = serverArgParser.rpcBindOpt match {
       case Some(rpcbind) => Some(rpcbind)
       case None          => conf.rpcBindOpt
     }
@@ -26,7 +25,7 @@ class OracleServerMain(override val args: Array[String])(implicit
       oracle <- conf.initialize()
 
       routes = Seq(OracleRoutes(oracle))
-      server = rpcPortOpt match {
+      server = serverArgParser.rpcPortOpt match {
         case Some(rpcport) =>
           Server(conf = conf,
                  handlers = routes,
@@ -59,9 +58,24 @@ class OracleServerMain(override val args: Array[String])(implicit
   }
 }
 
-object OracleServerMain extends BitcoinSApp {
+object OracleServerMain extends BitcoinSAppScalaDaemon {
 
   override val actorSystemName =
     s"bitcoin-s-oracle-${System.currentTimeMillis()}"
-  new OracleServerMain(args).run(Some("oracle"))
+
+  /** Directory specific for current network or custom dir */
+  override val customFinalDirOpt: Option[String] = Some("oracle")
+
+  val serverCmdLineArgs = ServerArgParser(args.toVector)
+
+  val datadirParser =
+    DatadirParser(serverCmdLineArgs, customFinalDirOpt)
+
+  System.setProperty("bitcoins.log.location", datadirParser.networkDir.toString)
+
+  implicit lazy val conf: DLCOracleAppConfig =
+    DLCOracleAppConfig(datadirParser.datadir, datadirParser.baseConfig)(
+      system.dispatcher)
+
+  new OracleServerMain(serverCmdLineArgs).run()
 }

@@ -222,7 +222,7 @@ object SignDLCDialog extends Logging {
       if (!dlcDetailsShown) {
         Try(
           LnMessageFactory(DLCAcceptTLV).fromHex(
-            acceptTLVTF.text.value)) match {
+            acceptTLVTF.text.value.trim)) match {
           case Failure(_) => ()
           case Success(lnMessage) =>
             showDetails(lnMessage, isFromFile = false)

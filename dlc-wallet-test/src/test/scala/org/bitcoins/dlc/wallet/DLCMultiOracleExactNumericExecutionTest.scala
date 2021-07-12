@@ -4,6 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.{Claimed, RemoteClaimed}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.util.sorted.OrderedAnnouncements
 import org.bitcoins.crypto._
 import org.bitcoins.testkitcore.dlc.DLCTest.genNumericOracleOutcome
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
@@ -35,7 +36,7 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
   val threshold = 3
 
   val oracleInfo: NumericExactMultiOracleInfo =
-    NumericExactMultiOracleInfo(threshold, announcements)
+    NumericExactMultiOracleInfo(threshold, OrderedAnnouncements(announcements))
 
   val contractOraclePair: ContractOraclePair.NumericPair =
     ContractOraclePair.NumericPair(contractDescriptor, oracleInfo)

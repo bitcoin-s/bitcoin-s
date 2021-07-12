@@ -20,12 +20,15 @@ import upickle.default._
 
 import java.io.File
 import java.nio.file.Files
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.{Failure, Properties, Success}
 
-class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
+class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
     extends Logging {
   var taskRunner: TaskRunner = _
+
+  val resultArea: TextArea = pane.resultTextArea
 
   // Sadly, it is a Java "pattern" to pass null into
   // constructors to signal that you want some default
@@ -46,32 +49,41 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
     dlcs.clear()
     getDLCs.map { walletDlcs =>
       dlcs ++= walletDlcs
+      pane.sortTable()
     }
     //purposely drop the future on the floor for now
     //as our GUI is not async safe at all
     ()
   }
 
+  def updateDLCInList(status: DLCStatus): Unit = {
+    val indexOpt = dlcs.zipWithIndex.find(_._1.dlcId == status.dlcId).map(_._2)
+
+    indexOpt match {
+      case Some(index) =>
+        dlcs.update(index, status)
+      case None =>
+        dlcs += status
+    }
+  }
+
   def updateDLC(dlcId: Sha256Digest): Unit = {
     ConsoleCli.exec(GetDLC(dlcId), GlobalData.consoleCliConfig) match {
       case Failure(exception) => throw exception
       case Success(dlcStatus) =>
-        dlcs += read[DLCStatus](ujson.read(dlcStatus))
-        dlcs.find(_.dlcId == dlcId).foreach(dlcs -= _)
+        val status = read[DLCStatus](dlcStatus)
+
+        updateDLCInList(status)
+        pane.sortTable()
     }
   }
 
   def updateDLCs(): Unit = {
-    val newDLCsF = getDLCs
-    val toAddF = newDLCsF.map(_.diff(dlcs))
-    val toRemoveF = newDLCsF.map(dlcs.diff)
-    val _ = for {
-      toAdd <- toAddF
-      toRemove <- toRemoveF
-    } yield {
-      dlcs ++= toAdd
-      dlcs --= toRemove
-      ()
+    getDLCs.map { dlcs =>
+      dlcs.foreach(updateDLCInList)
+      val toRemove = GlobalDLCData.dlcs.diff(dlcs)
+      GlobalDLCData.dlcs --= toRemove
+      pane.sortTable()
     }
 
     //purposely drop the future on the floor for now
@@ -82,8 +94,10 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
   def printDLCDialogResult[T <: CliCommand](
       caption: String,
       dialog: DLCDialog[T],
-      postProcessStr: String => String = str => str): Unit = {
+      postProcessStr: String => String = str => str): String = {
     val result = dialog.showAndWait(parentWindow.value)
+
+    val promise = Promise[String]()
 
     result match {
       case Some(command) =>
@@ -93,15 +107,19 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
             ConsoleCli.exec(command, GlobalData.consoleCliConfig) match {
               case Success(commandReturn) =>
                 resultArea.text = postProcessStr(commandReturn)
+                promise.success(commandReturn)
               case Failure(err) =>
                 err.printStackTrace()
                 resultArea.text = s"Error executing command:\n${err.getMessage}"
+                promise.success("")
             }
             updateDLCs()
           }
         )
-      case None => ()
+      case None => promise.success("")
     }
+
+    Await.result(promise.future, 15.seconds)
   }
 
   def onOffer(): Unit = {
@@ -202,11 +220,11 @@ class DLCPaneModel(val resultArea: TextArea)(implicit ec: ExecutionContext)
     }
   }
 
-  def onExecute(): Unit = {
+  def onExecute(): String = {
     printDLCDialogResult("ExecuteDLC", new ExecuteDLCDialog)
   }
 
-  def onRefund(): Unit = {
+  def onRefund(): String = {
     printDLCDialogResult("ExecuteDLCRefund", new RefundDLCDialog)
   }
 

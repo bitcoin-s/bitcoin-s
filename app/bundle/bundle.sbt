@@ -18,7 +18,7 @@ assembly / assemblyJarName := s"${name.value}.jar"
 
 //need compatibility with windows versioning scheme which is
 //w.x.y.z
-Windows / version := previousStableVersion.value.get
+Windows / version := CommonSettings.previousStableVersion
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", _ @_*)       => MergeStrategy.discard
@@ -26,7 +26,6 @@ assembly / assemblyMergeStrategy := {
   case _                                 => MergeStrategy.first
 }
 
-Compile / doc := (target.value / "none")
 // general package information (can be scoped to Windows)
 maintainer := "Chris Stewart <stewart.chris1234@gmail.com>"
 // Will say "Welcome to the <packageSummary> Setup Wizard"

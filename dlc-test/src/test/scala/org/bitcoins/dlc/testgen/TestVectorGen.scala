@@ -1,10 +1,10 @@
 package org.bitcoins.dlc.testgen
 
+import play.api.libs.json._
+
 import java.io.{File, PrintWriter}
-
-import play.api.libs.json.{JsArray, JsError, JsResult, JsSuccess, JsValue, Json}
-
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -36,6 +36,12 @@ trait TestVectorGen[T <: TestVector, Input] {
   }
 
   def readFromDefaultTestFile(): JsResult[Vector[T]] = {
+    // If we are missing the test file, generate it
+    if (!defaultTestFile.canRead) {
+      val gen = generateAndWriteTestVectors()
+      Await.result(gen, 60.seconds)
+    }
+
     val source = Source.fromFile(defaultTestFile)
     val str = source.getLines().reduce(_ ++ _)
     source.close()

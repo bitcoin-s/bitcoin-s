@@ -370,6 +370,7 @@ object UInt32
 
   lazy val zero: UInt32 = checkCached(0)
   lazy val one: UInt32 = checkCached(1)
+  lazy val two: UInt32 = checkCached(2)
 
   private lazy val minUnderlying: A = 0
   private lazy val maxUnderlying: A = BigInt(4294967295L)

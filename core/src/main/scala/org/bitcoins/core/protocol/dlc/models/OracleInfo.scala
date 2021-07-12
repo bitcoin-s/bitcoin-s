@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.dlc.models
 
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.util.sorted._
 import org.bitcoins.crypto._
 
 /** Specifies the set of oracles and their corresponding announcements
@@ -68,7 +69,7 @@ sealed trait SingleOracleInfo
   def publicKey: SchnorrPublicKey = announcement.publicKey
 
   /** The oracle's pre-committed nonces, in the correct order */
-  def nonces: Vector[SchnorrNonce] = announcement.eventTLV.nonces
+  def nonces: OrderedNonces = announcement.eventTLV.nonces
 
   /** The order of the given sigs should correspond to the given outcome. */
   def verifySigs(outcome: DLCOutcomeType, sigs: OracleSignatures): Boolean
@@ -77,7 +78,7 @@ sealed trait SingleOracleInfo
     * This point is used for adaptor signing.
     */
   def sigPoint(outcome: DLCOutcomeType): ECPublicKey = {
-    publicKey.computeSigPoint(outcome.serialized, nonces)
+    publicKey.computeSigPoint(outcome.serialized, nonces.vec)
   }
 
   /** Computes the sum of all nonces used in a given outcome */
@@ -227,7 +228,7 @@ sealed trait MultiOracleInfo[+T <: SingleOracleInfo]
     with TLVSerializable[MultiOracleInfoTLV] {
   override def numOracles: Int = announcements.length
 
-  def announcements: Vector[OracleAnnouncementTLV]
+  def announcements: OrderedAnnouncements
 
   require(
     announcements.length >= threshold,
@@ -273,12 +274,12 @@ object ExactMultiOracleInfo
   */
 case class EnumMultiOracleInfo(
     threshold: Int,
-    announcements: Vector[OracleAnnouncementTLV])
+    announcements: OrderedAnnouncements)
     extends ExactMultiOracleInfo[EnumSingleOracleInfo]
     with EnumOracleInfo {
 
   override val singleOracleInfos: Vector[EnumSingleOracleInfo] =
-    announcements.map(EnumSingleOracleInfo.apply)
+    announcements.toVector.map(EnumSingleOracleInfo.apply)
 }
 
 /** Represents the oracle information for more than one oracle where
@@ -286,12 +287,12 @@ case class EnumMultiOracleInfo(
   */
 case class NumericExactMultiOracleInfo(
     threshold: Int,
-    announcements: Vector[OracleAnnouncementTLV])
+    announcements: OrderedAnnouncements)
     extends ExactMultiOracleInfo[NumericSingleOracleInfo]
     with NumericOracleInfo {
 
   val singleOracleInfos: Vector[NumericSingleOracleInfo] =
-    announcements.map(NumericSingleOracleInfo.apply)
+    announcements.toVector.map(NumericSingleOracleInfo.apply)
 }
 
 /** Represents the oracle information and parameters for more than
@@ -299,7 +300,7 @@ case class NumericExactMultiOracleInfo(
   */
 case class NumericMultiOracleInfo(
     threshold: Int,
-    announcements: Vector[OracleAnnouncementTLV],
+    announcements: OrderedAnnouncements,
     maxErrorExp: Int,
     minFailExp: Int,
     maximizeCoverage: Boolean)
@@ -308,7 +309,7 @@ case class NumericMultiOracleInfo(
     with NumericOracleInfo {
 
   override val singleOracleInfos: Vector[NumericSingleOracleInfo] =
-    announcements.map(NumericSingleOracleInfo.apply)
+    announcements.toVector.map(NumericSingleOracleInfo.apply)
 
   override def toTLV: OracleInfoV2TLV = {
     OracleInfoV2TLV(
@@ -324,7 +325,7 @@ object NumericMultiOracleInfo
 
   def apply(
       threshold: Int,
-      announcements: Vector[OracleAnnouncementTLV],
+      announcements: OrderedAnnouncements,
       params: OracleParamsTLV): NumericMultiOracleInfo = {
     params match {
       case OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage) =>

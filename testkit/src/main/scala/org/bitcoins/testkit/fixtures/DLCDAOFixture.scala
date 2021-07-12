@@ -1,11 +1,13 @@
 package org.bitcoins.testkit.fixtures
 
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.dlc.wallet.models._
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.scalatest._
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 case class DLCDAOs(
     announcementDAO: OracleAnnouncementDataDAO,
@@ -18,9 +20,24 @@ case class DLCDAOs(
     dlcInputsDAO: DLCFundingInputDAO,
     dlcSigsDAO: DLCCETSignaturesDAO,
     dlcRefundSigDAO: DLCRefundSigsDAO,
-    dlcRemoteTxDAO: DLCRemoteTxDAO)
+    dlcRemoteTxDAO: DLCRemoteTxDAO) {
 
-trait DLCDAOFixture extends BitcoinSWalletTest {
+  val list = Vector(
+    announcementDAO,
+    nonceDAO,
+    dlcDAO,
+    dlcAnnouncementDAO,
+    contractDataDAO,
+    dlcOfferDAO,
+    dlcAcceptDAO,
+    dlcInputsDAO,
+    dlcSigsDAO,
+    dlcRefundSigDAO,
+    dlcRemoteTxDAO
+  )
+}
+
+trait DLCDAOFixture extends BitcoinSFixture with EmbeddedPg {
 
   private lazy val daos: DLCDAOs = {
     val announcementDAO = OracleAnnouncementDataDAO()
@@ -51,25 +68,29 @@ trait DLCDAOFixture extends BitcoinSWalletTest {
 
   final override type FixtureParam = DLCDAOs
 
-  implicit private val dlcConfig: DLCAppConfig = getFreshDLCAppConfig
+  implicit protected val config: BitcoinSAppConfig =
+    BitcoinSTestAppConfig
+      .getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl())
+
+  implicit private val dlcConfig: DLCAppConfig = config.dlcConf
 
   override def afterAll(): Unit = {
-    super.afterAll()
+    val stoppedF = config.stop()
+    val _ = Await.ready(stoppedF, akkaTimeout.duration)
+    super[EmbeddedPg].afterAll()
   }
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
     makeFixture(build = () => Future(dlcConfig.migrate()).map(_ => daos),
                 destroy = () => dropAll())(test)
 
-  def dropAll(): Future[Unit] = {
+  private def dropAll(): Future[Unit] = {
     val res = for {
-      _ <- dlcConfig.dropTable("flyway_schema_history")
-      _ <- dlcConfig.dropAll()
+      _ <- FutureUtil.sequentially(daos.list.reverse)(dao => dao.deleteAll())
     } yield ()
     res.failed.foreach { ex =>
       ex.printStackTrace()
     }
     res
   }
-
 }

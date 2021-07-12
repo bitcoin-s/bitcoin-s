@@ -11,7 +11,7 @@ import org.bitcoins.core.api.wallet.{
   CoinSelectionAlgo
 }
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
-import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
@@ -64,7 +64,7 @@ abstract class Wallet
 
   val chainParams: ChainParams = walletConfig.chain
 
-  val networkParameters: NetworkParameters = walletConfig.network
+  val networkParameters: BitcoinNetwork = walletConfig.network
 
   override val discoveryBatchSize: Int = walletConfig.discoveryBatchSize
 
@@ -81,7 +81,7 @@ abstract class Wallet
     OutgoingTransactionDAO()
   private[bitcoins] val addressTagDAO: AddressTagDAO = AddressTagDAO()
 
-  private[wallet] val stateDescriptorDAO: WalletStateDescriptorDAO =
+  private[bitcoins] val stateDescriptorDAO: WalletStateDescriptorDAO =
     WalletStateDescriptorDAO()
 
   val nodeApi: NodeApi
@@ -130,7 +130,7 @@ abstract class Wallet
         if (account.xpub != xpub) {
           val errorMsg =
             s"Divergent xpubs for account=$account. Existing database xpub=${account.xpub}, key manager's xpub=$xpub. " +
-              s"It is possible we have a different key manager being used than expected, key manager=$keyManager"
+              s"It is possible we have a different key manager being used than expected, key manager=${keyManager.kmParams.seedPath.toAbsolutePath.toString}"
           Future.failed(new RuntimeException(errorMsg))
         } else {
           Future.unit
@@ -995,7 +995,7 @@ object Wallet extends WalletLogger {
         if (account.xpub != xpub) {
           val errorMsg =
             s"Divergent xpubs for account=${account}. Existing database xpub=${account.xpub}, new xpub=${xpub}. " +
-              s"It is possible we have a different key manager being used than expected, keymanager=${keyManager}"
+              s"It is possible we have a different key manager being used than expected, keymanager=${keyManager.kmParams.seedPath.toAbsolutePath.toString}"
           Future.failed(new RuntimeException(errorMsg))
         } else {
           logger.debug(

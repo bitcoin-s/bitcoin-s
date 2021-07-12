@@ -119,7 +119,7 @@ object DLCFundingInput {
   def fromInputSigningInfo(
       info: ScriptSignatureParams[InputInfo],
       inputSerialId: UInt64,
-      sequence: UInt32 = TransactionConstants.sequence): DLCFundingInput = {
+      sequence: UInt32): DLCFundingInput = {
     DLCFundingInput(
       inputSerialId,
       info.prevTransaction,
@@ -179,6 +179,6 @@ case class SpendingInfoWithSerialId(
     spendingInfo: ScriptSignatureParams[InputInfo],
     serialId: UInt64) {
 
-  def toDLCFundingInput: DLCFundingInput =
-    DLCFundingInput.fromInputSigningInfo(spendingInfo, serialId)
+  def toDLCFundingInput(sequence: UInt32): DLCFundingInput =
+    DLCFundingInput.fromInputSigningInfo(spendingInfo, serialId, sequence)
 }

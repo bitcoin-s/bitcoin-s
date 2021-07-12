@@ -4,19 +4,23 @@ import akka.actor.ActorSystem
 import com.typesafe.config._
 import grizzled.slf4j.Logging
 import org.bitcoins.bundle.gui.BundleGUI._
+import org.bitcoins.db.AppConfig
+import org.bitcoins.db.util.{DatadirUtil, ServerArgParser}
 import org.bitcoins.gui._
+import org.bitcoins.node.NodeType._
+import org.bitcoins.node._
 import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
 import org.bitcoins.server._
 import scalafx.beans.property.ObjectProperty
 import scalafx.stage.Window
 
 import java.nio.file.Files
-import scala.concurrent.ExecutionContext.global
+import scala.concurrent._
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Promise}
-import scala.jdk.CollectionConverters._
 
-class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
+class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
+    system: ActorSystem)
+    extends Logging {
 
   var taskRunner: TaskRunner = _
 
@@ -26,23 +30,41 @@ class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
     ObjectProperty[Window](null.asInstanceOf[Window])
   }
 
-  def launchWallet(config: Config, appConfig: BitcoinSAppConfig): Unit = {
+  def launchWallet(bundleConf: Config, appConfig: BitcoinSAppConfig): Unit = {
     taskRunner.run(
       "Launching Wallet",
       op = {
+        import system.dispatcher
         val file = appConfig.baseDatadir.resolve("bitcoin-s-bundle.conf")
 
-        // if the user made changes in the gui, write to file
-        // We compare sets so we account for resolving the config
-        val confStr = config
-          .entrySet()
-          .asScala
-          .toVector
-          .sortBy(_.getKey)
-          .map { entry => s"${entry.getKey} = ${entry.getValue.render()}" }
-          .mkString("\n")
+        val bundleConfStr = AppConfig.configToString(bundleConf)
 
-        Files.write(file, confStr.getBytes)
+        logger.info(s"Writing bundle config to $file")
+        Files.write(file, bundleConfStr.getBytes)
+
+        val networkConfigF: Future[Config] = {
+          val tmpConf =
+            BitcoinSAppConfig.fromConfig(
+              bundleConf.withFallback(appConfig.config))
+          val netConfF: Future[Config] = tmpConf.nodeType match {
+            case _: InternalImplementationNodeType =>
+              // If we are connecting to a node we cannot
+              // know what network it is on now
+              Future.successful(ConfigFactory.empty())
+            case BitcoindBackend =>
+              tmpConf.bitcoindRpcConf.client.getBlockChainInfo.map { info =>
+                val networkStr =
+                  DatadirUtil.networkStrToDirName(info.chain.name)
+                ConfigFactory.parseString(s"bitcoin-s.network = $networkStr")
+              }
+          }
+
+          netConfF.map { netConf =>
+            serverArgParser.toConfig
+              .withFallback(netConf)
+              .withFallback(bundleConf)
+          }
+        }
 
         // Launch wallet
         val promise = Promise[Unit]()
@@ -50,10 +72,20 @@ class LandingPaneModel()(implicit system: ActorSystem) extends Logging {
           fetchStartingData()
           changeToWalletGUIScene()
           promise.success(())
-        }(global)
+        }
 
-        //use class base constructor to share the actor system
-        new BitcoinSServerMain(args.toArray).run()
+        val startedF = networkConfigF.map { networkConfig =>
+          val finalAppConfig =
+            BitcoinSAppConfig.fromDatadir(appConfig.baseDatadir, networkConfig)
+          // use class base constructor to share the actor system
+
+          new BitcoinSServerMain(serverArgParser)(system, finalAppConfig)
+            .run()
+        }
+
+        startedF.failed.foreach { case err =>
+          throw err
+        }
 
         Await.result(promise.future, 60.seconds)
       }

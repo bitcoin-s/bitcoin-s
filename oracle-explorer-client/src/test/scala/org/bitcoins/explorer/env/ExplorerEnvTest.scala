@@ -1,6 +1,7 @@
 package org.bitcoins.explorer.env
 
-import org.bitcoins.explorer.env.ExplorerEnv._
+import org.bitcoins.commons.jsonmodels.ExplorerEnv._
+import org.bitcoins.commons.jsonmodels.ExplorerEnv
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class ExplorerEnvTest extends BitcoinSUnitTest {

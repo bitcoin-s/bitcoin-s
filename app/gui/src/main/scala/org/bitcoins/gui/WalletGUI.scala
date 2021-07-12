@@ -25,6 +25,11 @@ abstract class WalletGUI extends Logging {
     text <== StringProperty("Sync Height: ") + GlobalData.syncHeight
   }
 
+  private lazy val connectedLabel = new Label {
+    padding = Insets(top = 0, right = 0, bottom = 10, left = 1200)
+    text <== GlobalData.connectedStr
+  }
+
   def fetchStartingData(): Unit = {
     model.startWalletInfoScheduler()
     model.updateFeeRate()
@@ -102,7 +107,7 @@ abstract class WalletGUI extends Logging {
   }
 
   lazy val bottomStack: StackPane = new StackPane() {
-    children = Vector(statusLabel, infoLabel)
+    children = Vector(statusLabel, infoLabel, connectedLabel)
   }
 
   lazy val borderPane: BorderPane = new BorderPane {

@@ -6,7 +6,7 @@ import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.commons.jsonmodels.BitcoinSServerInfo
 import org.bitcoins.core.config._
 import org.bitcoins.gui.util.GUIUtil._
-import scalafx.application.JFXApp
+import scalafx.application.JFXApp3
 import scalafx.geometry.Pos
 import scalafx.scene.Scene
 import scalafx.scene.control.Alert.AlertType
@@ -16,48 +16,12 @@ import scalafx.scene.layout.VBox
 
 import scala.util._
 
-object GUI extends WalletGUI with JFXApp {
+object GUI extends WalletGUI with JFXApp3 {
 
-  implicit lazy val system: ActorSystem = ActorSystem(
+  implicit override lazy val system: ActorSystem = ActorSystem(
     s"bitcoin-s-gui-${System.currentTimeMillis()}")
 
-  // Catch unhandled exceptions on FX Application thread
-  Thread
-    .currentThread()
-    .setUncaughtExceptionHandler((_: Thread, ex: Throwable) => {
-      ex.printStackTrace()
-      lazy val _ = new Alert(AlertType.Error) {
-        initOwner(owner)
-        title = "Unhandled exception"
-        headerText = "Exception: " + ex.getClass + ""
-        contentText = Option(ex.getMessage).getOrElse("")
-      }.showAndWait()
-    })
-
-  lazy val argsWithIndex: Vector[(String, Int)] =
-    parameters.raw.zipWithIndex.toVector
-
-  lazy val rpcPortOpt: Option[Int] = {
-    lazy val portOpt = argsWithIndex.find(_._1.toLowerCase == "--rpcport")
-    portOpt.map { case (_, idx) =>
-      parameters.raw(idx + 1).toInt
-    }
-  }
-
-  GlobalData.rpcPortOpt = rpcPortOpt
-
-  lazy val debug: Boolean = {
-    parameters.raw.exists(_.toLowerCase == "--debug")
-  }
-
-  GlobalData.debug = debug
-
-  lazy val walletScene: Scene = new Scene(1400, 800) {
-    root = rootView
-    stylesheets = GlobalData.currentStyleSheets
-  }
-
-  lazy val glassPane: VBox = new VBox {
+  override lazy val glassPane: VBox = new VBox {
     children = new ProgressIndicator {
       progress = ProgressIndicator.IndeterminateProgress
       visible = true
@@ -66,34 +30,73 @@ object GUI extends WalletGUI with JFXApp {
     visible = false
   }
 
-  lazy val info: BitcoinSServerInfo =
-    ConsoleCli.exec(GetInfo, GlobalData.consoleCliConfig) match {
-      case Failure(exception) =>
-        throw exception
-      case Success(str) =>
-        val json = ujson.read(str)
-        BitcoinSServerInfo.fromJson(json)
+  override def start(): Unit = {
+    // Catch unhandled exceptions on FX Application thread
+    Thread
+      .currentThread()
+      .setUncaughtExceptionHandler((_: Thread, ex: Throwable) => {
+        ex.printStackTrace()
+        val _ = new Alert(AlertType.Error) {
+          initOwner(owner)
+          title = "Unhandled exception"
+          headerText = "Exception: " + ex.getClass + ""
+          contentText = Option(ex.getMessage).getOrElse("")
+        }.showAndWait()
+      })
+
+    lazy val argsWithIndex: Vector[(String, Int)] =
+      parameters.raw.zipWithIndex.toVector
+
+    lazy val rpcPortOpt: Option[Int] = {
+      lazy val portOpt = argsWithIndex.find(_._1.toLowerCase == "--rpcport")
+      portOpt.map { case (_, idx) =>
+        parameters.raw(idx + 1).toInt
+      }
     }
 
-  GlobalData.network = info.network
+    GlobalData.rpcPortOpt = rpcPortOpt
 
-  lazy val (img, titleStr): (Image, String) = info.network match {
-    case MainNet =>
-      (logo, "Bitcoin-S Wallet")
-    case TestNet3 =>
-      (logoTestnet, "Bitcoin-S Wallet - [testnet]")
-    case RegTest =>
-      (logoRegtest, "Bitcoin-S Wallet - [regtest]")
-    case SigNet =>
-      (logoSignet, "Bitcoin-S Wallet - [signet]")
+    lazy val debug: Boolean = {
+      parameters.raw.exists(_.toLowerCase == "--debug")
+    }
+
+    GlobalData.debug = debug
+
+    lazy val walletScene: Scene = new Scene(1400, 800) {
+      root = rootView
+      stylesheets = GlobalData.currentStyleSheets
+    }
+
+    lazy val info: BitcoinSServerInfo =
+      ConsoleCli.exec(GetInfo, GlobalData.consoleCliConfig) match {
+        case Failure(exception) =>
+          throw exception
+        case Success(str) =>
+          val json = ujson.read(str)
+          BitcoinSServerInfo.fromJson(json)
+      }
+
+    GlobalData.network = info.network
+
+    lazy val (img, titleStr): (Image, String) = info.network match {
+      case MainNet =>
+        (logo, "Bitcoin-S Wallet")
+      case TestNet3 =>
+        (logoTestnet, "Bitcoin-S Wallet - [testnet]")
+      case RegTest =>
+        (logoRegtest, "Bitcoin-S Wallet - [regtest]")
+      case SigNet =>
+        (logoSignet, "Bitcoin-S Wallet - [signet]")
+    }
+
+    stage = new JFXApp3.PrimaryStage {
+      title = titleStr
+      scene = walletScene
+      icons.add(img)
+    }
+
+    fetchStartingData()
+    taskRunner
+    ()
   }
-
-  stage = new JFXApp.PrimaryStage {
-    title = titleStr
-    scene = walletScene
-    icons.add(img)
-  }
-
-  fetchStartingData()
-  taskRunner
 }

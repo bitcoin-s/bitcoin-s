@@ -213,7 +213,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "tpe" -> Element(OracleInfoV1TLV.tpe),
           "length" -> Element(tlv.length),
           "threshold" -> Element(UInt16(threshold)),
-          "announcements" -> MultiElement(announcements.map(Element(_)))
+          "announcements" -> MultiElement(
+            announcements.toVector.map(Element(_)))
         )
         DLCTLVTestVector(tlv, "oracle_info_v1", fields)
       case OracleInfoV2TLV(threshold, oracles, params) =>
@@ -221,7 +222,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           "tpe" -> Element(OracleInfoV2TLV.tpe),
           "length" -> Element(tlv.length),
           "threshold" -> Element(UInt16(threshold)),
-          "announcements" -> MultiElement(oracles.map(Element(_))),
+          "announcements" -> MultiElement(oracles.toVector.map(Element(_))),
           "params" -> Element(params)
         )
         DLCTLVTestVector(tlv, "oracle_info_v2", fields)
@@ -425,7 +426,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
         val fields = Vector(
           "tpe" -> Element(OracleEventV0TLV.tpe),
           "length" -> Element(tlv.length),
-          "oracleNonces" -> MultiElement(nonces.map(Element(_))),
+          "oracleNonces" -> MultiElement(nonces.vec.map(Element(_))),
           "eventMaturityEpoch" -> Element(eventMaturity),
           "eventDescriptor" -> Element(descriptor),
           "event_uri" -> Element(CryptoUtil.serializeForHash(uri))

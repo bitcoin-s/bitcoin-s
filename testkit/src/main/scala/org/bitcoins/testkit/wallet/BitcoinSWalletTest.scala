@@ -30,7 +30,10 @@ import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
-import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
+import org.bitcoins.testkit.wallet.FundWalletUtil.{
+  FundedDLCWallet,
+  FundedWallet
+}
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen._
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -112,6 +115,27 @@ trait BitcoinSWalletTest
                                           Some(segwitWalletConf)),
       destroy = { funded: FundedWallet =>
         destroyWallet(funded.wallet)
+      }
+    )(test)
+  }
+
+  /** Creates a wallet that is funded with some bitcoin, this wallet is NOT
+    * peered with a bitcoind so the funds in the wallet are not tied to an
+    * underlying blockchain
+    */
+  def withFundedDLCWallet(
+      test: OneArgAsyncTest,
+      bip39PasswordOpt: Option[String])(implicit
+      config: BitcoinSAppConfig): FutureOutcome = {
+    makeDependentFixture(
+      build = () =>
+        FundWalletUtil.createFundedDLCWallet(nodeApi,
+                                             chainQueryApi,
+                                             bip39PasswordOpt),
+      destroy = { funded: FundedDLCWallet =>
+        for {
+          _ <- destroyDLCWallet(funded.wallet)
+        } yield ()
       }
     )(test)
   }
@@ -661,6 +685,14 @@ object BitcoinSWalletTest extends WalletLogger {
       _ <- wallet.walletConfig.dropAll()
       _ <- wallet.stop()
       _ <- destroyWalletAppConfig(wallet.walletConfig)
+    } yield ()
+  }
+
+  def destroyDLCWallet(wallet: DLCWallet): Future[Unit] = {
+    import wallet.ec
+    for {
+      _ <- destroyWallet(wallet)
+      _ <- wallet.dlcConfig.stop()
     } yield ()
   }
 

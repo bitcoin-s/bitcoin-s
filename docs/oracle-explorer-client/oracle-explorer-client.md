@@ -21,9 +21,8 @@ while the other references the [test environment](https://test.oracle.suredbits.
 ```scala mdoc:invisible
 import akka.actor.ActorSystem
 import org.bitcoins.explorer.client._
-import org.bitcoins.explorer.env._
+import org.bitcoins.commons.jsonmodels._
 import org.bitcoins.explorer.model._
-import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.core.protocol.tlv.{OracleAnnouncementV0TLV,OracleAttestmentV0TLV}
 
 import scala.concurrent.Future
@@ -71,4 +70,3 @@ val sbAttestations = CreateAttestations(announcementHash, attestations)
 val createdAttestationsF = explorerClient.createAttestations(sbAttestations)
 
 ```
-

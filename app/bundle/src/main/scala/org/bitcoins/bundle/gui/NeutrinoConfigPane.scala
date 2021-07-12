@@ -1,7 +1,9 @@
 package org.bitcoins.bundle.gui
 
 import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.config._
 import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
 import scalafx.geometry._
 import scalafx.scene.Node
 import scalafx.scene.control._
@@ -23,8 +25,29 @@ class NeutrinoConfigPane(
     textAlignment = TextAlignment.Center
   }
 
+  val defaultPeer: String = {
+    appConfig.network match {
+      case MainNet          => "neutrino.suredbits.com"
+      case TestNet3         => "neutrino.testnet3.suredbits.com"
+      case RegTest | SigNet => "localhost"
+    }
+  }
+
+  val startingPeerAddress: String = {
+    appConfig.peers.headOption match {
+      case Some(peer) =>
+        // if we are using the default suredbits node
+        if (peer.contains(".suredbits.com")) {
+          defaultPeer
+        } else {
+          peer
+        }
+      case None => defaultPeer
+    }
+  }
+
   private val peerAddressTF: TextField = new TextField() {
-    text = appConfig.peers.headOption.getOrElse("")
+    text = startingPeerAddress
     minWidth = 300
   }
 

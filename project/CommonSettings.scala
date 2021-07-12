@@ -21,6 +21,8 @@ import scala.util.Properties
 
 object CommonSettings {
 
+  val previousStableVersion: String = "0.7.0"
+
   private def isCI = {
     Properties
       .envOrNone("CI")
@@ -53,6 +55,9 @@ object CommonSettings {
     //we don't want -Xfatal-warnings for publishing with publish/publishLocal either
     Compile / doc / scalacOptions ~= (_ filterNot (s =>
       s == "-Xfatal-warnings")),
+    //silence all scaladoc warnings generated from invalid syntax
+    //see: https://github.com/bitcoin-s/bitcoin-s/issues/3232
+    Compile / doc / scalacOptions ++= Vector(s"-Wconf:any:ws"),
     Test / console / scalacOptions ++= (Compile / console / scalacOptions).value,
     Test / scalacOptions ++= testCompilerOpts(scalaVersion.value),
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),

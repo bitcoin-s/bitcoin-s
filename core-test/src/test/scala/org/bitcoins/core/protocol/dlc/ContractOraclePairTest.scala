@@ -3,6 +3,7 @@ package org.bitcoins.core.protocol.dlc
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv.{EnumOutcome, OracleAnnouncementV0TLV}
+import org.bitcoins.core.util.sorted.OrderedAnnouncements
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
@@ -32,7 +33,8 @@ class ContractOraclePairTest extends BitcoinSUnitTest {
 
     val multiOracleInfo = EnumMultiOracleInfo(
       2,
-      Vector(oracleInfo1, oracleInfo2, oracleInfo3).map(_.announcement))
+      OrderedAnnouncements(
+        Vector(oracleInfo1, oracleInfo2, oracleInfo3).map(_.announcement)))
 
     assertThrows[IllegalArgumentException](
       ContractOraclePair.EnumPair(contractDescriptor, oracleInfo1)
@@ -70,7 +72,8 @@ class ContractOraclePairTest extends BitcoinSUnitTest {
     val oracleInfo3 = numericOracleInfo(3)
 
     val announcements =
-      Vector(oracleInfo1, oracleInfo2, oracleInfo3).map(_.announcement)
+      OrderedAnnouncements(
+        Vector(oracleInfo1, oracleInfo2, oracleInfo3).map(_.announcement))
     val multiOracleInfoExact = NumericExactMultiOracleInfo(2, announcements)
     val multiOracleInfo = NumericMultiOracleInfo(2,
                                                  announcements,

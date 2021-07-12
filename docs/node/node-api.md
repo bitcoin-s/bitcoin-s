@@ -4,7 +4,6 @@ id: node-api title: Node API
 
 ```scala mdoc:invisible
 import akka.actor.ActorSystem
-import org.bitcoins.core.api._
 import org.bitcoins.core.api.node._
 import org.bitcoins.crypto._
 import org.bitcoins.core.protocol.blockchain.Block
@@ -14,7 +13,6 @@ import org.bitcoins.core.util._
 import org.bitcoins.feeprovider._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.node._
-import org.bitcoins.node.networking.peer.DataMessageHandler._
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.testkit.BitcoinSTestAppConfig

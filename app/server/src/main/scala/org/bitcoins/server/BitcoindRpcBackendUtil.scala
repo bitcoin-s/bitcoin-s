@@ -27,6 +27,7 @@ object BitcoindRpcBackendUtil extends Logging {
   /** Has the wallet process all the blocks it has not seen up until bitcoind's chain tip */
   def syncWalletToBitcoind(bitcoind: BitcoindRpcClient, wallet: Wallet)(implicit
       system: ActorSystem): Future[Unit] = {
+    logger.info("Syncing wallet to bitcoind")
     import system.dispatcher
     for {
       bitcoindHeight <- bitcoind.getBlockCount
@@ -37,7 +38,12 @@ object BitcoindRpcBackendUtil extends Logging {
             txDbs <- wallet.listTransactions()
             lastConfirmedOpt = txDbs.filter(_.blockHashOpt.isDefined).lastOption
             _ <- lastConfirmedOpt match {
-              case None => Future.unit
+              case None =>
+                for {
+                  header <- bitcoind.getBestBlockHeader()
+                  _ <- wallet.stateDescriptorDAO.updateSyncHeight(header.hashBE,
+                                                                  header.height)
+                } yield ()
               case Some(txDb) =>
                 for {
                   heightOpt <- bitcoind.getBlockHeight(txDb.blockHashOpt.get)
@@ -64,11 +70,13 @@ object BitcoindRpcBackendUtil extends Logging {
       bitcoind: BitcoindRpcClient,
       wallet: Wallet)(implicit system: ActorSystem): Future[Wallet] = {
     if (walletHeight > bitcoindHeight) {
-      Future.failed(
-        new RuntimeException(
-          s"Bitcoind and wallet are in incompatible states, " +
-            s"wallet height: $walletHeight, bitcoind height: $bitcoindHeight"))
+      val msg = s"Bitcoind and wallet are in incompatible states, " +
+        s"wallet height: $walletHeight, bitcoind height: $bitcoindHeight"
+      logger.error(msg)
+      Future.failed(new RuntimeException(msg))
     } else {
+      logger.info(s"Syncing from $walletHeight to $bitcoindHeight")
+
       import system.dispatcher
 
       val hasFiltersF = bitcoind
@@ -123,12 +131,11 @@ object BitcoindRpcBackendUtil extends Logging {
     pairedWallet
   }
 
-  def startZMQWalletCallbacks(wallet: Wallet)(implicit
-      bitcoindRpcConf: BitcoindRpcAppConfig): Unit = {
-    require(bitcoindRpcConf.zmqConfig != ZmqConfig.empty,
+  def startZMQWalletCallbacks(wallet: Wallet, zmqConfig: ZmqConfig): Unit = {
+    require(zmqConfig != ZmqConfig.empty,
             "Must have the zmq raw configs defined to setup ZMQ callbacks")
 
-    bitcoindRpcConf.zmqRawTx.foreach { zmq =>
+    zmqConfig.rawTx.foreach { zmq =>
       val rawTxListener: Option[Transaction => Unit] = Some {
         { tx: Transaction =>
           logger.debug(s"Received tx ${tx.txIdBE.hex}, processing")
@@ -144,7 +151,7 @@ object BitcoindRpcBackendUtil extends Logging {
                         rawBlockListener = None).start()
     }
 
-    bitcoindRpcConf.zmqRawBlock.foreach { zmq =>
+    zmqConfig.rawBlock.foreach { zmq =>
       val rawBlockListener: Option[Block => Unit] = Some {
         { block: Block =>
           logger.debug(
@@ -221,7 +228,7 @@ object BitcoindRpcBackendUtil extends Logging {
 
       override def downloadBlocks(
           blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
-        logger.info(s"Fetching ${blockHashes.length} hashes from bitcoind")
+        logger.info(s"Fetching ${blockHashes.length} blocks from bitcoind")
         val numParallelism = Runtime.getRuntime.availableProcessors()
         walletF
           .flatMap { wallet =>

@@ -23,7 +23,6 @@ Here is an example of constructing a wallet and registering a callback, so you c
 
 ```scala mdoc:invisible
 import akka.actor.ActorSystem
-import org.bitcoins.core.api._
 import org.bitcoins.crypto._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee._
@@ -32,7 +31,6 @@ import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.config.WalletAppConfig
 import java.time.Instant

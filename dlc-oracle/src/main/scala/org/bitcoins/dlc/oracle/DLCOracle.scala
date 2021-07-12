@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.util.{FutureUtil, NumberUtil, TimeUtil}
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
@@ -198,7 +199,10 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
       nonces = rValueDbs.map(_.nonce)
 
-      eventTLV = OracleEventV0TLV(nonces, epoch, descriptor, eventName)
+      eventTLV = OracleEventV0TLV(OrderedNonces(nonces),
+                                  epoch,
+                                  descriptor,
+                                  eventName)
 
       announcementBytes = signingVersion.calcAnnouncementHash(eventTLV)
       announcementSignature = signingKey.schnorrSign(announcementBytes)

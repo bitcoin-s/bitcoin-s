@@ -1,5 +1,6 @@
 package org.bitcoins.server
 
+import org.bitcoins.db.util.ServerArgParser
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.util.{AkkaUtil, BitcoinSAsyncTest}
@@ -19,16 +20,18 @@ class ServerRunTest extends BitcoinSAsyncTest {
   // Note: on this test passing it will output a stack trace
   // because runMain calls err.printStackTrace() on failure
   it must "throw errors" in {
-    val datadir = BitcoinSTestAppConfig.tmpDir()
+    implicit val config = BitcoinSTestAppConfig.getNeutrinoTestConfig()
+    val datadir = config.chainConf.datadir
     val directory = new Directory(datadir.toFile)
 
     val randPort = RpcUtil.randomPort
-    val args = Array("--datadir",
-                     datadir.toAbsolutePath.toString,
-                     "--rpcport",
-                     randPort.toString)
+    val args = Vector("--datadir",
+                      datadir.toAbsolutePath.toString,
+                      "--rpcport",
+                      randPort.toString)
 
-    val main = new BitcoinSServerMain(args)
+    val serverArgParser = ServerArgParser(args)
+    val main = new BitcoinSServerMain(serverArgParser)
     val runMainF = main.start()
     // Use Exception because different errors can occur
     val assertionF: Future[Assertion] = recoverToSucceededIf[Exception] {

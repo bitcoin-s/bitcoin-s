@@ -54,8 +54,8 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
         } yield (walletA, walletB),
       destroy = { fundedWallets: (FundedDLCWallet, FundedDLCWallet) =>
         for {
-          _ <- destroyWallet(fundedWallets._1.wallet)
-          _ <- destroyWallet(fundedWallets._2.wallet)
+          _ <- destroyDLCWallet(fundedWallets._1.wallet)
+          _ <- destroyDLCWallet(fundedWallets._2.wallet)
         } yield ()
       }
     )(test)
@@ -92,10 +92,8 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
       },
       destroy = { dlcWallets: (InitializedDLCWallet, InitializedDLCWallet) =>
         for {
-          _ <- destroyWallet(dlcWallets._1.wallet)
-          _ <- destroyWallet(dlcWallets._2.wallet)
-          _ <- dlcWallets._1.wallet.dlcConfig.stop()
-          _ <- dlcWallets._2.wallet.dlcConfig.stop()
+          _ <- destroyDLCWallet(dlcWallets._1.wallet)
+          _ <- destroyDLCWallet(dlcWallets._2.wallet)
         } yield ()
       }
     )(test)

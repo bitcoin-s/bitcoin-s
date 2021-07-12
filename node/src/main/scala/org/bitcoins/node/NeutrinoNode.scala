@@ -65,22 +65,20 @@ case class NeutrinoNode(
     * @return
     */
   override def sync(): Future[Unit] = {
+    val blockchainsF =
+      BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
     for {
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
       bestFilterHeaderOpt <- chainApi.getBestFilterHeader()
       bestFilterOpt <- chainApi.getBestFilter()
-      blockchains <-
-        BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
+      blockchains <- blockchainsF
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
       _ <- peerMsgSender.sendGetHeadersMessage(cachedHeaders)
-      tip = blockchains
-        .map(_.tip)
-        .head //should be safe since we have genesis header inserted in db
       _ <- syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
                        bestFilterOpt = bestFilterOpt,
-                       bestBlockHeader = tip,
+                       bestBlockHeader = header,
                        chainApi = chainApi)
     } yield {
       logger.info(
