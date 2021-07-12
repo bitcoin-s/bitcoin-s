@@ -53,8 +53,10 @@ class AcceptOfferDialog {
       val (oracleKey, eventId) = offer.contractInfo.oracleInfo match {
         case OracleInfoV0TLV(announcement) =>
           (announcement.publicKey.hex, announcement.eventTLV.eventId)
-        case _: MultiOracleInfoTLV =>
-          throw new RuntimeException("This is impossible.")
+        case multi: MultiOracleInfoTLV =>
+          // todo display all oracles
+          val announcement = multi.oracles.head
+          (announcement.publicKey.hex, announcement.eventTLV.eventId)
       }
 
       gridPane.add(new Label("Event Id"), 0, nextRow)
