@@ -14,11 +14,11 @@ import scala.util.Try
   * Created by rorp
   *
   * @param connection      underlying TcpConnection
-  * @param credentials_opt optional username/password for authentication
+  * @param credentialsOpt optional username/password for authentication
   */
 class Socks5Connection(
     connection: ActorRef,
-    credentials_opt: Option[Credentials],
+    credentialsOpt: Option[Credentials],
     command: Socks5Connect)
     extends Actor
     with ActorLogging {
@@ -27,7 +27,7 @@ class Socks5Connection(
 
   context watch connection
 
-  val passwordAuth: Boolean = credentials_opt.isDefined
+  val passwordAuth: Boolean = credentialsOpt.isDefined
 
   var isConnected: Boolean = false
 
@@ -40,7 +40,7 @@ class Socks5Connection(
   def greetings: Receive = { case Tcp.Received(data) =>
     if (parseGreetings(data, passwordAuth) == PasswordAuth) {
       context become authenticate
-      val credentials = credentials_opt.getOrElse(
+      val credentials = credentialsOpt.getOrElse(
         throw Socks5Error("Credentials are not defined"))
       connection ! Tcp.Write(
         socks5PasswordAuthenticationRequest(credentials.username,
@@ -127,7 +127,7 @@ object Socks5Connection {
     (0x08, "Address type not supported")
   )
 
-  def socks5Greeting(passwordAuth: Boolean) = ByteString(
+  def socks5Greeting(passwordAuth: Boolean): ByteString = ByteString(
     0x05, // SOCKS version
     0x01, // number of authentication methods supported
     if (passwordAuth) PasswordAuth else NoAuth
