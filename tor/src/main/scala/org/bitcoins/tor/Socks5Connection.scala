@@ -243,7 +243,7 @@ object Socks5Connection {
 
 case class Socks5ProxyParams(
     address: InetSocketAddress,
-    credentials_opt: Option[Credentials],
+    credentialsOpt: Option[Credentials],
     randomizeCredentials: Boolean,
     useForIPv4: Boolean,
     useForIPv6: Boolean,
@@ -259,6 +259,6 @@ object Socks5ProxyParams {
         Socks5Connection.Credentials(CryptoUtil.randomBytes(16).toHex,
                                      CryptoUtil.randomBytes(16).toHex))
     } else {
-      proxyParams.credentials_opt
+      proxyParams.credentialsOpt
     }
 }

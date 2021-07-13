@@ -102,7 +102,13 @@ class Socks5ProxyGraphStage(
 
       def sendAuth(): Unit = {
         state = Authenticating
-        send(authMessage.get)
+        authMessage match {
+          case Some(message) => send(message)
+          case None =>
+            failStage(
+              new IllegalStateException(
+                "Cannot send AUTH message: undefined credentials"))
+        }
       }
 
       def sendConnect(): Unit = {

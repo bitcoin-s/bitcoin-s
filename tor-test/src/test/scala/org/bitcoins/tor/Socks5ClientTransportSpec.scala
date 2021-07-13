@@ -17,8 +17,8 @@ class Socks5ClientTransportSpec extends BitcoinSAsyncTest {
 
   val proxyParams = Socks5ProxyParams(
     address = InetSocketAddress.createUnresolved("127.0.0.1", 9050),
-    credentials_opt = None,
-    randomizeCredentials = true,
+    credentialsOpt = None,
+    randomizeCredentials = false,
     useForTor = true,
     useForIPv4 = true,
     useForIPv6 = true
