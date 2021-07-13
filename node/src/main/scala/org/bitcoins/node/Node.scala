@@ -125,6 +125,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       peerMsgSender.connect()
       val isInitializedF = for {
         _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized,
+                                            maxTries = 200,
                                             interval = 250.millis)
       } yield ()
 
