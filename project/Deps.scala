@@ -27,7 +27,7 @@ object Deps {
     val scalaFxV = "16.0.0-R24"
     val javaFxV = "17-ea+8"
 
-    val asyncNewScalaV = "0.10.0"
+    val asyncNewScalaV = "1.0.0"
 
     val flywayV = "6.4.2"
     val postgresV = "42.2.23"
