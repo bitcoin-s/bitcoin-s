@@ -77,10 +77,10 @@ trait NodeUnitTest extends BaseNodeTest {
         require(appConfig.nodeType == NodeType.SpvNode)
         for {
           bitcoind <- BitcoinSFixture.createBitcoind(versionOpt)
-          node <- NodeUnitTest.createSpvNode(createPeer(bitcoind))(
-            system,
-            appConfig.chainConf,
-            appConfig.nodeConf)
+          peer <- createPeer(bitcoind)
+          node <- NodeUnitTest.createSpvNode(peer)(system,
+                                                   appConfig.chainConf,
+                                                   appConfig.nodeConf)
           started <- node.start()
           _ <- NodeUnitTest.syncSpvNode(started, bitcoind)
         } yield SpvNodeConnectedWithBitcoind(node, bitcoind)
@@ -104,10 +104,10 @@ trait NodeUnitTest extends BaseNodeTest {
           BitcoinSFixture
             .createBitcoindWithFunds(Some(V21))
             .map(_.asInstanceOf[BitcoindV21RpcClient])
-        node <- NodeUnitTest.createSpvNode(createPeer(bitcoind))(
-          system,
-          appConfig.chainConf,
-          appConfig.nodeConf)
+        peer <- createPeer(bitcoind)
+        node <- NodeUnitTest.createSpvNode(peer)(system,
+                                                 appConfig.chainConf,
+                                                 appConfig.nodeConf)
         started <- node.start()
         _ <- NodeUnitTest.syncSpvNode(started, bitcoind)
       } yield SpvNodeConnectedWithBitcoindV21(node, bitcoind)
@@ -303,7 +303,8 @@ object NodeUnitTest extends P2PLogger {
     import system.dispatcher
     require(appConfig.nodeType == NodeType.SpvNode)
     for {
-      node <- createSpvNode(createPeer(bitcoind))
+      peer <- createPeer(bitcoind)
+      node <- createSpvNode(peer)
       _ <- appConfig.walletConf.start()
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoind,
@@ -423,15 +424,9 @@ object NodeUnitTest extends P2PLogger {
     Future.successful(receiver)
   }
 
-  def peerSocketAddress(
-      bitcoindRpcClient: BitcoindRpcClient): InetSocketAddress = {
-    NodeTestUtil.getBitcoindSocketAddress(bitcoindRpcClient)
-  }
-
-  def createPeer(bitcoind: BitcoindRpcClient): Peer = {
+  def createPeer(bitcoind: BitcoindRpcClient)(implicit
+      executionContext: ExecutionContext): Future[Peer] = {
     NodeTestUtil.getBitcoindPeer(bitcoind)
-//    val socket = peerSocketAddress(bitcoind)
-//    Peer(id = None, socket = socket)
   }
 
   def emptyPeer: Peer = {
@@ -483,8 +478,8 @@ object NodeUnitTest extends P2PLogger {
       _ <- checkConfigF
       chainHandler <- ChainUnitTest.createChainHandler()
     } yield chainHandler
-    val peer = createPeer(bitcoind)
     val nodeF = for {
+      peer <- createPeer(bitcoind)
       chainApi <- chainApiF
     } yield {
       val dmh = DataMessageHandler(chainApi)

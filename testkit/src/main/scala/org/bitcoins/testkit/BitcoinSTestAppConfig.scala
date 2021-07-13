@@ -14,7 +14,7 @@ import scala.util.Properties
 
 object BitcoinSTestAppConfig {
 
-  lazy val useTor: Boolean = Properties
+  lazy val torEnabled: Boolean = Properties
     .envOrNone("TOR")
     .isDefined
 
@@ -48,8 +48,8 @@ object BitcoinSTestAppConfig {
          |bitcoin-s {
          |  node {
          |     mode = spv
-         |     socks5.enabled = ${useTor}
          |  }
+         |  proxy.enabled = ${torEnabled}
          |}
       """.stripMargin
     }
@@ -66,8 +66,8 @@ object BitcoinSTestAppConfig {
            |bitcoin-s {
            |  node {
            |     mode = spv
-           |     socks5.enabled = ${useTor}
            |  }
+           |  proxy.enabled = ${torEnabled}
            |}
       """.stripMargin
       }
@@ -86,8 +86,8 @@ object BitcoinSTestAppConfig {
          |bitcoin-s {
          |  node {
          |     mode = neutrino
-         |     socks5.enabled = ${useTor}
          |  }
+         |  proxy.enabled = ${torEnabled}
          |}
       """.stripMargin
     }
@@ -103,8 +103,8 @@ object BitcoinSTestAppConfig {
            |bitcoin-s {
            |  node {
            |     mode = neutrino
-           |     socks5.enabled = ${useTor}
            |  }
+           |  proxy.enabled = ${torEnabled}
            |}
       """.stripMargin
       }

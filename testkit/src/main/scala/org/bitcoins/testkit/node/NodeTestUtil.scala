@@ -12,13 +12,13 @@ import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.tor.Socks5ProxyParams
 
 import java.net.InetSocketAddress
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Properties
 
 abstract class NodeTestUtil extends P2PLogger {
 
-  lazy val useTor: Boolean = Properties
+  lazy val torEnabled: Boolean = Properties
     .envOrNone("TOR")
     .isDefined
 
@@ -33,28 +33,30 @@ abstract class NodeTestUtil extends P2PLogger {
     * @param bitcoindRpcClient
     * @return
     */
-  def getBitcoindSocketAddress(
-      bitcoindRpcClient: BitcoindRpcClient): InetSocketAddress = {
-    if (useTor) {
+  def getBitcoindSocketAddress(bitcoindRpcClient: BitcoindRpcClient)(implicit
+      executionContext: ExecutionContext): Future[InetSocketAddress] = {
+    if (torEnabled) {
+      for {
+        networkInfo <- bitcoindRpcClient.getNetworkInfo
+      } yield {
+        val onionAddress = networkInfo.localaddresses
+          .find(_.address.endsWith(".onion"))
+          .getOrElse(throw new IllegalArgumentException(
+            s"bitcoind instance is not configured to use Tor: ${bitcoindRpcClient}"))
 
-      val networkInfo =
-        Await.result(bitcoindRpcClient.getNetworkInfo, 1000.seconds)
+        InetSocketAddress.createUnresolved(onionAddress.address,
+                                           onionAddress.port)
 
-      val onionAddress = networkInfo.localaddresses
-        .find(_.address.endsWith(".onion"))
-        .getOrElse(throw new IllegalArgumentException(
-          s"bitcoind instance is not configured to use Tor: ${bitcoindRpcClient}"))
-
-      InetSocketAddress.createUnresolved(onionAddress.address,
-                                         onionAddress.port)
+      }
     } else {
       val instance = bitcoindRpcClient.instance
-      new InetSocketAddress(instance.uri.getHost, instance.p2pPort)
+      Future.successful(
+        new InetSocketAddress(instance.uri.getHost, instance.p2pPort))
     }
   }
 
   def getSocks5ProxyParams: Option[Socks5ProxyParams] = {
-    if (useTor) {
+    if (torEnabled) {
       Some(
         Socks5ProxyParams(
           address = InetSocketAddress.createUnresolved("127.0.0.1", 9050),
@@ -67,11 +69,14 @@ abstract class NodeTestUtil extends P2PLogger {
   /** Gets the [[org.bitcoins.node.models.Peer]] that
     * corresponds to [[org.bitcoins.rpc.client.common.BitcoindRpcClient]]
     */
-  def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient): Peer = {
-    val socket = getBitcoindSocketAddress(bitcoindRpcClient)
-    val socks5ProxyParams = getSocks5ProxyParams
-    Peer(socket, socks5ProxyParams = socks5ProxyParams)
-  }
+  def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient)(implicit
+      executionContext: ExecutionContext): Future[Peer] =
+    for {
+      socket <- getBitcoindSocketAddress(bitcoindRpcClient)
+    } yield {
+      val socks5ProxyParams = getSocks5ProxyParams
+      Peer(socket, socks5ProxyParams = socks5ProxyParams)
+    }
 
   /** Checks if the given node and bitcoind is synced */
   def isSameBestHash(node: Node, rpc: BitcoindRpcClient)(implicit

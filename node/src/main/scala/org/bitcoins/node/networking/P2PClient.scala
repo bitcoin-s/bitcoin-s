@@ -18,6 +18,7 @@ import org.bitcoins.tor.Socks5Connection.{Socks5Connect, Socks5Connected}
 import org.bitcoins.tor.{Socks5Connection, Socks5ProxyParams}
 import scodec.bits.ByteVector
 
+import java.net.InetSocketAddress
 import scala.annotation.tailrec
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -96,7 +97,7 @@ case class P2PClientActor(
         context stop self
     }
 
-  def receive: Receive = {
+  def receive: Receive = LoggingReceive {
     case P2PClient.ConnectCommand =>
       val (peerOrProxyAddress, proxyParams) =
         peer.socks5ProxyParams match {
@@ -118,51 +119,63 @@ case class P2PClientActor(
       sender() ! handleMetaMsgDisconnected(metaMsg)
   }
 
-  def connecting(proxyParams: Option[Socks5ProxyParams]): Receive = {
-    case Tcp.CommandFailed(c: Tcp.Connect) =>
-      val peerOrProxyAddress = c.remoteAddress
-      logger.error(s"connection failed to ${peerOrProxyAddress} ${proxyParams}")
-//      context stop self
+  def connecting(proxyParams: Option[Socks5ProxyParams]): Receive =
+    LoggingReceive {
+      case Tcp.CommandFailed(c: Tcp.Connect) =>
+        val peerOrProxyAddress = c.remoteAddress
+        logger.error(
+          s"connection failed to ${peerOrProxyAddress} ${proxyParams}")
 
-    case event @ Tcp.Connected(peerOrProxyAddress, _) =>
-      val connection = sender()
-      proxyParams match {
-        case Some(proxyParams) =>
-          val proxyAddress = peerOrProxyAddress
-          val remoteAddress = peer.socket
-          logger.info(s"connected to SOCKS5 proxy ${proxyAddress}")
-          logger.info(
-            s"connecting to ${remoteAddress} via SOCKS5 ${proxyAddress}")
-          val proxy = context.actorOf(
-            Socks5Connection.props(
-              sender(),
-              Socks5ProxyParams.proxyCredentials(proxyParams),
-              Socks5Connect(remoteAddress)),
-            "Socks5Connection")
-          context watch proxy
-          context become {
-            case Tcp.CommandFailed(_: Socks5Connect) =>
-              logger.error(
-                s"connection failed to ${remoteAddress} via SOCKS5 ${proxyAddress}")
-              context stop self
-            case Socks5Connected(_) =>
-              logger.info(
-                s"connected to ${remoteAddress} via SOCKS5 proxy ${proxyAddress}")
-              context unwatch proxy
-              context watch connection
-              val _ = handleEvent(event, proxy, ByteVector.empty)
-            case Terminated(actor) if actor == proxy =>
-              context stop self
-            case metaMsg: P2PClient.MetaMsg =>
-              sender() ! handleMetaMsgDisconnected(metaMsg)
-          }
-        case None =>
-          val peerAddress = peerOrProxyAddress
-          logger.info(s"connected to ${peerAddress}")
-          context watch connection
-          val _ = handleEvent(event, connection, ByteVector.empty)
-      }
+      case event @ Tcp.Connected(peerOrProxyAddress, _) =>
+        val connection = sender()
+        proxyParams match {
+          case Some(proxyParams) =>
+            val proxyAddress = peerOrProxyAddress
+            val remoteAddress = peer.socket
+            logger.info(s"connected to SOCKS5 proxy ${proxyAddress}")
+            logger.info(
+              s"connecting to ${remoteAddress} via SOCKS5 ${proxyAddress}")
+            val proxy =
+              context.actorOf(Socks5Connection.props(
+                                sender(),
+                                Socks5ProxyParams.proxyCredentials(proxyParams),
+                                Socks5Connect(remoteAddress)),
+                              "Socks5Connection")
+            context watch proxy
+            context become socks5Connecting(event,
+                                            proxy,
+                                            connection,
+                                            remoteAddress,
+                                            proxyAddress)
+          case None =>
+            val peerAddress = peerOrProxyAddress
+            logger.info(s"connected to ${peerAddress}")
+            context watch connection
+            val _ = handleEvent(event, connection, ByteVector.empty)
+        }
 
+      case metaMsg: P2PClient.MetaMsg =>
+        sender() ! handleMetaMsgDisconnected(metaMsg)
+    }
+
+  def socks5Connecting(
+      event: Tcp.Connected,
+      proxy: ActorRef,
+      connection: ActorRef,
+      remoteAddress: InetSocketAddress,
+      proxyAddress: InetSocketAddress): Receive = LoggingReceive {
+    case Tcp.CommandFailed(_: Socks5Connect) =>
+      logger.error(
+        s"connection failed to ${remoteAddress} via SOCKS5 ${proxyAddress}")
+      context stop self
+    case Socks5Connected(_) =>
+      logger.info(
+        s"connected to ${remoteAddress} via SOCKS5 proxy ${proxyAddress}")
+      context unwatch proxy
+      context watch connection
+      val _ = handleEvent(event, proxy, ByteVector.empty)
+    case Terminated(actor) if actor == proxy =>
+      context stop self
     case metaMsg: P2PClient.MetaMsg =>
       sender() ! handleMetaMsgDisconnected(metaMsg)
   }

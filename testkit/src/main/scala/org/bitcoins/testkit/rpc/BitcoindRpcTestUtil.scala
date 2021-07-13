@@ -59,7 +59,7 @@ trait BitcoindRpcTestUtil extends Logging {
   type RpcClientAccum =
     mutable.Builder[BitcoindRpcClient, Vector[BitcoindRpcClient]]
 
-  lazy val useTor: Boolean = Properties
+  lazy val torEnabled: Boolean = Properties
     .envOrNone("TOR")
     .isDefined
 
@@ -127,7 +127,7 @@ trait BitcoindRpcTestUtil extends Logging {
         conf
       }
 
-    val configTor = if (useTor) {
+    val configTor = if (torEnabled) {
       config +
         """
           |[regtest]
