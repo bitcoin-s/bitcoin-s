@@ -59,6 +59,10 @@ trait BitcoindRpcTestUtil extends Logging {
   type RpcClientAccum =
     mutable.Builder[BitcoindRpcClient, Vector[BitcoindRpcClient]]
 
+  lazy val torEnabled: Boolean = Properties
+    .envOrNone("TOR")
+    .isDefined
+
   private def newUri: URI = new URI(s"http://localhost:${RpcUtil.randomPort}")
 
   private def newInetSocketAddres: InetSocketAddress = {
@@ -114,14 +118,27 @@ trait BitcoindRpcTestUtil extends Logging {
                   |prune=${if (pruneMode) 1 else 0}
     """.stripMargin
     val config =
-      if (blockFilterIndex)
+      if (blockFilterIndex) {
         conf + """
                  |blockfilterindex=1
                  |peerblockfilters=1
                  |""".stripMargin
-      else
+      } else {
         conf
-    BitcoindConfig(config = config, datadir = FileUtil.tmpDir())
+      }
+
+    val configTor = if (torEnabled) {
+      config +
+        """
+          |[regtest]
+          |proxy=127.0.0.1:9050
+          |listen=1
+          |bind=127.0.0.1
+          |""".stripMargin
+    } else {
+      config
+    }
+    BitcoindConfig(config = configTor, datadir = FileUtil.tmpDir())
   }
 
   /** Creates a `bitcoind` config within the system temp

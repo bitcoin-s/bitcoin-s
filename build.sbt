@@ -496,6 +496,12 @@ def isCI = {
     .isDefined
 }
 
+def isTor = {
+  Properties
+    .envOrNone("TOR")
+    .isDefined
+}
+
 lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
   .settings(CommonSettings.testSettings: _*)
@@ -547,7 +553,8 @@ lazy val node =
       coreJVM,
       chain,
       dbCommons,
-      bitcoindRpc
+      bitcoindRpc,
+      tor
     )
 
 lazy val nodeTest =
@@ -563,7 +570,8 @@ lazy val nodeTest =
       // Scalatest issue:
       // https://github.com/scalatest/scalatest/issues/556
       Test / fork := false,
-      libraryDependencies ++= Deps.nodeTest.value
+      libraryDependencies ++= Deps.nodeTest.value,
+      parallelExecution := !isTor
     )
     .dependsOn(
       coreJVM % testAndCompile,

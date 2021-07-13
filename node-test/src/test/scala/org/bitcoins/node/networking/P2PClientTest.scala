@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
 import org.bitcoins.node.models.Peer
+import org.bitcoins.node.networking.P2PClient.ConnectCommand
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.node.{
@@ -29,14 +30,14 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 
-  lazy val bitcoindPeerF = bitcoindRpcF.map { bitcoind =>
+  lazy val bitcoindPeerF = bitcoindRpcF.flatMap { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
   }
 
   lazy val bitcoindRpc2F =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 
-  lazy val bitcoindPeer2F = bitcoindRpcF.map { bitcoind =>
+  lazy val bitcoindPeer2F = bitcoindRpcF.flatMap { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
   }
   behavior of "parseIndividualMessages"
@@ -170,7 +171,6 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
   def connectAndDisconnect(peer: Peer): Future[Assertion] = {
 
     val probe = TestProbe()
-    val remote = peer.socket
     val peerMessageReceiverF =
       for {
         node <- NodeUnitTest.buildNode(peer)
@@ -187,8 +187,10 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
 
     val isConnectedF = for {
       p2pClient <- p2pClientF
-      _ = p2pClient.actor ! Tcp.Connect(remote)
-      isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected)
+      _ = p2pClient.actor ! ConnectCommand
+      isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected,
+                                                        interval = 1.second,
+                                                        maxTries = 100)
     } yield isConnected
 
     isConnectedF.flatMap { _ =>
@@ -197,7 +199,8 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
         _ = p2pClient.actor ! Tcp.Abort
         isDisconnected <-
           TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isDisconnected,
-                                             interval = 1.seconds)
+                                             interval = 1.second,
+                                             maxTries = 100)
       } yield isDisconnected
 
       isDisconnectedF.map { _ =>

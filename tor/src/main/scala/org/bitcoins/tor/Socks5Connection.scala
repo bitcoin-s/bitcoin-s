@@ -1,12 +1,12 @@
 package org.bitcoins.tor
 
-import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import akka.io.Tcp
 import akka.util.ByteString
-import Socks5Connection.{Credentials, Socks5Connect}
 import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.tor.Socks5Connection.{Credentials, Socks5Connect}
 
+import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
 import scala.util.Try
 
 /** Simple socks 5 client. It should be given a new connection, and will
@@ -135,12 +135,15 @@ object Socks5Connection {
 
   def socks5PasswordAuthenticationRequest(
       username: String,
-      password: String): ByteString =
+      password: String): ByteString = {
+    val usernameBytes = ByteString(username)
+    val passwordBytes = ByteString(password)
     ByteString(0x01, // version of username/password authentication
-               username.length.toByte) ++
-      ByteString(username) ++
-      ByteString(password.length.toByte) ++
-      ByteString(password)
+               usernameBytes.length.toByte) ++
+      usernameBytes ++
+      ByteString(passwordBytes.length.toByte) ++
+      passwordBytes
+  }
 
   def socks5ConnectionRequest(address: InetSocketAddress): ByteString = {
     ByteString(0x05, // SOCKS version
@@ -244,10 +247,7 @@ object Socks5Connection {
 case class Socks5ProxyParams(
     address: InetSocketAddress,
     credentialsOpt: Option[Credentials],
-    randomizeCredentials: Boolean,
-    useForIPv4: Boolean,
-    useForIPv6: Boolean,
-    useForTor: Boolean)
+    randomizeCredentials: Boolean)
 
 object Socks5ProxyParams {
 
