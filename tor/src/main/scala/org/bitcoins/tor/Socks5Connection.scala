@@ -7,6 +7,8 @@ import akka.util.ByteString
 import Socks5Connection.{Credentials, Socks5Connect}
 import org.bitcoins.crypto.CryptoUtil
 
+import scala.util.Try
+
 /** Simple socks 5 client. It should be given a new connection, and will
   *
   * Created by rorp
@@ -52,10 +54,11 @@ class Socks5Connection(
   }
 
   def authenticate: Receive = { case Tcp.Received(data) =>
-    parseAuth(data)
-    context become connectionRequest
-    connection ! Tcp.Write(socks5ConnectionRequest(command.address))
-    connection ! Tcp.ResumeReading
+    if (parseAuth(data)) {
+      context become connectionRequest
+      connection ! Tcp.Write(socks5ConnectionRequest(command.address))
+      connection ! Tcp.ResumeReading
+    }
   }
 
   def connectionRequest: Receive = { case Tcp.Received(data) =>
@@ -187,11 +190,13 @@ object Socks5Connection {
     }
   }
 
-  def parseAuth(data: ByteString): Unit = {
+  def parseAuth(data: ByteString): Boolean = {
     if (data(0) != 0x01) {
       throw Socks5Error("Invalid SOCKS5 auth method")
     } else if (data(1) != 0) {
       throw Socks5Error("SOCKS5 authentication failed")
+    } else {
+      true
     }
   }
 
@@ -221,10 +226,18 @@ object Socks5Connection {
           data.copyToArray(ip, 4, 4 + ip.length)
           val port = data(4 + ip.length).toInt << 8 | data(4 + ip.length + 1)
           new InetSocketAddress(InetAddress.getByAddress(ip), port)
-        case _ => throw Socks5Error(s"Unrecognized address type")
+        case b => throw Socks5Error(s"Unrecognized address type $b")
       }
     }
   }
+
+  def tryParseGreetings(data: ByteString, passwordAuth: Boolean): Try[Byte] =
+    Try(parseGreetings(data, passwordAuth))
+
+  def tryParseAuth(data: ByteString): Try[Boolean] = Try(parseAuth(data))
+
+  def tryParseConnectedAddress(data: ByteString): Try[InetSocketAddress] = Try(
+    parseConnectedAddress(data))
 
 }
 

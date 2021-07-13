@@ -2,8 +2,6 @@ package org.bitcoins.tor
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-
-import scala.util.{Failure, Success, Try}
 import akka.http.scaladsl.ClientTransport.TCP
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.{ClientTransport, Http}
@@ -14,6 +12,7 @@ import akka.util.ByteString
 
 import java.net.InetSocketAddress
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 class Socks5ClientTransport(proxyParams: Socks5ProxyParams)
     extends ClientTransport {
@@ -69,8 +68,8 @@ class Socks5ProxyGraphStage(
   val socks5In: Inlet[ByteString] = Inlet("OutgoingSOCKS5.in")
   val socks5Out: Outlet[ByteString] = Outlet("OutgoingSOCKS5.out")
 
-  import Socks5ProxyGraphStage._
   import Socks5Connection._
+  import Socks5ProxyGraphStage._
 
   override def shape: BidiShape[
     ByteString,
@@ -114,7 +113,7 @@ class Socks5ProxyGraphStage(
       def parseResponse(data: ByteString): Unit = {
         state match {
           case Greeting =>
-            Try(parseGreetings(data, credentialsOpt.nonEmpty)) match {
+            tryParseGreetings(data, credentialsOpt.nonEmpty) match {
               case Success(authMethod) =>
                 if (authMethod == PasswordAuth) {
                   sendAuth()
@@ -125,14 +124,18 @@ class Socks5ProxyGraphStage(
                 failStage(ex)
             }
           case Authenticating =>
-            Try(parseAuth(data)) match {
-              case Success(_) =>
-                sendConnect()
+            tryParseAuth(data) match {
+              case Success(authenticated) =>
+                if (authenticated) {
+                  sendConnect()
+                } else {
+                  failStage(new IllegalStateException("SOCKS5 AUTH failed"))
+                }
               case Failure(ex) =>
                 failStage(ex)
             }
           case Connecting =>
-            Try(parseConnectedAddress(data)) match {
+            tryParseConnectedAddress(data) match {
               case Success(_) =>
                 state = Connected
                 passAlong(bytesIn, socks5Out)
@@ -142,7 +145,7 @@ class Socks5ProxyGraphStage(
                 failStage(ex)
             }
           case _ =>
-            failStage(new IllegalArgumentException("Invalid state"))
+            failStage(new IllegalStateException("Invalid state"))
         }
       }
 
