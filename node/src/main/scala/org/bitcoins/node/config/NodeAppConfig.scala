@@ -88,10 +88,10 @@ case class NodeAppConfig(
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peer: Peer)(
+  def createNode(peers: Vector[Peer])(
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
-    NodeAppConfig.createNode(peer)(this, chainConf, system)
+    NodeAppConfig.createNode(peers)(this, chainConf, system)
   }
 }
 
@@ -107,7 +107,7 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
     NodeAppConfig(datadir, confs: _*)
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peer: Peer)(implicit
+  def createNode(peers: Vector[Peer])(implicit
       nodeConf: NodeAppConfig,
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
@@ -123,9 +123,9 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
 
     nodeConf.nodeType match {
       case NodeType.SpvNode =>
-        dmhF.map(dmh => SpvNode(peer, dmh, nodeConf, chainConf, system))
+        dmhF.map(dmh => SpvNode(peers, dmh, nodeConf, chainConf, system))
       case NodeType.NeutrinoNode =>
-        dmhF.map(dmh => NeutrinoNode(peer, dmh, nodeConf, chainConf, system))
+        dmhF.map(dmh => NeutrinoNode(peers, dmh, nodeConf, chainConf, system))
       case NodeType.FullNode =>
         Future.failed(new RuntimeException("Not implemented"))
       case NodeType.BitcoindBackend =>

@@ -58,16 +58,16 @@
     <!-- ╚═════════════════╝ -->
 
     <!-- See incoming message names and the peer it's sent from -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="INFO"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="DEBUG"/>
 
     <!-- See outgoing message names and the peer it's sent to -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="INFO"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="DEBUG"/>
 
     <!-- Inspect handling of headers and inventory messages  -->
-    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO"/>
+    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="DEBUG"/>
 
     <!-- inspect TCP details -->
-    <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
+    <logger name="org.bitcoins.node.networking.P2PClientActor" level="DEBUG"/>
 
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->

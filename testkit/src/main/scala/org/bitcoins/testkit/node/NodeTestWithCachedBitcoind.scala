@@ -7,16 +7,8 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest.{createPeer, syncNeutrinoNode}
-import org.bitcoins.testkit.node.fixture.{
-  NeutrinoNodeConnectedWithBitcoind,
-  SpvNodeConnectedWithBitcoind,
-  SpvNodeConnectedWithBitcoindV19
-}
-import org.bitcoins.testkit.rpc.{
-  CachedBitcoind,
-  CachedBitcoindNewest,
-  CachedBitcoindV19
-}
+import org.bitcoins.testkit.node.fixture.{NeutrinoNodeConnectedWithBitcoinds, SpvNodeConnectedWithBitcoind, SpvNodeConnectedWithBitcoindV19}
+import org.bitcoins.testkit.rpc.{BitcoindFixturesCachedPairV21, CachedBitcoind, CachedBitcoindNewest, CachedBitcoindV19}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.WalletCallbacks
 import org.scalatest.FutureOutcome
@@ -75,25 +67,26 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
       })(test)
   }
 
-  def withNeutrinoNodeConnectedToBitcoind(
+  def withNeutrinoNodeConnectedToBitcoinds(
       test: OneArgAsyncTest,
-      bitcoind: BitcoindRpcClient)(implicit
+      bitcoinds: Vector[BitcoindRpcClient])(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoind] = { () =>
+      NeutrinoNodeConnectedWithBitcoinds] = { () =>
       require(appConfig.nodeType == NodeType.NeutrinoNode)
       for {
-        node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
+        node <- NodeUnitTest.createNeutrinoNode(bitcoinds)(system,
                                                           appConfig.chainConf,
                                                           appConfig.nodeConf)
         startedNode <- node.start()
-        syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
-      } yield NeutrinoNodeConnectedWithBitcoind(syncedNode, bitcoind)
+        //is it enough to just sync with one bitcoind client for a test?
+        syncedNode <- syncNeutrinoNode(startedNode, bitcoinds(0))
+      } yield NeutrinoNodeConnectedWithBitcoinds(syncedNode, bitcoinds)
     }
-    makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
+    makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
-      { case x: NeutrinoNodeConnectedWithBitcoind =>
+      { case x: NeutrinoNodeConnectedWithBitcoinds =>
         tearDownNode(x.node)
       })(test)
   }
@@ -157,6 +150,16 @@ trait NodeTestWithCachedBitcoindNewest
 
   override def afterAll(): Unit = {
     super[CachedBitcoindNewest].afterAll()
+    super[NodeTestWithCachedBitcoind].afterAll()
+  }
+}
+
+trait NodeTestWithCachedBitcoindPair
+  extends NodeTestWithCachedBitcoind
+    with BitcoindFixturesCachedPairV21 {
+
+  override def afterAll(): Unit = {
+    super[BitcoindFixturesCachedPairV21].afterAll()
     super[NodeTestWithCachedBitcoind].afterAll()
   }
 }

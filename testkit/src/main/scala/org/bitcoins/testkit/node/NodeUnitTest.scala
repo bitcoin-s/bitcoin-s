@@ -210,7 +210,7 @@ object NodeUnitTest extends P2PLogger {
 
     val dmh = DataMessageHandler(chainApi)
 
-    NeutrinoNode(peer, dmh, nodeConf, chainConf, system)
+    NeutrinoNode(Vector(peer), dmh, nodeConf, chainConf, system)
   }
 
   def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(implicit
@@ -457,7 +457,7 @@ object NodeUnitTest extends P2PLogger {
     } yield {
       val dmh = DataMessageHandler(chainHandler)
       SpvNode(
-        nodePeer = peer,
+        nodePeer = Vector(peer),
         dataMessageHandler = dmh,
         nodeConfig = nodeAppConfig,
         chainConfig = chainAppConfig,
@@ -487,11 +487,42 @@ object NodeUnitTest extends P2PLogger {
       chainApi <- chainApiF
     } yield {
       val dmh = DataMessageHandler(chainApi)
-      NeutrinoNode(nodePeer = peer,
+      NeutrinoNode(nodePeer = Vector(peer),
                    dataMessageHandler = dmh,
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
                    actorSystem = system)
+    }
+
+    nodeF
+  }
+
+  /** Creates a Neutrino node peered with the given bitcoind client, this method
+    * also calls [[org.bitcoins.node.Node.start() start]] to start the node
+    */
+  def createNeutrinoNode(bitcoinds: Vector[BitcoindRpcClient])(implicit
+                                                      system: ActorSystem,
+                                                      chainAppConfig: ChainAppConfig,
+                                                      nodeAppConfig: NodeAppConfig): Future[NeutrinoNode] = {
+    import system.dispatcher
+
+    val checkConfigF = Future {
+      assert(nodeAppConfig.nodeType == NodeType.NeutrinoNode)
+    }
+    val chainApiF = for {
+      _ <- checkConfigF
+      chainHandler <- ChainUnitTest.createChainHandler()
+    } yield chainHandler
+    val peers = bitcoinds.map(createPeer(_))
+    val nodeF = for {
+      chainApi <- chainApiF
+    } yield {
+      val dmh = DataMessageHandler(chainApi)
+      NeutrinoNode(nodePeer = peers,
+        dataMessageHandler = dmh,
+        nodeConfig = nodeAppConfig,
+        chainConfig = chainAppConfig,
+        actorSystem = system)
     }
 
     nodeF
