@@ -8,6 +8,7 @@ import akka.http.scaladsl.settings.{
   ConnectionPoolSettings
 }
 import akka.testkit.{ImplicitSender, TestKit}
+import akka.util.ByteString
 import org.scalatest.funsuite.AnyFunSuiteLike
 import org.scalatest.{BeforeAndAfterAll, TestSuite}
 
@@ -21,6 +22,8 @@ class Socks5ClientTransportSpec
     with BeforeAndAfterAll
     with AnyFunSuiteLike
     with ImplicitSender {
+
+  implicit val ec = system.dispatcher
 
   ignore("connect to real daemon") {
 
@@ -41,19 +44,40 @@ class Socks5ClientTransportSpec
     val settings = ConnectionPoolSettings(system).withConnectionSettings(
       clientConnectionSettings)
 
-    val responseF = Http().singleRequest(
-      HttpRequest(uri = "http://test.oracle.suredbits.com/v1/attestations"),
-      settings = settings)
+    {
+      val responseF =
+        Http().singleRequest(HttpRequest(uri = "http://blockstream.info/"),
+                             settings = settings)
 
-    val response = Await.result(responseF, 10.seconds)
+      val response = Await.result(responseF, 10.seconds)
 
-    // Should be a redirect to the HTTPS endpoint
-    assert(response.status.intValue() == 301)
-    assert(
-      response.headers
-        .find(_.lowercaseName() == "location")
-        .map(_.value())
-        .contains("https://test.oracle.suredbits.com/v1/attestations"))
+      // Should be a redirect to the HTTPS endpoint
+      assert(response.status.intValue() == 301)
+      assert(
+        response.headers
+          .find(_.lowercaseName() == "location")
+          .map(_.value())
+          .contains("https://blockstream.info/"))
+    }
+
+    {
+      val responseF = Http().singleRequest(
+        HttpRequest(uri =
+          "http://explorerzydxu5ecjrkwceayqybizmpjjznk5izmitf2modhcusuqlid.onion/"),
+        settings = settings)
+
+      val response = Await.result(responseF, 10.seconds)
+
+      assert(response.status.intValue() == 200)
+
+      val htmlF = response.entity.dataBytes
+        .runFold(ByteString(""))(_ ++ _)
+        .map(x => x.utf8String)
+
+      val html = Await.result(htmlF, 10.seconds)
+
+      assert(html.contains("Bitcoin Explorer"))
+    }
   }
 
 }
