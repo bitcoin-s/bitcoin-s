@@ -2,6 +2,7 @@ package org.bitcoins.bundle.gui
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config._
+import org.bitcoins.db.util.DatadirUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
 import scalafx.geometry._
@@ -105,7 +106,8 @@ class NeutrinoConfigPane(
     } else ""
     val configStr = proxyConfStr +
       s"""
-         |bitcoin-s.network = ${networkComboBox.value.value}
+         |bitcoin-s.network = ${DatadirUtil.networkStrToDirName(
+        networkComboBox.value.value.toString)}
          |bitcoin-s.node.mode = neutrino
          |bitcoin-s.node.peers = ["${peerAddressTF.text.value}"]
          |""".stripMargin
