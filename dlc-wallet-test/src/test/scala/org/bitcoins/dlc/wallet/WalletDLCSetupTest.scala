@@ -277,6 +277,18 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     recoverToSucceededIf[IllegalArgumentException](failedAddSigsF)
   }
 
+  it must "fail to add its own sigs" in {
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
+
+      for {
+        sign <- getDLCReadyToAddSigs(walletA, walletB)
+        _ <- recoverToSucceededIf[IllegalArgumentException](
+          walletA.addDLCSigs(sign))
+      } yield succeed
+  }
+
   it must "fail to add dlc funding sigs that do not correspond to the DLC" in {
     FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
       val walletA = FundedDLCWallets._1.wallet
