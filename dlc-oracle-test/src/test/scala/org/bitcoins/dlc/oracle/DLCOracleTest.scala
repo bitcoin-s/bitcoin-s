@@ -230,7 +230,8 @@ class DLCOracleTest extends DLCOracleFixture {
   }
 
   it must "create and sign an enum event" in { dlcOracle: DLCOracle =>
-    val descriptor = TLVGen.enumEventDescriptorV0TLV.sampleSome
+    val descriptor = EnumEventDescriptorV0TLV(
+      Vector("WIN", "LOSE", "DRAW").map(NormalizedString(_)))
     val outcome = descriptor.outcomes.head
 
     val descriptorV0TLV =
