@@ -48,8 +48,9 @@ class NeutrinoConfigPane(
     }
   }
 
-  private val networkComboBox: ComboBox[NetworkParameters] =
-    new ComboBox[NetworkParameters](BitcoinNetworks.knownNetworks) {
+  private val networkComboBox: ComboBox[BitcoinNetwork] =
+    new ComboBox[BitcoinNetwork](
+      BitcoinNetworks.knownNetworks.map(_.asInstanceOf[BitcoinNetwork])) {
       value = BitcoinNetworks.fromString(appConfig.chainConf.network.name)
       onAction = _ => {
         val peer = peerAddressTF.text.value
@@ -58,8 +59,7 @@ class NeutrinoConfigPane(
             .contains("127.0.0.1")
         ) {
           val network = selectionModel().getSelectedItem
-          peerAddressTF.text.value = defaultPeerForNetwork(
-            network.asInstanceOf[BitcoinNetwork])
+          peerAddressTF.text.value = defaultPeerForNetwork(network)
         }
       }
     }
