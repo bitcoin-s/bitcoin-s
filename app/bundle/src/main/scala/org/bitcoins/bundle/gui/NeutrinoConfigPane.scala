@@ -97,18 +97,18 @@ class NeutrinoConfigPane(
   }
 
   def getConfig: Config = {
-    var configStr =
+    // Auto-enable proxy for .onion peers
+    val proxyConfStr = if (peerAddressTF.text.value.contains(".onion")) {
+      s"""
+         |bitcoin-s.proxy.enabled = true
+         |""".stripMargin
+    } else ""
+    val configStr = proxyConfStr +
       s"""
          |bitcoin-s.network = ${networkComboBox.value.value}
          |bitcoin-s.node.mode = neutrino
          |bitcoin-s.node.peers = ["${peerAddressTF.text.value}"]
          |""".stripMargin
-    // Auto-enable proxy for .onion peers
-    if (peerAddressTF.text.value.contains(".onion")) {
-      configStr = configStr + s"""
-                                 |bitcoin-s.proxy.enabled = true
-                                 |""".stripMargin
-    }
     ConfigFactory.parseString(configStr)
   }
 }
