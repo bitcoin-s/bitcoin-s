@@ -4,7 +4,6 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config._
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
-import scalafx.collections.ObservableBuffer
 import scalafx.geometry._
 import scalafx.scene.Node
 import scalafx.scene.control._
@@ -49,23 +48,21 @@ class NeutrinoConfigPane(
     }
   }
 
-  private val networkList = new ObservableBuffer[String]()
-
-  private val networkComboBox: ComboBox[String] = new ComboBox[String]() {
-    networkList ++= BitcoinNetworks.knownNetworks.map(_.toString)
-    items = networkList
-
-    val networkName =
-      BitcoinNetworks.fromString(appConfig.chainConf.network.name).toString
-    selectionModel.value.select(networkName)
-    onAction = _ => {
-      if (peerAddressTF.text.value.contains(".suredbits.com")) { // Or should this use the peers.headOption logic?
-        val selection = selectionModel().getSelectedItem
-        val network = BitcoinNetworks.fromString(selection)
-        peerAddressTF.text.value = defaultPeerForNetwork(network)
+  private val networkComboBox: ComboBox[NetworkParameters] =
+    new ComboBox[NetworkParameters](BitcoinNetworks.knownNetworks) {
+      value = BitcoinNetworks.fromString(appConfig.chainConf.network.name)
+      onAction = _ => {
+        val peer = peerAddressTF.text.value
+        if (
+          peer.contains(".suredbits.com") || peer.contains("localhost") || peer
+            .contains("127.0.0.1")
+        ) {
+          val network = selectionModel().getSelectedItem
+          peerAddressTF.text.value = defaultPeerForNetwork(
+            network.asInstanceOf[BitcoinNetwork])
+        }
       }
     }
-  }
 
   private val peerAddressTF: TextField = new TextField() {
     text = startingPeerAddress
@@ -100,13 +97,18 @@ class NeutrinoConfigPane(
   }
 
   def getConfig: Config = {
-    val configStr =
+    var configStr =
       s"""
          |bitcoin-s.network = ${networkComboBox.value.value}
          |bitcoin-s.node.mode = neutrino
          |bitcoin-s.node.peers = ["${peerAddressTF.text.value}"]
          |""".stripMargin
-
+    // Auto-enable proxy for .onion peers
+    if (peerAddressTF.text.value.contains(".onion")) {
+      configStr = configStr + s"""
+                                 |bitcoin-s.proxy.enabled = true
+                                 |""".stripMargin
+    }
     ConfigFactory.parseString(configStr)
   }
 }
