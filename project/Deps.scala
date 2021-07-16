@@ -315,7 +315,14 @@ object Deps {
   val dlcWallet =
     List(
       Compile.newMicroJson,
-      Compile.logback
+      Compile.grizzledSlf4j
+    )
+
+  val dlcNode =
+    List(
+      Compile.newMicroJson,
+      Compile.grizzledSlf4j,
+      Compile.akkaActor
     )
 
   val dlcWalletTest =
