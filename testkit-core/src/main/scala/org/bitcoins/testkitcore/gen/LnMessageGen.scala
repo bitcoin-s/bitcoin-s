@@ -16,6 +16,10 @@ trait LnMessageGen extends TLVGen {
     unknownTLV.map(LnMessage.apply)
   }
 
+  def initMessage: Gen[LnMessage[InitTLV]] = {
+    initTLV.map(LnMessage.apply)
+  }
+
   def errorMessage: Gen[LnMessage[ErrorTLV]] = {
     errorTLV.map(LnMessage.apply)
   }

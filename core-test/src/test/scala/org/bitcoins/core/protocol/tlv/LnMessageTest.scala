@@ -1,9 +1,10 @@
 package org.bitcoins.core.protocol.tlv
 
-import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.testkitcore.gen.LnMessageGen
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
-import scodec.bits.ByteVector
+import scodec.bits._
+
+import scala.util.Try
 
 class LnMessageTest extends BitcoinSUnitTest {
 
@@ -19,14 +20,28 @@ class LnMessageTest extends BitcoinSUnitTest {
     }
   }
 
-  "InitMessage" must "parse correctly as an unknown message" in {
+  "InitMessage" must "have serialization symmetry" in {
+    forAll(LnMessageGen.initMessage) { initMessage =>
+      assert(LnMessage(initMessage.bytes) == initMessage)
+      assert(LnMessageFactory(InitTLV)(initMessage.bytes) == initMessage)
+    }
+  }
+
+  "InitMessage" must "parse correctly" in {
+    assert(Try(LnMessage(
+      "001000022200000302aaa2012006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f")).isSuccess)
+  }
+
+  /** @see https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#appendix-c-message-extension */
+  "InitMessage" must "pass static test vectors" in {
+    assert(Try(LnMessageFactory(InitTLV)(hex"001000000000")).isSuccess)
     assert(
-      LnMessage(
-        "001000022200000302aaa2012006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f") == LnMessage(
-        UnknownTLV(
-          BigSizeUInt(16),
-          ByteVector.fromValidHex(
-            "00022200000302aaa2012006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f"))))
+      Try(LnMessageFactory(InitTLV)(hex"00100000000001012a030104")).isSuccess)
+
+    assert(Try(LnMessageFactory(InitTLV)(hex"00100000000001")).isFailure)
+    assert(Try(LnMessageFactory(InitTLV)(hex"00100000000002012a")).isFailure)
+    assert(
+      Try(LnMessageFactory(InitTLV)(hex"001000000000010101010102")).isFailure)
   }
 
   "ErrorMessage" must "have serialization symmetry" in {
