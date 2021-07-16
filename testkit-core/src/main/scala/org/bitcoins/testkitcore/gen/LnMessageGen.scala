@@ -73,6 +73,13 @@ trait LnMessageGen extends TLVGen {
   def lnMessage: Gen[LnMessage[TLV]] = {
     Gen.oneOf(
       unknownMessage,
+      knownLnMessage
+    )
+  }
+
+  def knownLnMessage: Gen[LnMessage[TLV]] = {
+    Gen.oneOf(
+      initMessage,
       errorMessage,
       pingMessage,
       pongMessage,
