@@ -287,11 +287,11 @@ case class DataMessageHandler(
         MerkleBuffers.putTx(tx, appConfig.nodeCallbacks).flatMap {
           belongsToMerkle =>
             if (belongsToMerkle) {
-              logger.trace(
+              logger.debug(
                 s"Transaction=${tx.txIdBE} belongs to merkleblock, not calling callbacks")
               Future.successful(this)
             } else {
-              logger.trace(
+              logger.debug(
                 s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
               appConfig.nodeCallbacks
                 .executeOnTxReceivedCallbacks(logger, tx)
@@ -368,7 +368,7 @@ case class DataMessageHandler(
   private def handleInventoryMsg(
       invMsg: InventoryMessage,
       peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
-    logger.info(s"Received inv=${invMsg}")
+    logger.debug(s"Received inv=${invMsg}")
     val getData = GetDataMessage(invMsg.inventories.flatMap {
       case Inventory(TypeIdentifier.MsgBlock, hash) =>
         // only request the merkle block if we are spv enabled
