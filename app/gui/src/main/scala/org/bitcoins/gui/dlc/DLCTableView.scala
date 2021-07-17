@@ -91,7 +91,8 @@ class DLCTableView(model: DLCPaneModel) {
       cellValueFactory = { status =>
         status.value match {
           case closed: ClosedDLCStatus =>
-            new StringProperty(status, "PNL", s"${closed.pnl}")
+            val amt = GUIUtil.numberFormatter.format(closed.pnl.satoshis.toLong)
+            new StringProperty(status, "PNL", s"$amt sats")
           case _: BroadcastedDLCStatus | _: AcceptedDLCStatus | _: Offered =>
             new StringProperty(status, "PNL", "In progress")
         }
