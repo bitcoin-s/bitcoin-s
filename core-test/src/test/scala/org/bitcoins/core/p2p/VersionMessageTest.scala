@@ -26,7 +26,7 @@ class VersionMessageTest extends BitcoinSUnitTest {
     val ipArr = Array(173.toByte, 31.toByte, 39.toByte, 168.toByte)
     val inet = InetAddress(ipArr)
 
-    val versionMessage = VersionMessage(MainNet, inet, inet)
+    val versionMessage = VersionMessage(MainNet, inet, inet, relay = false)
     assert(versionMessage.addressReceiveServices.nodeNone)
     versionMessage.addressReceiveIpAddress must be(inet)
     versionMessage.addressReceivePort must be(MainNet.port)
