@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.dlc.oracle.DLCOracle
+import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.scalatest._
@@ -13,17 +14,21 @@ trait DLCOracleFixture extends BitcoinSFixture with EmbeddedPg {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[DLCOracle] = () => {
-      val conf =
+      val conf: DLCOracleAppConfig =
         BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(pgUrl)
-      conf.initialize()
+      val _ = conf.migrate()
+
+      val oracleF: Future[DLCOracle] = conf.initialize()
+      oracleF
     }
 
     val destroy: DLCOracle => Future[Unit] = dlcOracle => {
       val conf = dlcOracle.conf
-      conf.dropAll().flatMap { _ =>
-        FileUtil.deleteTmpDir(conf.baseDatadir)
-        conf.stop()
-      }
+      val _ = conf.clean()
+      for {
+        _ <- conf.stop()
+        _ = FileUtil.deleteTmpDir(conf.baseDatadir)
+      } yield ()
     }
     makeDependentFixture(builder, destroy = destroy)(test)
   }
