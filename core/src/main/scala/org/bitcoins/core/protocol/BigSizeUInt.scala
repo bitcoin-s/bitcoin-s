@@ -16,6 +16,8 @@ case class BigSizeUInt(num: UInt64) extends NetworkElement {
     }
   }
 
+  def toBigInt: BigInt = num.toBigInt
+
   def toLong: Long = num.toLong
 
   def toInt: Int = {

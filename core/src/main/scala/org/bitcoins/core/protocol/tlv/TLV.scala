@@ -19,6 +19,7 @@ import scodec.bits.ByteVector
 
 import java.nio.charset.StandardCharsets
 import java.time.Instant
+import scala.annotation.tailrec
 
 sealed trait TLV extends NetworkElement with TLVUtil {
   def tpe: BigSizeUInt
@@ -33,6 +34,8 @@ sealed trait TLV extends NetworkElement with TLVUtil {
   }
 
   def sha256: Sha256Digest = CryptoUtil.sha256(bytes)
+
+  def typeName: String = TLV.getTypeName(tpe)
 }
 
 trait TLVUtil {
@@ -151,6 +154,7 @@ object TLV extends TLVParentFactory[TLV] {
 
   override lazy val allFactories: Vector[TLVFactory[TLV]] = {
     Vector(
+      InitTLV,
       ErrorTLV,
       PingTLV,
       PongTLV,
@@ -221,6 +225,8 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
 
   protected case class ValueIterator(value: ByteVector, var index: Int = 0) {
 
+    def finished: Boolean = current.isEmpty
+
     def current: ByteVector = {
       value.drop(index)
     }
@@ -235,6 +241,7 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
     }
 
     def take(numBytes: Int): ByteVector = {
+      require(current.length >= numBytes)
       val bytes = current.take(numBytes)
       skip(numBytes)
       bytes
@@ -390,6 +397,54 @@ object UnknownTLV extends Factory[UnknownTLV] {
 
     UnknownTLV(tpe, value)
   }
+}
+
+/** @see https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#the-init-message */
+case class InitTLV(
+    globalFeatureBytes: ByteVector,
+    featureBytes: ByteVector,
+    initTLVs: Vector[TLV])
+    extends TLV {
+  initTLVs.collect { case UnknownTLV(tpe, _) =>
+    require(tpe.toBigInt % 2 != 0,
+            s"Cannot have unknown even initTLVs, got $initTLVs")
+  }
+
+  require(initTLVs.map(_.tpe).distinct.size == initTLVs.size,
+          s"Cannot have duplicate TLV types in initTLVs, got $initTLVs")
+
+  override val tpe: BigSizeUInt = InitTLV.tpe
+
+  override val value: ByteVector = {
+    u16Prefix(globalFeatureBytes) ++ u16Prefix(featureBytes) ++
+      initTLVs.foldLeft(ByteVector.empty)(_ ++ _.bytes)
+  }
+}
+
+object InitTLV extends TLVFactory[InitTLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(16)
+
+  override def fromTLVValue(value: ByteVector): InitTLV = {
+    val iter = ValueIterator(value)
+
+    val global = iter.takeU16Prefixed(iter.take)
+    val features = iter.takeU16Prefixed(iter.take)
+
+    @tailrec
+    def loop(accum: Vector[TLV]): Vector[TLV] = {
+      if (iter.finished) accum
+      else {
+        val next = accum :+ iter.take(TLV)
+        loop(next)
+      }
+    }
+
+    val tlvs = loop(Vector.empty)
+
+    InitTLV(global, features, tlvs)
+  }
+
+  override val typeName: String = "InitTLV"
 }
 
 /** @see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#the-error-message]] */
