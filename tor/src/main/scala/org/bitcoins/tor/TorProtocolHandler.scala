@@ -1,16 +1,16 @@
 package org.bitcoins.tor
 
-import java.nio.file.attribute.PosixFilePermissions
-import java.nio.file.{Files, Path, Paths}
-import java.util
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash}
 import akka.io.Tcp.Connected
 import akka.util.ByteString
-import TorProtocolHandler.{Authentication, OnionServiceVersion}
 import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.tor.TorProtocolHandler.{Authentication, OnionServiceVersion}
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
+import java.nio.file.attribute.PosixFilePermissions
+import java.nio.file.{Files, Path, Paths}
+import java.util
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.Promise
