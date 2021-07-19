@@ -15,8 +15,7 @@ import org.bitcoins.tor.TorProtocolHandler.Authentication
 
 import java.net.InetSocketAddress
 import java.nio.file.Path
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Await, Promise, TimeoutException}
+import scala.concurrent.{Future, Promise}
 
 /** Created by rorp
   *
@@ -40,14 +39,15 @@ class TorController(address: InetSocketAddress, protocolHandlerProps: Props)
         case Some(ex) => log.error(ex, "Cannot connect")
         case _        => log.error("Cannot connect")
       }
-      context stop self
+      context.stop(self)
     case c: Connected =>
-      val protocolHandler = context actorOf protocolHandlerProps
+      val protocolHandler = context.actorOf(protocolHandlerProps)
       protocolHandler ! c
       val connection = sender()
       connection ! Register(self)
-      context watch connection
-      context become {
+      context.watch(connection)
+      context.watch(protocolHandler)
+      context.become {
         case data: ByteString =>
           connection ! Write(data)
         case c @ CommandFailed(_: Write) =>
@@ -58,9 +58,11 @@ class TorController(address: InetSocketAddress, protocolHandlerProps: Props)
         case Received(data) =>
           protocolHandler ! data
         case _: ConnectionClosed =>
-          context stop self
+          context.stop(self)
+        case Terminated(actor) if actor == protocolHandler =>
+          connection ! Tcp.Close
         case Terminated(actor) if actor == connection =>
-          context stop self
+          context.stop(self)
       }
   }
 
@@ -94,9 +96,8 @@ object TorController {
       authentication: Authentication,
       privateKeyPath: Path,
       virtualPort: Int,
-      targets: Seq[String] = Seq(),
-      timeout: FiniteDuration = 30.seconds)(implicit
-      system: ActorSystem): InetSocketAddress = {
+      targets: Seq[String] = Seq())(implicit
+      system: ActorSystem): Future[InetSocketAddress] = {
 
     val promiseTorAddress = Promise[InetSocketAddress]()
 
@@ -115,12 +116,7 @@ object TorController {
       "tor"
     )
 
-    try {
-      Await.result(promiseTorAddress.future, timeout)
-    } catch {
-      case _: TimeoutException =>
-        throw new TimeoutException(s"Tor did not respond after $timeout")
-    }
+    promiseTorAddress.future
   }
 
 }
