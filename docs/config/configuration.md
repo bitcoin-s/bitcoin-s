@@ -277,6 +277,13 @@ bitcoin-s {
           path = ${bitcoin-s.datadir}/oracle/
         }
     }
+    
+    testkit {
+      pg {
+        #enabled postgres backend database for all test cases
+        enabled = false
+      }
+    }
 }
 
 
