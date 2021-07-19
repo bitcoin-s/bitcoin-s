@@ -45,7 +45,8 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
 
       _ = assert(accountA.xpub != accountB.xpub)
 
-      _ <- walletA.createDLCOffer(sampleContractInfo,
+      _ <- walletA.createDLCOffer("test",
+                                  sampleContractInfo,
                                   half,
                                   Some(SatoshisPerVirtualByte.one),
                                   UInt32.zero,

@@ -36,6 +36,7 @@ object DLCStatusBuilder {
       case DLCState.Offered =>
         Offered(
           dlcId,
+          dlcDb.label,
           dlcDb.isInitiator,
           dlcDb.tempContractId,
           contractInfo,
@@ -47,6 +48,7 @@ object DLCStatusBuilder {
       case DLCState.Accepted =>
         Accepted(
           dlcId,
+          dlcDb.label,
           dlcDb.isInitiator,
           dlcDb.tempContractId,
           dlcDb.contractIdOpt.get,
@@ -59,6 +61,7 @@ object DLCStatusBuilder {
       case DLCState.Signed =>
         Signed(
           dlcId,
+          dlcDb.label,
           dlcDb.isInitiator,
           dlcDb.tempContractId,
           dlcDb.contractIdOpt.get,
@@ -71,6 +74,7 @@ object DLCStatusBuilder {
       case DLCState.Broadcasted =>
         Broadcasted(
           dlcId,
+          dlcDb.label,
           dlcDb.isInitiator,
           dlcDb.tempContractId,
           dlcDb.contractIdOpt.get,
@@ -84,6 +88,7 @@ object DLCStatusBuilder {
       case DLCState.Confirmed =>
         Confirmed(
           dlcId,
+          dlcDb.label,
           dlcDb.isInitiator,
           dlcDb.tempContractId,
           dlcDb.contractIdOpt.get,
@@ -131,6 +136,7 @@ object DLCStatusBuilder {
         //no oracle information in the refund case
         val refund = Refunded(
           dlcId,
+          dlcDb.label,
           dlcDb.isInitiator,
           dlcDb.tempContractId,
           dlcDb.contractIdOpt.get,
@@ -155,6 +161,7 @@ object DLCStatusBuilder {
           case DLCState.Claimed =>
             Claimed(
               dlcId,
+              dlcDb.label,
               dlcDb.isInitiator,
               dlcDb.tempContractId,
               dlcDb.contractIdOpt.get,
@@ -173,6 +180,7 @@ object DLCStatusBuilder {
           case DLCState.RemoteClaimed =>
             RemoteClaimed(
               dlcId,
+              dlcDb.label,
               dlcDb.isInitiator,
               dlcDb.tempContractId,
               dlcDb.contractIdOpt.get,

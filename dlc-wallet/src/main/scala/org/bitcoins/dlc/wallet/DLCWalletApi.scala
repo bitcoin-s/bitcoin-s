@@ -26,37 +26,36 @@ import scala.concurrent.Future
 trait DLCWalletApi { self: WalletApi =>
 
   def createDLCOffer(
+      label: String,
       contractInfoTLV: ContractInfoV0TLV,
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
       refundLT: UInt32): Future[DLCOffer] = {
     val contractInfo = ContractInfo.fromTLV(contractInfoTLV)
-    createDLCOffer(contractInfo, collateral, feeRateOpt, locktime, refundLT)
+    createDLCOffer(label,
+                   contractInfo,
+                   collateral,
+                   feeRateOpt,
+                   locktime,
+                   refundLT)
   }
 
   def createDLCOffer(
+      label: String,
       contractInfo: ContractInfo,
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
       refundLT: UInt32): Future[DLCOffer]
 
-  def registerDLCOffer(dlcOffer: DLCOffer): Future[DLCOffer] = {
-    createDLCOffer(
-      dlcOffer.contractInfo,
-      dlcOffer.totalCollateral,
-      Some(dlcOffer.feeRate),
-      dlcOffer.timeouts.contractMaturity.toUInt32,
-      dlcOffer.timeouts.contractTimeout.toUInt32
-    )
+  def acceptDLCOffer(
+      label: String,
+      dlcOfferTLV: DLCOfferTLV): Future[DLCAccept] = {
+    acceptDLCOffer(label, DLCOffer.fromTLV(dlcOfferTLV))
   }
 
-  def acceptDLCOffer(dlcOfferTLV: DLCOfferTLV): Future[DLCAccept] = {
-    acceptDLCOffer(DLCOffer.fromTLV(dlcOfferTLV))
-  }
-
-  def acceptDLCOffer(dlcOffer: DLCOffer): Future[DLCAccept]
+  def acceptDLCOffer(label: String, dlcOffer: DLCOffer): Future[DLCAccept]
 
   def signDLC(acceptTLV: DLCAcceptTLV): Future[DLCSign]
 

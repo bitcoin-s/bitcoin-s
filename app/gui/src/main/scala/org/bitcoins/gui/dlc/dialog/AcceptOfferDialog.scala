@@ -32,6 +32,7 @@ class AcceptOfferDialog {
     val offerTLVTF = new TextField() {
       minWidth = 300
     }
+    val labelTF = new TextField()
 
     var nextRow: Int = 2
     val gridPane = new GridPane {
@@ -47,6 +48,8 @@ class AcceptOfferDialog {
           0,
           0)
       add(offerTLVTF, 1, 0)
+      add(new Label("Label"), 0, 1)
+      add(labelTF, 1, 1)
     }
 
     def showOfferTerms(offer: DLCOfferTLV): Unit = {
@@ -220,11 +223,12 @@ class AcceptOfferDialog {
     // When the OK button is clicked, convert the result to a CreateDLCOffer.
     dialog.resultConverter = dialogButton =>
       if (dialogButton == ButtonType.OK) {
+        val label = labelTF.text.value
 
         val offerHex = offerTLVTF.text.value
         val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerHex)
 
-        Some(AcceptDLCOffer(offer))
+        Some(AcceptDLCOffer(label, offer))
       } else None
 
     val result = dialog.showAndWait()

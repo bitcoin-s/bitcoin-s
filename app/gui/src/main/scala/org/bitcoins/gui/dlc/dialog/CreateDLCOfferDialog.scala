@@ -39,9 +39,10 @@ class CreateDLCOfferDialog extends Logging {
 
     var announcementDetailsShown = false
     val announcementOrContractInfoTF = new TextField()
+    val labelTF = new TextField()
     var decompOpt: Option[DigitDecompositionEventDescriptorV0TLV] = None
 
-    var nextRow: Int = 3
+    var nextRow: Int = 4
     val gridPane = new GridPane {
       alignment = Pos.Center
       padding = Insets(top = 10, right = 10, bottom = 10, left = 10)
@@ -338,18 +339,22 @@ class CreateDLCOfferDialog extends Logging {
         contractInfoOpt: Option[ContractInfoV0TLV]): Unit = {
       announcementDetailsShown = true
       announcementOrContractInfoTF.disable = true
-      gridPane.add(new Label("Event Id"), 0, 1)
+
+      gridPane.add(new Label("Label"), 0, 1)
+      gridPane.add(labelTF, 1, 1)
+
+      gridPane.add(new Label("Event Id"), 0, 2)
       gridPane.add(new TextField() {
                      text = announcement.eventTLV.eventId
                      editable = false
                    },
                    1,
-                   1)
+                   2)
 
       announcement.eventTLV.eventDescriptor match {
         case EnumEventDescriptorV0TLV(outcomes) =>
-          gridPane.add(new Label("Outcomes"), 0, 2)
-          gridPane.add(new Label("Values"), 1, 2)
+          gridPane.add(new Label("Outcomes"), 0, 3)
+          gridPane.add(new Label("Values"), 1, 3)
           contractInfoOpt match {
             case Some(contractInfo) =>
               contractInfo.contractDescriptor match {
@@ -363,7 +368,7 @@ class CreateDLCOfferDialog extends Logging {
             case None =>
               outcomes.foreach(str => addEnumOutcomeRow(str.normStr, None))
           }
-          nextRow = 3
+          nextRow = 4
           addRemainingFields()
         case digitDecomp: UnsignedDigitDecompositionEventDescriptor =>
           decompOpt = Some(digitDecomp)
@@ -462,6 +467,8 @@ class CreateDLCOfferDialog extends Logging {
       if (dialogButton == ButtonType.OK) {
         val oracleInfo = getOracleInfo.get
 
+        val label = labelTF.text.value
+
         val collateralLong =
           numberFormatter.parse(collateralTF.text.value).longValue()
         val collateral = Satoshis(collateralLong)
@@ -513,6 +520,7 @@ class CreateDLCOfferDialog extends Logging {
 
         Some(
           CreateDLCOffer(
+            label = label,
             contractInfo = contractInfo,
             collateral = collateral,
             feeRateOpt = feeRateOpt,

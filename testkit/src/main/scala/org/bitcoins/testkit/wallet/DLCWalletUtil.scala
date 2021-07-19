@@ -201,6 +201,7 @@ object DLCWalletUtil extends Logging {
   lazy val sampleDLCDb: DLCDb = DLCDb(
     dlcId = Sha256Digest(
       "9da9922b9067007f8d9c56c37f202a568f0cdb104e5ef9752ad6cbc1834f0334"),
+    label = "sample",
     tempContractId = sampleDLCOffer.tempContractId,
     contractIdOpt = None,
     protocolVersion = 0,
@@ -237,13 +238,14 @@ object DLCWalletUtil extends Logging {
 
     for {
       offer <- walletA.createDLCOffer(
+        label = "test",
         contractInfo = contractInfo,
         collateral = half,
         feeRateOpt = Some(SatoshisPerVirtualByte.fromLong(10)),
         locktime = dummyTimeouts.contractMaturity.toUInt32,
         refundLocktime = dummyTimeouts.contractTimeout.toUInt32
       )
-      accept <- walletB.acceptDLCOffer(offer)
+      accept <- walletB.acceptDLCOffer(label = "test", offer = offer)
       sigs <- walletA.signDLC(accept)
       _ <- walletB.addDLCSigs(sigs)
 

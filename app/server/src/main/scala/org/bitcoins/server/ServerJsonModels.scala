@@ -644,6 +644,7 @@ object GetDLC extends ServerJsonModels {
 }
 
 case class CreateDLCOffer(
+    label: String,
     contractInfoTLV: ContractInfoV0TLV,
     collateral: Satoshis,
     feeRateOpt: Option[SatoshisPerVirtualByte],
@@ -655,14 +656,16 @@ object CreateDLCOffer extends ServerJsonModels {
   def fromJsArr(jsArr: ujson.Arr): Try[CreateDLCOffer] = {
 
     jsArr.arr.toList match {
-      case contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: Nil =>
+      case labelJs :: contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: Nil =>
         Try {
+          val label = labelJs.str
           val contractInfoTLV = jsToContractInfoTLV(contractInfoJs)
           val collateral = jsToSatoshis(collateralJs)
           val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
           val locktime = jsToUInt32(locktimeJs)
           val refundLT = jsToUInt32(refundLTJs)
-          CreateDLCOffer(contractInfoTLV,
+          CreateDLCOffer(label,
+                         contractInfoTLV,
                          collateral,
                          feeRate,
                          locktime,
@@ -676,24 +679,26 @@ object CreateDLCOffer extends ServerJsonModels {
   }
 }
 
-case class AcceptDLCOffer(offer: LnMessage[DLCOfferTLV])
+case class AcceptDLCOffer(label: String, offer: LnMessage[DLCOfferTLV])
 
 object AcceptDLCOffer extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLCOffer] = {
     jsArr.arr.toList match {
-      case offerJs :: Nil =>
+      case labelJs :: offerJs :: Nil =>
         Try {
+          val label = labelJs.str
           val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
-          AcceptDLCOffer(offer)
+          AcceptDLCOffer(label, offer)
         }
       case Nil =>
-        Failure(new IllegalArgumentException("Missing offer argument"))
+        Failure(
+          new IllegalArgumentException("Missing label and offer argument"))
 
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 1"))
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
     }
   }
 }
