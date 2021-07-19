@@ -462,7 +462,8 @@ object Deps {
 
   val tor: Def.Initialize[List[ModuleID]] = Def.setting {
     List(
-      Compile.akkaActor,
+      Compile.akkaStream,
+      Compile.akkaHttp,
       Compile.scodec.value
     )
   }
