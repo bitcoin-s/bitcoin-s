@@ -311,6 +311,13 @@ to ensure the entire module is initialized correctly.</p>
           <span class="hljs-attr">path</span> = ${bitcoin-s.datadir}/oracle/
         }
     }
+    
+    testkit {
+      pg {
+        <span class="hljs-comment">#enabled postgres backend database for all test cases</span>
+        <span class="hljs-attr">enabled</span> = <span class="hljs-literal">false</span>
+      }
+    }
 }
 
 
