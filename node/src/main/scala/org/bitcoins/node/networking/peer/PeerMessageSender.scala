@@ -64,7 +64,8 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     val versionMsg = VersionMessage(
       conf.network,
       InetAddress(client.peer.socket.getAddress.getAddress),
-      InetAddress(local.getAddress))
+      InetAddress(local.getAddress),
+      relay = conf.relay)
     logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
     sendMsg(versionMsg)
   }
@@ -78,9 +79,10 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
                        "/Bitcoin-S:0.7.0/",
                        Int32(height),
                        InetAddress(localhost.getAddress),
-                       InetAddress(localhost.getAddress))
+                       InetAddress(localhost.getAddress),
+                       conf.relay)
 
-      logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
+      logger.debug(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
       sendMsg(versionMsg)
     }
   }
@@ -148,7 +150,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
 
   def sendTransactionMessage(transaction: Transaction): Future[Unit] = {
     val message = TransactionMessage(transaction)
-    logger.trace(s"Sending txmessage=$message to peer=${client.peer}")
+    logger.debug(s"Sending txmessage=$message to peer=${client.peer}")
     sendMsg(message)
   }
 
@@ -159,7 +161,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     val inventories =
       hashes.map(hash => Inventory(typeIdentifier, hash))
     val message = GetDataMessage(inventories)
-    logger.info(s"Sending getdata=$message to peer=${client.peer}")
+    logger.debug(s"Sending getdata=$message to peer=${client.peer}")
     sendMsg(message)
   }
 

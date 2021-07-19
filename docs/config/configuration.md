@@ -163,6 +163,9 @@ bitcoin-s {
         
         hikari-logging = true
         hikari-logging-interval = 10 minute
+        
+        # whether to have p2p peers relay us unconfirmed txs
+        relay = false
     }
 
     proxy {

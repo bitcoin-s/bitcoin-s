@@ -1328,6 +1328,7 @@ trait VersionMessage extends ControlPayload {
   // what do these fields mean?
   override def toString(): String =
     s"VersionMessage($version, $services, epoch=${timestamp.toLong}, receiverServices=${addressReceiveIpAddress.bytes.toHex}, receiverAddress=${addressReceiveIpAddress.bytes.toHex}, receiverPort=$addressReceivePort), userAgent=$userAgent, startHeight=${startHeight.toInt}, relay=$relay)"
+
 }
 
 /** @see https://bitcoin.org/en/developer-reference#version
@@ -1391,12 +1392,14 @@ object VersionMessage extends Factory[VersionMessage] {
   def apply(
       network: NetworkParameters,
       receivingIpAddress: InetAddress,
-      transmittingIpAddress: InetAddress): VersionMessage = {
+      transmittingIpAddress: InetAddress,
+      relay: Boolean): VersionMessage = {
     VersionMessage(network,
                    ProtocolVersion.userAgent,
                    Int32.zero,
                    receivingIpAddress,
-                   transmittingIpAddress)
+                   transmittingIpAddress,
+                   relay)
   }
 
   def apply(
@@ -1404,9 +1407,9 @@ object VersionMessage extends Factory[VersionMessage] {
       userAgent: String,
       startHeight: Int32,
       receivingIpAddress: InetAddress,
-      transmittingIpAddress: InetAddress): VersionMessage = {
+      transmittingIpAddress: InetAddress,
+      relay: Boolean): VersionMessage = {
     val nonce = UInt64.zero
-    val relay = false
     VersionMessage(
       version = ProtocolVersion.default,
       services = ServiceIdentifier.NODE_NONE,

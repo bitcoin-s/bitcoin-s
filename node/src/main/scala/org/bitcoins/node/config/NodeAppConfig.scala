@@ -106,6 +106,14 @@ case class NodeAppConfig(
     }
   }
 
+  lazy val relay: Boolean = {
+    if (config.hasPath("bitcoin-s.node.relay")) {
+      config.getBoolean("bitcoin-s.node.relay")
+    } else {
+      false
+    }
+  }
+
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
   def createNode(peer: Peer)(
       chainConf: ChainAppConfig,
