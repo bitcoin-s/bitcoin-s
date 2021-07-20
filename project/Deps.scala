@@ -5,7 +5,7 @@ object Deps {
 
   object V {
     val bouncyCastle = "1.69"
-    val dropwizardMetricsV = "4.2.2" //https://github.com/dropwizard/metrics
+    val dropwizardMetricsV = "4.2.3" //https://github.com/dropwizard/metrics
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.4"
@@ -462,7 +462,8 @@ object Deps {
 
   val tor: Def.Initialize[List[ModuleID]] = Def.setting {
     List(
-      Compile.akkaActor,
+      Compile.akkaStream,
+      Compile.akkaHttp,
       Compile.scodec.value
     )
   }
