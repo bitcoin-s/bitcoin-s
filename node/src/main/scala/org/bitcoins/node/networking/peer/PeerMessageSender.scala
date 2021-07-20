@@ -27,8 +27,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
 
   /** Initiates a connection with the given peer */
   def connect(): Unit = {
-    logger.info(s"Attempting to connect to peer=$socket")
-    (client.actor ! Tcp.Connect(socket, timeout = Some(timeout.duration)))
+    client.actor ! P2PClient.ConnectCommand
   }
 
   def isConnected()(implicit ec: ExecutionContext): Future[Boolean] = {
@@ -65,7 +64,8 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     val versionMsg = VersionMessage(
       conf.network,
       InetAddress(client.peer.socket.getAddress.getAddress),
-      InetAddress(local.getAddress))
+      InetAddress(local.getAddress),
+      relay = conf.relay)
     logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
     sendMsg(versionMsg)
   }
@@ -73,16 +73,16 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   def sendVersionMessage(chainApi: ChainApi)(implicit
       ec: ExecutionContext): Future[Unit] = {
     chainApi.getBestHashBlockHeight().flatMap { height =>
-      val transmittingIpAddress = java.net.InetAddress.getLocalHost
-      val receivingIpAddress = client.peer.socket.getAddress
+      val localhost = java.net.InetAddress.getLocalHost
       val versionMsg =
         VersionMessage(conf.network,
                        "/Bitcoin-S:0.7.0/",
                        Int32(height),
-                       InetAddress(receivingIpAddress.getAddress),
-                       InetAddress(transmittingIpAddress.getAddress))
+                       InetAddress(localhost.getAddress),
+                       InetAddress(localhost.getAddress),
+                       conf.relay)
 
-      logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
+      logger.debug(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
       sendMsg(versionMsg)
     }
   }
@@ -150,7 +150,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
 
   def sendTransactionMessage(transaction: Transaction): Future[Unit] = {
     val message = TransactionMessage(transaction)
-    logger.trace(s"Sending txmessage=$message to peer=${client.peer}")
+    logger.debug(s"Sending txmessage=$message to peer=${client.peer}")
     sendMsg(message)
   }
 
@@ -161,7 +161,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     val inventories =
       hashes.map(hash => Inventory(typeIdentifier, hash))
     val message = GetDataMessage(inventories)
-    logger.info(s"Sending getdata=$message to peer=${client.peer}")
+    logger.debug(s"Sending getdata=$message to peer=${client.peer}")
     sendMsg(message)
   }
 

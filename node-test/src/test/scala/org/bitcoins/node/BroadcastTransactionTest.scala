@@ -3,30 +3,30 @@ package org.bitcoins.node
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.rpc.BitcoindException
-import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindV19
-import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoindV19
+import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindNewest
+import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-class BroadcastTransactionTest extends NodeTestWithCachedBitcoindV19 {
+class BroadcastTransactionTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, Vector.empty)
 
-  override type FixtureParam = SpvNodeConnectedWithBitcoindV19
+  override type FixtureParam = SpvNodeConnectedWithBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val outcome: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
-      outcome = withSpvNodeConnectedToBitcoindV19Cached(test, bitcoind)(
+      outcome = withSpvNodeConnectedToBitcoindCached(test, bitcoind)(
         system,
         getFreshConfig)
       f <- outcome.toFuture
@@ -36,7 +36,7 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindV19 {
 
   private val sendAmount = 1.bitcoin
 
-  def createValidTx(rpc: BitcoindV19RpcClient): Future[Transaction] = {
+  def createValidTx(rpc: BitcoindRpcClient): Future[Transaction] = {
     for {
       rawTx <-
         rpc.createRawTransaction(Vector.empty, Map(junkAddress -> sendAmount))
@@ -46,7 +46,7 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindV19 {
   }
 
   it must "safely broadcast a transaction twice" in { param =>
-    val SpvNodeConnectedWithBitcoindV19(node, rpc) = param
+    val SpvNodeConnectedWithBitcoind(node, rpc) = param
 
     for {
       tx <- createValidTx(rpc)
@@ -62,7 +62,7 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindV19 {
   }
 
   it must "broadcast a transaction" in { param =>
-    val SpvNodeConnectedWithBitcoindV19(node, rpc) = param
+    val SpvNodeConnectedWithBitcoind(node, rpc) = param
 
     def hasSeenTx(transaction: Transaction): Future[Boolean] = {
       rpc

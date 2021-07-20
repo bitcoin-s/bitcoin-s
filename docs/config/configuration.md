@@ -163,8 +163,18 @@ bitcoin-s {
         
         hikari-logging = true
         hikari-logging-interval = 10 minute
+        
+        # whether to have p2p peers relay us unconfirmed txs
+        relay = false
     }
 
+    proxy {
+        # You can configure SOCKS5 proxy to use Tor for outgoing connections
+        enabled = false
+        host = "127.0.0.1"
+        port = 9050
+    }
+    
     chain {
         force-recalc-chainwork = false
         neutrino {
@@ -269,6 +279,13 @@ bitcoin-s {
         db {
           path = ${bitcoin-s.datadir}/oracle/
         }
+    }
+    
+    testkit {
+      pg {
+        #enabled postgres backend database for all test cases
+        enabled = false
+      }
     }
 }
 

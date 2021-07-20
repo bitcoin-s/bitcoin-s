@@ -32,6 +32,13 @@ class TLVTest extends BitcoinSUnitTest {
     }
   }
 
+  "InitTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.initTLV) { init =>
+      assert(InitTLV(init.bytes) == init)
+      assert(TLV(init.bytes) == init)
+    }
+  }
+
   "ErrorTLV" must "have serialization symmetry" in {
     forAll(TLVGen.errorTLV) { error =>
       assert(ErrorTLV(error.bytes) == error)

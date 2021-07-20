@@ -70,7 +70,7 @@ val p2pPort = instance.p2pPort
 val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient(instance, Vector.newBuilder)
 
 //contains information on how to connect to bitcoin's p2p info
-val peerF = bitcoindF.map(b => NodeUnitTest.createPeer(b))
+val peerF = bitcoindF.flatMap(b => NodeUnitTest.createPeer(b))
 
 // set a data directory
 val prefix = s"node-example-${System.currentTimeMillis()}"

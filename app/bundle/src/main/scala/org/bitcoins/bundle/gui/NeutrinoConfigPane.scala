@@ -2,6 +2,7 @@ package org.bitcoins.bundle.gui
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config._
+import org.bitcoins.db.util.DatadirUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
 import scalafx.geometry._
@@ -25,15 +26,17 @@ class NeutrinoConfigPane(
     textAlignment = TextAlignment.Center
   }
 
-  val defaultPeer: String = {
-    appConfig.network match {
+  private def defaultPeerForNetwork(network: BitcoinNetwork) = {
+    network match {
       case MainNet          => "neutrino.suredbits.com"
       case TestNet3         => "neutrino.testnet3.suredbits.com"
       case RegTest | SigNet => "localhost"
     }
   }
 
-  val startingPeerAddress: String = {
+  private val defaultPeer: String = defaultPeerForNetwork(appConfig.network)
+
+  private val startingPeerAddress: String = {
     appConfig.peers.headOption match {
       case Some(peer) =>
         // if we are using the default suredbits node
@@ -46,6 +49,22 @@ class NeutrinoConfigPane(
     }
   }
 
+  private val networkComboBox: ComboBox[BitcoinNetwork] =
+    new ComboBox[BitcoinNetwork](
+      BitcoinNetworks.knownNetworks.map(_.asInstanceOf[BitcoinNetwork])) {
+      value = BitcoinNetworks.fromString(appConfig.chainConf.network.name)
+      onAction = _ => {
+        val peer = peerAddressTF.text.value
+        if (
+          peer.contains(".suredbits.com") || peer.contains("localhost") || peer
+            .contains("127.0.0.1")
+        ) {
+          val network = selectionModel().getSelectedItem
+          peerAddressTF.text.value = defaultPeerForNetwork(network)
+        }
+      }
+    }
+
   private val peerAddressTF: TextField = new TextField() {
     text = startingPeerAddress
     minWidth = 300
@@ -55,10 +74,13 @@ class NeutrinoConfigPane(
 
   val gridPane: GridPane = new GridPane() {
     hgap = 5
-    vgap = 5
+    vgap = 10
     padding = Insets(top = 10, right = 10, bottom = 10, left = 10)
     alignment = Pos.TopCenter
 
+    add(new Label("Network"), 0, nextRow)
+    add(networkComboBox, 1, nextRow)
+    nextRow += 1
     add(new Label("Peer Address"), 0, nextRow)
     add(peerAddressTF, 1, nextRow)
     nextRow += 1
@@ -76,12 +98,19 @@ class NeutrinoConfigPane(
   }
 
   def getConfig: Config = {
-    val configStr =
+    // Auto-enable proxy for .onion peers
+    val proxyConfStr = if (peerAddressTF.text.value.contains(".onion")) {
       s"""
+         |bitcoin-s.proxy.enabled = true
+         |""".stripMargin
+    } else ""
+    val configStr = proxyConfStr +
+      s"""
+         |bitcoin-s.network = ${DatadirUtil.networkStrToDirName(
+        networkComboBox.value.value.toString)}
          |bitcoin-s.node.mode = neutrino
          |bitcoin-s.node.peers = ["${peerAddressTF.text.value}"]
          |""".stripMargin
-
     ConfigFactory.parseString(configStr)
   }
 }

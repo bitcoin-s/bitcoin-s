@@ -30,6 +30,20 @@ trait TLVGen {
     }
   }
 
+  def initTLV: Gen[InitTLV] = {
+    for {
+      globalFeatures <- NumberGenerator.bytevector
+      features <- NumberGenerator.bytevector
+      tlvNum <- Gen.choose(2, 10)
+      // use unknown because some TLVs will make test really slow
+      tlvs <- Gen.listOfN(tlvNum, unknownTLV.suchThat(_.tpe.toBigInt % 2 != 0))
+    } yield {
+      // get only one tlv per type
+      val usedTLVs = tlvs.groupBy(_.tpe).map(_._2.head).toVector
+      InitTLV(globalFeatures, features, usedTLVs)
+    }
+  }
+
   def errorTLV: Gen[ErrorTLV] = {
     for {
       id <- NumberGenerator.bytevector(32)

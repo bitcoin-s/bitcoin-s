@@ -10,8 +10,13 @@ import org.bitcoins.testkitcore.gen.{NumberGenerator, StringGenerators}
 
 import java.nio.file._
 import scala.concurrent.ExecutionContext
+import scala.util.Properties
 
 object BitcoinSTestAppConfig {
+
+  lazy val torEnabled: Boolean = Properties
+    .envOrNone("TOR")
+    .isDefined
 
   /** Generates a temp directory with the prefix 'bitcoin-s- */
   def tmpDir(): Path = Files.createTempDirectory("bitcoin-s-")
@@ -39,12 +44,13 @@ object BitcoinSTestAppConfig {
   def getSpvTestConfig(config: Config*)(implicit
       ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
-      """
-        |bitcoin-s {
-        |  node {
-        |     mode = spv
-        |  }
-        |}
+      s"""
+         |bitcoin-s {
+         |  node {
+         |     mode = spv
+         |  }
+         |  proxy.enabled = ${torEnabled}
+         |}
       """.stripMargin
     }
     BitcoinSAppConfig(tmpDir(), (overrideConf +: config): _*)
@@ -56,12 +62,13 @@ object BitcoinSTestAppConfig {
       ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory
       .parseString {
-        """
-          |bitcoin-s {
-          |  node {
-          |     mode = spv
-          |  }
-          |}
+        s"""
+           |bitcoin-s {
+           |  node {
+           |     mode = spv
+           |  }
+           |  proxy.enabled = ${torEnabled}
+           |}
       """.stripMargin
       }
       .withFallback(genWalletNameConf)
@@ -75,12 +82,13 @@ object BitcoinSTestAppConfig {
   def getNeutrinoTestConfig(config: Config*)(implicit
       ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
-      """
-        |bitcoin-s {
-        |  node {
-        |     mode = neutrino
-        |  }
-        |}
+      s"""
+         |bitcoin-s {
+         |  node {
+         |     mode = neutrino
+         |  }
+         |  proxy.enabled = ${torEnabled}
+         |}
       """.stripMargin
     }
     BitcoinSAppConfig(tmpDir(), (overrideConf +: config): _*)
@@ -91,12 +99,13 @@ object BitcoinSTestAppConfig {
       config: Config*)(implicit ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory
       .parseString {
-        """
-          |bitcoin-s {
-          |  node {
-          |     mode = neutrino
-          |  }
-          |}
+        s"""
+           |bitcoin-s {
+           |  node {
+           |     mode = neutrino
+           |  }
+           |  proxy.enabled = ${torEnabled}
+           |}
       """.stripMargin
       }
       .withFallback(genWalletNameConf)

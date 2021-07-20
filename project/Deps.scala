@@ -5,7 +5,7 @@ object Deps {
 
   object V {
     val bouncyCastle = "1.69"
-    val dropwizardMetricsV = "4.2.2" //https://github.com/dropwizard/metrics
+    val dropwizardMetricsV = "4.2.3" //https://github.com/dropwizard/metrics
     val logback = "1.2.3"
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.4"
@@ -13,7 +13,7 @@ object Deps {
 
     val scalaTestPlus =
       "3.2.1.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
-    val slf4j = "1.7.31"
+    val slf4j = "1.7.32"
     val spray = "1.3.6"
     val zeromq = "0.5.2"
     val akkav = "10.2.4"
@@ -27,7 +27,7 @@ object Deps {
     val scalaFxV = "16.0.0-R24"
     val javaFxV = "17-ea+8"
 
-    val asyncNewScalaV = "0.10.0"
+    val asyncNewScalaV = "1.0.0"
 
     val flywayV = "6.4.2"
     val postgresV = "42.2.23"
@@ -462,7 +462,8 @@ object Deps {
 
   val tor: Def.Initialize[List[ModuleID]] = Def.setting {
     List(
-      Compile.akkaActor,
+      Compile.akkaStream,
+      Compile.akkaHttp,
       Compile.scodec.value
     )
   }

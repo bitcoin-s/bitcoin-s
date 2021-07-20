@@ -9,12 +9,18 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.{NeutrinoNode, Node, P2PLogger}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.tor.Socks5ProxyParams
 
 import java.net.InetSocketAddress
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Properties
 
 abstract class NodeTestUtil extends P2PLogger {
+
+  lazy val torEnabled: Boolean = Properties
+    .envOrNone("TOR")
+    .isDefined
 
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(implicit
       ref: ActorRefFactory,
@@ -27,19 +33,50 @@ abstract class NodeTestUtil extends P2PLogger {
     * @param bitcoindRpcClient
     * @return
     */
-  def getBitcoindSocketAddress(
-      bitcoindRpcClient: BitcoindRpcClient): InetSocketAddress = {
-    val instance = bitcoindRpcClient.instance
-    new InetSocketAddress(instance.uri.getHost, instance.p2pPort)
+  def getBitcoindSocketAddress(bitcoindRpcClient: BitcoindRpcClient)(implicit
+      executionContext: ExecutionContext): Future[InetSocketAddress] = {
+    if (torEnabled) {
+      for {
+        networkInfo <- bitcoindRpcClient.getNetworkInfo
+      } yield {
+        val onionAddress = networkInfo.localaddresses
+          .find(_.address.endsWith(".onion"))
+          .getOrElse(throw new IllegalArgumentException(
+            s"bitcoind instance is not configured to use Tor: ${bitcoindRpcClient}"))
+
+        InetSocketAddress.createUnresolved(onionAddress.address,
+                                           onionAddress.port)
+
+      }
+    } else {
+      val instance = bitcoindRpcClient.instance
+      Future.successful(
+        new InetSocketAddress(instance.uri.getHost, instance.p2pPort))
+    }
+  }
+
+  def getSocks5ProxyParams: Option[Socks5ProxyParams] = {
+    if (torEnabled) {
+      Some(
+        Socks5ProxyParams(
+          address = InetSocketAddress.createUnresolved("127.0.0.1", 9050),
+          credentialsOpt = None,
+          randomizeCredentials = true
+        ))
+    } else None
   }
 
   /** Gets the [[org.bitcoins.node.models.Peer]] that
     * corresponds to [[org.bitcoins.rpc.client.common.BitcoindRpcClient]]
     */
-  def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient): Peer = {
-    val socket = getBitcoindSocketAddress(bitcoindRpcClient)
-    Peer(socket)
-  }
+  def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient)(implicit
+      executionContext: ExecutionContext): Future[Peer] =
+    for {
+      socket <- getBitcoindSocketAddress(bitcoindRpcClient)
+    } yield {
+      val socks5ProxyParams = getSocks5ProxyParams
+      Peer(socket, socks5ProxyParams = socks5ProxyParams)
+    }
 
   /** Checks if the given node and bitcoind is synced */
   def isSameBestHash(node: Node, rpc: BitcoindRpcClient)(implicit
@@ -99,8 +136,8 @@ abstract class NodeTestUtil extends P2PLogger {
     import sys.dispatcher
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestHash(node, rpc),
-                            1000.milliseconds,
-                            maxTries = 100)
+                            1.second,
+                            maxTries = 200)
   }
 
   /** Awaits sync between the given node and bitcoind client */
@@ -109,7 +146,8 @@ abstract class NodeTestUtil extends P2PLogger {
     import sys.dispatcher
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestFilterHeaderHeight(node, rpc),
-                            1000.milliseconds)
+                            1.second,
+                            maxTries = 200)
   }
 
   /** Awaits sync between the given node and bitcoind client */
@@ -118,7 +156,8 @@ abstract class NodeTestUtil extends P2PLogger {
     import sys.dispatcher
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestFilterHeight(node, rpc),
-                            1000.milliseconds)
+                            1.second,
+                            maxTries = 200)
   }
 
   /** The future doesn't complete until the nodes best hash is the given hash */

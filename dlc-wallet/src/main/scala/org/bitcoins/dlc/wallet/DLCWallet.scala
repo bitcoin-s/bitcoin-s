@@ -1005,7 +1005,9 @@ abstract class DLCWallet
     for {
       dlcDbOpt <- dlcDAO.findByContractId(contractId)
       dlcDb <- dlcDbOpt match {
-        case Some(db) => Future.successful(db)
+        case Some(db) =>
+          require(!db.isInitiator, "Cannot add DLC sigs as initiator")
+          Future.successful(db)
         case None =>
           Future.failed(new RuntimeException(
             s"No DLC found with corresponding contractId ${contractId.toHex}"))
@@ -1051,6 +1053,7 @@ abstract class DLCWallet
   override def addDLCSigs(sign: DLCSign): Future[DLCDb] = {
     dlcDAO.findByContractId(sign.contractId).flatMap {
       case Some(dlc) =>
+        require(!dlc.isInitiator, "Cannot add DLC sigs as initiator")
         dlc.state match {
           case Offered =>
             Future.failed(
@@ -1193,6 +1196,28 @@ abstract class DLCWallet
   }
 
   override def executeDLC(
+      contractId: ByteVector,
+      oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
+    require(oracleSigs.nonEmpty, "Must provide at least one oracle signature")
+    dlcDAO.findByContractId(contractId).flatMap {
+      case None =>
+        Future.failed(
+          new IllegalArgumentException(
+            s"No DLC found with contractId $contractId"))
+      case Some(db) =>
+        db.closingTxIdOpt match {
+          case Some(txId) =>
+            transactionDAO.findByTxId(txId).flatMap {
+              case Some(tx) => Future.successful(tx.transaction)
+              case None     => createDLCExecutionTx(contractId, oracleSigs)
+            }
+          case None =>
+            createDLCExecutionTx(contractId, oracleSigs)
+        }
+    }
+  }
+
+  private def createDLCExecutionTx(
       contractId: ByteVector,
       oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
     require(oracleSigs.nonEmpty, "Must provide at least one oracle signature")

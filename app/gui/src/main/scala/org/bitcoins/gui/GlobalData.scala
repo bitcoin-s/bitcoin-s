@@ -5,7 +5,7 @@ import org.bitcoins.core.config._
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.gui.settings.Themes
-import scalafx.beans.property.StringProperty
+import scalafx.beans.property._
 
 object GlobalData {
   val currentConfirmedBalance: StringProperty = StringProperty("0")
@@ -21,6 +21,21 @@ object GlobalData {
   var network: BitcoinNetwork = _
 
   val statusText: StringProperty = StringProperty("")
+
+  private val isConnectedStr = "● Connected"
+  private val isDisconnectedStr = "○ Disconnected"
+
+  val connected: BooleanProperty = BooleanProperty(true)
+
+  connected.addListener { (_, _, newValue) =>
+    if (newValue) {
+      connectedStr.value = isConnectedStr
+    } else {
+      connectedStr.value = isDisconnectedStr
+    }
+  }
+
+  val connectedStr: StringProperty = StringProperty(isConnectedStr)
 
   var darkThemeEnabled: Boolean = true
 

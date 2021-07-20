@@ -1,11 +1,24 @@
 package org.bitcoins.testkit
 
 import com.opentable.db.postgres.embedded.EmbeddedPostgres
+import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, Suite}
 
 trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
 
-  lazy val pgEnabled: Boolean = sys.env.contains("PG_ENABLED")
+  lazy val pgEnabled: Boolean = {
+    val config = ConfigFactory.load()
+    val isEnv = sys.env.contains("PG_ENABLED")
+    val isConfig = {
+      if (config.hasPath("bitcoin-s.testkit.pg.enabled")) {
+        config.getBoolean("bitcoin-s.testkit.pg.enabled")
+      } else {
+        false
+      }
+    }
+    val isPgEnabled = isEnv || isConfig
+    isPgEnabled
+  }
 
   lazy val pg: Option[EmbeddedPostgres] = {
 

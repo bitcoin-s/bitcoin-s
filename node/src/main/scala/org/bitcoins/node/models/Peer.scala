@@ -1,11 +1,15 @@
 package org.bitcoins.node.models
 
-import java.net.InetSocketAddress
-
 import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.tor.Socks5ProxyParams
 
-case class Peer(socket: InetSocketAddress, id: Option[Long] = None)
+import java.net.InetSocketAddress
+
+case class Peer(
+    socket: InetSocketAddress,
+    id: Option[Long] = None,
+    socks5ProxyParams: Option[Socks5ProxyParams] = None)
     extends DbRowAutoInc[Peer] {
 
   override def copyWithId(id: Long): Peer = {
@@ -13,20 +17,24 @@ case class Peer(socket: InetSocketAddress, id: Option[Long] = None)
   }
 
   override def toString(): String =
-    s"Peer(${socket.getAddress()}:${socket.getPort()})"
+    s"Peer(${socket.getHostString()}:${socket.getPort()})"
 
 }
 
 object Peer {
 
-  def fromSocket(socket: InetSocketAddress): Peer = {
-    Peer(socket)
+  def fromSocket(
+      socket: InetSocketAddress,
+      socks5ProxyParams: Option[Socks5ProxyParams] = None): Peer = {
+    Peer(socket, socks5ProxyParams = socks5ProxyParams)
   }
 
   /** Constructs a peer from the given `bitcoind` instance
     */
-  def fromBitcoind(bitcoind: BitcoindInstance): Peer = {
+  def fromBitcoind(
+      bitcoind: BitcoindInstance,
+      socks5ProxyParams: Option[Socks5ProxyParams] = None): Peer = {
     val socket = new InetSocketAddress(bitcoind.uri.getHost, bitcoind.p2pPort)
-    fromSocket(socket)
+    fromSocket(socket, socks5ProxyParams = socks5ProxyParams)
   }
 }

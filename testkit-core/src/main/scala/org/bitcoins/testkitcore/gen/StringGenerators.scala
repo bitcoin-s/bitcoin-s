@@ -3,7 +3,6 @@ package org.bitcoins.testkitcore.gen
 import org.scalacheck.Gen
 
 import java.nio.charset.StandardCharsets
-import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 6/20/16.
   */
@@ -64,12 +63,14 @@ trait StringGenerators {
   def genUTF8String: Gen[String] = {
     for {
       bytes <- NumberGenerator.bytes
-      str <- Try(new String(bytes.toArray, StandardCharsets.UTF_8)) match {
-        case Failure(_) =>
-          genUTF8String
-        case Success(value) =>
-          Gen.const(value)
-      }
+      //this is done to get postgres tests working with utf8 strings
+      //I don't think we want to keep this here, as this seems like an exploit that is possible
+      //do we want to narrow the DLC spec or something? What is the point of having a
+      //null character in a UTF8 string for our purposes any way?
+      //To reproduce, use PG_ENABLED=1 and comment out the line below when running dlcOracleTest/test
+      //see: https://stackoverflow.com/a/1348551/967713
+      noZero = bytes.filterNot(_ == 0x0)
+      str = new String(noZero.toArray, StandardCharsets.UTF_8)
     } yield str
   }
 }

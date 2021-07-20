@@ -12,8 +12,7 @@ import org.bitcoins.gui.dlc.DLCPaneModel
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.application.Platform
 import scalafx.beans.property._
-import scalafx.scene.control.Alert.AlertType
-import scalafx.scene.control.{Alert, TextArea}
+import scalafx.scene.control.TextArea
 import scalafx.stage.Window
 
 import scala.concurrent.duration.DurationInt
@@ -35,10 +34,14 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
 
     override def run(): Unit = {
       Platform.runLater {
-        updateBalance()
-        updateWalletAccounting()
-        updateWalletInfo()
+        var success = updateBalance()
+        success &= updateWalletAccounting()
+        success &= updateWalletInfo()
+        // updateDLCs is a future, we can't get if it succeeded or not
+        // it should be caught by one of the others anyways
         dlcModel.updateDLCs()
+
+        GlobalData.connected.value = success
       }
     }
   }
@@ -99,15 +102,19 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
     }
 
     updateBalance()
+    ()
   }
 
   def onAbout(): Unit = {
     AboutDialog.showAndWait(parentWindow.value)
   }
 
-  private def updateWalletInfo(): Unit = {
+  /** Updates the wallet sync height
+    * @return if the update was successful
+    */
+  private def updateWalletInfo(): Boolean = {
     ConsoleCli.exec(WalletInfo, GlobalData.consoleCliConfig) match {
-      case Failure(_) => ()
+      case Failure(_) => false
       case Success(commandReturn) =>
         val json = ujson.read(commandReturn).obj("wallet").obj
         val height = json("height").num.toLong
@@ -115,10 +122,15 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
         // Only update once we start syncing filters
         if (height != 0)
           GlobalData.syncHeight.value = height.toString
+
+        true
     }
   }
 
-  private[gui] def updateBalance(): Unit = {
+  /** Updates the wallet balances
+    * @return if the update was successful
+    */
+  private[gui] def updateBalance(): Boolean = {
     ConsoleCli.exec(GetBalances(isSats = true),
                     GlobalData.consoleCliConfig) match {
       case Success(commandReturn) =>
@@ -140,21 +152,21 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
         GlobalData.currentUnconfirmedBalance.value = unconfirmedBalance
         GlobalData.currentReservedBalance.value = reservedBalance
         GlobalData.currentTotalBalance.value = totalBalance
+        true
       case Failure(err) =>
         err.printStackTrace()
-        val _ = new Alert(AlertType.Error) {
-          initOwner(owner)
-          title = "Could not retrieve wallet balance"
-          headerText = s"Operation failed. Exception: ${err.getClass}"
-          contentText = err.getMessage
-        }.showAndWait()
+        false
     }
   }
 
-  private def updateWalletAccounting(): Unit = {
+  /** Updates the wallet's DLC accounting details
+    * @return if the update was successful
+    */
+  private def updateWalletAccounting(): Boolean = {
     ConsoleCli.exec(GetDLCWalletAccounting, GlobalData.consoleCliConfig) match {
       case Failure(err) =>
         logger.error(s"Error fetching accounting", err)
+        false
       case Success(commandReturn) =>
         val json = ujson.read(commandReturn).obj
         val pnl = json(PicklerKeys.pnl).num.toLong.toString
@@ -162,7 +174,7 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
         val rorPrettyPrint = RateOfReturnUtil.prettyPrint(rateOfReturn)
         GlobalData.currentPNL.value = pnl
         GlobalData.rateOfReturn.value = rorPrettyPrint
-        ()
+        true
     }
   }
 }

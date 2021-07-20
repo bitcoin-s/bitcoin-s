@@ -122,7 +122,7 @@ case class DataMessageHandler(
                 (filter.blockHash,
                  BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
               }
-              logger.debug(s"Processing ${filterBatch.size} filters")
+              logger.info(s"Processing ${filterBatch.size} filters")
               for {
                 newChainApi <- chainApi.processFilters(filterBatch)
                 _ <-

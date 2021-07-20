@@ -47,7 +47,7 @@ trait GetNetworkInfoResult extends NetworkResult {
   def networks: Vector[Network]
   def relayfee: Bitcoins
   def incrementalfee: Bitcoins
-  def localadresses: Option[Vector[NetworkAddress]]
+  def localaddresses: Vector[NetworkAddress]
   def warnings: String
 }
 
@@ -64,7 +64,7 @@ case class GetNetworkInfoResultPreV21(
     networks: Vector[Network],
     relayfee: Bitcoins,
     incrementalfee: Bitcoins,
-    localadresses: Option[Vector[NetworkAddress]],
+    localaddresses: Vector[NetworkAddress],
     warnings: String)
     extends GetNetworkInfoResult
 
@@ -83,7 +83,7 @@ case class GetNetworkInfoResultPostV21(
     networks: Vector[Network],
     relayfee: Bitcoins,
     incrementalfee: Bitcoins,
-    localadresses: Option[Vector[NetworkAddress]],
+    localaddresses: Vector[NetworkAddress],
     warnings: String)
     extends GetNetworkInfoResult
 
