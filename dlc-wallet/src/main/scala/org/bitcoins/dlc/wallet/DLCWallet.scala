@@ -1199,6 +1199,28 @@ abstract class DLCWallet
       contractId: ByteVector,
       oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
     require(oracleSigs.nonEmpty, "Must provide at least one oracle signature")
+    dlcDAO.findByContractId(contractId).flatMap {
+      case None =>
+        Future.failed(
+          new IllegalArgumentException(
+            s"No DLC found with contractId $contractId"))
+      case Some(db) =>
+        db.closingTxIdOpt match {
+          case Some(txId) =>
+            transactionDAO.findByTxId(txId).flatMap {
+              case Some(tx) => Future.successful(tx.transaction)
+              case None     => createDLCExecutionTx(contractId, oracleSigs)
+            }
+          case None =>
+            createDLCExecutionTx(contractId, oracleSigs)
+        }
+    }
+  }
+
+  private def createDLCExecutionTx(
+      contractId: ByteVector,
+      oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
+    require(oracleSigs.nonEmpty, "Must provide at least one oracle signature")
     for {
       (executor, setup) <- executorAndSetupFromDb(contractId)
 

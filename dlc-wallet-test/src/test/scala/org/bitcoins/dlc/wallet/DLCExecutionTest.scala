@@ -217,6 +217,18 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     }
   }
 
+  it must "execute a DLC twice and get the same transaction" in { wallets =>
+    val wallet = wallets._1.wallet
+    for {
+      contractId <- getContractId(wallet)
+      status <- getDLCStatus(wallet)
+      (sig, _) = getSigs(status.contractInfo)
+
+      tx1 <- wallet.executeDLC(contractId, sig)
+      tx2 <- wallet.executeDLC(contractId, sig)
+    } yield assert(tx1 == tx2)
+  }
+
   it must "execute a losing dlc" in { wallets =>
     val dlcA = wallets._1.wallet
 
