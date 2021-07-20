@@ -190,7 +190,7 @@ trait CachedBitcoindPair[T <: BitcoindRpcClient]
 }
 
 trait CachedBitcoindPairV21
-  extends CachedBitcoindCollection[BitcoindV21RpcClient] {
+    extends CachedBitcoindCollection[BitcoindV21RpcClient] {
   _: BitcoinSAkkaAsyncTest =>
 
   override val version: BitcoindVersion = BitcoindVersion.V21

@@ -7,8 +7,17 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest.{createPeer, syncNeutrinoNode}
-import org.bitcoins.testkit.node.fixture.{NeutrinoNodeConnectedWithBitcoinds, SpvNodeConnectedWithBitcoind, SpvNodeConnectedWithBitcoindV21}
-import org.bitcoins.testkit.rpc.{CachedBitcoind, CachedBitcoindNewest, CachedBitcoindPairV21, CachedBitcoindV19}
+import org.bitcoins.testkit.node.fixture.{
+  NeutrinoNodeConnectedWithBitcoinds,
+  SpvNodeConnectedWithBitcoind,
+  SpvNodeConnectedWithBitcoindV21
+}
+import org.bitcoins.testkit.rpc.{
+  CachedBitcoind,
+  CachedBitcoindNewest,
+  CachedBitcoindPairV21,
+  CachedBitcoindV19
+}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.WalletCallbacks
 import org.scalatest.FutureOutcome
@@ -77,8 +86,8 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
       require(appConfig.nodeType == NodeType.NeutrinoNode)
       for {
         node <- NodeUnitTest.createNeutrinoNode(bitcoinds)(system,
-                                                          appConfig.chainConf,
-                                                          appConfig.nodeConf)
+                                                           appConfig.chainConf,
+                                                           appConfig.nodeConf)
         startedNode <- node.start()
         //is it enough to just sync with one bitcoind client for a test?
         syncedNode <- syncNeutrinoNode(startedNode, bitcoinds(0))
@@ -153,7 +162,7 @@ trait NodeTestWithCachedBitcoindNewest
 }
 
 trait NodeTestWithCachedBitcoindPair
-  extends NodeTestWithCachedBitcoind
+    extends NodeTestWithCachedBitcoind
     with CachedBitcoindPairV21 {
 
   override def afterAll(): Unit = {

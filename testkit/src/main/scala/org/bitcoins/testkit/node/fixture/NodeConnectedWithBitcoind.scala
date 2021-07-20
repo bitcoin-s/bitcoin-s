@@ -25,12 +25,12 @@ case class NeutrinoNodeConnectedWithBitcoind(
     bitcoind: BitcoindRpcClient)
     extends NodeConnectedWithBitcoind
 
-trait NodeConnectedWithBitcoinds{
+trait NodeConnectedWithBitcoinds {
   def node: Node
   def bitcoinds: Vector[BitcoindRpcClient]
 }
 
 case class NeutrinoNodeConnectedWithBitcoinds(
-                                             node: NeutrinoNode,
-                                             bitcoinds: Vector[BitcoindRpcClient]
-                                             ) extends NodeConnectedWithBitcoinds
+    node: NeutrinoNode,
+    bitcoinds: Vector[BitcoindRpcClient]
+) extends NodeConnectedWithBitcoinds

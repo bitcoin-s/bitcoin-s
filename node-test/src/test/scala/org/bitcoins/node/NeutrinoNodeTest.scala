@@ -34,20 +34,20 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   it must "connect to both peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
-      val connF= node.peers.indices.map(node.isConnected)
-      val resF=Future.sequence(connF).map(_.forall(_==true))
+      val connF = node.peers.indices.map(node.isConnected)
+      val resF = Future.sequence(connF).map(_.forall(_ == true))
       resF.map(assert(_))
   }
 
   it must "disconnect from both peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
-      def isAllDisconnectedF:Future[Boolean]={
-        val connF= node.peers.indices.map(node.isDisconnected)
-        val res=Future.sequence(connF).map(_.forall(_==true))
+      def isAllDisconnectedF: Future[Boolean] = {
+        val connF = node.peers.indices.map(node.isDisconnected)
+        val res = Future.sequence(connF).map(_.forall(_ == true))
         res
       }
-      val connF=for{
+      val connF = for {
         _ <- node.stop()
         f <- isAllDisconnectedF
       } yield f

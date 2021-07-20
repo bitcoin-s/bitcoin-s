@@ -497,9 +497,9 @@ object NodeUnitTest extends P2PLogger {
     * also calls [[org.bitcoins.node.Node.start() start]] to start the node
     */
   def createNeutrinoNode(bitcoinds: Vector[BitcoindRpcClient])(implicit
-                                                      system: ActorSystem,
-                                                      chainAppConfig: ChainAppConfig,
-                                                      nodeAppConfig: NodeAppConfig): Future[NeutrinoNode] = {
+      system: ActorSystem,
+      chainAppConfig: ChainAppConfig,
+      nodeAppConfig: NodeAppConfig): Future[NeutrinoNode] = {
     import system.dispatcher
 
     val checkConfigF = Future {
@@ -516,10 +516,10 @@ object NodeUnitTest extends P2PLogger {
     } yield {
       val dmh = DataMessageHandler(chainApi)
       NeutrinoNode(nodePeer = peers,
-        dataMessageHandler = dmh,
-        nodeConfig = nodeAppConfig,
-        chainConfig = chainAppConfig,
-        actorSystem = system)
+                   dataMessageHandler = dmh,
+                   nodeConfig = nodeAppConfig,
+                   chainConfig = chainAppConfig,
+                   actorSystem = system)
     }
 
     nodeF

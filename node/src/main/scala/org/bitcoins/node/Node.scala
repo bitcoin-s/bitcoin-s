@@ -29,7 +29,7 @@ import org.bitcoins.node.networking.peer.{
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success,Random}
+import scala.util.{Failure, Random, Success}
 
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
@@ -43,7 +43,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def executionContext: ExecutionContext = system.dispatcher
 
-  def randIdx:Int=Random.nextInt(peers.length)
+  def randIdx: Int = Random.nextInt(peers.length)
 
   val peers: Vector[Peer]
 
@@ -77,10 +77,14 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * the [[ChainApi chain api]] is updated inside of the p2p client
     */
   lazy val clients: Vector[P2PClient] = {
-    val peerMsgRecvs: Vector[PeerMessageReceiver] = peers.map(x=>
-      PeerMessageReceiver.newReceiver(node = this, peer = x))
+    val peerMsgRecvs: Vector[PeerMessageReceiver] =
+      peers.map(x => PeerMessageReceiver.newReceiver(node = this, peer = x))
     val zipped = peers.zip(peerMsgRecvs)
-    val p2p = zipped.map { case(peer,peerMsgRecv)=> P2PClient(context = system, peer = peer, peerMessageReceiver = peerMsgRecv) }
+    val p2p = zipped.map { case (peer, peerMsgRecv) =>
+      P2PClient(context = system,
+                peer = peer,
+                peerMessageReceiver = peerMsgRecv)
+    }
     p2p
   }
 
@@ -93,21 +97,22 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * with P2P messages, therefore marked as
     * `private[node]`.
     */
-  def send(msg: NetworkPayload,idx: Int): Future[Unit] = {
+  def send(msg: NetworkPayload, idx: Int): Future[Unit] = {
     peerMsgSenders(idx).sendMsg(msg)
   }
 
   /** Checks if we have a tcp connection with our peer */
-  def isConnected(idx:Int): Future[Boolean] = peerMsgSenders(idx).isConnected()
+  def isConnected(idx: Int): Future[Boolean] = peerMsgSenders(idx).isConnected()
 
   /** Checks if we are fully initialized with our peer and have executed the handshake
     * This means we can now send arbitrary messages to our peer
     *
     * @return
     */
-  def isInitialized(idx:Int): Future[Boolean] = peerMsgSenders(idx).isInitialized()
+  def isInitialized(idx: Int): Future[Boolean] =
+    peerMsgSenders(idx).isInitialized()
 
-  def isDisconnected(idx:Int): Future[Boolean] =
+  def isDisconnected(idx: Int): Future[Boolean] =
     peerMsgSenders(idx).isDisconnected()
 
   /** Starts our node */
@@ -173,9 +178,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       _ <- nodeAppConfig.stop()
     } yield disconnect
 
-    def isAllDisconnectedF:Future[Boolean]={
-      val connF=peerMsgSenders.indices.map(peerMsgSenders(_).isDisconnected())
-      val res=Future.sequence(connF).map(_.forall(_==true))
+    def isAllDisconnectedF: Future[Boolean] = {
+      val connF = peerMsgSenders.indices.map(peerMsgSenders(_).isDisconnected())
+      val res = Future.sequence(connF).map(_.forall(_ == true))
       res
     }
 
@@ -263,7 +268,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       Future.unit
     } else {
       peerMsgSenders(0).sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
-                                       blockHashes: _*)
+                                           blockHashes: _*)
     }
   }
 
