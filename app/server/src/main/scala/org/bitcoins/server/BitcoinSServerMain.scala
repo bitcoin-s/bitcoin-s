@@ -217,6 +217,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       nodeConf: NodeAppConfig,
       ec: ExecutionContext): Future[NodeCallbacks] = {
     lazy val onTx: OnTxReceived = { tx =>
+      logger.info("Receiving transaction as a callback")
       wallet.processTransaction(tx, blockHashOpt = None).map(_ => ())
     }
     lazy val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
@@ -241,7 +242,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                         onBlockHeadersReceived = Vector(onHeaders)))
       case NodeType.NeutrinoNode =>
         Future.successful(
-          NodeCallbacks(onBlockReceived = Vector(onBlock),
+          NodeCallbacks(onTxReceived = Vector(onTx),
+                        onBlockReceived = Vector(onBlock),
                         onCompactFiltersReceived = Vector(onCompactFilters),
                         onBlockHeadersReceived = Vector(onHeaders)))
       case NodeType.FullNode =>
