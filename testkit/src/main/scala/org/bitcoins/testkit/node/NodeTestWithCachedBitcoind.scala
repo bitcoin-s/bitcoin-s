@@ -8,7 +8,7 @@ import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest.{createPeer, syncNeutrinoNode}
 import org.bitcoins.testkit.node.fixture.{NeutrinoNodeConnectedWithBitcoinds, SpvNodeConnectedWithBitcoind, SpvNodeConnectedWithBitcoindV19}
-import org.bitcoins.testkit.rpc.{BitcoindFixturesCachedPairV21, CachedBitcoind, CachedBitcoindNewest, CachedBitcoindV19}
+import org.bitcoins.testkit.rpc.{CachedBitcoind, CachedBitcoindNewest, CachedBitcoindPairV21, CachedBitcoindV19}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.WalletCallbacks
 import org.scalatest.FutureOutcome
@@ -156,10 +156,10 @@ trait NodeTestWithCachedBitcoindNewest
 
 trait NodeTestWithCachedBitcoindPair
   extends NodeTestWithCachedBitcoind
-    with BitcoindFixturesCachedPairV21 {
+    with CachedBitcoindPairV21 {
 
   override def afterAll(): Unit = {
-    super[BitcoindFixturesCachedPairV21].afterAll()
+    super[CachedBitcoindPairV21].afterAll()
     super[NodeTestWithCachedBitcoind].afterAll()
   }
 }

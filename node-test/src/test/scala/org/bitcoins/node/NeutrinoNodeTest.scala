@@ -31,11 +31,27 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
   behavior of "NeutrinoNode"
 
-  it must "connect to all peers" in {
+  it must "connect to both peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
-      node.isConnected(0).map(assert(_))
-      node.isConnected(1).map(assert(_))
+      val connF=(0 until node.peers.length).map(idx=>node.isConnected(idx))
+      val resF=Future.sequence(connF).map(_.forall(_==true))
+      resF.map(assert(_))
+  }
+
+  it must "disconnect from both peers" in {
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+      val node = nodeConnectedWithBitcoind.node
+      def isAllDisconnectedF:Future[Boolean]={
+        val connF=(0 until node.peers.length).map(node.isDisconnected(_))
+        val res=Future.sequence(connF).map(_.forall(_==true))
+        res
+      }
+      val connF=for{
+        _ <- node.stop()
+        f <- isAllDisconnectedF
+      } yield f
+      connF.map(assert(_))
   }
 
   it must "receive notification that a block occurred on the p2p network for neutrino" in {

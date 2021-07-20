@@ -29,7 +29,7 @@ import org.bitcoins.node.networking.peer.{
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success,Random}
 
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
@@ -42,6 +42,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   implicit def chainAppConfig: ChainAppConfig
 
   implicit def executionContext: ExecutionContext = system.dispatcher
+
+  def randIdx:Int=Random.nextInt(peers.length)
 
   val peers: Vector[Peer]
 
@@ -77,10 +79,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   lazy val clients: Vector[P2PClient] = {
     val peerMsgRecvs: Vector[PeerMessageReceiver] = peers.map(x=>
       PeerMessageReceiver.newReceiver(node = this, peer = x))
-    val p2p =  peers zip peerMsgRecvs map {case(peer,peerMsgRecv)=> P2PClient(context = system,
-                        peer = peer,
-                        peerMessageReceiver = peerMsgRecv)
-    }
+    val zipped = peers.zip(peerMsgRecvs)
+    val p2p = zipped.map { case(peer,peerMsgRecv)=> P2PClient(context = system, peer = peer, peerMessageReceiver = peerMsgRecv) }
     p2p
   }
 
@@ -123,7 +123,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val chainApiF = startConfsF.flatMap(_ => chainApiFromDb())
 
     val startNodeF = {
-      peerMsgSenders foreach(_.connect())
+      peerMsgSenders.foreach(_.connect())
       val isInitializedF = for {
         _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized(0),
                                             interval = 250.millis)
@@ -164,16 +164,25 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   /** Stops our node */
   def stop(): Future[Node] = {
     logger.info(s"Stopping node")
+
+    val disconnectFs = peerMsgSenders.map(_.disconnect())
+
     val disconnectF = for {
-      disconnect <- peerMsgSenders(0).disconnect()
+      disconnect <- Future.sequence(disconnectFs)
       _ <- nodeAppConfig.stop()
     } yield disconnect
+
+    def isAllDisconnectedF:Future[Boolean]={
+      val connF=peerMsgSenders.indices.map(peerMsgSenders(_).isDisconnected())
+      val res=Future.sequence(connF).map(_.forall(_==true))
+      res
+    }
 
     val start = System.currentTimeMillis()
     val isStoppedF = disconnectF.flatMap { _ =>
       logger.info(s"Awaiting disconnect")
       //25 seconds to disconnect
-      AsyncUtil.retryUntilSatisfiedF(() => isDisconnected(0), 500.millis)
+      AsyncUtil.retryUntilSatisfiedF(() => isAllDisconnectedF, 500.millis)
     }
 
     isStoppedF.failed.foreach { e =>
