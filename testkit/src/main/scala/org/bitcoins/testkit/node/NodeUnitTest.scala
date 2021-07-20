@@ -509,9 +509,10 @@ object NodeUnitTest extends P2PLogger {
       _ <- checkConfigF
       chainHandler <- ChainUnitTest.createChainHandler()
     } yield chainHandler
-    val peers = bitcoinds.map(createPeer(_))
+    val peersF = bitcoinds.map(createPeer(_))
     val nodeF = for {
       chainApi <- chainApiF
+      peers <- Future.sequence(peersF)
     } yield {
       val dmh = DataMessageHandler(chainApi)
       NeutrinoNode(nodePeer = peers,
