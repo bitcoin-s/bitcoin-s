@@ -1,16 +1,16 @@
 package org.bitcoins.tor
 
-import java.nio.file.attribute.PosixFilePermissions
-import java.nio.file.{Files, Path, Paths}
-import java.util
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash}
 import akka.io.Tcp.Connected
 import akka.util.ByteString
-import TorProtocolHandler.{Authentication, OnionServiceVersion}
 import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.tor.TorProtocolHandler.{Authentication, OnionServiceVersion}
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
+import java.nio.file.attribute.PosixFilePermissions
+import java.nio.file.{Files, Path, Paths}
+import java.util
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.Promise
@@ -50,7 +50,7 @@ class TorProtocolHandler(
   override def receive: Receive = { case Connected(_, _) =>
     receiver = sender()
     sendCommand("PROTOCOLINFO 1")
-    context become protocolInfo
+    context.become(protocolInfo)
   }
 
   def protocolInfo: Receive = { case data: ByteString =>
@@ -71,14 +71,14 @@ class TorProtocolHandler(
     authentication match {
       case Password(password) =>
         sendCommand(s"""AUTHENTICATE "$password"""")
-        context become authenticate
+        context.become(authenticate)
       case SafeCookie(nonce) =>
         val cookieFile = Paths.get(
           unquote(
             res.getOrElse("COOKIEFILE",
                           throw TorException("cookie file not found"))))
         sendCommand(s"AUTHCHALLENGE SAFECOOKIE ${nonce.toHex}")
-        context become cookieChallenge(cookieFile, nonce)
+        context.become(cookieChallenge(cookieFile, nonce))
     }
   }
 
@@ -98,13 +98,13 @@ class TorProtocolHandler(
         cookieFile
       )
       sendCommand(s"AUTHENTICATE ${clientHash.toHex}")
-      context become authenticate
+      context.become(authenticate)
   }
 
   def authenticate: Receive = { case data: ByteString =>
     readResponse(data)
     sendCommand(s"ADD_ONION $computeKey $computePort")
-    context become addOnion
+    context.become(addOnion)
   }
 
   def addOnion: Receive = { case data: ByteString =>
@@ -123,6 +123,7 @@ class TorProtocolHandler(
   } catch {
     case t: Throwable =>
       onionAdded.map(_.tryFailure(t))
+      context.stop(self)
       ()
   }
 
