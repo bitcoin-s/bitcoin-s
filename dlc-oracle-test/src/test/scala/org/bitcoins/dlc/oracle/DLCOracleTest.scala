@@ -495,8 +495,8 @@ class DLCOracleTest extends DLCOracleFixture {
 
   it must "create and sign a decomp event with a large num digits" in {
     dlcOracle: DLCOracle =>
-      //https://test.oracle.suredbits.com/announcement/93cec264d526b316faebc2179ee376a0c9960cd6e26581bb62df990e5e99ee6d
-      //trying to replicate
+      //trying make sure we don't regress on
+      //https://github.com/bitcoin-s/bitcoin-s/issues/3431
 
       val outcome = 30816
       val numDigits = 18
