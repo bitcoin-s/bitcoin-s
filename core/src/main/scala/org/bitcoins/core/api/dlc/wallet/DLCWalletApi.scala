@@ -1,27 +1,19 @@
-package org.bitcoins.dlc.wallet
+package org.bitcoins.core.api.dlc.wallet
 
+import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.wallet._
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
+import org.bitcoins.core.dlc.accounting._
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
-  DLCAccept,
-  DLCOffer,
-  DLCSign
-}
-import org.bitcoins.core.protocol.dlc.models.{
-  ContractInfo,
-  DLCStatus,
-  OracleSignatures
-}
+import org.bitcoins.core.protocol.dlc.models.DLCMessage._
+import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.Sha256Digest
-import org.bitcoins.dlc.wallet.models.DLCDb
 import scodec.bits.ByteVector
 
-import scala.concurrent.Future
+import scala.concurrent._
 
 trait DLCWalletApi { self: WalletApi =>
 

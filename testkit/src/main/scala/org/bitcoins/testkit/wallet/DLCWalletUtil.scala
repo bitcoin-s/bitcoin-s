@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.wallet
 
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.crypto.WitnessTxSigComponent
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{BIP32Path, HDAccount, HDChainType}
