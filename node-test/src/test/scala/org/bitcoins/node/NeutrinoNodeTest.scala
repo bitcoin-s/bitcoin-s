@@ -37,7 +37,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val node = nodeConnectedWithBitcoind.node
       val connFs = node.peers.indices.map(node.isConnected)
       val connF = Future.sequence(connFs).map(_.forall(_ == true))
-      connF.map(assert(_))
+      val assertion1F = connF.map(assert(_))
 
       //checking all peers can be disconnected
       def isAllDisconnectedF: Future[Boolean] = {
@@ -46,6 +46,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         res
       }
       val disconnF = for {
+        _ <- assertion1F
         _ <- node.stop()
         f <- isAllDisconnectedF
       } yield f
