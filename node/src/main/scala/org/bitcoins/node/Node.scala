@@ -29,7 +29,7 @@ import org.bitcoins.node.networking.peer.{
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Random, Success}
+import scala.util.{Failure, Success}
 
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
@@ -42,8 +42,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   implicit def chainAppConfig: ChainAppConfig
 
   implicit def executionContext: ExecutionContext = system.dispatcher
-
-  def randIdx: Int = Random.nextInt(peers.length)
 
   val peers: Vector[Peer]
 

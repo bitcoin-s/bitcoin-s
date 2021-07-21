@@ -29,31 +29,27 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
     new FutureOutcome(outcomeF)
   }
 
-  //comment to be removed
-
   behavior of "NeutrinoNode"
 
-  it must "connect to both peers" in {
+  it must "be able to connect and disconnect from all peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+      //checking all peers are connected
       val node = nodeConnectedWithBitcoind.node
-      val connF = node.peers.indices.map(node.isConnected)
-      val resF = Future.sequence(connF).map(_.forall(_ == true))
-      resF.map(assert(_))
-  }
+      val connFs = node.peers.indices.map(node.isConnected)
+      val connF = Future.sequence(connFs).map(_.forall(_ == true))
+      connF.map(assert(_))
 
-  it must "disconnect from both peers" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
-      val node = nodeConnectedWithBitcoind.node
+      //checking all peers can be disconnected
       def isAllDisconnectedF: Future[Boolean] = {
-        val connF = node.peers.indices.map(node.isDisconnected)
-        val res = Future.sequence(connF).map(_.forall(_ == true))
+        val disconnFs = node.peers.indices.map(node.isDisconnected)
+        val res = Future.sequence(disconnFs).map(_.forall(_ == true))
         res
       }
-      val connF = for {
+      val disconnF = for {
         _ <- node.stop()
         f <- isAllDisconnectedF
       } yield f
-      connF.map(assert(_))
+      disconnF.map(assert(_))
   }
 
   it must "receive notification that a block occurred on the p2p network for neutrino" in {
