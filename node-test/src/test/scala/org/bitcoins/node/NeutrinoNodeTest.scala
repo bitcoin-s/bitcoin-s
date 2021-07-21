@@ -31,7 +31,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
   behavior of "NeutrinoNode"
 
-  it must "be able to connect and disconnect from all peers" in {
+  it must "be able to connect and then disconnect from all peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       //checking all peers are connected
       val node = nodeConnectedWithBitcoind.node
