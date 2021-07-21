@@ -493,6 +493,39 @@ class DLCOracleTest extends DLCOracleFixture {
       }
   }
 
+  it must "create and sign a decomp event with a large num digits" in {
+    dlcOracle: DLCOracle =>
+      //trying make sure we don't regress on
+      //https://github.com/bitcoin-s/bitcoin-s/issues/3431
+
+      val outcome = 30816
+      val numDigits = 18
+      val eventName = "test"
+      for {
+        announcement <-
+          dlcOracle.createNewDigitDecompEvent(eventName = eventName,
+                                              maturationTime = futureTime,
+                                              base = UInt16(2),
+                                              isSigned = false,
+                                              numDigits = numDigits,
+                                              unit = "units",
+                                              precision = Int32.zero)
+
+        _ = assert(announcement.validateSignature)
+
+        eventTLV = announcement.eventTLV
+
+        event <- dlcOracle.signDigits(eventName, outcome)
+      } yield {
+        event match {
+          case _: PendingOracleEvent | _: CompletedEnumV0OracleEvent =>
+            fail(s"Shouldn't be pending/enum after signDigits()")
+          case c: CompletedDigitDecompositionV0OracleEvent =>
+            assert(c.outcomeBase10 == outcome)
+        }
+      }
+  }
+
   it must "correctly track pending events" in { dlcOracle: DLCOracle =>
     val outcome = enumOutcomes.head
     for {
