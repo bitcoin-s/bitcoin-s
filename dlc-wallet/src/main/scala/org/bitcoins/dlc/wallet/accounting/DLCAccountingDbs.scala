@@ -1,7 +1,8 @@
 package org.bitcoins.dlc.wallet.accounting
 
+import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.dlc.wallet.models.{DLCAcceptDb, DLCDb, DLCOfferDb}
+import org.bitcoins.dlc.wallet.models.{DLCAcceptDb, DLCOfferDb}
 
 case class DLCAccountingDbs(
     dlcDb: DLCDb,

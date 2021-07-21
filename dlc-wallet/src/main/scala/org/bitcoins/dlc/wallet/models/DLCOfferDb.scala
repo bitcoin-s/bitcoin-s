@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.wallet.models
 
+import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress

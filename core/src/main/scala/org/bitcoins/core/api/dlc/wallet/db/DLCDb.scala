@@ -1,11 +1,15 @@
-package org.bitcoins.dlc.wallet.models
+package org.bitcoins.core.api.dlc.wallet.db
 
-import org.bitcoins.core.hd._
+import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.number.UInt64
-import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.dlc.models.DLCState
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
+  SchnorrDigitalSignature,
+  Sha256Digest
+}
 import scodec.bits.ByteVector
 
 /** This table contains all the meta information about a DLC.

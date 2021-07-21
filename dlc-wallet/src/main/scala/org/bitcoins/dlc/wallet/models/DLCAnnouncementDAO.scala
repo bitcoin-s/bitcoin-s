@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.wallet.models
 
+import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.crypto._
 import org.bitcoins.db._
 import org.bitcoins.dlc.wallet.DLCAppConfig
