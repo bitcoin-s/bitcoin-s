@@ -297,7 +297,7 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
       kVal = getKValue(rValDb, sigVersion)
       _ = require(
         kVal.schnorrNonce == rValDb.nonce,
-        s"The nonce from derived seed did not match database, db=${rValDb.nonce} derived=${kVal.schnorrNonce}, rValDb=$rValDb"
+        s"The nonce from derived seed did not match database, db=${rValDb.nonce.hex} derived=${kVal.schnorrNonce.hex}, rValDb=$rValDb"
       )
 
       hashBytes = eventOutcomeDb.hashedMessage
