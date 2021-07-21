@@ -4,27 +4,24 @@ import akka.actor.Cancellable
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
-import org.bitcoins.testkit.node.{
-  NodeTestUtil,
-  NodeTestWithCachedBitcoindNewest
-}
+import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
+import org.bitcoins.testkit.node.{NodeTestUtil, NodeTestWithCachedBitcoindPair}
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
-class NeutrinoNodeTest extends NodeTestWithCachedBitcoindNewest {
+class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
-  override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
+  override type FixtureParam = NeutrinoNodeConnectedWithBitcoinds
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF: Future[Outcome] = for {
-      bitcoind <- cachedBitcoindWithFundsF
-      outcome = withNeutrinoNodeConnectedToBitcoind(test, bitcoind)(
+      bitcoinds <- clientsF
+      outcome = withNeutrinoNodeConnectedToBitcoinds(test, bitcoinds.toVector)(
         system,
         getFreshConfig)
       f <- outcome.toFuture
@@ -34,15 +31,37 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindNewest {
 
   behavior of "NeutrinoNode"
 
+  it must "be able to connect and then disconnect from all peers" in {
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+      //checking all peers are connected
+      val node = nodeConnectedWithBitcoind.node
+      val connFs = node.peers.indices.map(node.isConnected)
+      val connF = Future.sequence(connFs).map(_.forall(_ == true))
+      val assertion1F = connF.map(assert(_))
+
+      //checking all peers can be disconnected
+      def isAllDisconnectedF: Future[Boolean] = {
+        val disconnFs = node.peers.indices.map(node.isDisconnected)
+        val res = Future.sequence(disconnFs).map(_.forall(_ == true))
+        res
+      }
+      val disconnF = for {
+        _ <- assertion1F
+        _ <- node.stop()
+        f <- isAllDisconnectedF
+      } yield f
+      disconnF.map(assert(_))
+  }
+
   it must "receive notification that a block occurred on the p2p network for neutrino" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
 
-      val bitcoind = nodeConnectedWithBitcoind.bitcoind
+      val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
 
       val assert1F = for {
-        _ <- node.isConnected.map(assert(_))
-        a2 <- node.isInitialized.map(assert(_))
+        _ <- node.isConnected(0).map(assert(_))
+        a2 <- node.isInitialized(0).map(assert(_))
       } yield a2
 
       val hashF: Future[DoubleSha256DigestBE] = bitcoind.getNewAddress
@@ -62,9 +81,9 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "stay in sync with a bitcoind instance for neutrino" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
-      val bitcoind = nodeConnectedWithBitcoind.bitcoind
+      val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
 
       //we need to generate 1 block for bitcoind to consider
       //itself out of IBD. bitcoind will not sendheaders

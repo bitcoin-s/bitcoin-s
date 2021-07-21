@@ -15,7 +15,7 @@ import org.bitcoins.node.networking.peer.DataMessageHandler
 import scala.concurrent.Future
 
 case class SpvNode(
-    nodePeer: Peer,
+    nodePeer: Vector[Peer],
     dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
@@ -30,7 +30,7 @@ case class SpvNode(
 
   override def chainAppConfig: ChainAppConfig = chainConfig
 
-  override val peer: Peer = nodePeer
+  override val peers: Vector[Peer] = nodePeer
 
   private val _bloomFilter = new Mutable(BloomFilter.empty)
 
@@ -58,8 +58,8 @@ case class SpvNode(
     // then need to calculate all the new elements in
     // the filter. this is easier:-)
     for {
-      _ <- peerMsgSender.sendFilterClearMessage()
-      _ <- peerMsgSender.sendFilterLoadMessage(newBloom)
+      _ <- peerMsgSenders(0).sendFilterClearMessage()
+      _ <- peerMsgSenders(0).sendFilterLoadMessage(newBloom)
     } yield this
 
   }
@@ -73,7 +73,7 @@ case class SpvNode(
     val hash = address.hash
     _bloomFilter.atomicUpdate(hash)(_.insert(_))
 
-    val sentFilterAddF = peerMsgSender.sendFilterAddMessage(hash)
+    val sentFilterAddF = peerMsgSenders(0).sendFilterAddMessage(hash)
 
     sentFilterAddF.map(_ => this)
   }
@@ -81,10 +81,10 @@ case class SpvNode(
   override def start(): Future[SpvNode] = {
     for {
       node <- super.start()
-      _ <- AsyncUtil.retryUntilSatisfiedF(() => isConnected)
-      _ <- peerMsgSender.sendFilterLoadMessage(bloomFilter)
+      _ <- AsyncUtil.retryUntilSatisfiedF(() => isConnected(0))
+      _ <- peerMsgSenders(0).sendFilterLoadMessage(bloomFilter)
     } yield {
-      logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
+      logger.info(s"Sending bloomfilter=${bloomFilter.hex} to ${peers(0)}")
       node.asInstanceOf[SpvNode]
     }
   }

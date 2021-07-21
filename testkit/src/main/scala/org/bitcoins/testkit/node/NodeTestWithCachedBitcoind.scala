@@ -8,13 +8,14 @@ import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest.{createPeer, syncNeutrinoNode}
 import org.bitcoins.testkit.node.fixture.{
-  NeutrinoNodeConnectedWithBitcoind,
+  NeutrinoNodeConnectedWithBitcoinds,
   SpvNodeConnectedWithBitcoind,
   SpvNodeConnectedWithBitcoindV21
 }
 import org.bitcoins.testkit.rpc.{
   CachedBitcoind,
   CachedBitcoindNewest,
+  CachedBitcoindPairV21,
   CachedBitcoindV19
 }
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
@@ -75,25 +76,26 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
       })(test)
   }
 
-  def withNeutrinoNodeConnectedToBitcoind(
+  def withNeutrinoNodeConnectedToBitcoinds(
       test: OneArgAsyncTest,
-      bitcoind: BitcoindRpcClient)(implicit
+      bitcoinds: Vector[BitcoindRpcClient])(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
-      NeutrinoNodeConnectedWithBitcoind] = { () =>
+      NeutrinoNodeConnectedWithBitcoinds] = { () =>
       require(appConfig.nodeType == NodeType.NeutrinoNode)
       for {
-        node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
-                                                          appConfig.chainConf,
-                                                          appConfig.nodeConf)
+        node <- NodeUnitTest.createNeutrinoNode(bitcoinds)(system,
+                                                           appConfig.chainConf,
+                                                           appConfig.nodeConf)
         startedNode <- node.start()
-        syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
-      } yield NeutrinoNodeConnectedWithBitcoind(syncedNode, bitcoind)
+        //is it enough to just sync with one bitcoind client for a test?
+        syncedNode <- syncNeutrinoNode(startedNode, bitcoinds(0))
+      } yield NeutrinoNodeConnectedWithBitcoinds(syncedNode, bitcoinds)
     }
-    makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
+    makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
-      { case x: NeutrinoNodeConnectedWithBitcoind =>
+      { case x: NeutrinoNodeConnectedWithBitcoinds =>
         tearDownNode(x.node)
       })(test)
   }
@@ -155,6 +157,16 @@ trait NodeTestWithCachedBitcoindNewest
 
   override def afterAll(): Unit = {
     super[CachedBitcoindNewest].afterAll()
+    super[NodeTestWithCachedBitcoind].afterAll()
+  }
+}
+
+trait NodeTestWithCachedBitcoindPair
+    extends NodeTestWithCachedBitcoind
+    with CachedBitcoindPairV21 {
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindPairV21].afterAll()
     super[NodeTestWithCachedBitcoind].afterAll()
   }
 }
