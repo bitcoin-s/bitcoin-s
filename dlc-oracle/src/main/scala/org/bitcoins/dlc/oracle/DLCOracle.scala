@@ -22,6 +22,7 @@ import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 import scodec.bits.ByteVector
 
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ExecutionContext, Future}
 
 class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
@@ -70,6 +71,11 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
   protected[bitcoins] val rValueDAO: RValueDAO = RValueDAO()
   protected[bitcoins] val eventDAO: EventDAO = EventDAO()
   protected[bitcoins] val eventOutcomeDAO: EventOutcomeDAO = EventOutcomeDAO()
+
+  lazy val nextKeyIndexF: Future[AtomicInteger] = rValueDAO.maxKeyIndex.map {
+    case Some(idx) => new AtomicInteger(idx + 1)
+    case None      => new AtomicInteger(0)
+  }
 
   private def getPath(keyIndex: Int): BIP32Path = {
     val accountIndex = rValAccount.index
@@ -174,11 +180,8 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
       dbs <- eventDAO.findByEventName(eventName)
       _ = require(dbs.isEmpty, s"Event name ($eventName) is already being used")
 
-      indexOpt <- rValueDAO.maxKeyIndex
-      firstIndex = indexOpt match {
-        case Some(value) => value + 1
-        case None        => 0
-      }
+      index <- nextKeyIndexF
+      firstIndex = index.getAndAdd(descriptor.noncesNeeded)
 
       rValueDbs =
         0.until(descriptor.noncesNeeded)
