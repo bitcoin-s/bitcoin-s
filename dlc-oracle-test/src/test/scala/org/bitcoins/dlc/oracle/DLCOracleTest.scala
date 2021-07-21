@@ -174,6 +174,37 @@ class DLCOracleTest extends DLCOracleFixture {
       }
   }
 
+  it must "create two events and use incrementing key indexes" in {
+    dlcOracle: DLCOracle =>
+      val create1F = dlcOracle.createNewDigitDecompEvent(eventName = "test1",
+                                                         maturationTime =
+                                                           futureTime,
+                                                         base = UInt16(10),
+                                                         isSigned = false,
+                                                         numDigits = 3,
+                                                         unit = "units",
+                                                         precision = Int32.zero)
+
+      val create2F = dlcOracle.createNewDigitDecompEvent(eventName = "test2",
+                                                         maturationTime =
+                                                           futureTime,
+                                                         base = UInt16(10),
+                                                         isSigned = false,
+                                                         numDigits = 3,
+                                                         unit = "units",
+                                                         precision = Int32.zero)
+
+      for {
+        _ <- create1F
+        _ <- create2F
+
+        rValDbs <- dlcOracle.rValueDAO.findAll()
+      } yield {
+        val indexes = rValDbs.map(_.keyIndex).sorted
+        assert(indexes == Vector(0, 1, 2, 3, 4, 5))
+      }
+  }
+
   it must "fail to create an event with the same name" in {
     dlcOracle: DLCOracle =>
       for {
