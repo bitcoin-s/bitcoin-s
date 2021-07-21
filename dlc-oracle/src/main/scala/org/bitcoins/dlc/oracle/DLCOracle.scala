@@ -72,10 +72,11 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
   protected[bitcoins] val eventDAO: EventDAO = EventDAO()
   protected[bitcoins] val eventOutcomeDAO: EventOutcomeDAO = EventOutcomeDAO()
 
-  lazy val nextKeyIndexF: Future[AtomicInteger] = rValueDAO.maxKeyIndex.map {
-    case Some(idx) => new AtomicInteger(idx + 1)
-    case None      => new AtomicInteger(0)
-  }
+  private lazy val nextKeyIndexF: Future[AtomicInteger] =
+    rValueDAO.maxKeyIndex.map {
+      case Some(idx) => new AtomicInteger(idx + 1)
+      case None      => new AtomicInteger(0)
+    }
 
   private def getPath(keyIndex: Int): BIP32Path = {
     val accountIndex = rValAccount.index
