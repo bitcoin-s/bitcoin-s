@@ -217,7 +217,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       nodeConf: NodeAppConfig,
       ec: ExecutionContext): Future[NodeCallbacks] = {
     lazy val onTx: OnTxReceived = { tx =>
-      logger.info(s"Receiving transaction txid=${tx.txId} as a callback")
+      logger.info(s"Receiving transaction txid=${tx.txIdBE} as a callback")
       wallet.processTransaction(tx, blockHashOpt = None).map(_ => ())
     }
     lazy val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
