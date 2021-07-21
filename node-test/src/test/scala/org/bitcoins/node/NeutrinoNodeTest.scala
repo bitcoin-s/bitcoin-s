@@ -29,6 +29,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
     new FutureOutcome(outcomeF)
   }
 
+  //comment to be removed
+
   behavior of "NeutrinoNode"
 
   it must "connect to both peers" in {
