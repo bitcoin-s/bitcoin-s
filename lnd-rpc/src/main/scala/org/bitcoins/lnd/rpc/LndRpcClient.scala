@@ -585,7 +585,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
 object LndRpcClient {
 
   /** The current version we support of Lnd */
-  private[bitcoins] val version = "0.13.0"
+  private[bitcoins] val version = "0.13.1"
 
   /** Key used for adding the macaroon to the gRPC header */
   private[lnd] val macaroonKey = "macaroon"
