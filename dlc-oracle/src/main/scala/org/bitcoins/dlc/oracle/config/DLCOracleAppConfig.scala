@@ -131,7 +131,7 @@ case class DLCOracleAppConfig(
   lazy val kmParams: KeyManagerParams =
     KeyManagerParams(kmConf.seedPath,
                      HDPurpose(DLCOracle.R_VALUE_PURPOSE),
-                     network)
+                     RegTest)
 
   lazy val aesPasswordOpt: Option[AesPassword] = kmConf.aesPasswordOpt
   lazy val bip39PasswordOpt: Option[String] = kmConf.bip39PasswordOpt
