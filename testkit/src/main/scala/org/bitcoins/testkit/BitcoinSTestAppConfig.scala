@@ -86,6 +86,7 @@ object BitcoinSTestAppConfig {
          |bitcoin-s {
          |  node {
          |     mode = neutrino
+         |     relay = true
          |  }
          |  proxy.enabled = ${torEnabled}
          |}
@@ -103,6 +104,7 @@ object BitcoinSTestAppConfig {
            |bitcoin-s {
            |  node {
            |     mode = neutrino
+           |     relay = true
            |  }
            |  proxy.enabled = ${torEnabled}
            |}
