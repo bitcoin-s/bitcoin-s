@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.oracle
 
+import com.typesafe.config.Config
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db._
@@ -21,16 +22,16 @@ import org.bitcoins.dlc.oracle.util.EventDbUtil
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 import scodec.bits.ByteVector
 
+import java.nio.file.Path
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.{ExecutionContext, Future}
 
-class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
-    val conf: DLCOracleAppConfig)
+case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     extends DLCOracleApi
     with Logging {
 
-  implicit val ec: ExecutionContext = conf.ec
+  implicit private val ec: ExecutionContext = conf.ec
 
   // We have to use Testnet here because before this was dictated by
   // by the network config. The default network config was Regtest,
@@ -49,6 +50,14 @@ class DLCOracle(private[this] val extPrivateKey: ExtPrivateKeyHardened)(implicit
 
   /** The chain index used in the bip32 paths for generating R values */
   private val rValueChainIndex = 0
+
+  /** The root private key for this oracle */
+  private[this] val extPrivateKey: ExtPrivateKeyHardened = {
+    WalletStorage.getPrivateKeyFromDisk(conf.kmConf.seedPath,
+                                        SegWitMainNetPriv,
+                                        conf.aesPasswordOpt,
+                                        conf.bip39PasswordOpt)
+  }
 
   private def signingKey: ECPrivateKey = {
     val coin = HDCoin(HDPurposes.SegWit, coinType)
@@ -427,13 +436,10 @@ object DLCOracle {
   // 585 is a random one I picked, unclaimed in https://github.com/satoshilabs/slips/blob/master/slip-0044.md
   val R_VALUE_PURPOSE = 585
 
-  def apply(
-      mnemonicCode: MnemonicCode,
-      passwordOpt: Option[AesPassword],
-      bip39PasswordOpt: Option[String] = None)(implicit
+  def apply(mnemonicCode: MnemonicCode)(implicit
       conf: DLCOracleAppConfig): DLCOracle = {
     val decryptedMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
-    val toWrite = passwordOpt match {
+    val toWrite = conf.aesPasswordOpt match {
       case Some(password) => decryptedMnemonic.encrypt(password)
       case None           => decryptedMnemonic
     }
@@ -441,11 +447,23 @@ object DLCOracle {
       WalletStorage.writeSeedToDisk(conf.kmConf.seedPath, toWrite)
     }
 
-    val key =
-      WalletStorage.getPrivateKeyFromDisk(conf.kmConf.seedPath,
-                                          SegWitMainNetPriv,
-                                          passwordOpt,
-                                          bip39PasswordOpt)
-    new DLCOracle(key)
+    new DLCOracle()
+  }
+
+  /** Gets the DLC oracle from the given datadir */
+  def fromDatadir(path: Path, configs: Vector[Config])(implicit
+      ec: ExecutionContext): Future[DLCOracle] = {
+    implicit val appConfig =
+      DLCOracleAppConfig.fromDatadir(datadir = path, configs)
+
+    val oracle = DLCOracle()
+
+    for {
+      _ <- appConfig.start()
+      differentKeyDbs <- oracle.eventDAO.findDifferentPublicKey(
+        oracle.publicKey)
+      fixedDbs = differentKeyDbs.map(_.copy(pubkey = oracle.publicKey))
+      _ <- oracle.eventDAO.updateAll(fixedDbs)
+    } yield oracle
   }
 }

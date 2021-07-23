@@ -3,7 +3,6 @@ package org.bitcoins.dlc.oracle.config
 import com.typesafe.config.Config
 import org.bitcoins.core.api.dlcoracle.db.EventOutcomeDbHelper
 import org.bitcoins.core.config._
-import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.protocol.tlv.EnumEventDescriptorV0TLV
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
@@ -12,7 +11,6 @@ import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
 import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.storage._
-import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 
@@ -158,20 +156,7 @@ case class DLCOracleAppConfig(
       }
     }
 
-    val key =
-      WalletStorage.getPrivateKeyFromDisk(kmConf.seedPath,
-                                          SegWitMainNetPriv,
-                                          aesPasswordOpt,
-                                          bip39PasswordOpt)
-    val oracle = new DLCOracle(key)(this)
-
-    for {
-      _ <- start()
-      differentKeyDbs <- oracle.eventDAO.findDifferentPublicKey(
-        oracle.publicKey)
-      fixedDbs = differentKeyDbs.map(_.copy(pubkey = oracle.publicKey))
-      _ <- oracle.eventDAO.updateAll(fixedDbs)
-    } yield oracle
+    DLCOracle.fromDatadir(directory, confs.toVector)
   }
 
   private lazy val rValueTable: TableQuery[Table[_]] = {
