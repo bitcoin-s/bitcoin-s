@@ -32,7 +32,6 @@ class DLCConnectionHandler(
 
   def connected(unalignedBytes: ByteVector): Receive = LoggingReceive {
     case lnMessage: LnMessage[TLV] =>
-      println("aHEREHEREREA")
       val byteMessage = ByteString(lnMessage.bytes.toArray)
       connection ! Tcp.Write(byteMessage)
       connection ! Tcp.ResumeReading
