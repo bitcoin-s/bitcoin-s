@@ -24,12 +24,14 @@ object RValueDbHelper {
       account: HDAccount,
       chainType: Int,
       keyIndex: Int): RValueDb = {
-    RValueDb(nonce,
-             eventName,
-             account.purpose,
-             account.coin.coinType,
-             account.index,
-             chainType,
-             keyIndex)
+    RValueDb(
+      nonce = nonce,
+      eventName = eventName,
+      purpose = account.purpose,
+      accountCoin = account.coin.coinType,
+      accountIndex = account.index,
+      chainType = chainType,
+      keyIndex = keyIndex
+    )
   }
 }
