@@ -1,19 +1,22 @@
 package org.bitcoins.dlc.node
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
-import org.bitcoins.dlc.node.DLCServer.GetState
+import org.bitcoins.tor.TorController
+import org.bitcoins.tor.TorProtocolHandler.Authentication
 
+import java.io.IOException
 import java.net.InetSocketAddress
+import java.nio.file.Path
+import scala.concurrent.{Future, Promise}
 
 class DLCServer(
     bindAddress: InetSocketAddress,
+    boundAddress: Option[Promise[InetSocketAddress]],
     dataHandlerFactory: DLCDataHandler.Factory = DLCDataHandler.defaultFactory)
     extends Actor
     with ActorLogging {
-
-  private var state: DLCServer.State = DLCServer.Initializing
 
   import context.system
 
@@ -21,43 +24,74 @@ class DLCServer(
 
   override def receive: Receive = LoggingReceive {
     case b @ Tcp.Bound(localAddress) =>
-      state = DLCServer.Bound
       log.info(s"Bound at $localAddress")
+      boundAddress.foreach(_.success(localAddress))
       context.parent ! b
 
-    case c @ Tcp.CommandFailed(_: Tcp.Bind) => {
-      state = DLCServer.BindError(c.cause)
-      val errorMessage = s"Cannot bind at ${bindAddress} "
-      c.cause match {
-        case Some(ex) =>
-          log.error(errorMessage, ex)
-        case None =>
-          log.error(errorMessage)
-      }
-      context.stop(self)
-    }
+    case c @ Tcp.CommandFailed(_: Tcp.Bind) =>
+      val ex = c.cause.getOrElse(new IOException("Unknown Error"))
+      log.error(s"Cannot bind $boundAddress", ex)
+      throw ex
 
     case Tcp.Connected(remoteAddress, _) =>
       val connection = sender()
       log.info(s"Received a connection from $remoteAddress")
       val _ = context.actorOf(
         Props(new DLCConnectionHandler(connection, dataHandlerFactory)))
-
-    case GetState => sender() ! state
   }
+
+  override def aroundReceive(receive: Receive, msg: Any): Unit = try {
+    super.aroundReceive(receive, msg)
+  } catch {
+    case t: Throwable =>
+      boundAddress.foreach(_.tryFailure(t))
+  }
+
 }
 
 object DLCServer {
 
-  sealed trait State
-  case object Initializing extends State
-  case object Bound extends State
-  case class BindError(cause: Option[Throwable]) extends State
-
-  object GetState
-
   def props(
       bindAddress: InetSocketAddress,
-      dataHandlerFactory: DLCDataHandler.Factory) = Props(
-    new DLCServer(bindAddress, dataHandlerFactory))
+      boundAddress: Option[Promise[InetSocketAddress]] = None,
+      dataHandlerFactory: DLCDataHandler.Factory): Props = Props(
+    new DLCServer(bindAddress, boundAddress, dataHandlerFactory))
+
+  case class TorParams(
+      controlAddress: InetSocketAddress,
+      authentication: Authentication,
+      privateKeyPath: Path
+  )
+
+  def bind(
+      bindAddress: InetSocketAddress,
+      torParams: Option[TorParams],
+      dataHandlerFactory: DLCDataHandler.Factory =
+        DLCDataHandler.defaultFactory)(implicit
+      system: ActorSystem): Future[InetSocketAddress] = {
+    import system.dispatcher
+
+    val promise = Promise[InetSocketAddress]()
+
+    for {
+      onionAddress <- torParams match {
+        case Some(params) =>
+          TorController
+            .setUpHiddenService(
+              params.controlAddress,
+              params.authentication,
+              params.privateKeyPath,
+              bindAddress.getPort
+            )
+            .map(Some(_))
+        case None => Future.successful(None)
+      }
+      boundAddress <- {
+        system.actorOf(props(bindAddress, Some(promise), dataHandlerFactory))
+        promise.future
+      }
+    } yield {
+      onionAddress.getOrElse(boundAddress)
+    }
+  }
 }
