@@ -126,18 +126,22 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val chainApiF = startConfsF.flatMap(_ => chainApiFromDb())
 
     val startNodeF = {
-      peerMsgSenders.foreach(_.connect())
-      val isInitializedF = for {
-        _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized(0),
-                                            maxTries = 200,
-                                            interval = 250.millis)
-      } yield ()
+      val isInitializedFs = peerMsgSenders.indices.map { idx =>
+        peerMsgSenders(idx).connect()
+        val isInitializedF = for {
+          _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized(idx),
+                                              maxTries = 200,
+                                              interval = 250.millis)
+        } yield ()
+        isInitializedF.failed.foreach(err =>
+          logger.error(
+            s"Failed to connect with peer=${peers(idx)} with err=$err"))
+        isInitializedF.map { _ =>
+          logger.info(s"Our peer=${peers(idx)} has been initialized")
+        }
+      }
 
-      isInitializedF.failed.foreach(err =>
-        logger.error(s"Failed to connect with peer=${peers(0)} with err=$err"))
-
-      isInitializedF.map { _ =>
-        logger.info(s"Our peer=${peers(0)} has been initialized")
+      Future.sequence(isInitializedFs).map { _ =>
         logger.info(s"Our node has been full started. It took=${System
           .currentTimeMillis() - start}ms")
         this

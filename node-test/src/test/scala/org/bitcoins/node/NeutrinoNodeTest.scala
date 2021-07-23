@@ -31,13 +31,22 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
   behavior of "NeutrinoNode"
 
-  it must "be able to connect and then disconnect from all peers" in {
+  it must "be able to connect,initialize and then disconnect from all peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       //checking all peers are connected
       val node = nodeConnectedWithBitcoind.node
       val connFs = node.peers.indices.map(node.isConnected)
       val connF = Future.sequence(connFs).map(_.forall(_ == true))
-      val assertion1F = connF.map(assert(_))
+      val connAssertion = connF.map(assert(_))
+
+      //checking all peers are initialized
+      val isInitializedFs = node.peers.indices.map(node.isInitialized)
+      val isInitializedF = for {
+        _ <- connAssertion
+        f <- Future.sequence(isInitializedFs).map(_.forall(_ == true))
+      } yield f
+
+      val initAssertion = isInitializedF.map(assert(_))
 
       //checking all peers can be disconnected
       def isAllDisconnectedF: Future[Boolean] = {
@@ -46,7 +55,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         res
       }
       val disconnF = for {
-        _ <- assertion1F
+        _ <- initAssertion
         _ <- node.stop()
         f <- isAllDisconnectedF
       } yield f
