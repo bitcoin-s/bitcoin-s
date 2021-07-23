@@ -174,6 +174,37 @@ class DLCOracleTest extends DLCOracleFixture {
       }
   }
 
+  it must "create two events and use incrementing key indexes" in {
+    dlcOracle: DLCOracle =>
+      val create1F = dlcOracle.createNewDigitDecompEvent(eventName = "test1",
+                                                         maturationTime =
+                                                           futureTime,
+                                                         base = UInt16(10),
+                                                         isSigned = false,
+                                                         numDigits = 3,
+                                                         unit = "units",
+                                                         precision = Int32.zero)
+
+      val create2F = dlcOracle.createNewDigitDecompEvent(eventName = "test2",
+                                                         maturationTime =
+                                                           futureTime,
+                                                         base = UInt16(10),
+                                                         isSigned = false,
+                                                         numDigits = 3,
+                                                         unit = "units",
+                                                         precision = Int32.zero)
+
+      for {
+        _ <- create1F
+        _ <- create2F
+
+        rValDbs <- dlcOracle.rValueDAO.findAll()
+      } yield {
+        val indexes = rValDbs.map(_.keyIndex).sorted
+        assert(indexes == Vector(0, 1, 2, 3, 4, 5))
+      }
+  }
+
   it must "fail to create an event with the same name" in {
     dlcOracle: DLCOracle =>
       for {
@@ -489,6 +520,39 @@ class DLCOracleTest extends DLCOracleFixture {
                                       completedEvent.attestations(2)) == sig1)
           case _: PendingOracleEvent | _: CompletedOracleEvent =>
             fail()
+        }
+      }
+  }
+
+  it must "create and sign a decomp event with a large num digits" in {
+    dlcOracle: DLCOracle =>
+      //trying make sure we don't regress on
+      //https://github.com/bitcoin-s/bitcoin-s/issues/3431
+
+      val outcome = 30816
+      val numDigits = 18
+      val eventName = "test"
+      for {
+        announcement <-
+          dlcOracle.createNewDigitDecompEvent(eventName = eventName,
+                                              maturationTime = futureTime,
+                                              base = UInt16(2),
+                                              isSigned = false,
+                                              numDigits = numDigits,
+                                              unit = "units",
+                                              precision = Int32.zero)
+
+        _ = assert(announcement.validateSignature)
+
+        eventTLV = announcement.eventTLV
+
+        event <- dlcOracle.signDigits(eventName, outcome)
+      } yield {
+        event match {
+          case _: PendingOracleEvent | _: CompletedEnumV0OracleEvent =>
+            fail(s"Shouldn't be pending/enum after signDigits()")
+          case c: CompletedDigitDecompositionV0OracleEvent =>
+            assert(c.outcomeBase10 == outcome)
         }
       }
   }

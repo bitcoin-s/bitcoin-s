@@ -21,6 +21,7 @@ case class LnMessage[+T <: TLV](tlv: T) extends NetworkElement {
   val tpe: UInt16 = UInt16(tlv.tpe.toInt)
   val payload: ByteVector = tlv.value
   override lazy val bytes: ByteVector = tpe.bytes ++ payload
+  val typeName: String = tlv.typeName
 }
 
 object LnMessage extends Factory[LnMessage[TLV]] {
@@ -32,6 +33,20 @@ object LnMessage extends Factory[LnMessage[TLV]] {
 
     val tlv = TLV.fromBytes(tpe.bytes ++ length.bytes ++ value)
     LnMessage(tlv)
+  }
+
+  def parseKnownMessage(bytes: ByteVector): LnMessage[TLV] = {
+    val msg = fromBytes(bytes)
+
+    msg.tlv match {
+      case unknown: UnknownTLV =>
+        throw new IllegalArgumentException(s"Parsed unknown TLV $unknown")
+      case _: DLCSetupTLV | _: DLCSetupPieceTLV | _: InitTLV | _: DLCOracleTLV |
+          _: ErrorTLV | _: PingTLV | _: PongTLV =>
+        ()
+    }
+
+    msg
   }
 }
 

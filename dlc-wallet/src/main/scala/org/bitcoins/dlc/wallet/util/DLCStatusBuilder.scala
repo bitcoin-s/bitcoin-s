@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.wallet.util
 
+import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.dlc.accounting.DLCAccounting
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._

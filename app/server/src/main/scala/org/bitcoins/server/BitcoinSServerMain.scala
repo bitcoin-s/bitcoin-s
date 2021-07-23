@@ -84,18 +84,20 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         "No peers specified, unable to start node")
     }
 
-    val peerSocket =
-      NetworkUtil.parseInetSocketAddress(nodeConf.peers.head,
-                                         nodeConf.network.port)
+    val peerSockets = {
+      nodeConf.peers.map(
+        NetworkUtil.parseInetSocketAddress(_, nodeConf.network.port)
+      )
+    }
 
-    val peer = Peer.fromSocket(peerSocket, nodeConf.socks5ProxyParams)
+    val peers = peerSockets.map(Peer.fromSocket(_, nodeConf.socks5ProxyParams))
 
     //run chain work migration
     val chainApiF = runChainWorkCalc(
       serverArgParser.forceChainWorkRecalc || chainConf.forceRecalcChainWork)
 
     //get a node that isn't started
-    val nodeF = nodeConf.createNode(peer)(chainConf, system)
+    val nodeF = nodeConf.createNode(peers)(chainConf, system)
 
     val feeProvider = getFeeProviderOrElse(
       MempoolSpaceProvider(HourFeeTarget, walletConf.network))

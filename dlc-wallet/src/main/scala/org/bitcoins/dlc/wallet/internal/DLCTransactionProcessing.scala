@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.wallet.internal
 
+import org.bitcoins.core.api.dlc.wallet.db._
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
@@ -10,7 +11,6 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.AddressTag
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.dlc.wallet.DLCWallet
-import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.wallet.internal.TransactionProcessing
 
 import scala.concurrent._

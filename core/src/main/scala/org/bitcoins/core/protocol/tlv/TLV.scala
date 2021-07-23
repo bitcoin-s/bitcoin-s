@@ -522,7 +522,9 @@ object PongTLV extends TLVFactory[PongTLV] {
   override val typeName: String = "PongTLV"
 }
 
-sealed trait EventDescriptorTLV extends TLV {
+sealed trait DLCOracleTLV extends TLV
+
+sealed trait EventDescriptorTLV extends DLCOracleTLV {
   def noncesNeeded: Int
 
   /** Event descriptors all use the same signing version as of now.
@@ -757,7 +759,7 @@ object DigitDecompositionEventDescriptorV0TLV
   override val typeName: String = "DigitDecompositionEventDescriptorV0TLV"
 }
 
-sealed trait OracleEventTLV extends TLV {
+sealed trait OracleEventTLV extends DLCOracleTLV {
   def eventDescriptor: EventDescriptorTLV
   def nonces: OrderedNonces
   def eventId: NormalizedString
@@ -809,7 +811,7 @@ object OracleEventV0TLV extends TLVFactory[OracleEventV0TLV] {
   override val typeName: String = "OracleEventV0TLV"
 }
 
-sealed trait OracleAnnouncementTLV extends TLV {
+sealed trait OracleAnnouncementTLV extends DLCOracleTLV {
   def eventTLV: OracleEventTLV
   def announcementSignature: SchnorrDigitalSignature
   def publicKey: SchnorrPublicKey
@@ -905,7 +907,7 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
   override val typeName: String = "OracleAnnouncementV0TLV"
 }
 
-sealed trait OracleAttestmentTLV extends TLV {
+sealed trait OracleAttestmentTLV extends DLCOracleTLV {
   def eventId: NormalizedString
   def publicKey: SchnorrPublicKey
   def sigs: Vector[SchnorrDigitalSignature]
@@ -977,7 +979,9 @@ object OracleAttestmentV0TLV extends TLVFactory[OracleAttestmentV0TLV] {
   override val typeName: String = "OracleAttestmentV0TLV"
 }
 
-sealed trait ContractDescriptorTLV extends TLV
+sealed trait DLCSetupPieceTLV extends TLV
+
+sealed trait ContractDescriptorTLV extends DLCSetupPieceTLV
 
 object ContractDescriptorTLV extends TLVParentFactory[ContractDescriptorTLV] {
 
@@ -1022,7 +1026,7 @@ object ContractDescriptorV0TLV extends TLVFactory[ContractDescriptorV0TLV] {
 }
 
 case class RoundingIntervalsV0TLV(intervalStarts: Vector[(Long, Satoshis)])
-    extends TLV {
+    extends DLCSetupPieceTLV {
   def isEmpty: Boolean = intervalStarts.isEmpty
 
   override val tpe: BigSizeUInt = RoundingIntervalsV0TLV.tpe
@@ -1102,7 +1106,8 @@ object TLVPoint extends Factory[TLVPoint] {
 }
 
 /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/8ee4bbe816c9881c832b1ce320b9f14c72e3506f/NumericOutcome.md#curve-serialization */
-case class PayoutFunctionV0TLV(points: Vector[TLVPoint]) extends TLV {
+case class PayoutFunctionV0TLV(points: Vector[TLVPoint])
+    extends DLCSetupPieceTLV {
   override val tpe: BigSizeUInt = PayoutFunctionV0TLV.tpe
 
   override val value: ByteVector = {
@@ -1154,7 +1159,7 @@ object ContractDescriptorV1TLV extends TLVFactory[ContractDescriptorV1TLV] {
   override val typeName: String = "ContractDescriptorV1TLV"
 }
 
-sealed trait OracleInfoTLV extends TLV
+sealed trait OracleInfoTLV extends DLCSetupPieceTLV
 
 object OracleInfoTLV extends TLVParentFactory[OracleInfoTLV] {
 
@@ -1218,7 +1223,7 @@ object OracleInfoV1TLV extends TLVFactory[OracleInfoV1TLV] {
   override val typeName: String = "OracleInfoV1TLV"
 }
 
-sealed trait OracleParamsTLV extends TLV
+sealed trait OracleParamsTLV extends DLCSetupPieceTLV
 
 case class OracleParamsV0TLV(
     maxErrorExp: Int,
@@ -1283,7 +1288,7 @@ case class ContractInfoV0TLV(
     totalCollateral: Satoshis,
     contractDescriptor: ContractDescriptorTLV,
     oracleInfo: OracleInfoTLV)
-    extends TLV {
+    extends DLCSetupPieceTLV {
   override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
 
   override val value: ByteVector = {
@@ -1316,7 +1321,7 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
   override val typeName: String = "ContractInfoV0TLV"
 }
 
-sealed trait FundingInputTLV extends TLV {
+sealed trait FundingInputTLV extends DLCSetupPieceTLV {
   def inputSerialId: UInt64
 }
 
@@ -1390,7 +1395,7 @@ object FundingInputV0TLV extends TLVFactory[FundingInputV0TLV] {
   override val typeName: String = "FundingInputV0TLV"
 }
 
-sealed trait CETSignaturesTLV extends TLV
+sealed trait CETSignaturesTLV extends DLCSetupPieceTLV
 
 case class CETSignaturesV0TLV(sigs: Vector[ECAdaptorSignature])
     extends CETSignaturesTLV {
@@ -1416,7 +1421,7 @@ object CETSignaturesV0TLV extends TLVFactory[CETSignaturesV0TLV] {
   override val typeName: String = "CETSignaturesV0TLV"
 }
 
-sealed trait FundingSignaturesTLV extends TLV
+sealed trait FundingSignaturesTLV extends DLCSetupPieceTLV
 
 case class FundingSignaturesV0TLV(witnesses: Vector[ScriptWitnessV0])
     extends FundingSignaturesTLV {
@@ -1454,6 +1459,8 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
   override val typeName: String = "FundingSignaturesV0TLV"
 }
 
+sealed trait DLCSetupTLV extends TLV
+
 case class DLCOfferTLV(
     contractFlags: Byte,
     chainHash: DoubleSha256Digest,
@@ -1469,7 +1476,7 @@ case class DLCOfferTLV(
     feeRate: SatoshisPerVirtualByte,
     contractMaturityBound: BlockTimeStamp,
     contractTimeout: BlockTimeStamp)
-    extends TLV {
+    extends DLCSetupTLV {
   require(
     changeSerialId != fundOutputSerialId,
     s"changeSerialId ($changeSerialId) cannot be equal to fundOutputSerialId ($fundOutputSerialId)")
@@ -1537,7 +1544,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
   override val typeName: String = "DLCOfferTLV"
 }
 
-sealed trait NegotiationFieldsTLV extends TLV
+sealed trait NegotiationFieldsTLV extends DLCSetupPieceTLV
 
 object NegotiationFieldsTLV extends TLVParentFactory[NegotiationFieldsTLV] {
 
@@ -1602,7 +1609,7 @@ case class DLCAcceptTLV(
     cetSignatures: CETSignaturesTLV,
     refundSignature: ECDigitalSignature,
     negotiationFields: NegotiationFieldsTLV)
-    extends TLV {
+    extends DLCSetupTLV {
   override val tpe: BigSizeUInt = DLCAcceptTLV.tpe
 
   override val value: ByteVector = {
@@ -1662,7 +1669,7 @@ case class DLCSignTLV(
     cetSignatures: CETSignaturesTLV,
     refundSignature: ECDigitalSignature,
     fundingSignatures: FundingSignaturesTLV)
-    extends TLV {
+    extends DLCSetupTLV {
   override val tpe: BigSizeUInt = DLCSignTLV.tpe
 
   override val value: ByteVector = {

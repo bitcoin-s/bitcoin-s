@@ -42,8 +42,8 @@ class SpvNodeTest extends NodeTestWithCachedBitcoindNewest {
       val bitcoind = spvNodeConnectedWithBitcoind.bitcoind
 
       val assert1F = for {
-        _ <- spvNode.isConnected.map(assert(_))
-        a2 <- spvNode.isInitialized.map(assert(_))
+        _ <- spvNode.isConnected(0).map(assert(_))
+        a2 <- spvNode.isInitialized(0).map(assert(_))
       } yield a2
 
       val hashF: Future[DoubleSha256DigestBE] = bitcoind.getNewAddress

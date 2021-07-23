@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.wallet.models
 
+import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.db.{CRUD, SlickUtil}
