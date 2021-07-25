@@ -1,22 +1,26 @@
 package org.bitcoins.dlc.node
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
+import akka.actor._
 import akka.event.LoggingReceive
 import akka.io.Tcp
 import akka.util.ByteString
-import org.bitcoins.core.protocol.tlv.{LnMessage, TLV}
+import grizzled.slf4j.Logging
+import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.dlc.node.DLCConnectionHandler.parseIndividualMessages
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 class DLCConnectionHandler(
+    dlcWalletApi: DLCWalletApi,
     connection: ActorRef,
     dataHandlerFactory: DLCDataHandler.Factory)
     extends Actor
     with ActorLogging {
 
-  private val handler = dataHandlerFactory(context, self)
+  private val handler = dataHandlerFactory(dlcWalletApi, context, self)
 
   override def preStart(): Unit = {
     context.watch(connection)
@@ -28,6 +32,7 @@ class DLCConnectionHandler(
 
   def connected(unalignedBytes: ByteVector): Receive = LoggingReceive {
     case lnMessage: LnMessage[TLV] =>
+      println("aHEREHEREREA")
       val byteMessage = ByteString(lnMessage.bytes.toArray)
       connection ! Tcp.Write(byteMessage)
       connection ! Tcp.ResumeReading
@@ -59,8 +64,7 @@ class DLCConnectionHandler(
       //we just received from our peer to hopefully be able to parse full messages
       val bytes: ByteVector = unalignedBytes ++ byteVec
       log.debug(s"Bytes for message parsing: ${bytes.toHex}")
-      val (messages, newUnalignedBytes) =
-        P2PClient.parseIndividualMessages(bytes)
+      val (messages, newUnalignedBytes) = parseIndividualMessages(bytes)
 
       log.debug {
         val length = messages.length
@@ -96,6 +100,21 @@ class DLCConnectionHandler(
     case Terminated(actor) if actor == connection =>
       context.stop(self)
   }
+}
+
+object DLCConnectionHandler extends Logging {
+
+  case object CloseConnection
+  case class WriteFailed(cause: Option[Throwable])
+  case object Ack extends Tcp.Event
+
+  def props(
+      dlcWalletApi: DLCWalletApi,
+      connection: ActorRef,
+      dataHandlerFactory: DLCDataHandler.Factory): Props = {
+    Props(
+      new DLCConnectionHandler(dlcWalletApi, connection, dataHandlerFactory))
+  }
 
   private[bitcoins] def parseIndividualMessages(
       bytes: ByteVector): (Vector[LnMessage[TLV]], ByteVector) = {
@@ -114,7 +133,7 @@ class DLCConnectionHandler(
             (accum, remainingBytes)
           case Success(message) =>
             val newRemainingBytes = remainingBytes.drop(message.byteSize)
-            log.debug(
+            logger.debug(
               s"Parsed a message=${message.typeName} from bytes, continuing with remainingBytes=${newRemainingBytes.length}")
             loop(newRemainingBytes, accum :+ message)
         }
@@ -123,15 +142,4 @@ class DLCConnectionHandler(
 
     loop(bytes, Vector.empty)
   }
-
-}
-
-object DLCConnectionHandler {
-
-  case object CloseConnection
-  case class WriteFailed(cause: Option[Throwable])
-  case object Ack extends Tcp.Event
-
-  def props(connection: ActorRef, dataHandlerFactory: DLCDataHandler.Factory) =
-    Props(new DLCConnectionHandler(connection, dataHandlerFactory))
 }

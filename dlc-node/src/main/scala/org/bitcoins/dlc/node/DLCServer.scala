@@ -3,11 +3,13 @@ package org.bitcoins.dlc.node
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
+import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.dlc.node.DLCServer.GetState
 
 import java.net.InetSocketAddress
 
 class DLCServer(
+    dlcWalletApi: DLCWalletApi,
     bindAddress: InetSocketAddress,
     dataHandlerFactory: DLCDataHandler.Factory = DLCDataHandler.defaultFactory)
     extends Actor
@@ -27,7 +29,7 @@ class DLCServer(
 
     case c @ Tcp.CommandFailed(_: Tcp.Bind) => {
       state = DLCServer.BindError(c.cause)
-      val errorMessage = s"Cannot bind at ${bindAddress} "
+      val errorMessage = s"Cannot bind at $bindAddress"
       c.cause match {
         case Some(ex) =>
           log.error(errorMessage, ex)
@@ -40,8 +42,8 @@ class DLCServer(
     case Tcp.Connected(remoteAddress, _) =>
       val connection = sender()
       log.info(s"Received a connection from $remoteAddress")
-      val _ = context.actorOf(
-        Props(new DLCConnectionHandler(connection, dataHandlerFactory)))
+      val _ = context.actorOf(Props(
+        new DLCConnectionHandler(dlcWalletApi, connection, dataHandlerFactory)))
 
     case GetState => sender() ! state
   }
@@ -57,7 +59,9 @@ object DLCServer {
   object GetState
 
   def props(
+      dlcWalletApi: DLCWalletApi,
       bindAddress: InetSocketAddress,
-      dataHandlerFactory: DLCDataHandler.Factory) = Props(
-    new DLCServer(bindAddress, dataHandlerFactory))
+      dataHandlerFactory: DLCDataHandler.Factory =
+        DLCDataHandler.defaultFactory): Props = Props(
+    new DLCServer(dlcWalletApi, bindAddress, dataHandlerFactory))
 }

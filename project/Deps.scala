@@ -325,6 +325,11 @@ object Deps {
       Compile.akkaActor
     )
 
+  val dlcNodeTest =
+    List(
+      Test.akkaTestkit
+    )
+
   val dlcWalletTest =
     List(
       Test.akkaTestkit,

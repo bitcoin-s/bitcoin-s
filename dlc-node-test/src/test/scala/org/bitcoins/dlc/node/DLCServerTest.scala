@@ -3,7 +3,7 @@ package org.bitcoins.dlc.node
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import org.bitcoins.core.number.UInt16
-import org.bitcoins.core.protocol.tlv.{LnMessage, PingTLV, PongTLV}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.rpc.util.RpcUtil
 import org.scalatest._
@@ -35,8 +35,9 @@ class DLCServerTest
     val serverProbe = TestProbe()
     val server = TestActorRef(
       DLCServer.props(
+        null, // todo remove nulls
         bindAddress,
-        { (_, connectionHandler) =>
+        { (_, _, connectionHandler) =>
           serverConnectionHandlerOpt = Some(connectionHandler)
           serverProbe.ref
         }
@@ -48,10 +49,12 @@ class DLCServerTest
 
     var clientConnectionHandlerOpt = Option.empty[ActorRef]
     val clientProbe = TestProbe()
-    val client = TestActorRef(DLCClient.props { (_, connectionHandler) =>
-      clientConnectionHandlerOpt = Some(connectionHandler)
-      clientProbe.ref
-    })
+    val client = TestActorRef(
+      DLCClient.props(null, // todo remove nulls
+                      { (_, _, connectionHandler) =>
+                        clientConnectionHandlerOpt = Some(connectionHandler)
+                        clientProbe.ref
+                      }))
     client ! DLCClient.Connect(Peer(connectAddress))
 
     awaitCond(serverConnectionHandlerOpt.isDefined)

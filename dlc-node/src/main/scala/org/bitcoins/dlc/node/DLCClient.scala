@@ -1,15 +1,18 @@
 package org.bitcoins.dlc.node
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
+import akka.actor._
 import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
+import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.tor.Socks5Connection.{Socks5Connect, Socks5Connected}
 import org.bitcoins.tor.{Socks5Connection, Socks5ProxyParams}
 
 import java.net.InetSocketAddress
 
-class DLCClient(dataHandlerFactory: DLCDataHandler.Factory)
+class DLCClient(
+    dlcWalletApi: DLCWalletApi,
+    dataHandlerFactory: DLCDataHandler.Factory)
     extends Actor
     with ActorLogging {
 
@@ -68,7 +71,10 @@ class DLCClient(dataHandlerFactory: DLCDataHandler.Factory)
           val peerAddress = peerOrProxyAddress
           log.info(s"connected to $peerAddress")
           val _ = context.actorOf(
-            Props(new DLCConnectionHandler(connection, dataHandlerFactory)))
+            Props(
+              new DLCConnectionHandler(dlcWalletApi,
+                                       connection,
+                                       dataHandlerFactory)))
       }
   }
 
@@ -83,8 +89,8 @@ class DLCClient(dataHandlerFactory: DLCDataHandler.Factory)
     case Socks5Connected(_) =>
       log.info(s"connected to $remoteAddress via SOCKS5 proxy $proxyAddress")
       context unwatch proxy
-      val _ = context.actorOf(
-        Props(new DLCConnectionHandler(connection, dataHandlerFactory)))
+      val _ = context.actorOf(Props(
+        new DLCConnectionHandler(dlcWalletApi, connection, dataHandlerFactory)))
     case Terminated(actor) if actor == proxy =>
       context stop self
   }
@@ -95,7 +101,8 @@ object DLCClient {
   case class Connect(peer: Peer)
 
   def props(
+      dlcWalletApi: DLCWalletApi,
       dataHandlerFactory: DLCDataHandler.Factory =
-        DLCDataHandler.defaultFactory) = Props(
-    new DLCClient(dataHandlerFactory))
+        DLCDataHandler.defaultFactory): Props = Props(
+    new DLCClient(dlcWalletApi, dataHandlerFactory))
 }

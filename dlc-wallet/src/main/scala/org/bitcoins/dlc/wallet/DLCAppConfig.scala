@@ -1,6 +1,5 @@
 package org.bitcoins.dlc.wallet
 
-import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -10,11 +9,9 @@ import org.bitcoins.core.wallet.keymanagement.KeyManagerInitializeError
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
-import org.bitcoins.tor.Socks5ProxyParams
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
-import java.net.{InetSocketAddress, URI}
 import java.nio.file._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -85,39 +82,15 @@ case class DLCAppConfig(private val directory: Path, private val conf: Config*)(
     }
   }
 
-  lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
-    if (config.getBoolean("bitcoin-s.proxy.enabled")) {
-      Some(
-        Socks5ProxyParams(
-          address = InetSocketAddress.createUnresolved(
-            config.getString("bitcoin-s.proxy.host"),
-            config.getInt("bitcoin-s.proxy.port")
-          ),
-          credentialsOpt = None,
-          randomizeCredentials = true
-        )
-      )
-    } else {
-      None
-    }
-  }
-
-  lazy val listenAddr: InetSocketAddress = {
-    val str = config.getString(s"bitcoin-s.$moduleName.listen")
-    val uri = new URI(str)
-    InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
-  }
-
   def createDLCWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
       feeRateApi: FeeRateApi)(implicit
       walletConf: WalletAppConfig,
-      system: ActorSystem): Future[DLCWallet] = {
-    DLCAppConfig.createDLCWallet(
-      nodeApi = nodeApi,
-      chainQueryApi = chainQueryApi,
-      feeRateApi = feeRateApi)(walletConf, this, system)
+      ec: ExecutionContext): Future[DLCWallet] = {
+    DLCAppConfig.createDLCWallet(nodeApi = nodeApi,
+                                 chainQueryApi = chainQueryApi,
+                                 feeRateApi = feeRateApi)(walletConf, this, ec)
   }
 }
 
@@ -139,8 +112,7 @@ object DLCAppConfig extends AppConfigFactory[DLCAppConfig] with WalletLogger {
       feeRateApi: FeeRateApi)(implicit
       walletConf: WalletAppConfig,
       dlcConf: DLCAppConfig,
-      system: ActorSystem): Future[DLCWallet] = {
-    import system.dispatcher
+      ec: ExecutionContext): Future[DLCWallet] = {
     val aesPasswordOpt = walletConf.aesPasswordOpt
     val bip39PasswordOpt = walletConf.bip39PasswordOpt
     walletConf.hasWallet().flatMap { walletExists =>

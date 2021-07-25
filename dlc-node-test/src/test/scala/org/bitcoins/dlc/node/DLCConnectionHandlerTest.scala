@@ -6,7 +6,9 @@ import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.LnMessageGen
 
-class P2PClientTest extends BitcoinSAsyncTest with CachedBitcoinSAppConfig {
+class DLCConnectionHandlerTest
+    extends BitcoinSAsyncTest
+    with CachedBitcoinSAppConfig {
 
   behavior of "parseIndividualMessages"
 
@@ -18,11 +20,11 @@ class P2PClientTest extends BitcoinSAsyncTest with CachedBitcoinSAppConfig {
     val randomIndex = scala.util.Random.nextInt().abs % accept.bytes.size
     val (firstHalf, secondHalf) = accept.bytes.splitAt(randomIndex)
     val (firstHalfParseHeaders, remainingBytes) =
-      P2PClient.parseIndividualMessages(firstHalf)
+      DLCConnectionHandler.parseIndividualMessages(firstHalf)
     firstHalfParseHeaders must be(empty)
 
     val (secondHalfParsedHeaders, _) =
-      P2PClient.parseIndividualMessages(remainingBytes ++ secondHalf)
+      DLCConnectionHandler.parseIndividualMessages(remainingBytes ++ secondHalf)
     val parsedLnMessage = secondHalfParsedHeaders.head
     val parsedLnAcceptMessage =
       parsedLnMessage.asInstanceOf[LnMessage[DLCAcceptTLV]]
@@ -35,7 +37,7 @@ class P2PClientTest extends BitcoinSAsyncTest with CachedBitcoinSAppConfig {
     // remove last byte so the message is not aligned
     val bytes = message.bytes.dropRight(1)
     val (parsedMessages, unAlignedBytes) =
-      P2PClient.parseIndividualMessages(bytes)
+      DLCConnectionHandler.parseIndividualMessages(bytes)
 
     assert(parsedMessages.isEmpty)
     assert(unAlignedBytes == bytes)
@@ -45,7 +47,8 @@ class P2PClientTest extends BitcoinSAsyncTest with CachedBitcoinSAppConfig {
   it must "parse an unknown message" ignore {
     val unknown = LnMessageGen.unknownMessage.sampleSome
 
-    val (messages, leftover) = P2PClient.parseIndividualMessages(unknown.bytes)
+    val (messages, leftover) =
+      DLCConnectionHandler.parseIndividualMessages(unknown.bytes)
     assert(messages == Vector(unknown))
     assert(leftover.isEmpty)
   }
