@@ -8,7 +8,7 @@ import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** The primary key type is the fingerprint [[ExtPublicKey.fingerprint]] */
+/** The primary key type is the public key associated with the extended public key [[ExtPublicKey.key]] */
 case class MasterXPubDAO()(implicit
     ec: ExecutionContext,
     appConfig: DbAppConfig)
@@ -45,7 +45,8 @@ case class MasterXPubDAO()(implicit
     */
   def validate(xpub: ExtPublicKey): Future[Unit] = {
     findAll().map { xpubs =>
-      require(xpubs.length == 1, s"Only 1 master xpub should be stored")
+      require(xpubs.length == 1,
+              s"Only 1 master xpub should be stored, got=${xpubs.length}")
       if (xpub != xpubs.head) {
         sys.error(
           s"Keymanager xpub and stored xpub are different, stored=${xpubs.head}, keymanager=${xpub}")
