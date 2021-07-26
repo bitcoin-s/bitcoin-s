@@ -87,7 +87,8 @@ case class DLCNodeAppConfig(
     new InetSocketAddress(uri.getHost, uri.getPort)
   }
 
-  def createDLCNode(dlcWallet: DLCWalletApi)(implicit system: ActorSystem): DLCNode = {
+  def createDLCNode(dlcWallet: DLCWalletApi)(implicit
+      system: ActorSystem): DLCNode = {
     DLCNode(dlcWallet)(system, this)
   }
 }
