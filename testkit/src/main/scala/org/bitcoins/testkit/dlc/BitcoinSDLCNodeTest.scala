@@ -40,8 +40,8 @@ trait BitcoinSDLCNodeTest extends BitcoinSWalletTest {
             getBIP39PasswordOpt(),
             Some(segwitWalletConf))(configB, system)
 
-          nodeA = DLCNode(walletA.wallet)(system, configA.dlcNodeConf)
-          nodeB = DLCNode(walletB.wallet)(system, configB.dlcNodeConf)
+          nodeA = configA.dlcNodeConf.createDLCNode(walletA.wallet)
+          nodeB = configB.dlcNodeConf.createDLCNode(walletB.wallet)
 
           _ <- nodeA.start()
           _ <- nodeB.start()

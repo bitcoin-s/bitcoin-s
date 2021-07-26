@@ -1,8 +1,11 @@
 package org.bitcoins.dlc.node.config
 
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db._
+import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.tor.Socks5ProxyParams
 import org.bitcoins.tor.TorProtocolHandler.{Password, SafeCookie}
 
@@ -82,5 +85,9 @@ case class DLCNodeAppConfig(
     val str = config.getString(s"bitcoin-s.$moduleName.listen")
     val uri = new URI("tcp://" + str)
     new InetSocketAddress(uri.getHost, uri.getPort)
+  }
+
+  def createDLCNode(dlcWallet: DLCWalletApi)(implicit system: ActorSystem): DLCNode = {
+    DLCNode(dlcWallet)(system, this)
   }
 }
