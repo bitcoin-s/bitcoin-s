@@ -35,20 +35,21 @@ object HDUtil {
   def getXpubVersion(
       hdPurpose: HDPurpose,
       network: NetworkParameters): ExtKeyPubVersion = {
-    import org.bitcoins.core.crypto.ExtKeyVersion._
     import org.bitcoins.core.hd.HDPurposes._
 
     (hdPurpose, network) match {
-      case (SegWit, MainNet | SigNet)            => SegWitMainNetPub
-      case (SegWit, TestNet3 | RegTest | SigNet) => SegWitTestNet3Pub
-      case (NestedSegWit, MainNet)               => NestedSegWitMainNetPub
+      case (SegWit, MainNet | SigNet) => ExtKeyPubVersion.SegWitMainNetPub
+      case (SegWit, TestNet3 | RegTest | SigNet) =>
+        ExtKeyPubVersion.SegWitTestNet3Pub
+      case (NestedSegWit, MainNet) => ExtKeyPubVersion.NestedSegWitMainNetPub
       case (NestedSegWit, TestNet3 | RegTest | SigNet) =>
-        NestedSegWitTestNet3Pub
-      case (Multisig, MainNet) => LegacyMainNetPub
+        ExtKeyPubVersion.NestedSegWitTestNet3Pub
+      case (Multisig, MainNet) => ExtKeyPubVersion.LegacyMainNetPub
       case (Multisig, TestNet3 | RegTest | SigNet) =>
-        LegacyTestNet3Pub
-      case (Legacy, MainNet)                     => LegacyMainNetPub
-      case (Legacy, TestNet3 | RegTest | SigNet) => LegacyTestNet3Pub
+        ExtKeyPubVersion.LegacyTestNet3Pub
+      case (Legacy, MainNet) => ExtKeyPubVersion.LegacyMainNetPub
+      case (Legacy, TestNet3 | RegTest | SigNet) =>
+        ExtKeyPubVersion.LegacyTestNet3Pub
       case (unknown: HDPurpose, _) =>
         throw new IllegalArgumentException(s"Got unknown HD purpose $unknown")
     }
@@ -58,12 +59,12 @@ object HDUtil {
   def getMatchingExtKeyVersion(version: ExtKeyPubVersion): ExtKeyPrivVersion = {
     import org.bitcoins.core.crypto.ExtKeyVersion._
     version match {
-      case LegacyMainNetPub        => LegacyMainNetPriv
-      case LegacyTestNet3Pub       => LegacyTestNet3Priv
-      case NestedSegWitMainNetPub  => NestedSegWitMainNetPriv
-      case NestedSegWitTestNet3Pub => NestedSegWitTestNet3Priv
-      case SegWitMainNetPub        => SegWitMainNetPriv
-      case SegWitTestNet3Pub       => SegWitTestNet3Priv
+      case ExtKeyPubVersion.LegacyMainNetPub        => LegacyMainNetPriv
+      case ExtKeyPubVersion.LegacyTestNet3Pub       => LegacyTestNet3Priv
+      case ExtKeyPubVersion.NestedSegWitMainNetPub  => NestedSegWitMainNetPriv
+      case ExtKeyPubVersion.NestedSegWitTestNet3Pub => NestedSegWitTestNet3Priv
+      case ExtKeyPubVersion.SegWitMainNetPub        => SegWitMainNetPriv
+      case ExtKeyPubVersion.SegWitTestNet3Pub       => SegWitTestNet3Priv
     }
   }
 
@@ -71,12 +72,12 @@ object HDUtil {
   def getMatchingExtKeyVersion(version: ExtKeyPrivVersion): ExtKeyPubVersion = {
     import org.bitcoins.core.crypto.ExtKeyVersion._
     version match {
-      case LegacyMainNetPriv        => LegacyMainNetPub
-      case LegacyTestNet3Priv       => LegacyTestNet3Pub
-      case NestedSegWitMainNetPriv  => NestedSegWitMainNetPub
-      case NestedSegWitTestNet3Priv => NestedSegWitTestNet3Pub
-      case SegWitMainNetPriv        => SegWitMainNetPub
-      case SegWitTestNet3Priv       => SegWitTestNet3Pub
+      case LegacyMainNetPriv        => ExtKeyPubVersion.LegacyMainNetPub
+      case LegacyTestNet3Priv       => ExtKeyPubVersion.LegacyTestNet3Pub
+      case NestedSegWitMainNetPriv  => ExtKeyPubVersion.NestedSegWitMainNetPub
+      case NestedSegWitTestNet3Priv => ExtKeyPubVersion.NestedSegWitTestNet3Pub
+      case SegWitMainNetPriv        => ExtKeyPubVersion.SegWitMainNetPub
+      case SegWitTestNet3Priv       => ExtKeyPubVersion.SegWitTestNet3Pub
     }
   }
 
