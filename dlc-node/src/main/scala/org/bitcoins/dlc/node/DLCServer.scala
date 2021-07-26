@@ -24,10 +24,9 @@ class DLCServer(
   IO(Tcp) ! Tcp.Bind(self, bindAddress)
 
   override def receive: Receive = LoggingReceive {
-    case b @ Tcp.Bound(localAddress) =>
+    case Tcp.Bound(localAddress) =>
       log.info(s"Bound at $localAddress")
       boundAddress.foreach(_.success(localAddress))
-      context.parent ! b
 
     case c @ Tcp.CommandFailed(_: Tcp.Bind) =>
       val ex = c.cause.getOrElse(new IOException("Unknown Error"))
