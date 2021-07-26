@@ -38,8 +38,12 @@ class DLCServer(
     case Tcp.Connected(remoteAddress, _) =>
       val connection = sender()
       log.info(s"Received a connection from $remoteAddress")
-      val _ = context.actorOf(Props(
-        new DLCConnectionHandler(dlcWalletApi, connection, dataHandlerFactory)))
+      val _ = context.actorOf(
+        Props(
+          new DLCConnectionHandler(dlcWalletApi,
+                                   connection,
+                                   None,
+                                   dataHandlerFactory)))
   }
 
   override def aroundReceive(receive: Receive, msg: Any): Unit = try {

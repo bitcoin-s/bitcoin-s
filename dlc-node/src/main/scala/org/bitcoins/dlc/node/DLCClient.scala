@@ -15,6 +15,7 @@ import scala.concurrent.{Future, Promise}
 class DLCClient(
     dlcWalletApi: DLCWalletApi,
     connectedAddress: Option[Promise[InetSocketAddress]],
+    handlerP: Option[Promise[ActorRef]],
     dataHandlerFactory: DLCDataHandler.Factory)
     extends Actor
     with ActorLogging {
@@ -67,6 +68,7 @@ class DLCClient(
             Props(
               new DLCConnectionHandler(dlcWalletApi,
                                        connection,
+                                       handlerP,
                                        dataHandlerFactory)))
           connectedAddress.foreach(_.success(peerAddress))
       }
@@ -85,7 +87,10 @@ class DLCClient(
       log.info(s"connected to $remoteAddress via SOCKS5 proxy $proxyAddress")
       val _ = context.actorOf(
         Props(
-          new DLCConnectionHandler(dlcWalletApi, proxy, dataHandlerFactory)))
+          new DLCConnectionHandler(dlcWalletApi,
+                                   proxy,
+                                   handlerP,
+                                   dataHandlerFactory)))
       connectedAddress.foreach(_.success(remoteAddress))
     case Terminated(actor) if actor == proxy =>
       context stop self
@@ -107,18 +112,21 @@ object DLCClient {
   def props(
       dlcWalletApi: DLCWalletApi,
       connectedAddress: Option[Promise[InetSocketAddress]],
+      handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory): Props = Props(
-    new DLCClient(dlcWalletApi, connectedAddress, dataHandlerFactory))
+    new DLCClient(dlcWalletApi, connectedAddress, handlerP, dataHandlerFactory))
 
   def connect(
       peer: Peer,
       dlcWalletApi: DLCWalletApi,
+      handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory =
         DLCDataHandler.defaultFactory)(implicit
       system: ActorSystem): Future[InetSocketAddress] = {
     val promise = Promise[InetSocketAddress]()
     val actor =
-      system.actorOf(props(dlcWalletApi, Some(promise), dataHandlerFactory))
+      system.actorOf(
+        props(dlcWalletApi, Some(promise), handlerP, dataHandlerFactory))
     actor ! Connect(peer)
     promise.future
   }

@@ -11,16 +11,22 @@ import org.bitcoins.dlc.node.DLCConnectionHandler.parseIndividualMessages
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
+import scala.concurrent.Promise
 import scala.util.{Failure, Success, Try}
 
 class DLCConnectionHandler(
     dlcWalletApi: DLCWalletApi,
     connection: ActorRef,
+    handlerP: Option[Promise[ActorRef]],
     dataHandlerFactory: DLCDataHandler.Factory)
     extends Actor
     with ActorLogging {
 
-  private val handler = dataHandlerFactory(dlcWalletApi, context, self)
+  private val handler = {
+    val h = dataHandlerFactory(dlcWalletApi, context, self)
+    handlerP.foreach(_.success(h))
+    h
+  }
 
   override def preStart(): Unit = {
     context.watch(connection)
@@ -110,9 +116,13 @@ object DLCConnectionHandler extends Logging {
   def props(
       dlcWalletApi: DLCWalletApi,
       connection: ActorRef,
+      handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory): Props = {
     Props(
-      new DLCConnectionHandler(dlcWalletApi, connection, dataHandlerFactory))
+      new DLCConnectionHandler(dlcWalletApi,
+                               connection,
+                               handlerP,
+                               dataHandlerFactory))
   }
 
   private[bitcoins] def parseIndividualMessages(

@@ -18,7 +18,6 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
 
   override def receive: Receive = LoggingReceive {
     case lnMessage: LnMessage[TLV] =>
-      println("RECEIVED LN MESSAGE")
       log.info(s"Received LnMessage ${lnMessage.typeName}")
       lnMessage.tlv match {
         case msg @ (_: UnknownTLV | _: DLCOracleTLV | _: DLCSetupPieceTLV) =>

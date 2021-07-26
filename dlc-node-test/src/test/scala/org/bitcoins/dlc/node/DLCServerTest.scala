@@ -65,6 +65,7 @@ class DLCServerTest
     val client = TestActorRef(
       DLCClient.props(null,
                       Some(connectedAddressPromise),
+                      None,
                       { (_, _, connectionHandler) =>
                         clientConnectionHandlerOpt = Some(connectionHandler)
                         clientProbe.ref
@@ -154,6 +155,7 @@ class DLCServerTest
         DLCClient.props(
           null,
           Some(connectedAddressPromise),
+          None,
           { (_, _, connectionHandler) =>
             clientConnectionHandlerOpt = Some(connectionHandler)
             clientProbe.ref
