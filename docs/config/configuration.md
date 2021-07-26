@@ -174,6 +174,20 @@ bitcoin-s {
         host = "127.0.0.1"
         port = 9050
     }
+
+    tor {
+        # You can enable Tor for incoming connections
+        enabled = false
+        control = 127.0.0.1:9051
+
+        # The password used to arrive at the HashedControlPassword for the control port.
+        # If provided, the HASHEDPASSWORD authentication method will be used instead of
+        # the SAFECOOKIE one.
+        # password = securePassword
+
+        # The path to the private key of the onion service being created
+        # privateKeyPath = /path/to/priv/key
+    }
     
     chain {
         force-recalc-chainwork = false
@@ -256,6 +270,10 @@ bitcoin-s {
 
         # name = constant # A constant fee rate in sats/vbyte
         # target = 1 # Will always use 1 sat/vbyte
+    }
+
+    dlcnode {
+        listen = "0.0.0.0:2862"
     }
 
     server {

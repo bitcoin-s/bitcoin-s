@@ -4,7 +4,9 @@ import com.typesafe.config.Config
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db._
 import org.bitcoins.tor.Socks5ProxyParams
+import org.bitcoins.tor.TorProtocolHandler.{Password, SafeCookie}
 
+import java.io.File
 import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
 import scala.concurrent._
@@ -48,6 +50,29 @@ case class DLCNodeAppConfig(
           randomizeCredentials = true
         )
       )
+    } else {
+      None
+    }
+  }
+
+  lazy val torParams: Option[TorParams] = {
+    if (config.getBoolean("bitcoin-s.tor.enabled")) {
+      val controlURI = new URI(config.getString("bitcoin-s.tor.control"))
+      val control = InetSocketAddress.createUnresolved(controlURI.getHost,
+                                                       controlURI.getPort)
+
+      val auth = config.getStringOrNone("bitcoin-s.tor.password") match {
+        case Some(pass) => Password(pass)
+        case None       => SafeCookie() // todo allow configuring the cookie?
+      }
+
+      val privKeyPath =
+        config.getStringOrNone("bitcoin-s.tor.privateKeyPath") match {
+          case Some(path) => new File(path).toPath
+          case None       => datadir.resolve("tor_priv_key")
+        }
+
+      Some(TorParams(control, auth, privKeyPath))
     } else {
       None
     }

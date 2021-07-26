@@ -4,12 +4,11 @@ import akka.actor._
 import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.dlc.node.config._
 import org.bitcoins.tor.TorController
-import org.bitcoins.tor.TorProtocolHandler.Authentication
 
 import java.io.IOException
 import java.net.InetSocketAddress
-import java.nio.file.Path
 import scala.concurrent.{Future, Promise}
 
 class DLCServer(
@@ -63,12 +62,6 @@ object DLCServer {
       boundAddress: Option[Promise[InetSocketAddress]] = None,
       dataHandlerFactory: DLCDataHandler.Factory): Props = Props(
     new DLCServer(dlcWalletApi, bindAddress, boundAddress, dataHandlerFactory))
-
-  case class TorParams(
-      controlAddress: InetSocketAddress,
-      authentication: Authentication,
-      privateKeyPath: Path
-  )
 
   def bind(
       dlcWalletApi: DLCWalletApi,
