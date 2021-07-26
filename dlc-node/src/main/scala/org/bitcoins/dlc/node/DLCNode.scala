@@ -13,25 +13,32 @@ import scala.concurrent._
 
 case class DLCNode(wallet: DLCWalletApi)(implicit
     system: ActorSystem,
-    config: DLCNodeAppConfig)
+    val config: DLCNodeAppConfig)
     extends StartStopAsync[Unit]
     with Logging {
 
   implicit val ec: ExecutionContextExecutor = system.dispatcher
 
-  lazy val serverBindF: Future[InetSocketAddress] = DLCServer.bind(
-    wallet,
-    config.listenAddress,
-    config.torParams
-  )
+  private[node] lazy val serverBindF: Future[InetSocketAddress] = {
+    logger.info(
+      s"Binding server to ${config.listenAddress}, with tor hidden service: ${config.torParams.isDefined}")
 
-  override def start(): Future[Unit] = serverBindF.map(_ => ())
+    DLCServer.bind(
+      wallet,
+      config.listenAddress,
+      config.torParams
+    )
+  }
+
+  override def start(): Future[Unit] = {
+    serverBindF.map(_ => ())
+  }
 
   override def stop(): Future[Unit] = {
     Future.unit
   }
 
-  def connectAndSendToPeer(
+  private[node] def connectAndSendToPeer(
       peerAddress: InetSocketAddress,
       message: LnMessage[TLV]): Future[Unit] = {
     val peer =
@@ -43,5 +50,11 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
       _ <- DLCClient.connect(peer, wallet, Some(handlerP))
       handler <- handlerP.future
     } yield handler ! message
+  }
+
+  def acceptDLCOffer(
+      peerAddress: InetSocketAddress,
+      dlcOffer: LnMessage[DLCOfferTLV]): Future[Unit] = {
+    connectAndSendToPeer(peerAddress, dlcOffer)
   }
 }

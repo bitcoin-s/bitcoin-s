@@ -386,6 +386,7 @@ lazy val appServer = project
     chain,
     wallet,
     dlcWallet,
+    dlcNode,
     bitcoindRpc,
     feeProvider,
     zmq

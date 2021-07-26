@@ -80,7 +80,7 @@ case class DLCNodeAppConfig(
 
   lazy val listenAddress: InetSocketAddress = {
     val str = config.getString(s"bitcoin-s.$moduleName.listen")
-    val uri = new URI(str)
-    InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
+    val uri = new URI("tcp://" + str)
+    new InetSocketAddress(uri.getHost, uri.getPort)
   }
 }
