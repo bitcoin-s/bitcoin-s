@@ -363,13 +363,6 @@ class CreateDLCOfferDialog extends Logging with CliCommandProducer {
                 }
             }
           case Success(announcement) =>
-            println("Announcement only case")
-            Try(ContractInfoV0TLV.fromHex(text)) match {
-              case Failure(_) =>
-                println("not ContractInfoV0TLV")
-              case Success(contractInfo) =>
-                println("found ContractInfoV0TLV" + contractInfo.oracleInfo)
-            }
             onAnnouncementEntered(announcement, None)
         }
       }
@@ -378,7 +371,6 @@ class CreateDLCOfferDialog extends Logging with CliCommandProducer {
     def onAnnouncementEntered(
         announcement: OracleAnnouncementV0TLV,
         contractInfoOpt: Option[ContractInfoV0TLV]): Unit = {
-      println("onAnnouncementEntered contractInfoOpt:" + contractInfoOpt)
       announcementDetailsShown = true
       announcementOrContractInfoTF.disable = true
       gridPane.add(new Label("Event Id"), 0, 1)
