@@ -15,10 +15,20 @@ import scalafx.stage.Window
 import scala.collection._
 import scala.util.{Failure, Success, Try}
 
-class AcceptOfferDialog {
+class AcceptOfferDialog extends CliCommandProducer {
 
-  def showAndWait(parentWindow: Window): Option[AcceptDLCCliCommand] = {
-    val dialog = new Dialog[Option[AcceptDLCCliCommand]]() {
+  def getCliCommand() = {
+    val offerHex = offerTLVTF.text.value
+    val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerHex)
+    Some(AcceptDLCOffer(offer))
+  }
+
+  private var dialog: Dialog[Option[AcceptDLCCliCommand]] = null
+
+  def showAndWait(
+      parentWindow: Window,
+      hex: String = ""): Option[AcceptDLCCliCommand] = {
+    dialog = new Dialog[Option[AcceptDLCCliCommand]]() {
       initOwner(parentWindow)
       title = "Accept DLC Offer"
       headerText = "Enter DLC Offer to accept"
@@ -28,15 +38,36 @@ class AcceptOfferDialog {
     dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
     dialog.resizable = true
 
-    var dlcDetailsShown = false
-    val offerTLVTF = new TextField() {
-      minWidth = 300
+    dialog.dialogPane().content = new ScrollPane {
+      content = buildView(hex)
     }
+
+    // When the OK button is clicked, convert the result to a CreateDLCOffer.
+    dialog.resultConverter = dialogButton =>
+      if (dialogButton == ButtonType.OK) {
+        getCliCommand()
+      } else None
+
+    val result = dialog.showAndWait()
+
+    result match {
+      case Some(Some(cmd: AcceptDLCCliCommand)) =>
+        Some(cmd)
+      case Some(_) | None => None
+    }
+  }
+
+  lazy val offerTLVTF = new TextField {
+    minWidth = 300
+  }
+
+  def buildView(initialOffer: String = "") = {
+    var dlcDetailsShown = false
 
     var nextRow: Int = 2
     val gridPane = new GridPane {
       alignment = Pos.Center
-      padding = Insets(top = 10, right = 10, bottom = 10, left = 10)
+      padding = Insets(10)
       hgap = 5
       vgap = 5
 
@@ -199,7 +230,9 @@ class AcceptOfferDialog {
       nextRow += 1
     }
 
-    offerTLVTF.onKeyTyped = _ => {
+    offerTLVTF.onKeyTyped = _ => onOfferKeyTyped()
+
+    def onOfferKeyTyped() = {
       if (!dlcDetailsShown) {
         Try(
           LnMessageFactory(DLCOfferTLV).fromHex(
@@ -208,31 +241,19 @@ class AcceptOfferDialog {
           case Success(lnMessage) =>
             dlcDetailsShown = true
             showOfferTerms(lnMessage.tlv)
-            dialog.dialogPane().getScene.getWindow.sizeToScene()
+            offerTLVTF.editable = false
+            if (dialog != null)
+              dialog.dialogPane().getScene.getWindow.sizeToScene()
         }
       }
     }
 
-    dialog.dialogPane().content = new ScrollPane {
-      content = new VBox(gridPane)
+    // Set initial state
+    if (initialOffer.nonEmpty) {
+      offerTLVTF.text = initialOffer
+      onOfferKeyTyped()
     }
 
-    // When the OK button is clicked, convert the result to a CreateDLCOffer.
-    dialog.resultConverter = dialogButton =>
-      if (dialogButton == ButtonType.OK) {
-
-        val offerHex = offerTLVTF.text.value
-        val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerHex)
-
-        Some(AcceptDLCOffer(offer))
-      } else None
-
-    val result = dialog.showAndWait()
-
-    result match {
-      case Some(Some(cmd: AcceptDLCCliCommand)) =>
-        Some(cmd)
-      case Some(_) | None => None
-    }
+    new VBox(gridPane)
   }
 }
