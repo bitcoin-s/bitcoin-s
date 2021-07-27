@@ -30,8 +30,8 @@ class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
   it must "throw RuntimeException if peer does not support compact filters" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       val node = nodeConnectedWithBitcoind.node
-      val exceptionF = recoverToExceptionIf[RuntimeException](node.start())
-      exceptionF.map(e =>
+      val exception = recoverToExceptionIf[RuntimeException](node.start())
+      exception.map(e =>
         assert(e.getMessage == "No peers supporting compact filters!"))
   }
 }
