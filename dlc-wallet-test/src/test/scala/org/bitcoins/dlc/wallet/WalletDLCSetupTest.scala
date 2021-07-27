@@ -723,4 +723,24 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     } yield succeed
   }
 
+  it must "not be able to sign its own accept" in { wallets =>
+    val walletA = wallets._1.wallet
+    val walletB = wallets._2.wallet
+
+    val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
+
+    for {
+      offer <- walletA.createDLCOffer(
+        offerData.contractInfo,
+        offerData.totalCollateral,
+        Some(offerData.feeRate),
+        offerData.timeouts.contractMaturity.toUInt32,
+        UInt32.max
+      )
+      accept <- walletB.acceptDLCOffer(offer)
+      res <- recoverToSucceededIf[IllegalArgumentException](
+        walletB.signDLC(accept))
+    } yield res
+  }
+
 }

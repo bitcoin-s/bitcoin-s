@@ -749,6 +749,8 @@ abstract class DLCWallet
       dlcDbOpt <- dlcDAO.findByTempContractId(accept.tempContractId)
       (dlcDb, acceptDbOpt) <- dlcDbOpt match {
         case Some(db) =>
+          require(db.isInitiator,
+                  "Cannot call DLC Sign on our own DLC Accept message")
           dlcAcceptDAO
             .findByDLCId(db.dlcId)
             .map(acceptDbOpt => (db, acceptDbOpt))
