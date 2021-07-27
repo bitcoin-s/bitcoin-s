@@ -100,7 +100,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
       })(test)
   }
 
-  def withNeutrinoNodeNotSyncedWithBitcoind(
+  def withNeutrinoNodeUnstarted(
       test: OneArgAsyncTest,
       bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem,
@@ -112,8 +112,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
         node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
                                                           appConfig.chainConf,
                                                           appConfig.nodeConf)
-        startedNode <- node.start()
-      } yield NeutrinoNodeConnectedWithBitcoind(startedNode, bitcoind)
+      } yield NeutrinoNodeConnectedWithBitcoind(node, bitcoind)
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
       build = nodeWithBitcoindBuilder,

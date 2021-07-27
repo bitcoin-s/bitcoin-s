@@ -4,7 +4,6 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindV19
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -19,9 +18,8 @@ class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val outcomeF: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
-      outcome = withNeutrinoNodeNotSyncedWithBitcoind(test, bitcoind)(
-        system,
-        getFreshConfig)
+      outcome = withNeutrinoNodeUnstarted(test, bitcoind)(system,
+                                                          getFreshConfig)
       f <- outcome.toFuture
     } yield f
     new FutureOutcome(outcomeF)
@@ -32,7 +30,8 @@ class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
   it must "throw RuntimeException if peer does not support compact filters" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       val node = nodeConnectedWithBitcoind.node
-      the[RuntimeException] thrownBy node
-        .sync() should have message "No peers supporting compact filters!"
+      val exception = recoverToExceptionIf[RuntimeException](node.start())
+      exception.map(e =>
+        assert(e.getMessage == "No peers supporting compact filters!"))
   }
 }

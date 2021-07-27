@@ -42,7 +42,7 @@ case class NeutrinoNode(
     copy(dataMessageHandler = dataMessageHandler)
   }
 
-  def getRandomPeerMsgSenderWithCompactFilters: PeerMessageSender = {
+  lazy val randomPeerMsgSenderWithCompactFilters: PeerMessageSender = {
     val filteredPeers =
       peerServices.filter(_._2.nodeCompactFilters).keys.toVector
     if (filteredPeers.isEmpty)
@@ -58,8 +58,8 @@ case class NeutrinoNode(
       node <- super.start()
       chainApi <- chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash()
-      _ <- peerMsgSenders(0).sendGetCompactFilterCheckPointMessage(
-        stopHash = bestHash.flip)
+      _ <- randomPeerMsgSenderWithCompactFilters
+        .sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
     } yield {
       node.asInstanceOf[NeutrinoNode]
     }
@@ -77,7 +77,7 @@ case class NeutrinoNode(
     * @return
     */
   override def sync(): Future[Unit] = {
-    val randomPeerMsgSender = getRandomPeerMsgSenderWithCompactFilters
+    val peerMsgSender = randomPeerMsgSenderWithCompactFilters
     val blockchainsF =
       BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
     for {
@@ -88,7 +88,7 @@ case class NeutrinoNode(
       blockchains <- blockchainsF
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      _ <- randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
+      _ <- peerMsgSender.sendGetHeadersMessage(cachedHeaders)
       _ <- syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
                        bestFilterOpt = bestFilterOpt,
                        bestBlockHeader = header,
