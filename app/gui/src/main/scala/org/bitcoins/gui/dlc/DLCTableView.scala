@@ -119,7 +119,7 @@ class DLCTableView(model: DLCPaneModel) {
                       collateralCol,
                       otherCollateralCol,
                       totalCollateralCol)
-      margin = Insets(10, 0, 10, 0)
+//      margin = Insets(10, 0, 10, 0)
       sortOrder.addAll(statusCol, eventIdCol, contractIdCol)
 
       val infoItem: MenuItem = new MenuItem("View DLC") {
