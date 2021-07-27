@@ -11,7 +11,7 @@ import org.bitcoins.chain.models.{
 }
 import org.bitcoins.core.api.chain._
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
+import org.bitcoins.core.p2p.{NetworkPayload, ServiceIdentifier, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
@@ -27,6 +27,7 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageSender
 }
 
+import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -44,6 +45,16 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   implicit def executionContext: ExecutionContext = system.dispatcher
 
   val peers: Vector[Peer]
+
+  val peerServices: mutable.Map[Peer, ServiceIdentifier] =
+    mutable.Map.empty
+
+  def setPeerServices(
+      peer: Peer,
+      serviceIdentifier: ServiceIdentifier): Unit = {
+    peerServices.put(peer, serviceIdentifier)
+    ()
+  }
 
   /** The current data message handler.
     * It should be noted that the dataMessageHandler contains
@@ -137,7 +148,20 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
           logger.error(
             s"Failed to connect with peer=${peers(idx)} with err=$err"))
         isInitializedF.map { _ =>
-          logger.info(s"Our peer=${peers(idx)} has been initialized")
+          nodeAppConfig.nodeType match {
+            case NodeType.NeutrinoNode => {
+              if (peerServices(peers(idx)).nodeCompactFilters) {
+                logger.info(s"Our peer=${peers(idx)} has been initialized")
+              } else {
+                logger.info(
+                  s"Our peer=${peers(idx)} does not support compact filters. Disconnecting.")
+                peerMsgSenders(idx).disconnect()
+              }
+            }
+            case NodeType.SpvNode         =>
+            case NodeType.BitcoindBackend =>
+            case NodeType.FullNode        =>
+          }
         }
       }
 

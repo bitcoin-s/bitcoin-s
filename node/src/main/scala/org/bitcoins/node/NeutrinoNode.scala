@@ -13,9 +13,10 @@ import org.bitcoins.core.api.chain.db.{
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.node.networking.peer.{DataMessageHandler, PeerMessageSender}
 
 import scala.concurrent.Future
+import scala.util.Random
 
 case class NeutrinoNode(
     nodePeer: Vector[Peer],
@@ -39,6 +40,17 @@ case class NeutrinoNode(
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): NeutrinoNode = {
     copy(dataMessageHandler = dataMessageHandler)
+  }
+
+  def getRandomPeerMsgSenderWithCompactFilters: PeerMessageSender = {
+    val filteredPeers =
+      peerServices.filter(_._2.nodeCompactFilters).keys.toVector
+    if (filteredPeers.isEmpty)
+      throw new RuntimeException("No peers supporting compact filters!")
+    val peer = filteredPeers(Random.nextInt(filteredPeers.length))
+    peerMsgSenders
+      .find(_.client.peer == peer)
+      .getOrElse(throw new RuntimeException("This should not happen."))
   }
 
   override def start(): Future[NeutrinoNode] = {
@@ -65,6 +77,7 @@ case class NeutrinoNode(
     * @return
     */
   override def sync(): Future[Unit] = {
+    val randomPeerMsgSender = getRandomPeerMsgSenderWithCompactFilters
     val blockchainsF =
       BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
     for {
@@ -75,7 +88,7 @@ case class NeutrinoNode(
       blockchains <- blockchainsF
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      _ <- peerMsgSenders(0).sendGetHeadersMessage(cachedHeaders)
+      _ <- randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
       _ <- syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
                        bestFilterOpt = bestFilterOpt,
                        bestBlockHeader = header,

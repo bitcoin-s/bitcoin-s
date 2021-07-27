@@ -8,6 +8,7 @@ import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest.{createPeer, syncNeutrinoNode}
 import org.bitcoins.testkit.node.fixture.{
+  NeutrinoNodeConnectedWithBitcoind,
   NeutrinoNodeConnectedWithBitcoinds,
   SpvNodeConnectedWithBitcoind,
   SpvNodeConnectedWithBitcoindV21
@@ -73,6 +74,51 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
       build = nodeWithBitcoindBuilder,
       { case x: SpvNodeConnectedWithBitcoind =>
         NodeUnitTest.destroyNode(x.node)
+      })(test)
+  }
+
+  def withNeutrinoNodeConnectedToBitcoind(
+      test: OneArgAsyncTest,
+      bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
+    val nodeWithBitcoindBuilder: () => Future[
+      NeutrinoNodeConnectedWithBitcoind] = { () =>
+      require(appConfig.nodeType == NodeType.NeutrinoNode)
+      for {
+        node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
+                                                          appConfig.chainConf,
+                                                          appConfig.nodeConf)
+        startedNode <- node.start()
+        syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
+      } yield NeutrinoNodeConnectedWithBitcoind(syncedNode, bitcoind)
+    }
+    makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
+      build = nodeWithBitcoindBuilder,
+      { case x: NeutrinoNodeConnectedWithBitcoind =>
+        tearDownNode(x.node)
+      })(test)
+  }
+
+  def withNeutrinoNodeNotSyncedWithBitcoind(
+      test: OneArgAsyncTest,
+      bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
+    val nodeWithBitcoindBuilder: () => Future[
+      NeutrinoNodeConnectedWithBitcoind] = { () =>
+      require(appConfig.nodeType == NodeType.NeutrinoNode)
+      for {
+        node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
+                                                          appConfig.chainConf,
+                                                          appConfig.nodeConf)
+        startedNode <- node.start()
+      } yield NeutrinoNodeConnectedWithBitcoind(startedNode, bitcoind)
+    }
+    makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
+      build = nodeWithBitcoindBuilder,
+      { case x: NeutrinoNodeConnectedWithBitcoind =>
+        tearDownNode(x.node)
       })(test)
   }
 
