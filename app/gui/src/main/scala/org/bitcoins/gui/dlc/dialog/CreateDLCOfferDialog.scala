@@ -44,7 +44,7 @@ class CreateDLCOfferDialog
     dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
     dialog.resizable = true
 
-    val vbox = buildView(hex, None, None)
+    val vbox = buildView(None, None, hex)
 
     dialog.dialogPane().content = new ScrollPane {
       content = vbox
@@ -91,9 +91,9 @@ class CreateDLCOfferDialog
   lazy val refundDatePicker = new DatePicker()
 
   def buildView(
-      initialContract: String = "",
       announcementOpt: Option[OracleAnnouncementV0TLV],
-      contractInfoOpt: Option[ContractInfoV0TLV]) = {
+      contractInfoOpt: Option[ContractInfoV0TLV],
+      initialContract: String = "") = {
     var nextRow: Int = 3
     val gridPane = new GridPane {
       alignment = Pos.Center
@@ -492,13 +492,11 @@ class CreateDLCOfferDialog
   }
 
   def getOracleInfo: Option[OracleInfo] = {
-    Try(
-      OracleAnnouncementV0TLV.fromHex(
-        announcementOrContractInfoTF.text.value)) match {
+    OracleAnnouncementV0TLV.fromHexT(
+      announcementOrContractInfoTF.text.value) match {
       case Failure(_) =>
-        Try(
-          ContractInfoV0TLV.fromHex(
-            announcementOrContractInfoTF.text.value)) match {
+        ContractInfoV0TLV.fromHexT(
+          announcementOrContractInfoTF.text.value) match {
           case Failure(_) => None
           case Success(contractInfo) =>
             Some(OracleInfo.fromTLV(contractInfo.oracleInfo))
