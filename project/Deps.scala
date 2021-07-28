@@ -60,7 +60,7 @@ object Deps {
     // CLI deps
     val scoptV = "4.0.1"
     val sttpV = "1.7.2"
-    val codehausV = "3.1.4"
+    val codehausV = "3.1.6"
     val scalaJsTimeV = "2.3.0"
     val zxingV = "3.4.1"
 
