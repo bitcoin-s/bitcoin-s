@@ -102,7 +102,7 @@ object SignDLCDialog
 
     // TODO : Externalize error styling to CSS
     val errorLabel = new Label("") {
-      style = "-fx-text-fill: red"
+      styleClass = Seq("error-label")
     }
 
     val fromFileHBox = new HBox() {
