@@ -35,28 +35,27 @@ class CreateDLCOfferDialog
   def showAndWait(
       parentWindow: Window,
       hex: String = ""): Option[CreateDLCOffer] = {
-    val newDialog = new Dialog[Option[CreateDLCOffer]]() {
+    val dialog = new Dialog[Option[CreateDLCOffer]]() {
       initOwner(parentWindow)
       title = "Create DLC Offer"
       headerText = "Enter DLC Contract Details"
     }
-    newDialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
-    newDialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
-    newDialog.resizable = true
+    dialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
+    dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
+    dialog.resizable = true
 
     val vbox = buildView(hex, null, None)
 
-    newDialog.dialogPane().content = new ScrollPane {
+    dialog.dialogPane().content = new ScrollPane {
       content = vbox
     }
     // When the OK button is clicked, convert the result to a CreateDLCOffer.
-    newDialog.resultConverter = dialogButton =>
+    dialog.resultConverter = dialogButton =>
       if (dialogButton == ButtonType.OK) {
         Some(getCliCommand())
       } else None
 
-    dialogOpt = Some(newDialog)
-
+    dialogOpt = Some(dialog)
     val result = dialogOpt.map(_.showAndWait())
 
     result match {

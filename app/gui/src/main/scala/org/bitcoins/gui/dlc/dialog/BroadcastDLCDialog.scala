@@ -35,12 +35,12 @@ object BroadcastDLCDialog
     }
   }
 
-  var dialog: Dialog[Option[AddDLCSigsAndBroadcastCliCommand]] = null
+  var dialogOpt: Option[Dialog[Option[AddDLCSigsAndBroadcastCliCommand]]] = None
 
   def showAndWait(
       parentWindow: Window,
       hex: String = ""): Option[AddDLCSigsAndBroadcastCliCommand] = {
-    dialog = new Dialog[Option[AddDLCSigsAndBroadcastCliCommand]]() {
+    val dialog = new Dialog[Option[AddDLCSigsAndBroadcastCliCommand]]() {
       initOwner(parentWindow)
       title = "Add DLC Signatures"
       headerText = "Enter DLC signatures message"
@@ -68,7 +68,8 @@ object BroadcastDLCDialog
       res
     }
 
-    val result = dialog.showAndWait()
+    dialogOpt = Some(dialog)
+    val result = dialogOpt.map(_.showAndWait())
 
     result match {
       case Some(Some(cmd: AddDLCSigsAndBroadcastCliCommand)) =>
@@ -281,7 +282,8 @@ object BroadcastDLCDialog
           errorLabel.text = errMsg
           vbox.children.add(errorLabel)
       }
-      if (dialog != null) dialog.dialogPane().getScene.getWindow.sizeToScene()
+      if (dialogOpt.isDefined)
+        dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
       ()
     }
 
@@ -299,8 +301,8 @@ object BroadcastDLCDialog
           logger.error(errMsg)
           errorLabel.text = errMsg
           vbox.children.add(errorLabel)
-          if (dialog != null)
-            dialog.dialogPane().getScene.getWindow.sizeToScene()
+          if (dialogOpt.isDefined)
+            dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
         case Success(sign) =>
           showDetails(sign, isFromFile = true)
       }

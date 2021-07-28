@@ -23,12 +23,12 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCOffer] {
     AcceptDLCOffer(offer)
   }
 
-  private var dialog: Dialog[Option[AcceptDLCCliCommand]] = null
+  private var dialogOpt: Option[Dialog[Option[AcceptDLCCliCommand]]] = None
 
   def showAndWait(
       parentWindow: Window,
       hex: String = ""): Option[AcceptDLCCliCommand] = {
-    dialog = new Dialog[Option[AcceptDLCCliCommand]]() {
+    val dialog = new Dialog[Option[AcceptDLCCliCommand]]() {
       initOwner(parentWindow)
       title = "Accept DLC Offer"
       headerText = "Enter DLC Offer to accept"
@@ -48,7 +48,8 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCOffer] {
         Some(getCliCommand())
       } else None
 
-    val result = dialog.showAndWait()
+    dialogOpt = Some(dialog)
+    val result = dialogOpt.map(_.showAndWait())
 
     result match {
       case Some(Some(cmd: AcceptDLCCliCommand)) =>
@@ -242,8 +243,8 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCOffer] {
             dlcDetailsShown = true
             showOfferTerms(lnMessage.tlv)
             offerTLVTF.editable = false
-            if (dialog != null)
-              dialog.dialogPane().getScene.getWindow.sizeToScene()
+            if (dialogOpt.isDefined)
+              dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
         }
       }
     }

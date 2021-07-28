@@ -35,12 +35,12 @@ object SignDLCDialog
     }
   }
 
-  var dialog: Dialog[Option[SignDLCCliCommand]] = null
+  var dialogOpt: Option[Dialog[Option[SignDLCCliCommand]]] = None
 
   def showAndWait(
       parentWindow: Window,
       hex: String = ""): Option[SignDLCCliCommand] = {
-    dialog = new Dialog[Option[SignDLCCliCommand]]() {
+    val dialog = new Dialog[Option[SignDLCCliCommand]]() {
       initOwner(parentWindow)
       title = "Sign DLC"
       headerText = "Enter DLC Accept message"
@@ -70,7 +70,8 @@ object SignDLCDialog
       res
     }
 
-    val result = dialog.showAndWait()
+    dialogOpt = Some(dialog)
+    val result = dialogOpt.map(_.showAndWait())
 
     result match {
       case Some(Some(cmd: SignDLCCliCommand)) =>
@@ -301,7 +302,8 @@ object SignDLCDialog
           errorLabel.text = errMsg
           vbox.children.add(errorLabel)
       }
-      if (dialog != null) dialog.dialogPane().getScene.getWindow.sizeToScene()
+      if (dialogOpt.isDefined)
+        dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
       ()
     }
 
@@ -319,8 +321,8 @@ object SignDLCDialog
           logger.error(errMsg)
           errorLabel.text = errMsg
           vbox.children.add(errorLabel)
-          if (dialog != null)
-            dialog.dialogPane().getScene.getWindow.sizeToScene()
+          if (dialogOpt.isDefined)
+            dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
         case Success(acceptMessage) =>
           showDetails(acceptMessage, isFromFile = true)
       }
