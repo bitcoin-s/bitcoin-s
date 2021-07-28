@@ -17,10 +17,10 @@ import scala.util.{Failure, Success, Try}
 
 class AcceptOfferDialog extends CliCommandProducer[AcceptDLCOffer] {
 
-  override def getCliCommand(): Some[AcceptDLCOffer] = {
+  override def getCliCommand(): AcceptDLCOffer = {
     val offerHex = offerTLVTF.text.value
     val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerHex)
-    Some(AcceptDLCOffer(offer))
+    AcceptDLCOffer(offer)
   }
 
   private var dialog: Dialog[Option[AcceptDLCCliCommand]] = null
@@ -45,7 +45,7 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCOffer] {
     // When the OK button is clicked, convert the result to a CreateDLCOffer.
     dialog.resultConverter = dialogButton =>
       if (dialogButton == ButtonType.OK) {
-        getCliCommand()
+        Some(getCliCommand())
       } else None
 
     val result = dialog.showAndWait()

@@ -24,14 +24,14 @@ object BroadcastDLCDialog
     extends Logging
     with CliCommandProducer[AddDLCSigsAndBroadcastCliCommand] {
 
-  override def getCliCommand(): Some[AddDLCSigsAndBroadcastCliCommand] = {
+  override def getCliCommand(): AddDLCSigsAndBroadcastCliCommand = {
     DLCDialog.signDLCFile match {
       case Some(file) =>
-        Some(AddDLCSigsAndBroadcastFromFile(file.toPath))
+        AddDLCSigsAndBroadcastFromFile(file.toPath)
       case None =>
         val hex = signTLVTF.text.value
         val signTLV = LnMessageFactory(DLCSignTLV)(hex)
-        Some(AddDLCSigsAndBroadcast(signTLV))
+        AddDLCSigsAndBroadcast(signTLV)
     }
   }
 
@@ -58,7 +58,7 @@ object BroadcastDLCDialog
     // When the OK button is clicked, convert the result to a SignDLC.
     dialog.resultConverter = dialogButton => {
       val res = if (dialogButton == ButtonType.OK) {
-        getCliCommand()
+        Some(getCliCommand())
       } else None
 
       // reset

@@ -26,7 +26,7 @@ class CreateDLCOfferDialog
     extends Logging
     with CliCommandProducer[CreateDLCOffer] {
 
-  override def getCliCommand(): Some[CreateDLCOffer] = {
+  override def getCliCommand(): CreateDLCOffer = {
     createDLCOffer()
   }
 
@@ -54,7 +54,7 @@ class CreateDLCOfferDialog
     // When the OK button is clicked, convert the result to a CreateDLCOffer.
     dialog.resultConverter = dialogButton =>
       if (dialogButton == ButtonType.OK) {
-        getCliCommand()
+        Some(getCliCommand())
       } else None
 
     val result = dialog.showAndWait()
@@ -505,7 +505,7 @@ class CreateDLCOfferDialog
     }
   }
 
-  def createDLCOffer(): Some[CreateDLCOffer] = {
+  def createDLCOffer(): CreateDLCOffer = {
     val oracleInfo = getOracleInfo.get
 
     val collateralLong =
@@ -557,14 +557,13 @@ class CreateDLCOfferDialog
         ContractInfo(totalCol, numeric, oracleInfo).toTLV
     }
 
-    Some(
-      CreateDLCOffer(
-        contractInfo = contractInfo,
-        collateral = collateral,
-        feeRateOpt = feeRateOpt,
-        locktime = UInt32.zero,
-        refundLT = refundLocktime
-      ))
+    CreateDLCOffer(
+      contractInfo = contractInfo,
+      collateral = collateral,
+      feeRateOpt = feeRateOpt,
+      locktime = UInt32.zero,
+      refundLT = refundLocktime
+    )
   }
 }
 

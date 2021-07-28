@@ -23,15 +23,15 @@ object SignDLCDialog
     extends Logging
     with CliCommandProducer[SignDLCCliCommand] {
 
-  override def getCliCommand(): Some[SignDLCCliCommand] = {
+  override def getCliCommand(): SignDLCCliCommand = {
     DLCDialog.acceptDLCFile match {
       case Some(file) =>
         val destOpt = DLCDialog.signDestDLCFile.map(_.toPath)
-        Some(SignDLCFromFile(file.toPath, destOpt))
+        SignDLCFromFile(file.toPath, destOpt)
       case None =>
         val acceptHex = acceptTLVTF.text.value
         val accept = LnMessageFactory(DLCAcceptTLV).fromHex(acceptHex)
-        Some(SignDLC(accept))
+        SignDLC(accept)
     }
   }
 
@@ -58,7 +58,7 @@ object SignDLCDialog
     // When the OK button is clicked, convert the result to a SignDLC.
     dialog.resultConverter = dialogButton => {
       val res = if (dialogButton == ButtonType.OK) {
-        getCliCommand()
+        Some(getCliCommand())
       } else None
 
       // reset
