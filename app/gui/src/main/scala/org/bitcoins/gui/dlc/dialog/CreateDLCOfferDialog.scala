@@ -30,34 +30,34 @@ class CreateDLCOfferDialog
     createDLCOffer()
   }
 
-  private var dialog: Dialog[Option[CreateDLCOffer]] = null
+  private var dialogOpt: Option[Dialog[Option[CreateDLCOffer]]] = None
 
   def showAndWait(
       parentWindow: Window,
       hex: String = ""): Option[CreateDLCOffer] = {
-    dialog = new Dialog[Option[CreateDLCOffer]]() {
+    val newDialog = new Dialog[Option[CreateDLCOffer]]() {
       initOwner(parentWindow)
       title = "Create DLC Offer"
       headerText = "Enter DLC Contract Details"
     }
-
-    dialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
-    dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
-    dialog.resizable = true
+    newDialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
+    newDialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
+    newDialog.resizable = true
 
     val vbox = buildView(hex, null, None)
 
-    dialog.dialogPane().content = new ScrollPane {
+    newDialog.dialogPane().content = new ScrollPane {
       content = vbox
     }
-
     // When the OK button is clicked, convert the result to a CreateDLCOffer.
-    dialog.resultConverter = dialogButton =>
+    newDialog.resultConverter = dialogButton =>
       if (dialogButton == ButtonType.OK) {
         Some(getCliCommand())
       } else None
 
-    val result = dialog.showAndWait()
+    dialogOpt = Some(newDialog)
+
+    val result = dialogOpt.map(_.showAndWait())
 
     result match {
       case Some(Some(offer: CreateDLCOffer)) => Some(offer)
@@ -93,7 +93,7 @@ class CreateDLCOfferDialog
 
   def buildView(
       initialContract: String = "",
-      announcement: OracleAnnouncementV0TLV,
+      announcementOpt: Option[OracleAnnouncementV0TLV],
       contractInfoOpt: Option[ContractInfoV0TLV]) = {
     var nextRow: Int = 3
     val gridPane = new GridPane {
@@ -214,7 +214,8 @@ class CreateDLCOfferDialog
       pointGrid.add(endPointBox, 2, row)
 
       nextPointRow += 1
-      if (dialog != null) dialog.dialogPane().getScene.getWindow.sizeToScene()
+      if (dialogOpt.isDefined)
+        dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
     }
 
     var nextRoundingRow: Int = 2
@@ -253,7 +254,8 @@ class CreateDLCOfferDialog
       roundingGrid.add(roundingLevelTF, 1, row)
 
       nextRoundingRow += 1
-      if (dialog != null) dialog.dialogPane().getScene.getWindow.sizeToScene()
+      if (dialogOpt.isDefined)
+        dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
     }
 
     val addRoundingRowButton: Button = new Button("+") {
@@ -471,21 +473,22 @@ class CreateDLCOfferDialog
           throw new RuntimeException(
             s"SignedDigitDecompositionEventDescriptors are not supported yet")
       }
-      if (dialog != null) dialog.dialogPane().getScene.getWindow.sizeToScene()
+      if (dialogOpt.isDefined)
+        dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
     }
 
-    if (announcement != null) {
-      onAnnouncementEntered(announcement, contractInfoOpt)
-      contractInfoOpt match {
-        case Some(_) =>
-          announcementOrContractInfoTF.text = contractInfoOpt.get.hex
-        case None => announcementOrContractInfoTF.text = announcement.hex
-      }
-    } else if (initialContract.nonEmpty) {
-      announcementOrContractInfoTF.text = initialContract
-      onAnnouncementKeyTyped()
+    announcementOpt match {
+      case Some(announcement) =>
+        onAnnouncementEntered(announcement, contractInfoOpt)
+        contractInfoOpt match {
+          case Some(_) =>
+            announcementOrContractInfoTF.text = contractInfoOpt.get.hex
+          case None => announcementOrContractInfoTF.text = announcement.hex
+        }
+      case None =>
+        announcementOrContractInfoTF.text = initialContract
+        onAnnouncementKeyTyped()
     }
-
     vbox
   }
 
