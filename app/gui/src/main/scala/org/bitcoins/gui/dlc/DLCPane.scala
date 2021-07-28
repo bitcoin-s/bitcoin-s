@@ -111,7 +111,7 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
   val exportResultButton: Button = new Button("Export Result") {
     onAction = _ => {
-      GUIUtil.showSaveDialog(resultTextArea.text.value, "Result")
+      GUIUtil.showSaveDialog("Result", Some(resultTextArea.text.value), None)
     }
   }
 

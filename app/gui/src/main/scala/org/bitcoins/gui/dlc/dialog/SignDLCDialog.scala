@@ -127,12 +127,12 @@ object SignDLCDialog
     }
 
     val destinationChooser = GUIUtil.getFileSaveButton(
-      "",
       "signed.txt",
-      file => {
+      None,
+      Some(file => {
         DLCDialog.signDestDLCFile = Some(file)
         DLCDialog.signDestFileChosenLabel.text = file.toString
-      })
+      }))
 
     val destChooserHBox = new HBox() {
       spacing = 5

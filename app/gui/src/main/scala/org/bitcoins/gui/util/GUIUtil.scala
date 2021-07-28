@@ -2,9 +2,12 @@ package org.bitcoins.gui.util
 
 import javafx.beans.value.ObservableValue
 import org.bitcoins.core.protocol.BlockTimeStamp
+import org.bitcoins.gui.GlobalData
+import scalafx.scene.{Parent, Scene}
 import scalafx.scene.control.{Button, TextField}
 import scalafx.scene.image.Image
-import scalafx.stage.FileChooser
+import scalafx.scene.layout.{Priority, Region}
+import scalafx.stage.{FileChooser, Stage}
 import scalafx.stage.FileChooser.ExtensionFilter
 
 import java.awt.Toolkit.getDefaultToolkit
@@ -56,42 +59,40 @@ object GUIUtil {
   private lazy val allExtensionFilter = new ExtensionFilter("All Files", "*")
 
   def showSaveDialog(
-      bytes: String = null,
-      filename: String = "",
-      handleFile: File => Unit = null): Unit = {
-    if (filename.nonEmpty) fileChooser.initialFileName = filename
+      filename: String,
+      bytes: Option[String],
+      handleFile: Option[File => Unit]): Unit = {
+    fileChooser.initialFileName = filename
     val chosenFileOpt = Option(fileChooser.showSaveDialog(null))
     chosenFileOpt match {
       case Some(chosenFile) =>
-        if (bytes != null) {
-          val _ = Files.write(chosenFile.toPath, bytes.getBytes)
+        if (bytes.isDefined) {
+          val _ = Files.write(chosenFile.toPath, bytes.get.getBytes)
         }
         // Remember last-used directory
         fileChooser.initialDirectory = chosenFile.getParentFile
 
-        if (handleFile != null) {
-          handleFile(chosenFile)
+        if (handleFile.isDefined) {
+          handleFile.get(chosenFile)
         }
       case None => // User canceled in dialog
     }
   }
 
-  def showOpenDialog(handleFile: File => Unit = null): Option[File] = {
+  def showOpenDialog(handleFile: File => Unit): Option[File] = {
     val chosenFileOpt = Option(fileChooser.showOpenDialog(null))
     chosenFileOpt match {
       case Some(chosenFile) =>
         // Remember last-used directory
         fileChooser.initialDirectory = chosenFile.getParentFile
 
-        if (handleFile != null) {
-          handleFile(chosenFile)
-        }
+        handleFile(chosenFile)
       case None => // User canceled in dialog
     }
     chosenFileOpt
   }
 
-  def getFileChooserButton(handleFile: File => Unit = null) = {
+  def getFileChooserButton(handleFile: File => Unit) = {
     new Button("Browse...") {
       onAction = _ => {
         val _ = GUIUtil.showOpenDialog(handleFile)
@@ -100,14 +101,35 @@ object GUIUtil {
   }
 
   def getFileSaveButton(
-      bytes: String = null,
-      filename: String = "",
-      handleFile: File => Unit = null) = {
+      filename: String,
+      bytes: Option[String],
+      handleFile: Option[File => Unit]) = {
     new Button("Browse...") {
       onAction = _ => {
-        val _ = GUIUtil.showSaveDialog(bytes, filename, handleFile)
+        val _ = GUIUtil.showSaveDialog(filename, bytes, handleFile)
       }
     }
+  }
+
+  def getHSpacer() = {
+    new Region { hgrow = Priority.Always }
+  }
+
+  def getWindow(
+      windowTitle: String,
+      width: Double,
+      height: Double,
+      rootView: Parent) = {
+    val windowScene = new Scene(width, height) {
+      root = rootView
+      stylesheets = GlobalData.currentStyleSheets
+    }
+    val stage = new Stage() {
+      title = windowTitle
+      scene = windowScene
+      // Icon?
+    }
+    stage
   }
 
   val logo = new Image("/icons/bitcoin-s.png")

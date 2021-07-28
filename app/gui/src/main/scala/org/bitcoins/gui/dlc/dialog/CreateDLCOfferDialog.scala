@@ -44,7 +44,7 @@ class CreateDLCOfferDialog
     dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
     dialog.resizable = true
 
-    val vbox = buildView(hex, null, None)
+    val vbox = buildView(hex, None, None)
 
     dialog.dialogPane().content = new ScrollPane {
       content = vbox
