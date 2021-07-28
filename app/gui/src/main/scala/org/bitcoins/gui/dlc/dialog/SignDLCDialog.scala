@@ -19,9 +19,11 @@ import java.nio.file.Files
 import scala.collection._
 import scala.util.{Failure, Success, Try}
 
-object SignDLCDialog extends Logging with CliCommandProducer {
+object SignDLCDialog
+    extends Logging
+    with CliCommandProducer[SignDLCCliCommand] {
 
-  def getCliCommand(): Some[SignDLCCliCommand] = {
+  override def getCliCommand(): Some[SignDLCCliCommand] = {
     DLCDialog.acceptDLCFile match {
       case Some(file) =>
         val destOpt = DLCDialog.signDestDLCFile.map(_.toPath)

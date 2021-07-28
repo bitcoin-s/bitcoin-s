@@ -20,9 +20,11 @@ import java.nio.file.Files
 import scala.collection._
 import scala.util.{Failure, Success, Try}
 
-object BroadcastDLCDialog extends Logging with CliCommandProducer {
+object BroadcastDLCDialog
+    extends Logging
+    with CliCommandProducer[AddDLCSigsAndBroadcastCliCommand] {
 
-  def getCliCommand(): Some[AddDLCSigsAndBroadcastCliCommand] = {
+  override def getCliCommand(): Some[AddDLCSigsAndBroadcastCliCommand] = {
     DLCDialog.signDLCFile match {
       case Some(file) =>
         Some(AddDLCSigsAndBroadcastFromFile(file.toPath))

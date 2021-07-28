@@ -15,9 +15,9 @@ import scalafx.stage.Window
 import scala.collection._
 import scala.util.{Failure, Success, Try}
 
-class AcceptOfferDialog extends CliCommandProducer {
+class AcceptOfferDialog extends CliCommandProducer[AcceptDLCOffer] {
 
-  def getCliCommand() = {
+  override def getCliCommand(): Some[AcceptDLCOffer] = {
     val offerHex = offerTLVTF.text.value
     val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerHex)
     Some(AcceptDLCOffer(offer))

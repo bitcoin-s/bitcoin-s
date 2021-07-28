@@ -22,9 +22,11 @@ import java.time.ZoneOffset
 import scala.collection._
 import scala.util.{Failure, Success, Try}
 
-class CreateDLCOfferDialog extends Logging with CliCommandProducer {
+class CreateDLCOfferDialog
+    extends Logging
+    with CliCommandProducer[CreateDLCOffer] {
 
-  def getCliCommand() = {
+  override def getCliCommand(): Some[CreateDLCOffer] = {
     createDLCOffer()
   }
 
@@ -503,7 +505,7 @@ class CreateDLCOfferDialog extends Logging with CliCommandProducer {
     }
   }
 
-  def createDLCOffer() = {
+  def createDLCOffer(): Some[CreateDLCOffer] = {
     val oracleInfo = getOracleInfo.get
 
     val collateralLong =
