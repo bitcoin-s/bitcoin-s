@@ -8,7 +8,7 @@ import org.bitcoins.core.p2p._
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import org.bitcoins.node.{NodeType, P2PLogger}
+import org.bitcoins.node.{Node, NodeType, P2PLogger}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
@@ -40,7 +40,11 @@ case class DataMessageHandler(
 
   def handleDataPayload(
       payload: DataPayload,
-      peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
+      peerMsgSender: PeerMessageSender,
+      node: Node): Future[DataMessageHandler] = {
+
+    lazy val peerWithCompactFilters = node.randomPeerMsgSenderWithCompactFilters
+    lazy val randomPeer = node.randomPeerMsgSender
 
     val resultF = payload match {
       case checkpoint: CompactFilterCheckPointMessage =>
@@ -66,14 +70,15 @@ case class DataMessageHandler(
               logger.info(
                 s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
               sendNextGetCompactFilterHeadersCommand(
-                peerMsgSender,
+                peerWithCompactFilters,
                 filterHeader.stopHash.flip).map(_ => syncing)
             } else {
               logger.info(
                 s"Done syncing filter headers, beginning to sync filters in datamessagehandler")
-              sendFirstGetCompactFilterCommand(peerMsgSender).map { synced =>
-                if (!synced) logger.info("We are synced")
-                syncing
+              sendFirstGetCompactFilterCommand(peerWithCompactFilters).map {
+                synced =>
+                  if (!synced) logger.info("We are synced")
+                  syncing
               }
             }
           newFilterHeaderHeight <- filterHeaderHeightOpt match {
@@ -135,7 +140,8 @@ case class DataMessageHandler(
             if (batchSizeFull) {
               logger.info(
                 s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
-              sendNextGetCompactFilterCommand(peerMsgSender, newFilterHeight)
+              sendNextGetCompactFilterCommand(peerWithCompactFilters,
+                                              newFilterHeight)
             } else Future.unit
         } yield {
           this.copy(
@@ -207,7 +213,7 @@ case class DataMessageHandler(
               if (count.toInt == HeadersMessage.MaxHeadersCount) {
                 logger.info(
                   s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
-                peerMsgSender
+                randomPeer
                   .sendGetHeadersMessage(lastHash)
                   .map(_ => syncing)
               } else {
@@ -227,7 +233,8 @@ case class DataMessageHandler(
                 ) {
                   logger.info(
                     s"Starting to fetch filter headers in data message handler")
-                  sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
+                  sendFirstGetCompactFilterHeadersCommand(
+                    peerWithCompactFilters)
                 } else {
                   Try(initialSyncDone.map(_.success(Done)))
                   Future.successful(syncing)

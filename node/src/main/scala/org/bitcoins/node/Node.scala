@@ -30,7 +30,7 @@ import org.bitcoins.node.networking.peer.{
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Random, Success}
 
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
@@ -54,6 +54,26 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       serviceIdentifier: ServiceIdentifier): Unit = {
     peerServices.put(peer, serviceIdentifier)
     ()
+  }
+
+  def randomPeerMsgSenderWithService(
+      f: ServiceIdentifier => Boolean): PeerMessageSender = {
+    val filteredPeers =
+      peerServices.filter(p => f(p._2)).keys.toVector
+    if (filteredPeers.isEmpty)
+      throw new RuntimeException("No peers supporting compact filters!")
+    val peer = filteredPeers(Random.nextInt(filteredPeers.length))
+    peerMsgSenders
+      .find(_.client.peer == peer)
+      .getOrElse(throw new RuntimeException("This should not happen."))
+  }
+
+  def randomPeerMsgSenderWithCompactFilters: PeerMessageSender = {
+    randomPeerMsgSenderWithService(_.nodeCompactFilters)
+  }
+
+  def randomPeerMsgSender: PeerMessageSender = {
+    peerMsgSenders(Random.nextInt(peerMsgSenders.length))
   }
 
   /** The current data message handler.
@@ -245,7 +265,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      _ <- peerMsgSenders(0).sendGetHeadersMessage(cachedHeaders)
+      _ <- randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
     } yield {
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE}")
