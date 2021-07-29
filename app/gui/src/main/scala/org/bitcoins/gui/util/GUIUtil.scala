@@ -66,14 +66,17 @@ object GUIUtil {
     val chosenFileOpt = Option(fileChooser.showSaveDialog(null))
     chosenFileOpt match {
       case Some(chosenFile) =>
-        if (bytes.isDefined) {
-          val _ = Files.write(chosenFile.toPath, bytes.get.getBytes)
-        }
         // Remember last-used directory
         fileChooser.initialDirectory = chosenFile.getParentFile
 
-        if (handleFile.isDefined) {
-          handleFile.get(chosenFile)
+        bytes match {
+          case Some(_) => Files.write(chosenFile.toPath, bytes.get.getBytes)
+          case None    => // There was nothing sent in to write out
+        }
+
+        handleFile match {
+          case Some(_) => handleFile.get(chosenFile)
+          case None    => // No callback defined
         }
       case None => // User canceled in dialog
     }
