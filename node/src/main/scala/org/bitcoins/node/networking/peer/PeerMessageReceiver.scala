@@ -118,16 +118,17 @@ class PeerMessageReceiver(
       sender: PeerMessageSender): Future[PeerMessageReceiver] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
-    node.dataMessageHandler.handleDataPayload(payload, sender).map { handler =>
-      val newNode = node.updateDataMessageHandler(handler)
-      new PeerMessageReceiver(newNode, state, peer)
+    node.dataMessageHandler.handleDataPayload(payload, sender, node).map {
+      handler =>
+        val newNode = node.updateDataMessageHandler(handler)
+        new PeerMessageReceiver(newNode, state, peer)
     }
   }
 
   /** Handles control payloads defined here https://bitcoin.org/en/developer-reference#control-messages
     *
-    * @param payload  the payload we need to do something with
-    * @param sender the [[PeerMessageSender]] we can use to initialize an subsequent messages that need to be sent
+    * @param payload the payload we need to do something with
+    * @param sender  the [[PeerMessageSender]] we can use to initialize an subsequent messages that need to be sent
     * @return the requests with the request removed for which the @payload is responding too
     */
   private def handleControlPayload(

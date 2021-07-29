@@ -48,7 +48,9 @@ class DataMessageHandlerTest extends NodeUnitTest {
           chainApi.processHeaders(invalidPayload.headers))
 
         // Verify we handle the payload correctly
-        _ <- dataMessageHandler.handleDataPayload(invalidPayload, sender)
+        _ <- dataMessageHandler.handleDataPayload(invalidPayload,
+                                                  sender,
+                                                  param.node)
       } yield succeed
   }
 
@@ -83,8 +85,8 @@ class DataMessageHandlerTest extends NodeUnitTest {
           DataMessageHandler(genesisChainApi)(spv.executionContext,
                                               spv.nodeAppConfig,
                                               spv.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload1, sender)
-        _ <- dataMessageHandler.handleDataPayload(payload2, sender)
+        _ <- dataMessageHandler.handleDataPayload(payload1, sender, param.node)
+        _ <- dataMessageHandler.handleDataPayload(payload2, sender, param.node)
         result <- resultP.future
       } yield assert(result == ((merkleBlock, Vector(tx))))
   }
@@ -116,7 +118,7 @@ class DataMessageHandlerTest extends NodeUnitTest {
           DataMessageHandler(genesisChainApi)(spv.executionContext,
                                               spv.nodeAppConfig,
                                               spv.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload, sender)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, param.node)
         result <- resultP.future
       } yield assert(result == block)
   }
@@ -151,7 +153,7 @@ class DataMessageHandlerTest extends NodeUnitTest {
                                               spv.nodeAppConfig,
                                               spv.chainConfig)
 
-        _ <- dataMessageHandler.handleDataPayload(payload, sender)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, param.node)
         result <- resultP.future
       } yield assert(result == Vector(header))
   }
@@ -184,7 +186,7 @@ class DataMessageHandlerTest extends NodeUnitTest {
                                               spv.nodeAppConfig,
                                               spv.chainConfig)
 
-        _ <- dataMessageHandler.handleDataPayload(payload, sender)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, param.node)
         result <- resultP.future
       } yield assert(result == Vector((hash.flip, filter.filter)))
   }
