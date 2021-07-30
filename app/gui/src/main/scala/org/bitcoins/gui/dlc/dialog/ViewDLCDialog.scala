@@ -12,7 +12,7 @@ import org.bitcoins.gui.dlc.{DLCPaneModel, DLCPlotUtil, GlobalDLCData}
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.Includes._
 import scalafx.beans.property.StringProperty
-import scalafx.geometry.Insets
+import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout.GridPane
@@ -29,17 +29,23 @@ object ViewDLCDialog {
       title = "View DLC"
     }
 
-    val closingTxId: StringProperty = StringProperty(
-      DLCStatus.getClosingTxId(status).map(_.hex).getOrElse(""))
-
     dialog.dialogPane().buttonTypes = Seq(ButtonType.Close)
     dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
     dialog.resizable = true
 
-    dialog.dialogPane().content = new GridPane() {
+    dialog.dialogPane().content = buildView(status, model)
+
+    val _ = dialog.showAndWait()
+  }
+
+  def buildView(status: DLCStatus, model: DLCPaneModel) = {
+    val closingTxId: StringProperty = StringProperty(
+      DLCStatus.getClosingTxId(status).map(_.hex).getOrElse(""))
+    new GridPane() {
+      alignment = Pos.Center
+      padding = Insets(10)
       hgap = 10
       vgap = 10
-      padding = Insets(20, 100, 10, 10)
 
       private var row = 0
       add(new Label("DLC Id:"), 0, row)
@@ -261,7 +267,5 @@ object ViewDLCDialog {
           add(previewGraphButton, 1, row)
       }
     }
-
-    val _ = dialog.showAndWait()
   }
 }

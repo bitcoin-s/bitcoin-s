@@ -21,6 +21,9 @@
 .label {
     -fx-text-fill: white;
 }
+.error-label {
+    -fx-text-fill: red;
+}
 
 .titulo{
     -fx-font-weight: bold;

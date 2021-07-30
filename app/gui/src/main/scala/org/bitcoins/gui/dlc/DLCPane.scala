@@ -3,18 +3,12 @@ package org.bitcoins.gui.dlc
 import javafx.event.{ActionEvent, EventHandler}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.gui.TaskRunner
+import org.bitcoins.gui.util.GUIUtil
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
 import scalafx.scene.layout._
-import scalafx.stage.FileChooser
-import scalafx.stage.FileChooser.ExtensionFilter
 
-import java.awt.Toolkit.getDefaultToolkit
-import java.awt.datatransfer.StringSelection
-import java.io.File
-import java.nio.file.Files
 import scala.concurrent.ExecutionContext
-import scala.util.Properties
 
 class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
@@ -117,28 +111,13 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
   val exportResultButton: Button = new Button("Export Result") {
     onAction = _ => {
-      val txtExtensionFilter = new ExtensionFilter("Text Files", "*.txt")
-      val allExtensionFilter = new ExtensionFilter("All Files", "*")
-      val fileChooser = new FileChooser() {
-        extensionFilters.addAll(txtExtensionFilter, allExtensionFilter)
-        selectedExtensionFilter = txtExtensionFilter
-        initialDirectory = new File(Properties.userHome)
-      }
-      val chosenFileOpt = Option(fileChooser.showSaveDialog(null))
-      chosenFileOpt match {
-        case Some(chosenFile) =>
-          Files.write(chosenFile.toPath, resultTextArea.text.value.getBytes)
-          ()
-        case None => // User canceled in dialog
-      }
+      GUIUtil.showSaveDialog("Result", Some(resultTextArea.text.value), None)
     }
   }
 
   val copyResultButton: Button = new Button("Copy Result") {
     onAction = _ => {
-      val clipboard = getDefaultToolkit.getSystemClipboard
-      val sel = new StringSelection(resultTextArea.text.value)
-      clipboard.setContents(sel, sel)
+      GUIUtil.setStringToClipboard(resultTextArea.text.value)
     }
   }
 

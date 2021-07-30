@@ -20,10 +20,27 @@ import java.nio.file.Files
 import scala.collection._
 import scala.util.{Failure, Success, Try}
 
-object BroadcastDLCDialog extends Logging {
+object BroadcastDLCDialog
+    extends Logging
+    with CliCommandProducer[AddDLCSigsAndBroadcastCliCommand] {
+
+  override def getCliCommand(): AddDLCSigsAndBroadcastCliCommand = {
+    DLCDialog.signDLCFile match {
+      case Some(file) =>
+        AddDLCSigsAndBroadcastFromFile(file.toPath)
+      case None =>
+        val hex = signTLVTF.text.value
+        val signTLV = LnMessageFactory(DLCSignTLV)(hex)
+        AddDLCSigsAndBroadcast(signTLV)
+    }
+  }
+
+  private var dialogOpt: Option[
+    Dialog[Option[AddDLCSigsAndBroadcastCliCommand]]] = None
 
   def showAndWait(
-      parentWindow: Window): Option[AddDLCSigsAndBroadcastCliCommand] = {
+      parentWindow: Window,
+      hex: String = ""): Option[AddDLCSigsAndBroadcastCliCommand] = {
     val dialog = new Dialog[Option[AddDLCSigsAndBroadcastCliCommand]]() {
       initOwner(parentWindow)
       title = "Add DLC Signatures"
@@ -34,12 +51,43 @@ object BroadcastDLCDialog extends Logging {
     dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
     dialog.resizable = true
 
-    var dlcDetailsShown = false
-    val signTLVTF = new TextField() {
-      minWidth = 300
+    dialog.dialogPane().content = new ScrollPane {
+      margin = Insets(10)
+      content = buildView(hex, None)
     }
 
+    // When the OK button is clicked, convert the result to a SignDLC.
+    dialog.resultConverter = dialogButton => {
+      val res = if (dialogButton == ButtonType.OK) {
+        Some(getCliCommand())
+      } else None
+
+      // reset
+      DLCDialog.signDLCFile = None
+      DLCDialog.signFileChosenLabel.text = ""
+
+      res
+    }
+
+    dialogOpt = Some(dialog)
+    val result = dialogOpt.map(_.showAndWait())
+
+    result match {
+      case Some(Some(cmd: AddDLCSigsAndBroadcastCliCommand)) =>
+        Some(cmd)
+      case Some(_) | None => None
+    }
+  }
+
+  private lazy val signTLVTF = new TextField() {
+    minWidth = 300
+  }
+
+  def buildView(initialSign: String = "", file: Option[File]) = {
+    var dlcDetailsShown = false
+
     val signTFHBox = new HBox() {
+      alignment = Pos.Center
       spacing = 5
       children = Vector(new Label("DLC Signatures"), signTLVTF)
     }
@@ -52,12 +100,14 @@ object BroadcastDLCDialog extends Logging {
       children = Vector(new Separator(), new Label("or"), new Separator())
     }
 
+    // TODO : Externalize error styling to CSS
     val errorLabel = new Label("") {
-      style = "-fx-text-fill: red"
+      styleClass = Seq("error-label")
     }
 
     val fromFileHBox = new HBox() {
       spacing = 5
+      alignment = Pos.Center
       children = Vector(new Label("DLC Sign File"))
     }
 
@@ -204,7 +254,9 @@ object BroadcastDLCDialog extends Logging {
       nextRow += 1
     }
 
-    signTLVTF.onKeyTyped = _ => {
+    signTLVTF.onKeyTyped = _ => onSignKeyTyped()
+
+    def onSignKeyTyped() = {
       if (!dlcDetailsShown) {
         Try(
           LnMessageFactory(DLCSignTLV).fromHex(
@@ -231,10 +283,14 @@ object BroadcastDLCDialog extends Logging {
           errorLabel.text = errMsg
           vbox.children.add(errorLabel)
       }
-      dialog.dialogPane().getScene.getWindow.sizeToScene()
+      if (dialogOpt.isDefined)
+        dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
+      ()
     }
 
     def handleFileChosen(file: File): Unit = {
+      DLCDialog.signDLCFile = Some(file)
+      DLCDialog.signFileChosenLabel.text = file.toString
       val signMessageT = Try {
         val hex = Files.readAllLines(file.toPath).get(0)
         LnMessageFactory(DLCSignTLV).fromHex(hex)
@@ -246,55 +302,30 @@ object BroadcastDLCDialog extends Logging {
           logger.error(errMsg)
           errorLabel.text = errMsg
           vbox.children.add(errorLabel)
-          dialog.dialogPane().getScene.getWindow.sizeToScene()
+          if (dialogOpt.isDefined)
+            dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
         case Success(sign) =>
           showDetails(sign, isFromFile = true)
       }
       ()
     }
 
-    val fileChooser = DLCDialog.fileChooserButton(
-      open = true,
-      { file =>
-        DLCDialog.signDLCFile = Some(file)
-        DLCDialog.signFileChosenLabel.text = file.toString
-        handleFileChosen(file)
-      })
+    val fileChooser =
+      GUIUtil.getFileChooserButton(file => handleFileChosen(file))
 
     fromFileHBox.children.addAll(fileChooser, DLCDialog.signFileChosenLabel)
 
-    dialog.dialogPane().content = new ScrollPane {
-      margin = Insets(10)
-      content = vbox
-    }
-
-    // When the OK button is clicked, convert the result to a SignDLC.
-    dialog.resultConverter = dialogButton => {
-      val res = if (dialogButton == ButtonType.OK) {
-        DLCDialog.signDLCFile match {
-          case Some(file) =>
-            Some(AddDLCSigsAndBroadcastFromFile(file.toPath))
-          case None =>
-            val hex = signTLVTF.text.value
-            val signTLV = LnMessageFactory(DLCSignTLV)(hex)
-
-            Some(AddDLCSigsAndBroadcast(signTLV))
+    // Set initial state
+    file match {
+      case Some(f) =>
+        handleFileChosen(f)
+      case None =>
+        if (initialSign.nonEmpty) {
+          signTLVTF.text = initialSign
+          onSignKeyTyped()
         }
-      } else None
-
-      // reset
-      DLCDialog.signDLCFile = None
-      DLCDialog.signFileChosenLabel.text = ""
-
-      res
     }
 
-    val result = dialog.showAndWait()
-
-    result match {
-      case Some(Some(cmd: AddDLCSigsAndBroadcastCliCommand)) =>
-        Some(cmd)
-      case Some(_) | None => None
-    }
+    vbox
   }
 }

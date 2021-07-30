@@ -6,19 +6,14 @@ import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.gui.{GUI, GlobalData}
 import org.bitcoins.gui.util.GUIUtil
-import scalafx.beans.property.StringProperty
-import scalafx.geometry.Insets
+import scalafx.beans.property.{StringProperty}
 import scalafx.scene.control.TableColumn.SortType
 import scalafx.scene.control.TableView.TableViewFocusModel
 import scalafx.scene.control.{ContextMenu, MenuItem, TableColumn, TableView}
 
-import java.awt.Toolkit.getDefaultToolkit
-import java.awt.datatransfer.StringSelection
-
 class DLCTableView(model: DLCPaneModel) {
 
   val tableView: TableView[DLCStatus] = {
-
     val eventIdCol = new TableColumn[DLCStatus, String] {
       text = "Event Id"
       prefWidth = 160
@@ -124,7 +119,6 @@ class DLCTableView(model: DLCPaneModel) {
                       collateralCol,
                       otherCollateralCol,
                       totalCollateralCol)
-      margin = Insets(10, 0, 10, 0)
       sortOrder.addAll(statusCol, eventIdCol, contractIdCol)
 
       val infoItem: MenuItem = new MenuItem("View DLC") {
@@ -154,10 +148,7 @@ class DLCTableView(model: DLCPaneModel) {
           val dlc = selectionModel.value.getSelectedItem
           getContractId(dlc).foreach { id =>
             GlobalDLCData.lastContractId = id.toHex
-
-            val clipboard = getDefaultToolkit.getSystemClipboard
-            val sel = new StringSelection(id.toHex)
-            clipboard.setContents(sel, sel)
+            GUIUtil.setStringToClipboard(id.toHex)
           }
         }
       }

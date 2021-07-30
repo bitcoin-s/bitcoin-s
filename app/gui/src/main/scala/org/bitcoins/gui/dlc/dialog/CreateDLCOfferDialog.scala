@@ -22,25 +22,81 @@ import java.time.ZoneOffset
 import scala.collection._
 import scala.util.{Failure, Success, Try}
 
-class CreateDLCOfferDialog extends Logging {
+class CreateDLCOfferDialog
+    extends Logging
+    with CliCommandProducer[CreateDLCOffer] {
 
-  def showAndWait(parentWindow: Window): Option[CreateDLCOffer] = {
+  override def getCliCommand(): CreateDLCOffer = {
+    createDLCOffer()
+  }
+
+  private var dialogOpt: Option[Dialog[Option[CreateDLCOffer]]] = None
+
+  def showAndWait(
+      parentWindow: Window,
+      hex: String = ""): Option[CreateDLCOffer] = {
     val dialog = new Dialog[Option[CreateDLCOffer]]() {
       initOwner(parentWindow)
       title = "Create DLC Offer"
       headerText = "Enter DLC Contract Details"
     }
-
     dialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
     dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
     dialog.resizable = true
 
-    val fields: mutable.Map[Int, (TextField, TextField)] = mutable.Map.empty
+    val vbox = buildView(None, None, hex)
 
-    var announcementDetailsShown = false
-    val announcementOrContractInfoTF = new TextField()
-    var decompOpt: Option[DigitDecompositionEventDescriptorV0TLV] = None
+    dialog.dialogPane().content = new ScrollPane {
+      content = vbox
+    }
+    // When the OK button is clicked, convert the result to a CreateDLCOffer.
+    dialog.resultConverter = dialogButton =>
+      if (dialogButton == ButtonType.OK) {
+        Some(getCliCommand())
+      } else None
 
+    dialogOpt = Some(dialog)
+    val result = dialogOpt.map(_.showAndWait())
+
+    result match {
+      case Some(Some(offer: CreateDLCOffer)) => Some(offer)
+      case Some(_) | None                    => None
+    }
+  }
+
+  private val fields: mutable.Map[Int, (TextField, TextField)] =
+    mutable.Map.empty
+
+  private var announcementDetailsShown = false
+  private lazy val announcementOrContractInfoTF = new TextField()
+  private var decompOpt: Option[DigitDecompositionEventDescriptorV0TLV] = None
+
+  private val pointMap: scala.collection.mutable.Map[
+    Int,
+    (TextField, TextField, CheckBox)] =
+    scala.collection.mutable.Map.empty
+
+  private val roundingMap: scala.collection.mutable.Map[
+    Int,
+    (TextField, TextField)] =
+    scala.collection.mutable.Map.empty
+
+  private lazy val feeRateTF = new TextField() {
+    text = GlobalData.feeRate.toLong.toString
+    promptText = "(optional)"
+  }
+
+  private lazy val collateralTF = new TextField() {
+    promptText = "Satoshis"
+  }
+  setNumericInput(collateralTF)
+
+  private lazy val refundDatePicker = new DatePicker()
+
+  def buildView(
+      announcementOpt: Option[OracleAnnouncementV0TLV],
+      contractInfoOpt: Option[ContractInfoV0TLV],
+      initialContract: String = "") = {
     var nextRow: Int = 3
     val gridPane = new GridPane {
       alignment = Pos.Center
@@ -99,11 +155,6 @@ class CreateDLCOfferDialog extends Logging {
 
       nextRow += 1
     }
-
-    val pointMap: scala.collection.mutable.Map[
-      Int,
-      (TextField, TextField, CheckBox)] =
-      scala.collection.mutable.Map.empty
 
     var nextPointRow: Int = 2
     val pointGrid: GridPane = new GridPane {
@@ -165,11 +216,9 @@ class CreateDLCOfferDialog extends Logging {
       pointGrid.add(endPointBox, 2, row)
 
       nextPointRow += 1
-      dialog.dialogPane().getScene.getWindow.sizeToScene()
+      if (dialogOpt.isDefined)
+        dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
     }
-
-    val roundingMap: scala.collection.mutable.Map[Int, (TextField, TextField)] =
-      scala.collection.mutable.Map.empty
 
     var nextRoundingRow: Int = 2
     val roundingGrid: GridPane = new GridPane {
@@ -207,7 +256,8 @@ class CreateDLCOfferDialog extends Logging {
       roundingGrid.add(roundingLevelTF, 1, row)
 
       nextRoundingRow += 1
-      dialog.dialogPane().getScene.getWindow.sizeToScene()
+      if (dialogOpt.isDefined)
+        dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
     }
 
     val addRoundingRowButton: Button = new Button("+") {
@@ -237,18 +287,6 @@ class CreateDLCOfferDialog extends Logging {
       panes = Vector(roundingPane)
     }
 
-    val feeRateTF = new TextField() {
-      text = GlobalData.feeRate.toLong.toString
-      promptText = "(optional)"
-    }
-
-    val collateralTF = new TextField() {
-      promptText = "Satoshis"
-    }
-    setNumericInput(collateralTF)
-
-    val refundDatePicker = new DatePicker()
-
     val previewGraphButton: Button = new Button("Preview Graph") {
       onAction = _ => {
         val (totalCollateral, descriptor) = getNumericContractInfo(
@@ -256,6 +294,7 @@ class CreateDLCOfferDialog extends Logging {
           pointMap.toVector.sortBy(_._1).map(_._2),
           roundingMap.toVector.sortBy(_._1).map(_._2))
 
+        // Could add to Figure like DLCPlotUtil:155-161 here to show breakeven line like dust...
         DLCPlotUtil.plotCETsWithOriginalCurve(base = 2,
                                               descriptor.numDigits,
                                               descriptor.outcomeValueFunc,
@@ -307,7 +346,9 @@ class CreateDLCOfferDialog extends Logging {
       ()
     }
 
-    announcementOrContractInfoTF.onKeyTyped = _ => {
+    announcementOrContractInfoTF.onKeyTyped = _ => onAnnouncementKeyTyped()
+
+    def onAnnouncementKeyTyped() = {
       if (!announcementDetailsShown) {
         val text = announcementOrContractInfoTF.text.value.trim
         Try(OracleAnnouncementV0TLV.fromHex(text)) match {
@@ -434,99 +475,98 @@ class CreateDLCOfferDialog extends Logging {
           throw new RuntimeException(
             s"SignedDigitDecompositionEventDescriptors are not supported yet")
       }
-      dialog.dialogPane().getScene.getWindow.sizeToScene()
+      if (dialogOpt.isDefined)
+        dialogOpt.get.dialogPane().getScene.getWindow.sizeToScene()
     }
 
-    dialog.dialogPane().content = new ScrollPane {
-      content = vbox
+    announcementOpt match {
+      case Some(announcement) =>
+        onAnnouncementEntered(announcement, contractInfoOpt)
+        contractInfoOpt match {
+          case Some(_) =>
+            announcementOrContractInfoTF.text = contractInfoOpt.get.hex
+          case None => announcementOrContractInfoTF.text = announcement.hex
+        }
+      case None =>
+        announcementOrContractInfoTF.text = initialContract
+        onAnnouncementKeyTyped()
+    }
+    vbox
+  }
+
+  def getOracleInfo: Option[OracleInfo] = {
+    OracleAnnouncementV0TLV.fromHexT(
+      announcementOrContractInfoTF.text.value) match {
+      case Failure(_) =>
+        ContractInfoV0TLV.fromHexT(
+          announcementOrContractInfoTF.text.value) match {
+          case Failure(_) => None
+          case Success(contractInfo) =>
+            Some(OracleInfo.fromTLV(contractInfo.oracleInfo))
+        }
+      case Success(announcement) => Some(SingleOracleInfo(announcement))
+    }
+  }
+
+  def createDLCOffer(): CreateDLCOffer = {
+    val oracleInfo = getOracleInfo.get
+
+    val collateralLong =
+      numberFormatter.parse(collateralTF.text.value).longValue()
+    val collateral = Satoshis(collateralLong)
+
+    val feeRateStr = feeRateTF.text.value
+
+    val feeRateOpt = if (feeRateStr.nonEmpty) {
+      Some(SatoshisPerVirtualByte(Satoshis(BigInt(feeRateStr))))
+    } else None
+
+    val refundLocktime = {
+      val value = refundDatePicker.delegate.getValue
+      val instant = value.atStartOfDay(ZoneOffset.UTC).toInstant
+
+      UInt32(instant.getEpochSecond)
     }
 
-    def getOracleInfo: Option[OracleInfo] = {
-      Try(
-        OracleAnnouncementV0TLV.fromHex(
-          announcementOrContractInfoTF.text.value)) match {
-        case Failure(_) =>
-          Try(
-            ContractInfoV0TLV.fromHex(
-              announcementOrContractInfoTF.text.value)) match {
-            case Failure(_) => None
-            case Success(contractInfo) =>
-              Some(OracleInfo.fromTLV(contractInfo.oracleInfo))
-          }
-        case Success(announcement) => Some(SingleOracleInfo(announcement))
-      }
-    }
-
-    // When the OK button is clicked, convert the result to a CreateDLCOffer.
-    dialog.resultConverter = dialogButton =>
-      if (dialogButton == ButtonType.OK) {
-        val oracleInfo = getOracleInfo.get
-
-        val collateralLong =
-          numberFormatter.parse(collateralTF.text.value).longValue()
-        val collateral = Satoshis(collateralLong)
-
-        val feeRateStr = feeRateTF.text.value
-
-        val feeRateOpt = if (feeRateStr.nonEmpty) {
-          Some(SatoshisPerVirtualByte(Satoshis(BigInt(feeRateStr))))
-        } else None
-
-        val refundLocktime = {
-          val value = refundDatePicker.delegate.getValue
-          val instant = value.atStartOfDay(ZoneOffset.UTC).toInstant
-
-          UInt32(instant.getEpochSecond)
+    val contractInfo = oracleInfo match {
+      case oracleInfo: EnumOracleInfo =>
+        val missingOutcomes = fields.values.filter(_._2.text.value.isEmpty)
+        if (missingOutcomes.nonEmpty) {
+          val missing = missingOutcomes.map(_._1.text.value).mkString(", ")
+          throw new RuntimeException(
+            s"You missed outcomes $missing. Please enter payouts for these situations")
         }
 
-        val contractInfo = oracleInfo match {
-          case oracleInfo: EnumOracleInfo =>
-            val missingOutcomes = fields.values.filter(_._2.text.value.isEmpty)
-            if (missingOutcomes.nonEmpty) {
-              val missing = missingOutcomes.map(_._1.text.value).mkString(", ")
-              throw new RuntimeException(
-                s"You missed outcomes $missing. Please enter payouts for these situations")
-            }
-
-            val inputs = fields.values.flatMap { case (str, value) =>
-              if (str.text.value.nonEmpty && value.text.value.nonEmpty) {
-                val amount =
-                  numberFormatter.parse(value.text.value).longValue()
-                Some((str.text.value, amount))
-              } else None
-            }
-            val contractMap = inputs.map { case (str, value) =>
-              EnumOutcome(str) -> Satoshis(value)
-            }.toVector
-
-            val descriptor = EnumContractDescriptor(contractMap)
-
-            ContractInfo(descriptor, oracleInfo).toTLV
-          case oracleInfo: NumericOracleInfo =>
-            val (totalCol, numeric) = getNumericContractInfo(
-              decompOpt,
-              pointMap.toVector.sortBy(_._1).map(_._2),
-              roundingMap.toVector.sortBy(_._1).map(_._2))
-
-            ContractInfo(totalCol, numeric, oracleInfo).toTLV
+        val inputs = fields.values.flatMap { case (str, value) =>
+          if (str.text.value.nonEmpty && value.text.value.nonEmpty) {
+            val amount =
+              numberFormatter.parse(value.text.value).longValue()
+            Some((str.text.value, amount))
+          } else None
         }
+        val contractMap = inputs.map { case (str, value) =>
+          EnumOutcome(str) -> Satoshis(value)
+        }.toVector
 
-        Some(
-          CreateDLCOffer(
-            contractInfo = contractInfo,
-            collateral = collateral,
-            feeRateOpt = feeRateOpt,
-            locktime = UInt32.zero,
-            refundLT = refundLocktime
-          ))
-      } else None
+        val descriptor = EnumContractDescriptor(contractMap)
 
-    val result = dialog.showAndWait()
+        ContractInfo(descriptor, oracleInfo).toTLV
+      case oracleInfo: NumericOracleInfo =>
+        val (totalCol, numeric) = getNumericContractInfo(
+          decompOpt,
+          pointMap.toVector.sortBy(_._1).map(_._2),
+          roundingMap.toVector.sortBy(_._1).map(_._2))
 
-    result match {
-      case Some(Some(offer: CreateDLCOffer)) => Some(offer)
-      case Some(_) | None                    => None
+        ContractInfo(totalCol, numeric, oracleInfo).toTLV
     }
+
+    CreateDLCOffer(
+      contractInfo = contractInfo,
+      collateral = collateral,
+      feeRateOpt = feeRateOpt,
+      locktime = UInt32.zero,
+      refundLT = refundLocktime
+    )
   }
 }
 
