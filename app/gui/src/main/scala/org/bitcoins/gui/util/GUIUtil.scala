@@ -59,9 +59,9 @@ object GUIUtil {
   private lazy val allExtensionFilter = new ExtensionFilter("All Files", "*")
 
   def showSaveDialog(
-      filename: String,
-      bytes: Option[String],
-      handleFile: Option[File => Unit]): Unit = {
+                      filename: String,
+                      bytesOpt: Option[String],
+                      handleFileOpt: Option[File => Unit]): Unit = {
     fileChooser.initialFileName = filename
     val chosenFileOpt = Option(fileChooser.showSaveDialog(null))
     chosenFileOpt match {
@@ -69,13 +69,13 @@ object GUIUtil {
         // Remember last-used directory
         fileChooser.initialDirectory = chosenFile.getParentFile
 
-        bytes match {
-          case Some(_) => Files.write(chosenFile.toPath, bytes.get.getBytes)
+        bytesOpt match {
+          case Some(bytes) => Files.write(chosenFile.toPath, bytes.getBytes)
           case None    => // There was nothing sent in to write out
         }
 
-        handleFile match {
-          case Some(_) => handleFile.get(chosenFile)
+        handleFileOpt match {
+          case Some(handleFile) => handleFile(chosenFile)
           case None    => // No callback defined
         }
       case None => // User canceled in dialog
