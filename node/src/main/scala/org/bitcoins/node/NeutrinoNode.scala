@@ -19,7 +19,7 @@ import scala.concurrent.Future
 
 case class NeutrinoNode(
     nodePeer: Vector[Peer],
-    dataMessageHandler: DataMessageHandler,
+    var dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem)
@@ -38,7 +38,8 @@ case class NeutrinoNode(
 
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): NeutrinoNode = {
-    copy(dataMessageHandler = dataMessageHandler)
+    this.dataMessageHandler = dataMessageHandler
+    this
   }
 
   override def start(): Future[NeutrinoNode] = {
