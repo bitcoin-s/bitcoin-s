@@ -1,13 +1,10 @@
 package org.bitcoins.dlc.node
 
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.testkit.node._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.testkitcore.gen.LnMessageGen
 
-class DLCConnectionHandlerTest
-    extends BitcoinSAsyncTest
-    with CachedBitcoinSAppConfig {
+class DLCConnectionHandlerTest extends BitcoinSAsyncTest {
 
   behavior of "parseIndividualMessages"
 
