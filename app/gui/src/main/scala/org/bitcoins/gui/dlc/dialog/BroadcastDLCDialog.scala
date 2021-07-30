@@ -35,7 +35,8 @@ object BroadcastDLCDialog
     }
   }
 
-  var dialogOpt: Option[Dialog[Option[AddDLCSigsAndBroadcastCliCommand]]] = None
+  private var dialogOpt: Option[
+    Dialog[Option[AddDLCSigsAndBroadcastCliCommand]]] = None
 
   def showAndWait(
       parentWindow: Window,

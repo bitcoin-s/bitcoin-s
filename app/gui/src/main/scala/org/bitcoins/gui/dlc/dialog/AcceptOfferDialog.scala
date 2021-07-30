@@ -58,7 +58,7 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCOffer] {
     }
   }
 
-  lazy val offerTLVTF = new TextField {
+  private lazy val offerTLVTF = new TextField {
     minWidth = 300
   }
 

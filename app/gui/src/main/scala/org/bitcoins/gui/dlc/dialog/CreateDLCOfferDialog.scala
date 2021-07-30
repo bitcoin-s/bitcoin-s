@@ -64,31 +64,34 @@ class CreateDLCOfferDialog
     }
   }
 
-  val fields: mutable.Map[Int, (TextField, TextField)] = mutable.Map.empty
+  private val fields: mutable.Map[Int, (TextField, TextField)] =
+    mutable.Map.empty
 
-  var announcementDetailsShown = false
-  lazy val announcementOrContractInfoTF = new TextField()
-  var decompOpt: Option[DigitDecompositionEventDescriptorV0TLV] = None
+  private var announcementDetailsShown = false
+  private lazy val announcementOrContractInfoTF = new TextField()
+  private var decompOpt: Option[DigitDecompositionEventDescriptorV0TLV] = None
 
-  val pointMap: scala.collection.mutable.Map[
+  private val pointMap: scala.collection.mutable.Map[
     Int,
     (TextField, TextField, CheckBox)] =
     scala.collection.mutable.Map.empty
 
-  val roundingMap: scala.collection.mutable.Map[Int, (TextField, TextField)] =
+  private val roundingMap: scala.collection.mutable.Map[
+    Int,
+    (TextField, TextField)] =
     scala.collection.mutable.Map.empty
 
-  lazy val feeRateTF = new TextField() {
+  private lazy val feeRateTF = new TextField() {
     text = GlobalData.feeRate.toLong.toString
     promptText = "(optional)"
   }
 
-  lazy val collateralTF = new TextField() {
+  private lazy val collateralTF = new TextField() {
     promptText = "Satoshis"
   }
   setNumericInput(collateralTF)
 
-  lazy val refundDatePicker = new DatePicker()
+  private lazy val refundDatePicker = new DatePicker()
 
   def buildView(
       announcementOpt: Option[OracleAnnouncementV0TLV],
