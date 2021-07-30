@@ -19,38 +19,51 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
   override def receive: Receive = LoggingReceive {
     case lnMessage: LnMessage[TLV] =>
       log.info(s"Received LnMessage ${lnMessage.typeName}")
-      lnMessage.tlv match {
-        case msg @ (_: UnknownTLV | _: DLCOracleTLV | _: DLCSetupPieceTLV) =>
-          log.error(s"Received unhandled message $msg")
-        case _: InitTLV =>
-          () // todo init logic
-        case error: ErrorTLV =>
-          log.error(error.toString)
-        case ping: PingTLV =>
-          val pong = PongTLV.forIgnored(ping.ignored)
-          connectionHandler ! LnMessage(pong)
-        case pong: PongTLV =>
-          log.debug(s"Received pong message $pong")
-        case dlcOffer: DLCOfferTLV =>
-          val _ = for {
-            accept <- dlcWalletApi.acceptDLCOffer(dlcOffer)
-            _ = connectionHandler ! accept.toMessage
-          } yield ()
-        case dlcAccept: DLCAcceptTLV =>
-          val _ = for {
-            sign <- dlcWalletApi.signDLC(dlcAccept)
-            _ = connectionHandler ! sign.toMessage
-          } yield ()
-        case dlcSign: DLCSignTLV =>
-          val _ = for {
-            _ <- dlcWalletApi.addDLCSigs(dlcSign)
-            _ <- dlcWalletApi.broadcastDLCFundingTx(dlcSign.contractId)
-          } yield ()
-      }
+      val f: Future[Unit] = handleTLVMessage(lnMessage)
+      f.failed.foreach(err =>
+        log.error(s"Failed to process lnMessage=${lnMessage}", err))
     case DLCConnectionHandler.WriteFailed(_) =>
       log.error("Write failed")
     case Terminated(actor) if actor == connectionHandler =>
       context.stop(self)
+  }
+
+  private def handleTLVMessage(lnMessage: LnMessage[TLV]): Future[Unit] = {
+    lnMessage.tlv match {
+      case msg @ (_: UnknownTLV | _: DLCOracleTLV | _: DLCSetupPieceTLV) =>
+        log.error(s"Received unhandled message $msg")
+        Future.unit
+      case _: InitTLV =>
+        Future.unit // todo init logic
+      case error: ErrorTLV =>
+        log.error(error.toString)
+        Future.unit //is this right?
+      case ping: PingTLV =>
+        val pong = PongTLV.forIgnored(ping.ignored)
+        connectionHandler ! LnMessage(pong)
+        Future.unit
+      case pong: PongTLV =>
+        log.debug(s"Received pong message $pong")
+        Future.unit
+      case dlcOffer: DLCOfferTLV =>
+        val f = for {
+          accept <- dlcWalletApi.acceptDLCOffer(dlcOffer)
+          _ = connectionHandler ! accept.toMessage
+        } yield ()
+        f
+      case dlcAccept: DLCAcceptTLV =>
+        val f = for {
+          sign <- dlcWalletApi.signDLC(dlcAccept)
+          _ = connectionHandler ! sign.toMessage
+        } yield ()
+        f
+      case dlcSign: DLCSignTLV =>
+        val f = for {
+          _ <- dlcWalletApi.addDLCSigs(dlcSign)
+          _ <- dlcWalletApi.broadcastDLCFundingTx(dlcSign.contractId)
+        } yield ()
+        f
+    }
   }
 }
 
