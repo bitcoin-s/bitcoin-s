@@ -36,6 +36,8 @@ case class SpvNode(
 
   def bloomFilter: BloomFilter = _bloomFilter.atomicGet
 
+  override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
+
   def setBloomFilter(bloom: BloomFilter): SpvNode = {
     _bloomFilter.atomicSet(bloom)
     this

@@ -65,7 +65,7 @@ class DataMessageHandlerNeutrinoNodesTest
           DataMessageHandler(genesisChainApi)(node.executionContext,
                                               node.nodeAppConfig,
                                               node.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload, sender, param.node)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
         result <- resultP.future
       } yield assert(result == tx)
   }

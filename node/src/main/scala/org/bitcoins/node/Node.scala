@@ -46,13 +46,15 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   val peers: Vector[Peer]
 
-  val peerServices: mutable.Map[Peer, ServiceIdentifier] =
+  private val _peerServices: mutable.Map[Peer, ServiceIdentifier] =
     mutable.Map.empty
+
+  def peerServices: Map[Peer, ServiceIdentifier] = _peerServices.toMap
 
   def setPeerServices(
       peer: Peer,
       serviceIdentifier: ServiceIdentifier): Unit = {
-    peerServices.put(peer, serviceIdentifier)
+    _peerServices.put(peer, serviceIdentifier)
     ()
   }
 
@@ -82,7 +84,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * maek sure we update the [[DataMessageHandler]] via [[updateDataMessageHandler()]]
     * to make sure we don't corrupt our chainstate cache
     */
-  def dataMessageHandler: DataMessageHandler
+  def getDataMessageHandler: DataMessageHandler
 
   def nodeCallbacks: NodeCallbacks = nodeAppConfig.nodeCallbacks
 

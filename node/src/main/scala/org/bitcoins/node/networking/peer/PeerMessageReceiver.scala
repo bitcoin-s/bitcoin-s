@@ -45,7 +45,7 @@ class PeerMessageReceiver(
 
         val peerMsgSender = PeerMessageSender(client)
 
-        peerMsgSender.sendVersionMessage(node.dataMessageHandler.chainApi)
+        peerMsgSender.sendVersionMessage(node.getDataMessageHandler.chainApi)
 
         val newRecv = toState(newState)
 
@@ -118,7 +118,7 @@ class PeerMessageReceiver(
       sender: PeerMessageSender): Future[PeerMessageReceiver] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
-    node.dataMessageHandler.handleDataPayload(payload, sender, node).map {
+    node.getDataMessageHandler.handleDataPayload(payload, sender, node).map {
       handler =>
         val newNode = node.updateDataMessageHandler(handler)
         new PeerMessageReceiver(newNode, state, peer)
