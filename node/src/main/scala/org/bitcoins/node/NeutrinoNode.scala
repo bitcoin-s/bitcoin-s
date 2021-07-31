@@ -40,13 +40,8 @@ case class NeutrinoNode(
 
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): NeutrinoNode = {
-    val a = copy(dataMessageHandler = dataMessageHandler)
-    peerServices.foreach { x =>
-      a.setPeerServices(x._1, x._2)
-    }
-    a
-//    this.dataMessageHandler = dataMessageHandler
-//    this
+    this.dataMessageHandler = dataMessageHandler
+    this
   }
 
   override def start(): Future[NeutrinoNode] = {
