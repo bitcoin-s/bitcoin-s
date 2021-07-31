@@ -3,8 +3,7 @@ package org.bitcoins.node.networking.peer
 import org.bitcoins.core.currency.BitcoinsInt
 import org.bitcoins.core.p2p.TransactionMessage
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.node.OnTxReceived
-import org.bitcoins.node.NodeCallbacks
+import org.bitcoins.node.{NodeCallbacks, OnTxReceived}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.{
@@ -66,7 +65,7 @@ class DataMessageHandlerNeutrinoNodesTest
           DataMessageHandler(genesisChainApi)(node.executionContext,
                                               node.nodeAppConfig,
                                               node.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload, sender)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
         result <- resultP.future
       } yield assert(result == tx)
   }
