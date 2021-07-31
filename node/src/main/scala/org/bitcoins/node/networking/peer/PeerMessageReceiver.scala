@@ -128,7 +128,7 @@ class PeerMessageReceiver(
   /** Handles control payloads defined here https://bitcoin.org/en/developer-reference#control-messages
     *
     * @param payload the payload we need to do something with
-    * @param sender  the [[PeerMessageSender]] we can use to initialize an subsequent messages that need to be sent
+    * @param sender the [[PeerMessageSender]] we can use to initialize an subsequent messages that need to be sent
     * @return the requests with the request removed for which the @payload is responding too
     */
   private def handleControlPayload(
