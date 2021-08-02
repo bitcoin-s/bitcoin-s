@@ -205,8 +205,21 @@ to ensure the entire module is initialized correctly.</p>
     proxy {
         <span class="hljs-comment"># You can configure SOCKS5 proxy to use Tor for outgoing connections</span>
         <span class="hljs-attr">enabled</span> = <span class="hljs-literal">false</span>
-        <span class="hljs-attr">host</span> = <span class="hljs-string">"127.0.0.1"</span>
-        <span class="hljs-attr">port</span> = <span class="hljs-number">9050</span>
+        <span class="hljs-attr">socks5</span> = <span class="hljs-string">"127.0.0.1:9050"</span>
+    }
+
+    tor {
+        <span class="hljs-comment"># You can enable Tor for incoming connections</span>
+        <span class="hljs-attr">enabled</span> = <span class="hljs-literal">false</span>
+        <span class="hljs-attr">control</span> = <span class="hljs-number">127.0</span>.<span class="hljs-number">0.1</span>:<span class="hljs-number">9051</span>
+
+        <span class="hljs-comment"># The password used to arrive at the HashedControlPassword for the control port.</span>
+        <span class="hljs-comment"># If provided, the HASHEDPASSWORD authentication method will be used instead of</span>
+        <span class="hljs-comment"># the SAFECOOKIE one.</span>
+        <span class="hljs-comment"># password = securePassword</span>
+
+        <span class="hljs-comment"># The path to the private key of the onion service being created</span>
+        <span class="hljs-comment"># privateKeyPath = /path/to/priv/key</span>
     }
     
     chain {
@@ -290,6 +303,12 @@ to ensure the entire module is initialized correctly.</p>
 
         <span class="hljs-comment"># name = constant # A constant fee rate in sats/vbyte</span>
         <span class="hljs-comment"># target = 1 # Will always use 1 sat/vbyte</span>
+    }
+
+    dlcnode {
+        <span class="hljs-comment"># The address we are listening on for incoming connections for DLCs</span>
+        <span class="hljs-comment"># Binding to 0.0.0.0 makes us listen to all incoming connections</span>
+        <span class="hljs-attr">listen</span> = <span class="hljs-string">"0.0.0.0:2862"</span>
     }
 
     server {
