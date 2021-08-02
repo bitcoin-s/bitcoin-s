@@ -67,7 +67,7 @@ object DLCServer {
       torParams: Option[TorParams],
       dataHandlerFactory: DLCDataHandler.Factory =
         DLCDataHandler.defaultFactory)(implicit
-      system: ActorSystem): Future[InetSocketAddress] = {
+      system: ActorSystem): Future[(InetSocketAddress, ActorRef)] = {
     import system.dispatcher
 
     val promise = Promise[InetSocketAddress]()
@@ -85,13 +85,13 @@ object DLCServer {
             .map(Some(_))
         case None => Future.successful(None)
       }
-      boundAddress <- {
-        system.actorOf(
-          props(dlcWalletApi, bindAddress, Some(promise), dataHandlerFactory))
-        promise.future
-      }
+      actorRef = system.actorOf(
+        props(dlcWalletApi, bindAddress, Some(promise), dataHandlerFactory))
+      boundAddress <- promise.future
     } yield {
-      onionAddress.getOrElse(boundAddress)
+      val addr = onionAddress.getOrElse(boundAddress)
+
+      (addr, actorRef)
     }
   }
 }

@@ -19,7 +19,7 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
 
   implicit val ec: ExecutionContextExecutor = system.dispatcher
 
-  private[node] lazy val serverBindF: Future[InetSocketAddress] = {
+  private[node] lazy val serverBindF: Future[(InetSocketAddress, ActorRef)] = {
     logger.info(
       s"Binding server to ${config.listenAddress}, with tor hidden service: ${config.torParams.isDefined}")
 
@@ -35,7 +35,9 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
   }
 
   override def stop(): Future[Unit] = {
-    Future.unit
+    serverBindF.map { case (_, actorRef) =>
+      system.stop(actorRef)
+    }
   }
 
   private[node] def connectAndSendToPeer(

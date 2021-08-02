@@ -24,7 +24,7 @@ class DLCNodeTest extends BitcoinSDLCNodeTest {
     val walletB = nodeB.wallet
 
     for {
-      addrA <- nodeA.serverBindF
+      (addrA, _) <- nodeA.serverBindF
       // verify we have no DLCs
       preDLCsA <- walletA.listDLCs()
       preDLCsB <- walletB.listDLCs()
