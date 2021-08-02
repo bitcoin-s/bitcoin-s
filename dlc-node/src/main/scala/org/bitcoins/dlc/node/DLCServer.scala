@@ -4,8 +4,7 @@ import akka.actor._
 import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
-import org.bitcoins.dlc.node.config._
-import org.bitcoins.tor.TorController
+import org.bitcoins.tor._
 
 import java.io.IOException
 import java.net.InetSocketAddress

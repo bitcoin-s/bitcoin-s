@@ -6,7 +6,8 @@ import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db._
 import org.bitcoins.dlc.node.DLCNode
-import org.bitcoins.tor.Socks5ProxyParams
+import org.bitcoins.tor
+import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 import org.bitcoins.tor.TorProtocolHandler.{Password, SafeCookie}
 
 import java.io.File
@@ -43,12 +44,11 @@ case class DLCNodeAppConfig(
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
     if (config.getBoolean("bitcoin-s.proxy.enabled")) {
+      val uri = new URI("tcp://" + config.getString("bitcoin-s.proxy.sock5"))
+      val sock5 = InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
       Some(
         Socks5ProxyParams(
-          address = InetSocketAddress.createUnresolved(
-            config.getString("bitcoin-s.proxy.host"),
-            config.getInt("bitcoin-s.proxy.port")
-          ),
+          address = sock5,
           credentialsOpt = None,
           randomizeCredentials = true
         )
@@ -75,7 +75,7 @@ case class DLCNodeAppConfig(
           case None       => datadir.resolve("tor_priv_key")
         }
 
-      Some(TorParams(control, auth, privKeyPath))
+      Some(tor.TorParams(control, auth, privKeyPath))
     } else {
       None
     }

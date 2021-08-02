@@ -9,16 +9,16 @@ import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.util.BitcoinSActorFixtureWithDLCWallet
+import org.bitcoins.testkit.util.NetworkUtil._
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.tor.{Socks5ProxyParams, TorController, TorProtocolHandler}
 import org.scalatest.{Assertion, FutureOutcome}
 import scodec.bits.ByteVector
 
 import java.io.File
-import java.net.{InetSocketAddress, Socket}
+import java.net.InetSocketAddress
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
-import scala.util.Try
 
 class DLCServerTorTest extends BitcoinSActorFixtureWithDLCWallet {
 
@@ -137,12 +137,6 @@ class DLCServerTorTest extends BitcoinSActorFixtureWithDLCWallet {
 
     resultF
   }
-
-  private def portIsBound(address: InetSocketAddress): Boolean =
-    Try {
-      val socket = new Socket(address.getHostString, address.getPort)
-      socket.close()
-    }.isSuccess
 
   private def withTempFile(
       prefix: String,

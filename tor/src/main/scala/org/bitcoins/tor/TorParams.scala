@@ -1,4 +1,4 @@
-package org.bitcoins.dlc.node.config
+package org.bitcoins.tor
 
 import org.bitcoins.tor.TorProtocolHandler.Authentication
 
