@@ -36,7 +36,6 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
 
   override def stop(): Future[Unit] = {
     serverBindF.map { case (_, actorRef) =>
-      actorRef ! DLCServer.Disconnect
       system.stop(actorRef)
     }
   }

@@ -49,6 +49,11 @@ class DLCServer(
                                    dataHandlerFactory)))
   }
 
+  override def postStop(): Unit = {
+    super.postStop()
+    socket ! DLCServer.Disconnect
+  }
+
   override def aroundReceive(receive: Receive, msg: Any): Unit = try {
     super.aroundReceive(receive, msg)
   } catch {
