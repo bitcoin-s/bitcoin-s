@@ -816,7 +816,6 @@ abstract class DLCWallet
           _ <- dlcSigsDAO.createAll(sigsDbs)
           _ <- dlcRefundSigDAO.upsert(refundSigsDb)
           _ <- dlcAcceptDAO.upsert(dlcAcceptDb)
-          _ <- dlcDAO.update(dlc.updateState(DLCState.Accepted))
 
           // .get is safe here because we must have an offer if we have a dlcDAO
           offerDb <- dlcOfferDAO.findByDLCId(dlc.dlcId).map(_.get)
@@ -855,8 +854,10 @@ abstract class DLCWallet
             case None    => scriptPubKeyDAO.create(spkDb)
           }
 
-          updatedDLCDb <-
-            updateFundingOutPoint(dlcDb.contractIdOpt.get, outPoint)
+          updatedDLCDb <- dlcDAO.update(
+            dlcDb
+              .updateState(DLCState.Accepted)
+              .updateFundingOutPoint(outPoint))
         } yield (updatedDLCDb, sigsDbs)
       case (dlc, Some(_)) =>
         logger.debug(
