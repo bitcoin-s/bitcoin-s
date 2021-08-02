@@ -51,7 +51,7 @@ class DLCServer(
 
   override def postStop(): Unit = {
     super.postStop()
-    socket ! DLCServer.Disconnect
+    socket ! Tcp.Unbind
   }
 
   override def aroundReceive(receive: Receive, msg: Any): Unit = try {
