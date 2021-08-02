@@ -1,7 +1,6 @@
 package org.bitcoins.dlc.node
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.io.Tcp
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.protocol.tlv._
@@ -37,7 +36,8 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
 
   override def stop(): Future[Unit] = {
     serverBindF.map { case (_, actorRef) =>
-      actorRef ! Tcp.Unbind
+      actorRef ! DLCServer.Disconnect
+      system.stop(actorRef)
     }
   }
 

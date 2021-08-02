@@ -22,10 +22,16 @@ class DLCServer(
 
   IO(Tcp) ! Tcp.Bind(self, bindAddress)
 
+  var socket: ActorRef = _
+
   override def receive: Receive = LoggingReceive {
     case Tcp.Bound(localAddress) =>
       log.info(s"Bound at $localAddress")
       boundAddress.foreach(_.success(localAddress))
+      socket = sender()
+
+    case DLCServer.Disconnect =>
+      socket ! Tcp.Unbind
 
     case c @ Tcp.CommandFailed(_: Tcp.Bind) =>
       val ex = c.cause.getOrElse(new IOException("Unknown Error"))
@@ -53,6 +59,8 @@ class DLCServer(
 }
 
 object DLCServer {
+
+  case object Disconnect
 
   def props(
       dlcWalletApi: DLCWalletApi,
