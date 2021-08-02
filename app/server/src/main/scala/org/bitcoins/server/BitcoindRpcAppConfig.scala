@@ -2,6 +2,7 @@ package org.bitcoins.server
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.db._
 import org.bitcoins.node.NodeType
 import org.bitcoins.node.config.NodeAppConfig
@@ -95,10 +96,9 @@ case class BitcoindRpcAppConfig(
     if (config.getBoolean("bitcoin-s.proxy.enabled")) {
       Some(
         Socks5ProxyParams(
-          address = InetSocketAddress.createUnresolved(
-            config.getString("bitcoin-s.proxy.host"),
-            config.getInt("bitcoin-s.proxy.port")
-          ),
+          address = NetworkUtil.parseInetSocketAddress(
+            config.getString("bitcoin-s.proxy.socks5"),
+            Socks5ProxyParams.DefaultPort),
           credentialsOpt = None,
           randomizeCredentials = true
         )

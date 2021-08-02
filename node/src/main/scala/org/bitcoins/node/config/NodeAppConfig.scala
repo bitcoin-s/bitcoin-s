@@ -9,7 +9,7 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
-import org.bitcoins.core.util.Mutable
+import org.bitcoins.core.util.{Mutable, NetworkUtil}
 import org.bitcoins.db.{AppConfigFactory, DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
@@ -17,7 +17,6 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.tor.Socks5ProxyParams
 
-import java.net.InetSocketAddress
 import java.nio.file.Path
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -93,10 +92,9 @@ case class NodeAppConfig(
     if (config.getBoolean("bitcoin-s.proxy.enabled")) {
       Some(
         Socks5ProxyParams(
-          address = InetSocketAddress.createUnresolved(
-            config.getString("bitcoin-s.proxy.host"),
-            config.getInt("bitcoin-s.proxy.port")
-          ),
+          address = NetworkUtil.parseInetSocketAddress(
+            config.getString("bitcoin-s.proxy.socks5"),
+            Socks5ProxyParams.DefaultPort),
           credentialsOpt = None,
           randomizeCredentials = true
         )

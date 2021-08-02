@@ -251,6 +251,8 @@ case class Socks5ProxyParams(
 
 object Socks5ProxyParams {
 
+  val DefaultPort = 9050
+
   def proxyCredentials(
       proxyParams: Socks5ProxyParams): Option[Socks5Connection.Credentials] =
     if (proxyParams.randomizeCredentials) {
