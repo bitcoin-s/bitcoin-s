@@ -171,7 +171,7 @@ bitcoin-s {
     proxy {
         # You can configure SOCKS5 proxy to use Tor for outgoing connections
         enabled = false
-        sock5 = "127.0.0.1:9050"
+        socks5 = "127.0.0.1:9050"
     }
 
     tor {
