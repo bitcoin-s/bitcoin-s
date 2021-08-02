@@ -3,6 +3,10 @@ package org.bitcoins.rpc.client.common
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.settings.{
+  ClientConnectionSettings,
+  ConnectionPoolSettings
+}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.StreamTcpException
@@ -22,6 +26,7 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
 }
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
 import org.bitcoins.rpc.util.NativeProcessFactory
+import org.bitcoins.tor.Socks5ClientTransport
 import play.api.libs.json._
 
 import java.nio.file.{Files, Path}
@@ -325,8 +330,21 @@ trait Client
   /** Cached http client to send requests to bitcoind with */
   private lazy val httpClient: HttpExt = Http(system)
 
+  private lazy val httpConnectionPoolSettings: ConnectionPoolSettings =
+    instance.proxyParams match {
+      case Some(proxyParams) =>
+        val socks5ClientTransport = new Socks5ClientTransport(proxyParams)
+
+        val clientConnectionSettings =
+          ClientConnectionSettings(system).withTransport(socks5ClientTransport)
+
+        ConnectionPoolSettings(system).withConnectionSettings(
+          clientConnectionSettings)
+      case None => ConnectionPoolSettings(system)
+    }
+
   protected def sendRequest(req: HttpRequest): Future[HttpResponse] = {
-    httpClient.singleRequest(req)
+    httpClient.singleRequest(req, settings = httpConnectionPoolSettings)
   }
 
   /** Parses the payload of the given response into JSON.

@@ -53,6 +53,8 @@ class BitcoindConfigPane(
       minWidth = 300
     }
 
+  private val torCheckBox: CheckBox = new CheckBox()
+
   private var nextRow: Int = 0
 
   val gridPane: GridPane = new GridPane() {
@@ -80,6 +82,10 @@ class BitcoindConfigPane(
     add(new Label("Bitcoin Core Version"), 0, nextRow)
     add(versionComboBox, 1, nextRow)
     nextRow += 1
+
+    add(new Label("Use Tor"), 0, nextRow)
+    add(torCheckBox, 1, nextRow)
+    nextRow += 1
   }
 
   val launchButton: Button = new Button("Launch Wallet") {
@@ -94,7 +100,14 @@ class BitcoindConfigPane(
   }
 
   def getConfig: Config = {
-    val configStr =
+    val proxyConfStr =
+      if (hostTF.text.value.contains(".onion") || torCheckBox.selected.value) {
+        s"""
+           |bitcoin-s.proxy.enabled = true
+           |""".stripMargin
+      } else ""
+
+    val configStr = proxyConfStr +
       s"""
          |bitcoin-s.node.mode = bitcoind
          |bitcoin-s.bitcoind-rpc.isRemote = true
