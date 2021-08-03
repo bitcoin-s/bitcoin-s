@@ -100,6 +100,9 @@ object Deps {
     val akkaSlf4j =
       "com.typesafe.akka" %% "akka-slf4j" % V.akkaStreamv withSources () withJavadoc ()
 
+    val akkaTestkit =
+      "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
+
     val scalaFx =
       "org.scalafx" %% "scalafx" % V.scalaFxV withSources () withJavadoc ()
 
@@ -258,9 +261,6 @@ object Deps {
       "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources () withJavadoc ()
     val playJson = Compile.playJson % "test"
 
-    val akkaTestkit =
-      "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
-
     val scalameter =
       "com.storm-enroute" %% "scalameter" % V.scalameterV % "test" withSources () withJavadoc ()
 
@@ -269,6 +269,9 @@ object Deps {
 
     val pgEmbedded =
       "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV % "test" withSources () withJavadoc ()
+
+    val akkaTestkit =
+      "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
   }
 
   def asyncUtils = Def.setting {
@@ -315,7 +318,19 @@ object Deps {
   val dlcWallet =
     List(
       Compile.newMicroJson,
-      Compile.logback
+      Compile.grizzledSlf4j
+    )
+
+  val dlcNode =
+    List(
+      Compile.newMicroJson,
+      Compile.grizzledSlf4j,
+      Compile.akkaActor
+    )
+
+  val dlcNodeTest =
+    List(
+      Test.akkaTestkit
     )
 
   val dlcWalletTest =
@@ -540,7 +555,7 @@ object Deps {
       Compile.pgEmbedded,
       Compile.slf4j,
       Compile.grizzledSlf4j,
-      Test.akkaTestkit
+      Compile.akkaTestkit
     )
   }
 
@@ -563,7 +578,6 @@ object Deps {
     )
 
   val walletTest = List(
-    Test.akkaTestkit,
     Test.pgEmbedded
   )
 
@@ -578,8 +592,7 @@ object Deps {
   val walletServerTest = List(
     Test.scalaMock,
     Test.akkaHttpTestkit,
-    Test.akkaStream,
-    Test.akkaTestkit
+    Test.akkaStream
   )
 
   val dlcOracle =

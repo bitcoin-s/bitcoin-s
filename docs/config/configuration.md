@@ -171,8 +171,21 @@ bitcoin-s {
     proxy {
         # You can configure SOCKS5 proxy to use Tor for outgoing connections
         enabled = false
-        host = "127.0.0.1"
-        port = 9050
+        socks5 = "127.0.0.1:9050"
+    }
+
+    tor {
+        # You can enable Tor for incoming connections
+        enabled = false
+        control = 127.0.0.1:9051
+
+        # The password used to arrive at the HashedControlPassword for the control port.
+        # If provided, the HASHEDPASSWORD authentication method will be used instead of
+        # the SAFECOOKIE one.
+        # password = securePassword
+
+        # The path to the private key of the onion service being created
+        # privateKeyPath = /path/to/priv/key
     }
     
     chain {
@@ -256,6 +269,12 @@ bitcoin-s {
 
         # name = constant # A constant fee rate in sats/vbyte
         # target = 1 # Will always use 1 sat/vbyte
+    }
+
+    dlcnode {
+        # The address we are listening on for incoming connections for DLCs
+        # Binding to 0.0.0.0 makes us listen to all incoming connections
+        listen = "0.0.0.0:2862"
     }
 
     server {

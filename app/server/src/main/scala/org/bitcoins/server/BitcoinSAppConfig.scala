@@ -7,6 +7,7 @@ import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.db.AppConfig
 import org.bitcoins.db.util.ServerArgParser
+import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.node.config.NodeAppConfig
@@ -32,6 +33,9 @@ case class BitcoinSAppConfig(
   lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
   lazy val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
   lazy val dlcConf: DLCAppConfig = DLCAppConfig(directory, confs: _*)
+
+  lazy val dlcNodeConf: DLCNodeAppConfig =
+    DLCNodeAppConfig(directory, confs: _*)
 
   def copyWithConfig(newConfs: Vector[Config]): BitcoinSAppConfig = {
     val configs = newConfs ++ confs

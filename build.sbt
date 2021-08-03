@@ -196,6 +196,8 @@ lazy val `bitcoin-s` = project
     walletTest,
     dlcWallet,
     dlcWalletTest,
+    dlcNode,
+    dlcNodeTest,
     appServer,
     appServerTest,
     appCommons,
@@ -250,6 +252,8 @@ lazy val `bitcoin-s` = project
     walletTest,
     dlcWallet,
     dlcWalletTest,
+    dlcNode,
+    dlcNodeTest,
     appServer,
     appServerTest,
     appCommons,
@@ -383,6 +387,7 @@ lazy val appServer = project
     chain,
     wallet,
     dlcWallet,
+    dlcNode,
     bitcoindRpc,
     feeProvider,
     zmq
@@ -698,6 +703,24 @@ lazy val dlcWalletTest = project
     libraryDependencies ++= Deps.dlcWalletTest
   )
   .dependsOn(coreJVM % testAndCompile, dlcWallet, testkit, dlcTest)
+
+lazy val dlcNode = project
+  .in(file("dlc-node"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-node",
+    libraryDependencies ++= Deps.dlcNode
+  )
+  .dependsOn(coreJVM, tor, dbCommons)
+
+lazy val dlcNodeTest = project
+  .in(file("dlc-node-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-node-test",
+    libraryDependencies ++= Deps.dlcNodeTest
+  )
+  .dependsOn(coreJVM % testAndCompile, dlcNode, testkit)
 
 lazy val dlcOracle = project
   .in(file("dlc-oracle"))
