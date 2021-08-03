@@ -3,6 +3,7 @@ package org.bitcoins.bundle.gui
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config._
 import org.bitcoins.db.util.DatadirUtil
+import org.bitcoins.gui.util.GUIUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
 import scalafx.geometry._
@@ -63,6 +64,7 @@ class NeutrinoConfigPane(
           peerAddressTF.text.value = defaultPeerForNetwork(network)
         }
       }
+      minWidth = 300
     }
 
   private val peerAddressTF: TextField = new TextField() {
@@ -70,14 +72,16 @@ class NeutrinoConfigPane(
     minWidth = 300
   }
 
-  private val torCheckBox: CheckBox = new CheckBox()
+  private val torCheckBox: CheckBox = new CheckBox() {
+    selected = appConfig.config.getBoolean("bitcoin-s.proxy.enabled")
+  }
 
   private var nextRow: Int = 0
 
   val gridPane: GridPane = new GridPane() {
     hgap = 5
     vgap = 10
-    padding = Insets(top = 10, right = 10, bottom = 10, left = 10)
+    padding = Insets(10)
     alignment = Pos.TopCenter
 
     add(new Label("Network"), 0, nextRow)
@@ -93,13 +97,13 @@ class NeutrinoConfigPane(
   }
 
   val launchButton: Button = new Button("Launch Wallet") {
-    margin = Insets(top = 180, right = 0, bottom = 0, left = 0)
     onAction = _ => model.launchWallet(getConfig, appConfig)
   }
 
   val view: Node = new VBox() {
     alignment = Pos.TopCenter
-    children = Vector(neutrinoExplainer, gridPane, launchButton)
+    children =
+      Vector(neutrinoExplainer, gridPane, GUIUtil.getVSpacer(), launchButton)
     spacing = 20
   }
 

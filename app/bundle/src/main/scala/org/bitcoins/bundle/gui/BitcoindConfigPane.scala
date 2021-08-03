@@ -53,7 +53,9 @@ class BitcoindConfigPane(
       minWidth = 300
     }
 
-  private val torCheckBox: CheckBox = new CheckBox()
+  private val torCheckBox: CheckBox = new CheckBox() {
+    selected = appConfig.config.getBoolean("bitcoin-s.proxy.enabled")
+  }
 
   private var nextRow: Int = 0
 
@@ -89,12 +91,12 @@ class BitcoindConfigPane(
   }
 
   val launchButton: Button = new Button("Launch Wallet") {
-    margin = Insets(top = 80, right = 0, bottom = 0, left = 0)
     onAction = _ => model.launchWallet(getConfig, appConfig)
   }
 
   val view: Node = new VBox() {
-    children = Vector(bitcoindExplainer, gridPane, launchButton)
+    children =
+      Vector(bitcoindExplainer, gridPane, GUIUtil.getVSpacer(), launchButton)
     spacing = 20
     alignment = Pos.TopCenter
   }

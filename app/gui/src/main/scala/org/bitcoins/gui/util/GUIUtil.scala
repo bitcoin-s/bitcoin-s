@@ -3,9 +3,10 @@ package org.bitcoins.gui.util
 import javafx.beans.value.ObservableValue
 import org.bitcoins.core.protocol.BlockTimeStamp
 import org.bitcoins.gui.GlobalData
+import scalafx.beans.property.StringProperty
 import scalafx.scene.{Parent, Scene}
-import scalafx.scene.control.{Button, TextField}
-import scalafx.scene.image.Image
+import scalafx.scene.control.{Button, TextField, Tooltip}
+import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.layout.{Priority, Region}
 import scalafx.stage.{FileChooser, Stage}
 import scalafx.stage.FileChooser.ExtensionFilter
@@ -114,8 +115,38 @@ object GUIUtil {
     }
   }
 
+  def getCopyToClipboardButton(property: StringProperty) = new Button {
+    styleClass += "icon-button" += "copy-button"
+    disable <== property.isEmpty
+    onAction = _ => {
+      setStringToClipboard(property.value)
+    }
+    tooltip = Tooltip("Copy to Clipboard.")
+    tooltip.value.setShowDelay(new javafx.util.Duration(100))
+  }
+
+  def getGreenCheck() = {
+    val img = new Image("/icons/green-check.png")
+    val imageView = new ImageView(img)
+    imageView.fitHeight = 16
+    imageView.fitWidth = 16
+    imageView
+  }
+
+  def getRedX() = {
+    val img = new Image("/icons/red-x.png")
+    val imageView = new ImageView(img)
+    imageView.fitHeight = 16
+    imageView.fitWidth = 16
+    imageView
+  }
+
   def getHSpacer() = {
     new Region { hgrow = Priority.Always }
+  }
+
+  def getVSpacer() = {
+    new Region { vgrow = Priority.Always }
   }
 
   def getWindow(
