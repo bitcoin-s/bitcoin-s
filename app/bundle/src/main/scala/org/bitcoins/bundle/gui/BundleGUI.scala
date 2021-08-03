@@ -67,11 +67,8 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
   }
 
   def writePreferenceValues(): Unit = {
-    println(
-      "writePreferenceValues w: " + stage.getWidth + " h: " + stage.getHeight)
     preferences.putDouble(WINDOW_WIDTH, stage.getWidth)
     preferences.putDouble(WINDOW_HEIGHT, stage.getHeight)
-    println("stage x: " + stage.getX + " y: " + stage.getY)
     preferences.putDouble(WINDOW_X, stage.getX)
     preferences.putDouble(WINDOW_Y, stage.getY)
     preferences.flush()
