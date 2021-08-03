@@ -2,11 +2,13 @@ package org.bitcoins.server
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.db._
 import org.bitcoins.node.NodeType
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config._
+import org.bitcoins.tor.Socks5ProxyParams
 
 import java.io.File
 import java.net.{InetSocketAddress, URI}
@@ -90,6 +92,22 @@ case class BitcoindRpcAppConfig(
   lazy val rpcPassword: String =
     config.getString("bitcoin-s.bitcoind-rpc.rpcpassword")
 
+  lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
+    if (config.getBoolean("bitcoin-s.proxy.enabled")) {
+      Some(
+        Socks5ProxyParams(
+          address = NetworkUtil.parseInetSocketAddress(
+            config.getString("bitcoin-s.proxy.socks5"),
+            Socks5ProxyParams.DefaultPort),
+          credentialsOpt = None,
+          randomizeCredentials = true
+        )
+      )
+    } else {
+      None
+    }
+  }
+
   lazy val versionOpt: Option[BitcoindVersion] =
     config
       .getStringOrNone("bitcoin-s.bitcoind-rpc.version")
@@ -140,7 +158,8 @@ case class BitcoindRpcAppConfig(
       zmqConfig = zmqConfig,
       binary = binaryOpt.getOrElse(fallbackBinary),
       datadir = bitcoindDataDir,
-      isRemote = isRemote
+      isRemote = isRemote,
+      proxyParams = socks5ProxyParams
     )
   }
 

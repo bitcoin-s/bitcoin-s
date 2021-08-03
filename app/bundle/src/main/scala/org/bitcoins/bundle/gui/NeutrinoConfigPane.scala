@@ -70,6 +70,8 @@ class NeutrinoConfigPane(
     minWidth = 300
   }
 
+  private val torCheckBox: CheckBox = new CheckBox()
+
   private var nextRow: Int = 0
 
   val gridPane: GridPane = new GridPane() {
@@ -83,6 +85,10 @@ class NeutrinoConfigPane(
     nextRow += 1
     add(new Label("Peer Address"), 0, nextRow)
     add(peerAddressTF, 1, nextRow)
+    nextRow += 1
+
+    add(new Label("Use Tor"), 0, nextRow)
+    add(torCheckBox, 1, nextRow)
     nextRow += 1
   }
 
@@ -99,11 +105,15 @@ class NeutrinoConfigPane(
 
   def getConfig: Config = {
     // Auto-enable proxy for .onion peers
-    val proxyConfStr = if (peerAddressTF.text.value.contains(".onion")) {
-      s"""
-         |bitcoin-s.proxy.enabled = true
-         |""".stripMargin
-    } else ""
+    val proxyConfStr =
+      if (
+        peerAddressTF.text.value.contains(
+          ".onion") || torCheckBox.selected.value
+      ) {
+        s"""
+           |bitcoin-s.proxy.enabled = true
+           |""".stripMargin
+      } else ""
     val configStr = proxyConfStr +
       s"""
          |bitcoin-s.network = ${DatadirUtil.networkStrToDirName(

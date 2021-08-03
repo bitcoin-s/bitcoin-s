@@ -122,7 +122,8 @@ lazy val bitcoindRpc = project
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
     asyncUtilsJVM,
-    appCommons
+    appCommons,
+    tor
   )
 
 lazy val eclairRpc = project

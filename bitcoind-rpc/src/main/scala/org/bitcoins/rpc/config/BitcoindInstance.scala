@@ -4,6 +4,7 @@ import grizzled.slf4j.Logging
 import org.bitcoins.core.api.commons.InstanceFactory
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.rpc.client.common.BitcoindVersion
+import org.bitcoins.tor.Socks5ProxyParams
 
 import java.io.{File, FileNotFoundException}
 import java.net.URI
@@ -65,6 +66,8 @@ sealed trait BitcoindInstance extends Logging {
   }
 
   def p2pPort: Int = uri.getPort
+
+  def proxyParams: Option[Socks5ProxyParams]
 }
 
 object BitcoindInstance extends InstanceFactory[BitcoindInstance] {
@@ -77,7 +80,8 @@ object BitcoindInstance extends InstanceFactory[BitcoindInstance] {
       zmqConfig: ZmqConfig,
       binary: File,
       datadir: File,
-      isRemote: Boolean
+      isRemote: Boolean,
+      proxyParams: Option[Socks5ProxyParams]
   ) extends BitcoindInstance
 
   def apply(
@@ -88,7 +92,8 @@ object BitcoindInstance extends InstanceFactory[BitcoindInstance] {
       zmqConfig: ZmqConfig = ZmqConfig(),
       binary: File = DEFAULT_BITCOIND_LOCATION,
       datadir: File = BitcoindConfig.DEFAULT_DATADIR,
-      isRemote: Boolean = false
+      isRemote: Boolean = false,
+      proxyParams: Option[Socks5ProxyParams] = None
   ): BitcoindInstance = {
     BitcoindInstanceImpl(network,
                          uri,
@@ -97,7 +102,8 @@ object BitcoindInstance extends InstanceFactory[BitcoindInstance] {
                          zmqConfig = zmqConfig,
                          binary = binary,
                          datadir = datadir,
-                         isRemote = isRemote)
+                         isRemote = isRemote,
+                         proxyParams = proxyParams)
   }
 
   lazy val DEFAULT_BITCOIND_LOCATION: File = {
