@@ -48,7 +48,7 @@ object ViewDLCDialog {
       vgap = 10
 
       private var row = 0
-      add(new Label("DLC Id:"), 0, row)
+      add(new Label("DLC Id"), 0, row)
       add(new TextField() {
             text = status.dlcId.hex
             editable = false
@@ -57,7 +57,7 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
-      add(new Label("Event Id:"), 0, row)
+      add(new Label("Event Id"), 0, row)
       add(
         new TextField() {
           text =
@@ -70,7 +70,7 @@ object ViewDLCDialog {
       )
 
       row += 1
-      add(new Label("Initiator:"), 0, row)
+      add(new Label("Initiator"), 0, row)
       add(new TextField() {
             text = if (status.isInitiator) "Yes" else "No"
             editable = false
@@ -79,7 +79,7 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
-      add(new Label("State:"), 0, row)
+      add(new Label("State"), 0, row)
       add(new TextField() {
             text = status.statusString
             editable = false
@@ -88,7 +88,7 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
-      add(new Label("Contract Id:"), 0, row)
+      add(new Label("Contract Id"), 0, row)
       val contractId: String = DLCStatus
         .getContractId(status)
         .map(_.toHex)
@@ -102,7 +102,7 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
-      add(new Label("Contract Info:"), 0, row)
+      add(new Label("Contract Info"), 0, row)
 
       add(new TextField() {
             text = status.contractInfo.toTLV.hex
@@ -114,7 +114,7 @@ object ViewDLCDialog {
       status match {
         case closed: ClosedDLCStatus =>
           row += 1
-          add(new Label("My payout:"), 0, row)
+          add(new Label("My payout"), 0, row)
           add(new TextField() {
                 text = s"${closed.myPayout}"
                 editable = false
@@ -123,7 +123,7 @@ object ViewDLCDialog {
               rowIndex = row)
 
           row += 1
-          add(new Label("Counter party payout:"), 0, row)
+          add(new Label("Counter party payout"), 0, row)
           add(new TextField() {
                 text = s"${closed.counterPartyPayout}"
                 editable = false
@@ -132,7 +132,7 @@ object ViewDLCDialog {
               rowIndex = row)
 
           row += 1
-          add(new Label("PNL:"), 0, row)
+          add(new Label("PNL"), 0, row)
           add(new TextField() {
                 text = s"${closed.pnl}"
                 editable = false
@@ -141,7 +141,7 @@ object ViewDLCDialog {
               rowIndex = row)
 
           row += 1
-          add(new Label("Rate of Return:"), 0, row)
+          add(new Label("Rate of Return"), 0, row)
           add(new TextField() {
                 text = s"${closed.rateOfReturnPrettyPrint}"
                 editable = false
@@ -153,7 +153,7 @@ object ViewDLCDialog {
       }
 
       row += 1
-      add(new Label("Fee Rate:"), 0, row)
+      add(new Label("Fee Rate"), 0, row)
       add(new TextField() {
             text = s"${status.feeRate.toLong} sats/vbyte"
             editable = false
@@ -162,7 +162,7 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
-      add(new Label("Contract Timeout:"), 0, row)
+      add(new Label("Contract Timeout"), 0, row)
       add(
         new TextField() {
           text = GUIUtil.epochToDateString(status.timeouts.contractTimeout)
@@ -173,7 +173,7 @@ object ViewDLCDialog {
       )
 
       row += 1
-      add(new Label("Collateral:"), 0, row)
+      add(new Label("Collateral"), 0, row)
       add(
         new TextField() {
           text = status.totalCollateral.satoshis.toLong.toString
@@ -184,7 +184,7 @@ object ViewDLCDialog {
       )
 
       row += 1
-      add(new Label("Funding TxId:"), 0, row)
+      add(new Label("Funding TxId"), 0, row)
       add(new TextField() {
             text = DLCStatus.getFundingTxId(status).map(_.hex).getOrElse("")
             editable = false
@@ -193,7 +193,7 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
-      add(new Label("Closing TxId:"), 0, row)
+      add(new Label("Closing TxId"), 0, row)
       add(new TextField() {
             text <== closingTxId
             editable = false
@@ -202,7 +202,7 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
-      add(new Label("Oracle Signatures:"), 0, row)
+      add(new Label("Oracle Signatures"), 0, row)
 
       val sigsOpt: Option[String] = DLCStatus
         .getOracleSignatures(status)
