@@ -177,7 +177,7 @@ bitcoin-s {
     tor {
         # You can enable Tor for incoming connections
         enabled = false
-        control = 127.0.0.1:9051
+        control = "127.0.0.1:9051"
 
         # The password used to arrive at the HashedControlPassword for the control port.
         # If provided, the HASHEDPASSWORD authentication method will be used instead of

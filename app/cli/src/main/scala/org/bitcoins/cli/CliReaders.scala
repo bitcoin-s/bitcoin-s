@@ -22,6 +22,7 @@ import scodec.bits.ByteVector
 import scopt._
 
 import java.io.File
+import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
 import java.time.{Instant, ZoneId, ZonedDateTime}
 import java.util.Date
@@ -34,6 +35,16 @@ object CliReaders {
 
     val reads: String => Path = str => new File(str).toPath
   }
+
+  implicit val inetSocketAddressReads: Read[InetSocketAddress] =
+    new Read[InetSocketAddress] {
+      val arity = 1
+
+      val reads: String => InetSocketAddress = str => {
+        val uri = new URI("tcp://" + str)
+        InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
+      }
+    }
 
   implicit val npReads: Read[NetworkParameters] =
     new Read[NetworkParameters] {

@@ -95,6 +95,9 @@
       "node/node": {
         "title": "Light Client"
       },
+      "node/tor": {
+        "title": "Setting up Tor with Light Client"
+      },
       "oracle-explorer-client/oracle-explorer-client": {
         "title": "Oracle Explorer Client"
       },
@@ -136,6 +139,9 @@
       },
       "testkit/testkit": {
         "title": "Testkit"
+      },
+      "tor/tor": {
+        "title": "Tor"
       },
       "wallet/address-tagging": {
         "title": "Address and UTXO tagging"
@@ -786,6 +792,7 @@
       "Key Manager": "Key Manager",
       "Node": "Node",
       "Wallet": "Wallet",
+      "Tor": "Tor",
       "RPC Clients": "RPC Clients",
       "Secp256k1": "Secp256k1",
       "Testkit": "Testkit",

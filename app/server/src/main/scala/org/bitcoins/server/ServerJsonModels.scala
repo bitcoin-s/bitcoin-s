@@ -19,6 +19,7 @@ import scodec.bits.ByteVector
 import ujson._
 
 import java.io.File
+import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
 import scala.util.{Failure, Try}
 
@@ -694,6 +695,33 @@ object AcceptDLCOffer extends ServerJsonModels {
         Failure(
           new IllegalArgumentException(
             s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class AcceptDLC(offer: LnMessage[DLCOfferTLV], peerAddr: InetSocketAddress)
+
+object AcceptDLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLC] = {
+    jsArr.arr.toList match {
+      case offerJs :: addrJs :: Nil =>
+        Try {
+          val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
+          val uri = new URI("tcp://" + addrJs.str)
+          val peerAddr =
+            InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
+
+          AcceptDLC(offer, peerAddr)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException("Missing offer and peerAddr argument"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
     }
   }
 }

@@ -2,9 +2,9 @@ package org.bitcoins.dlc.node
 
 import akka.actor.{ActorRef, ActorSystem}
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.dlc.node.config._
 import org.bitcoins.dlc.node.peer.Peer
 
@@ -14,7 +14,7 @@ import scala.concurrent._
 case class DLCNode(wallet: DLCWalletApi)(implicit
     system: ActorSystem,
     val config: DLCNodeAppConfig)
-    extends StartStopAsync[Unit]
+    extends DLCNodeApi
     with Logging {
 
   implicit val ec: ExecutionContextExecutor = system.dispatcher
@@ -23,11 +23,23 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     logger.info(
       s"Binding server to ${config.listenAddress}, with tor hidden service: ${config.torParams.isDefined}")
 
-    DLCServer.bind(
-      wallet,
-      config.listenAddress,
-      config.torParams
-    )
+    DLCServer
+      .bind(
+        wallet,
+        config.listenAddress,
+        config.torParams
+      )
+      .map { case (addr, actor) =>
+        hostAddressP.success(addr)
+        (addr, actor)
+      }
+  }
+
+  private val hostAddressP: Promise[InetSocketAddress] =
+    Promise[InetSocketAddress]()
+
+  def getHostAddress: Future[InetSocketAddress] = {
+    hostAddressP.future
   }
 
   override def start(): Future[Unit] = {

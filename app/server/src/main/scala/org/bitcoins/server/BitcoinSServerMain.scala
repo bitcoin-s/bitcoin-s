@@ -13,6 +13,8 @@ import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
+import org.bitcoins.dlc.node.DLCNode
+import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet._
 import org.bitcoins.feeprovider.FeeProviderName._
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
@@ -37,6 +39,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   implicit lazy val nodeConf: NodeAppConfig = conf.nodeConf
   implicit lazy val chainConf: ChainAppConfig = conf.chainConf
   implicit lazy val dlcConf: DLCAppConfig = conf.dlcConf
+  implicit lazy val dlcNodeConf: DLCNodeAppConfig = conf.dlcNodeConf
   implicit lazy val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
 
   override def start(): Future[Unit] = {
@@ -126,6 +129,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       initNode
     }
 
+    val dlcNodeF = for {
+      wallet <- configuredWalletF
+      node = dlcNodeConf.createDLCNode(wallet)
+    } yield node
+
     //start our http server now that we are synced
     for {
       node <- configuredNodeF
@@ -140,9 +148,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       }
       cachedChainApi <- node.chainApiFromDb()
       chainApi = ChainHandler.fromChainHandlerCached(cachedChainApi)
+
+      dlcNode <- dlcNodeF
+      _ <- dlcNode.start()
+
       binding <- startHttpServer(nodeApi = node,
                                  chainApi = chainApi,
                                  wallet = wallet,
+                                 dlcNode = dlcNode,
                                  serverCmdLineArgs = serverArgParser)
       _ = {
         logger.info(
@@ -204,9 +217,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             bitcoindRpcConf.zmqConfig)
         }
 
+      dlcNode = dlcNodeConf.createDLCNode(wallet)
+      _ <- dlcNode.start()
+
       binding <- startHttpServer(nodeApi = bitcoind,
                                  chainApi = bitcoind,
                                  wallet = wallet,
+                                 dlcNode = dlcNode,
                                  serverCmdLineArgs = serverArgParser)
       _ = BitcoinSServer.startedFP.success(Future.successful(binding))
     } yield {
@@ -299,6 +316,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       nodeApi: NodeApi,
       chainApi: ChainApi,
       wallet: DLCWallet,
+      dlcNode: DLCNode,
       serverCmdLineArgs: ServerArgParser)(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
@@ -309,6 +327,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val nodeRoutes = NodeRoutes(nodeApi)
     val chainRoutes = ChainRoutes(chainApi, nodeConf.network)
     val coreRoutes = CoreRoutes(Core)
+    val dlcRoutes = DLCRoutes(dlcNode)
+
+    val handlers =
+      Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes, dlcRoutes)
 
     val bindConfOpt = serverCmdLineArgs.rpcBindOpt match {
       case Some(rpcbind) => Some(rpcbind)
@@ -319,14 +341,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       serverCmdLineArgs.rpcPortOpt match {
         case Some(rpcport) =>
           Server(conf = nodeConf,
-                 handlers =
-                   Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                 handlers = handlers,
                  rpcbindOpt = bindConfOpt,
                  rpcport = rpcport)
         case None =>
           Server(conf = nodeConf,
-                 handlers =
-                   Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                 handlers = handlers,
                  rpcbindOpt = bindConfOpt,
                  rpcport = conf.rpcPort)
       }
