@@ -38,7 +38,7 @@ addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.3.1")
 addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.0.0")
 
 // Scala.js
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.6.0")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.7.0")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.20.0")
 
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.1.0")
