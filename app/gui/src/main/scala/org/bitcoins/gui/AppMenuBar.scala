@@ -3,6 +3,7 @@ package org.bitcoins.gui
 import org.bitcoins.cli.CliCommand.ZipDataDir
 import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.gui.settings.Themes
+import scalafx.application.Platform
 import scalafx.scene.control._
 import scalafx.scene.input.{KeyCode, KeyCodeCombination, KeyCombination}
 import scalafx.stage.FileChooser
@@ -11,14 +12,30 @@ import scalafx.stage.FileChooser.ExtensionFilter
 import java.io.File
 import scala.util.Properties
 
+// Utility functions for menuing. May want in a util file somewhere
+object menuUtil {
+
+  def modifierKey: KeyCombination.Modifier = {
+    if (Properties.isMac)
+      KeyCombination.MetaDown
+    else
+      KeyCombination.ControlDown
+  }
+}
+
 object AppMenuBar {
 
-  def menuBar(model: WalletGUIModel): MenuBar =
-    new MenuBar {
+  def menuBar(model: WalletGUIModel): MenuBar = {
+    val menuBar = new MenuBar {
       menus = List(new FileMenu().fileMenu,
                    new ViewMenu().viewMenu,
                    new HelpMenu(model).helpMenu)
     }
+    // Use MacOS native menuing
+    if (Properties.isMac)
+      menuBar.useSystemMenuBarProperty.set(true)
+    menuBar
+  }
 }
 
 private class FileMenu() {
@@ -48,8 +65,8 @@ private class FileMenu() {
   private val quit: MenuItem = new MenuItem("_Quit") {
     mnemonicParsing = true
     accelerator =
-      new KeyCodeCombination(KeyCode.Q, KeyCombination.ControlDown) // CTRL + Q
-    onAction = _ => sys.exit()
+      new KeyCodeCombination(KeyCode.Q, menuUtil.modifierKey) // Ctrl/Cmd + Q
+    onAction = _ => Platform.exit()
   }
 
   val fileMenu: Menu =
