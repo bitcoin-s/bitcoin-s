@@ -9,13 +9,14 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
-import org.bitcoins.core.util.{Mutable, NetworkUtil}
+import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.{AppConfigFactory, DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
-import org.bitcoins.tor.Socks5ProxyParams
+import org.bitcoins.tor.config.TorAppConfig
+import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 
 import java.nio.file.Path
 import scala.concurrent.{ExecutionContext, Future}
@@ -88,21 +89,13 @@ case class NodeAppConfig(
     strs.map(_.replace("localhost", "127.0.0.1"))
   }
 
-  lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
-    if (config.getBoolean("bitcoin-s.proxy.enabled")) {
-      Some(
-        Socks5ProxyParams(
-          address = NetworkUtil.parseInetSocketAddress(
-            config.getString("bitcoin-s.proxy.socks5"),
-            Socks5ProxyParams.DefaultPort),
-          credentialsOpt = None,
-          randomizeCredentials = true
-        )
-      )
-    } else {
-      None
-    }
-  }
+  lazy val torConf: TorAppConfig =
+    TorAppConfig(directory, confs: _*)
+
+  lazy val socks5ProxyParams: Option[Socks5ProxyParams] =
+    torConf.socks5ProxyParams
+
+  lazy val torParams: Option[TorParams] = torConf.torParams
 
   lazy val relay: Boolean = {
     if (config.hasPath("bitcoin-s.node.relay")) {

@@ -35,7 +35,7 @@ object SignDLCDialog
     }
   }
 
-  var dialogOpt: Option[Dialog[Option[SignDLCCliCommand]]] = None
+  private var dialogOpt: Option[Dialog[Option[SignDLCCliCommand]]] = None
 
   def showAndWait(
       parentWindow: Window,
@@ -74,7 +74,7 @@ object SignDLCDialog
     val result = dialogOpt.map(_.showAndWait())
 
     result match {
-      case Some(Some(cmd: SignDLCCliCommand)) =>
+      case Some(Some(Some(cmd: SignDLCCliCommand))) =>
         Some(cmd)
       case Some(_) | None => None
     }

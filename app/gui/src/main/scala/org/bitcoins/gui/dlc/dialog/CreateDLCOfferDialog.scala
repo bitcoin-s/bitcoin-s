@@ -59,8 +59,8 @@ class CreateDLCOfferDialog
     val result = dialogOpt.map(_.showAndWait())
 
     result match {
-      case Some(Some(offer: CreateDLCOffer)) => Some(offer)
-      case Some(_) | None                    => None
+      case Some(Some(Some(offer: CreateDLCOffer))) => Some(offer)
+      case Some(_) | None                          => None
     }
   }
 

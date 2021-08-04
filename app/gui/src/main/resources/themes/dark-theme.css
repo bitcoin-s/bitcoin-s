@@ -38,16 +38,48 @@
     -fx-text-fill: white;
 }
 
+.icon-button {
+    -fx-background-repeat: no-repeat;
+    -fx-padding: 5 15 5 15;
+    -fx-background-position: center;
+    -fx-background-size: 16px;
+}
+.narrow-icon-button {
+    -fx-background-repeat: no-repeat;
+    -fx-padding: 5 10 5 10;
+    -fx-background-position: center;
+    -fx-background-size: 16px;
+}
+
+.copy-button {
+    -fx-background-image: url("../icons/copy-white.png");
+}
+
 .separator *.line {
     -fx-background-color: #3C3C3C;
     -fx-border-style: solid;
     -fx-border-width: 1px;
 }
 
-.copy-button {
-    -fx-background-image: url("../icons/copy-white.png");
-    -fx-background-repeat: no-repeat;
-    -fx-padding: 5 10 5 10;
-    -fx-background-position: center;
-    -fx-background-size: 16px;
+/* Accordion Group heading content */
+.small {
+    -fx-font-size: 0.8em;
+}
+
+/* Right content area */
+.scroll-pane {
+    -fx-background-insets: 0;
+}
+.scroll-pane:focused {
+    -fx-background-insets: 0;
+}
+.scroll-pane .corner {
+    -fx-background-insets: 0;
+}
+
+/* Button Group under dialog container content */
+.dialog-button-group {
+    -fx-border-style: solid none none none;
+    -fx-border-width: 1;
+    -fx-border-color: black;
 }
