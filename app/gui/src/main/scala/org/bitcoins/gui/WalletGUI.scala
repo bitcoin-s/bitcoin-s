@@ -8,6 +8,9 @@ import scalafx.geometry._
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
+import java.awt.Toolkit.getDefaultToolkit
+import java.awt.datatransfer.StringSelection
+
 abstract class WalletGUI extends Logging {
 
   def glassPane: VBox
@@ -34,6 +37,7 @@ abstract class WalletGUI extends Logging {
     model.startWalletInfoScheduler()
     model.updateFeeRate()
     dlcPane.model.setUp()
+    model.updateTorAddress()
   }
 
   private val satsProperty = StringProperty(" sats")
@@ -94,6 +98,41 @@ abstract class WalletGUI extends Logging {
     onAction = _ => model.onSend()
   }
 
+  private lazy val spacer = new Region { vgrow = Priority.Always }
+
+  private var nextRow: Int = 0
+
+  private lazy val stateDetails = new GridPane {
+    visible <== GlobalData.torAddress.isNotEmpty
+    hgap = 5
+    vgap = 5
+    prefWidth = 300 // to match buttons
+    columnConstraints = Seq(new ColumnConstraints { hgrow = Priority.Always },
+                            new ColumnConstraints { hgrow = Priority.Always })
+
+    val hbox = new HBox {
+      children = Seq(
+        new TextField {
+          hgrow = Priority.Always
+          text <== GlobalData.torAddress
+        },
+        // TODO : Use GUIUtil to generate...
+        new Button {
+          styleClass += "copy-button"
+          onAction = _ => {
+            val clipboard = getDefaultToolkit.getSystemClipboard
+            val sel = new StringSelection(GlobalData.torAddress.value)
+            clipboard.setContents(sel, sel)
+          }
+        }
+      )
+    }
+
+    add(new Label("Tor Address"), 0, nextRow)
+    add(hbox, 1, nextRow)
+    nextRow += 1
+  }
+
   private lazy val sidebar = new VBox {
     padding = Insets(10)
     spacing = 20
@@ -102,8 +141,12 @@ abstract class WalletGUI extends Logging {
     sendButton.prefWidth <== width
     getNewAddressButton.maxWidth = 300
     sendButton.maxWidth = 300
-    children =
-      Vector(balanceBox, walletAccountingBox, getNewAddressButton, sendButton)
+    children = Vector(balanceBox,
+                      walletAccountingBox,
+                      getNewAddressButton,
+                      sendButton,
+                      spacer,
+                      stateDetails)
   }
 
   lazy val bottomStack: StackPane = new StackPane() {

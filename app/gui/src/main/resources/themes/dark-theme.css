@@ -21,20 +21,17 @@
 .label {
     -fx-text-fill: white;
 }
-.error-label {
-    -fx-text-fill: red;
-}
 
-.titulo{
+.titulo {
     -fx-font-weight: bold;
     -fx-font-size: 18px;
 }
 
-.button{
+.button {
     -fx-focus-traversable: false;
 }
 
-.button:hover{
+.button:hover {
     -fx-text-fill: white;
 }
 
@@ -42,4 +39,12 @@
     -fx-background-color: #3C3C3C;
     -fx-border-style: solid;
     -fx-border-width: 1px;
+}
+
+.copy-button {
+    -fx-background-image: url("../icons/copy-white.png");
+    -fx-background-repeat: no-repeat;
+    -fx-padding: 5 10 5 10;
+    -fx-background-position: center;
+    -fx-background-size: 16px;
 }
