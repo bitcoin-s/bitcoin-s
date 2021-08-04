@@ -12,17 +12,6 @@ import scalafx.stage.FileChooser.ExtensionFilter
 import java.io.File
 import scala.util.Properties
 
-// Utility functions for menuing. May want in a util file somewhere
-object menuUtil {
-
-  def modifierKey: KeyCombination.Modifier = {
-    if (Properties.isMac)
-      KeyCombination.MetaDown
-    else
-      KeyCombination.ControlDown
-  }
-}
-
 object AppMenuBar {
 
   def menuBar(model: WalletGUIModel): MenuBar = {
@@ -65,7 +54,9 @@ private class FileMenu() {
   private val quit: MenuItem = new MenuItem("_Quit") {
     mnemonicParsing = true
     accelerator =
-      new KeyCodeCombination(KeyCode.Q, menuUtil.modifierKey) // Ctrl/Cmd + Q
+      new KeyCodeCombination(KeyCode.Q,
+                             KeyCombination.ShortcutDown
+      ) // Ctrl/Cmd + Q
     onAction = _ => Platform.exit()
   }
 
