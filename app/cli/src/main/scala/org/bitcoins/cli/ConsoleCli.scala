@@ -29,6 +29,7 @@ import ujson._
 import upickle.{default => up}
 
 import java.io.File
+import java.net.InetSocketAddress
 import java.nio.file.Path
 import java.time.Instant
 import java.util.Date
@@ -167,6 +168,9 @@ object ConsoleCli {
       cmd("walletinfo")
         .action((_, conf) => conf.copy(command = WalletInfo))
         .text("Returns data about the current wallet being used"),
+      cmd("getdlchostaddress")
+        .action((_, conf) => conf.copy(command = GetDLCHostAddress))
+        .text("Returns the public listening address of the DLC Node"),
       cmd("createdlcoffer")
         .action((_, conf) =>
           conf.copy(
@@ -215,6 +219,30 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case offer: CreateDLCOffer =>
                   offer.copy(refundLT = refundLT)
+                case other => other
+              }))
+        ),
+      cmd("acceptdlc")
+        .action((_, conf) =>
+          conf.copy(command =
+            AcceptDLC(null,
+                      InetSocketAddress.createUnresolved("localhost", 0))))
+        .text("Accepts a DLC offer given from another party")
+        .children(
+          arg[LnMessage[DLCOfferTLV]]("offer")
+            .required()
+            .action((offer, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLC =>
+                  accept.copy(offer = offer)
+                case other => other
+              })),
+          arg[InetSocketAddress]("peer")
+            .required()
+            .action((peer, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLC =>
+                  accept.copy(peerAddr = peer)
                 case other => other
               }))
         ),
@@ -1511,7 +1539,8 @@ object ConsoleCli {
       case WalletInfo =>
         RequestParam("walletinfo")
       // DLCs
-      case GetDLCs => RequestParam("getdlcs")
+      case GetDLCHostAddress => RequestParam("getdlchostaddress")
+      case GetDLCs           => RequestParam("getdlcs")
       case GetDLC(dlcId) =>
         RequestParam("getdlc", Seq(up.writeJs(dlcId)))
       case CreateDLCOffer(contractInfo,
@@ -1529,6 +1558,8 @@ object ConsoleCli {
             up.writeJs(refundLT)
           )
         )
+      case AcceptDLC(offer, address) =>
+        RequestParam("acceptdlc", Seq(up.writeJs(offer), up.writeJs(address)))
       case AcceptDLCOffer(offer) =>
         RequestParam("acceptdlcoffer", Seq(up.writeJs(offer)))
       case AcceptDLCOfferFromFile(path, dest) =>
@@ -1892,6 +1923,8 @@ object CliCommand {
   case object GetInfo extends AppServerCliCommand
 
   // DLC
+  case object GetDLCHostAddress extends AppServerCliCommand
+
   case class CreateDLCOffer(
       contractInfo: ContractInfoV0TLV,
       collateral: Satoshis,
@@ -1901,6 +1934,11 @@ object CliCommand {
       extends AppServerCliCommand
 
   sealed trait AcceptDLCCliCommand extends AppServerCliCommand
+
+  case class AcceptDLC(
+      offer: LnMessage[DLCOfferTLV],
+      peerAddr: InetSocketAddress)
+      extends AcceptDLCCliCommand
 
   case class AcceptDLCOffer(offer: LnMessage[DLCOfferTLV])
       extends AcceptDLCCliCommand

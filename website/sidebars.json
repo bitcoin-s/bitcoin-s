@@ -59,6 +59,9 @@
       "wallet/wallet-rpc",
       "wallet/backups"
     ],
+    "Tor": [
+      "tor/tor"
+    ],
     "RPC Clients": [
       "rpc/rpc-clients-intro",
       "rpc/rpc-eclair",

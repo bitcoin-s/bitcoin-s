@@ -60,7 +60,8 @@ case class DLCNodeAppConfig(
 
   lazy val torParams: Option[TorParams] = {
     if (config.getBoolean("bitcoin-s.tor.enabled")) {
-      val controlURI = new URI(config.getString("bitcoin-s.tor.control"))
+      val controlURI = new URI(
+        "tcp://" + config.getString("bitcoin-s.tor.control"))
       val control = InetSocketAddress.createUnresolved(controlURI.getHost,
                                                        controlURI.getPort)
 

@@ -28,6 +28,7 @@ import ujson._
 import upickle.default._
 
 import java.io.File
+import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
 import java.time.Instant
 import java.util.Date
@@ -36,6 +37,14 @@ object Picklers {
 
   implicit val pathPickler: ReadWriter[Path] =
     readwriter[String].bimap(_.toString, str => new File(str).toPath)
+
+  implicit val inetSocketAddress: ReadWriter[InetSocketAddress] =
+    readwriter[String].bimap(
+      addr => s"${addr.getHostName}:${addr.getPort}",
+      str => {
+        val uri = new URI("tcp://" + str)
+        InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
+      })
 
   implicit val byteVectorPickler: ReadWriter[ByteVector] =
     readwriter[String].bimap(_.toHex, str => ByteVector.fromValidHex(str))
