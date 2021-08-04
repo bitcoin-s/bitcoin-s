@@ -73,7 +73,7 @@ object BroadcastDLCDialog
     val result = dialogOpt.map(_.showAndWait())
 
     result match {
-      case Some(Some(cmd: AddDLCSigsAndBroadcastCliCommand)) =>
+      case Some(Some(Some(cmd: AddDLCSigsAndBroadcastCliCommand))) =>
         Some(cmd)
       case Some(_) | None => None
     }
