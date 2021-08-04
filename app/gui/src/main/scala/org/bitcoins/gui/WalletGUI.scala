@@ -3,13 +3,11 @@ package org.bitcoins.gui
 import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.gui.dlc.DLCPane
+import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
 import scalafx.geometry._
 import scalafx.scene.control._
 import scalafx.scene.layout._
-
-import java.awt.Toolkit.getDefaultToolkit
-import java.awt.datatransfer.StringSelection
 
 abstract class WalletGUI extends Logging {
 
@@ -111,20 +109,13 @@ abstract class WalletGUI extends Logging {
                             new ColumnConstraints { hgrow = Priority.Always })
 
     val hbox = new HBox {
+      alignment = Pos.Center
       children = Seq(
         new TextField {
           hgrow = Priority.Always
           text <== GlobalData.torAddress
         },
-        // TODO : Use GUIUtil to generate...
-        new Button {
-          styleClass += "copy-button"
-          onAction = _ => {
-            val clipboard = getDefaultToolkit.getSystemClipboard
-            val sel = new StringSelection(GlobalData.torAddress.value)
-            clipboard.setContents(sel, sel)
-          }
-        }
+        GUIUtil.getCopyToClipboardButton(GlobalData.torAddress)
       )
     }
 
