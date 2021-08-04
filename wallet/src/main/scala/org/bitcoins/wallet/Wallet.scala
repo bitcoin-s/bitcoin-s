@@ -32,6 +32,7 @@ import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager}
+import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._
@@ -139,12 +140,15 @@ abstract class Wallet
         Future.failed(new RuntimeException(errorMsg))
     }
   }
+  private val masterXpubDAO: MasterXPubDAO = MasterXPubDAO()(ec, walletConfig)
 
   override def start(): Future[Wallet] = {
     logger.info("Starting Wallet")
+    val keymanagerXpub = keyManager.getRootXPub
     for {
       _ <- walletConfig.start()
       _ <- checkRootAccount
+      _ <- KeyManagerUtil.checkMasterXPub(keymanagerXpub, masterXpubDAO)
       _ <- downloadMissingUtxos
       _ = walletConfig.startRebroadcastTxsScheduler(this)
     } yield {

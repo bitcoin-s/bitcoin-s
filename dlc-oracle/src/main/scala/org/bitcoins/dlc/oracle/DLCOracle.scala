@@ -5,8 +5,8 @@ import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db._
 import org.bitcoins.core.config.BitcoinNetwork
-import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
-import org.bitcoins.core.crypto.ExtPrivateKeyHardened
+import org.bitcoins.core.crypto.ExtKeyVersion.SegWitTestNet3Priv
+import org.bitcoins.core.crypto.{ExtPrivateKeyHardened, ExtPublicKey}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
@@ -16,10 +16,12 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.util.{FutureUtil, NumberUtil, TimeUtil}
 import org.bitcoins.crypto._
+import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.dlc.oracle.util.EventDbUtil
 import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.keymanager.util.KeyManagerUtil
 import scodec.bits.ByteVector
 
 import java.nio.file.Path
@@ -54,10 +56,12 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   /** The root private key for this oracle */
   private[this] val extPrivateKey: ExtPrivateKeyHardened = {
     WalletStorage.getPrivateKeyFromDisk(conf.kmConf.seedPath,
-                                        SegWitMainNetPriv,
+                                        SegWitTestNet3Priv,
                                         conf.aesPasswordOpt,
                                         conf.bip39PasswordOpt)
   }
+
+  def getRootXpub: ExtPublicKey = extPrivateKey.extPublicKey
 
   private def signingKey: ECPrivateKey = {
     val coin = HDCoin(HDPurposes.SegWit, coinType)
@@ -441,11 +445,12 @@ object DLCOracle {
       ec: ExecutionContext): Future[DLCOracle] = {
     implicit val appConfig =
       DLCOracleAppConfig.fromDatadir(datadir = path, configs)
-
+    val masterXpubDAO: MasterXPubDAO = MasterXPubDAO()(ec, appConfig)
     val oracle = DLCOracle()
 
     for {
       _ <- appConfig.start()
+      _ <- KeyManagerUtil.checkMasterXPub(oracle.getRootXpub, masterXpubDAO)
       differentKeyDbs <- oracle.eventDAO.findDifferentPublicKey(
         oracle.publicKey)
       fixedDbs = differentKeyDbs.map(_.copy(pubkey = oracle.publicKey))

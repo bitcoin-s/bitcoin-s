@@ -5,15 +5,21 @@ import org.bitcoins.commons.config.AppConfigFactory
 import org.bitcoins.core.api.dlcoracle.db.EventOutcomeDbHelper
 import org.bitcoins.core.config._
 import org.bitcoins.core.hd.HDPurpose
+import org.bitcoins.core.protocol.blockchain.{
+  BitcoinChainParams,
+  TestNetChainParams
+}
 import org.bitcoins.core.protocol.tlv.EnumEventDescriptorV0TLV
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
-import org.bitcoins.db.DatabaseDriver._
+import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
+import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
+import org.bitcoins.keymanager.util.FileBasedSeedExists
 
 import java.nio.file.{Files, Path}
 import scala.concurrent.{ExecutionContext, Future}
@@ -23,7 +29,8 @@ case class DLCOracleAppConfig(
     private val confs: Config*)(implicit val ec: ExecutionContext)
     extends DbAppConfig
     with DbManagement
-    with JdbcProfileComponent[DLCOracleAppConfig] {
+    with JdbcProfileComponent[DLCOracleAppConfig]
+    with FileBasedSeedExists {
 
   import profile.api._
 
@@ -37,14 +44,18 @@ case class DLCOracleAppConfig(
       configOverrides: Seq[Config]): DLCOracleAppConfig =
     DLCOracleAppConfig(directory, configOverrides: _*)
 
+  /** DLC oracles are not network specific, so just hard code the testnet chain params */
+  final override lazy val chain: BitcoinChainParams = TestNetChainParams
+
+  /** DLC oracles are not network specific, so just hard code the network */
+  final override lazy val network: BitcoinNetwork = chain.network
+
   override def moduleName: String = DLCOracleAppConfig.moduleName
 
   override def baseDatadir: Path = directory
 
   lazy val kmConf: KeyManagerAppConfig =
     KeyManagerAppConfig(directory, confs: _*)
-
-  lazy val networkParameters: NetworkParameters = chain.network
 
   /** The path to our encrypted mnemonic seed */
   lazy val seedPath: Path = kmConf.seedPath
@@ -73,9 +84,7 @@ case class DLCOracleAppConfig(
       }
       // Move old db in network folder to oracle folder
       val oldNetworkLocation = networkDir.resolve("oracle.sqlite")
-      if (!exists() && Files.exists(oldNetworkLocation)) {
-        Files.move(oldNetworkLocation, dbPath)
-      }
+      val existsF = exists()
 
       val numMigrations = migrate()
       logger.info(s"Applied $numMigrations to the dlc oracle project")
@@ -121,31 +130,34 @@ case class DLCOracleAppConfig(
   lazy val aesPasswordOpt: Option[AesPassword] = kmConf.aesPasswordOpt
   lazy val bip39PasswordOpt: Option[String] = kmConf.bip39PasswordOpt
 
-  /** Checks if our oracle as a mnemonic seed associated with it */
-  def seedExists(): Boolean = kmConf.seedExists()
-
-  def exists(): Boolean = {
+  def exists(): Future[Boolean] = {
     lazy val hasDb = this.driver match {
       case PostgreSQL => true
       case SQLite     => Files.exists(dbPath)
     }
-    seedExists() && hasDb
+    seedExists().map(bool => bool && hasDb)
   }
 
   private def initializeKeyManager(): Future[DLCOracle] = {
-    if (!seedExists()) {
-      BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
-                                 kmParams = kmParams,
-                                 bip39PasswordOpt = bip39PasswordOpt) match {
-        case Left(err) => sys.error(err.toString)
-        case Right(_) =>
-          logger.info("Successfully generated a seed and key manager")
+    val initF = seedExists().map {bool =>
+      if (!bool) {
+        BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
+          kmParams = kmParams,
+          bip39PasswordOpt = bip39PasswordOpt) match {
+          case Left(err) => sys.error(err.toString)
+          case Right(km) =>
+            logger.info("Successfully generated a seed and key manager")
+            masterXPubDAO.create(km.getRootXPub)
+              .map(_ => ())
+        }
+      } else {
+        Future.unit
       }
     }
-
-    val o = new DLCOracle()(this)
-    Future.successful(o)
+    initF.map(_ => new DLCOracle()(this))
   }
+
+  private val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
 
   private lazy val rValueTable: TableQuery[Table[_]] = {
     RValueDAO()(ec, appConfig).table

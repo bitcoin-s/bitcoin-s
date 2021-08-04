@@ -54,6 +54,10 @@ case class MasterXPubDAO()(implicit
     }
   }
 
+  def existsOneXpub(): Future[Boolean] = {
+    safeDatabase.run(table.exists.result)
+  }
+
   class MasterXpubTable(tag: Tag)
       extends Table[ExtPublicKey](tag, schemaName, "master_xpub") {
 
