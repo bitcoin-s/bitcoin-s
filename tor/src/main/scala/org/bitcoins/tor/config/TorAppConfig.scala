@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory, ConfigOps}
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.tor.TorProtocolHandler.{Password, SafeCookie}
+import org.bitcoins.tor.client.TorClient
 import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 
 import java.io.File
@@ -71,6 +72,15 @@ case class TorAppConfig(private val directory: Path, private val confs: Config*)
       None
     }
   }
+
+  lazy val enabled: Boolean = socks5ProxyParams.isDefined || torParams.isDefined
+
+  def createClient(implicit ec: ExecutionContext): TorClient = {
+    new TorClient()(ec, this)
+  }
+
+  lazy val torDir: Path = baseDatadir.resolve("tor")
+  lazy val torLogFile: Path = torDir.resolve("TorLogs.txt")
 }
 
 object TorAppConfig extends AppConfigFactory[TorAppConfig] {

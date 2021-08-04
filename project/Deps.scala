@@ -480,7 +480,8 @@ object Deps {
     List(
       Compile.akkaStream,
       Compile.akkaHttp,
-      Compile.scodec.value
+      Compile.scodec.value,
+      Compile.grizzledSlf4j
     )
   }
 
