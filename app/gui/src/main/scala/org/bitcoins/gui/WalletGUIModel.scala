@@ -177,4 +177,20 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
         true
     }
   }
+
+  // Address returned from GetDLCHostAddress when Tor is disabled
+  private val DEFAULT_TOR_ADDRESS = "0:0:0:0:0:0:0:0:2862"
+
+  /** Retrieves the tor endpoint address
+    */
+  def updateTorAddress() = {
+    ConsoleCli.exec(GetDLCHostAddress, GlobalData.consoleCliConfig) match {
+      case Failure(err) =>
+        logger.error(s"Error fetching tor address", err)
+      case Success(commandReturn) =>
+        // Leave Tor Address out of UI if Tor is not enabled
+        if (commandReturn != DEFAULT_TOR_ADDRESS)
+          GlobalData.torAddress.value = commandReturn
+    }
+  }
 }
