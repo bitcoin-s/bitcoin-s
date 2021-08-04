@@ -96,27 +96,24 @@ object GUIUtil {
     chosenFileOpt
   }
 
-  def getFileChooserButton(handleFile: File => Unit) = {
-    new Button("Browse...") {
-      onAction = _ => {
-        val _ = GUIUtil.showOpenDialog(handleFile)
-      }
+  def getFileChooserButton(handleFile: File => Unit): Button = new Button(
+    "Browse...") {
+    onAction = _ => {
+      val _ = GUIUtil.showOpenDialog(handleFile)
     }
   }
 
   def getFileSaveButton(
       filename: String,
       bytes: Option[String],
-      handleFile: Option[File => Unit]) = {
-    new Button("Browse...") {
-      onAction = _ => {
-        val _ = GUIUtil.showSaveDialog(filename, bytes, handleFile)
-      }
+      handleFile: Option[File => Unit]): Button = new Button("Browse...") {
+    onAction = _ => {
+      val _ = GUIUtil.showSaveDialog(filename, bytes, handleFile)
     }
   }
 
-  def getCopyToClipboardButton(property: StringProperty) = new Button {
-    styleClass += "icon-button" += "copy-button"
+  def getCopyToClipboardButton(property: StringProperty): Button = new Button {
+    styleClass ++= Vector("icon-button", "copy-button")
     disable <== property.isEmpty
     onAction = _ => {
       setStringToClipboard(property.value)
@@ -125,7 +122,7 @@ object GUIUtil {
     tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
-  def getGreenCheck() = {
+  def getGreenCheck(): ImageView = {
     val img = new Image("/icons/green-check.png")
     val imageView = new ImageView(img)
     imageView.fitHeight = 16
@@ -133,7 +130,7 @@ object GUIUtil {
     imageView
   }
 
-  def getRedX() = {
+  def getRedX(): ImageView = {
     val img = new Image("/icons/red-x.png")
     val imageView = new ImageView(img)
     imageView.fitHeight = 16
@@ -141,19 +138,15 @@ object GUIUtil {
     imageView
   }
 
-  def getHSpacer() = {
-    new Region { hgrow = Priority.Always }
-  }
+  def getHSpacer(): Region = new Region { hgrow = Priority.Always }
 
-  def getVSpacer() = {
-    new Region { vgrow = Priority.Always }
-  }
+  def getVSpacer(): Region = new Region { vgrow = Priority.Always }
 
   def getWindow(
       windowTitle: String,
       width: Double,
       height: Double,
-      rootView: Parent) = {
+      rootView: Parent): Stage = {
     val windowScene = new Scene(width, height) {
       root = rootView
       stylesheets = GlobalData.currentStyleSheets

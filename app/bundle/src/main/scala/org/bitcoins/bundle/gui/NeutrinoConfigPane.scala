@@ -73,7 +73,7 @@ class NeutrinoConfigPane(
   }
 
   private val torCheckBox: CheckBox = new CheckBox() {
-    selected = appConfig.config.getBoolean("bitcoin-s.proxy.enabled")
+    selected = appConfig.nodeConf.socks5ProxyParams.isDefined
   }
 
   private var nextRow: Int = 0
