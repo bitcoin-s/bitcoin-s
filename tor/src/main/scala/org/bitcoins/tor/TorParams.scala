@@ -10,3 +10,7 @@ case class TorParams(
     authentication: Authentication,
     privateKeyPath: Path
 )
+
+object TorParams {
+  val DefaultControlPort: Int = 9051
+}

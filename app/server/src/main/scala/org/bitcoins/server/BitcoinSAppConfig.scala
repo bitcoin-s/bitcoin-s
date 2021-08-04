@@ -11,6 +11,7 @@ import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import java.nio.file.{Files, Path, Paths}
@@ -33,6 +34,7 @@ case class BitcoinSAppConfig(
   lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
   lazy val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
   lazy val dlcConf: DLCAppConfig = DLCAppConfig(directory, confs: _*)
+  lazy val torConf: TorAppConfig = TorAppConfig(directory, confs: _*)
 
   lazy val dlcNodeConf: DLCNodeAppConfig =
     DLCNodeAppConfig(directory, confs: _*)
@@ -52,6 +54,7 @@ case class BitcoinSAppConfig(
   override def start(): Future[Unit] = {
     val futures = List(kmConf.start(),
                        walletConf.start(),
+                       torConf.start(),
                        nodeConf.start(),
                        chainConf.start(),
                        bitcoindRpcConf.start(),
@@ -66,6 +69,7 @@ case class BitcoinSAppConfig(
       _ <- walletConf.stop()
       _ <- chainConf.stop()
       _ <- bitcoindRpcConf.stop()
+      _ <- torConf.stop()
     } yield ()
   }
 
