@@ -65,7 +65,7 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
     val result = dialogOpt.map(_.showAndWait())
 
     result match {
-      case Some(Some(cmd: AcceptDLCCliCommand)) =>
+      case Some(Some(Some(cmd: AcceptDLCCliCommand))) =>
         Some(cmd)
       case Some(_) | None => None
     }
