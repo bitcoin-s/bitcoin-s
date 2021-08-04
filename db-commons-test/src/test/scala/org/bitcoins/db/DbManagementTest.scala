@@ -111,7 +111,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         assert(flywayInfo.applied().length == expected)
         assert(flywayInfo.pending().length == 0)
       case PostgreSQL =>
-        val expected = 8
+        val expected = 9
         assert(result == expected)
         val flywayInfo = walletDbManagement.info()
 
@@ -160,7 +160,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         assert(flywayInfo.applied().length == expected)
         assert(flywayInfo.pending().length == 0)
       case PostgreSQL =>
-        val expected = 4
+        val expected = 5
         assert(result == expected)
         val flywayInfo = oracleAppConfig.info()
 
