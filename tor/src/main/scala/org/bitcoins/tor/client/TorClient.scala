@@ -60,6 +60,7 @@ class TorClient(implicit ec: ExecutionContext, conf: TorAppConfig)
 
     val args = Vector(
       "--ExitRelay 0", // ensure we aren't an exit relay
+      "--BridgeRelay 0", // ensure we aren't an bridge relay
       s"--SOCKSPort ${socks5ProxyParams.address.getHostName}:${socks5ProxyParams.address.getPort}",
       s"--ControlPort ${torParams.controlAddress.getPort}",
       authenticationArg,
