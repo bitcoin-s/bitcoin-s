@@ -17,17 +17,14 @@ abstract class WalletGUI extends Logging {
 
   private lazy val statusLabel = new Label {
     maxWidth = Double.MaxValue
-    padding = Insets(0, 10, 10, 10)
     text <== GlobalData.statusText
   }
 
   private lazy val infoLabel = new Label {
-    padding = Insets(top = 0, right = 0, bottom = 10, left = 0)
     text <== StringProperty("Sync Height: ") + GlobalData.syncHeight
   }
 
   private lazy val connectedLabel = new Label {
-    padding = Insets(top = 0, right = 0, bottom = 10, left = 1200)
     text <== GlobalData.connectedStr
   }
 
@@ -140,8 +137,14 @@ abstract class WalletGUI extends Logging {
                       stateDetails)
   }
 
-  lazy val bottomStack: StackPane = new StackPane() {
-    children = Vector(statusLabel, infoLabel, connectedLabel)
+  lazy val bottomStack: HBox = new HBox {
+    padding = Insets(5, 10, 5, 10)
+    hgrow = Priority.Always
+    children = Vector(statusLabel,
+                      GUIUtil.getHSpacer(),
+                      infoLabel,
+                      GUIUtil.getHSpacer(),
+                      connectedLabel)
   }
 
   lazy val borderPane: BorderPane = new BorderPane {
