@@ -25,6 +25,11 @@
     -fx-text-fill: red;
 }
 
+/* Non-editable TextField to look like Label */
+.no-text-input-readonly-style .text-input:readonly {
+   -fx-background-color: transparent;
+}
+
 .titulo {
     -fx-font-weight: bold;
     -fx-font-size: 18px;
