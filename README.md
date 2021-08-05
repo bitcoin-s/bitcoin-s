@@ -106,4 +106,4 @@ See [here](https://bitcoin-s.org/docs/contributing) for more information.
 
 ### License
 
-bitcoin-s is MIT licensed, as found in the [LICENSE](LICENSE) file.
+Bitcoin-s is MIT licensed, as found in the [LICENSE](LICENSE) file.
