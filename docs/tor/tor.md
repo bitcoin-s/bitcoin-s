@@ -55,6 +55,7 @@ To enable the tor proxy you simply need to set a couple config options after you
 You need to enable the proxy and set the host and port configuration options. If you are using the default settings you
 should only need to set `bitcoin-s.proxy.enabled = true`.
 These modifications need to be made to `$HOME/.bitcoin-s/bitcoin-s.conf` file.
+Create this file if it does not exist.
 
 ```$xslt
 bitcoin-s {
@@ -109,6 +110,7 @@ After changing these settings, you will need to restart your computer.
 You need to enable tor and set the control option, `127.0.0.1:9051` is the default. If you are using the default
 settings you should only need to set `bitcoin-s.tor.enabled = true`.
 These modifications need to be made to `$HOME/.bitcoin-s/bitcoin-s.conf` file.
+Create this file if it does not exist.
 
 ```$xslt
 bitcoin-s {
