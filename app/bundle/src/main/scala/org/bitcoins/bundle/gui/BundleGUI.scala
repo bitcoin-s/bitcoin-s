@@ -34,7 +34,6 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
 
   val DEFAULT_WIDTH = 1400.0
   val DEFAULT_HEIGHT = 800.0
-  val DEFAULT_MAXIMIZED = false
   val NOT_SET = Double.MinValue
   val MINIMUM_WIDTH = 800.0
   val MINIMUM_HEIGHT = 500.0

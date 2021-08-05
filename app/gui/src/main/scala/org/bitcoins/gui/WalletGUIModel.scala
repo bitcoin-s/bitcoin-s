@@ -169,11 +169,11 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
         false
       case Success(commandReturn) =>
         val json = ujson.read(commandReturn).obj
-        val pnl = json(PicklerKeys.pnl).num.toLong.toString
+        val pnl = json(PicklerKeys.pnl).num.toLong
         val rateOfReturn = json(PicklerKeys.rateOfReturn).num
-        val rorPrettyPrint = RateOfReturnUtil.prettyPrint(rateOfReturn)
-        GlobalData.currentPNL.value = pnl
-        GlobalData.rateOfReturn.value = rorPrettyPrint
+        val rorPercentage = RateOfReturnUtil.toPercentage(rateOfReturn)
+        GlobalData.currentPNL.value = GUIUtil.numberFormatter.format(pnl)
+        GlobalData.rateOfReturn.value = rorPercentage
         true
     }
   }
