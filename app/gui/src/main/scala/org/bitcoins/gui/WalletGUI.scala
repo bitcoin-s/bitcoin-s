@@ -35,53 +35,8 @@ abstract class WalletGUI extends Logging {
     model.updateTorAddress()
   }
 
-  private val satsProperty = StringProperty(" sats")
-
-  private lazy val confirmedText = new Label() {
-    text <== StringProperty(
-      "Confirmed balance:\t\t") + GlobalData.currentConfirmedBalance + satsProperty
-  }
-
-  private lazy val unconfirmedText = new Label() {
-    text <== StringProperty(
-      "Unconfirmed balance:\t") + GlobalData.currentUnconfirmedBalance + satsProperty
-  }
-
-  private lazy val reservedText = new Label() {
-    text <== StringProperty(
-      "Reserved balance:\t\t") + GlobalData.currentReservedBalance + satsProperty
-  }
-
-  private lazy val totalBalanceText = new Label() {
-    text <== StringProperty(
-      "Total balance:\t\t\t") + GlobalData.currentTotalBalance + satsProperty
-  }
-
-  private lazy val pnlText = new Label() {
-    text <== StringProperty(
-      "Profit and Loss:\t\t\t") + GlobalData.currentPNL + satsProperty
-  }
-
-  private lazy val rateOfReturnText = new Label() {
-    text <== StringProperty("Rate of Return:\t\t\t") + GlobalData.rateOfReturn
-  }
-
   private[gui] lazy val dlcPane = new DLCPane(glassPane)(system.dispatcher)
   private[gui] lazy val model = new WalletGUIModel(dlcPane.model)
-
-  private lazy val balanceBox = new VBox {
-    spacing = 10
-    children = Vector(confirmedText,
-                      unconfirmedText,
-                      reservedText,
-                      new Separator(),
-                      totalBalanceText)
-  }
-
-  private lazy val walletAccountingBox = new VBox {
-    spacing = 10
-    children = Vector(pnlText, rateOfReturnText)
-  }
 
   private lazy val getNewAddressButton = new Button {
     text = "Get New Address"
@@ -93,15 +48,92 @@ abstract class WalletGUI extends Logging {
     onAction = _ => model.onSend()
   }
 
-  private lazy val spacer = new Region { vgrow = Priority.Always }
+  private lazy val buttonBox = new HBox {
+    spacing = 10
+    getNewAddressButton.prefWidth <== width / 2
+    sendButton.prefWidth <== width / 2
+    getNewAddressButton.minWidth = 120
+    sendButton.minWidth = 120
+    getNewAddressButton.maxWidth = 240
+    sendButton.maxWidth = 240
+    children = Vector(getNewAddressButton, sendButton)
+  }
 
-  private var nextRow: Int = 0
+  private var nextRow: Int = _
+
+  private def getTextField(stringProperty: StringProperty): TextField =
+    new TextField() {
+      text <== stringProperty
+      editable = false
+      alignment = Pos.CenterRight
+    }
+  private def getSatsLabel(): Label = new Label("sats")
+
+  private lazy val walletGrid = new GridPane() {
+    minWidth = 490 // Matches button widths, this sets minWidth of sidebar
+    styleClass += "no-text-input-readonly-style"
+    nextRow = 0
+    add(new Label("Confirmed Balance"), 0, nextRow)
+    add(getTextField(GlobalData.currentConfirmedBalance), 1, nextRow)
+    add(getSatsLabel(), 2, nextRow)
+    nextRow += 1
+
+    add(new Label("Unconfirmed Balance"), 0, nextRow)
+    add(getTextField(GlobalData.currentUnconfirmedBalance), 1, nextRow)
+    add(getSatsLabel(), 2, nextRow)
+    nextRow += 1
+
+    add(new Label("Reserve Balance"), 0, nextRow)
+    add(getTextField(GlobalData.currentReservedBalance), 1, nextRow)
+    add(getSatsLabel(), 2, nextRow)
+    nextRow += 1
+
+    add(new Separator(), 1, nextRow)
+    nextRow += 1
+
+    add(new Label("Total Balance"), 0, nextRow)
+    add(getTextField(GlobalData.currentTotalBalance), 1, nextRow)
+    add(getSatsLabel(), 2, nextRow)
+
+    nextRow = 0 // 2nd column
+    add(new Label("Profit and Loss"), 4, nextRow)
+    add(getTextField(GlobalData.currentPNL), 5, nextRow)
+    add(getSatsLabel(), 6, nextRow)
+    nextRow += 1
+
+    add(new Label("Rate of Return"), 4, nextRow)
+    add(getTextField(GlobalData.rateOfReturn), 5, nextRow)
+    add(new Label("%"), 6, nextRow)
+    nextRow += 1
+
+    // Force spacer column width
+    columnConstraints = Seq(
+      new ColumnConstraints(),
+      new ColumnConstraints() {
+        prefWidth = 110
+      },
+      new ColumnConstraints(),
+      new ColumnConstraints() { // spacer column
+        prefWidth = 30
+      },
+      new ColumnConstraints(),
+      new ColumnConstraints() {
+        prefWidth = 90
+      }
+    )
+  }
+
+  private lazy val wallet = new VBox {
+    padding = Insets(10)
+    spacing = 10
+    children = Vector(walletGrid, buttonBox)
+  }
 
   private lazy val stateDetails = new GridPane {
     visible <== GlobalData.torAddress.isNotEmpty
     hgap = 5
     vgap = 5
-    prefWidth = 300 // to match buttons
+    prefWidth = 490 // to match wallet
     columnConstraints = Seq(new ColumnConstraints { hgrow = Priority.Always },
                             new ColumnConstraints { hgrow = Priority.Always })
 
@@ -115,7 +147,7 @@ abstract class WalletGUI extends Logging {
         GUIUtil.getCopyToClipboardButton(GlobalData.torAddress)
       )
     }
-
+    nextRow = 0
     add(new Label("Tor Address"), 0, nextRow)
     add(hbox, 1, nextRow)
     nextRow += 1
@@ -127,14 +159,9 @@ abstract class WalletGUI extends Logging {
 
     getNewAddressButton.prefWidth <== width
     sendButton.prefWidth <== width
-    getNewAddressButton.maxWidth = 300
-    sendButton.maxWidth = 300
-    children = Vector(balanceBox,
-                      walletAccountingBox,
-                      getNewAddressButton,
-                      sendButton,
-                      spacer,
-                      stateDetails)
+    getNewAddressButton.maxWidth = 240
+    sendButton.maxWidth = 240
+    children = Vector(wallet, GUIUtil.getVSpacer(), stateDetails)
   }
 
   lazy val bottomStack: HBox = new HBox {

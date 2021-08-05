@@ -22,6 +22,7 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
   private val resultArea = new BorderPane() {
     padding = Insets(top = 10, right = 0, bottom = 10, left = 0)
     center = resultTextArea
+    hgrow = Priority.Always
   }
 
   val model = new DLCPaneModel(this)
@@ -99,9 +100,12 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
   }
 
   private val buttonSpacer = new HBox {
-    spacing = 100
     alignment = Pos.Center
-    children = Vector(initButtonBar, acceptButtonBar, execButtonBar)
+    children = Vector(initButtonBar,
+                      GUIUtil.getHSpacer(),
+                      acceptButtonBar,
+                      GUIUtil.getHSpacer(),
+                      execButtonBar)
   }
 
   private val textAreaHBox = new HBox {
@@ -141,9 +145,7 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
     center = textAreasAndTableViewVBox
   }
 
-  resultArea.prefWidth <== borderPane.width
   resultArea.prefHeight <== (borderPane.height * 2) / 3
-
   tableView.prefHeight <== borderPane.height / 3
 
   private val taskRunner = new TaskRunner(buttonSpacer, glassPane)
