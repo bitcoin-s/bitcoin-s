@@ -13,7 +13,6 @@ import scalafx.scene.control._
 import scalafx.scene.layout._
 import scalafx.stage.Window
 
-import java.net.{InetSocketAddress, URI}
 import scala.collection._
 import scala.util.{Failure, Success, Try}
 
@@ -23,14 +22,10 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
     val offerHex = offerTLVTF.text.value
     val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerHex)
     if (peerAddressTF.text.value.nonEmpty) {
-      val peer = new URI(
-        "tcp://" + NetworkUtil.parseInetSocketAddress(peerAddressTF.text.value,
-                                                      2862))
+      val peer =
+        NetworkUtil.parseInetSocketAddress(peerAddressTF.text.value, 2862)
 
-      val peerAddr =
-        InetSocketAddress.createUnresolved(peer.getHost, peer.getPort)
-
-      AcceptDLC(offer, peerAddr)
+      AcceptDLC(offer, peer)
     } else {
       AcceptDLCOffer(offer)
     }
