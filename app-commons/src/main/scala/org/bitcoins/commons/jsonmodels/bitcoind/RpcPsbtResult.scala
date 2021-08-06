@@ -15,12 +15,12 @@ import org.bitcoins.crypto.{
 
 sealed abstract class RpcPsbtResult
 
-final case class WalletProcessPsbtResult(psbt: PSBT, complete: Boolean)
+case class WalletProcessPsbtResult(psbt: PSBT, complete: Boolean)
     extends RpcPsbtResult
 
 sealed abstract class FinalizePsbtResult extends RpcPsbtResult
-final case class FinalizedPsbt(hex: Transaction) extends FinalizePsbtResult
-final case class NonFinalizedPsbt(psbt: PSBT) extends FinalizePsbtResult
+case class FinalizedPsbt(hex: Transaction) extends FinalizePsbtResult
+case class NonFinalizedPsbt(psbt: PSBT) extends FinalizePsbtResult
 
 sealed abstract class DecodePsbtResult extends RpcPsbtResult {
   def tx: RpcTransaction
@@ -69,39 +69,39 @@ final case class RpcPsbtInputV22(
     unknown: Option[Map[String, String]] // The unknown global fields
 ) extends RpcPsbtInput
 
-final case class RpcPsbtScript(
+case class RpcPsbtScript(
     asm: String, // todo(torkelrogstad) split into Vector[ScriptToken]?
     hex: ScriptPubKey,
     scriptType: Option[ScriptType],
     address: Option[BitcoinAddress]
 ) extends RpcPsbtResult
 
-final case class PsbtBIP32Deriv(
+case class PsbtBIP32Deriv(
     pubkey: ECPublicKey,
     masterFingerprint: String, // todo(torkelrogstad)
     path: String
     // todo(torkelrogstad) there's more fields here
 ) extends RpcPsbtResult
 
-final case class PsbtWitnessUtxoInput(
+case class PsbtWitnessUtxoInput(
     amount: Bitcoins,
     scriptPubKey: RpcPsbtScript
 ) extends RpcPsbtResult
 
-final case class RpcPsbtOutput(
+case class RpcPsbtOutput(
     redeemScript: Option[RpcPsbtScript],
     witnessScript: Option[RpcPsbtScript],
     bip32Derivs: Option[Vector[PsbtBIP32Deriv]],
     unknown: Option[Map[String, String]]
 ) extends RpcPsbtResult
 
-final case class WalletCreateFundedPsbtResult(
+case class WalletCreateFundedPsbtResult(
     psbt: PSBT,
     fee: Bitcoins,
     changepos: Int
 ) extends RpcPsbtResult
 
-final case class AnalyzePsbtResult(
+case class AnalyzePsbtResult(
     inputs: Vector[AnalyzePsbtInput],
     estimated_vsize: Option[Double],
     estimated_feerate: Option[Double],
@@ -109,14 +109,14 @@ final case class AnalyzePsbtResult(
     next: String
 ) extends RpcPsbtResult
 
-final case class AnalyzePsbtInput(
+case class AnalyzePsbtInput(
     has_utxo: Boolean,
     is_final: Boolean,
     missing: Option[PsbtMissingData],
     next: Option[String]
 ) extends RpcPsbtResult
 
-final case class PsbtMissingData(
+case class PsbtMissingData(
     pubkeys: Option[Vector[ECPublicKeyBytes]],
     signatures: Option[Vector[ECDigitalSignature]],
     redeemscript: Option[RpcPsbtScript],
