@@ -191,15 +191,21 @@ class DLCTableView(model: DLCPaneModel) {
               }
             }
           }
-          // Enable/disable menu items per selection
+          // Enable/disable menu items per selection state
           row.item.onChange { (_, _, newContent) =>
             if (newContent != null) {
-              cancelDLCItem.disable =
-                row.item.value.isInstanceOf[AcceptedDLCStatus]
-              val enableRefundExecute =
-                row.item.value.isInstanceOf[BroadcastedDLCStatus]
-              refundDLCItem.disable = !enableRefundExecute
-              executeDLCItem.disable = !enableRefundExecute
+              cancelDLCItem.disable = row.item.value.state match {
+                case DLCState.Offered | DLCState.Accepted | DLCState.Signed =>
+                  false
+                case _ => true
+              }
+              val disableRefundExecute = row.item.value.state match {
+                case DLCState.Broadcasted | DLCState.Confirmed =>
+                  false
+                case _ => true
+              }
+              refundDLCItem.disable = disableRefundExecute
+              executeDLCItem.disable = disableRefundExecute
             }
           }
 
