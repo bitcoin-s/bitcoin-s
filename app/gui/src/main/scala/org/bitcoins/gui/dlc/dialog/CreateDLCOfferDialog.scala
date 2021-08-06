@@ -131,11 +131,13 @@ class CreateDLCOfferDialog
         amtOpt: Option[Satoshis]): Unit = {
 
       val outcomeTF = new TextField() {
+        styleClass += "enum-outcome-textfield"
         text = outcomeText
         disable = true
         editable = false
       }
       val amtTF = new TextField() {
+        styleClass += "enum-payout-textfield"
         promptText = "Satoshis"
         tooltip = Tooltip(
           s"""Amount you will win if the oracle signs for "$outcomeText".""")
@@ -163,9 +165,16 @@ class CreateDLCOfferDialog
       hgap = 5
       vgap = 0
 
-      add(new Label("Outcome"), 0, 0)
+      add(new Label("Outcome") {
+            maxWidth = Double.MaxValue
+            alignment = Pos.Center
+          },
+          0,
+          0)
       add(
         new Label("Payout") {
+          maxWidth = Double.MaxValue
+          alignment = Pos.Center
           tooltip = Tooltip(
             "Amount you will win if the oracle signs for the given outcome.")
           tooltip.value.setShowDelay(new javafx.util.Duration(100))
@@ -174,6 +183,8 @@ class CreateDLCOfferDialog
         0
       )
       add(new Label("Endpoint") {
+            maxWidth = Double.MaxValue
+            alignment = Pos.Center
             minWidth = 100
           },
           2,
@@ -187,6 +198,7 @@ class CreateDLCOfferDialog
         row: Int = nextPointRow): Unit = {
 
       val xTF = new TextField() {
+        styleClass += "numeric-outcome-textfield"
         promptText = "Outcome"
       }
       xOpt match {
@@ -195,6 +207,7 @@ class CreateDLCOfferDialog
         case None => ()
       }
       val yTF = new TextField() {
+        styleClass += "numeric-payout-textfield"
         promptText = "Satoshis"
       }
       yOpt match {
@@ -227,8 +240,18 @@ class CreateDLCOfferDialog
       hgap = 5
       vgap = 5
 
-      add(new Label("Outcome"), 0, 0)
-      add(new Label("Rounding Level"), 1, 0)
+      add(new Label("Outcome") {
+            maxWidth = Double.MaxValue
+            alignment = Pos.Center
+          },
+          0,
+          0)
+      add(new Label("Rounding Level") {
+            maxWidth = Double.MaxValue
+            alignment = Pos.Center
+          },
+          1,
+          0)
     }
 
     def addRoundingRow(
@@ -236,10 +259,12 @@ class CreateDLCOfferDialog
         levelOpt: Option[Satoshis]): Unit = {
 
       val outcomeTF = new TextField() {
+        styleClass += "rounding-outcome-textfield"
         promptText = "Outcome"
         text = outcomeOpt.map(_.toString).getOrElse("")
       }
       val roundingLevelTF = new TextField() {
+        styleClass += "rounding-level-textfield"
         promptText = "Satoshis"
         text = levelOpt match {
           case Some(level) => level.toLong.toString
@@ -264,18 +289,15 @@ class CreateDLCOfferDialog
       onAction = _ => addRoundingRow(None, None)
     }
 
-    val roundingIntervals = new ScrollPane() {
-      content = new VBox {
+    val roundingIntervals = new VBox {
+      alignment = Pos.Center
+      hgrow = Priority.Always
+      val label: HBox = new HBox {
         alignment = Pos.Center
-
-        val label: HBox = new HBox {
-          alignment = Pos.Center
-          spacing = 10
-          children =
-            Vector(new Label("Rounding Intervals"), addRoundingRowButton)
-        }
-        children = Vector(label, roundingGrid)
+        spacing = 10
+        children = Vector(new Label("Rounding Intervals"), addRoundingRowButton)
       }
+      children = Vector(label, roundingGrid)
     }
 
     val roundingPane: TitledPane = new TitledPane() {
