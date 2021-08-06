@@ -197,12 +197,18 @@ class DLCTableView(model: DLCPaneModel) {
               cancelDLCItem.disable = row.item.value.state match {
                 case DLCState.Offered | DLCState.Accepted | DLCState.Signed =>
                   false
-                case _ => true
+                case DLCState.Confirmed | DLCState.Broadcasted |
+                    DLCState.Claimed | DLCState.Refunded |
+                    DLCState.RemoteClaimed =>
+                  true
               }
               val disableRefundExecute = row.item.value.state match {
                 case DLCState.Broadcasted | DLCState.Confirmed =>
                   false
-                case _ => true
+                case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
+                    DLCState.Claimed | DLCState.Refunded |
+                    DLCState.RemoteClaimed =>
+                  true
               }
               refundDLCItem.disable = disableRefundExecute
               executeDLCItem.disable = disableRefundExecute
