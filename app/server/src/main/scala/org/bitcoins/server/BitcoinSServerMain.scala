@@ -6,13 +6,13 @@ import akka.http.scaladsl.Http
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
+import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet._

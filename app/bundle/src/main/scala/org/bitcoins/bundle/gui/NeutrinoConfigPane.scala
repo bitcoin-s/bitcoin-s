@@ -1,8 +1,8 @@
 package org.bitcoins.bundle.gui
 
 import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.commons.util.DatadirUtil
 import org.bitcoins.core.config._
-import org.bitcoins.db.util.DatadirUtil
 import org.bitcoins.gui.util.GUIUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig.toNodeConf

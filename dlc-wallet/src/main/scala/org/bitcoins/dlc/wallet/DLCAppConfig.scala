@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet
 
 import com.typesafe.config.Config
+import org.bitcoins.commons.config.{AppConfigFactory, ConfigOps}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi

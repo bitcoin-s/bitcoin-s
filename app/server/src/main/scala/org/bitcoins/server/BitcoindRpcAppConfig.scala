@@ -2,7 +2,7 @@ package org.bitcoins.server
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
-import org.bitcoins.db._
+import org.bitcoins.commons.config.{AppConfig, AppConfigFactory, ConfigOps}
 import org.bitcoins.node.NodeType
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}

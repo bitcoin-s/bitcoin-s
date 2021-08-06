@@ -1,8 +1,8 @@
-package org.bitcoins.db.util
+package org.bitcoins.commons.util
 
 import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.config._
-import org.bitcoins.db.AppConfig
 
 import java.nio.file.{Path, Paths}
 import scala.util.Properties

@@ -1,6 +1,7 @@
 package org.bitcoins.db.util
 
 import com.typesafe.config.ConfigFactory
+import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 

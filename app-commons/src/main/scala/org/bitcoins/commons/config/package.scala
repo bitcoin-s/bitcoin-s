@@ -1,11 +1,11 @@
-package org.bitcoins
+package org.bitcoins.commons
 
 import com.typesafe.config.{Config, ConfigRenderOptions}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-package object db {
+package object config {
 
   implicit class ConfigOps(private val config: Config) extends AnyVal {
 

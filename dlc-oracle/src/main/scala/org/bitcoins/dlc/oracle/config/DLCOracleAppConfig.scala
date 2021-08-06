@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.oracle.config
 
 import com.typesafe.config.Config
+import org.bitcoins.commons.config.AppConfigFactory
 import org.bitcoins.core.api.dlcoracle.db.EventOutcomeDbHelper
 import org.bitcoins.core.config._
 import org.bitcoins.core.hd.HDPurpose
