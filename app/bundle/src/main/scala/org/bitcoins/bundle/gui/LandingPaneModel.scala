@@ -4,8 +4,8 @@ import akka.actor.ActorSystem
 import com.typesafe.config._
 import grizzled.slf4j.Logging
 import org.bitcoins.bundle.gui.BundleGUI._
-import org.bitcoins.db.AppConfig
-import org.bitcoins.db.util.{DatadirUtil, ServerArgParser}
+import org.bitcoins.commons.config.AppConfig
+import org.bitcoins.commons.util.{DatadirUtil, ServerArgParser}
 import org.bitcoins.gui._
 import org.bitcoins.node.NodeType._
 import org.bitcoins.node._

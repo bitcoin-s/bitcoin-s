@@ -1,10 +1,10 @@
 package org.bitcoins.scripts
 
 import akka.actor.ActorSystem
-import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
+import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.server.routes.{BitcoinSServerRunner}
-import org.bitcoins.server.util.{BitcoinSAppScalaDaemon}
+import org.bitcoins.server.routes.BitcoinSServerRunner
+import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 
 import java.nio.file.Paths
 import scala.concurrent.Future

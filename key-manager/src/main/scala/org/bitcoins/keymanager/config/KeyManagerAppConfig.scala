@@ -1,9 +1,9 @@
 package org.bitcoins.keymanager.config
 
 import com.typesafe.config.Config
+import org.bitcoins.commons.config.{AppConfig, AppConfigFactory, ConfigOps}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.crypto.AesPassword
-import org.bitcoins.db._
 import org.bitcoins.keymanager.WalletStorage
 
 import java.nio.file.{Files, Path}

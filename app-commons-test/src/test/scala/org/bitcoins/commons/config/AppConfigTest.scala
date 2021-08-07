@@ -1,4 +1,4 @@
-package org.bitcoins.db
+package org.bitcoins.commons.config
 
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config._

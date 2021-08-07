@@ -1,14 +1,14 @@
-package org.bitcoins.db
+package org.bitcoins.commons.config
 
-import com.typesafe.config._
+import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions}
 import grizzled.slf4j.Logging
-import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config._
 import org.bitcoins.core.protocol.blockchain.BitcoinChainParams
 import org.bitcoins.core.util.StartStopAsync
 
 import java.nio.file._
 import scala.concurrent.Future
+import org.bitcoins.core.compat.JavaConverters._
 import scala.util.Properties
 import scala.util.matching.Regex
 

@@ -291,7 +291,8 @@ object Deps {
       Compile.newMicroPickle.value,
       Compile.playJson,
       Compile.slf4j,
-      Compile.grizzledSlf4j
+      Compile.grizzledSlf4j,
+      Compile.typesafeConfig
     )
   }
 

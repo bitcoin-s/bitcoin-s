@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.node
 
 import akka.actor.{ActorSystem, Cancellable}
+import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi, FilterSyncMarker}
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
@@ -13,7 +14,6 @@ import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.EmbeddedPg

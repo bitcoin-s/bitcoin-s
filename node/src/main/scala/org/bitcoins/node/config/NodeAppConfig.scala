@@ -9,8 +9,9 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
+import org.bitcoins.commons.config.AppConfigFactory
 import org.bitcoins.core.util.Mutable
-import org.bitcoins.db.{AppConfigFactory, DbAppConfig, JdbcProfileComponent}
+import org.bitcoins.db.{DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.node.models.Peer

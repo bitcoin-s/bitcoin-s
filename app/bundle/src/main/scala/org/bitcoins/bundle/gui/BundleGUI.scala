@@ -1,7 +1,7 @@
 package org.bitcoins.bundle.gui
 
 import org.bitcoins.bundle.util.BitcoinSAppJFX3
-import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
+import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.gui._
 import org.bitcoins.gui.util.GUIUtil
 import org.bitcoins.server.BitcoinSAppConfig

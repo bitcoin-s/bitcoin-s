@@ -1,8 +1,7 @@
-package org.bitcoins.db.util
+package org.bitcoins.commons.util
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.db.AppConfig
-import org.bitcoins.db.AppConfig.safePathToString
+import org.bitcoins.commons.config.AppConfig
 
 import java.nio.file.{Path, Paths}
 
@@ -23,7 +22,7 @@ case class DatadirParser(
 
   lazy val datadirConfig: Config =
     ConfigFactory.parseString(
-      s"bitcoin-s.datadir = ${safePathToString(datadirPath)}")
+      s"bitcoin-s.datadir = ${AppConfig.safePathToString(datadirPath)}")
 
   lazy val networkConfig: Config = serverArgs.networkOpt match {
     case Some(network) =>

@@ -5,6 +5,7 @@ import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.commons.config.{AppConfigFactory, ConfigOps}
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.db._
