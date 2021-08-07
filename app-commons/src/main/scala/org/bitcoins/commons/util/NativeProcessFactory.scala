@@ -1,4 +1,4 @@
-package org.bitcoins.rpc.util
+package org.bitcoins.commons.util
 
 import grizzled.slf4j.Logging
 

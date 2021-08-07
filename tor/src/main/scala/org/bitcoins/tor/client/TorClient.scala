@@ -1,6 +1,7 @@
 package org.bitcoins.tor.client
 
 import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.tor.TorProtocolHandler._
 import org.bitcoins.tor.config.TorAppConfig
@@ -9,17 +10,15 @@ import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 import java.io.{File, FileNotFoundException}
 import java.net.InetSocketAddress
 import java.nio.file.{Files, Path, StandardCopyOption}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.sys.process.{Process, ProcessBuilder}
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 /** A trait that helps start bitcoind/eclair when it is started via bitcoin-s */
-class TorClient(implicit ec: ExecutionContext, conf: TorAppConfig)
-    extends Logging {
-
-  private[this] var processOpt: Option[Process] = None
-
-  private lazy val process: ProcessBuilder = scala.sys.process.Process(cmd)
+class TorClient()(implicit
+    val executionContext: ExecutionContext,
+    conf: TorAppConfig)
+    extends NativeProcessFactory
+    with Logging {
 
   lazy val socks5ProxyParams: Socks5ProxyParams = conf.socks5ProxyParams match {
     case Some(params) => params
@@ -49,8 +48,8 @@ class TorClient(implicit ec: ExecutionContext, conf: TorAppConfig)
 
   private lazy val authenticationArg = torParams.authentication match {
     case Password(_) =>
-      "error"
 //      s"--HashedControlPassword $password" // todo: need to hash the password correctly
+      throw new RuntimeException("Password authentication not yet supported")
     case _: SafeCookie =>
       "--CookieAuthentication 1"
   }
@@ -74,52 +73,6 @@ class TorClient(implicit ec: ExecutionContext, conf: TorAppConfig)
     }
 
     s"$executable $args"
-  }
-
-  def isAlive: Boolean = {
-    processOpt match {
-      case Some(p) =>
-        p.isAlive()
-      case None =>
-        false
-    }
-  }
-
-  /** Starts the binary by spinning up a new process */
-  def startBinary(): Future[Unit] = Future {
-    processOpt match {
-      case Some(_) =>
-        //don't do anything as it is already started
-        logger.info(s"Tor binary was already started!")
-        ()
-      case None =>
-        if (cmd.nonEmpty) {
-          val started = process.run()
-          processOpt = Some(started)
-        } else {
-          logger.warn("cmd not set, no Tor binary started")
-        }
-        ()
-    }
-  }
-
-  /** Stops the binary by destroying the underlying operating system process
-    *
-    * If the client is a remote client (not started on the host operating system)
-    * this method is a no-op
-    */
-  def stopBinary(): Future[Unit] = Future {
-    processOpt match {
-      case Some(process) =>
-        if (process.isAlive()) {
-          val _ = process.destroy()
-        }
-        processOpt = None
-      case None =>
-        logger.info(s"No process found, binary wasn't started!")
-        //no process running, nothing to do
-        ()
-    }
   }
 }
 
@@ -145,7 +98,7 @@ object TorClient extends Logging {
     * @param datadir Directory where to write files
     * @return Tor executable file
     */
-  def torBinaryFromResource(datadir: Path): File = {
+  private def torBinaryFromResource(datadir: Path): File = {
     // todo implement versioning
     val (torFileName, fileList) = if (EnvUtil.isLinux) {
       ("linux_64/tor", linuxFileList)
@@ -163,7 +116,8 @@ object TorClient extends Logging {
     if (executableFileName.exists() && executableFileName.canExecute) {
       executableFileName
     } else {
-      logger.info("Tor executable is not written to datadir, creating...")
+      logger.info(
+        s"Tor executable is not written to datadir $datadir, creating...")
 
       fileList.foreach { fileName =>
         val stream =
