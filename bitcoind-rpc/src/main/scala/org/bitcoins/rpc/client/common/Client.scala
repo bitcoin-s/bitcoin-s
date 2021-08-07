@@ -333,13 +333,17 @@ trait Client
   private lazy val httpConnectionPoolSettings: ConnectionPoolSettings =
     instance.proxyParams match {
       case Some(proxyParams) =>
-        val socks5ClientTransport = new Socks5ClientTransport(proxyParams)
+        val host = instance.rpcUri.getHost
+        if (!host.contains("localhost") && !host.contains("127.0.0.1")) {
+          val socks5ClientTransport = new Socks5ClientTransport(proxyParams)
 
-        val clientConnectionSettings =
-          ClientConnectionSettings(system).withTransport(socks5ClientTransport)
+          val clientConnectionSettings =
+            ClientConnectionSettings(system).withTransport(
+              socks5ClientTransport)
 
-        ConnectionPoolSettings(system).withConnectionSettings(
-          clientConnectionSettings)
+          ConnectionPoolSettings(system).withConnectionSettings(
+            clientConnectionSettings)
+        } else ConnectionPoolSettings(system)
       case None => ConnectionPoolSettings(system)
     }
 
