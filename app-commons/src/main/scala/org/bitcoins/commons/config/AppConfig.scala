@@ -8,7 +8,7 @@ import org.bitcoins.core.util.StartStopAsync
 
 import java.nio.file._
 import scala.concurrent.Future
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import org.bitcoins.core.compat.JavaConverters._
 import scala.util.Properties
 import scala.util.matching.Regex
 
