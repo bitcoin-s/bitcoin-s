@@ -102,9 +102,16 @@ case class P2PClientActor(
       val (peerOrProxyAddress, proxyParams) =
         peer.socks5ProxyParams match {
           case Some(proxyParams) =>
-            val proxyAddress = proxyParams.address
-            logger.info(s"connecting to SOCKS5 proxy $proxyAddress")
-            (proxyAddress, Some(proxyParams))
+            val host = peer.socket.getHostName
+            if (!host.contains("localhost") && !host.contains("127.0.0.1")) {
+              val proxyAddress = proxyParams.address
+              logger.info(s"connecting to SOCKS5 proxy $proxyAddress")
+              (proxyAddress, Some(proxyParams))
+            } else {
+              val remoteAddress = peer.socket
+              logger.info(s"connecting to $remoteAddress")
+              (peer.socket, None)
+            }
           case None =>
             val remoteAddress = peer.socket
             logger.info(s"connecting to $remoteAddress")
