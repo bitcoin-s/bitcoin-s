@@ -79,17 +79,10 @@ class TorClient()(implicit
 object TorClient extends Logging {
 
   lazy val DEFAULT_TOR_LOCATION: Option[File] = {
-    def findExecutableOnPath(name: String): Option[File] =
-      sys.env
-        .getOrElse("PATH", "")
-        .split(File.pathSeparator)
-        .map(directory => new File(directory, name))
-        .find(file => file.isFile && file.canExecute)
-
     if (EnvUtil.isWindows) {
-      findExecutableOnPath("tor.exe")
+      NativeProcessFactory.findExecutableOnPath("tor.exe")
     } else {
-      findExecutableOnPath("tor")
+      NativeProcessFactory.findExecutableOnPath("tor")
     }
   }
 

@@ -2,6 +2,7 @@ package org.bitcoins.commons.util
 
 import grizzled.slf4j.Logging
 
+import java.io.File
 import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process.{Process, ProcessBuilder}
 
@@ -62,4 +63,14 @@ trait NativeProcessFactory extends Logging {
     }
   }
 
+}
+
+object NativeProcessFactory {
+
+  def findExecutableOnPath(name: String): Option[File] =
+    sys.env
+      .getOrElse("PATH", "")
+      .split(File.pathSeparator)
+      .map(directory => new File(directory, name))
+      .find(file => file.isFile && file.canExecute)
 }
