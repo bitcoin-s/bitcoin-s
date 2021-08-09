@@ -1,7 +1,7 @@
 package org.bitcoins.oracle.server
 
 import akka.actor.ActorSystem
-import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
+import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon

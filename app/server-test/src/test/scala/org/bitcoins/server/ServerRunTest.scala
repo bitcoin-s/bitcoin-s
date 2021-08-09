@@ -1,6 +1,6 @@
 package org.bitcoins.server
 
-import org.bitcoins.db.util.ServerArgParser
+import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.util.{AkkaUtil, BitcoinSAsyncTest}

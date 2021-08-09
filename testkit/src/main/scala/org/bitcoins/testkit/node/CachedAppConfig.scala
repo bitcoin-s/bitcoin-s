@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.node
 
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.db.AppConfig
+import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig

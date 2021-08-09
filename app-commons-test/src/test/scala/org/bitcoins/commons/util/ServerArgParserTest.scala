@@ -1,4 +1,4 @@
-package org.bitcoins.db.util
+package org.bitcoins.commons.util
 
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.testkit.BitcoinSTestAppConfig

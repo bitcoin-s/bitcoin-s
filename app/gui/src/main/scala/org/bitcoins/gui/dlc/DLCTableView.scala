@@ -6,10 +6,16 @@ import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.gui.{GUI, GlobalData}
 import org.bitcoins.gui.util.GUIUtil
-import scalafx.beans.property.{StringProperty}
+import scalafx.beans.property.StringProperty
 import scalafx.scene.control.TableColumn.SortType
 import scalafx.scene.control.TableView.TableViewFocusModel
-import scalafx.scene.control.{ContextMenu, MenuItem, TableColumn, TableView}
+import scalafx.scene.control.{
+  ContextMenu,
+  MenuItem,
+  TableColumn,
+  TableRow,
+  TableView
+}
 
 class DLCTableView(model: DLCPaneModel) {
 
@@ -20,7 +26,6 @@ class DLCTableView(model: DLCPaneModel) {
       cellValueFactory = { status =>
         val eventIdStr =
           status.value.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
-
         new StringProperty(status, "Event Id", eventIdStr)
       }
     }
@@ -34,7 +39,6 @@ class DLCTableView(model: DLCPaneModel) {
           case signed: AcceptedDLCStatus =>
             signed.contractId.toHex
         }
-
         new StringProperty(status, "Contract Id", contractIdStr)
       }
     }
@@ -121,47 +125,106 @@ class DLCTableView(model: DLCPaneModel) {
                       totalCollateralCol)
       sortOrder.addAll(statusCol, eventIdCol, contractIdCol)
 
-      val infoItem: MenuItem = new MenuItem("View DLC") {
-        onAction = _ => {
-          val selected = selectionModel.value
-          val dlc = selected.getSelectedItem
-          model.viewDLC(dlc)
-          focusModel = new TableViewFocusModel(tableView)
-        }
-      }
+      rowFactory = { _ =>
+        {
+          val row = new TableRow[DLCStatus]()
 
-      val viewOnExplorer: MenuItem = new MenuItem("View on Oracle Explorer") {
-        onAction = _ => {
-          val dlc = selectionModel.value.getSelectedItem
-          val primaryOracle =
-            dlc.oracleInfo.singleOracleInfos.head.announcement
-          val baseUrl =
-            ExplorerEnv.fromBitcoinNetwork(GlobalData.network).siteUrl
-          val url =
-            s"${baseUrl}announcement/${primaryOracle.sha256.hex}"
-          GUI.hostServices.showDocument(url)
-        }
-      }
-
-      val copyIdItem: MenuItem = new MenuItem("Copy Contract Id") {
-        onAction = _ => {
-          val dlc = selectionModel.value.getSelectedItem
-          getContractId(dlc).foreach { id =>
-            GlobalDLCData.lastContractId = id.toHex
-            GUIUtil.setStringToClipboard(id.toHex)
+          val infoItem: MenuItem = new MenuItem("View DLC") {
+            onAction = _ => {
+              val selected = selectionModel.value
+              val dlc = selected.getSelectedItem
+              model.viewDLC(dlc)
+              focusModel = new TableViewFocusModel(tableView)
+            }
           }
-        }
-      }
 
-      val cancelDLCItem: MenuItem = new MenuItem("Cancel DLC") {
-        onAction = _ => {
-          val dlc = selectionModel.value.getSelectedItem
-          model.cancelDLC(dlc)
-        }
-      }
+          val viewOnExplorer: MenuItem = new MenuItem(
+            "View on Oracle Explorer") {
+            onAction = _ => {
+              val dlc = selectionModel.value.getSelectedItem
+              val primaryOracle =
+                dlc.oracleInfo.singleOracleInfos.head.announcement
+              // TODO : GlobalData.network is currently null here, showing error dialog
+              val baseUrl =
+                ExplorerEnv.fromBitcoinNetwork(GlobalData.network).siteUrl
+              val url =
+                s"${baseUrl}announcement/${primaryOracle.sha256.hex}"
+              GUI.hostServices.showDocument(url)
+            }
+          }
 
-      contextMenu = new ContextMenu() {
-        items ++= Vector(infoItem, viewOnExplorer, copyIdItem, cancelDLCItem)
+          val copyIdItem: MenuItem = new MenuItem("Copy Contract Id") {
+            onAction = _ => {
+              val dlc = selectionModel.value.getSelectedItem
+              getContractId(dlc).foreach { id =>
+                GlobalDLCData.lastContractId = id.toHex
+                GUIUtil.setStringToClipboard(id.toHex)
+              }
+            }
+          }
+
+          val cancelDLCItem: MenuItem = new MenuItem("Cancel DLC") {
+            onAction = _ => {
+              val dlc = selectionModel.value.getSelectedItem
+              model.cancelDLC(dlc)
+            }
+          }
+
+          val refundDLCItem: MenuItem = new MenuItem("Refund DLC") {
+            disable = true
+            onAction = _ => {
+              val dlc = selectionModel.value.getSelectedItem
+              getContractId(dlc).foreach { id =>
+                GlobalDLCData.lastContractId = id.toHex
+                model.onRefund()
+              }
+            }
+          }
+
+          val executeDLCItem: MenuItem = new MenuItem("Execute DLC") {
+            disable = true
+            onAction = _ => {
+              val dlc = selectionModel.value.getSelectedItem
+              getContractId(dlc).foreach { id =>
+                GlobalDLCData.lastContractId = id.toHex
+                model.onExecute()
+              }
+            }
+          }
+          // Enable/disable menu items per selection state
+          row.item.onChange { (_, _, newContent) =>
+            if (newContent != null) {
+              cancelDLCItem.disable = row.item.value.state match {
+                case DLCState.Offered | DLCState.Accepted | DLCState.Signed =>
+                  false
+                case DLCState.Confirmed | DLCState.Broadcasted |
+                    DLCState.Claimed | DLCState.Refunded |
+                    DLCState.RemoteClaimed =>
+                  true
+              }
+              val disableRefundExecute = row.item.value.state match {
+                case DLCState.Broadcasted | DLCState.Confirmed =>
+                  false
+                case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
+                    DLCState.Claimed | DLCState.Refunded |
+                    DLCState.RemoteClaimed =>
+                  true
+              }
+              refundDLCItem.disable = disableRefundExecute
+              executeDLCItem.disable = disableRefundExecute
+            }
+          }
+
+          row.contextMenu = new ContextMenu() {
+            items ++= Vector(infoItem,
+                             viewOnExplorer,
+                             copyIdItem,
+                             cancelDLCItem,
+                             refundDLCItem,
+                             executeDLCItem)
+          }
+          row
+        }
       }
     }
   }

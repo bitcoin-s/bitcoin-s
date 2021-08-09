@@ -1,7 +1,7 @@
 package org.bitcoins.bundle.gui
 
 import org.bitcoins.bundle.util.BitcoinSAppJFX3
-import org.bitcoins.db.util.{DatadirParser, ServerArgParser}
+import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.gui._
 import org.bitcoins.gui.util.GUIUtil
 import org.bitcoins.server.BitcoinSAppConfig
@@ -34,7 +34,6 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
 
   val DEFAULT_WIDTH = 1400.0
   val DEFAULT_HEIGHT = 800.0
-  val DEFAULT_MAXIMIZED = false
   val NOT_SET = Double.MinValue
   val MINIMUM_WIDTH = 800.0
   val MINIMUM_HEIGHT = 500.0

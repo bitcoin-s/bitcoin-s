@@ -2,9 +2,9 @@ package org.bitcoins.dlc.node.config
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.db._
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.tor.{Socks5ProxyParams, TorParams}

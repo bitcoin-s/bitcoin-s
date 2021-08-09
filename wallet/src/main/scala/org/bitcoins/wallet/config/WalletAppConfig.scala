@@ -2,6 +2,7 @@ package org.bitcoins.wallet.config
 
 import com.typesafe.config.Config
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.commons.config.{AppConfigFactory, ConfigOps}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi

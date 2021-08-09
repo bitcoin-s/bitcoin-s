@@ -1,6 +1,6 @@
 package org.bitcoins.testkit.db
 
-import org.bitcoins.db.AppConfig
+import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}

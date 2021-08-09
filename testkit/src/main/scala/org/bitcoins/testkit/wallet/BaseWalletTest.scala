@@ -1,13 +1,13 @@
 package org.bitcoins.testkit.wallet
 
 import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.db.AppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}

@@ -1,9 +1,8 @@
-package org.bitcoins.db
-
-import java.nio.file.{Path, Paths}
+package org.bitcoins.commons.config
 
 import com.typesafe.config.{Config, ConfigFactory}
 
+import java.nio.file.{Path, Paths}
 import scala.concurrent.ExecutionContext
 
 trait AppConfigFactory[C <: AppConfig] {

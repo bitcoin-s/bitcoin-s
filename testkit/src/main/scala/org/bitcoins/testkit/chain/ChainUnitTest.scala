@@ -9,13 +9,13 @@ import org.bitcoins.chain.blockchain.{ChainHandler, ChainHandlerCached}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.chain.ChainUnitTest.createChainHandler

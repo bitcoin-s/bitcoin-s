@@ -29,7 +29,7 @@ Otherwise, you can install the Tor Browser from [here](https://www.torproject.or
 
 ## Starting Tor
 
-To connect to onion addresses you need th enable the tor proxy. To do so you need to have tor currently running, this
+To connect to onion addresses you need to enable the tor proxy. To do so you need to have tor currently running, this
 can be checked by using the command `sudo systemctl status tor`. This should give you an output similar to:
 
 ```bash
@@ -45,6 +45,16 @@ $ sudo systemctl status tor
 
 If the output says `Active: active`, then it is running and good to go.
 
+On mac osx you can use the command `brew services list` to ensure tor is running. This should give you an output similar to: 
+
+```bash
+$ brew services list
+Name    Status  User        Plist            
+tor     started $username /Users/username/Library/LaunchAgents/homebrew.mxcl.tor.plist 
+```
+
+If tor satus is `started`, then it is running and good to go. 
+
 ## Enabling the Tor proxy
 
 Enabling the tor proxy allows you to create outgoing connections over tor. This is needed if you want to sync the
@@ -54,6 +64,8 @@ To enable the tor proxy you simply need to set a couple config options after you
 
 You need to enable the proxy and set the host and port configuration options. If you are using the default settings you
 should only need to set `bitcoin-s.proxy.enabled = true`.
+These modifications need to be made to `$HOME/.bitcoin-s/bitcoin-s.conf` file.
+Create this file if it does not exist.
 
 ```$xslt
 bitcoin-s {
@@ -86,7 +98,7 @@ CookieAuthFileGroupReadable 1
 ```
 
 Add or uncomment those, save, and restart Tor (usually `systemctl restart tor`
-or `sudo systemctl restart tor` on most systemd-based systems, including recent Debian and Ubuntu, or just restart the
+or `sudo systemctl restart tor` on most systemd-based systems, including recent Debian and Ubuntu, `brew services restart tor` on mac osx, or just restart the
 computer).
 
 On some systems (such as Arch Linux), you may also need to add the following line:
@@ -107,6 +119,8 @@ After changing these settings, you will need to restart your computer.
 
 You need to enable tor and set the control option, `127.0.0.1:9051` is the default. If you are using the default
 settings you should only need to set `bitcoin-s.tor.enabled = true`.
+These modifications need to be made to `$HOME/.bitcoin-s/bitcoin-s.conf` file.
+Create this file if it does not exist.
 
 ```$xslt
 bitcoin-s {

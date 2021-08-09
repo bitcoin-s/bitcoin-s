@@ -3,10 +3,10 @@ package org.bitcoins.server
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.file.FileUtil
+import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.core.util.StartStopAsync
-import org.bitcoins.db.AppConfig
-import org.bitcoins.db.util.ServerArgParser
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig

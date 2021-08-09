@@ -25,6 +25,11 @@
     -fx-text-fill: red;
 }
 
+/* Non-editable TextField to look like Label */
+.no-text-input-readonly-style .text-input:readonly {
+   -fx-background-color: transparent;
+}
+
 .titulo {
     -fx-font-weight: bold;
     -fx-font-size: 18px;
@@ -82,4 +87,18 @@
     -fx-border-style: solid none none none;
     -fx-border-width: 1;
     -fx-border-color: black;
+}
+
+/* New Offer Dialog */
+.enum-outcome-textfield, .numeric-outcome-textfield {
+    -fx-pref-width: 120;
+    -fx-alignment: center-right;
+}
+.enum-payout-textfield, .numeric-payout-textfield {
+    -fx-pref-width: 120;
+    -fx-alignment: center-right;
+}
+.rounding-outcome-textfield, .rounding-level-textfield {
+    -fx-pref-width: 120;
+    -fx-alignment: center-right;
 }
