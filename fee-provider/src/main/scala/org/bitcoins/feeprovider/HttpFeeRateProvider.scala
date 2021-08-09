@@ -1,7 +1,6 @@
 package org.bitcoins.feeprovider
 
 import java.time.{Duration, Instant}
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, Uri}
@@ -9,16 +8,20 @@ import akka.util.ByteString
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.tor.{Socks5ClientTransport, Socks5ProxyParams}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.Try
 
 object HttpFeeRateProvider {
 
-  def makeApiCall(uri: Uri)(implicit system: ActorSystem): Future[String] = {
+  def makeApiCall(uri: Uri, proxyParam: Option[Socks5ProxyParams])(implicit
+      system: ActorSystem): Future[String] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
-    Http()
-      .singleRequest(HttpRequest(uri = uri))
+    val connectionPoolSettings =
+      Socks5ClientTransport.createConnectionPoolSettings(proxyParam)
+    Http(system)
+      .singleRequest(HttpRequest(uri = uri), settings = connectionPoolSettings)
       .flatMap(response =>
         response.entity.dataBytes
           .runFold(ByteString.empty)(_ ++ _)
@@ -33,9 +36,11 @@ abstract class HttpFeeRateProvider[T <: FeeUnit] extends FeeRateApi {
 
   protected def converter(str: String): Try[T]
 
+  protected def proxyParams: Option[Socks5ProxyParams]
+
   def getFeeRate: Future[T] = {
     HttpFeeRateProvider
-      .makeApiCall(uri)
+      .makeApiCall(uri, proxyParams)
       .flatMap(ret => Future.fromTry(converter(ret)))(system.dispatcher)
   }
 }

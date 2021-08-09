@@ -476,7 +476,7 @@ lazy val feeProvider = project
     name := "bitcoin-s-fee-provider",
     libraryDependencies ++= Deps.feeProvider.value
   )
-  .dependsOn(coreJVM, appCommons)
+  .dependsOn(coreJVM, appCommons, tor)
 
 lazy val feeProviderTest = project
   .in(file("fee-provider-test"))
@@ -675,7 +675,7 @@ lazy val wallet = project
     name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
-  .dependsOn(coreJVM, appCommons, dbCommons, keyManager, asyncUtilsJVM)
+  .dependsOn(coreJVM, appCommons, dbCommons, keyManager, asyncUtilsJVM, tor)
 
 lazy val walletTest = project
   .in(file("wallet-test"))
@@ -747,7 +747,7 @@ lazy val oracleExplorerClient = project
     name := "bitcoin-s-oracle-explorer-client",
     libraryDependencies ++= Deps.oracleExplorerClient
   )
-  .dependsOn(coreJVM, appCommons, testkit % "test->test")
+  .dependsOn(coreJVM, appCommons, tor, testkit % "test->test")
 
 lazy val scripts = project
   .in(file("app/scripts"))
