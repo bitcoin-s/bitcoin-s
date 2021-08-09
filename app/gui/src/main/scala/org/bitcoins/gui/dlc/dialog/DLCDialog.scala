@@ -10,7 +10,7 @@ import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout.GridPane
-import scalafx.stage.{Window}
+import scalafx.stage.Window
 
 import java.io.File
 
