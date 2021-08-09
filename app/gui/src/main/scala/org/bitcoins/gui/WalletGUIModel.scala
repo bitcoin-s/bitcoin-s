@@ -183,7 +183,7 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
 
   /** Retrieves the tor endpoint address
     */
-  def updateTorAddress() = {
+  def updateTorAddress(): Unit = {
     ConsoleCli.exec(GetDLCHostAddress, GlobalData.consoleCliConfig) match {
       case Failure(err) =>
         logger.error(s"Error fetching tor address", err)
