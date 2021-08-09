@@ -33,7 +33,6 @@ import java.util.concurrent.{
 }
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.Try
 
 /** Configuration for the Bitcoin-S wallet
   * @param directory The data directory of the wallet
