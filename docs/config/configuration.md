@@ -128,7 +128,9 @@ bitcoin-s {
     bitcoind-rpc {
         # bitcoind rpc username
         rpcuser = user
-        # bitcoind rpc password
+        # bitcoind rpc password.
+        # If you're generating the rpc password using rpcauth.py, then there are chances that the password generated might contain an '='.
+        # Please refrain from using such passwords.
         rpcpassword = password
 
         # Binary location of bitcoind
@@ -151,6 +153,9 @@ bitcoin-s {
         zmqpubhashtx = "tcp://127.0.0.1:28330"
         # bitcoind zmq raw block
         zmqpubhashblock = "tcp://127.0.0.1:28331"
+        
+        #If you have bitcoind already running on your system, you can set isRemote to true. By default, Bitcoin-S will start the binary for you.
+        isRemote = false
     }
 
     node {
