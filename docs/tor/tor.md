@@ -88,13 +88,14 @@ config, as well as have tor configured for it.
 ### Configuring Tor
 
 You may need to set up the Tor Control Port. On Linux distributions there may be some or all of the following settings
-in `/etc/tor/torrc` for linux or `/opt/homebrew/etc/tor/torcc` for mac, generally commented out by default (if not, add
+in `/etc/tor/torrc` for linux or `/opt/homebrew/etc/tor/torrc` for mac, generally commented out by default (if not, add
 them):
 
 ```
 ControlPort 9051
 CookieAuthentication 1
 CookieAuthFileGroupReadable 1
+CookieAuthFile /usr/local/var/tor/control_auth_cookie
 ```
 
 Add or uncomment those, save, and restart Tor (usually `systemctl restart tor`
@@ -111,6 +112,10 @@ You may also need permissions for the auth cookie file, this can be done doing
 
 ```bash
 sudo usermod -a -G debian-tor $USER
+```
+or on mac
+```
+sudo chmod 755 /usr/local/var/tor
 ```
 
 After changing these settings, you will need to restart your computer.
@@ -145,7 +150,7 @@ bitcoin-s {
 Alternatively, you can manually create a tor hidden service.
 
 You can also manually configure your node to be reachable from the Tor network. Add these lines to
-your `/etc/tor/torrc` (or equivalent config file, mac is located at `/opt/homebrew/etc/tor/torcc`):
+your `/etc/tor/torrc` (or equivalent config file, mac is located at `/opt/homebrew/etc/tor/torrc`):
 
 ```
 HiddenServiceDir /var/lib/tor/dlc-service/
