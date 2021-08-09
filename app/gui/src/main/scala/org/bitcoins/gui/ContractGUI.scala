@@ -60,7 +60,7 @@ class ContractGUI(glassPane: VBox) {
       val event = model.addEvent(this.text.value.trim)
       event match {
         case Some(tup) =>
-          this.clear()
+          clearEventTF()
           eventTableView.sort()
           // Set focus on new item
           eventTableView.getSelectionModel().select(tup)
@@ -69,6 +69,10 @@ class ContractGUI(glassPane: VBox) {
         case None =>
       }
     }
+  }
+
+  private def clearEventTF(): Unit = {
+    addEventTF.clear()
   }
 
   lazy val addEventHBox = new HBox {
@@ -81,9 +85,13 @@ class ContractGUI(glassPane: VBox) {
     promptText = "Contract Hex"
     onKeyTyped = _ => {
       val bool = onContractAdded(text.value.trim, None)
-      if (bool) this.clear() // Clear on valid data
+      if (bool) clearContractTF() // Clear on valid data
       ()
     }
+  }
+
+  private def clearContractTF(): Unit = {
+    addContractTF.clear()
   }
 
   private lazy val fileChooserButton = GUIUtil.getFileChooserButton(file => {
@@ -145,7 +153,7 @@ class ContractGUI(glassPane: VBox) {
 
       val removeContract: MenuItem = new MenuItem("Remove Contract") {
         onAction = _ => {
-          val selected = selectionModel.value.getSelectedItem
+          val selected = selectionModel().getSelectedItem
           model.onRemoveContract(selected._1, selected._2)
         }
       }
@@ -155,7 +163,7 @@ class ContractGUI(glassPane: VBox) {
       }
 
       onMouseClicked = _ => {
-        val i = this.getSelectionModel.getSelectedItem
+        val i = selectionModel().getSelectedItem
         if (i != null) {
           showCreateOfferPane(i._1, i._2)
         }
