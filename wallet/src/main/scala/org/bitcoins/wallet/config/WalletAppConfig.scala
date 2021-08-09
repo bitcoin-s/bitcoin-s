@@ -290,11 +290,12 @@ case class WalletAppConfig(
         ()
       case None =>
         logger.info(s"Starting wallet rebroadcast task")
+        val initDelay = 60
         val interval = rebroadcastFrequency.toSeconds
 
         val future =
           scheduler.scheduleAtFixedRate(RebroadcastTransactionsRunnable(wallet),
-                                        interval,
+                                        initDelay,
                                         interval,
                                         TimeUnit.SECONDS)
         rebroadcastTransactionsCancelOpt = Some(future)
@@ -402,7 +403,12 @@ object WalletAppConfig
 
       // Make sure broadcasting completes
       // Wrap in try in case of spurious failure
-      Try(Await.result(f, 60.seconds))
+      try {
+        Await.result(f, 60.seconds)
+      } catch {
+        case scala.util.control.NonFatal(exn) =>
+          logger.error(s"Failed to broadcast txs", exn)
+      }
       ()
     }
   }
