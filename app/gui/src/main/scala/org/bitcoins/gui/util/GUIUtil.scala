@@ -7,6 +7,7 @@ import scalafx.beans.property.StringProperty
 import scalafx.scene.{Parent, Scene}
 import scalafx.scene.control.{Button, TextField, Tooltip}
 import scalafx.scene.image.{Image, ImageView}
+import scalafx.scene.input.{KeyCode, KeyCodeCombination, KeyCombination}
 import scalafx.scene.layout.{Priority, Region}
 import scalafx.stage.{FileChooser, Stage}
 import scalafx.stage.FileChooser.ExtensionFilter
@@ -155,6 +156,16 @@ object GUIUtil {
       title = windowTitle
       scene = windowScene
       // Icon?
+    }
+    if (Properties.isMac || Properties.isLinux) {
+      windowScene.accelerators.put(
+        new KeyCodeCombination(KeyCode.W, KeyCombination.ShortcutDown),
+        () => stage.close())
+    }
+    if (Properties.isWin || Properties.isLinux) {
+      windowScene.accelerators.put(
+        new KeyCodeCombination(KeyCode.F4, KeyCombination.AltDown),
+        () => stage.close())
     }
     stage
   }
