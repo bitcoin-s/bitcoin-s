@@ -1,6 +1,5 @@
 package org.bitcoins.gui.dlc
 
-import javafx.event.{ActionEvent, EventHandler}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.gui.TaskRunner
 import org.bitcoins.gui.util.GUIUtil
@@ -29,9 +28,7 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
   private val offerButton = new Button {
     text = "Offer"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onOffer()
-    }
+    onAction = _ => model.onOffer()
     tooltip = Tooltip(
       "Initiates a DLC with the given oracle and contract parameters, generating an Offer message.")
     tooltip.value.setShowDelay(new javafx.util.Duration(100))
@@ -39,27 +36,21 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
   private val acceptButton = new Button {
     text = "Accept"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onAccept()
-    }
+    onAction = _ => model.onAccept()
     tooltip = Tooltip("In response to an Offer, generates an Accept message.")
     tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val signButton = new Button {
     text = "Sign"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onSign()
-    }
+    onAction = _ => model.onSign()
     tooltip = Tooltip("In response to an Accept, generates a Sign message.")
     tooltip.value.setShowDelay(new javafx.util.Duration(100))
   }
 
   private val broadcastDLCButton = new Button {
     text = "Broadcast DLC"
-    onAction = new EventHandler[ActionEvent] {
-      override def handle(event: ActionEvent): Unit = model.onBroadcastDLC()
-    }
+    onAction = _ => model.onBroadcastDLC()
     tooltip = Tooltip(
       "In response to a Sign, saves signatures and broadcasts the funding transaction.")
     tooltip.value.setShowDelay(new javafx.util.Duration(100))
@@ -114,18 +105,15 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
   }
 
   val exportResultButton: Button = new Button("Export Result") {
-    onAction = _ => {
+    onAction = _ =>
       GUIUtil.showSaveDialog("Result", Some(resultTextArea.text.value), None)
-    }
   }
 
   val copyResultButton: Button = new Button("Copy Result") {
-    onAction = _ => {
-      GUIUtil.setStringToClipboard(resultTextArea.text.value)
-    }
+    onAction = _ => GUIUtil.setStringToClipboard(resultTextArea.text.value)
   }
 
-  val resultButtonHBox: HBox = new HBox() {
+  val resultButtonHBox: HBox = new HBox {
     spacing = 10
     children = Vector(exportResultButton, copyResultButton)
   }
