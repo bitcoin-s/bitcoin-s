@@ -12,6 +12,7 @@ import akka.util.ByteString
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonReaders._
+import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
@@ -31,7 +32,6 @@ import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.network.NodeUri
 import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.bitcoins.rpc.util.NativeProcessFactory
 import org.bitcoins.tor.Socks5ClientTransport
 import play.api.libs.json._
 

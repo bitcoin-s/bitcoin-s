@@ -7,6 +7,7 @@ import grizzled.slf4j.Logging
 import io.grpc.{CallCredentials, Metadata}
 import lnrpc._
 import org.bitcoins.commons.jsonmodels.lnd._
+import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -25,7 +26,6 @@ import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
 import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.config.LndInstance
-import org.bitcoins.rpc.util.NativeProcessFactory
 import scodec.bits.ByteVector
 import signrpc.TxOut
 import walletrpc.{SendOutputsRequest, WalletKitClient}

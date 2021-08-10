@@ -25,6 +25,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.config.ZmqConfig
 import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
+import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -41,6 +42,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   implicit lazy val dlcConf: DLCAppConfig = conf.dlcConf
   implicit lazy val dlcNodeConf: DLCNodeAppConfig = conf.dlcNodeConf
   implicit lazy val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
+  implicit lazy val torConf: TorAppConfig = conf.torConf
 
   override def start(): Future[Unit] = {
     val startedConfigF = conf.start()
@@ -54,6 +56,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     for {
       _ <- startedConfigF
+
+      _ <-
+        if (torConf.enabled) {
+          val tor = torConf.createClient
+          tor.startBinary()
+        } else Future.unit
+
       start <- {
         nodeConf.nodeType match {
           case _: InternalImplementationNodeType =>

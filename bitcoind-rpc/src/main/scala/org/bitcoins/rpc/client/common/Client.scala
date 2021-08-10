@@ -12,6 +12,7 @@ import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.config._
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.util.StartStopAsync
@@ -22,7 +23,6 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
   PasswordBased
 }
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
-import org.bitcoins.rpc.util.NativeProcessFactory
 import org.bitcoins.tor.Socks5ClientTransport
 import play.api.libs.json._
 

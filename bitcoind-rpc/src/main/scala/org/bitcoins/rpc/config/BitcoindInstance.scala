@@ -1,6 +1,7 @@
 package org.bitcoins.rpc.config
 
 import grizzled.slf4j.Logging
+import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.api.commons.InstanceFactory
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.rpc.client.common.BitcoindVersion
@@ -107,19 +108,11 @@ object BitcoindInstance extends InstanceFactory[BitcoindInstance] {
   }
 
   lazy val DEFAULT_BITCOIND_LOCATION: File = {
-
-    def findExecutableOnPath(name: String): Option[File] =
-      sys.env
-        .getOrElse("PATH", "")
-        .split(File.pathSeparator)
-        .map(directory => new File(directory, name))
-        .find(file => file.isFile && file.canExecute)
-
     val cmd =
       if (Properties.isWin) {
-        findExecutableOnPath("bitcoind.exe")
+        NativeProcessFactory.findExecutableOnPath("bitcoind.exe")
       } else {
-        findExecutableOnPath("bitcoind")
+        NativeProcessFactory.findExecutableOnPath("bitcoind")
       }
 
     cmd.getOrElse(
