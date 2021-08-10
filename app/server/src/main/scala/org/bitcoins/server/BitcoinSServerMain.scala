@@ -11,6 +11,7 @@ import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.DLCNode
@@ -28,6 +29,7 @@ import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
+import java.net.{InetAddress, UnknownHostException}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
@@ -88,7 +90,52 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
 
     val peerSockets = {
-      nodeConf.peers.map(
+      val allPeers = {
+        if (nodeConf.network == MainNet) {
+          val dnsSeeds = Vector(
+            "seed.bitcoin.sipa.be",
+            "seed.bitcoin.sipa.be",
+            "seed.bitcoin.sipa.be",
+            "seed.bitcoin.sipa.be",
+            "seed.bitcoin.sipa.be",
+            "seed.bitcoin.sipa.be",
+            "seed.bitcoin.sipa.be",
+            "seed.bitcoin.sipa.be",
+            "seed.bitcoin.sipa.be",
+            "seed.bitcoin.sipa.be",
+            "seed.bitcoin.sipa.be",
+            "dnsseed.bluematt.me",
+            "dnsseed.bitcoin.dashjr.org",
+            "seed.bitcoinstats.com",
+            "seed.bitcoin.jonasschnelli.ch",
+            "seed.btc.petertodd.org",
+            "seed.bitcoin.sprovoost.nl",
+            "dnsseed.emzy.de",
+            "seed.bitcoin.wiz.biz"
+          )
+
+          val peersFromSeed = dnsSeeds.flatMap(seed => {
+            try {
+              InetAddress
+                .getAllByName(seed)
+            } catch {
+              case _: UnknownHostException =>
+                logger.info(s"DNS seed $seed is unavailable")
+                Vector()
+            }
+          })
+
+          val onlinePeers = peersFromSeed.distinct
+            .filter(_.isReachable(500))
+            .map(_.getHostAddress)
+
+          nodeConf.peers.appendedAll(onlinePeers)
+        } else {
+          nodeConf.peers
+        }
+      }
+
+      allPeers.map(
         NetworkUtil.parseInetSocketAddress(_, nodeConf.network.port)
       )
     }

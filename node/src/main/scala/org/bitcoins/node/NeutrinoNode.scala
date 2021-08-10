@@ -34,7 +34,7 @@ case class NeutrinoNode(
 
   override def chainAppConfig: ChainAppConfig = chainConfig
 
-  override val peers: Vector[Peer] = nodePeer
+  nodePeer.foreach(addPeer)
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 
@@ -52,6 +52,9 @@ case class NeutrinoNode(
       _ <- randomPeerMsgSenderWithCompactFilters
         .sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
     } yield {
+      logger.info(s"All peers $peers")
+      logger.info(
+        s"Peers with compact filters ${peers.filter(peerData(_).serviceIdentifier.nodeCompactFilters)}")
       node.asInstanceOf[NeutrinoNode]
     }
 

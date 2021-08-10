@@ -30,6 +30,7 @@ import org.bitcoins.node.networking.peer.{
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Random, Success}
 
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
@@ -44,24 +45,62 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def executionContext: ExecutionContext = system.dispatcher
 
-  val peers: Vector[Peer]
+  def peers: Vector[Peer] = peerData.keys.toVector
 
-  private val _peerServices: mutable.Map[Peer, ServiceIdentifier] =
-    mutable.Map.empty
+  case class PeerData(peer: Peer) {
 
-  def peerServices: Map[Peer, ServiceIdentifier] = _peerServices.toMap
+    lazy val peerMessageSender: PeerMessageSender = PeerMessageSender(client)
 
-  def setPeerServices(
-      peer: Peer,
-      serviceIdentifier: ServiceIdentifier): Unit = {
-    _peerServices.put(peer, serviceIdentifier)
+    lazy val client: P2PClient = {
+      val peerMessageReceiver =
+        PeerMessageReceiver.newReceiver(node = Node.this, peer = peer)
+      P2PClient(context = system,
+                peer = peer,
+                peerMessageReceiver = peerMessageReceiver)
+    }
+
+    private var _serviceIdentifier: ServiceIdentifier = _
+
+    def serviceIdentifier: ServiceIdentifier = {
+      _serviceIdentifier match {
+        case service: ServiceIdentifier => service
+        case _ =>
+          throw new RuntimeException(
+            "Tried to user service without initializing.")
+      }
+    }
+
+    def setServiceIdentifier(serviceIdentifier: ServiceIdentifier): Unit = {
+      _serviceIdentifier = serviceIdentifier
+    }
+  }
+
+  def addPeer(peer: Peer): Unit = {
+    logger.info(s"Adding peer $peer")
+    if (!_peerData.contains(peer)) {
+      _peerData.put(peer, PeerData(peer))
+    }
     ()
   }
 
+  def removePeer(peer: Peer): Unit = {
+    if (_peerData.contains(peer)) {
+      _peerData.remove(peer)
+    }
+    ()
+  }
+
+  private val _peerData: mutable.Map[Peer, PeerData] =
+    mutable.Map.empty
+
+  def peerData: Map[Peer, PeerData] = _peerData.toMap
+
   def randomPeerMsgSenderWithService(
       f: ServiceIdentifier => Boolean): PeerMessageSender = {
-    val filteredPeers =
-      peerServices.filter(p => f(p._2)).keys.toVector
+    val filteredPeers = peerData
+      .filter(p => f(p._2.serviceIdentifier))
+      .keys
+      .toVector
     if (filteredPeers.isEmpty)
       throw new RuntimeException("No peers supporting compact filters!")
     val peer = filteredPeers(Random.nextInt(filteredPeers.length))
@@ -107,21 +146,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
     * the [[ChainApi chain api]] is updated inside of the p2p client
     */
-  lazy val clients: Vector[P2PClient] = {
-    val peerMsgRecvs: Vector[PeerMessageReceiver] =
-      peers.map(x => PeerMessageReceiver.newReceiver(node = this, peer = x))
-    val zipped = peers.zip(peerMsgRecvs)
-    val p2p = zipped.map { case (peer, peerMsgRecv) =>
-      P2PClient(context = system,
-                peer = peer,
-                peerMessageReceiver = peerMsgRecv)
-    }
-    p2p
-  }
+  def clients: Vector[P2PClient] = peerData.values.map(_.client).toVector
 
-  lazy val peerMsgSenders: Vector[PeerMessageSender] = {
-    clients.map(PeerMessageSender(_))
-  }
+  def peerMsgSenders: Vector[PeerMessageSender] =
+    peerData.values.map(_.peerMessageSender).toVector
 
   /** Sends the given P2P to our peer.
     * This method is useful for playing around
@@ -159,30 +187,37 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val chainApiF = startConfsF.flatMap(_ => chainApiFromDb())
 
     val startNodeF = {
-      val isInitializedFs = peerMsgSenders.indices.map { idx =>
-        peerMsgSenders(idx).connect()
-        val isInitializedF = for {
-          _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized(idx),
-                                              maxTries = 200,
-                                              interval = 250.millis)
-        } yield ()
-        isInitializedF.failed.foreach(err =>
-          logger.error(
-            s"Failed to connect with peer=${peers(idx)} with err=$err"))
-        isInitializedF.map { _ =>
-          nodeAppConfig.nodeType match {
-            case NodeType.NeutrinoNode => {
-              if (peerServices(peers(idx)).nodeCompactFilters) {
-                logger.info(s"Our peer=${peers(idx)} has been initialized")
-              } else {
-                logger.info(
-                  s"Our peer=${peers(idx)} does not support compact filters. Disconnecting.")
-                peerMsgSenders(idx).disconnect()
+      logger.info(peers)
+      val isInitializedFs = peers.map { peer =>
+        peerData(peer).peerMessageSender.connect()
+        val isInitializedF =
+          for {
+            _ <- AsyncUtil
+              .retryUntilSatisfiedF(
+                () => peerData(peer).peerMessageSender.isInitialized(),
+                maxTries = 50,
+                interval = 250.millis)
+              .recover { case NonFatal(_) =>
+                logger.info(s"Failed to initialize $peer")
+                peerData(peer).peerMessageSender.disconnect()
+                removePeer(peer)
               }
+          } yield ()
+        isInitializedF.map { _ =>
+          if (peerData.contains(peer)) {
+            nodeAppConfig.nodeType match {
+              case NodeType.NeutrinoNode =>
+                if (peerData(peer).serviceIdentifier.nodeCompactFilters) {
+                  logger.info(s"Our peer=$peer has been initialized")
+                } else {
+                  logger.info(
+                    s"Our peer=$peer does not support compact filters. Disconnecting.")
+                  peerData(peer).peerMessageSender.disconnect()
+                }
+              case NodeType.SpvNode         =>
+              case NodeType.BitcoindBackend =>
+              case NodeType.FullNode        =>
             }
-            case NodeType.SpvNode         =>
-            case NodeType.BitcoindBackend =>
-            case NodeType.FullNode        =>
           }
         }
       }

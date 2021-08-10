@@ -149,7 +149,7 @@ class PeerMessageReceiver(
             val newState = good.withVersionMsg(versionMsg)
 
             sender.sendVerackMessage()
-            node.setPeerServices(peer, versionMsg.services)
+            node.peerData(peer).setServiceIdentifier(versionMsg.services)
 
             val newRecv = toState(newState)
 
