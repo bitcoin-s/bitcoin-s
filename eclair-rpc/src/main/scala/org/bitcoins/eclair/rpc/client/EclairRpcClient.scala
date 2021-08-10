@@ -32,6 +32,7 @@ import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.network.NodeUri
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.NativeProcessFactory
+import org.bitcoins.tor.Socks5ClientTransport
 import play.api.libs.json._
 
 import java.io.File
@@ -686,9 +687,14 @@ class EclairRpcClient(
     }
   }
 
+  private lazy val http = Http(system)
+
+  private lazy val httpConnectionPoolSettings =
+    Socks5ClientTransport.createConnectionPoolSettings(instance.rpcUri,
+                                                       instance.proxyParams)
+
   private def sendRequest(req: HttpRequest): Future[HttpResponse] = {
-    val respF = Http(system).singleRequest(req)
-    respF
+    http.singleRequest(req, settings = httpConnectionPoolSettings)
   }
 
   private def buildRequest(

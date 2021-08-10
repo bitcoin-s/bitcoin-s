@@ -7,6 +7,7 @@ import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.feeprovider.MempoolSpaceTarget._
+import org.bitcoins.tor.Socks5ProxyParams
 import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import scala.util.{Failure, Success, Try}
@@ -16,7 +17,9 @@ import scala.util.{Failure, Success, Try}
   */
 case class MempoolSpaceProvider(
     target: MempoolSpaceTarget,
-    network: BitcoinNetwork)(implicit override val system: ActorSystem)
+    network: BitcoinNetwork,
+    proxyParams: Option[Socks5ProxyParams])(implicit
+    override val system: ActorSystem)
     extends CachedHttpFeeRateProvider[SatoshisPerVirtualByte] {
 
   override val uri: Uri = network match {
@@ -53,16 +56,21 @@ case class MempoolSpaceProvider(
 
 object MempoolSpaceProvider extends FeeProviderFactory[MempoolSpaceProvider] {
 
-  override def fromBlockTarget(blocks: Int)(implicit
+  override def fromBlockTarget(
+      blocks: Int,
+      proxyParams: Option[Socks5ProxyParams])(implicit
       system: ActorSystem): MempoolSpaceProvider = {
     val target = MempoolSpaceTarget.fromBlockTarget(blocks)
-    MempoolSpaceProvider(target, MainNet)
+    MempoolSpaceProvider(target, MainNet, proxyParams)
   }
 
-  def fromBlockTarget(blocks: Int, network: BitcoinNetwork)(implicit
+  def fromBlockTarget(
+      blocks: Int,
+      network: BitcoinNetwork,
+      proxyParams: Option[Socks5ProxyParams])(implicit
       system: ActorSystem): MempoolSpaceProvider = {
     val target = MempoolSpaceTarget.fromBlockTarget(blocks)
-    MempoolSpaceProvider(target, network)
+    MempoolSpaceProvider(target, network, proxyParams)
   }
 }
 

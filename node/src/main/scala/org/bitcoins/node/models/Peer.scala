@@ -8,9 +8,9 @@ import java.net.InetSocketAddress
 
 case class Peer(
     socket: InetSocketAddress,
-    id: Option[Long] = None,
-    socks5ProxyParams: Option[Socks5ProxyParams] = None)
-    extends DbRowAutoInc[Peer] {
+    socks5ProxyParams: Option[Socks5ProxyParams],
+    id: Option[Long] = None
+) extends DbRowAutoInc[Peer] {
 
   override def copyWithId(id: Long): Peer = {
     this.copy(id = Some(id))
@@ -25,7 +25,7 @@ object Peer {
 
   def fromSocket(
       socket: InetSocketAddress,
-      socks5ProxyParams: Option[Socks5ProxyParams] = None): Peer = {
+      socks5ProxyParams: Option[Socks5ProxyParams]): Peer = {
     Peer(socket, socks5ProxyParams = socks5ProxyParams)
   }
 
@@ -33,7 +33,7 @@ object Peer {
     */
   def fromBitcoind(
       bitcoind: BitcoindInstance,
-      socks5ProxyParams: Option[Socks5ProxyParams] = None): Peer = {
+      socks5ProxyParams: Option[Socks5ProxyParams]): Peer = {
     val socket = new InetSocketAddress(bitcoind.uri.getHost, bitcoind.p2pPort)
     fromSocket(socket, socks5ProxyParams = socks5ProxyParams)
   }

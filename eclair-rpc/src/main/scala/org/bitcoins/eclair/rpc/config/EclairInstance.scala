@@ -4,7 +4,9 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.api.commons.InstanceFactory
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.protocol.ln.LnPolicy
+import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, ZmqConfig}
+import org.bitcoins.tor.Socks5ProxyParams
 
 import java.io.File
 import java.net.{InetSocketAddress, URI}
@@ -20,6 +22,7 @@ sealed trait EclairInstance {
   def bitcoindRpcUri: Option[URI]
   def bitcoindAuthCredentials: Option[BitcoindAuthCredentials]
   def zmqConfig: Option[ZmqConfig]
+  def proxyParams: Option[Socks5ProxyParams]
 }
 
 /** @define fromConfigDoc
@@ -38,7 +41,8 @@ object EclairInstance extends InstanceFactory[EclairInstance] {
       logbackXmlPath: Option[String],
       bitcoindRpcUri: Option[URI],
       bitcoindAuthCredentials: Option[BitcoindAuthCredentials],
-      zmqConfig: Option[ZmqConfig])
+      zmqConfig: Option[ZmqConfig],
+      proxyParams: Option[Socks5ProxyParams])
       extends EclairInstance
 
   def apply(
@@ -47,9 +51,11 @@ object EclairInstance extends InstanceFactory[EclairInstance] {
       rpcUri: URI,
       authCredentials: EclairAuthCredentials,
       logbackXmlPath: Option[String],
+      proxyParams: Option[Socks5ProxyParams],
       bitcoindRpcUri: Option[URI] = None,
       bitcoindAuthCredentials: Option[BitcoindAuthCredentials] = None,
-      zmqConfig: Option[ZmqConfig] = None): EclairInstance = {
+      zmqConfig: Option[ZmqConfig] = None
+  ): EclairInstance = {
     EclairInstanceImpl(network,
                        uri,
                        rpcUri,
@@ -57,43 +63,47 @@ object EclairInstance extends InstanceFactory[EclairInstance] {
                        logbackXmlPath,
                        bitcoindRpcUri,
                        bitcoindAuthCredentials,
-                       zmqConfig)
+                       zmqConfig,
+                       proxyParams)
   }
 
   override val DEFAULT_DATADIR: Path = Paths.get(Properties.userHome, ".eclair")
 
   override val DEFAULT_CONF_FILE: Path = DEFAULT_DATADIR.resolve("eclair.conf")
 
+  private val DefaultPort = 9735
+
   private def toInetSocketAddress(string: String): InetSocketAddress = {
-    val uri = new URI(string)
-    new InetSocketAddress(uri.getHost, uri.getPort)
+    NetworkUtil.parseInetSocketAddress(string, DefaultPort)
   }
 
   def fromDatadir(
       datadir: File = DEFAULT_DATADIR.toFile,
-      logbackXml: Option[String]): EclairInstance = {
+      logbackXml: Option[String],
+      proxyParams: Option[Socks5ProxyParams]): EclairInstance = {
     require(datadir.exists, s"${datadir.getPath} does not exist!")
     require(datadir.isDirectory, s"${datadir.getPath} is not a directory!")
 
     val eclairConf = new File(datadir.getAbsolutePath + "/eclair.conf")
 
-    fromConfFile(eclairConf, logbackXml)
+    fromConfFile(eclairConf, logbackXml, proxyParams)
 
   }
 
   override def fromConfigFile(
       file: File = DEFAULT_CONF_FILE.toFile): EclairInstance =
-    fromConfFile(file, None)
+    fromConfFile(file, None, None)
 
   def fromConfFile(
       file: File = DEFAULT_CONF_FILE.toFile,
-      logbackXml: Option[String]): EclairInstance = {
+      logbackXml: Option[String],
+      proxyParams: Option[Socks5ProxyParams]): EclairInstance = {
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
     val config = ConfigFactory.parseFile(file)
 
-    fromConfig(config, file.getParentFile, logbackXml)
+    fromConfig(config, file.getParentFile, logbackXml, proxyParams)
   }
 
   override def fromDataDir(
@@ -110,20 +120,22 @@ object EclairInstance extends InstanceFactory[EclairInstance] {
   def fromConfig(
       config: Config,
       datadir: File,
-      logbackXml: Option[String]): EclairInstance = {
-    fromConfig(config, Some(datadir), logbackXml)
+      logbackXml: Option[String],
+      proxyParams: Option[Socks5ProxyParams]): EclairInstance = {
+    fromConfig(config, Some(datadir), logbackXml, proxyParams)
   }
 
   /** $fromConfigDoc
     */
   def fromConfig(config: Config): EclairInstance = {
-    fromConfig(config, None, None)
+    fromConfig(config, None, None, None)
   }
 
   private def fromConfig(
       config: Config,
       datadir: Option[File],
-      logbackXml: Option[String]): EclairInstance = {
+      logbackXml: Option[String],
+      proxyParams: Option[Socks5ProxyParams]): EclairInstance = {
     val chain = ConfigUtil.getStringOrElse(config, "eclair.chain", "testnet")
 
     //  default conf: https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf
@@ -189,7 +201,8 @@ object EclairInstance extends InstanceFactory[EclairInstance] {
       logbackXmlPath = logbackXml,
       bitcoindRpcUri = Some(bitcoindRpcUri),
       bitcoindAuthCredentials = Some(bitcoindAuthCredentials),
-      zmqConfig = Some(zmqConfig)
+      zmqConfig = Some(zmqConfig),
+      proxyParams = proxyParams
     )
   }
 }

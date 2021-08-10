@@ -17,6 +17,7 @@ import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
+import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig.RebroadcastTransactionsRunnable
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
@@ -58,6 +59,9 @@ case class WalletAppConfig(
   protected[bitcoins] def baseDatadir: Path = directory
 
   override def appConfig: WalletAppConfig = this
+
+  lazy val torConf: TorAppConfig =
+    TorAppConfig(directory, conf: _*)
 
   private[wallet] lazy val scheduler: ScheduledExecutorService = {
     Executors.newScheduledThreadPool(

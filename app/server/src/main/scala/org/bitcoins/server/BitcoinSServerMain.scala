@@ -103,7 +103,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val nodeF = nodeConf.createNode(peers)(chainConf, system)
 
     val feeProvider = getFeeProviderOrElse(
-      MempoolSpaceProvider(HourFeeTarget, walletConf.network))
+      MempoolSpaceProvider(HourFeeTarget,
+                           walletConf.network,
+                           walletConf.torConf.socks5ProxyParams))
     //get our wallet
     val configuredWalletF = for {
       node <- nodeF
@@ -360,6 +362,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   def getFeeProviderOrElse(default: => FeeRateApi)(implicit
       system: ActorSystem,
       walletConf: WalletAppConfig): FeeRateApi = {
+    val proxyParams = walletConf.torConf.socks5ProxyParams
     val feeProviderNameOpt =
       walletConf.feeProviderNameOpt.flatMap(FeeProviderName.fromStringOpt)
     val feeProvider =
@@ -367,15 +370,17 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         case (None, None) | (None, Some(_)) =>
           default
         case (Some(BitcoinerLive), None) =>
-          BitcoinerLiveFeeRateProvider.fromBlockTarget(6)
+          BitcoinerLiveFeeRateProvider.fromBlockTarget(6, proxyParams)
         case (Some(BitcoinerLive), Some(target)) =>
-          BitcoinerLiveFeeRateProvider.fromBlockTarget(target)
+          BitcoinerLiveFeeRateProvider.fromBlockTarget(target, proxyParams)
         case (Some(BitGo), targetOpt) =>
-          BitGoFeeRateProvider(targetOpt)
+          BitGoFeeRateProvider(targetOpt, proxyParams)
         case (Some(MempoolSpace), None) =>
-          MempoolSpaceProvider(HourFeeTarget, walletConf.network)
+          MempoolSpaceProvider(HourFeeTarget, walletConf.network, proxyParams)
         case (Some(MempoolSpace), Some(target)) =>
-          MempoolSpaceProvider.fromBlockTarget(target, walletConf.network)
+          MempoolSpaceProvider.fromBlockTarget(target,
+                                               walletConf.network,
+                                               proxyParams)
         case (Some(Constant), Some(num)) =>
           ConstantFeeRateProvider(SatoshisPerVirtualByte.fromLong(num))
         case (Some(Constant), None) =>

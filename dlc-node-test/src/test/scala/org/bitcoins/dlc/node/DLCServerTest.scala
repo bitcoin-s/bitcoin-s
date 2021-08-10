@@ -60,7 +60,7 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
                           clientConnectionHandlerOpt = Some(connectionHandler)
                           clientProbe.ref
                         }))
-      client ! DLCClient.Connect(Peer(connectAddress))
+      client ! DLCClient.Connect(Peer(connectAddress, socks5ProxyParams = None))
 
       for {
         _ <- connectedAddressPromise.future

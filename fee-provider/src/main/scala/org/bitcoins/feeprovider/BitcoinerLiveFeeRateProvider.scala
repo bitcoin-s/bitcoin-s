@@ -6,11 +6,14 @@ import org.bitcoins.commons.jsonmodels.wallet.BitcoinerLiveResult
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider.validMinutes
+import org.bitcoins.tor.Socks5ProxyParams
 import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import scala.util.{Failure, Success, Try}
 
-case class BitcoinerLiveFeeRateProvider(minutes: Int)(implicit
+case class BitcoinerLiveFeeRateProvider(
+    minutes: Int,
+    proxyParams: Option[Socks5ProxyParams])(implicit
     override val system: ActorSystem)
     extends CachedHttpFeeRateProvider[SatoshisPerVirtualByte] {
 
@@ -39,7 +42,9 @@ object BitcoinerLiveFeeRateProvider
   final val validMinutes =
     Vector(30, 60, 120, 180, 360, 720, 1440)
 
-  override def fromBlockTarget(blocks: Int)(implicit
+  override def fromBlockTarget(
+      blocks: Int,
+      proxyParams: Option[Socks5ProxyParams])(implicit
       system: ActorSystem): BitcoinerLiveFeeRateProvider = {
     require(blocks > 0,
             s"Cannot have a negative or zero block target, got $blocks")
@@ -49,6 +54,6 @@ object BitcoinerLiveFeeRateProvider
     // Find closest
     val target = blockTargets.minBy(target => Math.abs(target - blocks))
 
-    BitcoinerLiveFeeRateProvider(target)
+    BitcoinerLiveFeeRateProvider(target, proxyParams)
   }
 }
