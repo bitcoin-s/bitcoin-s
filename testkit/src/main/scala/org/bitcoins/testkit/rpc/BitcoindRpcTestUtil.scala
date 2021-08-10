@@ -38,7 +38,7 @@ import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.config._
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.testkit.util.{BitcoindRpcTestClient, FileUtil}
+import org.bitcoins.testkit.util.{BitcoindRpcTestClient, FileUtil, TorUtil}
 import org.bitcoins.util.ListUtil
 
 import java.io.File
@@ -58,10 +58,6 @@ trait BitcoindRpcTestUtil extends Logging {
 
   type RpcClientAccum =
     mutable.Builder[BitcoindRpcClient, Vector[BitcoindRpcClient]]
-
-  lazy val torEnabled: Boolean = Properties
-    .envOrNone("TOR")
-    .isDefined
 
   private def newUri: URI = new URI(s"http://localhost:${RpcUtil.randomPort}")
 
@@ -127,7 +123,7 @@ trait BitcoindRpcTestUtil extends Logging {
         conf
       }
 
-    val configTor = if (torEnabled) {
+    val configTor = if (TorUtil.torEnabled) {
       config +
         """
           |[regtest]
