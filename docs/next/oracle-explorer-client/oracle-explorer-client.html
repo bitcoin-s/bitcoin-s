@@ -78,7 +78,7 @@ while the other references the <a href="https://test.oracle.suredbits.com">test 
 
 <span class="hljs-comment">//use test environment for this little example</span>
 <span class="hljs-keyword">val</span> env = <span class="hljs-type">ExplorerEnv</span>.<span class="hljs-type">Test</span>
-<span class="hljs-keyword">val</span> explorerClient = <span class="hljs-type">SbExplorerClient</span>(env)
+<span class="hljs-keyword">val</span> explorerClient = <span class="hljs-type">SbExplorerClient</span>(env, proxyParams = <span class="hljs-type">None</span>)
 
 <span class="hljs-comment">//list all announcemnts on the explorer</span>
 <span class="hljs-keyword">val</span> announcementsF: <span class="hljs-type">Future</span>[<span class="hljs-type">Vector</span>[<span class="hljs-type">SbAnnouncementEvent</span>]] = explorerClient.listAnnouncements()
