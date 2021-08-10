@@ -87,7 +87,7 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
           throw err
         }
 
-        Await.result(promise.future, 60.seconds)
+        Await.result(promise.future, 120.seconds)
       }
     )
   }
