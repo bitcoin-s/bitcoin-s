@@ -94,16 +94,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         if (nodeConf.network == MainNet) {
           val dnsSeeds = Vector(
             "seed.bitcoin.sipa.be",
-            "seed.bitcoin.sipa.be",
-            "seed.bitcoin.sipa.be",
-            "seed.bitcoin.sipa.be",
-            "seed.bitcoin.sipa.be",
-            "seed.bitcoin.sipa.be",
-            "seed.bitcoin.sipa.be",
-            "seed.bitcoin.sipa.be",
-            "seed.bitcoin.sipa.be",
-            "seed.bitcoin.sipa.be",
-            "seed.bitcoin.sipa.be",
             "dnsseed.bluematt.me",
             "dnsseed.bitcoin.dashjr.org",
             "seed.bitcoinstats.com",
