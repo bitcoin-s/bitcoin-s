@@ -1,6 +1,5 @@
 package org.bitcoins.gui
 
-//import akka.actor.ActorSystem
 import org.bitcoins.cli.CliCommand.{
   AcceptDLCCliCommand,
   AddDLCSigsAndBroadcastCliCommand,
@@ -47,10 +46,6 @@ import scala.util.{Failure, Success}
 
 class ContractGUI(glassPane: VBox) {
 
-  def fetchStartingData(): Unit = {
-    // Nothing to fetch for state yet...
-  }
-
   private[gui] lazy val model = new ContractGUIModel()
 
   private lazy val addEventTF = new TextField {
@@ -84,8 +79,8 @@ class ContractGUI(glassPane: VBox) {
     styleClass += "title-textfield"
     promptText = "Contract Hex"
     onKeyTyped = _ => {
-      val bool = onContractAdded(text.value.trim, None)
-      if (bool) clearContractTF() // Clear on valid data
+      val validAddition = onContractAdded(text.value.trim, None)
+      if (validAddition) clearContractTF() // Clear on valid data
       ()
     }
   }
@@ -96,8 +91,8 @@ class ContractGUI(glassPane: VBox) {
 
   private lazy val fileChooserButton = GUIUtil.getFileChooserButton(file => {
     val hex = Files.readAllLines(file.toPath).get(0)
-    val bool = onContractAdded(hex, Some(file))
-    if (bool) addContractTF.clear()
+    val validAddition = onContractAdded(hex, Some(file))
+    if (validAddition) clearContractTF() // Clear on valid data
   })
 
   lazy val addContractHBox = new HBox {
@@ -177,24 +172,25 @@ class ContractGUI(glassPane: VBox) {
 
   // Text paste / file browse handler
   private def onContractAdded(hex: String, file: Option[File]): Boolean = {
-    var success = true
     // Accept / Sign / Broadcast identifier
     LnMessageFactory(DLCOfferTLV).fromHexT(hex) match { // Accept
       case Success(_) =>
         showAcceptOfferPane(hex)
+        true
       case Failure(_) =>
         LnMessageFactory(DLCAcceptTLV).fromHexT(hex) match { // Sign
           case Success(_) =>
             showSignDLCPane(hex, file)
+            true
           case Failure(_) =>
             LnMessageFactory(DLCSignTLV).fromHexT(hex) match { // Broadcast
               case Success(_) =>
                 showBroadcastDLCPane(hex, file)
-              case Failure(_) => success = false // Nothing else to check for
+                true
+              case Failure(_) => false // Nothing else to check for
             }
         }
     }
-    success
   }
 
   private lazy val contractStepPane: VBox = new VBox
