@@ -2,6 +2,7 @@ package org.bitcoins.gui
 
 import org.bitcoins.cli.CliCommand.ZipDataDir
 import org.bitcoins.cli.ConsoleCli
+import org.bitcoins.gui.dlc.DLCPane
 import org.bitcoins.gui.settings.Themes
 import scalafx.application.Platform
 import scalafx.scene.control._
@@ -14,10 +15,10 @@ import scala.util.Properties
 
 object AppMenuBar {
 
-  def menuBar(model: WalletGUIModel): MenuBar = {
+  def menuBar(model: WalletGUIModel, dlcPane: DLCPane): MenuBar = {
     val menuBar = new MenuBar {
       menus = List(new FileMenu().fileMenu,
-                   new ViewMenu().viewMenu,
+                   new ViewMenu(dlcPane).viewMenu,
                    new HelpMenu(model).helpMenu)
     }
     // Use MacOS native menuing
@@ -53,10 +54,7 @@ private class FileMenu() {
 
   private val quit: MenuItem = new MenuItem("_Quit") {
     mnemonicParsing = true
-    accelerator =
-      new KeyCodeCombination(KeyCode.Q,
-                             KeyCombination.ShortcutDown
-      ) // Ctrl/Cmd + Q
+    accelerator = new KeyCodeCombination(KeyCode.Q, KeyCombination.ShortcutDown)
     onAction = _ => Platform.exit()
   }
 
@@ -67,7 +65,7 @@ private class FileMenu() {
     }
 }
 
-private class ViewMenu() {
+private class ViewMenu(dlcPane: DLCPane) {
 
   private val themeToggle: ToggleGroup = new ToggleGroup()
 
@@ -109,9 +107,15 @@ private class ViewMenu() {
     }
   }
 
+  private val dlcWindow = new MenuItem("DLC Operations") {
+    accelerator =
+      new KeyCodeCombination(KeyCode.Digit1, KeyCombination.ShortcutDown)
+    onAction = _ => dlcPane.showWindow()
+  }
+
   val viewMenu: Menu = new Menu("_View") {
     mnemonicParsing = true
-    items = List(themes)
+    items = List(themes, new SeparatorMenuItem(), dlcWindow)
   }
 }
 

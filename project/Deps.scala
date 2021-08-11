@@ -56,7 +56,7 @@ object Deps {
 
     val sourcecodeV = "0.2.7"
 
-    val scalaJsStubsV = "1.0.0"
+    val scalaJsStubsV = "1.1.0"
     // CLI deps
     val scoptV = "4.0.1"
     val sttpV = "1.7.2"
@@ -480,7 +480,8 @@ object Deps {
     List(
       Compile.akkaStream,
       Compile.akkaHttp,
-      Compile.scodec.value
+      Compile.scodec.value,
+      Compile.grizzledSlf4j
     )
   }
 

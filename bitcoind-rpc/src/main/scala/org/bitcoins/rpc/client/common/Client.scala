@@ -3,10 +3,7 @@ package org.bitcoins.rpc.client.common
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.settings.{
-  ClientConnectionSettings,
-  ConnectionPoolSettings
-}
+import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.StreamTcpException
@@ -15,6 +12,7 @@ import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.config._
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.util.StartStopAsync
@@ -25,7 +23,6 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
   PasswordBased
 }
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
-import org.bitcoins.rpc.util.NativeProcessFactory
 import org.bitcoins.tor.Socks5ClientTransport
 import play.api.libs.json._
 
@@ -331,21 +328,8 @@ trait Client
   private lazy val httpClient: HttpExt = Http(system)
 
   private lazy val httpConnectionPoolSettings: ConnectionPoolSettings =
-    instance.proxyParams match {
-      case Some(proxyParams) =>
-        val host = instance.rpcUri.getHost
-        if (!host.contains("localhost") && !host.contains("127.0.0.1")) {
-          val socks5ClientTransport = new Socks5ClientTransport(proxyParams)
-
-          val clientConnectionSettings =
-            ClientConnectionSettings(system).withTransport(
-              socks5ClientTransport)
-
-          ConnectionPoolSettings(system).withConnectionSettings(
-            clientConnectionSettings)
-        } else ConnectionPoolSettings(system)
-      case None => ConnectionPoolSettings(system)
-    }
+    Socks5ClientTransport.createConnectionPoolSettings(instance.rpcUri,
+                                                       instance.proxyParams)
 
   protected def sendRequest(req: HttpRequest): Future[HttpResponse] = {
     httpClient.singleRequest(req, settings = httpConnectionPoolSettings)

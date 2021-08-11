@@ -15,15 +15,23 @@ import org.bitcoins.explorer.model.{
   SbAnnouncementEvent
 }
 import org.bitcoins.explorer.picklers.ExplorerPicklers
+import org.bitcoins.tor.{Socks5ClientTransport, Socks5ProxyParams}
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
 
+import java.net.URI
 import scala.concurrent.Future
 
 /** A class that implements the Suredbits oracle explorer API */
-case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
+case class SbExplorerClient(
+    env: ExplorerEnv,
+    proxyParams: Option[Socks5ProxyParams])(implicit system: ActorSystem) {
   import ExplorerPicklers._
   import system.dispatcher
   private val httpClient: HttpExt = Http(system)
+
+  private val httpConnectionPoolSettings =
+    Socks5ClientTransport.createConnectionPoolSettings(new URI(env.baseUri),
+                                                       proxyParams)
 
   /** Lists all events on oracle explorer
     * @see https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f#list-all-events
@@ -132,7 +140,7 @@ case class SbExplorerClient(env: ExplorerEnv)(implicit system: ActorSystem) {
 
     val responsePayloadF: Future[String] = {
       httpClient
-        .singleRequest(httpReq)
+        .singleRequest(httpReq, settings = httpConnectionPoolSettings)
         .flatMap(response =>
           response.entity.dataBytes
             .runFold(ByteString.empty)(_ ++ _)

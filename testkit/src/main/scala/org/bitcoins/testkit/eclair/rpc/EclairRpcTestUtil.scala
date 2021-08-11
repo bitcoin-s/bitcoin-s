@@ -2,6 +2,7 @@ package org.bitcoins.testkit.eclair.rpc
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.eclair.{
   IncomingPaymentStatus,
   OutgoingPayment,
@@ -17,7 +18,6 @@ import org.bitcoins.core.protocol.ln.channel.{
 }
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
-import grizzled.slf4j.Logging
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
@@ -155,7 +155,7 @@ trait EclairRpcTestUtil extends Logging {
   def eclairInstance(
       datadir: File,
       logbackXml: Option[String]): EclairInstance = {
-    val instance = EclairInstance.fromDatadir(datadir, logbackXml)
+    val instance = EclairInstance.fromDatadir(datadir, logbackXml, None)
     instance
   }
 

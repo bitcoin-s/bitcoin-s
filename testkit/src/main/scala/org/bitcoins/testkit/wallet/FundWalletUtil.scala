@@ -12,12 +12,12 @@ import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkitcore.util.TransactionTestUtil
+import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
 import org.bitcoins.testkit.wallet.FundWalletUtil.{
   FundedTestWallet,
   FundedWallet
 }
+import org.bitcoins.testkitcore.util.TransactionTestUtil
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -71,6 +71,8 @@ trait FundWalletUtil extends Logging {
       txId <- bitcoind.sendMany(addressAmountMap)
       tx <- bitcoind.getRawTransactionRaw(txId)
       hashes <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+
+      _ <- wallet.processTransaction(tx, hashes.headOption)
     } yield (tx, hashes.head)
 
     txAndHashF.map(_ => wallet)
@@ -182,5 +184,37 @@ object FundWalletUtil extends FundWalletUtil {
         extraConfig = extraConfig)
       funded <- FundWalletUtil.fundWallet(wallet)
     } yield FundedDLCWallet(funded.wallet.asInstanceOf[DLCWallet])
+  }
+
+  def createFundedDLCWalletWithBitcoind(
+      bitcoind: BitcoindRpcClient,
+      bip39PasswordOpt: Option[String],
+      extraConfig: Option[Config] = None)(implicit
+      config: BitcoinSAppConfig,
+      system: ActorSystem): Future[FundedDLCWallet] = {
+    import system.dispatcher
+    for {
+      tmp <- BitcoinSWalletTest.createDLCWallet2Accounts(
+        nodeApi = bitcoind,
+        chainQueryApi = bitcoind,
+        bip39PasswordOpt = bip39PasswordOpt,
+        extraConfig = extraConfig)
+
+      wallet = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
+        bitcoind,
+        tmp)
+
+      funded1 <- fundAccountForWalletWithBitcoind(
+        BitcoinSWalletTest.defaultAcctAmts,
+        wallet.walletConfig.defaultAccount,
+        wallet,
+        bitcoind)
+
+      hdAccount1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
+      funded <- fundAccountForWalletWithBitcoind(BitcoinSWalletTest.account1Amt,
+                                                 hdAccount1,
+                                                 funded1,
+                                                 bitcoind)
+    } yield FundedDLCWallet(funded.asInstanceOf[DLCWallet])
   }
 }

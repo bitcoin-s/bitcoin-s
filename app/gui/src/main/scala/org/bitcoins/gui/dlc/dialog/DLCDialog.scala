@@ -10,10 +10,9 @@ import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout.GridPane
-import scalafx.stage.{FileChooser, Window}
+import scalafx.stage.Window
 
 import java.io.File
-import scala.util.Properties
 
 abstract class DLCDialog[T <: CliCommand](
     dialogTitle: String,
@@ -144,27 +143,6 @@ object DLCDialog {
   def textArea(): TextArea = {
     new TextArea {
       wrapText = true
-    }
-  }
-
-  def fileChooserButton[T](open: Boolean, handleFile: File => T): Node = {
-    new Button("Browse...") {
-      onAction = _ => {
-        val fileChooser = new FileChooser() {
-          initialDirectory = new File(Properties.userHome)
-        }
-
-        val selectedFile =
-          if (open)
-            fileChooser.showOpenDialog(null)
-          else
-            fileChooser.showSaveDialog(null)
-
-        if (selectedFile != null) {
-          handleFile(selectedFile)
-          ()
-        }
-      }
     }
   }
 
