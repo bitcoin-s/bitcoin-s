@@ -375,7 +375,7 @@ case class DataMessageHandler(
   private def handleInventoryMsg(
       invMsg: InventoryMessage,
       peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
-    logger.info(s"Received inv=${invMsg}")
+    logger.debug(s"Received inv=${invMsg}")
     val getData = GetDataMessage(invMsg.inventories.flatMap {
       case Inventory(TypeIdentifier.MsgBlock, hash) =>
         // only request the merkle block if we are spv enabled
