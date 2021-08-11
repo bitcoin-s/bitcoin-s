@@ -309,7 +309,7 @@ object DLCWalletUtil extends Logging {
       expectedOutputs: Int)(implicit ec: ExecutionContext): Future[Boolean] = {
     for {
       contractId <- getContractId(dlcA)
-      fundingTx <- dlcB.getDLCFundingTx(contractId)
+      fundingTx <- dlcB.broadcastDLCFundingTx(contractId)
       tx <-
         if (asInitiator) {
           func(dlcA)
@@ -320,6 +320,7 @@ object DLCWalletUtil extends Logging {
         if (asInitiator) dlcB.processTransaction(tx, None)
         else dlcA.processTransaction(tx, None)
       }
+      _ <- dlcA.broadcastTransaction(tx)
 
       dlcDb <- dlcA.dlcDAO.findByContractId(contractId)
       _ <- verifyProperlySetTxIds(dlcA)
