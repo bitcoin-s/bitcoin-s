@@ -66,10 +66,22 @@
     -fx-border-width: 1px;
 }
 
-/* Accordion Group heading content */
+/* Accordion TitledPane heading content */
 .small {
     -fx-font-size: 0.8em;
 }
+
+/* Accordion TitledPane heading textfield */
+.title-textfield {
+    -fx-pref-width: 90;
+}
+
+/* Adjust divider visibility and padding */
+/*
+.split-pane > .split-pane-divider {
+    -fx-padding: 0;
+}
+*/
 
 /* Right content area */
 .scroll-pane {
