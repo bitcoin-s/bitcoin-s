@@ -1159,9 +1159,8 @@ abstract class DLCWallet
       tx <- getDLCFundingTx(contractId)
       _ = logger.info(
         s"Broadcasting funding transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}")
-      _ <- broadcastTransaction(tx)
-
       _ <- updateDLCState(contractId, DLCState.Broadcasted)
+      _ <- broadcastTransaction(tx)
     } yield tx
   }
 
