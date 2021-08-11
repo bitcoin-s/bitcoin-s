@@ -1404,6 +1404,15 @@ case class CETSignaturesV0TLV(sigs: Vector[ECAdaptorSignature])
   override val value: ByteVector = {
     bigSizePrefixedList(sigs)
   }
+
+  override def toString: String = {
+    if (sigs.length <= 5) {
+      super.toString
+    } else {
+      s"CETSignaturesV0TLV(sigs=${sigs.take(
+        2)}..., omitting remainingSigs of length=${sigs.length - 2})"
+    }
+  }
 }
 
 object CETSignaturesV0TLV extends TLVFactory[CETSignaturesV0TLV] {
