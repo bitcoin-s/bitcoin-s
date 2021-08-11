@@ -38,6 +38,7 @@ class BitcoindConfigPane(
   }
   GUIUtil.setNumericInput(portTF)
 
+<<<<<<< HEAD
   private val rpcUserTF: TextField = new TextField {
     text = Try(appConfig.rpcUser).getOrElse("")
     minWidth = 300
@@ -45,6 +46,15 @@ class BitcoindConfigPane(
 
   private val rpcPasswordTF: TextField = new TextField {
     text = Try(appConfig.rpcPassword).getOrElse("")
+=======
+  private val rpcUserTF: TextField = new TextField() {
+    text = appConfig.rpcUser.getOrElse("")
+    minWidth = 300
+  }
+
+  private val rpcPasswordTF: TextField = new TextField() {
+    text = appConfig.rpcPassword.getOrElse("")
+>>>>>>> bug fix in BitcoindConfigPane
     minWidth = 300
   }
 
