@@ -9,7 +9,7 @@ import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.tor.CachedTor
-import org.bitcoins.testkit.util.BitcoinSActorFixtureWithDLCWallet
+import org.bitcoins.testkit.util.{BitcoinSActorFixtureWithDLCWallet, TorUtil}
 import org.bitcoins.testkit.util.TorUtil._
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.tor.{Socks5ProxyParams, TorController, TorProtocolHandler}
@@ -30,7 +30,9 @@ class DLCServerTorTest
   implicit val conf: BitcoinSAppConfig = getFreshConfig
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedDLCWallet(test, getBIP39PasswordOpt())
+    if (TorUtil.torEnabled) {
+      withFundedDLCWallet(test, getBIP39PasswordOpt())
+    } else FutureOutcome.succeeded
   }
 
   it must "send/receive Ping and Pong TLVs over Tor" in { fundedDLCWallet =>

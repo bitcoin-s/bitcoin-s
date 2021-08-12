@@ -42,16 +42,4 @@ trait CachedTor {
     }
     ()
   }
-
-  override def afterAll(): Unit = {
-    if (isTorStarted.get()) {
-      // if it was used, shut down the cached tor
-      val stoppedF = for {
-        tor <- torF
-        _ <- tor.stopBinary()
-      } yield ()
-
-      Await.result(stoppedF, duration)
-    } else () //do nothing since tor wasn't used
-  }
 }
