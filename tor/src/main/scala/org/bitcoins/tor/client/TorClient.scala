@@ -132,9 +132,7 @@ object TorClient extends Logging {
         Files.copy(stream, writePath, StandardCopyOption.REPLACE_EXISTING)
       }
 
-      // set tor/tor.exe file as executable
-      //executableFileName.setExecutable(true)
-
+      //set files as executable
       torBundle.executables.foreach { f =>
         val executable = datadir.resolve(f)
         executable.toFile.setExecutable(true)
