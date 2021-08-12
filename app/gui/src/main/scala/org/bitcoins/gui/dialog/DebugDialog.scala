@@ -1,5 +1,6 @@
 package org.bitcoins.gui.dialog
 
+import grizzled.slf4j.Logging
 import org.bitcoins.gui.GlobalData
 import scalafx.Includes._
 import scalafx.scene.control.{Button, ButtonType, Dialog}
@@ -11,7 +12,7 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 import scala.util.Properties
 
-object DebugDialog {
+object DebugDialog extends Logging {
 
   private val LOGFILE_NAME = "bitcoin-s.log"
 
@@ -44,8 +45,16 @@ object DebugDialog {
             if (d.isSupported(Desktop.Action.OPEN)) {
               // Open file in default log reader per OS
               d.open(new File(path.toString))
+            } else {
+              logger.error("Desktop.Action.OPEN on log file not supported")
             }
+          } else {
+            logger.error(
+              "This platform is non-Linux or does not support Desktop")
           }
+        } else {
+          logger.error(
+            s"Expected log file location does not exist ${path.toString}")
         }
       }
     }
