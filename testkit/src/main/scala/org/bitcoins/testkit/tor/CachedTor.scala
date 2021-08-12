@@ -2,7 +2,7 @@ package org.bitcoins.testkit.tor
 
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.util.BitcoinSAkkaAsyncTest
+import org.bitcoins.testkit.util.{BitcoinSAkkaAsyncTest, TorUtil}
 import org.bitcoins.testkit.util.TorUtil.verifyTorEnabled
 import org.bitcoins.tor.client.TorClient
 import org.bitcoins.tor.config.TorAppConfig
@@ -37,7 +37,7 @@ trait CachedTor {
   }
 
   override def beforeAll(): Unit = {
-    if (!isTorStarted.get()) {
+    if (TorUtil.torEnabled && !isTorStarted.get()) {
       Await.result(torF, duration)
     }
     ()
