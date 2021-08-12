@@ -213,6 +213,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
                   peerData(peer).peerMessageSender.disconnect()
                 }
               case NodeType.SpvNode =>
+              case NodeType.BitcoindBackend =>
+                throw new RuntimeException("Node cannot be BitcoindBackend")
+              case NodeType.FullNode =>
             }
           }
         }
