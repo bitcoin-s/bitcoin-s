@@ -93,26 +93,28 @@ object TorClient extends Logging {
     */
   private def torBinaryFromResource(datadir: Path): File = {
     // todo implement versioning
-    val (torFileName, fileList) = if (EnvUtil.isLinux) {
-      ("linux_64/tor", linuxFileList)
+    val torBundle = if (EnvUtil.isLinux) {
+      linuxTorBundle
     } else if (EnvUtil.isMac) {
-      ("osx_64/tor", osxFileList)
+      osxTorBundle
     } else if (EnvUtil.isWindows) {
-      ("windows_64/tor.exe", windowsFileList)
+      windowsTorBundle
     } else throw new RuntimeException("Unknown platform")
 
-    val executableFileName = datadir.resolve(torFileName).toFile
+    val executableFileName = datadir.resolve(torBundle.primaryExecutable).toFile
 
     logger.info(
       s"Using prepackaged Tor from bitcoin-s resources, $executableFileName")
 
-    if (executableFileName.exists() && executableFileName.canExecute) {
+    if (existsAndIsExecutable(datadir, torBundle)) {
+      logger.info(
+        s"Using tor daemon already written to datadir=${datadir.toAbsolutePath}")
       executableFileName
     } else {
       logger.info(
         s"Tor executable is not written to datadir $datadir, creating...")
 
-      fileList.foreach { fileName =>
+      torBundle.allFilesNames.foreach { fileName =>
         val stream =
           Try(getClass.getResource("/" + fileName).openStream()) match {
             case Failure(_)      => throw new FileNotFoundException(fileName)
@@ -131,7 +133,12 @@ object TorClient extends Logging {
       }
 
       // set tor/tor.exe file as executable
-      executableFileName.setExecutable(true)
+      //executableFileName.setExecutable(true)
+
+      torBundle.executables.foreach { f =>
+        val executable = datadir.resolve(f)
+        executable.toFile.setExecutable(true)
+      }
 
       logger.info(
         s"Using prepackaged Tor from bitcoin-s resources, $executableFileName")
@@ -140,39 +147,69 @@ object TorClient extends Logging {
     }
   }
 
-  private lazy val linuxFileList: Vector[String] = {
-    Vector(
-      "linux_64/tor",
-      "linux_64/LICENSE",
-      "linux_64/libssl.so.1.1",
-      "linux_64/libevent-2.1.so.7",
-      "linux_64/libcrypto.so.1.1",
-      "linux_64/libstdc++/libstdc++.so.6"
+  /** The executables and lists of library files needed to run tor on a specific platform
+    * @param executuables the files that need to be set to executable
+    * @param fileList shared object files or library files for tor to operate
+    */
+  private case class TorFileBundle(
+      executables: Vector[String],
+      fileList: Vector[String]) {
+    val allFilesNames: Vector[String] = executables ++ fileList
+
+    /** By convention, make the primary executable the first element passed into executables
+      * This is needed because some platforms like osx require two tor executables (tor, tor.real)
+      */
+    def primaryExecutable: String = executables.head
+  }
+
+  private lazy val linuxTorBundle: TorFileBundle = {
+    TorFileBundle(
+      executables = Vector("linux_64/tor"),
+      fileList = Vector(
+        "linux_64/LICENSE",
+        "linux_64/libssl.so.1.1",
+        "linux_64/libevent-2.1.so.7",
+        "linux_64/libcrypto.so.1.1",
+        "linux_64/libstdc++/libstdc++.so.6"
+      )
     )
   }
 
-  private lazy val osxFileList: Vector[String] = {
-    Vector(
-      "osx_64/tor",
-      "osx_64/tor.real",
-      "osx_64/LICENSE",
-      "osx_64/libevent-2.1.7.dylib"
+  private lazy val osxTorBundle: TorFileBundle = {
+    TorFileBundle(
+      executables = Vector(
+        "osx_64/tor",
+        "osx_64/tor.real"
+      ),
+      fileList = Vector("osx_64/LICENSE", "osx_64/libevent-2.1.7.dylib")
     )
   }
 
-  private lazy val windowsFileList: Vector[String] = {
-    Vector(
-      "windows_64/tor.exe",
-      "windows_64/libcrypto-1_1-x64.dll",
-      "windows_64/libevent-2-1-7.dll",
-      "windows_64/libevent_core-2-1-7.dll",
-      "windows_64/libevent_extra-2-1-7.dll",
-      "windows_64/libgcc_s_seh-1.dll",
-      "windows_64/libssl-1_1-x64.dll",
-      "windows_64/libssp-0.dll",
-      "windows_64/libwinpthread-1.dll",
-      "windows_64/LICENSE",
-      "windows_64/zlib1.dll"
+  private lazy val windowsTorBundle: TorFileBundle = {
+    TorFileBundle(
+      executables = Vector("windows_64/tor.exe"),
+      fileList = Vector(
+        "windows_64/libcrypto-1_1-x64.dll",
+        "windows_64/libevent-2-1-7.dll",
+        "windows_64/libevent_core-2-1-7.dll",
+        "windows_64/libevent_extra-2-1-7.dll",
+        "windows_64/libgcc_s_seh-1.dll",
+        "windows_64/libssl-1_1-x64.dll",
+        "windows_64/libssp-0.dll",
+        "windows_64/libwinpthread-1.dll",
+        "windows_64/LICENSE",
+        "windows_64/zlib1.dll"
+      )
     )
+  }
+
+  /** Checks if the executable files exists in the given datadir and are executable */
+  private def existsAndIsExecutable(
+      datadir: Path,
+      bundle: TorFileBundle): Boolean = {
+    bundle.executables.forall { executableFileName =>
+      val executableFile = datadir.resolve(executableFileName).toFile
+      executableFile.exists() && executableFile.canExecute
+    }
   }
 }
