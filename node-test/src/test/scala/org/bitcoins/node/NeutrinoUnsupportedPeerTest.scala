@@ -4,6 +4,7 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindV19
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
+import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -16,7 +17,10 @@ class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val torClientF = if (TorUtil.torEnabled) torF else Future.unit
+
     val outcomeF: Future[Outcome] = for {
+      _ <- torClientF
       bitcoind <- cachedBitcoindWithFundsF
       outcome = withNeutrinoNodeUnstarted(test, bitcoind)(system,
                                                           getFreshConfig)

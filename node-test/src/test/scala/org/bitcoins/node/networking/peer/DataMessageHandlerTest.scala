@@ -13,11 +13,12 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest
 import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoindV21
+import org.bitcoins.testkit.tor.CachedTor
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.{Future, Promise}
 
-class DataMessageHandlerTest extends NodeUnitTest {
+class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =

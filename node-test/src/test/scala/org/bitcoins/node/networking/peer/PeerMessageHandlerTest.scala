@@ -11,6 +11,7 @@ import org.bitcoins.testkit.node.{
   NodeTestWithCachedBitcoindNewest,
   NodeUnitTest
 }
+import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.{Await, Future}
@@ -29,7 +30,10 @@ class PeerMessageHandlerTest
   override type FixtureParam = Peer
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val torClientF = if (TorUtil.torEnabled) torF else Future.unit
+
     val outcomeF: Future[Outcome] = for {
+      _ <- torClientF
       bitcoind <- cachedBitcoindWithFundsF
       outcome = withBitcoindPeer(test, bitcoind)
       f <- outcome.toFuture
@@ -41,6 +45,7 @@ class PeerMessageHandlerTest
     cachedConfig.chainConf
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     val setupF = ChainUnitTest.setupHeaderTableWithGenesisHeader()
     Await.result(setupF, duration)
     ()
