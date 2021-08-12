@@ -109,6 +109,10 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
     AboutDialog.showAndWait(parentWindow.value)
   }
 
+  def onDebug(): Unit = {
+    DebugDialog.show(parentWindow.value)
+  }
+
   /** Updates the wallet sync height
     * @return if the update was successful
     */
