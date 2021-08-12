@@ -45,6 +45,7 @@ object DebugDialog {
               // Open file in default log reader per OS
               d.open(new File(path.toString))
             }
+          }
         }
       }
     }
