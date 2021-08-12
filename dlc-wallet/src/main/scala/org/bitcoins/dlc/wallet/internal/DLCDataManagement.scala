@@ -567,7 +567,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
                    fundingInputs,
                    contractInfo)
       .flatMap { executor =>
-        // Filter for only counter party's outcome sigs
+        // Filter for only counterparty's outcome sigs
         val outcomeSigs =
           if (dlcDb.isInitiator) {
             outcomeSigsDbs

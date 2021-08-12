@@ -51,7 +51,7 @@ But do note that this demonstrates the old non-adaptor version of DLCs so that t
 
 If using a numeric contract and/or multiple oracles, messages can get very large and sometimes even too large to for the application.
 To solve this there is an `Export to file` button located under the text box for the messages your wallet will construct.
-This can be used to export a DLC message to a file and then the file can be sent to your counter party.
+This can be used to export a DLC message to a file and then the file can be sent to your counterparty.
 If you receive a file from a counter-party, there is an `Import file` button on every dialog you input a DLC message.
 This can be used to import the file of the DLC message from your counter-party.
 
