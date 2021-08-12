@@ -17,16 +17,21 @@ class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val torClientF = if (TorUtil.torEnabled) torF else Future.unit
-
-    val outcomeF: Future[Outcome] = for {
-      _ <- torClientF
-      bitcoind <- cachedBitcoindWithFundsF
-      outcome = withNeutrinoNodeUnstarted(test, bitcoind)(system,
-                                                          getFreshConfig)
-      f <- outcome.toFuture
-    } yield f
-    new FutureOutcome(outcomeF)
+    if (TorUtil.torEnabled) {
+      // We must skip this test for tor enabled
+      // because bitcoind only supported tor v2 at the time
+      // which is now deprecated and no longer supported by
+      // the tor network
+      FutureOutcome.succeeded
+    } else {
+      val outcomeF: Future[Outcome] = for {
+        bitcoind <- cachedBitcoindWithFundsF
+        outcome = withNeutrinoNodeUnstarted(test, bitcoind)(system,
+                                                            getFreshConfig)
+        f <- outcome.toFuture
+      } yield f
+      new FutureOutcome(outcomeF)
+    }
   }
 
   behavior of "NeutrinoNode"
