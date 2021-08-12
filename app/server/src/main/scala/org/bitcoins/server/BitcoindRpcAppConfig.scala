@@ -1,7 +1,7 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.Config
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory, ConfigOps}
 import org.bitcoins.node.NodeType
 import org.bitcoins.node.config.NodeAppConfig
@@ -159,10 +159,6 @@ case class BitcoindRpcAppConfig(
       binary = binaryOpt match {
         case Some(file) => file
         case None => {
-          val homeVar = sys.env("HOME");
-          val config = ConfigFactory
-            .parseFile(new File(homeVar + "/.bitcoin-s/bitcoin-s.conf"))
-            .resolve()
           new File(config.getString("bitcoin-s.bitcoind-rpc.binary"))
         }
       },
