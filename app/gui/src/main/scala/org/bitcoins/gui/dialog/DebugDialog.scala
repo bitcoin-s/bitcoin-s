@@ -39,17 +39,12 @@ object DebugDialog {
             val _ = Runtime
               .getRuntime()
               .exec(s"/usr/bin/xdg-open ${path.toString}")
-          } else if (
-            Desktop.isDesktopSupported && Desktop
-              .getDesktop()
-              .isSupported(Desktop.Action.OPEN)
-          ) {
-            // Open file in default log reader per OS
-            Desktop.getDesktop().open(new File(path.toString))
-          } else {
-            println(
-              "File is missing or Desktop operations are not supported on this platform")
-          }
+          } else if (Desktop.isDesktopSupported) {
+            val d = Desktop.getDesktop
+            if (d.isSupported(Desktop.Action.OPEN)) {
+              // Open file in default log reader per OS
+              d.open(new File(path.toString))
+            }
         }
       }
     }
