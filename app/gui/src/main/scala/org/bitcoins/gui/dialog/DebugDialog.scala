@@ -31,19 +31,21 @@ object DebugDialog {
         val location = System.getProperty("bitcoins.log.location")
         val path = Paths.get(location, LOGFILE_NAME)
         if (Files.exists(path)) {
-          val file = new File(path.toString)
           // Ubuntu seems to support Desktop and Desktop.open(), but hangs on opening file
+          // This is an issue in JavaFX and the common workaround is to call on another thread
+          // I was not having any luck with Platform.runLater wrapping call to Desktop.open getting around the bug
           if (Properties.isLinux) {
+            // Work around native file-open alternative that works on Ubuntu
             val _ = Runtime
               .getRuntime()
-              .exec("/usr/bin/evince \"" + file.getAbsolutePath() + "\"")
+              .exec(s"/usr/bin/xdg-open ${path.toString}")
           } else if (
             Desktop.isDesktopSupported && Desktop
               .getDesktop()
               .isSupported(Desktop.Action.OPEN)
           ) {
             // Open file in default log reader per OS
-            Desktop.getDesktop().open(file)
+            Desktop.getDesktop().open(new File(path.toString))
           } else {
             println(
               "File is missing or Desktop operations are not supported on this platform")
