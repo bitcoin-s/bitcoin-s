@@ -29,10 +29,16 @@ object DebugDialog {
         // Get root active network directory
         val location = System.getProperty("bitcoins.log.location")
         val path = Paths.get(location, LOGFILE_NAME)
-        if (Files.exists(path)) {
-          val file = new File(path.toString)
+        if (
+          Files.exists(path) && Desktop.isDesktopSupported && Desktop
+            .getDesktop()
+            .isSupported(Desktop.Action.OPEN)
+        ) {
           // Open file in default log reader per OS
-          Desktop.getDesktop().edit(file)
+          Desktop.getDesktop().open(new File(path.toString))
+        } else {
+          println(
+            "File is missing or Desktop operations are not supported on this platform")
         }
       }
     }
