@@ -22,7 +22,7 @@ import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.Peer
+import org.bitcoins.node.models.{Peer, PeerDAO}
 import org.bitcoins.rpc.config.ZmqConfig
 import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
@@ -84,60 +84,61 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
   def startBitcoinSBackend(): Future[Unit] = {
     val start = System.currentTimeMillis()
-    if (nodeConf.peers.isEmpty) {
-      throw new IllegalArgumentException(
-        "No peers specified, unable to start node")
-    }
 
-    val peerSockets = {
-      val allPeers = {
+    val peerSocketsF = {
+      val allPeersF = {
         if (nodeConf.network == MainNet) {
-          val dnsSeeds = Vector(
-            "seed.bitcoin.sipa.be",
-            "dnsseed.bluematt.me",
-            "dnsseed.bitcoin.dashjr.org",
-            "seed.bitcoinstats.com",
-            "seed.bitcoin.jonasschnelli.ch",
-            "seed.btc.petertodd.org",
-            "seed.bitcoin.sprovoost.nl",
-            "dnsseed.emzy.de",
-            "seed.bitcoin.wiz.biz"
-          )
+          val dnsSeeds = nodeConf.network.dnsSeeds
 
-          val peersFromSeed = dnsSeeds.flatMap(seed => {
-            try {
-              InetAddress
-                .getAllByName(seed)
-            } catch {
-              case _: UnknownHostException =>
-                logger.info(s"DNS seed $seed is unavailable")
-                Vector()
-            }
-          })
-
-          val onlinePeers = peersFromSeed.distinct
+          val peersFromSeed = dnsSeeds
+            .flatMap(seed => {
+              try {
+                InetAddress
+                  .getAllByName(seed)
+              } catch {
+                case _: UnknownHostException =>
+                  logger.info(s"DNS seed $seed is unavailable")
+                  Vector()
+              }
+            })
+            .distinct
             .filter(_.isReachable(500))
             .map(_.getHostAddress)
 
-          nodeConf.peers.appendedAll(onlinePeers)
+          val peersFromDbF = PeerDAO().findAll().map(_.map(_.address))
+
+          val peersFromConf = nodeConf.peers
+
+          val all = for {
+            peersFromDB <- peersFromDbF
+          } yield {
+
+            val ret = (peersFromDB ++ peersFromConf ++ peersFromSeed).distinct
+            logger.info(ret)
+            ret
+          }
+          all
         } else {
-          nodeConf.peers
+          Future(nodeConf.peers)
         }
       }
 
-      allPeers.map(
-        NetworkUtil.parseInetSocketAddress(_, nodeConf.network.port)
-      )
+      allPeersF.map(_.map(peer =>
+        NetworkUtil.parseInetSocketAddress(peer, nodeConf.network.port)))
     }
 
-    val peers = peerSockets.map(Peer.fromSocket(_, nodeConf.socks5ProxyParams))
+    val peersF = peerSocketsF.map(peerSockets =>
+      peerSockets.map(Peer.fromSocket(_, nodeConf.socks5ProxyParams)))
 
     //run chain work migration
     val chainApiF = runChainWorkCalc(
       serverArgParser.forceChainWorkRecalc || chainConf.forceRecalcChainWork)
 
     //get a node that isn't started
-    val nodeF = nodeConf.createNode(peers)(chainConf, system)
+    val nodeF = for {
+      peers <- peersF
+      node <- nodeConf.createNode(peers)(chainConf, system)
+    } yield node
 
     val feeProvider = getFeeProviderOrElse(
       MempoolSpaceProvider(HourFeeTarget, walletConf.network))

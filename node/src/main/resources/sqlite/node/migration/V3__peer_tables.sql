@@ -1,0 +1,1 @@
+ create table if not exists "peers" ("address" VARCHAR NOT NULL PRIMARY KEY UNIQUE,"last_connected" TIMESTAMP)

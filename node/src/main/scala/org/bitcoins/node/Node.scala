@@ -11,15 +11,12 @@ import org.bitcoins.chain.models.{
 }
 import org.bitcoins.core.api.chain._
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.p2p.{NetworkPayload, ServiceIdentifier, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{
-  BroadcastAbleTransaction,
-  BroadcastAbleTransactionDAO,
-  Peer
-}
+import org.bitcoins.node.models._
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.{
   DataMessageHandler,
@@ -27,6 +24,7 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageSender
 }
 
+import java.time.Instant
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -59,19 +57,15 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
                 peerMessageReceiver = peerMessageReceiver)
     }
 
-    private var _serviceIdentifier: ServiceIdentifier = _
+    private var _serviceIdentifier: Option[ServiceIdentifier] = None
 
     def serviceIdentifier: ServiceIdentifier = {
-      _serviceIdentifier match {
-        case service: ServiceIdentifier => service
-        case _ =>
-          throw new RuntimeException(
-            "Tried to user service without initializing.")
-      }
+      _serviceIdentifier.getOrElse(
+        throw new RuntimeException("Service identifier not initialized"))
     }
 
     def setServiceIdentifier(serviceIdentifier: ServiceIdentifier): Unit = {
-      _serviceIdentifier = serviceIdentifier
+      _serviceIdentifier = Some(serviceIdentifier)
     }
   }
 
@@ -209,14 +203,16 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
               case NodeType.NeutrinoNode =>
                 if (peerData(peer).serviceIdentifier.nodeCompactFilters) {
                   logger.info(s"Our peer=$peer has been initialized")
+                  if (nodeAppConfig.network == MainNet) {
+                    PeerDAO().upsert(
+                      PeerDB(peer.socket.getHostString, Instant.now()))
+                  }
                 } else {
                   logger.info(
                     s"Our peer=$peer does not support compact filters. Disconnecting.")
                   peerData(peer).peerMessageSender.disconnect()
                 }
-              case NodeType.SpvNode         =>
-              case NodeType.BitcoindBackend =>
-              case NodeType.FullNode        =>
+              case NodeType.SpvNode =>
             }
           }
         }
