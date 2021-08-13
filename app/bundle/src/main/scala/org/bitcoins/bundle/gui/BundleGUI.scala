@@ -107,7 +107,8 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
         serverArgParser)(system.dispatcher)
 
     GlobalData.network = toNodeConf(appConfig).network
-    GlobalData.torEnabled.value = appConfig.torConf.enabled
+    GlobalData.proxyEnabled.value =
+      appConfig.nodeConf.socks5ProxyParams.isDefined
 
     validatePreferenceValues()
 

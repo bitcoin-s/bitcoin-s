@@ -107,5 +107,5 @@ object GlobalData {
 
   val torDLCHostAddress = StringProperty("")
 
-  val torEnabled = BooleanProperty(false)
+  val proxyEnabled = BooleanProperty(false)
 }

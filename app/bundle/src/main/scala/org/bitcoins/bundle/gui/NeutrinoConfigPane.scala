@@ -109,22 +109,15 @@ class NeutrinoConfigPane(
 
   def getConfig: Config = {
     // Auto-enable proxy for .onion peers
-    val proxyConfStr =
-      if (
-        peerAddressTF.text.value.contains(
-          ".onion") || torCheckBox.selected.value
-      ) {
-        s"""
-           |bitcoin-s.proxy.enabled = true
-           |""".stripMargin
-      } else ""
-    val configStr = proxyConfStr +
-      s"""
-         |bitcoin-s.network = ${DatadirUtil.networkStrToDirName(
-        networkComboBox.value.value.toString)}
-         |bitcoin-s.node.mode = neutrino
-         |bitcoin-s.node.peers = ["${peerAddressTF.text.value}"]
-         |""".stripMargin
+    val proxyEnabled =
+      torCheckBox.selected.value || peerAddressTF.text.value.contains(".onion")
+    val configStr = s"""
+                       |bitcoin-s.proxy.enabled = ${proxyEnabled}
+                       |bitcoin-s.network = ${DatadirUtil.networkStrToDirName(
+      networkComboBox.value.value.toString)}
+                       |bitcoin-s.node.mode = neutrino
+                       |bitcoin-s.node.peers = ["${peerAddressTF.text.value}"]
+                       |""".stripMargin
     ConfigFactory.parseString(configStr)
   }
 }
