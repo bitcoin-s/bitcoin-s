@@ -12,8 +12,11 @@ object TorUtil extends Logging {
     .envOrNone("TOR")
     .isDefined
 
-  def torProxyAddress = new InetSocketAddress("localhost", 9050)
-  def torControlAddress = new InetSocketAddress("localhost", 9051)
+  val PROXY_PORT = 9050
+  val CONTROL_PORT = 9051
+
+  def torProxyAddress = new InetSocketAddress("localhost", PROXY_PORT)
+  def torControlAddress = new InetSocketAddress("localhost", CONTROL_PORT)
   def torProxyEnabled: Boolean = portIsBound(torProxyAddress)
   def torControlEnabled: Boolean = portIsBound(torControlAddress)
 

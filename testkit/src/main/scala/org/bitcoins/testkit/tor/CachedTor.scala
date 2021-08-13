@@ -1,14 +1,10 @@
 package org.bitcoins.testkit.tor
 
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.util.{BitcoinSAkkaAsyncTest, TorUtil}
-import org.bitcoins.testkit.util.TorUtil.verifyTorEnabled
-import org.bitcoins.tor.client.TorClient
 import org.bitcoins.tor.config.TorAppConfig
 
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 /** A trait that holds a cached instance of a the tor daemon
@@ -23,17 +19,10 @@ trait CachedTor {
 
   protected val isTorStarted: AtomicBoolean = new AtomicBoolean(false)
 
-  protected lazy val torF: Future[TorClient] = {
+  protected lazy val torF: Future[Unit] = {
     val _ = isTorStarted.set(true)
 
-    val torClient = torConfig.createClient
-
-    for {
-      _ <- torClient.startBinary()
-      // wait for tor to startup
-      _ <- TestAsyncUtil.nonBlockingSleep(5.seconds)
-      _ = verifyTorEnabled()
-    } yield torClient
+    torConfig.start()
   }
 
   override def beforeAll(): Unit = {
