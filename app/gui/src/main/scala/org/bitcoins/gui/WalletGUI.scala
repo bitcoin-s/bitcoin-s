@@ -22,7 +22,8 @@ abstract class WalletGUI extends Logging {
 
   private lazy val networkLabel = new Label {
     padding = Insets(0, 10, 0, 0)
-    text <== StringProperty("Network: ") + GlobalData.network
+    text <== StringProperty("Network: ") + GlobalData.network +
+      (if (GlobalData.torEnabled.value) " over Tor")
   }
 
   private lazy val infoLabel = new Label {
@@ -175,7 +176,7 @@ abstract class WalletGUI extends Logging {
   }
 
   private lazy val stateDetails = new GridPane {
-    visible <== GlobalData.torAddress.isNotEmpty
+    visible <== GlobalData.torDLCHostAddress.isNotEmpty
     padding = Insets(4, 0, 0, 0)
     hgap = 5
     vgap = 5
@@ -187,13 +188,13 @@ abstract class WalletGUI extends Logging {
       children = Seq(
         new TextField {
           hgrow = Priority.Always
-          text <== GlobalData.torAddress
+          text <== GlobalData.torDLCHostAddress
         },
-        GUIUtil.getCopyToClipboardButton(GlobalData.torAddress)
+        GUIUtil.getCopyToClipboardButton(GlobalData.torDLCHostAddress)
       )
     }
     nextRow = 0
-    add(new Label("Tor Address"), 0, nextRow)
+    add(new Label("Tor DLC Host Address"), 0, nextRow)
     add(hbox, 1, nextRow)
     nextRow += 1
   }

@@ -105,5 +105,7 @@ object GlobalData {
 
   var feeRate: FeeUnit = SatoshisPerVirtualByte.fromLong(50)
 
-  val torAddress = StringProperty("")
+  val torDLCHostAddress = StringProperty("")
+
+  val torEnabled = BooleanProperty(false)
 }
