@@ -87,7 +87,7 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
 
       add(
         new Label("DLC Offer") {
-          tooltip = Tooltip("Offer message given from your counter party.")
+          tooltip = Tooltip("Offer message given from your counterparty.")
           tooltip.value.setShowDelay(new javafx.util.Duration(100))
         },
         0,
@@ -161,7 +161,7 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
                    nextRow)
       nextRow += 1
 
-      gridPane.add(new Label("Counter Party Collateral"), 0, nextRow)
+      gridPane.add(new Label("Counterparty Collateral"), 0, nextRow)
       gridPane.add(new TextField() {
                      text = offer.totalCollateralSatoshis.toString
                      editable = false
