@@ -20,6 +20,11 @@ abstract class WalletGUI extends Logging {
     text <== GlobalData.statusText
   }
 
+  private lazy val networkLabel = new Label {
+    padding = Insets(0, 10, 0, 0)
+    text <== StringProperty("Network: ") + GlobalData.network
+  }
+
   private lazy val infoLabel = new Label {
     text <== StringProperty("Sync Height: ") + GlobalData.syncHeight
   }
@@ -231,6 +236,7 @@ abstract class WalletGUI extends Logging {
     hgrow = Priority.Always
     children = Vector(statusLabel,
                       GUIUtil.getHSpacer(),
+                      networkLabel,
                       infoLabel,
                       GUIUtil.getHSpacer(),
                       connectedLabel)
