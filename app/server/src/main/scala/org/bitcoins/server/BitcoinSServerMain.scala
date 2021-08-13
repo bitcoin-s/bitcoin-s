@@ -81,6 +81,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- walletConf.stop()
       _ <- nodeConf.stop()
       _ <- chainConf.stop()
+      _ <- {
+        if (torConf.enabled) {
+          torConf.createClient.stopBinary()
+        } else {
+          Future.unit
+        }
+      }
       _ = logger.info(s"Stopped ${nodeConf.nodeType.shortName} node")
       _ <- system.terminate()
     } yield {
