@@ -18,7 +18,7 @@ object AppMenuBar {
   def menuBar(model: WalletGUIModel, dlcPane: DLCPane): MenuBar = {
     val menuBar = new MenuBar {
       menus = List(new FileMenu().fileMenu,
-                   new ViewMenu(dlcPane).viewMenu,
+                   new ViewMenu(model, dlcPane).viewMenu,
                    new HelpMenu(model).helpMenu)
     }
     // Use MacOS native menuing
@@ -65,7 +65,7 @@ private class FileMenu() {
     }
 }
 
-private class ViewMenu(dlcPane: DLCPane) {
+private class ViewMenu(model: WalletGUIModel, dlcPane: DLCPane) {
 
   private val themeToggle: ToggleGroup = new ToggleGroup()
 
@@ -113,9 +113,15 @@ private class ViewMenu(dlcPane: DLCPane) {
     onAction = _ => dlcPane.showWindow()
   }
 
+  private val debugWindow = new MenuItem("Debug Operations") {
+    accelerator =
+      new KeyCodeCombination(KeyCode.Digit2, KeyCombination.ShortcutDown)
+    onAction = _ => model.onDebug()
+  }
+
   val viewMenu: Menu = new Menu("_View") {
     mnemonicParsing = true
-    items = List(themes, new SeparatorMenuItem(), dlcWindow)
+    items = List(themes, new SeparatorMenuItem(), dlcWindow, debugWindow)
   }
 }
 
