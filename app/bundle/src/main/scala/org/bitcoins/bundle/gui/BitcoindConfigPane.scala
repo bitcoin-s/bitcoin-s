@@ -8,15 +8,12 @@ import scalafx.geometry._
 import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout._
-<<<<<<< HEAD
 import scalafx.scene.text.{Font, TextAlignment}
-=======
-import scalafx.scene.text.TextAlignment
->>>>>>> 2a35ffa123fe2b681647e84cabca34059d9332f3
+
 
 class BitcoindConfigPane(
-    appConfig: BitcoinSAppConfig,
-    model: LandingPaneModel) {
+                          appConfig: BitcoinSAppConfig,
+                          model: LandingPaneModel) {
 
   private val bitcoindExplainer: Label = new Label {
     padding = Insets(20)
@@ -40,33 +37,13 @@ class BitcoindConfigPane(
   }
   GUIUtil.setNumericInput(portTF)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
   private val rpcUserTF: TextField = new TextField {
-    text = Try(appConfig.rpcUser).getOrElse("")
+    text = appConfig.rpcUser.getOrElse("")
     minWidth = 300
   }
 
   private val rpcPasswordTF: TextField = new TextField {
-    text = Try(appConfig.rpcPassword).getOrElse("")
-=======
-  private val rpcUserTF: TextField = new TextField() {
-    text = appConfig.rpcUser.getOrElse("")
-    minWidth = 300
-  }
-
-  private val rpcPasswordTF: TextField = new TextField() {
     text = appConfig.rpcPassword.getOrElse("")
->>>>>>> bug fix in BitcoindConfigPane
-=======
-  private val rpcUserTF: TextField = new TextField() {
-    text = appConfig.rpcUser.getOrElse("")
-    minWidth = 300
-  }
-
-  private val rpcPasswordTF: TextField = new TextField() {
-    text = appConfig.rpcPassword.getOrElse("")
->>>>>>> 2a35ffa123fe2b681647e84cabca34059d9332f3
     minWidth = 300
   }
 
