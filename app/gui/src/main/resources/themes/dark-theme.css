@@ -76,7 +76,7 @@
     -fx-pref-width: 90;
 }
 
-/* Adjust divider visibility and padding */
+/* Adjust SplitPane divider visibility and padding */
 /*
 .split-pane > .split-pane-divider {
     -fx-padding: 0;
@@ -99,6 +99,15 @@
     -fx-border-style: solid none none none;
     -fx-border-width: 1;
     -fx-border-color: black;
+}
+
+/* View DLC Dialog */
+.view-dlc-label {
+    -fx-min-width: 115; /* Counterparty payout */
+    -fx-alignment: center-right;
+}
+.view-dlc-textfield {
+    -fx-pref-width: 300;
 }
 
 /* New Offer Dialog */
