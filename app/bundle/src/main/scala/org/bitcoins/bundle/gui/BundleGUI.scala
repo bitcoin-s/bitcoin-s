@@ -5,6 +5,7 @@ import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.gui._
 import org.bitcoins.gui.util.GUIUtil
 import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
 import scalafx.application.{JFXApp3, Platform}
 import scalafx.geometry.Pos
 import scalafx.scene.Scene
@@ -104,6 +105,8 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
       BitcoinSAppConfig.fromDatadirWithBundleConfWithServerArgs(
         datadirParser.datadir,
         serverArgParser)(system.dispatcher)
+
+    GlobalData.network = toNodeConf(appConfig).network
 
     validatePreferenceValues()
 

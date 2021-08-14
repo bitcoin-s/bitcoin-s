@@ -20,6 +20,11 @@ abstract class WalletGUI extends Logging {
     text <== GlobalData.statusText
   }
 
+  private lazy val networkLabel = new Label {
+    padding = Insets(0, 10, 0, 0)
+    text <== StringProperty("Network: ") + GlobalData.network
+  }
+
   private lazy val infoLabel = new Label {
     text <== StringProperty("Sync Height: ") + GlobalData.syncHeight
   }
@@ -69,7 +74,7 @@ abstract class WalletGUI extends Logging {
   private def getSatsLabel(): Label = new Label("sats")
 
   private lazy val walletGrid = new GridPane() {
-    // Could force minWidth here to avoid text/value compression from SplitPane
+    minWidth = 490 // avoid text/value compression from SplitPane
     styleClass += "no-text-input-readonly-style"
     nextRow = 0
     add(new Label("Confirmed Balance"), 0, nextRow)
@@ -151,6 +156,18 @@ abstract class WalletGUI extends Logging {
   private lazy val sidebarAccordian = new VBox {
     padding = Insets(4)
 
+    val walletUI = new TitledPane {
+      content = wallet
+      text = "Wallet"
+    }
+
+    val eventUI = new TitledPane {
+      graphic = eventsTitleHbox
+      content = contractGUI.eventPane
+      expanded = false
+    }
+    eventsTitleHbox.minWidth <== eventUI.width - TITLEPANE_RIGHT_GUTTER
+
     val contractUI = new TitledPane {
       graphic = contractsTitleHbox
       content = dlcPane.tableView
@@ -163,22 +180,10 @@ abstract class WalletGUI extends Logging {
     }
     contractsTitleHbox.minWidth <== contractUI.width - TITLEPANE_RIGHT_GUTTER
 
-    val eventUI = new TitledPane {
-      graphic = eventsTitleHbox
-      content = contractGUI.eventPane
-      expanded = false
-    }
-    eventsTitleHbox.minWidth <== eventUI.width - TITLEPANE_RIGHT_GUTTER
-
-    val walletUI = new TitledPane {
-      content = wallet
-      text = "Wallet"
-    }
-
     children = Vector(
-      contractUI,
-      eventUI,
       walletUI,
+      eventUI,
+      contractUI,
       GUIUtil.getVSpacer(),
       stateDetails
     )
@@ -217,13 +222,13 @@ abstract class WalletGUI extends Logging {
     styleClass = Seq("scroll-pane")
     fitToHeight = true
     fitToWidth = true
-//    minWidth = 300 // May want this set only if there is content
+    minWidth = 270
+    hbarPolicy = ScrollPane.ScrollBarPolicy.Never
     content = rightPaneContent
   }
 
   lazy val splitPane: SplitPane = new SplitPane {
     items ++= Seq(sidebarAccordian, rightPane)
-    setDividerPosition(0, 0.6)
   }
 
   lazy val bottomStack: HBox = new HBox {
@@ -231,6 +236,7 @@ abstract class WalletGUI extends Logging {
     hgrow = Priority.Always
     children = Vector(statusLabel,
                       GUIUtil.getHSpacer(),
+                      networkLabel,
                       infoLabel,
                       GUIUtil.getHSpacer(),
                       connectedLabel)
