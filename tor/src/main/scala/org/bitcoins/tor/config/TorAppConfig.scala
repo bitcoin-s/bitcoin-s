@@ -1,6 +1,7 @@
 package org.bitcoins.tor.config
 
 import com.typesafe.config.Config
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory, ConfigOps}
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.tor.TorProtocolHandler.{Password, SafeCookie}
@@ -8,14 +9,16 @@ import org.bitcoins.tor.client.TorClient
 import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 
 import java.io.File
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S node
   * @param directory The data directory of the node
   * @param confs Optional sequence of configuration overrides
   */
-case class TorAppConfig(private val directory: Path, private val confs: Config*)
+case class TorAppConfig(
+    private val directory: Path,
+    private val confs: Config*)(implicit ec: ExecutionContext)
     extends AppConfig {
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
   override protected[bitcoins] def moduleName: String = TorAppConfig.moduleName
@@ -30,9 +33,51 @@ case class TorAppConfig(private val directory: Path, private val confs: Config*)
   /** Ensures correct tables and other required information is in
     * place for our node.
     */
-  override def start(): Future[Unit] = Future.unit
+  override def start(): Future[Unit] = {
+    val start = System.currentTimeMillis()
+    //remove old tor log file so we accurately tell when
+    //the binary is started
+    if (torLogFile.toFile.exists()) {
+      torLogFile.toFile.delete()
+    }
+    val startedBinary: Future[Unit] = createClient.startBinary()
+    for {
+      _ <- startedBinary
+      _ <- isBinaryFullyStarted()
+    } yield {
+      logger.info(
+        s"Tor binary is fully started, it took=${System.currentTimeMillis() - start}ms")
+    }
+  }
 
-  override def stop(): Future[Unit] = Future.unit
+  private val isBootstrappedLogLine = "Bootstrapped 100% (done): Done"
+
+  /** Checks if the tor binary is started by looking for a log in the [[torLogFile]]
+    * The log line we are looking or is
+    * {{{
+    *     Bootstrapped 100% (done): Done
+    *  }}}
+    */
+  private def isBinaryFullyStarted(): Future[Unit] = {
+    AsyncUtil.retryUntilSatisfied(checkIfLogExists)
+  }
+
+  /** Checks it the [[isBootstrappedLogLine]] exists in the tor log file */
+  private def checkIfLogExists: Boolean = {
+    //NEED TO FIGURE OUT HOW TO CHECK LOG FILE FOR ONLY THESE
+    //LINES AFTER WE START THE BINARY SO WE DON'T
+    //COUNT OLD LOGS
+    val stream = Files.lines(torLogFile)
+    try {
+      stream
+        .filter((line: String) => line.contains(isBootstrappedLogLine))
+        .count() > 0
+    } finally if (stream != null) stream.close()
+  }
+
+  override def stop(): Future[Unit] = {
+    createClient.stopBinary()
+  }
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
     if (config.getBoolean("bitcoin-s.proxy.enabled")) {
