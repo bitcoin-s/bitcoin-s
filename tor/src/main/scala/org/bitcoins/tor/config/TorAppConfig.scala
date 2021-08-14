@@ -36,7 +36,8 @@ case class TorAppConfig(
   override def start(): Future[Unit] = {
     val start = System.currentTimeMillis()
     //remove old tor log file so we accurately tell when
-    //the binary is started
+    //the binary is started, if we don't remove this
+    //we could have that log line appear from previous runs
     if (torLogFile.toFile.exists()) {
       torLogFile.toFile.delete()
     }
@@ -64,9 +65,6 @@ case class TorAppConfig(
 
   /** Checks it the [[isBootstrappedLogLine]] exists in the tor log file */
   private def checkIfLogExists: Boolean = {
-    //NEED TO FIGURE OUT HOW TO CHECK LOG FILE FOR ONLY THESE
-    //LINES AFTER WE START THE BINARY SO WE DON'T
-    //COUNT OLD LOGS
     val stream = Files.lines(torLogFile)
     try {
       stream
