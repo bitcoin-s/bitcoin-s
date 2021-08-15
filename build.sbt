@@ -139,7 +139,7 @@ lazy val lndRpc = project
 lazy val tor = project
   .in(file("tor"))
   .settings(CommonSettings.prodSettings: _*)
-  .dependsOn(coreJVM, appCommons)
+  .dependsOn(coreJVM, appCommons, asyncUtilsJVM)
 
 lazy val torTest = project
   .in(file("tor-test"))
