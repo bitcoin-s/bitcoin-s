@@ -34,20 +34,26 @@ case class TorAppConfig(
     * place for our node.
     */
   override def start(): Future[Unit] = {
-    val start = System.currentTimeMillis()
-    //remove old tor log file so we accurately tell when
-    //the binary is started, if we don't remove this
-    //we could have that log line appear from previous runs
-    if (torLogFile.toFile.exists()) {
-      torLogFile.toFile.delete()
-    }
-    val startedBinary: Future[Unit] = createClient.startBinary()
-    for {
-      _ <- startedBinary
-      _ <- isBinaryFullyStarted()
-    } yield {
-      logger.info(
-        s"Tor binary is fully started, it took=${System.currentTimeMillis() - start}ms")
+    if (torParams.isDefined) {
+      val start = System.currentTimeMillis()
+      //remove old tor log file so we accurately tell when
+      //the binary is started, if we don't remove this
+      //we could have that log line appear from previous runs
+      if (torLogFile.toFile.exists()) {
+        torLogFile.toFile.delete()
+      }
+      val startedBinary: Future[Unit] = createClient.startBinary()
+      for {
+        _ <- startedBinary
+        _ <- isBinaryFullyStarted()
+      } yield {
+        logger.info(
+          s"Tor binary is fully started, it took=${System.currentTimeMillis() - start}ms")
+      }
+    } else {
+      logger.warn(
+        s"Tor was requested to start, but it is diabled in the configuration file. Not starting tor")
+      Future.unit
     }
   }
 
