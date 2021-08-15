@@ -88,6 +88,10 @@ case class TorAppConfig(
 
   override def stop(): Future[Unit] = {
     createClient.stopBinary()
+      .map { _ =>
+        isStarted.set(false)
+        ()
+      }
   }
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
