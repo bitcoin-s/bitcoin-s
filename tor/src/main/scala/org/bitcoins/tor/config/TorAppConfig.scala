@@ -10,6 +10,7 @@ import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 
 import java.io.File
 import java.nio.file.{Files, Path}
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S node
@@ -30,11 +31,14 @@ case class TorAppConfig(
 
   protected[bitcoins] def baseDatadir: Path = directory
 
+  private val isStarted: AtomicBoolean = new AtomicBoolean(false)
+
   /** Ensures correct tables and other required information is in
     * place for our node.
     */
   override def start(): Future[Unit] = {
-    if (torParams.isDefined) {
+    if (torParams.isDefined && !isStarted.get) {
+      isStarted.set(true)
       val start = System.currentTimeMillis()
       //remove old tor log file so we accurately tell when
       //the binary is started, if we don't remove this
@@ -50,6 +54,9 @@ case class TorAppConfig(
         logger.info(
           s"Tor binary is fully started, it took=${System.currentTimeMillis() - start}ms")
       }
+    } else if (isStarted.get) {
+      logger.debug(s"Tor binary already started")
+      Future.unit
     } else {
       logger.warn(
         s"Tor was requested to start, but it is diabled in the configuration file. Not starting tor")
