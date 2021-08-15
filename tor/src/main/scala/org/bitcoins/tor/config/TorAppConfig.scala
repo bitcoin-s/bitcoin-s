@@ -87,7 +87,8 @@ case class TorAppConfig(
   }
 
   override def stop(): Future[Unit] = {
-    createClient.stopBinary()
+    createClient
+      .stopBinary()
       .map { _ =>
         isStarted.set(false)
         ()
