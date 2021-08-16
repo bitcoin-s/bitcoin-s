@@ -36,7 +36,7 @@ Here is an example of how to start eclair:
 ```scala mdoc:invisible
 import akka.actor.ActorSystem
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
-import org.bitcoins.eclair.rpc.config.EclairInstance
+import org.bitcoins.eclair.rpc.config.EclairInstanceLocal
 import java.nio.file.Paths
 ```
 
@@ -47,7 +47,7 @@ implicit val ec = system.dispatcher
 
 val datadirPath = Paths.get("path", "to", "datadir")
 val binaryPath = Paths.get("path", "to", "eclair-node-0.5.0-ac08560", "bin", "eclair-node.sh")
-val instance = EclairInstance.fromDatadir(datadirPath.toFile, logbackXml = None, proxyParams = None)
+val instance = EclairInstanceLocal.fromDatadir(datadirPath.toFile, logbackXml = None, proxyParams = None)
 val client = new EclairRpcClient(instance, Some(binaryPath.toFile))
 
 val startedF = client.start()
