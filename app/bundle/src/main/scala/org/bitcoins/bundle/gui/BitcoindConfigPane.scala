@@ -10,7 +10,6 @@ import scalafx.scene.control._
 import scalafx.scene.layout._
 import scalafx.scene.text.{Font, TextAlignment}
 
-
 class BitcoindConfigPane(
     appConfig: BitcoinSAppConfig,
     model: LandingPaneModel) {

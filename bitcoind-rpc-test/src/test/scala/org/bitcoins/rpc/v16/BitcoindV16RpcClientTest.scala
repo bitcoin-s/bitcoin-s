@@ -19,6 +19,7 @@ import org.bitcoins.testkit.rpc.{
   BitcoindRpcTestUtil
 }
 
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class BitcoindV16RpcClientTest extends BitcoindFixturesCachedPairV16 {
@@ -41,8 +42,8 @@ class BitcoindV16RpcClientTest extends BitcoindFixturesCachedPairV16 {
   it should "be able to start a V16 bitcoind" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
-    assert(client.version == BitcoindVersion.V16)
-    assert(otherClient.version == BitcoindVersion.V16)
+    assert(client.version == Future.successful(BitcoindVersion.V16))
+    assert(otherClient.version == Future.successful(BitcoindVersion.V16))
   }
 
   it should "be able to sign a raw transaction" in { nodePair: FixtureParam =>

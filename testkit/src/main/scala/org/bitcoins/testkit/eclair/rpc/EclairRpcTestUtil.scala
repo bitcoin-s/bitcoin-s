@@ -21,11 +21,12 @@ import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
-import org.bitcoins.eclair.rpc.config.EclairInstance
+import org.bitcoins.eclair.rpc.config.EclairInstanceLocal
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
   BitcoindInstance,
+  BitcoindInstanceLocal,
   ZmqConfig
 }
 import org.bitcoins.rpc.util.RpcUtil
@@ -59,8 +60,9 @@ trait EclairRpcTestUtil extends Logging {
 
   /** Makes a best effort to get a 0.16 bitcoind instance
     */
-  def startedBitcoindRpcClient(instance: BitcoindInstance = bitcoindInstance())(
-      implicit actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
+  def startedBitcoindRpcClient(
+      instance: BitcoindInstanceLocal = bitcoindInstance())(implicit
+      actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
     //need to do something with the Vector.newBuilder presumably?
     BitcoindRpcTestUtil.startedBitcoindRpcClient(instance, Vector.newBuilder)
   }
@@ -71,7 +73,7 @@ trait EclairRpcTestUtil extends Logging {
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       bitcoindV: BitcoindVersion =
-        EclairRpcClient.bitcoindV): BitcoindInstance = {
+        EclairRpcClient.bitcoindV): BitcoindInstanceLocal = {
     BitcoindRpcTestUtil.getInstance(bitcoindVersion = bitcoindV,
                                     port = port,
                                     rpcPort = rpcPort,
@@ -147,29 +149,29 @@ trait EclairRpcTestUtil extends Logging {
 
   /** Assumes bitcoind is running already and you have specified correct bindings in eclair.conf */
   def cannonicalEclairInstance(
-      logbackXml: Option[String] = None): EclairInstance = {
+      logbackXml: Option[String] = None): EclairInstanceLocal = {
     val datadir = cannonicalDatadir
     eclairInstance(datadir, logbackXml)
   }
 
   def eclairInstance(
       datadir: File,
-      logbackXml: Option[String]): EclairInstance = {
-    val instance = EclairInstance.fromDatadir(datadir, logbackXml, None)
+      logbackXml: Option[String]): EclairInstanceLocal = {
+    val instance = EclairInstanceLocal.fromDatadir(datadir, logbackXml, None)
     instance
   }
 
   /** Starts the given bitcoind instance and then starts the eclair instance */
   def eclairInstance(
       bitcoindRpc: BitcoindRpcClient,
-      logbackXml: Option[String] = None): EclairInstance = {
+      logbackXml: Option[String] = None): EclairInstanceLocal = {
     val datadir = eclairDataDir(bitcoindRpc, false)
     eclairInstance(datadir, logbackXml)
   }
 
   def randomEclairInstance(
       bitcoindRpc: BitcoindRpcClient,
-      logbackXml: Option[String] = None): EclairInstance = {
+      logbackXml: Option[String] = None): EclairInstanceLocal = {
     val datadir = eclairDataDir(bitcoindRpc, false)
     eclairInstance(datadir, logbackXml)
   }
@@ -682,7 +684,7 @@ trait EclairRpcTestUtil extends Logging {
     val bitcoindRpc = {
       val instance = eclairRpcClient.instance
       val auth = instance.authCredentials
-      val bitcoindInstance = BitcoindInstance(
+      val bitcoindInstance = BitcoindInstanceLocal(
         network = instance.network,
         uri = new URI("http://localhost:18333"),
         rpcUri = auth.bitcoindRpcUri,

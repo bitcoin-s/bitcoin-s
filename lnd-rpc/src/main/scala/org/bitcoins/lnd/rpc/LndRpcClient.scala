@@ -25,7 +25,7 @@ import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
 import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient._
-import org.bitcoins.lnd.rpc.config.LndInstance
+import org.bitcoins.lnd.rpc.config.{LndInstance, LndInstanceLocal}
 import scodec.bits.ByteVector
 import signrpc.TxOut
 import walletrpc.{SendOutputsRequest, WalletKitClient}
@@ -40,17 +40,21 @@ import scala.util.{Failure, Success, Try}
 
 /** @param binary Path to lnd executable
   */
-class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
+class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     implicit system: ActorSystem)
     extends NativeProcessFactory
     with StartStopAsync[LndRpcClient]
     with Logging {
+  instance match {
+    case _: LndInstanceLocal =>
+      require(binaryOpt.isDefined,
+              s"Binary must be defined with a local instance of lnd")
+  }
 
   /** The command to start the daemon on the underlying OS */
-  override def cmd: String = binary match {
-    case Some(file) =>
-      s"$file --lnddir=${instance.datadir.toAbsolutePath}"
-    case None => ""
+  override def cmd: String = instance match {
+    case local: LndInstanceLocal =>
+      s"${binaryOpt.get} --lnddir=${local.datadir.toAbsolutePath}"
   }
 
   implicit val executionContext: ExecutionContext = system.dispatcher
@@ -513,9 +517,10 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
             // too many tries to get info about a payment
             // either Lnd is down or the payment is still in PENDING state for some reason
             // complete the promise with an exception so the runnable will be canceled
-            p.failure(new RuntimeException(
-              s"LndApi.monitorInvoice() [${instance.datadir}] too many attempts: ${attempts
-                .get()} for invoice=${rHash.hash.hex}"))
+            p.failure(
+              new RuntimeException(
+                s"LndApi.monitorInvoice() [${instance}] too many attempts: ${attempts
+                  .get()} for invoice=${rHash.hash.hex}"))
           }
         }
       }

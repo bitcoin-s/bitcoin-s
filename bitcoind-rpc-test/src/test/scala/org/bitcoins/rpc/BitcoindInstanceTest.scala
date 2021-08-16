@@ -6,7 +6,7 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
   BitcoindConfig,
-  BitcoindInstance
+  BitcoindInstanceLocal
 }
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -66,7 +66,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     """.stripMargin
 
     val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
-    val instance = BitcoindInstance.fromConfig(conf, newestBitcoindBinary)
+    val instance = BitcoindInstanceLocal.fromConfig(conf, newestBitcoindBinary)
     assert(
       instance.authCredentials
         .isInstanceOf[BitcoindAuthCredentials.CookieBased])
@@ -86,7 +86,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
       """.stripMargin
 
     val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
-    val instance = BitcoindInstance.fromConfig(conf, newestBitcoindBinary)
+    val instance = BitcoindInstanceLocal.fromConfig(conf, newestBitcoindBinary)
     assert(
       instance.authCredentials
         .isInstanceOf[BitcoindAuthCredentials.PasswordBased])
@@ -117,7 +117,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
       BitcoindAuthCredentials.PasswordBased(username = "bitcoin-s",
                                             password = "strong_password")
     val instance =
-      BitcoindInstance(
+      BitcoindInstanceLocal(
         network = RegTest,
         uri = new URI(s"http://localhost:$port"),
         rpcUri = new URI(s"http://localhost:$rpcPort"),
@@ -131,7 +131,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
 
   it should "parse a bitcoin.conf file, start bitcoind, mine some blocks and quit" in {
     val instance =
-      BitcoindInstance.fromDatadir(datadir.toFile, newestBitcoindBinary)
+      BitcoindInstanceLocal.fromDatadir(datadir.toFile, newestBitcoindBinary)
     val client = BitcoindRpcClient.withActorSystem(instance)
 
     for {

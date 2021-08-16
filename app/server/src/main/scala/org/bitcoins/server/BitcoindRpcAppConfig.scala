@@ -54,7 +54,7 @@ case class BitcoindRpcAppConfig(
   override def stop(): Future[Unit] = Future.unit
 
   lazy val DEFAULT_BINARY_PATH: Option[File] =
-    BitcoindInstance.DEFAULT_BITCOIND_LOCATION
+    BitcoindInstanceLocal.DEFAULT_BITCOIND_LOCATION
 
   lazy val binaryOpt: Option[File] =
     config.getStringOrNone("bitcoin-s.bitcoind-rpc.binary").map(new File(_))
@@ -146,9 +146,8 @@ case class BitcoindRpcAppConfig(
   lazy val zmqConfig: ZmqConfig =
     ZmqConfig(zmqHashBlock, zmqRawBlock, zmqHashTx, zmqRawTx)
 
-  lazy val bitcoindInstance: BitcoindInstance = {
-
-    BitcoindInstance(
+  lazy val bitcoindInstance: BitcoindInstanceLocal = {
+    BitcoindInstanceLocal(
       network = network,
       uri = uri,
       rpcUri = rpcUri,
@@ -160,9 +159,7 @@ case class BitcoindRpcAppConfig(
           new File(config.getString("bitcoin-s.bitcoind-rpc.binary"))
         }
       },
-      datadir = bitcoindDataDir,
-      isRemote = isRemote,
-      proxyParams = socks5ProxyParams
+      datadir = bitcoindDataDir
     )
   }
 

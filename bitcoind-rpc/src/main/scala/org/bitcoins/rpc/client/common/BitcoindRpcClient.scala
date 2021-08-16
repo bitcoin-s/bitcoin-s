@@ -27,7 +27,12 @@ import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
-import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
+import org.bitcoins.rpc.config.{
+  BitcoindConfig,
+  BitcoindInstance,
+  BitcoindInstanceLocal,
+  BitcoindInstanceRemote
+}
 
 import java.io.File
 import scala.concurrent.Future
@@ -45,7 +50,7 @@ import scala.concurrent.Future
   * This is a sealed abstract class, so you can pattern match easily
   * on the errors, and handle them as you see fit.
   */
-class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
+class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     override val system: ActorSystem)
     extends Client
     with FeeRateApi
@@ -65,12 +70,15 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
     with PsbtRpc
     with UtilRpc {
 
-  override def version: BitcoindVersion = instance.getVersion
-
-  require(
-    instance.isRemote ||
-      version == BitcoindVersion.Unknown || version == instance.getVersion,
-    s"bitcoind version must be $version, got ${instance.getVersion}")
+  override def version: Future[BitcoindVersion] = {
+    instance match {
+      case _: BitcoindInstanceRemote =>
+        getNetworkInfo.map(info =>
+          BitcoindVersion.fromNetworkVersion(info.version))
+      case local: BitcoindInstanceLocal =>
+        Future.successful(local.getVersion)
+    }
+  }
 
   // Fee Rate Provider
 
@@ -209,14 +217,17 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(implicit
       height: Int): Future[Vector[CompactFilterDb]] = filterHeadersUnsupported
 
   protected def filtersUnsupported: Future[Nothing] = {
-    Future.failed(
-      new UnsupportedOperationException(
-        s"bitcoind ${instance.getVersion} does not support block filters"))
+    version.map { v =>
+      throw new UnsupportedOperationException(
+        s"bitcoind $v does not support block filters")
+    }
   }
 
   protected def filterHeadersUnsupported: Future[Nothing] = {
-    Future.failed(new UnsupportedOperationException(
-      s"bitcoind ${instance.getVersion} does not support block filters headers through the rpc"))
+    version.map { v =>
+      throw new UnsupportedOperationException(
+        s"bitcoind $v does not support block filters headers through the rpc")
+    }
   }
 }
 
@@ -249,12 +260,14 @@ object BitcoindRpcClient {
     new BitcoindRpcClient(instance)
 
   /** Constructs a RPC client from the given datadir, or
-    * the default datadir if no directory is provided
+    * the default datadir if no directory is provided.
+    * This is always a [[BitcoindInstanceLocal]] since a binary
+    * is passed into this method
     */
   def fromDatadir(
       datadir: File = BitcoindConfig.DEFAULT_DATADIR,
       binary: File): BitcoindRpcClient = {
-    val instance = BitcoindInstance.fromDatadir(datadir, binary)
+    val instance = BitcoindInstanceLocal.fromDatadir(datadir, binary)
     val cli = BitcoindRpcClient(instance)
     cli
   }
@@ -335,5 +348,13 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] {
 
   override def fromString(string: String): BitcoindVersion = {
     fromStringOpt(string).get
+  }
+
+  /** Gets the bitcoind version from the 'getnetworkresult' bitcoind rpc
+    * An example for 210100 for the 21.1.0 release of bitcoin core
+    */
+  def fromNetworkVersion(int: Int): BitcoindVersion = {
+    //need to translate the int 210100 (as an example) to a BitcoindVersion
+    ???
   }
 }

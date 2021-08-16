@@ -12,6 +12,7 @@ import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.rpc._
 import org.bitcoins.rpc.client.common._
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.rpc.util.{NodePair, RpcUtil}
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairV19,
@@ -105,7 +106,13 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
 
   it should "be able to backup the wallet" in { nodePair =>
     val walletClient = nodePair.node2
-    val datadir = walletClient.getDaemon.datadir.getAbsolutePath
+    val localInstance = walletClient.getDaemon match {
+      case _: BitcoindInstanceRemote =>
+        sys.error(s"Cannot use remote bitocind instance in test cases")
+      case local: BitcoindInstanceLocal =>
+        local
+    }
+    val datadir = localInstance.datadir.getAbsolutePath
     for {
       _ <- walletClient.backupWallet(datadir + "/backup.dat", Some(walletName))
     } yield {
@@ -286,6 +293,12 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
     val publicKey = ecPrivateKey.publicKey
     val address = P2PKHAddress(publicKey, networkParam)
 
+    val localInstance = client.getDaemon match {
+      case _: BitcoindInstanceRemote =>
+        sys.error(s"Cannot use remote bitocind instance in test cases")
+      case local: BitcoindInstanceLocal =>
+        local
+    }
     for {
       _ <- client.importPrivKey(ecPrivateKey.toPrivateKeyBytes(),
                                 rescan = false,
@@ -294,7 +307,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
       result <-
         client
           .dumpWallet(
-            client.getDaemon.datadir.getAbsolutePath + "/wallet_dump.dat",
+            localInstance.datadir.getAbsolutePath + "/wallet_dump.dat",
             Some(walletName))
     } yield {
       assert(key.toPrivateKey == ecPrivateKey)
@@ -359,10 +372,16 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
   it should "be able to import a wallet" in { nodePair =>
     val client = nodePair.node2
     val walletClient = client
+    val localInstance = client.getDaemon match {
+      case _: BitcoindInstanceRemote =>
+        sys.error(s"Cannot use remote bitocind instance in test cases")
+      case local: BitcoindInstanceLocal =>
+        local
+    }
     for {
       address <- client.getNewAddress(Some(walletName))
       walletFile =
-        client.getDaemon.datadir.getAbsolutePath + "/client_wallet.dat"
+        localInstance.datadir.getAbsolutePath + "/client_wallet.dat"
 
       fileResult <-
         client.dumpWallet(walletFile, walletNameOpt = Some(walletName))

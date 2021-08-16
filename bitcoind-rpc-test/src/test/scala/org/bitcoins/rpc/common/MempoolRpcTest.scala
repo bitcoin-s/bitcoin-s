@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairV21,
   BitcoindRpcTestUtil
@@ -180,8 +181,13 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairV21 {
   it should "be able to save the mem pool to disk" in {
     nodePair: FixtureParam =>
       val client = nodePair.node1
+      val localInstance = client.getDaemon match {
+        case _: BitcoindInstanceRemote =>
+          sys.error(s"Cannot have remote bitcoind instance in tests")
+        case local: BitcoindInstanceLocal => local
+      }
       val regTest =
-        new File(client.getDaemon.datadir.getAbsolutePath + "/regtest")
+        new File(localInstance.datadir.getAbsolutePath + "/regtest")
       assert(regTest.isDirectory)
       assert(!regTest.list().contains("mempool.dat"))
       for {

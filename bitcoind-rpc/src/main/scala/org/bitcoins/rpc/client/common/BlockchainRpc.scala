@@ -28,7 +28,7 @@ trait BlockchainRpc { self: Client =>
   }
 
   def getBlockChainInfo: Future[GetBlockChainInfoResult] = {
-    self.version match {
+    self.version.flatMap {
       case V16 | V17 | V18 =>
         bitcoindCall[GetBlockChainInfoResultPreV19]("getblockchaininfo")
       case V21 | V20 | V19 | Experimental | Unknown =>
