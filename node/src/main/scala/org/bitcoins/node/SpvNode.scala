@@ -34,6 +34,8 @@ case class SpvNode(
 
   private val _bloomFilter = new Mutable(BloomFilter.empty)
 
+  nodePeer.foreach(addPeer)
+
   def bloomFilter: BloomFilter = _bloomFilter.atomicGet
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
