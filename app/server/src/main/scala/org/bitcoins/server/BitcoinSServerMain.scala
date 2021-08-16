@@ -88,6 +88,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val peerSocketsF = {
       val allPeersF = {
         if (nodeConf.network == MainNet) {
+
           val dnsSeeds = nodeConf.network.dnsSeeds
 
           val peersFromSeed = dnsSeeds
