@@ -62,7 +62,7 @@ import org.bitcoins.core.wallet.fee._
 import org.bitcoins.feeprovider._
 import org.bitcoins.keymanager.bip39._
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.config._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.wallet.Wallet
@@ -113,7 +113,7 @@ val configF: Future[Unit] = for {
     _ <- chainConfig.start()
 } yield ()
 
-val bitcoindInstance = BitcoindInstance.fromDatadir()
+val bitcoindInstance = BitcoindInstanceLocal.fromDatadir()
 
 val bitcoind = BitcoindRpcClient(bitcoindInstance)
 

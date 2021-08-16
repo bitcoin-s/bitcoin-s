@@ -14,7 +14,7 @@ import org.bitcoins.feeprovider._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.node._
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
-import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.config._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.Wallet
@@ -55,7 +55,8 @@ implicit val walletConf: WalletAppConfig =
 
 // let's use a helper method to get a v19 bitcoind
 // and a ChainApi
-val bitcoind = BitcoindV19RpcClient(BitcoindInstance.fromConfigFile())
+val instance = BitcoindInstanceLocal.fromConfigFile(BitcoindConfig.DEFAULT_CONF_FILE)
+val bitcoind = BitcoindV19RpcClient(instance)
 val chainApi = BitcoinSWalletTest.MockChainQueryApi
 val aesPasswordOpt = Some(AesPassword.fromString("password"))
 

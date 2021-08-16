@@ -106,7 +106,7 @@ val authCredentials = BitcoindAuthCredentials.PasswordBased(
 )
 
 val bitcoindInstance = {
-  BitcoindInstance (
+  BitcoindInstanceLocal(
     network = MainNet,
     uri = new URI(s"http://localhost:${MainNet.port}"),
     rpcUri = new URI(s"http://localhost:${MainNet.rpcPort}"),
