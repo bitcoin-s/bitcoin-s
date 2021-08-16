@@ -78,12 +78,19 @@ case class TorAppConfig(
 
   /** Checks it the [[isBootstrappedLogLine]] exists in the tor log file */
   private def checkIfLogExists: Boolean = {
-    val stream = Files.lines(torLogFile)
-    try {
-      stream
-        .filter((line: String) => line.contains(isBootstrappedLogLine))
-        .count() > 0
-    } finally if (stream != null) stream.close()
+    if (Files.exists(torLogFile)) {
+      val stream = Files.lines(torLogFile)
+      try {
+        stream
+          .filter((line: String) => line.contains(isBootstrappedLogLine))
+          .count() > 0
+      } finally if (stream != null) stream.close()
+    } else {
+      //log file may not exist quite yet as we just started the tor binary
+      //it may take a bit for the tor binary to write the log file
+      false
+    }
+
   }
 
   override def stop(): Future[Unit] = {
