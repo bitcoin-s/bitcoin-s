@@ -21,9 +21,8 @@ abstract class WalletGUI extends Logging {
   }
 
   private lazy val networkLabel = new Label {
-    padding = Insets(0, 10, 0, 0)
-    text <== StringProperty("Network: ") + GlobalData.network +
-      (if (GlobalData.proxyEnabled.value) " over Tor" else "")
+    padding = Insets(0, 15, 0, 0)
+    text <== GlobalData.networkString
   }
 
   private lazy val infoLabel = new Label {
@@ -230,6 +229,7 @@ abstract class WalletGUI extends Logging {
     bottom = bottomStack
   }
 
+  // BundleGUI overrides initial state
   lazy val rootView: StackPane = new StackPane {
     children = Seq(
       borderPane,

@@ -79,6 +79,10 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
             BitcoinSAppConfig.fromDatadir(appConfig.baseDatadir, networkConfig)
           // use class base constructor to share the actor system
 
+          GlobalData.setBitcoinNetwork(
+            finalAppConfig.network,
+            finalAppConfig.socks5ProxyParams.isDefined)
+
           new BitcoinSServerMain(serverArgParser)(system, finalAppConfig)
             .run()
         }
