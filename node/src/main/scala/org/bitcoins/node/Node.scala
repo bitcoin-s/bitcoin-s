@@ -31,6 +31,32 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Random, Success}
 
+case class PeerData(peer: Peer, node: Node)(implicit
+    system: ActorSystem,
+    nodeAppConfig: NodeAppConfig) {
+
+  lazy val peerMessageSender: PeerMessageSender = PeerMessageSender(client)
+
+  lazy val client: P2PClient = {
+    val peerMessageReceiver =
+      PeerMessageReceiver.newReceiver(node = node, peer = peer)
+    P2PClient(context = system,
+              peer = peer,
+              peerMessageReceiver = peerMessageReceiver)
+  }
+
+  private var _serviceIdentifier: Option[ServiceIdentifier] = None
+
+  def serviceIdentifier: ServiceIdentifier = {
+    _serviceIdentifier.getOrElse(
+      throw new RuntimeException("Service identifier not initialized"))
+  }
+
+  def setServiceIdentifier(serviceIdentifier: ServiceIdentifier): Unit = {
+    _serviceIdentifier = Some(serviceIdentifier)
+  }
+}
+
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
 trait Node extends NodeApi with ChainQueryApi with P2PLogger {
@@ -45,34 +71,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   def peers: Vector[Peer] = peerData.keys.toVector
 
-  case class PeerData(peer: Peer) {
-
-    lazy val peerMessageSender: PeerMessageSender = PeerMessageSender(client)
-
-    lazy val client: P2PClient = {
-      val peerMessageReceiver =
-        PeerMessageReceiver.newReceiver(node = Node.this, peer = peer)
-      P2PClient(context = system,
-                peer = peer,
-                peerMessageReceiver = peerMessageReceiver)
-    }
-
-    private var _serviceIdentifier: Option[ServiceIdentifier] = None
-
-    def serviceIdentifier: ServiceIdentifier = {
-      _serviceIdentifier.getOrElse(
-        throw new RuntimeException("Service identifier not initialized"))
-    }
-
-    def setServiceIdentifier(serviceIdentifier: ServiceIdentifier): Unit = {
-      _serviceIdentifier = Some(serviceIdentifier)
-    }
-  }
-
   def addPeer(peer: Peer): Unit = {
     logger.info(s"Adding peer $peer")
     if (!_peerData.contains(peer)) {
-      _peerData.put(peer, PeerData(peer))
+      _peerData.put(peer, PeerData(peer, this))
     }
     ()
   }
