@@ -11,6 +11,7 @@ import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 import java.io.File
 import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.AtomicBoolean
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S node
@@ -73,17 +74,26 @@ case class TorAppConfig(
     *  }}}
     */
   private def isBinaryFullyStarted(): Future[Unit] = {
-    AsyncUtil.retryUntilSatisfied(checkIfLogExists)
+    //tor can take at least 25 seconds to start at times
+    //see: https://github.com/bitcoin-s/bitcoin-s/pull/3558#issuecomment-899819698
+    AsyncUtil.retryUntilSatisfied(checkIfLogExists, 1.second, 60)
   }
 
   /** Checks it the [[isBootstrappedLogLine]] exists in the tor log file */
   private def checkIfLogExists: Boolean = {
-    val stream = Files.lines(torLogFile)
-    try {
-      stream
-        .filter((line: String) => line.contains(isBootstrappedLogLine))
-        .count() > 0
-    } finally if (stream != null) stream.close()
+    if (Files.exists(torLogFile)) {
+      val stream = Files.lines(torLogFile)
+      try {
+        stream
+          .filter((line: String) => line.contains(isBootstrappedLogLine))
+          .count() > 0
+      } finally if (stream != null) stream.close()
+    } else {
+      //log file may not exist quite yet as we just started the tor binary
+      //it may take a bit for the tor binary to write the log file
+      false
+    }
+
   }
 
   override def stop(): Future[Unit] = {
