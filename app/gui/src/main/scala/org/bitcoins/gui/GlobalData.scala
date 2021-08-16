@@ -27,7 +27,7 @@ object GlobalData {
     this.network = network
     this.proxyEnabled.value = proxyEnabled
     networkString.value = "Network: " + network
-    if (GlobalData.proxyEnabled.value) networkString.value += " over Tor"
+    if (proxyEnabled) networkString.value += " over Tor"
   }
 
   val statusText: StringProperty = StringProperty("")
