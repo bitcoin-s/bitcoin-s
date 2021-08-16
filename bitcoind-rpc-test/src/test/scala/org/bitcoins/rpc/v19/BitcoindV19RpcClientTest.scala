@@ -20,7 +20,11 @@ class BitcoindV19RpcClientTest extends BitcoindFixturesFundedCachedV19 {
 
   it should "be able to start a V19 bitcoind instance" in {
     client: BitcoindV19RpcClient =>
-      assert(client.version == Future.successful(BitcoindVersion.V19))
+      for {
+        v <- client.version
+      } yield {
+        assert(v == BitcoindVersion.V19)
+      }
   }
 
   it should "get a block filter given a block hash" in {
