@@ -125,15 +125,6 @@ trait Client
     *         cannot be started
     */
   override def start(): Future[BitcoindRpcClient] = {
-    if (version != BitcoindVersion.Unknown) {
-      val foundVersion = instance.getVersion
-      if (foundVersion != version) {
-        throw new RuntimeException(
-          s"Wrong version for bitcoind RPC client! Expected $version, got $foundVersion")
-      }
-    }
-
-    val startedF = startBinary()
 
     // if we're doing cookie based authentication, we might attempt
     // to read the cookie file before it's written. this ensures
@@ -151,16 +142,34 @@ trait Client
       case _: PasswordBased => Future.successful(())
 
     }
+    val isAlreadyStarted: Future[Boolean] = isStartedF
 
-    val started: Future[BitcoindRpcClient] = {
-      for {
-        _ <- startedF
-        _ <- awaitCookie(instance.authCredentials)
-        _ = isStartedFlag.set(true)
-        _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
-                                            interval = 1.seconds,
-                                            maxTries = 120)
-      } yield this.asInstanceOf[BitcoindRpcClient]
+    val started: Future[Future[BitcoindRpcClient]] = isAlreadyStarted map {
+      case false =>
+        if (version != BitcoindVersion.Unknown) {
+          val foundVersion = instance.getVersion
+          if (foundVersion != version) {
+            throw new RuntimeException(
+              s"Wrong version for bitcoind RPC client! Expected $version, got $foundVersion")
+          }
+        }
+
+        val startedF = startBinary()
+
+        for {
+          _ <- startedF
+          _ <- awaitCookie(instance.authCredentials)
+          _ = isStartedFlag.set(true)
+          _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
+                                              interval = 1.seconds,
+                                              maxTries = 120)
+        } yield this.asInstanceOf[BitcoindRpcClient]
+
+      case true =>
+        for {
+          _ <- awaitCookie(instance.authCredentials)
+          _ = isStartedFlag.set(true)
+        } yield this.asInstanceOf[BitcoindRpcClient]
     }
 
     started.onComplete {
@@ -188,7 +197,8 @@ trait Client
           logger.info(s"Dumped bitcoin.conf to $otherTempfile")
         }
     }
-    started
+
+    started.flatten
   }
 
   private def tryPing(): Future[Boolean] = {
@@ -227,11 +237,7 @@ trait Client
         // if the cookie file doesn't exist we're not started
         Future.successful(false)
       case (CookieBased(_, _) | PasswordBased(_, _)) =>
-        if (isStartedFlag.get) {
-          tryPing()
-        } else {
-          Future.successful(false)
-        }
+        tryPing()
     }
   }
 
