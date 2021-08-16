@@ -2,7 +2,7 @@ package org.bitcoins.testkit.util
 
 import akka.actor.ActorSystem
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.config.BitcoindInstanceLocal
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 
 import java.nio.file.{Files, Path}
@@ -17,7 +17,7 @@ case class BitcoindRpcTestClient(
           s"Path did not exist! got=${binary.toAbsolutePath.toString}")
   import system.dispatcher
 
-  private lazy val bitcoindInstance: BitcoindInstance = {
+  private lazy val bitcoindInstance: BitcoindInstanceLocal = {
     BitcoindRpcTestUtil.getInstance(bitcoindVersion = version,
                                     binaryDirectory = binaryDirectory)
   }

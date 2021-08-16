@@ -21,7 +21,10 @@ import org.bitcoins.core.protocol.ln.{
 }
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
-import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
+import org.bitcoins.eclair.rpc.config.{
+  EclairAuthCredentials,
+  EclairInstanceLocal
+}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
@@ -512,7 +515,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
     val badInstanceF = badCredentialsF.flatMap { badCredentials =>
       val getBadInstance = (client: EclairRpcClient, _: EclairRpcClient) => {
-        val instance = EclairInstance(
+        val instance = EclairInstanceLocal(
           network = client.instance.network,
           uri = client.instance.uri,
           rpcUri = client.instance.rpcUri,

@@ -306,7 +306,7 @@ trait WalletRpc { self: Client =>
       walletNameOpt: Option[String] = None
   ): Future[SetWalletFlagResult] = {
 
-    self.version match {
+    self.version.flatMap {
       case V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[SetWalletFlagResult](
           "setwalletflag",
@@ -320,7 +320,7 @@ trait WalletRpc { self: Client =>
   }
 
   def getBalances: Future[GetBalancesResult] = {
-    self.version match {
+    self.version.flatMap {
       case V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[GetBalancesResult]("getbalances")
       case V16 | V17 | V18 =>
@@ -331,7 +331,7 @@ trait WalletRpc { self: Client =>
   }
 
   def getBalances(walletName: String): Future[GetBalancesResult] = {
-    self.version match {
+    self.version.flatMap {
       case V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[GetBalancesResult]("getbalances",
                                         uriExtensionOpt =
@@ -404,7 +404,7 @@ trait WalletRpc { self: Client =>
       disablePrivateKeys: Boolean = false,
       blank: Boolean = false,
       passphrase: String = ""): Future[CreateWalletResult] =
-    self.version match {
+    self.version.flatMap {
       case V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[CreateWalletResult]("createwallet",
                                          List(JsString(walletName),
@@ -422,7 +422,7 @@ trait WalletRpc { self: Client =>
   def getAddressInfo(
       address: BitcoinAddress,
       walletNameOpt: Option[String] = None): Future[AddressInfoResult] = {
-    self.version match {
+    self.version.flatMap {
       case V16 | V17 =>
         bitcoindCall[AddressInfoResultPreV18](
           "getaddressinfo",

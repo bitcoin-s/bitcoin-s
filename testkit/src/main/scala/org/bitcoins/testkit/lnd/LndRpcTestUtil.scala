@@ -8,11 +8,12 @@ import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.lnd.rpc.LndRpcClient
-import org.bitcoins.lnd.rpc.config.LndInstance
+import org.bitcoins.lnd.rpc.config.LndInstanceLocal
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
   BitcoindInstance,
+  BitcoindInstanceLocal,
   ZmqConfig
 }
 import org.bitcoins.rpc.util.RpcUtil
@@ -39,8 +40,9 @@ trait LndRpcTestUtil extends Logging {
 
   /** Makes a best effort to get a 0.21 bitcoind instance
     */
-  def startedBitcoindRpcClient(instance: BitcoindInstance = bitcoindInstance())(
-      implicit actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
+  def startedBitcoindRpcClient(
+      instance: BitcoindInstanceLocal = bitcoindInstance())(implicit
+      actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
     //need to do something with the Vector.newBuilder presumably?
     BitcoindRpcTestUtil.startedBitcoindRpcClient(instance, Vector.newBuilder)
   }
@@ -50,7 +52,8 @@ trait LndRpcTestUtil extends Logging {
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
-      bitcoindV: BitcoindVersion = BitcoindVersion.V21): BitcoindInstance = {
+      bitcoindV: BitcoindVersion =
+        BitcoindVersion.V21): BitcoindInstanceLocal = {
     BitcoindRpcTestUtil.getInstance(bitcoindVersion = bitcoindV,
                                     port = port,
                                     rpcPort = rpcPort,
@@ -107,13 +110,13 @@ trait LndRpcTestUtil extends Logging {
     }
   }
 
-  def lndInstance(bitcoindRpc: BitcoindRpcClient): LndInstance = {
+  def lndInstance(bitcoindRpc: BitcoindRpcClient): LndInstanceLocal = {
     val datadir = lndDataDir(bitcoindRpc, isCannonical = false)
     lndInstance(datadir)
   }
 
-  def lndInstance(datadir: File): LndInstance = {
-    LndInstance.fromDataDir(datadir)
+  def lndInstance(datadir: File): LndInstanceLocal = {
+    LndInstanceLocal.fromDataDir(datadir)
   }
 
   /** Returns a `Future` that is completed when both lnd and bitcoind have the same block height

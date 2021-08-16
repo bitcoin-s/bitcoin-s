@@ -79,7 +79,8 @@ class BitcoindV21RpcClient(override val instance: BitcoindInstance)(implicit
     } yield Vector(filter.filterDb(height))
   }
 
-  override lazy val version: BitcoindVersion = BitcoindVersion.V21
+  override lazy val version: Future[BitcoindVersion.V21.type] =
+    Future.successful(BitcoindVersion.V21)
 
   /** $signRawTx
     *

@@ -35,7 +35,8 @@ class BitcoindV18RpcClient(override val instance: BitcoindInstance)(implicit
     with PsbtRpc
     with V18AssortedRpc {
 
-  override lazy val version: BitcoindVersion = BitcoindVersion.V18
+  override lazy val version: Future[BitcoindVersion.V18.type] =
+    Future.successful(BitcoindVersion.V18)
 
   override def getFilterCount(): Future[Int] = filtersUnsupported
 

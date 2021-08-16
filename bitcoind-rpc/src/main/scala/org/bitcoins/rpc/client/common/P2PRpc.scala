@@ -56,7 +56,7 @@ trait P2PRpc { self: Client =>
   }
 
   def getNetworkInfo: Future[GetNetworkInfoResult] = {
-    version match {
+    version.flatMap {
       case V21 | Unknown =>
         bitcoindCall[GetNetworkInfoResultPostV21]("getnetworkinfo")
       case V16 | V17 | V18 | V19 | V20 | Experimental =>
@@ -65,7 +65,7 @@ trait P2PRpc { self: Client =>
   }
 
   def getPeerInfo: Future[Vector[Peer]] = {
-    self.version match {
+    self.version.flatMap {
       case V21 | Unknown =>
         bitcoindCall[Vector[PeerPostV21]]("getpeerinfo")
       case V20 =>
@@ -76,7 +76,7 @@ trait P2PRpc { self: Client =>
   }
 
   def listBanned: Future[Vector[NodeBan]] = {
-    self.version match {
+    self.version.flatMap {
       case V21 | V20 | Unknown =>
         bitcoindCall[Vector[NodeBanPostV20]]("listbanned")
       case V16 | V17 | V18 | V19 | Experimental =>

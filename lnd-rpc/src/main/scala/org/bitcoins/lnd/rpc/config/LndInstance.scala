@@ -1,6 +1,6 @@
 package org.bitcoins.lnd.rpc.config
 
-import org.bitcoins.core.api.commons.InstanceFactory
+import org.bitcoins.core.api.commons.InstanceFactoryLocal
 import org.bitcoins.core.config._
 import org.bitcoins.rpc.config.BitcoindAuthCredentials._
 import org.bitcoins.rpc.config._
@@ -11,21 +11,19 @@ import java.net._
 import java.nio.file._
 import scala.util.Properties
 
-case class LndInstance(
-    datadir: Path,
-    network: BitcoinNetwork,
-    listenBinding: URI,
-    restUri: URI,
-    rpcUri: URI,
-    bitcoindAuthCredentials: PasswordBased,
-    bitcoindRpcUri: URI,
-    zmqConfig: ZmqConfig,
-    debugLevel: LogLevel) {
-
-  lazy val certFile: File =
-    datadir.resolve("tls.cert").toFile
+sealed trait LndInstance {
+  def network: BitcoinNetwork
+  def listenBinding: URI
+  def restUri: URI
+  def rpcUri: URI
+  def bitcoindAuthCredentials: PasswordBased
+  def bitcoindRpcUri: URI
+  def zmqConfig: ZmqConfig
+  def debugLevel: LogLevel
 
   private var macaroonOpt: Option[String] = None
+
+  def datadir: Path
 
   def macaroon: String = {
     macaroonOpt match {
@@ -36,7 +34,7 @@ case class LndInstance(
             .resolve("data")
             .resolve("chain")
             .resolve("bitcoin")
-            .resolve(LndInstance.getNetworkDirName(network))
+            .resolve(LndInstanceLocal.getNetworkDirName(network))
             .resolve("admin.macaroon")
 
         val bytes = Files.readAllBytes(path)
@@ -46,9 +44,24 @@ case class LndInstance(
         hex
     }
   }
+
+  lazy val certFile: File =
+    datadir.resolve("tls.cert").toFile
 }
 
-object LndInstance extends InstanceFactory[LndInstance] {
+case class LndInstanceLocal(
+    datadir: Path,
+    network: BitcoinNetwork,
+    listenBinding: URI,
+    restUri: URI,
+    rpcUri: URI,
+    bitcoindAuthCredentials: PasswordBased,
+    bitcoindRpcUri: URI,
+    zmqConfig: ZmqConfig,
+    debugLevel: LogLevel)
+    extends LndInstance
+
+object LndInstanceLocal extends InstanceFactoryLocal[LndInstanceLocal] {
 
   override val DEFAULT_DATADIR: Path = Paths.get(Properties.userHome, ".lnd")
 
@@ -64,7 +77,7 @@ object LndInstance extends InstanceFactory[LndInstance] {
   }
 
   override def fromConfigFile(
-      file: File = DEFAULT_CONF_FILE.toFile): LndInstance = {
+      file: File = DEFAULT_CONF_FILE.toFile): LndInstanceLocal = {
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
@@ -73,7 +86,8 @@ object LndInstance extends InstanceFactory[LndInstance] {
     fromConfig(config)
   }
 
-  override def fromDataDir(dir: File = DEFAULT_DATADIR.toFile): LndInstance = {
+  override def fromDataDir(
+      dir: File = DEFAULT_DATADIR.toFile): LndInstanceLocal = {
     require(dir.exists, s"${dir.getPath} does not exist!")
     require(dir.isDirectory, s"${dir.getPath} is not a directory!")
 
@@ -83,7 +97,7 @@ object LndInstance extends InstanceFactory[LndInstance] {
     fromConfig(config)
   }
 
-  def fromConfig(config: LndConfig): LndInstance = {
+  def fromConfig(config: LndConfig): LndInstanceLocal = {
     config.lndInstance
   }
 }
