@@ -95,7 +95,6 @@ them):
 ControlPort 9051
 CookieAuthentication 1
 CookieAuthFileGroupReadable 1
-CookieAuthFile /usr/local/var/tor/control_auth_cookie
 ```
 
 Add or uncomment those, save, and restart Tor (usually `systemctl restart tor`
@@ -119,6 +118,13 @@ sudo chmod 755 /usr/local/var/tor
 ```
 
 After changing these settings, you will need to restart your computer.
+
+### Optional Settings
+If you experience repeated connection issues make sure to check the bitcoin-s.log file. If the logs show that Bitcoin-s is able to connect through the tor proxy (`connected to neutrino.suredbits.com/:8333 via SOCKS5 proxy /127.0.0.1:9050`) but is not able to connect through the tor controller (`TorController refused to connect` or similar) you may need to make additional changes to your torrc file. Find the location of your tor control_auth_cookie file and add the pathname for this file to your torrc file as show below. 
+For mac osx:
+```
+CookieAuthFile /usr/local/var/tor/control_auth_cookie
+```
 
 ### Configuring Bitcoin-S
 
