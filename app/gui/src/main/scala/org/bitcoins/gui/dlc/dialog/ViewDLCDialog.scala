@@ -15,7 +15,7 @@ import scalafx.beans.property.StringProperty
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
 import scalafx.scene.control._
-import scalafx.scene.layout.GridPane
+import scalafx.scene.layout.{GridPane, HBox, Priority}
 import scalafx.stage.Window
 
 object ViewDLCDialog {
@@ -53,13 +53,13 @@ object ViewDLCDialog {
     }
   }
 
-  private def getTextField(property: StringProperty): TextField = {
-    new TextField {
-      styleClass += "view-dlc-textfield"
-      text <== property
-      editable = false
-    }
-  }
+//  private def getTextField(property: StringProperty): TextField = {
+//    new TextField {
+//      styleClass += "view-dlc-textfield"
+//      text <== property
+//      editable = false
+//    }
+//  }
 
   def buildView(status: DLCStatus, model: DLCPaneModel) = {
     val closingTxId: StringProperty = StringProperty(
@@ -155,15 +155,48 @@ object ViewDLCDialog {
           rowIndex = row)
 
       row += 1
+      // TODO : Status filtering for showing this view vs just the TextField
+      val fundingHBox = new HBox() {
+        children = Seq(
+          new TextField {
+            text = DLCStatus.getFundingTxId(status).map(_.hex).getOrElse("")
+            editable = false
+            hgrow = Priority.Always
+          },
+          new Button("Rebroadcast") {
+            disable = !DLCStatus.getFundingTxId(status).isDefined
+            onAction = _ => {
+              DLCStatus.getContractId(status) match {
+                case Some(contractId) => model.rebroadcastFundingTx(contractId)
+                case None             => // Nothing to do
+              }
+            }
+          }
+        )
+      }
       add(getLabel("Funding TxId"), 0, row)
-      add(
-        getTextField(DLCStatus.getFundingTxId(status).map(_.hex).getOrElse("")),
-        columnIndex = 1,
-        rowIndex = row)
+      add(fundingHBox, columnIndex = 1, rowIndex = row)
 
       row += 1
+      // TODO : Status filtering for showing this view vs just the TextField
+      val closingHBox = new HBox {
+        children = Seq(
+          new TextField() {
+            text <== closingTxId
+            editable = false
+            hgrow = Priority.Always
+          },
+          new Button("Rebroadcast") {
+            disable =
+              true // Until operation is supported, correct value = closingTxId.isEmpty.getValue
+            onAction = _ => {
+              model.rebroadcastClosingTx(status)
+            }
+          }
+        )
+      }
       add(getLabel("Closing TxId"), 0, row)
-      add(getTextField(closingTxId), columnIndex = 1, rowIndex = row)
+      add(closingHBox, columnIndex = 1, rowIndex = row)
 
       row += 1
       add(getLabel("Oracle Signatures"), 0, row)
