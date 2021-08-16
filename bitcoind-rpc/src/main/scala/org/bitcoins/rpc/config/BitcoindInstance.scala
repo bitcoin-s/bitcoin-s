@@ -117,6 +117,14 @@ object BitcoindInstance extends InstanceFactory[BitcoindInstance] {
                          proxyParams = proxyParams)
   }
 
+  val bitcoindLocationFromConfigFile: File = {
+    val homeVar = sys.env("HOME");
+    val config = ConfigFactory
+      .parseFile(new File(homeVar + "/.bitcoin-s/bitcoin-s.conf"))
+      .resolve()
+    new File(config.getString("bitcoin-s.bitcoind-rpc.binary"))
+  }
+
   lazy val DEFAULT_BITCOIND_LOCATION: Option[File] = {
     val cmd =
       if (Properties.isWin) {
@@ -141,13 +149,7 @@ object BitcoindInstance extends InstanceFactory[BitcoindInstance] {
       datadir: File = BitcoindConfig.DEFAULT_DATADIR,
       binary: File = DEFAULT_BITCOIND_LOCATION match {
         case Some(file) => file
-        case None => {
-          val homeVar = sys.env("HOME");
-          val config = ConfigFactory
-            .parseFile(new File(homeVar + "/.bitcoin-s/bitcoin-s.conf"))
-            .resolve()
-          new File(config.getString("bitcoin-s.bitcoind-rpc.binary"))
-        }
+        case None       => bitcoindLocationFromConfigFile
       }
   ): BitcoindInstance = {
     require(datadir.exists, s"${datadir.getPath} does not exist!")
@@ -168,13 +170,7 @@ object BitcoindInstance extends InstanceFactory[BitcoindInstance] {
       dir,
       DEFAULT_BITCOIND_LOCATION match {
         case Some(file) => file
-        case None => {
-          val homeVar = sys.env("HOME");
-          val config = ConfigFactory
-            .parseFile(new File(homeVar + "/.bitcoin-s/bitcoin-s.conf"))
-            .resolve()
-          new File(config.getString("bitcoin-s.bitcoind-rpc.binary"))
-        }
+        case None       => bitcoindLocationFromConfigFile
       }
     )
   }
@@ -188,13 +184,7 @@ object BitcoindInstance extends InstanceFactory[BitcoindInstance] {
       file: File = BitcoindConfig.DEFAULT_CONF_FILE,
       binary: File = DEFAULT_BITCOIND_LOCATION match {
         case Some(file) => file
-        case None => {
-          val homeVar = sys.env("HOME");
-          val config = ConfigFactory
-            .parseFile(new File(homeVar + "/.bitcoin-s/bitcoin-s.conf"))
-            .resolve()
-          new File(config.getString("bitcoin-s.bitcoind-rpc.binary"))
-        }
+        case None       => bitcoindLocationFromConfigFile
       }
   ): BitcoindInstance = {
     require(file.exists, s"${file.getPath} does not exist!")
@@ -210,13 +200,7 @@ object BitcoindInstance extends InstanceFactory[BitcoindInstance] {
       file,
       DEFAULT_BITCOIND_LOCATION match {
         case Some(file) => file
-        case None => {
-          val homeVar = sys.env("HOME");
-          val config = ConfigFactory
-            .parseFile(new File(homeVar + "/.bitcoin-s/bitcoin-s.conf"))
-            .resolve()
-          new File(config.getString("bitcoin-s.bitcoind-rpc.binary"))
-        }
+        case None       => bitcoindLocationFromConfigFile
       }
     )
   }
@@ -226,13 +210,7 @@ object BitcoindInstance extends InstanceFactory[BitcoindInstance] {
       config: BitcoindConfig,
       binary: File = DEFAULT_BITCOIND_LOCATION match {
         case Some(file) => file
-        case None => {
-          val homeVar = sys.env("HOME");
-          val config = ConfigFactory
-            .parseFile(new File(homeVar + "/.bitcoin-s/bitcoin-s.conf"))
-            .resolve()
-          new File(config.getString("bitcoin-s.bitcoind-rpc.binary"))
-        }
+        case None       => bitcoindLocationFromConfigFile
       }
   ): BitcoindInstance = {
 

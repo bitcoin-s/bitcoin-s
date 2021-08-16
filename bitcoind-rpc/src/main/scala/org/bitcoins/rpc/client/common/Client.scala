@@ -144,9 +144,9 @@ trait Client
     }
     val isAlreadyStarted: Future[Boolean] = isStartedF
 
-    val started: Future[Future[BitcoindRpcClient]] = isAlreadyStarted map {
+    val started: Future[Future[BitcoindRpcClient]] = isAlreadyStarted.map {
       case false =>
-        if (version != BitcoindVersion.Unknown) {
+        if (!instance.isRemote && version != BitcoindVersion.Unknown) {
           val foundVersion = instance.getVersion
           if (foundVersion != version) {
             throw new RuntimeException(
