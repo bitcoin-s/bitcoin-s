@@ -11,8 +11,6 @@ import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.testkit.chain.BlockHeaderHelper
 import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV18
 
-import scala.concurrent.Future
-
 class BitcoindV18RpcClientTest extends BitcoindFixturesFundedCachedV18 {
 
   behavior of "BitcoindV18RpcClient"
@@ -32,7 +30,9 @@ class BitcoindV18RpcClientTest extends BitcoindFixturesFundedCachedV18 {
   }
 
   it should "be able to start a V18 bitcoind instance" in { client =>
-    assert(client.version == Future.successful(BitcoindVersion.V18))
+    for {
+      v <- client.version
+    } yield assert(v == BitcoindVersion.V18)
   }
 
   it should "return active rpc commands" in { client =>

@@ -21,7 +21,9 @@ class BitcoindV21RpcClientTest extends BitcoindFixturesFundedCachedV21 {
 
   it should "be able to start a V21 bitcoind instance" in {
     client: BitcoindV21RpcClient =>
-      assert(client.version == Future.successful(BitcoindVersion.V21))
+      for {
+        v <- client.version
+      } yield assert(v == BitcoindVersion.V21)
   }
 
   it should "be able to get network info" in {
