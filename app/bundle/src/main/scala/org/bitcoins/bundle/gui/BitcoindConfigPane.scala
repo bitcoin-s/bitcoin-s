@@ -10,7 +10,6 @@ import scalafx.scene.control._
 import scalafx.scene.layout._
 import scalafx.scene.text.{Font, TextAlignment}
 
-import scala.util.Try
 
 class BitcoindConfigPane(
     appConfig: BitcoinSAppConfig,
@@ -39,12 +38,12 @@ class BitcoindConfigPane(
   GUIUtil.setNumericInput(portTF)
 
   private val rpcUserTF: TextField = new TextField {
-    text = Try(appConfig.rpcUser).getOrElse("")
+    text = appConfig.rpcUser.getOrElse("")
     minWidth = 300
   }
 
   private val rpcPasswordTF: TextField = new TextField {
-    text = Try(appConfig.rpcPassword).getOrElse("")
+    text = appConfig.rpcPassword.getOrElse("")
     minWidth = 300
   }
 
