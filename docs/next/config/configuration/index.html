@@ -163,6 +163,11 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment"># bitcoind rpc username</span>
         <span class="hljs-attr">rpcuser</span> = user
         <span class="hljs-comment"># bitcoind rpc password</span>
+        <span class="hljs-comment"># If your password contains the characters  '$','{', '}', '[', ']', ':', '=', ',', '+', '#', '`', '^', '?', '!', '@', '*', '&amp;', whitespace</span>
+        <span class="hljs-comment"># or the string "//", enclose it in double quotes</span>
+        <span class="hljs-comment"># rpcpassword = "password=" if the original password is password=, rpcpassword = "passwo//rd" if the original password is passwo//rd etc.</span>
+        <span class="hljs-comment"># If it contains '\' or '"', escape it with '\'</span>
+        <span class="hljs-comment"># rpcpassword = "pass\\word" if the original password is pass\word, rpcpassword = "pass\"word" if the original password is pass"word</span>
         <span class="hljs-attr">rpcpassword</span> = password
 
         <span class="hljs-comment"># Binary location of bitcoind</span>
@@ -185,6 +190,9 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-attr">zmqpubhashtx</span> = <span class="hljs-string">"tcp://127.0.0.1:28330"</span>
         <span class="hljs-comment"># bitcoind zmq raw block</span>
         <span class="hljs-attr">zmqpubhashblock</span> = <span class="hljs-string">"tcp://127.0.0.1:28331"</span>
+        
+        <span class="hljs-comment">#If you have a bitcoind instance that is running remotely on another machine, you should set it to true</span>
+        <span class="hljs-attr">isRemote</span> = <span class="hljs-literal">false</span>
     }
 
     node {
