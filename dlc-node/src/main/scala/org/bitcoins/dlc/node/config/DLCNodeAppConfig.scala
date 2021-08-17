@@ -20,7 +20,7 @@ import scala.concurrent._
   */
 case class DLCNodeAppConfig(
     private val directory: Path,
-    private val conf: Config*)
+    private val conf: Config*)(implicit ec: ExecutionContext)
     extends AppConfig {
   override protected[bitcoins] def configOverrides: List[Config] = conf.toList
 
