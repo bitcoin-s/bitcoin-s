@@ -1,10 +1,14 @@
 package org.bitcoins.chain.blockchain
 
-import org.bitcoins.chain.{ChainCallbacks, OnBlockHeaderConnected}
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.chain.{ChainCallbacks, OnBlockHeaderConnected}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
+import org.bitcoins.core.api.chain.db.{
+  BlockHeaderDb,
+  BlockHeaderDbHelper,
+  CompactFilterHeaderDb
+}
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -242,6 +246,75 @@ class ChainHandlerTest extends ChainDbUnitTest {
           DoubleSha256DigestBE.fromBytes(ECPrivateKey.freshPrivateKey.bytes))
         recoverToSucceededIf[UnknownBlockHash](newChainHandlerF)
       }
+  }
+
+  it must "verify a batch of filter headers" in { chainHandler: ChainHandler =>
+    val goodBatch = Vector(
+      ChainUnitTest.genesisFilterHeaderDb,
+      CompactFilterHeaderDb(
+        hashBE = DoubleSha256DigestBE.fromHex(
+          "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"),
+        previousFilterHeaderBE = ChainUnitTest.genesisFilterHeaderDb.hashBE,
+        height = 1,
+        filterHashBE = DoubleSha256DigestBE.fromHex(
+          "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"),
+        blockHashBE = DoubleSha256DigestBE.fromHex(
+          "aaa1a2a3a4a5a6a7a8a9aaabacadaeafaaa1a2a3a4a5a6a7a8a9aaabacadaeaf")
+      )
+    )
+
+    val invalidGenesisFilterHeaderBatch = Vector(
+      ChainUnitTest.genesisFilterHeaderDb.copy(
+        hashBE = ChainUnitTest.genesisFilterHeaderDb.previousFilterHeaderBE,
+        previousFilterHeaderBE = ChainUnitTest.genesisFilterHeaderDb.hashBE
+      )
+    )
+
+    val invalidFilterHeaderBatch = Vector(
+      ChainUnitTest.genesisFilterHeaderDb.copy(height = 1)
+    )
+
+    val selfReferenceFilterHeaderBatch = Vector(
+      ChainUnitTest.genesisFilterHeaderDb,
+      CompactFilterHeaderDb(
+        hashBE = DoubleSha256DigestBE.fromHex(
+          "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"),
+        previousFilterHeaderBE = DoubleSha256DigestBE.fromHex(
+          "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"),
+        height = 1,
+        filterHashBE = DoubleSha256DigestBE.fromHex(
+          "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"),
+        blockHashBE = DoubleSha256DigestBE.fromHex(
+          "aaa1a2a3a4a5a6a7a8a9aaabacadaeafaaa1a2a3a4a5a6a7a8a9aaabacadaeaf")
+      )
+    )
+
+    val unknownFilterHeaderBatch = Vector(
+      ChainUnitTest.genesisFilterHeaderDb,
+      CompactFilterHeaderDb(
+        hashBE = DoubleSha256DigestBE.fromHex(
+          "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"),
+        previousFilterHeaderBE = DoubleSha256DigestBE.fromHex(
+          "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"),
+        height = 1,
+        filterHashBE = DoubleSha256DigestBE.fromHex(
+          "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"),
+        blockHashBE = DoubleSha256DigestBE.fromHex(
+          "aaa1a2a3a4a5a6a7a8a9aaabacadaeafaaa1a2a3a4a5a6a7a8a9aaabacadaeaf")
+      )
+    )
+
+    for {
+      _ <- chainHandler.verifyFilterHeaders(goodBatch)
+      _ <- recoverToSucceededIf[IllegalArgumentException](
+        chainHandler.verifyFilterHeaders(invalidGenesisFilterHeaderBatch))
+      _ <- recoverToSucceededIf[IllegalArgumentException](
+        chainHandler.verifyFilterHeaders(invalidFilterHeaderBatch))
+      _ <- recoverToSucceededIf[IllegalArgumentException](
+        chainHandler.verifyFilterHeaders(selfReferenceFilterHeaderBatch))
+      _ <- recoverToSucceededIf[IllegalArgumentException](
+        chainHandler.verifyFilterHeaders(unknownFilterHeaderBatch))
+    } yield succeed
   }
 
   it must "get the highest filter" in { chainHandler: ChainHandler =>

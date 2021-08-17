@@ -350,66 +350,6 @@ class ChainHandler(
       }
     }
 
-    /** Verifies if the previous header exists either in the batch [[filtersByHash]]
-      * or in the database, throws if it doesn't
-      */
-    def checkFilterHeader(
-        filtersByHash: Map[DoubleSha256DigestBE, CompactFilterHeaderDb])(
-        filterHeader: CompactFilterHeaderDb): Future[Unit] = {
-
-      def checkHeight(
-          filterHeader: CompactFilterHeaderDb,
-          prevHeader: CompactFilterHeaderDb): Unit = {
-        require(
-          prevHeader.height == filterHeader.height - 1,
-          s"Unexpected previous filter header's height: ${prevHeader.height} != ${filterHeader.height - 1}"
-        )
-      }
-
-      if (filterHeader.hashBE == filterHeader.previousFilterHeaderBE) {
-        Future.failed(
-          new IllegalArgumentException(
-            s"Filter header cannot reference to itself: ${filterHeader}"))
-      } else if (filterHeader.height == 0) {
-        Future {
-          require(
-            filterHeader.previousFilterHeaderBE == DoubleSha256DigestBE.empty,
-            s"Previous filter header hash for the genesis block must be empty: ${filterHeader}")
-        }
-      } else {
-        if (filterHeader.previousFilterHeaderBE == DoubleSha256DigestBE.empty) {
-          Future.failed(new IllegalArgumentException(
-            s"Previous filter header hash for a regular block must not be empty: ${filterHeader}"))
-        } else {
-          filtersByHash.get(filterHeader.previousFilterHeaderBE) match {
-            case Some(prevHeader) =>
-              Future {
-                checkHeight(filterHeader, prevHeader)
-              }
-            case None =>
-              val filterHashFOpt = filterHeaderDAO
-                .findByHash(filterHeader.previousFilterHeaderBE)
-              filterHashFOpt.map {
-                case Some(prevHeader) =>
-                  checkHeight(filterHeader, prevHeader)
-                case None =>
-                  throw new IllegalArgumentException(
-                    s"Previous filter header does not exist: $filterHeader")
-              }
-          }
-        }
-      }
-    }
-
-    def verifyFilterHeaders(
-        filterHeaders: Vector[CompactFilterHeaderDb]): Future[Unit] = {
-      val byHash = filterHeaders.foldLeft(
-        Map.empty[DoubleSha256DigestBE, CompactFilterHeaderDb])((acc, fh) =>
-        acc.updated(fh.hashBE, fh))
-      val verify = checkFilterHeader(byHash)(_)
-      FutureUtil.sequentially(filterHeaders)(verify).map(_ => ())
-    }
-
     for {
       filterHeadersToCreate <- filterHeadersToCreateF
       _ <- verifyFilterHeaders(filterHeadersToCreate)
@@ -473,6 +413,66 @@ class ChainHandler(
         case (_, _) =>
           logger.warn("Was unable to process any filters")
           this
+      }
+    }
+  }
+
+  /** Verifies if the previous headers exist either in the batch [[filterHeaders]]
+    * or in the database, throws if it doesn't
+    */
+  def verifyFilterHeaders(
+      filterHeaders: Vector[CompactFilterHeaderDb]): Future[Unit] = {
+    val byHash = filterHeaders.foldLeft(
+      Map.empty[DoubleSha256DigestBE, CompactFilterHeaderDb])((acc, fh) =>
+      acc.updated(fh.hashBE, fh))
+    val verify = checkFilterHeader(byHash)(_)
+    FutureUtil.sequentially(filterHeaders)(verify).map(_ => ())
+  }
+
+  private def checkFilterHeader(
+      filtersByHash: Map[DoubleSha256DigestBE, CompactFilterHeaderDb])(
+      filterHeader: CompactFilterHeaderDb): Future[Unit] = {
+
+    def checkHeight(
+        filterHeader: CompactFilterHeaderDb,
+        prevHeader: CompactFilterHeaderDb): Unit = {
+      require(
+        prevHeader.height == filterHeader.height - 1,
+        s"Unexpected previous filter header's height: ${prevHeader.height} != ${filterHeader.height - 1}"
+      )
+    }
+
+    if (filterHeader.hashBE == filterHeader.previousFilterHeaderBE) {
+      Future.failed(
+        new IllegalArgumentException(
+          s"Filter header cannot reference to itself: ${filterHeader}"))
+    } else if (filterHeader.height == 0) {
+      Future {
+        require(
+          filterHeader.previousFilterHeaderBE == DoubleSha256DigestBE.empty,
+          s"Previous filter header hash for the genesis block must be empty: ${filterHeader}")
+      }
+    } else {
+      if (filterHeader.previousFilterHeaderBE == DoubleSha256DigestBE.empty) {
+        Future.failed(new IllegalArgumentException(
+          s"Previous filter header hash for a regular block must not be empty: ${filterHeader}"))
+      } else {
+        filtersByHash.get(filterHeader.previousFilterHeaderBE) match {
+          case Some(prevHeader) =>
+            Future {
+              checkHeight(filterHeader, prevHeader)
+            }
+          case None =>
+            val filterHashFOpt = filterHeaderDAO
+              .findByHash(filterHeader.previousFilterHeaderBE)
+            filterHashFOpt.map {
+              case Some(prevHeader) =>
+                checkHeight(filterHeader, prevHeader)
+              case None =>
+                throw new IllegalArgumentException(
+                  s"Previous filter header does not exist: $filterHeader")
+            }
+        }
       }
     }
   }
