@@ -12,5 +12,6 @@ case class TorParams(
 )
 
 object TorParams {
+  val DefaultProxyPort: Int = 9050
   val DefaultControlPort: Int = 9051
 }
