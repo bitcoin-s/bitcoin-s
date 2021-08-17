@@ -292,7 +292,6 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
   }
 
   def rebroadcastFundingTx(contractId: ByteVector): Unit = {
-    println("rebroadcastFundingTx " + contractId)
     taskRunner.run(
       "Rebroadcast Funding Tx",
       op = {
@@ -309,7 +308,6 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
   }
 
   def rebroadcastClosingTx(status: DLCStatus): Unit = {
-    println("rebroadcastClosingTx " + status)
 //    (DLCStatus.getContractId(status), getOracleSignatures(status)) match {
 //      case (Some(contractId), Some(sigs)) =>
 //        taskRunner.run(
@@ -328,6 +326,8 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
 //        )
 //      case _ => // Nothing to do
 //    }
+
+    sys.error(s"Rebroadcasting of closing transaction is not implemented yet")
   }
 
   def exportResult(result: String): Unit = {
