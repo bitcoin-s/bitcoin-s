@@ -157,7 +157,7 @@ bitcoin-s {
         # bitcoind zmq raw block
         zmqpubhashblock = "tcp://127.0.0.1:28331"
         
-        #If you have bitcoind already running on your system, you can set isRemote to true. By default, Bitcoin-S will start the binary for you.
+        #If you have a bitcoind instance that is running remotely on another machine, you should set it to true
         isRemote = false
     }
 
