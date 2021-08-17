@@ -135,24 +135,6 @@ abstract class WalletGUI extends Logging {
     children = Vector(walletGrid, buttonBox)
   }
 
-  private lazy val eventsLabel = new Label("Events")
-
-  private lazy val eventsTitleHbox = new HBox {
-    alignment = Pos.Center
-    children = Seq(eventsLabel, GUIUtil.getHSpacer(), contractGUI.addEventHBox)
-  }
-
-  private lazy val contractLabel = new Label("Contracts")
-
-  private lazy val contractsTitleHbox = new HBox {
-    alignment = Pos.Center
-    children =
-      Seq(contractLabel, GUIUtil.getHSpacer(), contractGUI.addContractHBox)
-  }
-
-  // Magic indent so text doesn't write passed edge of TitledPane
-  private val TITLEPANE_RIGHT_GUTTER = 35
-
   private lazy val sidebarAccordian = new VBox {
     padding = Insets(4)
 
@@ -162,15 +144,14 @@ abstract class WalletGUI extends Logging {
     }
 
     val eventUI = new TitledPane {
-      graphic = eventsTitleHbox
       content = contractGUI.eventPane
+      text = "Events"
       expanded = false
     }
-    eventsTitleHbox.minWidth <== eventUI.width - TITLEPANE_RIGHT_GUTTER
 
     val contractUI = new TitledPane {
-      graphic = contractsTitleHbox
       content = dlcPane.tableView
+      text = "Contracts"
       dlcPane.tableView.onMouseClicked = _ => {
         val i = dlcPane.tableView.getSelectionModel.getSelectedItem
         if (i != null) {
@@ -178,12 +159,12 @@ abstract class WalletGUI extends Logging {
         }
       }
     }
-    contractsTitleHbox.minWidth <== contractUI.width - TITLEPANE_RIGHT_GUTTER
 
     children = Vector(
+      contractGUI.loadPane,
       walletUI,
-      eventUI,
       contractUI,
+      eventUI,
       GUIUtil.getVSpacer(),
       stateDetails
     )

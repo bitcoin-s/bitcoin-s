@@ -31,6 +31,7 @@ import scalafx.geometry._
 import scalafx.scene.Parent
 import scalafx.scene.control.{
   ContextMenu,
+  Label,
   MenuItem,
   TableColumn,
   TableView,
@@ -48,9 +49,13 @@ class ContractGUI(glassPane: VBox) {
 
   private[gui] lazy val model = new ContractGUIModel()
 
+  private lazy val addEventLabel = new Label("Load Event") {
+    styleClass += "load-label"
+  }
+
   private lazy val addEventTF = new TextField {
-    styleClass += "title-textfield"
-    promptText = "New Event Hex"
+    styleClass += "load-textfield"
+    promptText = "Paste Event Hex"
     onKeyTyped = _ => {
       val event = model.addEvent(this.text.value.trim)
       event match {
@@ -70,14 +75,13 @@ class ContractGUI(glassPane: VBox) {
     addEventTF.clear()
   }
 
-  lazy val addEventHBox = new HBox {
-    styleClass += "small"
-    children = Seq(addEventTF)
+  private lazy val addContractLabel = new Label("Load DLC") {
+    styleClass += "load-label"
   }
 
   private lazy val addContractTF = new TextField {
-    styleClass += "title-textfield"
-    promptText = "Contract Hex"
+    styleClass += "load-textfield"
+    promptText = "Paste Contract Hex"
     onKeyTyped = _ => {
       val validAddition = onContractAdded(text.value.trim, None)
       if (validAddition) clearContractTF() // Clear on valid data
@@ -95,9 +99,16 @@ class ContractGUI(glassPane: VBox) {
     if (validAddition) clearContractTF() // Clear on valid data
   })
 
-  lazy val addContractHBox = new HBox {
-    styleClass += "small"
-    children = Seq(fileChooserButton, addContractTF)
+  lazy val loadPane = new GridPane {
+    styleClass += "load-pane"
+    padding = Insets(10, 0, 10, 4)
+    hgap = 5
+    add(addContractLabel, 0, 0)
+    add(addContractTF, 1, 0)
+    add(fileChooserButton, 2, 0)
+    add(new Region { prefWidth = 15 }, 3, 0)
+    add(addEventLabel, 4, 0)
+    add(addEventTF, 5, 0)
   }
 
   private lazy val eventIdCol = new TableColumn[
