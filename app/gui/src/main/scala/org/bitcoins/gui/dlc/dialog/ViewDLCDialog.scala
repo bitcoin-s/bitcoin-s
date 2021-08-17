@@ -156,6 +156,7 @@ object ViewDLCDialog {
             hgrow = Priority.Always
           },
           new Button("Rebroadcast") {
+            minWidth = 90
             disable = !DLCStatus.getFundingTxId(status).isDefined
             onAction = _ => {
               DLCStatus.getContractId(status) match {
@@ -179,6 +180,7 @@ object ViewDLCDialog {
             hgrow = Priority.Always
           },
           new Button("Rebroadcast") {
+            minWidth = 90
             disable = closingTxId.isEmpty.getValue
             onAction = _ => {
               model.rebroadcastClosingTx(status)
