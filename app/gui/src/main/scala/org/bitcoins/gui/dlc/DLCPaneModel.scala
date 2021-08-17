@@ -16,6 +16,7 @@ import scalafx.scene.control.Alert.AlertType
 import scalafx.scene.control.{Alert, ButtonType, TextArea}
 import scalafx.stage.FileChooser.ExtensionFilter
 import scalafx.stage.{FileChooser, Window}
+import scodec.bits.ByteVector
 import upickle.default._
 
 import java.io.File
@@ -288,6 +289,46 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
         }
       )
     }
+  }
+
+  def rebroadcastFundingTx(contractId: ByteVector): Unit = {
+    taskRunner.run(
+      "Rebroadcast Funding Tx",
+      op = {
+        ConsoleCli.exec(BroadcastDLCFundingTx(contractId),
+                        GlobalData.consoleCliConfig) match {
+          case Success(_) => {
+            logger.info(s"Successfully rebroadcast funding tx")
+            // TODO : Want to show Alert or success data in view
+          }
+          case Failure(err) => throw err
+        }
+      }
+    )
+  }
+
+  def rebroadcastClosingTx(status: DLCStatus): Unit = {
+//    (DLCStatus.getContractId(status), getOracleSignatures(status)) match {
+//      case (Some(contractId), Some(sigs)) =>
+//        taskRunner.run(
+//          "Rebroadcast Closing Tx",
+//          op = {
+//            // TODO : Where do these sigs come from?
+//            println("Rebroadcasting " + contractId + " sigs: " + sigs)
+//            ConsoleCli.exec(ExecuteDLC(contractId, sigs, false),
+//                            GlobalData.consoleCliConfig) match {
+//              case Success(_) => {
+//                println("Rebroadcast Closing Tx Success")
+//              }
+//              case Failure(err) => throw err
+//            }
+//          }
+//        )
+//      case _ => // Nothing to do
+//    }
+
+    sys.error(
+      s"Rebroadcasting of closing transaction is not implemented yet, status=$status")
   }
 
   def exportResult(result: String): Unit = {
