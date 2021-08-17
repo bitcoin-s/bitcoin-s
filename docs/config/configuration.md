@@ -133,7 +133,7 @@ bitcoin-s {
         # or the string "//", enclose it in double quotes
         # rpcpassword = "password=" if the original password is password=, rpcpassword = "passwo//rd" if the original password is passwo//rd etc.
         # If it contains '\' or '"', escape it with '\'
-        # rpcpassword = 'pass\\word' if the original password is pass\word, rpcpassword = "pass\"word" if the original password is pass"word
+        # rpcpassword = "pass\\word" if the original password is pass\word, rpcpassword = "pass\"word" if the original password is pass"word
         rpcpassword = password
 
         # Binary location of bitcoind
