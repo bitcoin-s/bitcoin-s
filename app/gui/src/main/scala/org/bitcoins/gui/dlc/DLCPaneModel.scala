@@ -327,7 +327,8 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
 //      case _ => // Nothing to do
 //    }
 
-    sys.error(s"Rebroadcasting of closing transaction is not implemented yet")
+    sys.error(
+      s"Rebroadcasting of closing transaction is not implemented yet, status=$status")
   }
 
   def exportResult(result: String): Unit = {
