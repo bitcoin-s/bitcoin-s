@@ -53,14 +53,6 @@ object ViewDLCDialog {
     }
   }
 
-//  private def getTextField(property: StringProperty): TextField = {
-//    new TextField {
-//      styleClass += "view-dlc-textfield"
-//      text <== property
-//      editable = false
-//    }
-//  }
-
   def buildView(status: DLCStatus, model: DLCPaneModel) = {
     val closingTxId: StringProperty = StringProperty(
       DLCStatus.getClosingTxId(status).map(_.hex).getOrElse(""))
@@ -164,6 +156,7 @@ object ViewDLCDialog {
             hgrow = Priority.Always
           },
           new Button("Rebroadcast") {
+            minWidth = 90
             disable = !DLCStatus.getFundingTxId(status).isDefined
             onAction = _ => {
               DLCStatus.getContractId(status) match {
@@ -187,8 +180,8 @@ object ViewDLCDialog {
             hgrow = Priority.Always
           },
           new Button("Rebroadcast") {
-            disable =
-              true // Until operation is supported, correct value = closingTxId.isEmpty.getValue
+            minWidth = 90
+            disable = closingTxId.isEmpty.getValue
             onAction = _ => {
               model.rebroadcastClosingTx(status)
             }

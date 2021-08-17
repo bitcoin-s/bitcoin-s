@@ -5,6 +5,7 @@ import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, ConsoleCli}
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto._
 import org.bitcoins.gui._
@@ -297,10 +298,7 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
       op = {
         ConsoleCli.exec(BroadcastDLCFundingTx(contractId),
                         GlobalData.consoleCliConfig) match {
-          case Success(_) => {
-            logger.info(s"Successfully rebroadcast funding tx")
-            // TODO : Want to show Alert or success data in view
-          }
+          case Success(_)   => logger.info(s"Successfully rebroadcast funding tx")
           case Failure(err) => throw err
         }
       }
@@ -308,27 +306,29 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
   }
 
   def rebroadcastClosingTx(status: DLCStatus): Unit = {
-//    (DLCStatus.getContractId(status), getOracleSignatures(status)) match {
-//      case (Some(contractId), Some(sigs)) =>
-//        taskRunner.run(
-//          "Rebroadcast Closing Tx",
-//          op = {
-//            // TODO : Where do these sigs come from?
-//            println("Rebroadcasting " + contractId + " sigs: " + sigs)
-//            ConsoleCli.exec(ExecuteDLC(contractId, sigs, false),
-//                            GlobalData.consoleCliConfig) match {
-//              case Success(_) => {
-//                println("Rebroadcast Closing Tx Success")
-//              }
-//              case Failure(err) => throw err
-//            }
-//          }
-//        )
-//      case _ => // Nothing to do
-//    }
-
-    sys.error(
-      s"Rebroadcasting of closing transaction is not implemented yet, status=$status")
+    DLCStatus.getClosingTxId(status) match {
+      case Some(txId) =>
+        taskRunner.run(
+          "Rebroadcast Funding Tx",
+          op = {
+            ConsoleCli.exec(GetTransaction(txId),
+                            GlobalData.consoleCliConfig) match {
+              case Success(tx) => {
+                val t = Transaction.fromHex(tx)
+                logger.info(s"Successfully found closing tx")
+                ConsoleCli.exec(SendRawTransaction(t),
+                                GlobalData.consoleCliConfig) match {
+                  case Success(_) =>
+                    logger.info(s"Successfully rebroadcast closing tx")
+                  case Failure(err) => throw err
+                }
+              }
+              case Failure(err) => throw err
+            }
+          }
+        )
+      case None => ()
+    }
   }
 
   def exportResult(result: String): Unit = {
