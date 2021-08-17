@@ -298,7 +298,7 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
         ConsoleCli.exec(BroadcastDLCFundingTx(contractId),
                         GlobalData.consoleCliConfig) match {
           case Success(_) => {
-            println("Rebroadcast Funding Tx Success")
+            logger.info(s"Successfully rebroadcast funding tx")
             // TODO : Want to show Alert or success data in view
           }
           case Failure(err) => throw err
