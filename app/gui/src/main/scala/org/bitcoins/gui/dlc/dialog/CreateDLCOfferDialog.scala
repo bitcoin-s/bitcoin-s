@@ -411,8 +411,18 @@ class CreateDLCOfferDialog
 
       announcement.eventTLV.eventDescriptor match {
         case EnumEventDescriptorV0TLV(outcomes) =>
-          gridPane.add(new Label("Outcomes"), 0, 2)
-          gridPane.add(new Label("Values"), 1, 2)
+          gridPane.add(new Label("Outcome") {
+                         maxWidth = Double.MaxValue
+                         alignment = Pos.Center
+                       },
+                       0,
+                       2)
+          gridPane.add(new Label("Payout") {
+                         maxWidth = Double.MaxValue
+                         alignment = Pos.Center
+                       },
+                       1,
+                       2)
           contractInfoOpt match {
             case Some(contractInfo) =>
               contractInfo.contractDescriptor match {
