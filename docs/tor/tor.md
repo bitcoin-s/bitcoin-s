@@ -88,7 +88,7 @@ config, as well as have tor configured for it.
 ### Configuring Tor
 
 You may need to set up the Tor Control Port. On Linux distributions there may be some or all of the following settings
-in `/etc/tor/torrc` for linux or `/opt/homebrew/etc/tor/torcc` for mac, generally commented out by default (if not, add
+in `/etc/tor/torrc` for linux or `/opt/homebrew/etc/tor/torrc` for mac, generally commented out by default (if not, add
 them):
 
 ```
@@ -112,8 +112,19 @@ You may also need permissions for the auth cookie file, this can be done doing
 ```bash
 sudo usermod -a -G debian-tor $USER
 ```
+or on mac
+```
+sudo chmod 755 /usr/local/var/tor
+```
 
 After changing these settings, you will need to restart your computer.
+
+### Optional Settings
+If you experience repeated connection issues make sure to check the bitcoin-s.log file. If the logs show that Bitcoin-s is able to connect through the tor proxy (`connected to neutrino.suredbits.com/:8333 via SOCKS5 proxy /127.0.0.1:9050`) but is not able to connect through the tor controller (`TorController refused to connect` or similar) you may need to make additional changes to your torrc file. Find the location of your tor control_auth_cookie file and add the pathname for this file to your torrc file as show below. 
+For mac osx:
+```
+CookieAuthFile /usr/local/var/tor/control_auth_cookie
+```
 
 ### Configuring Bitcoin-S
 
@@ -145,7 +156,7 @@ bitcoin-s {
 Alternatively, you can manually create a tor hidden service.
 
 You can also manually configure your node to be reachable from the Tor network. Add these lines to
-your `/etc/tor/torrc` (or equivalent config file, mac is located at `/opt/homebrew/etc/tor/torcc`):
+your `/etc/tor/torrc` (or equivalent config file, mac is located at `/opt/homebrew/etc/tor/torrc`):
 
 ```
 HiddenServiceDir /var/lib/tor/dlc-service/

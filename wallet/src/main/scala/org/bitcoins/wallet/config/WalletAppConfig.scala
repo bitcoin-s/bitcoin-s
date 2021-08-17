@@ -293,9 +293,9 @@ case class WalletAppConfig(
         ()
       case None =>
         logger.info(s"Starting wallet rebroadcast task")
-        val initDelay = 60
-        val interval = rebroadcastFrequency.toSeconds
 
+        val interval = rebroadcastFrequency.toSeconds
+        val initDelay = interval
         val future =
           scheduler.scheduleAtFixedRate(RebroadcastTransactionsRunnable(wallet),
                                         initDelay,

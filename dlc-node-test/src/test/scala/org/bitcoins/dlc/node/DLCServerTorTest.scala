@@ -6,10 +6,10 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.protocol.tlv.{LnMessage, PingTLV, PongTLV}
 import org.bitcoins.core.util.EnvUtil
+import org.bitcoins.core.util.NetworkUtil._
 import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.util.BitcoinSActorFixtureWithDLCWallet
-import org.bitcoins.testkit.util.NetworkUtil._
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.tor.{Socks5ProxyParams, TorController, TorProtocolHandler}
 import org.scalatest.{Assertion, FutureOutcome}

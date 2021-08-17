@@ -1,6 +1,7 @@
 package org.bitcoins.core.util
 
-import java.net.{InetAddress, InetSocketAddress, URI, UnknownHostException}
+import java.net._
+import scala.util.Try
 
 abstract class NetworkUtil {
 
@@ -55,6 +56,12 @@ abstract class NetworkUtil {
         false
     }
   }
+
+  def portIsBound(address: InetSocketAddress): Boolean =
+    Try {
+      val socket = new Socket(address.getHostString, address.getPort)
+      socket.close()
+    }.isSuccess
 }
 
 object NetworkUtil extends NetworkUtil
