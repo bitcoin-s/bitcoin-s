@@ -411,7 +411,7 @@ class CreateDLCOfferDialog
 
       announcement.eventTLV.eventDescriptor match {
         case EnumEventDescriptorV0TLV(outcomes) =>
-          gridPane.add(new Region { prefHeight = 10 }, 0, 2)
+          gridPane.add(new Region { prefHeight = 20 }, 0, 2)
           gridPane.add(new Label("Outcome") {
                          maxWidth = Double.MaxValue
                          alignment = Pos.Center
