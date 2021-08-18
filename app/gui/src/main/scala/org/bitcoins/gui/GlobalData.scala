@@ -3,7 +3,6 @@ package org.bitcoins.gui
 import org.bitcoins.cli.Config
 import org.bitcoins.core.config._
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
-import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.gui.settings.Themes
 import scalafx.beans.property._
 
@@ -67,12 +66,12 @@ object GlobalData {
   }
 
   /** Builds a url for the blockstream explorer to view the tx */
-  def buildTxUrl(txid: DoubleSha256DigestBE): String = {
+  def buildTxUrl(txIdHex: String): String = {
     network match {
       case MainNet =>
-        s"https://blockstream.info/tx/${txid.hex}"
+        s"https://blockstream.info/tx/${txIdHex}"
       case TestNet3 =>
-        s"https://blockstream.info/testnet/tx/${txid.hex}"
+        s"https://blockstream.info/testnet/tx/${txIdHex}"
       case net @ (RegTest | SigNet) =>
         s"View transaction on your own node on $net"
     }

@@ -1,10 +1,9 @@
 package org.bitcoins.gui.dlc
 
-import org.bitcoins.commons.jsonmodels.ExplorerEnv
 import org.bitcoins.core.dlc.accounting.RateOfReturnUtil
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.gui.{GUI, GlobalData}
+import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
 import scalafx.scene.control.TableColumn.SortType
@@ -144,12 +143,9 @@ class DLCTableView(model: DLCPaneModel) {
               val dlc = selectionModel.value.getSelectedItem
               val primaryOracle =
                 dlc.oracleInfo.singleOracleInfos.head.announcement
-              // TODO : GlobalData.network is currently null here, showing error dialog
-              val baseUrl =
-                ExplorerEnv.fromBitcoinNetwork(GlobalData.network).siteUrl
               val url =
-                s"${baseUrl}announcement/${primaryOracle.sha256.hex}"
-              GUI.hostServices.showDocument(url)
+                GUIUtil.getAnnouncementUrl(GlobalData.network, primaryOracle)
+              GUIUtil.openUrl(url)
             }
           }
 

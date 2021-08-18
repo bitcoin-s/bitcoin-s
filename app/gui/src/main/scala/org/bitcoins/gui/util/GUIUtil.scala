@@ -1,8 +1,11 @@
 package org.bitcoins.gui.util
 
 import javafx.beans.value.ObservableValue
+import org.bitcoins.commons.jsonmodels.ExplorerEnv
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.protocol.BlockTimeStamp
-import org.bitcoins.gui.GlobalData
+import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
+import org.bitcoins.gui.{GUI, GlobalData}
 import scalafx.beans.property.StringProperty
 import scalafx.scene.{Parent, Scene}
 import scalafx.scene.control.{Button, TextField, Tooltip}
@@ -168,6 +171,18 @@ object GUIUtil {
         () => stage.close())
     }
     stage
+  }
+
+  def getAnnouncementUrl(
+      network: BitcoinNetwork,
+      primaryOracle: OracleAnnouncementTLV): String = {
+    val baseUrl =
+      ExplorerEnv.fromBitcoinNetwork(network).siteUrl
+    s"${baseUrl}announcement/${primaryOracle.sha256.hex}"
+  }
+
+  def openUrl(url: String): Unit = {
+    GUI.hostServices.showDocument(url)
   }
 
   val logo = new Image("/icons/bitcoin-s.png")
