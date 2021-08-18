@@ -15,6 +15,7 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.networking.P2PClient
 
 import scala.concurrent.duration.DurationInt
@@ -76,7 +77,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       val localhost = java.net.InetAddress.getLocalHost
       val versionMsg =
         VersionMessage(conf.network,
-                       "/Bitcoin-S:0.7.0/",
+                       NodeConstants.userAgent,
                        Int32(height),
                        InetAddress(localhost.getAddress),
                        InetAddress(localhost.getAddress),
