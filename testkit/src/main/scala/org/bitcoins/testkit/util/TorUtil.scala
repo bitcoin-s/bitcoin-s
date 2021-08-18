@@ -1,9 +1,10 @@
 package org.bitcoins.testkit.util
 
 import grizzled.slf4j.Logging
-import org.bitcoins.testkit.util.NetworkUtil._
+import org.bitcoins.core.util.NetworkUtil.portIsBound
+import org.bitcoins.tor.TorParams
 
-import java.net.InetSocketAddress
+import java.net.{InetAddress, InetSocketAddress}
 import scala.util.Properties
 
 object TorUtil extends Logging {
@@ -12,17 +13,23 @@ object TorUtil extends Logging {
     .envOrNone("TOR")
     .isDefined
 
-  val PROXY_PORT = 9050
-  val CONTROL_PORT = 9051
+  def torProxyAddress =
+    new InetSocketAddress(InetAddress.getLoopbackAddress,
+                          TorParams.DefaultProxyPort)
 
-  def torProxyAddress = new InetSocketAddress("localhost", PROXY_PORT)
-  def torControlAddress = new InetSocketAddress("localhost", CONTROL_PORT)
+  def torControlAddress =
+    new InetSocketAddress(InetAddress.getLoopbackAddress,
+                          TorParams.DefaultControlPort)
+
   def torProxyEnabled: Boolean = portIsBound(torProxyAddress)
   def torControlEnabled: Boolean = portIsBound(torControlAddress)
 
   def verifyTorEnabled(): Unit = {
-    assume(torProxyEnabled, "Tor daemon is not running or listening port 9050")
-    assume(torControlEnabled,
-           "Tor daemon is not running or listening port 9051")
+    assume(
+      torProxyEnabled,
+      s"Tor daemon is not running or listening port ${TorParams.DefaultProxyPort}")
+    assume(
+      torControlEnabled,
+      s"Tor daemon is not running or listening port ${TorParams.DefaultControlPort}")
   }
 }
