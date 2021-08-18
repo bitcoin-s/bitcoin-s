@@ -5,6 +5,7 @@ import org.bitcoins.testkit.util.{BitcoinSAkkaAsyncTest, TorUtil}
 import org.bitcoins.tor.config.TorAppConfig
 
 import java.util.concurrent.atomic.AtomicBoolean
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 /** A trait that holds a cached instance of a the tor daemon
@@ -27,7 +28,7 @@ trait CachedTor {
 
   override def beforeAll(): Unit = {
     if (TorUtil.torEnabled && !isTorStarted.get()) {
-      Await.result(torF, duration)
+      Await.result(torF, 70.seconds)
     }
     ()
   }
