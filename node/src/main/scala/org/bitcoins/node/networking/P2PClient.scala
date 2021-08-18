@@ -7,11 +7,15 @@ import akka.io.{IO, Tcp}
 import akka.util.{ByteString, CompactByteString, Timeout}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.p2p.{NetworkHeader, NetworkMessage, NetworkPayload}
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, NumberUtil}
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.PeerMessageReceiver
+import org.bitcoins.node.networking.P2PClient.ConnectCommand
+import org.bitcoins.node.networking.peer.{
+  PeerMessageReceiver,
+  PeerMessageReceiverState
+}
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.util.BitcoinSNodeUtil
 import org.bitcoins.tor.Socks5Connection.{Socks5Connect, Socks5Connected}
@@ -62,6 +66,9 @@ case class P2PClientActor(
 
   private var currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
+  /** The number of times we have attempted to reconnect to the peer */
+  private var reconnectionTries: Int = 0
+
   /** The manager is an actor that handles the underlying low level I/O resources (selectors, channels)
     * and instantiates workers for specific tasks, such as listening to incoming connections.
     */
@@ -88,13 +95,21 @@ case class P2PClientActor(
         val networkMsg = NetworkMessage(network, payload)
         self.forward(networkMsg)
       case message: Tcp.Message =>
-        val newUnalignedBytes =
+        val newUnalignedBytesOpt =
           handleTcpMessage(message, peerConnection, unalignedBytes)
-        context.become(awaitNetworkRequest(peerConnection, newUnalignedBytes))
+        newUnalignedBytesOpt match {
+          case Some(newUnalignedBytes) =>
+            context.become(
+              awaitNetworkRequest(peerConnection, newUnalignedBytes))
+          case None =>
+            //signifies the tcp connection was closed, go back to our initial state
+            context.become(receive)
+        }
+
       case metaMsg: P2PClient.MetaMsg =>
         sender() ! handleMetaMsg(metaMsg)
       case Terminated(actor) if actor == peerConnection =>
-        context stop self
+        context.stop(self)
     }
 
   def receive: Receive = LoggingReceive {
@@ -121,12 +136,16 @@ case class P2PClientActor(
                             timeout = Some(20.seconds),
                             options = KeepAlive(true) :: Nil,
                             pullMode = true)
-      context become connecting(proxyParams)
+      context.become(connecting(proxyParams))
     case metaMsg: P2PClient.MetaMsg =>
       sender() ! handleMetaMsgDisconnected(metaMsg)
+
+    case _: Terminated =>
+      logger.info(
+        s"Received terminated message, this is likely because we are attempting to re-connect to peer=$peer reconnectionTries=$reconnectionTries")
   }
 
-  def connecting(proxyParams: Option[Socks5ProxyParams]): Receive =
+  def connecting(proxyParams: Option[Socks5ProxyParams]): Receive = {
     LoggingReceive {
       case Tcp.CommandFailed(c: Tcp.Connect) =>
         val peerOrProxyAddress = c.remoteAddress
@@ -164,6 +183,7 @@ case class P2PClientActor(
       case metaMsg: P2PClient.MetaMsg =>
         sender() ! handleMetaMsgDisconnected(metaMsg)
     }
+  }
 
   def socks5Connecting(
       event: Tcp.Connected,
@@ -182,7 +202,7 @@ case class P2PClientActor(
       context watch connection
       val _ = handleEvent(event, proxy, ByteVector.empty)
     case Terminated(actor) if actor == proxy =>
-      context stop self
+      context.stop(self)
     case metaMsg: P2PClient.MetaMsg =>
       sender() ! handleMetaMsgDisconnected(metaMsg)
   }
@@ -197,39 +217,42 @@ case class P2PClientActor(
 
   /** Handles boiler plate [[Tcp.Message]] types.
     *
-    * @return the unaligned bytes if we haven't received a full Bitcoin P2P message yet
+    * @return None in the case that the tcp connection was closed
+    *         Some(bytevector) in the case that we still have a valid tcp connection with some unaligned bytes
     */
   private def handleTcpMessage(
       message: Tcp.Message,
       peerConnection: ActorRef,
-      unalignedBytes: ByteVector): ByteVector = {
+      unalignedBytes: ByteVector): Option[ByteVector] = {
     message match {
       case event: Tcp.Event =>
         handleEvent(event, peerConnection, unalignedBytes = unalignedBytes)
       case command: Tcp.Command =>
         handleCommand(command, peerConnection)
 
-        unalignedBytes
+        Some(unalignedBytes)
     }
   }
 
   /** This function is responsible for handling a [[Tcp.Event]] algebraic data type
+    * @return None in the case that the tcp connection was closed
+    *         Some(bytevector) in the case that we still have a valid tcp connection with some unaligned bytes
     */
   private def handleEvent(
       event: Tcp.Event,
       peerConnection: ActorRef,
-      unalignedBytes: ByteVector): ByteVector = {
+      unalignedBytes: ByteVector): Option[ByteVector] = {
     event match {
       case Tcp.Bound(localAddress) =>
         logger.debug(
           s"Actor is now bound to the local address: ${localAddress}")
         context.parent ! Tcp.Bound(localAddress)
 
-        unalignedBytes
+        Some(unalignedBytes)
       case Tcp.CommandFailed(command) =>
         logger.debug(s"Client Command failed: ${command}")
 
-        unalignedBytes
+        Some(unalignedBytes) //this right?
       case Tcp.Connected(remote, local) =>
         logger.debug(s"Tcp connection to: ${remote}")
         logger.debug(s"Local: ${local}")
@@ -242,19 +265,64 @@ case class P2PClientActor(
 
         currentPeerMsgHandlerRecv =
           currentPeerMsgHandlerRecv.connect(P2PClient(self, peer))
+
         context.become(awaitNetworkRequest(peerConnection, unalignedBytes))
-        unalignedBytes
+
+        Some(unalignedBytes)
 
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed) =>
-        logger.info(s"We've been disconnected by $peer command=${closeCmd}")
-        //tell our peer message handler we are disconnecting
-        val newPeerMsgRecv = currentPeerMsgHandlerRecv.disconnect()
+        logger.info(
+          s"We've been disconnected by $peer command=${closeCmd} state=${currentPeerMsgHandlerRecv.state}")
 
-        currentPeerMsgHandlerRecv = newPeerMsgRecv
-        context.stop(self)
-        unalignedBytes
+        currentPeerMsgHandlerRecv.state match {
+          case _: PeerMessageReceiverState.Initializing =>
+            //this is an interesting case where we are getting disconnected from our
+            //peer before we can completely execute the handshake the bitcoin
+            //protocol requires to get to the PeerMessageReceiverState.Normal
+            //historically, this is because the peer we are connecting to likely has
+            //too many connections. The default of the bitcoin protocol is allowing 125 inbound connections
+            //if the peer already has the maximum number of connections, it will automatically disconnect
+            //you after establishing a tcp connection. In this case, we will try to reconnect on a
+            //exponentially increasing timeline
 
+            currentPeerMsgHandlerRecv =
+              initPeerMsgHandlerReceiver //reset the state
+
+            context.become(receive) //reset behavior to initial behavior
+
+            //try to re-connect with a exponential delay
+            val delay = NumberUtil.pow2(reconnectionTries)
+            reconnectionTries += 1
+            logger.info(
+              s"Scheduling a reconnection attempt for peer=$peer in $delay seconds")
+
+            if (reconnectionTries < 10) {
+              context.system.scheduler.scheduleOnce(delay.toInt.second) {
+                self ! ConnectCommand
+              }(context.system.dispatcher)
+            } else {
+              logger.error(
+                s"Giving up reconnecting to peer=$peer after $reconnectionTries attempts")
+            }
+
+            //get rid of unaligned bytes, as we are establishing a new connection
+            None
+          case PeerMessageReceiverState.Preconnection =>
+            logger.error(
+              s"Cannot be in the preconnection state and receive a disconnect message from peer! This shouldn't happen!")
+            None
+          case _: PeerMessageReceiverState.Disconnected =>
+            //do nothing, we are already disconnected
+            logger.warn(
+              s"Disconnecting from an already disconnected peer! This is shouldn't happen!")
+            None
+          case _: PeerMessageReceiverState.Normal =>
+            //tell our peer message handler we are disconnecting
+            val newPeerMsgRecv = currentPeerMsgHandlerRecv.disconnect()
+            currentPeerMsgHandlerRecv = newPeerMsgRecv
+            None
+        }
       case Tcp.Received(byteString: ByteString) =>
         val byteVec = ByteVector(byteString.toArray)
         logger.debug(s"Received ${byteVec.length} TCP bytes")
@@ -303,9 +371,28 @@ case class P2PClientActor(
             context.dispatcher)
 
         val newMsgReceiver = Await.result(newMsgReceiverF, timeout)
+        currentPeerMsgHandlerRecv.state match {
+          case _: PeerMessageReceiverState.Normal |
+              PeerMessageReceiverState.Preconnection |
+              _: PeerMessageReceiverState.Disconnected =>
+          //do nothing
+          case _: PeerMessageReceiverState.Initializing =>
+            //may need to reset reconnectTries
+            newMsgReceiver.state match {
+              case PeerMessageReceiverState.Preconnection |
+                  _: PeerMessageReceiverState.Disconnected |
+                  _: PeerMessageReceiverState.Initializing =>
+              //do nothing
+              case _: PeerMessageReceiverState.Normal =>
+                //if we did a state transition from Initializing -> Normal
+                //we need to reset the reconnectTires
+                reconnectionTries = 0
+            }
+        }
         currentPeerMsgHandlerRecv = newMsgReceiver
+
         peerConnection ! Tcp.ResumeReading
-        newUnalignedBytes
+        Some(newUnalignedBytes)
     }
   }
 
