@@ -44,6 +44,13 @@ trait NativeProcessFactory extends Logging {
     }
   }
 
+  /** Restarts the binary. If the binary isn't currently running this is
+    * equivalent to calling [[startBinary()]]
+    */
+  def restartBinary(): Future[Unit] = {
+    stopBinary().flatMap(_ => startBinary())
+  }
+
   /** Stops the binary by destroying the underlying operating system process
     *
     * If the client is a remote client (not started on the host operating system)

@@ -20,7 +20,7 @@
         </encoder>
     </appender>
 
-    <root level="OFF">
+    <root level="INFO">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
@@ -60,7 +60,7 @@
     <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="WARN"/>
 
     <!-- inspect TCP details -->
-    <logger name="org.bitcoins.node.networking.P2PClientActor" level="WARN"/>
+    <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
 
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
