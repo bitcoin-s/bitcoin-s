@@ -93,7 +93,7 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
                   textArea.text = "Error, server did not return anything"
                 } else {
                   textArea.text = s"Transaction sent! $txid"
-                  TransactionSentDialog.show(GUI.stage, txid)
+                  TransactionSentDialog.show(parentWindow.value, txid)
                 }
               case Failure(err) => throw err
             }

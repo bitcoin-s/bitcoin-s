@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto._
 import org.bitcoins.gui._
+import org.bitcoins.gui.dialog.TransactionSentDialog
 import org.bitcoins.gui.dlc.GlobalDLCData.dlcs
 import org.bitcoins.gui.dlc.dialog._
 import scalafx.application.Platform
@@ -306,23 +307,26 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
   }
 
   def rebroadcastClosingTx(status: DLCStatus): Unit = {
+    println("rebroadcastClosingTx " + status)
     DLCStatus.getClosingTxId(status) match {
       case Some(txId) =>
         taskRunner.run(
-          "Rebroadcast Funding Tx",
+          "Rebroadcast Closing Tx",
           op = {
             ConsoleCli.exec(GetTransaction(txId),
                             GlobalData.consoleCliConfig) match {
-              case Success(tx) => {
+              case Success(tx) =>
                 val t = Transaction.fromHex(tx)
                 logger.info(s"Successfully found closing tx")
                 ConsoleCli.exec(SendRawTransaction(t),
                                 GlobalData.consoleCliConfig) match {
                   case Success(_) =>
                     logger.info(s"Successfully rebroadcast closing tx")
+                    // IE : Unclear to me on why this has to runLater(), but it does
+                    Platform.runLater(
+                      TransactionSentDialog.show(parentWindow.value, tx))
                   case Failure(err) => throw err
                 }
-              }
               case Failure(err) => throw err
             }
           }
