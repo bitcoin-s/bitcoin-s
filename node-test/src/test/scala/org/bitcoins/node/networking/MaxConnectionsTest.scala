@@ -4,6 +4,7 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.asyncutil.AsyncUtil.RpcRetryException
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerHandler
+import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.testkit.node.{
   CachedBitcoinSAppConfig,
@@ -26,7 +27,10 @@ class MaxConnectionsTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
   val maxConnections0Config =
     standardConfig.withOption("maxconnections", "0")
 
-  val instance = BitcoindInstance.fromConfig(maxConnections0Config)
+  val binary = BitcoindRpcTestUtil.getBinary(BitcoindVersion.newest)
+
+  val instance =
+    BitcoindInstance.fromConfig(config = maxConnections0Config, binary = binary)
 
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(instance = instance,
