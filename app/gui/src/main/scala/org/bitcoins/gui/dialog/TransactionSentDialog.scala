@@ -36,6 +36,11 @@ object TransactionSentDialog {
         },
         new Hyperlink("View transaction on Blockstream Explorer") {
           onAction = _ => GUIUtil.openUrl(GlobalData.buildTxUrl(txId))
+        },
+        new Label(
+          "It will take a few seconds for the transaction to show up in the block explorer. Refresh your browser tab momentarily if the transaction is not immediately available.") {
+          wrapText = true
+          maxWidth = 285
         }
       )
     }
