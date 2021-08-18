@@ -97,7 +97,7 @@ class CreateDLCOfferDialog
       announcementOpt: Option[OracleAnnouncementV0TLV],
       contractInfoOpt: Option[ContractInfoV0TLV],
       initialContract: String = "") = {
-    var nextRow: Int = 3
+    var nextRow: Int = 4
     val gridPane = new GridPane {
       alignment = Pos.Center
       padding = Insets(top = 10, right = 10, bottom = 10, left = 10)
@@ -411,8 +411,19 @@ class CreateDLCOfferDialog
 
       announcement.eventTLV.eventDescriptor match {
         case EnumEventDescriptorV0TLV(outcomes) =>
-          gridPane.add(new Label("Outcomes"), 0, 2)
-          gridPane.add(new Label("Values"), 1, 2)
+          gridPane.add(new Region { prefHeight = 20 }, 0, 2)
+          gridPane.add(new Label("Outcome") {
+                         maxWidth = Double.MaxValue
+                         alignment = Pos.Center
+                       },
+                       0,
+                       3)
+          gridPane.add(new Label("Payout") {
+                         maxWidth = Double.MaxValue
+                         alignment = Pos.Center
+                       },
+                       1,
+                       3)
           contractInfoOpt match {
             case Some(contractInfo) =>
               contractInfo.contractDescriptor match {
