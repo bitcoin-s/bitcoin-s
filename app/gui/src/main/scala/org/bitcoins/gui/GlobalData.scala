@@ -17,7 +17,20 @@ object GlobalData {
 
   val syncHeight: StringProperty = StringProperty("Syncing headers...")
 
+  private val torProxyEnabledStr = "● Tor Proxy"
+
   var network: BitcoinNetwork = _
+  val torProxyEnabled = StringProperty("")
+  val networkString: StringProperty = new StringProperty("")
+
+  def setBitcoinNetwork(
+      network: BitcoinNetwork,
+      proxyEnabled: Boolean): Unit = {
+    this.network = network
+    networkString.value = "Network: " + network
+    // Only showing Tor Proxy status when enabled
+    if (proxyEnabled) torProxyEnabled.value = torProxyEnabledStr
+  }
 
   val statusText: StringProperty = StringProperty("")
 
@@ -105,5 +118,5 @@ object GlobalData {
 
   var feeRate: FeeUnit = SatoshisPerVirtualByte.fromLong(50)
 
-  val torAddress = StringProperty("")
+  val torDLCHostAddress = StringProperty("")
 }
