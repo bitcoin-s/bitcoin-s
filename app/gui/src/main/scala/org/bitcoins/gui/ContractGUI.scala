@@ -25,7 +25,6 @@ import org.bitcoins.gui.dlc.dialog.{
   SignDLCDialog,
   ViewDLCDialog
 }
-import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
 import scalafx.geometry._
 import scalafx.scene.Parent
@@ -40,7 +39,6 @@ import scalafx.scene.control.{
 import scalafx.scene.layout._
 
 import java.io.File
-import java.nio.file.Files
 import java.text.SimpleDateFormat
 import java.util.Date
 import scala.util.{Failure, Success}
@@ -49,13 +47,13 @@ class ContractGUI(glassPane: VBox) {
 
   private[gui] lazy val model = new ContractGUIModel()
 
-  private lazy val addEventLabel = new Label("Load Event") {
+  private lazy val addEventLabel = new Label("Build Offer") {
     styleClass += "load-label"
   }
 
   private lazy val addEventTF = new TextField {
     styleClass += "load-textfield"
-    promptText = "Paste Event Hex"
+    promptText = "Paste Hex"
     onKeyTyped = _ => {
       val event = model.addEvent(this.text.value.trim)
       event match {
@@ -75,13 +73,13 @@ class ContractGUI(glassPane: VBox) {
     addEventTF.clear()
   }
 
-  private lazy val addContractLabel = new Label("Load DLC") {
+  private lazy val addContractLabel = new Label("Accept Offer") {
     styleClass += "load-label"
   }
 
   private lazy val addContractTF = new TextField {
     styleClass += "load-textfield"
-    promptText = "Paste Contract Hex"
+    promptText = "Paste Hex"
     onKeyTyped = _ => {
       val validAddition = onContractAdded(text.value.trim, None)
       if (validAddition) clearContractTF() // Clear on valid data
@@ -93,22 +91,15 @@ class ContractGUI(glassPane: VBox) {
     addContractTF.clear()
   }
 
-  private lazy val fileChooserButton = GUIUtil.getFileChooserButton(file => {
-    val hex = Files.readAllLines(file.toPath).get(0)
-    val validAddition = onContractAdded(hex, Some(file))
-    if (validAddition) clearContractTF() // Clear on valid data
-  })
-
   lazy val loadPane = new GridPane {
     styleClass += "load-pane"
-    padding = Insets(10, 0, 10, 4)
+    padding = Insets(10, 0, 10, 11)
     hgap = 5
     add(addContractLabel, 0, 0)
     add(addContractTF, 1, 0)
-    add(fileChooserButton, 2, 0)
-    add(new Region { prefWidth = 15 }, 3, 0)
-    add(addEventLabel, 4, 0)
-    add(addEventTF, 5, 0)
+    add(new Region { prefWidth = 57 }, 2, 0)
+    add(addEventLabel, 3, 0)
+    add(addEventTF, 4, 0)
   }
 
   private lazy val eventIdCol = new TableColumn[
