@@ -157,13 +157,9 @@ object ViewDLCDialog {
           },
           new Button("Rebroadcast") {
             minWidth = 90
-            disable = !DLCStatus.getFundingTxId(status).isDefined
-            onAction = _ => {
-              DLCStatus.getContractId(status) match {
-                case Some(contractId) => model.rebroadcastFundingTx(contractId)
-                case None             => // Nothing to do
-              }
-            }
+            disable =
+              !(status.state == DLCState.Broadcasted || status.state == DLCState.Signed)
+            onAction = _ => model.rebroadcastFundingTx(status)
           }
         )
       }
