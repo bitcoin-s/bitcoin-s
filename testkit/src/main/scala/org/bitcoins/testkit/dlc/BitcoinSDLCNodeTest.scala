@@ -15,7 +15,7 @@ trait BitcoinSDLCNodeTest extends BitcoinSWalletTest with CachedTor {
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig = {
     val dlcListen = ConfigFactory.parseString(
-      s"""bitcoin-s.dlcnode.listen = "0.0.0.0:${RpcUtil.randomPort}" """)
+      s"""bitcoin-s.dlcnode.listen = "127.0.0.1:${RpcUtil.randomPort}" """)
     BaseWalletTest.getFreshConfig(pgUrl, Vector(dlcListen))
   }
 

@@ -45,7 +45,9 @@ object BitcoinSTestAppConfig {
          |  node {
          |     mode = spv
          |  }
-         |  proxy.enabled = ${torEnabled}
+         |
+         |  proxy.enabled = $torEnabled
+         |  tor.enabled = $torEnabled
          |}
       """.stripMargin
     }
@@ -63,7 +65,8 @@ object BitcoinSTestAppConfig {
            |  node {
            |     mode = spv
            |  }
-           |  proxy.enabled = ${torEnabled}
+           |  proxy.enabled = $torEnabled
+           |  tor.enabled = $torEnabled
            |}
       """.stripMargin
       }
@@ -84,7 +87,9 @@ object BitcoinSTestAppConfig {
          |     mode = neutrino
          |     relay = true
          |  }
-         |  proxy.enabled = ${torEnabled}
+         |
+         |  proxy.enabled = $torEnabled
+         |  tor.enabled = $torEnabled
          |}
       """.stripMargin
     }
@@ -102,7 +107,8 @@ object BitcoinSTestAppConfig {
            |     mode = neutrino
            |     relay = true
            |  }
-           |  proxy.enabled = ${torEnabled}
+           |  proxy.enabled = $torEnabled
+           |  tor.enabled = $torEnabled
            |}
       """.stripMargin
       }
