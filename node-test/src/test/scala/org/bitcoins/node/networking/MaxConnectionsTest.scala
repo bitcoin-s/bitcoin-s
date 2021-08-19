@@ -64,11 +64,13 @@ class MaxConnectionsTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
       //so we have time to restart bitcoind
       _ <- AkkaUtil.nonBlockingSleep(10.seconds)
       _ <- bitcoindRpc.stop()
+      //need to wait for mac to unlock the datadir
+      //before we can restart the bitcoind binary
+      _ <- AkkaUtil.nonBlockingSleep(3.seconds)
       //write updated configuration, this sets maxconnections=1
       //which allows us to connect
       _ = standardConfig.withOption("maxconnections", "125")
       _ <- bitcoindRpc.start()
-      _ = logger.error(s"Done starting bitcoind again")
       //now we should eventually automatically reconnect
       _ <- AsyncUtil.retryUntilSatisfiedF(
         conditionF = () => peerHandler.p2pClient.isConnected(),
