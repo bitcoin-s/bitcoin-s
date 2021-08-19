@@ -382,9 +382,7 @@ class ChainHandler(
 
     val messagesByBlockHash: Map[DoubleSha256DigestBE, CompactFilterMessage] =
       messages.groupBy(_.blockHash.flip).map { case (blockHash, messages) =>
-        if (messages.size > 1)
-          return Future.failed(
-            DuplicateFilters("Attempt to process duplicate filters"))
+        logger.warn("Attempt to process duplicate filters")
         (blockHash, messages.head)
       }
 

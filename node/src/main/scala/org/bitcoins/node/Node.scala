@@ -114,7 +114,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val p2p = zipped.map { case (peer, peerMsgRecv) =>
       P2PClient(context = system,
                 peer = peer,
-                peerMessageReceiver = peerMsgRecv)
+                peerMessageReceiver = peerMsgRecv,
+                onReconnect = sync)
     }
     p2p
   }
@@ -163,12 +164,14 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         peerMsgSenders(idx).connect()
         val isInitializedF = for {
           _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized(idx),
-                                              maxTries = 200,
+                                              maxTries = 1024,
                                               interval = 250.millis)
         } yield ()
-        isInitializedF.failed.foreach(err =>
+        isInitializedF.failed.foreach { err =>
           logger.error(
-            s"Failed to connect with peer=${peers(idx)} with err=$err"))
+            s"Failed to connect with peer=${peers(idx)} with err=$err")
+          sys.exit(-1)
+        }
         isInitializedF.map { _ =>
           nodeAppConfig.nodeType match {
             case NodeType.NeutrinoNode => {
