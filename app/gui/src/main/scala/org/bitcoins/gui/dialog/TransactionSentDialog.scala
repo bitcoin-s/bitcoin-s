@@ -26,16 +26,21 @@ object TransactionSentDialog {
       children = Seq(
         new HBox {
           alignment = Pos.Center
-          spacing = 10
-          children = Seq(new Label("Transaction Id:"),
+          spacing = 15
+          children = Seq(new Label("Transaction Id"),
                          new TextField {
                            text = txId
                            minWidth = 200
                            editable = false
                          })
         },
+        new Hyperlink("View transaction on mempool.space") {
+          onAction =
+            _ => GUIUtil.openUrl(GlobalData.buildMempoolSpaceTxUrl(txId))
+        },
         new Hyperlink("View transaction on Blockstream Explorer") {
-          onAction = _ => GUIUtil.openUrl(GlobalData.buildTxUrl(txId))
+          onAction =
+            _ => GUIUtil.openUrl(GlobalData.buildBlockstreamExplorerTxUrl(txId))
         },
         new Label(
           "It will take a few seconds for the transaction to show up in the block explorer. Refresh your browser tab momentarily if the transaction is not immediately available.") {
