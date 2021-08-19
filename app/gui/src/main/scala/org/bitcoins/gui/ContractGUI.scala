@@ -47,18 +47,18 @@ class ContractGUI(glassPane: VBox) {
 
   private[gui] lazy val model = new ContractGUIModel()
 
-  private lazy val addEventLabel = new Label("Build Offer") {
+  private lazy val buildOfferLabel = new Label("Build Offer") {
     styleClass += "load-label"
   }
 
-  private lazy val addEventTF = new TextField {
+  private lazy val buildOfferTF = new TextField {
     styleClass += "load-textfield"
     promptText = "Paste Hex"
     onKeyTyped = _ => {
       val event = model.addEvent(this.text.value.trim)
       event match {
         case Some(tup) =>
-          clearEventTF()
+          clearBuildOfferTF()
           eventTableView.sort()
           // Set focus on new item
           eventTableView.getSelectionModel().select(tup)
@@ -69,37 +69,37 @@ class ContractGUI(glassPane: VBox) {
     }
   }
 
-  private def clearEventTF(): Unit = {
-    addEventTF.clear()
+  private def clearBuildOfferTF(): Unit = {
+    buildOfferTF.clear()
   }
 
-  private lazy val addContractLabel = new Label("Accept Offer") {
+  private lazy val acceptLabel = new Label("Accept Offer") {
     styleClass += "load-label"
   }
 
-  private lazy val addContractTF = new TextField {
+  private lazy val acceptTF = new TextField {
     styleClass += "load-textfield"
     promptText = "Paste Hex"
     onKeyTyped = _ => {
       val validAddition = onContractAdded(text.value.trim, None)
-      if (validAddition) clearContractTF() // Clear on valid data
+      if (validAddition) clearAcceptTF() // Clear on valid data
       ()
     }
   }
 
-  private def clearContractTF(): Unit = {
-    addContractTF.clear()
+  private def clearAcceptTF(): Unit = {
+    acceptTF.clear()
   }
 
   lazy val loadPane = new GridPane {
     styleClass += "load-pane"
     padding = Insets(10, 0, 10, 11)
     hgap = 5
-    add(addContractLabel, 0, 0)
-    add(addContractTF, 1, 0)
+    add(buildOfferLabel, 0, 0)
+    add(buildOfferTF, 1, 0)
     add(new Region { prefWidth = 57 }, 2, 0)
-    add(addEventLabel, 3, 0)
-    add(addEventTF, 4, 0)
+    add(acceptLabel, 3, 0)
+    add(acceptTF, 4, 0)
   }
 
   private lazy val eventIdCol = new TableColumn[
