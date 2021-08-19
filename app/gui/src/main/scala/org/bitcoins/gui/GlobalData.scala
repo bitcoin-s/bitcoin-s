@@ -17,17 +17,19 @@ object GlobalData {
 
   val syncHeight: StringProperty = StringProperty("Syncing headers...")
 
+  private val torProxyEnabledStr = "● Tor Proxy"
+
   var network: BitcoinNetwork = _
-  val proxyEnabled = BooleanProperty(false)
+  val torProxyEnabled = StringProperty("")
   val networkString: StringProperty = new StringProperty("")
 
   def setBitcoinNetwork(
       network: BitcoinNetwork,
       proxyEnabled: Boolean): Unit = {
     this.network = network
-    this.proxyEnabled.value = proxyEnabled
     networkString.value = "Network: " + network
-    if (proxyEnabled) networkString.value += " over Tor"
+    // Only showing Tor Proxy status when enabled
+    if (proxyEnabled) torProxyEnabled.value = torProxyEnabledStr
   }
 
   val statusText: StringProperty = StringProperty("")

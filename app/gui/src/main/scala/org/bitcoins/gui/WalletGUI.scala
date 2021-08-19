@@ -21,12 +21,15 @@ abstract class WalletGUI extends Logging {
   }
 
   private lazy val networkLabel = new Label {
-    padding = Insets(0, 15, 0, 0)
     text <== GlobalData.networkString
   }
 
   private lazy val infoLabel = new Label {
     text <== StringProperty("Sync Height: ") + GlobalData.syncHeight
+  }
+
+  private lazy val torProxyLabel = new Label {
+    text <== GlobalData.torProxyEnabled
   }
 
   private lazy val connectedLabel = new Label {
@@ -215,11 +218,13 @@ abstract class WalletGUI extends Logging {
   lazy val bottomStack: HBox = new HBox {
     padding = Insets(5, 10, 5, 10)
     hgrow = Priority.Always
+    spacing = 15
     children = Vector(statusLabel,
                       GUIUtil.getHSpacer(),
                       networkLabel,
                       infoLabel,
                       GUIUtil.getHSpacer(),
+                      torProxyLabel,
                       connectedLabel)
   }
 
