@@ -81,6 +81,10 @@ class TorClient()(implicit
 
 object TorClient extends Logging {
 
+  // made by doing ./tor --version
+  val TOR_VERSION = "Tor version 0.4.5.7 (git-83f895c015de5520)."
+  val versionFileName = "version.txt"
+
   lazy val DEFAULT_TOR_LOCATION: Option[File] = {
     if (EnvUtil.isWindows) {
       NativeProcessFactory.findExecutableOnPath("tor.exe")
@@ -95,7 +99,6 @@ object TorClient extends Logging {
     * @return Tor executable file
     */
   private def torBinaryFromResource(datadir: Path): File = {
-    // todo implement versioning
     val torBundle = if (EnvUtil.isLinux) {
       linuxTorBundle
     } else if (EnvUtil.isMac) {
@@ -135,8 +138,12 @@ object TorClient extends Logging {
         executable.toFile.setExecutable(true)
       }
 
+      // write geoip files
       writeFileFromResource("geoip/geoip", datadir.resolve("geoip"))
       writeFileFromResource("geoip/geoip6", datadir.resolve("geoip6"))
+
+      // write version file
+      Files.write(datadir.resolve(versionFileName), TOR_VERSION.getBytes)
 
       logger.info(
         s"Using prepackaged Tor from bitcoin-s resources, $executableFileName")
@@ -145,7 +152,9 @@ object TorClient extends Logging {
     }
   }
 
-  private def writeFileFromResource(resourceName: String, writePath: Path) = {
+  private def writeFileFromResource(
+      resourceName: String,
+      writePath: Path): Long = {
     val stream =
       Try(getClass.getResource("/" + resourceName).openStream()) match {
         case Failure(_)      => throw new FileNotFoundException(resourceName)
@@ -156,7 +165,7 @@ object TorClient extends Logging {
 
   /** The executables and lists of library files needed to run tor on a specific platform
     *
-    * @param executuables the files that need to be set to executable
+    * @param executables the files that need to be set to executable
     * @param fileList shared object files or library files for tor to operate
     */
   private case class TorFileBundle(
@@ -215,9 +224,19 @@ object TorClient extends Logging {
   private def existsAndIsExecutable(
       datadir: Path,
       bundle: TorFileBundle): Boolean = {
-    bundle.executables.forall { executableFileName =>
+
+    val versionFile = datadir.resolve(versionFileName)
+
+    lazy val currentVersion = new String(Files.readAllBytes(versionFile))
+
+    val latestVersion =
+      versionFile.toFile.exists() && currentVersion == TOR_VERSION
+
+    lazy val hasFiles = bundle.executables.forall { executableFileName =>
       val executableFile = datadir.resolve(executableFileName).toFile
       executableFile.exists() && executableFile.canExecute
     }
+
+    latestVersion && hasFiles
   }
 }
