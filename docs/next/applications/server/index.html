@@ -97,7 +97,7 @@ you can interact with the running container with <code>bitcoin-s-cli</code> or <
 server listens for requests on port <code>9999</code>.</p>
 <p>This means we need to forward requests on the host machine to the docker container correctly.</p>
 <p>This can be done with the following command</p>
-<pre><code class="hljs"><span class="hljs-selector-tag">docker</span> <span class="hljs-selector-tag">run</span> <span class="hljs-selector-tag">-d</span> <span class="hljs-selector-tag">-p</span> 9999<span class="hljs-selector-pseudo">:9999</span> <span class="hljs-selector-tag">bitcoin-s-server</span><span class="hljs-selector-pseudo">:latest</span><span class="hljs-selector-pseudo">:latest</span>
+<pre><code class="hljs">docker <span class="hljs-keyword">run</span><span class="bash"> -d -p 9999:9999 bitcoin<span class="hljs-_">-s</span>-server:latest</span>
 </code></pre>
 <p>Now you can send requests with <code>bitcoin-s-cli</code> or <code>curl</code>.
 Here is an example with <code>bitcoin-s-cli</code></p>
