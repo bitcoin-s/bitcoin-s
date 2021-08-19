@@ -106,39 +106,18 @@ case class P2PClientActor(
         reconnect()
     }
 
-  override def receive: Receive = initializing
-
-  def initializing: Receive = LoggingReceive {
+  override def receive: Receive = LoggingReceive {
     case P2PClient.ConnectCommand =>
-      val (peerOrProxyAddress, proxyParams) =
-        peer.socks5ProxyParams match {
-          case Some(proxyParams) =>
-            val host = peer.socket.getHostName
-            if (!host.contains("localhost") && !host.contains("127.0.0.1")) {
-              val proxyAddress = proxyParams.address
-              logger.info(s"connecting to SOCKS5 proxy $proxyAddress")
-              (proxyAddress, Some(proxyParams))
-            } else {
-              val remoteAddress = peer.socket
-              logger.info(s"connecting to $remoteAddress")
-              (peer.socket, None)
-            }
-          case None =>
-            val remoteAddress = peer.socket
-            logger.info(s"connecting to $remoteAddress")
-            (peer.socket, None)
-        }
-      manager ! Tcp.Connect(peerOrProxyAddress,
-                            timeout = Some(20.seconds),
-                            options = KeepAlive(true) :: Nil,
-                            pullMode = true)
-      context become connecting(proxyParams)
+      connect()
+    case metaMsg: P2PClient.MetaMsg =>
+      sender() ! handleMetaMsgDisconnected(metaMsg)
+  }
 
+  def reconnecting: Receive = LoggingReceive {
     case P2PClient.ReconnectCommand =>
       logger.info(s"reconnecting to ${peer.socket}")
       reconnectHandlerOpt = Some(onReconnect)
-      self ! P2PClient.ConnectCommand
-
+      connect()
     case metaMsg: P2PClient.MetaMsg =>
       sender() ! handleMetaMsgDisconnected(metaMsg)
   }
@@ -208,6 +187,32 @@ case class P2PClientActor(
       logger.warn(s"unhandled message=$message")
   }
 
+  private def connect() = {
+    val (peerOrProxyAddress, proxyParams) =
+      peer.socks5ProxyParams match {
+        case Some(proxyParams) =>
+          val host = peer.socket.getHostName
+          if (!host.contains("localhost") && !host.contains("127.0.0.1")) {
+            val proxyAddress = proxyParams.address
+            logger.info(s"connecting to SOCKS5 proxy $proxyAddress")
+            (proxyAddress, Some(proxyParams))
+          } else {
+            val remoteAddress = peer.socket
+            logger.info(s"connecting to $remoteAddress")
+            (peer.socket, None)
+          }
+        case None =>
+          val remoteAddress = peer.socket
+          logger.info(s"connecting to $remoteAddress")
+          (peer.socket, None)
+      }
+    manager ! Tcp.Connect(peerOrProxyAddress,
+                          timeout = Some(20.seconds),
+                          options = KeepAlive(true) :: Nil,
+                          pullMode = true)
+    context become connecting(proxyParams)
+  }
+
   private def reconnect() = {
     currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
@@ -222,7 +227,7 @@ case class P2PClientActor(
       context.system.scheduler.scheduleOnce(delay)(
         self ! P2PClient.ReconnectCommand)
 
-      context.become(initializing)
+      context.become(reconnecting)
     }
   }
 

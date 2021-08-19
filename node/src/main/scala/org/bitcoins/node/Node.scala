@@ -27,7 +27,6 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageSender
 }
 
-import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -254,8 +253,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     }
   }
 
-  private val syncing = new AtomicBoolean(false)
-
   /** Starts to sync our node with our peer
     * If our local best block hash is the same as our peers
     * we will not sync, otherwise we will keep syncing
@@ -264,26 +261,19 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * @return
     */
   def sync(): Future[Unit] = {
-    // we should allow only one running sync process
-    if (syncing.compareAndSet(false, true)) {
-      val blockchainsF =
-        BlockHeaderDAO()(executionContext, chainAppConfig).getBlockchains()
-      val res = for {
-        chainApi <- chainApiFromDb()
-        header <- chainApi.getBestBlockHeader()
-        blockchains <- blockchainsF
+    val blockchainsF =
+      BlockHeaderDAO()(executionContext, chainAppConfig).getBlockchains()
+    for {
+      chainApi <- chainApiFromDb()
+      header <- chainApi.getBestBlockHeader()
+      blockchains <- blockchainsF
 
-        // Get all of our cached headers in case of a reorg
-        cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-        _ <- randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
-      } yield {
-        logger.info(
-          s"Starting sync node, height=${header.height} hash=${header.hashBE}")
-      }
-      res.onComplete(_ => syncing.set(false))
-      res
-    } else {
-      Future.unit
+      // Get all of our cached headers in case of a reorg
+      cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
+      _ <- randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
+    } yield {
+      logger.info(
+        s"Starting sync node, height=${header.height} hash=${header.hashBE}")
     }
   }
 
