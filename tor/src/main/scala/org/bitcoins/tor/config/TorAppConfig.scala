@@ -9,7 +9,7 @@ import org.bitcoins.tor.client.TorClient
 import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 
 import java.io.File
-import java.net.InetSocketAddress
+import java.net.{InetAddress, InetSocketAddress}
 import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.duration.DurationInt
@@ -87,19 +87,14 @@ case class TorAppConfig(
 
   /** Checks it the [[isBootstrappedLogLine]] exists in the tor log file */
   private def checkIfLogExists: Boolean = {
-    if (Files.exists(torLogFile)) {
+    torLogFile.toFile.exists() && {
       val stream = Files.lines(torLogFile)
       try {
         stream
           .filter((line: String) => line.contains(isBootstrappedLogLine))
           .count() > 0
       } finally if (stream != null) stream.close()
-    } else {
-      //log file may not exist quite yet as we just started the tor binary
-      //it may take a bit for the tor binary to write the log file
-      false
     }
-
   }
 
   private def checkIfTorAlreadyRunning: Boolean = {
@@ -109,8 +104,8 @@ case class TorAppConfig(
         torParams match {
           case Some(params) => params.controlAddress
           case None =>
-            InetSocketAddress.createUnresolved("127.0.0.1",
-                                               TorParams.DefaultProxyPort)
+            new InetSocketAddress(InetAddress.getLoopbackAddress,
+                                  TorParams.DefaultProxyPort)
         }
     }
 
