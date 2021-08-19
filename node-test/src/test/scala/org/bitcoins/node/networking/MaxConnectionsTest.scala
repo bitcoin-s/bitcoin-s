@@ -62,7 +62,7 @@ class MaxConnectionsTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
       //we need to wait for the re-connection attempts
       //to at least a 16 second delay before reconnecting
       //so we have time to restart bitcoind
-      _ = AkkaUtil.nonBlockingSleep(10.seconds)
+      _ <- AkkaUtil.nonBlockingSleep(10.seconds)
       _ <- bitcoindRpc.stop()
       //write updated configuration, this sets maxconnections=1
       //which allows us to connect
