@@ -8,7 +8,7 @@ import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 
 import java.io.{File, FileNotFoundException}
-import java.net.InetSocketAddress
+import java.net.{InetAddress, InetSocketAddress}
 import java.nio.file.{Files, Path, StandardCopyOption}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
@@ -23,9 +23,8 @@ class TorClient()(implicit
   lazy val socks5ProxyParams: Socks5ProxyParams = conf.socks5ProxyParams match {
     case Some(params) => params
     case None =>
-      val addr = InetSocketAddress.createUnresolved(
-        "127.0.0.1",
-        Socks5ProxyParams.DefaultPort)
+      val addr = new InetSocketAddress(InetAddress.getLoopbackAddress,
+                                       Socks5ProxyParams.DefaultPort)
       Socks5ProxyParams(
         address = addr,
         credentialsOpt = None,
@@ -36,9 +35,8 @@ class TorClient()(implicit
   lazy val torParams: TorParams = conf.torParams match {
     case Some(params) => params
     case None =>
-      val control = InetSocketAddress.createUnresolved(
-        "127.0.0.1",
-        TorParams.DefaultControlPort)
+      val control = new InetSocketAddress(InetAddress.getLoopbackAddress,
+                                          TorParams.DefaultControlPort)
 
       val auth = SafeCookie()
       val privKeyPath = conf.datadir.resolve("tor_priv_key")
@@ -54,6 +52,13 @@ class TorClient()(implicit
       "--CookieAuthentication 1"
   }
 
+  private lazy val executable = {
+    TorClient.DEFAULT_TOR_LOCATION match {
+      case Some(default) => default
+      case None          => TorClient.torBinaryFromResource(conf.torDir)
+    }
+  }
+
   /** The command to start the daemon on the underlying OS */
   lazy val cmd: String = {
 
@@ -64,16 +69,14 @@ class TorClient()(implicit
       s"--ControlPort ${torParams.controlAddress.getPort}",
       authenticationArg,
       s"""--DataDirectory "${conf.torDir.toAbsolutePath}" """,
-      s"""--Log "notice file ${conf.torLogFile.toAbsolutePath}" """
+      s"""--Log "notice file ${conf.torLogFile.toAbsolutePath}" """,
+      s"""--GeoIPFile "${conf.torDir.toAbsolutePath.resolve("geoip")}" """,
+      s"""--GeoIPv6File "${conf.torDir.toAbsolutePath.resolve("geoip6")}" """
     ).mkString(" ")
-
-    val executable = TorClient.DEFAULT_TOR_LOCATION match {
-      case Some(default) => default
-      case None          => TorClient.torBinaryFromResource(conf.torDir)
-    }
 
     s"$executable $args"
   }
+
 }
 
 object TorClient extends Logging {
@@ -115,12 +118,6 @@ object TorClient extends Logging {
         s"Tor executable is not written to datadir $datadir, creating...")
 
       torBundle.allFilesNames.foreach { fileName =>
-        val stream =
-          Try(getClass.getResource("/" + fileName).openStream()) match {
-            case Failure(_)      => throw new FileNotFoundException(fileName)
-            case Success(stream) => stream
-          }
-
         val writePath = datadir.resolve(fileName)
 
         val parentDir = writePath.getParent.toFile
@@ -129,7 +126,7 @@ object TorClient extends Logging {
           Files.createDirectories(parentDir.toPath)
         }
 
-        Files.copy(stream, writePath, StandardCopyOption.REPLACE_EXISTING)
+        writeFileFromResource(fileName, writePath)
       }
 
       //set files as executable
@@ -138,6 +135,9 @@ object TorClient extends Logging {
         executable.toFile.setExecutable(true)
       }
 
+      writeFileFromResource("geoip/geoip", datadir.resolve("geoip"))
+      writeFileFromResource("geoip/geoip6", datadir.resolve("geoip6"))
+
       logger.info(
         s"Using prepackaged Tor from bitcoin-s resources, $executableFileName")
 
@@ -145,7 +145,17 @@ object TorClient extends Logging {
     }
   }
 
+  private def writeFileFromResource(resourceName: String, writePath: Path) = {
+    val stream =
+      Try(getClass.getResource("/" + resourceName).openStream()) match {
+        case Failure(_)      => throw new FileNotFoundException(resourceName)
+        case Success(stream) => stream
+      }
+    Files.copy(stream, writePath, StandardCopyOption.REPLACE_EXISTING)
+  }
+
   /** The executables and lists of library files needed to run tor on a specific platform
+    *
     * @param executuables the files that need to be set to executable
     * @param fileList shared object files or library files for tor to operate
     */
@@ -162,7 +172,7 @@ object TorClient extends Logging {
 
   private lazy val linuxTorBundle: TorFileBundle = {
     TorFileBundle(
-      executables = Vector("linux_64/tor"),
+      executables = Vector("linux_64/tor", "linux_64/tor.real"),
       fileList = Vector(
         "linux_64/LICENSE",
         "linux_64/libssl.so.1.1",

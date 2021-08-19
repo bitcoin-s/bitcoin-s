@@ -6,7 +6,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.commons.util.ServerArgParser
-import org.bitcoins.core.util.StartStopAsync
+import org.bitcoins.core.util.{FutureUtil, StartStopAsync}
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
@@ -52,15 +52,15 @@ case class BitcoinSAppConfig(
 
   /** Initializes the wallet, node and chain projects */
   override def start(): Future[Unit] = {
-    val futures = List(kmConf.start(),
-                       walletConf.start(),
-                       torConf.start(),
-                       nodeConf.start(),
-                       chainConf.start(),
-                       bitcoindRpcConf.start(),
-                       dlcConf.start())
+    val configs = List(kmConf,
+                       walletConf,
+                       torConf,
+                       nodeConf,
+                       chainConf,
+                       bitcoindRpcConf,
+                       dlcConf)
 
-    Future.sequence(futures).map(_ => ())
+    FutureUtil.sequentially(configs)(_.start()).map(_ => ())
   }
 
   override def stop(): Future[Unit] = {
