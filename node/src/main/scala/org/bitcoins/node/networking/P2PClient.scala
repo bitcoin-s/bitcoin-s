@@ -65,17 +65,17 @@ case class P2PClientActor(
 
   private var reconnectHandlerOpt: Option[() => Future[Unit]] = None
 
-  private val maxReconnectionTries = 256
+  private val maxReconnectionTries = 16
 
   private var reconnectionTry = 0
+
+  private val reconnectionDelay = 500.millis
 
   /** The parameters for the network we are connected to
     */
   private val network: NetworkParameters = config.network
 
   private val timeout = 1000.seconds
-
-  private val reconnectionDelay = 1.second
 
   /** The manager is an actor that handles the underlying low level I/O resources (selectors, channels)
     * and instantiates workers for specific tasks, such as listening to incoming connections.
@@ -211,14 +211,14 @@ case class P2PClientActor(
   private def reconnect() = {
     currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
-    reconnectionTry = reconnectionTry + 1
     if (reconnectionTry >= maxReconnectionTries) {
-      logger.error("Exceeded maximum tries to reconnect")
+      logger.error("Exceeded maximum number of reconnection attempts")
       context.stop(self)
     } else {
-      val delay = reconnectionDelay * reconnectionTry
-      import context.dispatcher
+      val delay = reconnectionDelay * (1 << reconnectionTry)
+      reconnectionTry = reconnectionTry + 1
 
+      import context.dispatcher
       context.system.scheduler.scheduleOnce(delay)(
         self ! P2PClient.ReconnectCommand)
 
@@ -279,8 +279,6 @@ case class P2PClientActor(
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed | Tcp.ErrorClosed(_)) =>
         logger.info(s"We've been disconnected by $peer command=${closeCmd}")
-        //tell our peer message handler we are disconnecting
-        currentPeerMsgHandlerRecv.disconnect()
         unalignedBytes
 
       case Tcp.Received(byteString: ByteString) =>
