@@ -284,6 +284,7 @@ case class P2PClientActor(
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed | Tcp.ErrorClosed(_)) =>
         logger.info(s"We've been disconnected by $peer command=${closeCmd}")
+        currentPeerMsgHandlerRecv.disconnect()
         unalignedBytes
 
       case Tcp.Received(byteString: ByteString) =>
@@ -325,7 +326,11 @@ case class P2PClientActor(
           case (peerMsgRecv: PeerMessageReceiver, m: NetworkMessage) =>
             logger.trace(s"Processing message=${m}")
             val msg = NetworkMessageReceived(m, P2PClient(self, peer))
-            peerMsgRecv.handleNetworkMessageReceived(msg)
+            if (peerMsgRecv.isConnected) {
+              peerMsgRecv.handleNetworkMessageReceived(msg)
+            } else {
+              Future.successful(peerMsgRecv)
+            }
         }
 
         logger.trace(s"About to process ${messages.length} messages")

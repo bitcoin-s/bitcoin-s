@@ -81,7 +81,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   /** The current data message handler.
     * It should be noted that the dataMessageHandler contains
     * chainstate. When we update with a new chainstate, we need to
-    * maek sure we update the [[DataMessageHandler]] via [[updateDataMessageHandler()]]
+    * make sure we update the [[DataMessageHandler]] via [[updateDataMessageHandler()]]
     * to make sure we don't corrupt our chainstate cache
     */
   def getDataMessageHandler: DataMessageHandler
