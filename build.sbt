@@ -718,7 +718,8 @@ lazy val dlcNodeTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-node-test",
-    libraryDependencies ++= Deps.dlcNodeTest
+    libraryDependencies ++= Deps.dlcNodeTest,
+    parallelExecution := !isTor
   )
   .dependsOn(coreJVM % testAndCompile, dlcNode, testkit)
 
