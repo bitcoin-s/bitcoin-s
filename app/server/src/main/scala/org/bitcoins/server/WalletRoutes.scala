@@ -799,6 +799,16 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("sendrawtransaction", arr) =>
+      withValidServerCommand(SendRawTransaction.fromJsArr(arr)) {
+        case SendRawTransaction(tx) =>
+          complete {
+            wallet.broadcastTransaction(tx).map { _ =>
+              Server.httpSuccess(tx.txIdBE)
+            }
+          }
+      }
+
     case ServerCommand("estimatefee", _) =>
       complete {
         wallet.getFeeRate.map { fee =>
