@@ -93,6 +93,20 @@
     -fx-background-insets: 0;
 }
 
+/* Welcome Pane */
+.welcome-header {
+    -fx-font-size: 1.5em;
+}
+.welcome-font {
+    -fx-font-size: 1.2em;
+}
+.welcome-textarea {
+    -fx-font-size: 1.2em;
+}
+.link-background {
+    -fx-background-color: derive(-fx-base, 99%);
+}
+
 /* Button Group under dialog container content */
 .dialog-button-group {
     -fx-border-style: solid none none none;
