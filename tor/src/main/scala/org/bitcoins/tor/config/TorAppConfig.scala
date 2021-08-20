@@ -41,6 +41,7 @@ case class TorAppConfig(
   override def start(): Future[Unit] = {
     lazy val torRunning = checkIfTorAlreadyRunning
     if (enabled && !isStarted.get && !torRunning) {
+      logger.info(s"Starting tor")
       isStarted.set(true)
       val start = System.currentTimeMillis()
       //remove old tor log file so we accurately tell when
