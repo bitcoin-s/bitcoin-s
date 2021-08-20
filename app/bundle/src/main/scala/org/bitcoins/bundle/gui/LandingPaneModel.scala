@@ -31,7 +31,6 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
   }
 
   def launchWallet(bundleConf: Config, appConfig: BitcoinSAppConfig): Unit = {
-    logger.error(s"-------------Calling launchWallet-------------")
     taskRunner.run(
       "Launching Wallet",
       op = {
@@ -44,7 +43,6 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
         Files.write(file, bundleConfStr.getBytes)
 
         val networkConfigF: Future[Config] = {
-          logger.error(s"-------networkConfigF-----------")
           val tmpConf =
             BitcoinSAppConfig.fromConfig(
               bundleConf.withFallback(appConfig.config))
@@ -54,7 +52,6 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
               // know what network it is on now
               Future.successful(ConfigFactory.empty())
             case BitcoindBackend =>
-              logger.info(s"Attempting to get the bitcoind networkConfig")
               if (!appConfig.torConf.enabled) {
                 tmpConf.bitcoindRpcConf.client.getBlockChainInfo.map { info =>
                   val networkStr =
@@ -69,9 +66,6 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
               }
 
           }
-
-          netConfF.failed.foreach(_ =>
-            logger.error(s"Failed to get bitcoind network"))
 
           netConfF.map { netConf =>
             serverArgParser.toConfig
@@ -89,7 +83,6 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
         }
 
         val startedF = networkConfigF.map { networkConfig =>
-          logger.error(s"Creating finalAppConfig")
           val finalAppConfig =
             BitcoinSAppConfig.fromDatadir(appConfig.baseDatadir, networkConfig)
           // use class base constructor to share the actor system
@@ -97,8 +90,6 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
           GlobalData.setBitcoinNetwork(
             finalAppConfig.network,
             finalAppConfig.socks5ProxyParams.isDefined)
-          logger.error(
-            s"------------------BEFORE STARTING BITCOINSERVERMAIN------------------")
           new BitcoinSServerMain(serverArgParser)(system, finalAppConfig)
             .run()
         }
