@@ -57,4 +57,9 @@ class ReConnectionTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
 
     connectedF
   }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoinSAppConfig].afterAll()
+    super[BitcoindRpcTest].afterAll()
+  }
 }
