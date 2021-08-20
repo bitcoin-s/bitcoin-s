@@ -56,11 +56,11 @@ class PeerMessageReceiver(
   protected[networking] def disconnect(): PeerMessageReceiver = {
     logger.trace(s"Disconnecting with internalstate=${state}")
     state match {
-      case bad @ (_: Initializing | _: Disconnected | Preconnection) =>
+      case bad @ (_: Disconnected | Preconnection) =>
         throw new RuntimeException(
           s"Cannot disconnect from peer=${peer} when in state=${bad}")
 
-      case good: Normal =>
+      case good @ (_: Initializing | _: Normal) =>
         logger.debug(s"Disconnected bitcoin peer=${peer}")
         val newState = Disconnected(
           clientConnectP = good.clientConnectP,
@@ -69,9 +69,9 @@ class PeerMessageReceiver(
           verackMsgP = good.verackMsgP
         )
 
-        val newRecv = toState(newState)
-
-        newRecv
+        val newNode =
+          node.updateDataMessageHandler(node.getDataMessageHandler.reset)
+        new PeerMessageReceiver(newNode, newState, peer)
     }
   }
 

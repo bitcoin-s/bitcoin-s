@@ -38,6 +38,12 @@ case class DataMessageHandler(
 
   private val txDAO = BroadcastAbleTransactionDAO()
 
+  def reset: DataMessageHandler = copy(initialSyncDone = None,
+                                       currentFilterBatch = Vector.empty,
+                                       filterHeaderHeightOpt = None,
+                                       filterHeightOpt = None,
+                                       syncing = false)
+
   def handleDataPayload(
       payload: DataPayload,
       peerMsgSender: PeerMessageSender,
