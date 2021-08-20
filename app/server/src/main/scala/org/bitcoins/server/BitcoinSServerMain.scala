@@ -45,6 +45,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   implicit lazy val torConf: TorAppConfig = conf.torConf
 
   override def start(): Future[Unit] = {
+    logger.info("Starting appServer")
     val startedConfigF = conf.start()
 
     logger.info(s"Start on network ${walletConf.network}")
