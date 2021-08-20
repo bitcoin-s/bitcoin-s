@@ -1,7 +1,6 @@
 package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorRef
-import akka.io.Tcp
 import akka.util.Timeout
 import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
 import org.bitcoins.core.bloom.BloomFilter
@@ -48,7 +47,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     isConnected().flatMap {
       case true =>
         logger.info(s"Disconnecting peer at socket=${socket}")
-        (client.actor ! Tcp.Close)
+        (client.actor ! P2PClient.CloseCommand)
         Future.unit
       case false =>
         val err =

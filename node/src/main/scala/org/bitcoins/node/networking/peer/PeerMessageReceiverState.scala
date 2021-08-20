@@ -163,6 +163,23 @@ object PeerMessageReceiverState {
     override def toString: String = "Normal"
   }
 
+  /** The state for when we initialized as disconnect from our peer */
+  case class InitializedDisconnect(
+      clientConnectP: Promise[P2PClient],
+      clientDisconnectP: Promise[Unit],
+      versionMsgP: Promise[VersionMessage],
+      verackMsgP: Promise[VerAckMessage.type])
+      extends PeerMessageReceiverState {
+    require(
+      isConnected,
+      s"We cannot have a PeerMessageReceiverState.Normal if the Peer is not connected")
+    require(
+      isInitialized,
+      s"We cannot have a PeerMessageReceiverState.Normal if the Peer is not initialized")
+
+    override def toString: String = "InitializedDisconnect"
+  }
+
   case class Disconnected(
       clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],
