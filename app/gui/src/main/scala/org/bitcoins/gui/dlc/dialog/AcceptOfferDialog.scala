@@ -211,7 +211,9 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
                 descriptor.numDigits,
                 descriptor.outcomeValueFunc,
                 offer.contractInfo.totalCollateral,
-                RoundingIntervals.fromTLV(v1.roundingIntervals))
+                RoundingIntervals.fromTLV(v1.roundingIntervals),
+                Some(yourCol.satoshis.toLong.toInt)
+              )
               ()
             }
           }

@@ -311,17 +311,22 @@ class CreateDLCOfferDialog
 
     val previewGraphButton: Button = new Button("Preview Graph") {
       onAction = _ => {
+        val breakeven =
+          if (collateralTF.text.value != "")
+            Some(numberFormatter.parse(collateralTF.text.value).intValue())
+          else None
+
         val (totalCollateral, descriptor) = getNumericContractInfo(
           decompOpt,
           pointMap.toVector.sortBy(_._1).map(_._2),
           roundingMap.toVector.sortBy(_._1).map(_._2))
 
-        // Could add to Figure like DLCPlotUtil:155-161 here to show breakeven line like dust...
         DLCPlotUtil.plotCETsWithOriginalCurve(base = 2,
                                               descriptor.numDigits,
                                               descriptor.outcomeValueFunc,
                                               totalCollateral,
-                                              descriptor.roundingIntervals)
+                                              descriptor.roundingIntervals,
+                                              breakeven)
         ()
       }
     }

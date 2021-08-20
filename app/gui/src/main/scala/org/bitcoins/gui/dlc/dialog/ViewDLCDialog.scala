@@ -242,12 +242,15 @@ object ViewDLCDialog {
                   None
               }
 
-              DLCPlotUtil.plotCETs(base = 2,
-                                   descriptor.numDigits,
-                                   payoutCurve,
-                                   status.contractInfo.totalCollateral,
-                                   descriptor.roundingIntervals,
-                                   outcomeOpt)
+              DLCPlotUtil.plotCETs(
+                base = 2,
+                descriptor.numDigits,
+                payoutCurve,
+                status.contractInfo.totalCollateral,
+                descriptor.roundingIntervals,
+                outcomeOpt,
+                Some(status.localCollateral.satoshis.toLong.toInt)
+              )
               ()
             }
           }
