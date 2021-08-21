@@ -230,7 +230,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     } yield disconnect
 
     def isAllDisconnectedF: Future[Boolean] = {
-      val connF = peerMsgSenders.indices.map(peerMsgSenders(_).isDisconnected())
+      val connF = peerMsgSenders.map(_.isDisconnected())
       val res = Future.sequence(connF).map(_.forall(_ == true))
       res
     }

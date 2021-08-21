@@ -48,16 +48,10 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
       val initAssertion = isInitializedF.map(assert(_))
 
-      //checking all peers can be disconnected
-      def isAllDisconnectedF: Future[Boolean] = {
-        val disconnFs = node.peers.indices.map(node.isDisconnected)
-        val res = Future.sequence(disconnFs).map(_.forall(_ == true))
-        res
-      }
       val disconnF = for {
         _ <- initAssertion
         _ <- node.stop()
-        f <- isAllDisconnectedF
+        f <- isAllDisconnectedF(node)
       } yield f
       disconnF.map(assert(_))
   }
@@ -133,4 +127,10 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       }
   }
 
+  //checking all peers can be disconnected
+  private def isAllDisconnectedF(node: Node): Future[Boolean] = {
+    val disconnFs = node.peers.indices.map(node.isDisconnected)
+    val res = Future.sequence(disconnFs).map(_.forall(_ == true))
+    res
+  }
 }
