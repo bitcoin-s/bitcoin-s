@@ -9,7 +9,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class PeerDB(
     address: String,
-    lastConnected: Instant
+    lastConnected: Instant,
+    firstSeen: Instant,
+    networkId: Byte,
 )
 
 case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
@@ -39,7 +41,11 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
 
     def lastConnected: Rep[Instant] = column("last_connected")
 
+    def firstSeen: Rep[Instant]=column("first_seen")
+
+    def networkId: Rep[Byte]=column("network_id")
+
     def * : ProvenShape[PeerDB] =
-      (address, lastConnected).<>(PeerDB.tupled, PeerDB.unapply)
+      (address, lastConnected, firstSeen,networkId).<>(PeerDB.tupled, PeerDB.unapply)
   }
 }

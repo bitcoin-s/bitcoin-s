@@ -4,25 +4,17 @@ import akka.actor.ActorSystem
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  CompactFilterDAO,
-  CompactFilterHeaderDAO
-}
+import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.api.chain._
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.p2p.{NetworkPayload, ServiceIdentifier, TypeIdentifier}
+import org.bitcoins.core.p2p.{AddrV2Message, NetworkPayload, ServiceIdentifier, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.{
-  DataMessageHandler,
-  PeerMessageReceiver,
-  PeerMessageSender
-}
+import org.bitcoins.node.networking.peer.{DataMessageHandler, PeerMessageReceiver, PeerMessageSender}
 
 import java.time.Instant
 import scala.collection.mutable
@@ -175,13 +167,14 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       logger.info(s"Our peer=$peer has been initialized")
       if (nodeAppConfig.network == MainNet) {
         PeerDAO().upsert(
-          PeerDB(peer.socket.getHostString, Instant.now()))
+          PeerDB(peer.socket.getHostString, Instant.now(),Instant.now(), AddrV2Message.IPV4_NETWORK_BYTE))
       }
     } else {
       logger.info(
         s"Our peer=$peer does not support compact filters. Disconnecting.")
       peerData(peer).peerMessageSender.disconnect()
     }
+    Future.unit
   }
 
   private def initializePeer(peer: Peer): Future[Unit]={
