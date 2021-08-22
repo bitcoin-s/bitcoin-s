@@ -170,6 +170,50 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def isDisconnected(idx: Int): Future[Boolean] =
     peerMsgSenders(idx).isDisconnected()
 
+  private def createInDbIfBlockFilterPeer(peer: Peer): Future[Unit] = {
+    if (peerData(peer).serviceIdentifier.nodeCompactFilters) {
+      logger.info(s"Our peer=$peer has been initialized")
+      if (nodeAppConfig.network == MainNet) {
+        PeerDAO().upsert(
+          PeerDB(peer.socket.getHostString, Instant.now()))
+      }
+    } else {
+      logger.info(
+        s"Our peer=$peer does not support compact filters. Disconnecting.")
+      peerData(peer).peerMessageSender.disconnect()
+    }
+  }
+
+  private def initializePeer(peer: Peer): Future[Unit]={
+    peerData(peer).peerMessageSender.connect()
+    val isInitializedF =
+      for {
+        _ <- AsyncUtil
+          .retryUntilSatisfiedF(
+            () => peerData(peer).peerMessageSender.isInitialized(),
+            maxTries = 50,
+            interval = 250.millis)
+          .recover { case NonFatal(_) =>
+            logger.info(s"Failed to initialize $peer")
+            peerData(peer).peerMessageSender.disconnect()
+            removePeer(peer)
+          }
+      } yield ()
+    isInitializedF.map { _ =>
+      if (peerData.contains(peer)) {
+        nodeAppConfig.nodeType match {
+          case NodeType.NeutrinoNode => createInDbIfBlockFilterPeer(peer)
+          case NodeType.SpvNode =>
+          case NodeType.BitcoindBackend =>
+            throw new RuntimeException("Node cannot be BitcoindBackend")
+          case NodeType.FullNode =>
+        }
+      }
+    }
+    isInitializedF
+  }
+
+
   /** Starts our node */
   def start(): Future[Node] = {
     logger.info("Starting node")
@@ -184,44 +228,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
     val startNodeF = {
       logger.info(peers)
-      val isInitializedFs = peers.map { peer =>
-        peerData(peer).peerMessageSender.connect()
-        val isInitializedF =
-          for {
-            _ <- AsyncUtil
-              .retryUntilSatisfiedF(
-                () => peerData(peer).peerMessageSender.isInitialized(),
-                maxTries = 50,
-                interval = 250.millis)
-              .recover { case NonFatal(_) =>
-                logger.info(s"Failed to initialize $peer")
-                peerData(peer).peerMessageSender.disconnect()
-                removePeer(peer)
-              }
-          } yield ()
-        isInitializedF.map { _ =>
-          if (peerData.contains(peer)) {
-            nodeAppConfig.nodeType match {
-              case NodeType.NeutrinoNode =>
-                if (peerData(peer).serviceIdentifier.nodeCompactFilters) {
-                  logger.info(s"Our peer=$peer has been initialized")
-                  if (nodeAppConfig.network == MainNet) {
-                    PeerDAO().upsert(
-                      PeerDB(peer.socket.getHostString, Instant.now()))
-                  }
-                } else {
-                  logger.info(
-                    s"Our peer=$peer does not support compact filters. Disconnecting.")
-                  peerData(peer).peerMessageSender.disconnect()
-                }
-              case NodeType.SpvNode =>
-              case NodeType.BitcoindBackend =>
-                throw new RuntimeException("Node cannot be BitcoindBackend")
-              case NodeType.FullNode =>
-            }
-          }
-        }
-      }
+      val isInitializedFs = peers.map(initializePeer)
 
       Future.sequence(isInitializedFs).map { _ =>
         logger.info(s"Our node has been full started. It took=${System
