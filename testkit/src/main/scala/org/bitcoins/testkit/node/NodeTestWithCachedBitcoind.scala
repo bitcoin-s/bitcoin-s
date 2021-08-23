@@ -19,6 +19,7 @@ import org.bitcoins.testkit.rpc.{
   CachedBitcoindPairV21,
   CachedBitcoindV19
 }
+import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.WalletCallbacks
 import org.scalatest.FutureOutcome
@@ -29,7 +30,8 @@ import scala.concurrent.Future
   * The cached bitcoind will be share across tests in the test suite that extends
   * this trait.
   */
-trait NodeTestWithCachedBitcoind extends BaseNodeTest { _: CachedBitcoind[_] =>
+trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
+  _: CachedBitcoind[_] =>
 
   def withSpvNodeFundedWalletBitcoindCached(
       test: OneArgAsyncTest,

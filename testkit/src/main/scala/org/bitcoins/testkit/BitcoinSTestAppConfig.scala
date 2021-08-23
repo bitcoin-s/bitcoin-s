@@ -5,18 +5,14 @@ import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkit.util.TorUtil.torEnabled
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.{NumberGenerator, StringGenerators}
 
 import java.nio.file._
 import scala.concurrent.ExecutionContext
-import scala.util.Properties
 
 object BitcoinSTestAppConfig {
-
-  lazy val torEnabled: Boolean = Properties
-    .envOrNone("TOR")
-    .isDefined
 
   /** Generates a temp directory with the prefix 'bitcoin-s- */
   def tmpDir(): Path = Files.createTempDirectory("bitcoin-s-")
@@ -49,7 +45,9 @@ object BitcoinSTestAppConfig {
          |  node {
          |     mode = spv
          |  }
-         |  proxy.enabled = ${torEnabled}
+         |
+         |  proxy.enabled = $torEnabled
+         |  tor.enabled = $torEnabled
          |}
       """.stripMargin
     }
@@ -67,7 +65,8 @@ object BitcoinSTestAppConfig {
            |  node {
            |     mode = spv
            |  }
-           |  proxy.enabled = ${torEnabled}
+           |  proxy.enabled = $torEnabled
+           |  tor.enabled = $torEnabled
            |}
       """.stripMargin
       }
@@ -88,7 +87,9 @@ object BitcoinSTestAppConfig {
          |     mode = neutrino
          |     relay = true
          |  }
-         |  proxy.enabled = ${torEnabled}
+         |
+         |  proxy.enabled = $torEnabled
+         |  tor.enabled = $torEnabled
          |}
       """.stripMargin
     }
@@ -106,7 +107,8 @@ object BitcoinSTestAppConfig {
            |     mode = neutrino
            |     relay = true
            |  }
-           |  proxy.enabled = ${torEnabled}
+           |  proxy.enabled = $torEnabled
+           |  tor.enabled = $torEnabled
            |}
       """.stripMargin
       }

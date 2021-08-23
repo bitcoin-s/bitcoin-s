@@ -18,6 +18,7 @@ import org.bitcoins.testkit.node.{
   NodeUnitTest
 }
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest._
 import scodec.bits._
@@ -25,7 +26,10 @@ import scodec.bits._
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
+class P2PClientTest
+    extends BitcoindRpcTest
+    with CachedBitcoinSAppConfig
+    with CachedTor {
 
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)

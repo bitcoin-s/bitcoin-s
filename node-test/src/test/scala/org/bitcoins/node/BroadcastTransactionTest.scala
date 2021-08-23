@@ -9,6 +9,7 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindNewest
 import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
+import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -24,7 +25,10 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindNewest {
   override type FixtureParam = SpvNodeConnectedWithBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val torClientF = if (TorUtil.torEnabled) torF else Future.unit
+
     val outcome: Future[Outcome] = for {
+      _ <- torClientF
       bitcoind <- cachedBitcoindWithFundsF
       outcome = withSpvNodeConnectedToBitcoindCached(test, bitcoind)(
         system,

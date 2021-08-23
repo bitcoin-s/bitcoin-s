@@ -1,4 +1,4 @@
-name: Linux 2.13 bitcoind, eclair, and lnd rpc tests
+name: Tor Tests
 env:
   COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
 
@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
+    env:
+      TOR: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -28,4 +30,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: run tests
-        run: sbt ++2.13.6 downloadBitcoind downloadEclair downloadLnd coverage bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls lndRpcTest/test
+        run: sbt ++2.13.6 downloadBitcoind torTest/test nodeTest/test dlcNodeTest/test
