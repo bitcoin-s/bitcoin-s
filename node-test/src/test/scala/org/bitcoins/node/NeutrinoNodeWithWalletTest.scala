@@ -1,6 +1,5 @@
 package org.bitcoins.node
 
-import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
@@ -8,6 +7,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.node.{
   NeutrinoNodeFundedWalletBitcoind,
   NodeTestUtil,
@@ -17,6 +17,7 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
@@ -40,8 +41,8 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     new FutureOutcome(outcomeF)
   }
 
-  val TestAmount = 1.bitcoin
-  val FeeRate = SatoshisPerByte(10.sats)
+  val TestAmount: Bitcoins = 1.bitcoin
+  val FeeRate: SatoshisPerByte = SatoshisPerByte(10.sats)
   val TestFees: Satoshis = 2230.sats
 
   it must "receive information about received payments" in { param =>
@@ -108,7 +109,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- wallet.getConfirmedBalance()
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-      _ <- AsyncUtil.awaitConditionF(condition1)
+      _ <- TestAsyncUtil.awaitConditionF(condition1, interval = 1.second)
       // receive
       address <- wallet.getNewAddress()
       txId <- bitcoind.sendToAddress(address, TestAmount)
@@ -120,7 +121,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-      _ <- AsyncUtil.awaitConditionF(condition2)
+      _ <- TestAsyncUtil.awaitConditionF(condition2, interval = 1.second)
       // assert we got the full tx with witness data
       txs <- wallet.listTransactions()
     } yield assert(txs.exists(_.transaction == expectedTx))
@@ -186,9 +187,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ = assert(utxos.size == 3)
 
       address <- wallet.getNewAddress()
-      _ <-
-        bitcoind
-          .sendToAddress(address, TestAmount)
+      _ <- bitcoind.sendToAddress(address, TestAmount)
 
       addresses <- wallet.listAddresses()
       utxos <- wallet.listDefaultAccountUtxos()
@@ -210,7 +209,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
       _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
 
-      _ <- AsyncUtil.awaitConditionF(condition)
+      _ <- TestAsyncUtil.awaitConditionF(condition, interval = 1.second)
     } yield succeed
   }
 }
