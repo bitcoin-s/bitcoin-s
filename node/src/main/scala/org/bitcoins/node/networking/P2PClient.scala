@@ -70,6 +70,8 @@ case class P2PClientActor(
     extends Actor
     with P2PLogger {
 
+  private case object ReconnectCommand extends NodeCommand
+
   private var currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
   private var reconnectHandlerOpt: Option[() => Future[Unit]] = None
@@ -109,8 +111,11 @@ case class P2PClientActor(
         val newUnalignedBytes =
           handleTcpMessage(message, peerConnection, unalignedBytes)
         context.become(awaitNetworkRequest(peerConnection, newUnalignedBytes))
-      case nodeCommand: NodeCommand =>
-        handleNodeCommand(nodeCommand, Some(peerConnection))
+      case P2PClient.CloseCommand =>
+        logger.info(s"disconnecting from peer $peer")
+        currentPeerMsgHandlerRecv =
+          currentPeerMsgHandlerRecv.initializeDisconnect()
+        peerConnection ! Tcp.Close
       case metaMsg: P2PClient.MetaMsg =>
         sender() ! handleMetaMsg(metaMsg)
       case Terminated(actor) if actor == peerConnection =>
@@ -119,13 +124,13 @@ case class P2PClientActor(
 
   override def receive: Receive = LoggingReceive {
     case P2PClient.ConnectCommand =>
-      handleNodeCommand(P2PClient.ConnectCommand, None)
+      connect()
     case metaMsg: P2PClient.MetaMsg =>
       sender() ! handleMetaMsgDisconnected(metaMsg)
   }
 
   def reconnecting: Receive = LoggingReceive {
-    case P2PClient.ReconnectCommand =>
+    case ReconnectCommand =>
       logger.info(s"reconnecting to ${peer.socket}")
       reconnectHandlerOpt = Some(onReconnect)
       connect()
@@ -242,8 +247,7 @@ case class P2PClientActor(
           reconnectionTry = reconnectionTry + 1
 
           import context.dispatcher
-          context.system.scheduler.scheduleOnce(delay)(
-            self ! P2PClient.ReconnectCommand)
+          context.system.scheduler.scheduleOnce(delay)(self ! ReconnectCommand)
 
           context.become(reconnecting)
         }
@@ -261,10 +265,6 @@ case class P2PClientActor(
     message match {
       case event: Tcp.Event =>
         handleEvent(event, peerConnection, unalignedBytes = unalignedBytes)
-      case command: Tcp.Command =>
-        handleCommand(command, peerConnection)
-
-        unalignedBytes
     }
   }
 
@@ -369,20 +369,6 @@ case class P2PClientActor(
     }
   }
 
-  /** This function is responsible for handling a [[Tcp.Command]] algebraic data type
-    */
-  private def handleCommand(
-      command: Tcp.Command,
-      peerConnection: ActorRef): Unit =
-    command match {
-      case closeCmd @ (Tcp.ConfirmedClose | Tcp.Close | Tcp.Abort) =>
-        peerConnection ! closeCmd
-      case connectCmd: Tcp.Connect =>
-        manager ! connectCmd
-      case bind: Tcp.Bind =>
-        manager ! bind
-    }
-
   /** Returns the current state of our peer given the [[P2PClient.MetaMsg meta message]]
     */
   private def handleMetaMsg(metaMsg: P2PClient.MetaMsg): Boolean = {
@@ -410,20 +396,6 @@ case class P2PClientActor(
     val byteMessage = CompactByteString(message.bytes.toArray)
     peerConnection ! Tcp.Write(byteMessage)
     peerConnection ! Tcp.ResumeReading
-  }
-
-  private def handleNodeCommand(
-      command: NodeCommand,
-      peerConnectionOpt: Option[ActorRef]): Unit = command match {
-    case P2PClient.ConnectCommand =>
-      connect()
-    case P2PClient.ReconnectCommand =>
-      reconnect()
-    case P2PClient.CloseCommand =>
-      currentPeerMsgHandlerRecv =
-        currentPeerMsgHandlerRecv.initializeDisconnect()
-      peerConnectionOpt.map(actor => actor.tell(Tcp.Close, self))
-      ()
   }
 
 }
@@ -467,9 +439,6 @@ object P2PClient extends P2PLogger {
 
   sealed trait NodeCommand
   case object ConnectCommand extends NodeCommand
-
-  case object ReconnectCommand extends NodeCommand
-
   case object CloseCommand extends NodeCommand
 
   /** A message hierarchy that canbe sent to [[P2PClientActor P2P Client Actor]]
