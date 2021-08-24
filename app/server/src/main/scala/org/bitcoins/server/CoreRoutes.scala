@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.commons.jsonmodels.{SerializedPSBT, SerializedTransaction}
-import org.bitcoins.core.api.core.CoreApi
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
@@ -12,15 +11,15 @@ import org.bitcoins.core.protocol.script.{
   P2WSHWitnessSPKV0
 }
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.server.BitcoinSAppConfig.toChainConf
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import ujson._
 
 import scala.collection.mutable
+import scala.concurrent.Future
 
-case class CoreRoutes(core: CoreApi)(implicit
-    system: ActorSystem,
-    config: BitcoinSAppConfig)
+case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
     extends ServerRoute {
   import system.dispatcher
 
@@ -29,8 +28,7 @@ case class CoreRoutes(core: CoreApi)(implicit
       withValidServerCommand(FinalizePSBT.fromJsArr(arr)) {
         case FinalizePSBT(psbt) =>
           complete {
-            core
-              .finalizePSBT(psbt)
+            psbt.finalizePSBT
               .map(finalized => Server.httpSuccess(finalized.base64))
           }
       }
@@ -39,8 +37,7 @@ case class CoreRoutes(core: CoreApi)(implicit
       withValidServerCommand(ExtractFromPSBT.fromJsArr(arr)) {
         case ExtractFromPSBT(psbt) =>
           complete {
-            core
-              .extractFromPSBT(psbt)
+            psbt.extractTransactionAndValidate
               .map(tx => Server.httpSuccess(tx.hex))
           }
       }
@@ -49,9 +46,9 @@ case class CoreRoutes(core: CoreApi)(implicit
       withValidServerCommand(ConvertToPSBT.fromJsArr(arr)) {
         case ConvertToPSBT(tx) =>
           complete {
-            core
-              .convertToPSBT(tx)
-              .map(psbt => Server.httpSuccess(psbt.base64))
+            val psbt = PSBT.fromUnsignedTx(tx)
+
+            Server.httpSuccess(psbt.base64)
           }
       }
 
@@ -59,8 +56,7 @@ case class CoreRoutes(core: CoreApi)(implicit
       withValidServerCommand(CombinePSBTs.fromJsArr(arr)) {
         case CombinePSBTs(psbts) =>
           complete {
-            core
-              .combinePSBTs(psbts)
+            combinePSBTs(psbts.toVector)
               .map(psbt => Server.httpSuccess(psbt.base64))
           }
       }
@@ -69,8 +65,7 @@ case class CoreRoutes(core: CoreApi)(implicit
       withValidServerCommand(JoinPSBTs.fromJsArr(arr)) {
         case JoinPSBTs(psbts) =>
           complete {
-            core
-              .joinPSBTs(psbts)
+            combinePSBTs(psbts.toVector)
               .map(psbt => Server.httpSuccess(psbt.base64))
           }
       }
@@ -186,5 +181,22 @@ case class CoreRoutes(core: CoreApi)(implicit
             Server.httpSuccess(ujson.Null)
           }
       }
+  }
+
+  def combinePSBTs(psbts: Vector[PSBT]): Future[PSBT] = {
+    if (psbts.isEmpty) {
+      Future.failed(new IllegalArgumentException("No PSBTs given"))
+    } else {
+      try {
+        val empty = PSBT.fromUnsignedTx(psbts.head.transaction)
+        val combined =
+          psbts.foldLeft(empty)((accum, psbt) => accum.combinePSBT(psbt))
+
+        Future.successful(combined)
+      } catch {
+        case err: IllegalArgumentException =>
+          Future.failed(err)
+      }
+    }
   }
 }

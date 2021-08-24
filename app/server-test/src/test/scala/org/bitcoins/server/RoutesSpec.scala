@@ -3,7 +3,6 @@ package org.bitcoins.server
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.api.wallet.db._
@@ -79,7 +78,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val walletRoutes: WalletRoutes = WalletRoutes(mockWalletApi)
 
-  val coreRoutes: CoreRoutes = CoreRoutes(Core)
+  val coreRoutes: CoreRoutes = CoreRoutes()
 
   "The server" should {
 
