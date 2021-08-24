@@ -182,11 +182,11 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     for {
       _ <- startClient(client)
       remoteInstance = BitcoindInstanceRemote(instance.network,
-                                               instance.uri,
-                                               instance.rpcUri,
-                                               instance.authCredentials,
-                                               instance.zmqConfig,
-                                               None)
+                                              instance.uri,
+                                              instance.rpcUri,
+                                              instance.authCredentials,
+                                              instance.zmqConfig,
+                                              None)
       remoteClient = BitcoindRpcClient.withActorSystem(remoteInstance)
       _ <- remoteClient.isStartedF.map {
         case false =>
