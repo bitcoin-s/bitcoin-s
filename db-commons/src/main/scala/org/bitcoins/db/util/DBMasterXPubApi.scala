@@ -1,20 +1,15 @@
-package org.bitcoins.keymanager.util
+package org.bitcoins.db.util
 
+import org.bitcoins.core.api.keymanager.MasterXPubApi
 import org.bitcoins.db.DbAppConfig
 import org.bitcoins.db.models.MasterXPubDAO
+import org.bitcoins.keymanager.WalletStorage
 
 import java.nio.file.Path
 import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.keymanager.WalletStorage
 
-trait SeedExistsApi {
-
-  /** Determines if the seed exists */
-  def seedExists()(implicit ec: ExecutionContext): Future[Boolean]
-}
-
-/** A trait for checking invariants on file based seeds */
-trait FileBasedSeedExists extends SeedExistsApi { dbAppConfig: DbAppConfig =>
+/** A trait for checking invariants on file based seeds against a database stored master xpub */
+trait DBMasterXPubApi extends MasterXPubApi { dbAppConfig: DbAppConfig =>
 
   def seedPath: Path
 

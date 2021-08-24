@@ -15,11 +15,11 @@ import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
 import org.bitcoins.db.models.MasterXPubDAO
+import org.bitcoins.db.util.DBMasterXPubApi
 import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
-import org.bitcoins.keymanager.util.FileBasedSeedExists
 
 import java.nio.file.{Files, Path}
 import scala.concurrent.{ExecutionContext, Future}
@@ -30,7 +30,7 @@ case class DLCOracleAppConfig(
     extends DbAppConfig
     with DbManagement
     with JdbcProfileComponent[DLCOracleAppConfig]
-    with FileBasedSeedExists {
+    with DBMasterXPubApi {
 
   import profile.api._
 

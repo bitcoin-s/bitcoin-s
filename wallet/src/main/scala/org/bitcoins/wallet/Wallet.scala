@@ -5,11 +5,7 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
-import org.bitcoins.core.api.wallet.{
-  AnyHDWalletApi,
-  BlockSyncState,
-  CoinSelectionAlgo
-}
+import org.bitcoins.core.api.wallet.{AnyHDWalletApi, BlockSyncState, CoinSelectionAlgo}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -27,12 +23,13 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil}
 import org.bitcoins.core.wallet.builder._
 import org.bitcoins.core.wallet.fee._
-import org.bitcoins.core.wallet.keymanagement.{KeyManagerParams}
+import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
-import org.bitcoins.keymanager.bip39.{BIP39KeyManager}
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.db.models.MasterXPubDAO
+import org.bitcoins.db.util.MasterXPubUtil
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._
@@ -148,7 +145,7 @@ abstract class Wallet
     for {
       _ <- walletConfig.start()
       _ <- checkRootAccount
-      _ <- KeyManagerUtil.checkMasterXPub(keymanagerXpub, masterXpubDAO)
+      _ <- MasterXPubUtil.checkMasterXPub(keymanagerXpub, masterXpubDAO)
       _ <- downloadMissingUtxos
       _ = walletConfig.startRebroadcastTxsScheduler(this)
     } yield {

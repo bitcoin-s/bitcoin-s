@@ -17,11 +17,12 @@ import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.util.{FutureUtil, NumberUtil, TimeUtil}
 import org.bitcoins.crypto._
 import org.bitcoins.db.models.MasterXPubDAO
+import org.bitcoins.db.util.MasterXPubUtil
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.dlc.oracle.util.EventDbUtil
-import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.keymanager.util.KeyManagerUtil
+import org.bitcoins.keymanager.{WalletStorage}
 import scodec.bits.ByteVector
 
 import java.nio.file.Path
@@ -450,7 +451,7 @@ object DLCOracle {
 
     for {
       _ <- appConfig.start()
-      _ <- KeyManagerUtil.checkMasterXPub(oracle.getRootXpub, masterXpubDAO)
+      _ <- MasterXPubUtil.checkMasterXPub(oracle.getRootXpub, masterXpubDAO)
       differentKeyDbs <- oracle.eventDAO.findDifferentPublicKey(
         oracle.publicKey)
       fixedDbs = differentKeyDbs.map(_.copy(pubkey = oracle.publicKey))
