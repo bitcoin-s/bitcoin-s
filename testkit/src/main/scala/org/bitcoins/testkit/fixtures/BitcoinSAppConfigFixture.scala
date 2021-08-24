@@ -2,10 +2,11 @@ package org.bitcoins.testkit.fixtures
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
-
+import org.bitcoins.testkit.util.TorUtil
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -52,7 +53,9 @@ trait BitcoinSAppConfigBitcoinFixtureNotStarted
     makeDependentFixture(builder, destroyF)(test)
   }
 
-  /** Builds a configuration with the proper bitcoind credentials and bitcoin-s node mode set to bitcoind */
+  /** Builds a configuration with the proper bitcoind credentials and bitcoin-s node mode set to bitcoind
+    * and sets tor config
+    */
   private def buildConfig(instance: BitcoindInstance): Config = {
     val configStr =
       s"""
@@ -60,7 +63,13 @@ trait BitcoinSAppConfigBitcoinFixtureNotStarted
          |bitcoin-s.bitcoind-rpc.rpcpassword="${instance.authCredentials.password}"
          |bitcoin-s.bitcoind-rpc.rpcbind="${instance.rpcUri.getHost}"
          |bitcoin-s.bitcoind-rpc.rpcport="${instance.rpcUri.getPort}"
+         |bitcoin-s.bitcoind-rpc.isRemote=true
+         |bitcoin-s.bitcoind-rpc.version="${instance.getVersion}"
          |bitcoin-s.node.mode=bitcoind
+         |bitcoin-s.tor.enabled=${TorUtil.torEnabled}
+         |bitcoin-s.proxy.enabled=${TorUtil.torEnabled}
+         |bitcoin-s.dlcnode.listen = "0.0.0.0:${RpcUtil.randomPort}"
+         |bitcoin-s.server.rpcport = ${RpcUtil.randomPort}
          |""".stripMargin
 
     ConfigFactory.parseString(configStr)
