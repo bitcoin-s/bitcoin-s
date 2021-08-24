@@ -164,13 +164,12 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         peerMsgSenders(idx).connect()
         val isInitializedF = for {
           _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized(idx),
-                                              maxTries = 1024,
+                                              maxTries = 240,
                                               interval = 250.millis)
         } yield ()
         isInitializedF.failed.foreach { err =>
           logger.error(
             s"Failed to connect with peer=${peers(idx)} with err=$err")
-          sys.exit(-1)
         }
         isInitializedF.map { _ =>
           nodeAppConfig.nodeType match {
