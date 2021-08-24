@@ -107,9 +107,9 @@ case class P2PClientActor(
       case payload: NetworkPayload =>
         val networkMsg = NetworkMessage(network, payload)
         self.forward(networkMsg)
-      case message: Tcp.Message =>
+      case message: Tcp.Event =>
         val newUnalignedBytes =
-          handleTcpMessage(message, peerConnection, unalignedBytes)
+          handleEvent(message, peerConnection, unalignedBytes)
         context.become(awaitNetworkRequest(peerConnection, newUnalignedBytes))
       case P2PClient.CloseCommand =>
         logger.info(s"disconnecting from peer $peer")
@@ -251,20 +251,6 @@ case class P2PClientActor(
 
           context.become(reconnecting)
         }
-    }
-  }
-
-  /** Handles boiler plate [[Tcp.Message]] types.
-    *
-    * @return the unaligned bytes if we haven't received a full Bitcoin P2P message yet
-    */
-  private def handleTcpMessage(
-      message: Tcp.Message,
-      peerConnection: ActorRef,
-      unalignedBytes: ByteVector): ByteVector = {
-    message match {
-      case event: Tcp.Event =>
-        handleEvent(event, peerConnection, unalignedBytes = unalignedBytes)
     }
   }
 

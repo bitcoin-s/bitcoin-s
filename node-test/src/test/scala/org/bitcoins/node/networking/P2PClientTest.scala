@@ -1,6 +1,5 @@
 package org.bitcoins.node.networking
 
-import akka.io.Tcp
 import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
@@ -201,7 +200,7 @@ class P2PClientTest
     isConnectedF.flatMap { _ =>
       val isDisconnectedF = for {
         p2pClient <- p2pClientF
-        _ = p2pClient.actor ! Tcp.Abort
+        _ = p2pClient.actor ! P2PClient.CloseCommand
         isDisconnected <-
           TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isDisconnected,
                                              interval = 1.second,
