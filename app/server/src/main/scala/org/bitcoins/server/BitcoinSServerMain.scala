@@ -440,7 +440,7 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
   implicit lazy val conf: BitcoinSAppConfig =
     BitcoinSAppConfig(datadirParser.datadir,
                       datadirParser.baseConfig,
-                      serverCmdLineArgs.toConfig)(system.dispatcher)
+                      serverCmdLineArgs.toConfig)(system)
 
   new BitcoinSServerMain(serverCmdLineArgs).run()
 }

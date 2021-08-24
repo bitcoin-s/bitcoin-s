@@ -1,5 +1,6 @@
 package org.bitcoins.testkit.wallet
 
+import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
@@ -10,14 +11,15 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
+import org.bitcoins.testkit.util.BitcoinSAkkaAsyncTest
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.scalatest.AsyncTestSuite
+import org.scalatest.Suite
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /** Base test trait for all the tests in our walletTest module */
-trait BaseWalletTest extends EmbeddedPg { _: AsyncTestSuite =>
+trait BaseWalletTest extends EmbeddedPg { _: Suite with BitcoinSAkkaAsyncTest =>
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)
@@ -127,14 +129,13 @@ trait BaseWalletTest extends EmbeddedPg { _: AsyncTestSuite =>
 object BaseWalletTest {
 
   def getFreshConfig(pgUrl: () => Option[String], config: Vector[Config])(
-      implicit ec: ExecutionContext): BitcoinSAppConfig = {
+      implicit system: ActorSystem): BitcoinSAppConfig = {
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, config)
   }
 
   def getFreshWalletAppConfig(
       pgUrl: () => Option[String],
-      config: Vector[Config])(implicit
-      ec: ExecutionContext): WalletAppConfig = {
+      config: Vector[Config])(implicit system: ActorSystem): WalletAppConfig = {
     getFreshConfig(pgUrl, config).walletConf
   }
 

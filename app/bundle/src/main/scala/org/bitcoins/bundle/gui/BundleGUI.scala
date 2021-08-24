@@ -103,7 +103,7 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
     implicit val appConfig: BitcoinSAppConfig =
       BitcoinSAppConfig.fromDatadirWithBundleConfWithServerArgs(
         datadirParser.datadir,
-        serverArgParser)(system.dispatcher)
+        serverArgParser)(system)
 
     validatePreferenceValues()
 
