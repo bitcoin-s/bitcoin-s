@@ -9,7 +9,7 @@ object Cli extends App {
   import System.err.{println => printerr}
 
   try {
-    ConsoleCli.exec(args.toVector: _*) match {
+    ConsoleCli.exec(args.toVector) match {
       case Success(output) => println(output)
       case Failure(err) =>
         printerr(err.getMessage)

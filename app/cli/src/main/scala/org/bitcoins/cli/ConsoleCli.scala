@@ -1491,8 +1491,8 @@ object ConsoleCli {
     )
   }
 
-  def exec(args: String*): Try[String] = {
-    val config = OParser.parse(parser, args.toVector, Config()) match {
+  def exec(args: Vector[String]): Try[String] = {
+    val config = OParser.parse(parser, args, Config()) match {
       case None       => sys.exit(1)
       case Some(conf) => conf
     }
