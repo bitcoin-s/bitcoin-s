@@ -6,7 +6,8 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
   BitcoindConfig,
-  BitcoindInstanceLocal
+  BitcoindInstanceLocal,
+  BitcoindInstanceRemote1
 }
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -149,6 +150,51 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
             ()
           }
     } yield assert(balance > Bitcoins(0))
+
+  }
+
+  it should "connect us to a remote bitcoind instance and ping it successfully" in {
+    val port = RpcUtil.randomPort
+    val rpcPort = RpcUtil.randomPort
+    val confStr = s"""
+                     |daemon=1
+                     |rpcauth=bitcoin-s:6d7580be1deb4ae52bc4249871845b09$$82b282e7c6493f6982a5a7af9fbb1b671bab702e2f31bbb1c016bb0ea1cc27ca
+                     |regtest=1
+                     |port=${RpcUtil.randomPort}
+                     |rpcport=${RpcUtil.randomPort}
+       """.stripMargin
+
+    val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
+    val authCredentials =
+      BitcoindAuthCredentials.PasswordBased(username = "bitcoin-s",
+                                            password = "strong_password")
+    val instance =
+      BitcoindInstanceLocal(
+        network = RegTest,
+        uri = new URI(s"http://localhost:$port"),
+        rpcUri = new URI(s"http://localhost:$rpcPort"),
+        authCredentials = authCredentials,
+        datadir = conf.datadir,
+        binary = newestBitcoindBinary
+      )
+
+    val client = BitcoindRpcClient.withActorSystem(instance)
+    for {
+      _ <- startClient(client)
+      remoteInstance = BitcoindInstanceRemote1(instance.network,
+                                               instance.uri,
+                                               instance.rpcUri,
+                                               instance.authCredentials,
+                                               instance.zmqConfig,
+                                               None)
+      remoteClient = BitcoindRpcClient.withActorSystem(remoteInstance)
+      _ <- remoteClient.isStartedF.map {
+        case false =>
+          fail("Couldn't ping remote instance")
+        case true => logger.info("Ping successful!")
+      }
+
+    } yield succeed
 
   }
 

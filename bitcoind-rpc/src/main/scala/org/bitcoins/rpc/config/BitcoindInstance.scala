@@ -252,6 +252,32 @@ object BitcoindInstanceLocal
 }
 
 object BitcoindInstanceRemote1 extends InstanceFactory[BitcoindInstanceRemote] {
+
+  private case class BitcoindInstanceRemoteImpl(
+      network: NetworkParameters,
+      uri: URI,
+      rpcUri: URI,
+      authCredentials: BitcoindAuthCredentials,
+      zmqConfig: ZmqConfig,
+      proxyParams: Option[Socks5ProxyParams]
+  ) extends BitcoindInstanceRemote
+
+  def apply(
+      network: NetworkParameters,
+      uri: URI,
+      rpcUri: URI,
+      authCredentials: BitcoindAuthCredentials,
+      zmqConfig: ZmqConfig = ZmqConfig(),
+      proxyParams: Option[Socks5ProxyParams] = None
+  ): BitcoindInstanceRemote = {
+    BitcoindInstanceRemoteImpl(network,
+                               uri,
+                               rpcUri,
+                               authCredentials,
+                               zmqConfig = zmqConfig,
+                               proxyParams = proxyParams)
+  }
+
   override def fromConfigFile(file: File): BitcoindInstanceRemote = ???
 
   override def fromDataDir(dir: File): BitcoindInstanceRemote = ???
