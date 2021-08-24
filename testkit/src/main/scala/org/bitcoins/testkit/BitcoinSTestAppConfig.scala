@@ -1,5 +1,6 @@
 package org.bitcoins.testkit
 
+import akka.actor.ActorSystem
 import com.typesafe.config._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
@@ -38,7 +39,7 @@ object BitcoinSTestAppConfig {
     * 2) Logging is turned down to WARN
     */
   def getSpvTestConfig(config: Config*)(implicit
-      ec: ExecutionContext): BitcoinSAppConfig = {
+      system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       s"""
          |bitcoin-s {
@@ -57,7 +58,7 @@ object BitcoinSTestAppConfig {
   def getSpvWithEmbeddedDbTestConfig(
       pgUrl: () => Option[String],
       config: Vector[Config])(implicit
-      ec: ExecutionContext): BitcoinSAppConfig = {
+      system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory
       .parseString {
         s"""
@@ -79,7 +80,7 @@ object BitcoinSTestAppConfig {
   }
 
   def getNeutrinoTestConfig(config: Config*)(implicit
-      ec: ExecutionContext): BitcoinSAppConfig = {
+      system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       s"""
          |bitcoin-s {
@@ -98,7 +99,7 @@ object BitcoinSTestAppConfig {
 
   def getNeutrinoWithEmbeddedDbTestConfig(
       pgUrl: () => Option[String],
-      config: Config*)(implicit ec: ExecutionContext): BitcoinSAppConfig = {
+      config: Config*)(implicit system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory
       .parseString {
         s"""

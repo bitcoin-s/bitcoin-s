@@ -102,7 +102,7 @@ object ScanBitcoind extends BitcoinSAppScalaDaemon {
   override val customFinalDirOpt = None
 
   implicit val rpcAppConfig: BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig.fromDefaultDatadir()(system.dispatcher)
+    BitcoindRpcAppConfig.fromDefaultDatadir()(system)
 
   new ScanBitcoind().run()
 }

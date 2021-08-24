@@ -2,18 +2,19 @@ package org.bitcoins.server
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
-import org.bitcoins.commons.config.{AppConfig, AppConfigFactory, ConfigOps}
+import org.bitcoins.commons.config.{AppConfig, ConfigOps}
 import org.bitcoins.node.NodeType
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config._
+import org.bitcoins.server.util.AppConfigFactoryActorSystem
 import org.bitcoins.tor.Socks5ProxyParams
 import org.bitcoins.tor.config.TorAppConfig
 
 import java.io.File
 import java.net.{InetSocketAddress, URI}
 import java.nio.file._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /** Configuration for a BitcoindRpcClient
   * @param directory The data directory of the Bitcoin-S instance
@@ -21,8 +22,9 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class BitcoindRpcAppConfig(
     private val directory: Path,
-    private val confs: Config*)(implicit val ec: ExecutionContext)
+    private val confs: Config*)(implicit val system: ActorSystem)
     extends AppConfig {
+  import system.dispatcher
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
 
   override protected[bitcoins] def moduleName: String =
@@ -162,13 +164,14 @@ case class BitcoindRpcAppConfig(
 
 }
 
-object BitcoindRpcAppConfig extends AppConfigFactory[BitcoindRpcAppConfig] {
+object BitcoindRpcAppConfig
+    extends AppConfigFactoryActorSystem[BitcoindRpcAppConfig] {
   override val moduleName: String = "bitcoind"
 
   /** Constructs a node configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
-      ec: ExecutionContext): BitcoindRpcAppConfig =
+      system: ActorSystem): BitcoindRpcAppConfig =
     BitcoindRpcAppConfig(datadir, confs: _*)
 }

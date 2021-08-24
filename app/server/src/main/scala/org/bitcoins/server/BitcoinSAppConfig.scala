@@ -1,5 +1,6 @@
 package org.bitcoins.server
 
+import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.config.ChainAppConfig
@@ -15,7 +16,7 @@ import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import java.nio.file.{Files, Path, Paths}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /** A unified config class for all submodules of Bitcoin-S
   * that accepts configuration. Thanks to implicit definitions
@@ -28,8 +29,9 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class BitcoinSAppConfig(
     private val directory: Path,
-    private val confs: Config*)(implicit ec: ExecutionContext)
+    private val confs: Config*)(implicit system: ActorSystem)
     extends StartStopAsync[Unit] {
+  import system.dispatcher
   lazy val walletConf: WalletAppConfig = WalletAppConfig(directory, confs: _*)
   lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
   lazy val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
@@ -122,25 +124,24 @@ case class BitcoinSAppConfig(
 object BitcoinSAppConfig extends Logging {
 
   def fromConfig(config: Config)(implicit
-      ec: ExecutionContext): BitcoinSAppConfig = {
+      system: ActorSystem): BitcoinSAppConfig = {
     val configDataDir: Path = Paths.get(config.getString("bitcoin-s.datadir"))
     BitcoinSAppConfig(configDataDir, config)
   }
 
-  def fromClassPathConfig()(implicit
-      ec: ExecutionContext): BitcoinSAppConfig = {
+  def fromClassPathConfig()(implicit system: ActorSystem): BitcoinSAppConfig = {
     fromConfig(ConfigFactory.load())
   }
 
   def fromDatadir(datadir: Path, confs: Config*)(implicit
-      ec: ExecutionContext): BitcoinSAppConfig = {
+      system: ActorSystem): BitcoinSAppConfig = {
     BitcoinSAppConfig(datadir, confs: _*)
   }
 
   def fromDatadirWithServerArgs(
       datadir: Path,
       serverArgsParser: ServerArgParser)(implicit
-      ec: ExecutionContext): BitcoinSAppConfig = {
+      system: ActorSystem): BitcoinSAppConfig = {
     fromDatadir(datadir, serverArgsParser.toConfig)
   }
 
@@ -148,18 +149,18 @@ object BitcoinSAppConfig extends Logging {
     * data directory and given list of configuration overrides.
     */
   def fromDefaultDatadir(confs: Config*)(implicit
-      ec: ExecutionContext): BitcoinSAppConfig =
+      system: ActorSystem): BitcoinSAppConfig =
     BitcoinSAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
 
   def fromDefaultDatadirWithBundleConf(confs: Vector[Config] = Vector.empty)(
-      implicit ec: ExecutionContext): BitcoinSAppConfig = {
+      implicit system: ActorSystem): BitcoinSAppConfig = {
     fromDatadirWithBundleConf(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs)
   }
 
   def fromDatadirWithBundleConf(
       datadir: Path,
       confs: Vector[Config] = Vector.empty)(implicit
-      ec: ExecutionContext): BitcoinSAppConfig = {
+      system: ActorSystem): BitcoinSAppConfig = {
     val baseConf: BitcoinSAppConfig =
       fromDatadir(datadir, confs: _*)
 
@@ -186,13 +187,13 @@ object BitcoinSAppConfig extends Logging {
   def fromDatadirWithBundleConfWithServerArgs(
       datadir: Path,
       serverArgParser: ServerArgParser)(implicit
-      ec: ExecutionContext): BitcoinSAppConfig = {
+      system: ActorSystem): BitcoinSAppConfig = {
     fromDatadirWithBundleConf(datadir, Vector(serverArgParser.toConfig))
   }
 
   /** Creates a BitcoinSAppConfig the the given daemon args to a server */
   def fromDefaultDatadirWithServerArgs(serverArgParser: ServerArgParser)(
-      implicit ec: ExecutionContext): BitcoinSAppConfig = {
+      implicit system: ActorSystem): BitcoinSAppConfig = {
     val config = serverArgParser.toConfig
     fromConfig(config)
   }
