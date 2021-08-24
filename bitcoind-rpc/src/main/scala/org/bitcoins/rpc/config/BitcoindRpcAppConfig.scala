@@ -147,12 +147,12 @@ case class BitcoindRpcAppConfig(
       )
 
     case None =>
-      BitcoindInstanceRemote1(network = network,
-                              uri = uri,
-                              rpcUri = rpcUri,
-                              authCredentials = authCredentials,
-                              zmqConfig = zmqConfig,
-                              proxyParams = socks5ProxyParams)
+      BitcoindInstanceRemote(network = network,
+                             uri = uri,
+                             rpcUri = rpcUri,
+                             authCredentials = authCredentials,
+                             zmqConfig = zmqConfig,
+                             proxyParams = socks5ProxyParams)
   }
 
   lazy val client: BitcoindRpcClient = {

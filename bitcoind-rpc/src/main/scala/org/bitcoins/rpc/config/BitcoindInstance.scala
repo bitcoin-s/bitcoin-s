@@ -251,7 +251,7 @@ object BitcoindInstanceLocal
   override val DEFAULT_CONF_FILE: Path = BitcoindConfig.DEFAULT_CONF_FILE.toPath
 }
 
-object BitcoindInstanceRemote1 extends InstanceFactory[BitcoindInstanceRemote] {
+object BitcoindInstanceRemote extends InstanceFactory[BitcoindInstanceRemote] {
 
   private case class BitcoindInstanceRemoteImpl(
       network: NetworkParameters,

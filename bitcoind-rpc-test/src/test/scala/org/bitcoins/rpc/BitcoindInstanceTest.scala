@@ -7,7 +7,7 @@ import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
   BitcoindConfig,
   BitcoindInstanceLocal,
-  BitcoindInstanceRemote1
+  BitcoindInstanceRemote
 }
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -181,7 +181,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     val client = BitcoindRpcClient.withActorSystem(instance)
     for {
       _ <- startClient(client)
-      remoteInstance = BitcoindInstanceRemote1(instance.network,
+      remoteInstance = BitcoindInstanceRemote(instance.network,
                                                instance.uri,
                                                instance.rpcUri,
                                                instance.authCredentials,
