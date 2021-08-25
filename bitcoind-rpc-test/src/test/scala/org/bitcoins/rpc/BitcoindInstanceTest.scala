@@ -181,17 +181,19 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     val client = BitcoindRpcClient.withActorSystem(instance)
     for {
       _ <- startClient(client)
-      remoteInstance = BitcoindInstanceRemote(instance.network,
-                                              instance.uri,
-                                              instance.rpcUri,
-                                              instance.authCredentials,
-                                              instance.zmqConfig,
-                                              None)
+      remoteInstance = BitcoindInstanceRemote(
+        network = instance.network,
+        uri = instance.uri,
+        rpcUri = instance.rpcUri,
+        authCredentials = instance.authCredentials,
+        zmqConfig = instance.zmqConfig,
+        proxyParams = None
+      )
       remoteClient = BitcoindRpcClient.withActorSystem(remoteInstance)
       _ <- remoteClient.isStartedF.map {
         case false =>
           fail("Couldn't ping remote instance")
-        case true => logger.info("Ping successful!")
+        case true =>
       }
 
     } yield succeed

@@ -108,7 +108,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
     val walletClient = nodePair.node2
     val localInstance = walletClient.getDaemon match {
       case _: BitcoindInstanceRemote =>
-        sys.error(s"Cannot use remote bitocind instance in test cases")
+        sys.error(s"Cannot use remote bitcoind instance in test cases")
       case local: BitcoindInstanceLocal =>
         local
     }
@@ -295,7 +295,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
 
     val localInstance = client.getDaemon match {
       case _: BitcoindInstanceRemote =>
-        sys.error(s"Cannot use remote bitocind instance in test cases")
+        sys.error(s"Cannot use remote bitcoind instance in test cases")
       case local: BitcoindInstanceLocal =>
         local
     }
@@ -374,7 +374,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairV19 {
     val walletClient = client
     val localInstance = client.getDaemon match {
       case _: BitcoindInstanceRemote =>
-        sys.error(s"Cannot use remote bitocind instance in test cases")
+        sys.error(s"Cannot use remote bitcoind instance in test cases")
       case local: BitcoindInstanceLocal =>
         local
     }

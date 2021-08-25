@@ -20,12 +20,28 @@ sealed trait LndInstance {
   def bitcoindRpcUri: URI
   def zmqConfig: ZmqConfig
   def debugLevel: LogLevel
-
-  private var macaroonOpt: Option[String] = None
+  def macaroon: String
 
   def datadir: Path
 
-  def macaroon: String = {
+  val certFile: File
+}
+
+case class LndInstanceLocal(
+    datadir: Path,
+    network: BitcoinNetwork,
+    listenBinding: URI,
+    restUri: URI,
+    rpcUri: URI,
+    bitcoindAuthCredentials: PasswordBased,
+    bitcoindRpcUri: URI,
+    zmqConfig: ZmqConfig,
+    debugLevel: LogLevel)
+    extends LndInstance {
+
+  private var macaroonOpt: Option[String] = None
+
+  override def macaroon: String = {
     macaroonOpt match {
       case Some(value) => value
       case None =>
@@ -48,18 +64,6 @@ sealed trait LndInstance {
   lazy val certFile: File =
     datadir.resolve("tls.cert").toFile
 }
-
-case class LndInstanceLocal(
-    datadir: Path,
-    network: BitcoinNetwork,
-    listenBinding: URI,
-    restUri: URI,
-    rpcUri: URI,
-    bitcoindAuthCredentials: PasswordBased,
-    bitcoindRpcUri: URI,
-    zmqConfig: ZmqConfig,
-    debugLevel: LogLevel)
-    extends LndInstance
 
 object LndInstanceLocal extends InstanceFactoryLocal[LndInstanceLocal] {
 

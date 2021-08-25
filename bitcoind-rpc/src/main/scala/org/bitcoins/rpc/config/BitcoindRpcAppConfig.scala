@@ -156,19 +156,13 @@ case class BitcoindRpcAppConfig(
   }
 
   lazy val client: BitcoindRpcClient = {
-    val version: Option[BitcoindVersion] = bitcoindInstance match {
-      case local: BitcoindInstanceLocal =>
-        Some(versionOpt.getOrElse(local.getVersion))
-      case _: BitcoindInstanceRemote => None
-
-    }
-
     bitcoindInstance match {
-      case _: BitcoindInstanceLocal =>
-        BitcoindRpcClient.fromVersion(version.get, bitcoindInstance)
-      case _: BitcoindInstanceRemote => new BitcoindRpcClient(bitcoindInstance)
+      case local: BitcoindInstanceLocal =>
+        val version = versionOpt.getOrElse(local.getVersion)
+        BitcoindRpcClient.fromVersion(version, bitcoindInstance)
+      case _: BitcoindInstanceRemote =>
+        new BitcoindRpcClient(bitcoindInstance)
     }
-
   }
 }
 

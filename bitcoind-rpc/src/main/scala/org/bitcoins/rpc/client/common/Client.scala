@@ -88,9 +88,7 @@ trait Client
       case local: BitcoindInstanceLocal =>
         val path = local.datadir.toPath.resolve("bitcoin.conf")
         Some(path)
-
     }
-
   }
 
   implicit protected val system: ActorSystem
