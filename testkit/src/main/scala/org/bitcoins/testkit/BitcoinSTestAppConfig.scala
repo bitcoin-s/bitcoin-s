@@ -49,6 +49,7 @@ object BitcoinSTestAppConfig {
          |
          |  proxy.enabled = $torEnabled
          |  tor.enabled = $torEnabled
+         |  tor.use-random-ports = false
          |}
       """.stripMargin
     }
@@ -68,6 +69,7 @@ object BitcoinSTestAppConfig {
            |  }
            |  proxy.enabled = $torEnabled
            |  tor.enabled = $torEnabled
+           |  tor.use-random-ports = false
            |}
       """.stripMargin
       }
@@ -91,6 +93,7 @@ object BitcoinSTestAppConfig {
          |
          |  proxy.enabled = $torEnabled
          |  tor.enabled = $torEnabled
+         |  tor.use-random-ports = false
          |}
       """.stripMargin
     }
@@ -110,6 +113,7 @@ object BitcoinSTestAppConfig {
            |  }
            |  proxy.enabled = $torEnabled
            |  tor.enabled = $torEnabled
+           |  tor.use-random-ports = false  
            |}
       """.stripMargin
       }

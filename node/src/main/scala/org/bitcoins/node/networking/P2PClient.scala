@@ -229,7 +229,6 @@ case class P2PClientActor(
       case _: PeerMessageReceiverState.InitializedDisconnect =>
         logger.warn(
           s"Ignoring reconnection attempts as we initialized disconnect from peer=$peer")
-        ()
       case PeerMessageReceiverState.Preconnection | _: Initializing |
           _: Normal | _: Disconnected =>
         currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver

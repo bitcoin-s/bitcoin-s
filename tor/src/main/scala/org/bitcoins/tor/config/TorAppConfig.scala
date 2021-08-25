@@ -41,6 +41,8 @@ case class TorAppConfig(
 
   lazy val torProvided = config.getBoolean("bitcoin-s.tor.provided")
 
+  lazy val useRandomPorts = config.getBoolean("bitcoin-s.tor.use-random-ports")
+
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
     if (config.getBoolean("bitcoin-s.proxy.enabled")) {
       val address = if (torProvided) {
@@ -49,7 +51,9 @@ case class TorAppConfig(
           TorParams.DefaultProxyPort)
       } else {
         new InetSocketAddress(InetAddress.getLoopbackAddress,
-                              TorAppConfig.randomSocks5Port)
+                              if (useRandomPorts)
+                                TorAppConfig.randomSocks5Port
+                              else TorParams.DefaultProxyPort)
       }
       Some(
         Socks5ProxyParams(
@@ -71,7 +75,9 @@ case class TorAppConfig(
                                            TorParams.DefaultControlPort)
       } else {
         new InetSocketAddress(InetAddress.getLoopbackAddress,
-                              TorAppConfig.randomControlPort)
+                              if (useRandomPorts)
+                                TorAppConfig.randomControlPort
+                              else TorParams.DefaultControlPort)
       }
 
       val auth = config.getStringOrNone("bitcoin-s.tor.password") match {
