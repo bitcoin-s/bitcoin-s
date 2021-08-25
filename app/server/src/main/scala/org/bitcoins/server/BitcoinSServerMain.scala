@@ -7,7 +7,6 @@ import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
-import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -332,7 +331,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val walletRoutes = WalletRoutes(wallet)
     val nodeRoutes = NodeRoutes(nodeApi)
     val chainRoutes = ChainRoutes(chainApi, nodeConf.network)
-    val coreRoutes = CoreRoutes(Core)
+    val coreRoutes = CoreRoutes()
     val dlcRoutes = DLCRoutes(dlcNode)
 
     val handlers =
