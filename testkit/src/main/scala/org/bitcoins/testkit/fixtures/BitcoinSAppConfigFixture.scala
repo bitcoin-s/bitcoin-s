@@ -15,7 +15,6 @@ sealed trait BitcoinSAppConfigFixture extends BitcoinSFixture with EmbeddedPg {
   override type FixtureParam = BitcoinSAppConfig
 
   override def afterAll(): Unit = {
-    println(s"Stopping BitcoinSAppConfigFixture")
     super[EmbeddedPg].afterAll()
     super[BitcoinSFixture].afterAll()
   }
