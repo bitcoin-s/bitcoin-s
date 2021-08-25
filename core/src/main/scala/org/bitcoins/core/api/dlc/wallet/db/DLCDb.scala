@@ -1,5 +1,6 @@
 package org.bitcoins.core.api.dlc.wallet.db
 
+import org.bitcoins.core.api.db.LastUpdatedDb
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.dlc.models.DLCState
@@ -35,7 +36,7 @@ case class DLCDb(
     fundingTxIdOpt: Option[DoubleSha256DigestBE],
     closingTxIdOpt: Option[DoubleSha256DigestBE],
     aggregateSignatureOpt: Option[SchnorrDigitalSignature]
-) {
+) extends LastUpdatedDb {
 
   def updateState(newState: DLCState): DLCDb = {
     copy(state = newState, lastUpdated = TimeUtil.now)
