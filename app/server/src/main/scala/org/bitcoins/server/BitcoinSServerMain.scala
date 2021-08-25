@@ -87,40 +87,36 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     val peerSocketsF = {
       val allPeersF = {
-        if (nodeConf.network == MainNet) {
-          val dnsSeeds = nodeConf.network.dnsSeeds
+        val dnsSeeds = nodeConf.network.dnsSeeds
 
-          val peersFromSeed = dnsSeeds
-            .flatMap(seed => {
-              try {
-                InetAddress
-                  .getAllByName(seed)
-              } catch {
-                case _: UnknownHostException =>
-                  logger.info(s"DNS seed $seed is unavailable")
-                  Vector()
-              }
-            })
-            .distinct
-            .filter(_.isReachable(500))
-            .map(_.getHostAddress)
+        val peersFromSeed = dnsSeeds
+          .flatMap(seed => {
+            try {
+              InetAddress
+                .getAllByName(seed)
+            } catch {
+              case _: UnknownHostException =>
+                logger.info(s"DNS seed $seed is unavailable")
+                Vector()
+            }
+          })
+          .distinct
+          .filter(_.isReachable(500))
+          .map(_.getHostAddress)
 
-          val peersFromDbF = PeerDAO().findAll().map(_.map(_.address))
+        val peersFromDbF = PeerDAO().findAll().map(_.map(_.address))
 
-          val peersFromConf = nodeConf.peers
+        val peersFromConf = nodeConf.peers
 
-          val all = for {
-            peersFromDB <- peersFromDbF
-          } yield {
+        val all = for {
+          peersFromDB <- peersFromDbF
+        } yield {
 
-            val ret = (peersFromDB ++ peersFromConf ++ peersFromSeed).distinct
-            logger.info(ret)
-            ret
-          }
-          all
-        } else {
-          Future(nodeConf.peers)
+          val ret = (peersFromDB ++ peersFromConf ++ peersFromSeed).distinct
+          logger.info(ret)
+          ret
         }
+        all
       }
 
       allPeersF.map(_.map(peer =>
