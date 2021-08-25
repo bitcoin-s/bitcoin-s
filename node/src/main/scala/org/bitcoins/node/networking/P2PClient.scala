@@ -7,20 +7,20 @@ import akka.io.{IO, Tcp}
 import akka.util.{ByteString, CompactByteString, Timeout}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.p2p.{NetworkHeader, NetworkMessage, NetworkPayload}
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient.NodeCommand
-import org.bitcoins.node.networking.peer.{
-  PeerMessageReceiver,
-  PeerMessageReceiverState
-}
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
   Disconnected,
   Initializing,
   Normal
+}
+import org.bitcoins.node.networking.peer.{
+  PeerMessageReceiver,
+  PeerMessageReceiverState
 }
 import org.bitcoins.node.util.BitcoinSNodeUtil
 import org.bitcoins.tor.Socks5Connection.{Socks5Connect, Socks5Connected}
@@ -202,8 +202,8 @@ case class P2PClientActor(
     val (peerOrProxyAddress, proxyParams) =
       peer.socks5ProxyParams match {
         case Some(proxyParams) =>
-          val host = peer.socket.getHostName
-          if (!host.contains("localhost") && !host.contains("127.0.0.1")) {
+          val host = peer.socket.getHostString
+          if (!NetworkUtil.isLocalhost(host)) {
             val proxyAddress = proxyParams.address
             logger.info(s"connecting to SOCKS5 proxy $proxyAddress")
             (proxyAddress, Some(proxyParams))

@@ -68,7 +68,7 @@ object Socks5ClientTransport {
     */
   def createConnectionPoolSettings(uri: URI, proxyParams: Socks5ProxyParams)(
       implicit system: ActorSystem): ConnectionPoolSettings = {
-    if (!NetworkUtil.isLoopbackAddress(uri)) {
+    if (!NetworkUtil.isLocalhost(uri.getHost)) {
       createConnectionPoolSettings(proxyParams)
     } else ConnectionPoolSettings(system)
   }
@@ -80,7 +80,7 @@ object Socks5ClientTransport {
       uri: URI,
       proxyParams: Option[Socks5ProxyParams])(implicit
       system: ActorSystem): ConnectionPoolSettings = {
-    if (!NetworkUtil.isLoopbackAddress(uri)) {
+    if (!NetworkUtil.isLocalhost(uri.getHost)) {
       createConnectionPoolSettings(proxyParams)
     } else ConnectionPoolSettings(system)
   }
