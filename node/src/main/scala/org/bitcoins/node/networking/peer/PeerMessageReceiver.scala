@@ -177,9 +177,10 @@ class PeerMessageReceiver(
         //we don't want to have to request them manually
         sender.sendHeadersMessage()
         Future.successful(this)
-      case _: AddrMessage =>
+      case addr: AddrMessage =>
+        addr.addresses.foreach(node.createInDbIfBlockFilterPeer)
         Future.successful(this)
-      case _: AddrV2Message =>
+      case addr: AddrV2Message =>
         sender.sendSendAddrV2Message()
         Future.successful(this)
       case SendAddrV2Message =>

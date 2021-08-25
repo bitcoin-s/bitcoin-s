@@ -8,7 +8,7 @@ import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilte
 import org.bitcoins.core.api.chain._
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.p2p.{AddrV2Message, NetworkPayload, ServiceIdentifier, TypeIdentifier}
+import org.bitcoins.core.p2p.{AddrV2Message, NetworkIpAddress, NetworkPayload, ServiceIdentifier, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
@@ -166,8 +166,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     if (peerData(peer).serviceIdentifier.nodeCompactFilters) {
       logger.info(s"Our peer=$peer has been initialized")
       if (nodeAppConfig.network == MainNet) {
-        PeerDAO().upsert(
-          PeerDB(peer.socket.getHostString, Instant.now(),Instant.now(), AddrV2Message.IPV4_NETWORK_BYTE))
+        PeerDAO().upsertPeer(peer.socket.getHostString)
       }
     } else {
       logger.info(
@@ -177,7 +176,21 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     Future.unit
   }
 
-  private def initializePeer(peer: Peer): Future[Unit]={
+  def createInDbIfBlockFilterPeer(networkAddress: NetworkIpAddress):Unit={
+    val stringAddress=networkAddress.address.ipv4Bytes.toArray.map(x=>{
+      val short=x.toShort
+      if(short<0) x+256
+      else short
+    }).mkString(".")+s":${networkAddress.port}"
+    logger.info(s"Peer from addr: $stringAddress")
+    if(networkAddress.services.nodeCompactFilters){
+      PeerDAO().upsertPeer(stringAddress)
+    }
+    ()
+  }
+
+
+  private def initializePeer(peer: Peer): Future[Unit] = {
     peerData(peer).peerMessageSender.connect()
     val isInitializedF =
       for {
