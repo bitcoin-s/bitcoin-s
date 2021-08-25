@@ -164,13 +164,7 @@ object BitcoindInstanceLocal
       dir,
       DEFAULT_BITCOIND_LOCATION match {
         case Some(file) => file
-        case None => {
-          val homeVar = sys.env("HOME");
-          val config = ConfigFactory
-            .parseFile(new File(homeVar + "/.bitcoin-s/bitcoin-s.conf"))
-            .resolve()
-          new File(config.getString("bitcoin-s.bitcoind-rpc.binary"))
-        }
+        case None       => bitcoindLocationFromConfigFile
       }
     )
   }
@@ -256,7 +250,56 @@ object BitcoindInstanceRemote extends InstanceFactory[BitcoindInstanceRemote] {
                                proxyParams = proxyParams)
   }
 
-  override def fromConfigFile(file: File): BitcoindInstanceRemote = ???
+  def fromConfFile(
+      file: File = BitcoindConfig.DEFAULT_CONF_FILE
+  ): BitcoindInstanceRemote = {
+    require(file.exists, s"${file.getPath} does not exist!")
+    require(file.isFile, s"${file.getPath} is not a file!")
 
-  override def fromDataDir(dir: File): BitcoindInstanceRemote = ???
+    val conf = BitcoindConfig(file, file.getParentFile)
+
+    fromConfig(conf)
+  }
+
+  override def fromConfigFile(file: File): BitcoindInstanceRemote = {
+    fromConfFile(
+      file
+    )
+  }
+
+  /** Constructs a `bitcoind` instance from the given config */
+  def fromConfig(
+      config: BitcoindConfig
+  ): BitcoindInstanceRemote = {
+
+    val authCredentials = BitcoindAuthCredentials.fromConfig(config)
+    BitcoindInstanceRemoteImpl(config.network,
+                               config.uri,
+                               config.rpcUri,
+                               authCredentials,
+                               zmqConfig = ZmqConfig.fromConfig(config),
+                               proxyParams = None)
+  }
+
+  def fromDatadir(
+      datadir: File = BitcoindConfig.DEFAULT_DATADIR
+  ): BitcoindInstanceRemote = {
+    require(datadir.exists, s"${datadir.getPath} does not exist!")
+    require(datadir.isDirectory, s"${datadir.getPath} is not a directory!")
+
+    val configPath = Paths.get(datadir.getAbsolutePath, "bitcoin.conf")
+    if (Files.exists(configPath)) {
+
+      val file = configPath.toFile()
+      fromConfFile(file)
+    } else {
+      fromConfig(BitcoindConfig.empty)
+    }
+  }
+
+  override def fromDataDir(dir: File): BitcoindInstanceRemote = {
+    fromDatadir(
+      dir
+    )
+  }
 }

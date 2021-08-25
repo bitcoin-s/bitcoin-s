@@ -133,8 +133,9 @@ trait Client
   override lazy val cmd: String = {
     instance match {
       case _: BitcoindInstanceRemote =>
-        sys.error(
+        logger.warn(
           s"Cannot start remote instance with local binary command. You've likely misconfigured something")
+        ""
       case local: BitcoindInstanceLocal =>
         val binaryPath = local.binary.getAbsolutePath
         val cmd = List(binaryPath,
@@ -178,8 +179,9 @@ trait Client
       case false =>
         instance match {
           case _: BitcoindInstanceRemote =>
-            sys.error(
+            logger.warn(
               s"Cannot start a remote instance, it needs to be started on the remote host machine")
+            null
           case local: BitcoindInstanceLocal =>
             val versionCheckF = version.map { v =>
               if (v != BitcoindVersion.Unknown) {
