@@ -46,7 +46,10 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
+
+      // clean up
       _ <- wallet.walletConfig.stop()
+      _ = wallet.walletConfig.clean()
     } yield {
       assert(balance == amountToSend)
       assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
@@ -86,7 +89,9 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
       utxos <- wallet.listUtxos(TxoState.ConfirmedReceived)
 
+      // clean up
       _ <- wallet.walletConfig.stop()
+      _ = wallet.walletConfig.clean()
     } yield {
       assert(utxos.size == 1)
       val utxo = utxos.head
@@ -126,7 +131,9 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
       balance <- wallet.getBalance()
 
+      // clean up
       _ <- wallet.walletConfig.stop()
+      _ = wallet.walletConfig.clean()
     } yield {
       assert(balance == amountToSend)
     }
@@ -177,7 +184,10 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
         unconfirmedBalance <- wallet.getUnconfirmedBalance()
         confirmedBalance <- wallet.getConfirmedBalance()
+
+        // clean up
         _ <- wallet.walletConfig.stop()
+        _ = wallet.walletConfig.clean()
       } yield {
         assert(confirmedBalance == amountToSend)
         assert(unconfirmedBalance == Satoshis.zero)
