@@ -38,4 +38,9 @@ class BitcoinSServerMainBitcoindTorTest
         assert(blockHash.isSuccess)
       }
   }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    BitcoinSServer.reset()
+  }
 }
