@@ -5,6 +5,7 @@ import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models.{DLCState, DLCStatus}
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator, TLVGen}
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
@@ -24,6 +25,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         val status =
           DLCStatus.Offered(Sha256Digest.empty,
                             isInit,
+                            TimeUtil.now,
                             offer.tempContractId,
                             offer.contractInfo,
                             offer.timeouts,
@@ -51,6 +53,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           DLCStatus.Accepted(
             Sha256Digest.empty,
             isInit,
+            TimeUtil.now,
             offer.tempContractId,
             contractId,
             offer.contractInfo,
@@ -80,6 +83,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           DLCStatus.Signed(
             Sha256Digest.empty,
             isInit,
+            TimeUtil.now,
             offer.tempContractId,
             contractId,
             offer.contractInfo,
@@ -110,6 +114,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           DLCStatus.Broadcasted(
             Sha256Digest.empty,
             isInit,
+            TimeUtil.now,
             offer.tempContractId,
             contractId,
             offer.contractInfo,
@@ -141,6 +146,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           DLCStatus.Confirmed(
             Sha256Digest.empty,
             isInit,
+            TimeUtil.now,
             offer.tempContractId,
             contractId,
             offer.contractInfo,
@@ -183,6 +189,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         DLCStatus.Claimed(
           Sha256Digest.empty,
           isInit,
+          TimeUtil.now,
           offer.tempContractId,
           contractId,
           offer.contractInfo,
@@ -233,6 +240,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         DLCStatus.RemoteClaimed(
           Sha256Digest.empty,
           isInit,
+          TimeUtil.now,
           offer.tempContractId,
           contractId,
           offer.contractInfo,
@@ -279,6 +287,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         DLCStatus.Refunded(
           Sha256Digest.empty,
           isInit,
+          TimeUtil.now,
           offer.tempContractId,
           contractId,
           offer.contractInfo,

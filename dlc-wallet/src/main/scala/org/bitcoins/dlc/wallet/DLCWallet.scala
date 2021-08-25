@@ -86,7 +86,7 @@ abstract class DLCWallet
       }
       contractId = calcContractId(offer, accept)
 
-      newDLCDb = dlcDb.copy(contractIdOpt = Some(contractId))
+      newDLCDb = dlcDb.updateContractId(contractId)
       _ = logger.debug(s"Updating DLC contract Ids")
       updated <- dlcDAO.update(newDLCDb)
     } yield updated
@@ -144,7 +144,7 @@ abstract class DLCWallet
       }
       _ = logger.info(
         s"Updating DLC (${contractId.toHex}) closing txId to txIdBE=${txId.hex}")
-      updated <- dlcDAO.update(dlcDb.copy(closingTxIdOpt = Some(txId)))
+      updated <- dlcDAO.update(dlcDb.updateClosingTxId(txId))
     } yield updated
   }
 
@@ -164,7 +164,7 @@ abstract class DLCWallet
       _ = logger.debug(
         s"Updating DLC (${contractId.toHex}) aggregate signature to ${aggregateSignature.hex}")
       updated <- dlcDAO.update(
-        dlcDb.copy(aggregateSignatureOpt = Some(aggregateSignature)))
+        dlcDb.updateAggregateSignature(aggregateSignature))
     } yield updated
   }
 
@@ -400,6 +400,7 @@ abstract class DLCWallet
         keyIndex = nextIndex,
         feeRate = feeRate,
         fundOutputSerialId = fundOutputSerialId,
+        lastUpdated = TimeUtil.now,
         fundingOutPointOpt = None,
         fundingTxIdOpt = None,
         closingTxIdOpt = None,
@@ -481,6 +482,7 @@ abstract class DLCWallet
               keyIndex = nextIndex,
               feeRate = offer.feeRate,
               fundOutputSerialId = offer.fundOutputSerialId,
+              lastUpdated = TimeUtil.now,
               fundingOutPointOpt = None,
               fundingTxIdOpt = None,
               closingTxIdOpt = None,

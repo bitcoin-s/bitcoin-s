@@ -13,12 +13,15 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
+import java.time.Instant
+
 sealed trait DLCStatus {
 
   /** The flipped sha256 hash of oracleInfo ++ contractInfo ++ timeoutes */
   def dlcId: Sha256Digest
   def isInitiator: Boolean
   def state: DLCState
+  def lastUpdated: Instant
   def tempContractId: Sha256Digest
   def contractInfo: ContractInfo
   def oracleInfo: OracleInfo = contractInfo.oracleInfo
@@ -69,6 +72,7 @@ object DLCStatus {
   case class Offered(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
@@ -82,6 +86,7 @@ object DLCStatus {
   case class Accepted(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
@@ -96,6 +101,7 @@ object DLCStatus {
   case class Signed(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
@@ -110,6 +116,7 @@ object DLCStatus {
   case class Broadcasted(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
@@ -125,6 +132,7 @@ object DLCStatus {
   case class Confirmed(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
@@ -140,6 +148,7 @@ object DLCStatus {
   case class Claimed(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
@@ -160,6 +169,7 @@ object DLCStatus {
   case class RemoteClaimed(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
@@ -181,6 +191,7 @@ object DLCStatus {
   case class Refunded(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,

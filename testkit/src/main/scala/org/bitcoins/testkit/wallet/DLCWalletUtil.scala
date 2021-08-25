@@ -20,6 +20,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.wallet.DLCWallet
@@ -212,6 +213,7 @@ object DLCWalletUtil extends Logging {
     keyIndex = 0,
     feeRate = SatoshisPerVirtualByte.fromLong(3),
     fundOutputSerialId = UInt64.one,
+    lastUpdated = TimeUtil.now,
     fundingOutPointOpt = None,
     fundingTxIdOpt = None,
     closingTxIdOpt = None,
