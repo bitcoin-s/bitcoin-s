@@ -76,7 +76,6 @@ trait BitcoinSAppConfigBitcoinFixtureNotStarted
   }
 
   override def afterAll(): Unit = {
-    println(s"Stopping BitcoinSAppConfigBitcoinFixtureNotStarted")
     super[CachedBitcoindNewest].afterAll()
     super[BitcoinSAppConfigFixture].afterAll()
   }
