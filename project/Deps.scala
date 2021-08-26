@@ -592,6 +592,7 @@ object Deps {
   }
 
   val walletServerTest = List(
+    Compile.typesafeConfig,
     Test.scalaMock,
     Test.akkaHttpTestkit,
     Test.akkaStream

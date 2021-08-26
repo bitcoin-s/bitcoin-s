@@ -1,4 +1,4 @@
-package org.bitcoins.node
+package org.bitcoins.core.api.node
 
 import org.bitcoins.crypto.StringFactory
 

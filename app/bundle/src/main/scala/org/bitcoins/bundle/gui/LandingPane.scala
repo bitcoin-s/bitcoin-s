@@ -3,8 +3,8 @@ package org.bitcoins.bundle.gui
 import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.util.ServerArgParser
+import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.gui._
-import org.bitcoins.node.NodeType
 import org.bitcoins.server.BitcoinSAppConfig
 import scalafx.geometry._
 import scalafx.scene.control.TabPane.TabClosingPolicy

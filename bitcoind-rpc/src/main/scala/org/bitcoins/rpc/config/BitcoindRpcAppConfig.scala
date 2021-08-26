@@ -1,13 +1,10 @@
-package org.bitcoins.server
+package org.bitcoins.rpc.config
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.commons.config.{AppConfig, ConfigOps}
-import org.bitcoins.node.NodeType
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.config._
-import org.bitcoins.server.util.AppConfigFactoryActorSystem
+import org.bitcoins.rpc.util.AppConfigFactoryActorSystem
 import org.bitcoins.tor.Socks5ProxyParams
 import org.bitcoins.tor.config.TorAppConfig
 
@@ -37,21 +34,7 @@ case class BitcoindRpcAppConfig(
 
   protected[bitcoins] def baseDatadir: Path = directory
 
-  lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
-
-  override def start(): Future[Unit] = {
-    nodeConf.nodeType match {
-      case NodeType.BitcoindBackend =>
-        binaryOpt match {
-          case Some(_) =>
-            client.start().map(_ => ())
-          case None =>
-            Future.unit
-        }
-      case NodeType.SpvNode | NodeType.NeutrinoNode | NodeType.FullNode =>
-        Future.unit
-    }
-  }
+  override def start(): Future[Unit] = Future.unit
 
   override def stop(): Future[Unit] = Future.unit
 

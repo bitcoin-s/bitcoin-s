@@ -6,9 +6,9 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.server.BitcoindRpcAppConfig
+import org.bitcoins.rpc.config.BitcoindRpcAppConfig
 import org.bitcoins.server.routes.BitcoinSRunner
-import org.bitcoins.server.util.{BitcoinSAppScalaDaemon}
+import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 
 import scala.concurrent.Future
 

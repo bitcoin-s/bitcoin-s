@@ -1,4 +1,4 @@
-package org.bitcoins.server.util
+package org.bitcoins.rpc.util
 
 import akka.actor.ActorSystem
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactoryBase}
