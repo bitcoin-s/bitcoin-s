@@ -13,7 +13,7 @@ import java.net.{InetAddress, InetSocketAddress}
 import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S node
   * @param directory The data directory of the node
@@ -69,10 +69,10 @@ case class TorAppConfig(
 
   lazy val torParams: Option[TorParams] = {
     if (config.getBoolean("bitcoin-s.tor.enabled")) {
-      val controlValue = config.getString("bitcoin-s.tor.control")
       val address = if (torProvided) {
-        NetworkUtil.parseInetSocketAddress(controlValue,
-                                           TorParams.DefaultControlPort)
+        NetworkUtil.parseInetSocketAddress(
+          config.getString("bitcoin-s.tor.control"),
+          TorParams.DefaultControlPort)
       } else {
         new InetSocketAddress(InetAddress.getLoopbackAddress,
                               if (useRandomPorts)
@@ -123,9 +123,15 @@ case class TorAppConfig(
         if (torLogFile.toFile.exists()) {
           torLogFile.toFile.delete()
         }
-        val startedBinary: Future[Unit] = createClient.startBinary()
+        val client = createClient
         for {
-          _ <- startedBinary
+          _ <- client.startBinary()
+          _ = Runtime.getRuntime.addShutdownHook(new Thread() {
+            override def run(): Unit = {
+              // don't forget to stop the daemon on exit
+              Await.result(client.stopBinary(), 30.seconds)
+            }
+          })
           _ <- isBinaryFullyStarted()
         } yield {
           logger.info(
