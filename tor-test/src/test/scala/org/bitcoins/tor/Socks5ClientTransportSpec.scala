@@ -10,16 +10,11 @@ import akka.util.ByteString
 import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TorUtil}
 
-import java.net.InetSocketAddress
-
 class Socks5ClientTransportSpec extends BitcoinSAsyncTest with CachedTor {
 
   implicit val ec = system.dispatcher
 
-  val proxyParams = Socks5ProxyParams(
-    address = InetSocketAddress.createUnresolved("127.0.0.1", 9050),
-    credentialsOpt = None,
-    randomizeCredentials = true)
+  val proxyParams = torConfig.socks5ProxyParams.get
 
   val socks5ClientTransport = new Socks5ClientTransport(proxyParams)
 

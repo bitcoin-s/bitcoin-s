@@ -52,12 +52,7 @@ class TorClient()(implicit
       "--CookieAuthentication 1"
   }
 
-  private lazy val executable = {
-    TorClient.DEFAULT_TOR_LOCATION match {
-      case Some(default) => default
-      case None          => TorClient.torBinaryFromResource(conf.torDir)
-    }
-  }
+  private lazy val executable = TorClient.torBinaryFromResource(conf.torDir)
 
   /** The command to start the daemon on the underlying OS */
   lazy val cmd: String = {
