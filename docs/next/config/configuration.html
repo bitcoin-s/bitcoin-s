@@ -220,6 +220,17 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment"># You can enable Tor for incoming connections</span>
         <span class="hljs-attr">enabled</span> = <span class="hljs-literal">false</span>
         <span class="hljs-attr">control</span> = <span class="hljs-string">"127.0.0.1:9051"</span>
+        
+        <span class="hljs-comment"># Tor daemon can be provided by the node operator.</span>
+        <span class="hljs-comment"># If this parameter set to true, bitcoin-s will connect the provided Tor daemon.</span>
+        <span class="hljs-comment"># Otherwise bitcoin-s will start its own pre-packaged daemon.</span>
+        <span class="hljs-attr">provided</span> = <span class="hljs-literal">false</span>
+
+        <span class="hljs-comment"># This parameter allows to use random port numbers for pre-packaged Tor daemon,</span>
+        <span class="hljs-comment"># which is useful if another Tor daemon instance already bound SOCKS5 and control ports.</span>
+        <span class="hljs-comment"># In this case bitcoin-s.tor.control and bitcoin-s.proxy.socks5</span>
+        <span class="hljs-comment"># addresses will be automatically changed to "localhost:&lt;random port&gt;"</span>
+        <span class="hljs-attr">use-random-ports</span> = <span class="hljs-literal">true</span>
 
         <span class="hljs-comment"># The password used to arrive at the HashedControlPassword for the control port.</span>
         <span class="hljs-comment"># If provided, the HASHEDPASSWORD authentication method will be used instead of</span>
