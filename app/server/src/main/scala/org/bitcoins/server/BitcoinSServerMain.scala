@@ -445,7 +445,7 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
 }
 
 object BitcoinSServer {
-  private[server] val startedFP = Promise[Future[Http.ServerBinding]]()
+  private[server] var startedFP = Promise[Future[Http.ServerBinding]]()
 
   /** Allows the above server to be bundled with other projects.
     *
@@ -457,4 +457,8 @@ object BitcoinSServer {
     * been initialized.
     */
   val startedF: Future[Http.ServerBinding] = startedFP.future.flatten
+
+  def reset(): Unit = {
+    startedFP = Promise[Future[Http.ServerBinding]]()
+  }
 }

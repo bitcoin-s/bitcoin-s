@@ -398,9 +398,11 @@ lazy val appServerTest = project
   .in(file("app/server-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(libraryDependencies ++= Deps.walletServerTest)
+  .settings(parallelExecution := false)
   .dependsOn(
     appServer,
-    testkit
+    testkit,
+    cli
   )
 
 lazy val cli = project

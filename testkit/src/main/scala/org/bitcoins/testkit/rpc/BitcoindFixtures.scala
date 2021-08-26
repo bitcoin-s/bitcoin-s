@@ -189,6 +189,27 @@ trait BitcoindFixturesFundedCachedV21
   }
 }
 
+trait BitcoindFixturesFundedCachedNewest
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesFundedCached
+    with CachedBitcoindNewest {
+  override type FixtureParam = BitcoindRpcClient
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val f: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      futOutcome = withNewestFundedBitcoindCached(test, bitcoind)
+      fut <- futOutcome.toFuture
+    } yield fut
+    new FutureOutcome(f)
+  }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindNewest].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
+}
+
 /** Bitcoind fixtures with two cached bitcoind that are connected via p2p */
 trait BitcoindFixturesCachedPair[T <: BitcoindRpcClient]
     extends BitcoindFixturesCached
