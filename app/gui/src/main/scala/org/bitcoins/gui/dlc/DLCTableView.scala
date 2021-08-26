@@ -82,11 +82,10 @@ class DLCTableView(model: DLCPaneModel) {
       text = "Last Updated"
       prefWidth = 125
       cellValueFactory = { status =>
-        val str = TimeUtil.iso8601ToString(status.value.lastUpdated)
+        val str = GUIUtil.epochToDateString(status.value.lastUpdated)
         new StringProperty(status, "Last Updated", str)
       }
       sortType = SortType.Descending
-      visible = false
     }
 
     val pnlCol = new TableColumn[DLCStatus, String] {
