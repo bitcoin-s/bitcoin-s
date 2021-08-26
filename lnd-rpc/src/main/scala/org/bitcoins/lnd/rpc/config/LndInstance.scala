@@ -24,7 +24,7 @@ sealed trait LndInstance {
 
   def datadir: Path
 
-  val certFile: File
+  def certFile: File
 }
 
 case class LndInstanceLocal(

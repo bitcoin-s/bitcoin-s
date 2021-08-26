@@ -179,9 +179,8 @@ trait Client
       case false =>
         instance match {
           case _: BitcoindInstanceRemote =>
-            logger.warn(
+            sys.error(
               s"Cannot start a remote instance, it needs to be started on the remote host machine")
-            null
           case local: BitcoindInstanceLocal =>
             val versionCheckF = version.map { v =>
               if (v != BitcoindVersion.Unknown) {

@@ -355,6 +355,18 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] {
     */
   def fromNetworkVersion(int: Int): BitcoindVersion = {
     //need to translate the int 210100 (as an example) to a BitcoindVersion
-    ???
+    int.toString.substring(0, 2) match {
+      case "16" => V16
+      case "17" => V17
+      case "18" =>
+        int.toString.substring(2, 4) match {
+          case "99" => Experimental
+          case _    => V18
+        }
+      case "19" => V19
+      case "20" => V20
+      case "21" => V21
+      case _    => Unknown
+    }
   }
 }
