@@ -14,6 +14,7 @@ import org.bitcoins.testkit.node.{
   NodeTestWithCachedBitcoindNewest
 }
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.Wallet
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -203,7 +204,14 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ = assert(addresses.size == 7)
       _ = assert(utxos.size == 3)
       _ = logger.warn(s"2")
-      _ <- wallet.clearAllUtxosAndAddresses()
+      //cleaning the talbes is the easiest way to clean out wallet
+      _ = wallet.walletConfig.clean()
+      //re-apply migrations
+      _ = wallet.walletConfig.migrate()
+      //reinitialize things like accounts
+      _ <- Wallet.initialize(wallet, wallet.walletConfig.bip39PasswordOpt)(
+        wallet.walletConfig,
+        system.dispatcher)
       _ = logger.warn(s"3")
       addresses <- wallet.listAddresses()
       utxos <- wallet.listDefaultAccountUtxos()
