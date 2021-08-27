@@ -208,7 +208,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ = wallet.walletConfig.clean()
       //re-apply migrations
       _ = wallet.walletConfig.migrate()
-      //reinitialize things like accounts
+      //reinitalize things like accounts
       _ <- Wallet.initialize(wallet, wallet.walletConfig.bip39PasswordOpt)(
         wallet.walletConfig,
         system.dispatcher)
@@ -225,7 +225,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
       _ = logger.warn(s"5")
-      _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
+      _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 50)
 
       _ <- AsyncUtil.awaitConditionF(condition)
     } yield {
