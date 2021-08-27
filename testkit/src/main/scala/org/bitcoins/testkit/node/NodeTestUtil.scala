@@ -95,6 +95,7 @@ abstract class NodeTestUtil extends P2PLogger {
       filterCount <- chainApi.getFilterCount()
       blockCount <- rpcCountF
     } yield {
+      println(s"blockcount=${blockCount} filterCount=${filterCount}")
       blockCount == filterCount
     }
   }
