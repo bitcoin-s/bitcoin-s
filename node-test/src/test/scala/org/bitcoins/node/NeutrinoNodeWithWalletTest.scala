@@ -14,7 +14,6 @@ import org.bitcoins.testkit.node.{
   NodeTestWithCachedBitcoindNewest
 }
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.Wallet
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -183,7 +182,8 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           s"expectedAddressScripts.length=${expectedAddressScripts.length} expectedUtxoScripts.length=${expectedUtxoScripts.length}")
         balance == expectedBalance &&
         utxos.size == 4 &&
-        expectedAddressScripts == expectedUtxoScripts
+        expectedAddressScripts.forall(addrScript =>
+          expectedUtxoScripts.contains(addrScript))
       }
     }
 
@@ -220,7 +220,6 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
       _ = logger.warn(s"5")
       _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 50)
-
       _ <- AsyncUtil.awaitConditionF(condition)
     } yield {
       logger.warn(s"6")
