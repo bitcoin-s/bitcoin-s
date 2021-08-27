@@ -101,8 +101,9 @@ case class DataMessageHandler(
         }
       case filter: CompactFilterMessage =>
         logger.debug(s"Received ${filter.commandName}, $filter")
+        val expectedBatchSize = chainConfig.filterBatchSize - 1
         val batchSizeFull: Boolean =
-          currentFilterBatch.size == chainConfig.filterBatchSize - 1
+          currentFilterBatch.size == expectedBatchSize
         for {
           (newFilterHeaderHeight, newFilterHeight) <-
             (filterHeaderHeightOpt, filterHeightOpt) match {
@@ -142,7 +143,12 @@ case class DataMessageHandler(
                     .executeOnCompactFiltersReceivedCallbacks(logger,
                                                               blockFilters)
               } yield (Vector.empty, newChainApi)
-            } else Future.successful((filterBatch, chainApi))
+            } else {
+              logger.info(
+                s"Ignoring filters because !newSyncing=${!newSyncing} batchSizeFull=${batchSizeFull} " +
+                  s"currentBatchSize=${currentFilterBatch.length} expectedBatchSize=${expectedBatchSize} filterBatch.length=${filterBatch.length}")
+              Future.successful((filterBatch, chainApi))
+            }
           _ <-
             if (batchSizeFull) {
               logger.info(
