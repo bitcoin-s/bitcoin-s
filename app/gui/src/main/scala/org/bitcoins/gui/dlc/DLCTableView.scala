@@ -3,7 +3,6 @@ package org.bitcoins.gui.dlc
 import org.bitcoins.core.dlc.accounting.RateOfReturnUtil
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
