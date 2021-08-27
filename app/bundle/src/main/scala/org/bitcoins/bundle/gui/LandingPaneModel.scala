@@ -6,9 +6,9 @@ import grizzled.slf4j.Logging
 import org.bitcoins.bundle.gui.BundleGUI._
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.util.{DatadirUtil, ServerArgParser}
+import org.bitcoins.core.api.node.InternalImplementationNodeType
 import org.bitcoins.gui._
-import org.bitcoins.node.NodeType._
-import org.bitcoins.node._
+import org.bitcoins.core.api.node.NodeType._
 import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
 import org.bitcoins.server._
 import scalafx.beans.property.ObjectProperty

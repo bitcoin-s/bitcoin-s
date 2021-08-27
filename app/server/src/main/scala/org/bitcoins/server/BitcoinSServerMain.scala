@@ -9,7 +9,12 @@ import org.bitcoins.chain.models._
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
-import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.node.{
+  ExternalImplementationNodeType,
+  InternalImplementationNodeType,
+  NodeApi,
+  NodeType
+}
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.DLCNode
@@ -21,7 +26,7 @@ import org.bitcoins.feeprovider._
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.rpc.config.ZmqConfig
+import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 import org.bitcoins.tor.config.TorAppConfig

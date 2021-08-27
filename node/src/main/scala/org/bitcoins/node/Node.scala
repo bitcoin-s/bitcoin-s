@@ -10,7 +10,7 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.api.chain._
-import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.node.{NodeApi, NodeType}
 import org.bitcoins.core.p2p.{NetworkPayload, ServiceIdentifier, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}

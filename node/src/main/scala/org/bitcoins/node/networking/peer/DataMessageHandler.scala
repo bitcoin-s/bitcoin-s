@@ -3,12 +3,13 @@ package org.bitcoins.node.networking.peer
 import akka.Done
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import org.bitcoins.node.{Node, NodeType, P2PLogger}
+import org.bitcoins.node.{Node, P2PLogger}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try

@@ -10,6 +10,7 @@ import org.bitcoins.core.api.chain.db.{
   CompactFilterDb,
   CompactFilterHeaderDb
 }
+import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
