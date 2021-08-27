@@ -167,9 +167,9 @@ case class SpendingInfoDAO()(implicit
       .run(actions.transactionally)
       .map {
         case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
-        case _ =>
+        case result =>
           throw new SQLException(
-            s"Unexpected result: Cannot upsert either a UTXO or a SPK record for $si")
+            s"Unexpected result: $result Cannot upsert either a UTXO or a SPK record for $si")
       }
   }
 
