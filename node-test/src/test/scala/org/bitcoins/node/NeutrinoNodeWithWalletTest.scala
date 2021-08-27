@@ -180,6 +180,10 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           s"expectedBalance=${expectedBalance} balance=${balance} utxos.size=${utxos.size}")
         logger.info(
           s"expectedAddressScripts.length=${expectedAddressScripts.length} expectedUtxoScripts.length=${expectedUtxoScripts.length}")
+        expectedAddressScripts.foreach(addrScript =>
+          logger.info(s"expectedAddressScript=$addrScript"))
+        expectedUtxoScripts.foreach(utxoScript =>
+          logger.info(s"expectedUtxoScript=$utxoScript"))
         balance == expectedBalance &&
         utxos.size == 4 &&
         expectedAddressScripts.forall(addrScript =>
