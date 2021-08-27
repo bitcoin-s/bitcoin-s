@@ -171,11 +171,18 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         addresses <- wallet.listAddresses()
         utxos <- wallet.listUtxos()
       } yield {
-        balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount &&
-        utxos.size == 4 &&
-        addresses.map(_.scriptPubKey.hex).sorted == utxos
+        val expectedBalance = BitcoinSWalletTest.expectedDefaultAmt + TestAmount
+        val expectedUtxoScripts = utxos
           .map(_.output.scriptPubKey.hex)
           .sorted
+        val expectedAddressScripts = addresses.map(_.scriptPubKey.hex).sorted
+        logger.info(
+          s"expectedBalance=${expectedBalance} balance=${balance} utxos.size=${utxos.size}")
+        logger.info(
+          s"expectedAddressScripts.length=${expectedAddressScripts.length} expectedUtxoScripts.length=${expectedUtxoScripts.length}")
+        balance == expectedBalance &&
+        utxos.size == 4 &&
+        expectedAddressScripts == expectedUtxoScripts
       }
     }
 
