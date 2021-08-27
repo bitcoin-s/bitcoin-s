@@ -181,6 +181,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
     for {
       addresses <- wallet.listAddresses()
+      _ = logger.warn(s"0")
       utxos <- wallet.listDefaultAccountUtxos()
       _ = assert(addresses.size == 6)
       _ = assert(utxos.size == 3)
@@ -194,22 +195,27 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       utxos <- wallet.listDefaultAccountUtxos()
       _ = assert(addresses.size == 7)
       _ = assert(utxos.size == 3)
-      _ <-
-        bitcoind.getNewAddress
-          .flatMap(bitcoind.generateToAddress(1, _))
-      _ <- NodeTestUtil.awaitSync(node, bitcoind)
-      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-
+      _ = logger.warn(s"2")
       _ <- wallet.clearAllUtxosAndAddresses()
-
+      _ = logger.warn(s"3")
       addresses <- wallet.listAddresses()
       utxos <- wallet.listDefaultAccountUtxos()
       _ = assert(addresses.isEmpty)
       _ = assert(utxos.isEmpty)
 
+      _ <-
+        bitcoind.getNewAddress
+          .flatMap(bitcoind.generateToAddress(1, _))
+      _ = logger.warn(s"4")
+      _ <- NodeTestUtil.awaitSync(node, bitcoind)
+      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+      _ = logger.warn(s"5")
       _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
 
       _ <- AsyncUtil.awaitConditionF(condition)
-    } yield succeed
+    } yield {
+      logger.warn(s"6")
+      succeed
+    }
   }
 }
