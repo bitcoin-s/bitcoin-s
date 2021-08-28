@@ -134,7 +134,11 @@ class ChainHandler(
         successfullyValidatedHeaders.distinct
       }
 
-      if (headersToBeCreated.isEmpty) {
+      if (filteredHeaders.isEmpty) {
+        logger.warn(
+          s"Received headers we have already seen, count=${headers.length} headers=${headers}")
+        Future.successful(this)
+      } else if (headersToBeCreated.isEmpty) {
         //this means we are given zero headers that were valid.
         //Return a failure in this case to avoid issue 2365
         //https://github.com/bitcoin-s/bitcoin-s/issues/2365
