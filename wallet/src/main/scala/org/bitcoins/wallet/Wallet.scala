@@ -278,11 +278,21 @@ abstract class Wallet
   }
 
   override def clearAllUtxosAndAddresses(): Future[Wallet] = {
-    for {
+    val resultedF = for {
       _ <- spendingInfoDAO.deleteAll()
       _ <- addressDAO.deleteAll()
       _ <- scriptPubKeyDAO.deleteAll()
-    } yield this
+    } yield {
+      logger.info(
+        s"Done clearing all utxos, addresses and scripts from the database")
+      this
+    }
+    resultedF.failed.foreach(err =>
+      logger.error(
+        s"Failed to clear utxos, addresses and scripts from the database",
+        err))
+
+    resultedF
   }
 
   /** Sums up the value of all unspent
