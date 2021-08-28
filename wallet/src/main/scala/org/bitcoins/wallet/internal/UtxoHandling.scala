@@ -295,7 +295,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       Future.successful(VoutIndexOutOfBounds)
     } else {
 
-
       val output = transaction.outputs(vout.toInt)
       val outPoint = TransactionOutPoint(transaction.txId, vout)
       logger.info(
