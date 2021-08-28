@@ -291,15 +291,14 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       state: ReceivedState,
       addressDbE: Either[AddUtxoError, AddressDb]): Future[AddUtxoResult] = {
 
-    logger.info(s"Adding UTXO to wallet: ${transaction.txId.hex}:${vout.toInt}")
-
     if (vout.toInt >= transaction.outputs.length) {
       //out of bounds output
       Future.successful(VoutIndexOutOfBounds)
     } else {
       val output = transaction.outputs(vout.toInt)
       val outPoint = TransactionOutPoint(transaction.txId, vout)
-
+      logger.info(
+        s"Adding UTXO to wallet: ${transaction.txId.hex}:${vout.toInt} amt=${output.value}")
       // insert the UTXO into the DB
       val insertedUtxoEF: Either[AddUtxoError, Future[SpendingInfoDb]] = for {
         addressDb <- addressDbE
