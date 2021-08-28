@@ -129,7 +129,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
   it must "watch an arbitrary SPK" in { param =>
     val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 
-    def generateBlock() =
+    def generateBlock(): Future[Unit] =
       for {
         _ <-
           bitcoind.getNewAddress
