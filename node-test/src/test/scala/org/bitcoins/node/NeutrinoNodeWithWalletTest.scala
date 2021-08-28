@@ -208,6 +208,10 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ = assert(addresses.size == 7)
       _ = assert(utxos.size == 3)
       _ = logger.warn(s"2")
+      bitcoindHeight <- bitcoind.getBlockCount
+      _ <- AsyncUtil.awaitConditionF({ case _ =>
+        wallet.getSyncState().map(_.height == bitcoindHeight)
+      })
       //cleaning the talbes is the easiest way to clean out wallet
       _ <- wallet.clearAllUtxosAndAddresses()
       _ = logger.warn(s"3")
