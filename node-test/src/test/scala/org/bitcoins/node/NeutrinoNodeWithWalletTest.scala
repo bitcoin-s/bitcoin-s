@@ -214,6 +214,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       })
       //cleaning the talbes is the easiest way to clean out wallet
       _ <- wallet.clearAllUtxosAndAddresses()
+      _ <- wallet.isEmpty().map(assert(_))
       _ = logger.warn(s"3")
       addresses <- wallet.listAddresses()
       utxos <- wallet.listDefaultAccountUtxos()

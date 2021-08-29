@@ -264,7 +264,12 @@ abstract class Wallet
     for {
       addressCount <- addressDAO.count()
       spendingInfoCount <- spendingInfoDAO.count()
-    } yield addressCount == 0 && spendingInfoCount == 0
+      spkCount <- scriptPubKeyDAO.count()
+    } yield {
+      addressCount == 0 &&
+      spendingInfoCount == 0 &&
+      spkCount == 0
+    }
 
   override def clearUtxosAndAddresses(account: HDAccount): Future[Wallet] = {
     for {
