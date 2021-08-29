@@ -159,7 +159,10 @@ case class TorAppConfig(
       isStarted.set(false)
       createClient
         .stopBinary()
-        .recover(_ => isStarted.set(true))
+        .recover { case _ =>
+          isStarted.set(true)
+          ()
+        }
     }
   }
 
