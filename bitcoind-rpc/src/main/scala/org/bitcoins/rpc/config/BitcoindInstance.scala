@@ -91,9 +91,8 @@ object BitcoindInstanceLocal
       zmqConfig: ZmqConfig,
       binary: File,
       datadir: File
-  ) extends BitcoindInstanceLocal {
-    implicit override def system: ActorSystem = ???
-  }
+  )(implicit override val system: ActorSystem)
+      extends BitcoindInstanceLocal
 
   def apply(
       network: NetworkParameters,
@@ -245,9 +244,8 @@ object BitcoindInstanceRemote extends InstanceFactory[BitcoindInstanceRemote] {
       authCredentials: BitcoindAuthCredentials,
       zmqConfig: ZmqConfig,
       proxyParams: Option[Socks5ProxyParams]
-  ) extends BitcoindInstanceRemote {
-    implicit override def system: ActorSystem = ???
-  }
+  )(implicit override val system: ActorSystem)
+      extends BitcoindInstanceRemote
 
   def apply(
       network: NetworkParameters,

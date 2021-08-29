@@ -41,10 +41,10 @@ trait LndRpcTestUtil extends Logging {
   /** Makes a best effort to get a 0.21 bitcoind instance
     */
   def startedBitcoindRpcClient(
-      instance: BitcoindInstanceLocal = bitcoindInstance())(implicit
+      instanceOpt: Option[BitcoindInstanceLocal] = None)(implicit
       actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
     //need to do something with the Vector.newBuilder presumably?
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(instance, Vector.newBuilder)
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(instanceOpt, Vector.newBuilder)
   }
 
   /** Creates a bitcoind instance with the given parameters */
@@ -52,8 +52,8 @@ trait LndRpcTestUtil extends Logging {
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
-      bitcoindV: BitcoindVersion =
-        BitcoindVersion.V21): BitcoindInstanceLocal = {
+      bitcoindV: BitcoindVersion = BitcoindVersion.V21)(implicit
+      system: ActorSystem): BitcoindInstanceLocal = {
     BitcoindRpcTestUtil.getInstance(bitcoindVersion = bitcoindV,
                                     port = port,
                                     rpcPort = rpcPort,

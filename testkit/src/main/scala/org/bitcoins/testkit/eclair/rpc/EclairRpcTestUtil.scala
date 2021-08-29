@@ -61,10 +61,12 @@ trait EclairRpcTestUtil extends Logging {
   /** Makes a best effort to get a 0.16 bitcoind instance
     */
   def startedBitcoindRpcClient(
-      instance: BitcoindInstanceLocal = bitcoindInstance())(implicit
+      instanceOpt: Option[BitcoindInstanceLocal] = None)(implicit
       actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
     //need to do something with the Vector.newBuilder presumably?
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(instance, Vector.newBuilder)
+    val instance = instanceOpt.getOrElse(bitcoindInstance())
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(Some(instance),
+                                                 Vector.newBuilder)
   }
 
   /** Creates a bitcoind instance with the given parameters */
@@ -72,8 +74,8 @@ trait EclairRpcTestUtil extends Logging {
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
-      bitcoindV: BitcoindVersion =
-        EclairRpcClient.bitcoindV): BitcoindInstanceLocal = {
+      bitcoindV: BitcoindVersion = EclairRpcClient.bitcoindV)(implicit
+      system: ActorSystem): BitcoindInstanceLocal = {
     BitcoindRpcTestUtil.getInstance(bitcoindVersion = bitcoindV,
                                     port = port,
                                     rpcPort = rpcPort,
