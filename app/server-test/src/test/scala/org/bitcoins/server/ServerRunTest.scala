@@ -39,7 +39,7 @@ class ServerRunTest extends BitcoinSAsyncTest {
         _ <- runMainF
         _ <- AkkaUtil.nonBlockingSleep(2.seconds)
         _ = directory.deleteRecursively()
-        _ <- AkkaUtil.nonBlockingSleep(2.seconds)
+        _ <- AkkaUtil.nonBlockingSleep(5.seconds)
       } yield ()
 
       for {
