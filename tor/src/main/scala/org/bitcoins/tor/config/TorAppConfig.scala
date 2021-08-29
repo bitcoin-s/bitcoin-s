@@ -156,7 +156,10 @@ case class TorAppConfig(
     if (torProvided) {
       Future.unit
     } else {
-      createClient.stopBinary().map(_ => isStarted.set(false))
+      isStarted.set(false)
+      createClient
+        .stopBinary()
+        .recover(_ => isStarted.set(true))
     }
   }
 
