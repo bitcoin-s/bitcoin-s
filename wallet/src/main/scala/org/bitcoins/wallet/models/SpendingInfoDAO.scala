@@ -156,7 +156,7 @@ case class SpendingInfoDAO()(implicit
           } yield table.insertOrUpdate(
             UTXORecord.fromSpendingInfoDb(si, newSpkId))).flatten
       }
-      utxo <- table.filter(_.id === si.id.get).result.headOption
+      utxo <- table.filter(_.outPoint === si.outPoint).result.headOption
       spk <-
         spkTable
           .filter(_.scriptPubKey === si.output.scriptPubKey)
