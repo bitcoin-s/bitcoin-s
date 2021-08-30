@@ -129,7 +129,7 @@ case class TorAppConfig(
     * place for our node.
     */
   override def start(): Future[Unit] = {
-    if (torProvided) {
+    if (torProvided || isAlive()) {
       Future.unit
     } else {
       lazy val torRunning = checkIfTorAlreadyRunning

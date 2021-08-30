@@ -56,8 +56,10 @@ class BitcoinSServerMain(
 
   implicit lazy val torConf: TorAppConfig = {
     torConfOpt match {
-      case Some(torConf) => torConf
-      case None          => conf.torConf
+      case Some(torConf) =>
+        logger.info(s"Using cached tor configuration")
+        torConf
+      case None => conf.torConf
     }
   }
 
