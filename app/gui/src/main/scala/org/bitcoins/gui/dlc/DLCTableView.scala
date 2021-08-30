@@ -89,8 +89,7 @@ class DLCTableView(model: DLCPaneModel) {
 
       cellValueFactory = { status =>
         val instant = status.value.lastUpdated
-        val utc = instant.atOffset(ZoneOffset.UTC)
-        val str = dtFormatter.format(utc)
+        val str = dtFormatter.format(instant)
         new StringProperty(status, "Last Updated", str)
       }
       sortType = SortType.Descending
