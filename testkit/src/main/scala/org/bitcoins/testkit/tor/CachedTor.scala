@@ -32,4 +32,11 @@ trait CachedTor {
     }
     ()
   }
+
+  override def afterAll(): Unit = {
+    if (TorUtil.torEnabled && isTorStarted.get) {
+      Await.result(torConfig.stop(), akkaTimeout.duration)
+    }
+    ()
+  }
 }
