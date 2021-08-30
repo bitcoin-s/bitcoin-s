@@ -1,13 +1,11 @@
 package org.bitcoins.node.models
 
-import monix.execution.{Ack, CancelableFuture}
 import org.bitcoins.core.p2p.AddrV2Message
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.node.config.NodeAppConfig
 import slick.lifted.ProvenShape
 
 import java.time.Instant
-import scala.concurrent.impl.Promise
 import scala.concurrent.{ExecutionContext, Future}
 
 case class PeerDB(
@@ -44,7 +42,7 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
       case Some(value) => upsert(PeerDB(address,firstSeen = value.firstSeen,lastConnected=lastConnected,networkId=networkId))
       case None => upsert(PeerDB(address,firstSeen = Instant.now,lastConnected=lastConnected,networkId=networkId))
     }
-
+    ()
   }
 
   class PeerTable(tag: Tag) extends Table[PeerDB](tag, schemaName, "peers") {

@@ -178,21 +178,13 @@ class PeerMessageReceiver(
         sender.sendHeadersMessage()
         Future.successful(this)
       case addr: AddrMessage =>
-        /* For this, storing is fine, it gives ipv4 addresses the normal ones (88.232.34.12 type) same as the ones
-        given by dns seeds. No problem in this so far so good.
-         */
         addr.addresses.foreach(node.createInDbIfBlockFilterPeer)
         Future.successful(this)
       case addr: AddrV2Message =>
-        /* In the case of V2 messages, messages are of a wider variety, ipv6, torv2, torv3 etc usually stored as bytes
-          (unlike the string addresses I am storing in db, I guess that needs to change?).
-          Then suppose we have made that change, then how to manage connections with them, for tor I can understand what
-          it would look like as in if it's normal then use ipv4 addresses (in this case how would ipv6 used?), if it's tor
-          use tor addresses too along with others, also what to do with i2p and cjdns ones?
-          Basically the problem is so far I've only used the normal addresses like neutrino.suredbits.com be it over tor or without it and am
-          confused as to how to deal with these different types.
-          Also, since dns seeds give only ipv4 addresses should I just limit it to them?
-         */
+        addr match {
+          case ipv4: IPv4AddrV2Message => node.createInDbIfBlockFilterPeer(ipv4)
+          case _ =>logger.warn("Unsupported address type")
+        }
         sender.sendSendAddrV2Message()
         Future.successful(this)
       case SendAddrV2Message =>

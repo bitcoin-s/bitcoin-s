@@ -7,8 +7,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.api.chain._
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.p2p.{AddrV2Message, NetworkIpAddress, NetworkPayload, ServiceIdentifier, TypeIdentifier}
+import org.bitcoins.core.p2p.{IPv4AddrV2Message, NetworkIpAddress, NetworkPayload, ServiceIdentifier, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
@@ -16,7 +15,6 @@ import org.bitcoins.node.models._
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.{DataMessageHandler, PeerMessageReceiver, PeerMessageSender}
 
-import java.time.Instant
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -182,6 +180,20 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     }).mkString(".")+s":${networkAddress.port}"
     logger.info(s"Peer from addr: $stringAddress")
     if(networkAddress.services.nodeCompactFilters){
+      PeerDAO().upsertPeer(stringAddress)
+    }
+    ()
+  }
+
+  def createInDbIfBlockFilterPeer(addr: IPv4AddrV2Message): Unit={
+    val stringAddress=addr.addr.ipv4Bytes.toArray.map(x=>{
+      val short=x.toShort
+      if(short<0) x+256
+      else short
+    }).mkString(".")+s":${addr.port}"
+    logger.info(s"Peer from addrV2: $stringAddress")
+    val serviceIdentifier=ServiceIdentifier(addr.services.bytes)
+    if(serviceIdentifier.nodeCompactFilters){
       PeerDAO().upsertPeer(stringAddress)
     }
     ()
