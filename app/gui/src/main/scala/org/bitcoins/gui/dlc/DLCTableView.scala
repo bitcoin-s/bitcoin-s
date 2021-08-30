@@ -10,8 +10,8 @@ import scalafx.scene.control.TableColumn.SortType
 import scalafx.scene.control.TableView.TableViewFocusModel
 import scalafx.scene.control._
 
+import java.time.LocalDateTime
 import java.time.format.{DateTimeFormatter, FormatStyle}
-import java.time.{LocalDateTime, ZoneOffset}
 
 class DLCTableView(model: DLCPaneModel) {
 
