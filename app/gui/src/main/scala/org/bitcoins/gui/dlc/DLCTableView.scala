@@ -10,6 +10,9 @@ import scalafx.scene.control.TableColumn.SortType
 import scalafx.scene.control.TableView.TableViewFocusModel
 import scalafx.scene.control._
 
+import java.time.format.{DateTimeFormatter, FormatStyle}
+import java.time.{LocalDateTime, ZoneOffset}
+
 class DLCTableView(model: DLCPaneModel) {
 
   val tableView: TableView[DLCStatus] = {
@@ -80,11 +83,23 @@ class DLCTableView(model: DLCPaneModel) {
     val lastUpdatedCol = new TableColumn[DLCStatus, String] {
       text = "Last Updated"
       prefWidth = 125
+
+      private val dtFormatter: DateTimeFormatter =
+        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+
       cellValueFactory = { status =>
-        val str = GUIUtil.epochToDateString(status.value.lastUpdated)
+        val instant = status.value.lastUpdated
+        val utc = instant.atOffset(ZoneOffset.UTC)
+        val str = dtFormatter.format(utc)
         new StringProperty(status, "Last Updated", str)
       }
       sortType = SortType.Descending
+      comparator = (a: String, b: String) => {
+        val dtA = LocalDateTime.parse(a, dtFormatter)
+        val dtB = LocalDateTime.parse(b, dtFormatter)
+
+        dtA.compareTo(dtB)
+      }
     }
 
     val pnlCol = new TableColumn[DLCStatus, String] {
