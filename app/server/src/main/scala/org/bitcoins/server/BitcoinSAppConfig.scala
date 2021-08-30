@@ -41,7 +41,7 @@ case class BitcoinSAppConfig(
   lazy val torConf: TorAppConfig = TorAppConfig(directory, confs: _*)
 
   lazy val dlcNodeConf: DLCNodeAppConfig =
-    DLCNodeAppConfig(directory, confs: _*)
+    DLCNodeAppConfig(directory, confs: _*)(system.dispatcher, torConf)
 
   def copyWithConfig(newConfs: Vector[Config]): BitcoinSAppConfig = {
     val configs = newConfs ++ confs

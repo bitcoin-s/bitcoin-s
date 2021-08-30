@@ -85,7 +85,7 @@ case class BitcoindRpcAppConfig(
     TorAppConfig(directory, confs: _*)
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] =
-    torConf.socks5ProxyParams
+    Some(torConf.socks5ProxyParams)
 
   lazy val versionOpt: Option[BitcoindVersion] =
     config

@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory}
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
-import org.bitcoins.core.util.FutureUtil
+
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
@@ -20,7 +20,9 @@ import scala.concurrent._
   */
 case class DLCNodeAppConfig(
     private val directory: Path,
-    private val conf: Config*)(implicit ec: ExecutionContext)
+    private val conf: Config*)(implicit
+    ec: ExecutionContext,
+    torAppConfig: TorAppConfig)
     extends AppConfig {
   override protected[bitcoins] def configOverrides: List[Config] = conf.toList
 
@@ -36,18 +38,21 @@ case class DLCNodeAppConfig(
   protected[bitcoins] def baseDatadir: Path = directory
 
   override def start(): Future[Unit] = {
-    FutureUtil.unit
+    if (!torAppConfig.isAlive()) {
+      torAppConfig.start()
+    } else {
+      Future.unit
+    }
   }
 
   override def stop(): Future[Unit] = Future.unit
 
-  lazy val torConf: TorAppConfig =
-    TorAppConfig(directory, conf: _*)
-
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] =
-    torConf.socks5ProxyParams
+    Some(torAppConfig.socks5ProxyParams)
 
-  lazy val torParams: Option[TorParams] = torConf.torParams
+  lazy val torParams: Option[TorParams] = {
+    Some(torAppConfig.torParams)
+  }
 
   lazy val listenAddress: InetSocketAddress = {
     val str = config.getString(s"bitcoin-s.$moduleName.listen")
@@ -65,6 +70,8 @@ object DLCNodeAppConfig extends AppConfigFactory[DLCNodeAppConfig] {
   override val moduleName: String = "dlcnode"
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
-      ec: ExecutionContext): DLCNodeAppConfig =
-    DLCNodeAppConfig(datadir, confs: _*)
+      ec: ExecutionContext): DLCNodeAppConfig = {
+    val torAppConfig = TorAppConfig.fromDatadir(datadir, confs)
+    DLCNodeAppConfig(datadir, confs: _*)(ec = ec, torAppConfig = torAppConfig)
+  }
 }
