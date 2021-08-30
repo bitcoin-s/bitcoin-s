@@ -129,7 +129,8 @@ case class TorAppConfig(
     * place for our node.
     */
   override def start(): Future[Unit] = {
-    if (torProvided || isAlive()) {
+    if (torProvided) {
+      logger.info(s"Tor provided, ignoring TorAppConfig.start()")
       Future.unit
     } else {
       lazy val torRunning = checkIfTorAlreadyRunning
@@ -206,7 +207,7 @@ case class TorAppConfig(
   private def checkIfTorAlreadyRunning: Boolean = {
     val toCheck = socks5ProxyParams.address
 
-    NetworkUtil.portIsBound(toCheck)
+    NetworkUtil.portIsBound(toCheck) || isAlive()
   }
 
   private lazy val authenticationArg: String =
