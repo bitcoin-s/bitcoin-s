@@ -1,16 +1,19 @@
 package org.bitcoins.gui.dialog
 
 import grizzled.slf4j.Logging
-import org.bitcoins.gui.GlobalData
+import org.bitcoins.cli.CliCommand.LockUnspent
+import org.bitcoins.cli.ConsoleCli
+import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.Includes._
-import scalafx.scene.control.{Button, ButtonType, Dialog}
+import scalafx.geometry.Pos
+import scalafx.scene.control.{Button, ButtonType, Dialog, ProgressIndicator}
 import scalafx.scene.layout.VBox
 import scalafx.stage.{Modality, Window}
 
 import java.awt.Desktop
 import java.io.File
 import java.nio.file.{Files, Paths}
-import scala.util.Properties
+import scala.util.{Failure, Properties, Success}
 
 object DebugDialog extends Logging {
 
@@ -59,11 +62,40 @@ object DebugDialog extends Logging {
       }
     }
 
-    dialog.dialogPane().content = new VBox {
+    val unreserveAllUTXOsButton = new Button("Unreserve All UTXOs")
+
+    val content = new VBox {
       minWidth = 300
       minHeight = 300
-      children = Seq(openLogButton)
+      spacing = 10
+      children = Seq(openLogButton, unreserveAllUTXOsButton)
     }
+
+    val glassPane = new VBox {
+      children = new ProgressIndicator {
+        progress = ProgressIndicator.IndeterminateProgress
+        visible = true
+      }
+      alignment = Pos.Center
+      visible = false
+    }
+
+    lazy val taskRunner = new TaskRunner(content, glassPane)
+
+    unreserveAllUTXOsButton.onAction = _ => {
+      taskRunner.run(
+        "Unreserve All UTXOs", {
+          ConsoleCli.exec(LockUnspent(true, Vector.empty),
+                          GlobalData.consoleCliConfig) match {
+            case Success(_) => ()
+            case Failure(err) =>
+              throw err
+          }
+        }
+      )
+    }
+
+    dialog.dialogPane().content = content
 
     val _ = dialog.show()
   }
