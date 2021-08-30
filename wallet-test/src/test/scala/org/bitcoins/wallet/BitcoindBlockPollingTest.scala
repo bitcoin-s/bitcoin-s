@@ -41,9 +41,9 @@ class BitcoindBlockPollingTest
         _ = assert(firstBalance == Satoshis.zero)
 
         // Setup block polling
-        _ = BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
-                                                             bitcoind,
-                                                             1.second)
+        _ <- BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
+                                                              bitcoind,
+                                                              1.second)
         _ <- bitcoind.generateToAddress(6, bech32Address)
 
         // Wait for it to process
