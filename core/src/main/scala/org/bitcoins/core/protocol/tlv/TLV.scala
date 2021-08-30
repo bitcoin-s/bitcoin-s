@@ -627,6 +627,9 @@ sealed trait NumericEventDescriptorTLV extends EventDescriptorTLV {
       case None                    => false
     }
   }
+
+  /** If the Descriptor contains negative values */
+  def isSigned: Boolean
 }
 
 /** Describes a large range event using numerical decomposition */
@@ -705,7 +708,10 @@ case class SignedDigitDecompositionEventDescriptor(
     numDigits: UInt16,
     unit: NormalizedString,
     precision: Int32)
-    extends DigitDecompositionEventDescriptorV0TLV
+    extends DigitDecompositionEventDescriptorV0TLV {
+
+  override val isSigned: Boolean = true
+}
 
 /** Represents a large range event that is unsigned */
 case class UnsignedDigitDecompositionEventDescriptor(
@@ -713,7 +719,9 @@ case class UnsignedDigitDecompositionEventDescriptor(
     numDigits: UInt16,
     unit: NormalizedString,
     precision: Int32)
-    extends DigitDecompositionEventDescriptorV0TLV
+    extends DigitDecompositionEventDescriptorV0TLV {
+  override val isSigned: Boolean = false
+}
 
 object DigitDecompositionEventDescriptorV0TLV
     extends TLVFactory[DigitDecompositionEventDescriptorV0TLV] {

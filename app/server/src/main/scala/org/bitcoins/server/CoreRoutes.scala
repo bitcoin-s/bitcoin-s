@@ -5,17 +5,21 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.commons.jsonmodels.{SerializedPSBT, SerializedTransaction}
 import org.bitcoins.core.hd.AddressType
+import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
   P2SHScriptPubKey,
   P2WSHWitnessSPKV0
 }
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.server.BitcoinSAppConfig.toChainConf
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import ujson._
 
+import java.util.Date
 import scala.collection.mutable
 import scala.concurrent.Future
 
@@ -140,6 +144,107 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
               inputJson ++ optionalsJson ++ nextRoleJson
             val jsonMap = mutable.LinkedHashMap(jsonVec: _*)
             val json = Obj(jsonMap)
+
+            Server.httpSuccess(json)
+          }
+      }
+
+    case ServerCommand("decodeoffer", arr) =>
+      withValidServerCommand(DecodeOffer.fromJsArr(arr)) {
+        case DecodeOffer(offerTLV) =>
+          complete {
+            val offer = DLCOffer.fromTLV(offerTLV)
+
+            val fundingInputJson = offer.fundingInputs.map { input =>
+              Obj(
+                "inputSerialId" -> Str(input.inputSerialId.hex),
+                "prevTx" -> Str(input.prevTx.hex),
+                "prevTxId" -> Str(input.prevTx.txIdBE.hex),
+                "vout" -> Num(input.prevTxVout.toLong.toDouble),
+                "sequence" -> Num(input.sequence.toLong.toDouble)
+              )
+            }
+
+            val json = Obj(
+              "contractInfo" -> Str(offer.contractInfo.hex),
+              "fundingKey" -> Str(offer.pubKeys.fundingKey.hex),
+              "payoutAddress" -> Str(offer.pubKeys.payoutAddress.toString),
+              "changeAddress" -> Str(offer.changeAddress.toString),
+              "totalCollateral" -> Num(offer.totalCollateral.toLong.toDouble),
+              "fundingInputs" -> fundingInputJson,
+              "payoutSerialId" -> Str(offer.payoutSerialId.hex),
+              "changeSerialId" -> Str(offer.changeSerialId.hex),
+              "fundOutputSerialId" -> Str(offer.fundOutputSerialId.hex),
+              "feeRate" -> Num(offer.feeRate.toLong.toDouble),
+              "contractMaturity" -> Num(
+                offer.timeouts.contractMaturity.toUInt32.toLong.toDouble),
+              "contractTimeout" -> Num(
+                offer.timeouts.contractTimeout.toUInt32.toLong.toDouble)
+            )
+
+            Server.httpSuccess(json)
+          }
+      }
+
+    case ServerCommand("decodeannouncement", arr) =>
+      withValidServerCommand(DecodeAnnouncement.fromJsArr(arr)) {
+        case DecodeAnnouncement(announcement) =>
+          complete {
+            val noncesJson = announcement.eventTLV.nonces.map { nonce =>
+              Str(nonce.hex)
+            }
+
+            val descriptorJson = announcement.eventTLV.eventDescriptor match {
+              case EnumEventDescriptorV0TLV(outcomes) =>
+                Obj(
+                  "outcomes" -> outcomes.map(Str(_))
+                )
+              case numeric: NumericEventDescriptorTLV =>
+                Obj(
+                  "base" -> Num(numeric.base.toLong.toDouble),
+                  "isSigned" -> Bool(numeric.isSigned),
+                  "unit" -> Str(numeric.unit),
+                  "precision" -> Num(numeric.precision.toLong.toDouble)
+                )
+            }
+
+            val eventJson = Obj(
+              "nonces" -> noncesJson,
+              "maturity" -> Str(
+                TimeUtil.iso8601ToString(
+                  Date.from(announcement.eventTLV.maturation))),
+              "descriptor" -> descriptorJson,
+              "eventId" -> Str(announcement.eventTLV.eventId)
+            )
+
+            val json = Obj(
+              "announcementSignature" -> Str(
+                announcement.announcementSignature.hex),
+              "publicKey" -> Str(announcement.publicKey.hex),
+              "event" -> eventJson
+            )
+
+            Server.httpSuccess(json)
+          }
+      }
+
+    case ServerCommand("decodeattestments", arr) =>
+      withValidServerCommand(DecodeAttestations.fromJsArr(arr)) {
+        case DecodeAttestations(attestments) =>
+          complete {
+            val sigsJson = attestments.sigs.map { sig =>
+              Str(sig.hex)
+            }
+
+            val valuesJson = attestments.outcomes.map { value =>
+              Str(value)
+            }
+
+            val json = Obj(
+              "eventId" -> Str(attestments.eventId),
+              "signatures" -> sigsJson,
+              "values" -> valuesJson
+            )
 
             Server.httpSuccess(json)
           }

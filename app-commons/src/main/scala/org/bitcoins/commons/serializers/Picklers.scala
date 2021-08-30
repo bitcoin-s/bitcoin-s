@@ -614,8 +614,14 @@ object Picklers {
   implicit val extPrivateKeyPickler: ReadWriter[ExtPrivateKey] =
     readwriter[String].bimap(ExtKey.toString, ExtPrivateKey.fromString)
 
+  implicit val oracleAnnouncementTLV: ReadWriter[OracleAnnouncementV0TLV] =
+    readwriter[String].bimap(_.hex, OracleAnnouncementV0TLV.fromHex)
+
   implicit val oracleAttestmentTLV: ReadWriter[OracleAttestmentTLV] =
     readwriter[String].bimap(_.hex, OracleAttestmentTLV.fromHex)
+
+  implicit val oracleAttestmentV0TLV: ReadWriter[OracleAttestmentV0TLV] =
+    readwriter[String].bimap(_.hex, OracleAttestmentV0TLV.fromHex)
 
   implicit val ecPublicKeyPickler: ReadWriter[ECPublicKey] =
     readwriter[String].bimap(_.hex, ECPublicKey.fromHex)
