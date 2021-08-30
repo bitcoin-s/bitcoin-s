@@ -36,7 +36,13 @@ import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
+/** The entry point for our backend server
+  * @param serverArgParser - the command line arguments passed to the server
+  * @param torConfOpt a running tor app config that should be used instead of building one
+  */
+class BitcoinSServerMain(
+    override val serverArgParser: ServerArgParser,
+    torConfOpt: Option[TorAppConfig] = None)(implicit
     override val system: ActorSystem,
     conf: BitcoinSAppConfig)
     extends BitcoinSServerRunner {
@@ -47,7 +53,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   implicit lazy val dlcConf: DLCAppConfig = conf.dlcConf
   implicit lazy val dlcNodeConf: DLCNodeAppConfig = conf.dlcNodeConf
   implicit lazy val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
-  implicit lazy val torConf: TorAppConfig = conf.torConf
+
+  implicit lazy val torConf: TorAppConfig = {
+    torConfOpt match {
+      case Some(torConf) => torConf
+      case None          => conf.torConf
+    }
+  }
 
   override def start(): Future[Unit] = {
     logger.info("Starting appServer")

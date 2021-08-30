@@ -14,7 +14,9 @@ class BitcoinSServerMainBitcoindTorTest
 
   it must "start our app server with bitcoind as a backend with tor" in {
     config: BitcoinSAppConfig =>
-      val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
+      val server =
+        new BitcoinSServerMain(serverArgParser = ServerArgParser.empty,
+                               torConfOpt = Some(torConfig))(system, config)
 
       val cliConfig: Config = Config(rpcPortOpt = Some(config.rpcPort))
 
