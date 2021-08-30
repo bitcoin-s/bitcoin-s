@@ -3,12 +3,10 @@ package org.bitcoins.server
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.testkit.fixtures.BitcoinSAppConfigBitcoinFixtureNotStarted
-import org.bitcoins.testkit.tor.CachedTor
 
 /** Test starting bitcoin-s with bitcoind as the backend for app */
 class BitcoinSServerMainBitcoindTorTest
-    extends BitcoinSAppConfigBitcoinFixtureNotStarted
-    with CachedTor {
+    extends BitcoinSAppConfigBitcoinFixtureNotStarted {
 
   behavior of "BitcoinSServerMain"
 
