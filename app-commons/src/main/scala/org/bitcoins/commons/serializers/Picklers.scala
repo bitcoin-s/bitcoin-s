@@ -2,12 +2,7 @@ package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
-import org.bitcoins.core.crypto.{
-  ExtKey,
-  ExtPrivateKey,
-  ExtPublicKey,
-  MnemonicCode
-}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.hd.AddressType
@@ -20,6 +15,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.core.util.TimeUtil._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
@@ -173,6 +169,7 @@ object Picklers {
         "state" -> Str(statusString),
         "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
+        "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
         "tempContractId" -> Str(tempContractId.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
@@ -192,6 +189,7 @@ object Picklers {
       "state" -> Str(statusString),
       "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
+      "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
       "contractInfo" -> Str(contractInfo.hex),
@@ -212,6 +210,7 @@ object Picklers {
       "state" -> Str(statusString),
       "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
+      "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
       "contractInfo" -> Str(contractInfo.hex),
@@ -233,6 +232,7 @@ object Picklers {
         "state" -> Str(statusString),
         "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
+        "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
         "contractInfo" -> Str(contractInfo.hex),
@@ -255,6 +255,7 @@ object Picklers {
         "state" -> Str(statusString),
         "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
+        "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
         "contractInfo" -> Str(contractInfo.hex),
@@ -287,6 +288,7 @@ object Picklers {
       "state" -> Str(statusString),
       "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
+      "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
       "contractInfo" -> Str(contractInfo.hex),
@@ -327,6 +329,7 @@ object Picklers {
         "state" -> Str(statusString),
         "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
+        "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
         "contractInfo" -> Str(contractInfo.hex),
@@ -358,6 +361,7 @@ object Picklers {
       "state" -> Str(statusString),
       "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
+      "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
       "contractInfo" -> Str(contractInfo.hex),
@@ -401,6 +405,7 @@ object Picklers {
   implicit val dlcStatusR: Reader[DLCStatus] = reader[Obj].map { obj =>
     val dlcId = Sha256Digest(obj("dlcId").str)
     val state = DLCState.fromString(obj("state").str)
+    val lastUpdated = iso8601ToInstant(obj("lastUpdated").str)
     val isInitiator = obj("isInitiator").bool
     val tempContractId = Sha256Digest(obj("tempContractId").str)
     val contractInfoTLV = ContractInfoV0TLV(obj("contractInfo").str)
@@ -460,6 +465,7 @@ object Picklers {
         Offered(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
@@ -471,6 +477,7 @@ object Picklers {
         Accepted(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -483,6 +490,7 @@ object Picklers {
         Signed(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -495,6 +503,7 @@ object Picklers {
         Broadcasted(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -508,6 +517,7 @@ object Picklers {
         Confirmed(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -521,6 +531,7 @@ object Picklers {
         Claimed(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -541,6 +552,7 @@ object Picklers {
         RemoteClaimed(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -559,6 +571,7 @@ object Picklers {
         Refunded(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),

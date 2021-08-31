@@ -12,6 +12,7 @@ import org.bitcoins.dlc.wallet.DLCAppConfig
 import scodec.bits.ByteVector
 import slick.lifted._
 
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCDAO()(implicit
@@ -140,6 +141,8 @@ case class DLCDAO()(implicit
 
     def fundOutputSerialId: Rep[UInt64] = column("fund_output_serial_id")
 
+    def lastUpdated: Rep[Instant] = column("last_updated")
+
     def fundingOutPointOpt: Rep[Option[TransactionOutPoint]] =
       column("funding_outpoint")
 
@@ -164,6 +167,7 @@ case class DLCDAO()(implicit
        keyIndex,
        feeRate,
        fundOutputSerialId,
+       lastUpdated,
        fundingOutPointOpt,
        fundingTxIdOpt,
        closingTxIdOpt,

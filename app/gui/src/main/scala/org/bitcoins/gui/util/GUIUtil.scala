@@ -7,13 +7,13 @@ import org.bitcoins.core.protocol.BlockTimeStamp
 import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
 import org.bitcoins.gui.{GUI, GlobalData}
 import scalafx.beans.property.StringProperty
-import scalafx.scene.{Parent, Scene}
 import scalafx.scene.control.{Button, TextField, Tooltip}
 import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.input.{KeyCode, KeyCodeCombination, KeyCombination}
 import scalafx.scene.layout.{Priority, Region}
-import scalafx.stage.{FileChooser, Stage}
+import scalafx.scene.{Parent, Scene}
 import scalafx.stage.FileChooser.ExtensionFilter
+import scalafx.stage.{FileChooser, Stage}
 
 import java.awt.Toolkit.getDefaultToolkit
 import java.awt.datatransfer.StringSelection
@@ -40,10 +40,15 @@ object GUIUtil {
 
   def epochToDateString(epoch: BlockTimeStamp): String = {
     val long = epoch.toUInt32.toLong
-    val instant = Instant.ofEpochSecond(long).atOffset(ZoneOffset.UTC)
+    val instant = Instant.ofEpochSecond(long)
+    epochToDateString(instant)
+  }
+
+  def epochToDateString(instant: Instant): String = {
+    val utc = instant.atOffset(ZoneOffset.UTC)
     DateTimeFormatter
       .ofLocalizedDate(FormatStyle.MEDIUM)
-      .format(instant)
+      .format(utc)
   }
 
   def setStringToClipboard(str: String): Unit = {

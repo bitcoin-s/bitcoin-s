@@ -8,13 +8,10 @@ import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
 import scalafx.scene.control.TableColumn.SortType
 import scalafx.scene.control.TableView.TableViewFocusModel
-import scalafx.scene.control.{
-  ContextMenu,
-  MenuItem,
-  TableColumn,
-  TableRow,
-  TableView
-}
+import scalafx.scene.control._
+
+import java.time.{LocalDateTime, ZoneId}
+import java.time.format.{DateTimeFormatter, FormatStyle}
 
 class DLCTableView(model: DLCPaneModel) {
 
@@ -83,6 +80,28 @@ class DLCTableView(model: DLCPaneModel) {
       }
     }
 
+    val lastUpdatedCol = new TableColumn[DLCStatus, String] {
+      text = "Last Updated"
+      prefWidth = 125
+
+      private val dtFormatter: DateTimeFormatter =
+        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+
+      cellValueFactory = { status =>
+        val instant = status.value.lastUpdated
+        val zone = ZoneId.systemDefault()
+        val str = dtFormatter.format(instant.atZone(zone))
+        new StringProperty(status, "Last Updated", str)
+      }
+      sortType = SortType.Descending
+      comparator = (a: String, b: String) => {
+        val dtA = LocalDateTime.parse(a, dtFormatter)
+        val dtB = LocalDateTime.parse(b, dtFormatter)
+
+        dtA.compareTo(dtB)
+      }
+    }
+
     val pnlCol = new TableColumn[DLCStatus, String] {
       text = "Realized PNL"
       prefWidth = 110
@@ -121,8 +140,10 @@ class DLCTableView(model: DLCPaneModel) {
                       rorCol,
                       collateralCol,
                       otherCollateralCol,
-                      totalCollateralCol)
-      sortOrder.addAll(statusCol, eventIdCol, contractIdCol)
+                      totalCollateralCol,
+                      lastUpdatedCol)
+
+      sortOrder.addAll(lastUpdatedCol)
 
       rowFactory = { _ =>
         {
