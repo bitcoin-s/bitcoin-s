@@ -10,7 +10,7 @@ import scalafx.scene.control.TableColumn.SortType
 import scalafx.scene.control.TableView.TableViewFocusModel
 import scalafx.scene.control._
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, ZoneId}
 import java.time.format.{DateTimeFormatter, FormatStyle}
 
 class DLCTableView(model: DLCPaneModel) {
@@ -89,7 +89,8 @@ class DLCTableView(model: DLCPaneModel) {
 
       cellValueFactory = { status =>
         val instant = status.value.lastUpdated
-        val str = dtFormatter.format(instant)
+        val zone = ZoneId.systemDefault()
+        val str = dtFormatter.format(instant.atZone(zone))
         new StringProperty(status, "Last Updated", str)
       }
       sortType = SortType.Descending
