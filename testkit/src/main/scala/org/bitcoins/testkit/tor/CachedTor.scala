@@ -45,10 +45,9 @@ trait CachedTor {
 trait CachedTorCustomDatadir extends CachedTor { _: BitcoinSAkkaAsyncTest =>
 
   /** The specific datadir we should start the tor instance from */
-  def customDatadir: Future[Path]
+  def customDatadir: Path
 
   implicit override protected lazy val torConfig: TorAppConfig = {
-    TorAppConfig.fromDatadir(Await.result(customDatadir, akkaTimeout.duration),
-                             Vector.empty)
+    TorAppConfig.fromDatadir(customDatadir, Vector.empty)
   }
 }

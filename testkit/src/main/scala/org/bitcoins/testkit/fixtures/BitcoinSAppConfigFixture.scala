@@ -9,8 +9,8 @@ import org.bitcoins.rpc.config.{
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
-import org.bitcoins.testkit.tor.{CachedTorCustomDatadir}
-import org.bitcoins.testkit.util.TorUtil
+import org.bitcoins.testkit.tor.CachedTorCustomDatadir
+import org.bitcoins.testkit.util.{FileUtil, TorUtil}
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.scalatest.FutureOutcome
 
@@ -38,8 +38,7 @@ trait BitcoinSAppConfigBitcoinFixtureNotStarted
 
   override type FixtureParam = BitcoinSAppConfig
 
-  override def customDatadir: Future[Path] =
-    cachedBitcoindWithFundsF.map(_.instance.datadir.toPath)
+  override lazy val customDatadir: Path = FileUtil.tmpDir().toPath
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[BitcoinSAppConfig] = () => {
