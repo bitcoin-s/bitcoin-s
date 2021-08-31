@@ -63,7 +63,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def peers: Vector[Peer] = peerData.keys.toVector
 
   def addPeer(peer: Peer): Unit = {
-    logger.info(s"Adding peer $peer")
     if (!_peerData.contains(peer)) {
       _peerData.put(peer, PeerData(peer, this))
     }
@@ -187,8 +186,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       if(short<0) x+256
       else short
     }).mkString(".")+s":${networkAddress.port}"
-    logger.info(s"Peer from addr: $stringAddress")
+    logger.debug(s"Peer from addr: $stringAddress")
     if(networkAddress.services.nodeCompactFilters){
+      logger.debug(s"Peer from add: $stringAddress  supports compact filters.")
       PeerDAO().upsertPeer(stringAddress)
     }
     ()
@@ -200,9 +200,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       if(short<0) x+256
       else short
     }).mkString(".")+s":${addr.port}"
-    logger.info(s"Peer from addrV2: $stringAddress")
+    logger.debug(s"Peer from addrV2: $stringAddress")
     val serviceIdentifier=ServiceIdentifier(addr.services.bytes)
     if(serviceIdentifier.nodeCompactFilters){
+      logger.debug(s"Peer from addrV2: $stringAddress supports compact filters.")
       PeerDAO().upsertPeer(stringAddress)
     }
     ()

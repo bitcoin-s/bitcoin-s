@@ -52,8 +52,8 @@ case class NeutrinoNode(
       _ <- randomPeerMsgSenderWithCompactFilters
         .sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
     } yield {
-      logger.info(s"All peers $peers")
-      logger.info(
+      logger.debug(s"All peers $peers")
+      logger.debug(
         s"Peers with compact filters ${peers.filter(peerData(_).serviceIdentifier.nodeCompactFilters)}")
       node.asInstanceOf[NeutrinoNode]
     }
