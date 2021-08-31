@@ -221,7 +221,8 @@ object Picklers {
       "feeRate" -> Num(feeRate.toLong.toDouble),
       "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
       "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
-      "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble)
+      "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
+      "fundingTxId" -> Str(fundingTxId.hex)
     )
   }
 
@@ -497,7 +498,8 @@ object Picklers {
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
           totalCollateral,
-          localCollateral
+          localCollateral,
+          fundingTxId
         )
       case DLCState.Broadcasted =>
         Broadcasted(

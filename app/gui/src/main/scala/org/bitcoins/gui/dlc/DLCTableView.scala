@@ -110,7 +110,7 @@ class DLCTableView(model: DLCPaneModel) {
           case closed: ClosedDLCStatus =>
             val amt = GUIUtil.numberFormatter.format(closed.pnl.satoshis.toLong)
             new StringProperty(status, "PNL", s"$amt sats")
-          case _: BroadcastedDLCStatus | _: AcceptedDLCStatus | _: Offered =>
+          case _: SignedDLCStatus | _: AcceptedDLCStatus | _: Offered =>
             new StringProperty(status, "PNL", "In progress")
         }
       }
@@ -126,7 +126,7 @@ class DLCTableView(model: DLCPaneModel) {
               status,
               "Rate of Return",
               s"${RateOfReturnUtil.prettyPrint(closed.rateOfReturn)}")
-          case _: BroadcastedDLCStatus | _: AcceptedDLCStatus | _: Offered =>
+          case _: SignedDLCStatus | _: AcceptedDLCStatus | _: Offered =>
             new StringProperty(status, "Rate of Return", "In progress")
         }
       }

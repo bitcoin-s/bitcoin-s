@@ -6,7 +6,7 @@ import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models.{DLCState, DLCStatus}
 import org.bitcoins.core.util.TimeUtil
-import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator, TLVGen}
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalacheck.Gen
@@ -90,7 +90,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.timeouts,
             offer.feeRate,
             totalCollateral,
-            offer.totalCollateral
+            offer.totalCollateral,
+            DoubleSha256DigestBE.empty
           )
 
         assert(status.state == DLCState.Signed)
