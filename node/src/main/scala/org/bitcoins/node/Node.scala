@@ -14,6 +14,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.{DataMessageHandler, PeerMessageReceiver, PeerMessageSender}
+import scodec.bits.ByteVector
 
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
@@ -173,7 +174,15 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   }
 
   def createInDbIfBlockFilterPeer(networkAddress: NetworkIpAddress):Unit={
-    val stringAddress=networkAddress.address.ipv4Bytes.toArray.map(x=>{
+    val ipv4bytes: Option[ByteVector]=try {
+      Some(networkAddress.address.ipv4Bytes)
+    }catch {
+      case _: Throwable => {
+        logger.info("Ignoring ipv6 address from addr message")
+        return
+      }
+    }
+    val stringAddress=ipv4bytes.get.toArray.map(x=>{
       val short=x.toShort
       if(short<0) x+256
       else short
@@ -217,6 +226,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       } yield ()
     isInitializedF.map { _ =>
       if (peerData.contains(peer)) {
+        peerData(peer).peerMessageSender.sendGetAddrMessage()
         nodeAppConfig.nodeType match {
           case NodeType.NeutrinoNode => createInDbIfBlockFilterPeer(peer)
           case NodeType.SpvNode =>

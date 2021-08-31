@@ -122,6 +122,10 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(sendHeadersMsg)
   }
 
+  def sendGetAddrMessage(): Future[Unit]={
+    sendMsg(GetAddrMessage)
+  }
+
   /** Sends a inventory message with the given transactions
     */
   def sendInventoryMessage(transactions: Transaction*): Future[Unit] = {
