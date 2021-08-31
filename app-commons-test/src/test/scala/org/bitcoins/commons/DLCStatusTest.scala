@@ -6,7 +6,7 @@ import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models.{DLCState, DLCStatus}
 import org.bitcoins.core.util.TimeUtil
-import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
+import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator, TLVGen}
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalacheck.Gen
@@ -73,8 +73,9 @@ class DLCStatusTest extends BitcoinSJvmTest {
   it must "have json symmetry in DLCStatus.Signed" in {
     forAllParallel(NumberGenerator.bool,
                    TLVGen.dlcOfferTLV,
-                   NumberGenerator.bytevector) {
-      case (isInit, offerTLV, contractId) =>
+                   NumberGenerator.bytevector,
+                   CryptoGenerators.doubleSha256DigestBE) {
+      case (isInit, offerTLV, contractId, txId) =>
         val offer = DLCOffer.fromTLV(offerTLV)
 
         val totalCollateral = offer.contractInfo.max
@@ -91,7 +92,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.feeRate,
             totalCollateral,
             offer.totalCollateral,
-            DoubleSha256DigestBE.empty
+            txId
           )
 
         assert(status.state == DLCState.Signed)
