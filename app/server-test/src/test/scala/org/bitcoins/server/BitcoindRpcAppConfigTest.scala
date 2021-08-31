@@ -1,9 +1,9 @@
 package org.bitcoins.server
 
 import java.nio.file._
-
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config._
+import org.bitcoins.rpc.config.BitcoindRpcAppConfig
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 import scala.reflect.io.Directory

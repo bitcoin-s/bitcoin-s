@@ -1,11 +1,13 @@
 package org.bitcoins.dlc.statictest
 
 import org.bitcoins.dlc.testgen._
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.{BitcoinSJvmTest}
+import org.scalatest.Assertion
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class DLCTestVectorTest extends BitcoinSUnitTest {
+class DLCTestVectorTest extends BitcoinSJvmTest {
   behavior of "DLCTestVectors"
 
   it should "have serialization symmetry" in {
@@ -22,7 +24,14 @@ class DLCTestVectorTest extends BitcoinSUnitTest {
     val vecResult = DLCTestVectorGen.readFromDefaultTestFile()
     assert(vecResult.isSuccess)
 
-    vecResult.get.foldLeft(succeed) { case (_, testVec) =>
+    val vecF = vecResult.get.map(runTest(_))
+    Future
+      .sequence(vecF)
+      .map(_ => succeed)
+  }
+
+  private def runTest(testVec: TestVector): Future[Assertion] = {
+    Future {
       testVec match {
         case testVec: SuccessTestVector =>
           val resultT = DLCTxGen

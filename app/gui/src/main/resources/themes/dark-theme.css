@@ -66,10 +66,21 @@
     -fx-border-width: 1px;
 }
 
-/* Accordion Group heading content */
-.small {
-    -fx-font-size: 0.8em;
+/* Accept / Build Offer Pane */
+.load-label {
+    -fx-padding: 0 10 0 0;
 }
+.load-textfield {
+    -fx-pref-width: 130;
+    -fx-prompt-text-fill: #b0b0b0;
+}
+
+/* Adjust SplitPane divider visibility and padding */
+/*
+.split-pane > .split-pane-divider {
+    -fx-padding: 0;
+}
+*/
 
 /* Right content area */
 .scroll-pane {
@@ -82,11 +93,34 @@
     -fx-background-insets: 0;
 }
 
+/* Welcome Pane */
+.welcome-header {
+    -fx-font-size: 1.5em;
+}
+.welcome-font {
+    -fx-font-size: 1.2em;
+}
+.welcome-textarea {
+    -fx-font-size: 1.2em;
+}
+.link-background {
+    -fx-background-color: derive(-fx-base, 99%);
+}
+
 /* Button Group under dialog container content */
 .dialog-button-group {
     -fx-border-style: solid none none none;
     -fx-border-width: 1;
     -fx-border-color: black;
+}
+
+/* View DLC Dialog */
+.view-dlc-label {
+    -fx-min-width: 115; /* Counterparty payout */
+    -fx-alignment: center-right;
+}
+.view-dlc-textfield {
+    -fx-pref-width: 300;
 }
 
 /* New Offer Dialog */

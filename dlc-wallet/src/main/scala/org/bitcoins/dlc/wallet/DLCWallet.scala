@@ -1155,14 +1155,40 @@ abstract class DLCWallet
 
   override def broadcastDLCFundingTx(
       contractId: ByteVector): Future[Transaction] = {
+    val dlcDbOptF = dlcDAO.findByContractId(contractId)
+    val fundingTxF = getDLCFundingTx(contractId)
     for {
-      tx <- getDLCFundingTx(contractId)
+      dlcDbOpt <- dlcDbOptF
+      _ = dlcDbOpt match {
+        case None =>
+          sys.error(
+            s"Cannot broadcast DLC when we don't know the contract, given contractId=${contractId}")
+        case Some(dlcDb) =>
+          isValidBroadcastState(dlcDb)
+      }
+      tx <- fundingTxF
+      _ <- updateDLCState(contractId, DLCState.Broadcasted)
       _ = logger.info(
         s"Broadcasting funding transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}")
       _ <- broadcastTransaction(tx)
-
-      _ <- updateDLCState(contractId, DLCState.Broadcasted)
     } yield tx
+  }
+
+  /** Checks if the DLC is in a valid state to broadcast the funding tx.
+    * This is particurarily useful for situations when users want to
+    * re-broadcast funding txs. You should only be able to re-broadcast
+    * a funding tx in two states, [[DLCState.Signed]] or [[DLCState.Broadcasted]]
+    * The reason accepted is needed is that is the state the DLC is in
+    * when a user gives us their sign message
+    */
+  private def isValidBroadcastState(dlcDb: DLCDb): DLCDb = {
+    dlcDb.state match {
+      case DLCState.Broadcasted | DLCState.Signed => dlcDb
+      case state @ (DLCState.Offered | DLCState.Confirmed | DLCState.Accepted |
+          DLCState.Claimed | DLCState.RemoteClaimed | DLCState.Refunded) =>
+        sys.error(
+          s"Cannot broadcast the dlc when it is in the state=${state} contractId=${dlcDb.contractIdOpt}")
+    }
   }
 
   override def executeDLC(

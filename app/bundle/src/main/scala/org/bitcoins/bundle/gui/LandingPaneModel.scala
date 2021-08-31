@@ -6,9 +6,9 @@ import grizzled.slf4j.Logging
 import org.bitcoins.bundle.gui.BundleGUI._
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.util.{DatadirUtil, ServerArgParser}
+import org.bitcoins.core.api.node.InternalImplementationNodeType
 import org.bitcoins.gui._
-import org.bitcoins.node.NodeType._
-import org.bitcoins.node._
+import org.bitcoins.core.api.node.NodeType._
 import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
 import org.bitcoins.server._
 import scalafx.beans.property.ObjectProperty
@@ -52,11 +52,19 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
               // know what network it is on now
               Future.successful(ConfigFactory.empty())
             case BitcoindBackend =>
-              tmpConf.bitcoindRpcConf.client.getBlockChainInfo.map { info =>
-                val networkStr =
-                  DatadirUtil.networkStrToDirName(info.chain.name)
-                ConfigFactory.parseString(s"bitcoin-s.network = $networkStr")
+              if (!appConfig.torConf.enabled) {
+                tmpConf.bitcoindRpcConf.client.getBlockChainInfo.map { info =>
+                  val networkStr =
+                    DatadirUtil.networkStrToDirName(info.chain.name)
+                  ConfigFactory.parseString(s"bitcoin-s.network = $networkStr")
+                }
+              } else {
+                //we cannot connect to bitcoind and determine
+                //the network over tor since tor isn't started
+                //yet
+                Future.successful(ConfigFactory.empty())
               }
+
           }
 
           netConfF.map { netConf =>
@@ -79,6 +87,9 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
             BitcoinSAppConfig.fromDatadir(appConfig.baseDatadir, networkConfig)
           // use class base constructor to share the actor system
 
+          GlobalData.setBitcoinNetwork(
+            finalAppConfig.network,
+            finalAppConfig.socks5ProxyParams.isDefined)
           new BitcoinSServerMain(serverArgParser)(system, finalAppConfig)
             .run()
         }
@@ -87,7 +98,7 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
           throw err
         }
 
-        Await.result(promise.future, 60.seconds)
+        Await.result(promise.future, 120.seconds)
       }
     )
   }

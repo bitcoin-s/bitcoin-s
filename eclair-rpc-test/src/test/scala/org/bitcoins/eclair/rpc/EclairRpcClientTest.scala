@@ -512,11 +512,14 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
     val badInstanceF = badCredentialsF.flatMap { badCredentials =>
       val getBadInstance = (client: EclairRpcClient, _: EclairRpcClient) => {
-        val instance = EclairInstance(network = client.instance.network,
-                                      uri = client.instance.uri,
-                                      rpcUri = client.instance.rpcUri,
-                                      authCredentials = badCredentials,
-                                      logbackXmlPath = None)
+        val instance = EclairInstance(
+          network = client.instance.network,
+          uri = client.instance.uri,
+          rpcUri = client.instance.rpcUri,
+          authCredentials = badCredentials,
+          logbackXmlPath = None,
+          proxyParams = None
+        )
 
         Future.successful(instance)
       }

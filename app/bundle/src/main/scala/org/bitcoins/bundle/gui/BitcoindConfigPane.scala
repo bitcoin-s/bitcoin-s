@@ -8,7 +8,7 @@ import scalafx.geometry._
 import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout._
-import scalafx.scene.text.TextAlignment
+import scalafx.scene.text.{Font, TextAlignment}
 
 import scala.util.Try
 
@@ -16,33 +16,34 @@ class BitcoindConfigPane(
     appConfig: BitcoinSAppConfig,
     model: LandingPaneModel) {
 
-  private val bitcoindExplainer: Label = new Label() {
-    margin = Insets(10)
+  private val bitcoindExplainer: Label = new Label {
+    padding = Insets(20)
     text = "This will fetch block data from the Bitcoin Core RPC." +
       " This does not require Bitcoin-S to do an initial block download but" +
       " Bitcoin Core will need to be synced."
+    font = new Font(16)
     maxWidth = 600
     wrapText = true
     textAlignment = TextAlignment.Center
   }
 
-  private val hostTF: TextField = new TextField() {
+  private val hostTF: TextField = new TextField {
     text = appConfig.rpcBind.toString
     minWidth = 300
   }
 
-  private val portTF: TextField = new TextField() {
+  private val portTF: TextField = new TextField {
     text = appConfig.bitcoindRpcConf.rpcPort.toString
     minWidth = 300
   }
   GUIUtil.setNumericInput(portTF)
 
-  private val rpcUserTF: TextField = new TextField() {
+  private val rpcUserTF: TextField = new TextField {
     text = Try(appConfig.rpcUser).getOrElse("")
     minWidth = 300
   }
 
-  private val rpcPasswordTF: TextField = new TextField() {
+  private val rpcPasswordTF: PasswordField = new PasswordField {
     text = Try(appConfig.rpcPassword).getOrElse("")
     minWidth = 300
   }
@@ -53,16 +54,15 @@ class BitcoindConfigPane(
       minWidth = 300
     }
 
-  private val torCheckBox: CheckBox = new CheckBox() {
+  private val torCheckBox: CheckBox = new CheckBox {
     selected = appConfig.nodeConf.socks5ProxyParams.isDefined
   }
 
   private var nextRow: Int = 0
 
-  val gridPane: GridPane = new GridPane() {
-    hgap = 5
-    vgap = 5
-    padding = Insets(top = 10, right = 10, bottom = 10, left = 10)
+  private val gridPane: GridPane = new GridPane {
+    hgap = 10
+    vgap = 10
     alignment = Pos.TopCenter
 
     add(new Label("RPC Host"), 0, nextRow)
@@ -90,11 +90,11 @@ class BitcoindConfigPane(
     nextRow += 1
   }
 
-  val launchButton: Button = new Button("Launch Wallet") {
+  private val launchButton: Button = new Button("Launch Wallet") {
     onAction = _ => model.launchWallet(getConfig, appConfig)
   }
 
-  val view: Node = new VBox() {
+  val view: Node = new VBox {
     children =
       Vector(bitcoindExplainer, gridPane, GUIUtil.getVSpacer(), launchButton)
     spacing = 20

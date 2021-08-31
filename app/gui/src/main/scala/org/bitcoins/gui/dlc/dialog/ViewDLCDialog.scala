@@ -15,7 +15,7 @@ import scalafx.beans.property.StringProperty
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
 import scalafx.scene.control._
-import scalafx.scene.layout.GridPane
+import scalafx.scene.layout.{GridPane, HBox, Priority}
 import scalafx.stage.Window
 
 object ViewDLCDialog {
@@ -38,6 +38,21 @@ object ViewDLCDialog {
     val _ = dialog.showAndWait()
   }
 
+  private def getLabel(label: String): Label = {
+    new Label {
+      styleClass += "view-dlc-label"
+      text = label
+    }
+  }
+
+  private def getTextField(value: String): TextField = {
+    new TextField {
+      styleClass += "view-dlc-textfield"
+      text = value
+      editable = false
+    }
+  }
+
   def buildView(status: DLCStatus, model: DLCPaneModel) = {
     val closingTxId: StringProperty = StringProperty(
       DLCStatus.getClosingTxId(status).map(_.hex).getOrElse(""))
@@ -45,107 +60,67 @@ object ViewDLCDialog {
       alignment = Pos.Center
       padding = Insets(10)
       hgap = 10
-      vgap = 10
+      vgap = 5
 
       private var row = 0
-      add(new Label("DLC Id"), 0, row)
-      add(new TextField() {
-            text = status.dlcId.hex
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
+      add(getLabel("DLC Id"), 0, row)
+      add(getTextField(status.dlcId.hex), columnIndex = 1, rowIndex = row)
 
       row += 1
-      add(new Label("Event Id"), 0, row)
+      add(getLabel("Event Id"), 0, row)
       add(
-        new TextField() {
-          text =
-            status.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
-          editable = false
-          minWidth = 300
-        },
+        getTextField(
+          status.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId),
         columnIndex = 1,
-        rowIndex = row
-      )
+        rowIndex = row)
 
       row += 1
-      add(new Label("Initiator"), 0, row)
-      add(new TextField() {
-            text = if (status.isInitiator) "Yes" else "No"
-            editable = false
-          },
+      add(getLabel("Initiator"), 0, row)
+      add(getTextField(if (status.isInitiator) "Yes" else "No"),
           columnIndex = 1,
           rowIndex = row)
 
       row += 1
-      add(new Label("State"), 0, row)
-      add(new TextField() {
-            text = status.statusString
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
+      add(getLabel("State"), 0, row)
+      add(getTextField(status.statusString), columnIndex = 1, rowIndex = row)
 
       row += 1
-      add(new Label("Contract Id"), 0, row)
+      add(getLabel("Contract Id"), 0, row)
       val contractId: String = DLCStatus
         .getContractId(status)
         .map(_.toHex)
         .getOrElse("")
 
-      add(new TextField() {
-            text = contractId
-            editable = false
-          },
-          columnIndex = 1,
-          rowIndex = row)
+      add(getTextField(contractId), columnIndex = 1, rowIndex = row)
 
       row += 1
-      add(new Label("Contract Info"), 0, row)
+      add(getLabel("Contract Info"), 0, row)
 
-      add(new TextField() {
-            text = status.contractInfo.toTLV.hex
-            editable = false
-          },
+      add(getTextField(status.contractInfo.toTLV.hex),
           columnIndex = 1,
           rowIndex = row)
 
       status match {
         case closed: ClosedDLCStatus =>
           row += 1
-          add(new Label("My payout"), 0, row)
-          add(new TextField() {
-                text = s"${closed.myPayout}"
-                editable = false
-              },
+          add(getLabel("My payout"), 0, row)
+          add(getTextField(s"${closed.myPayout}"),
               columnIndex = 1,
               rowIndex = row)
 
           row += 1
-          add(new Label("Counter party payout"), 0, row)
-          add(new TextField() {
-                text = s"${closed.counterPartyPayout}"
-                editable = false
-              },
+          add(getLabel("Counterparty payout"), 0, row)
+          add(getTextField(s"${closed.counterPartyPayout}"),
               columnIndex = 1,
               rowIndex = row)
 
           row += 1
-          add(new Label("PNL"), 0, row)
-          add(new TextField() {
-                text = s"${closed.pnl}"
-                editable = false
-              },
-              columnIndex = 1,
-              rowIndex = row)
+          add(getLabel("PNL"), 0, row)
+          add(getTextField(s"${closed.pnl}"), columnIndex = 1, rowIndex = row)
 
           row += 1
-          add(new Label("Rate of Return"), 0, row)
-          add(new TextField() {
-                text = s"${closed.rateOfReturnPrettyPrint}"
-                editable = false
-              },
+          add(getLabel("Rate of Return"), 0, row)
+          add(getTextField(s"${closed.rateOfReturnPrettyPrint}"),
               columnIndex = 1,
               rowIndex = row)
         case _: AcceptedDLCStatus | _: Offered =>
@@ -153,56 +128,67 @@ object ViewDLCDialog {
       }
 
       row += 1
-      add(new Label("Fee Rate"), 0, row)
-      add(new TextField() {
-            text = s"${status.feeRate.toLong} sats/vbyte"
-            editable = false
-          },
+      add(getLabel("Fee Rate"), 0, row)
+      add(getTextField(s"${status.feeRate.toLong} sats/vbyte"),
           columnIndex = 1,
           rowIndex = row)
 
       row += 1
-      add(new Label("Contract Timeout"), 0, row)
-      add(
-        new TextField() {
-          text = GUIUtil.epochToDateString(status.timeouts.contractTimeout)
-          editable = false
-        },
-        columnIndex = 1,
-        rowIndex = row
-      )
+      add(getLabel("Contract Timeout"), 0, row)
+      add(getTextField(
+            GUIUtil.epochToDateString(status.timeouts.contractTimeout)),
+          columnIndex = 1,
+          rowIndex = row)
 
       row += 1
-      add(new Label("Collateral"), 0, row)
-      add(
-        new TextField() {
-          text = status.totalCollateral.satoshis.toLong.toString
-          editable = false
-        },
-        columnIndex = 1,
-        rowIndex = row
-      )
+      add(getLabel("Collateral"), 0, row)
+      add(getTextField(status.totalCollateral.satoshis.toLong.toString),
+          columnIndex = 1,
+          rowIndex = row)
 
       row += 1
-      add(new Label("Funding TxId"), 0, row)
-      add(new TextField() {
+      // TODO : Status filtering for showing this view vs just the TextField
+      val fundingHBox = new HBox() {
+        children = Seq(
+          new TextField {
             text = DLCStatus.getFundingTxId(status).map(_.hex).getOrElse("")
             editable = false
+            hgrow = Priority.Always
           },
-          columnIndex = 1,
-          rowIndex = row)
+          new Button("Rebroadcast") {
+            minWidth = 90
+            disable =
+              !(status.state == DLCState.Broadcasted || status.state == DLCState.Signed)
+            onAction = _ => model.rebroadcastFundingTx(status)
+          }
+        )
+      }
+      add(getLabel("Funding TxId"), 0, row)
+      add(fundingHBox, columnIndex = 1, rowIndex = row)
 
       row += 1
-      add(new Label("Closing TxId"), 0, row)
-      add(new TextField() {
+      // TODO : Status filtering for showing this view vs just the TextField
+      val closingHBox = new HBox {
+        children = Seq(
+          new TextField() {
             text <== closingTxId
             editable = false
+            hgrow = Priority.Always
           },
-          columnIndex = 1,
-          rowIndex = row)
+          new Button("Rebroadcast") {
+            minWidth = 90
+            disable = closingTxId.isEmpty.getValue
+            onAction = _ => {
+              model.rebroadcastClosingTx(status)
+            }
+          }
+        )
+      }
+      add(getLabel("Closing TxId"), 0, row)
+      add(closingHBox, columnIndex = 1, rowIndex = row)
 
       row += 1
-      add(new Label("Oracle Signatures"), 0, row)
+      add(getLabel("Oracle Signatures"), 0, row)
 
       val sigsOpt: Option[String] = DLCStatus
         .getOracleSignatures(status)
@@ -228,6 +214,8 @@ object ViewDLCDialog {
           }
       }
       add(node, columnIndex = 1, rowIndex = row)
+
+      // TODO : Refund button and discriminator
 
       row += 1
       status.contractInfo.contractDescriptor match {

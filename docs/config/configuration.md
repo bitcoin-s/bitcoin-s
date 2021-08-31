@@ -129,6 +129,11 @@ bitcoin-s {
         # bitcoind rpc username
         rpcuser = user
         # bitcoind rpc password
+        # If your password contains the characters  '$','{', '}', '[', ']', ':', '=', ',', '+', '#', '`', '^', '?', '!', '@', '*', '&', whitespace
+        # or the string "//", enclose it in double quotes
+        # rpcpassword = "password=" if the original password is password=, rpcpassword = "passwo//rd" if the original password is passwo//rd etc.
+        # If it contains '\' or '"', escape it with '\'
+        # rpcpassword = "pass\\word" if the original password is pass\word, rpcpassword = "pass\"word" if the original password is pass"word
         rpcpassword = password
 
         # Binary location of bitcoind
@@ -151,6 +156,9 @@ bitcoin-s {
         zmqpubhashtx = "tcp://127.0.0.1:28330"
         # bitcoind zmq raw block
         zmqpubhashblock = "tcp://127.0.0.1:28331"
+        
+        #If you have a bitcoind instance that is running remotely on another machine, you should set it to true
+        isRemote = false
     }
 
     node {
@@ -178,6 +186,17 @@ bitcoin-s {
         # You can enable Tor for incoming connections
         enabled = false
         control = "127.0.0.1:9051"
+        
+        # Tor daemon can be provided by the node operator.
+        # If this parameter set to true, bitcoin-s will connect the provided Tor daemon.
+        # Otherwise bitcoin-s will start its own pre-packaged daemon.
+        provided = false
+
+        # This parameter allows to use random port numbers for pre-packaged Tor daemon,
+        # which is useful if another Tor daemon instance already bound SOCKS5 and control ports.
+        # In this case bitcoin-s.tor.control and bitcoin-s.proxy.socks5
+        # addresses will be automatically changed to "localhost:<random port>"
+        use-random-ports = true
 
         # The password used to arrive at the HashedControlPassword for the control port.
         # If provided, the HASHEDPASSWORD authentication method will be used instead of

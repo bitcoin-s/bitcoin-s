@@ -63,7 +63,7 @@ This means we need to forward requests on the host machine to the docker contain
 
 This can be done with the following command
 ```
-docker run -d -p 9999:9999 bitcoin-s-server:latest:latest
+docker run -d -p 9999:9999 bitcoin-s-server:latest
 ```
 
 Now you can send requests with `bitcoin-s-cli` or `curl`.

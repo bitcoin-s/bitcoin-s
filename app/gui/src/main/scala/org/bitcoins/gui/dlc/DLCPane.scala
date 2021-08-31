@@ -123,18 +123,27 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
   def sortTable(): Unit = tableView.sort()
 
   private val textAreasAndTableViewVBox = new VBox {
-    children = Seq(textAreaHBox, resultButtonHBox, tableView)
+    children = Seq(textAreaHBox, resultButtonHBox)
     spacing = 10
   }
 
   val borderPane: BorderPane = new BorderPane {
-    padding = Insets(top = 10, right = 10, bottom = 0, left = 10)
+    padding = Insets(10)
     top = buttonSpacer
     center = textAreasAndTableViewVBox
   }
 
-  resultArea.prefHeight <== (borderPane.height * 2) / 3
-  tableView.prefHeight <== borderPane.height / 3
+  private lazy val window =
+    GUIUtil.getWindow("DLC Operations", 650, 350, borderPane)
+
+  def showWindow(): Unit = {
+    window.show()
+    window.requestFocus()
+    window.toFront()
+  }
+
+  buttonSpacer.prefWidth <== borderPane.width
+  resultArea.prefWidth <== borderPane.width
 
   private val taskRunner = new TaskRunner(buttonSpacer, glassPane)
   model.taskRunner = taskRunner

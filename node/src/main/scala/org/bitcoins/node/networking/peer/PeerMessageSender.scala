@@ -1,7 +1,6 @@
 package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorRef
-import akka.io.Tcp
 import akka.util.Timeout
 import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
 import org.bitcoins.core.bloom.BloomFilter
@@ -15,6 +14,7 @@ import org.bitcoins.crypto.{
 }
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.networking.P2PClient
 
 import scala.concurrent.duration.DurationInt
@@ -47,7 +47,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     isConnected().flatMap {
       case true =>
         logger.info(s"Disconnecting peer at socket=${socket}")
-        (client.actor ! Tcp.Close)
+        (client.actor ! P2PClient.CloseCommand)
         Future.unit
       case false =>
         val err =
@@ -76,7 +76,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       val localhost = java.net.InetAddress.getLocalHost
       val versionMsg =
         VersionMessage(conf.network,
-                       "/Bitcoin-S:0.7.0/",
+                       NodeConstants.userAgent,
                        Int32(height),
                        InetAddress(localhost.getAddress),
                        InetAddress(localhost.getAddress),

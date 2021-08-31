@@ -6,8 +6,9 @@ import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.api.chain._
-import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.p2p.{IPv4AddrV2Message, NetworkIpAddress, NetworkPayload, ServiceIdentifier, TypeIdentifier}
+import org.bitcoins.core.p2p.{IPv4AddrV2Message, NetworkIpAddress}
+import org.bitcoins.core.api.node.{NodeApi, NodeType}
+import org.bitcoins.core.p2p.{NetworkPayload, ServiceIdentifier, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
@@ -33,7 +34,7 @@ case class PeerData(peer: Peer, node: Node)(implicit
       PeerMessageReceiver.newReceiver(node = node, peer = peer)
     P2PClient(context = system,
               peer = peer,
-              peerMessageReceiver = peerMessageReceiver)
+              peerMessageReceiver = peerMessageReceiver, onReconnect = node.sync)
   }
 
   private var _serviceIdentifier: Option[ServiceIdentifier] = None
@@ -106,7 +107,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   /** The current data message handler.
     * It should be noted that the dataMessageHandler contains
     * chainstate. When we update with a new chainstate, we need to
-    * maek sure we update the [[DataMessageHandler]] via [[updateDataMessageHandler()]]
+    * make sure we update the [[DataMessageHandler]] via [[updateDataMessageHandler()]]
     * to make sure we don't corrupt our chainstate cache
     */
   def getDataMessageHandler: DataMessageHandler
@@ -296,7 +297,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     } yield disconnect
 
     def isAllDisconnectedF: Future[Boolean] = {
-      val connF = peerMsgSenders.indices.map(peerMsgSenders(_).isDisconnected())
+      val connF = peerMsgSenders.map(_.isDisconnected())
       val res = Future.sequence(connF).map(_.forall(_ == true))
       res
     }

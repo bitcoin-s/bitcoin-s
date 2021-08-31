@@ -188,7 +188,7 @@ object SignDLCDialog
                    nextRow)
       nextRow += 1
 
-      gridPane.add(new Label("Counter Party Collateral"), 0, nextRow)
+      gridPane.add(new Label("Counterparty Collateral"), 0, nextRow)
       gridPane.add(new TextField() {
                      text = status.remoteCollateral.satoshis.toString
                      editable = false

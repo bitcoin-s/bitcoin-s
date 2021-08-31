@@ -2,7 +2,7 @@ package org.bitcoins.dlc.node.config
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
-import org.bitcoins.commons.config.AppConfig
+import org.bitcoins.commons.config.{AppConfig, AppConfigFactory}
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.dlc.node.DLCNode
@@ -20,11 +20,12 @@ import scala.concurrent._
   */
 case class DLCNodeAppConfig(
     private val directory: Path,
-    private val conf: Config*)
+    private val conf: Config*)(implicit ec: ExecutionContext)
     extends AppConfig {
   override protected[bitcoins] def configOverrides: List[Config] = conf.toList
 
-  override protected[bitcoins] def moduleName: String = "dlcnode"
+  override protected[bitcoins] def moduleName: String =
+    DLCNodeAppConfig.moduleName
 
   override protected[bitcoins] type ConfigType = DLCNodeAppConfig
 
@@ -58,4 +59,12 @@ case class DLCNodeAppConfig(
       system: ActorSystem): DLCNode = {
     DLCNode(dlcWallet)(system, this)
   }
+}
+
+object DLCNodeAppConfig extends AppConfigFactory[DLCNodeAppConfig] {
+  override val moduleName: String = "dlcnode"
+
+  override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
+      ec: ExecutionContext): DLCNodeAppConfig =
+    DLCNodeAppConfig(datadir, confs: _*)
 }

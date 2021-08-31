@@ -10,24 +10,25 @@ import scalafx.geometry._
 import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout._
-import scalafx.scene.text.TextAlignment
+import scalafx.scene.text.{Font, TextAlignment}
 
 class NeutrinoConfigPane(
     appConfig: BitcoinSAppConfig,
     model: LandingPaneModel) {
 
-  private val neutrinoExplainer: Label = new Label() {
-    margin = Insets(10)
+  private val neutrinoExplainer: Label = new Label {
+    padding = Insets(20)
     text =
       "Neutrino syncing will have the Bitcoin-S wallet fetch block headers and neutrino filters" +
         " from the given peer. This requires downloading the entire history of filters" +
         " on first startup which can take an hour or two."
+    font = new Font(16)
     maxWidth = 600
     wrapText = true
     textAlignment = TextAlignment.Center
   }
 
-  private def defaultPeerForNetwork(network: BitcoinNetwork) = {
+  private def defaultPeerForNetwork(network: BitcoinNetwork): String = {
     network match {
       case MainNet          => "neutrino.suredbits.com"
       case TestNet3         => "neutrino.testnet3.suredbits.com"
@@ -67,21 +68,20 @@ class NeutrinoConfigPane(
       minWidth = 300
     }
 
-  private val peerAddressTF: TextField = new TextField() {
+  private val peerAddressTF: TextField = new TextField {
     text = startingPeerAddress
     minWidth = 300
   }
 
-  private val torCheckBox: CheckBox = new CheckBox() {
+  private val torCheckBox: CheckBox = new CheckBox {
     selected = appConfig.nodeConf.socks5ProxyParams.isDefined
   }
 
   private var nextRow: Int = 0
 
-  val gridPane: GridPane = new GridPane() {
-    hgap = 5
+  private val gridPane: GridPane = new GridPane {
+    hgap = 10
     vgap = 10
-    padding = Insets(10)
     alignment = Pos.TopCenter
 
     add(new Label("Network"), 0, nextRow)
@@ -96,35 +96,28 @@ class NeutrinoConfigPane(
     nextRow += 1
   }
 
-  val launchButton: Button = new Button("Launch Wallet") {
+  private val launchButton: Button = new Button("Launch Wallet") {
     onAction = _ => model.launchWallet(getConfig, appConfig)
   }
 
-  val view: Node = new VBox() {
+  val view: Node = new VBox {
+    spacing = 20
     alignment = Pos.TopCenter
     children =
       Vector(neutrinoExplainer, gridPane, GUIUtil.getVSpacer(), launchButton)
-    spacing = 20
   }
 
   def getConfig: Config = {
     // Auto-enable proxy for .onion peers
-    val proxyConfStr =
-      if (
-        peerAddressTF.text.value.contains(
-          ".onion") || torCheckBox.selected.value
-      ) {
-        s"""
-           |bitcoin-s.proxy.enabled = true
-           |""".stripMargin
-      } else ""
-    val configStr = proxyConfStr +
-      s"""
-         |bitcoin-s.network = ${DatadirUtil.networkStrToDirName(
-        networkComboBox.value.value.toString)}
-         |bitcoin-s.node.mode = neutrino
-         |bitcoin-s.node.peers = ["${peerAddressTF.text.value}"]
-         |""".stripMargin
+    val proxyEnabled =
+      torCheckBox.selected.value || peerAddressTF.text.value.contains(".onion")
+    val configStr = s"""
+                       |bitcoin-s.proxy.enabled = ${proxyEnabled}
+                       |bitcoin-s.network = ${DatadirUtil.networkStrToDirName(
+      networkComboBox.value.value.toString)}
+                       |bitcoin-s.node.mode = neutrino
+                       |bitcoin-s.node.peers = ["${peerAddressTF.text.value}"]
+                       |""".stripMargin
     ConfigFactory.parseString(configStr)
   }
 }

@@ -1,10 +1,9 @@
 package org.bitcoins.gui.dlc
 
-import org.bitcoins.commons.jsonmodels.ExplorerEnv
 import org.bitcoins.core.dlc.accounting.RateOfReturnUtil
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.gui.{GUI, GlobalData}
+import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.beans.property.StringProperty
 import scalafx.scene.control.TableColumn.SortType
@@ -22,7 +21,7 @@ class DLCTableView(model: DLCPaneModel) {
   val tableView: TableView[DLCStatus] = {
     val eventIdCol = new TableColumn[DLCStatus, String] {
       text = "Event Id"
-      prefWidth = 160
+      prefWidth = 230
       cellValueFactory = { status =>
         val eventIdStr =
           status.value.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
@@ -32,7 +31,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val contractIdCol = new TableColumn[DLCStatus, String] {
       text = "Contract Id"
-      prefWidth = 100
+      prefWidth = 90
       cellValueFactory = { status =>
         val contractIdStr = status.value match {
           case _: Offered => ""
@@ -45,7 +44,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val statusCol = new TableColumn[DLCStatus, String] {
       text = "Status"
-      prefWidth = 125
+      prefWidth = 105
       cellValueFactory = { status =>
         new StringProperty(status, "Status", status.value.statusString)
       }
@@ -65,12 +64,12 @@ class DLCTableView(model: DLCPaneModel) {
     }
 
     val otherCollateralCol = new TableColumn[DLCStatus, String] {
-      text = "Counter Party Collateral"
-      prefWidth = 200
+      text = "Counterparty Collateral"
+      prefWidth = 150
       cellValueFactory = { status =>
         val amt = GUIUtil.numberFormatter.format(
           status.value.remoteCollateral.satoshis.toLong)
-        new StringProperty(status, "Counter Party Collateral", s"$amt sats")
+        new StringProperty(status, "Counterparty Collateral", s"$amt sats")
       }
     }
 
@@ -86,7 +85,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val pnlCol = new TableColumn[DLCStatus, String] {
       text = "Realized PNL"
-      prefWidth = 100
+      prefWidth = 110
       cellValueFactory = { status =>
         status.value match {
           case closed: ClosedDLCStatus =>
@@ -100,7 +99,7 @@ class DLCTableView(model: DLCPaneModel) {
 
     val rorCol = new TableColumn[DLCStatus, String] {
       text = "Rate of Return"
-      prefWidth = 125
+      prefWidth = 105
       cellValueFactory = { status =>
         status.value match {
           case closed: ClosedDLCStatus =>
@@ -144,12 +143,9 @@ class DLCTableView(model: DLCPaneModel) {
               val dlc = selectionModel.value.getSelectedItem
               val primaryOracle =
                 dlc.oracleInfo.singleOracleInfos.head.announcement
-              // TODO : GlobalData.network is currently null here, showing error dialog
-              val baseUrl =
-                ExplorerEnv.fromBitcoinNetwork(GlobalData.network).siteUrl
               val url =
-                s"${baseUrl}announcement/${primaryOracle.sha256.hex}"
-              GUI.hostServices.showDocument(url)
+                GUIUtil.getAnnouncementUrl(GlobalData.network, primaryOracle)
+              GUIUtil.openUrl(url)
             }
           }
 

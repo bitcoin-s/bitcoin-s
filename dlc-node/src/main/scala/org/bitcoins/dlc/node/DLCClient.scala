@@ -79,7 +79,7 @@ class DLCClient(
       remoteAddress: InetSocketAddress,
       proxyAddress: InetSocketAddress): Receive = LoggingReceive {
     case c @ Tcp.CommandFailed(_: Socks5Connect) =>
-      val ex = c.cause.getOrElse(new IOException("UnknownError"))
+      val ex = c.cause.getOrElse(new IOException(s"UnknownError: $c"))
       log.error(s"connection failed to $remoteAddress via SOCKS5 $proxyAddress",
                 ex)
       throw ex

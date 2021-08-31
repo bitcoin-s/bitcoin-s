@@ -139,7 +139,7 @@ lazy val lndRpc = project
 lazy val tor = project
   .in(file("tor"))
   .settings(CommonSettings.prodSettings: _*)
-  .dependsOn(coreJVM, appCommons)
+  .dependsOn(coreJVM, appCommons, asyncUtilsJVM)
 
 lazy val torTest = project
   .in(file("tor-test"))
@@ -398,9 +398,11 @@ lazy val appServerTest = project
   .in(file("app/server-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(libraryDependencies ++= Deps.walletServerTest)
+  .settings(parallelExecution := false)
   .dependsOn(
     appServer,
-    testkit
+    testkit,
+    cli
   )
 
 lazy val cli = project
@@ -476,7 +478,7 @@ lazy val feeProvider = project
     name := "bitcoin-s-fee-provider",
     libraryDependencies ++= Deps.feeProvider.value
   )
-  .dependsOn(coreJVM, appCommons)
+  .dependsOn(coreJVM, appCommons, tor)
 
 lazy val feeProviderTest = project
   .in(file("fee-provider-test"))
@@ -675,7 +677,7 @@ lazy val wallet = project
     name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
-  .dependsOn(coreJVM, appCommons, dbCommons, keyManager, asyncUtilsJVM)
+  .dependsOn(coreJVM, appCommons, dbCommons, keyManager, asyncUtilsJVM, tor)
 
 lazy val walletTest = project
   .in(file("wallet-test"))
@@ -718,7 +720,8 @@ lazy val dlcNodeTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-dlc-node-test",
-    libraryDependencies ++= Deps.dlcNodeTest
+    libraryDependencies ++= Deps.dlcNodeTest,
+    parallelExecution := !isTor
   )
   .dependsOn(coreJVM % testAndCompile, dlcNode, testkit)
 
@@ -747,7 +750,7 @@ lazy val oracleExplorerClient = project
     name := "bitcoin-s-oracle-explorer-client",
     libraryDependencies ++= Deps.oracleExplorerClient
   )
-  .dependsOn(coreJVM, appCommons, testkit % "test->test")
+  .dependsOn(coreJVM, appCommons, tor, testkit % "test->test")
 
 lazy val scripts = project
   .in(file("app/scripts"))

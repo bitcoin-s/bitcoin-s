@@ -1,6 +1,5 @@
 package org.bitcoins.node.networking
 
-import akka.io.Tcp
 import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
@@ -18,6 +17,7 @@ import org.bitcoins.testkit.node.{
   NodeUnitTest
 }
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest._
 import scodec.bits._
@@ -25,7 +25,10 @@ import scodec.bits._
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
+class P2PClientTest
+    extends BitcoindRpcTest
+    with CachedBitcoinSAppConfig
+    with CachedTor {
 
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
@@ -178,7 +181,8 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =
       peerMessageReceiverF.map { peerMsgRecv =>
-        TestActorRef(P2PClient.props(peer, peerMsgRecv), probe.ref)
+        TestActorRef(P2PClient.props(peer, peerMsgRecv, { () => Future.unit }),
+                     probe.ref)
       }
     val p2pClientF: Future[P2PClient] = clientActorF.map {
       client: TestActorRef[P2PClientActor] =>
@@ -196,7 +200,7 @@ class P2PClientTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
     isConnectedF.flatMap { _ =>
       val isDisconnectedF = for {
         p2pClient <- p2pClientF
-        _ = p2pClient.actor ! Tcp.Abort
+        _ = p2pClient.actor ! P2PClient.CloseCommand
         isDisconnected <-
           TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isDisconnected,
                                              interval = 1.second,

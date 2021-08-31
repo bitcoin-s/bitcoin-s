@@ -3,14 +3,18 @@ package org.bitcoins.tor
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.ClientTransport.TCP
-import akka.http.scaladsl.settings.ClientConnectionSettings
+import akka.http.scaladsl.settings.{
+  ClientConnectionSettings,
+  ConnectionPoolSettings
+}
 import akka.http.scaladsl.{ClientTransport, Http}
 import akka.stream.scaladsl.{BidiFlow, Flow, Keep}
 import akka.stream.stage._
 import akka.stream.{Attributes, BidiShape, Inlet, Outlet}
 import akka.util.ByteString
+import org.bitcoins.core.util.NetworkUtil
 
-import java.net.InetSocketAddress
+import java.net.{InetSocketAddress, URI}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -32,6 +36,55 @@ class Socks5ClientTransport(proxyParams: Socks5ProxyParams)
       .mapMaterializedValue(_.map(_.copy(remoteAddress =
         InetSocketAddress.createUnresolved(host, port)))(system.dispatcher))
   }
+}
+
+object Socks5ClientTransport {
+
+  /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters.
+    */
+  def createConnectionPoolSettings(proxyParams: Socks5ProxyParams)(implicit
+      system: ActorSystem): ConnectionPoolSettings = {
+    val socks5ClientTransport = new Socks5ClientTransport(proxyParams)
+
+    val clientConnectionSettings =
+      ClientConnectionSettings(system).withTransport(socks5ClientTransport)
+
+    ConnectionPoolSettings(system).withConnectionSettings(
+      clientConnectionSettings)
+  }
+
+  /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters.
+    */
+  def createConnectionPoolSettings(proxyParamsOpt: Option[Socks5ProxyParams])(
+      implicit system: ActorSystem): ConnectionPoolSettings =
+    proxyParamsOpt match {
+      case Some(proxyParams) =>
+        createConnectionPoolSettings(proxyParams)
+      case None => ConnectionPoolSettings(system)
+    }
+
+  /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters.
+    * If the URI points to the loopback interface returns the default [[ConnectionPoolSettings]] without SOCKS5 proxy
+    */
+  def createConnectionPoolSettings(uri: URI, proxyParams: Socks5ProxyParams)(
+      implicit system: ActorSystem): ConnectionPoolSettings = {
+    if (!NetworkUtil.isLocalhost(uri.getHost)) {
+      createConnectionPoolSettings(proxyParams)
+    } else ConnectionPoolSettings(system)
+  }
+
+  /** Creates [[ConnectionPoolSettings]] for the provided proxy parameters.
+    * If the URI points to the loopback interface returns the default [[ConnectionPoolSettings]] without SOCKS5 proxy
+    */
+  def createConnectionPoolSettings(
+      uri: URI,
+      proxyParams: Option[Socks5ProxyParams])(implicit
+      system: ActorSystem): ConnectionPoolSettings = {
+    if (!NetworkUtil.isLocalhost(uri.getHost)) {
+      createConnectionPoolSettings(proxyParams)
+    } else ConnectionPoolSettings(system)
+  }
+
 }
 
 object Socks5ProxyGraphStage {

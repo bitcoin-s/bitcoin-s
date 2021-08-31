@@ -3,12 +3,13 @@ package org.bitcoins.node.networking.peer
 import akka.Done
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import org.bitcoins.node.{Node, NodeType, P2PLogger}
+import org.bitcoins.node.{Node, P2PLogger}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
@@ -37,6 +38,12 @@ case class DataMessageHandler(
           "Bitcoind should handle the P2P interactions")
 
   private val txDAO = BroadcastAbleTransactionDAO()
+
+  def reset: DataMessageHandler = copy(initialSyncDone = None,
+                                       currentFilterBatch = Vector.empty,
+                                       filterHeaderHeightOpt = None,
+                                       filterHeightOpt = None,
+                                       syncing = false)
 
   def handleDataPayload(
       payload: DataPayload,
@@ -375,7 +382,7 @@ case class DataMessageHandler(
   private def handleInventoryMsg(
       invMsg: InventoryMessage,
       peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
-    logger.info(s"Received inv=${invMsg}")
+    logger.debug(s"Received inv=${invMsg}")
     val getData = GetDataMessage(invMsg.inventories.flatMap {
       case Inventory(TypeIdentifier.MsgBlock, hash) =>
         // only request the merkle block if we are spv enabled

@@ -9,13 +9,15 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
-import org.bitcoins.commons.config.AppConfigFactory
+import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.{DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.rpc.config.BitcoindRpcAppConfig
+import org.bitcoins.rpc.util.AppConfigFactoryActorSystem
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 
@@ -28,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class NodeAppConfig(
     private val directory: Path,
-    private val confs: Config*)(implicit override val ec: ExecutionContext)
+    private val confs: Config*)(implicit val system: ActorSystem)
     extends DbAppConfig
     with NodeDbManagement
     with JdbcProfileComponent[NodeAppConfig] {
@@ -39,6 +41,8 @@ case class NodeAppConfig(
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): NodeAppConfig =
     NodeAppConfig(directory, configs: _*)
+
+  implicit override def ec: ExecutionContext = system.dispatcher
 
   protected[bitcoins] def baseDatadir: Path = directory
 
@@ -58,6 +62,23 @@ case class NodeAppConfig(
   override def start(): Future[Unit] = {
     for {
       _ <- super.start()
+      _ <- {
+        nodeType match {
+          case NodeType.BitcoindBackend =>
+            val bitcoindRpcAppConfig =
+              BitcoindRpcAppConfig(directory, confs: _*)(system)
+            bitcoindRpcAppConfig.binaryOpt match {
+              case Some(_) =>
+                bitcoindRpcAppConfig.client
+                  .start()
+                  .map(_ => ())
+              case None =>
+                Future.unit
+            }
+          case NodeType.SpvNode | NodeType.NeutrinoNode | NodeType.FullNode =>
+            Future.unit
+        }
+      }
     } yield {
       logger.debug(s"Initializing node setup")
       val numMigrations = migrate()
@@ -114,7 +135,7 @@ case class NodeAppConfig(
   }
 }
 
-object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
+object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
 
   override val moduleName: String = "node"
 
@@ -122,7 +143,7 @@ object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
     * data directory and given list of configuration overrides.
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
-      ec: ExecutionContext): NodeAppConfig =
+      system: ActorSystem): NodeAppConfig =
     NodeAppConfig(datadir, confs: _*)
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */

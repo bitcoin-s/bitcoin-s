@@ -7,23 +7,14 @@ import akka.http.scaladsl.settings.{
   ConnectionPoolSettings
 }
 import akka.util.ByteString
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkit.tor.CachedTor
+import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TorUtil}
 
-import java.net.InetSocketAddress
-import scala.util.Properties
-
-class Socks5ClientTransportSpec extends BitcoinSAsyncTest {
-
-  val torEnabled = Properties
-    .envOrNone("TOR")
-    .isDefined
+class Socks5ClientTransportSpec extends BitcoinSAsyncTest with CachedTor {
 
   implicit val ec = system.dispatcher
 
-  val proxyParams = Socks5ProxyParams(
-    address = InetSocketAddress.createUnresolved("127.0.0.1", 9050),
-    credentialsOpt = None,
-    randomizeCredentials = true)
+  val proxyParams = torConfig.socks5ProxyParams.get
 
   val socks5ClientTransport = new Socks5ClientTransport(proxyParams)
 
@@ -34,7 +25,7 @@ class Socks5ClientTransportSpec extends BitcoinSAsyncTest {
     clientConnectionSettings)
 
   it should "handle clear net addresses" in {
-    assume(torEnabled, "TOR environment variable is not set")
+    assume(TorUtil.torEnabled, "TOR environment variable is not set")
     for {
       response <- Http().singleRequest(
         HttpRequest(uri = "http://blockstream.info/"),
@@ -51,7 +42,7 @@ class Socks5ClientTransportSpec extends BitcoinSAsyncTest {
   }
 
   it should "handle onion addresses" in {
-    assume(torEnabled, "TOR environment variable is not set")
+    assume(TorUtil.torEnabled, "TOR environment variable is not set")
     for {
       response <- Http().singleRequest(
         HttpRequest(uri =

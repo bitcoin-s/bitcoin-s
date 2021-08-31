@@ -1,16 +1,23 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.api.wallet.db.{
+  AddressRecord,
   LegacySpendingInfo,
   NestedSegwitV0SpendingInfo,
-  SegwitV0SpendingInfo
+  ScriptPubKeyDb,
+  SegwitV0SpendingInfo,
+  SpendingInfoDb
 }
-import org.bitcoins.core.protocol.script.ScriptSignature
+import org.bitcoins.core.config.MainNet
+import org.bitcoins.core.hd.{HDChainType, HDCoinType, HDPurpose}
+import org.bitcoins.core.protocol.Bech32Address
+import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
   TransactionInput
 }
 import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
@@ -226,5 +233,40 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
 
       assert(dbs == Vector(db.get))
     }
+  }
+
+  it must "be able to upsert a spendinginfodb" in { daos =>
+    val pubKey = ECPublicKey.freshPublicKey
+    val spk = P2WPKHWitnessSPKV0(pubKey)
+    val spendingInfoDb: SpendingInfoDb =
+      WalletTestUtil.sampleSegwitUTXO(spk, TxoState.BroadcastReceived)
+
+    val spendingInfoDAO = daos.utxoDAO
+    val addressDAO = daos.addressDAO
+    val spkDAO = daos.scriptPubKeyDAO
+    val spkUpsertedF = spkDAO.create(ScriptPubKeyDb(scriptPubKey = spk))
+    for {
+      spkDb <- spkUpsertedF
+      addressRecord = AddressRecord(
+        purpose = HDPurpose(1),
+        accountCoin = HDCoinType.Bitcoin,
+        accountIndex = 0,
+        accountChain = HDChainType.External,
+        addressIndex = 0,
+        address = Bech32Address(spk, MainNet),
+        pubKey = pubKey,
+        hashedPubKey = spk.pubKeyHash,
+        scriptPubKeyId = spkDb.id.get,
+        scriptWitnessOpt = None
+      )
+      _ <- addressDAO.create(addressRecord)
+      _ <- insertDummyIncomingTransaction(daos, spendingInfoDb)
+      _ <- spendingInfoDAO.upsert(spendingInfoDb)
+      found <- spendingInfoDAO.findByOutPoints(Vector(spendingInfoDb.outPoint))
+    } yield {
+      assert(found.length == 1)
+      assert(found.head == spendingInfoDb.copyWithId(found.head.id.get))
+    }
+
   }
 }

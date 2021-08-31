@@ -119,7 +119,7 @@ implicit val kmAppConfig = KeyManagerAppConfig.fromDefaultDatadir()
 val keyManager: BIP39KeyManager = {
   BIP39KeyManager.fromParams(walletAppConfig.kmParams,None,None).right.get
 }
-val feeRateProvider: FeeRateApi = MempoolSpaceProvider.fromBlockTarget(6)
+val feeRateProvider: FeeRateApi = MempoolSpaceProvider.fromBlockTarget(6, proxyParams = None)
 val wallet = Wallet(keyManager, bitcoind, bitcoind, feeRateProvider, keyManager.creationTime)
 
 //yay! we have a synced wallet

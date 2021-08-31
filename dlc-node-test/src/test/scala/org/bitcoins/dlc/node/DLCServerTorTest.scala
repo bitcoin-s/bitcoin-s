@@ -5,11 +5,12 @@ import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.protocol.tlv.{LnMessage, PingTLV, PongTLV}
-import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.testkit.util.BitcoinSActorFixtureWithDLCWallet
-import org.bitcoins.testkit.util.NetworkUtil._
+import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.tor.CachedTor
+import org.bitcoins.testkit.util.{BitcoinSActorFixtureWithDLCWallet, TorUtil}
+import org.bitcoins.testkit.util.TorUtil._
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.tor.{Socks5ProxyParams, TorController, TorProtocolHandler}
 import org.scalatest.{Assertion, FutureOutcome}
@@ -20,27 +21,21 @@ import java.net.InetSocketAddress
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 
-class DLCServerTorTest extends BitcoinSActorFixtureWithDLCWallet {
-
-  val torProxyAddress = new InetSocketAddress("localhost", 9050)
-  val torControlAddress = new InetSocketAddress("localhost", 9051)
-  val torProxyEnabled: Boolean = portIsBound(torProxyAddress)
-  val torControlEnabled: Boolean = portIsBound(torControlAddress)
+class DLCServerTorTest
+    extends BitcoinSActorFixtureWithDLCWallet
+    with CachedTor {
 
   override type FixtureParam = FundedDLCWallet
 
+  implicit val conf: BitcoinSAppConfig = getFreshConfig
+
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    // Skip on CI as we don't have access to tor control port
-    if (EnvUtil.isCI) {
-      FutureOutcome.succeeded
-    } else withFundedDLCWallet(test, getBIP39PasswordOpt())(getFreshConfig)
+    if (TorUtil.torEnabled) {
+      withFundedDLCWallet(test, getBIP39PasswordOpt())
+    } else FutureOutcome.succeeded
   }
 
   it must "send/receive Ping and Pong TLVs over Tor" in { fundedDLCWallet =>
-    assume(torProxyEnabled, "Tor daemon is not running or listening port 9050")
-    assume(torControlEnabled,
-           "Tor daemon is not running or listening port 9051")
-
     val timeout = 30.seconds
 
     val resultF: Future[Assertion] = withTempFile("onion_", "_private_key") {

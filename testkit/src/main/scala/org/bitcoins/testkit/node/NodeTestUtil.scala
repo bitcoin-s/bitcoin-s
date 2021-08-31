@@ -9,23 +9,19 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.{NeutrinoNode, Node, P2PLogger}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.testkit.util.TorUtil
 import org.bitcoins.tor.Socks5ProxyParams
 
 import java.net.InetSocketAddress
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Properties
 
 abstract class NodeTestUtil extends P2PLogger {
-
-  lazy val torEnabled: Boolean = Properties
-    .envOrNone("TOR")
-    .isDefined
 
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(implicit
       ref: ActorRefFactory,
       conf: NodeAppConfig): P2PClient = {
-    P2PClient.apply(ref, peer, peerMsgReceiver)
+    P2PClient.apply(ref, peer, peerMsgReceiver, { () => Future.unit })
   }
 
   /** Helper method to get the [[java.net.InetSocketAddress]]
@@ -35,7 +31,7 @@ abstract class NodeTestUtil extends P2PLogger {
     */
   def getBitcoindSocketAddress(bitcoindRpcClient: BitcoindRpcClient)(implicit
       executionContext: ExecutionContext): Future[InetSocketAddress] = {
-    if (torEnabled) {
+    if (TorUtil.torEnabled) {
       for {
         networkInfo <- bitcoindRpcClient.getNetworkInfo
       } yield {
@@ -56,7 +52,7 @@ abstract class NodeTestUtil extends P2PLogger {
   }
 
   def getSocks5ProxyParams: Option[Socks5ProxyParams] = {
-    if (torEnabled) {
+    if (TorUtil.torEnabled) {
       Some(
         Socks5ProxyParams(
           address = InetSocketAddress.createUnresolved("127.0.0.1", 9050),

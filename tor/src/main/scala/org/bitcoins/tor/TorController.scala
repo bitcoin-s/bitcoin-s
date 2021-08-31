@@ -113,7 +113,7 @@ object TorController {
     val _ = system.actorOf(
       TorController.props(address = controlAddress,
                           protocolHandlerProps = protocolHandlerProps),
-      "tor"
+      s"tor-${System.currentTimeMillis()}"
     )
 
     promiseTorAddress.future

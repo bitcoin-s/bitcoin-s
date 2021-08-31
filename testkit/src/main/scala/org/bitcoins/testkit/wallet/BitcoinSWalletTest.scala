@@ -323,7 +323,8 @@ object BitcoinSWalletTest extends WalletLogger {
   def createWalletAppConfig(
       pgUrl: () => Option[String],
       configs: Vector[Config])(implicit
-      ec: ExecutionContext): Future[WalletAppConfig] = {
+      system: ActorSystem): Future[WalletAppConfig] = {
+    import system.dispatcher
     val baseConf = BaseWalletTest.getFreshWalletAppConfig(pgUrl, configs)
     val walletNameOpt = if (NumberGenerator.bool.sampleSome) {
       Some(StringGenerators.genNonEmptyString.sampleSome)

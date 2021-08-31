@@ -39,7 +39,7 @@ class ZMQSubscriberTest extends AsyncFlatSpec with Logging {
     //and set the bitcoin.conf file to allow for
     //zmq connections
     //see: https://github.com/bitcoin/bitcoin/blob/master/doc/zmq.md
-    val socket = new InetSocketAddress("tcp://127.0.0.1", 29000)
+    val socket = new InetSocketAddress("127.0.0.1", 29000)
 
     val zmqSub =
       new ZMQSubscriber(socket, None, None, rawTxListener, rawBlockListener)

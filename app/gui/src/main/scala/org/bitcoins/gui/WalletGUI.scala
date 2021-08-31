@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.gui.dlc.DLCPane
 import org.bitcoins.gui.util.GUIUtil
-import scalafx.beans.property.StringProperty
+import scalafx.beans.property.{StringProperty}
 import scalafx.geometry._
 import scalafx.scene.control._
 import scalafx.scene.layout._
@@ -20,8 +20,16 @@ abstract class WalletGUI extends Logging {
     text <== GlobalData.statusText
   }
 
+  private lazy val networkLabel = new Label {
+    text <== GlobalData.networkString
+  }
+
   private lazy val infoLabel = new Label {
     text <== StringProperty("Sync Height: ") + GlobalData.syncHeight
+  }
+
+  private lazy val torProxyLabel = new Label {
+    text <== GlobalData.torProxyEnabled
   }
 
   private lazy val connectedLabel = new Label {
@@ -37,25 +45,24 @@ abstract class WalletGUI extends Logging {
 
   private[gui] lazy val dlcPane = new DLCPane(glassPane)(system.dispatcher)
   private[gui] lazy val model = new WalletGUIModel(dlcPane.model)
+  private[gui] lazy val contractGUI = new ContractGUI(glassPane)
 
   private lazy val getNewAddressButton = new Button {
     text = "Get New Address"
     onAction = _ => model.onGetNewAddress()
+    hgrow = Priority.Always
+    maxWidth = 240
   }
 
   private lazy val sendButton = new Button {
     text = "Send"
     onAction = _ => model.onSend()
+    hgrow = Priority.Always
+    maxWidth = 240
   }
 
   private lazy val buttonBox = new HBox {
     spacing = 10
-    getNewAddressButton.prefWidth <== width / 2
-    sendButton.prefWidth <== width / 2
-    getNewAddressButton.minWidth = 120
-    sendButton.minWidth = 120
-    getNewAddressButton.maxWidth = 240
-    sendButton.maxWidth = 240
     children = Vector(getNewAddressButton, sendButton)
   }
 
@@ -70,7 +77,7 @@ abstract class WalletGUI extends Logging {
   private def getSatsLabel(): Label = new Label("sats")
 
   private lazy val walletGrid = new GridPane() {
-    minWidth = 490 // Matches button widths, this sets minWidth of sidebar
+    minWidth = 490 // avoid text/value compression from SplitPane
     styleClass += "no-text-input-readonly-style"
     nextRow = 0
     add(new Label("Confirmed Balance"), 0, nextRow)
@@ -111,6 +118,7 @@ abstract class WalletGUI extends Logging {
       new ColumnConstraints(),
       new ColumnConstraints() {
         prefWidth = 110
+        minWidth = 110 // Don't compress numerics
       },
       new ColumnConstraints(),
       new ColumnConstraints() { // spacer column
@@ -119,6 +127,7 @@ abstract class WalletGUI extends Logging {
       new ColumnConstraints(),
       new ColumnConstraints() {
         prefWidth = 90
+        minWidth = 90 // Don't compress numerics
       }
     )
   }
@@ -129,11 +138,50 @@ abstract class WalletGUI extends Logging {
     children = Vector(walletGrid, buttonBox)
   }
 
+  private lazy val sidebarAccordian = new VBox {
+    padding = Insets(4)
+
+    val walletUI = new TitledPane {
+      content = wallet
+      text = "Wallet"
+    }
+
+    val eventUI = new TitledPane {
+      content = contractGUI.eventPane
+      text = "Events"
+      expanded = false
+    }
+
+    val contractUI = new TitledPane {
+      content = dlcPane.tableView
+      text = "Contracts"
+      dlcPane.tableView.onMouseClicked = _ => {
+        val i = dlcPane.tableView.getSelectionModel.getSelectedItem
+        if (i != null) {
+          contractGUI.showDLCView(i, dlcPane.model)
+        }
+      }
+    }
+
+    children = Vector(
+      contractGUI.loadPane,
+      walletUI,
+      contractUI,
+      eventUI,
+      GUIUtil.getVSpacer(),
+      stateDetails
+    )
+  }
+
+  private lazy val rightPaneContent: VBox = new VBox {
+    children = Vector(contractGUI.contractViews)
+  }
+
   private lazy val stateDetails = new GridPane {
-    visible <== GlobalData.torAddress.isNotEmpty
+    visible <== GlobalData.torDLCHostAddress.isNotEmpty
+    padding = Insets(4, 0, 0, 0)
     hgap = 5
     vgap = 5
-    prefWidth = 490 // to match wallet
     columnConstraints = Seq(new ColumnConstraints { hgrow = Priority.Always },
                             new ColumnConstraints { hgrow = Priority.Always })
 
@@ -142,45 +190,51 @@ abstract class WalletGUI extends Logging {
       children = Seq(
         new TextField {
           hgrow = Priority.Always
-          text <== GlobalData.torAddress
+          text <== GlobalData.torDLCHostAddress
         },
-        GUIUtil.getCopyToClipboardButton(GlobalData.torAddress)
+        GUIUtil.getCopyToClipboardButton(GlobalData.torDLCHostAddress)
       )
     }
     nextRow = 0
-    add(new Label("Tor Address"), 0, nextRow)
+    add(new Label("Tor DLC Host Address"), 0, nextRow)
     add(hbox, 1, nextRow)
     nextRow += 1
   }
 
-  private lazy val sidebar = new VBox {
-    padding = Insets(10)
-    spacing = 20
+  lazy val rightPane: ScrollPane = new ScrollPane {
+    padding = Insets(4, 4, 4, 0) // There's native pad on the SplitPane divider
+    styleClass = Seq("scroll-pane")
+    fitToHeight = true
+    fitToWidth = true
+    minWidth = 270
+    hbarPolicy = ScrollPane.ScrollBarPolicy.Never
+    content = rightPaneContent
+  }
 
-    getNewAddressButton.prefWidth <== width
-    sendButton.prefWidth <== width
-    getNewAddressButton.maxWidth = 240
-    sendButton.maxWidth = 240
-    children = Vector(wallet, GUIUtil.getVSpacer(), stateDetails)
+  lazy val splitPane: SplitPane = new SplitPane {
+    items ++= Seq(sidebarAccordian, rightPane)
   }
 
   lazy val bottomStack: HBox = new HBox {
     padding = Insets(5, 10, 5, 10)
     hgrow = Priority.Always
+    spacing = 15
     children = Vector(statusLabel,
                       GUIUtil.getHSpacer(),
+                      networkLabel,
                       infoLabel,
                       GUIUtil.getHSpacer(),
+                      torProxyLabel,
                       connectedLabel)
   }
 
   lazy val borderPane: BorderPane = new BorderPane {
-    top = AppMenuBar.menuBar(model)
-    left = sidebar
-    center = dlcPane.borderPane
+    top = AppMenuBar.menuBar(model, dlcPane)
+    center = splitPane
     bottom = bottomStack
   }
 
+  // BundleGUI overrides initial state
   lazy val rootView: StackPane = new StackPane {
     children = Seq(
       borderPane,

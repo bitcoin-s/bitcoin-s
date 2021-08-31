@@ -5,11 +5,14 @@ import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.{CliCommand, ConsoleCli}
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto._
 import org.bitcoins.gui._
+import org.bitcoins.gui.dialog.{FundingTransactionDialog, TransactionSentDialog}
 import org.bitcoins.gui.dlc.GlobalDLCData.dlcs
 import org.bitcoins.gui.dlc.dialog._
+import org.bitcoins.gui.util.GUIUtil
 import scalafx.application.Platform
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.Alert.AlertType
@@ -287,6 +290,61 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
           Platform.runLater(GUI.model.updateBalance())
         }
       )
+    }
+  }
+
+  def rebroadcastFundingTx(status: DLCStatus): Unit = {
+    DLCStatus.getContractId(status) match {
+      case Some(contractId) =>
+        taskRunner.run(
+          "Rebroadcast Funding Tx",
+          op = {
+            ConsoleCli.exec(BroadcastDLCFundingTx(contractId),
+                            GlobalData.consoleCliConfig) match {
+              case Success(txId) =>
+                logger.info(s"Successfully rebroadcast funding tx " + txId)
+                // Looking for Event Hash in status, but don't see it
+                val announcementHash =
+                  status.oracleInfo.singleOracleInfos.head.announcement.sha256.hex
+                Platform.runLater(
+                  FundingTransactionDialog.show(
+                    parentWindow.value,
+                    txId,
+                    GUIUtil.epochToDateString(status.timeouts.contractTimeout),
+                    GlobalData.buildAnnouncementUrl(announcementHash),
+                    true))
+              case Failure(err) => throw err
+            }
+          }
+        )
+      case None => ()
+    }
+  }
+
+  def rebroadcastClosingTx(status: DLCStatus): Unit = {
+    DLCStatus.getClosingTxId(status) match {
+      case Some(txId) =>
+        taskRunner.run(
+          "Rebroadcast Closing Tx",
+          op = {
+            ConsoleCli.exec(GetTransaction(txId),
+                            GlobalData.consoleCliConfig) match {
+              case Success(tx) =>
+                val t = Transaction.fromHex(tx)
+                logger.info(s"Successfully found closing tx")
+                ConsoleCli.exec(SendRawTransaction(t),
+                                GlobalData.consoleCliConfig) match {
+                  case Success(_) =>
+                    logger.info(s"Successfully rebroadcast closing tx")
+                    Platform.runLater(
+                      TransactionSentDialog.show(parentWindow.value, tx))
+                  case Failure(err) => throw err
+                }
+              case Failure(err) => throw err
+            }
+          }
+        )
+      case None => ()
     }
   }
 

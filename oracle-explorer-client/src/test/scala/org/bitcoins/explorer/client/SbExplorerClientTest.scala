@@ -12,6 +12,7 @@ import org.bitcoins.explorer.model.{
   SbAnnouncementEvent
 }
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.tor.Socks5ProxyParams
 
 import scala.concurrent.Future
 
@@ -19,7 +20,10 @@ class SbExplorerClientTest extends BitcoinSAsyncTest {
 
   behavior of "SbExplorerClient"
 
-  val explorerClient = SbExplorerClient(ExplorerEnv.Production)
+  private val proxyParams = Option.empty[Socks5ProxyParams]
+
+  private val explorerClient =
+    SbExplorerClient(ExplorerEnv.Production, proxyParams)
 
   //https://test.oracle.suredbits.com/event/57505dcdfe8746d9adf3454df538244a425f302c07642d9dc4a4f635fbf08d30
   private val announcementHex: String =

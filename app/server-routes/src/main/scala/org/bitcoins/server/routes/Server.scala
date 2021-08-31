@@ -18,7 +18,8 @@ case class Server(
     handlers: Seq[ServerRoute],
     rpcbindOpt: Option[String],
     rpcport: Int)(implicit system: ActorSystem)
-    extends HttpLogger {
+    extends HttpLogger
+    with CORSHandler {
 
   import system.dispatcher
 
@@ -54,7 +55,7 @@ case class Server(
 
     handleRejections(rejectionHandler) {
       handleExceptions(exceptionHandler) {
-        route
+        corsHandler(route)
       }
     }
   }

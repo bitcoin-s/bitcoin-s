@@ -18,7 +18,7 @@ object Deps {
     val zeromq = "0.5.2"
     val akkav = "10.2.6"
     val playv = "2.9.2"
-    val akkaStreamv = "2.6.15"
+    val akkaStreamv = "2.6.16"
     val scodecV = "1.1.27"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.5"
@@ -33,7 +33,7 @@ object Deps {
     val postgresV = "42.2.23"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.3"
-    val sqliteV = "3.36.0.1"
+    val sqliteV = "3.36.0.3"
 
     val scalameterV = "0.17"
     val scalamockV = "5.1.0"
@@ -56,7 +56,7 @@ object Deps {
 
     val sourcecodeV = "0.2.7"
 
-    val scalaJsStubsV = "1.0.0"
+    val scalaJsStubsV = "1.1.0"
     // CLI deps
     val scoptV = "4.0.1"
     val sttpV = "1.7.2"
@@ -480,7 +480,8 @@ object Deps {
     List(
       Compile.akkaStream,
       Compile.akkaHttp,
-      Compile.scodec.value
+      Compile.scodec.value,
+      Compile.grizzledSlf4j
     )
   }
 
@@ -591,6 +592,7 @@ object Deps {
   }
 
   val walletServerTest = List(
+    Compile.typesafeConfig,
     Test.scalaMock,
     Test.akkaHttpTestkit,
     Test.akkaStream

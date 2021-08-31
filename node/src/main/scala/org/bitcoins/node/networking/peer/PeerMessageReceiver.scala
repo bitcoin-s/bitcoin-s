@@ -1,12 +1,13 @@
 package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorRefFactory
+import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
-import org.bitcoins.node.{Node, NodeType, P2PLogger}
+import org.bitcoins.node.{Node, P2PLogger}
 
 import scala.concurrent.Future
 
@@ -36,7 +37,8 @@ class PeerMessageReceiver(
   protected[networking] def connect(client: P2PClient): PeerMessageReceiver = {
 
     state match {
-      case bad @ (_: Initializing | _: Normal | _: Disconnected) =>
+      case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
+          _: Disconnected) =>
         throw new RuntimeException(s"Cannot call connect when in state=${bad}")
       case Preconnection =>
         logger.info(s"Connection established with peer=${peer}")
@@ -53,14 +55,35 @@ class PeerMessageReceiver(
     }
   }
 
+  /** Initializes the disconnection from our peer on the network.
+    * This is different than [[disconnect()]] as that indicates the
+    * peer initialized a disconnection from us
+    */
+  private[networking] def initializeDisconnect(): PeerMessageReceiver = {
+    state match {
+      case bad @ (_: Disconnected | Preconnection) =>
+        throw new RuntimeException(
+          s"Cannot initialize disconnect from peer=$peer when in state=$bad")
+      case _: InitializedDisconnect =>
+        logger.warn(
+          s"Already initialized disconnected from peer=$peer, this is a noop")
+        this
+      case state @ (_: Initializing | _: Normal) =>
+        val newState = InitializedDisconnect(state.clientConnectP,
+                                             state.clientDisconnectP,
+                                             state.versionMsgP,
+                                             state.verackMsgP)
+        toState(newState)
+    }
+  }
+
   protected[networking] def disconnect(): PeerMessageReceiver = {
     logger.trace(s"Disconnecting with internalstate=${state}")
     state match {
-      case bad @ (_: Initializing | _: Disconnected | Preconnection) =>
+      case bad @ (_: Disconnected | Preconnection) =>
         throw new RuntimeException(
           s"Cannot disconnect from peer=${peer} when in state=${bad}")
-
-      case good: Normal =>
+      case good @ (_: Initializing | _: Normal | _: InitializedDisconnect) =>
         logger.debug(s"Disconnected bitcoin peer=${peer}")
         val newState = Disconnected(
           clientConnectP = good.clientConnectP,
@@ -69,9 +92,9 @@ class PeerMessageReceiver(
           verackMsgP = good.verackMsgP
         )
 
-        val newRecv = toState(newState)
-
-        newRecv
+        val newNode =
+          node.updateDataMessageHandler(node.getDataMessageHandler.reset)
+        new PeerMessageReceiver(newNode, newState, peer)
     }
   }
 
@@ -140,7 +163,8 @@ class PeerMessageReceiver(
         logger.trace(s"Received versionMsg=$versionMsg from peer=$peer")
 
         state match {
-          case bad @ (_: Disconnected | _: Normal | Preconnection) =>
+          case bad @ (_: Disconnected | _: Normal | Preconnection |
+              _: InitializedDisconnect) =>
             Future.failed(
               new RuntimeException(
                 s"Cannot handle version message while in state=${bad}"))
@@ -158,7 +182,8 @@ class PeerMessageReceiver(
 
       case VerAckMessage =>
         state match {
-          case bad @ (_: Disconnected | _: Normal | Preconnection) =>
+          case bad @ (_: Disconnected | _: InitializedDisconnect | _: Normal |
+              Preconnection) =>
             Future.failed(
               new RuntimeException(
                 s"Cannot handle version message while in state=${bad}"))

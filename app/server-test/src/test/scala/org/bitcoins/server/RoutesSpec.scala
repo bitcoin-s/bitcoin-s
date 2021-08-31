@@ -3,7 +3,6 @@ package org.bitcoins.server
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import org.bitcoins.core.Core
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db._
 import org.bitcoins.core.api.wallet.db._
@@ -79,7 +78,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val walletRoutes: WalletRoutes = WalletRoutes(mockWalletApi)
 
-  val coreRoutes: CoreRoutes = CoreRoutes(Core)
+  val coreRoutes: CoreRoutes = CoreRoutes()
 
   "The server" should {
 
@@ -795,14 +794,14 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       val tx = Transaction(
         "020000000258e87a21b56daf0c23be8e7070456c336f7cbaa5c8757924f545887bb2abdd750000000000ffffffff838d0427d0ec650a68aa46bb0b098aea4422c071b2ca78352a077959d07cea1d0100000000ffffffff0270aaf00800000000160014d85c2b71d0060b09c9886aeb815e50991dda124d00e1f5050000000016001400aea9a2e5f0f876a588df5546e8742d1d87008f00000000")
 
-      (mockNode
+      (mockWalletApi
         .broadcastTransaction(_: Transaction))
         .expects(tx)
         .returning(Future.unit)
         .anyNumberOfTimes()
 
       val route =
-        nodeRoutes.handleCommand(
+        walletRoutes.handleCommand(
           ServerCommand("sendrawtransaction", Arr(Str(tx.hex))))
 
       Get() ~> route ~> check {

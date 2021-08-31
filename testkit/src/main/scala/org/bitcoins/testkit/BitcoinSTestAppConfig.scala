@@ -1,22 +1,19 @@
 package org.bitcoins.testkit
 
+import akka.actor.ActorSystem
 import com.typesafe.config._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkit.util.TorUtil.torEnabled
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.{NumberGenerator, StringGenerators}
 
 import java.nio.file._
 import scala.concurrent.ExecutionContext
-import scala.util.Properties
 
 object BitcoinSTestAppConfig {
-
-  lazy val torEnabled: Boolean = Properties
-    .envOrNone("TOR")
-    .isDefined
 
   /** Generates a temp directory with the prefix 'bitcoin-s- */
   def tmpDir(): Path = Files.createTempDirectory("bitcoin-s-")
@@ -42,14 +39,17 @@ object BitcoinSTestAppConfig {
     * 2) Logging is turned down to WARN
     */
   def getSpvTestConfig(config: Config*)(implicit
-      ec: ExecutionContext): BitcoinSAppConfig = {
+      system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       s"""
          |bitcoin-s {
          |  node {
          |     mode = spv
          |  }
-         |  proxy.enabled = ${torEnabled}
+         |
+         |  proxy.enabled = $torEnabled
+         |  tor.enabled = $torEnabled
+         |  tor.use-random-ports = false
          |}
       """.stripMargin
     }
@@ -59,7 +59,7 @@ object BitcoinSTestAppConfig {
   def getSpvWithEmbeddedDbTestConfig(
       pgUrl: () => Option[String],
       config: Vector[Config])(implicit
-      ec: ExecutionContext): BitcoinSAppConfig = {
+      system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory
       .parseString {
         s"""
@@ -67,7 +67,9 @@ object BitcoinSTestAppConfig {
            |  node {
            |     mode = spv
            |  }
-           |  proxy.enabled = ${torEnabled}
+           |  proxy.enabled = $torEnabled
+           |  tor.enabled = $torEnabled
+           |  tor.use-random-ports = false
            |}
       """.stripMargin
       }
@@ -80,7 +82,7 @@ object BitcoinSTestAppConfig {
   }
 
   def getNeutrinoTestConfig(config: Config*)(implicit
-      ec: ExecutionContext): BitcoinSAppConfig = {
+      system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       s"""
          |bitcoin-s {
@@ -88,7 +90,10 @@ object BitcoinSTestAppConfig {
          |     mode = neutrino
          |     relay = true
          |  }
-         |  proxy.enabled = ${torEnabled}
+         |
+         |  proxy.enabled = $torEnabled
+         |  tor.enabled = $torEnabled
+         |  tor.use-random-ports = false
          |}
       """.stripMargin
     }
@@ -97,7 +102,7 @@ object BitcoinSTestAppConfig {
 
   def getNeutrinoWithEmbeddedDbTestConfig(
       pgUrl: () => Option[String],
-      config: Config*)(implicit ec: ExecutionContext): BitcoinSAppConfig = {
+      config: Config*)(implicit system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory
       .parseString {
         s"""
@@ -106,7 +111,9 @@ object BitcoinSTestAppConfig {
            |     mode = neutrino
            |     relay = true
            |  }
-           |  proxy.enabled = ${torEnabled}
+           |  proxy.enabled = $torEnabled
+           |  tor.enabled = $torEnabled
+           |  tor.use-random-ports = false  
            |}
       """.stripMargin
       }

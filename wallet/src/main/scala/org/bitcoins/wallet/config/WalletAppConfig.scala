@@ -17,6 +17,7 @@ import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
+import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig.RebroadcastTransactionsRunnable
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
@@ -33,7 +34,6 @@ import java.util.concurrent.{
 }
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.Try
 
 /** Configuration for the Bitcoin-S wallet
   * @param directory The data directory of the wallet
@@ -59,6 +59,9 @@ case class WalletAppConfig(
   protected[bitcoins] def baseDatadir: Path = directory
 
   override def appConfig: WalletAppConfig = this
+
+  lazy val torConf: TorAppConfig =
+    TorAppConfig(directory, conf: _*)
 
   private[wallet] lazy val scheduler: ScheduledExecutorService = {
     Executors.newScheduledThreadPool(
@@ -290,11 +293,12 @@ case class WalletAppConfig(
         ()
       case None =>
         logger.info(s"Starting wallet rebroadcast task")
-        val interval = rebroadcastFrequency.toSeconds
 
+        val interval = rebroadcastFrequency.toSeconds
+        val initDelay = interval
         val future =
           scheduler.scheduleAtFixedRate(RebroadcastTransactionsRunnable(wallet),
-                                        interval,
+                                        initDelay,
                                         interval,
                                         TimeUnit.SECONDS)
         rebroadcastTransactionsCancelOpt = Some(future)
@@ -402,7 +406,12 @@ object WalletAppConfig
 
       // Make sure broadcasting completes
       // Wrap in try in case of spurious failure
-      Try(Await.result(f, 60.seconds))
+      try {
+        Await.result(f, 60.seconds)
+      } catch {
+        case scala.util.control.NonFatal(exn) =>
+          logger.error(s"Failed to broadcast txs", exn)
+      }
       ()
     }
   }

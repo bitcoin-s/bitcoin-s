@@ -3,8 +3,8 @@ package org.bitcoins.bundle.gui
 import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.util.ServerArgParser
+import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.gui._
-import org.bitcoins.node.NodeType
 import org.bitcoins.server.BitcoinSAppConfig
 import scalafx.geometry._
 import scalafx.scene.control.TabPane.TabClosingPolicy
@@ -29,14 +29,14 @@ class LandingPane(glassPane: VBox, serverArgParser: ServerArgParser)(implicit
 
   val bitcoindConfigPane = new BitcoindConfigPane(appConfig, model)
 
-  val bitcoindTab: Tab = new Tab() {
+  val bitcoindTab: Tab = new Tab {
     text = "Bitcoin RPC Config"
     content = bitcoindConfigPane.view
   }
 
   val neutrinoConfigPane = new NeutrinoConfigPane(appConfig, model)
 
-  val neutrinoTab: Tab = new Tab() {
+  val neutrinoTab: Tab = new Tab {
     text = "Neutrino Config"
     content = neutrinoConfigPane.view
   }
@@ -44,7 +44,8 @@ class LandingPane(glassPane: VBox, serverArgParser: ServerArgParser)(implicit
   val isNeutrino: Boolean =
     Try(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode).getOrElse(false)
 
-  val tabPane: TabPane = new TabPane() {
+  val tabPane: TabPane = new TabPane {
+    padding = Insets(10)
     tabs =
       if (isNeutrino) // if neutrino config, open at that tab
         Vector(neutrinoTab, bitcoindTab)
@@ -54,7 +55,7 @@ class LandingPane(glassPane: VBox, serverArgParser: ServerArgParser)(implicit
   }
 
   val view: BorderPane = new BorderPane {
-    padding = Insets(top = 10, right = 10, bottom = 10, left = 10)
+    padding = Insets(10)
 
     top = label
     center = tabPane
