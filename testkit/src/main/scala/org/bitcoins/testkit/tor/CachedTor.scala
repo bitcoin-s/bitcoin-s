@@ -4,6 +4,7 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.util.{BitcoinSAkkaAsyncTest, TorUtil}
 import org.bitcoins.tor.config.TorAppConfig
 
+import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
@@ -38,5 +39,16 @@ trait CachedTor {
       Await.result(torConfig.stop(), akkaTimeout.duration)
     }
     ()
+  }
+}
+
+trait CachedTorCustomDatadir extends CachedTor { _: BitcoinSAkkaAsyncTest =>
+
+  /** The specific datadir we should start the tor instance from */
+  def customDatadir: Future[Path]
+
+  implicit override protected lazy val torConfig: TorAppConfig = {
+    TorAppConfig.fromDatadir(Await.result(customDatadir, akkaTimeout.duration),
+                             Vector.empty)
   }
 }

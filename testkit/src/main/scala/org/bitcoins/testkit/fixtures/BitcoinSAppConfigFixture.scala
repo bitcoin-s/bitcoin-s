@@ -9,11 +9,12 @@ import org.bitcoins.rpc.config.{
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
-import org.bitcoins.testkit.tor.CachedTor
+import org.bitcoins.testkit.tor.{CachedTorCustomDatadir}
 import org.bitcoins.testkit.util.TorUtil
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.scalatest.FutureOutcome
 
+import java.nio.file.Path
 import scala.concurrent.Future
 
 sealed trait BitcoinSAppConfigFixture extends BitcoinSFixture with EmbeddedPg {
@@ -33,9 +34,12 @@ sealed trait BitcoinSAppConfigFixture extends BitcoinSFixture with EmbeddedPg {
 trait BitcoinSAppConfigBitcoinFixtureNotStarted
     extends BitcoinSAppConfigFixture
     with CachedBitcoindNewest
-    with CachedTor {
+    with CachedTorCustomDatadir {
 
   override type FixtureParam = BitcoinSAppConfig
+
+  override def customDatadir: Future[Path] =
+    cachedBitcoindWithFundsF.map(_.instance.datadir.toPath)
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[BitcoinSAppConfig] = () => {
