@@ -4,7 +4,11 @@ import akka.actor.ActorSystem
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  CompactFilterDAO,
+  CompactFilterHeaderDAO
+}
 import org.bitcoins.core.api.chain._
 import org.bitcoins.core.p2p.{IPv4AddrV2Message, NetworkIpAddress}
 import org.bitcoins.core.api.node.{NodeApi, NodeType}
@@ -14,7 +18,11 @@ import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.{DataMessageHandler, PeerMessageReceiver, PeerMessageSender}
+import org.bitcoins.node.networking.peer.{
+  DataMessageHandler,
+  PeerMessageReceiver,
+  PeerMessageSender
+}
 import scodec.bits.ByteVector
 
 import scala.collection.mutable
@@ -34,7 +42,8 @@ case class PeerData(peer: Peer, node: Node)(implicit
       PeerMessageReceiver.newReceiver(node = node, peer = peer)
     P2PClient(context = system,
               peer = peer,
-              peerMessageReceiver = peerMessageReceiver, onReconnect = node.sync)
+              peerMessageReceiver = peerMessageReceiver,
+              onReconnect = node.sync)
   }
 
   private var _serviceIdentifier: Option[ServiceIdentifier] = None
@@ -173,43 +182,48 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     Future.unit
   }
 
-  def createInDbIfBlockFilterPeer(networkAddress: NetworkIpAddress):Unit={
-    val ipv4bytes: Option[ByteVector]=try {
-      Some(networkAddress.address.ipv4Bytes)
-    }catch {
-      case _: Throwable => {
-        logger.info("Ignoring ipv6 address from addr message")
-        return
+  def createInDbIfBlockFilterPeer(networkAddress: NetworkIpAddress): Unit = {
+    val ipv4bytes: Option[ByteVector] =
+      try {
+        Some(networkAddress.address.ipv4Bytes)
+      } catch {
+        case _: Throwable => {
+          logger.info("Ignoring ipv6 address from addr message")
+          return
+        }
       }
-    }
-    val stringAddress=ipv4bytes.get.toArray.map(x=>{
-      val short=x.toShort
-      if(short<0) x+256
-      else short
-    }).mkString(".")+s":${networkAddress.port}"
+    val stringAddress = ipv4bytes.get.toArray
+      .map(x => {
+        val short = x.toShort
+        if (short < 0) x + 256
+        else short
+      })
+      .mkString(".") + s":${networkAddress.port}"
     logger.debug(s"Peer from addr: $stringAddress")
-    if(networkAddress.services.nodeCompactFilters){
+    if (networkAddress.services.nodeCompactFilters) {
       logger.debug(s"Peer from add: $stringAddress  supports compact filters.")
       PeerDAO().upsertPeer(stringAddress)
     }
     ()
   }
 
-  def createInDbIfBlockFilterPeer(addr: IPv4AddrV2Message): Unit={
-    val stringAddress=addr.addr.ipv4Bytes.toArray.map(x=>{
-      val short=x.toShort
-      if(short<0) x+256
-      else short
-    }).mkString(".")+s":${addr.port}"
+  def createInDbIfBlockFilterPeer(addr: IPv4AddrV2Message): Unit = {
+    val stringAddress = addr.addr.ipv4Bytes.toArray
+      .map(x => {
+        val short = x.toShort
+        if (short < 0) x + 256
+        else short
+      })
+      .mkString(".") + s":${addr.port}"
     logger.debug(s"Peer from addrV2: $stringAddress")
-    val serviceIdentifier=ServiceIdentifier(addr.services.bytes)
-    if(serviceIdentifier.nodeCompactFilters){
-      logger.debug(s"Peer from addrV2: $stringAddress supports compact filters.")
+    val serviceIdentifier = ServiceIdentifier(addr.services.bytes)
+    if (serviceIdentifier.nodeCompactFilters) {
+      logger.debug(
+        s"Peer from addrV2: $stringAddress supports compact filters.")
       PeerDAO().upsertPeer(stringAddress)
     }
     ()
   }
-
 
   private def initializePeer(peer: Peer): Future[Unit] = {
     peerData(peer).peerMessageSender.connect()
@@ -231,7 +245,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         peerData(peer).peerMessageSender.sendGetAddrMessage()
         nodeAppConfig.nodeType match {
           case NodeType.NeutrinoNode => createInDbIfBlockFilterPeer(peer)
-          case NodeType.SpvNode =>
+          case NodeType.SpvNode      =>
           case NodeType.BitcoindBackend =>
             throw new RuntimeException("Node cannot be BitcoindBackend")
           case NodeType.FullNode =>
@@ -240,7 +254,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     }
     isInitializedF
   }
-
 
   /** Starts our node */
   def start(): Future[Node] = {

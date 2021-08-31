@@ -36,11 +36,24 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
       ts: Vector[PeerDB]): Query[Table[_], PeerDB, Seq] = findByPrimaryKeys(
     ts.map(_.address))
 
-  def upsertPeer(address: String,lastConnected:Instant=Instant.now,networkId:Byte=AddrV2Message.IPV4_NETWORK_BYTE): Unit ={
-    val existingF=read(address)
+  def upsertPeer(
+      address: String,
+      lastConnected: Instant = Instant.now,
+      networkId: Byte = AddrV2Message.IPV4_NETWORK_BYTE): Unit = {
+    val existingF = read(address)
     existingF.map {
-      case Some(value) => upsert(PeerDB(address,firstSeen = value.firstSeen,lastConnected=lastConnected,networkId=networkId))
-      case None => upsert(PeerDB(address,firstSeen = Instant.now,lastConnected=lastConnected,networkId=networkId))
+      case Some(value) =>
+        upsert(
+          PeerDB(address,
+                 firstSeen = value.firstSeen,
+                 lastConnected = lastConnected,
+                 networkId = networkId))
+      case None =>
+        upsert(
+          PeerDB(address,
+                 firstSeen = Instant.now,
+                 lastConnected = lastConnected,
+                 networkId = networkId))
     }
     ()
   }

@@ -12,7 +12,10 @@ class PeerDAOTest extends NodeDAOFixture {
   it must "write a peer and read it back" in { daos =>
     val peerDAO = daos.peerDAO
     //using a hardcoded peer for now
-    val peer = PeerDB(address = "127.0.0.1", lastConnected = Instant.now, firstSeen = Instant.now, networkId = AddrV2Message.IPV6_NETWORK_BYTE)
+    val peer = PeerDB(address = "127.0.0.1",
+                      lastConnected = Instant.now,
+                      firstSeen = Instant.now,
+                      networkId = AddrV2Message.IPV6_NETWORK_BYTE)
 
     for {
       created <- peerDAO.create(peer)
@@ -21,8 +24,8 @@ class PeerDAOTest extends NodeDAOFixture {
       assert(
         read.get.address == created.address &&
           read.get.lastConnected.getEpochSecond == created.lastConnected.getEpochSecond
-          && read.get.firstSeen.getEpochSecond==created.firstSeen.getEpochSecond
-        && read.get.networkId==AddrV2Message.IPV6_NETWORK_BYTE
+          && read.get.firstSeen.getEpochSecond == created.firstSeen.getEpochSecond
+          && read.get.networkId == AddrV2Message.IPV6_NETWORK_BYTE
       )
     }
 

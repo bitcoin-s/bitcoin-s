@@ -122,7 +122,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(sendHeadersMsg)
   }
 
-  def sendGetAddrMessage(): Future[Unit]={
+  def sendGetAddrMessage(): Future[Unit] = {
     sendMsg(GetAddrMessage)
   }
 

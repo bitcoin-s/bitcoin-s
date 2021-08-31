@@ -208,7 +208,7 @@ class PeerMessageReceiver(
       case addr: AddrV2Message =>
         addr match {
           case ipv4: IPv4AddrV2Message => node.createInDbIfBlockFilterPeer(ipv4)
-          case _ =>logger.warn("Unsupported address type")
+          case _                       => logger.warn("Unsupported address type")
         }
         sender.sendSendAddrV2Message()
         Future.successful(this)
