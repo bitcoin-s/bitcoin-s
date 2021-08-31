@@ -254,7 +254,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val chainApiF = startConfsF.flatMap(_ => chainApiFromDb())
 
     val startNodeF = {
-      logger.info(peers)
       val isInitializedFs = peers.map(initializePeer)
 
       Future.sequence(isInitializedFs).map { _ =>
