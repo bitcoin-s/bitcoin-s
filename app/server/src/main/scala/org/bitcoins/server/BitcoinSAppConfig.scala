@@ -82,7 +82,14 @@ case class BitcoinSAppConfig(
       _ <- walletConf.stop()
       _ <- chainConf.stop()
       _ <- bitcoindRpcConf.stop()
-      _ <- torConf.stop()
+      _ <- {
+        if (torAppConfigOpt.isDefined) {
+          //do not stop tor if it was passed in as a parameter
+          Future.unit
+        } else {
+          torConf.stop()
+        }
+      }
     } yield ()
   }
 
