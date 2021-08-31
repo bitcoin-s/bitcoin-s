@@ -94,7 +94,7 @@ val config = ConfigFactory.parseString {
     |""".stripMargin
 }
 
-implicit val appConfig = BitcoinSAppConfig(datadir, config)
+implicit val appConfig = BitcoinSAppConfig(datadir, Vector(config))
 implicit val chainConfig = appConfig.chainConf
 implicit val nodeConfig = appConfig.nodeConf
 
