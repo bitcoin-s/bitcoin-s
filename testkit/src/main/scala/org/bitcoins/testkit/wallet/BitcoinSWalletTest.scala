@@ -342,7 +342,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
         BitcoinSAppConfig(
           baseConf.baseDatadir,
-          (walletNameOverride +: baseConf.configOverrides): _*).walletConf
+          (walletNameOverride +: baseConf.configOverrides).toVector).walletConf
       case None => baseConf
     }
 

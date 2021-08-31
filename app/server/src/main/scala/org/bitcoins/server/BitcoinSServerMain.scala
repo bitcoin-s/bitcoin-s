@@ -40,9 +40,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
   * @param serverArgParser - the command line arguments passed to the server
   * @param torConfOpt a running tor app config that should be used instead of building one
   */
-class BitcoinSServerMain(
-    override val serverArgParser: ServerArgParser,
-    torConfOpt: Option[TorAppConfig] = None)(implicit
+class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
     conf: BitcoinSAppConfig)
     extends BitcoinSServerRunner {
@@ -54,14 +52,7 @@ class BitcoinSServerMain(
   implicit lazy val dlcNodeConf: DLCNodeAppConfig = conf.dlcNodeConf
   implicit lazy val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
 
-  implicit lazy val torConf: TorAppConfig = {
-    torConfOpt match {
-      case Some(torConf) =>
-        logger.info(s"Using cached tor configuration")
-        torConf
-      case None => conf.torConf
-    }
-  }
+  implicit lazy val torConf: TorAppConfig = conf.torConf
 
   override def start(): Future[Unit] = {
     logger.info("Starting appServer")
@@ -489,9 +480,9 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
   System.setProperty("bitcoins.log.location", datadirParser.networkDir.toString)
 
   implicit lazy val conf: BitcoinSAppConfig =
-    BitcoinSAppConfig(datadirParser.datadir,
-                      datadirParser.baseConfig,
-                      serverCmdLineArgs.toConfig)(system)
+    BitcoinSAppConfig(
+      datadirParser.datadir,
+      Vector(datadirParser.baseConfig, serverCmdLineArgs.toConfig))(system)
 
   new BitcoinSServerMain(serverCmdLineArgs).run()
 }

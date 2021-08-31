@@ -31,21 +31,28 @@ import scala.concurrent.Future
   */
 case class BitcoinSAppConfig(
     private val directory: Path,
-    private val confs: Config*)(implicit system: ActorSystem)
+    private val confs: Vector[Config],
+    torAppConfigOpt: Option[TorAppConfig] = None)(implicit system: ActorSystem)
     extends StartStopAsync[Unit] {
   import system.dispatcher
   lazy val walletConf: WalletAppConfig = WalletAppConfig(directory, confs: _*)
   lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
   lazy val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
   lazy val dlcConf: DLCAppConfig = DLCAppConfig(directory, confs: _*)
-  lazy val torConf: TorAppConfig = TorAppConfig(directory, confs: _*)
+
+  lazy val torConf: TorAppConfig = {
+    torAppConfigOpt match {
+      case Some(t) => t
+      case None    => TorAppConfig(directory, confs: _*)
+    }
+  }
 
   lazy val dlcNodeConf: DLCNodeAppConfig =
     DLCNodeAppConfig(directory, confs: _*)(system.dispatcher, torConf)
 
   def copyWithConfig(newConfs: Vector[Config]): BitcoinSAppConfig = {
     val configs = newConfs ++ confs
-    BitcoinSAppConfig(directory, configs: _*)
+    BitcoinSAppConfig(directory, configs, torAppConfigOpt)
   }
 
   lazy val kmConf: KeyManagerAppConfig =
@@ -105,7 +112,7 @@ case class BitcoinSAppConfig(
   }
 
   def withOverrides(configs: Config*): BitcoinSAppConfig = {
-    BitcoinSAppConfig(directory, configs ++ confs: _*)
+    BitcoinSAppConfig(directory, (configs ++ confs).toVector)
   }
 
   /** Zips $HOME/.bitcoin-s
@@ -130,7 +137,7 @@ object BitcoinSAppConfig extends Logging {
   def fromConfig(config: Config)(implicit
       system: ActorSystem): BitcoinSAppConfig = {
     val configDataDir: Path = Paths.get(config.getString("bitcoin-s.datadir"))
-    BitcoinSAppConfig(configDataDir, config)
+    BitcoinSAppConfig(configDataDir, Vector(config))
   }
 
   def fromClassPathConfig()(implicit system: ActorSystem): BitcoinSAppConfig = {
@@ -139,7 +146,7 @@ object BitcoinSAppConfig extends Logging {
 
   def fromDatadir(datadir: Path, confs: Config*)(implicit
       system: ActorSystem): BitcoinSAppConfig = {
-    BitcoinSAppConfig(datadir, confs: _*)
+    BitcoinSAppConfig(datadir, confs.toVector)
   }
 
   def fromDatadirWithServerArgs(
@@ -154,7 +161,7 @@ object BitcoinSAppConfig extends Logging {
     */
   def fromDefaultDatadir(confs: Config*)(implicit
       system: ActorSystem): BitcoinSAppConfig =
-    BitcoinSAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
+    BitcoinSAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs.toVector)
 
   def fromDefaultDatadirWithBundleConf(confs: Vector[Config] = Vector.empty)(
       implicit system: ActorSystem): BitcoinSAppConfig = {

@@ -207,7 +207,7 @@ case class TorAppConfig(
   private def checkIfTorAlreadyRunning: Boolean = {
     val toCheck = socks5ProxyParams.address
 
-    NetworkUtil.portIsBound(toCheck) || isAlive()
+    NetworkUtil.portIsBound(toCheck) && isAlive()
   }
 
   private lazy val authenticationArg: String =

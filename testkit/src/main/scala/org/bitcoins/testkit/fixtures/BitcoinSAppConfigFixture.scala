@@ -44,14 +44,14 @@ trait BitcoinSAppConfigBitcoinFixtureNotStarted
     val builder: () => Future[BitcoinSAppConfig] = () => {
       for {
         bitcoind <- cachedBitcoindWithFundsF
-        datadir = bitcoind.instance match {
-          case local: BitcoindInstanceLocal => local.datadir
-          case _: BitcoindInstanceRemote =>
-            sys.error("Remote instance should not be used in tests")
-        }
+        _ <- torF
         conf = buildConfig(bitcoind.instance)
-        bitcoinSAppConfig = BitcoinSAppConfig(datadir.toPath, conf)
-      } yield bitcoinSAppConfig
+        bitcoinSAppConfig = BitcoinSAppConfig(customDatadir,
+                                              Vector(conf),
+                                              torAppConfigOpt = Some(torConfig))
+      } yield {
+        bitcoinSAppConfig
+      }
     }
 
     val destroyF: BitcoinSAppConfig => Future[Unit] = { appConfig =>

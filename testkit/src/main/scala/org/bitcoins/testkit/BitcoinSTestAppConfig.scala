@@ -53,7 +53,7 @@ object BitcoinSTestAppConfig {
          |}
       """.stripMargin
     }
-    BitcoinSAppConfig(tmpDir(), (overrideConf +: config): _*)
+    BitcoinSAppConfig(tmpDir(), (overrideConf +: config).toVector)
   }
 
   def getSpvWithEmbeddedDbTestConfig(
@@ -75,10 +75,10 @@ object BitcoinSTestAppConfig {
       }
       .withFallback(genWalletNameConf)
 
-    BitcoinSAppConfig(
-      tmpDir(),
-      (overrideConf +: configWithEmbeddedDb(project = None,
-                                            pgUrl) +: config): _*)
+    val configs: Vector[Config] = {
+      (overrideConf +: configWithEmbeddedDb(project = None, pgUrl) +: config)
+    }
+    BitcoinSAppConfig(tmpDir(), configs)
   }
 
   def getNeutrinoTestConfig(config: Config*)(implicit
@@ -97,7 +97,8 @@ object BitcoinSTestAppConfig {
          |}
       """.stripMargin
     }
-    BitcoinSAppConfig(tmpDir(), (overrideConf +: config): _*)
+    val configs = (overrideConf +: config).toVector
+    BitcoinSAppConfig(tmpDir(), configs)
   }
 
   def getNeutrinoWithEmbeddedDbTestConfig(
@@ -119,10 +120,11 @@ object BitcoinSTestAppConfig {
       }
       .withFallback(genWalletNameConf)
 
-    BitcoinSAppConfig(
-      tmpDir(),
+    val configs = {
       (overrideConf +: configWithEmbeddedDb(project = None,
-                                            pgUrl) +: config): _*)
+                                            pgUrl) +: config).toVector
+    }
+    BitcoinSAppConfig(tmpDir(), configs)
   }
 
   def getDLCOracleAppConfig(config: Config*)(implicit
@@ -137,8 +139,8 @@ object BitcoinSTestAppConfig {
       case None =>
         ConfigFactory.empty()
     }
-
-    DLCOracleAppConfig(tmpDir(), overrideConf +: config: _*)
+    val configs = (overrideConf +: config).toVector
+    DLCOracleAppConfig(tmpDir(), configs: _*)
   }
 
   def getDLCOracleWithEmbeddedDbTestConfig(
