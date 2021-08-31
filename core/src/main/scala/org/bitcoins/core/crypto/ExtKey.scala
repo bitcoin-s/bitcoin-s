@@ -16,6 +16,10 @@ sealed abstract class ExtKey extends NetworkElement {
   require(bytes.size == 78,
           "ExtKey must be 78 bytes in size, got: " + bytes.size)
 
+  require(
+    depth != UInt8.zero || !(childNum != UInt32.zero || fingerprint != ExtKey.masterFingerprint),
+    "Cannot have a 0 depth with non-zero parent fingerprint")
+
   protected type VersionType <: ExtKeyVersion
 
   /** The network and private/public key identifier for this key */
