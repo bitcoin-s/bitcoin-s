@@ -9,12 +9,7 @@ import org.bitcoins.chain.models._
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
-import org.bitcoins.core.api.node.{
-  ExternalImplementationNodeType,
-  InternalImplementationNodeType,
-  NodeApi,
-  NodeType
-}
+import org.bitcoins.core.api.node.{ExternalImplementationNodeType, InternalImplementationNodeType, NodeApi, NodeType}
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.DLCNode
@@ -25,7 +20,7 @@ import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{PeerDAO}
+import org.bitcoins.node.models.PeerDAO
 import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
@@ -36,6 +31,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 
 import java.net.{InetAddress, UnknownHostException}
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Random
 
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
@@ -114,14 +110,18 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
         val peersFromDbF = PeerDAO().findAll().map(_.map(_.address))
 
-        val peersFromConf = nodeConf.peers
+        val peersFromConf = nodeConf.peers.distinct
 
         val all = for {
           peersFromDB <- peersFromDbF
         } yield {
-
-          val ret = (peersFromDB ++ peersFromConf ++ peersFromSeed).distinct
-          logger.info(ret)
+          val maxPeers=8
+          var ret:Vector[String]=Vector()
+          //choosing "maxPeers" no of elements from lists randomly in the order of peersFromConf, peersFromDB, peersFromSeed
+          ret=ret++Random.shuffle(peersFromConf).take(maxPeers)
+          ret=ret++Random.shuffle(peersFromDB.diff(ret)).take(maxPeers-ret.length)
+          ret=ret++Random.shuffle(peersFromSeed.diff(ret)).take(maxPeers-ret.length)
+          logger.info(s"Selected peers: $ret")
           ret
         }
         all
