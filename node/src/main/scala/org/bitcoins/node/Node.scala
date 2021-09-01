@@ -173,7 +173,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   private def createInDbIfBlockFilterPeer(peer: Peer): Future[Unit] = {
     if (peerData(peer).serviceIdentifier.nodeCompactFilters) {
       logger.info(s"Our peer=$peer has been initialized")
-      PeerDAO().upsertPeer(peer.socket.getHostString)
+      PeerDAO().upsertPeer(s"${peer.socket.getHostString}:${peer.socket.getPort}")
     } else {
       logger.info(
         s"Our peer=$peer does not support compact filters. Disconnecting.")
@@ -199,9 +199,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         else short
       })
       .mkString(".") + s":${networkAddress.port}"
-    logger.debug(s"Peer from addr: $stringAddress")
     if (networkAddress.services.nodeCompactFilters) {
-      logger.debug(s"Peer from add: $stringAddress  supports compact filters.")
+      logger.info(s"Peer from addr: $stringAddress supports compact filters.")
       PeerDAO().upsertPeer(stringAddress)
     }
     ()
@@ -216,7 +215,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       })
       .mkString(".") + s":${addr.port}"
     logger.debug(s"Peer from addrV2: $stringAddress")
-    val serviceIdentifier = ServiceIdentifier(addr.services.bytes)
+    val serviceIdentifier = ServiceIdentifier.fromBytes(addr.services.bytes)
     if (serviceIdentifier.nodeCompactFilters) {
       logger.debug(
         s"Peer from addrV2: $stringAddress supports compact filters.")
@@ -236,7 +235,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
             interval = 250.millis)
           .recover { case NonFatal(_) =>
             logger.info(s"Failed to initialize $peer")
-            peerData(peer).peerMessageSender.disconnect()
             removePeer(peer)
           }
       } yield ()

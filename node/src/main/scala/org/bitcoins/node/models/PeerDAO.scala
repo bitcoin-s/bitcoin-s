@@ -40,6 +40,7 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
       address: String,
       lastConnected: Instant = Instant.now,
       networkId: Byte = AddrV2Message.IPV4_NETWORK_BYTE): Unit = {
+    logger.info(s"Adding peer to db $address")
     val existingF = read(address)
     existingF.map {
       case Some(value) =>

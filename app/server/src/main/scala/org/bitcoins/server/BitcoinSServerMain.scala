@@ -93,7 +93,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       val allPeersF = {
         val dnsSeeds = nodeConf.network.dnsSeeds
 
-        val peersFromSeed = dnsSeeds
+        lazy val peersFromSeed = dnsSeeds
           .flatMap(seed => {
             try {
               InetAddress
@@ -115,12 +115,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         val all = for {
           peersFromDB <- peersFromDbF
         } yield {
-          val maxPeers=8
+          logger.info(s"db peers $peersFromDB")
+          val maxPeers=2
           var ret:Vector[String]=Vector()
           //choosing "maxPeers" no of elements from lists randomly in the order of peersFromConf, peersFromDB, peersFromSeed
           ret=ret++Random.shuffle(peersFromConf).take(maxPeers)
           ret=ret++Random.shuffle(peersFromDB.diff(ret)).take(maxPeers-ret.length)
-          ret=ret++Random.shuffle(peersFromSeed.diff(ret)).take(maxPeers-ret.length)
+          //dns seeds won't be used if they are not required as startup time greatly increases because of them
+          if(maxPeers-ret.length>0) ret=ret++Random.shuffle(peersFromSeed.diff(ret)).take(maxPeers-ret.length)
           logger.info(s"Selected peers: $ret")
           ret
         }
