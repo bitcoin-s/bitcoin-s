@@ -114,9 +114,8 @@ case class TorAppConfig(
   }
 
   lazy val enabled: Boolean = {
-    //always enabled now ? Seems so because we always define the
-    //torParams and socks5Params
-    true
+    config.getBoolean("bitcoin-s.tor.enabled") &&
+    config.getBoolean("bitcoin-s.proxy.enabled")
   }
 
   private val isBootstrappedLogLine = "Bootstrapped 100% (done): Done"
