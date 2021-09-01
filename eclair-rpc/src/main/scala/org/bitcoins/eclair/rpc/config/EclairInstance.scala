@@ -1,5 +1,6 @@
 package org.bitcoins.eclair.rpc.config
 
+import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.api.commons.InstanceFactoryLocal
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
@@ -35,7 +36,8 @@ sealed trait EclairInstanceRemote extends EclairInstance
   * file to a
   * [[org.bitcoins.eclair.rpc.config.EclairInstance EclairInstance]]
   */
-object EclairInstanceLocal extends InstanceFactoryLocal[EclairInstanceLocal] {
+object EclairInstanceLocal
+    extends InstanceFactoryLocal[EclairInstanceLocal, ActorSystem] {
 
   private case class EclairInstanceLocalImpl(
       network: NetworkParameters,
@@ -94,8 +96,8 @@ object EclairInstanceLocal extends InstanceFactoryLocal[EclairInstanceLocal] {
 
   }
 
-  override def fromConfigFile(
-      file: File = DEFAULT_CONF_FILE.toFile): EclairInstanceLocal =
+  override def fromConfigFile(file: File = DEFAULT_CONF_FILE.toFile)(implicit
+      system: ActorSystem): EclairInstanceLocal =
     fromConfFile(file, None, None)
 
   def fromConfFile(
@@ -110,8 +112,8 @@ object EclairInstanceLocal extends InstanceFactoryLocal[EclairInstanceLocal] {
     fromConfig(config, file.getParentFile, logbackXml, proxyParams)
   }
 
-  override def fromDataDir(
-      dir: File = DEFAULT_DATADIR.toFile): EclairInstanceLocal = {
+  override def fromDataDir(dir: File = DEFAULT_DATADIR.toFile)(implicit
+      system: ActorSystem): EclairInstanceLocal = {
     require(dir.exists, s"${dir.getPath} does not exist!")
     require(dir.isDirectory, s"${dir.getPath} is not a directory!")
 

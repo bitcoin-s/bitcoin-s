@@ -1,5 +1,6 @@
 package org.bitcoins.lnd.rpc.config
 
+import akka.actor.ActorSystem
 import org.bitcoins.core.api.commons.InstanceFactoryLocal
 import org.bitcoins.core.config._
 import org.bitcoins.rpc.config.BitcoindAuthCredentials._
@@ -65,7 +66,8 @@ case class LndInstanceLocal(
     datadir.resolve("tls.cert").toFile
 }
 
-object LndInstanceLocal extends InstanceFactoryLocal[LndInstanceLocal] {
+object LndInstanceLocal
+    extends InstanceFactoryLocal[LndInstanceLocal, ActorSystem] {
 
   override val DEFAULT_DATADIR: Path = Paths.get(Properties.userHome, ".lnd")
 
@@ -80,8 +82,8 @@ object LndInstanceLocal extends InstanceFactoryLocal[LndInstanceLocal] {
     }
   }
 
-  override def fromConfigFile(
-      file: File = DEFAULT_CONF_FILE.toFile): LndInstanceLocal = {
+  override def fromConfigFile(file: File = DEFAULT_CONF_FILE.toFile)(implicit
+      system: ActorSystem): LndInstanceLocal = {
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
@@ -90,8 +92,8 @@ object LndInstanceLocal extends InstanceFactoryLocal[LndInstanceLocal] {
     fromConfig(config)
   }
 
-  override def fromDataDir(
-      dir: File = DEFAULT_DATADIR.toFile): LndInstanceLocal = {
+  override def fromDataDir(dir: File = DEFAULT_DATADIR.toFile)(implicit
+      system: ActorSystem): LndInstanceLocal = {
     require(dir.exists, s"${dir.getPath} does not exist!")
     require(dir.isDirectory, s"${dir.getPath} is not a directory!")
 

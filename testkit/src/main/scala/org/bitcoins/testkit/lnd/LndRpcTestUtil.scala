@@ -110,12 +110,14 @@ trait LndRpcTestUtil extends Logging {
     }
   }
 
-  def lndInstance(bitcoindRpc: BitcoindRpcClient): LndInstanceLocal = {
+  def lndInstance(bitcoindRpc: BitcoindRpcClient)(implicit
+      system: ActorSystem): LndInstanceLocal = {
     val datadir = lndDataDir(bitcoindRpc, isCannonical = false)
     lndInstance(datadir)
   }
 
-  def lndInstance(datadir: File): LndInstanceLocal = {
+  def lndInstance(datadir: File)(implicit
+      system: ActorSystem): LndInstanceLocal = {
     LndInstanceLocal.fromDataDir(datadir)
   }
 

@@ -81,7 +81,7 @@ sealed trait BitcoindInstanceRemote extends BitcoindInstance {
 }
 
 object BitcoindInstanceLocal
-    extends InstanceFactoryLocal[BitcoindInstanceLocal] {
+    extends InstanceFactoryLocal[BitcoindInstanceLocal, ActorSystem] {
 
   private case class BitcoindInstanceLocalImpl(
       network: NetworkParameters,
@@ -227,15 +227,10 @@ object BitcoindInstanceLocal
   override val DEFAULT_DATADIR: Path = BitcoindConfig.DEFAULT_DATADIR.toPath
 
   override val DEFAULT_CONF_FILE: Path = BitcoindConfig.DEFAULT_CONF_FILE.toPath
-
-  override def fromConfigFile(file: File): BitcoindInstanceLocal =
-    ???
-
-  override def fromDataDir(dir: File): BitcoindInstanceLocal =
-    ???
 }
 
-object BitcoindInstanceRemote extends InstanceFactory[BitcoindInstanceRemote] {
+object BitcoindInstanceRemote
+    extends InstanceFactory[BitcoindInstanceRemote, ActorSystem] {
 
   private case class BitcoindInstanceRemoteImpl(
       network: NetworkParameters,
@@ -273,7 +268,7 @@ object BitcoindInstanceRemote extends InstanceFactory[BitcoindInstanceRemote] {
     fromConfig(conf)
   }
 
-  def fromConfigFile(file: File)(implicit
+  override def fromConfigFile(file: File)(implicit
       system: ActorSystem): BitcoindInstanceRemote = {
     fromConfFile(
       file
@@ -292,17 +287,11 @@ object BitcoindInstanceRemote extends InstanceFactory[BitcoindInstanceRemote] {
                                proxyParams = None)
   }
 
-  def fromDataDir(dir: File)(implicit
+  override def fromDataDir(dir: File)(implicit
       system: ActorSystem): BitcoindInstanceRemote = {
     require(dir.exists, s"${dir.getPath} does not exist!")
     require(dir.isDirectory, s"${dir.getPath} is not a directory!")
     val conf = BitcoindRpcAppConfig(dir.toPath)
     fromConfig(conf)
   }
-
-  override def fromConfigFile(file: File): BitcoindInstanceRemote =
-    ???
-
-  override def fromDataDir(dir: File): BitcoindInstanceRemote =
-    ???
 }
