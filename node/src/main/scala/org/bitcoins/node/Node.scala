@@ -173,7 +173,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   private def createInDbIfBlockFilterPeer(peer: Peer): Future[Unit] = {
     if (peerData(peer).serviceIdentifier.nodeCompactFilters) {
       logger.info(s"Our peer=$peer has been initialized")
-      PeerDAO().upsertPeer(s"${peer.socket.getHostString}:${peer.socket.getPort}")
+      PeerDAO().upsertPeer(
+        s"${peer.socket.getHostString}:${peer.socket.getPort}")
     } else {
       logger.info(
         s"Our peer=$peer does not support compact filters. Disconnecting.")

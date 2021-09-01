@@ -10,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class PeerDB(
     address: String,
-    lastConnected: Instant,
+    lastSeen: Instant,
     firstSeen: Instant,
     networkId: Byte
 )
@@ -38,7 +38,7 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
 
   def upsertPeer(
       address: String,
-      lastConnected: Instant = Instant.now,
+      lastSeen: Instant = Instant.now,
       networkId: Byte = AddrV2Message.IPV4_NETWORK_BYTE): Unit = {
     logger.info(s"Adding peer to db $address")
     val existingF = read(address)
@@ -47,13 +47,13 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
         upsert(
           PeerDB(address,
                  firstSeen = value.firstSeen,
-                 lastConnected = lastConnected,
+                 lastSeen = lastSeen,
                  networkId = networkId))
       case None =>
         upsert(
           PeerDB(address,
                  firstSeen = Instant.now,
-                 lastConnected = lastConnected,
+                 lastSeen = lastSeen,
                  networkId = networkId))
     }
     ()
@@ -63,14 +63,14 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
 
     def address: Rep[String] = column("address", O.PrimaryKey)
 
-    def lastConnected: Rep[Instant] = column("last_connected")
+    def lastSeen: Rep[Instant] = column("last_seen")
 
     def firstSeen: Rep[Instant] = column("first_seen")
 
     def networkId: Rep[Byte] = column("network_id")
 
     def * : ProvenShape[PeerDB] =
-      (address, lastConnected, firstSeen, networkId).<>(PeerDB.tupled,
-                                                        PeerDB.unapply)
+      (address, lastSeen, firstSeen, networkId).<>(PeerDB.tupled,
+                                                   PeerDB.unapply)
   }
 }

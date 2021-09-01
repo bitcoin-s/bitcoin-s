@@ -9,7 +9,12 @@ import org.bitcoins.chain.models._
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
-import org.bitcoins.core.api.node.{ExternalImplementationNodeType, InternalImplementationNodeType, NodeApi, NodeType}
+import org.bitcoins.core.api.node.{
+  ExternalImplementationNodeType,
+  InternalImplementationNodeType,
+  NodeApi,
+  NodeType
+}
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.DLCNode
@@ -116,13 +121,18 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           peersFromDB <- peersFromDbF
         } yield {
           logger.info(s"db peers $peersFromDB")
-          val maxPeers=2
-          var ret:Vector[String]=Vector()
+          val maxPeers = 2
+          var ret: Vector[String] = Vector()
           //choosing "maxPeers" no of elements from lists randomly in the order of peersFromConf, peersFromDB, peersFromSeed
-          ret=ret++Random.shuffle(peersFromConf).take(maxPeers)
-          ret=ret++Random.shuffle(peersFromDB.diff(ret)).take(maxPeers-ret.length)
+          ret = ret ++ Random.shuffle(peersFromConf).take(maxPeers)
+          ret = ret ++ Random
+            .shuffle(peersFromDB.diff(ret))
+            .take(maxPeers - ret.length)
           //dns seeds won't be used if they are not required as startup time greatly increases because of them
-          if(maxPeers-ret.length>0) ret=ret++Random.shuffle(peersFromSeed.diff(ret)).take(maxPeers-ret.length)
+          if (maxPeers - ret.length > 0)
+            ret = ret ++ Random
+              .shuffle(peersFromSeed.diff(ret))
+              .take(maxPeers - ret.length)
           logger.info(s"Selected peers: $ret")
           ret
         }
