@@ -29,7 +29,7 @@ class BitcoindV16RpcClient(override val instance: BitcoindInstance)(implicit
     with V16AccountRpc
     with V16SendRpc {
 
-  override def version: Future[BitcoindVersion] =
+  override lazy val version: Future[BitcoindVersion] =
     Future.successful(BitcoindVersion.V16)
 
   override def getFilterCount(): Future[Int] = filtersUnsupported

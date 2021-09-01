@@ -56,12 +56,9 @@ trait P2PRpc { self: Client =>
   }
 
   def getNetworkInfo: Future[GetNetworkInfoResult] = {
-    version.flatMap {
-      case V21 | Unknown =>
-        bitcoindCall[GetNetworkInfoResultPostV21]("getnetworkinfo")
-      case V16 | V17 | V18 | V19 | V20 | Experimental =>
-        bitcoindCall[GetNetworkInfoResultPreV21]("getnetworkinfo")
-    }
+    bitcoindCall[GetNetworkInfoResultPostV21]("getnetworkinfo")
+      .recoverWith(_ =>
+        bitcoindCall[GetNetworkInfoResultPreV21]("getnetworkinfo"))
   }
 
   def getPeerInfo: Future[Vector[Peer]] = {

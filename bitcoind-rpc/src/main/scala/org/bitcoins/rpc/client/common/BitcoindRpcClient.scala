@@ -70,7 +70,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     with PsbtRpc
     with UtilRpc {
 
-  override def version: Future[BitcoindVersion] = {
+  override lazy val version: Future[BitcoindVersion] = {
     instance match {
       case _: BitcoindInstanceRemote =>
         getNetworkInfo.map(info =>
