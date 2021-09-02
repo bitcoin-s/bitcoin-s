@@ -975,7 +975,7 @@ object Wallet extends WalletLogger {
           if (xpubs.length == 1 && xpubs.head == keyManager.getRootXPub) {
             xpubs.head
           } else {
-            sys.error(
+            throw new IllegalArgumentException(
               s"Wallet database contains different master xpubs, got=${xpubs}")
           }
         }

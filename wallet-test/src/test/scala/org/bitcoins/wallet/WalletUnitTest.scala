@@ -2,6 +2,7 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.api.wallet.db.{AddressDb, TransactionDbHelper}
+import org.bitcoins.core.crypto.{ExtKeyVersion, ExtPrivateKey}
 import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -172,6 +173,28 @@ class WalletUnitTest extends BitcoinSWalletTest {
               wallet.walletConfig,
               executionContext)
           }
+      }
+  }
+
+  it must "be able to detect different master xpubs on wallet startup" in {
+    wallet: Wallet =>
+      val rootXpriv =
+        ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitMainNetPriv)
+      val uniqueKeyManager =
+        new BIP39KeyManager(rootExtPrivKey = rootXpriv,
+                            kmParams = wallet.keyManager.kmParams,
+                            creationTime = wallet.keyManager.creationTime)
+      val walletDiffKeyManager: Wallet =
+        Wallet(uniqueKeyManager,
+               wallet.nodeApi,
+               wallet.chainQueryApi,
+               wallet.feeRateApi,
+               wallet.creationTime)(wallet.walletConfig, wallet.ec)
+
+      recoverToSucceededIf[IllegalArgumentException] {
+        Wallet.initialize(walletDiffKeyManager, bip39PasswordOpt)(
+          wallet.walletConfig,
+          wallet.ec)
       }
   }
 
