@@ -10,9 +10,8 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.api.chain._
-import org.bitcoins.core.p2p.{IPv4AddrV2Message, NetworkIpAddress}
 import org.bitcoins.core.api.node.{NodeApi, NodeType}
-import org.bitcoins.core.p2p.{NetworkPayload, ServiceIdentifier, TypeIdentifier}
+import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
@@ -29,7 +28,7 @@ import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-import scala.util.{Failure, Random, Success}
+import scala.util.{Failure, Random, Success, Try}
 
 case class PeerData(peer: Peer, node: Node)(implicit
     system: ActorSystem,
@@ -173,56 +172,49 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   private def createInDbIfBlockFilterPeer(peer: Peer): Future[Unit] = {
     if (peerData(peer).serviceIdentifier.nodeCompactFilters) {
       logger.info(s"Our peer=$peer has been initialized")
-      PeerDAO().upsertPeer(
-        s"${peer.socket.getHostString}:${peer.socket.getPort}")
+      val addrBytes = peer.socket.getAddress.getAddress
+      val networkByte =
+        if (addrBytes.length == AddrV2Message.IPV4_ADDR_LENGTH) {
+          AddrV2Message.IPV4_NETWORK_BYTE
+        } else if (addrBytes.length == AddrV2Message.IPV6_ADDR_LENGTH) {
+          AddrV2Message.IPV6_NETWORK_BYTE
+        } else // todo might be tor, how to handle?
+          throw new IllegalArgumentException("Unknown peer network")
+      PeerDAO()
+        .upsertPeer(ByteVector(addrBytes), peer.socket.getPort, networkByte)
+        .map(_ => ())
     } else {
       logger.info(
         s"Our peer=$peer does not support compact filters. Disconnecting.")
-      PeerDAO().deleteByKey(s"${peer.socket.getHostString}:${peer.socket.getPort}")
+      PeerDAO().deleteByKey(
+        s"${peer.socket.getHostString}:${peer.socket.getPort}")
       peerData(peer).peerMessageSender.disconnect()
     }
-    Future.unit
   }
 
-  def createInDbIfBlockFilterPeer(networkAddress: NetworkIpAddress): Unit = {
-    val ipv4bytes: Option[ByteVector] =
-      try {
-        Some(networkAddress.address.ipv4Bytes)
-      } catch {
-        case _: Throwable =>
-          logger.info("Ignoring ipv6 address from addr message")
-          return
-      }
-    val stringAddress = ipv4bytes.get.toArray
-      .map(x => {
-        val short = x.toShort
-        if (short < 0) x + 256
-        else short
-      })
-      .mkString(".") + s":${networkAddress.port}"
+  def createInDbIfBlockFilterPeer(
+      networkAddress: NetworkIpAddress): Future[Unit] = {
     if (networkAddress.services.nodeCompactFilters) {
-      logger.info(s"Peer from addr: $stringAddress supports compact filters.")
-      PeerDAO().upsertPeer(stringAddress)
-    }
-    ()
+      val (networkByte, bytes) = Try(networkAddress.address.ipv4Bytes) match {
+        case Failure(_) =>
+          (AddrV2Message.IPV6_NETWORK_BYTE, networkAddress.address.bytes)
+        case Success(ipv4Bytes) =>
+          (AddrV2Message.IPV4_NETWORK_BYTE, ipv4Bytes)
+      }
+
+      logger.info(s"Peer from addr: $bytes supports compact filters.")
+      PeerDAO().upsertPeer(bytes, networkAddress.port, networkByte).map(_ => ())
+    } else Future.unit
   }
 
-  def createInDbIfBlockFilterPeer(addr: IPv4AddrV2Message): Unit = {
-    val stringAddress = addr.addr.ipv4Bytes.toArray
-      .map(x => {
-        val short = x.toShort
-        if (short < 0) x + 256
-        else short
-      })
-      .mkString(".") + s":${addr.port}"
-    logger.debug(s"Peer from addrV2: $stringAddress")
+  def createInDbIfBlockFilterPeer(addr: IPv4AddrV2Message): Future[Unit] = {
     val serviceIdentifier = ServiceIdentifier.fromBytes(addr.services.bytes)
     if (serviceIdentifier.nodeCompactFilters) {
-      logger.debug(
-        s"Peer from addrV2: $stringAddress supports compact filters.")
-      PeerDAO().upsertPeer(stringAddress)
-    }
-    ()
+      logger.info(s"Peer from addr: ${addr.addr} supports compact filters.")
+      PeerDAO()
+        .upsertPeer(addr.addrBytes, addr.port.toInt, addr.networkId)
+        .map(_ => ())
+    } else Future.unit
   }
 
   private def initializePeer(peer: Peer): Future[Unit] = {

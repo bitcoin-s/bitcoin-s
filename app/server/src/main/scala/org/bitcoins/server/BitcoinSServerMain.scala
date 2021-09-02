@@ -25,8 +25,7 @@ import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.PeerDAO
-import org.bitcoins.node.models.Peer
+import org.bitcoins.node.models.{Peer, PeerDAO}
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
@@ -113,7 +112,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           .filter(_.isReachable(500))
           .map(_.getHostAddress)
 
-        val peersFromDbF = PeerDAO().findAll().map(_.map(_.address))
+        val peersFromDbF =
+          PeerDAO().findAll().map(_.map(p => new String(p.address.toArray)))
 
         val peersFromConf = nodeConf.peers.distinct
 
@@ -139,6 +139,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         all
       }
 
+      // todo use saved port instead of default port
       allPeersF.map(_.map(peer =>
         NetworkUtil.parseInetSocketAddress(peer, nodeConf.network.port)))
     }
