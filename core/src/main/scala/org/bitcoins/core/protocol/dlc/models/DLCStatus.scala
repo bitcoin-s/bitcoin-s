@@ -38,11 +38,11 @@ sealed trait AcceptedDLCStatus extends DLCStatus {
   def contractId: ByteVector
 }
 
-sealed trait BroadcastedDLCStatus extends AcceptedDLCStatus {
+sealed trait SignedDLCStatus extends AcceptedDLCStatus {
   def fundingTxId: DoubleSha256DigestBE
 }
 
-sealed trait ClosedDLCStatus extends BroadcastedDLCStatus {
+sealed trait ClosedDLCStatus extends SignedDLCStatus {
   def closingTxId: DoubleSha256DigestBE
   def myPayout: CurrencyUnit
   def counterPartyPayout: CurrencyUnit
@@ -108,8 +108,9 @@ object DLCStatus {
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
       totalCollateral: CurrencyUnit,
-      localCollateral: CurrencyUnit)
-      extends AcceptedDLCStatus {
+      localCollateral: CurrencyUnit,
+      fundingTxId: DoubleSha256DigestBE)
+      extends SignedDLCStatus {
     override val state: DLCState.Signed.type = DLCState.Signed
   }
 
@@ -125,7 +126,7 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE)
-      extends BroadcastedDLCStatus {
+      extends SignedDLCStatus {
     override val state: DLCState.Broadcasted.type = DLCState.Broadcasted
   }
 
@@ -141,7 +142,7 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE)
-      extends BroadcastedDLCStatus {
+      extends SignedDLCStatus {
     override val state: DLCState.Confirmed.type = DLCState.Confirmed
   }
 
@@ -218,7 +219,7 @@ object DLCStatus {
 
   def getFundingTxId(status: DLCStatus): Option[DoubleSha256DigestBE] = {
     status match {
-      case status: BroadcastedDLCStatus =>
+      case status: SignedDLCStatus =>
         Some(status.fundingTxId)
       case _: Offered | _: Accepted | _: Signed =>
         None
@@ -239,8 +240,7 @@ object DLCStatus {
     status match {
       case claimed: ClaimedDLCStatus =>
         Some(claimed.oracleSigs)
-      case _: Offered | _: Accepted | _: Signed | _: BroadcastedDLCStatus |
-          _: Refunded =>
+      case _: Offered | _: Accepted | _: SignedDLCStatus | _: Refunded =>
         None
     }
   }

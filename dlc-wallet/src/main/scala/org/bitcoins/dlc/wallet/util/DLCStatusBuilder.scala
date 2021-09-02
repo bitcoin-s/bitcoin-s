@@ -69,7 +69,8 @@ object DLCStatusBuilder {
           contractData.dlcTimeouts,
           dlcDb.feeRate,
           totalCollateral,
-          localCollateral
+          localCollateral,
+          dlcDb.fundingTxIdOpt.get
         )
       case DLCState.Broadcasted =>
         Broadcasted(

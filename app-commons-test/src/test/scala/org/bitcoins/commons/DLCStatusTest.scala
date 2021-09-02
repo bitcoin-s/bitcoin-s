@@ -73,8 +73,9 @@ class DLCStatusTest extends BitcoinSJvmTest {
   it must "have json symmetry in DLCStatus.Signed" in {
     forAllParallel(NumberGenerator.bool,
                    TLVGen.dlcOfferTLV,
-                   NumberGenerator.bytevector) {
-      case (isInit, offerTLV, contractId) =>
+                   NumberGenerator.bytevector,
+                   CryptoGenerators.doubleSha256DigestBE) {
+      case (isInit, offerTLV, contractId, txId) =>
         val offer = DLCOffer.fromTLV(offerTLV)
 
         val totalCollateral = offer.contractInfo.max
@@ -90,7 +91,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.timeouts,
             offer.feeRate,
             totalCollateral,
-            offer.totalCollateral
+            offer.totalCollateral,
+            txId
           )
 
         assert(status.state == DLCState.Signed)
