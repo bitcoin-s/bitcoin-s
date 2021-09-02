@@ -65,7 +65,8 @@ import scala.util._
 case class P2PClientActor(
     peer: Peer,
     initPeerMsgHandlerReceiver: PeerMessageReceiver,
-    onReconnect: () => Future[Unit]
+    onReconnect: () => Future[Unit],
+    private val maxReconnectionTries: Int
 )(implicit config: NodeAppConfig)
     extends Actor
     with P2PLogger {
@@ -75,8 +76,6 @@ case class P2PClientActor(
   private var currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
   private var reconnectHandlerOpt: Option[() => Future[Unit]] = None
-
-  private val maxReconnectionTries = 1
 
   private var reconnectionTry = 0
 
@@ -449,23 +448,26 @@ object P2PClient extends P2PLogger {
   def props(
       peer: Peer,
       peerMsgHandlerReceiver: PeerMessageReceiver,
-      onReconnect: () => Future[Unit])(implicit
+      onReconnect: () => Future[Unit],
+      maxReconnectionTries: Int)(implicit
       config: NodeAppConfig
   ): Props =
     Props(classOf[P2PClientActor],
           peer,
           peerMsgHandlerReceiver,
           onReconnect,
+          maxReconnectionTries,
           config)
 
   def apply(
       context: ActorRefFactory,
       peer: Peer,
       peerMessageReceiver: PeerMessageReceiver,
-      onReconnect: () => Future[Unit])(implicit
-      config: NodeAppConfig): P2PClient = {
+      onReconnect: () => Future[Unit],
+      maxReconnectionTries: Int)(implicit config: NodeAppConfig): P2PClient = {
     val actorRef = context.actorOf(
-      props = props(peer, peerMessageReceiver, onReconnect),
+      props =
+        props(peer, peerMessageReceiver, onReconnect, maxReconnectionTries),
       name = BitcoinSNodeUtil.createActorName(getClass))
 
     P2PClient(actorRef, peer)

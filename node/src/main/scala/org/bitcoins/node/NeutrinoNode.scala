@@ -13,18 +13,16 @@ import org.bitcoins.core.api.chain.db.{
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
 
 import scala.concurrent.Future
 
 case class NeutrinoNode(
-    nodePeer: Vector[Peer],
     private var dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
-    actorSystem: ActorSystem)
-    extends Node {
+    actorSystem: ActorSystem
+) extends Node {
   require(
     nodeConfig.nodeType == NodeType.NeutrinoNode,
     s"We need our Neutrino mode enabled to be able to construct a Neutrino node!")
@@ -34,8 +32,6 @@ case class NeutrinoNode(
   implicit override def nodeAppConfig: NodeAppConfig = nodeConfig
 
   override def chainAppConfig: ChainAppConfig = chainConfig
-
-  nodePeer.foreach(addPeer)
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 

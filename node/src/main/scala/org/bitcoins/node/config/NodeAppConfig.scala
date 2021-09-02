@@ -165,7 +165,7 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
       case NodeType.SpvNode =>
         dmhF.map(dmh => SpvNode(peers, dmh, nodeConf, chainConf, system))
       case NodeType.NeutrinoNode =>
-        dmhF.map(dmh => NeutrinoNode(peers, dmh, nodeConf, chainConf, system))
+        dmhF.map(dmh => NeutrinoNode(dmh, nodeConf, chainConf, system))
       case NodeType.FullNode =>
         Future.failed(new RuntimeException("Not implemented"))
       case NodeType.BitcoindBackend =>

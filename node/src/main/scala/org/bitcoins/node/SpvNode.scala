@@ -35,7 +35,7 @@ case class SpvNode(
 
   private val _bloomFilter = new Mutable(BloomFilter.empty)
 
-  nodePeer.foreach(addPeer)
+  nodePeer.foreach(peer => addPeer(peer))
 
   def bloomFilter: BloomFilter = _bloomFilter.atomicGet
 

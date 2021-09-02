@@ -25,7 +25,7 @@ import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{Peer, PeerDAO}
+import org.bitcoins.node.models.{Peer}
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
@@ -33,9 +33,7 @@ import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
-import java.net.{InetAddress, UnknownHostException}
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Random
 
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
@@ -93,69 +91,20 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   def startBitcoinSBackend(): Future[Unit] = {
     val start = System.currentTimeMillis()
 
-    val peerSocketsF = {
-      val allPeersF = {
-        val dnsSeeds = nodeConf.network.dnsSeeds
-
-        lazy val peersFromSeed = dnsSeeds
-          .flatMap(seed => {
-            try {
-              InetAddress
-                .getAllByName(seed)
-            } catch {
-              case _: UnknownHostException =>
-                logger.info(s"DNS seed $seed is unavailable")
-                Vector()
-            }
-          })
-          .distinct
-          .filter(_.isReachable(500))
-          .map(_.getHostAddress)
-
-        val peersFromDbF =
-          PeerDAO().findAll().map(_.map(p => new String(p.address.toArray)))
-
-        val peersFromConf = nodeConf.peers.distinct
-
-        val all = for {
-          peersFromDB <- peersFromDbF
-        } yield {
-          logger.info(s"db peers $peersFromDB")
-          val maxPeers = 20
-          var ret: Vector[String] = Vector()
-          //choosing "maxPeers" no of elements from lists randomly in the order of peersFromConf, peersFromDB, peersFromSeed
-          ret = ret ++ Random.shuffle(peersFromConf).take(maxPeers)
-          ret = ret ++ Random
-            .shuffle(peersFromDB.diff(ret))
-            .take(maxPeers - ret.length)
-          //dns seeds won't be used if they are not required as startup time greatly increases because of them
-          if (maxPeers - ret.length > 0)
-            ret = ret ++ Random
-              .shuffle(peersFromSeed.diff(ret))
-              .take(maxPeers - ret.length)
-          logger.info(s"Selected peers: $ret")
-          ret
-        }
-        all
-      }
-
-      // todo use saved port instead of default port
-      allPeersF.map(_.map(peer =>
-        NetworkUtil.parseInetSocketAddress(peer, nodeConf.network.port)))
+    val peerSockets = {
+      nodeConf.peers.map(
+        NetworkUtil.parseInetSocketAddress(_, nodeConf.network.port)
+      )
     }
 
-    val peersF = peerSocketsF.map(peerSockets =>
-      peerSockets.map(Peer.fromSocket(_, nodeConf.socks5ProxyParams)))
+    val peers = peerSockets.map(Peer.fromSocket(_, nodeConf.socks5ProxyParams))
 
     //run chain work migration
     val chainApiF = runChainWorkCalc(
       serverArgParser.forceChainWorkRecalc || chainConf.forceRecalcChainWork)
 
     //get a node that isn't started
-    val nodeF = for {
-      peers <- peersF
-      node <- nodeConf.createNode(peers)(chainConf, system)
-    } yield node
+    val nodeF = nodeConf.createNode(peers)(chainConf, system)
 
     val feeProvider = getFeeProviderOrElse(
       MempoolSpaceProvider(HourFeeTarget,
