@@ -2,6 +2,7 @@ package org.bitcoins.node.models
 
 import org.bitcoins.core.p2p.AddrV2Message
 import org.bitcoins.testkit.fixtures.NodeDAOFixture
+import scodec.bits.ByteVector
 
 import java.time.Instant
 
@@ -12,7 +13,8 @@ class PeerDAOTest extends NodeDAOFixture {
   it must "write a peer and read it back" in { daos =>
     val peerDAO = daos.peerDAO
     //using a hardcoded peer for now
-    val peer = PeerDB(address = "127.0.0.1",
+    val peer = PeerDB(address = ByteVector("127.0.0.1".getBytes),
+                      port = 18333,
                       lastSeen = Instant.now,
                       firstSeen = Instant.now,
                       networkId = AddrV2Message.IPV4_NETWORK_BYTE)
@@ -23,6 +25,7 @@ class PeerDAOTest extends NodeDAOFixture {
     } yield {
       assert(
         read.get.address == created.address &&
+          read.get.port == created.port &&
           read.get.lastSeen.getEpochSecond == created.lastSeen.getEpochSecond
           && read.get.firstSeen.getEpochSecond == created.firstSeen.getEpochSecond
           && read.get.networkId == AddrV2Message.IPV4_NETWORK_BYTE

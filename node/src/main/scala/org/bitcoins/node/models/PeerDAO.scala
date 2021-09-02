@@ -1,25 +1,28 @@
 package org.bitcoins.node.models
 
-import org.bitcoins.core.p2p.AddrV2Message
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.node.config.NodeAppConfig
+import scodec.bits.ByteVector
 import slick.lifted.ProvenShape
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 case class PeerDB(
-    address: String,
+    address: ByteVector,
+    port: Int,
     lastSeen: Instant,
     firstSeen: Instant,
     networkId: Byte
 )
 
 case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
-    extends CRUD[PeerDB, String]
-    with SlickUtil[PeerDB, String] {
+    extends CRUD[PeerDB, ByteVector]
+    with SlickUtil[PeerDB, ByteVector] {
 
   import profile.api._
+  val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+  import mappers._
 
   override val table: TableQuery[PeerTable] =
     TableQuery[PeerTable]
@@ -28,7 +31,7 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[String]): Query[PeerTable, PeerDB, Seq] = {
+      ids: Vector[ByteVector]): Query[PeerTable, PeerDB, Seq] = {
     table.filter(_.address.inSet(ids))
   }
 
@@ -36,37 +39,42 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
       ts: Vector[PeerDB]): Query[Table[_], PeerDB, Seq] = findByPrimaryKeys(
     ts.map(_.address))
 
-  def deleteByKey(address: String):Future[Int]={
-    val q=table.filter(_.address===address)
+  def deleteByKey(address: String): Future[Int] = {
+    val bytes = ByteVector(address.getBytes)
+    val q = table.filter(_.address === bytes)
     safeDatabase.run(q.delete)
   }
 
   def upsertPeer(
-      address: String,
-      lastSeen: Instant = Instant.now,
-      networkId: Byte = AddrV2Message.IPV4_NETWORK_BYTE): Unit = {
+      address: ByteVector,
+      port: Int,
+      networkId: Byte,
+      lastSeen: Instant = Instant.now): Future[PeerDB] = {
     logger.info(s"Adding peer to db $address")
     val existingF = read(address)
-    existingF.map {
+    existingF.flatMap {
       case Some(value) =>
         upsert(
           PeerDB(address,
+                 port = port,
                  firstSeen = value.firstSeen,
                  lastSeen = lastSeen,
                  networkId = networkId))
       case None =>
         upsert(
           PeerDB(address,
+                 port = port,
                  firstSeen = Instant.now,
                  lastSeen = lastSeen,
                  networkId = networkId))
     }
-    ()
   }
 
   class PeerTable(tag: Tag) extends Table[PeerDB](tag, schemaName, "peers") {
 
-    def address: Rep[String] = column("address", O.PrimaryKey)
+    def address: Rep[ByteVector] = column("address", O.PrimaryKey)
+
+    def port: Rep[Int] = column("port")
 
     def lastSeen: Rep[Instant] = column("last_seen")
 
@@ -75,7 +83,7 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
     def networkId: Rep[Byte] = column("network_id")
 
     def * : ProvenShape[PeerDB] =
-      (address, lastSeen, firstSeen, networkId).<>(PeerDB.tupled,
-                                                   PeerDB.unapply)
+      (address, port, lastSeen, firstSeen, networkId).<>(PeerDB.tupled,
+                                                         PeerDB.unapply)
   }
 }
