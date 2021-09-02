@@ -12,10 +12,7 @@ import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
-  MockChainQueryApi,
-  MockNodeApi
-}
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{MockChainQueryApi, MockNodeApi}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.compatible.Assertion
 import play.api.libs.json._

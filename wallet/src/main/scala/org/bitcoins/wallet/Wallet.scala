@@ -956,6 +956,34 @@ object Wallet extends WalletLogger {
     WalletImpl(nodeApi, chainQueryApi, feeRateApi)
   }
 
+  /** Creates the master xpub for the key manager in the database
+    * @throws RuntimeException if a different master xpub key exists in the database
+    */
+  private def createMasterXPub(keyManager: BIP39KeyManager)(implicit
+      walletAppConfig: WalletAppConfig,
+      ec: ExecutionContext): Future[ExtPublicKey] = {
+    val masterXPubDAO = MasterXPubDAO()
+    val countF = masterXPubDAO.count()
+    //make sure we don't have a xpub in the db
+    countF.flatMap { count =>
+      if (count == 0) {
+        masterXPubDAO.create(keyManager.getRootXPub)
+      } else {
+        for {
+          xpubs <- masterXPubDAO.findAll()
+        } yield {
+          if (xpubs.length == 1 && xpubs.head == keyManager.getRootXPub) {
+            xpubs.head
+          } else {
+            sys.error(
+              s"Wallet database contains different master xpubs, got=${xpubs}")
+          }
+        }
+      }
+    }
+
+  }
+
   /** Creates the level 0 account for the given HD purpose, if the root account exists do nothing */
   private def createRootAccount(wallet: Wallet, keyManager: BIP39KeyManager)(
       implicit ec: ExecutionContext): Future[AccountDb] = {
@@ -1000,10 +1028,11 @@ object Wallet extends WalletLogger {
       walletAppConfig: WalletAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
     val passwordOpt = walletAppConfig.aesPasswordOpt
+    val createMasterXpubF = createMasterXPub(wallet.keyManager)
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later
     // and still have their wallet work
-    def createAccountFutures: Future[Vector[Future[AccountDb]]] =
+    def createAccountFutures: Future[Vector[Future[AccountDb]]] = {
       for {
         _ <- walletAppConfig.start()
         accounts = HDPurposes.singleSigPurposes.map { purpose =>
@@ -1027,11 +1056,15 @@ object Wallet extends WalletLogger {
 
         }
       } yield accounts
+    }
 
-    createAccountFutures.flatMap(accounts => FutureUtil.collect(accounts)).map {
-      _ =>
-        logger.debug(s"Created root level accounts for wallet")
-        wallet
+    for {
+      _ <- createMasterXpubF
+      _ <- createAccountFutures.flatMap(accounts =>
+        FutureUtil.collect(accounts))
+    } yield {
+      logger.debug(s"Created root level accounts for wallet")
+      wallet
     }
   }
 }
