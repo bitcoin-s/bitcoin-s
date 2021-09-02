@@ -36,6 +36,11 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
       ts: Vector[PeerDB]): Query[Table[_], PeerDB, Seq] = findByPrimaryKeys(
     ts.map(_.address))
 
+  def deleteByKey(address: String):Future[Int]={
+    val q=table.filter(_.address===address)
+    safeDatabase.run(q.delete)
+  }
+
   def upsertPeer(
       address: String,
       lastSeen: Instant = Instant.now,

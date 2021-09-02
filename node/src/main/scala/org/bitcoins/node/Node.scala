@@ -178,6 +178,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     } else {
       logger.info(
         s"Our peer=$peer does not support compact filters. Disconnecting.")
+      PeerDAO().deleteByKey(s"${peer.socket.getHostString}:${peer.socket.getPort}")
       peerData(peer).peerMessageSender.disconnect()
     }
     Future.unit

@@ -121,7 +121,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           peersFromDB <- peersFromDbF
         } yield {
           logger.info(s"db peers $peersFromDB")
-          val maxPeers = 2
+          val maxPeers = 20
           var ret: Vector[String] = Vector()
           //choosing "maxPeers" no of elements from lists randomly in the order of peersFromConf, peersFromDB, peersFromSeed
           ret = ret ++ Random.shuffle(peersFromConf).take(maxPeers)

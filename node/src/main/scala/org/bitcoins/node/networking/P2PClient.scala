@@ -76,7 +76,7 @@ case class P2PClientActor(
 
   private var reconnectHandlerOpt: Option[() => Future[Unit]] = None
 
-  private val maxReconnectionTries = 16
+  private val maxReconnectionTries = 1
 
   private var reconnectionTry = 0
 
