@@ -15,7 +15,7 @@ class PeerDAOTest extends NodeDAOFixture {
     val peer = PeerDB(address = "127.0.0.1",
                       lastSeen = Instant.now,
                       firstSeen = Instant.now,
-                      networkId = AddrV2Message.IPV6_NETWORK_BYTE)
+                      networkId = AddrV2Message.IPV4_NETWORK_BYTE)
 
     for {
       created <- peerDAO.create(peer)
@@ -25,7 +25,7 @@ class PeerDAOTest extends NodeDAOFixture {
         read.get.address == created.address &&
           read.get.lastSeen.getEpochSecond == created.lastSeen.getEpochSecond
           && read.get.firstSeen.getEpochSecond == created.firstSeen.getEpochSecond
-          && read.get.networkId == AddrV2Message.IPV6_NETWORK_BYTE
+          && read.get.networkId == AddrV2Message.IPV4_NETWORK_BYTE
       )
     }
 

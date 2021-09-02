@@ -189,10 +189,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       try {
         Some(networkAddress.address.ipv4Bytes)
       } catch {
-        case _: Throwable => {
+        case _: Throwable =>
           logger.info("Ignoring ipv6 address from addr message")
           return
-        }
       }
     val stringAddress = ipv4bytes.get.toArray
       .map(x => {
