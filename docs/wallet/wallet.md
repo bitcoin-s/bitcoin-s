@@ -71,6 +71,7 @@ import com.typesafe.config.ConfigFactory
 import java.nio.file.Files
 import java.time.Instant
 import scala.concurrent._
+import akka.actor.ActorSystem
 
 val chainApi = new ChainQueryApi {
     override def epochSecondToBlockHeight(time: Long): Future[Int] = Future.successful(0)
@@ -85,7 +86,7 @@ val chainApi = new ChainQueryApi {
 
 ```scala mdoc:compile-only
 implicit val ec = scala.concurrent.ExecutionContext.global
-
+implicit val system = ActorSystem("System")
 
 val config = ConfigFactory.parseString {
     """

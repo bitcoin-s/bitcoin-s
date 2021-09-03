@@ -42,13 +42,13 @@ import org.bitcoins.rpc.BitcoindWalletException
 import org.bitcoins.crypto._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.currency._
-
+import akka.actor.ActorSystem
 ```
 
 ```scala mdoc:compile-only
 
 implicit val ec: ExecutionContext = ExecutionContext.global
-
+implicit val system = ActorSystem("System")
 // this reads authentication credentials and
 // connection details from the default data
 // directory on your platform
@@ -68,7 +68,7 @@ To do so the wallet rpc functions have an optional `walletName` parameter.
 ```scala mdoc:compile-only
 
 implicit val ec: ExecutionContext = ExecutionContext.global
-
+implicit val system = ActorSystem("System")
 val client = BitcoindRpcClient.fromDatadir(binary=new File("/path/to/bitcoind"), datadir=new File("/path/to/bitcoind-datadir"))
 
 for {
@@ -96,7 +96,7 @@ ready to create the connection with our RPC client
 ```scala mdoc:compile-only
 
 implicit val ec: ExecutionContext = ExecutionContext.global
-
+implicit val system = ActorSystem("System")
 val username = "FILL_ME_IN" //this username comes from 'rpcuser' in your bitcoin.conf file
 val password = "FILL_ME_IN" //this password comes from your 'rpcpassword' in your bitcoin.conf file
 

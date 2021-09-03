@@ -24,7 +24,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.rpc.config.BitcoindInstanceLocal
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.chain._
-
+import akka.actor.ActorSystem
 import scala.concurrent._
 import java.nio.file.Files
 ```
@@ -32,7 +32,7 @@ import java.nio.file.Files
 ```scala mdoc:compile-only
 
 implicit val ec = ExecutionContext.global
-
+implicit val system = ActorSystem("System")
 // We are assuming that a `bitcoind` regtest node is running the background.
 // You can see our `bitcoind` guides to see how to connect
 // to a local or remote `bitcoind` node.
