@@ -144,9 +144,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       logger.info(s"Selected peers: $ret")
       ret
     }
-
-    allF.map(_.map(addPeer(_)))
-    Future.unit
+    for {
+      all <- allF
+    } yield all.foreach(addPeer(_, reconnect = false))
   }
 
   def peers: Vector[Peer] = peerData.keys.toVector
