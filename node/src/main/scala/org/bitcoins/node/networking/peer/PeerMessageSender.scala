@@ -46,13 +46,13 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   def disconnect()(implicit ec: ExecutionContext): Future[Unit] = {
     isConnected().flatMap {
       case true =>
-        logger.info(s"Disconnecting peer at socket=${socket}")
+        logger.debug(s"Disconnecting peer at socket=${socket}")
         (client.actor ! P2PClient.CloseCommand)
         Future.unit
       case false =>
         val err =
           s"Cannot disconnect client that is not connected to socket=${socket}!"
-        logger.warn(err)
+        logger.debug(err)
         Future.unit
     }
 

@@ -24,7 +24,11 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageSender
 }
 
+import java.util.concurrent.TimeUnit
 import java.net.{InetAddress, UnknownHostException}
+import scala.concurrent.duration.Duration
+
+//import java.net.{InetAddress, UnknownHostException}
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -34,21 +38,21 @@ import scala.util.{Failure, Random, Success}
 case class PeerData(
     peer: Peer,
     node: Node,
-    var keepConnection: Boolean,
-    networkByte: Option[Byte])(implicit
-    system: ActorSystem,
-    nodeAppConfig: NodeAppConfig) {
+    var keepConnection: Boolean
+)(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig) {
 
   lazy val peerMessageSender: PeerMessageSender = PeerMessageSender(client)
 
   lazy val client: P2PClient = {
     val peerMessageReceiver =
       PeerMessageReceiver.newReceiver(node = node, peer = peer)
-    P2PClient(context = system,
-              peer = peer,
-              peerMessageReceiver = peerMessageReceiver,
-              onReconnect = node.sync,
-              maxReconnectionTries = if (keepConnection) 16 else 1)
+    P2PClient(
+      context = system,
+      peer = peer,
+      peerMessageReceiver = peerMessageReceiver,
+      onReconnect = if (keepConnection) node.sync else () => { Future.unit },
+      maxReconnectionTries = if (keepConnection) 16 else 1
+    )
   }
 
   private var _serviceIdentifier: Option[ServiceIdentifier] = None
@@ -75,7 +79,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def executionContext: ExecutionContext = system.dispatcher
 
-  //adding peers from config, db and dns seeds
+  val peersToCheckQueue: mutable.Queue[Peer] = mutable.Queue.empty[Peer]
+
   private def getPeersFromDnsSeeds: Vector[Peer] = {
     val dnsSeeds = nodeAppConfig.network.dnsSeeds
     val addresses = dnsSeeds
@@ -96,6 +101,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
     val peers =
       inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
+    logger.info(s"Peers from dns seeds ${peers.toVector}")
     peers.toVector
   }
 
@@ -118,31 +124,42 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
     val peers =
       inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
-    logger.info(peers)
     peers
+  }
+
+  system.scheduler.scheduleWithFixedDelay(initialDelay =
+                                            Duration(10, TimeUnit.DAYS),
+                                          delay = Duration(15, TimeUnit.DAYS)) {
+    new Runnable() {
+      override def run(): Unit = {
+        if (peersToCheckQueue.size < 10)
+          getPeersFromDnsSeeds.foreach(peersToCheckQueue.enqueue)
+        val peers = for { _ <- 0 to 9 } yield peersToCheckQueue.dequeue()
+        peers.foreach(peer => {
+          addPeer(peer, keepConnection = false)
+          initializePeer(peer)
+        })
+      }
+    }
   }
 
   def getPeers: Future[Unit] = {
     val peersFromConfig = getPeersFromConf
     lazy val peersFromDbF = getPeersFromDb
-    lazy val peersFromSeeds = getPeersFromDnsSeeds
 
     val allF = for {
       peersFromDb <- peersFromDbF
     } yield {
       logger.info(s"db peers $peersFromDb")
       val ret = Vector.newBuilder[Peer]
-      //choosing "maxPeers" no of elements from lists randomly in the order of peersFromConf, peersFromDB, peersFromSeed
+      //choosing "maxPeers" no of elements from lists randomly in the order of peersFromConf, peersFromDB
       ret ++= Random.shuffle(peersFromConfig).take(maxConnectedPeers)
       if (maxConnectedPeers - ret.knownSize > 0)
         ret ++= Random
           .shuffle(peersFromDb.diff(ret.result()))
           .take(maxConnectedPeers - ret.knownSize)
       ret.result().foreach(addPeer(_, keepConnection = true))
-      logger.info(s"selected peers ${ret.result()}")
-      //dns seeds won't be used if they are not required as startup time greatly increases because of them
-      if (maxConnectedPeers - ret.knownSize > 0)
-        peersFromSeeds.foreach(addPeer(_, keepConnection = false))
+      logger.info(s"Selected initial peers ${ret.result()}")
     }
     allF
   }
@@ -151,16 +168,18 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   def addPeer(
       peer: Peer,
-      keepConnection: Boolean = true,
-      networkByte: Option[Byte] = None): Unit = {
+      keepConnection: Boolean = true
+  ): Unit = {
+    logger.info(s"Adding peer $peer")
     if (!_peerData.contains(peer)) {
-      _peerData.put(peer, PeerData(peer, this, keepConnection, networkByte))
+      _peerData.put(peer, PeerData(peer, this, keepConnection))
       peerData(peer).peerMessageSender.connect()
     }
     ()
   }
 
   def removePeer(peer: Peer): Unit = {
+    logger.info(s"removing peer $peer")
     if (_peerData.contains(peer)) {
       peerData(peer).peerMessageSender.disconnect()
       _peerData.remove(peer)
@@ -260,8 +279,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def isDisconnected(idx: Int): Future[Boolean] =
     peerMsgSenders(idx).isDisconnected()
 
-  private def connectedPeersCount = peerData.count(_._2.keepConnection)
-  private val maxConnectedPeers = 4
+  def connectedPeersCount: Int = peerData.count(_._2.keepConnection)
+  val maxConnectedPeers = 1
+
+  def onPeerInitialization(peer: Peer): Any
 
   def initializePeer(peer: Peer): Future[Unit] = {
     val isInitializedF =
@@ -272,23 +293,12 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
             maxTries = 50,
             interval = 250.millis)
           .recover { case NonFatal(_) =>
-            logger.info(s"Failed to initialize $peer")
+            logger.debug(s"Failed to initialize $peer")
             removePeer(peer)
           }
       } yield ()
     isInitializedF.map { _ =>
-      if (peerData.contains(peer)) {
-        if (peerData(peer).keepConnection) {
-          logger.info(
-            s"midway Our peer $peer is initialized num is $connectedPeersCount")
-          peerData(peer).peerMessageSender.sendGetAddrMessage()
-          handlePeerGossipMessage(peer)
-        }
-        if (connectedPeersCount < maxConnectedPeers) {
-          peerData(peer).keepConnection = true
-          logger.info(s"midway peer $peer added num is $connectedPeersCount")
-        } else removePeer(peer)
-      }
+      onPeerInitialization(peer)
     }
     isInitializedF
   }

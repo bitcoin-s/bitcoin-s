@@ -24,8 +24,8 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO}
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import scodec.bits.ByteVector
+//import scodec.bits.ByteVector
 
-import java.net.InetAddress
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.Future
 
@@ -56,43 +56,42 @@ case class NeutrinoNode(
   override def handlePeerGossipMessage(message: Any): Unit = {
     message match {
       case addr: AddrMessage =>
-        addr.addresses.foreach(createInDbIfBlockFilterPeer)
+        logger.info("got an addr1")
+        addr.addresses.foreach(addToPeerQueue)
       case addr: IPv4AddrV2Message =>
         createInDbIfBlockFilterPeer(addr)
-        ()
-      case peer: Peer =>
-        createInDbIfBlockFilterPeer(peer)
         ()
     }
   }
 
-  private def createInDbIfBlockFilterPeer(
-      networkAddress: NetworkIpAddress): Future[Unit] = {
+  override def onPeerInitialization(peer: Peer): Future[Unit] = {
+    logger.info(s"peer $peer at onPeerInit")
+    createInDbIfBlockFilterPeer(peer)
+  }
+
+  private def addToPeerQueue(networkAddress: NetworkIpAddress): Unit = {
     if (networkAddress.services.nodeCompactFilters) {
-      val (networkByte, bytes) = Try(networkAddress.address.ipv4Bytes) match {
+      val bytes = Try(networkAddress.address.ipv4Bytes) match {
         case Failure(_) =>
-          (AddrV2Message.IPV6_NETWORK_BYTE, networkAddress.address.bytes)
+          networkAddress.address.bytes
         case Success(ipv4Bytes) =>
-          (AddrV2Message.IPV4_NETWORK_BYTE, ipv4Bytes)
+          ipv4Bytes
       }
       val inetAddress =
         NetworkUtil.parseInetSocketAddress(bytes, networkAddress.port)
       val peer = Peer.fromSocket(socket = inetAddress,
                                  socks5ProxyParams =
                                    nodeAppConfig.socks5ProxyParams)
-      addPeer(peer, keepConnection = false, networkByte = Some(networkByte))
-      logger.info(
-        s"Peer from addr: $bytes supports compact filters. ${InetAddress.getByAddress(bytes.toArray).getHostAddress}")
-      initializePeer(peer)
-      Future.unit
-    } else Future.unit
+      logger.info(s"adding to q: $peer")
+      peersToCheckQueue.enqueue(peer)
+    }
   }
 
   private def createInDbIfBlockFilterPeer(
       addr: IPv4AddrV2Message): Future[Unit] = {
     val serviceIdentifier = ServiceIdentifier.fromBytes(addr.services.bytes)
     if (serviceIdentifier.nodeCompactFilters) {
-      logger.info(s"Peer from addr: ${addr.addr} supports compact filters.")
+      logger.debug(s"Peer from addr: ${addr.addr} supports compact filters.")
       PeerDAO()
         .upsertPeer(addr.addrBytes, addr.port.toInt, addr.networkId)
         .map(_ => ())
@@ -101,7 +100,7 @@ case class NeutrinoNode(
 
   private def createInDbIfBlockFilterPeer(peer: Peer): Future[Unit] = {
     if (peerData(peer).serviceIdentifier.nodeCompactFilters) {
-      logger.info(s"Our peer=$peer has been initialized")
+      logger.info(s"Our peer=$peer has been initialized and upport cf")
       val addrBytes = peer.socket.getAddress.getAddress
       val networkByte =
         if (addrBytes.length == AddrV2Message.IPV4_ADDR_LENGTH) {
@@ -114,12 +113,14 @@ case class NeutrinoNode(
       PeerDAO()
         .upsertPeer(ByteVector(addrBytes), peer.socket.getPort, networkByte)
         .map(_ => ())
+      Future.unit
     } else {
       logger.info(
         s"Our peer=$peer does not support compact filters. Disconnecting.")
-      PeerDAO().deleteByKey(
-        s"${peer.socket.getHostString}:${peer.socket.getPort}")
-      peerData(peer).peerMessageSender.disconnect()
+      removePeer(peer)
+      PeerDAO()
+        .deleteByKey(s"${peer.socket.getHostString}:${peer.socket.getPort}")
+        .map(_ => ())
     }
   }
 
