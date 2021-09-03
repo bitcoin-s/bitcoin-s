@@ -12,7 +12,7 @@ object TorUtil extends Logging {
   val torEnabled: Boolean = {
     Properties
       .envOrNone("TOR")
-      .map(_ == "true")
+      .map(_.toLowerCase == "true")
       .getOrElse(false)
   }
 
