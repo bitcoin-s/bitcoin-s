@@ -203,13 +203,10 @@ class PeerMessageReceiver(
         sender.sendHeadersMessage()
         Future.successful(this)
       case addr: AddrMessage =>
-        addr.addresses.foreach(node.createInDbIfBlockFilterPeer)
+        node.handlePeerGossipMessage(addr)
         Future.successful(this)
       case addr: AddrV2Message =>
-        addr match {
-          case ipv4: IPv4AddrV2Message => node.createInDbIfBlockFilterPeer(ipv4)
-          case _                       => logger.warn("Unsupported address type")
-        }
+        node.handlePeerGossipMessage(addr)
         sender.sendSendAddrV2Message()
         Future.successful(this)
       case SendAddrV2Message =>

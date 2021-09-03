@@ -10,7 +10,7 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.api.chain._
-import org.bitcoins.core.api.node.{NodeApi, NodeType}
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.NetworkUtil
@@ -23,17 +23,19 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageReceiver,
   PeerMessageSender
 }
-import scodec.bits.ByteVector
 
 import java.net.{InetAddress, UnknownHostException}
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-import scala.util.{Failure, Random, Success, Try}
+import scala.util.{Failure, Random, Success}
 
-case class PeerData(peer: Peer, node: Node, var keepConnection: Boolean)(
-    implicit
+case class PeerData(
+    peer: Peer,
+    node: Node,
+    var keepConnection: Boolean,
+    networkByte: Option[Byte])(implicit
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig) {
 
@@ -115,7 +117,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val inetSockets = addresses.map(
       NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
     val peers =
-      inetSockets.map(Peer.fromSocket((_), nodeAppConfig.socks5ProxyParams))
+      inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
     logger.info(peers)
     peers
   }
@@ -147,9 +149,12 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   def peers: Vector[Peer] = peerData.filter(_._2.keepConnection).keys.toVector
 
-  def addPeer(peer: Peer, keepConnection: Boolean = true): Unit = {
+  def addPeer(
+      peer: Peer,
+      keepConnection: Boolean = true,
+      networkByte: Option[Byte] = None): Unit = {
     if (!_peerData.contains(peer)) {
-      _peerData.put(peer, PeerData(peer, this, keepConnection))
+      _peerData.put(peer, PeerData(peer, this, keepConnection, networkByte))
       peerData(peer).peerMessageSender.connect()
     }
     ()
@@ -215,6 +220,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
                                     CompactFilterDAO())
   }
 
+  //todo think of a better name
+  def handlePeerGossipMessage(message: Any): Unit
+
   /** Unlike our chain api, this is cached inside our node
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
     * the [[ChainApi chain api]] is updated inside of the p2p client
@@ -252,67 +260,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def isDisconnected(idx: Int): Future[Boolean] =
     peerMsgSenders(idx).isDisconnected()
 
-  private def createInDbIfBlockFilterPeer(peer: Peer): Future[Unit] = {
-    if (peerData(peer).serviceIdentifier.nodeCompactFilters) {
-      logger.info(s"Our peer=$peer has been initialized")
-      val addrBytes = peer.socket.getAddress.getAddress
-      val networkByte =
-        if (addrBytes.length == AddrV2Message.IPV4_ADDR_LENGTH) {
-          AddrV2Message.IPV4_NETWORK_BYTE
-        } else if (addrBytes.length == AddrV2Message.IPV6_ADDR_LENGTH) {
-          AddrV2Message.IPV6_NETWORK_BYTE
-        } else // todo might be tor, how to handle?
-          throw new IllegalArgumentException("Unknown peer network")
-      logger.info(s"Adding peer to db $peer")
-      PeerDAO()
-        .upsertPeer(ByteVector(addrBytes), peer.socket.getPort, networkByte)
-        .map(_ => ())
-    } else {
-      logger.info(
-        s"Our peer=$peer does not support compact filters. Disconnecting.")
-      PeerDAO().deleteByKey(
-        s"${peer.socket.getHostString}:${peer.socket.getPort}")
-      peerData(peer).peerMessageSender.disconnect()
-    }
-  }
-
-  def createInDbIfBlockFilterPeer(
-      networkAddress: NetworkIpAddress): Future[Unit] = {
-    if (networkAddress.services.nodeCompactFilters) {
-      val (networkByte, bytes) = Try(networkAddress.address.ipv4Bytes) match {
-        case Failure(_) =>
-          (AddrV2Message.IPV6_NETWORK_BYTE, networkAddress.address.bytes)
-        case Success(ipv4Bytes) =>
-          (AddrV2Message.IPV4_NETWORK_BYTE, ipv4Bytes)
-      }
-      val inetAddress =
-        NetworkUtil.parseInetSocketAddress(bytes, networkAddress.port)
-      val peer = Peer.fromSocket(socket = inetAddress,
-                                 socks5ProxyParams =
-                                   nodeAppConfig.socks5ProxyParams)
-      addPeer(peer, keepConnection = false)
-      logger.info(
-        s"Peer from addr: $bytes supports compact filters. ${InetAddress.getByAddress(bytes.toArray).getHostAddress}")
-      PeerDAO().upsertPeer(bytes, networkAddress.port, networkByte).map(_ => ())
-      initializePeer(peer)
-      Future.unit
-    } else Future.unit
-  }
-
-  def createInDbIfBlockFilterPeer(addr: IPv4AddrV2Message): Future[Unit] = {
-    val serviceIdentifier = ServiceIdentifier.fromBytes(addr.services.bytes)
-    if (serviceIdentifier.nodeCompactFilters) {
-      logger.info(s"Peer from addr: ${addr.addr} supports compact filters.")
-      PeerDAO()
-        .upsertPeer(addr.addrBytes, addr.port.toInt, addr.networkId)
-        .map(_ => ())
-    } else Future.unit
-  }
-
-  private var connectedPeersCount = 0
+  private def connectedPeersCount = peerData.count(_._2.keepConnection)
   private val maxConnectedPeers = 4
 
-  private def initializePeer(peer: Peer): Future[Unit] = {
+  def initializePeer(peer: Peer): Future[Unit] = {
     val isInitializedF =
       for {
         _ <- AsyncUtil
@@ -328,21 +279,13 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     isInitializedF.map { _ =>
       if (peerData.contains(peer)) {
         if (peerData(peer).keepConnection) {
-          connectedPeersCount += 1
           logger.info(
             s"midway Our peer $peer is initialized num is $connectedPeersCount")
           peerData(peer).peerMessageSender.sendGetAddrMessage()
-          nodeAppConfig.nodeType match {
-            case NodeType.NeutrinoNode => createInDbIfBlockFilterPeer(peer)
-            case NodeType.SpvNode      =>
-            case NodeType.BitcoindBackend =>
-              throw new RuntimeException("Node cannot be BitcoindBackend")
-            case NodeType.FullNode =>
-          }
+          handlePeerGossipMessage(peer)
         }
         if (connectedPeersCount < maxConnectedPeers) {
           peerData(peer).keepConnection = true
-          connectedPeersCount += 1
           logger.info(s"midway peer $peer added num is $connectedPeersCount")
         } else removePeer(peer)
       }

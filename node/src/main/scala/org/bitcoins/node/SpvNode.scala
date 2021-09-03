@@ -46,6 +46,8 @@ case class SpvNode(
     this
   }
 
+  override def handlePeerGossipMessage(message: Any): Unit = {}
+
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): SpvNode = {
     copy(dataMessageHandler = dataMessageHandler)
