@@ -32,7 +32,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Random, Success, Try}
 
-case class PeerData(peer: Peer, node: Node, reconnect: Boolean)(implicit
+case class PeerData(peer: Peer, node: Node, var keepConnection: Boolean)(
+    implicit
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig) {
 
@@ -45,7 +46,7 @@ case class PeerData(peer: Peer, node: Node, reconnect: Boolean)(implicit
               peer = peer,
               peerMessageReceiver = peerMessageReceiver,
               onReconnect = node.sync,
-              maxReconnectionTries = if (reconnect) 16 else 1)
+              maxReconnectionTries = if (keepConnection) 16 else 1)
   }
 
   private var _serviceIdentifier: Option[ServiceIdentifier] = None
@@ -92,19 +93,18 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val inetSockets = addresses.map(
       NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
     val peers =
-      inetSockets.map(Peer.fromSocket((_), nodeAppConfig.socks5ProxyParams))
+      inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
     peers.toVector
   }
 
   private def getPeersFromDb: Future[Vector[Peer]] = {
-    val addressesF =
-      PeerDAO().findAll().map(_.map(p => new String(p.address.toArray)))
+    val addressesF: Future[Vector[PeerDB]] =
+      PeerDAO().findAll()
     val peersF = addressesF.map { addresses =>
-      val inetSockets = addresses.map(
-        NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
-      // todo use saved port instead of default port
+      val inetSockets = addresses.map(a =>
+        NetworkUtil.parseInetSocketAddress(a.address, a.port))
       val peers =
-        inetSockets.map(Peer.fromSocket((_), nodeAppConfig.socks5ProxyParams))
+        inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
       peers
     }
     peersF
@@ -129,38 +129,35 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       peersFromDb <- peersFromDbF
     } yield {
       logger.info(s"db peers $peersFromDb")
-      val maxPeers = 1
       val ret = Vector.newBuilder[Peer]
       //choosing "maxPeers" no of elements from lists randomly in the order of peersFromConf, peersFromDB, peersFromSeed
-      ret ++= Random.shuffle(peersFromConfig).take(maxPeers)
-      if (maxPeers - ret.knownSize > 0)
+      ret ++= Random.shuffle(peersFromConfig).take(maxConnectedPeers)
+      if (maxConnectedPeers - ret.knownSize > 0)
         ret ++= Random
           .shuffle(peersFromDb.diff(ret.result()))
-          .take(maxPeers - ret.knownSize)
+          .take(maxConnectedPeers - ret.knownSize)
+      ret.result().foreach(addPeer(_, keepConnection = true))
+      logger.info(s"selected peers ${ret.result()}")
       //dns seeds won't be used if they are not required as startup time greatly increases because of them
-      if (maxPeers - ret.knownSize > 0)
-        ret ++= Random
-          .shuffle(peersFromSeeds.diff(ret.result()))
-          .take(maxPeers - ret.knownSize)
-      logger.info(s"Selected peers: ${ret.result()}")
-      ret.result()
+      if (maxConnectedPeers - ret.knownSize > 0)
+        peersFromSeeds.foreach(addPeer(_, keepConnection = false))
     }
-    for {
-      all <- allF
-    } yield all.foreach(addPeer(_, reconnect = false))
+    allF
   }
 
-  def peers: Vector[Peer] = peerData.keys.toVector
+  def peers: Vector[Peer] = peerData.filter(_._2.keepConnection).keys.toVector
 
-  def addPeer(peer: Peer, reconnect: Boolean = true): Unit = {
+  def addPeer(peer: Peer, keepConnection: Boolean = true): Unit = {
     if (!_peerData.contains(peer)) {
-      _peerData.put(peer, PeerData(peer, this, reconnect))
+      _peerData.put(peer, PeerData(peer, this, keepConnection))
+      peerData(peer).peerMessageSender.connect()
     }
     ()
   }
 
   def removePeer(peer: Peer): Unit = {
     if (_peerData.contains(peer)) {
+      peerData(peer).peerMessageSender.disconnect()
       _peerData.remove(peer)
     }
     ()
@@ -174,7 +171,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def randomPeerMsgSenderWithService(
       f: ServiceIdentifier => Boolean): PeerMessageSender = {
     val filteredPeers = peerData
-      .filter(p => f(p._2.serviceIdentifier))
+      .filter(p => f(p._2.serviceIdentifier) && p._2.keepConnection)
       .keys
       .toVector
     if (filteredPeers.isEmpty)
@@ -222,10 +219,15 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
     * the [[ChainApi chain api]] is updated inside of the p2p client
     */
-  def clients: Vector[P2PClient] = peerData.values.map(_.client).toVector
+  def clients: Vector[P2PClient] =
+    peerData.filter(_._2.keepConnection).values.map(_.client).toVector
 
   def peerMsgSenders: Vector[PeerMessageSender] =
-    peerData.values.map(_.peerMessageSender).toVector
+    peerData
+      .filter(_._2.keepConnection)
+      .values
+      .map(_.peerMessageSender)
+      .toVector
 
   /** Sends the given P2P to our peer.
     * This method is useful for playing around
@@ -261,6 +263,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
           AddrV2Message.IPV6_NETWORK_BYTE
         } else // todo might be tor, how to handle?
           throw new IllegalArgumentException("Unknown peer network")
+      logger.info(s"Adding peer to db $peer")
       PeerDAO()
         .upsertPeer(ByteVector(addrBytes), peer.socket.getPort, networkByte)
         .map(_ => ())
@@ -282,9 +285,17 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         case Success(ipv4Bytes) =>
           (AddrV2Message.IPV4_NETWORK_BYTE, ipv4Bytes)
       }
-
-      logger.info(s"Peer from addr: $bytes supports compact filters.")
+      val inetAddress =
+        NetworkUtil.parseInetSocketAddress(bytes, networkAddress.port)
+      val peer = Peer.fromSocket(socket = inetAddress,
+                                 socks5ProxyParams =
+                                   nodeAppConfig.socks5ProxyParams)
+      addPeer(peer, keepConnection = false)
+      logger.info(
+        s"Peer from addr: $bytes supports compact filters. ${InetAddress.getByAddress(bytes.toArray).getHostAddress}")
       PeerDAO().upsertPeer(bytes, networkAddress.port, networkByte).map(_ => ())
+      initializePeer(peer)
+      Future.unit
     } else Future.unit
   }
 
@@ -298,8 +309,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     } else Future.unit
   }
 
+  private var connectedPeersCount = 0
+  private val maxConnectedPeers = 4
+
   private def initializePeer(peer: Peer): Future[Unit] = {
-    peerData(peer).peerMessageSender.connect()
     val isInitializedF =
       for {
         _ <- AsyncUtil
@@ -314,14 +327,24 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       } yield ()
     isInitializedF.map { _ =>
       if (peerData.contains(peer)) {
-        peerData(peer).peerMessageSender.sendGetAddrMessage()
-        nodeAppConfig.nodeType match {
-          case NodeType.NeutrinoNode => createInDbIfBlockFilterPeer(peer)
-          case NodeType.SpvNode      =>
-          case NodeType.BitcoindBackend =>
-            throw new RuntimeException("Node cannot be BitcoindBackend")
-          case NodeType.FullNode =>
+        if (peerData(peer).keepConnection) {
+          connectedPeersCount += 1
+          logger.info(
+            s"midway Our peer $peer is initialized num is $connectedPeersCount")
+          peerData(peer).peerMessageSender.sendGetAddrMessage()
+          nodeAppConfig.nodeType match {
+            case NodeType.NeutrinoNode => createInDbIfBlockFilterPeer(peer)
+            case NodeType.SpvNode      =>
+            case NodeType.BitcoindBackend =>
+              throw new RuntimeException("Node cannot be BitcoindBackend")
+            case NodeType.FullNode =>
+          }
         }
+        if (connectedPeersCount < maxConnectedPeers) {
+          peerData(peer).keepConnection = true
+          connectedPeersCount += 1
+          logger.info(s"midway peer $peer added num is $connectedPeersCount")
+        } else removePeer(peer)
       }
     }
     isInitializedF

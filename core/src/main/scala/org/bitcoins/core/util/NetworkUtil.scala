@@ -1,5 +1,7 @@
 package org.bitcoins.core.util
 
+import scodec.bits.ByteVector
+
 import java.net._
 import scala.annotation.tailrec
 import scala.util.{Failure, Random, Success, Try}
@@ -14,6 +16,19 @@ abstract class NetworkUtil {
       defaultPort: => Int): InetSocketAddress = {
     val uri = new URI("tcp://" + address)
     val port = if (uri.getPort < 0) defaultPort else uri.getPort
+    InetSocketAddress.createUnresolved(uri.getHost, port)
+  }
+
+  def parseInetSocketAddress(
+      address: ByteVector,
+      port: Int): InetSocketAddress = {
+    val hostAddress = InetAddress.getByAddress(address.toArray).getHostAddress
+    val uri: URI = {
+      address.size match {
+        case 4  => new URI("tcp://" + hostAddress)
+        case 16 => new URI(s"tcp://[$hostAddress]")
+      }
+    }
     InetSocketAddress.createUnresolved(uri.getHost, port)
   }
 
