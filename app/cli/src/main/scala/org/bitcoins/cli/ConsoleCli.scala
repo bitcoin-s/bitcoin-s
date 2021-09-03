@@ -734,6 +734,19 @@ object ConsoleCli {
               }))
         ),
       note(sys.props("line.separator") + "=== DLC ==="),
+      cmd("decodecontractinfo")
+        .action((_, conf) => conf.copy(command = DecodeContractInfo(null)))
+        .text("Decodes a contract info into json")
+        .children(
+          arg[ContractInfoV0TLV]("contractinfo")
+            .text("Hex encoded contract info")
+            .required()
+            .action((contractInfo, conf) =>
+              conf.copy(command = conf.command match {
+                case decode: DecodeContractInfo =>
+                  decode.copy(contractInfo = contractInfo)
+                case other => other
+              }))),
       cmd("decodeoffer")
         .action((_, conf) => conf.copy(command = DecodeOffer(null)))
         .text("Decodes an offer message into json")
@@ -1609,6 +1622,9 @@ object ConsoleCli {
       // DLCs
       case GetDLCHostAddress => RequestParam("getdlchostaddress")
 
+      case DecodeContractInfo(contractInfo) =>
+        RequestParam("decodecontractinfo", Seq(up.writeJs(contractInfo)))
+
       case DecodeOffer(offer) =>
         RequestParam("decodeoffer", Seq(up.writeJs(offer)))
       case DecodeAnnouncement(announcement) =>
@@ -2001,6 +2017,9 @@ object CliCommand {
 
   // DLC
   case object GetDLCHostAddress extends AppServerCliCommand
+
+  case class DecodeContractInfo(contractInfo: ContractInfoV0TLV)
+      extends AppServerCliCommand
 
   case class DecodeOffer(offer: LnMessage[DLCOfferTLV])
       extends AppServerCliCommand

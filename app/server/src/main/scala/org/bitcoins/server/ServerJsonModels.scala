@@ -677,6 +677,28 @@ object CreateDLCOffer extends ServerJsonModels {
   }
 }
 
+case class DecodeContractInfo(contractInfo: ContractInfoV0TLV)
+
+object DecodeContractInfo extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DecodeContractInfo] = {
+    jsArr.arr.toList match {
+      case contractInfoJs :: Nil =>
+        Try {
+          val contractInfo = ContractInfoV0TLV(contractInfoJs.str)
+          DecodeContractInfo(contractInfo)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing contractInfo argument"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
 case class DecodeOffer(offer: DLCOfferTLV)
 
 object DecodeOffer extends ServerJsonModels {
@@ -707,7 +729,7 @@ object DecodeOffer extends ServerJsonModels {
   }
 }
 
-case class DecodeAnnouncement(announcement: OracleAnnouncementV0TLV)
+case class DecodeAnnouncement(announcement: OracleAnnouncementTLV)
 
 object DecodeAnnouncement extends ServerJsonModels {
 
@@ -715,7 +737,7 @@ object DecodeAnnouncement extends ServerJsonModels {
     jsArr.arr.toList match {
       case annJs :: Nil =>
         Try {
-          val announcementTLV = OracleAnnouncementV0TLV(annJs.str)
+          val announcementTLV = OracleAnnouncementTLV(annJs.str)
           DecodeAnnouncement(announcementTLV)
         }
       case Nil =>
