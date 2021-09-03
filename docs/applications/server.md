@@ -226,6 +226,14 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `passphrase` - The passphrase to encrypt the wallet with
 
 ### DLC
+ - `decodecontractinfo` `contractinfo` - Decodes a contract info into json
+   - `contractinfo` - Hex encoded contract info
+ - `decodeoffer` `offer` - Decodes an offer message into json
+    - `offer` - Hex encoded dlc offer message
+ - `decodeannouncement` `announcement` - Decodes an oracle announcement message into json
+    - `announcement` - Hex encoded oracle announcement message
+ - `decodeattestments` `attestments` - Decodes an oracle attestments message into json
+    - `attestments` - Hex encoded oracle attestments message
  - `getdlchostaddress` - Returns the public listening address of the DLC Node
  - `createdlcoffer` `contractInfo` `collateral` `[feerate]` `locktime` `refundlocktime` - Creates a DLC offer that another party can accept
     - `contractInfo` - Hex encoded contractInfo message

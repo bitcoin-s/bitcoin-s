@@ -21,7 +21,7 @@ import ujson._
 import java.io.File
 import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
-import scala.util.{Failure, Try}
+import scala.util._
 
 case class GetNewAddress(labelOpt: Option[AddressLabelTag])
 
@@ -673,6 +673,102 @@ object CreateDLCOffer extends ServerJsonModels {
         Failure(
           new IllegalArgumentException(
             s"Bad number of arguments: ${other.length}. Expected: 6"))
+    }
+  }
+}
+
+case class DecodeContractInfo(contractInfo: ContractInfoV0TLV)
+
+object DecodeContractInfo extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DecodeContractInfo] = {
+    jsArr.arr.toList match {
+      case contractInfoJs :: Nil =>
+        Try {
+          val contractInfo = ContractInfoV0TLV(contractInfoJs.str)
+          DecodeContractInfo(contractInfo)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing contractInfo argument"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class DecodeOffer(offer: DLCOfferTLV)
+
+object DecodeOffer extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DecodeOffer] = {
+    jsArr.arr.toList match {
+      case offerJs :: Nil =>
+        Try {
+          val offer: LnMessage[DLCOfferTLV] =
+            LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
+          DecodeOffer(offer.tlv)
+        } match {
+          case Success(value) => Success(value)
+          case Failure(_) =>
+            Try {
+              val offer = DLCOfferTLV.fromHex(offerJs.str)
+              DecodeOffer(offer)
+            }
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing offer argument"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class DecodeAnnouncement(announcement: OracleAnnouncementTLV)
+
+object DecodeAnnouncement extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DecodeAnnouncement] = {
+    jsArr.arr.toList match {
+      case annJs :: Nil =>
+        Try {
+          val announcementTLV = OracleAnnouncementTLV(annJs.str)
+          DecodeAnnouncement(announcementTLV)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing announcement argument"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class DecodeAttestations(announcement: OracleAttestmentV0TLV)
+
+object DecodeAttestations extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DecodeAttestations] = {
+    jsArr.arr.toList match {
+      case attestmentJs :: Nil =>
+        Try {
+          val attestments = OracleAttestmentV0TLV(attestmentJs.str)
+          DecodeAttestations(attestments)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing attestment argument"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
     }
   }
 }

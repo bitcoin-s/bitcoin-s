@@ -196,6 +196,22 @@ object CliReaders {
       val reads: String => ContractInfoV0TLV = ContractInfoV0TLV.fromHex
     }
 
+  implicit val announcementReads: Read[OracleAnnouncementV0TLV] =
+    new Read[OracleAnnouncementV0TLV] {
+      val arity: Int = 1
+
+      val reads: String => OracleAnnouncementV0TLV =
+        OracleAnnouncementV0TLV.fromHex
+    }
+
+  implicit val attestmentReads: Read[OracleAttestmentV0TLV] =
+    new Read[OracleAttestmentV0TLV] {
+      val arity: Int = 1
+
+      val reads: String => OracleAttestmentV0TLV =
+        OracleAttestmentV0TLV.fromHex
+    }
+
   implicit val blockStampReads: Read[BlockStamp] =
     new Read[BlockStamp] {
       val arity: Int = 1

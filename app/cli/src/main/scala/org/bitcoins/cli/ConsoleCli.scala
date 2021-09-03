@@ -734,6 +734,58 @@ object ConsoleCli {
               }))
         ),
       note(sys.props("line.separator") + "=== DLC ==="),
+      cmd("decodecontractinfo")
+        .action((_, conf) => conf.copy(command = DecodeContractInfo(null)))
+        .text("Decodes a contract info into json")
+        .children(
+          arg[ContractInfoV0TLV]("contractinfo")
+            .text("Hex encoded contract info")
+            .required()
+            .action((contractInfo, conf) =>
+              conf.copy(command = conf.command match {
+                case decode: DecodeContractInfo =>
+                  decode.copy(contractInfo = contractInfo)
+                case other => other
+              }))),
+      cmd("decodeoffer")
+        .action((_, conf) => conf.copy(command = DecodeOffer(null)))
+        .text("Decodes an offer message into json")
+        .children(
+          arg[LnMessage[DLCOfferTLV]]("offer")
+            .text("Hex encoded dlc offer message")
+            .required()
+            .action((offer, conf) =>
+              conf.copy(command = conf.command match {
+                case decode: DecodeOffer =>
+                  decode.copy(offer = offer)
+                case other => other
+              }))),
+      cmd("decodeannouncement")
+        .action((_, conf) => conf.copy(command = DecodeAnnouncement(null)))
+        .text("Decodes an oracle announcement message into json")
+        .children(
+          arg[OracleAnnouncementV0TLV]("announcement")
+            .text("Hex encoded oracle announcement message")
+            .required()
+            .action((ann, conf) =>
+              conf.copy(command = conf.command match {
+                case decode: DecodeAnnouncement =>
+                  decode.copy(announcement = ann)
+                case other => other
+              }))),
+      cmd("decodeattestments")
+        .action((_, conf) => conf.copy(command = DecodeAttestments(null)))
+        .text("Decodes an oracle attestments message into json")
+        .children(
+          arg[OracleAttestmentV0TLV]("attestments")
+            .text("Hex encoded oracle attestments message")
+            .required()
+            .action((attestments, conf) =>
+              conf.copy(command = conf.command match {
+                case decode: DecodeAttestments =>
+                  decode.copy(sigs = attestments)
+                case other => other
+              }))),
       cmd("getdlchostaddress")
         .action((_, conf) => conf.copy(command = GetDLCHostAddress))
         .text("Returns the public listening address of the DLC Node"),
@@ -1569,7 +1621,19 @@ object ConsoleCli {
         RequestParam("walletinfo")
       // DLCs
       case GetDLCHostAddress => RequestParam("getdlchostaddress")
-      case GetDLCs           => RequestParam("getdlcs")
+
+      case DecodeContractInfo(contractInfo) =>
+        RequestParam("decodecontractinfo", Seq(up.writeJs(contractInfo)))
+
+      case DecodeOffer(offer) =>
+        RequestParam("decodeoffer", Seq(up.writeJs(offer)))
+      case DecodeAnnouncement(announcement) =>
+        RequestParam("decodeannouncement", Seq(up.writeJs(announcement)))
+
+      case DecodeAttestments(attestments) =>
+        RequestParam("decodeattestments", Seq(up.writeJs(attestments)))
+
+      case GetDLCs => RequestParam("getdlcs")
       case GetDLC(dlcId) =>
         RequestParam("getdlc", Seq(up.writeJs(dlcId)))
       case CreateDLCOffer(contractInfo,
@@ -1953,6 +2017,18 @@ object CliCommand {
 
   // DLC
   case object GetDLCHostAddress extends AppServerCliCommand
+
+  case class DecodeContractInfo(contractInfo: ContractInfoV0TLV)
+      extends AppServerCliCommand
+
+  case class DecodeOffer(offer: LnMessage[DLCOfferTLV])
+      extends AppServerCliCommand
+
+  case class DecodeAnnouncement(announcement: OracleAnnouncementV0TLV)
+      extends AppServerCliCommand
+
+  case class DecodeAttestments(sigs: OracleAttestmentV0TLV)
+      extends AppServerCliCommand
 
   case class CreateDLCOffer(
       contractInfo: ContractInfoV0TLV,
