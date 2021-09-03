@@ -9,9 +9,12 @@ import scala.util.Properties
 
 object TorUtil extends Logging {
 
-  val torEnabled: Boolean = Properties
-    .envOrNone("TOR")
-    .isDefined
+  val torEnabled: Boolean = {
+    Properties
+      .envOrNone("TOR")
+      .map(_ == "true")
+      .getOrElse(false)
+  }
 
   def torProxyAddress =
     new InetSocketAddress(InetAddress.getLoopbackAddress,

@@ -14,7 +14,7 @@ class Socks5ClientTransportSpec extends BitcoinSAsyncTest with CachedTor {
 
   implicit val ec = system.dispatcher
 
-  val proxyParams = torConfig.socks5ProxyParams
+  val proxyParams = torConfig.socks5ProxyParams.get
 
   val socks5ClientTransport = new Socks5ClientTransport(proxyParams)
 

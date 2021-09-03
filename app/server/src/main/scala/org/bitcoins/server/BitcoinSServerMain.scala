@@ -119,7 +119,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val feeProvider = getFeeProviderOrElse(
       MempoolSpaceProvider(HourFeeTarget,
                            walletConf.network,
-                           Some(torConf.socks5ProxyParams)))
+                           torConf.socks5ProxyParams))
     //get our wallet
     val configuredWalletF = for {
       node <- nodeF
@@ -379,20 +379,17 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         case (None, None) | (None, Some(_)) =>
           default
         case (Some(BitcoinerLive), None) =>
-          BitcoinerLiveFeeRateProvider.fromBlockTarget(6, Some(proxyParams))
+          BitcoinerLiveFeeRateProvider.fromBlockTarget(6, proxyParams)
         case (Some(BitcoinerLive), Some(target)) =>
-          BitcoinerLiveFeeRateProvider.fromBlockTarget(target,
-                                                       Some(proxyParams))
+          BitcoinerLiveFeeRateProvider.fromBlockTarget(target, proxyParams)
         case (Some(BitGo), targetOpt) =>
-          BitGoFeeRateProvider(targetOpt, Some(proxyParams))
+          BitGoFeeRateProvider(targetOpt, proxyParams)
         case (Some(MempoolSpace), None) =>
-          MempoolSpaceProvider(HourFeeTarget,
-                               walletConf.network,
-                               Some(proxyParams))
+          MempoolSpaceProvider(HourFeeTarget, walletConf.network, proxyParams)
         case (Some(MempoolSpace), Some(target)) =>
           MempoolSpaceProvider.fromBlockTarget(target,
                                                walletConf.network,
-                                               Some(proxyParams))
+                                               proxyParams)
         case (Some(Constant), Some(num)) =>
           ConstantFeeRateProvider(SatoshisPerVirtualByte.fromLong(num))
         case (Some(Constant), None) =>

@@ -48,10 +48,10 @@ case class DLCNodeAppConfig(
   override def stop(): Future[Unit] = Future.unit
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] =
-    Some(torAppConfig.socks5ProxyParams)
+    torAppConfig.socks5ProxyParams
 
   lazy val torParams: Option[TorParams] = {
-    Some(torAppConfig.torParams)
+    torAppConfig.torParams
   }
 
   lazy val listenAddress: InetSocketAddress = {

@@ -115,9 +115,9 @@ case class NodeAppConfig(
     TorAppConfig(directory, confs: _*)
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] =
-    Some(torConf.socks5ProxyParams)
+    torConf.socks5ProxyParams
 
-  lazy val torParams: Option[TorParams] = Some(torConf.torParams)
+  lazy val torParams: Option[TorParams] = torConf.torParams
 
   lazy val relay: Boolean = {
     if (config.hasPath("bitcoin-s.node.relay")) {

@@ -49,7 +49,7 @@ case class TorAppConfig(
 
   lazy val useRandomPorts = config.getBoolean("bitcoin-s.tor.use-random-ports")
 
-  lazy val socks5ProxyParams: Socks5ProxyParams = {
+  lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
     if (config.getBoolean("bitcoin-s.proxy.enabled")) {
       val address = if (torProvided) {
         NetworkUtil.parseInetSocketAddress(
@@ -61,23 +61,18 @@ case class TorAppConfig(
                                 TorAppConfig.randomSocks5Port
                               else TorParams.DefaultProxyPort)
       }
-      Socks5ProxyParams(
+      val proxyParams = Socks5ProxyParams(
         address = address,
         credentialsOpt = None,
         randomizeCredentials = true
       )
+      Some(proxyParams)
     } else {
-      val addr = new InetSocketAddress(InetAddress.getLoopbackAddress,
-                                       Socks5ProxyParams.DefaultPort)
-      Socks5ProxyParams(
-        address = addr,
-        credentialsOpt = None,
-        randomizeCredentials = true
-      )
+      None
     }
   }
 
-  lazy val torParams: TorParams = {
+  lazy val torParams: Option[TorParams] = {
     if (config.getBoolean("bitcoin-s.tor.enabled")) {
       val address = if (torProvided) {
         NetworkUtil.parseInetSocketAddress(
@@ -101,21 +96,20 @@ case class TorAppConfig(
           case None       => datadir.resolve("tor_priv_key")
         }
 
-      TorParams(address, auth, privKeyPath)
+      val torParams = TorParams(address, auth, privKeyPath)
+      Some(torParams)
     } else {
-      val control = new InetSocketAddress(InetAddress.getLoopbackAddress,
-                                          TorParams.DefaultControlPort)
-
-      val auth = SafeCookie()
-      val privKeyPath = datadir.resolve("tor_priv_key")
-
-      TorParams(control, auth, privKeyPath)
+      None
     }
   }
 
   lazy val enabled: Boolean = {
-    config.getBoolean("bitcoin-s.tor.enabled") &&
-    config.getBoolean("bitcoin-s.proxy.enabled")
+    val bool = config.getBoolean("bitcoin-s.tor.enabled") &&
+      config.getBoolean("bitcoin-s.proxy.enabled")
+
+    println(
+      s"----------------------------bool=$bool----------------------------")
+    bool
   }
 
   private val isBootstrappedLogLine = "Bootstrapped 100% (done): Done"
@@ -204,30 +198,42 @@ case class TorAppConfig(
   }
 
   private def checkIfTorAlreadyRunning: Boolean = {
-    val toCheck = socks5ProxyParams.address
-
-    NetworkUtil.portIsBound(toCheck) && isAlive()
+    socks5ProxyParams match {
+      case Some(params) =>
+        val toCheck = params.address
+        NetworkUtil.portIsBound(toCheck) && isAlive()
+      case None => false
+    }
   }
 
-  private lazy val authenticationArg: String =
-    torParams.authentication match {
-      case Password(_) =>
-        //      s"--HashedControlPassword $password" // todo: need to hash the password correctly
-        throw new RuntimeException("Password authentication not yet supported")
-      case _: SafeCookie =>
-        "--CookieAuthentication 1"
-    }
+  private lazy val authenticationArg: String = {
+    torParams
+      .map { params =>
+        params.authentication match {
+          case Password(_) =>
+            //      s"--HashedControlPassword $password" // todo: need to hash the password correctly
+            throw new RuntimeException(
+              "Password authentication not yet supported")
+          case _: SafeCookie =>
+            "--CookieAuthentication 1"
+        }
+      }
+      .getOrElse(sys.error(
+        s"Trying to authenticate with tor when torParams is not defined! got=$torParams"))
+  }
 
   private lazy val executable = TorAppConfig.torBinaryFromResource(torDir)
 
   /** The command to start the daemon on the underlying OS */
   override lazy val cmd: String = {
-
+    require(socks5ProxyParams.isDefined,
+            s"Socks5ProxyParams was not defined, cannot start tor")
+    require(torParams.isDefined, s"TorParams was not define, cannot start tor")
     val args = Vector(
       "--ExitRelay 0", // ensure we aren't an exit relay
       "--BridgeRelay 0", // ensure we aren't an bridge relay
-      s"--SOCKSPort ${socks5ProxyParams.address.getHostName}:${socks5ProxyParams.address.getPort}",
-      s"--ControlPort ${torParams.controlAddress.getPort}",
+      s"--SOCKSPort ${socks5ProxyParams.get.address.getHostName}:${socks5ProxyParams.get.address.getPort}",
+      s"--ControlPort ${torParams.get.controlAddress.getPort}",
       authenticationArg,
       s"""--DataDirectory "${torDir.toAbsolutePath}" """,
       s"""--Log "notice file ${torLogFile.toAbsolutePath}" """,
