@@ -130,19 +130,20 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     } yield {
       logger.info(s"db peers $peersFromDb")
       val maxPeers = 1
-      var ret: Vector[Peer] = Vector()
+      val ret = Vector.newBuilder[Peer]
       //choosing "maxPeers" no of elements from lists randomly in the order of peersFromConf, peersFromDB, peersFromSeed
-      ret = ret ++ Random.shuffle(peersFromConfig).take(maxPeers)
-      ret = ret ++ Random
-        .shuffle(peersFromDb.diff(ret))
-        .take(maxPeers - ret.length)
+      ret ++= Random.shuffle(peersFromConfig).take(maxPeers)
+      if (maxPeers - ret.knownSize > 0)
+        ret ++= Random
+          .shuffle(peersFromDb.diff(ret.result()))
+          .take(maxPeers - ret.knownSize)
       //dns seeds won't be used if they are not required as startup time greatly increases because of them
-      if (maxPeers - ret.length > 0)
-        ret = ret ++ Random
-          .shuffle(peersFromSeeds.diff(ret))
-          .take(maxPeers - ret.length)
-      logger.info(s"Selected peers: $ret")
-      ret
+      if (maxPeers - ret.knownSize > 0)
+        ret ++= Random
+          .shuffle(peersFromSeeds.diff(ret.result()))
+          .take(maxPeers - ret.knownSize)
+      logger.info(s"Selected peers: ${ret.result()}")
+      ret.result()
     }
     for {
       all <- allF
