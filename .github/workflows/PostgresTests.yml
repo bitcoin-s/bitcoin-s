@@ -12,6 +12,7 @@ jobs:
     if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     env:
       PG_ENABLED: "1"
+      TOR: "false"
     steps:
       - name: Checkout
         uses: actions/checkout@v2

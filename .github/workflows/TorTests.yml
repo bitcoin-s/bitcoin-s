@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 60
     if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     env:
-      TOR: "1"
+      TOR: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
