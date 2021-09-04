@@ -153,10 +153,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       val ret = Vector.newBuilder[Peer]
       //choosing "maxPeers" no of elements from lists randomly in the order of peersFromConf, peersFromDB
       ret ++= Random.shuffle(peersFromConfig).take(maxConnectedPeers)
-      if (maxConnectedPeers - ret.knownSize > 0)
+      if (maxConnectedPeers - ret.result().size > 0)
         ret ++= Random
           .shuffle(peersFromDb.diff(ret.result()))
-          .take(maxConnectedPeers - ret.knownSize)
+          .take(maxConnectedPeers - ret.result().size)
       ret.result().foreach(addPeer(_, keepConnection = true))
     }
     allF
