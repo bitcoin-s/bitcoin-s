@@ -35,7 +35,8 @@ case class NeutrinoNode(
     private var dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
-    actorSystem: ActorSystem
+    actorSystem: ActorSystem,
+    defaultPeers: Vector[Peer] = Vector()
 ) extends Node {
   require(
     nodeConfig.nodeType == NodeType.NeutrinoNode,
@@ -54,6 +55,8 @@ case class NeutrinoNode(
     this.dataMessageHandler = dataMessageHandler
     this
   }
+
+  defaultPeers.foreach(addPeer(_))
 
   override def handlePeerGossipMessage(message: Any): Unit = {
     message match {

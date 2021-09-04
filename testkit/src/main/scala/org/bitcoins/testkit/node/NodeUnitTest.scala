@@ -211,7 +211,7 @@ object NodeUnitTest extends P2PLogger {
 
     val dmh = DataMessageHandler(chainApi)
 
-    NeutrinoNode(dmh, nodeConf, chainConf, system)
+    NeutrinoNode(dmh, nodeConf, chainConf, system, defaultPeers = Vector(peer))
   }
 
   def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(implicit
@@ -487,7 +487,8 @@ object NodeUnitTest extends P2PLogger {
       NeutrinoNode(dataMessageHandler = dmh,
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
-                   actorSystem = system)
+                   actorSystem = system,
+                   defaultPeers = Vector(peer))
     }
 
     nodeF
@@ -518,7 +519,8 @@ object NodeUnitTest extends P2PLogger {
       NeutrinoNode(dataMessageHandler = dmh,
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
-                   actorSystem = system)
+                   actorSystem = system,
+                   defaultPeers = peers)
     }
 
     nodeF

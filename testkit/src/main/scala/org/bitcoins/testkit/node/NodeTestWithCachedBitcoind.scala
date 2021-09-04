@@ -113,8 +113,8 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
         node <- NodeUnitTest.createNeutrinoNode(bitcoinds)(system,
                                                            appConfig.chainConf,
                                                            appConfig.nodeConf)
+        _ <- appConfig.nodeConf.start()
         startedNode <- node.start()
-        //is it enough to just sync with one bitcoind client for a test?
         syncedNode <- syncNeutrinoNode(startedNode, bitcoinds(0))
       } yield NeutrinoNodeConnectedWithBitcoinds(syncedNode, bitcoinds)
     }
