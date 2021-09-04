@@ -48,7 +48,7 @@ case class SpvNode(
 
   override def handlePeerGossipMessage(message: Any): Unit = {}
 
-  override def onPeerInitialization(peer: Peer): Unit = {}
+  override def onPeerInitialization(peer: Peer): Future[Unit] = { Future.unit }
 
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): SpvNode = {

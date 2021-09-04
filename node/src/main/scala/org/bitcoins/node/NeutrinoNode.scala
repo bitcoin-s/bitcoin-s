@@ -15,17 +15,19 @@ import org.bitcoins.core.p2p.{
   AddrMessage,
   AddrV2Message,
   IPv4AddrV2Message,
+  IPv6AddrV2Message,
   NetworkIpAddress,
-  ServiceIdentifier
+  ServiceIdentifier,
+  TorV3AddrV2Message
 }
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{Peer, PeerDAO}
+import org.bitcoins.node.models.{Peer, PeerDAO, PeerDB}
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import scodec.bits.ByteVector
-//import scodec.bits.ByteVector
 
+import java.net.InetAddress
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.Future
 
@@ -56,17 +58,53 @@ case class NeutrinoNode(
   override def handlePeerGossipMessage(message: Any): Unit = {
     message match {
       case addr: AddrMessage =>
-        logger.info("got an addr1")
         addr.addresses.foreach(addToPeerQueue)
-      case addr: IPv4AddrV2Message =>
-        createInDbIfBlockFilterPeer(addr)
-        ()
+      case addr: AddrV2Message =>
+        val bytes = addr.bytes
+        val port = addr.port.toInt
+        val services = ServiceIdentifier.fromBytes(addr.services.bytes)
+        val inetAddress =
+          NetworkUtil.parseInetSocketAddress(bytes, port)
+        val peer = Peer.fromSocket(socket = inetAddress,
+                                   socks5ProxyParams =
+                                     nodeAppConfig.socks5ProxyParams)
+        addr match {
+          case IPv4AddrV2Message(_, _, _, _) | IPv6AddrV2Message(_, _, _, _) =>
+            if (services.nodeCompactFilters)
+              peersToCheckStack.push(peer)
+          case TorV3AddrV2Message(_, _, _, _) =>
+            if (nodeConfig.torConf.enabled && services.nodeCompactFilters)
+              peersToCheckStack.push(peer)
+          case _ => logger.debug("Unsupported network. Skipping.")
+        }
     }
   }
 
   override def onPeerInitialization(peer: Peer): Future[Unit] = {
-    logger.info(s"peer $peer at onPeerInit")
-    createInDbIfBlockFilterPeer(peer)
+    //if its not removed then it means it means initialization was successful as in failed initializations are removed
+    //from peerData
+    if (
+      peerData.contains(peer) && peerData(
+        peer).serviceIdentifier.nodeCompactFilters
+    ) {
+      for {
+        _ <- createInDb(peer)
+      } yield {
+        if (
+          peerData(
+            peer).keepConnection || connectedPeersCount < maxConnectedPeers
+        ) {
+          peerData(peer).peerMessageSender.sendGetAddrMessage()
+          //only the nodes that have keepConnection as true would be actually used by us
+          peerData(peer).keepConnection = true
+          logger.info(
+            s"Connected to peer $peer with compact filters. Connected peer count $connectedPeersCount")
+        } else removePeer(peer)
+      }
+    } else {
+      removePeer(peer)
+      Future.unit
+    }
   }
 
   private def addToPeerQueue(networkAddress: NetworkIpAddress): Unit = {
@@ -77,51 +115,32 @@ case class NeutrinoNode(
         case Success(ipv4Bytes) =>
           ipv4Bytes
       }
+      logger.debug(s"Peer from addr: $bytes")
       val inetAddress =
         NetworkUtil.parseInetSocketAddress(bytes, networkAddress.port)
       val peer = Peer.fromSocket(socket = inetAddress,
                                  socks5ProxyParams =
                                    nodeAppConfig.socks5ProxyParams)
-      logger.info(s"adding to q: $peer")
-      peersToCheckQueue.enqueue(peer)
+      peersToCheckStack.push(peer)
     }
   }
 
-  private def createInDbIfBlockFilterPeer(
-      addr: IPv4AddrV2Message): Future[Unit] = {
-    val serviceIdentifier = ServiceIdentifier.fromBytes(addr.services.bytes)
-    if (serviceIdentifier.nodeCompactFilters) {
-      logger.debug(s"Peer from addr: ${addr.addr} supports compact filters.")
-      PeerDAO()
-        .upsertPeer(addr.addrBytes, addr.port.toInt, addr.networkId)
-        .map(_ => ())
-    } else Future.unit
-  }
-
-  private def createInDbIfBlockFilterPeer(peer: Peer): Future[Unit] = {
-    if (peerData(peer).serviceIdentifier.nodeCompactFilters) {
-      logger.info(s"Our peer=$peer has been initialized and upport cf")
-      val addrBytes = peer.socket.getAddress.getAddress
-      val networkByte =
-        if (addrBytes.length == AddrV2Message.IPV4_ADDR_LENGTH) {
-          AddrV2Message.IPV4_NETWORK_BYTE
-        } else if (addrBytes.length == AddrV2Message.IPV6_ADDR_LENGTH) {
-          AddrV2Message.IPV6_NETWORK_BYTE
-        } else // todo might be tor, how to handle?
-          throw new IllegalArgumentException("Unknown peer network")
-      logger.info(s"Adding peer to db $peer")
-      PeerDAO()
-        .upsertPeer(ByteVector(addrBytes), peer.socket.getPort, networkByte)
-        .map(_ => ())
-      Future.unit
-    } else {
-      logger.info(
-        s"Our peer=$peer does not support compact filters. Disconnecting.")
-      removePeer(peer)
-      PeerDAO()
-        .deleteByKey(s"${peer.socket.getHostString}:${peer.socket.getPort}")
-        .map(_ => ())
-    }
+  private def createInDb(peer: Peer): Future[PeerDB] = {
+    logger.debug(s"Adding peer to db $peer")
+    val addrBytes =
+      InetAddress.getByName(peer.socket.getHostString).getAddress
+    val networkByte =
+      if (addrBytes.length == AddrV2Message.IPV4_ADDR_LENGTH) {
+        AddrV2Message.IPV4_NETWORK_BYTE
+      } else if (addrBytes.length == AddrV2Message.IPV6_ADDR_LENGTH) {
+        AddrV2Message.IPV6_NETWORK_BYTE
+      } else if (addrBytes.length == AddrV2Message.TOR_V3_ADDR_LENGTH) {
+        AddrV2Message.TOR_V3_NETWORK_BYTE
+      } else {
+        throw new IllegalArgumentException("Unknown peer network")
+      }
+    PeerDAO()
+      .upsertPeer(ByteVector(addrBytes), peer.socket.getPort, networkByte)
   }
 
   override def start(): Future[NeutrinoNode] = {
@@ -132,9 +151,6 @@ case class NeutrinoNode(
       _ <- randomPeerMsgSenderWithCompactFilters
         .sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
     } yield {
-      logger.debug(s"All peers $peers")
-      logger.debug(
-        s"Peers with compact filters ${peers.filter(peerData(_).serviceIdentifier.nodeCompactFilters)}")
       node.asInstanceOf[NeutrinoNode]
     }
 

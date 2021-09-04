@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit
 import java.net.{InetAddress, UnknownHostException}
 import scala.concurrent.duration.Duration
 
-//import java.net.{InetAddress, UnknownHostException}
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -79,7 +78,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def executionContext: ExecutionContext = system.dispatcher
 
-  val peersToCheckQueue: mutable.Queue[Peer] = mutable.Queue.empty[Peer]
+  val peersToCheckStack: mutable.Stack[Peer] = mutable.Stack.empty[Peer]
 
   private def getPeersFromDnsSeeds: Vector[Peer] = {
     val dnsSeeds = nodeAppConfig.network.dnsSeeds
@@ -90,7 +89,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
             .getAllByName(seed)
         } catch {
           case _: UnknownHostException =>
-            logger.info(s"DNS seed $seed is unavailable")
+            logger.debug(s"DNS seed $seed is unavailable")
             Vector()
         }
       })
@@ -101,7 +100,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
     val peers =
       inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
-    logger.info(s"Peers from dns seeds ${peers.toVector}")
     peers.toVector
   }
 
@@ -109,8 +107,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val addressesF: Future[Vector[PeerDB]] =
       PeerDAO().findAll()
     val peersF = addressesF.map { addresses =>
-      val inetSockets = addresses.map(a =>
-        NetworkUtil.parseInetSocketAddress(a.address, a.port))
+      val inetSockets = addresses.map(a => {
+        NetworkUtil.parseInetSocketAddress(a.address, a.port)
+      })
       val peers =
         inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
       peers
@@ -128,13 +127,14 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   }
 
   system.scheduler.scheduleWithFixedDelay(initialDelay =
-                                            Duration(10, TimeUnit.DAYS),
-                                          delay = Duration(15, TimeUnit.DAYS)) {
+                                            Duration(10, TimeUnit.SECONDS),
+                                          delay =
+                                            Duration(5, TimeUnit.SECONDS)) {
     new Runnable() {
       override def run(): Unit = {
-        if (peersToCheckQueue.size < 10)
-          getPeersFromDnsSeeds.foreach(peersToCheckQueue.enqueue)
-        val peers = for { _ <- 0 to 9 } yield peersToCheckQueue.dequeue()
+        if (peersToCheckStack.size < 10)
+          peersToCheckStack.pushAll(getPeersFromDnsSeeds)
+        val peers = for { _ <- 0 to 9 } yield peersToCheckStack.pop()
         peers.foreach(peer => {
           addPeer(peer, keepConnection = false)
           initializePeer(peer)
@@ -150,7 +150,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val allF = for {
       peersFromDb <- peersFromDbF
     } yield {
-      logger.info(s"db peers $peersFromDb")
       val ret = Vector.newBuilder[Peer]
       //choosing "maxPeers" no of elements from lists randomly in the order of peersFromConf, peersFromDB
       ret ++= Random.shuffle(peersFromConfig).take(maxConnectedPeers)
@@ -159,7 +158,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
           .shuffle(peersFromDb.diff(ret.result()))
           .take(maxConnectedPeers - ret.knownSize)
       ret.result().foreach(addPeer(_, keepConnection = true))
-      logger.info(s"Selected initial peers ${ret.result()}")
     }
     allF
   }
@@ -170,7 +168,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       peer: Peer,
       keepConnection: Boolean = true
   ): Unit = {
-    logger.info(s"Adding peer $peer")
     if (!_peerData.contains(peer)) {
       _peerData.put(peer, PeerData(peer, this, keepConnection))
       peerData(peer).peerMessageSender.connect()
@@ -179,7 +176,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   }
 
   def removePeer(peer: Peer): Unit = {
-    logger.info(s"removing peer $peer")
     if (_peerData.contains(peer)) {
       peerData(peer).peerMessageSender.disconnect()
       _peerData.remove(peer)
@@ -280,9 +276,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     peerMsgSenders(idx).isDisconnected()
 
   def connectedPeersCount: Int = peerData.count(_._2.keepConnection)
-  val maxConnectedPeers = 1
+  val maxConnectedPeers = 4
 
-  def onPeerInitialization(peer: Peer): Any
+  def onPeerInitialization(peer: Peer): Future[Unit]
 
   def initializePeer(peer: Peer): Future[Unit] = {
     val isInitializedF =
@@ -297,10 +293,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
             removePeer(peer)
           }
       } yield ()
-    isInitializedF.map { _ =>
-      onPeerInitialization(peer)
-    }
-    isInitializedF
+    for {
+      _ <- isInitializedF
+      _ <- onPeerInitialization(peer)
+    } yield ()
   }
 
   /** Starts our node */

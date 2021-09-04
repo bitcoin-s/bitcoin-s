@@ -50,7 +50,6 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
       port: Int,
       networkId: Byte,
       lastSeen: Instant = Instant.now): Future[PeerDB] = {
-    logger.info(s"Adding peer to db $address")
     val existingF = read(address)
     existingF.flatMap {
       case Some(value) =>
