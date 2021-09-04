@@ -171,7 +171,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     if (!_peerData.contains(peer)) {
       _peerData.put(peer, PeerData(peer, this, keepConnection))
       peerData(peer).peerMessageSender.connect()
-    }
+    } else logger.debug(s"Peer $peer already added.")
     ()
   }
 
@@ -179,7 +179,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     if (_peerData.contains(peer)) {
       peerData(peer).peerMessageSender.disconnect()
       _peerData.remove(peer)
-    }
+    } else logger.debug(s"Peer $peer does not exist in set")
     ()
   }
 
