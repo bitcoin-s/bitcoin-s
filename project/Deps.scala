@@ -550,7 +550,6 @@ object Deps {
 
   def testkit = Def.setting {
     List(
-      Compile.slf4j,
       Compile.scalacheck.value,
       Compile.scalaTest.value,
       Compile.scalaTestPlus.value,
