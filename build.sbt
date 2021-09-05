@@ -507,10 +507,11 @@ def isCI = {
     .isDefined
 }
 
-def isTor = {
+def isTor: Boolean = {
   Properties
     .envOrNone("TOR")
-    .isDefined
+    .map(_.toLowerCase == "true")
+    .getOrElse(false)
 }
 
 lazy val bitcoindRpcTest = project
