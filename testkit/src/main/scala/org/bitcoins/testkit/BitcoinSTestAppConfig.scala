@@ -9,6 +9,7 @@ import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.util.TorUtil.torEnabled
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.{NumberGenerator, StringGenerators}
+import org.bitcoins.tor.config.TorAppConfig
 
 import java.nio.file._
 import scala.concurrent.ExecutionContext
@@ -81,7 +82,9 @@ object BitcoinSTestAppConfig {
     BitcoinSAppConfig(tmpDir(), configs)
   }
 
-  def getNeutrinoTestConfig(config: Config*)(implicit
+  def getNeutrinoTestConfig(
+      config: Vector[Config],
+      torAppConfigOpt: Option[TorAppConfig] = None)(implicit
       system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       s"""
@@ -98,12 +101,14 @@ object BitcoinSTestAppConfig {
       """.stripMargin
     }
     val configs = (overrideConf +: config).toVector
-    BitcoinSAppConfig(tmpDir(), configs)
+    BitcoinSAppConfig(tmpDir(), configs, torAppConfigOpt)
   }
 
   def getNeutrinoWithEmbeddedDbTestConfig(
       pgUrl: () => Option[String],
-      config: Config*)(implicit system: ActorSystem): BitcoinSAppConfig = {
+      config: Vector[Config],
+      torAppConfigOpt: Option[TorAppConfig] = None)(implicit
+      system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory
       .parseString {
         s"""
@@ -121,10 +126,9 @@ object BitcoinSTestAppConfig {
       .withFallback(genWalletNameConf)
 
     val configs = {
-      (overrideConf +: configWithEmbeddedDb(project = None,
-                                            pgUrl) +: config).toVector
+      (overrideConf +: configWithEmbeddedDb(project = None, pgUrl) +: config)
     }
-    BitcoinSAppConfig(tmpDir(), configs)
+    BitcoinSAppConfig(tmpDir(), configs, torAppConfigOpt)
   }
 
   def getDLCOracleAppConfig(config: Config*)(implicit

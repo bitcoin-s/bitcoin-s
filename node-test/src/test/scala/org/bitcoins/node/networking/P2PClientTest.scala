@@ -11,24 +11,15 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient.ConnectCommand
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.{
-  CachedBitcoinSAppConfig,
-  NodeTestUtil,
-  NodeUnitTest
-}
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.tor.CachedTor
-import org.bitcoins.testkit.util.BitcoindRpcTest
+import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
+import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, BitcoindRpcTorTest}
 import org.scalatest._
 import scodec.bits._
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class P2PClientTest
-    extends BitcoindRpcTest
-    with CachedBitcoinSAppConfig
-    with CachedTor {
+class P2PClientTest extends BitcoindRpcTorTest {
 
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
@@ -128,27 +119,6 @@ class P2PClientTest
   }
 
   behavior of "P2PClient"
-
-  override def beforeAll(): Unit = {
-    implicit val chainConf = cachedConfig.chainConf
-    chainConf.migrate()
-    ()
-  }
-
-  override def afterAll(): Unit = {
-    implicit val chainConf = cachedConfig.chainConf
-    val shutdownConfigF = for {
-      _ <- chainConf.dropTable("flyway_schema_history")
-      _ <- chainConf.dropAll()
-    } yield {
-      super[CachedBitcoinSAppConfig].afterAll()
-    }
-
-    shutdownConfigF.onComplete { _ =>
-      super[BitcoindRpcTest].afterAll()
-    }
-
-  }
 
   it must "establish a tcp connection with a bitcoin node" in {
     bitcoindPeerF.flatMap { remote =>

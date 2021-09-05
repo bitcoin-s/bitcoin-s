@@ -12,7 +12,8 @@ import scala.concurrent.Future
 class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
 
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl,
+                                                              Vector.empty)
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 

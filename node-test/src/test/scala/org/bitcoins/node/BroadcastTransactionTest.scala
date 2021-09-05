@@ -7,8 +7,11 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindNewest
-import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
+import org.bitcoins.testkit.node.{
+  NeutrinoNodeFundedWalletBitcoind,
+  NodeTestWithCachedBitcoindNewest
+}
+
 import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
@@ -20,19 +23,25 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, Vector.empty)
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(
+      pgUrl = pgUrl,
+      config = Vector.empty,
+      torAppConfigOpt = Some(torConfig))
 
-  override type FixtureParam = SpvNodeConnectedWithBitcoind
+  override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val torClientF = if (TorUtil.torEnabled) torF else Future.unit
 
     val outcome: Future[Outcome] = for {
       _ <- torClientF
+      _ = println(s"Done torClientF")
       bitcoind <- cachedBitcoindWithFundsF
-      outcome = withSpvNodeConnectedToBitcoindCached(test, bitcoind)(
+      _ = println(s"Done with bitcoind")
+      outcome = withNeutrinoNodeFundedWalletBitcoind(test, None, bitcoind)(
         system,
         getFreshConfig)
+      _ = println(s"withSpvNodeConnectedToBitcoindCached")
       f <- outcome.toFuture
     } yield f
     new FutureOutcome(outcome)
@@ -50,7 +59,7 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "safely broadcast a transaction twice" in { param =>
-    val SpvNodeConnectedWithBitcoind(node, rpc) = param
+    val NeutrinoNodeFundedWalletBitcoind(node, _, rpc, _) = param
 
     for {
       tx <- createValidTx(rpc)
@@ -66,7 +75,7 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindNewest {
   }
 
   it must "broadcast a transaction" in { param =>
-    val SpvNodeConnectedWithBitcoind(node, rpc) = param
+    val NeutrinoNodeFundedWalletBitcoind(node, _, rpc, _) = param
 
     def hasSeenTx(transaction: Transaction): Future[Boolean] = {
       rpc

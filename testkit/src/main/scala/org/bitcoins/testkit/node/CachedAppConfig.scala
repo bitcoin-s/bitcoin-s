@@ -5,6 +5,7 @@ import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.util.BitcoinSAkkaAsyncTest
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -23,7 +24,7 @@ sealed trait CachedAppConfig { _: BitcoinSAkkaAsyncTest =>
 trait CachedBitcoinSAppConfig { _: BitcoinSAkkaAsyncTest =>
 
   implicit protected lazy val cachedConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoTestConfig()
+    BitcoinSTestAppConfig.getNeutrinoTestConfig(Vector.empty)
 
   implicit protected lazy val cachedNodeConf: NodeAppConfig = {
     cachedConfig.nodeConf
@@ -37,9 +38,20 @@ trait CachedBitcoinSAppConfig { _: BitcoinSAkkaAsyncTest =>
     cachedConfig.chainConf
   }
 
+  override def beforeAll(): Unit = {
+    Await.result(cachedConfig.start(), duration)
+  }
+
   override def afterAll(): Unit = {
     Await.result(cachedConfig.stop(), duration)
   }
+}
+
+trait CachedBitcoinSAppConfigCachedTor extends CachedBitcoinSAppConfig {
+  _: BitcoinSAkkaAsyncTest with CachedTor =>
+
+  implicit override protected lazy val cachedConfig: BitcoinSAppConfig =
+    BitcoinSTestAppConfig.getNeutrinoTestConfig(Vector.empty, Some(torConfig))
 }
 
 trait CachedChainAppConfig {

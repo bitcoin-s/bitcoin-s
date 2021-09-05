@@ -23,7 +23,7 @@ class ServerRunTest extends BitcoinSAsyncTest {
     val noPeersConfig =
       ConfigFactory.parseString(s"""bitcoin-s.node.peers=[]""")
     implicit val config =
-      BitcoinSTestAppConfig.getNeutrinoTestConfig(noPeersConfig)
+      BitcoinSTestAppConfig.getNeutrinoTestConfig(Vector(noPeersConfig))
     val datadir = config.chainConf.datadir
 
     val invalidPort = -1

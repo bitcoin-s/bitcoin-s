@@ -9,7 +9,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import scala.collection.mutable
 import scala.concurrent.{Await, Future}
 
-abstract class BitcoindRpcTest extends BitcoinSAsyncTest with Logging {
+trait BitcoindRpcTest extends BitcoinSAsyncTest with Logging {
 
   private val dirExists =
     Files.exists(BitcoindRpcTestClient.sbtBinaryDirectory)

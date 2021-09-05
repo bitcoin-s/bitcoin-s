@@ -66,13 +66,14 @@ abstract class NodeTestUtil extends P2PLogger {
     * corresponds to [[org.bitcoins.rpc.client.common.BitcoindRpcClient]]
     */
   def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient)(implicit
-      executionContext: ExecutionContext): Future[Peer] =
+      executionContext: ExecutionContext): Future[Peer] = {
     for {
       socket <- getBitcoindSocketAddress(bitcoindRpcClient)
     } yield {
       val socks5ProxyParams = getSocks5ProxyParams
       Peer(socket, socks5ProxyParams = socks5ProxyParams)
     }
+  }
 
   /** Checks if the given node and bitcoind is synced */
   def isSameBestHash(node: Node, rpc: BitcoindRpcClient)(implicit
