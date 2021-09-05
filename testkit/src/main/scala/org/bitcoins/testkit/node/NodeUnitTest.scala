@@ -543,7 +543,9 @@ object NodeUnitTest extends P2PLogger {
       system: ActorSystem): Future[NeutrinoNode] = {
     import system.dispatcher
     for {
-
+      height <- bitcoind.getBlockCount
+      _ = Thread.sleep(1000)
+      _ = logger.error(s"bitcoindHeight=${height} before start sync")
       _ <- node.sync()
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)

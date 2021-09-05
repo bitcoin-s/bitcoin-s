@@ -79,11 +79,16 @@ abstract class NodeTestUtil extends P2PLogger {
   def isSameBestHash(node: Node, rpc: BitcoindRpcClient)(implicit
       ec: ExecutionContext): Future[Boolean] = {
     val hashF = rpc.getBestBlockHash
+    val bitcoindHeightF = rpc.getBlockCount
     for {
       chainApi <- node.chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash()
+      height <- chainApi.getBlockCount()
       hash <- hashF
+      bitcoindHeight <- bitcoindHeightF
     } yield {
+      logger.error(
+        s"Bitcoind.bestHash=${hash.hex} chainApi.bestHash=${bestHash.hex} bitcoindHeight=$bitcoindHeight height=$height")
       bestHash == hash
     }
   }
@@ -134,7 +139,7 @@ abstract class NodeTestUtil extends P2PLogger {
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestHash(node, rpc),
                             1.second,
-                            maxTries = 200)
+                            maxTries = 60)
   }
 
   /** Awaits sync between the given node and bitcoind client */
@@ -144,7 +149,7 @@ abstract class NodeTestUtil extends P2PLogger {
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestFilterHeaderHeight(node, rpc),
                             1.second,
-                            maxTries = 200)
+                            maxTries = 60)
   }
 
   /** Awaits sync between the given node and bitcoind client */
@@ -154,7 +159,7 @@ abstract class NodeTestUtil extends P2PLogger {
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestFilterHeight(node, rpc),
                             1.second,
-                            maxTries = 200)
+                            maxTries = 60)
   }
 
   /** The future doesn't complete until the nodes best hash is the given hash */
