@@ -10,6 +10,7 @@ import org.bitcoins.testkit.util.BitcoinSAkkaAsyncTest
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
 
 sealed trait CachedAppConfig { _: BitcoinSAkkaAsyncTest =>
 
@@ -39,7 +40,8 @@ trait CachedBitcoinSAppConfig { _: BitcoinSAkkaAsyncTest =>
   }
 
   override def beforeAll(): Unit = {
-    Await.result(cachedConfig.start(), duration)
+    //takes awhile for tor to start
+    Await.result(cachedConfig.start(), 45.seconds)
   }
 
   override def afterAll(): Unit = {

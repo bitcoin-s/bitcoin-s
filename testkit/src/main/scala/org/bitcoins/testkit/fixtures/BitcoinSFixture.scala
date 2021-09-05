@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.fixtures
 
 import akka.actor.ActorSystem
+import grizzled.slf4j.Logging
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
@@ -138,7 +139,7 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
 
 }
 
-object BitcoinSFixture {
+object BitcoinSFixture extends Logging {
 
   def createBitcoindWithFunds(versionOpt: Option[BitcoindVersion] = None)(
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
@@ -155,6 +156,8 @@ object BitcoinSFixture {
       system: ActorSystem): Future[BitcoindRpcClient] = {
     import system.dispatcher
     val instance = BitcoindRpcTestUtil.instance(versionOpt = versionOpt)
+    logger.error(
+      s"Creating bitcoind with datadir=${instance.datadir.toPath.toAbsolutePath}")
     val bitcoind = versionOpt match {
       case Some(v) => BitcoindRpcClient.fromVersion(v, instance)
       case None    => new BitcoindRpcClient(instance)

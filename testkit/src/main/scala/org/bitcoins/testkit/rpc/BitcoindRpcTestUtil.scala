@@ -440,7 +440,7 @@ trait BitcoindRpcTestUtil extends Logging {
       for {
         _ <- stopF
         _ <- awaitStopped(s)
-        _ <- removeDataDirectory(s)
+        //_ <- removeDataDirectory(s)
       } yield ()
     }
     Future.sequence(serverStops).map(_ => ())
