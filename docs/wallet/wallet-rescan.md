@@ -55,7 +55,7 @@ import scala.concurrent.duration.DurationInt
 //we need an actor system and app config to power this
 implicit val system: ActorSystem = ActorSystem(s"wallet-rescan-example")
 implicit val ec: ExecutionContext = system.dispatcher
-implicit val appConfig: BitcoinSAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig()
+implicit val appConfig: BitcoinSAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig(Vector.empty)
 implicit val walletAppConfig: WalletAppConfig = appConfig.walletConf
 
 val bip39PasswordOpt = None

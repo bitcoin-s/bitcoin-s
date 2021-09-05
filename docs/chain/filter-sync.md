@@ -53,7 +53,7 @@ We are going to implement `getFilterFunc` with bitcoind and then sync a few filt
 
 implicit val system = ActorSystem(s"filter-sync-example")
 implicit val ec = system.dispatcher
-implicit val chainAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf
+implicit val chainAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig(Vector.empty).chainConf
 
 //let's use a helper method to get a v19 bitcoind
 //instance and a chainApi

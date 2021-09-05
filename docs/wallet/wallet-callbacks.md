@@ -40,7 +40,7 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
 implicit val system: ActorSystem = ActorSystem("example")
 implicit val ec: ExecutionContextExecutor = system.dispatcher
 implicit val walletConf: WalletAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoTestConfig().walletConf
+    BitcoinSTestAppConfig.getNeutrinoTestConfig(Vector.empty).walletConf
 
 // let's use a helper method to get a v19 bitcoind
 // and a ChainApi
