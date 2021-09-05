@@ -126,10 +126,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     peers
   }
 
-  system.scheduler.scheduleWithFixedDelay(initialDelay =
-                                            Duration(10, TimeUnit.SECONDS),
-                                          delay =
-                                            Duration(5, TimeUnit.SECONDS)) {
+  lazy val peerConnectionScheduler = system.scheduler.scheduleWithFixedDelay(
+    initialDelay = Duration(10, TimeUnit.SECONDS),
+    delay = Duration(5, TimeUnit.SECONDS)) {
     new Runnable() {
       override def run(): Unit = {
         if (peersToCheckStack.size < 10)
@@ -302,6 +301,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   /** Starts our node */
   def start(): Future[Node] = {
     logger.info("Starting node")
+    peerConnectionScheduler
     val start = System.currentTimeMillis()
 
     val startConfsF = for {
