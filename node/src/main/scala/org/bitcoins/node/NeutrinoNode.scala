@@ -36,7 +36,7 @@ case class NeutrinoNode(
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem,
-    defaultPeers: Vector[Peer] = Vector()
+    alternatePeers: Vector[Peer] = Vector()
 ) extends Node {
   require(
     nodeConfig.nodeType == NodeType.NeutrinoNode,
@@ -56,7 +56,7 @@ case class NeutrinoNode(
     this
   }
 
-  defaultPeers.foreach(addPeer(_))
+  alternatePeers.foreach(addPeer(_))
 
   override def handlePeerGossipMessage(message: Any): Unit = {
     message match {
