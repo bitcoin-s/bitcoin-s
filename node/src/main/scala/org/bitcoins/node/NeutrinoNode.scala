@@ -135,12 +135,15 @@ case class NeutrinoNode(
   private def createInDb(peer: Peer): Future[PeerDB] = {
     logger.debug(s"Adding peer to db $peer")
     val addrBytes =
-      InetAddress.getByName(peer.socket.getHostString).getAddress
+      if (peer.socket.getHostString.contains(".onion"))
+        NetworkUtil.torV3AddressToBytes(peer.socket.getHostString)
+      else
+        InetAddress.getByName(peer.socket.getHostString).getAddress
     val networkByte = addrBytes.length match {
       case AddrV2Message.IPV4_ADDR_LENGTH   => AddrV2Message.IPV4_NETWORK_BYTE
       case AddrV2Message.IPV6_ADDR_LENGTH   => AddrV2Message.IPV6_NETWORK_BYTE
       case AddrV2Message.TOR_V3_ADDR_LENGTH => AddrV2Message.TOR_V3_NETWORK_BYTE
-      case _                                => throw new IllegalArgumentException("Unknown peer network")
+      case _                                => throw new IllegalArgumentException("Unsupported address type")
     }
     PeerDAO()
       .upsertPeer(ByteVector(addrBytes), peer.socket.getPort, networkByte)

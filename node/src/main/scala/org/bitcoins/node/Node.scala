@@ -70,7 +70,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val addressesF: Future[Vector[PeerDB]] =
       PeerDAO().findAll()
     val peersF = addressesF.map { addresses =>
-      val inetSockets = addresses.map(a => {
+      val filteredAddresses = addresses.filter(
+        nodeAppConfig.torConf.enabled || _.networkId != AddrV2Message.TOR_V3_NETWORK_BYTE)
+      val inetSockets = filteredAddresses.map(a => {
         NetworkUtil.parseInetSocketAddress(a.address, a.port)
       })
       val peers =
@@ -140,9 +142,14 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   def removePeer(peer: Peer): Unit = {
     if (_peerData.contains(peer)) {
-      peerData(peer).peerMessageSender.disconnect()
-      _peerData.remove(peer)
-    } else logger.debug(s"Peer $peer does not exist in set")
+      val connF = peerData(peer).peerMessageSender.isConnected()
+      connF.map(conn =>
+        if (conn)
+          peerData(peer).peerMessageSender
+            .disconnect()
+            .map(_ => _peerData.remove(peer))
+        else _peerData.remove(peer))
+    } else logger.debug(s"Key $peer not found in peerData")
     ()
   }
 
@@ -238,7 +245,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     peerMsgSenders(idx).isDisconnected()
 
   def connectedPeersCount: Int = peerData.count(_._2.keepConnection)
-  val maxConnectedPeers = 4
+  val maxConnectedPeers = 1
 
   def onPeerInitialization(peer: Peer): Future[Unit]
 

@@ -1,7 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.p2p.AddrV2Message
-import scodec.bits.ByteVector
+import scodec.bits.{BitVector, ByteVector}
 
 import java.net._
 import scala.annotation.tailrec
@@ -23,16 +23,49 @@ abstract class NetworkUtil {
   def parseInetSocketAddress(
       address: ByteVector,
       port: Int): InetSocketAddress = {
-    val hostAddress = InetAddress.getByAddress(address.toArray).getHostAddress
     val uri: URI = {
       address.size match {
-        case AddrV2Message.IPV4_ADDR_LENGTH |
-            AddrV2Message.TOR_V3_ADDR_LENGTH =>
+        case AddrV2Message.IPV4_ADDR_LENGTH =>
+          val hostAddress =
+            InetAddress.getByAddress(address.toArray).getHostAddress
           new URI("tcp://" + hostAddress)
-        case AddrV2Message.IPV6_ADDR_LENGTH => new URI(s"tcp://[$hostAddress]")
+        case AddrV2Message.IPV6_ADDR_LENGTH =>
+          val hostAddress =
+            InetAddress.getByAddress(address.toArray).getHostAddress
+          new URI(s"tcp://[$hostAddress]")
+        case AddrV2Message.TOR_V3_ADDR_LENGTH =>
+          val hostAddress = bytesToTorV3Address(address)
+          new URI("tcp://" + hostAddress)
       }
     }
     InetSocketAddress.createUnresolved(uri.getHost, port)
+  }
+
+  def bytesToTorV3Address(bytes: ByteVector): String = {
+    def sha3(bytes: Array[Byte]): ByteVector = {
+      import java.security.MessageDigest
+      val digest: MessageDigest = MessageDigest.getInstance("SHA3-256")
+      val hashBytes: Array[Byte] = digest.digest(bytes)
+      ByteVector(hashBytes)
+    }
+
+    val version = BigInt(0x03).toByteArray
+    val pubkey = bytes.toArray
+    val checksum = sha3(".onion checksum".getBytes ++ pubkey ++ version)
+    val address =
+      BitVector(
+        pubkey ++ checksum.take(2).toArray ++ version).toBase32 + ".onion"
+    address.toLowerCase
+  }
+
+  def torV3AddressToBytes(address: String): Array[Byte] = {
+    val encoded = address.substring(0, address.indexOf('.')).toUpperCase
+    val decoded = BitVector.fromBase32(encoded) match {
+      case Some(value) => value.toByteArray
+      case None =>
+        throw new IllegalArgumentException("Invalid TorV3 onion address")
+    }
+    decoded.slice(0, decoded.length - 3)
   }
 
   def isLocalhost(hostName: String): Boolean = {
