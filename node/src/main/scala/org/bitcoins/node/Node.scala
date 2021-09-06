@@ -98,9 +98,12 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
                                               Duration(5, TimeUnit.SECONDS)) {
       new Runnable() {
         override def run(): Unit = {
-          if (peersToCheckStack.size < 10)
+          val peersInDbCountF = PeerDAO().count()
+          peersInDbCountF.map(cnt =>
+            if (cnt > 10) peerConnectionScheduler.cancel())
+          if (peersToCheckStack.size < 8)
             peersToCheckStack.pushAll(getPeersFromDnsSeeds)
-          val peers = for { _ <- 0 to 9 } yield peersToCheckStack.pop()
+          val peers = for { _ <- 0 to 7 } yield peersToCheckStack.pop()
           peers.foreach(peer => {
             addPeer(peer, keepConnection = false)
             initializePeer(peer)
@@ -245,7 +248,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     peerMsgSenders(idx).isDisconnected()
 
   def connectedPeersCount: Int = peerData.count(_._2.keepConnection)
-  val maxConnectedPeers = 1
+  val maxConnectedPeers = 2
 
   def onPeerInitialization(peer: Peer): Future[Unit]
 
