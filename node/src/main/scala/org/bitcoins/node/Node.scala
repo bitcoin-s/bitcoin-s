@@ -18,11 +18,7 @@ import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.{
-  DataMessageHandler,
-  PeerMessageReceiver,
-  PeerMessageSender
-}
+import org.bitcoins.node.networking.peer.{DataMessageHandler, PeerMessageSender}
 
 import java.util.concurrent.TimeUnit
 import java.net.{InetAddress, UnknownHostException}
@@ -32,38 +28,6 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Random, Success}
-
-case class PeerData(
-    peer: Peer,
-    node: Node,
-    var keepConnection: Boolean
-)(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig) {
-
-  lazy val peerMessageSender: PeerMessageSender = PeerMessageSender(client)
-
-  lazy val client: P2PClient = {
-    val peerMessageReceiver =
-      PeerMessageReceiver.newReceiver(node = node, peer = peer)
-    P2PClient(
-      context = system,
-      peer = peer,
-      peerMessageReceiver = peerMessageReceiver,
-      onReconnect = if (keepConnection) node.sync else () => { Future.unit },
-      maxReconnectionTries = if (keepConnection) 16 else 1
-    )
-  }
-
-  private var _serviceIdentifier: Option[ServiceIdentifier] = None
-
-  def serviceIdentifier: ServiceIdentifier = {
-    _serviceIdentifier.getOrElse(
-      throw new RuntimeException("Service identifier not initialized"))
-  }
-
-  def setServiceIdentifier(serviceIdentifier: ServiceIdentifier): Unit = {
-    _serviceIdentifier = Some(serviceIdentifier)
-  }
-}
 
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
@@ -234,8 +198,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
                                     CompactFilterDAO())
   }
 
-  //todo think of a better name
-  def handlePeerGossipMessage(message: Any): Unit
+  def handlePeerGossipMessage(message: GossipAddrMessage): Unit
 
   /** Unlike our chain api, this is cached inside our node
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that

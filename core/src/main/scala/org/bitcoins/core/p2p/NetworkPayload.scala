@@ -463,7 +463,10 @@ sealed trait ControlPayload extends NetworkPayload
   * any program already on the network.
   * @see [[https://bitcoin.org/en/developer-reference#addr]]
   */
-trait AddrMessage extends ControlPayload {
+
+sealed trait GossipAddrMessage extends ControlPayload
+
+trait AddrMessage extends GossipAddrMessage {
   def ipCount: CompactSizeUInt
   def addresses: Seq[NetworkIpAddress]
   override def commandName = NetworkPayload.addrCommandName
@@ -500,7 +503,7 @@ object AddrMessage extends Factory[AddrMessage] {
   *
   * @see https://github.com/bitcoin/bips/blob/master/bip-0155.mediawiki
   */
-sealed trait AddrV2Message extends ControlPayload {
+sealed trait AddrV2Message extends GossipAddrMessage {
   def time: UInt32
   def services: CompactSizeUInt
   def networkId: Byte

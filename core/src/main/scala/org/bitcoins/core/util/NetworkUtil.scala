@@ -1,5 +1,6 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.core.p2p.AddrV2Message
 import scodec.bits.ByteVector
 
 import java.net._
@@ -25,8 +26,10 @@ abstract class NetworkUtil {
     val hostAddress = InetAddress.getByAddress(address.toArray).getHostAddress
     val uri: URI = {
       address.size match {
-        case 4  => new URI("tcp://" + hostAddress)
-        case 16 => new URI(s"tcp://[$hostAddress]")
+        case AddrV2Message.IPV4_ADDR_LENGTH |
+            AddrV2Message.TOR_V3_ADDR_LENGTH =>
+          new URI("tcp://" + hostAddress)
+        case AddrV2Message.IPV4_ADDR_LENGTH => new URI(s"tcp://[$hostAddress]")
       }
     }
     InetSocketAddress.createUnresolved(uri.getHost, port)

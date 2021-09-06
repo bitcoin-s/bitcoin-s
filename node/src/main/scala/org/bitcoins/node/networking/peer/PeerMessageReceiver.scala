@@ -8,6 +8,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.{Node, P2PLogger}
+import org.bitcoins.core.p2p.NetworkPayload
 
 import scala.concurrent.Future
 
@@ -202,14 +203,11 @@ class PeerMessageReceiver(
         //we don't want to have to request them manually
         sender.sendHeadersMessage()
         Future.successful(this)
-      case addr: AddrMessage =>
-        node.handlePeerGossipMessage(addr)
-        Future.successful(this)
-      case addr: AddrV2Message =>
-        node.handlePeerGossipMessage(addr)
-        sender.sendSendAddrV2Message()
+      case msg: GossipAddrMessage =>
+        node.handlePeerGossipMessage(msg)
         Future.successful(this)
       case SendAddrV2Message =>
+        sender.sendSendAddrV2Message()
         Future.successful(this)
       case _ @(_: FilterAddMessage | _: FilterLoadMessage |
           FilterClearMessage) =>

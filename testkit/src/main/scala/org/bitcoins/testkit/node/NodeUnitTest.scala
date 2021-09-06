@@ -220,7 +220,7 @@ object NodeUnitTest extends P2PLogger {
                  nodeConf,
                  chainConf,
                  system,
-                 configPeersOverride = Vector(peer))
+                 confPeersOverride = Vector(peer))
   }
 
   def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(implicit
@@ -500,7 +500,7 @@ object NodeUnitTest extends P2PLogger {
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
                    actorSystem = system,
-                   configPeersOverride = Vector(peer))
+                   confPeersOverride = Vector(peer))
     }
 
     nodeF
@@ -533,7 +533,7 @@ object NodeUnitTest extends P2PLogger {
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
                    actorSystem = system,
-                   configPeersOverride = peers)
+                   confPeersOverride = peers)
     }
 
     nodeF

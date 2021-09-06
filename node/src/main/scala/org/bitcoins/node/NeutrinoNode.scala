@@ -14,6 +14,7 @@ import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p.{
   AddrMessage,
   AddrV2Message,
+  GossipAddrMessage,
   IPv4AddrV2Message,
   IPv6AddrV2Message,
   NetworkIpAddress,
@@ -36,7 +37,7 @@ case class NeutrinoNode(
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem,
-    configPeersOverride: Vector[Peer] = Vector()
+    confPeersOverride: Vector[Peer] = Vector()
 ) extends Node {
   require(
     nodeConfig.nodeType == NodeType.NeutrinoNode,
@@ -57,11 +58,11 @@ case class NeutrinoNode(
   }
 
   override def getPeersFromConf: Vector[Peer] = {
-    if (configPeersOverride.isEmpty) super.getPeersFromConf
-    else configPeersOverride
+    if (confPeersOverride.isEmpty) super.getPeersFromConf
+    else confPeersOverride
   }
 
-  override def handlePeerGossipMessage(message: Any): Unit = {
+  override def handlePeerGossipMessage(message: GossipAddrMessage): Unit = {
     message match {
       case addr: AddrMessage =>
         addr.addresses.foreach(addToPeerQueue)
@@ -135,16 +136,12 @@ case class NeutrinoNode(
     logger.debug(s"Adding peer to db $peer")
     val addrBytes =
       InetAddress.getByName(peer.socket.getHostString).getAddress
-    val networkByte =
-      if (addrBytes.length == AddrV2Message.IPV4_ADDR_LENGTH) {
-        AddrV2Message.IPV4_NETWORK_BYTE
-      } else if (addrBytes.length == AddrV2Message.IPV6_ADDR_LENGTH) {
-        AddrV2Message.IPV6_NETWORK_BYTE
-      } else if (addrBytes.length == AddrV2Message.TOR_V3_ADDR_LENGTH) {
-        AddrV2Message.TOR_V3_NETWORK_BYTE
-      } else {
-        throw new IllegalArgumentException("Unknown peer network")
-      }
+    val networkByte = addrBytes.length match {
+      case AddrV2Message.IPV4_ADDR_LENGTH   => AddrV2Message.IPV4_NETWORK_BYTE
+      case AddrV2Message.IPV6_ADDR_LENGTH   => AddrV2Message.IPV6_NETWORK_BYTE
+      case AddrV2Message.TOR_V3_ADDR_LENGTH => AddrV2Message.TOR_V3_NETWORK_BYTE
+      case _                                => throw new IllegalArgumentException("Unknown peer network")
+    }
     PeerDAO()
       .upsertPeer(ByteVector(addrBytes), peer.socket.getPort, networkByte)
   }

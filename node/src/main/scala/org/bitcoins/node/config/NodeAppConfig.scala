@@ -171,7 +171,7 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
                        nodeConf,
                        chainConf,
                        system,
-                       configPeersOverride = peers))
+                       confPeersOverride = peers))
       case NodeType.FullNode =>
         Future.failed(new RuntimeException("Not implemented"))
       case NodeType.BitcoindBackend =>
