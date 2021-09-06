@@ -8,7 +8,6 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.{Node, P2PLogger}
-import org.bitcoins.core.p2p.NetworkPayload
 
 import scala.concurrent.Future
 

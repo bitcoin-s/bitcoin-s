@@ -29,7 +29,7 @@ abstract class NetworkUtil {
         case AddrV2Message.IPV4_ADDR_LENGTH |
             AddrV2Message.TOR_V3_ADDR_LENGTH =>
           new URI("tcp://" + hostAddress)
-        case AddrV2Message.IPV4_ADDR_LENGTH => new URI(s"tcp://[$hostAddress]")
+        case AddrV2Message.IPV6_ADDR_LENGTH => new URI(s"tcp://[$hostAddress]")
       }
     }
     InetSocketAddress.createUnresolved(uri.getHost, port)

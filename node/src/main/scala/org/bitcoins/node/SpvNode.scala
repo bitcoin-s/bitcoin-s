@@ -6,6 +6,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.p2p.GossipAddrMessage
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.Mutable
@@ -47,7 +48,7 @@ case class SpvNode(
     this
   }
 
-  override def handlePeerGossipMessage(message: Any): Unit = {}
+  override def handlePeerGossipMessage(message: GossipAddrMessage): Unit = {}
 
   override def onPeerInitialization(peer: Peer): Future[Unit] = { Future.unit }
 
