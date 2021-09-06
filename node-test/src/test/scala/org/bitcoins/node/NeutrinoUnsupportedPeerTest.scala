@@ -13,7 +13,9 @@ class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
 
   override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl,
-                                                              Vector.empty)
+                                                              Vector.empty,
+                                                              torAppConfigOpt =
+                                                                Some(torConfig))
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 

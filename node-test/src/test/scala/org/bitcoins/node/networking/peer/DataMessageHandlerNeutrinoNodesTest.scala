@@ -20,7 +20,9 @@ class DataMessageHandlerNeutrinoNodesTest
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl,
-                                                              Vector.empty)
+                                                              Vector.empty,
+                                                              torAppConfigOpt =
+                                                                Some(torConfig))
 
   override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
 

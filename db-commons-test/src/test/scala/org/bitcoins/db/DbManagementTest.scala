@@ -124,7 +124,9 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   it must "run migrations for node db" in {
     val nodeAppConfig =
-      NodeAppConfig(BitcoinSTestAppConfig.tmpDir(), dbConfig(ProjectType.Node))
+      NodeAppConfig(BitcoinSTestAppConfig.tmpDir(),
+                    Vector(dbConfig(ProjectType.Node)),
+                    None)
     val nodeDbManagement = createNodeDbManagement(nodeAppConfig)
     val result = nodeDbManagement.migrate()
     nodeAppConfig.driver match {

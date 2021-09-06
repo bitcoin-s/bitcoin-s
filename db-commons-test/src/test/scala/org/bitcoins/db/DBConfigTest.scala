@@ -26,7 +26,7 @@ class DBConfigTest extends BitcoinSAsyncTest {
                   StandardOpenOption.WRITE)
 
       val chainConfig = ChainAppConfig(dataDir)
-      val nodeConfig = NodeAppConfig(dataDir)
+      val nodeConfig = NodeAppConfig(dataDir, Vector.empty, None)
       val walletConfig = WalletAppConfig(dataDir)
 
       val slickChainConfig = chainConfig.slickDbConfig
@@ -60,7 +60,7 @@ class DBConfigTest extends BitcoinSAsyncTest {
         slickChainConfig.config.getString("db.connectionPool") == "disabled")
       assert(slickChainConfig.config.getInt("db.queueSize") == 5000)
 
-      val nodeConfig = NodeAppConfig(dataDir)
+      val nodeConfig = NodeAppConfig(dataDir, Vector.empty, None)
       val slickNodeConfig = nodeConfig.slickDbConfig
       assert(slickNodeConfig.profileName == "slick.jdbc.SQLiteProfile")
       assert(slickNodeConfig.config.hasPath("db.numThreads"))

@@ -59,7 +59,8 @@ object BitcoinSTestAppConfig {
 
   def getSpvWithEmbeddedDbTestConfig(
       pgUrl: () => Option[String],
-      config: Vector[Config])(implicit
+      config: Vector[Config],
+      torAppConfigOpt: Option[TorAppConfig] = None)(implicit
       system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory
       .parseString {
@@ -79,7 +80,7 @@ object BitcoinSTestAppConfig {
     val configs: Vector[Config] = {
       (overrideConf +: configWithEmbeddedDb(project = None, pgUrl) +: config)
     }
-    BitcoinSAppConfig(tmpDir(), configs)
+    BitcoinSAppConfig(tmpDir(), configs, torAppConfigOpt)
   }
 
   def getNeutrinoTestConfig(

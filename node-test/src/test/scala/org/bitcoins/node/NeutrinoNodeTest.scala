@@ -16,7 +16,9 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl,
-                                                              Vector.empty)
+                                                              Vector.empty,
+                                                              torAppConfigOpt =
+                                                                Some(torConfig))
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoinds
 
@@ -25,7 +27,9 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
     val outcomeF: Future[Outcome] = for {
       _ <- torClientF
+      _ = println(s"Done with torClientF")
       bitcoinds <- clientsF
+      _ = println(s"Done with bitcoinds")
       outcome = withNeutrinoNodeConnectedToBitcoinds(test, bitcoinds.toVector)(
         system,
         getFreshConfig)

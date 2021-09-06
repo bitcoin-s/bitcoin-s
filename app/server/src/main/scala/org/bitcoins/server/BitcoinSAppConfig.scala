@@ -36,7 +36,9 @@ case class BitcoinSAppConfig(
     extends StartStopAsync[Unit] {
   import system.dispatcher
   lazy val walletConf: WalletAppConfig = WalletAppConfig(directory, confs: _*)
-  lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
+
+  lazy val nodeConf: NodeAppConfig =
+    NodeAppConfig(directory, confs, torAppConfigOpt)
   lazy val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
   lazy val dlcConf: DLCAppConfig = DLCAppConfig(directory, confs: _*)
 

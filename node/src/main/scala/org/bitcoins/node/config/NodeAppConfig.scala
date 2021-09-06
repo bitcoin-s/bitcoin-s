@@ -30,7 +30,8 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class NodeAppConfig(
     private val directory: Path,
-    private val confs: Config*)(implicit val system: ActorSystem)
+    private val confs: Vector[Config],
+    torAppConfigOpt: Option[TorAppConfig])(implicit val system: ActorSystem)
     extends DbAppConfig
     with NodeDbManagement
     with JdbcProfileComponent[NodeAppConfig] {
@@ -40,7 +41,7 @@ case class NodeAppConfig(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): NodeAppConfig =
-    NodeAppConfig(directory, configs: _*)
+    NodeAppConfig(directory, configs.toVector, torAppConfigOpt)
 
   implicit override def ec: ExecutionContext = system.dispatcher
 
@@ -95,7 +96,13 @@ case class NodeAppConfig(
 
   override def stop(): Future[Unit] = {
     val _ = stopHikariLogger()
-    super.stop()
+    val stopTorF = if (!torAppConfigOpt.isDefined) {
+      torConf.stop()
+    } else {
+      Future.unit
+    }
+
+    stopTorF.flatMap(_ => super.stop())
   }
 
   lazy val nodeType: NodeType =
@@ -111,8 +118,13 @@ case class NodeAppConfig(
     strs.map(_.replace("localhost", "127.0.0.1"))
   }
 
-  lazy val torConf: TorAppConfig =
-    TorAppConfig(directory, confs: _*)
+  lazy val torConf: TorAppConfig = {
+    torAppConfigOpt match {
+      case Some(c) => c
+      case None    => TorAppConfig(directory, confs: _*)
+    }
+
+  }
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] =
     torConf.socks5ProxyParams
@@ -144,7 +156,7 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       system: ActorSystem): NodeAppConfig =
-    NodeAppConfig(datadir, confs: _*)
+    NodeAppConfig(directory = datadir, confs = confs, torAppConfigOpt = None)
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
   def createNode(peers: Vector[Peer])(implicit

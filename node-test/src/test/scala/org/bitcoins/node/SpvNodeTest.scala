@@ -20,7 +20,10 @@ class SpvNodeTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, Vector.empty)
+    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl,
+                                                         Vector.empty,
+                                                         torAppConfigOpt =
+                                                           Some(torConfig))
 
   override type FixtureParam = SpvNodeConnectedWithBitcoind
 
