@@ -111,6 +111,12 @@ case class NodeAppConfig(
     strs.map(_.replace("localhost", "127.0.0.1"))
   }
 
+  lazy val maxConnectedPeers: Int = {
+    if (config.hasPath("bitcoin-s.node.maxConnectedPeers"))
+      config.getInt("bitcoin-s.node.maxConnectedPeers")
+    else 2
+  }
+
   lazy val torConf: TorAppConfig =
     TorAppConfig(directory, confs: _*)
 

@@ -248,7 +248,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     peerMsgSenders(idx).isDisconnected()
 
   def connectedPeersCount: Int = peerData.count(_._2.keepConnection)
-  val maxConnectedPeers = 2
+  def maxConnectedPeers: Int = nodeAppConfig.maxConnectedPeers
 
   def onPeerInitialization(peer: Peer): Future[Unit]
 
