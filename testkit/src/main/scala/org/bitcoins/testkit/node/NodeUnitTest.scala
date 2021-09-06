@@ -200,8 +200,8 @@ object NodeUnitTest extends P2PLogger {
     val chainApiF = ChainHandlerCached
       .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO)
 
-    val nodeF=chainApiF.map(buildNode(peer, _))
-    for{
+    val nodeF = chainApiF.map(buildNode(peer, _))
+    for {
       node <- nodeF
       _ <- node.nodeConfig.start()
       _ <- node.getPeers
