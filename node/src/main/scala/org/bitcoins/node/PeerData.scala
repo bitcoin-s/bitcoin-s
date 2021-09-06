@@ -1,0 +1,45 @@
+package org.bitcoins.node
+
+import akka.actor.ActorSystem
+import org.bitcoins.core.p2p.ServiceIdentifier
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.models.Peer
+import org.bitcoins.node.networking.P2PClient
+import org.bitcoins.node.networking.peer.{
+  PeerMessageReceiver,
+  PeerMessageSender
+}
+
+import scala.concurrent.Future
+
+case class PeerData(
+    peer: Peer,
+    node: Node,
+    var keepConnection: Boolean
+)(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig) {
+
+  lazy val peerMessageSender: PeerMessageSender = PeerMessageSender(client)
+
+  lazy val client: P2PClient = {
+    val peerMessageReceiver =
+      PeerMessageReceiver.newReceiver(node = node, peer = peer)
+    P2PClient(
+      context = system,
+      peer = peer,
+      peerMessageReceiver = peerMessageReceiver,
+      onReconnect = if (keepConnection) node.sync else () => { Future.unit },
+      maxReconnectionTries = if (keepConnection) 16 else 1
+    )
+  }
+
+  private var _serviceIdentifier: Option[ServiceIdentifier] = None
+
+  def serviceIdentifier: ServiceIdentifier = {
+    _serviceIdentifier.getOrElse(
+      throw new RuntimeException("Service identifier not initialized"))
+  }
+
+  def setServiceIdentifier(serviceIdentifier: ServiceIdentifier): Unit = {
+    _serviceIdentifier = Some(serviceIdentifier)
+  }
+}
