@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
@@ -27,7 +27,6 @@ import org.bitcoins.node.networking.peer.{
 import java.util.concurrent.TimeUnit
 import java.net.{InetAddress, UnknownHostException}
 import scala.concurrent.duration.Duration
-
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -117,7 +116,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     peersF
   }
 
-  private def getPeersFromConf: Vector[Peer] = {
+  def getPeersFromConf: Vector[Peer] = {
     val addresses = nodeAppConfig.peers
     val inetSockets = addresses.map(
       NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
@@ -126,21 +125,23 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     peers
   }
 
-  lazy val peerConnectionScheduler = system.scheduler.scheduleWithFixedDelay(
-    initialDelay = Duration(10, TimeUnit.SECONDS),
-    delay = Duration(5, TimeUnit.SECONDS)) {
-    new Runnable() {
-      override def run(): Unit = {
-        if (peersToCheckStack.size < 10)
-          peersToCheckStack.pushAll(getPeersFromDnsSeeds)
-        val peers = for { _ <- 0 to 9 } yield peersToCheckStack.pop()
-        peers.foreach(peer => {
-          addPeer(peer, keepConnection = false)
-          initializePeer(peer)
-        })
+  lazy val peerConnectionScheduler: Cancellable =
+    system.scheduler.scheduleWithFixedDelay(initialDelay =
+                                              Duration(10, TimeUnit.SECONDS),
+                                            delay =
+                                              Duration(5, TimeUnit.SECONDS)) {
+      new Runnable() {
+        override def run(): Unit = {
+          if (peersToCheckStack.size < 10)
+            peersToCheckStack.pushAll(getPeersFromDnsSeeds)
+          val peers = for { _ <- 0 to 9 } yield peersToCheckStack.pop()
+          peers.foreach(peer => {
+            addPeer(peer, keepConnection = false)
+            initializePeer(peer)
+          })
+        }
       }
     }
-  }
 
   def getPeers: Future[Unit] = {
     val peersFromConfig = getPeersFromConf
@@ -169,7 +170,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   ): Unit = {
     if (!_peerData.contains(peer)) {
       _peerData.put(peer, PeerData(peer, this, keepConnection))
-      peerData(peer).peerMessageSender.connect()
     } else logger.debug(s"Peer $peer already added.")
     ()
   }
@@ -280,6 +280,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def onPeerInitialization(peer: Peer): Future[Unit]
 
   def initializePeer(peer: Peer): Future[Unit] = {
+    peerData(peer).peerMessageSender.connect()
     val isInitializedF =
       for {
         _ <- AsyncUtil

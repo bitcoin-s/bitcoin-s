@@ -215,7 +215,7 @@ object NodeUnitTest extends P2PLogger {
                  nodeConf,
                  chainConf,
                  system,
-                 alternatePeers = Vector(peer))
+                 configPeersOverride = Vector(peer))
   }
 
   def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(implicit
@@ -460,7 +460,7 @@ object NodeUnitTest extends P2PLogger {
     } yield {
       val dmh = DataMessageHandler(chainHandler)
       SpvNode(
-        nodePeer = Vector(peer),
+        confPeersOverride = Vector(peer),
         dataMessageHandler = dmh,
         nodeConfig = nodeAppConfig,
         chainConfig = chainAppConfig,
@@ -495,7 +495,7 @@ object NodeUnitTest extends P2PLogger {
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
                    actorSystem = system,
-                   alternatePeers = Vector(peer))
+                   configPeersOverride = Vector(peer))
     }
 
     nodeF
@@ -528,7 +528,7 @@ object NodeUnitTest extends P2PLogger {
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
                    actorSystem = system,
-                   alternatePeers = peers)
+                   configPeersOverride = peers)
     }
 
     nodeF

@@ -16,11 +16,11 @@ import org.bitcoins.node.networking.peer.DataMessageHandler
 import scala.concurrent.Future
 
 case class SpvNode(
-    nodePeer: Vector[Peer],
     dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
-    actorSystem: ActorSystem)
+    actorSystem: ActorSystem,
+    confPeersOverride: Vector[Peer] = Vector())
     extends Node {
   require(nodeConfig.nodeType == NodeType.SpvNode,
           s"We need our SPV mode enabled to be able to construct a SPV node!")
@@ -31,11 +31,12 @@ case class SpvNode(
 
   override def chainAppConfig: ChainAppConfig = chainConfig
 
-  override val peers: Vector[Peer] = nodePeer
-
   private val _bloomFilter = new Mutable(BloomFilter.empty)
 
-  nodePeer.foreach(peer => addPeer(peer))
+  override def getPeersFromConf: Vector[Peer] = {
+    if (confPeersOverride.isEmpty) super.getPeersFromConf
+    else confPeersOverride
+  }
 
   def bloomFilter: BloomFilter = _bloomFilter.atomicGet
 
