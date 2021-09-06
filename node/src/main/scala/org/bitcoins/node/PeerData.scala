@@ -28,7 +28,7 @@ case class PeerData(
       peer = peer,
       peerMessageReceiver = peerMessageReceiver,
       onReconnect = if (keepConnection) node.sync else () => { Future.unit },
-      maxReconnectionTries = if (keepConnection) 16 else 1
+      maxReconnectionTries = if (keepConnection) 16 else 0
     )
   }
 
