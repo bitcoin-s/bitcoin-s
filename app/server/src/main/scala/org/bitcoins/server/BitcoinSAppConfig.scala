@@ -61,7 +61,7 @@ case class BitcoinSAppConfig(
     KeyManagerAppConfig(directory, confs: _*)
 
   lazy val bitcoindRpcConf: BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig(directory, confs: _*)
+    BitcoindRpcAppConfig(directory, confs, torAppConfigOpt)
 
   lazy val network: NetworkParameters = chainConf.network
 

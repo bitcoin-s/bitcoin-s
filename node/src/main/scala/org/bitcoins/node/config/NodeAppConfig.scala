@@ -67,7 +67,7 @@ case class NodeAppConfig(
         nodeType match {
           case NodeType.BitcoindBackend =>
             val bitcoindRpcAppConfig =
-              BitcoindRpcAppConfig(directory, confs: _*)(system)
+              BitcoindRpcAppConfig(directory, confs, torAppConfigOpt)(system)
             bitcoindRpcAppConfig.binaryOpt match {
               case Some(_) =>
                 bitcoindRpcAppConfig.clientF

@@ -19,7 +19,8 @@ import scala.concurrent.Future
   */
 case class BitcoindRpcAppConfig(
     private val directory: Path,
-    private val confs: Config*)(implicit val system: ActorSystem)
+    private val confs: Vector[Config],
+    torAppConfigOpt: Option[TorAppConfig])(implicit val system: ActorSystem)
     extends AppConfig {
 
   import system.dispatcher
@@ -33,7 +34,7 @@ case class BitcoindRpcAppConfig(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig(directory, configs: _*)
+    BitcoindRpcAppConfig(directory, configs.toVector, torAppConfigOpt)
 
   protected[bitcoins] def baseDatadir: Path = directory
 
@@ -190,7 +191,7 @@ object BitcoindRpcAppConfig
     */
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
-      system: ActorSystem): BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig(datadir, confs: _*)
-
+      system: ActorSystem): BitcoindRpcAppConfig = {
+    BitcoindRpcAppConfig(datadir, confs, None)
+  }
 }
