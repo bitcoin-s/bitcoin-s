@@ -1,4 +1,5 @@
 import com.typesafe.sbt.SbtGit.GitKeys._
+import sbt.Keys.{publish, publishLocal}
 
 import scala.util.Properties
 
@@ -354,6 +355,7 @@ lazy val oracleServer = project
   .in(file("app/oracle-server"))
   .settings(CommonSettings.appSettings: _*)
   .settings(CommonSettings.dockerSettings: _*)
+  .settings(CommonSettings.dockerBuildxSettings: _*)
   .dependsOn(
     dlcOracle,
     serverRoutes
@@ -380,6 +382,7 @@ lazy val appServer = project
   .in(file("app/server"))
   .settings(CommonSettings.appSettings: _*)
   .settings(CommonSettings.dockerSettings: _*)
+  .settings(CommonSettings.dockerBuildxSettings: _*)
   .dependsOn(
     serverRoutes,
     appCommons,
