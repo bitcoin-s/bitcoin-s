@@ -22,7 +22,9 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, Vector.empty)
+    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl,
+                                                         Vector.empty,
+                                                         Some(torConfig))
 
   override type FixtureParam = SpvNodeConnectedWithBitcoindV21
 

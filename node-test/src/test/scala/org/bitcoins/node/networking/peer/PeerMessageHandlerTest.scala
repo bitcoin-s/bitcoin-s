@@ -25,7 +25,7 @@ class PeerMessageHandlerTest
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getSpvTestConfig(Vector.empty, Some(torConfig))
 
   override type FixtureParam = Peer
 

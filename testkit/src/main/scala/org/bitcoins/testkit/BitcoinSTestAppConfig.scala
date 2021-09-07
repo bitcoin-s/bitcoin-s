@@ -39,7 +39,9 @@ object BitcoinSTestAppConfig {
     * 1) Data directory is set to user temp directory
     * 2) Logging is turned down to WARN
     */
-  def getSpvTestConfig(config: Config*)(implicit
+  def getSpvTestConfig(
+      config: Vector[Config],
+      torAppConfigOpt: Option[TorAppConfig])(implicit
       system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       s"""
@@ -54,7 +56,7 @@ object BitcoinSTestAppConfig {
          |}
       """.stripMargin
     }
-    BitcoinSAppConfig(tmpDir(), (overrideConf +: config).toVector)
+    BitcoinSAppConfig(tmpDir(), (overrideConf +: config), torAppConfigOpt)
   }
 
   def getSpvWithEmbeddedDbTestConfig(
