@@ -388,7 +388,7 @@ lazy val oracleServer = project
   .in(file("app/oracle-server"))
   .settings(CommonSettings.appSettings: _*)
   .settings(CommonSettings.dockerSettings: _*)
-  .settings(dockerBuildxSettings)
+  .settings(dockerBuildxSettings: _*)
   .dependsOn(
     dlcOracle,
     serverRoutes
