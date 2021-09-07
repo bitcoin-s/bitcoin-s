@@ -89,7 +89,7 @@ UTXOs with popular database like Postgres, SQLite, etc.</p>
 <p>This code snippet you have a running <code>bitcoind</code> instance, locally
 on regtest.</p>
 <pre><code class="hljs css language-scala">implicit val ec = scala.concurrent.ExecutionContext.global
-
+implicit val system = ActorSystem("System")
 
 val config = ConfigFactory.parseString {
     """
@@ -117,7 +117,7 @@ val configF: Future[Unit] = for {
     _ &lt;- chainConfig.start()
 } yield ()
 
-val bitcoindInstance = BitcoindInstance.fromDatadir()
+val bitcoindInstance = BitcoindInstanceLocal.fromDatadir()
 
 val bitcoind = BitcoindRpcClient(bitcoindInstance)
 

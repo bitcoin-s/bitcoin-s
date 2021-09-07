@@ -85,7 +85,7 @@
 
 <span class="hljs-keyword">val</span> datadirPath = <span class="hljs-type">Paths</span>.get(<span class="hljs-string">"path"</span>, <span class="hljs-string">"to"</span>, <span class="hljs-string">"datadir"</span>)
 <span class="hljs-keyword">val</span> binaryPath = <span class="hljs-type">Paths</span>.get(<span class="hljs-string">"path"</span>, <span class="hljs-string">"to"</span>, <span class="hljs-string">"eclair-node-0.5.0-ac08560"</span>, <span class="hljs-string">"bin"</span>, <span class="hljs-string">"eclair-node.sh"</span>)
-<span class="hljs-keyword">val</span> instance = <span class="hljs-type">EclairInstance</span>.fromDatadir(datadirPath.toFile, logbackXml = <span class="hljs-type">None</span>, proxyParams = <span class="hljs-type">None</span>)
+<span class="hljs-keyword">val</span> instance = <span class="hljs-type">EclairInstanceLocal</span>.fromDatadir(datadirPath.toFile, logbackXml = <span class="hljs-type">None</span>, proxyParams = <span class="hljs-type">None</span>)
 <span class="hljs-keyword">val</span> client = <span class="hljs-keyword">new</span> <span class="hljs-type">EclairRpcClient</span>(instance, <span class="hljs-type">Some</span>(binaryPath.toFile))
 
 <span class="hljs-keyword">val</span> startedF = client.start()

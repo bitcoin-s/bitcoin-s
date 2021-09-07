@@ -80,7 +80,7 @@
 
 <span class="hljs-keyword">val</span> datadirPath = <span class="hljs-type">Paths</span>.get(<span class="hljs-string">"path"</span>, <span class="hljs-string">"to"</span>, <span class="hljs-string">"datadir"</span>)
 <span class="hljs-keyword">val</span> binaryPath = <span class="hljs-type">Paths</span>.get(<span class="hljs-string">"path"</span>, <span class="hljs-string">"to"</span>, <span class="hljs-string">"lnd-linux-amd64-v0.13.1-beta"</span>, <span class="hljs-string">"lnd"</span>)
-<span class="hljs-keyword">val</span> instance = <span class="hljs-type">LndInstance</span>.fromDataDir(datadirPath.toFile)
+<span class="hljs-keyword">val</span> instance = <span class="hljs-type">LndInstanceLocal</span>.fromDataDir(datadirPath.toFile)
 <span class="hljs-keyword">val</span> client = <span class="hljs-keyword">new</span> <span class="hljs-type">LndRpcClient</span>(instance, <span class="hljs-type">Some</span>(binaryPath.toFile))
 
 <span class="hljs-keyword">val</span> startedF = client.start()
