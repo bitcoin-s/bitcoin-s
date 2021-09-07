@@ -30,7 +30,9 @@ class BitcoindV18RpcClientTest extends BitcoindFixturesFundedCachedV18 {
   }
 
   it should "be able to start a V18 bitcoind instance" in { client =>
-    assert(client.version == BitcoindVersion.V18)
+    for {
+      v <- client.version
+    } yield assert(v == BitcoindVersion.V18)
   }
 
   it should "return active rpc commands" in { client =>

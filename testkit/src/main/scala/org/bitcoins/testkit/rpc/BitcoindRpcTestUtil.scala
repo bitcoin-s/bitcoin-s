@@ -210,8 +210,8 @@ trait BitcoindRpcTestUtil extends Logging {
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       versionOpt: Option[BitcoindVersion] = None,
-      binaryDirectory: Path =
-        BitcoindRpcTestClient.sbtBinaryDirectory): BitcoindInstance = {
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory)(implicit
+      system: ActorSystem): BitcoindInstanceLocal = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
     val hasNeutrinoSupport = versionOpt match {
@@ -241,7 +241,7 @@ trait BitcoindRpcTestUtil extends Logging {
 
     }
 
-    BitcoindInstance.fromConfig(conf, binary)
+    BitcoindInstanceLocal.fromConfig(conf, binary)
   }
 
   def v16Instance(
@@ -250,7 +250,7 @@ trait BitcoindRpcTestUtil extends Logging {
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  ): BitcoindInstance =
+  )(implicit system: ActorSystem): BitcoindInstanceLocal =
     instance(port = port,
              rpcPort = rpcPort,
              zmqConfig = zmqConfig,
@@ -264,7 +264,7 @@ trait BitcoindRpcTestUtil extends Logging {
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  ): BitcoindInstance =
+  )(implicit system: ActorSystem): BitcoindInstanceLocal =
     instance(port = port,
              rpcPort = rpcPort,
              zmqConfig = zmqConfig,
@@ -278,7 +278,7 @@ trait BitcoindRpcTestUtil extends Logging {
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  ): BitcoindInstance =
+  )(implicit system: ActorSystem): BitcoindInstanceLocal =
     instance(port = port,
              rpcPort = rpcPort,
              zmqConfig = zmqConfig,
@@ -292,7 +292,7 @@ trait BitcoindRpcTestUtil extends Logging {
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  ): BitcoindInstance =
+  )(implicit system: ActorSystem): BitcoindInstanceLocal =
     instance(port = port,
              rpcPort = rpcPort,
              zmqConfig = zmqConfig,
@@ -306,7 +306,7 @@ trait BitcoindRpcTestUtil extends Logging {
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  ): BitcoindInstance =
+  )(implicit system: ActorSystem): BitcoindInstanceLocal =
     instance(port = port,
              rpcPort = rpcPort,
              zmqConfig = zmqConfig,
@@ -320,7 +320,7 @@ trait BitcoindRpcTestUtil extends Logging {
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  ): BitcoindInstance =
+  )(implicit system: ActorSystem): BitcoindInstanceLocal =
     instance(port = port,
              rpcPort = rpcPort,
              zmqConfig = zmqConfig,
@@ -334,7 +334,7 @@ trait BitcoindRpcTestUtil extends Logging {
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  ): BitcoindInstance =
+  )(implicit system: ActorSystem): BitcoindInstanceLocal =
     instance(port = port,
              rpcPort = rpcPort,
              zmqConfig = zmqConfig,
@@ -349,8 +349,8 @@ trait BitcoindRpcTestUtil extends Logging {
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
-      binaryDirectory: Path =
-        BitcoindRpcTestClient.sbtBinaryDirectory): BitcoindInstance = {
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory)(implicit
+      system: ActorSystem): BitcoindInstanceLocal = {
     bitcoindVersion match {
       case BitcoindVersion.V16 =>
         BitcoindRpcTestUtil.v16Instance(port,
@@ -624,15 +624,21 @@ trait BitcoindRpcTestUtil extends Logging {
       maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
     implicit val ec = system.dispatcher
     AsyncUtil
-      .retryUntilSatisfiedF(conditionF = { () =>
-                              Future {
-                                val dir = client.getDaemon.datadir
-                                FileUtil.deleteTmpDir(dir)
-                                !dir.exists()
-                              }
-                            },
-                            interval = interval,
-                            maxTries = maxTries)
+      .retryUntilSatisfiedF(
+        conditionF = { () =>
+          Future {
+            val dir = client.getDaemon match {
+              case _: BitcoindInstanceRemote =>
+                sys.error(s"Cannot have remote bitcoind instance in testkit")
+              case local: BitcoindInstanceLocal => local.datadir
+            }
+            FileUtil.deleteTmpDir(dir)
+            !dir.exists()
+          }
+        },
+        interval = interval,
+        maxTries = maxTries
+      )
   }
 
   /** Returns a pair of unconnected
@@ -982,13 +988,13 @@ trait BitcoindRpcTestUtil extends Logging {
       case v16: BitcoindV16RpcClient =>
         v16.getAddressInfo(address).map(_.pubkey)
       case other: BitcoindRpcClient =>
-        if (
-          other.instance.getVersion.toString >= BitcoindVersion.V17.toString
-        ) {
-          val v17 = new BitcoindV17RpcClient(other.instance)
-          v17.getAddressInfo(address).map(_.pubkey)
-        } else {
-          other.getAddressInfo(address).map(_.pubkey)
+        other.version.flatMap { v =>
+          if (v.toString >= BitcoindVersion.V17.toString) {
+            val v17 = new BitcoindV17RpcClient(other.instance)
+            v17.getAddressInfo(address).map(_.pubkey)
+          } else {
+            other.getAddressInfo(address).map(_.pubkey)
+          }
         }
     }
   }
@@ -1121,10 +1127,13 @@ trait BitcoindRpcTestUtil extends Logging {
     *                    this vectorbuilder.
     */
   def startedBitcoindRpcClient(
-      instance: BitcoindInstance = BitcoindRpcTestUtil.instance(),
+      instanceOpt: Option[BitcoindInstanceLocal] = None,
       clientAccum: RpcClientAccum)(implicit
       system: ActorSystem): Future[BitcoindRpcClient] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
+
+    val instance = instanceOpt.getOrElse(BitcoindRpcTestUtil.instance())
+
     require(
       instance.datadir.getPath.startsWith(Properties.tmpDir),
       s"${instance.datadir} is not in user temp dir! This could lead to bad things happening.")

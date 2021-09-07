@@ -1,7 +1,11 @@
 package org.bitcoins.testkit.fixtures
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.config.{
+  BitcoindInstance,
+  BitcoindInstanceLocal,
+  BitcoindInstanceRemote
+}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
@@ -35,7 +39,11 @@ trait BitcoinSAppConfigBitcoinFixtureNotStarted
     val builder: () => Future[BitcoinSAppConfig] = () => {
       for {
         bitcoind <- cachedBitcoindWithFundsF
-        datadir = bitcoind.instance.datadir
+        datadir = bitcoind.instance match {
+          case local: BitcoindInstanceLocal => local.datadir
+          case _: BitcoindInstanceRemote =>
+            sys.error("Remote instance should not be used in tests")
+        }
         conf = buildConfig(bitcoind.instance)
         bitcoinSAppConfig = BitcoinSAppConfig(datadir.toPath, conf)
       } yield bitcoinSAppConfig
@@ -56,6 +64,11 @@ trait BitcoinSAppConfigBitcoinFixtureNotStarted
     * and sets tor config
     */
   private def buildConfig(instance: BitcoindInstance): Config = {
+    val version = instance match {
+      case local: BitcoindInstanceLocal => local.getVersion
+      case _: BitcoindInstanceRemote =>
+        sys.error("Remote instance should not be used in tests")
+    }
     val configStr =
       s"""
          |bitcoin-s.bitcoind-rpc.rpcuser="${instance.authCredentials.username}"
@@ -63,7 +76,7 @@ trait BitcoinSAppConfigBitcoinFixtureNotStarted
          |bitcoin-s.bitcoind-rpc.rpcbind="${instance.rpcUri.getHost}"
          |bitcoin-s.bitcoind-rpc.rpcport="${instance.rpcUri.getPort}"
          |bitcoin-s.bitcoind-rpc.isRemote=true
-         |bitcoin-s.bitcoind-rpc.version="${instance.getVersion}"
+         |bitcoin-s.bitcoind-rpc.version="${version}"
          |bitcoin-s.node.mode=bitcoind
          |bitcoin-s.tor.enabled=${TorUtil.torEnabled}
          |bitcoin-s.proxy.enabled=${TorUtil.torEnabled}

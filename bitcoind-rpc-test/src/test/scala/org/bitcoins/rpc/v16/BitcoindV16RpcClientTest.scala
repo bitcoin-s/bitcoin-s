@@ -41,8 +41,13 @@ class BitcoindV16RpcClientTest extends BitcoindFixturesCachedPairV16 {
   it should "be able to start a V16 bitcoind" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
-    assert(client.version == BitcoindVersion.V16)
-    assert(otherClient.version == BitcoindVersion.V16)
+    for {
+      v <- client.version
+      v1 <- otherClient.version
+    } yield {
+      assert(v == BitcoindVersion.V16)
+      assert(v1 == BitcoindVersion.V16)
+    }
   }
 
   it should "be able to sign a raw transaction" in { nodePair: FixtureParam =>

@@ -35,7 +35,8 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(implicit
     extends BitcoindRpcClient(instance)
     with V17LabelRpc {
 
-  override def version: BitcoindVersion = BitcoindVersion.V17
+  override lazy val version: Future[BitcoindVersion.V17.type] =
+    Future.successful(BitcoindVersion.V17)
 
   override def getFilterCount(): Future[Int] = filtersUnsupported
 

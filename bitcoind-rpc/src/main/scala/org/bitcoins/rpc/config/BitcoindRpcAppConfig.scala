@@ -21,11 +21,14 @@ case class BitcoindRpcAppConfig(
     private val directory: Path,
     private val confs: Config*)(implicit val system: ActorSystem)
     extends AppConfig {
+
   import system.dispatcher
+
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
 
   override protected[bitcoins] def moduleName: String =
     BitcoindRpcAppConfig.moduleName
+
   override protected[bitcoins] type ConfigType = BitcoindRpcAppConfig
 
   override protected[bitcoins] def newConfigOfType(
@@ -38,8 +41,8 @@ case class BitcoindRpcAppConfig(
 
   override def stop(): Future[Unit] = Future.unit
 
-  lazy val DEFAULT_BINARY_PATH: File =
-    BitcoindInstance.DEFAULT_BITCOIND_LOCATION
+  lazy val DEFAULT_BINARY_PATH: Option[File] =
+    BitcoindInstanceLocal.DEFAULT_BITCOIND_LOCATION
 
   lazy val binaryOpt: Option[File] =
     config.getStringOrNone("bitcoin-s.bitcoind-rpc.binary").map(new File(_))
@@ -72,10 +75,11 @@ case class BitcoindRpcAppConfig(
 
   lazy val rpcUri: URI = new URI(s"$rpcBind:$rpcPort")
 
-  lazy val rpcUser: String = config.getString("bitcoin-s.bitcoind-rpc.rpcuser")
+  lazy val rpcUser: Option[String] =
+    config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcuser")
 
-  lazy val rpcPassword: String =
-    config.getString("bitcoin-s.bitcoind-rpc.rpcpassword")
+  lazy val rpcPassword: Option[String] =
+    config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcpassword")
 
   lazy val torConf: TorAppConfig =
     TorAppConfig(directory, confs: _*)
@@ -91,8 +95,17 @@ case class BitcoindRpcAppConfig(
   lazy val isRemote: Boolean =
     config.getBooleanOrElse("bitcoin-s.bitcoind-rpc.isRemote", default = false)
 
-  lazy val authCredentials: BitcoindAuthCredentials =
-    BitcoindAuthCredentials.PasswordBased(rpcUser, rpcPassword)
+  lazy val authCredentials: BitcoindAuthCredentials = rpcUser match {
+    case Some(rpcUser) => {
+      rpcPassword match {
+        case Some(rpcPassword) =>
+          BitcoindAuthCredentials.PasswordBased(rpcUser, rpcPassword)
+        case None =>
+          BitcoindAuthCredentials.CookieBased(network)
+      }
+    }
+    case None => BitcoindAuthCredentials.CookieBased(network)
+  }
 
   lazy val zmqRawBlock: Option[InetSocketAddress] =
     config.getStringOrNone("bitcoin-s.bitcoind-rpc.zmqpubrawblock").map { str =>
@@ -121,40 +134,49 @@ case class BitcoindRpcAppConfig(
   lazy val zmqConfig: ZmqConfig =
     ZmqConfig(zmqHashBlock, zmqRawBlock, zmqHashTx, zmqRawTx)
 
-  lazy val bitcoindInstance: BitcoindInstance = {
-    val fallbackBinary =
-      if (isRemote) BitcoindInstance.remoteFilePath else DEFAULT_BINARY_PATH
+  lazy val bitcoindInstance = binaryOpt match {
+    case Some(file) =>
+      BitcoindInstanceLocal(
+        network = network,
+        uri = uri,
+        rpcUri = rpcUri,
+        authCredentials = authCredentials,
+        zmqConfig = zmqConfig,
+        binary = file,
+        datadir = bitcoindDataDir
+      )
 
-    BitcoindInstance(
-      network = network,
-      uri = uri,
-      rpcUri = rpcUri,
-      authCredentials = authCredentials,
-      zmqConfig = zmqConfig,
-      binary = binaryOpt.getOrElse(fallbackBinary),
-      datadir = bitcoindDataDir,
-      isRemote = isRemote,
-      proxyParams = socks5ProxyParams
-    )
+    case None =>
+      BitcoindInstanceRemote(network = network,
+                             uri = uri,
+                             rpcUri = rpcUri,
+                             authCredentials = authCredentials,
+                             zmqConfig = zmqConfig,
+                             proxyParams = socks5ProxyParams)
   }
 
   lazy val client: BitcoindRpcClient = {
-    val version = versionOpt.getOrElse(bitcoindInstance.getVersion)
-    implicit val system: ActorSystem =
-      ActorSystem.create("bitcoind-rpc-client-created-by-bitcoin-s", config)
-    BitcoindRpcClient.fromVersion(version, bitcoindInstance)
+    bitcoindInstance match {
+      case local: BitcoindInstanceLocal =>
+        val version = versionOpt.getOrElse(local.getVersion)
+        BitcoindRpcClient.fromVersion(version, bitcoindInstance)
+      case _: BitcoindInstanceRemote =>
+        new BitcoindRpcClient(bitcoindInstance)
+    }
   }
-
 }
 
 object BitcoindRpcAppConfig
     extends AppConfigFactoryActorSystem[BitcoindRpcAppConfig] {
+
   override val moduleName: String = "bitcoind"
 
   /** Constructs a node configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
+
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       system: ActorSystem): BitcoindRpcAppConfig =
     BitcoindRpcAppConfig(datadir, confs: _*)
+
 }
