@@ -17,7 +17,9 @@ class AppConfigTest extends BitcoinSAsyncTest {
     val networkOverride =
       ConfigFactory.parseString("bitcoin-s.network = testnet3")
 
-    val config = BitcoinSTestAppConfig.getSpvTestConfig(networkOverride)
+    val config =
+      BitcoinSTestAppConfig.getSpvTestConfig(config = Vector(networkOverride),
+                                             torAppConfigOpt = None)
     val chainConf = config.chainConf
     val walletConf = config.walletConf
     val nodeConf = config.nodeConf
@@ -31,7 +33,8 @@ class AppConfigTest extends BitcoinSAsyncTest {
   }
 
   it must "have the same DB path" in {
-    val conf = BitcoinSTestAppConfig.getSpvTestConfig()
+    val conf = BitcoinSTestAppConfig.getSpvTestConfig(config = Vector.empty,
+                                                      torAppConfigOpt = None)
     val chainConf = conf.chainConf
     val walletConf = conf.walletConf
     val nodeConf = conf.nodeConf
@@ -40,7 +43,8 @@ class AppConfigTest extends BitcoinSAsyncTest {
   }
 
   it must "have distinct databases" in {
-    val conf = BitcoinSTestAppConfig.getSpvTestConfig()
+    val conf = BitcoinSTestAppConfig.getSpvTestConfig(config = Vector.empty,
+                                                      torAppConfigOpt = None)
     val chainConf = conf.chainConf
     val walletConf = conf.walletConf
     val nodeConf = conf.nodeConf

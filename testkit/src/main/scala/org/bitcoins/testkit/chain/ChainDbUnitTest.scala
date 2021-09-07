@@ -11,7 +11,9 @@ trait ChainDbUnitTest extends ChainUnitTest with EmbeddedPg {
     val memoryDb =
       BitcoinSTestAppConfig.configWithEmbeddedDb(Some(ProjectType.Chain), pgUrl)
     val chainConfig: ChainAppConfig =
-      BitcoinSTestAppConfig.getSpvTestConfig().chainConf
+      BitcoinSTestAppConfig
+        .getSpvTestConfig(config = Vector.empty, torAppConfigOpt = None)
+        .chainConf
     chainConfig.withOverrides(memoryDb)
   }
 
@@ -20,7 +22,10 @@ trait ChainDbUnitTest extends ChainUnitTest with EmbeddedPg {
       BitcoinSTestAppConfig.configWithEmbeddedDb(Some(ProjectType.Chain), pgUrl)
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     val chainConfig: ChainAppConfig =
-      BitcoinSTestAppConfig.getSpvTestConfig(mainnetConf).chainConf
+      BitcoinSTestAppConfig
+        .getSpvTestConfig(config = Vector(mainnetConf), torAppConfigOpt = None)
+        .chainConf
+
     chainConfig.withOverrides(memoryDb)
   }
 

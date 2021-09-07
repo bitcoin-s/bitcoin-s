@@ -17,7 +17,7 @@ trait CachedTor {
   _: BitcoinSAkkaAsyncTest =>
 
   implicit protected lazy val torConfig: TorAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig().torConf
+    BitcoinSTestAppConfig.getSpvTestConfig(Vector.empty, None).torConf
 
   protected val isTorStarted: AtomicBoolean = new AtomicBoolean(false)
 

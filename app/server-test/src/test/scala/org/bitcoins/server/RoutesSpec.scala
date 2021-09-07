@@ -57,7 +57,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   implicit val conf: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getSpvTestConfig(config = Vector.empty,
+                                           torAppConfigOpt = None)
 
   implicit val timeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
 

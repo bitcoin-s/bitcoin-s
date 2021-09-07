@@ -16,7 +16,8 @@ trait DualWalletTestCachedBitcoind
   import BitcoinSWalletTest._
 
   implicit protected def config2: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getSpvTestConfig(config = Vector.empty,
+                                           torAppConfigOpt = None)
 
   implicit protected def wallet2AppConfig: WalletAppConfig = {
     config2.walletConf

@@ -48,7 +48,7 @@ trait ChainUnitTest
     */
   lazy val mainnetAppConfig: ChainAppConfig = {
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
-    BitcoinSTestAppConfig.getSpvTestConfig(mainnetConf).chainConf
+    BitcoinSTestAppConfig.getSpvTestConfig(Vector(mainnetConf), None).chainConf
   }
 
   override def beforeAll(): Unit = {
