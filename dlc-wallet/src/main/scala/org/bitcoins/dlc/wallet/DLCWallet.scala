@@ -422,18 +422,20 @@ abstract class DLCWallet
       _ <- dlcAnnouncementDAO.createAll(dlcAnnouncementDbs)
       dlcOfferDb = DLCOfferDbHelper.fromDLCOffer(dlcId, offer)
 
-      dlcInputs = spendingInfos.zip(utxos).map { case (utxo, fundingInput) =>
-        DLCFundingInputDb(
-          dlcId = dlcId,
-          isInitiator = true,
-          inputSerialId = fundingInput.inputSerialId,
-          outPoint = utxo.outPoint,
-          output = utxo.output,
-          nSequence = fundingInput.sequence,
-          maxWitnessLength = fundingInput.maxWitnessLen.toLong,
-          redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
-          witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
-        )
+      dlcInputs = spendingInfos.zip(utxos).zipWithIndex.map {
+        case ((utxo, fundingInput), idx) =>
+          DLCFundingInputDb(
+            dlcId = dlcId,
+            isInitiator = true,
+            index = idx,
+            inputSerialId = fundingInput.inputSerialId,
+            outPoint = utxo.outPoint,
+            output = utxo.output,
+            nSequence = fundingInput.sequence,
+            maxWitnessLength = fundingInput.maxWitnessLen.toLong,
+            redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
+            witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
+          )
       }
 
       _ = logger.info(
@@ -685,35 +687,40 @@ abstract class DLCWallet
 
       dlcOfferDb = DLCOfferDbHelper.fromDLCOffer(dlc.dlcId, offer)
 
-      offerInputs = offer.fundingInputs.map(funding =>
-        DLCFundingInputDb(
-          dlcId = dlc.dlcId,
-          isInitiator = true,
-          inputSerialId = funding.inputSerialId,
-          outPoint = funding.outPoint,
-          output = funding.output,
-          nSequence = funding.sequence,
-          maxWitnessLength = funding.maxWitnessLen.toLong,
-          redeemScriptOpt = funding.redeemScriptOpt,
-          witnessScriptOpt = None
-        ))
+      offerInputs = offer.fundingInputs.zipWithIndex.map {
+        case (funding, idx) =>
+          DLCFundingInputDb(
+            dlcId = dlc.dlcId,
+            isInitiator = true,
+            index = idx,
+            inputSerialId = funding.inputSerialId,
+            outPoint = funding.outPoint,
+            output = funding.output,
+            nSequence = funding.sequence,
+            maxWitnessLength = funding.maxWitnessLen.toLong,
+            redeemScriptOpt = funding.redeemScriptOpt,
+            witnessScriptOpt = None
+          )
+      }
 
       offerPrevTxs = offer.fundingInputs.map(funding =>
         TransactionDbHelper.fromTransaction(funding.prevTx,
                                             blockHashOpt = None))
 
-      acceptInputs = spendingInfos.zip(utxos).map { case (utxo, fundingInput) =>
-        DLCFundingInputDb(
-          dlcId = dlc.dlcId,
-          isInitiator = false,
-          inputSerialId = fundingInput.inputSerialId,
-          outPoint = utxo.outPoint,
-          output = utxo.output,
-          nSequence = fundingInput.sequence,
-          maxWitnessLength = fundingInput.maxWitnessLen.toLong,
-          redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
-          witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
-        )
+      acceptInputs = spendingInfos.zip(utxos).zipWithIndex.map {
+        case ((utxo, fundingInput), idx) =>
+          DLCFundingInputDb(
+            dlcId = dlc.dlcId,
+            isInitiator = false,
+            index = idx,
+            inputSerialId = fundingInput.inputSerialId,
+            outPoint = utxo.outPoint,
+            output = utxo.output,
+            nSequence = fundingInput.sequence,
+            maxWitnessLength = fundingInput.maxWitnessLen.toLong,
+            redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
+            witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
+          )
       }
 
       accept =
@@ -772,18 +779,21 @@ abstract class DLCWallet
 
         val dlcId = dlc.dlcId
         lazy val dlcAcceptDb = DLCAcceptDbHelper.fromDLCAccept(dlcId, accept)
-        lazy val acceptInputs = accept.fundingInputs.map(funding =>
-          DLCFundingInputDb(
-            dlcId = dlcId,
-            isInitiator = false,
-            inputSerialId = funding.inputSerialId,
-            outPoint = funding.outPoint,
-            output = funding.output,
-            nSequence = funding.sequence,
-            maxWitnessLength = funding.maxWitnessLen.toLong,
-            redeemScriptOpt = funding.redeemScriptOpt,
-            witnessScriptOpt = None
-          ))
+        lazy val acceptInputs = accept.fundingInputs.zipWithIndex.map {
+          case (funding, idx) =>
+            DLCFundingInputDb(
+              dlcId = dlcId,
+              isInitiator = false,
+              index = idx,
+              inputSerialId = funding.inputSerialId,
+              outPoint = funding.outPoint,
+              output = funding.output,
+              nSequence = funding.sequence,
+              maxWitnessLength = funding.maxWitnessLen.toLong,
+              redeemScriptOpt = funding.redeemScriptOpt,
+              witnessScriptOpt = None
+            )
+        }
 
         lazy val acceptPrevTxs = accept.fundingInputs.map { funding =>
           TransactionDbHelper.fromTransaction(funding.prevTx,
@@ -933,13 +943,20 @@ abstract class DLCWallet
       _ = logger.info(s"Creating funding sigs for ${contractId.toHex}")
       fundingSigs <- Future.fromTry(signer.signFundingTx())
 
+      // order fundingSigs by index
+      inputDbs <- dlcInputsDAO.findByDLCId(dlc.dlcId, isInitiator = true)
+      sortedSigVec = inputDbs.sortBy(_.index).map { db =>
+        val sig = fundingSigs(db.outPoint)
+        (db.outPoint, sig)
+      }
+
       updatedRefundSigsDb = refundSigsDb.copy(initiatorSig =
         Some(cetSigs.refundSig))
       _ <- dlcRefundSigDAO.update(updatedRefundSigsDb)
 
       _ <- updateDLCState(dlc.contractIdOpt.get, DLCState.Signed)
       _ = logger.info(s"DLC ${contractId.toHex} is signed")
-    } yield DLCSign(cetSigs, fundingSigs, contractId)
+    } yield DLCSign(cetSigs, FundingSignatures(sortedSigVec), contractId)
   }
 
   def verifyCETSigs(accept: DLCAccept): Future[Boolean] = {
@@ -981,7 +998,7 @@ abstract class DLCWallet
   def addFundingSigs(sign: DLCSign): Future[Vector[DLCFundingInputDb]] = {
     for {
       dlc <- dlcDAO.findByContractId(sign.contractId).map(_.get)
-      inputs <- dlcInputsDAO.findByDLCId(dlc.dlcId)
+      inputs <- dlcInputsDAO.findByDLCId(dlc.dlcId).map(_.sortBy(_.index))
 
       _ = logger.info(
         s"Verifying ${sign.fundingSigs.length} funding sigs for contract ${sign.contractId.toHex}")
@@ -1019,36 +1036,16 @@ abstract class DLCWallet
           Future.failed(new RuntimeException(
             s"No DLC found with corresponding contractId ${contractId.toHex}"))
       }
-      // .get should be safe now
-      contractData <- contractDataDAO.read(dlcDb.dlcId).map(_.get)
-      offerDbOpt <- dlcOfferDAO.findByDLCId(dlcDb.dlcId)
-      offerDb = offerDbOpt.get
-      fundingInputDbs <- dlcInputsDAO.findByDLCId(dlcDb.dlcId,
-                                                  isInitiator = true)
+      (_, contractData, dlcOffer, dlcAccept, fundingInputs, contractInfo) <-
+        getDLCFundingData(dlcDb.dlcId)
+      builder <- builderFromDbData(dlcDb,
+                                   contractData,
+                                   dlcOffer,
+                                   dlcAccept,
+                                   fundingInputs,
+                                   contractInfo)
 
-      txIds = fundingInputDbs.map(_.outPoint.txIdBE)
-      remotePrevTxs <- remoteTxDAO.findByTxIdBEs(txIds)
-
-      (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
-        dlcDb.dlcId)
-
-      prevTxs = remotePrevTxs.map(_.transaction)
-      txs = prevTxs.groupBy(_.txIdBE)
-
-      fundingInputs = fundingInputDbs.map(input =>
-        input.toFundingInput(txs(input.outPoint.txIdBE).head))
-
-      contractInfo = getContractInfo(contractData,
-                                     announcements,
-                                     announcementData,
-                                     nonceDbs)
-
-      offer = offerDb.toDLCOffer(contractInfo,
-                                 fundingInputs,
-                                 dlcDb,
-                                 contractData)
-
-      sign = DLCSign.fromTLV(signTLV, offer)
+      sign = DLCSign.fromTLV(signTLV, builder.offer)
       result <- addDLCSigs(sign)
     } yield result
   }

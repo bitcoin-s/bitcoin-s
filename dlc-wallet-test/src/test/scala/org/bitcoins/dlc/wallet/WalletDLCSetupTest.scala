@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency._
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
@@ -75,7 +75,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       _ = {
         assert(dlcA2Opt.isDefined)
         assert(dlcA2Opt.get.state == DLCState.Signed)
-        assert(sign.fundingSigs.length == offerData.fundingInputs.size)
+        assert(sign.fundingSigs.length == offer.fundingInputs.size)
       }
 
       dlcDb <- walletB.addDLCSigs(sign)
@@ -136,6 +136,120 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       testNegotiate(fundedDLCWallets, DLCWalletUtil.sampleMultiNonceDLCOffer)
   }
 
+  // This could happen inputs can end up in different orders when
+  // using postgres or using different coin selection algos
+  it must "correctly negotiate a dlc with reordered inputs" in {
+    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      // construct a contract info that uses many inputs
+      val totalCol = Bitcoins(11).satoshis
+      val col = totalCol / Satoshis(2)
+
+      val outcomes: Vector[(EnumOutcome, Satoshis)] =
+        Vector(EnumOutcome(winStr) -> totalCol,
+               EnumOutcome(loseStr) -> Satoshis.zero)
+
+      val oraclePair: ContractOraclePair.EnumPair =
+        ContractOraclePair.EnumPair(EnumContractDescriptor(outcomes),
+                                    sampleOracleInfo)
+
+      val contractInfo: ContractInfo = ContractInfo(totalCol, oraclePair)
+
+      val offerData =
+        sampleDLCOffer.copy(contractInfo = contractInfo,
+                            totalCollateral = col.satoshis)
+
+      val walletA = fundedDLCWallets._1.wallet
+      val walletB = fundedDLCWallets._2.wallet
+
+      def reorderInputDbs(
+          wallet: DLCWallet,
+          dlcId: Sha256Digest): Future[Unit] = {
+        for {
+          inputDbs <- wallet.dlcInputsDAO.findByDLCId(dlcId)
+          _ <- wallet.dlcInputsDAO.deleteByDLCId(dlcId)
+          _ <- wallet.dlcInputsDAO.createAll(inputDbs.reverse)
+        } yield ()
+      }
+
+      for {
+        offer <- walletA.createDLCOffer(
+          offerData.contractInfo,
+          offerData.totalCollateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          offerData.timeouts.contractTimeout.toUInt32
+        )
+        dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
+
+        accept <- walletB.acceptDLCOffer(offer)
+
+        // reorder dlc inputs in wallets
+        _ <- reorderInputDbs(walletA, dlcId)
+        _ <- reorderInputDbs(walletB, dlcId)
+
+        sign <- walletA.signDLC(accept)
+
+        dlcDb <- walletB.addDLCSigs(sign)
+      } yield assert(dlcDb.state == DLCState.Signed)
+  }
+
+  // This could happen inputs can end up in different orders when
+  // using postgres or using different coin selection algos
+  it must "correctly negotiate a dlc with tlvs & with reordered inputs" in {
+    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      // construct a contract info that uses many inputs
+      val totalCol = Bitcoins(11).satoshis
+      val col = totalCol / Satoshis(2)
+
+      val outcomes: Vector[(EnumOutcome, Satoshis)] =
+        Vector(EnumOutcome(winStr) -> totalCol,
+               EnumOutcome(loseStr) -> Satoshis.zero)
+
+      val oraclePair: ContractOraclePair.EnumPair =
+        ContractOraclePair.EnumPair(EnumContractDescriptor(outcomes),
+                                    sampleOracleInfo)
+
+      val contractInfo: ContractInfo = ContractInfo(totalCol, oraclePair)
+
+      val offerData =
+        sampleDLCOffer.copy(contractInfo = contractInfo,
+                            totalCollateral = col.satoshis)
+
+      val walletA = fundedDLCWallets._1.wallet
+      val walletB = fundedDLCWallets._2.wallet
+
+      def reorderInputDbs(
+          wallet: DLCWallet,
+          dlcId: Sha256Digest): Future[Unit] = {
+        for {
+          inputDbs <- wallet.dlcInputsDAO.findByDLCId(dlcId)
+          _ <- wallet.dlcInputsDAO.deleteByDLCId(dlcId)
+          _ <- wallet.dlcInputsDAO.createAll(inputDbs.reverse)
+        } yield ()
+      }
+
+      for {
+        offer <- walletA.createDLCOffer(
+          offerData.contractInfo,
+          offerData.totalCollateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          offerData.timeouts.contractTimeout.toUInt32
+        )
+        dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
+
+        accept <- walletB.acceptDLCOffer(offer.toTLV)
+
+        // reorder dlc inputs in wallets
+        _ <- reorderInputDbs(walletA, dlcId)
+        _ <- reorderInputDbs(walletB, dlcId)
+
+        sign <- walletA.signDLC(accept.toTLV)
+
+        dlcDb <- walletB.addDLCSigs(sign.toTLV)
+      } yield assert(dlcDb.state == DLCState.Signed)
+  }
+
   it must "correctly negotiate a dlc using TLVs" in {
     fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
       val walletA = fundedDLCWallets._1.wallet
@@ -185,7 +299,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ = {
           assert(dlcA2Opt.isDefined)
           assert(dlcA2Opt.get.state == DLCState.Signed)
-          assert(sign.fundingSigs.length == offerData.fundingInputs.size)
+          assert(sign.fundingSigs.length == offer.fundingInputs.size)
         }
 
         dlcDb <- walletB.addDLCSigs(sign.toTLV)
@@ -294,7 +408,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
-      testDLCSignVerification[NoSuchElementException](
+      testDLCSignVerification[IllegalArgumentException](
         walletA,
         walletB,
         (sign: DLCSign) =>

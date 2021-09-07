@@ -79,7 +79,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         contractData <- contractDataDAO.read(dlcId).map(_.get)
         offerDbOpt <- dlcOfferDAO.findByDLCId(dlcId)
         acceptDbOpt <- dlcAcceptDAO.findByDLCId(dlcId)
-        fundingInputDbs <- dlcInputsDAO.findByDLCId(dlcId)
+        fundingInputDbs <- dlcInputsDAO
+          .findByDLCId(dlcId)
+          .map(_.sortBy(_.index))
         txIds = fundingInputDbs.map(_.outPoint.txIdBE)
         remotePrevTxs <- remoteTxDAO.findByTxIdBEs(txIds)
         localPrevTxs <- transactionDAO.findByTxIdBEs(txIds)
@@ -154,7 +156,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
 
           DLCStatus.calculateOutcomeAndSig(isInit, offer, accept, sign, cet).get
         }
-        (outcomes, oracleInfos) = getOutcomeDbInfo(outcome)
+        (_, oracleInfos) = getOutcomeDbInfo(outcome)
 
         noncesByAnnouncement = nonceDbs
           .groupBy(_.announcementId)
