@@ -40,7 +40,13 @@ case class BitcoindRpcAppConfig(
 
   override def start(): Future[Unit] = Future.unit
 
-  override def stop(): Future[Unit] = Future.unit
+  override def stop(): Future[Unit] = {
+    if (!torAppConfigOpt.isDefined) {
+      torConf.stop()
+    } else {
+      Future.unit
+    }
+  }
 
   lazy val DEFAULT_BINARY_PATH: Option[File] =
     BitcoindInstanceLocal.DEFAULT_BITCOIND_LOCATION
@@ -82,8 +88,13 @@ case class BitcoindRpcAppConfig(
   lazy val rpcPassword: Option[String] =
     config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcpassword")
 
-  lazy val torConf: TorAppConfig =
-    TorAppConfig(directory, confs: _*)
+  lazy val torConf: TorAppConfig = {
+    torAppConfigOpt match {
+      case Some(cached) => cached
+      case None =>
+        TorAppConfig(directory, confs: _*)
+    }
+  }
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] =
     torConf.socks5ProxyParams
