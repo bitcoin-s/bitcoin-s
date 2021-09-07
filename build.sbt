@@ -351,44 +351,11 @@ lazy val appCommonsTest = project
   .settings(CommonSettings.testSettings: _*)
   .dependsOn(appCommons, testkit)
 
-// See https://softwaremill.com/how-to-build-multi-platform-docker-image-with-sbt-and-docker-buildx/
-lazy val ensureDockerBuildx =
-  taskKey[Unit]("Ensure that docker buildx configuration exists")
-
-lazy val dockerBuildWithBuildx =
-  taskKey[Unit]("Build docker images using buildx")
-
-import scala.sys.process.Process
-
-lazy val dockerBuildxSettings = Seq(
-  ensureDockerBuildx := {
-    if (Process("docker buildx inspect multi-arch-builder").! == 1) {
-      Process("docker buildx create --use --name multi-arch-builder",
-              baseDirectory.value).!
-    }
-  },
-  dockerBuildWithBuildx := {
-    streams.value.log("Building and pushing image with Buildx")
-    dockerAliases.value.foreach(alias =>
-      Process(
-        "docker buildx build --platform=linux/amd64,linux/arm64 --push -t " +
-          alias + " .",
-        baseDirectory.value / "target" / "docker" / "stage").!)
-  },
-  Docker / publish := Def
-    .sequential(
-      Docker / publishLocal,
-      ensureDockerBuildx,
-      dockerBuildWithBuildx
-    )
-    .value
-)
-
 lazy val oracleServer = project
   .in(file("app/oracle-server"))
   .settings(CommonSettings.appSettings: _*)
   .settings(CommonSettings.dockerSettings: _*)
-  .settings(dockerBuildxSettings: _*)
+  .settings(CommonSettings.dockerBuildxSettings: _*)
   .dependsOn(
     dlcOracle,
     serverRoutes
@@ -415,7 +382,7 @@ lazy val appServer = project
   .in(file("app/server"))
   .settings(CommonSettings.appSettings: _*)
   .settings(CommonSettings.dockerSettings: _*)
-  .settings(dockerBuildxSettings: _*)
+  .settings(CommonSettings.dockerBuildxSettings: _*)
   .dependsOn(
     serverRoutes,
     appCommons,

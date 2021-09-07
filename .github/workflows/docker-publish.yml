@@ -2,7 +2,7 @@
 name: CI to Docker Hub
 on:
   push:
-    branches: [master, main, sbt-docker-multi-platform]
+    branches: [master, main]
     tags: ["*"]
 jobs:
   build:
