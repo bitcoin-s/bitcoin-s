@@ -4,18 +4,14 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.asyncutil.AsyncUtil.RpcRetryException
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerHandler
-import org.bitcoins.testkit.node.{
-  CachedBitcoinSAppConfig,
-  NodeTestUtil,
-  NodeUnitTest
-}
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.{AkkaUtil, BitcoindRpcTest}
+import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
+import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, BitcoindRpcTorTest}
+import org.bitcoins.testkit.util.AkkaUtil
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class ReConnectionTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
+class ReConnectionTest extends BitcoindRpcTorTest {
 
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
@@ -56,10 +52,5 @@ class ReConnectionTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
     } yield succeed
 
     connectedF
-  }
-
-  override def afterAll(): Unit = {
-    super[CachedBitcoinSAppConfig].afterAll()
-    super[BitcoindRpcTest].afterAll()
   }
 }

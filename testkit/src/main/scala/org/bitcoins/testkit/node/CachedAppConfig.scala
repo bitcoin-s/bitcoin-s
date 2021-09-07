@@ -49,8 +49,20 @@ trait CachedBitcoinSAppConfig { _: BitcoinSAkkaAsyncTest =>
   }
 }
 
-trait CachedBitcoinSAppConfigCachedTor extends CachedBitcoinSAppConfig {
-  _: BitcoinSAkkaAsyncTest with CachedTor =>
+trait CachedBitcoinSAppConfigCachedTor
+    extends CachedBitcoinSAppConfig
+    with CachedTor {
+  _: BitcoinSAkkaAsyncTest =>
+
+  override def beforeAll(): Unit = {
+    super[CachedTor].beforeAll()
+    super[CachedBitcoinSAppConfig].beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoinSAppConfig].afterAll()
+    super[CachedTor].afterAll()
+  }
 
   implicit override protected lazy val cachedConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoTestConfig(Vector.empty, Some(torConfig))
