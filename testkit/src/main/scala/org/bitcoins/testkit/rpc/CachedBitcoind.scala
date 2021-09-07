@@ -50,8 +50,6 @@ trait CachedBitcoindFunded[T <: BitcoindRpcClient] extends CachedBitcoind[T] {
       //if it was used, shut down the cached bitcoind
       val stoppedF = for {
         cachedBitcoind <- cachedBitcoindWithFundsF
-        _ = logger.error(
-          s"cachedBitcoind.datadir=${cachedBitcoind.instance.datadir.toPath}")
         _ <- BitcoindRpcTestUtil.stopServer(cachedBitcoind)
       } yield ()
 

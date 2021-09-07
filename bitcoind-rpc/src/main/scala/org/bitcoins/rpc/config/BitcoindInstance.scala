@@ -264,7 +264,9 @@ object BitcoindInstanceRemote
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
-    val conf = BitcoindRpcAppConfig(file.toPath)
+    val conf = BitcoindRpcAppConfig(directory = file.toPath,
+                                    confs = Vector.empty,
+                                    torAppConfigOpt = None)
     fromConfig(conf)
   }
 
@@ -291,7 +293,7 @@ object BitcoindInstanceRemote
       system: ActorSystem): BitcoindInstanceRemote = {
     require(dir.exists, s"${dir.getPath} does not exist!")
     require(dir.isDirectory, s"${dir.getPath} is not a directory!")
-    val conf = BitcoindRpcAppConfig(dir.toPath)
+    val conf = BitcoindRpcAppConfig(dir.toPath, Vector.empty, None)
     fromConfig(conf)
   }
 }
