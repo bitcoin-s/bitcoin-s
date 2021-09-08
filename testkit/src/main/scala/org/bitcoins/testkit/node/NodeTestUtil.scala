@@ -38,7 +38,7 @@ abstract class NodeTestUtil extends P2PLogger {
         val onionAddress = networkInfo.localaddresses
           .find(_.address.endsWith(".onion"))
           .getOrElse(throw new IllegalArgumentException(
-            s"bitcoind instance is not configured to use Tor: ${bitcoindRpcClient}"))
+            s"bitcoind instance is not configured to use Tor: ${bitcoindRpcClient}, addresses=${networkInfo.localaddresses}"))
 
         InetSocketAddress.createUnresolved(onionAddress.address,
                                            onionAddress.port)

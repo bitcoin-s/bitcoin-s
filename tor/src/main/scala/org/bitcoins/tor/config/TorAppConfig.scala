@@ -167,8 +167,11 @@ case class TorAppConfig(
 
   override def stop(): Future[Unit] = {
     if (torProvided) {
+      logger.info(
+        s"Ignoring request to stop tor binary, as tor was given to us")
       Future.unit
     } else {
+      logger.info(s"Stopping tor binary")
       stopBinary().map(_ => isStarted.set(false))
     }
   }
