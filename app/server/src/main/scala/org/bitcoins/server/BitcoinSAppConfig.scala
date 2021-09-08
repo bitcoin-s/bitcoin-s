@@ -7,6 +7,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.commons.util.ServerArgParser
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.{FutureUtil, StartStopAsync}
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
@@ -52,6 +53,8 @@ case class BitcoinSAppConfig(
 
   lazy val bitcoindRpcConf: BitcoindRpcAppConfig =
     BitcoindRpcAppConfig(directory, confs: _*)
+
+  lazy val network: NetworkParameters = chainConf.network
 
   /** Initializes the wallet, node and chain projects */
   override def start(): Future[Unit] = {
@@ -199,43 +202,24 @@ object BitcoinSAppConfig extends Logging {
     fromConfig(config)
   }
 
-  import scala.language.implicitConversions
-
-  /** Converts the given implicit config to a wallet config */
-  implicit def implicitToWalletConf(implicit
-      conf: BitcoinSAppConfig): WalletAppConfig =
-    conf.walletConf
-
   /** Converts the given config to a wallet config */
-  implicit def toWalletConf(conf: BitcoinSAppConfig): WalletAppConfig =
+  def toWalletConf(conf: BitcoinSAppConfig): WalletAppConfig = {
     conf.walletConf
-
-  /** Converts the given implicit config to a chain config */
-  implicit def implicitToChainConf(implicit
-      conf: BitcoinSAppConfig): ChainAppConfig =
-    conf.chainConf
+  }
 
   /** Converts the given config to a chain config */
-  implicit def toChainConf(conf: BitcoinSAppConfig): ChainAppConfig =
+  def toChainConf(conf: BitcoinSAppConfig): ChainAppConfig = {
     conf.chainConf
-
-  /** Converts the given implicit config to a node config */
-  implicit def implicitToNodeConf(implicit
-      conf: BitcoinSAppConfig): NodeAppConfig =
-    conf.nodeConf
+  }
 
   /** Converts the given config to a node config */
-  implicit def toNodeConf(conf: BitcoinSAppConfig): NodeAppConfig =
+  def toNodeConf(conf: BitcoinSAppConfig): NodeAppConfig = {
     conf.nodeConf
-
-  /** Converts the given implicit config to a bitcoind rpc config */
-  implicit def implicitToBitcoindRpcConf(implicit
-      conf: BitcoinSAppConfig): BitcoindRpcAppConfig =
-    conf.bitcoindRpcConf
+  }
 
   /** Converts the given config to a bitcoind rpc config */
-  implicit def toBitcoindRpcConf(
-      conf: BitcoinSAppConfig): BitcoindRpcAppConfig =
+  def toBitcoindRpcConf(conf: BitcoinSAppConfig): BitcoindRpcAppConfig = {
     conf.bitcoindRpcConf
+  }
 
 }

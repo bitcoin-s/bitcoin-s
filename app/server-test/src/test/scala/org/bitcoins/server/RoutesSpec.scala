@@ -38,7 +38,6 @@ import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.node.Node
-import org.bitcoins.server.BitcoinSAppConfig.implicitToWalletConf
 import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.DLCWalletUtil
@@ -76,7 +75,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val nodeRoutes = NodeRoutes(mockNode)
 
-  val walletRoutes: WalletRoutes = WalletRoutes(mockWalletApi)
+  val walletRoutes: WalletRoutes =
+    WalletRoutes(mockWalletApi)(system, conf.walletConf)
 
   val coreRoutes: CoreRoutes = CoreRoutes()
 

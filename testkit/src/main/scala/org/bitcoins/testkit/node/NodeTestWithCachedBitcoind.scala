@@ -62,7 +62,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[SpvNodeConnectedWithBitcoind] = {
       () =>
-        require(appConfig.nodeType == NodeType.SpvNode)
+        require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
         for {
           peer <- createPeer(bitcoind)
           node <- NodeUnitTest.createSpvNode(peer)(system,
@@ -87,7 +87,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
       NeutrinoNodeConnectedWithBitcoind] = { () =>
-      require(appConfig.nodeType == NodeType.NeutrinoNode)
+      require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
                                                           appConfig.chainConf,
@@ -108,7 +108,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
       NeutrinoNodeConnectedWithBitcoinds] = { () =>
-      require(appConfig.nodeType == NodeType.NeutrinoNode)
+      require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         node <- NodeUnitTest.createNeutrinoNode(bitcoinds)(system,
                                                            appConfig.chainConf,
@@ -207,7 +207,7 @@ trait NodeTestWithCachedBitcoindV19
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
       SpvNodeConnectedWithBitcoindV21] = { () =>
-      require(appConfig.nodeType == NodeType.SpvNode)
+      require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
       for {
         peer <- createPeer(bitcoind)
         node <- NodeUnitTest.createSpvNode(peer)(system,
