@@ -26,7 +26,7 @@ class BitcoindConfigPane(
   }
 
   private val hostTF: TextField = new TextField {
-    text = appConfig.rpcBind.toString
+    text = appConfig.bitcoindRpcConf.rpcBind.toString
     minWidth = 300
   }
 
@@ -37,18 +37,19 @@ class BitcoindConfigPane(
   GUIUtil.setNumericInput(portTF)
 
   private val rpcUserTF: TextField = new TextField {
-    text = appConfig.rpcUser.getOrElse("")
+    text = appConfig.bitcoindRpcConf.rpcUser.getOrElse("")
     minWidth = 300
   }
 
   private val rpcPasswordTF: PasswordField = new PasswordField {
-    text = appConfig.rpcPassword.getOrElse("")
+    text = appConfig.bitcoindRpcConf.rpcPassword.getOrElse("")
     minWidth = 300
   }
 
   private val versionComboBox: ComboBox[BitcoindVersion] =
     new ComboBox[BitcoindVersion](BitcoindVersion.standard) {
-      value = appConfig.versionOpt.getOrElse(BitcoindVersion.newest)
+      value =
+        appConfig.bitcoindRpcConf.versionOpt.getOrElse(BitcoindVersion.newest)
       minWidth = 300
     }
 

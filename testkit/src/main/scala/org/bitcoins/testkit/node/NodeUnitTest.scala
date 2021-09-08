@@ -15,7 +15,6 @@ import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.NodeUnitTest.{
@@ -44,7 +43,7 @@ trait NodeUnitTest extends BaseNodeTest {
       appConfig: BitcoinSAppConfig): FutureOutcome = {
 
     val nodeBuilder: () => Future[SpvNode] = { () =>
-      require(appConfig.nodeType == NodeType.SpvNode)
+      require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
       for {
         node <- NodeUnitTest.createSpvNode(emptyPeer)(system,
                                                       appConfig.chainConf,
@@ -75,7 +74,7 @@ trait NodeUnitTest extends BaseNodeTest {
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[SpvNodeConnectedWithBitcoind] = {
       () =>
-        require(appConfig.nodeType == NodeType.SpvNode)
+        require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
         for {
           bitcoind <- BitcoinSFixture.createBitcoind(versionOpt)
           peer <- createPeer(bitcoind)
@@ -99,7 +98,7 @@ trait NodeUnitTest extends BaseNodeTest {
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
       SpvNodeConnectedWithBitcoindV21] = { () =>
-      require(appConfig.nodeType == NodeType.SpvNode)
+      require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
       for {
         bitcoind <-
           BitcoinSFixture
@@ -128,7 +127,7 @@ trait NodeUnitTest extends BaseNodeTest {
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
       NeutrinoNodeConnectedWithBitcoind] = { () =>
-      require(appConfig.nodeType == NodeType.NeutrinoNode)
+      require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         bitcoind <- BitcoinSFixture.createBitcoind(versionOpt)
         node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
@@ -217,9 +216,12 @@ object NodeUnitTest extends P2PLogger {
   def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(implicit
       appConfig: BitcoinSAppConfig,
       system: ActorSystem): Future[PeerMessageReceiver] = {
-    val receiver = PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
-                                       node = buildNode(peer, chainApi),
-                                       peer = peer)
+    val receiver =
+      PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
+                          node = buildNode(peer, chainApi)(appConfig.chainConf,
+                                                           appConfig.nodeConf,
+                                                           system),
+                          peer = peer)(system, appConfig.nodeConf)
     Future.successful(receiver)
   }
 
@@ -282,7 +284,7 @@ object NodeUnitTest extends P2PLogger {
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[SpvNodeFundedWalletBitcoind] = {
     import system.dispatcher
-    require(appConfig.nodeType == NodeType.SpvNode)
+    require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
       spvNodeWithBitcoind <- createSpvNodeFundedWalletFromBitcoind(
@@ -302,10 +304,12 @@ object NodeUnitTest extends P2PLogger {
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[SpvNodeFundedWalletBitcoind] = {
     import system.dispatcher
-    require(appConfig.nodeType == NodeType.SpvNode)
+    require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
     for {
       peer <- createPeer(bitcoind)
-      node <- createSpvNode(peer)
+      node <- createSpvNode(peer)(system,
+                                  appConfig.chainConf,
+                                  appConfig.nodeConf)
       _ <- appConfig.walletConf.start()
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoind,
@@ -322,7 +326,9 @@ object NodeUnitTest extends P2PLogger {
       _ <- syncSpvNode(startedNodeWithBloomFilter, bitcoind)
       //callbacks are executed asynchronously, which is how we fund the wallet
       //so we need to wait until the wallet balances are correct
-      _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
+      _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)(
+        appConfig.walletConf,
+        system)
     } yield {
       SpvNodeFundedWalletBitcoind(node = startedNodeWithBloomFilter,
                                   wallet = fundedWallet.wallet,
@@ -340,10 +346,12 @@ object NodeUnitTest extends P2PLogger {
       appConfig: BitcoinSAppConfig): Future[
     NeutrinoNodeFundedWalletBitcoind] = {
     import system.dispatcher
-    require(appConfig.nodeType == NodeType.NeutrinoNode)
+    require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
-      node <- createNeutrinoNode(bitcoind)
+      node <- createNeutrinoNode(bitcoind)(system,
+                                           appConfig.chainConf,
+                                           appConfig.nodeConf)
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoindRpcClient = bitcoind,
         nodeApi = node,
@@ -354,7 +362,9 @@ object NodeUnitTest extends P2PLogger {
       syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
       //callbacks are executed asynchronously, which is how we fund the wallet
       //so we need to wait until the wallet balances are correct
-      _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
+      _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)(
+        appConfig.walletConf,
+        system)
     } yield {
       NeutrinoNodeFundedWalletBitcoind(node = syncedNode,
                                        wallet = fundedWallet.wallet,
@@ -371,9 +381,11 @@ object NodeUnitTest extends P2PLogger {
       appConfig: BitcoinSAppConfig): Future[
     NeutrinoNodeFundedWalletBitcoind] = {
     import system.dispatcher
-    require(appConfig.nodeType == NodeType.NeutrinoNode)
+    require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
     for {
-      node <- createNeutrinoNode(bitcoind)
+      node <- createNeutrinoNode(bitcoind)(system,
+                                           appConfig.chainConf,
+                                           appConfig.nodeConf)
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoindRpcClient = bitcoind,
         nodeApi = node,
@@ -384,7 +396,9 @@ object NodeUnitTest extends P2PLogger {
       syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
       //callbacks are executed asynchronously, which is how we fund the wallet
       //so we need to wait until the wallet balances are correct
-      _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
+      _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)(
+        appConfig.walletConf,
+        system)
     } yield {
       NeutrinoNodeFundedWalletBitcoind(node = syncedNode,
                                        wallet = fundedWallet.wallet,

@@ -5,7 +5,6 @@ import org.bitcoins.commons.util.DatadirUtil
 import org.bitcoins.core.config._
 import org.bitcoins.gui.util.GUIUtil
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
 import scalafx.geometry._
 import scalafx.scene.Node
 import scalafx.scene.control._
@@ -36,10 +35,11 @@ class NeutrinoConfigPane(
     }
   }
 
-  private val defaultPeer: String = defaultPeerForNetwork(appConfig.network)
+  private val defaultPeer: String = defaultPeerForNetwork(
+    appConfig.nodeConf.network)
 
   private val startingPeerAddress: String = {
-    appConfig.peers.headOption match {
+    appConfig.nodeConf.peers.headOption match {
       case Some(peer) =>
         // if we are using the default suredbits node
         if (peer.contains(".suredbits.com")) {

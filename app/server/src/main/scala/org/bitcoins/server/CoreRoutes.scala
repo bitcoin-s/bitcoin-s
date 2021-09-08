@@ -13,7 +13,6 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.server.BitcoinSAppConfig.toChainConf
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import ujson._
 import upickle.default._

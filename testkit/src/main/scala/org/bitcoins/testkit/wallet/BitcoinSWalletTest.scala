@@ -25,7 +25,6 @@ import org.bitcoins.node.{
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
@@ -410,7 +409,9 @@ object BitcoinSWalletTest extends WalletLogger {
                   chainQueryApi,
                   new RandomFeeProvider,
                   keyManager.creationTime)(walletConfig, config.dlcConf, ec)
-      Wallet.initialize(wallet, bip39PasswordOpt).map(_.asInstanceOf[DLCWallet])
+      Wallet
+        .initialize(wallet, bip39PasswordOpt)(walletConfig, ec)
+        .map(_.asInstanceOf[DLCWallet])
     }
   }
 
@@ -600,9 +601,10 @@ object BitcoinSWalletTest extends WalletLogger {
     import system.dispatcher
     config.walletConf.addCallbacks(walletCallbacks)
     for {
-      wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi,
-                                                         chainQueryApi,
-                                                         bip39PasswordOpt)
+      wallet <- BitcoinSWalletTest.createWallet2Accounts(
+        nodeApi,
+        chainQueryApi,
+        bip39PasswordOpt)(config.walletConf, system)
       withBitcoind <- createWalletWithBitcoind(wallet, versionOpt)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded
@@ -629,7 +631,7 @@ object BitcoinSWalletTest extends WalletLogger {
       wallet <- BitcoinSWalletTest.createWallet2Accounts(
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi,
-        bip39PasswordOpt = bip39PasswordOpt)
+        bip39PasswordOpt = bip39PasswordOpt)(config.walletConf, system)
       //add callbacks for wallet
       nodeCallbacks =
         BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(wallet)
