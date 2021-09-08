@@ -1,13 +1,7 @@
 package org.bitcoins.core.currency
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.number.{
-  BaseNumbers,
-  BasicArithmetic,
-  Bounded,
-  Int64,
-  UInt64
-}
+import org.bitcoins.core.number._
 import org.bitcoins.core.serializers.RawSatoshisSerializer
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
@@ -185,6 +179,8 @@ object CurrencyUnits extends Numeric[CurrencyUnit] {
   override def negate(x: CurrencyUnit): CurrencyUnit = -x
 
   override def fromInt(x: Int): CurrencyUnit = Satoshis(x.toLong)
+
+  def fromLong(x: Long): CurrencyUnit = Satoshis(x)
 
   // Must go through toLong to avoid infinite recursion
   override def toInt(x: CurrencyUnit): Int = x.satoshis.toLong.toInt
