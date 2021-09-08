@@ -317,11 +317,7 @@ case class BlockHeaderDAO()(implicit
   def getBestChainTips: Future[Vector[BlockHeaderDb]] = {
     val aggregate = {
       maxWorkQuery.flatMap { work =>
-        logger.debug(s"Max block work: $work")
         val atChainWork = getAtChainWorkQuery(work)
-        atChainWork.map { headers =>
-          logger.debug(s"Headers at $work: $headers")
-        }
         atChainWork
       }
     }

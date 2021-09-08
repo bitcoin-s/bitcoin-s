@@ -181,9 +181,16 @@ case class P2PClientActor(
       proxy: ActorRef,
       remoteAddress: InetSocketAddress,
       proxyAddress: InetSocketAddress): Receive = LoggingReceive {
-    case Tcp.CommandFailed(_: Socks5Connect) =>
-      logger.error(
-        s"connection failed to ${remoteAddress} via SOCKS5 ${proxyAddress}")
+    case f: Tcp.CommandFailed =>
+      if (f.cause.isDefined) {
+        logger.error(
+          s"connection failed to ${remoteAddress} via SOCKS5 ${proxyAddress}",
+          f.cause.get)
+      } else {
+        logger.error(
+          s"connection failed to ${remoteAddress} via SOCKS5 ${proxyAddress}, no cause")
+      }
+
       reconnect()
     case Socks5Connected(_) =>
       logger.info(
@@ -250,10 +257,9 @@ case class P2PClientActor(
           reconnectionTry = reconnectionTry + 1
 
           import context.dispatcher
-          context.system.scheduler.scheduleOnce(delay)(
-            self ! P2PClient.ReconnectCommand)
-
           context.become(reconnecting)
+          context.system.scheduler.scheduleOnce(delay)(self ! ReconnectCommand)
+          ()
         }
     }
   }
