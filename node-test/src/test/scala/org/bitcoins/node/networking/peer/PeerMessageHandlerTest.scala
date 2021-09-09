@@ -35,7 +35,7 @@ class PeerMessageHandlerTest
     val outcomeF: Future[Outcome] = for {
       _ <- torClientF
       bitcoind <- cachedBitcoindWithFundsF
-      outcome = withBitcoindPeer(test, bitcoind)
+      outcome = withBitcoindPeer(test, bitcoind, torConfig.socks5ProxyParams)
       f <- outcome.toFuture
     } yield f
     new FutureOutcome(outcomeF)

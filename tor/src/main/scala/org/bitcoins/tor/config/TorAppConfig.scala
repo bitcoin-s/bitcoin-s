@@ -130,7 +130,8 @@ case class TorAppConfig(
       lazy val torRunning = checkIfTorAlreadyRunning
       if (enabled && !isStarted.get && !torRunning) {
         isStarted.set(true)
-        logger.info(s"Starting Tor daemon")
+        logger.info(
+          s"Starting Tor daemon with socksProxy=${socks5ProxyParams.get.address} control=${torParams.get.controlAddress}")
         val start = System.currentTimeMillis()
         //remove old tor log file so we accurately tell when
         //the binary is started, if we don't remove this
@@ -152,7 +153,7 @@ case class TorAppConfig(
             s"Tor daemon is fully started, it took=${System.currentTimeMillis() - start}ms")
         }
       } else if (isStarted.get) {
-        logger.debug(s"Tor daemon already started")
+        logger.info(s"Tor daemon already started")
         Future.unit
       } else if (torRunning) {
         logger.warn(

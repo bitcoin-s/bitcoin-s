@@ -22,6 +22,7 @@ import org.bitcoins.testkit.rpc.{
 }
 import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.tor.Socks5ProxyParams
 import org.bitcoins.wallet.WalletCallbacks
 import org.scalatest.FutureOutcome
 
@@ -64,7 +65,10 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       () =>
         require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
         for {
-          peer <- createPeer(bitcoind)
+          peer <- createPeer(
+            bitcoind = bitcoind,
+            socks5ProxyParamsOpt =
+              appConfig.torAppConfigOpt.flatMap(_.socks5ProxyParams))
           node <- NodeUnitTest.createSpvNode(peer)(system,
                                                    appConfig.chainConf,
                                                    appConfig.nodeConf)
@@ -147,9 +151,10 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
 
   def withBitcoindPeer(
       test: OneArgAsyncTest,
-      bitcoind: BitcoindRpcClient): FutureOutcome = {
+      bitcoind: BitcoindRpcClient,
+      socks5ProxyParamsOpt: Option[Socks5ProxyParams]): FutureOutcome = {
     makeDependentFixture[Peer](
-      () => NodeTestUtil.getBitcoindPeer(bitcoind),
+      () => NodeTestUtil.getBitcoindPeer(bitcoind, socks5ProxyParamsOpt),
       _ => Future.unit
     )(test)
   }
@@ -209,7 +214,10 @@ trait NodeTestWithCachedBitcoindV19
       SpvNodeConnectedWithBitcoindV21] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
       for {
-        peer <- createPeer(bitcoind)
+        peer <- createPeer(
+          bitcoind = bitcoind,
+          socks5ProxyParamsOpt =
+            appConfig.torAppConfigOpt.flatMap(_.socks5ProxyParams))
         node <- NodeUnitTest.createSpvNode(peer)(system,
                                                  appConfig.chainConf,
                                                  appConfig.nodeConf)

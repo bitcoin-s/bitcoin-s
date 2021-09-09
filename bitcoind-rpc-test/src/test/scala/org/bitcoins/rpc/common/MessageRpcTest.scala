@@ -13,7 +13,8 @@ class MessageRpcTest extends BitcoindRpcTest {
 
   val clientF: Future[BitcoindRpcClient] =
     BitcoindRpcTestUtil
-      .startedBitcoindRpcClient(clientAccum = clientAccum)
+      .startedBitcoindRpcClient(torAppConfigOpt = None,
+                                clientAccum = clientAccum)
 
   behavior of "MessageRpc"
 

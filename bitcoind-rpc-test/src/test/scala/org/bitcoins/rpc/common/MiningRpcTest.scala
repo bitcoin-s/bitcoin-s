@@ -10,7 +10,8 @@ import org.bitcoins.rpc.BitcoindP2PException.NotConnected
 class MiningRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePairV17(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodePairV17(torAppConfigOpt = None,
+                                          clientAccum = clientAccum)
 
   behavior of "MiningRpc"
 

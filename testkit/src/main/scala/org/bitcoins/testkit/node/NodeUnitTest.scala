@@ -30,6 +30,7 @@ import org.bitcoins.testkit.node.fixture.{
 }
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.bitcoins.testkitcore.node.P2PMessageTestUtil
+import org.bitcoins.tor.Socks5ProxyParams
 import org.bitcoins.wallet.WalletCallbacks
 import org.scalatest.FutureOutcome
 
@@ -79,7 +80,10 @@ trait NodeUnitTest extends BaseNodeTest {
           bitcoind <- BitcoinSFixture.createBitcoind(
             torAppConfigOpt = appConfig.torAppConfigOpt,
             versionOpt = versionOpt)
-          peer <- createPeer(bitcoind)
+          peer <- createPeer(
+            bitcoind = bitcoind,
+            socks5ProxyParamsOpt =
+              appConfig.torAppConfigOpt.flatMap(_.socks5ProxyParams))
           node <- NodeUnitTest.createSpvNode(peer)(system,
                                                    appConfig.chainConf,
                                                    appConfig.nodeConf)
@@ -108,7 +112,9 @@ trait NodeUnitTest extends BaseNodeTest {
                                        appConfig.torAppConfigOpt,
                                      versionOpt = Some(V21))
             .map(_.asInstanceOf[BitcoindV21RpcClient])
-        peer <- createPeer(bitcoind)
+        peer <- createPeer(
+          bitcoind,
+          appConfig.torAppConfigOpt.flatMap(_.socks5ProxyParams))
         node <- NodeUnitTest.createSpvNode(peer)(system,
                                                  appConfig.chainConf,
                                                  appConfig.nodeConf)
@@ -314,7 +320,10 @@ object NodeUnitTest extends P2PLogger {
     import system.dispatcher
     require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
     for {
-      peer <- createPeer(bitcoind)
+      peer <- createPeer(
+        bitcoind = bitcoind,
+        socks5ProxyParamsOpt =
+          appConfig.torAppConfigOpt.flatMap(_.socks5ProxyParams))
       node <- createSpvNode(peer)(system,
                                   appConfig.chainConf,
                                   appConfig.nodeConf)
@@ -448,9 +457,12 @@ object NodeUnitTest extends P2PLogger {
     Future.successful(receiver)
   }
 
-  def createPeer(bitcoind: BitcoindRpcClient)(implicit
+  def createPeer(
+      bitcoind: BitcoindRpcClient,
+      socks5ProxyParamsOpt: Option[Socks5ProxyParams])(implicit
       executionContext: ExecutionContext): Future[Peer] = {
-    NodeTestUtil.getBitcoindPeer(bitcoind)
+    NodeTestUtil.getBitcoindPeer(bitcoindRpcClient = bitcoind,
+                                 socks5ProxyParamsOpt = socks5ProxyParamsOpt)
   }
 
   def emptyPeer: Peer = {
@@ -503,7 +515,9 @@ object NodeUnitTest extends P2PLogger {
       chainHandler <- ChainUnitTest.createChainHandler()
     } yield chainHandler
     val nodeF = for {
-      peer <- createPeer(bitcoind)
+      peer <- createPeer(
+        bitcoind,
+        nodeAppConfig.torAppConfigOpt.flatMap(_.socks5ProxyParams))
       chainApi <- chainApiF
     } yield {
       val dmh = DataMessageHandler(chainApi)
@@ -533,7 +547,10 @@ object NodeUnitTest extends P2PLogger {
       _ <- checkConfigF
       chainHandler <- ChainUnitTest.createChainHandler()
     } yield chainHandler
-    val peersF = bitcoinds.map(createPeer(_))
+    val peersF = bitcoinds.map(b =>
+      createPeer(bitcoind = b,
+                 socks5ProxyParamsOpt =
+                   nodeAppConfig.torAppConfigOpt.flatMap(_.socks5ProxyParams)))
     val nodeF = for {
       chainApi <- chainApiF
       peers <- Future.sequence(peersF)

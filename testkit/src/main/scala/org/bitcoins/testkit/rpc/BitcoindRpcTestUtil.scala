@@ -138,6 +138,7 @@ trait BitcoindRpcTestUtil extends Logging {
           s"""
              |[regtest]
              |proxy=127.0.0.1:${torAppConfig.socks5ProxyParams.get.address.getPort}
+             |torcontrol=127.0.0.1:${torAppConfig.torParams.get.controlAddress.getPort}
              |listen=1
              |bind=127.0.0.1
              |""".stripMargin

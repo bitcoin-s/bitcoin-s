@@ -42,7 +42,6 @@ abstract class NodeTestUtil extends P2PLogger {
 
         InetSocketAddress.createUnresolved(onionAddress.address,
                                            onionAddress.port)
-
       }
     } else {
       val instance = bitcoindRpcClient.instance
@@ -51,27 +50,20 @@ abstract class NodeTestUtil extends P2PLogger {
     }
   }
 
-  def getSocks5ProxyParams: Option[Socks5ProxyParams] = {
-    if (TorUtil.torEnabled) {
-      Some(
-        Socks5ProxyParams(
-          address = InetSocketAddress.createUnresolved("127.0.0.1", 9050),
-          credentialsOpt = None,
-          randomizeCredentials = true
-        ))
-    } else None
-  }
-
   /** Gets the [[org.bitcoins.node.models.Peer]] that
     * corresponds to [[org.bitcoins.rpc.client.common.BitcoindRpcClient]]
+    * @param bitcoindRpcClient the bitcoind that we want to peer with
+    * @param socks5ProxyParamsOpt the proxy parameters needed to connect to the peer if it is on tor
+    * @return
     */
-  def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient)(implicit
+  def getBitcoindPeer(
+      bitcoindRpcClient: BitcoindRpcClient,
+      socks5ProxyParamsOpt: Option[Socks5ProxyParams])(implicit
       executionContext: ExecutionContext): Future[Peer] = {
     for {
       socket <- getBitcoindSocketAddress(bitcoindRpcClient)
     } yield {
-      val socks5ProxyParams = getSocks5ProxyParams
-      Peer(socket, socks5ProxyParams = socks5ProxyParams)
+      Peer(socket, socks5ProxyParams = socks5ProxyParamsOpt)
     }
   }
 

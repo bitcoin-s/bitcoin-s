@@ -59,7 +59,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
   lazy val bitcoindRpcClientF: Future[BitcoindRpcClient] = {
     for {
-      cli <- EclairRpcTestUtil.startedBitcoindRpcClient()
+      cli <- EclairRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None)
       // make sure we have enough money to open channels
       address <- cli.getNewAddress
       _ <- cli.generateToAddress(200, address)

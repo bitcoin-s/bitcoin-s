@@ -29,7 +29,6 @@ trait CachedTor extends Logging {
   }
 
   override def beforeAll(): Unit = {
-    logger.error(s"------------------ CACHEDTOR BEFOREALL ------------------")
     if (TorUtil.torEnabled && !isTorStarted.get()) {
       Await.result(torF, 70.seconds)
     }

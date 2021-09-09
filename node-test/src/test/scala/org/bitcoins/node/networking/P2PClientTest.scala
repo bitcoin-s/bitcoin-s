@@ -21,18 +21,26 @@ import scala.concurrent.duration.DurationInt
 
 class P2PClientTest extends BitcoindRpcTorTest {
 
-  lazy val bitcoindRpcF =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+  lazy val bitcoindRpcF = for {
+    rpc <- BitcoindRpcTestUtil.startedBitcoindRpcClient(
+      torAppConfigOpt = Some(torConfig),
+      clientAccum = clientAccum)
+  } yield rpc
 
   lazy val bitcoindPeerF = bitcoindRpcF.flatMap { bitcoind =>
-    NodeTestUtil.getBitcoindPeer(bitcoind)
+    NodeTestUtil.getBitcoindPeer(bitcoind, torConfig.socks5ProxyParams)
   }
 
-  lazy val bitcoindRpc2F =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+  lazy val bitcoindRpc2F = {
+    for {
+      rpc <- BitcoindRpcTestUtil.startedBitcoindRpcClient(
+        torAppConfigOpt = Some(torConfig),
+        clientAccum = clientAccum)
+    } yield rpc
+  }
 
   lazy val bitcoindPeer2F = bitcoindRpcF.flatMap { bitcoind =>
-    NodeTestUtil.getBitcoindPeer(bitcoind)
+    NodeTestUtil.getBitcoindPeer(bitcoind, torConfig.socks5ProxyParams)
   }
   behavior of "parseIndividualMessages"
 

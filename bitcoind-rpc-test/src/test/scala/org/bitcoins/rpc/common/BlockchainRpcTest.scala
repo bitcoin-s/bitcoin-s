@@ -19,7 +19,9 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairV17 {
     val pruneClient =
       BitcoindRpcClient.withActorSystem(
         BitcoindRpcTestUtil
-          .instance(pruneMode = true, versionOpt = Some(BitcoindVersion.V17)))
+          .instance(torAppConfigOpt = None,
+                    pruneMode = true,
+                    versionOpt = Some(BitcoindVersion.V17)))
 
     for {
       _ <- pruneClient.start()
