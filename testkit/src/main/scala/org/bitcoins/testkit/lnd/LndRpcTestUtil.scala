@@ -20,6 +20,7 @@ import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.{FileUtil, TestkitBinaries}
+import org.bitcoins.tor.config.TorAppConfig
 
 import java.io.{File, PrintWriter}
 import java.net.InetSocketAddress
@@ -44,17 +45,22 @@ trait LndRpcTestUtil extends Logging {
       instanceOpt: Option[BitcoindInstanceLocal] = None)(implicit
       actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
     //need to do something with the Vector.newBuilder presumably?
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(instanceOpt, Vector.newBuilder)
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None,
+                                                 clientAccum =
+                                                   Vector.newBuilder,
+                                                 instanceOpt = instanceOpt)
   }
 
   /** Creates a bitcoind instance with the given parameters */
   def bitcoindInstance(
+      torAppConfigOpt: Option[TorAppConfig],
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       bitcoindV: BitcoindVersion = BitcoindVersion.V21)(implicit
       system: ActorSystem): BitcoindInstanceLocal = {
     BitcoindRpcTestUtil.getInstance(bitcoindVersion = bitcoindV,
+                                    torAppConfigOpt = torAppConfigOpt,
                                     port = port,
                                     rpcPort = rpcPort,
                                     zmqConfig = zmqConfig)

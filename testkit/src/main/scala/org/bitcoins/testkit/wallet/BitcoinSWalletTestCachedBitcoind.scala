@@ -11,6 +11,7 @@ import org.bitcoins.testkit.rpc.{
   CachedBitcoindNewest,
   CachedBitcoindV19
 }
+import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   createWalletWithBitcoind,
   createWalletWithBitcoindCallbacks,
@@ -32,7 +33,8 @@ import scala.util.{Failure, Success}
 trait BitcoinSWalletTestCachedBitcoind
     extends BitcoinSFixture
     with BaseWalletTest
-    with EmbeddedPg { _: CachedBitcoind[_] =>
+    with EmbeddedPg
+    with CachedTor { _: CachedBitcoind[_] =>
 
   /** Creates a funded wallet fixture with bitcoind
     * This is different than [[withFundedWalletAndBitcoind()]]

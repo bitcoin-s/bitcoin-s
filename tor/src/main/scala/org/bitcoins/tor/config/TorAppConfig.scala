@@ -50,6 +50,7 @@ case class TorAppConfig(
   lazy val useRandomPorts = config.getBoolean("bitcoin-s.tor.use-random-ports")
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
+    logger.error(s"@@@@@@@@@ useRandomPorts=$useRandomPorts @@@@@@@@@")
     if (config.getBoolean("bitcoin-s.proxy.enabled")) {
       val address = if (torProvided) {
         NetworkUtil.parseInetSocketAddress(
@@ -259,13 +260,13 @@ object TorAppConfig extends AppConfigFactory[TorAppConfig] with Logging {
       ec: ExecutionContext): TorAppConfig =
     TorAppConfig(datadir, confs: _*)
 
-  lazy val randomSocks5Port: Int = ports.proxyPort
+  def randomSocks5Port: Int = ports.proxyPort
 
-  lazy val randomControlPort: Int = ports.controlPort
+  def randomControlPort: Int = ports.controlPort
 
   private case class TorPorts(proxyPort: Int, controlPort: Int)
 
-  private lazy val ports = {
+  private def ports: TorPorts = {
     val proxyPort = NetworkUtil.randomPort()
 
     def findControlPort: Int = {

@@ -170,7 +170,7 @@ trait BitcoinSWalletTest
       walletAppConfig: WalletAppConfig): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
       builder = { () =>
-        BitcoinSFixture.createBitcoindWithFunds()
+        BitcoinSFixture.createBitcoindWithFunds(torAppConfigOpt = None)
       },
       dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
         createWalletWithBitcoind(bitcoind)
@@ -189,7 +189,8 @@ trait BitcoinSWalletTest
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
       builder = { () =>
         BitcoinSFixture
-          .createBitcoindWithFunds(Some(BitcoindVersion.V19))
+          .createBitcoindWithFunds(torAppConfigOpt = None,
+                                   Some(BitcoindVersion.V19))
           .map(_.asInstanceOf[BitcoindV19RpcClient])
       },
       dependentBuilder = { (bitcoind: BitcoindV19RpcClient) =>
@@ -211,7 +212,8 @@ trait BitcoinSWalletTest
       for {
         bitcoind <-
           BitcoinSFixture
-            .createBitcoindWithFunds(Some(BitcoindVersion.V19))
+            .createBitcoindWithFunds(torAppConfigOpt = None,
+                                     Some(BitcoindVersion.V19))
             .map(_.asInstanceOf[BitcoindV19RpcClient])
         wallet <- createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
         fundedWallet <- fundWalletWithBitcoind(wallet)
@@ -538,7 +540,8 @@ object BitcoinSWalletTest extends WalletLogger {
   def createWalletWithBitcoind(
       wallet: Wallet
   )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
-    val bitcoindF = BitcoinSFixture.createBitcoindWithFunds()
+    val bitcoindF =
+      BitcoinSFixture.createBitcoindWithFunds(torAppConfigOpt = None)
     bitcoindF.map(WalletWithBitcoindRpc(wallet, _))(system.dispatcher)
   }
 
@@ -548,7 +551,9 @@ object BitcoinSWalletTest extends WalletLogger {
       versionOpt: Option[BitcoindVersion]
   )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
-    val bitcoindF = BitcoinSFixture.createBitcoindWithFunds(versionOpt)
+    val bitcoindF = BitcoinSFixture.createBitcoindWithFunds(torAppConfigOpt =
+                                                              None,
+                                                            versionOpt)
     bitcoindF.map(WalletWithBitcoindRpc(wallet, _))
   }
 

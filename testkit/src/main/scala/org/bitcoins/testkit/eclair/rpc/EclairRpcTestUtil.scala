@@ -33,6 +33,7 @@ import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.{EclairRpcTestClient, FileUtil}
+import org.bitcoins.tor.config.TorAppConfig
 
 import java.io.{File, PrintWriter}
 import java.net.URI
@@ -61,22 +62,26 @@ trait EclairRpcTestUtil extends Logging {
   /** Makes a best effort to get a 0.16 bitcoind instance
     */
   def startedBitcoindRpcClient(
+      torAppConfigOpt: Option[TorAppConfig],
       instanceOpt: Option[BitcoindInstanceLocal] = None)(implicit
       actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
     //need to do something with the Vector.newBuilder presumably?
-    val instance = instanceOpt.getOrElse(bitcoindInstance())
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(Some(instance),
-                                                 Vector.newBuilder)
+    val instance = instanceOpt.getOrElse(bitcoindInstance(torAppConfigOpt))
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt,
+                                                 Vector.newBuilder,
+                                                 Some(instance))
   }
 
   /** Creates a bitcoind instance with the given parameters */
   def bitcoindInstance(
+      torAppConfigOpt: Option[TorAppConfig],
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       bitcoindV: BitcoindVersion = EclairRpcClient.bitcoindV)(implicit
       system: ActorSystem): BitcoindInstanceLocal = {
     BitcoindRpcTestUtil.getInstance(bitcoindVersion = bitcoindV,
+                                    torAppConfigOpt,
                                     port = port,
                                     rpcPort = rpcPort,
                                     zmqConfig = zmqConfig)
@@ -354,7 +359,7 @@ trait EclairRpcTestUtil extends Logging {
       if (bitcoindRpcClient.isDefined) {
         Future.successful(bitcoindRpcClient.get)
       } else {
-        EclairRpcTestUtil.startedBitcoindRpcClient()
+        EclairRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None)
       }
     }
 
@@ -511,7 +516,7 @@ trait EclairRpcTestUtil extends Logging {
       if (bitcoindRpcClientOpt.isDefined) {
         Future.successful(bitcoindRpcClientOpt.get)
       } else {
-        EclairRpcTestUtil.startedBitcoindRpcClient()
+        EclairRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None)
       }
     }
 
@@ -774,7 +779,7 @@ trait EclairRpcTestUtil extends Logging {
         system: ActorSystem): Future[EclairNetwork] = {
       import system.dispatcher
       for {
-        bitcoind <- startedBitcoindRpcClient()
+        bitcoind <- startedBitcoindRpcClient(torAppConfigOpt = None)
         testEclairInstance =
           EclairRpcTestUtil.eclairInstance(bitcoind, logbackXml = logbackXml)
         testEclairNode = new EclairRpcClient(testEclairInstance,

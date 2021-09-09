@@ -1,5 +1,6 @@
 package org.bitcoins.testkit.tor
 
+import grizzled.slf4j.Logging
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.util.{BitcoinSAkkaAsyncTest, TorUtil}
 import org.bitcoins.tor.config.TorAppConfig
@@ -13,7 +14,7 @@ import scala.concurrent.{Await, Future}
   * This is useful for using with fixtures to avoid starting tor everytime a
   * new test is run.
   */
-trait CachedTor {
+trait CachedTor extends Logging {
   _: BitcoinSAkkaAsyncTest =>
 
   implicit protected lazy val torConfig: TorAppConfig =
@@ -28,6 +29,7 @@ trait CachedTor {
   }
 
   override def beforeAll(): Unit = {
+    logger.error(s"------------------ CACHEDTOR BEFOREALL ------------------")
     if (TorUtil.torEnabled && !isTorStarted.get()) {
       Await.result(torF, 70.seconds)
     }

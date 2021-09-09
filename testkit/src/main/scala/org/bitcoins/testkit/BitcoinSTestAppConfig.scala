@@ -52,7 +52,7 @@ object BitcoinSTestAppConfig {
          |
          |  proxy.enabled = $torEnabled
          |  tor.enabled = $torEnabled
-         |  tor.use-random-ports = false
+         |  tor.use-random-ports = true
          |}
       """.stripMargin
     }

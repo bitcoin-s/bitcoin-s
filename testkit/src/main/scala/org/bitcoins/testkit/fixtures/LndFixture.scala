@@ -4,10 +4,11 @@ import org.bitcoins.lnd.rpc.LndRpcClient
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.lnd._
 import org.bitcoins.testkit.rpc._
+import org.bitcoins.testkit.tor.CachedTor
 import org.scalatest.FutureOutcome
 
 /** A trait that is useful if you need Lnd fixtures for your test suite */
-trait LndFixture extends BitcoinSFixture with CachedBitcoindV21 {
+trait LndFixture extends BitcoinSFixture with CachedBitcoindV21 with CachedTor {
 
   override type FixtureParam = LndRpcClient
 
@@ -35,7 +36,10 @@ trait LndFixture extends BitcoinSFixture with CachedBitcoindV21 {
 }
 
 /** A trait that is useful if you need Lnd fixtures for your test suite */
-trait DualLndFixture extends BitcoinSFixture with CachedBitcoindV21 {
+trait DualLndFixture
+    extends BitcoinSFixture
+    with CachedBitcoindV21
+    with CachedTor {
 
   override type FixtureParam = (BitcoindRpcClient, LndRpcClient, LndRpcClient)
 

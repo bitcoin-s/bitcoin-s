@@ -8,6 +8,7 @@ import org.bitcoins.testkit.rpc.{
   CachedBitcoindNewest,
   CachedBitcoindV19
 }
+import org.bitcoins.testkit.tor.CachedTor
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -20,7 +21,8 @@ trait ChainWithBitcoindUnitTest extends ChainDbUnitTest {
 
 trait ChainWithBitcoindNewestCachedUnitTest
     extends ChainWithBitcoindUnitTest
-    with CachedBitcoindNewest {
+    with CachedBitcoindNewest
+    with CachedTor {
 
   override type FixtureParam = BitcoindBaseVersionChainHandlerViaRpc
 
@@ -49,13 +51,15 @@ trait ChainWithBitcoindNewestCachedUnitTest
   override def afterAll(): Unit = {
     super[CachedBitcoindNewest].afterAll()
     super[ChainWithBitcoindUnitTest].afterAll()
+    super[CachedTor].afterAll()
   }
 }
 
 /** Chain Unit test suite that has a cached bitcoind v19 instance */
 trait ChainWithBitcoindV19CachedUnitTest
     extends ChainWithBitcoindUnitTest
-    with CachedBitcoindV19 {
+    with CachedBitcoindV19
+    with CachedTor {
 
   override type FixtureParam = BitcoindV19ChainHandler
 
@@ -85,5 +89,6 @@ trait ChainWithBitcoindV19CachedUnitTest
   override def afterAll(): Unit = {
     super[CachedBitcoindV19].afterAll()
     super[ChainWithBitcoindUnitTest].afterAll()
+    super[CachedTor].afterAll()
   }
 }

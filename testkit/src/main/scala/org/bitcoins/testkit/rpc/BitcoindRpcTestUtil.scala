@@ -38,7 +38,8 @@ import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.config._
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.testkit.util.{BitcoindRpcTestClient, FileUtil, TorUtil}
+import org.bitcoins.testkit.util.{BitcoindRpcTestClient, FileUtil}
+import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.util.ListUtil
 
 import java.io.File
@@ -67,7 +68,7 @@ trait BitcoindRpcTestUtil extends Logging {
 
   /** Standard config used for testing purposes
     */
-  def standardConfig: BitcoindConfig = {
+  def standardConfig(torAppConfigOpt: Option[TorAppConfig]): BitcoindConfig = {
 
     val hashBlock = newInetSocketAddres
     val hashTx = newInetSocketAddres
@@ -77,13 +78,15 @@ trait BitcoindRpcTestUtil extends Logging {
                               rawBlock = Some(rawBlock),
                               hashTx = Some(hashTx),
                               rawTx = Some(rawTx))
-    config(uri = newUri,
+    config(torAppConfigOpt = torAppConfigOpt,
+           uri = newUri,
            rpcUri = newUri,
            zmqConfig = zmqConfig,
            pruneMode = false)
   }
 
   def config(
+      torAppConfigOpt: Option[TorAppConfig],
       uri: URI,
       rpcUri: URI,
       zmqConfig: ZmqConfig,
@@ -129,16 +132,17 @@ trait BitcoindRpcTestUtil extends Logging {
         conf
       }
 
-    val configTor = if (TorUtil.torEnabled) {
-      config +
-        """
-          |[regtest]
-          |proxy=127.0.0.1:9050
-          |listen=1
-          |bind=127.0.0.1
-          |""".stripMargin
-    } else {
-      config
+    val configTor = torAppConfigOpt match {
+      case Some(torAppConfig) =>
+        config +
+          s"""
+             |[regtest]
+             |proxy=127.0.0.1:${torAppConfig.socks5ProxyParams.get.address.getPort}
+             |listen=1
+             |bind=127.0.0.1
+             |""".stripMargin
+      case None =>
+        config
     }
     BitcoindConfig(config = configTor, datadir = FileUtil.tmpDir())
   }
@@ -148,13 +152,15 @@ trait BitcoindRpcTestUtil extends Logging {
     * file
     */
   def writtenConfig(
+      torAppConfigOpt: Option[TorAppConfig],
       uri: URI,
       rpcUri: URI,
       zmqConfig: ZmqConfig,
       pruneMode: Boolean,
       blockFilterIndex: Boolean = false
   ): Path = {
-    val conf = config(uri = uri,
+    val conf = config(torAppConfigOpt = torAppConfigOpt,
+                      uri = uri,
                       rpcUri = rpcUri,
                       zmqConfig = zmqConfig,
                       pruneMode = pruneMode,
@@ -211,6 +217,7 @@ trait BitcoindRpcTestUtil extends Logging {
 
   /** Creates a `bitcoind` instance within the user temporary directory */
   def instance(
+      torAppConfigOpt: Option[TorAppConfig],
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
@@ -228,7 +235,8 @@ trait BitcoindRpcTestUtil extends Logging {
         true
     }
     val configFile =
-      writtenConfig(uri,
+      writtenConfig(torAppConfigOpt,
+                    uri,
                     rpcUri,
                     zmqConfig,
                     pruneMode,
@@ -251,106 +259,135 @@ trait BitcoindRpcTestUtil extends Logging {
   }
 
   def v16Instance(
+      torAppConfigOpt: Option[TorAppConfig],
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   )(implicit system: ActorSystem): BitcoindInstanceLocal =
-    instance(port = port,
-             rpcPort = rpcPort,
-             zmqConfig = zmqConfig,
-             pruneMode = pruneMode,
-             versionOpt = Some(BitcoindVersion.V16),
-             binaryDirectory = binaryDirectory)
+    instance(
+      torAppConfigOpt = torAppConfigOpt,
+      port = port,
+      rpcPort = rpcPort,
+      zmqConfig = zmqConfig,
+      pruneMode = pruneMode,
+      versionOpt = Some(BitcoindVersion.V16),
+      binaryDirectory = binaryDirectory
+    )
 
   def v17Instance(
+      torAppConfigOpt: Option[TorAppConfig],
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  )(implicit system: ActorSystem): BitcoindInstanceLocal =
-    instance(port = port,
-             rpcPort = rpcPort,
-             zmqConfig = zmqConfig,
-             pruneMode = pruneMode,
-             versionOpt = Some(BitcoindVersion.V17),
-             binaryDirectory = binaryDirectory)
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory)(implicit
+      system: ActorSystem): BitcoindInstanceLocal =
+    instance(
+      torAppConfigOpt = torAppConfigOpt,
+      port = port,
+      rpcPort = rpcPort,
+      zmqConfig = zmqConfig,
+      pruneMode = pruneMode,
+      versionOpt = Some(BitcoindVersion.V17),
+      binaryDirectory = binaryDirectory
+    )
 
   def v18Instance(
+      torAppConfigOpt: Option[TorAppConfig],
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  )(implicit system: ActorSystem): BitcoindInstanceLocal =
-    instance(port = port,
-             rpcPort = rpcPort,
-             zmqConfig = zmqConfig,
-             pruneMode = pruneMode,
-             versionOpt = Some(BitcoindVersion.V18),
-             binaryDirectory = binaryDirectory)
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory)(implicit
+      system: ActorSystem): BitcoindInstanceLocal =
+    instance(
+      torAppConfigOpt = torAppConfigOpt,
+      port = port,
+      rpcPort = rpcPort,
+      zmqConfig = zmqConfig,
+      pruneMode = pruneMode,
+      versionOpt = Some(BitcoindVersion.V18),
+      binaryDirectory = binaryDirectory
+    )
 
   def v19Instance(
+      torAppConfigOpt: Option[TorAppConfig],
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  )(implicit system: ActorSystem): BitcoindInstanceLocal =
-    instance(port = port,
-             rpcPort = rpcPort,
-             zmqConfig = zmqConfig,
-             pruneMode = pruneMode,
-             versionOpt = Some(BitcoindVersion.V19),
-             binaryDirectory = binaryDirectory)
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory)(implicit
+      system: ActorSystem): BitcoindInstanceLocal =
+    instance(
+      torAppConfigOpt = torAppConfigOpt,
+      port = port,
+      rpcPort = rpcPort,
+      zmqConfig = zmqConfig,
+      pruneMode = pruneMode,
+      versionOpt = Some(BitcoindVersion.V19),
+      binaryDirectory = binaryDirectory
+    )
 
   def v20Instance(
+      torAppConfigOpt: Option[TorAppConfig],
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  )(implicit system: ActorSystem): BitcoindInstanceLocal =
-    instance(port = port,
-             rpcPort = rpcPort,
-             zmqConfig = zmqConfig,
-             pruneMode = pruneMode,
-             versionOpt = Some(BitcoindVersion.V20),
-             binaryDirectory = binaryDirectory)
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory)(implicit
+      system: ActorSystem): BitcoindInstanceLocal =
+    instance(
+      torAppConfigOpt = torAppConfigOpt,
+      port = port,
+      rpcPort = rpcPort,
+      zmqConfig = zmqConfig,
+      pruneMode = pruneMode,
+      versionOpt = Some(BitcoindVersion.V20),
+      binaryDirectory = binaryDirectory
+    )
 
   def v21Instance(
+      torAppConfigOpt: Option[TorAppConfig],
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  )(implicit system: ActorSystem): BitcoindInstanceLocal =
-    instance(port = port,
-             rpcPort = rpcPort,
-             zmqConfig = zmqConfig,
-             pruneMode = pruneMode,
-             versionOpt = Some(BitcoindVersion.V21),
-             binaryDirectory = binaryDirectory)
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory)(implicit
+      system: ActorSystem): BitcoindInstanceLocal =
+    instance(
+      torAppConfigOpt = torAppConfigOpt,
+      port = port,
+      rpcPort = rpcPort,
+      zmqConfig = zmqConfig,
+      pruneMode = pruneMode,
+      versionOpt = Some(BitcoindVersion.V21),
+      binaryDirectory = binaryDirectory
+    )
 
   def vExperimentalInstance(
+      torAppConfigOpt: Option[TorAppConfig],
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
       pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  )(implicit system: ActorSystem): BitcoindInstanceLocal =
-    instance(port = port,
-             rpcPort = rpcPort,
-             zmqConfig = zmqConfig,
-             pruneMode = pruneMode,
-             versionOpt = Some(BitcoindVersion.Experimental),
-             binaryDirectory = binaryDirectory)
+      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory)(implicit
+      system: ActorSystem): BitcoindInstanceLocal =
+    instance(
+      torAppConfigOpt = torAppConfigOpt,
+      port = port,
+      rpcPort = rpcPort,
+      zmqConfig = zmqConfig,
+      pruneMode = pruneMode,
+      versionOpt = Some(BitcoindVersion.Experimental),
+      binaryDirectory = binaryDirectory
+    )
 
   /** Gets an instance of bitcoind with the given version */
   def getInstance(
       bitcoindVersion: BitcoindVersion,
+      torAppConfigOpt: Option[TorAppConfig],
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
@@ -359,43 +396,50 @@ trait BitcoindRpcTestUtil extends Logging {
       system: ActorSystem): BitcoindInstanceLocal = {
     bitcoindVersion match {
       case BitcoindVersion.V16 =>
-        BitcoindRpcTestUtil.v16Instance(port,
+        BitcoindRpcTestUtil.v16Instance(torAppConfigOpt,
+                                        port,
                                         rpcPort,
                                         zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
       case BitcoindVersion.V17 =>
-        BitcoindRpcTestUtil.v17Instance(port,
+        BitcoindRpcTestUtil.v17Instance(torAppConfigOpt,
+                                        port,
                                         rpcPort,
                                         zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
       case BitcoindVersion.V18 =>
-        BitcoindRpcTestUtil.v18Instance(port,
+        BitcoindRpcTestUtil.v18Instance(torAppConfigOpt,
+                                        port,
                                         rpcPort,
                                         zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
       case BitcoindVersion.V19 =>
-        BitcoindRpcTestUtil.v19Instance(port,
+        BitcoindRpcTestUtil.v19Instance(torAppConfigOpt,
+                                        port,
                                         rpcPort,
                                         zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
       case BitcoindVersion.V20 =>
-        BitcoindRpcTestUtil.v20Instance(port,
+        BitcoindRpcTestUtil.v20Instance(torAppConfigOpt,
+                                        port,
                                         rpcPort,
                                         zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
       case BitcoindVersion.V21 =>
-        BitcoindRpcTestUtil.v21Instance(port,
+        BitcoindRpcTestUtil.v21Instance(torAppConfigOpt,
+                                        port,
                                         rpcPort,
                                         zmqConfig,
                                         pruneMode,
                                         binaryDirectory = binaryDirectory)
       case BitcoindVersion.Experimental =>
-        BitcoindRpcTestUtil.vExperimentalInstance(port,
+        BitcoindRpcTestUtil.vExperimentalInstance(torAppConfigOpt,
+                                                  port,
                                                   rpcPort,
                                                   zmqConfig,
                                                   pruneMode,
@@ -656,10 +700,12 @@ trait BitcoindRpcTestUtil extends Logging {
   )(implicit
       system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
     implicit val ec: ExecutionContextExecutor = system.getDispatcher
+    val instance1 = instance(None)
+    val instance2 = instance(None)
     val client1: BitcoindRpcClient =
-      BitcoindRpcClient.withActorSystem(instance())
+      BitcoindRpcClient.withActorSystem(instance1)
     val client2: BitcoindRpcClient =
-      BitcoindRpcClient.withActorSystem(instance())
+      BitcoindRpcClient.withActorSystem(instance2)
 
     startServers(Vector(client1, client2)).map { _ =>
       clientAccum ++= List(client1, client2)
@@ -702,35 +748,37 @@ trait BitcoindRpcTestUtil extends Logging {
 
   private def createNodeSequence[T <: BitcoindRpcClient](
       numNodes: Int,
-      version: BitcoindVersion)(implicit
+      version: BitcoindVersion,
+      torAppConfigOpt: Option[TorAppConfig])(implicit
       system: ActorSystem): Future[Vector[T]] = {
     import system.dispatcher
 
     val clients: Vector[T] = (0 until numNodes).map { _ =>
       val rpc = version match {
         case BitcoindVersion.Unknown =>
-          BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil.instance())
+          val instance = BitcoindRpcTestUtil.instance(torAppConfigOpt)
+          BitcoindRpcClient.withActorSystem(instance)
         case BitcoindVersion.V16 =>
           BitcoindV16RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v16Instance())
+            BitcoindRpcTestUtil.v16Instance(torAppConfigOpt))
         case BitcoindVersion.V17 =>
           BitcoindV17RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v17Instance())
+            BitcoindRpcTestUtil.v17Instance(torAppConfigOpt))
         case BitcoindVersion.V18 =>
           BitcoindV18RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v18Instance())
+            BitcoindRpcTestUtil.v18Instance(torAppConfigOpt))
         case BitcoindVersion.V19 =>
           BitcoindV19RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v19Instance())
+            BitcoindRpcTestUtil.v19Instance(torAppConfigOpt))
         case BitcoindVersion.V20 =>
           BitcoindV20RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v20Instance())
+            BitcoindRpcTestUtil.v20Instance(torAppConfigOpt))
         case BitcoindVersion.V21 =>
           BitcoindV21RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v21Instance())
+            BitcoindRpcTestUtil.v21Instance(torAppConfigOpt))
         case BitcoindVersion.Experimental =>
           BitcoindV19RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.vExperimentalInstance())
+            BitcoindRpcTestUtil.vExperimentalInstance(torAppConfigOpt))
       }
 
       // this is safe as long as this method is never
@@ -756,22 +804,24 @@ trait BitcoindRpcTestUtil extends Logging {
 
   private def createNodePairInternal[T <: BitcoindRpcClient](
       version: BitcoindVersion,
+      torAppConfigOpt: Option[TorAppConfig],
       clientAccum: RpcClientAccum)(implicit
       system: ActorSystem): Future[(T, T)] = {
     import system.dispatcher
 
-    createNodePairInternal[T](version).map { pair =>
+    createNodePairInternal[T](version, torAppConfigOpt).map { pair =>
       clientAccum.++=(Vector(pair._1, pair._2))
       pair
     }
   }
 
   private def createNodePairInternal[T <: BitcoindRpcClient](
-      version: BitcoindVersion)(implicit
+      version: BitcoindVersion,
+      torAppConfigOpt: Option[TorAppConfig])(implicit
       system: ActorSystem): Future[(T, T)] = {
     import system.dispatcher
 
-    createNodeSequence[T](numNodes = 2, version).map {
+    createNodeSequence[T](numNodes = 2, version, torAppConfigOpt).map {
       case first +: second +: _ => (first, second)
       case _: Vector[BitcoindRpcClient] =>
         throw new RuntimeException("Did not get two clients!")
@@ -782,70 +832,86 @@ trait BitcoindRpcTestUtil extends Logging {
     * that are connected with some blocks in the chain
     */
   def createNodePair[T <: BitcoindRpcClient](
+      torAppConfigOpt: Option[TorAppConfig],
       clientAccum: RpcClientAccum = Vector.newBuilder)(implicit
       system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    createNodePair[T](BitcoindVersion.newest).map { pair =>
+    createNodePair[T](BitcoindVersion.newest, torAppConfigOpt).map { pair =>
       clientAccum.++=(Vector(pair._1, pair._2))
       pair
     }(system.dispatcher)
 
-  def createNodePair[T <: BitcoindRpcClient](version: BitcoindVersion)(implicit
+  def createNodePair[T <: BitcoindRpcClient](
+      version: BitcoindVersion,
+      torAppConfigOpt: Option[TorAppConfig])(implicit
       system: ActorSystem): Future[(T, T)] = {
-    createNodePairInternal(version)
+    createNodePairInternal(version, torAppConfigOpt)
   }
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
     * that are connected with some blocks in the chain
     */
-  def createNodePairV16(clientAccum: RpcClientAccum)(implicit
+  def createNodePairV16(
+      torAppConfigOpt: Option[TorAppConfig],
+      clientAccum: RpcClientAccum)(implicit
   system: ActorSystem): Future[(BitcoindV16RpcClient, BitcoindV16RpcClient)] =
-    createNodePairInternal(BitcoindVersion.V16, clientAccum)
+    createNodePairInternal(BitcoindVersion.V16, torAppConfigOpt, clientAccum)
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v17.BitcoindV17RpcClient BitcoindV17RpcClient]]
     * that are connected with some blocks in the chain
     */
-  def createNodePairV17(clientAccum: RpcClientAccum)(implicit
+  def createNodePairV17(
+      torAppConfigOpt: Option[TorAppConfig],
+      clientAccum: RpcClientAccum)(implicit
   system: ActorSystem): Future[(BitcoindV17RpcClient, BitcoindV17RpcClient)] =
-    createNodePairInternal(BitcoindVersion.V17, clientAccum)
+    createNodePairInternal(BitcoindVersion.V17, torAppConfigOpt, clientAccum)
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v18.BitcoindV18RpcClient BitcoindV18RpcClient]]
     * that are connected with some blocks in the chain
     */
-  def createNodePairV18(clientAccum: RpcClientAccum)(implicit
+  def createNodePairV18(
+      torAppConfigOpt: Option[TorAppConfig],
+      clientAccum: RpcClientAccum)(implicit
   system: ActorSystem): Future[(BitcoindV18RpcClient, BitcoindV18RpcClient)] =
-    createNodePairInternal(BitcoindVersion.V18, clientAccum)
+    createNodePairInternal(BitcoindVersion.V18, torAppConfigOpt, clientAccum)
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v19.BitcoindV19RpcClient BitcoindV19RpcClient]]
     * that are connected with some blocks in the chain
     */
-  def createNodePairV19(clientAccum: RpcClientAccum)(implicit
+  def createNodePairV19(
+      torAppConfigOpt: Option[TorAppConfig],
+      clientAccum: RpcClientAccum)(implicit
   system: ActorSystem): Future[(BitcoindV19RpcClient, BitcoindV19RpcClient)] =
-    createNodePairInternal(BitcoindVersion.V19, clientAccum)
+    createNodePairInternal(BitcoindVersion.V19, torAppConfigOpt, clientAccum)
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v20.BitcoindV20RpcClient BitcoindV20RpcClient]]
     * that are connected with some blocks in the chain
     */
-  def createNodePairV20(clientAccum: RpcClientAccum)(implicit
+  def createNodePairV20(
+      torAppConfigOpt: Option[TorAppConfig],
+      clientAccum: RpcClientAccum)(implicit
   system: ActorSystem): Future[(BitcoindV20RpcClient, BitcoindV20RpcClient)] =
-    createNodePairInternal(BitcoindVersion.V20, clientAccum)
+    createNodePairInternal(BitcoindVersion.V20, torAppConfigOpt, clientAccum)
 
   /** Returns a pair of [[org.bitcoins.rpc.client.v21.BitcoindV21RpcClient BitcoindV21RpcClient]]
     * that are connected with some blocks in the chain
     */
-  def createNodePairV21(clientAccum: RpcClientAccum)(implicit
+  def createNodePairV21(
+      torAppConfigOpt: Option[TorAppConfig],
+      clientAccum: RpcClientAccum)(implicit
   system: ActorSystem): Future[(BitcoindV21RpcClient, BitcoindV21RpcClient)] =
-    createNodePairInternal(BitcoindVersion.V21, clientAccum)
+    createNodePairInternal(BitcoindVersion.V21, torAppConfigOpt, clientAccum)
 
   /** Returns a triple of [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
     * that are connected with some blocks in the chain
     */
   private def createNodeTripleInternal[T <: BitcoindRpcClient](
       version: BitcoindVersion,
+      torAppConfigOpt: Option[TorAppConfig],
       clientAccum: RpcClientAccum
   )(implicit system: ActorSystem): Future[(T, T, T)] = {
     import system.dispatcher
 
-    createNodeTripleInternal[T](version).map { nodes =>
+    createNodeTripleInternal[T](version, torAppConfigOpt).map { nodes =>
       clientAccum.+=(nodes._1)
       clientAccum.+=(nodes._2)
       clientAccum.+=(nodes._3)
@@ -857,11 +923,12 @@ trait BitcoindRpcTestUtil extends Logging {
     * that are connected with some blocks in the chain
     */
   private def createNodeTripleInternal[T <: BitcoindRpcClient](
-      version: BitcoindVersion
+      version: BitcoindVersion,
+      torAppConfigOpt: Option[TorAppConfig]
   )(implicit system: ActorSystem): Future[(T, T, T)] = {
     import system.dispatcher
 
-    createNodeSequence[T](numNodes = 3, version).map {
+    createNodeSequence[T](numNodes = 3, version, torAppConfigOpt).map {
       case first +: second +: third +: _ => (first, second, third)
       case _: Vector[T] =>
         throw new RuntimeException("Did not get three clients!")
@@ -872,42 +939,48 @@ trait BitcoindRpcTestUtil extends Logging {
     * that are connected with some blocks in the chain
     */
   def createNodeTriple(
-      clientAccum: RpcClientAccum
-  )(implicit system: ActorSystem): Future[
+      torAppConfigOpt: Option[TorAppConfig],
+      clientAccum: RpcClientAccum)(implicit system: ActorSystem): Future[
     (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] = {
-    createNodeTripleInternal(BitcoindVersion.Unknown, clientAccum)
+    createNodeTripleInternal(BitcoindVersion.Unknown,
+                             torAppConfigOpt,
+                             clientAccum)
   }
 
   /** Returns a triple of org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient
     * that are connected with some blocks in the chain
     */
-  def createNodeTriple[T <: BitcoindRpcClient](version: BitcoindVersion)(
-      implicit system: ActorSystem): Future[(T, T, T)] = {
-    createNodeTripleInternal(version)
+  def createNodeTriple[T <: BitcoindRpcClient](
+      version: BitcoindVersion,
+      torAppConfigOpt: Option[TorAppConfig])(implicit
+      system: ActorSystem): Future[(T, T, T)] = {
+    createNodeTripleInternal(version, torAppConfigOpt)
   }
 
   /** @return a triple of [[org.bitcoins.rpc.client.v17.BitcoindV17RpcClient BitcoindV17RpcClient]]
     * that are connected with some blocks in the chain
     */
   def createNodeTripleV17(
+      torAppConfigOpt: Option[TorAppConfig],
       clientAccum: RpcClientAccum
   )(implicit system: ActorSystem): Future[
     (BitcoindV17RpcClient, BitcoindV17RpcClient, BitcoindV17RpcClient)] = {
-    createNodeTripleInternal(BitcoindVersion.V17, clientAccum)
+    createNodeTripleInternal(BitcoindVersion.V17, torAppConfigOpt, clientAccum)
   }
 
   def createNodeTripleV18(
-      clientAccum: RpcClientAccum
-  )(implicit system: ActorSystem): Future[
+      torAppConfigOpt: Option[TorAppConfig],
+      clientAccum: RpcClientAccum)(implicit system: ActorSystem): Future[
     (BitcoindV18RpcClient, BitcoindV18RpcClient, BitcoindV18RpcClient)] = {
-    createNodeTripleInternal(BitcoindVersion.V18, clientAccum)
+    createNodeTripleInternal(BitcoindVersion.V18, torAppConfigOpt, clientAccum)
   }
 
   def createNodeTripleV19(
+      torAppConfigOpt: Option[TorAppConfig],
       clientAccum: RpcClientAccum
   )(implicit system: ActorSystem): Future[
     (BitcoindV19RpcClient, BitcoindV19RpcClient, BitcoindV19RpcClient)] = {
-    createNodeTripleInternal(BitcoindVersion.V19, clientAccum)
+    createNodeTripleInternal(BitcoindVersion.V19, torAppConfigOpt, clientAccum)
   }
 
   def createRawCoinbaseTransaction(
@@ -1133,12 +1206,14 @@ trait BitcoindRpcTestUtil extends Logging {
     *                    this vectorbuilder.
     */
   def startedBitcoindRpcClient(
-      instanceOpt: Option[BitcoindInstanceLocal] = None,
-      clientAccum: RpcClientAccum)(implicit
+      torAppConfigOpt: Option[TorAppConfig],
+      clientAccum: RpcClientAccum,
+      instanceOpt: Option[BitcoindInstanceLocal] = None)(implicit
       system: ActorSystem): Future[BitcoindRpcClient] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
 
-    val instance = instanceOpt.getOrElse(BitcoindRpcTestUtil.instance())
+    val instance =
+      instanceOpt.getOrElse(BitcoindRpcTestUtil.instance(torAppConfigOpt))
 
     require(
       instance.datadir.getPath.startsWith(Properties.tmpDir),

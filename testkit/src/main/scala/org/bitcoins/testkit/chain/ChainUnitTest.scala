@@ -278,9 +278,10 @@ trait ChainUnitTest
   }
 
   def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
-    composeBuildersAndWrap(() => BitcoinSFixture.createBitcoind(),
-                           createChainHandlerWithBitcoindZmq,
-                           BitcoindChainHandlerViaZmq.apply)()
+    composeBuildersAndWrap(
+      () => BitcoinSFixture.createBitcoind(torAppConfigOpt = None),
+      createChainHandlerWithBitcoindZmq,
+      BitcoindChainHandlerViaZmq.apply)()
   }
 
   def destroyBitcoindChainHandlerViaZmq(
@@ -308,7 +309,7 @@ trait ChainUnitTest
       chainAppConfig: ChainAppConfig): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaZmq] =
       composeBuildersAndWrap(
-        builder = () => BitcoinSFixture.createBitcoind(),
+        builder = () => BitcoinSFixture.createBitcoind(torAppConfigOpt = None),
         dependentBuilder = { rpc: BitcoindRpcClient =>
           createChainHandlerWithBitcoindZmq(rpc)(chainAppConfig)
         },
@@ -322,7 +323,7 @@ trait ChainUnitTest
       system: ActorSystem): FutureOutcome = {
     val builder: () => Future[BitcoindBaseVersionChainHandlerViaRpc] = { () =>
       BitcoinSFixture
-        .createBitcoind()
+        .createBitcoind(torAppConfigOpt = None)
         .flatMap(ChainUnitTest.createChainApiWithBitcoindRpc)
     }
 
@@ -684,7 +685,7 @@ object ChainUnitTest extends ChainVerificationLogger {
     import system.dispatcher
     val bitcoindV = BitcoindVersion.V19
     val bitcoindF = BitcoinSFixture
-      .createBitcoind(Some(bitcoindV))
+      .createBitcoind(torAppConfigOpt = None, versionOpt = Some(bitcoindV))
       .map(_.asInstanceOf[BitcoindV19RpcClient])
     bitcoindF.flatMap(b => createBitcoindV19ChainHandler(b))
   }

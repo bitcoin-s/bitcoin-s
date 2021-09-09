@@ -19,6 +19,7 @@ case class BitcoindRpcTestClient(
 
   private lazy val bitcoindInstance: BitcoindInstanceLocal = {
     BitcoindRpcTestUtil.getInstance(bitcoindVersion = version,
+                                    torAppConfigOpt = None,
                                     binaryDirectory = binaryDirectory)
   }
 
@@ -32,9 +33,10 @@ case class BitcoindRpcTestClient(
       case Some(client) => Future.successful(client)
       case None =>
         val clientF =
-          BitcoindRpcTestUtil.startedBitcoindRpcClient(Some(bitcoindInstance),
-                                                       clientAccum =
-                                                         Vector.newBuilder)
+          BitcoindRpcTestUtil.startedBitcoindRpcClient(
+            torAppConfigOpt = None,
+            clientAccum = Vector.newBuilder,
+            instanceOpt = Some(bitcoindInstance))
         clientF.map { c =>
           clientOpt = Some(c)
           c

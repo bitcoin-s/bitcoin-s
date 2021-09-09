@@ -24,7 +24,7 @@ case class EclairRpcTestClient(
     bitcoindRpcClientOpt match {
       case Some(bitcoindRpcClient) => Future.successful(bitcoindRpcClient)
       case None =>
-        EclairRpcTestUtil.startedBitcoindRpcClient()
+        EclairRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None)
     }
   }
 

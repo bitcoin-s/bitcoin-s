@@ -76,7 +76,9 @@ trait NodeUnitTest extends BaseNodeTest {
       () =>
         require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
         for {
-          bitcoind <- BitcoinSFixture.createBitcoind(versionOpt)
+          bitcoind <- BitcoinSFixture.createBitcoind(
+            torAppConfigOpt = appConfig.torAppConfigOpt,
+            versionOpt = versionOpt)
           peer <- createPeer(bitcoind)
           node <- NodeUnitTest.createSpvNode(peer)(system,
                                                    appConfig.chainConf,
@@ -102,7 +104,9 @@ trait NodeUnitTest extends BaseNodeTest {
       for {
         bitcoind <-
           BitcoinSFixture
-            .createBitcoindWithFunds(Some(V21))
+            .createBitcoindWithFunds(torAppConfigOpt =
+                                       appConfig.torAppConfigOpt,
+                                     versionOpt = Some(V21))
             .map(_.asInstanceOf[BitcoindV21RpcClient])
         peer <- createPeer(bitcoind)
         node <- NodeUnitTest.createSpvNode(peer)(system,
@@ -129,7 +133,9 @@ trait NodeUnitTest extends BaseNodeTest {
       NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
-        bitcoind <- BitcoinSFixture.createBitcoind(versionOpt)
+        bitcoind <- BitcoinSFixture.createBitcoind(torAppConfigOpt =
+                                                     appConfig.torAppConfigOpt,
+                                                   versionOpt = versionOpt)
         node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
                                                           appConfig.chainConf,
                                                           appConfig.nodeConf)
@@ -286,7 +292,9 @@ object NodeUnitTest extends P2PLogger {
     import system.dispatcher
     require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
     for {
-      bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
+      bitcoind <- BitcoinSFixture.createBitcoindWithFunds(
+        torAppConfigOpt = appConfig.torAppConfigOpt,
+        versionOpt)
       spvNodeWithBitcoind <- createSpvNodeFundedWalletFromBitcoind(
         walletCallbacks,
         bip39PasswordOpt,
@@ -347,7 +355,9 @@ object NodeUnitTest extends P2PLogger {
     import system.dispatcher
     require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
     for {
-      bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
+      bitcoind <- BitcoinSFixture.createBitcoindWithFunds(
+        torAppConfigOpt = appConfig.torAppConfigOpt,
+        versionOpt)
       node <- createNeutrinoNode(bitcoind)(system,
                                            appConfig.chainConf,
                                            appConfig.nodeConf)

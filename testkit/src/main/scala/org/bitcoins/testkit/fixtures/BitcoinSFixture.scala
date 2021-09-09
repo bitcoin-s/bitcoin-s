@@ -5,6 +5,7 @@ import grizzled.slf4j.Logging
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
+import org.bitcoins.tor.config.TorAppConfig
 import org.scalatest._
 
 import scala.concurrent.{Future, Promise}
@@ -141,21 +142,26 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
 
 object BitcoinSFixture extends Logging {
 
-  def createBitcoindWithFunds(versionOpt: Option[BitcoindVersion] = None)(
-      implicit system: ActorSystem): Future[BitcoindRpcClient] = {
+  def createBitcoindWithFunds(
+      torAppConfigOpt: Option[TorAppConfig],
+      versionOpt: Option[BitcoindVersion] = None)(implicit
+      system: ActorSystem): Future[BitcoindRpcClient] = {
     import system.dispatcher
     for {
-      bitcoind <- createBitcoind(versionOpt = versionOpt)
+      bitcoind <- createBitcoind(torAppConfigOpt, versionOpt = versionOpt)
       address <- bitcoind.getNewAddress
       _ <- bitcoind.generateToAddress(blocks = 101, address)
     } yield bitcoind
   }
 
   /** Creates a new bitcoind instance */
-  def createBitcoind(versionOpt: Option[BitcoindVersion] = None)(implicit
+  def createBitcoind(
+      torAppConfigOpt: Option[TorAppConfig],
+      versionOpt: Option[BitcoindVersion] = None)(implicit
       system: ActorSystem): Future[BitcoindRpcClient] = {
     import system.dispatcher
-    val instance = BitcoindRpcTestUtil.instance(versionOpt = versionOpt)
+    val instance =
+      BitcoindRpcTestUtil.instance(torAppConfigOpt, versionOpt = versionOpt)
     logger.error(
       s"Creating bitcoind with datadir=${instance.datadir.toPath.toAbsolutePath}")
     val bitcoind = versionOpt match {

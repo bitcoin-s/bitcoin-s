@@ -10,6 +10,7 @@ import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.util.{NodePair, NodeTriple}
 import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
+import org.bitcoins.testkit.tor.CachedTor
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.scalatest.{FutureOutcome, Outcome}
 
@@ -32,12 +33,12 @@ trait BitcoindFixtures extends BitcoinSFixture with EmbeddedPg {
 }
 
 /** Bitcoind fixtures with a cached a bitcoind instance */
-trait BitcoindFixturesCached extends BitcoindFixtures {
+trait BitcoindFixturesCached extends BitcoindFixtures with CachedTor {
   _: BitcoinSAsyncFixtureTest with CachedBitcoind[_] =>
 }
 
 /** Bitcoind fixtures with a cached a bitcoind instance that is funded */
-trait BitcoindFixturesFundedCached extends BitcoindFixtures {
+trait BitcoindFixturesFundedCached extends BitcoindFixtures with CachedTor {
   _: BitcoinSAsyncFixtureTest with CachedBitcoindFunded[_] =>
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
