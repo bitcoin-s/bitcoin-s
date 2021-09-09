@@ -35,6 +35,11 @@ import scala.concurrent.Future
 trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
   _: CachedBitcoind[_] =>
 
+  override def beforeAll(): Unit = {
+    super[CachedTor].beforeAll()
+    super[BaseNodeTest].beforeAll()
+  }
+
   def withSpvNodeFundedWalletBitcoindCached(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String],

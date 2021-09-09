@@ -209,8 +209,11 @@ object Socks5Connection {
     } else {
       val status = data(1)
       if (status != 0) {
-        throw Socks5Error(
-          connectErrors.getOrElse(status, s"Unknown SOCKS5 error $status"))
+        val errorOpt = connectErrors.get(status)
+        val errWithDataOpt: Option[String] = errorOpt.map(_ + s", data=$data")
+        val err: String = errWithDataOpt
+          .getOrElse(s"Unknown SOCKS5 error $status, data=${data}")
+        throw Socks5Error(err)
       }
       data(3) match {
         case 0x01 =>
