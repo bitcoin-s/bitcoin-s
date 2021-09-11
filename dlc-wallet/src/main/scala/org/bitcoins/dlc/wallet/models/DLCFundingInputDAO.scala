@@ -85,6 +85,8 @@ case class DLCFundingInputDAO()(implicit
 
     def inputSerialId: Rep[UInt64] = column("input_serial_id")
 
+    def index: Rep[Int] = column("index")
+
     def isInitiator: Rep[Boolean] = column("is_initiator")
 
     def output: Rep[TransactionOutput] = column("output")
@@ -101,6 +103,7 @@ case class DLCFundingInputDAO()(implicit
     def * : ProvenShape[DLCFundingInputDb] =
       (dlcId,
        isInitiator,
+       index,
        inputSerialId,
        outPoint,
        output,

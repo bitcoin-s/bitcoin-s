@@ -12,6 +12,7 @@ import org.bitcoins.crypto.Sha256Digest
 case class DLCFundingInputDb(
     dlcId: Sha256Digest,
     isInitiator: Boolean,
+    index: Int,
     inputSerialId: UInt64,
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
