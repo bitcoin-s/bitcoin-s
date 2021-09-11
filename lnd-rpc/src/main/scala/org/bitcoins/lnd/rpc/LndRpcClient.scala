@@ -15,20 +15,21 @@ import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.LnTag.PaymentHashTag
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput,
   Transaction => Tx
 }
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
 import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.config.{LndInstance, LndInstanceLocal}
 import scodec.bits.ByteVector
-import signrpc.TxOut
-import walletrpc.{SendOutputsRequest, WalletKitClient}
+import signrpc._
+import walletrpc.{FinalizePsbtRequest, SendOutputsRequest, WalletKitClient}
 
 import java.io.{File, FileInputStream}
 import java.net.InetSocketAddress
@@ -38,7 +39,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-/** @param binary Path to lnd executable
+/** @param binaryOpt Path to lnd executable
   */
 class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     implicit system: ActorSystem)
@@ -94,6 +95,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   lazy val lnd: LightningClient = LightningClient(clientSettings)
   lazy val wallet: WalletKitClient = WalletKitClient(clientSettings)
   lazy val unlocker: WalletUnlockerClient = WalletUnlockerClient(clientSettings)
+  lazy val signer: SignerClient = SignerClient(clientSettings)
 
   def genSeed(): Future[GenSeedResponse] = {
     logger.trace("lnd calling genseed")
@@ -422,6 +424,63 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
         val bytes = ByteVector(res.rawTx.toByteArray)
         Tx(bytes)
       }
+  }
+
+  def finalizePSBT(psbt: PSBT): Future[PSBT] = {
+    val bytes = ByteString.copyFrom(psbt.bytes.toArray)
+    val request = FinalizePsbtRequest(bytes)
+
+    finalizePSBT(request)
+  }
+
+  def finalizePSBT(request: FinalizePsbtRequest): Future[PSBT] = {
+    logger.trace("lnd calling finalizepsbt")
+
+    wallet
+      .finalizePsbt(request)
+      .map { res =>
+        val bytes = ByteVector(res.signedPsbt.toByteArray)
+        PSBT(bytes)
+      }
+  }
+
+  def computeInputScript(
+      tx: Tx,
+      inputIdx: Int,
+      output: TransactionOutput): Future[(ScriptSignature, ScriptWitness)] = {
+    val spkBytes = ByteString.copyFrom(output.scriptPubKey.bytes.toArray)
+    val txOut = TxOut(value = output.value.satoshis.toLong, pkScript = spkBytes)
+    val signDescriptor =
+      SignDescriptor(output = Some(txOut), inputIndex = inputIdx)
+
+    computeInputScript(tx, Vector(signDescriptor)).map(_.head)
+  }
+
+  def computeInputScript(
+      tx: Tx,
+      signDescriptors: Vector[SignDescriptor]): Future[
+    Vector[(ScriptSignature, ScriptWitness)]] = {
+    val request: SignReq =
+      SignReq(ByteString.copyFrom(tx.bytes.toArray), signDescriptors)
+
+    computeInputScript(request)
+  }
+
+  def computeInputScript(
+      request: SignReq): Future[Vector[(ScriptSignature, ScriptWitness)]] = {
+    logger.trace("lnd calling computeinputscript")
+
+    signer.computeInputScript(request).map { res =>
+      res.inputScripts.map { script =>
+        val scriptSigByes = ByteVector(script.sigScript.toByteArray)
+        val scriptSig = ScriptSignature(scriptSigByes)
+
+        val witnessStackBytes =
+          script.witness.map(w => ByteVector(w.toByteArray))
+        val witness = ScriptWitness(witnessStackBytes)
+        (scriptSig, witness)
+      }.toVector
+    }
   }
 
   /** Broadcasts the given transaction
