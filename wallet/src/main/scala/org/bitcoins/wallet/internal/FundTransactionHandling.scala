@@ -52,8 +52,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      coinSelectionAlgo: CoinSelectionAlgo =
-        CoinSelectionAlgo.AccumulateLargest,
+      coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.LeastWaste,
       fromTagOpt: Option[AddressTag],
       markAsReserved: Boolean = false): Future[(
       RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
@@ -82,10 +81,13 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
     val selectedUtxosF: Future[Vector[(SpendingInfoDb, Transaction)]] =
       for {
         walletUtxos <- utxosF
-        utxos = CoinSelector.selectByAlgo(coinSelectionAlgo = coinSelectionAlgo,
-                                          walletUtxos = walletUtxos.map(_._1),
-                                          outputs = destinations,
-                                          feeRate = feeRate)
+        utxos = CoinSelector.selectByAlgo(
+          coinSelectionAlgo = coinSelectionAlgo,
+          walletUtxos = walletUtxos.map(_._1),
+          outputs = destinations,
+          feeRate = feeRate,
+          longTermFeeRateOpt = Some(self.walletConfig.longTermFeeRate)
+        )
 
       } yield walletUtxos.filter(utxo => utxos.contains(utxo._1))
 

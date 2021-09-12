@@ -27,11 +27,21 @@ object CoinSelectionAlgo extends StringFactory[CoinSelectionAlgo] {
   /** Greedily selects from walletUtxos in order, skipping outputs with values below their fees */
   final case object StandardAccumulate extends CoinSelectionAlgo
 
-  val all: Vector[CoinSelectionAlgo] =
+  /** Tries all coin selection algos and uses the one with the least waste */
+  case object LeastWaste extends CoinSelectionAlgo
+
+  /** Coin selection algos that don't call other ones */
+  val independentAlgos: Vector[CoinSelectionAlgo] =
     Vector(RandomSelection,
            AccumulateLargest,
            AccumulateSmallestViable,
            StandardAccumulate)
+
+  /** Coin selection algos that call upon other ones and choose the best */
+  val multiCoinSelectionAlgos: Vector[CoinSelectionAlgo] = Vector(LeastWaste)
+
+  val all: Vector[CoinSelectionAlgo] =
+    independentAlgos ++ multiCoinSelectionAlgos
 
   override def fromStringOpt(str: String): Option[CoinSelectionAlgo] = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase)

@@ -109,6 +109,22 @@ class CoinSelectorTest extends BitcoinSWalletTest {
     assert(selections.exists(_ != first))
   }
 
+  it must "select the least wasteful outputs" in { fixture =>
+    val selection =
+      CoinSelector.selectByLeastWaste(walletUtxos = fixture.utxoSet,
+                                      outputs = Vector(fixture.output),
+                                      feeRate = fixture.feeRate,
+                                      longTermFeeRate =
+                                        SatoshisPerByte.fromLong(10))
+
+    // Need to sort as ordering will be different sometimes
+    val sortedSelection = selection.sortBy(_.outPoint.hex)
+    val sortedExpected =
+      Vector(fixture.utxo2, fixture.utxo1, fixture.utxo3).sortBy(_.outPoint.hex)
+
+    assert(sortedSelection == sortedExpected)
+  }
+
   it must "correctly approximate transaction input size" in { fixture =>
     val expected1 =
       32 + 4 + 1 + 4 + fixture.utxo1.scriptWitnessOpt.get.bytes.length

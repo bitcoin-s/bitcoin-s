@@ -244,6 +244,10 @@ bitcoin-s {
 
         requiredConfirmations = 6
 
+        # Expected average fee rate over the long term
+        # in satoshis per virtual byte
+        longTermFeeRate = 10
+
         # How big the address queue size is before we throw an exception
         # because of an overflow
         addressQueueSize = 10
