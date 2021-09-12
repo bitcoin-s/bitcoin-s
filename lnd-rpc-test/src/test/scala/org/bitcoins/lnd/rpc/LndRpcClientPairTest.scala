@@ -1,12 +1,16 @@
 package org.bitcoins.lnd.rpc
 
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.script.EmptyScriptSignature
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerKW
 import org.bitcoins.testkit.fixtures.DualLndFixture
 
 import scala.concurrent.duration.DurationInt
+import scala.util.{Failure, Success}
 
 class LndRpcClientPairTest extends DualLndFixture {
 
@@ -20,6 +24,40 @@ class LndRpcClientPairTest extends DualLndFixture {
       assert(infoA.identityPubkey != infoB.identityPubkey)
       assert(infoA.blockHeight >= 0)
       assert(infoB.blockHeight >= 0)
+    }
+  }
+
+  it must "sign a transaction" in { param =>
+    val (bitcoind, lnd, _) = param
+
+    for {
+      addr <- lnd.getNewAddress
+      _ <- bitcoind.sendToAddress(addr, Bitcoins(1))
+      bitcoindAddr <- bitcoind.getNewAddress
+      utxo <- lnd.listUnspent.map(_.head)
+      prevOut = TransactionOutput(utxo.amount, utxo.spk)
+
+      input = TransactionInput(utxo.outPointOpt.get,
+                               EmptyScriptSignature,
+                               TransactionConstants.sequence)
+      output = TransactionOutput(Bitcoins(0.5), bitcoindAddr.scriptPubKey)
+
+      unsigned = BaseTransaction(Int32.two,
+                                 Vector(input),
+                                 Vector(output),
+                                 UInt32.zero)
+
+      (scriptSig, wit) <- lnd.computeInputScript(unsigned, 0, prevOut)
+    } yield {
+      val psbt = PSBT
+        .fromUnsignedTx(unsigned)
+        .addWitnessUTXOToInput(prevOut, 0)
+        .addFinalizedScriptWitnessToInput(scriptSig, wit, 0)
+
+      psbt.extractTransactionAndValidate match {
+        case Success(_)         => succeed
+        case Failure(exception) => fail(exception)
+      }
     }
   }
 
