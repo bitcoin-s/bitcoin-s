@@ -114,7 +114,7 @@ case class NodeAppConfig(
   lazy val maxConnectedPeers: Int = {
     if (config.hasPath("bitcoin-s.node.maxConnectedPeers"))
       config.getInt("bitcoin-s.node.maxConnectedPeers")
-    else 2
+    else 1
   }
 
   lazy val torConf: TorAppConfig =
