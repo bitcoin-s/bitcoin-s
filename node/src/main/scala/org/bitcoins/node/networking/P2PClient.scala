@@ -288,7 +288,7 @@ case class P2PClientActor(
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed | Tcp.ErrorClosed(_)) =>
         logger.info(s"We've been disconnected by $peer command=${closeCmd}")
-        currentPeerMsgHandlerRecv.disconnect()
+        currentPeerMsgHandlerRecv = currentPeerMsgHandlerRecv.disconnect()
         unalignedBytes
 
       case Tcp.Received(byteString: ByteString) =>
