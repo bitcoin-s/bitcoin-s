@@ -6,13 +6,16 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.p2p.GossipAddrMessage
+import org.bitcoins.core.p2p.NetworkIpAddress
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.node.networking.peer.{
+  ControlMessageHandler,
+  DataMessageHandler
+}
 
 import scala.concurrent.Future
 
@@ -34,6 +37,8 @@ case class SpvNode(
 
   private val _bloomFilter = new Mutable(BloomFilter.empty)
 
+  val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
+
   override def getPeersFromConf: Vector[Peer] = {
     if (confPeersOverride.isEmpty) super.getPeersFromConf
     else confPeersOverride
@@ -47,10 +52,6 @@ case class SpvNode(
     _bloomFilter.atomicSet(bloom)
     this
   }
-
-  override def handlePeerGossipMessage(message: GossipAddrMessage): Unit = {}
-
-  override def onPeerInitialization(peer: Peer): Future[Unit] = { Future.unit }
 
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): SpvNode = {
@@ -114,4 +115,6 @@ case class SpvNode(
       startHeight: Int,
       endHeight: Int): Future[Vector[FilterResponse]] =
     Future.failed(new RuntimeException(cfErrMsg))
+
+  override def addToPeerQueue(networkAddress: NetworkIpAddress): Unit = {}
 }

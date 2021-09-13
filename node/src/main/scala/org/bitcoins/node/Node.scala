@@ -18,7 +18,12 @@ import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.{DataMessageHandler, PeerMessageSender}
+import org.bitcoins.node.networking.peer.{
+  ControlMessageHandler,
+  DataMessageHandler,
+  PeerMessageSender
+}
+import scodec.bits.ByteVector
 
 import java.util.concurrent.TimeUnit
 import java.net.{InetAddress, UnknownHostException}
@@ -156,6 +161,25 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     ()
   }
 
+  def createInDb(peer: Peer): Future[PeerDB] = {
+    logger.debug(s"Adding peer to db $peer")
+    val addrBytes =
+      if (peer.socket.getHostString.contains(".onion"))
+        NetworkUtil.torV3AddressToBytes(peer.socket.getHostString)
+      else
+        InetAddress.getByName(peer.socket.getHostString).getAddress
+    val networkByte = addrBytes.length match {
+      case AddrV2Message.IPV4_ADDR_LENGTH   => AddrV2Message.IPV4_NETWORK_BYTE
+      case AddrV2Message.IPV6_ADDR_LENGTH   => AddrV2Message.IPV6_NETWORK_BYTE
+      case AddrV2Message.TOR_V3_ADDR_LENGTH => AddrV2Message.TOR_V3_NETWORK_BYTE
+      case _                                => throw new IllegalArgumentException("Unsupported address type")
+    }
+    PeerDAO()
+      .upsertPeer(ByteVector(addrBytes), peer.socket.getPort, networkByte)
+  }
+
+  def addToPeerQueue(networkAddress: NetworkIpAddress): Unit
+
   private val _peerData: mutable.Map[Peer, PeerData] =
     mutable.Map.empty
 
@@ -164,7 +188,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def randomPeerMsgSenderWithService(
       f: ServiceIdentifier => Boolean): PeerMessageSender = {
     val filteredPeers = peerData
-      .filter(p => f(p._2.serviceIdentifier) && p._2.keepConnection)
+      .filter(p => p._2.keepConnection && f(p._2.serviceIdentifier))
       .keys
       .toVector
     if (filteredPeers.isEmpty)
@@ -191,6 +215,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     */
   def getDataMessageHandler: DataMessageHandler
 
+  def controlMessageHandler: ControlMessageHandler
+
   def nodeCallbacks: NodeCallbacks = nodeAppConfig.nodeCallbacks
 
   lazy val txDAO: BroadcastAbleTransactionDAO = BroadcastAbleTransactionDAO()
@@ -207,8 +233,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
                                     CompactFilterHeaderDAO(),
                                     CompactFilterDAO())
   }
-
-  def handlePeerGossipMessage(message: GossipAddrMessage): Unit
 
   /** Unlike our chain api, this is cached inside our node
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
@@ -250,8 +274,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def connectedPeersCount: Int = peerData.count(_._2.keepConnection)
   def maxConnectedPeers: Int = nodeAppConfig.maxConnectedPeers
 
-  def onPeerInitialization(peer: Peer): Future[Unit]
-
   def initializePeer(peer: Peer): Future[Unit] = {
     peerData(peer).peerMessageSender.connect()
     val isInitializedF =
@@ -266,10 +288,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
             removePeer(peer)
           }
       } yield ()
-    for {
-      _ <- isInitializedF
-      _ <- onPeerInitialization(peer)
-    } yield ()
+    isInitializedF
   }
 
   /** Starts our node */

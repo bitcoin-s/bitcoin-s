@@ -11,24 +11,16 @@ import org.bitcoins.core.api.chain.db.{
   CompactFilterHeaderDb
 }
 import org.bitcoins.core.api.node.NodeType
-import org.bitcoins.core.p2p.{
-  AddrMessage,
-  AddrV2Message,
-  GossipAddrMessage,
-  IPv4AddrV2Message,
-  IPv6AddrV2Message,
-  NetworkIpAddress,
-  ServiceIdentifier,
-  TorV3AddrV2Message
-}
+import org.bitcoins.core.p2p.NetworkIpAddress
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{Peer, PeerDAO, PeerDB}
-import org.bitcoins.node.networking.peer.DataMessageHandler
-import scodec.bits.ByteVector
+import org.bitcoins.node.models.Peer
+import org.bitcoins.node.networking.peer.{
+  ControlMessageHandler,
+  DataMessageHandler
+}
 
-import java.net.InetAddress
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.Future
 
@@ -51,6 +43,8 @@ case class NeutrinoNode(
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 
+  val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
+
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): NeutrinoNode = {
     this.dataMessageHandler = dataMessageHandler
@@ -62,59 +56,7 @@ case class NeutrinoNode(
     else confPeersOverride
   }
 
-  override def handlePeerGossipMessage(message: GossipAddrMessage): Unit = {
-    message match {
-      case addr: AddrMessage =>
-        addr.addresses.foreach(addToPeerQueue)
-      case addr: AddrV2Message =>
-        val bytes = addr.bytes
-        val port = addr.port.toInt
-        val services = ServiceIdentifier.fromBytes(addr.services.bytes)
-        val inetAddress =
-          NetworkUtil.parseInetSocketAddress(bytes, port)
-        val peer = Peer.fromSocket(socket = inetAddress,
-                                   socks5ProxyParams =
-                                     nodeAppConfig.socks5ProxyParams)
-        addr match {
-          case IPv4AddrV2Message(_, _, _, _) | IPv6AddrV2Message(_, _, _, _) =>
-            if (services.nodeCompactFilters)
-              peersToCheckStack.push(peer)
-          case TorV3AddrV2Message(_, _, _, _) =>
-            if (nodeConfig.torConf.enabled && services.nodeCompactFilters)
-              peersToCheckStack.push(peer)
-          case _ => logger.debug("Unsupported network. Skipping.")
-        }
-    }
-  }
-
-  override def onPeerInitialization(peer: Peer): Future[Unit] = {
-    //if its not removed then it means it means initialization was successful as in failed initializations are removed
-    //from peerData
-    if (
-      peerData.contains(peer) && peerData(
-        peer).serviceIdentifier.nodeCompactFilters
-    ) {
-      for {
-        _ <- createInDb(peer)
-      } yield {
-        if (
-          peerData(
-            peer).keepConnection || connectedPeersCount < maxConnectedPeers
-        ) {
-          peerData(peer).peerMessageSender.sendGetAddrMessage()
-          //only the nodes that have keepConnection as true would be actually used by us
-          peerData(peer).keepConnection = true
-          logger.info(
-            s"Connected to peer $peer with compact filters. Connected peer count $connectedPeersCount")
-        } else removePeer(peer)
-      }
-    } else {
-      removePeer(peer)
-      Future.unit
-    }
-  }
-
-  private def addToPeerQueue(networkAddress: NetworkIpAddress): Unit = {
+  override def addToPeerQueue(networkAddress: NetworkIpAddress): Unit = {
     if (networkAddress.services.nodeCompactFilters) {
       val bytes = Try(networkAddress.address.ipv4Bytes) match {
         case Failure(_) =>
@@ -130,23 +72,6 @@ case class NeutrinoNode(
                                    nodeAppConfig.socks5ProxyParams)
       peersToCheckStack.push(peer)
     }
-  }
-
-  private def createInDb(peer: Peer): Future[PeerDB] = {
-    logger.debug(s"Adding peer to db $peer")
-    val addrBytes =
-      if (peer.socket.getHostString.contains(".onion"))
-        NetworkUtil.torV3AddressToBytes(peer.socket.getHostString)
-      else
-        InetAddress.getByName(peer.socket.getHostString).getAddress
-    val networkByte = addrBytes.length match {
-      case AddrV2Message.IPV4_ADDR_LENGTH   => AddrV2Message.IPV4_NETWORK_BYTE
-      case AddrV2Message.IPV6_ADDR_LENGTH   => AddrV2Message.IPV6_NETWORK_BYTE
-      case AddrV2Message.TOR_V3_ADDR_LENGTH => AddrV2Message.TOR_V3_NETWORK_BYTE
-      case _                                => throw new IllegalArgumentException("Unsupported address type")
-    }
-    PeerDAO()
-      .upsertPeer(ByteVector(addrBytes), peer.socket.getPort, networkByte)
   }
 
   override def start(): Future[NeutrinoNode] = {
