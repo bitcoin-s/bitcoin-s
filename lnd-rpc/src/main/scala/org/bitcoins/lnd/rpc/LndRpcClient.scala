@@ -199,10 +199,15 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   def listUnspent: Future[Vector[UTXOResult]] = {
+    val request = ListUnspentRequest(0, Int.MaxValue)
+    listUnspent(request)
+  }
+
+  def listUnspent(request: ListUnspentRequest): Future[Vector[UTXOResult]] = {
     logger.trace("lnd calling listunspent")
 
     lnd
-      .listUnspent(ListUnspentRequest())
+      .listUnspent(request)
       .map(_.utxos.toVector.map { utxo =>
         val outPointOpt = utxo.outpoint.map { out =>
           val txId = DoubleSha256DigestBE(out.txidStr)
