@@ -87,8 +87,9 @@ class FundTransactionHandlingTest
                                               fromTagOpt = None,
                                               markAsReserved = false)
       } yield {
-        assert(fundedTx.inputs.length == 1,
-               s"We should only need one input to fund this tx")
+        // Can be different depending on waste calculation
+        assert(fundedTx.inputs.length == 1 || fundedTx.inputs.length == 2,
+               s"We should only need one or two inputs to fund this tx")
 
         destinations.foreach(d => assert(fundedTx.outputs.contains(d)))
         assert(fundedTx.outputs.length == 6,
