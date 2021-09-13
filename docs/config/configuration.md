@@ -1,6 +1,5 @@
 ---
-title: Application Configuration
-id: configuration
+title: Application Configuration id: configuration
 ---
 
 Bitcoin-S uses [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md)
@@ -168,6 +167,9 @@ bitcoin-s {
         # (e.g. "neutrino.testnet3.suredbits.com:18333")
         # Port number is optional, the default value is 8333 for mainnet,
         # 18333 for testnet and 18444 for regtest.
+        
+        # specify a maximum number of connections to peers to be used in node operation
+        maxConnectedPeers = 1
         
         hikari-logging = true
         hikari-logging-interval = 10 minute

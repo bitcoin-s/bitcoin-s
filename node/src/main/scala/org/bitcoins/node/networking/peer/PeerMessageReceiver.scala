@@ -206,8 +206,7 @@ class PeerMessageReceiver(
         node.handlePeerGossipMessage(msg)
         Future.successful(this)
       case SendAddrV2Message =>
-        sender.sendSendAddrV2Message()
-        Future.successful(this)
+        sender.sendSendAddrV2Message().map(_ => this)
       case _ @(_: FilterAddMessage | _: FilterLoadMessage |
           FilterClearMessage) =>
         Future.successful(this)

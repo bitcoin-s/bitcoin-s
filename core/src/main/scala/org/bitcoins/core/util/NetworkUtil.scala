@@ -34,14 +34,17 @@ abstract class NetworkUtil {
             InetAddress.getByAddress(address.toArray).getHostAddress
           new URI(s"tcp://[$hostAddress]")
         case AddrV2Message.TOR_V3_ADDR_LENGTH =>
-          val hostAddress = bytesToTorV3Address(address)
+          val hostAddress = parseUnresolvedInetSocketAddress(address)
           new URI("tcp://" + hostAddress)
+        case unknownSize =>
+          sys.error(
+            s"Attempted to parse InetSocketAddress with unknown size, got=${unknownSize}")
       }
     }
     InetSocketAddress.createUnresolved(uri.getHost, port)
   }
 
-  def bytesToTorV3Address(bytes: ByteVector): String = {
+  def parseUnresolvedInetSocketAddress(bytes: ByteVector): String = {
     def sha3(bytes: Array[Byte]): ByteVector = {
       import java.security.MessageDigest
       val digest: MessageDigest = MessageDigest.getInstance("SHA3-256")

@@ -21,7 +21,7 @@ case class SpvNode(
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem,
-    confPeersOverride: Vector[Peer] = Vector())
+    confPeersOverride: Vector[Peer] = Vector.empty)
     extends Node {
   require(nodeConfig.nodeType == NodeType.SpvNode,
           s"We need our SPV mode enabled to be able to construct a SPV node!")

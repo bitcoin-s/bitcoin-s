@@ -15,7 +15,7 @@ import scala.concurrent.Future
 case class PeerData(
     peer: Peer,
     node: Node,
-    var keepConnection: Boolean
+    private var _keepConnection: Boolean
 )(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig) {
 
   lazy val peerMessageSender: PeerMessageSender = PeerMessageSender(client)
@@ -27,8 +27,8 @@ case class PeerData(
       context = system,
       peer = peer,
       peerMessageReceiver = peerMessageReceiver,
-      onReconnect = if (keepConnection) node.sync else () => { Future.unit },
-      maxReconnectionTries = if (keepConnection) 16 else 0
+      onReconnect = if (_keepConnection) node.sync else () => { Future.unit },
+      maxReconnectionTries = if (_keepConnection) 16 else 0
     )
   }
 
@@ -42,4 +42,8 @@ case class PeerData(
   def setServiceIdentifier(serviceIdentifier: ServiceIdentifier): Unit = {
     _serviceIdentifier = Some(serviceIdentifier)
   }
+
+  def keepConnection: Boolean = _keepConnection
+
+  def setToKeepConnection(): Unit = _keepConnection = true
 }
