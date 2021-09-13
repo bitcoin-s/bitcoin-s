@@ -70,8 +70,6 @@ case class P2PClientActor(
     extends Actor
     with P2PLogger {
 
-  private case object ReconnectCommand extends NodeCommand
-
   private var currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
   private var reconnectHandlerOpt: Option[() => Future[Unit]] = None
@@ -112,10 +110,8 @@ case class P2PClientActor(
           handleEvent(message, peerConnection, unalignedBytes)
         context.become(awaitNetworkRequest(peerConnection, newUnalignedBytes))
       case P2PClient.CloseCommand =>
-        logger.info(s"disconnecting from peer $peer")
-        currentPeerMsgHandlerRecv =
-          currentPeerMsgHandlerRecv.initializeDisconnect()
-        peerConnection ! Tcp.Close
+        handleNodeCommand(cmd = P2PClient.CloseCommand,
+                          peerConnectionOpt = Some(peerConnection))
       case metaMsg: P2PClient.MetaMsg =>
         sender() ! handleMetaMsg(metaMsg)
       case Terminated(actor) if actor == peerConnection =>
@@ -123,17 +119,21 @@ case class P2PClientActor(
     }
 
   override def receive: Receive = LoggingReceive {
-    case P2PClient.ConnectCommand =>
-      connect()
+    case cmd: NodeCommand =>
+      handleNodeCommand(cmd = cmd, peerConnectionOpt = None)
     case metaMsg: P2PClient.MetaMsg =>
       sender() ! handleMetaMsgDisconnected(metaMsg)
   }
 
   def reconnecting: Receive = LoggingReceive {
-    case ReconnectCommand =>
+    case P2PClient.ReconnectCommand =>
       logger.info(s"reconnecting to ${peer.socket}")
       reconnectHandlerOpt = Some(onReconnect)
       connect()
+    case P2PClient.CloseCommand =>
+      handleNodeCommand(P2PClient.CloseCommand, None)
+    case P2PClient.ConnectCommand =>
+      handleNodeCommand(P2PClient.ConnectCommand, None)
     case metaMsg: P2PClient.MetaMsg =>
       sender() ! handleMetaMsgDisconnected(metaMsg)
   }
@@ -246,7 +246,8 @@ case class P2PClientActor(
           reconnectionTry = reconnectionTry + 1
 
           import context.dispatcher
-          context.system.scheduler.scheduleOnce(delay)(self ! ReconnectCommand)
+          context.system.scheduler.scheduleOnce(delay)(
+            self ! P2PClient.ReconnectCommand)
 
           context.become(reconnecting)
         }
@@ -383,6 +384,32 @@ case class P2PClientActor(
     peerConnection ! Tcp.ResumeReading
   }
 
+  /** Handles the commands that can be sent to our node
+    * @param cmd the command to execute
+    * @param peerConnectionOpt the connection to a peer, if it exists
+    */
+  private def handleNodeCommand(
+      cmd: NodeCommand,
+      peerConnectionOpt: Option[ActorRef]): Unit = {
+    cmd match {
+      case P2PClient.ConnectCommand =>
+        connect()
+      case P2PClient.ReconnectCommand =>
+        reconnect()
+      case P2PClient.CloseCommand =>
+        peerConnectionOpt match {
+          case Some(peerConnection) =>
+            logger.info(s"Disconnecting from peer $peer")
+            currentPeerMsgHandlerRecv =
+              currentPeerMsgHandlerRecv.initializeDisconnect()
+            peerConnection ! Tcp.Close
+          case None =>
+            logger.warn(
+              s"Attempting to disconnect peer that was not connected!")
+        }
+    }
+  }
+
 }
 
 case class P2PClient(actor: ActorRef, peer: Peer) extends P2PLogger {
@@ -424,6 +451,7 @@ object P2PClient extends P2PLogger {
 
   sealed trait NodeCommand
   case object ConnectCommand extends NodeCommand
+  case object ReconnectCommand extends NodeCommand
   case object CloseCommand extends NodeCommand
 
   /** A message hierarchy that canbe sent to [[P2PClientActor P2P Client Actor]]
