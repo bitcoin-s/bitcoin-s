@@ -8,6 +8,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.node.{
   NeutrinoNodeFundedWalletBitcoind,
   NodeTestUtil,
@@ -42,25 +43,22 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
   val TestAmount = 1.bitcoin
   val FeeRate = SatoshisPerByte(10.sats)
-  val TestFees: Satoshis = 2230.sats
+  val TestFees: Satoshis = 2220.sats
 
   it must "receive information about received payments" in { param =>
     val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 
     def condition(
-        expectedConfirmedAmount: CurrencyUnit,
-        expectedUnconfirmedAmount: CurrencyUnit,
+        expectedBalance: CurrencyUnit,
         expectedUtxos: Int,
         expectedAddresses: Int): Future[Boolean] = {
       for {
-        confirmedBalance <- wallet.getConfirmedBalance()
-        unconfirmedBalance <- wallet.getUnconfirmedBalance()
+        balance <- wallet.getBalance()
         addresses <- wallet.listAddresses()
         utxos <- wallet.listDefaultAccountUtxos()
       } yield {
         // +- fee rate because signatures could vary in size
-        (expectedConfirmedAmount === confirmedBalance +- FeeRate.currencyUnit) &&
-        (expectedUnconfirmedAmount === unconfirmedBalance +- FeeRate.currencyUnit) &&
+        (expectedBalance === balance +- FeeRate.currencyUnit) &&
         (expectedAddresses == addresses.size) &&
         (expectedUtxos == utxos.size)
       }
@@ -73,8 +71,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     //unconfirmed = 3 BTC - TestAmount - TestFees
     val condition1 = () => {
       condition(
-        expectedConfirmedAmount = 3.bitcoin,
-        expectedUnconfirmedAmount = 3.bitcoin - TestAmount - TestFees,
+        expectedBalance = 6.bitcoin - TestAmount - TestFees,
         expectedUtxos = 3,
         expectedAddresses = 7
       )
@@ -86,9 +83,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     //and have 1 more address/utxo
     val condition2 = { () =>
       condition(
-        expectedConfirmedAmount = 3.bitcoin,
-        expectedUnconfirmedAmount =
-          (3.bitcoin - TestAmount - TestFees) + TestAmount,
+        expectedBalance = (6.bitcoin - TestAmount - TestFees) + TestAmount,
         expectedUtxos = 4,
         expectedAddresses = 8
       )
@@ -105,7 +100,6 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <-
         bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
-      _ <- wallet.getConfirmedBalance()
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
       _ <- AsyncUtil.awaitConditionF(condition1, maxTries = 100) //10 seconds
@@ -120,7 +114,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-      _ <- AsyncUtil.awaitConditionF(condition2)
+      _ <- TestAsyncUtil.awaitConditionF(condition2)
       // assert we got the full tx with witness data
       txs <- wallet.listTransactions()
     } yield assert(txs.exists(_.transaction == expectedTx))
