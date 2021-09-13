@@ -3,6 +3,7 @@ package org.bitcoins.tor
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash}
 import akka.io.Tcp.Connected
 import akka.util.ByteString
+import grizzled.slf4j.Logging
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.tor.TorProtocolHandler.{Authentication, OnionServiceVersion}
 import scodec.bits.ByteVector
@@ -39,7 +40,8 @@ class TorProtocolHandler(
     onionAdded: Option[Promise[InetSocketAddress]])
     extends Actor
     with Stash
-    with ActorLogging {
+    with ActorLogging
+    with Logging {
 
   import TorProtocolHandler._
 
@@ -55,6 +57,7 @@ class TorProtocolHandler(
 
   def protocolInfo: Receive = { case data: ByteString =>
     val res = parseResponse(readResponse(data))
+    logger.info(s"Parsed response=$res")
     val methods: String =
       res.getOrElse("METHODS", throw TorException("auth methods not found"))
     val torVersion = unquote(
@@ -185,6 +188,7 @@ class TorProtocolHandler(
   }
 
   private def sendCommand(cmd: String): Unit = {
+    logger.info(s"sending command=$cmd")
     receiver ! ByteString(s"$cmd\r\n")
   }
 }

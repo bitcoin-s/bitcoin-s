@@ -14,7 +14,7 @@ import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.{Future, Promise}
 
-class DataMessageHandlerNeutrinoNodesTest
+class DataMessageHandlerNeutrinoNxodesTest
     extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */

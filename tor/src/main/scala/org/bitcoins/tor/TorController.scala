@@ -96,8 +96,9 @@ object TorController {
       authentication: Authentication,
       privateKeyPath: Path,
       virtualPort: Int,
-      targets: Seq[String] = Seq())(implicit
+      targets: Seq[String] = Seq.empty)(implicit
       system: ActorSystem): Future[InetSocketAddress] = {
+    println(s"@@@@@@@@@@@@@@@@ Setting up hidden service @@@@@@@@@@@@@@@@")
 
     val promiseTorAddress = Promise[InetSocketAddress]()
 

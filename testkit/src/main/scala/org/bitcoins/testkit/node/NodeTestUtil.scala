@@ -141,7 +141,7 @@ abstract class NodeTestUtil extends P2PLogger {
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestFilterHeaderHeight(node, rpc),
                             1.second,
-                            maxTries = 60)
+                            maxTries = 120)
   }
 
   /** Awaits sync between the given node and bitcoind client */

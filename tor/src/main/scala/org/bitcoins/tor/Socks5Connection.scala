@@ -3,6 +3,7 @@ package org.bitcoins.tor
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import akka.io.Tcp
 import akka.util.ByteString
+import grizzled.slf4j.Logging
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.tor.Socks5Connection.{Credentials, Socks5Connect}
 
@@ -21,8 +22,11 @@ class Socks5Connection(
     credentialsOpt: Option[Credentials],
     command: Socks5Connect)
     extends Actor
-    with ActorLogging {
+    with ActorLogging
+    with Logging {
 
+  logger.info(
+    s"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ SOCKS5CONNECTION @@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
   import Socks5Connection._
 
   context watch connection
@@ -62,6 +66,7 @@ class Socks5Connection(
   }
 
   def connectionRequest: Receive = { case Tcp.Received(data) =>
+    logger.info(s"ConnectionRequest data=$data")
     val connectedAddress = parseConnectedAddress(data)
     context become connected
     context.parent ! Socks5Connected(connectedAddress)
@@ -73,8 +78,12 @@ class Socks5Connection(
   }
 
   def registered(handler: ActorRef): Receive = {
-    case c: Tcp.Command => connection ! c
-    case e: Tcp.Event   => handler ! e
+    case c: Tcp.Command =>
+      logger.info(s"Socks5Connection received command=$c")
+      connection ! c
+    case e: Tcp.Event =>
+      logger.info(s"Socks5Connection received event=$e")
+      handler ! e
   }
 
   override def unhandled(message: Any): Unit = message match {
@@ -93,7 +102,7 @@ class Socks5Connection(
 
 }
 
-object Socks5Connection {
+object Socks5Connection extends Logging {
 
   def props(
       tcpConnection: ActorRef,
@@ -181,6 +190,7 @@ object Socks5Connection {
     ByteString((port & 0x0000ff00) >> 8, port & 0x000000ff)
 
   def parseGreetings(data: ByteString, passwordAuth: Boolean): Byte = {
+    logger.info(s"parseGreetings()")
     if (data(0) != 0x05) {
       throw Socks5Error("Invalid SOCKS5 version")
     } else if (
@@ -194,6 +204,7 @@ object Socks5Connection {
   }
 
   def parseAuth(data: ByteString): Boolean = {
+    logger.info(s"parseAuth()")
     if (data(0) != 0x01) {
       throw Socks5Error("Invalid SOCKS5 auth method")
     } else if (data(1) != 0) {
@@ -205,15 +216,19 @@ object Socks5Connection {
 
   def parseConnectedAddress(data: ByteString): InetSocketAddress = {
     if (data(0) != 0x05) {
-      throw Socks5Error("Invalid proxy version")
+      val err = Socks5Error(s"Invalid proxy version, data(0)=${data(0)}")
+      logger.error(err)
+      throw err
     } else {
       val status = data(1)
       if (status != 0) {
         val errorOpt = connectErrors.get(status)
         val errWithDataOpt: Option[String] = errorOpt.map(_ + s", data=$data")
-        val err: String = errWithDataOpt
+        val errMsg: String = errWithDataOpt
           .getOrElse(s"Unknown SOCKS5 error $status, data=${data}")
-        throw Socks5Error(err)
+        val err = Socks5Error(errMsg)
+        logger.error(errMsg, err)
+        throw err
       }
       data(3) match {
         case 0x01 =>

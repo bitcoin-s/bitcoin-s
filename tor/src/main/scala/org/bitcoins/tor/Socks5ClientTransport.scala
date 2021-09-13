@@ -12,6 +12,7 @@ import akka.stream.scaladsl.{BidiFlow, Flow, Keep}
 import akka.stream.stage._
 import akka.stream.{Attributes, BidiShape, Inlet, Outlet}
 import akka.util.ByteString
+import grizzled.slf4j.Logging
 import org.bitcoins.core.util.NetworkUtil
 
 import java.net.{InetSocketAddress, URI}
@@ -113,7 +114,8 @@ class Socks5ProxyGraphStage(
     targetPort: Int,
     proxyParams: Socks5ProxyParams)
     extends GraphStage[
-      BidiShape[ByteString, ByteString, ByteString, ByteString]] {
+      BidiShape[ByteString, ByteString, ByteString, ByteString]]
+    with Logging {
 
   val bytesIn: Inlet[ByteString] = Inlet("OutgoingTCP.in")
   val bytesOut: Outlet[ByteString] = Outlet("OutgoingTCP.out")
@@ -170,6 +172,7 @@ class Socks5ProxyGraphStage(
       }
 
       def parseResponse(data: ByteString): Unit = {
+        logger.info(s"parseResponse() state=$state data=$data")
         state match {
           case Greeting =>
             tryParseGreetings(data, credentialsOpt.nonEmpty) match {
