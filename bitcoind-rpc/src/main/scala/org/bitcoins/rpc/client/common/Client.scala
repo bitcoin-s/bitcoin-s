@@ -282,7 +282,11 @@ trait Client
         // if the cookie file doesn't exist we're not started
         Future.successful(false)
       case (CookieBased(_, _) | PasswordBased(_, _)) =>
-        tryPing()
+        if (isStartedFlag.get) {
+          tryPing()
+        } else {
+          Future.successful(false)
+        }
     }
   }
 
