@@ -258,7 +258,8 @@ case class P2PClientActor(
 
           import context.dispatcher
           context.become(reconnecting)
-          context.system.scheduler.scheduleOnce(delay)(self ! ReconnectCommand)
+          context.system.scheduler.scheduleOnce(delay)(
+            self ! P2PClient.ReconnectCommand)
           ()
         }
     }
