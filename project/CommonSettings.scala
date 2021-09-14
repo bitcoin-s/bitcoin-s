@@ -183,6 +183,8 @@ object CommonSettings {
       //the default provided by sbt native packager
       //which is 'demiourgos728'
       Docker / daemonUser := "bitcoin-s",
+      //needed for umbrel to run
+      Docker / daemonUserUid := Some("1000"),
       Docker / packageName := packageName.value,
       Docker / version := version.value,
       dockerUpdateLatest := isSnapshot.value
