@@ -1,11 +1,12 @@
 package org.bitcoins.node.networking.peer
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.p2p.{VerAckMessage, VersionMessage}
 import org.bitcoins.node.networking.P2PClient
 
 import scala.concurrent.{Future, Promise}
 
-sealed abstract class PeerMessageReceiverState {
+sealed abstract class PeerMessageReceiverState extends Logging {
 
   /** This promise gets completed when we receive a
     * [[akka.io.Tcp.Connected]] message from [[org.bitcoins.node.networking.P2PClient P2PClient]]
@@ -172,14 +173,40 @@ object PeerMessageReceiverState {
       extends PeerMessageReceiverState {
     require(
       isConnected,
-      s"We cannot have a PeerMessageReceiverState.Normal if the Peer is not connected")
+      s"We cannot have a PeerMessageReceiverState.InitializedDisconnect if the Peer is not connected")
     require(
       isInitialized,
-      s"We cannot have a PeerMessageReceiverState.Normal if the Peer is not initialized")
+      s"We cannot have a PeerMessageReceiverState.InitializedDisconnect if the Peer is not initialized")
 
     override def toString: String = "InitializedDisconnect"
   }
 
+  /** This means we initialized a disconnection from the peer
+    * and it is successfully completed now.
+    * This is different than the [[Disconnected]] state as it is
+    * useful for situations where we don't want to reconnect
+    * because we initialized the disconnection
+    */
+  case class InitializedDisconnectDone(
+      clientConnectP: Promise[P2PClient],
+      clientDisconnectP: Promise[Unit],
+      versionMsgP: Promise[VersionMessage],
+      verackMsgP: Promise[VerAckMessage.type])
+      extends PeerMessageReceiverState {
+    require(
+      isDisconnected,
+      s"We cannot have a PeerMessageReceiverState.InitializedDisconnectDone if the Peer is not connected")
+    require(
+      isInitialized,
+      s"We cannot have a PeerMessageReceiverState.InitializedDisconnectDone if the Peer is not initialized")
+
+    override def toString: String = "InitializedDisconnect"
+  }
+
+  /** Means we are disconnected from a peer. This is different
+    * than [[InitializedDisconnectDone]] because this means
+    * the peer disconnected us
+    */
   case class Disconnected(
       clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],

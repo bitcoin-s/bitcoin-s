@@ -122,7 +122,7 @@ case class P2PClientActor(
     case cmd: NodeCommand =>
       handleNodeCommand(cmd = cmd, peerConnectionOpt = None)
     case metaMsg: P2PClient.MetaMsg =>
-      sender() ! handleMetaMsgDisconnected(metaMsg)
+      sender() ! handleMetaMsg(metaMsg)
   }
 
   def reconnecting: Receive = LoggingReceive {
@@ -135,7 +135,7 @@ case class P2PClientActor(
     case P2PClient.ConnectCommand =>
       handleNodeCommand(P2PClient.ConnectCommand, None)
     case metaMsg: P2PClient.MetaMsg =>
-      sender() ! handleMetaMsgDisconnected(metaMsg)
+      sender() ! handleMetaMsg(metaMsg)
   }
 
   def connecting(proxyParams: Option[Socks5ProxyParams]): Receive =
@@ -173,7 +173,7 @@ case class P2PClientActor(
             val _ = handleEvent(event, connection, ByteVector.empty)
         }
       case metaMsg: P2PClient.MetaMsg =>
-        sender() ! handleMetaMsgDisconnected(metaMsg)
+        sender() ! handleMetaMsg(metaMsg)
     }
 
   def socks5Connecting(
@@ -192,7 +192,7 @@ case class P2PClientActor(
     case Terminated(actor) if actor == proxy =>
       reconnect()
     case metaMsg: P2PClient.MetaMsg =>
-      sender() ! handleMetaMsgDisconnected(metaMsg)
+      sender() ! handleMetaMsg(metaMsg)
   }
 
   override def unhandled(message: Any): Unit = message match {
@@ -231,11 +231,15 @@ case class P2PClientActor(
 
   private def reconnect(): Unit = {
     currentPeerMsgHandlerRecv.state match {
-      case _: PeerMessageReceiverState.InitializedDisconnect =>
+      case _: PeerMessageReceiverState.InitializedDisconnect |
+          _: PeerMessageReceiverState.InitializedDisconnectDone =>
         logger.warn(
-          s"Ignoring reconnection attempts as we initialized disconnect from peer=$peer")
+          s"Ignoring reconnection attempts as we initialized disconnect from peer=$peer, state=${currentPeerMsgHandlerRecv.state}")
+        ()
       case PeerMessageReceiverState.Preconnection | _: Initializing |
           _: Normal | _: Disconnected =>
+        logger.info(
+          s"Attempting to reconnect to peer=$peer, previous state=${currentPeerMsgHandlerRecv.state}")
         currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
         if (reconnectionTry >= maxReconnectionTries) {
@@ -288,7 +292,8 @@ case class P2PClientActor(
 
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed | Tcp.ErrorClosed(_)) =>
-        logger.info(s"We've been disconnected by $peer command=${closeCmd}")
+        logger.info(
+          s"We've been disconnected by $peer command=${closeCmd} state=${currentPeerMsgHandlerRecv.state}")
         currentPeerMsgHandlerRecv = currentPeerMsgHandlerRecv.disconnect()
         unalignedBytes
 
@@ -362,14 +367,6 @@ case class P2PClientActor(
       case P2PClient.IsConnected    => currentPeerMsgHandlerRecv.isConnected
       case P2PClient.IsInitialized  => currentPeerMsgHandlerRecv.isInitialized
       case P2PClient.IsDisconnected => currentPeerMsgHandlerRecv.isDisconnected
-    }
-  }
-
-  private def handleMetaMsgDisconnected(metaMsg: P2PClient.MetaMsg): Boolean = {
-    metaMsg match {
-      case P2PClient.IsConnected    => false
-      case P2PClient.IsInitialized  => false
-      case P2PClient.IsDisconnected => true
     }
   }
 

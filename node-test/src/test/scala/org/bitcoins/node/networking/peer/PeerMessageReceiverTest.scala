@@ -117,5 +117,13 @@ class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindPair {
         newMsgReceiver.state
           .isInstanceOf[PeerMessageReceiverState.InitializedDisconnect])
       assert(!newMsgReceiver.isDisconnected)
+
+      val disconnectRecv = newMsgReceiver.disconnect()
+
+      assert(
+        disconnectRecv.state
+          .isInstanceOf[PeerMessageReceiverState.InitializedDisconnectDone])
+      assert(disconnectRecv.isDisconnected)
+      assert(disconnectRecv.state.clientDisconnectP.isCompleted)
   }
 }
