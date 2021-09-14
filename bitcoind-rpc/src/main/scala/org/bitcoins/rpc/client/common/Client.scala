@@ -282,7 +282,21 @@ trait Client
         // if the cookie file doesn't exist we're not started
         Future.successful(false)
       case (CookieBased(_, _) | PasswordBased(_, _)) =>
-        tryPing()
+        instance match {
+          case _: BitcoindInstanceRemote =>
+            //we cannot check locally if it has been started
+            //so best we can do is try to ping
+            tryPing()
+          case _: BitcoindInstanceLocal =>
+            //check if the binary has been started
+            //and then tryPing() if it has
+            if (isStartedFlag.get) {
+              tryPing()
+            } else {
+              Future.successful(false)
+            }
+        }
+
     }
   }
 

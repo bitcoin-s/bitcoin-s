@@ -191,6 +191,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
         proxyParams = None
       )
       remoteClient = BitcoindRpcClient.withActorSystem(remoteInstance)
+      _ <- remoteClient.start()
       _ <- remoteClient.isStartedF.map {
         case false =>
           client.stop()
