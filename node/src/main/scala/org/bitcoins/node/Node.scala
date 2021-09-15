@@ -31,6 +31,7 @@ import scala.concurrent.duration.Duration
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
+import scala.io.Source
 import scala.util.control.NonFatal
 import scala.util.{Failure, Random, Success}
 
@@ -69,6 +70,19 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val peers =
       inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
     peers.toVector
+  }
+
+  private def getPeersFromResources: Vector[Peer] = {
+    val source = Source.fromURL(getClass.getResource("/hardcoded-peers.txt"))
+    val addresses = source
+      .getLines()
+      .toVector
+      .filter(nodeAppConfig.torConf.enabled || !_.contains(".onion"))
+    val inetSockets = addresses.map(
+      NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
+    val peers =
+      inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
+    peers
   }
 
   private def getPeersFromDb: Future[Vector[Peer]] = {
@@ -120,6 +134,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def getPeers: Future[Unit] = {
     val peersFromConfig = getPeersFromConf
     lazy val peersFromDbF = getPeersFromDb
+    peersToCheckStack.pushAll(getPeersFromResources)
 
     val allF = for {
       peersFromDb <- peersFromDbF
