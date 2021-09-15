@@ -45,13 +45,16 @@ case class DataMessageHandler(
                                        filterHeightOpt = None,
                                        syncing = false)
 
+  //this will be set and stored when we receive max ammount of headers once, so as to use only this one
+  //for syncing subsequently
+  private var peerMsgSenderToUseInIBD: Option[PeerMessageSender] = None
+
   def handleDataPayload(
       payload: DataPayload,
       peerMsgSender: PeerMessageSender,
       node: Node): Future[DataMessageHandler] = {
 
     lazy val peerWithCompactFilters = node.randomPeerMsgSenderWithCompactFilters
-    lazy val randomPeer = node.randomPeerMsgSender
 
     val resultF = payload match {
       case checkpoint: CompactFilterCheckPointMessage =>
@@ -210,6 +213,10 @@ case class DataMessageHandler(
           .flatMap { newApi =>
             if (headers.nonEmpty) {
 
+              val peer = node.peerData
+                .filter(_._2.peerMessageSender == peerWithCompactFilters)
+                .head
+                ._1
               val lastHeader = headers.last
               val lastHash = lastHeader.hash
               newApi.getBlockCount().map { count =>
@@ -219,16 +226,19 @@ case class DataMessageHandler(
 
               if (count.toInt == HeadersMessage.MaxHeadersCount) {
                 logger.info(
-                  s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
-                randomPeer
+                  s"Received maximum amount of headers from $peer in one header message. This means we are not synced, requesting more")
+                if (peerMsgSenderToUseInIBD.isEmpty) {
+                  peerMsgSenderToUseInIBD = Some(peerMsgSender)
+                }
+                peerMsgSenderToUseInIBD.get
                   .sendGetHeadersMessage(lastHash)
                   .map(_ => syncing)
               } else {
-                logger.debug(
-                  List(s"Received headers=${count.toInt} in one message,",
-                       "which is less than max. This means we are synced,",
-                       "not requesting more.")
-                    .mkString(" "))
+                logger.debug(List(
+                  s"Received headers=${count.toInt} from $peer in one message,",
+                  "which is less than max. This means we are synced,",
+                  "not requesting more.")
+                  .mkString(" "))
                 // If we are in neutrino mode, we might need to start fetching filters and their headers
                 // if we are syncing we should do this, however, sometimes syncing isn't a good enough check,
                 // so we also check if our cached filter heights have been set as well, if they haven't then
@@ -239,7 +249,7 @@ case class DataMessageHandler(
                       filterHeightOpt.isEmpty))
                 ) {
                   logger.info(
-                    s"Starting to fetch filter headers in data message handler")
+                    s"Starting to fetch filter headers in data message handler from $peer")
                   sendFirstGetCompactFilterHeadersCommand(
                     peerWithCompactFilters)
                 } else {
