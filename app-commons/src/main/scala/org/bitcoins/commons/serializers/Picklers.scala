@@ -2,12 +2,7 @@ package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
-import org.bitcoins.core.crypto.{
-  ExtKey,
-  ExtPrivateKey,
-  ExtPublicKey,
-  MnemonicCode
-}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.hd.AddressType
@@ -20,6 +15,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.core.util.TimeUtil._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
@@ -122,9 +118,6 @@ object Picklers {
   implicit val partialSignaturePickler: ReadWriter[PartialSignature] =
     readwriter[String].bimap(_.hex, PartialSignature.fromHex)
 
-  implicit val dlcOfferTLVPickler: ReadWriter[DLCOfferTLV] =
-    readwriter[String].bimap(_.hex, DLCOfferTLV.fromHex)
-
   implicit val lnMessageDLCOfferTLVPickler: ReadWriter[LnMessage[DLCOfferTLV]] =
     readwriter[String].bimap(_.hex, LnMessageFactory(DLCOfferTLV).fromHex)
 
@@ -166,6 +159,213 @@ object Picklers {
     LockUnspentOutputParameter] =
     readwriter[Value].bimap(_.toJson, LockUnspentOutputParameter.fromJson)
 
+  // can't make implicit because it will overlap with ones needed for cli
+  val announcementV0JsonWriter: Writer[OracleAnnouncementV0TLV] =
+    writer[Obj].comap { announcement =>
+      val noncesJson = announcement.eventTLV.nonces.map { nonce =>
+        Str(nonce.hex)
+      }
+
+      val descriptorJson = announcement.eventTLV.eventDescriptor match {
+        case EnumEventDescriptorV0TLV(outcomes) =>
+          Obj("outcomes" -> outcomes.map(Str(_)))
+        case numeric: NumericEventDescriptorTLV =>
+          Obj(
+            "base" -> Num(numeric.base.toLong.toDouble),
+            "isSigned" -> Bool(numeric.isSigned),
+            "unit" -> Str(numeric.unit),
+            "precision" -> Num(numeric.precision.toLong.toDouble)
+          )
+      }
+
+      val maturityStr =
+        TimeUtil.iso8601ToString(Date.from(announcement.eventTLV.maturation))
+
+      val eventJson = Obj("nonces" -> noncesJson,
+                          "maturity" -> Str(maturityStr),
+                          "descriptor" -> descriptorJson,
+                          "eventId" -> Str(announcement.eventTLV.eventId))
+
+      Obj(
+        "announcementSignature" -> Str(announcement.announcementSignature.hex),
+        "publicKey" -> Str(announcement.publicKey.hex),
+        "event" -> eventJson)
+    }
+
+  // can't make implicit because it will overlap with ones needed for cli
+  val oracleAnnouncementTLVJsonWriter: Writer[OracleAnnouncementTLV] =
+    writer[Value].comap { case v0: OracleAnnouncementV0TLV =>
+      writeJs(v0)(announcementV0JsonWriter)
+    }
+
+  // can't make implicit because it will overlap with ones needed for cli
+  val oracleAttestmentV0Writer: Writer[OracleAttestmentV0TLV] =
+    writer[Obj].comap { attestments =>
+      val sigsJson = attestments.sigs.map(sig => Str(sig.hex))
+      val valuesJson = attestments.outcomes.map(Str(_))
+
+      Obj("eventId" -> Str(attestments.eventId),
+          "signatures" -> sigsJson,
+          "values" -> valuesJson)
+    }
+
+  implicit val fundingInputV0Writer: Writer[FundingInputTLV] =
+    writer[Value].comap { case v0: FundingInputV0TLV =>
+      writeJs(v0)(fundingInputWriter)
+    }
+
+  implicit val fundingInputWriter: Writer[FundingInputV0TLV] =
+    writer[Obj].comap { input =>
+      import input._
+
+      val redeemScriptJson = redeemScriptOpt match {
+        case Some(rs) => Str(rs.hex)
+        case None     => ujson.Null
+      }
+
+      Obj(
+        "inputSerialId" -> Num(inputSerialId.toBigInt.toDouble),
+        "prevTx" -> Str(prevTx.hex),
+        "prevTxVout" -> Num(prevTxVout.toLong.toDouble),
+        "sequence" -> Num(sequence.toLong.toDouble),
+        "maxWitnessLen" -> Num(maxWitnessLen.toLong.toDouble),
+        "redeemScript" -> redeemScriptJson
+      )
+    }
+
+  implicit val contractDescriptorV0Writer: Writer[ContractDescriptorV0TLV] =
+    writer[Obj].comap { v0 =>
+      import v0._
+
+      val outcomesJs = outcomes.map { case (outcome, payout) =>
+        Obj("outcome" -> Str(outcome),
+            "localPayout" -> Num(payout.toLong.toDouble))
+      }
+
+      Obj("outcomes" -> outcomesJs)
+    }
+
+  implicit val payoutFunctionV0TLVWriter: Writer[PayoutFunctionV0TLV] =
+    writer[Obj].comap { payoutFunc =>
+      import payoutFunc._
+
+      val pointsJs = points.map { point =>
+        Obj(
+          "outcome" -> Num(point.outcome.toDouble),
+          "payout" -> Num(point.value.toLong.toDouble),
+          "extraPrecision" -> Num(point.extraPrecision.toDouble),
+          "isEndpoint" -> Bool(point.isEndpoint)
+        )
+      }
+
+      Obj("points" -> pointsJs)
+    }
+
+  implicit val roundingIntervalsV0TLVWriter: Writer[RoundingIntervalsV0TLV] =
+    writer[Obj].comap { roundingIntervals =>
+      import roundingIntervals._
+
+      val intervalsJs = intervalStarts.map { i =>
+        Obj("beginInterval" -> Num(i._1.toDouble),
+            "roundingMod" -> Num(i._2.toLong.toDouble))
+      }
+
+      Obj("intervals" -> intervalsJs)
+    }
+
+  implicit val contractDescriptorV1Writer: Writer[ContractDescriptorV1TLV] =
+    writer[Obj].comap { v1 =>
+      import v1._
+
+      Obj("numDigits" -> Num(numDigits.toDouble),
+          "payoutFunction" -> writeJs(payoutFunction),
+          "roundingIntervals" -> writeJs(roundingIntervals))
+    }
+
+  implicit val contractDescriptorWriter: Writer[ContractDescriptorTLV] =
+    writer[Value].comap {
+      case v0: ContractDescriptorV0TLV =>
+        writeJs(v0)(contractDescriptorV0Writer)
+      case v1: ContractDescriptorV1TLV =>
+        writeJs(v1)(contractDescriptorV1Writer)
+    }
+
+  implicit val oracleInfoV0TLVWriter: Writer[OracleInfoV0TLV] =
+    writer[Obj].comap { oracleInfo =>
+      Obj(
+        "announcement" -> writeJs(oracleInfo.announcement)(
+          oracleAnnouncementTLVJsonWriter))
+    }
+
+  implicit val oracleInfoV1TLVWriter: Writer[OracleInfoV1TLV] =
+    writer[Obj].comap { oracleInfo =>
+      import oracleInfo._
+      Obj("threshold" -> Num(threshold.toDouble),
+          "announcements" -> oracles.map(o =>
+            writeJs(o)(oracleAnnouncementTLVJsonWriter)))
+    }
+
+  implicit val oracleParamsV0TLVWriter: Writer[OracleParamsV0TLV] =
+    writer[Obj].comap { params =>
+      import params._
+      Obj("maxErrorExp" -> Num(maxErrorExp.toDouble),
+          "minFailExp" -> Num(minFailExp.toDouble),
+          "maximizeCoverage" -> Bool(maximizeCoverage))
+    }
+
+  implicit val oracleParamsTLVWriter: Writer[OracleParamsTLV] =
+    writer[Value].comap { case v0: OracleParamsV0TLV =>
+      writeJs(v0)
+    }
+
+  implicit val oracleInfoV2TLVWriter: Writer[OracleInfoV2TLV] =
+    writer[Obj].comap { oracleInfo =>
+      import oracleInfo._
+      Obj("threshold" -> Num(threshold.toDouble),
+          "announcements" -> oracles.map(o =>
+            writeJs(o)(oracleAnnouncementTLVJsonWriter)),
+          "params" -> writeJs(params))
+    }
+
+  implicit val oracleInfoTLVWriter: Writer[OracleInfoTLV] =
+    writer[Value].comap {
+      case v0: OracleInfoV0TLV => writeJs(v0)
+      case v1: OracleInfoV1TLV => writeJs(v1)
+      case v2: OracleInfoV2TLV => writeJs(v2)
+    }
+
+  // can't make implicit because it will overlap with ones needed for cli
+  val contractInfoV0TLVJsonWriter: Writer[ContractInfoV0TLV] =
+    writer[Obj].comap { contractInfo =>
+      import contractInfo._
+
+      Obj("totalCollateral" -> Num(totalCollateral.toLong.toDouble),
+          "contractDescriptor" -> writeJs(contractDescriptor),
+          "oracleInfo" -> writeJs(oracleInfo))
+    }
+
+  implicit val offerTLVWriter: Writer[DLCOfferTLV] =
+    writer[Obj].comap { offer =>
+      import offer._
+      Obj(
+        "contractFlags" -> Str(contractFlags.toHexString),
+        "chainHash" -> Str(chainHash.hex),
+        "contractInfo" -> writeJs(contractInfo)(contractInfoV0TLVJsonWriter),
+        "fundingPubKey" -> Str(fundingPubKey.hex),
+        "payoutSPK" -> Str(payoutSPK.hex),
+        "payoutSerialId" -> Num(payoutSerialId.toBigInt.toDouble),
+        "offerCollateralSatoshis" -> Num(
+          totalCollateralSatoshis.toLong.toDouble),
+        "fundingInputs" -> fundingInputs.map(i => writeJs(i)),
+        "changeSPK" -> Str(changeSPK.hex),
+        "changeSerialId" -> Num(changeSerialId.toBigInt.toDouble),
+        "fundOutputSerialId" -> Num(fundOutputSerialId.toBigInt.toDouble),
+        "feeRatePerVb" -> Num(feeRate.toLong.toDouble),
+        "cetLocktime" -> Num(contractMaturityBound.toUInt32.toLong.toDouble),
+        "refundLocktime" -> Num(contractTimeout.toUInt32.toLong.toDouble)
+      )
+    }
+
   implicit val offeredW: Writer[Offered] =
     writer[Obj].comap { offered =>
       import offered._
@@ -173,6 +373,7 @@ object Picklers {
         "state" -> Str(statusString),
         "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
+        "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
         "tempContractId" -> Str(tempContractId.hex),
         "contractInfo" -> Str(contractInfo.hex),
         "contractMaturity" -> Num(
@@ -192,6 +393,7 @@ object Picklers {
       "state" -> Str(statusString),
       "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
+      "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
       "contractInfo" -> Str(contractInfo.hex),
@@ -212,6 +414,7 @@ object Picklers {
       "state" -> Str(statusString),
       "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
+      "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
       "contractInfo" -> Str(contractInfo.hex),
@@ -222,7 +425,8 @@ object Picklers {
       "feeRate" -> Num(feeRate.toLong.toDouble),
       "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
       "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
-      "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble)
+      "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
+      "fundingTxId" -> Str(fundingTxId.hex)
     )
   }
 
@@ -233,6 +437,7 @@ object Picklers {
         "state" -> Str(statusString),
         "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
+        "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
         "contractInfo" -> Str(contractInfo.hex),
@@ -255,6 +460,7 @@ object Picklers {
         "state" -> Str(statusString),
         "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
+        "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
         "contractInfo" -> Str(contractInfo.hex),
@@ -287,6 +493,7 @@ object Picklers {
       "state" -> Str(statusString),
       "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
+      "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
       "contractInfo" -> Str(contractInfo.hex),
@@ -327,6 +534,7 @@ object Picklers {
         "state" -> Str(statusString),
         "dlcId" -> Str(dlcId.hex),
         "isInitiator" -> Bool(isInitiator),
+        "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
         "tempContractId" -> Str(tempContractId.hex),
         "contractId" -> Str(contractId.toHex),
         "contractInfo" -> Str(contractInfo.hex),
@@ -358,6 +566,7 @@ object Picklers {
       "state" -> Str(statusString),
       "dlcId" -> Str(dlcId.hex),
       "isInitiator" -> Bool(isInitiator),
+      "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
       "tempContractId" -> Str(tempContractId.hex),
       "contractId" -> Str(contractId.toHex),
       "contractInfo" -> Str(contractInfo.hex),
@@ -401,6 +610,7 @@ object Picklers {
   implicit val dlcStatusR: Reader[DLCStatus] = reader[Obj].map { obj =>
     val dlcId = Sha256Digest(obj("dlcId").str)
     val state = DLCState.fromString(obj("state").str)
+    val lastUpdated = iso8601ToInstant(obj("lastUpdated").str)
     val isInitiator = obj("isInitiator").bool
     val tempContractId = Sha256Digest(obj("tempContractId").str)
     val contractInfoTLV = ContractInfoV0TLV(obj("contractInfo").str)
@@ -460,6 +670,7 @@ object Picklers {
         Offered(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
@@ -471,6 +682,7 @@ object Picklers {
         Accepted(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -483,18 +695,21 @@ object Picklers {
         Signed(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
           totalCollateral,
-          localCollateral
+          localCollateral,
+          fundingTxId
         )
       case DLCState.Broadcasted =>
         Broadcasted(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -508,6 +723,7 @@ object Picklers {
         Confirmed(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -521,6 +737,7 @@ object Picklers {
         Claimed(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -541,6 +758,7 @@ object Picklers {
         RemoteClaimed(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -559,6 +777,7 @@ object Picklers {
         Refunded(
           dlcId,
           isInitiator,
+          lastUpdated,
           tempContractId,
           contractId,
           ContractInfo.fromTLV(contractInfoTLV),
@@ -599,8 +818,14 @@ object Picklers {
   implicit val extPrivateKeyPickler: ReadWriter[ExtPrivateKey] =
     readwriter[String].bimap(ExtKey.toString, ExtPrivateKey.fromString)
 
+  implicit val oracleAnnouncementTLV: ReadWriter[OracleAnnouncementV0TLV] =
+    readwriter[String].bimap(_.hex, OracleAnnouncementV0TLV.fromHex)
+
   implicit val oracleAttestmentTLV: ReadWriter[OracleAttestmentTLV] =
     readwriter[String].bimap(_.hex, OracleAttestmentTLV.fromHex)
+
+  implicit val oracleAttestmentV0TLV: ReadWriter[OracleAttestmentV0TLV] =
+    readwriter[String].bimap(_.hex, OracleAttestmentV0TLV.fromHex)
 
   implicit val ecPublicKeyPickler: ReadWriter[ECPublicKey] =
     readwriter[String].bimap(_.hex, ECPublicKey.fromHex)

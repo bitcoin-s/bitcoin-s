@@ -17,6 +17,8 @@ import sbt._
 import sbt.Keys._
 import sbtprotoc.ProtocPlugin.autoImport.PB
 import sbtassembly.AssemblyKeys._
+
+import scala.sys.process.Process
 import scala.util.Properties
 
 object CommonSettings {
@@ -175,15 +177,61 @@ object CommonSettings {
   lazy val dockerSettings: Seq[Setting[_]] = {
     Vector(
       //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
-      dockerBaseImage := "openjdk:15.0.2-jdk-buster",
+      dockerBaseImage := "openjdk:16-slim",
       dockerRepository := Some("bitcoinscala"),
       //set the user to be 'bitcoin-s' rather than
       //the default provided by sbt native packager
       //which is 'demiourgos728'
       Docker / daemonUser := "bitcoin-s",
+      //needed for umbrel to run
+      Docker / daemonUserUid := Some("1000"),
       Docker / packageName := packageName.value,
       Docker / version := version.value,
       dockerUpdateLatest := isSnapshot.value
+    )
+  }
+
+  // See https://softwaremill.com/how-to-build-multi-platform-docker-image-with-sbt-and-docker-buildx/
+  lazy val ensureDockerBuildx =
+    taskKey[Unit]("Ensure that docker buildx configuration exists")
+
+  lazy val dockerBuildWithBuildx =
+    taskKey[Unit]("Build docker images using buildx")
+
+  /** These settings are needed to produce docker images across different chip architectures
+    * such as amd64 and arm64
+    * @see https://softwaremill.com/how-to-build-multi-platform-docker-image-with-sbt-and-docker-buildx/
+    */
+  lazy val dockerBuildxSettings = {
+    Seq(
+      ensureDockerBuildx := {
+        if (Process("docker buildx inspect multi-arch-builder").! == 1) {
+          Process("docker buildx create --use --name multi-arch-builder",
+                  baseDirectory.value).!
+        }
+      },
+      dockerBuildWithBuildx := {
+        streams.value.log("Building and pushing image with Buildx")
+        dockerAliases.value.foreach { alias =>
+          //issue the command below in to the terminal in the same directory that
+          //our sbt plugin generates the docker file.
+          //if you want to reproduce the docker file, run docker:stage
+          //in your sbt terminal and you should find it in target/docker/stage/
+          val cmd =
+            "docker buildx build --platform=linux/amd64,linux/arm64 --push -t " +
+              alias + " ."
+          val dockerFileDir =
+            baseDirectory.value / "target" / "docker" / "stage"
+          Process(cmd, dockerFileDir).!
+        }
+      },
+      Docker / publish := Def
+        .sequential(
+          Docker / publishLocal,
+          ensureDockerBuildx,
+          dockerBuildWithBuildx
+        )
+        .value
     )
   }
 

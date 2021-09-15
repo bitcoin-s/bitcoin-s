@@ -33,7 +33,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           } else if (dlcDb.state == DLCState.Claimed) {
             Future.successful(dlcDb.copy(state = DLCState.Claimed))
           } else {
-            val withState = dlcDb.copy(state = DLCState.RemoteClaimed)
+            val withState = dlcDb.updateState(DLCState.RemoteClaimed)
             if (dlcDb.state != DLCState.RemoteClaimed) {
               for {
                 // update so we can calculate correct DLCStatus
@@ -79,7 +79,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         contractData <- contractDataDAO.read(dlcId).map(_.get)
         offerDbOpt <- dlcOfferDAO.findByDLCId(dlcId)
         acceptDbOpt <- dlcAcceptDAO.findByDLCId(dlcId)
-        fundingInputDbs <- dlcInputsDAO.findByDLCId(dlcId)
+        fundingInputDbs <- dlcInputsDAO
+          .findByDLCId(dlcId)
+          .map(_.sortBy(_.index))
         txIds = fundingInputDbs.map(_.outPoint.txIdBE)
         remotePrevTxs <- remoteTxDAO.findByTxIdBEs(txIds)
         localPrevTxs <- transactionDAO.findByTxIdBEs(txIds)
@@ -154,7 +156,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
 
           DLCStatus.calculateOutcomeAndSig(isInit, offer, accept, sign, cet).get
         }
-        (outcomes, oracleInfos) = getOutcomeDbInfo(outcome)
+        (_, oracleInfos) = getOutcomeDbInfo(outcome)
 
         noncesByAnnouncement = nonceDbs
           .groupBy(_.announcementId)
@@ -225,7 +227,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
               case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
                   DLCState.Broadcasted =>
                 if (blockHashOpt.isDefined)
-                  dlcDb.copy(state = DLCState.Confirmed)
+                  dlcDb.updateState(DLCState.Confirmed)
                 else dlcDb.copy(state = DLCState.Broadcasted)
               case DLCState.Confirmed | DLCState.Claimed |
                   DLCState.RemoteClaimed | DLCState.Refunded =>
@@ -257,7 +259,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
               insertTransaction(transaction, blockHashOpt)
             } else FutureUtil.unit
 
-          withTx = dlcDbs.map(_.copy(closingTxIdOpt = Some(transaction.txIdBE)))
+          withTx = dlcDbs.map(_.updateClosingTxId(transaction.txIdBE))
           updatedFs = withTx.map(calculateAndSetState)
           updated <- Future.sequence(updatedFs)
 

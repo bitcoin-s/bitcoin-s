@@ -22,7 +22,12 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
   CookieBased,
   PasswordBased
 }
-import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
+import org.bitcoins.rpc.config.{
+  BitcoindAuthCredentials,
+  BitcoindInstance,
+  BitcoindInstanceLocal,
+  BitcoindInstanceRemote
+}
 import org.bitcoins.tor.Socks5ClientTransport
 import play.api.libs.json._
 
@@ -45,28 +50,46 @@ trait Client
     extends Logging
     with StartStopAsync[BitcoindRpcClient]
     with NativeProcessFactory {
-  def version: BitcoindVersion
+  def version: Future[BitcoindVersion]
   protected val instance: BitcoindInstance
 
   protected def walletExtension(walletName: String): String =
     s"/wallet/$walletName"
 
-  /** The log file of the Bitcoin Core daemon
+  /** The log file of the Bitcoin Core daemon.
+    * This returns the log file if the underlying instance is
+    * [[org.bitcoins.rpc.config.BitcoindInstanceLocal]], and
+    * None if the underlying instance is [[BitcoindInstanceRemote]]
     */
-  lazy val logFile: Path = {
-
-    val prefix = instance.network match {
-      case MainNet  => ""
-      case TestNet3 => "testnet"
-      case RegTest  => "regtest"
-      case SigNet   => "signet"
+  lazy val logFileOpt: Option[Path] = {
+    instance match {
+      case _: BitcoindInstanceRemote => None
+      case local: BitcoindInstanceLocal =>
+        val prefix = instance.network match {
+          case MainNet  => ""
+          case TestNet3 => "testnet"
+          case RegTest  => "regtest"
+          case SigNet   => "signet"
+        }
+        val path = local.datadir.toPath.resolve(prefix).resolve("debug.log")
+        Some(path)
     }
-    instance.datadir.toPath.resolve(prefix).resolve("debug.log")
   }
 
-  /** The configuration file of the Bitcoin Core daemon */
-  lazy val confFile: Path =
-    instance.datadir.toPath.resolve("bitcoin.conf")
+  /** The configuration file of the Bitcoin Core daemon
+    * This returns the conf file is the underlying instance is
+    * [[BitcoindInstanceLocal]] and None if the underlying
+    * instance is [[BitcoindInstanceRemote]]
+    */
+  lazy val confFileOpt: Option[Path] = {
+    instance match {
+      case _: BitcoindInstanceRemote =>
+        None
+      case local: BitcoindInstanceLocal =>
+        val path = local.datadir.toPath.resolve("bitcoin.conf")
+        Some(path)
+    }
+  }
 
   implicit protected val system: ActorSystem
 
@@ -108,15 +131,23 @@ trait Client
   def getDaemon: BitcoindInstance = instance
 
   override lazy val cmd: String = {
-    val binaryPath = instance.binary.getAbsolutePath
-    val cmd = List(binaryPath,
-                   "-datadir=" + instance.datadir,
-                   "-rpcport=" + instance.rpcUri.getPort,
-                   "-port=" + instance.uri.getPort)
-    logger.debug(
-      s"starting bitcoind with datadir ${instance.datadir} and binary path $binaryPath")
+    instance match {
+      case _: BitcoindInstanceRemote =>
+        logger.warn(
+          s"Cannot start remote instance with local binary command. You've likely misconfigured something")
+        ""
+      case local: BitcoindInstanceLocal =>
+        val binaryPath = local.binary.getAbsolutePath
+        val cmd = List(binaryPath,
+                       "-datadir=" + local.datadir,
+                       "-rpcport=" + instance.rpcUri.getPort,
+                       "-port=" + instance.uri.getPort)
+        logger.debug(
+          s"starting bitcoind with datadir ${local.datadir} and binary path $binaryPath")
 
-    cmd.mkString(" ")
+        cmd.mkString(" ")
+
+    }
   }
 
   /** Starts bitcoind on the local system.
@@ -125,15 +156,6 @@ trait Client
     *         cannot be started
     */
   override def start(): Future[BitcoindRpcClient] = {
-    if (version != BitcoindVersion.Unknown) {
-      val foundVersion = instance.getVersion
-      if (foundVersion != version) {
-        throw new RuntimeException(
-          s"Wrong version for bitcoind RPC client! Expected $version, got $foundVersion")
-      }
-    }
-
-    val startedF = startBinary()
 
     // if we're doing cookie based authentication, we might attempt
     // to read the cookie file before it's written. this ensures
@@ -151,16 +173,41 @@ trait Client
       case _: PasswordBased => Future.successful(())
 
     }
+    val isAlreadyStarted: Future[Boolean] = isStartedF
 
-    val started: Future[BitcoindRpcClient] = {
-      for {
-        _ <- startedF
-        _ <- awaitCookie(instance.authCredentials)
-        _ = isStartedFlag.set(true)
-        _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
-                                            interval = 1.seconds,
-                                            maxTries = 120)
-      } yield this.asInstanceOf[BitcoindRpcClient]
+    val started: Future[Future[BitcoindRpcClient]] = isAlreadyStarted.map {
+      case false =>
+        instance match {
+          case _: BitcoindInstanceRemote =>
+            sys.error(
+              s"Cannot start a remote instance, it needs to be started on the remote host machine")
+          case local: BitcoindInstanceLocal =>
+            val versionCheckF = version.map { v =>
+              if (v != BitcoindVersion.Unknown) {
+                val foundVersion = local.getVersion
+                if (foundVersion != v) {
+                  throw new RuntimeException(
+                    s"Wrong version for bitcoind RPC client! Expected $version, got $foundVersion")
+                }
+              }
+            }
+
+            val startedF = versionCheckF.flatMap(_ => startBinary())
+
+            for {
+              _ <- startedF
+              _ <- awaitCookie(instance.authCredentials)
+              _ = isStartedFlag.set(true)
+              _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
+                                                  interval = 1.seconds,
+                                                  maxTries = 120)
+            } yield this.asInstanceOf[BitcoindRpcClient]
+        }
+      case true =>
+        for {
+          _ <- awaitCookie(instance.authCredentials)
+          _ = isStartedFlag.set(true)
+        } yield this.asInstanceOf[BitcoindRpcClient]
     }
 
     started.onComplete {
@@ -176,19 +223,27 @@ trait Client
         // of our instances. We don't want to do this on mainnet,
         // as both the logs and conf file most likely contain sensitive
         // information
-        if (network != MainNet) {
-          val tempfile = Files.createTempFile("bitcoind-log-", ".dump")
-          val logfile = Files.readAllBytes(logFile)
-          Files.write(tempfile, logfile)
-          logger.info(s"Dumped debug.log to $tempfile")
 
-          val otherTempfile = Files.createTempFile("bitcoin-conf-", ".dump")
-          val conffile = Files.readAllBytes(confFile)
-          Files.write(otherTempfile, conffile)
-          logger.info(s"Dumped bitcoin.conf to $otherTempfile")
+        instance match {
+          case _: BitcoindInstanceRemote =>
+            ()
+          case _: BitcoindInstanceLocal =>
+            if (network != MainNet) {
+              val tempfile = Files.createTempFile("bitcoind-log-", ".dump")
+              val logfile = Files.readAllBytes(logFileOpt.get)
+              Files.write(tempfile, logfile)
+              logger.info(s"Dumped debug.log to $tempfile")
+
+              val otherTempfile = Files.createTempFile("bitcoin-conf-", ".dump")
+              val conffile = Files.readAllBytes(confFileOpt.get)
+              Files.write(otherTempfile, conffile)
+              logger.info(s"Dumped bitcoin.conf to $otherTempfile")
+            }
         }
+
     }
-    started
+
+    started.flatten
   }
 
   private def tryPing(): Future[Boolean] = {
@@ -227,11 +282,21 @@ trait Client
         // if the cookie file doesn't exist we're not started
         Future.successful(false)
       case (CookieBased(_, _) | PasswordBased(_, _)) =>
-        if (isStartedFlag.get) {
-          tryPing()
-        } else {
-          Future.successful(false)
+        instance match {
+          case _: BitcoindInstanceRemote =>
+            //we cannot check locally if it has been started
+            //so best we can do is try to ping
+            tryPing()
+          case _: BitcoindInstanceLocal =>
+            //check if the binary has been started
+            //and then tryPing() if it has
+            if (isStartedFlag.get) {
+              tryPing()
+            } else {
+              Future.successful(false)
+            }
         }
+
     }
   }
 
@@ -327,9 +392,16 @@ trait Client
   /** Cached http client to send requests to bitcoind with */
   private lazy val httpClient: HttpExt = Http(system)
 
-  private lazy val httpConnectionPoolSettings: ConnectionPoolSettings =
-    Socks5ClientTransport.createConnectionPoolSettings(instance.rpcUri,
-                                                       instance.proxyParams)
+  private lazy val httpConnectionPoolSettings: ConnectionPoolSettings = {
+    instance match {
+      case remote: BitcoindInstanceRemote =>
+        Socks5ClientTransport.createConnectionPoolSettings(instance.rpcUri,
+                                                           remote.proxyParams)
+      case _: BitcoindInstanceLocal =>
+        Socks5ClientTransport.createConnectionPoolSettings(instance.rpcUri,
+                                                           None)
+    }
+  }
 
   protected def sendRequest(req: HttpRequest): Future[HttpResponse] = {
     httpClient.singleRequest(req, settings = httpConnectionPoolSettings)

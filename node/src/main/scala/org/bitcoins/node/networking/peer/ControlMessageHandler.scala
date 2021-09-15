@@ -47,8 +47,8 @@ case class ControlMessageHandler(node: Node)(implicit
         logger.trace(s"Received versionMsg=$versionMsg from peer=$peer")
 
         state match {
-          case bad @ (_: Disconnected | _: Normal | Preconnection |
-              _: InitializedDisconnect) =>
+          case bad @ (_: Disconnected | _: InitializedDisconnect | _: Normal |
+              _: InitializedDisconnectDone | Preconnection) =>
             Future.failed(
               new RuntimeException(
                 s"Cannot handle version message while in state=$bad"))
@@ -68,7 +68,7 @@ case class ControlMessageHandler(node: Node)(implicit
       case VerAckMessage =>
         state match {
           case bad @ (_: Disconnected | _: InitializedDisconnect | _: Normal |
-              Preconnection) =>
+              _: InitializedDisconnectDone | Preconnection) =>
             Future.failed(
               new RuntimeException(
                 s"Cannot handle version message while in state=$bad"))

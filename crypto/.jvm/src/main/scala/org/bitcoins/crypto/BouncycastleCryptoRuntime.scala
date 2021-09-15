@@ -147,8 +147,9 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
   override def secKeyVerify(privateKeyBytes: ByteVector): Boolean = {
     val num = new BigInteger(1, privateKeyBytes.toArray)
 
-    BouncyCastleCryptoParams.curve.getCurve.isValidFieldElement(num) && num
-      .compareTo(BouncyCastleCryptoParams.curve.getN) < 0
+    BouncyCastleCryptoParams.curve.getCurve.isValidFieldElement(num) &&
+    num.compareTo(BouncyCastleCryptoParams.curve.getN) < 0 &&
+    num != BigInteger.ZERO
   }
 
   override def verify(

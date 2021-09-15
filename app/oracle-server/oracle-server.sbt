@@ -1,3 +1,5 @@
+import com.typesafe.sbt.packager.docker.DockerChmodType
+
 name := "bitcoin-s-oracle-server"
 
 // Ensure actor system is shut down
@@ -15,6 +17,13 @@ packageDescription := "A basic DLC oracle that allows you to commit to events an
 dockerExposedPorts ++= Seq(9998)
 
 dockerEntrypoint := Seq("/opt/docker/bin/bitcoin-s-oracle-server")
+
+//make it so all users can execute the startup script
+//for the oracle server
+//this is needed for umbrel
+//https://linuxize.com/post/chmod-command-in-linux/#symbolic-text-method
+dockerAdditionalPermissions += (DockerChmodType.Custom(
+  "a=rx"), "/opt/docker/bin/bitcoin-s-oracle-server")
 
 //this passes in our default configuration for docker
 //you can override this by passing in a custom conf file

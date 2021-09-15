@@ -18,10 +18,14 @@ object TimeUtil {
     now.getEpochSecond
   }
 
+  def iso8601ToInstant(str: String): Instant = {
+    val ta = DateTimeFormatter.ISO_INSTANT.parse(str)
+    Instant.from(ta)
+  }
+
   def iso8601ToDate(str: String): Date = {
     val isoT = Try {
-      val ta = DateTimeFormatter.ISO_INSTANT.parse(str)
-      val instant = Instant.from(ta)
+      val instant = iso8601ToInstant(str)
       Date.from(instant)
     }
 
@@ -33,6 +37,10 @@ object TimeUtil {
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"))
         dateFormat.parse(str)
     }
+  }
+
+  def iso8601ToString(instant: Instant): String = {
+    DateTimeFormatter.ISO_INSTANT.format(instant)
   }
 
   def iso8601ToString(date: Date): String = {

@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.commons.jsonmodels.{SerializedPSBT, SerializedTransaction}
+import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
@@ -12,9 +13,9 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.server.BitcoinSAppConfig.toChainConf
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import ujson._
+import upickle.default._
 
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -142,6 +143,40 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
             val json = Obj(jsonMap)
 
             Server.httpSuccess(json)
+          }
+      }
+
+    case ServerCommand("decodeoffer", arr) =>
+      withValidServerCommand(DecodeOffer.fromJsArr(arr)) {
+        case DecodeOffer(offerTLV) =>
+          complete {
+            Server.httpSuccess(writeJs(offerTLV))
+          }
+      }
+
+    case ServerCommand("decodecontractinfo", arr) =>
+      withValidServerCommand(DecodeContractInfo.fromJsArr(arr)) {
+        case DecodeContractInfo(contractInfo) =>
+          complete {
+            Server.httpSuccess(
+              writeJs(contractInfo)(contractInfoV0TLVJsonWriter))
+          }
+      }
+
+    case ServerCommand("decodeannouncement", arr) =>
+      withValidServerCommand(DecodeAnnouncement.fromJsArr(arr)) {
+        case DecodeAnnouncement(announcement) =>
+          complete {
+            Server.httpSuccess(
+              writeJs(announcement)(oracleAnnouncementTLVJsonWriter))
+          }
+      }
+
+    case ServerCommand("decodeattestments", arr) =>
+      withValidServerCommand(DecodeAttestations.fromJsArr(arr)) {
+        case DecodeAttestations(attestments) =>
+          complete {
+            Server.httpSuccess(writeJs(attestments)(oracleAttestmentV0Writer))
           }
       }
 

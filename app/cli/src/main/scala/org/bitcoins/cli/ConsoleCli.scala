@@ -168,315 +168,6 @@ object ConsoleCli {
       cmd("walletinfo")
         .action((_, conf) => conf.copy(command = WalletInfo))
         .text("Returns data about the current wallet being used"),
-      cmd("getdlchostaddress")
-        .action((_, conf) => conf.copy(command = GetDLCHostAddress))
-        .text("Returns the public listening address of the DLC Node"),
-      cmd("createdlcoffer")
-        .action((_, conf) =>
-          conf.copy(
-            command = CreateDLCOffer(ContractInfoV0TLV.dummy,
-                                     Satoshis.zero,
-                                     None,
-                                     UInt32.zero,
-                                     UInt32.zero)))
-        .text("Creates a DLC offer that another party can accept")
-        .children(
-          arg[ContractInfoV0TLV]("contractInfo")
-            .required()
-            .action((info, conf) =>
-              conf.copy(command = conf.command match {
-                case offer: CreateDLCOffer =>
-                  offer.copy(contractInfo = info)
-                case other => other
-              })),
-          arg[Satoshis]("collateral")
-            .required()
-            .action((collateral, conf) =>
-              conf.copy(command = conf.command match {
-                case offer: CreateDLCOffer =>
-                  offer.copy(collateral = collateral)
-                case other => other
-              })),
-          arg[SatoshisPerVirtualByte]("feerate")
-            .optional()
-            .action((feeRate, conf) =>
-              conf.copy(command = conf.command match {
-                case offer: CreateDLCOffer =>
-                  offer.copy(feeRateOpt = Some(feeRate))
-                case other => other
-              })),
-          arg[UInt32]("locktime")
-            .required()
-            .action((locktime, conf) =>
-              conf.copy(command = conf.command match {
-                case offer: CreateDLCOffer =>
-                  offer.copy(locktime = locktime)
-                case other => other
-              })),
-          arg[UInt32]("refundlocktime")
-            .required()
-            .action((refundLT, conf) =>
-              conf.copy(command = conf.command match {
-                case offer: CreateDLCOffer =>
-                  offer.copy(refundLT = refundLT)
-                case other => other
-              }))
-        ),
-      cmd("acceptdlc")
-        .action((_, conf) =>
-          conf.copy(command =
-            AcceptDLC(null,
-                      InetSocketAddress.createUnresolved("localhost", 0))))
-        .text("Accepts a DLC offer given from another party")
-        .children(
-          arg[LnMessage[DLCOfferTLV]]("offer")
-            .required()
-            .action((offer, conf) =>
-              conf.copy(command = conf.command match {
-                case accept: AcceptDLC =>
-                  accept.copy(offer = offer)
-                case other => other
-              })),
-          arg[InetSocketAddress]("peer")
-            .required()
-            .action((peer, conf) =>
-              conf.copy(command = conf.command match {
-                case accept: AcceptDLC =>
-                  accept.copy(peerAddr = peer)
-                case other => other
-              }))
-        ),
-      cmd("acceptdlcoffer")
-        .action((_, conf) => conf.copy(command = AcceptDLCOffer(null)))
-        .text("Accepts a DLC offer given from another party")
-        .children(
-          arg[LnMessage[DLCOfferTLV]]("offer")
-            .required()
-            .action((offer, conf) =>
-              conf.copy(command = conf.command match {
-                case accept: AcceptDLCOffer =>
-                  accept.copy(offer = offer)
-                case other => other
-              }))
-        ),
-      cmd("acceptdlcofferfromfile")
-        .action((_, conf) =>
-          conf.copy(command =
-            AcceptDLCOfferFromFile(new File("").toPath, None)))
-        .text("Accepts a DLC offer given from another party")
-        .children(
-          arg[Path]("path")
-            .required()
-            .action((path, conf) =>
-              conf.copy(command = conf.command match {
-                case accept: AcceptDLCOfferFromFile =>
-                  accept.copy(path = path)
-                case other => other
-              })),
-          arg[Path]("destination")
-            .optional()
-            .action((dest, conf) =>
-              conf.copy(command = conf.command match {
-                case accept: AcceptDLCOfferFromFile =>
-                  accept.copy(destination = Some(dest))
-                case other => other
-              }))
-        ),
-      cmd("signdlc")
-        .action((_, conf) => conf.copy(command = SignDLC(null)))
-        .text("Signs a DLC")
-        .children(
-          arg[LnMessage[DLCAcceptTLV]]("accept")
-            .required()
-            .action((accept, conf) =>
-              conf.copy(command = conf.command match {
-                case signDLC: SignDLC =>
-                  signDLC.copy(accept = accept)
-                case other => other
-              }))
-        ),
-      cmd("signdlcfromfile")
-        .action((_, conf) =>
-          conf.copy(command = SignDLCFromFile(new File("").toPath, None)))
-        .text("Signs a DLC")
-        .children(
-          arg[Path]("path")
-            .required()
-            .action((path, conf) =>
-              conf.copy(command = conf.command match {
-                case signDLC: SignDLCFromFile =>
-                  signDLC.copy(path = path)
-                case other => other
-              })),
-          arg[Path]("destination")
-            .optional()
-            .action((dest, conf) =>
-              conf.copy(command = conf.command match {
-                case accept: SignDLCFromFile =>
-                  accept.copy(destination = Some(dest))
-                case other => other
-              }))
-        ),
-      cmd("adddlcsigs")
-        .action((_, conf) => conf.copy(command = AddDLCSigs(null)))
-        .text("Adds DLC Signatures into the database")
-        .children(
-          arg[LnMessage[DLCSignTLV]]("sigs")
-            .required()
-            .action((sigs, conf) =>
-              conf.copy(command = conf.command match {
-                case addDLCSigs: AddDLCSigs =>
-                  addDLCSigs.copy(sigs = sigs)
-                case other => other
-              }))
-        ),
-      cmd("adddlcsigsfromfile")
-        .action((_, conf) =>
-          conf.copy(command = AddDLCSigsFromFile(new File("").toPath)))
-        .text("Adds DLC Signatures into the database")
-        .children(
-          arg[Path]("path")
-            .required()
-            .action((path, conf) =>
-              conf.copy(command = conf.command match {
-                case addDLCSigs: AddDLCSigsFromFile =>
-                  addDLCSigs.copy(path = path)
-                case other => other
-              }))
-        ),
-      cmd("adddlcsigsandbroadcast")
-        .action((_, conf) => conf.copy(command = AddDLCSigsAndBroadcast(null)))
-        .text("Adds DLC Signatures into the database and broadcasts the funding transaction")
-        .children(
-          arg[LnMessage[DLCSignTLV]]("sigs")
-            .required()
-            .action((sigs, conf) =>
-              conf.copy(command = conf.command match {
-                case addDLCSigs: AddDLCSigsAndBroadcast =>
-                  addDLCSigs.copy(sigs = sigs)
-                case other => other
-              }))
-        ),
-      cmd("adddlcsigsandbroadcastfromfile")
-        .action((_, conf) =>
-          conf.copy(command =
-            AddDLCSigsAndBroadcastFromFile(new File("").toPath)))
-        .text("Adds DLC Signatures into the database and broadcasts the funding transaction")
-        .children(
-          arg[Path]("path")
-            .required()
-            .action((path, conf) =>
-              conf.copy(command = conf.command match {
-                case addDLCSigs: AddDLCSigsAndBroadcastFromFile =>
-                  addDLCSigs.copy(path = path)
-                case other => other
-              }))
-        ),
-      cmd("getdlcfundingtx")
-        .action((_, conf) => conf.copy(command = GetDLCFundingTx(null)))
-        .text("Returns the Funding Tx corresponding to the DLC with the given contractId")
-        .children(
-          opt[ByteVector]("contractId")
-            .required()
-            .action((contractId, conf) =>
-              conf.copy(command = conf.command match {
-                case getDLCFundingTx: GetDLCFundingTx =>
-                  getDLCFundingTx.copy(contractId = contractId)
-                case other => other
-              }))
-        ),
-      cmd("broadcastdlcfundingtx")
-        .action((_, conf) => conf.copy(command = BroadcastDLCFundingTx(null)))
-        .text("Broadcasts the funding Tx corresponding to the DLC with the given contractId")
-        .children(
-          arg[ByteVector]("contractId")
-            .required()
-            .action((contractId, conf) =>
-              conf.copy(command = conf.command match {
-                case broadcastDLCFundingTx: BroadcastDLCFundingTx =>
-                  broadcastDLCFundingTx.copy(contractId = contractId)
-                case other => other
-              }))
-        ),
-      cmd("executedlc")
-        .action((_, conf) =>
-          conf.copy(command =
-            ExecuteDLC(ByteVector.empty, Vector.empty, noBroadcast = false)))
-        .text("Executes the DLC with the given contractId")
-        .children(
-          arg[ByteVector]("contractId")
-            .required()
-            .action((contractId, conf) =>
-              conf.copy(command = conf.command match {
-                case executeDLC: ExecuteDLC =>
-                  executeDLC.copy(contractId = contractId)
-                case other => other
-              })),
-          arg[Seq[OracleAttestmentTLV]]("oraclesigs")
-            .required()
-            .action((sigs, conf) =>
-              conf.copy(command = conf.command match {
-                case executeDLC: ExecuteDLC =>
-                  executeDLC.copy(oracleSigs = sigs.toVector)
-                case other => other
-              })),
-          opt[Unit]("noBroadcast")
-            .optional()
-            .action((_, conf) =>
-              conf.copy(command = conf.command match {
-                case executeDLC: ExecuteDLC =>
-                  executeDLC.copy(noBroadcast = true)
-                case other => other
-              }))
-        ),
-      cmd("executedlcrefund")
-        .action((_, conf) =>
-          conf.copy(command = ExecuteDLCRefund(null, noBroadcast = false)))
-        .text("Executes the Refund transaction for the given DLC")
-        .children(
-          arg[ByteVector]("contractId")
-            .required()
-            .action((contractId, conf) =>
-              conf.copy(command = conf.command match {
-                case executeDLCRefund: ExecuteDLCRefund =>
-                  executeDLCRefund.copy(contractId = contractId)
-                case other => other
-              })),
-          opt[Unit]("noBroadcast")
-            .optional()
-            .action((_, conf) =>
-              conf.copy(command = conf.command match {
-                case executeDLCRefund: ExecuteDLCRefund =>
-                  executeDLCRefund.copy(noBroadcast = true)
-                case other => other
-              }))
-        ),
-      cmd("canceldlc")
-        .action((_, conf) => conf.copy(command = CancelDLC(Sha256Digest.empty)))
-        .text("Cancels a DLC and unreserves used utxos")
-        .children(
-          arg[Sha256Digest]("dlcId")
-            .required()
-            .action((dlcId, conf) =>
-              conf.copy(command = conf.command match {
-                case cancelDLC: CancelDLC =>
-                  cancelDLC.copy(dlcId = dlcId)
-                case other => other
-              }))
-        ),
-      cmd("getdlcs")
-        .action((_, conf) => conf.copy(command = GetDLCs))
-        .text("Returns all dlcs in the wallet"),
-      cmd("getdlc")
-        .action((_, conf) => conf.copy(command = GetDLC(Sha256Digest.empty)))
-        .text("Gets a specific dlc in the wallet")
-        .children(arg[Sha256Digest]("dlcId")
-          .required()
-          .action((dlcId, conf) =>
-            conf.copy(command = conf.command match {
-              case _: GetDLC => GetDLC(dlcId)
-              case other     => other
-            }))),
       cmd("getbalance")
         .action((_, conf) => conf.copy(command = GetBalance(false)))
         .text("Get the wallet balance")
@@ -687,6 +378,7 @@ object ConsoleCli {
                 case other => other
               })),
           opt[Unit]("noBroadcast")
+            .text("Gives full serialized transaction instead of broadcasting")
             .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
@@ -1041,6 +733,395 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      note(sys.props("line.separator") + "=== DLC ==="),
+      cmd("decodecontractinfo")
+        .action((_, conf) => conf.copy(command = DecodeContractInfo(null)))
+        .text("Decodes a contract info into json")
+        .children(
+          arg[ContractInfoV0TLV]("contractinfo")
+            .text("Hex encoded contract info")
+            .required()
+            .action((contractInfo, conf) =>
+              conf.copy(command = conf.command match {
+                case decode: DecodeContractInfo =>
+                  decode.copy(contractInfo = contractInfo)
+                case other => other
+              }))),
+      cmd("decodeoffer")
+        .action((_, conf) => conf.copy(command = DecodeOffer(null)))
+        .text("Decodes an offer message into json")
+        .children(
+          arg[LnMessage[DLCOfferTLV]]("offer")
+            .text("Hex encoded dlc offer message")
+            .required()
+            .action((offer, conf) =>
+              conf.copy(command = conf.command match {
+                case decode: DecodeOffer =>
+                  decode.copy(offer = offer)
+                case other => other
+              }))),
+      cmd("decodeannouncement")
+        .action((_, conf) => conf.copy(command = DecodeAnnouncement(null)))
+        .text("Decodes an oracle announcement message into json")
+        .children(
+          arg[OracleAnnouncementV0TLV]("announcement")
+            .text("Hex encoded oracle announcement message")
+            .required()
+            .action((ann, conf) =>
+              conf.copy(command = conf.command match {
+                case decode: DecodeAnnouncement =>
+                  decode.copy(announcement = ann)
+                case other => other
+              }))),
+      cmd("decodeattestments")
+        .action((_, conf) => conf.copy(command = DecodeAttestments(null)))
+        .text("Decodes an oracle attestments message into json")
+        .children(
+          arg[OracleAttestmentV0TLV]("attestments")
+            .text("Hex encoded oracle attestments message")
+            .required()
+            .action((attestments, conf) =>
+              conf.copy(command = conf.command match {
+                case decode: DecodeAttestments =>
+                  decode.copy(sigs = attestments)
+                case other => other
+              }))),
+      cmd("getdlchostaddress")
+        .action((_, conf) => conf.copy(command = GetDLCHostAddress))
+        .text("Returns the public listening address of the DLC Node"),
+      cmd("createdlcoffer")
+        .action((_, conf) =>
+          conf.copy(
+            command = CreateDLCOffer(ContractInfoV0TLV.dummy,
+                                     Satoshis.zero,
+                                     None,
+                                     UInt32.zero,
+                                     UInt32.zero)))
+        .text("Creates a DLC offer that another party can accept")
+        .children(
+          arg[ContractInfoV0TLV]("contractInfo")
+            .text("Hex encoded contractInfo message")
+            .required()
+            .action((info, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(contractInfo = info)
+                case other => other
+              })),
+          arg[Satoshis]("collateral")
+            .text("Satoshis to fund your side of the DLC")
+            .required()
+            .action((collateral, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(collateral = collateral)
+                case other => other
+              })),
+          arg[SatoshisPerVirtualByte]("feerate")
+            .text("Fee rate for both funding and closing transactions, in sats/vbytes")
+            .optional()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(feeRateOpt = Some(feeRate))
+                case other => other
+              })),
+          arg[UInt32]("locktime")
+            .text("Locktime of the contract execution transactions")
+            .required()
+            .action((locktime, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(locktime = locktime)
+                case other => other
+              })),
+          arg[UInt32]("refundlocktime")
+            .text("Locktime of the refund transaction")
+            .required()
+            .action((refundLT, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(refundLT = refundLT)
+                case other => other
+              }))
+        ),
+      cmd("acceptdlc")
+        .action((_, conf) =>
+          conf.copy(command =
+            AcceptDLC(null,
+                      InetSocketAddress.createUnresolved("localhost", 0))))
+        .text("Accepts a DLC offer given from another party")
+        .children(
+          arg[LnMessage[DLCOfferTLV]]("offer")
+            .text("Hex encoded dlc offer message")
+            .required()
+            .action((offer, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLC =>
+                  accept.copy(offer = offer)
+                case other => other
+              })),
+          arg[InetSocketAddress]("peer")
+            .text("Peer's network address")
+            .required()
+            .action((peer, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLC =>
+                  accept.copy(peerAddr = peer)
+                case other => other
+              }))
+        ),
+      cmd("acceptdlcoffer")
+        .action((_, conf) => conf.copy(command = AcceptDLCOffer(null)))
+        .text("Accepts a DLC offer given from another party")
+        .children(
+          arg[LnMessage[DLCOfferTLV]]("offer")
+            .text("Hex encoded dlc offer message")
+            .required()
+            .action((offer, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOffer =>
+                  accept.copy(offer = offer)
+                case other => other
+              }))
+        ),
+      cmd("acceptdlcofferfromfile")
+        .action((_, conf) =>
+          conf.copy(command =
+            AcceptDLCOfferFromFile(new File("").toPath, None)))
+        .text("Accepts a DLC offer given from another party")
+        .children(
+          arg[Path]("path")
+            .text("Path to dlc offer file")
+            .required()
+            .action((path, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOfferFromFile =>
+                  accept.copy(path = path)
+                case other => other
+              })),
+          arg[Path]("destination")
+            .text("Path to write dlc accept message")
+            .optional()
+            .action((dest, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOfferFromFile =>
+                  accept.copy(destination = Some(dest))
+                case other => other
+              }))
+        ),
+      cmd("signdlc")
+        .action((_, conf) => conf.copy(command = SignDLC(null)))
+        .text("Signs a DLC")
+        .children(
+          arg[LnMessage[DLCAcceptTLV]]("accept")
+            .text("Hex encoded dlc accept message")
+            .required()
+            .action((accept, conf) =>
+              conf.copy(command = conf.command match {
+                case signDLC: SignDLC =>
+                  signDLC.copy(accept = accept)
+                case other => other
+              }))
+        ),
+      cmd("signdlcfromfile")
+        .action((_, conf) =>
+          conf.copy(command = SignDLCFromFile(new File("").toPath, None)))
+        .text("Signs a DLC")
+        .children(
+          arg[Path]("path")
+            .text("Path to dlc accept file")
+            .required()
+            .action((path, conf) =>
+              conf.copy(command = conf.command match {
+                case signDLC: SignDLCFromFile =>
+                  signDLC.copy(path = path)
+                case other => other
+              })),
+          arg[Path]("destination")
+            .text("Path to write dlc sign message")
+            .optional()
+            .action((dest, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: SignDLCFromFile =>
+                  accept.copy(destination = Some(dest))
+                case other => other
+              }))
+        ),
+      cmd("adddlcsigs")
+        .action((_, conf) => conf.copy(command = AddDLCSigs(null)))
+        .text("Adds DLC Signatures into the database")
+        .children(
+          arg[LnMessage[DLCSignTLV]]("sigs")
+            .text("Hex encoded dlc sign message")
+            .required()
+            .action((sigs, conf) =>
+              conf.copy(command = conf.command match {
+                case addDLCSigs: AddDLCSigs =>
+                  addDLCSigs.copy(sigs = sigs)
+                case other => other
+              }))
+        ),
+      cmd("adddlcsigsfromfile")
+        .action((_, conf) =>
+          conf.copy(command = AddDLCSigsFromFile(new File("").toPath)))
+        .text("Adds DLC Signatures into the database")
+        .children(
+          arg[Path]("path")
+            .text("Path to dlc sign file")
+            .required()
+            .action((path, conf) =>
+              conf.copy(command = conf.command match {
+                case addDLCSigs: AddDLCSigsFromFile =>
+                  addDLCSigs.copy(path = path)
+                case other => other
+              }))
+        ),
+      cmd("adddlcsigsandbroadcast")
+        .action((_, conf) => conf.copy(command = AddDLCSigsAndBroadcast(null)))
+        .text("Adds DLC Signatures into the database and broadcasts the funding transaction")
+        .children(
+          arg[LnMessage[DLCSignTLV]]("sigs")
+            .text("Hex encoded dlc sign message")
+            .required()
+            .action((sigs, conf) =>
+              conf.copy(command = conf.command match {
+                case addDLCSigs: AddDLCSigsAndBroadcast =>
+                  addDLCSigs.copy(sigs = sigs)
+                case other => other
+              }))
+        ),
+      cmd("adddlcsigsandbroadcastfromfile")
+        .action((_, conf) =>
+          conf.copy(command =
+            AddDLCSigsAndBroadcastFromFile(new File("").toPath)))
+        .text("Adds DLC Signatures into the database and broadcasts the funding transaction")
+        .children(
+          arg[Path]("path")
+            .text("Path to dlc sign file")
+            .required()
+            .action((path, conf) =>
+              conf.copy(command = conf.command match {
+                case addDLCSigs: AddDLCSigsAndBroadcastFromFile =>
+                  addDLCSigs.copy(path = path)
+                case other => other
+              }))
+        ),
+      cmd("getdlcfundingtx")
+        .action((_, conf) => conf.copy(command = GetDLCFundingTx(null)))
+        .text("Returns the Funding Tx corresponding to the DLC with the given contractId")
+        .children(
+          arg[ByteVector]("contractId")
+            .text("ContractId of the DLC")
+            .required()
+            .action((contractId, conf) =>
+              conf.copy(command = conf.command match {
+                case getDLCFundingTx: GetDLCFundingTx =>
+                  getDLCFundingTx.copy(contractId = contractId)
+                case other => other
+              }))
+        ),
+      cmd("broadcastdlcfundingtx")
+        .action((_, conf) => conf.copy(command = BroadcastDLCFundingTx(null)))
+        .text("Broadcasts the funding Tx corresponding to the DLC with the given contractId")
+        .children(
+          arg[ByteVector]("contractId")
+            .text("ContractId of the DLC")
+            .required()
+            .action((contractId, conf) =>
+              conf.copy(command = conf.command match {
+                case broadcastDLCFundingTx: BroadcastDLCFundingTx =>
+                  broadcastDLCFundingTx.copy(contractId = contractId)
+                case other => other
+              }))
+        ),
+      cmd("executedlc")
+        .action((_, conf) =>
+          conf.copy(command =
+            ExecuteDLC(ByteVector.empty, Vector.empty, noBroadcast = false)))
+        .text("Executes the DLC with the given contractId")
+        .children(
+          arg[ByteVector]("contractId")
+            .text("ContractId of the DLC")
+            .required()
+            .action((contractId, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLC: ExecuteDLC =>
+                  executeDLC.copy(contractId = contractId)
+                case other => other
+              })),
+          arg[Seq[OracleAttestmentTLV]]("oraclesigs")
+            .text("Array of oracle attestations")
+            .required()
+            .action((sigs, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLC: ExecuteDLC =>
+                  executeDLC.copy(oracleSigs = sigs.toVector)
+                case other => other
+              })),
+          opt[Unit]("noBroadcast")
+            .text("Gives full serialized transaction instead of broadcasting")
+            .optional()
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLC: ExecuteDLC =>
+                  executeDLC.copy(noBroadcast = true)
+                case other => other
+              }))
+        ),
+      cmd("executedlcrefund")
+        .action((_, conf) =>
+          conf.copy(command = ExecuteDLCRefund(null, noBroadcast = false)))
+        .text("Executes the Refund transaction for the given DLC")
+        .children(
+          arg[ByteVector]("contractId")
+            .text("ContractId of the DLC")
+            .required()
+            .action((contractId, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCRefund: ExecuteDLCRefund =>
+                  executeDLCRefund.copy(contractId = contractId)
+                case other => other
+              })),
+          opt[Unit]("noBroadcast")
+            .text("Gives full serialized transaction instead of broadcasting")
+            .optional()
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCRefund: ExecuteDLCRefund =>
+                  executeDLCRefund.copy(noBroadcast = true)
+                case other => other
+              }))
+        ),
+      cmd("canceldlc")
+        .action((_, conf) => conf.copy(command = CancelDLC(Sha256Digest.empty)))
+        .text("Cancels a DLC and unreserves used utxos")
+        .children(
+          arg[Sha256Digest]("dlcId")
+            .text("Internal id of the DLC")
+            .required()
+            .action((dlcId, conf) =>
+              conf.copy(command = conf.command match {
+                case cancelDLC: CancelDLC =>
+                  cancelDLC.copy(dlcId = dlcId)
+                case other => other
+              }))
+        ),
+      cmd("getdlcs")
+        .action((_, conf) => conf.copy(command = GetDLCs))
+        .text("Returns all dlcs in the wallet"),
+      cmd("getdlc")
+        .action((_, conf) => conf.copy(command = GetDLC(Sha256Digest.empty)))
+        .text("Gets a specific dlc in the wallet")
+        .children(
+          arg[Sha256Digest]("dlcId")
+            .text("Internal id of the DLC")
+            .required()
+            .action((dlcId, conf) =>
+              conf.copy(command = conf.command match {
+                case _: GetDLC => GetDLC(dlcId)
+                case other     => other
+              }))),
       note(sys.props("line.separator") + "=== Network ==="),
       cmd("getpeers")
         .action((_, conf) => conf.copy(command = GetPeers))
@@ -1540,7 +1621,19 @@ object ConsoleCli {
         RequestParam("walletinfo")
       // DLCs
       case GetDLCHostAddress => RequestParam("getdlchostaddress")
-      case GetDLCs           => RequestParam("getdlcs")
+
+      case DecodeContractInfo(contractInfo) =>
+        RequestParam("decodecontractinfo", Seq(up.writeJs(contractInfo)))
+
+      case DecodeOffer(offer) =>
+        RequestParam("decodeoffer", Seq(up.writeJs(offer)))
+      case DecodeAnnouncement(announcement) =>
+        RequestParam("decodeannouncement", Seq(up.writeJs(announcement)))
+
+      case DecodeAttestments(attestments) =>
+        RequestParam("decodeattestments", Seq(up.writeJs(attestments)))
+
+      case GetDLCs => RequestParam("getdlcs")
       case GetDLC(dlcId) =>
         RequestParam("getdlc", Seq(up.writeJs(dlcId)))
       case CreateDLCOffer(contractInfo,
@@ -1924,6 +2017,18 @@ object CliCommand {
 
   // DLC
   case object GetDLCHostAddress extends AppServerCliCommand
+
+  case class DecodeContractInfo(contractInfo: ContractInfoV0TLV)
+      extends AppServerCliCommand
+
+  case class DecodeOffer(offer: LnMessage[DLCOfferTLV])
+      extends AppServerCliCommand
+
+  case class DecodeAnnouncement(announcement: OracleAnnouncementV0TLV)
+      extends AppServerCliCommand
+
+  case class DecodeAttestments(sigs: OracleAttestmentV0TLV)
+      extends AppServerCliCommand
 
   case class CreateDLCOffer(
       contractInfo: ContractInfoV0TLV,

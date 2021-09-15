@@ -108,7 +108,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- wallet.getConfirmedBalance()
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-      _ <- AsyncUtil.awaitConditionF(condition1)
+      _ <- AsyncUtil.awaitConditionF(condition1, maxTries = 100) //10 seconds
       // receive
       address <- wallet.getNewAddress()
       txId <- bitcoind.sendToAddress(address, TestAmount)

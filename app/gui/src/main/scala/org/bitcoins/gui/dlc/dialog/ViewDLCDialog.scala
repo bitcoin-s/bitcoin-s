@@ -157,8 +157,7 @@ object ViewDLCDialog {
           },
           new Button("Rebroadcast") {
             minWidth = 90
-            disable =
-              !(status.state == DLCState.Broadcasted || status.state == DLCState.Signed)
+            disable = !(status.state == DLCState.Broadcasted)
             onAction = _ => model.rebroadcastFundingTx(status)
           }
         )

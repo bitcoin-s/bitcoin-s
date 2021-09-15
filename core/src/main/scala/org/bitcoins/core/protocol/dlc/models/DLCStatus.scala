@@ -13,12 +13,15 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
+import java.time.Instant
+
 sealed trait DLCStatus {
 
   /** The flipped sha256 hash of oracleInfo ++ contractInfo ++ timeoutes */
   def dlcId: Sha256Digest
   def isInitiator: Boolean
   def state: DLCState
+  def lastUpdated: Instant
   def tempContractId: Sha256Digest
   def contractInfo: ContractInfo
   def oracleInfo: OracleInfo = contractInfo.oracleInfo
@@ -35,11 +38,11 @@ sealed trait AcceptedDLCStatus extends DLCStatus {
   def contractId: ByteVector
 }
 
-sealed trait BroadcastedDLCStatus extends AcceptedDLCStatus {
+sealed trait SignedDLCStatus extends AcceptedDLCStatus {
   def fundingTxId: DoubleSha256DigestBE
 }
 
-sealed trait ClosedDLCStatus extends BroadcastedDLCStatus {
+sealed trait ClosedDLCStatus extends SignedDLCStatus {
   def closingTxId: DoubleSha256DigestBE
   def myPayout: CurrencyUnit
   def counterPartyPayout: CurrencyUnit
@@ -69,6 +72,7 @@ object DLCStatus {
   case class Offered(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
@@ -82,6 +86,7 @@ object DLCStatus {
   case class Accepted(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
@@ -96,20 +101,23 @@ object DLCStatus {
   case class Signed(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
       timeouts: DLCTimeouts,
       feeRate: FeeUnit,
       totalCollateral: CurrencyUnit,
-      localCollateral: CurrencyUnit)
-      extends AcceptedDLCStatus {
+      localCollateral: CurrencyUnit,
+      fundingTxId: DoubleSha256DigestBE)
+      extends SignedDLCStatus {
     override val state: DLCState.Signed.type = DLCState.Signed
   }
 
   case class Broadcasted(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
@@ -118,13 +126,14 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE)
-      extends BroadcastedDLCStatus {
+      extends SignedDLCStatus {
     override val state: DLCState.Broadcasted.type = DLCState.Broadcasted
   }
 
   case class Confirmed(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
@@ -133,13 +142,14 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE)
-      extends BroadcastedDLCStatus {
+      extends SignedDLCStatus {
     override val state: DLCState.Confirmed.type = DLCState.Confirmed
   }
 
   case class Claimed(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
@@ -160,6 +170,7 @@ object DLCStatus {
   case class RemoteClaimed(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
@@ -181,6 +192,7 @@ object DLCStatus {
   case class Refunded(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
+      lastUpdated: Instant,
       tempContractId: Sha256Digest,
       contractId: ByteVector,
       contractInfo: ContractInfo,
@@ -207,7 +219,7 @@ object DLCStatus {
 
   def getFundingTxId(status: DLCStatus): Option[DoubleSha256DigestBE] = {
     status match {
-      case status: BroadcastedDLCStatus =>
+      case status: SignedDLCStatus =>
         Some(status.fundingTxId)
       case _: Offered | _: Accepted | _: Signed =>
         None
@@ -228,8 +240,7 @@ object DLCStatus {
     status match {
       case claimed: ClaimedDLCStatus =>
         Some(claimed.oracleSigs)
-      case _: Offered | _: Accepted | _: Signed | _: BroadcastedDLCStatus |
-          _: Refunded =>
+      case _: Offered | _: Accepted | _: SignedDLCStatus | _: Refunded =>
         None
     }
   }

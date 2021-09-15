@@ -219,7 +219,9 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
                                      announcements,
                                      announcementData,
                                      nonceDbs)
-    } yield (dlcDb, contractData, dlcOffer, fundingInputs, contractInfo)
+
+      sortedInputs = fundingInputs.sortBy(_.index)
+    } yield (dlcDb, contractData, dlcOffer, sortedInputs, contractInfo)
   }
 
   private[wallet] def getDLCFundingData(dlcId: Sha256Digest): Future[
@@ -421,7 +423,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
   private[wallet] def matchPrevTxsWithInputs(
       inputs: Vector[DLCFundingInputDb],
       prevTxs: Vector[TransactionDb]): Vector[DLCFundingInput] = {
-    inputs.map { i =>
+    inputs.sortBy(_.index).map { i =>
       prevTxs.find(_.txId == i.outPoint.txId) match {
         case Some(txDb) => i.toFundingInput(txDb.transaction)
         case None =>

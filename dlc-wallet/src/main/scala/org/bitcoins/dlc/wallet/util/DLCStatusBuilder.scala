@@ -7,9 +7,8 @@ import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.SchnorrDigitalSignature
-import org.bitcoins.dlc.wallet.accounting.AccountingUtil
+import org.bitcoins.dlc.wallet.accounting.{AccountingUtil, DLCAccountingDbs}
 import org.bitcoins.dlc.wallet.models._
-import org.bitcoins.dlc.wallet.accounting.DLCAccountingDbs
 
 object DLCStatusBuilder {
 
@@ -38,6 +37,7 @@ object DLCStatusBuilder {
         Offered(
           dlcId,
           dlcDb.isInitiator,
+          dlcDb.lastUpdated,
           dlcDb.tempContractId,
           contractInfo,
           contractData.dlcTimeouts,
@@ -49,6 +49,7 @@ object DLCStatusBuilder {
         Accepted(
           dlcId,
           dlcDb.isInitiator,
+          dlcDb.lastUpdated,
           dlcDb.tempContractId,
           dlcDb.contractIdOpt.get,
           contractInfo,
@@ -61,18 +62,21 @@ object DLCStatusBuilder {
         Signed(
           dlcId,
           dlcDb.isInitiator,
+          dlcDb.lastUpdated,
           dlcDb.tempContractId,
           dlcDb.contractIdOpt.get,
           contractInfo,
           contractData.dlcTimeouts,
           dlcDb.feeRate,
           totalCollateral,
-          localCollateral
+          localCollateral,
+          dlcDb.fundingTxIdOpt.get
         )
       case DLCState.Broadcasted =>
         Broadcasted(
           dlcId,
           dlcDb.isInitiator,
+          dlcDb.lastUpdated,
           dlcDb.tempContractId,
           dlcDb.contractIdOpt.get,
           contractInfo,
@@ -86,6 +90,7 @@ object DLCStatusBuilder {
         Confirmed(
           dlcId,
           dlcDb.isInitiator,
+          dlcDb.lastUpdated,
           dlcDb.tempContractId,
           dlcDb.contractIdOpt.get,
           contractInfo,
@@ -133,6 +138,7 @@ object DLCStatusBuilder {
         val refund = Refunded(
           dlcId,
           dlcDb.isInitiator,
+          dlcDb.lastUpdated,
           dlcDb.tempContractId,
           dlcDb.contractIdOpt.get,
           contractInfo,
@@ -157,6 +163,7 @@ object DLCStatusBuilder {
             Claimed(
               dlcId,
               dlcDb.isInitiator,
+              dlcDb.lastUpdated,
               dlcDb.tempContractId,
               dlcDb.contractIdOpt.get,
               contractInfo,
@@ -175,6 +182,7 @@ object DLCStatusBuilder {
             RemoteClaimed(
               dlcId,
               dlcDb.isInitiator,
+              dlcDb.lastUpdated,
               dlcDb.tempContractId,
               dlcDb.contractIdOpt.get,
               contractInfo,

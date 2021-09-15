@@ -104,7 +104,7 @@ object CoinSelector extends CoinSelector {
       case None =>
         utxo.scriptWitnessOpt match {
           case Some(script) => script.bytes.length
-          case None         => 25 // PUBKEYHASH
+          case None         => 107 // PUBKEYHASH
         }
     }
 

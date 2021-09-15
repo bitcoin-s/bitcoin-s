@@ -38,7 +38,7 @@ class PeerMessageReceiver(
 
     state match {
       case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
-          _: Disconnected) =>
+          _: InitializedDisconnectDone | _: Disconnected) =>
         throw new RuntimeException(s"Cannot call connect when in state=${bad}")
       case Preconnection =>
         logger.debug(s"Connection established with peer=${peer}")
@@ -61,7 +61,8 @@ class PeerMessageReceiver(
     */
   private[networking] def initializeDisconnect(): PeerMessageReceiver = {
     state match {
-      case bad @ (_: Disconnected | Preconnection) =>
+      case bad @ (_: Disconnected | _: InitializedDisconnectDone |
+          Preconnection) =>
         throw new RuntimeException(
           s"Cannot initialize disconnect from peer=$peer when in state=$bad")
       case _: InitializedDisconnect =>
@@ -80,10 +81,20 @@ class PeerMessageReceiver(
   protected[networking] def disconnect(): PeerMessageReceiver = {
     logger.trace(s"Disconnecting with internalstate=${state}")
     state match {
-      case bad @ (_: Disconnected | Preconnection) =>
+      case bad @ (_: Disconnected | Preconnection |
+          _: InitializedDisconnectDone) =>
         throw new RuntimeException(
           s"Cannot disconnect from peer=${peer} when in state=${bad}")
-      case good @ (_: Initializing | _: Normal | _: InitializedDisconnect) =>
+      case good: InitializedDisconnect =>
+        val newState = InitializedDisconnectDone(
+          clientConnectP = good.clientConnectP,
+          clientDisconnectP = good.clientDisconnectP.success(()),
+          versionMsgP = good.versionMsgP,
+          verackMsgP = good.verackMsgP)
+        val newNode =
+          node.updateDataMessageHandler(node.getDataMessageHandler.reset)
+        new PeerMessageReceiver(newNode, newState, peer)
+      case good @ (_: Initializing | _: Normal) =>
         logger.debug(s"Disconnected bitcoin peer=${peer}")
         val newState = Disconnected(
           clientConnectP = good.clientConnectP,

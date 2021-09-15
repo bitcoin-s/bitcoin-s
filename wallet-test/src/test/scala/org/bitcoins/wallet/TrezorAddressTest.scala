@@ -232,7 +232,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   private def testAccountType(purpose: HDPurpose): Future[Assertion] = {
     val confOverride = configForPurpose(purpose)
     implicit val conf: WalletAppConfig =
-      BitcoinSTestAppConfig.getSpvTestConfig(confOverride)
+      BitcoinSTestAppConfig.getSpvTestConfig(confOverride).walletConf
 
     val testVectors = purpose match {
       case HDPurposes.Legacy       => legacyVectors

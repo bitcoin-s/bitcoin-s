@@ -5,6 +5,7 @@ import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models.{DLCState, DLCStatus}
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator, TLVGen}
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
@@ -24,6 +25,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         val status =
           DLCStatus.Offered(Sha256Digest.empty,
                             isInit,
+                            TimeUtil.now,
                             offer.tempContractId,
                             offer.contractInfo,
                             offer.timeouts,
@@ -51,6 +53,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           DLCStatus.Accepted(
             Sha256Digest.empty,
             isInit,
+            TimeUtil.now,
             offer.tempContractId,
             contractId,
             offer.contractInfo,
@@ -70,8 +73,9 @@ class DLCStatusTest extends BitcoinSJvmTest {
   it must "have json symmetry in DLCStatus.Signed" in {
     forAllParallel(NumberGenerator.bool,
                    TLVGen.dlcOfferTLV,
-                   NumberGenerator.bytevector) {
-      case (isInit, offerTLV, contractId) =>
+                   NumberGenerator.bytevector,
+                   CryptoGenerators.doubleSha256DigestBE) {
+      case (isInit, offerTLV, contractId, txId) =>
         val offer = DLCOffer.fromTLV(offerTLV)
 
         val totalCollateral = offer.contractInfo.max
@@ -80,13 +84,15 @@ class DLCStatusTest extends BitcoinSJvmTest {
           DLCStatus.Signed(
             Sha256Digest.empty,
             isInit,
+            TimeUtil.now,
             offer.tempContractId,
             contractId,
             offer.contractInfo,
             offer.timeouts,
             offer.feeRate,
             totalCollateral,
-            offer.totalCollateral
+            offer.totalCollateral,
+            txId
           )
 
         assert(status.state == DLCState.Signed)
@@ -110,6 +116,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           DLCStatus.Broadcasted(
             Sha256Digest.empty,
             isInit,
+            TimeUtil.now,
             offer.tempContractId,
             contractId,
             offer.contractInfo,
@@ -141,6 +148,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           DLCStatus.Confirmed(
             Sha256Digest.empty,
             isInit,
+            TimeUtil.now,
             offer.tempContractId,
             contractId,
             offer.contractInfo,
@@ -183,6 +191,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         DLCStatus.Claimed(
           Sha256Digest.empty,
           isInit,
+          TimeUtil.now,
           offer.tempContractId,
           contractId,
           offer.contractInfo,
@@ -233,6 +242,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         DLCStatus.RemoteClaimed(
           Sha256Digest.empty,
           isInit,
+          TimeUtil.now,
           offer.tempContractId,
           contractId,
           offer.contractInfo,
@@ -279,6 +289,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         DLCStatus.Refunded(
           Sha256Digest.empty,
           isInit,
+          TimeUtil.now,
           offer.tempContractId,
           contractId,
           offer.contractInfo,
