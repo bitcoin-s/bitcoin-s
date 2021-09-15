@@ -1,10 +1,10 @@
 package org.bitcoins.core.hd
 
 import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.crypto.{ExtKeyVersion, _}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
-import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
+import org.bitcoins.crypto._
 import org.bitcoins.testkitcore.gen.{HDGenerators, NumberGenerator}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._
@@ -107,6 +107,8 @@ class HDPathTest extends BitcoinSUnitTest {
           assert(value == path.asInstanceOf[SegWitHDPath])
         case value: NestedSegWitHDPath =>
           assert(value == path.asInstanceOf[NestedSegWitHDPath])
+        case value: TaprootHDPath =>
+          assert(value == path.asInstanceOf[TaprootHDPath])
       }
       resultOpt.getOrElse(
         fail(s"$path did not have toString/fromString symmetry"))
@@ -445,6 +447,128 @@ class HDPathTest extends BitcoinSUnitTest {
       assert(expectedAddress == address)
     }
 
+  }
+
+  // https://github.com/bitcoin/bips/blob/master/bip-0086.mediawiki#test-vectors
+  it must "correctly parse the example from BIP86" in {
+    val words = Vector("abandon",
+                       "abandon",
+                       "abandon",
+                       "abandon",
+                       "abandon",
+                       "abandon",
+                       "abandon",
+                       "abandon",
+                       "abandon",
+                       "abandon",
+                       "abandon",
+                       "about")
+    val mnemonic = MnemonicCode.fromWords(words)
+    val seed = BIP39Seed.fromMnemonic(mnemonic)
+    val xpriv = seed.toExtPrivateKey(ExtKeyVersion.LegacyMainNetPriv)
+    val xpub = xpriv.extPublicKey
+
+    val expectedXpriv = ExtPrivateKey.fromString(
+      "xprv9s21ZrQH143K3GJpoapnV8SFfukcVBSfeCficPSGfubmSFDxo1kuHnLisriDvSnRRuL2Qrg5ggqHKNVpxR86QEC8w35uxmGoggxtQTPvfUu")
+    val expectedXpub = ExtPublicKey.fromString(
+      "xpub661MyMwAqRbcFkPHucMnrGNzDwb6teAX1RbKQmqtEF8kK3Z7LZ59qafCjB9eCRLiTVG3uxBxgKvRgbubRhqSKXnGGb1aoaqLrpMBDrVxga8")
+
+    assert(xpriv == expectedXpriv)
+    assert(xpub == expectedXpub)
+
+    {
+      val path = BIP32Path.fromString("m/86'/0'/0'")
+      val derivedXpriv = xpriv.deriveChildPrivKey(path)
+      val derivedXpub = xpriv.deriveChildPubKey(path)
+      val expectedXpriv = ExtPrivateKey.fromString(
+        "xprv9xgqHN7yz9MwCkxsBPN5qetuNdQSUttZNKw1dcYTV4mkaAFiBVGQziHs3NRSWMkCzvgjEe3n9xV8oYywvM8at9yRqyaZVz6TYYhX98VjsUk")
+      val expectedXpub = ExtPublicKey.fromString(
+        "xpub6BgBgsespWvERF3LHQu6CnqdvfEvtMcQjYrcRzx53QJjSxarj2afYWcLteoGVky7D3UKDP9QyrLprQ3VCECoY49yfdDEHGCtMMj92pReUsQ")
+
+      assert(derivedXpriv == expectedXpriv)
+      assert(derivedXpub.get == expectedXpub)
+    }
+
+    {
+      val firstAddrPath = TaprootHDPath.fromString("m/86'/0'/0'/0/0")
+      val derivedXpriv = xpriv.deriveChildPrivKey(firstAddrPath)
+      val derivedXpub = xpriv.deriveChildPubKey(firstAddrPath)
+
+      val expectedXpriv = ExtPrivateKey.fromString(
+        "xprvA449goEeU9okwCzzZaxiy475EQGQzBkc65su82nXEvcwzfSskb2hAt2WymrjyRL6kpbVTGL3cKtp9herYXSjjQ1j4stsXXiRF7kXkCacK3T")
+      val expectedXpub = ExtPublicKey.fromString(
+        "xpub6H3W6JmYJXN49h5TfcVjLC3onS6uPeUTTJoVvRC8oG9vsTn2J8LwigLzq5tHbrwAzH9DGo6ThGUdWsqce8dGfwHVBxSbixjDADGGdzF7t2B")
+
+      val derivedPriv = derivedXpriv.key
+      val internalKey = derivedPriv.publicKey
+      // todo Taproot spk & output key
+//      val spk = P2WPKHWitnessSPKV0(derivedPub)
+//      val address = Bech32Address(spk, MainNet)
+
+      val expectedInternalKey = SchnorrPublicKey(
+        hex"cc8a4bc64d897bddc5fbc2f670f7a8ba0b386779106cf1223c6fc5d7cd6fc115")
+//      val expectedAddress =
+//        Bech32Address.fromString("bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu")
+
+      assert(derivedXpriv == expectedXpriv)
+      assert(derivedXpub.get == expectedXpub)
+      assert(expectedInternalKey == internalKey.schnorrPublicKey)
+//      assert(expectedAddress == address)
+    }
+
+    {
+      val firstAddrPath = TaprootHDPath.fromString("m/86'/0'/0'/0/1")
+      val derivedXpriv = xpriv.deriveChildPrivKey(firstAddrPath)
+      val derivedXpub = xpriv.deriveChildPubKey(firstAddrPath)
+
+      val expectedXpriv = ExtPrivateKey.fromString(
+        "xprvA449goEeU9okyiF1LmKiDaTgeXvmh87DVyRd35VPbsSop8n8uALpbtrUhUXByPFKK7C2yuqrB1FrhiDkEMC4RGmA5KTwsE1aB5jRu9zHsuQ")
+      val expectedXpub = ExtPublicKey.fromString(
+        "xpub6H3W6JmYJXN4CCKUSnriaiQRCZmG6aq4sCMDqTu1ACyngw7HShf59hAxYjXgKDuuHThVEUzdHrc3aXCr9kfvQvZPit5dnD3K9xVRBzjK3rX")
+
+      val derivedPriv = derivedXpriv.key
+      val internalKey = derivedPriv.publicKey
+      // todo Taproot spk & output key
+//       val spk = P2WPKHWitnessSPKV0(derivedPub)
+//       val address = Bech32Address(spk, MainNet)
+
+      val expectedInternalKey = SchnorrPublicKey(
+        hex"83dfe85a3151d2517290da461fe2815591ef69f2b18a2ce63f01697a8b313145")
+      //      val expectedAddress =
+      //        Bech32Address.fromString("bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu")
+
+      assert(derivedXpriv == expectedXpriv)
+      assert(derivedXpub.get == expectedXpub)
+      assert(expectedInternalKey == internalKey.schnorrPublicKey)
+      //      assert(expectedAddress == address)
+    }
+
+    {
+      val firstAddrPath = TaprootHDPath.fromString("m/86'/0'/0'/1/0")
+      val derivedXpriv = xpriv.deriveChildPrivKey(firstAddrPath)
+      val derivedXpub = xpriv.deriveChildPubKey(firstAddrPath)
+
+      val expectedXpriv = ExtPrivateKey.fromString(
+        "xprvA3Ln3Gt3aphvUgzgEDT8vE2cYqb4PjFfpmbiFKphxLg1FjXQpkAk5M1ZKDY15bmCAHA35jTiawbFuwGtbDZogKF1WfjwxML4gK7WfYW5JRP")
+      val expectedXpub = ExtPublicKey.fromString(
+        "xpub6GL8SnQwRCGDhB59LEz9HMyM6sRYoByXBzXK3iEKWgCz8XrZNHUzd9L3AUBELW5NzA7dEFvMas1F84TuPH3xqdUA5tumaGWFgihJzWytXe3")
+
+      val derivedPriv = derivedXpriv.key
+      val internalKey = derivedPriv.publicKey
+      // todo Taproot spk & output key
+//      val spk = P2WPKHWitnessSPKV0(derivedPub)
+//      val address = Bech32Address(spk, MainNet)
+
+      val expectedInternalKey = SchnorrPublicKey(
+        hex"399f1b2f4393f29a18c937859c5dd8a77350103157eb880f02e8c08214277cef")
+      //      val expectedAddress =
+      //        Bech32Address.fromString("bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu")
+
+      assert(derivedXpriv == expectedXpriv)
+      assert(derivedXpub.get == expectedXpub)
+      assert(expectedInternalKey == internalKey.schnorrPublicKey)
+      //      assert(expectedAddress == address)
+    }
   }
 
   // to reproduce the data used in this test:

@@ -14,9 +14,11 @@ object HDUtil {
     import org.bitcoins.core.hd.HDPurposes._
 
     (hdPurpose, network) match {
-      case (SegWit, MainNet)                     => SegWitMainNetPriv
-      case (SegWit, TestNet3 | RegTest | SigNet) => SegWitTestNet3Priv
-      case (NestedSegWit, MainNet)               => NestedSegWitMainNetPriv
+      case (Taproot, MainNet | SigNet)            => LegacyMainNetPriv
+      case (Taproot, TestNet3 | RegTest | SigNet) => LegacyTestNet3Priv
+      case (SegWit, MainNet)                      => SegWitMainNetPriv
+      case (SegWit, TestNet3 | RegTest | SigNet)  => SegWitTestNet3Priv
+      case (NestedSegWit, MainNet)                => NestedSegWitMainNetPriv
       case (NestedSegWit, TestNet3 | RegTest | SigNet) =>
         NestedSegWitTestNet3Priv
       case (Multisig, MainNet) => LegacyMainNetPriv
@@ -39,9 +41,11 @@ object HDUtil {
     import org.bitcoins.core.hd.HDPurposes._
 
     (hdPurpose, network) match {
-      case (SegWit, MainNet | SigNet)            => SegWitMainNetPub
-      case (SegWit, TestNet3 | RegTest | SigNet) => SegWitTestNet3Pub
-      case (NestedSegWit, MainNet)               => NestedSegWitMainNetPub
+      case (Taproot, MainNet | SigNet)            => LegacyMainNetPub
+      case (Taproot, TestNet3 | RegTest | SigNet) => LegacyTestNet3Pub
+      case (SegWit, MainNet | SigNet)             => SegWitMainNetPub
+      case (SegWit, TestNet3 | RegTest | SigNet)  => SegWitTestNet3Pub
+      case (NestedSegWit, MainNet)                => NestedSegWitMainNetPub
       case (NestedSegWit, TestNet3 | RegTest | SigNet) =>
         NestedSegWitTestNet3Pub
       case (Multisig, MainNet) => LegacyMainNetPub
