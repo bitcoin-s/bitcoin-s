@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.oracle.config
 
+import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.DLCOracleAppConfigFixture
@@ -10,14 +11,15 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
 
   behavior of "DLCOracleAppConfig"
 
-  it must "initialize the same oracle twice" in {
+  it must "start the same oracle twice" in {
     dlcOracleAppConfig: DLCOracleAppConfig =>
-      val dlcOracle1F = dlcOracleAppConfig.initialize()
-      val dlcOracle2F = dlcOracleAppConfig.initialize()
-
+      val started1F = dlcOracleAppConfig.start()
+      val started2F = dlcOracleAppConfig.start()
       for {
-        dlcOracle1 <- dlcOracle1F
-        dlcOracle2 <- dlcOracle2F
+        _ <- started1F
+        _ <- started2F
+        dlcOracle1 = new DLCOracle()(dlcOracleAppConfig)
+        dlcOracle2 = new DLCOracle()(dlcOracleAppConfig)
       } yield {
         assert(dlcOracle1.publicKey == dlcOracle2.publicKey)
       }
@@ -26,12 +28,17 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
   it must "initialize the oracle, move the seed somewhere else, and then start the oracle again and get the same pubkeys" in {
     dlcOracleAppConfig: DLCOracleAppConfig =>
       val seedFile = dlcOracleAppConfig.seedPath
-      val dlcOracle1F = dlcOracleAppConfig.initialize()
-      val pubKeyBeforeMoveF = dlcOracle1F.map(_.publicKey)
+      val startedF = dlcOracleAppConfig.start()
+      val pubKeyBeforeMoveF = for {
+        _ <- startedF
+        dlcOracle = new DLCOracle()(dlcOracleAppConfig)
+      } yield {
+        dlcOracle.publicKey
+      }
 
       //stop old oracle
       val stoppedF = for {
-        _ <- dlcOracle1F
+        _ <- startedF
         _ <- dlcOracleAppConfig.stop()
       } yield ()
 
@@ -43,13 +50,21 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
 
       //create seed directory
       Files.createDirectories(newSeedPath.getParent)
-      //copy seed file to new directory
-      Files.copy(seedFile, newSeedPath)
+      val copyF = startedF.map { _ =>
+        //copy seed file to new directory
+        Files.copy(seedFile, newSeedPath)
+      }
 
       //start the new app config from the new datadir
-      val dlcOracle2F = DLCOracleAppConfig
+      val appConfig = DLCOracleAppConfig
         .fromDatadir(newDatadir)
-        .initialize()
+
+      val started2F = for {
+        _ <- copyF
+        _ <- appConfig.start()
+      } yield ()
+
+      val dlcOracle2F = started2F.map(_ => new DLCOracle()(appConfig))
 
       for {
         _ <- stoppedF

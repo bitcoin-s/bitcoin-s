@@ -46,7 +46,16 @@ case class KeyManagerAppConfig(
     seedFolder.resolve(s"$prefix${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
   }
 
+  /** Entropy provided by the a user in their bitcoin-s.conf
+    * configuration file. This should be used to seed the keymanager
+    * rather than randomly generating entropy.
+    */
+  private lazy val externalEntropy: Option[String] = {
+    config.getStringOrNone("bitcoin-s.keymanager.entropy")
+  }
+
   override def start(): Future[Unit] = {
+    val _ = externalEntropy
     val oldDefaultFile =
       baseDatadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
 

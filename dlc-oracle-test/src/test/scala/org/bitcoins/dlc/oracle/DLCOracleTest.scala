@@ -109,7 +109,8 @@ class DLCOracleTest extends DLCOracleFixture {
         Vector(ConfigFactory.parseString("bitcoin-s.network = mainnet"),
                ConfigFactory.parseString("bitcoin-s.oracle.db.name = oracle1")))
 
-      newConf.initialize().flatMap { oracleB =>
+      newConf.start().flatMap { _ =>
+        val oracleB = new DLCOracle()(newConf)
         assert(oracleA.publicKey == oracleB.publicKey)
 
         val eventName = "test"

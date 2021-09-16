@@ -2,6 +2,7 @@ package org.bitcoins.oracle.server
 
 import akka.actor.ActorSystem
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
+import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
@@ -22,8 +23,7 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     for {
       _ <- conf.start()
-      oracle <- conf.initialize()
-
+      oracle = new DLCOracle()
       routes = Seq(OracleRoutes(oracle))
       server = serverArgParser.rpcPortOpt match {
         case Some(rpcport) =>
