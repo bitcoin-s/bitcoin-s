@@ -52,7 +52,7 @@ abstract class Wallet
     with WalletLogger {
 
   override def keyManager: BIP39KeyManager = {
-    walletConfig.kmConf.toBip39KeyManager(walletConfig.kmParams.purpose)
+    walletConfig.kmConf.toBip39KeyManager
   }
 
   implicit val ec: ExecutionContext

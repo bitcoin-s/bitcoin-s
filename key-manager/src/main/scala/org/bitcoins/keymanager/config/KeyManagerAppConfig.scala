@@ -49,12 +49,26 @@ case class KeyManagerAppConfig(
     seedFolder.resolve(s"$prefix${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
   }
 
+  private lazy val defaultAccountKind: HDPurpose =
+    config.getString("bitcoin-s.wallet.defaultAccountType") match {
+      case "legacy"        => HDPurposes.Legacy
+      case "segwit"        => HDPurposes.SegWit
+      case "nested-segwit" => HDPurposes.NestedSegWit
+      // todo: validate this pre-app startup
+      case other: String =>
+        throw new RuntimeException(s"$other is not a valid account type!")
+    }
+
   /** Entropy provided by the a user in their bitcoin-s.conf
     * configuration file. This should be used to seed the keymanager
     * rather than randomly generating entropy.
     */
   private lazy val externalEntropy: Option[String] = {
     config.getStringOrNone("bitcoin-s.keymanager.entropy")
+  }
+
+  private val kmParams: KeyManagerParams = {
+    KeyManagerParams(seedPath, defaultAccountKind, network)
   }
 
   override def start(): Future[Unit] = {
@@ -78,7 +92,7 @@ case class KeyManagerAppConfig(
       logger.info(
         s"Initializing new mnemonic seed at path=${seedPath.toAbsolutePath}")
       //need to initialize the key manager
-      val kmParams = KeyManagerParams(seedPath, HDPurposes.SegWit, network)
+
       val initE = BIP39KeyManager.initialize(aesPasswordOpt,
                                              kmParams = kmParams,
                                              bip39PasswordOpt)
@@ -93,10 +107,9 @@ case class KeyManagerAppConfig(
       }
     } else {
       logger.info(
-        s"Starting keymanager with seedPath${seedPath.toAbsolutePath}")
+        s"Starting keymanager with seedPath=${seedPath.toAbsolutePath}")
       Future.unit
     }
-
   }
 
   override def stop(): Future[Unit] = Future.unit
@@ -118,8 +131,7 @@ case class KeyManagerAppConfig(
   /** Creates a [[BIP39KeyManager]] from the seed referenced by this [[KeyManagerAppConfig]]
     * with the given wallet purpose
     */
-  def toBip39KeyManager(purpose: HDPurpose): BIP39KeyManager = {
-    val kmParams = KeyManagerParams(seedPath, purpose, network)
+  def toBip39KeyManager: BIP39KeyManager = {
     val kmE: Either[ReadMnemonicError, BIP39KeyManager] =
       BIP39KeyManager.fromParams(kmParams = kmParams,
                                  passwordOpt = aesPasswordOpt,
