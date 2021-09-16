@@ -6,10 +6,8 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.keymanagement.KeyManagerInitializeError
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
-import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
@@ -114,42 +112,17 @@ object DLCAppConfig extends AppConfigFactory[DLCAppConfig] with WalletLogger {
       walletConf: WalletAppConfig,
       dlcConf: DLCAppConfig,
       ec: ExecutionContext): Future[DLCWallet] = {
-    val aesPasswordOpt = walletConf.aesPasswordOpt
     val bip39PasswordOpt = walletConf.bip39PasswordOpt
     walletConf.hasWallet().flatMap { walletExists =>
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
-        // TODO change me when we implement proper password handling
-        BIP39LockedKeyManager.unlock(aesPasswordOpt,
-                                     bip39PasswordOpt,
-                                     walletConf.kmParams) match {
-          case Right(km) =>
-            val wallet =
-              DLCWallet(km, nodeApi, chainQueryApi, feeRateApi, km.creationTime)
-            Future.successful(wallet)
-          case Left(err) =>
-            sys.error(s"Error initializing key manager, err=${err}")
-        }
+        val wallet =
+          DLCWallet(nodeApi, chainQueryApi, feeRateApi)
+        Future.successful(wallet)
       } else {
-        logger.info(s"Initializing key manager")
-        val keyManagerE: Either[KeyManagerInitializeError, BIP39KeyManager] =
-          BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
-                                     kmParams = walletConf.kmParams,
-                                     bip39PasswordOpt = bip39PasswordOpt)
-
-        val keyManager = keyManagerE match {
-          case Right(keyManager) => keyManager
-          case Left(err) =>
-            sys.error(s"Error initializing key manager, err=${err}")
-        }
-
         logger.info(s"Creating new wallet")
         val unInitializedWallet =
-          DLCWallet(keyManager,
-                    nodeApi,
-                    chainQueryApi,
-                    feeRateApi,
-                    keyManager.creationTime)
+          DLCWallet(nodeApi, chainQueryApi, feeRateApi)
 
         Wallet
           .initialize(wallet = unInitializedWallet,

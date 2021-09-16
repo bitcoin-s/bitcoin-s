@@ -27,14 +27,11 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil}
 import org.bitcoins.core.wallet.builder._
 import org.bitcoins.core.wallet.fee._
-import org.bitcoins.core.wallet.keymanagement.{
-  KeyManagerParams,
-  KeyManagerUnlockError
-}
+import org.bitcoins.core.wallet.keymanagement.{KeyManagerParams}
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
-import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
+import org.bitcoins.keymanager.bip39.{BIP39KeyManager}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._
@@ -54,7 +51,9 @@ abstract class Wallet
     with RescanHandling
     with WalletLogger {
 
-  override def keyManager: BIP39KeyManager
+  override def keyManager: BIP39KeyManager = {
+    walletConfig.kmConf.toBip39KeyManager(walletConfig.kmParams.purpose)
+  }
 
   implicit val ec: ExecutionContext
 
@@ -227,29 +226,6 @@ abstract class Wallet
       } else {
         Vector.empty
       }
-    }
-  }
-
-  def unlock(
-      passphraseOpt: Option[AesPassword],
-      bip39PasswordOpt: Option[String]): Either[
-    KeyManagerUnlockError,
-    Wallet] = {
-    val kmParams = walletConfig.kmParams
-
-    val unlockedKeyManagerE =
-      BIP39LockedKeyManager.unlock(passphraseOpt = passphraseOpt,
-                                   bip39PasswordOpt = bip39PasswordOpt,
-                                   kmParams = kmParams)
-    unlockedKeyManagerE match {
-      case Right(km) =>
-        val w = Wallet(keyManager = km,
-                       nodeApi = nodeApi,
-                       chainQueryApi = chainQueryApi,
-                       feeRateApi = feeRateApi,
-                       creationTime = km.creationTime)
-        Right(w)
-      case Left(err) => Left(err)
     }
   }
 
@@ -962,25 +938,21 @@ abstract class Wallet
 object Wallet extends WalletLogger {
 
   private case class WalletImpl(
-      keyManager: BIP39KeyManager,
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi,
-      override val creationTime: Instant
+      feeRateApi: FeeRateApi
   )(implicit
       val walletConfig: WalletAppConfig,
       val ec: ExecutionContext
   ) extends Wallet
 
   def apply(
-      keyManager: BIP39KeyManager,
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi,
-      creationTime: Instant)(implicit
+      feeRateApi: FeeRateApi)(implicit
       config: WalletAppConfig,
       ec: ExecutionContext): Wallet = {
-    WalletImpl(keyManager, nodeApi, chainQueryApi, feeRateApi, creationTime)
+    WalletImpl(nodeApi, chainQueryApi, feeRateApi)
   }
 
   /** Creates the level 0 account for the given HD purpose, if the root account exists do nothing */

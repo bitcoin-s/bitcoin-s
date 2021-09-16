@@ -7,9 +7,7 @@ import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError
-import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError.MnemonicNotFound
-import org.bitcoins.crypto.{AesPassword, DoubleSha256DigestBE, ECPublicKey}
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPublicKey}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkitcore.util.TransactionTestUtil._
 import org.scalatest.FutureOutcome
@@ -124,21 +122,6 @@ class WalletUnitTest extends BitcoinSWalletTest {
       _ <- testChain(hdAccount = account.hdAccount, External)
       res <- testChain(hdAccount = account.hdAccount, Change)
     } yield res
-  }
-
-  it should "fail to unlock the wallet with a bad aes password" in {
-    wallet: Wallet =>
-      val badPassphrase = Some(AesPassword.fromNonEmptyString("bad"))
-
-      val errorType = wallet.unlock(badPassphrase, None) match {
-        case Right(_)  => fail("Unlocked wallet with bad password!")
-        case Left(err) => err
-      }
-      errorType match {
-        case KeyManagerUnlockError.MnemonicNotFound          => fail(MnemonicNotFound)
-        case KeyManagerUnlockError.BadPassword               => succeed
-        case KeyManagerUnlockError.JsonParsingError(message) => fail(message)
-      }
   }
 
   it should "match block filters" in { wallet: Wallet =>

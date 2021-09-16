@@ -1,16 +1,14 @@
 package org.bitcoins.wallet
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.util.{FutureUtil, TimeUtil}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.feeprovider.ConstantFeeRateProvider
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
@@ -26,6 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 
 class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
+  import org.bitcoins.commons.serializers.JsonSerializers._
 
   val mnemonic = MnemonicCode.fromWords(
     Vector(
@@ -146,27 +145,15 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   private def getWallet(config: WalletAppConfig)(implicit
       ec: ExecutionContext): Future[Wallet] = {
     val bip39PasswordOpt = None
-    val kmE = BIP39KeyManager.initializeWithEntropy(
-      aesPasswordOpt = config.aesPasswordOpt,
-      entropy = mnemonic.toEntropy,
-      bip39PasswordOpt = bip39PasswordOpt,
-      kmParams = config.kmParams)
-    kmE match {
-      case Left(err) =>
-        Future.failed(
-          new RuntimeException(s"Failed to initialize km with err=${err}"))
-      case Right(km) =>
-        val wallet =
-          Wallet(km,
-                 MockNodeApi,
-                 MockChainQueryApi,
-                 ConstantFeeRateProvider(SatoshisPerVirtualByte.one),
-                 TimeUtil.now)(config, ec)
-        val walletF =
-          Wallet.initialize(wallet = wallet,
-                            bip39PasswordOpt = bip39PasswordOpt)(config, ec)
-        walletF
-    }
+    val wallet =
+      Wallet(MockNodeApi,
+             MockChainQueryApi,
+             ConstantFeeRateProvider(SatoshisPerVirtualByte.one))(config, ec)
+    val walletF =
+      Wallet.initialize(wallet = wallet, bip39PasswordOpt = bip39PasswordOpt)(
+        config,
+        ec)
+    walletF
   }
 
   case class AccountAndAddrsAndVector(

@@ -29,12 +29,10 @@ import org.bitcoins.crypto._
 import org.bitcoins.dlc.wallet.internal._
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.dlc.wallet.util.DLCStatusBuilder
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
 
-import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 /** A [[Wallet]] with full DLC Functionality */
@@ -1504,11 +1502,9 @@ abstract class DLCWallet
 object DLCWallet extends WalletLogger {
 
   private case class DLCWalletImpl(
-      keyManager: BIP39KeyManager,
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi,
-      override val creationTime: Instant
+      feeRateApi: FeeRateApi
   )(implicit
       val walletConfig: WalletAppConfig,
       val dlcConfig: DLCAppConfig,
@@ -1516,14 +1512,12 @@ object DLCWallet extends WalletLogger {
   ) extends DLCWallet
 
   def apply(
-      keyManager: BIP39KeyManager,
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi,
-      creationTime: Instant)(implicit
+      feeRateApi: FeeRateApi)(implicit
       config: WalletAppConfig,
       dlcConfig: DLCAppConfig,
       ec: ExecutionContext): DLCWallet = {
-    DLCWalletImpl(keyManager, nodeApi, chainQueryApi, feeRateApi, creationTime)
+    DLCWalletImpl(nodeApi, chainQueryApi, feeRateApi)
   }
 }

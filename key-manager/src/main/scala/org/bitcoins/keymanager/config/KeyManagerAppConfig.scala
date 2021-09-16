@@ -3,8 +3,11 @@ package org.bitcoins.keymanager.config
 import com.typesafe.config.Config
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory, ConfigOps}
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.hd.{HDPurpose, HDPurposes}
+import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
-import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.keymanager.{ReadMnemonicError, WalletStorage}
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 
 import java.nio.file.{Files, Path}
 import scala.concurrent.{ExecutionContext, Future}
@@ -68,8 +71,32 @@ case class KeyManagerAppConfig(
       // Create directory
       Files.createDirectories(newDefaultFile.getParent)
       Files.copy(oldDefaultFile, newDefaultFile)
+      logger.info(
+        s"Migrated keymanager seed from=${oldDefaultFile.toAbsolutePath} to=${newDefaultFile.toAbsolutePath}")
+      Future.unit
+    } else if (!Files.exists(newDefaultFile)) {
+      logger.info(
+        s"Initializing new mnemonic seed at path=${seedPath.toAbsolutePath}")
+      //need to initialize the key manager
+      val kmParams = KeyManagerParams(seedPath, HDPurposes.SegWit, network)
+      val initE = BIP39KeyManager.initialize(aesPasswordOpt,
+                                             kmParams = kmParams,
+                                             bip39PasswordOpt)
+      initE match {
+        case Right(km) =>
+          logger.info(
+            s"Successfully initialize seed at path with root xpub=${km.getRootXPub}")
+          Future.unit
+        case Left(err) =>
+          Future.failed(new RuntimeException(
+            s"Failed to initialize mnemonic seed in keymanager with err=$err"))
+      }
+    } else {
+      logger.info(
+        s"Starting keymanager with seedPath${seedPath.toAbsolutePath}")
+      Future.unit
     }
-    Future.unit
+
   }
 
   override def stop(): Future[Unit] = Future.unit
@@ -86,6 +113,24 @@ case class KeyManagerAppConfig(
   /** Checks if our key manager as a mnemonic seed associated with it */
   def seedExists(): Boolean = {
     WalletStorage.seedExists(seedPath)
+  }
+
+  /** Creates a [[BIP39KeyManager]] from the seed referenced by this [[KeyManagerAppConfig]]
+    * with the given wallet purpose
+    */
+  def toBip39KeyManager(purpose: HDPurpose): BIP39KeyManager = {
+    val kmParams = KeyManagerParams(seedPath, purpose, network)
+    val kmE: Either[ReadMnemonicError, BIP39KeyManager] =
+      BIP39KeyManager.fromParams(kmParams = kmParams,
+                                 passwordOpt = aesPasswordOpt,
+                                 bip39PasswordOpt = bip39PasswordOpt)
+    kmE match {
+      case Left(err) =>
+        sys.error(
+          s"Could not create a BIP39KeyManager from the KeyManagerAppConfig, err=$err")
+      case Right(km) =>
+        km
+    }
   }
 }
 
