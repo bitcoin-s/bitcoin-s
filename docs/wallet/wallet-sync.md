@@ -115,12 +115,9 @@ val getBlockFunc = {hash: DoubleSha256DigestBE => bitcoind.getBlockRaw(hash) }
 //yay! We are now all setup. Using our 3 functions above and a wallet, we can now sync
 //a fresh wallet
 implicit val walletAppConfig = WalletAppConfig.fromDefaultDatadir()
-implicit val kmAppConfig = KeyManagerAppConfig.fromDefaultDatadir()
-val keyManager: BIP39KeyManager = {
-  BIP39KeyManager.fromParams(walletAppConfig.kmParams,None,None).right.get
-}
+
 val feeRateProvider: FeeRateApi = MempoolSpaceProvider.fromBlockTarget(6, proxyParams = None)
-val wallet = Wallet(keyManager, bitcoind, bitcoind, feeRateProvider, keyManager.creationTime)
+val wallet = Wallet(bitcoind, bitcoind, feeRateProvider)
 
 //yay! we have a synced wallet
 val syncedWalletF = WalletSync.syncFullBlocks(wallet,
