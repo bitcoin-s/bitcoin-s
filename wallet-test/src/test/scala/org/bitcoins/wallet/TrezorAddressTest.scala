@@ -144,16 +144,18 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
 
   private def getWallet(config: WalletAppConfig)(implicit
       ec: ExecutionContext): Future[Wallet] = {
+    import system.dispatcher
     val bip39PasswordOpt = None
-    val wallet =
-      Wallet(MockNodeApi,
-             MockChainQueryApi,
-             ConstantFeeRateProvider(SatoshisPerVirtualByte.one))(config, ec)
-    val walletF =
-      Wallet.initialize(wallet = wallet, bip39PasswordOpt = bip39PasswordOpt)(
-        config,
-        ec)
-    walletF
+    val startedF = config.start()
+    for {
+      _ <- startedF
+      wallet =
+        Wallet(MockNodeApi,
+               MockChainQueryApi,
+               ConstantFeeRateProvider(SatoshisPerVirtualByte.one))(config, ec)
+      init <- Wallet.initialize(wallet = wallet,
+                                bip39PasswordOpt = bip39PasswordOpt)(config, ec)
+    } yield init
   }
 
   case class AccountAndAddrsAndVector(

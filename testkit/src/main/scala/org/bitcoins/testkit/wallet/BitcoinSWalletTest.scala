@@ -346,15 +346,24 @@ object BitcoinSWalletTest extends WalletLogger {
         case Some(c) => config.withOverrides(c)
       }
 
+      val walletConfigWithBip39Pw = bip39PasswordOpt match {
+        case Some(pw) =>
+          val str = s"""bitcoin-s.keymanager.bip39password="$pw""""
+          val bip39Config = ConfigFactory.parseString(str)
+          walletConfig.withOverrides(bip39Config)
+        case None => walletConfig
+      }
+
       // we want to check we're not overwriting
       // any user data
       AppConfig.throwIfDefaultDatadir(walletConfig)
 
-      walletConfig.start().flatMap { _ =>
+      walletConfigWithBip39Pw.start().flatMap { _ =>
         val wallet =
-          Wallet(nodeApi, chainQueryApi, new RandomFeeProvider)(walletConfig,
-                                                                ec)
-        Wallet.initialize(wallet, bip39PasswordOpt)
+          Wallet(nodeApi, chainQueryApi, new RandomFeeProvider)(
+            walletConfigWithBip39Pw,
+            ec)
+        Wallet.initialize(wallet, bip39PasswordOpt)(walletConfigWithBip39Pw, ec)
       }
     }
   }

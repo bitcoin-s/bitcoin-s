@@ -114,7 +114,7 @@ sealed abstract class CryptoGenerators {
     * @see https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#From_mnemonic_to_seed
     */
   def bip39Password: Gen[String] = {
-    Gen.asciiStr
+    Gen.alphaNumStr
   }
 
   /** Generates a valid BIP39 seed from
