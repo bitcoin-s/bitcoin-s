@@ -66,7 +66,8 @@ case class KeyManagerAppConfig(
     * rather than randomly generating entropy.
     */
   private lazy val externalEntropy: Option[String] = {
-    config.getStringOrNone("bitcoin-s.keymanager.entropy")
+    val opt = config.getStringOrNone("bitcoin-s.keymanager.entropy")
+    opt
   }
 
   private val kmParams: KeyManagerParams = {
