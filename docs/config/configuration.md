@@ -265,6 +265,11 @@ bitcoin-s {
 
         # Password that your seed is encrypted with
         aesPassword = changeMe
+        
+        # At least 16 bytes of entropy encoded in hex
+        # This will be used as the seed for any
+        # project that is dependent on the keymanager
+        entropy = ""
     }
 
     # Bitcoin-S provides manny different fee providers
