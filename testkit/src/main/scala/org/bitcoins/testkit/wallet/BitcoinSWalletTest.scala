@@ -236,6 +236,17 @@ trait BitcoinSWalletTest
     }
     makeDependentFixture(builder, destroy = destroy)(test)
   }
+
+  def withWalletConfigNotStarted(test: OneArgAsyncTest): FutureOutcome = {
+    val builder: () => Future[WalletAppConfig] = () => {
+      createWalletAppConfigNotStarted(pgUrl, Vector.empty)
+    }
+
+    val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
+      destroyWalletAppConfig(walletAppConfig)
+    }
+    makeDependentFixture(builder, destroy = destroy)(test)
+  }
 }
 
 object BitcoinSWalletTest extends WalletLogger {
@@ -307,6 +318,17 @@ object BitcoinSWalletTest extends WalletLogger {
       configs: Vector[Config])(implicit
       system: ActorSystem): Future[WalletAppConfig] = {
     import system.dispatcher
+    val walletAppConfigF = createWalletAppConfigNotStarted(pgUrl, configs)
+    for {
+      appConfig <- walletAppConfigF
+      _ <- appConfig.start()
+    } yield appConfig
+  }
+
+  def createWalletAppConfigNotStarted(
+      pgUrl: () => Option[String],
+      configs: Vector[Config])(implicit
+      system: ActorSystem): Future[WalletAppConfig] = {
     val baseConf = BaseWalletTest.getFreshWalletAppConfig(pgUrl, configs)
     val walletNameOpt = if (NumberGenerator.bool.sampleSome) {
       Some(StringGenerators.genNonEmptyString.sampleSome)
@@ -324,7 +346,7 @@ object BitcoinSWalletTest extends WalletLogger {
       case None => baseConf
     }
 
-    walletConf.start().map(_ => walletConf)
+    Future.successful(walletConf)
   }
 
   /** Returns a function that can be used to create a wallet fixture.

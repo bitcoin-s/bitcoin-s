@@ -396,4 +396,25 @@ trait CryptoRuntime {
       derivedKeyLength: Int): ByteVector
 
   def randomBytes(n: Int): ByteVector
+
+  /** Implements basic sanity tests for checking entropy like
+    * making sure it isn't all the same bytes,
+    * it isn't all 0x00...00
+    * or it isn't all 0xffff...fff
+    */
+  def checkEntropy(bitVector: BitVector): Boolean = {
+    val byteArr = bitVector.toByteArray
+    if (bitVector.length < 128) {
+      //not enough entropy
+      false
+    } else if (byteArr.toSet.size == 1) {
+      //means all byte were the same
+      //we need more diversity with entropy
+      false
+    } else {
+      true
+    }
+  }
+
+  def checkEntropy(bytes: ByteVector): Boolean = checkEntropy(bytes.toBitVector)
 }

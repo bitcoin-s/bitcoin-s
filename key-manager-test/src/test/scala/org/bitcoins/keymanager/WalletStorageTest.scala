@@ -20,7 +20,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
   override type FixtureParam = WalletAppConfig
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withWalletConfig(test)
+    withWalletConfigNotStarted(test)
 
   def getSeedPath(config: WalletAppConfig): Path = {
     config.kmConf.seedPath

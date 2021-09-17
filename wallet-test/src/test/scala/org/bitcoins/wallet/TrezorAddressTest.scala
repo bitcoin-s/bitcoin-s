@@ -130,15 +130,18 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   lazy val nestedVectors =
     vectors.filter(_.pathType == HDPurposes.NestedSegWit)
 
-  def configForPurpose(purpose: HDPurpose): Config = {
+  def configForPurposeAndSeed(purpose: HDPurpose): Config = {
     val purposeStr = purpose match {
       case HDPurposes.Legacy       => "legacy"
       case HDPurposes.SegWit       => "segwit"
       case HDPurposes.NestedSegWit => "nested-segwit"
       case other                   => fail(s"unexpected purpose: $other")
     }
+    val entropy = mnemonic.toEntropy.toHex
     val confStr = s"""bitcoin-s.wallet.defaultAccountType = $purposeStr
-                     |bitcoin-s.network = mainnet""".stripMargin
+                     |bitcoin-s.network = mainnet
+                     |bitcoin-s.keymanager.entropy=${entropy}
+                     |""".stripMargin
     ConfigFactory.parseString(confStr)
   }
 
@@ -219,7 +222,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   }
 
   private def testAccountType(purpose: HDPurpose): Future[Assertion] = {
-    val confOverride = configForPurpose(purpose)
+    val confOverride = configForPurposeAndSeed(purpose)
     implicit val conf: WalletAppConfig =
       BitcoinSTestAppConfig.getSpvTestConfig(confOverride).walletConf
 
