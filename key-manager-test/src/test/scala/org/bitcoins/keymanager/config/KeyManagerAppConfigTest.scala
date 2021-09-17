@@ -142,4 +142,41 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
       assert(xpub == appConfig1.toBip39KeyManager.getRootXPub)
     }
   }
+
+  it must "fail to start the key manager when there isn't enough entropy" in {
+    val tmpDir2 = BitcoinSTestAppConfig.tmpDir()
+    val tempFile = Files.createFile(tmpDir2.resolve("bitcoin-s.conf"))
+    val entropy = CryptoUtil.randomBytes(15)
+    val confStr = s"""
+                     | bitcoin-s {
+                     |   network = testnet3
+                     |   keymanager.entropy=${entropy.toHex}
+                     | }
+    """.stripMargin
+    val _ = Files.write(tempFile, confStr.getBytes())
+
+    val appConfig1 = KeyManagerAppConfig(directory = tmpDir2)
+
+    assertThrows[RuntimeException] {
+      appConfig1.start()
+    }
+  }
+
+  it must "fail to start the key manager when the entropy isn't hex chars" in {
+    val tmpDir2 = BitcoinSTestAppConfig.tmpDir()
+    val tempFile = Files.createFile(tmpDir2.resolve("bitcoin-s.conf"))
+    val confStr = s"""
+                     | bitcoin-s {
+                     |   network = testnet3
+                     |   keymanager.entropy=invalidhexcharactersfortestcase
+                     | }
+    """.stripMargin
+    val _ = Files.write(tempFile, confStr.getBytes())
+
+    val appConfig1 = KeyManagerAppConfig(directory = tmpDir2)
+
+    assertThrows[RuntimeException] {
+      appConfig1.start()
+    }
+  }
 }
