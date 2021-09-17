@@ -397,29 +397,40 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi: ChainQueryApi)(implicit
       config: BitcoinSAppConfig,
       ec: ExecutionContext): Future[DLCWallet] = {
-    val defaultConf = config.walletConf
+
     val walletConfig = extraConfig match {
-      case None    => defaultConf
-      case Some(c) => defaultConf.withOverrides(c)
+      case None    => config
+      case Some(c) => config.withOverrides(c)
+    }
+
+    val walletConfigWithBip39Pw = bip39PasswordOpt match {
+      case Some(pw) =>
+        val str = s"""bitcoin-s.keymanager.bip39password="$pw""""
+        val bip39Config = ConfigFactory.parseString(str)
+        walletConfig.withOverrides(bip39Config)
+      case None => walletConfig
     }
 
     // we want to check we're not overwriting
     // any user data
-    AppConfig.throwIfDefaultDatadir(walletConfig)
+    AppConfig.throwIfDefaultDatadir(walletConfigWithBip39Pw.walletConf)
 
     val initConfs = for {
-      _ <- walletConfig.start()
+      _ <- walletConfigWithBip39Pw.walletConf.start()
       _ <- config.dlcConf.start()
     } yield ()
 
     initConfs.flatMap { _ =>
       val wallet =
-        DLCWallet(nodeApi, chainQueryApi, new RandomFeeProvider)(walletConfig,
-                                                                 config.dlcConf,
-                                                                 ec)
+        DLCWallet(nodeApi, chainQueryApi, new RandomFeeProvider)(
+          walletConfigWithBip39Pw.walletConf,
+          config.dlcConf,
+          ec)
 
       Wallet
-        .initialize(wallet, bip39PasswordOpt)(walletConfig, ec)
+        .initialize(wallet, bip39PasswordOpt)(
+          walletConfigWithBip39Pw.walletConf,
+          ec)
         .map(_.asInstanceOf[DLCWallet])
     }
   }
