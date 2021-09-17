@@ -98,7 +98,7 @@ object BIP39KeyManager
 
     val time = TimeUtil.now
 
-    val writtenToDiskE: Either[KeyManagerInitializeError, KeyManagerApi] =
+    val writtenToDiskE: Either[KeyManagerInitializeError, KeyManagerApi] = {
       if (Files.notExists(seedPath)) {
         logger.info(
           s"Seed path parent directory does not exist, creating ${seedPath.getParent}")
@@ -159,6 +159,7 @@ object BIP39KeyManager
                 JsonParsingError(err.toString)))
         }
       }
+    }
 
     //verify we can unlock it for a sanity check
     val unlocked = BIP39LockedKeyManager.unlock(passphraseOpt = aesPasswordOpt,
