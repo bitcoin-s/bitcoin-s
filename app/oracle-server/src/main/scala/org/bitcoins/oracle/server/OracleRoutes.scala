@@ -173,7 +173,10 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                   "announcementTLV" -> Str(event.announcementTLV.hex),
                   "attestations" -> attestationJson,
                   "outcomes" -> outcomesJson,
-                  "signedOutcome" -> signedOutcomeJs
+                  "signedOutcome" -> signedOutcomeJs,
+                  // TLV shas for UI to have ids
+                  "announcementTLVsha256" -> event.announcementTLV.sha256.hex,
+                  "eventDescriptorTLVsha256" -> event.eventDescriptorTLV.sha256.hex
                 )
                 Server.httpSuccess(json)
               case None =>
