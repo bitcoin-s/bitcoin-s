@@ -77,14 +77,14 @@
 
 <span class="hljs-comment">//get 256 bits of random entropy</span>
 <span class="hljs-keyword">val</span> entropy = <span class="hljs-type">MnemonicCode</span>.getEntropy256Bits
-<span class="hljs-comment">// entropy: scodec.bits.BitVector = BitVector(256 bits, 0xabe5a35713836868facb788e173dd3ec76134d68c2f87fd0514491b7bba38b03)</span>
+<span class="hljs-comment">// entropy: scodec.bits.BitVector = BitVector(256 bits, 0xc950ee0709642fec7b2f186f737755407cc470770084edf96f0517f350b15638)</span>
 
 <span class="hljs-keyword">val</span> mnemonic = <span class="hljs-type">MnemonicCode</span>.fromEntropy(entropy)
 <span class="hljs-comment">// mnemonic: MnemonicCode = Masked(MnemonicCodeImpl)</span>
 
 <span class="hljs-comment">//you can print that mnemonic seed with this</span>
 println(mnemonic.words)
-<span class="hljs-comment">// Vector(program, code, still, check, custom, crucial, twenty, humor, mix, rigid, insane, suggest, gentle, pluck, perfect, gallery, lemon, little, eye, casino, knife, spike, clown, husband)</span>
+<span class="hljs-comment">// Vector(sing, manual, limb, barrel, drill, wage, uncover, toast, hunt, option, stem, liberty, slush, deal, swing, awesome, unknown, slice, scout, copper, crush, flavor, flight, aunt)</span>
 </code></pre>
 <p>Now that we have a <code>MnemonicCode</code> that was securely generated, we need to now create <code>KeyManagerParams</code> which tells us how to generate
 generate specific kinds of addresses for wallets.</p>
@@ -99,7 +99,7 @@ generate specific kinds of addresses for wallets.</p>
 <pre><code class="hljs css language-scala"><span class="hljs-comment">//this will create a temp directory with the prefix 'key-manager-example` that will</span>
 <span class="hljs-comment">//have a file in it called "encrypted-bitcoin-s-seed.json"</span>
 <span class="hljs-keyword">val</span> seedPath = <span class="hljs-type">Files</span>.createTempDirectory(<span class="hljs-string">"key-manager-example"</span>).resolve(<span class="hljs-type">WalletStorage</span>.<span class="hljs-type">ENCRYPTED_SEED_FILE_NAME</span>)
-<span class="hljs-comment">// seedPath: Path = /tmp/key-manager-example18220699126438590155/encrypted-bitcoin-s-seed.json</span>
+<span class="hljs-comment">// seedPath: Path = /tmp/key-manager-example18356705985532911486/encrypted-bitcoin-s-seed.json</span>
 
 <span class="hljs-comment">//let's create a native segwit key manager</span>
 <span class="hljs-keyword">val</span> purpose = <span class="hljs-type">HDPurposes</span>.<span class="hljs-type">SegWit</span>
@@ -110,19 +110,19 @@ generate specific kinds of addresses for wallets.</p>
 <span class="hljs-comment">// network: RegTest.type = RegTest</span>
 
 <span class="hljs-keyword">val</span> kmParams = <span class="hljs-type">KeyManagerParams</span>(seedPath, purpose, network)
-<span class="hljs-comment">// kmParams: KeyManagerParams = KeyManagerParams(/tmp/key-manager-example18220699126438590155/encrypted-bitcoin-s-seed.json,m/84',RegTest)</span>
+<span class="hljs-comment">// kmParams: KeyManagerParams = KeyManagerParams(/tmp/key-manager-example18356705985532911486/encrypted-bitcoin-s-seed.json,m/84',RegTest)</span>
 
 <span class="hljs-keyword">val</span> aesPasswordOpt = <span class="hljs-type">Some</span>(<span class="hljs-type">AesPassword</span>.fromString(<span class="hljs-string">"password"</span>))
 <span class="hljs-comment">// aesPasswordOpt: Some[AesPassword] = Some(Masked(AesPassword))</span>
 
 <span class="hljs-keyword">val</span> km = <span class="hljs-type">BIP39KeyManager</span>.initializeWithMnemonic(aesPasswordOpt, mnemonic, <span class="hljs-type">None</span>, kmParams)
-<span class="hljs-comment">// km: Either[KeyManagerInitializeError, BIP39KeyManager] = Right(org.bitcoins.keymanager.bip39.BIP39KeyManager@1be62857)</span>
+<span class="hljs-comment">// km: Either[KeyManagerInitializeError, BIP39KeyManager] = Right(org.bitcoins.keymanager.bip39.BIP39KeyManager@760aa626)</span>
 
 <span class="hljs-keyword">val</span> rootXPub = km.right.get.getRootXPub
-<span class="hljs-comment">// rootXPub: ExtPublicKey = vpub5SLqN2bLY4WeaTahkRj7zDbMQ3PB4u8JzDYLkjoQsPTko5LyeKsqe69Y1Gnu1JkCmygYouFe6iTgwXk5wo8JzzfkfaicjBjSV5u3LrG254S</span>
+<span class="hljs-comment">// rootXPub: ExtPublicKey = vpub5SLqN2bLY4WeYwSB514YDJroSWpZzo925jgBKtHqKjJcHTxbpMH4QSNfahYRm43JmvijzwCu58nKZytBuXaRSvFVm8RtENsvHcTfJV4HyVd</span>
 
 println(rootXPub)
-<span class="hljs-comment">// vpub5SLqN2bLY4WeaTahkRj7zDbMQ3PB4u8JzDYLkjoQsPTko5LyeKsqe69Y1Gnu1JkCmygYouFe6iTgwXk5wo8JzzfkfaicjBjSV5u3LrG254S</span>
+<span class="hljs-comment">// vpub5SLqN2bLY4WeYwSB514YDJroSWpZzo925jgBKtHqKjJcHTxbpMH4QSNfahYRm43JmvijzwCu58nKZytBuXaRSvFVm8RtENsvHcTfJV4HyVd</span>
 </code></pre>
 <p>Which should print something that looks like this</p>
 <p><code>vpub5SLqN2bLY4WeXxMqwJHJFBEwxSscGB2uDUnsTS3edVjZEwTrQDFDNqoR2xLqARQPabGaXsHSTenTRcqm2EnB9MpuC4vSk3LqSgNmGGZtuq7</code></p>
@@ -131,17 +131,17 @@ println(rootXPub)
 again after initializing it once. You can use the same <code>mnemonic</code> for different networks, which you control <code>KeyManagerParams</code>.</p>
 <pre><code class="hljs css language-scala"><span class="hljs-comment">//let's create a nested segwit key manager for mainnet</span>
 <span class="hljs-keyword">val</span> mainnetKmParams = <span class="hljs-type">KeyManagerParams</span>(seedPath, <span class="hljs-type">HDPurposes</span>.<span class="hljs-type">SegWit</span>, <span class="hljs-type">MainNet</span>)
-<span class="hljs-comment">// mainnetKmParams: KeyManagerParams = KeyManagerParams(/tmp/key-manager-example18220699126438590155/encrypted-bitcoin-s-seed.json,m/84',MainNet)</span>
+<span class="hljs-comment">// mainnetKmParams: KeyManagerParams = KeyManagerParams(/tmp/key-manager-example18356705985532911486/encrypted-bitcoin-s-seed.json,m/84',MainNet)</span>
 
 <span class="hljs-comment">//we do not need to all `initializeWithMnemonic()` again as we have saved the seed to dis</span>
 <span class="hljs-keyword">val</span> mainnetKeyManager = <span class="hljs-type">BIP39KeyManager</span>.fromMnemonic(mnemonic, mainnetKmParams, <span class="hljs-type">None</span>, <span class="hljs-type">Instant</span>.now)
-<span class="hljs-comment">// mainnetKeyManager: BIP39KeyManager = org.bitcoins.keymanager.bip39.BIP39KeyManager@51253764</span>
+<span class="hljs-comment">// mainnetKeyManager: BIP39KeyManager = org.bitcoins.keymanager.bip39.BIP39KeyManager@72f81a4f</span>
 
 <span class="hljs-keyword">val</span> mainnetXpub = mainnetKeyManager.getRootXPub
-<span class="hljs-comment">// mainnetXpub: ExtPublicKey = zpub6jftahH18ngZyeMB5rscpZyN5uxxqP6JefdDtKNxPQyH1UbtexY68Ln666dEzwMtQY9moodswMstUgCLpanNBwQA8wWK4q1PZz9cuBhKWQW</span>
+<span class="hljs-comment">// mainnetXpub: ExtPublicKey = zpub6jftahH18ngZx8CeQSD33fEp8PQMmH71kBm4TTsNqkp8VsDWpywJth1DfXNmkgezQVBxzqb8unCX78LSnKEUdryuEVDaa29sNWiErr65aSF</span>
 
 println(mainnetXpub)
-<span class="hljs-comment">// zpub6jftahH18ngZyeMB5rscpZyN5uxxqP6JefdDtKNxPQyH1UbtexY68Ln666dEzwMtQY9moodswMstUgCLpanNBwQA8wWK4q1PZz9cuBhKWQW</span>
+<span class="hljs-comment">// zpub6jftahH18ngZx8CeQSD33fEp8PQMmH71kBm4TTsNqkp8VsDWpywJth1DfXNmkgezQVBxzqb8unCX78LSnKEUdryuEVDaa29sNWiErr65aSF</span>
 </code></pre>
 <p>Which gives us something that looks like this</p>
 <p><code>zpub6jftahH18ngZw98KGjRo5XcxeKTQ2eztsvskb1dC9XF5TLimQquTs6Ry7nBBA425D9joXmfgJJCexmJ1u2SELJZJfRi95gcnXadLpZzYb5c</code></p>
