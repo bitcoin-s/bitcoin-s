@@ -18,8 +18,9 @@ trait DLCOracleFixture extends BitcoinSFixture with EmbeddedPg {
         BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(pgUrl)
       val _ = conf.migrate()
 
-      val oracleF: Future[DLCOracle] = conf.initialize()
-      oracleF
+      val oracleConfF: Future[Unit] = conf.start()
+
+      oracleConfF.map(_ => new DLCOracle()(conf))
     }
 
     val destroy: DLCOracle => Future[Unit] = dlcOracle => {

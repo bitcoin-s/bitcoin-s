@@ -8,14 +8,10 @@ import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.Mutable
-import org.bitcoins.core.wallet.keymanagement.{
-  KeyManagerInitializeError,
-  KeyManagerParams
-}
+import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
-import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig.RebroadcastTransactionsRunnable
@@ -24,14 +20,7 @@ import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 
 import java.nio.file.{Files, Path, Paths}
-import java.util.concurrent.{
-  ExecutorService,
-  Executors,
-  ScheduledExecutorService,
-  ScheduledFuture,
-  ThreadFactory,
-  TimeUnit
-}
+import java.util.concurrent._
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -182,6 +171,7 @@ case class WalletAppConfig(
   override def start(): Future[Unit] = {
     for {
       _ <- super.start()
+      _ <- kmConf.start()
     } yield {
       logger.debug(s"Initializing wallet setup")
 
@@ -343,42 +333,17 @@ object WalletAppConfig
       walletConf: WalletAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
     walletConf.hasWallet().flatMap { walletExists =>
-      val aesPasswordOpt = walletConf.aesPasswordOpt
       val bip39PasswordOpt = walletConf.bip39PasswordOpt
 
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
-        // TODO change me when we implement proper password handling
-        BIP39LockedKeyManager.unlock(aesPasswordOpt,
-                                     bip39PasswordOpt,
-                                     walletConf.kmParams) match {
-          case Right(km) =>
-            val wallet =
-              Wallet(km, nodeApi, chainQueryApi, feeRateApi, km.creationTime)
-            Future.successful(wallet)
-          case Left(err) =>
-            sys.error(s"Error initializing key manager, err=${err}")
-        }
+        val wallet =
+          Wallet(nodeApi, chainQueryApi, feeRateApi)
+        Future.successful(wallet)
       } else {
-        logger.info(s"Initializing key manager")
-        val keyManagerE: Either[KeyManagerInitializeError, BIP39KeyManager] =
-          BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
-                                     kmParams = walletConf.kmParams,
-                                     bip39PasswordOpt = bip39PasswordOpt)
-
-        val keyManager = keyManagerE match {
-          case Right(keyManager) => keyManager
-          case Left(err) =>
-            sys.error(s"Error initializing key manager, err=${err}")
-        }
-
         logger.info(s"Creating new wallet")
         val unInitializedWallet =
-          Wallet(keyManager,
-                 nodeApi,
-                 chainQueryApi,
-                 feeRateApi,
-                 keyManager.creationTime)
+          Wallet(nodeApi, chainQueryApi, feeRateApi)
 
         Wallet.initialize(wallet = unInitializedWallet,
                           bip39PasswordOpt = bip39PasswordOpt)

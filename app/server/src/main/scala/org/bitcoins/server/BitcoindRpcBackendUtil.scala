@@ -117,13 +117,11 @@ object BitcoindRpcBackendUtil extends Logging {
     val walletCallbackP = Promise[Wallet]()
 
     val pairedWallet = Wallet(
-      keyManager = wallet.keyManager,
       nodeApi =
         BitcoindRpcBackendUtil.getNodeApiWalletCallback(bitcoind,
                                                         walletCallbackP.future),
       chainQueryApi = bitcoind,
-      feeRateApi = wallet.feeRateApi,
-      creationTime = wallet.keyManager.creationTime
+      feeRateApi = wallet.feeRateApi
     )(wallet.walletConfig, wallet.ec)
 
     walletCallbackP.success(pairedWallet)
@@ -178,13 +176,11 @@ object BitcoindRpcBackendUtil extends Logging {
     val walletCallbackP = Promise[Wallet]()
 
     val pairedWallet = DLCWallet(
-      keyManager = wallet.keyManager,
       nodeApi =
         BitcoindRpcBackendUtil.getNodeApiWalletCallback(bitcoind,
                                                         walletCallbackP.future),
       chainQueryApi = bitcoind,
-      feeRateApi = wallet.feeRateApi,
-      creationTime = wallet.keyManager.creationTime
+      feeRateApi = wallet.feeRateApi
     )(wallet.walletConfig, wallet.dlcConfig, wallet.ec)
 
     walletCallbackP.success(pairedWallet)
