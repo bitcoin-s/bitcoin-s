@@ -299,6 +299,11 @@ to ensure the entire module is initialized correctly.</p>
 
         <span class="hljs-comment"># Password that your seed is encrypted with</span>
         <span class="hljs-attr">aesPassword</span> = changeMe
+        
+        <span class="hljs-comment"># At least 16 bytes of entropy encoded in hex</span>
+        <span class="hljs-comment"># This will be used as the seed for any</span>
+        <span class="hljs-comment"># project that is dependent on the keymanager</span>
+        <span class="hljs-attr">entropy</span> = <span class="hljs-string">""</span>
     }
 
     <span class="hljs-comment"># Bitcoin-S provides manny different fee providers</span>

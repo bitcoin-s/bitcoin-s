@@ -87,17 +87,6 @@ Let's make an easy one:</p>
 <span class="hljs-keyword">val</span> bitcoind = <span class="hljs-type">BitcoindV19RpcClient</span>(<span class="hljs-type">BitcoindInstanceLocal</span>.fromConfFile())
 <span class="hljs-keyword">val</span> aesPasswordOpt = <span class="hljs-type">Some</span>(<span class="hljs-type">AesPassword</span>.fromString(<span class="hljs-string">"password"</span>))
 
-<span class="hljs-comment">// Create our key manager</span>
-  <span class="hljs-keyword">val</span> keyManagerE = <span class="hljs-type">BIP39KeyManager</span>.initialize(aesPasswordOpt = aesPasswordOpt,
-                                               kmParams = walletConf.kmParams,
-                                               bip39PasswordOpt = <span class="hljs-type">None</span>)
-
-<span class="hljs-keyword">val</span> keyManager = keyManagerE <span class="hljs-keyword">match</span> {
-    <span class="hljs-keyword">case</span> <span class="hljs-type">Right</span>(keyManager) =&gt; keyManager
-    <span class="hljs-keyword">case</span> <span class="hljs-type">Left</span>(err) =&gt;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-type">RuntimeException</span>(<span class="hljs-string">s"Cannot initialize key manager err=<span class="hljs-subst">$err</span>"</span>)
-  }
-
 <span class="hljs-comment">// Here is a super simple example of a callback, this could be replaced with anything, from</span>
 <span class="hljs-comment">// relaying the transaction on the network, finding relevant wallet outputs, verifying the transaction,</span>
 <span class="hljs-comment">// or writing it to disk</span>
@@ -110,11 +99,10 @@ Let's make an easy one:</p>
 
 <span class="hljs-comment">// Now we can create a wallet</span>
 <span class="hljs-keyword">val</span> wallet =
-    <span class="hljs-type">Wallet</span>(keyManager = keyManager,
+    <span class="hljs-type">Wallet</span>(
            nodeApi = bitcoind,
            chainQueryApi = bitcoind,
-           feeRateApi = <span class="hljs-type">ConstantFeeRateProvider</span>(<span class="hljs-type">SatoshisPerVirtualByte</span>.one),
-           creationTime = <span class="hljs-type">Instant</span>.now)
+           feeRateApi = <span class="hljs-type">ConstantFeeRateProvider</span>(<span class="hljs-type">SatoshisPerVirtualByte</span>.one))
 
 <span class="hljs-comment">// Finally, we can add the callbacks to our wallet config</span>
 walletConf.addCallbacks(exampleCallbacks)

@@ -106,17 +106,6 @@ want.</p>
 <span class="hljs-keyword">val</span> bitcoind = <span class="hljs-type">BitcoindV19RpcClient</span>(instance)
 <span class="hljs-keyword">val</span> nodeApi = <span class="hljs-type">BitcoinSWalletTest</span>.<span class="hljs-type">MockNodeApi</span>
 
-<span class="hljs-comment">// Create our key manager</span>
-<span class="hljs-keyword">val</span> keyManagerE = <span class="hljs-type">BIP39KeyManager</span>.initialize(aesPasswordOpt = <span class="hljs-type">Some</span>(<span class="hljs-type">AesPassword</span>.fromString(<span class="hljs-string">"password"</span>)),
-                                               kmParams = walletConf.kmParams,
-                                               bip39PasswordOpt = <span class="hljs-type">None</span>)
-
-<span class="hljs-keyword">val</span> keyManager = keyManagerE <span class="hljs-keyword">match</span> {
-    <span class="hljs-keyword">case</span> <span class="hljs-type">Right</span>(keyManager) =&gt; keyManager
-    <span class="hljs-keyword">case</span> <span class="hljs-type">Left</span>(err) =&gt;
-      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-type">RuntimeException</span>(<span class="hljs-string">s"Cannot initialize key manager err=<span class="hljs-subst">$err</span>"</span>)
-  }
-
 <span class="hljs-comment">// This function can be used to create a callback for when our chain api receives a transaction, block, or</span>
 <span class="hljs-comment">// a block filter, the returned NodeCallbacks will contain the necessary items to initialize the callbacks</span>
 <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">createCallbacks</span></span>(
@@ -223,7 +212,7 @@ want.</p>
 
 <span class="hljs-comment">// Finally, we can initialize our wallet with our own node api</span>
 <span class="hljs-keyword">val</span> wallet =
-    <span class="hljs-type">Wallet</span>(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi, feeRateApi = <span class="hljs-type">ConstantFeeRateProvider</span>(<span class="hljs-type">SatoshisPerVirtualByte</span>.one), creationTime = <span class="hljs-type">Instant</span>.now)
+    <span class="hljs-type">Wallet</span>(nodeApi = nodeApi, chainQueryApi = chainApi, feeRateApi = <span class="hljs-type">ConstantFeeRateProvider</span>(<span class="hljs-type">SatoshisPerVirtualByte</span>.one))
 
 <span class="hljs-comment">// Then to trigger one of the events we can run</span>
 wallet.chainQueryApi.getFiltersBetweenHeights(<span class="hljs-number">100</span>, <span class="hljs-number">150</span>)
