@@ -55,11 +55,13 @@ case class DLCOracleAppConfig(
 
   override def start(): Future[Unit] = {
     logger.debug(s"Initializing dlc oracle setup")
-    super.start().flatMap { _ =>
+    val migrationsF = for {
+      _ <- super.start()
+      _ <- kmConf.start()
+    } yield {
       if (Files.notExists(datadir)) {
         Files.createDirectories(datadir)
       }
-
       val networkDir = {
         val lastDirname = network match {
           case MainNet  => "mainnet"
@@ -69,7 +71,6 @@ case class DLCOracleAppConfig(
         }
         baseDatadir.resolve(lastDirname)
       }
-
       // Move old db in network folder to oracle folder
       val oldNetworkLocation = networkDir.resolve("oracle.sqlite")
       if (!exists() && Files.exists(oldNetworkLocation)) {
@@ -80,6 +81,10 @@ case class DLCOracleAppConfig(
       logger.info(s"Applied $numMigrations to the dlc oracle project")
 
       val migrations = migrationsApplied()
+      migrations
+    }
+
+    migrationsF.flatMap { migrations =>
       val migrationWorkAroundF = v2V3MigrationWorkaround(migrations)
 
       val initializeF = initializeKeyManager()
