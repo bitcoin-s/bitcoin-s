@@ -12,6 +12,8 @@ import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
+import org.bitcoins.db.models.MasterXPubDAO
+import org.bitcoins.db.util.{DBMasterXPubApi, MasterXPubUtil}
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig.RebroadcastTransactionsRunnable
@@ -33,7 +35,8 @@ case class WalletAppConfig(
     private val conf: Config*)(implicit override val ec: ExecutionContext)
     extends DbAppConfig
     with WalletDbManagement
-    with JdbcProfileComponent[WalletAppConfig] {
+    with JdbcProfileComponent[WalletAppConfig]
+    with DBMasterXPubApi {
   override protected[bitcoins] def configOverrides: List[Config] = conf.toList
 
   override protected[bitcoins] def moduleName: String =
@@ -167,22 +170,31 @@ case class WalletAppConfig(
         None
     }
   }
+  private val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
 
   override def start(): Future[Unit] = {
+    if (Files.notExists(datadir)) {
+      Files.createDirectories(datadir)
+    }
+
     for {
       _ <- super.start()
       _ <- kmConf.start()
+      masterXpub = kmConf.toBip39KeyManager.getRootXPub
+      numMigrations = migrate()
+      isExists <- seedExists()
+      _ <- {
+        logger.info(s"Starting wallet with xpub=${masterXpub}")
+        if (!isExists) {
+          masterXPubDAO
+            .create(masterXpub)
+            .map(_ => ())
+        } else {
+          MasterXPubUtil.checkMasterXPub(masterXpub, masterXPubDAO)
+        }
+      }
     } yield {
       logger.debug(s"Initializing wallet setup")
-
-      if (Files.notExists(datadir)) {
-        Files.createDirectories(datadir)
-      }
-
-      val numMigrations = {
-        migrate()
-      }
-
       if (isHikariLoggingEnabled) {
         //.get is safe because hikari logging is enabled
         startHikariLogger(hikariLoggingInterval.get)
@@ -206,10 +218,7 @@ case class WalletAppConfig(
   }
 
   /** The path to our encrypted mnemonic seed */
-  private[bitcoins] lazy val seedPath: Path = kmConf.seedPath
-
-  /** Checks if our wallet as a mnemonic seed associated with it */
-  def seedExists(): Boolean = kmConf.seedExists()
+  override lazy val seedPath: Path = kmConf.seedPath
 
   def kmParams: KeyManagerParams =
     KeyManagerParams(kmConf.seedPath, defaultAccountKind, network)

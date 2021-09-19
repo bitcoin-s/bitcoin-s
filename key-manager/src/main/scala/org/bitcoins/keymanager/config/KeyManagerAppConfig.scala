@@ -12,6 +12,7 @@ import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import scodec.bits.BitVector
 
 import java.nio.file.{Files, Path}
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 case class KeyManagerAppConfig(
@@ -92,7 +93,31 @@ case class KeyManagerAppConfig(
       Future.unit
     } else if (!Files.exists(newDefaultFile)) {
       initializeKeyManager()
+    } else if (externalEntropy.isDefined && seedExists()) {
+      //means we have a seed saved on disk and external entropy
+      //provided. We should make sure the entropy provided generates
+      //the seed on disk to prevent internal inconsistencies
+      val bitVec = BitVector.fromValidHex(externalEntropy.get)
+      //make sure external entropy provided to us is consistent
+      if (!CryptoUtil.checkEntropy(bitVec)) {
+        sys.error(
+          s"The entropy used by bitcoin-s does not pass basic entropy sanity checks, got=${externalEntropy}")
+      }
+      val mnemonicEntropy = MnemonicCode.fromEntropy(entropy = bitVec)
+      val kmEntropy = BIP39KeyManager
+        .fromMnemonic(mnemonic = mnemonicEntropy,
+                      kmParams = kmParams,
+                      bip39PasswordOpt = bip39PasswordOpt,
+                      creationTime = Instant.now)
+      val kmRootXpub = toBip39KeyManager.getRootXPub
+      require(
+        kmEntropy.getRootXPub == kmRootXpub,
+        s"Xpubs were different, generated from entropy=${kmEntropy.getRootXPub} keymanager xpub on disk=$kmRootXpub")
+      logger.info(
+        s"Starting key manager with seedPath=${seedPath.toAbsolutePath}")
+      Future.unit
     } else {
+
       logger.info(
         s"Starting keymanager with seedPath=${seedPath.toAbsolutePath}")
       Future.unit

@@ -31,9 +31,8 @@ import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.db.models.MasterXPubDAO
-import org.bitcoins.db.util.MasterXPubUtil
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._
@@ -141,15 +140,12 @@ abstract class Wallet
         Future.failed(new RuntimeException(errorMsg))
     }
   }
-  private val masterXpubDAO: MasterXPubDAO = MasterXPubDAO()(ec, walletConfig)
 
   override def start(): Future[Wallet] = {
     logger.info("Starting Wallet")
-    val keymanagerXpub = keyManager.getRootXPub
     for {
       _ <- walletConfig.start()
       _ <- checkRootAccount
-      _ <- MasterXPubUtil.checkMasterXPub(keymanagerXpub, masterXpubDAO)
       _ <- downloadMissingUtxos
       _ = walletConfig.startRebroadcastTxsScheduler(this)
     } yield {
@@ -970,7 +966,6 @@ object Wallet extends WalletLogger {
     val countF = masterXPubDAO.count()
     //make sure we don't have a xpub in the db
     countF.flatMap { count =>
-      println(s"count=$count")
       if (count == 0) {
         masterXPubDAO.create(keyManager.getRootXPub)
       } else {
@@ -978,7 +973,6 @@ object Wallet extends WalletLogger {
           xpubs <- masterXPubDAO.findAll()
         } yield {
           if (xpubs.length == 1 && xpubs.head == keyManager.getRootXPub) {
-            println(s"xpub=${xpubs.head} kmXpub=${keyManager.getRootXPub}")
             xpubs.head
           } else {
             throw new IllegalArgumentException(
@@ -1034,8 +1028,7 @@ object Wallet extends WalletLogger {
       ec: ExecutionContext): Future[Wallet] = {
     implicit val walletAppConfig = wallet.walletConfig
     val passwordOpt = walletAppConfig.aesPasswordOpt
-    println(
-      s"entropy=${walletAppConfig.kmConf.externalEntropy} xpub=${walletAppConfig.kmConf.toBip39KeyManager.getRootXPub}")
+
     val createMasterXpubF = createMasterXPub(wallet.keyManager)
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later

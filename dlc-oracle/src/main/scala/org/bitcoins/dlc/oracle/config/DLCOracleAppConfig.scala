@@ -140,11 +140,12 @@ case class DLCOracleAppConfig(
     seedExists().map(bool => bool && hasDb)
   }
 
-  private def initializeKeyManager(): Future[DLCOracle] = {
-    val initF = seedExists().map { bool =>
+  /** Insert the master xpub for the oracle */
+  private def initializeKeyManager(): Future[Unit] = {
+    val initF = seedExists().flatMap { bool =>
       if (!bool) {
-        BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
-                                   kmParams = kmParams,
+        BIP39KeyManager.fromParams(kmParams = kmParams,
+                                   passwordOpt = aesPasswordOpt,
                                    bip39PasswordOpt = bip39PasswordOpt) match {
           case Left(err) => sys.error(err.toString)
           case Right(km) =>
@@ -157,7 +158,7 @@ case class DLCOracleAppConfig(
         Future.unit
       }
     }
-    initF.map(_ => new DLCOracle()(this))
+    initF
   }
 
   private val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)

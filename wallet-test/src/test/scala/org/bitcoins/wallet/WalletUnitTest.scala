@@ -173,7 +173,6 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   it must "be able to detect different master xpubs on wallet startup" in {
     wallet: Wallet =>
-      println(s"================== Starting test case ==================")
       //create new config with different entropy
       //to make the keymanagers differetn
       val config = ConfigFactory.parseString(
