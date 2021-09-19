@@ -43,13 +43,16 @@ case class KeyManagerAppConfig(
 
   /** The path to our encrypted mnemonic seed */
   lazy val seedPath: Path = {
+    seedFolder.resolve(seedFileName)
+  }
+
+  private val seedFileName: String = {
     val prefix = walletNameOpt match {
       case Some(walletName) =>
         s"$walletName-"
       case None => ""
     }
-
-    seedFolder.resolve(s"$prefix${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
+    s"$prefix${WalletStorage.ENCRYPTED_SEED_FILE_NAME}"
   }
 
   private lazy val defaultAccountKind: HDPurpose =
@@ -75,12 +78,14 @@ case class KeyManagerAppConfig(
     KeyManagerParams(seedPath, defaultAccountKind, network)
   }
 
-  override def start(): Future[Unit] = {
-    val oldDefaultFile =
-      baseDatadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+  private def getOldSeedPath(): Path = {
+    baseDatadir.resolve(seedFileName)
+  }
 
-    val newDefaultFile = seedFolder
-      .resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+  override def start(): Future[Unit] = {
+    val oldDefaultFile = getOldSeedPath()
+
+    val newDefaultFile = seedPath
 
     if (!Files.exists(newDefaultFile) && Files.exists(oldDefaultFile)) {
       // Copy key manager file to new location
@@ -92,6 +97,7 @@ case class KeyManagerAppConfig(
         s"Migrated keymanager seed from=${oldDefaultFile.toAbsolutePath} to=${newDefaultFile.toAbsolutePath}")
       Future.unit
     } else if (!Files.exists(newDefaultFile)) {
+      logger.info(s"No seed file found at=${newDefaultFile.toAbsolutePath}")
       initializeKeyManager()
     } else if (externalEntropy.isDefined && seedExists()) {
       //means we have a seed saved on disk and external entropy

@@ -184,7 +184,8 @@ case class WalletAppConfig(
       numMigrations = migrate()
       isExists <- seedExists()
       _ <- {
-        logger.info(s"Starting wallet with xpub=${masterXpub}")
+        logger.info(
+          s"Starting wallet with xpub=${masterXpub} walletName=${walletNameOpt}")
         if (!isExists) {
           masterXPubDAO
             .create(masterXpub)
