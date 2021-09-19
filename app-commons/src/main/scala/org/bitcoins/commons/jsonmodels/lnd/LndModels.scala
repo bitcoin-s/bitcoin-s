@@ -52,4 +52,10 @@ case class TxDetails(
     destAddresses: Vector[BitcoinAddress],
     tx: Transaction,
     label: String
-)
+) extends LndModel
+
+case class UTXOLease(
+    id: ByteVector,
+    outPoint: TransactionOutPoint,
+    expiration: Long
+) extends LndModel

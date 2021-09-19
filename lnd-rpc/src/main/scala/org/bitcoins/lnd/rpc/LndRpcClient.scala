@@ -34,6 +34,7 @@ import signrpc._
 import walletrpc.{
   FinalizePsbtRequest,
   LeaseOutputRequest,
+  ListLeasesRequest,
   ReleaseOutputRequest,
   SendOutputsRequest,
   WalletKitClient
@@ -478,6 +479,23 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
         (scriptSig, witness)
       }.toVector
     }
+  }
+
+  def listLeases(): Future[Vector[UTXOLease]] = {
+    listLeases(ListLeasesRequest())
+  }
+
+  def listLeases(request: ListLeasesRequest): Future[Vector[UTXOLease]] = {
+    logger.trace("lnd calling listleases")
+
+    wallet
+      .listLeases(request)
+      .map(_.lockedUtxos.toVector.map { lease =>
+        val txId = DoubleSha256DigestBE(lease.outpoint.get.txidBytes)
+        val vout = UInt32(lease.outpoint.get.outputIndex)
+        val outPoint = TransactionOutPoint(txId, vout)
+        UTXOLease(lease.id, outPoint, lease.expiration)
+      })
   }
 
   def leaseOutput(

@@ -7,6 +7,8 @@ import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.testkit.fixtures.LndFixture
 
+import scala.concurrent.Future
+
 class LndRpcClientTest extends LndFixture {
 
   it must "get info from lnd" in { lnd =>
@@ -98,5 +100,20 @@ class LndRpcClientTest extends LndFixture {
       assert(balances.unsettledLocalBalance == Satoshis.zero)
       assert(balances.unsettledRemoteBalance == Satoshis.zero)
     }
+  }
+
+  it must "lease and release an output" in { lnd =>
+    for {
+      utxos <- lnd.listUnspent
+      leaseFs = utxos.map(u => lnd.leaseOutput(u.outPointOpt.get, 100))
+      _ <- Future.sequence(leaseFs)
+      leases <- lnd.listLeases()
+      _ = assert(leases.size == utxos.size)
+
+      releaseFs = utxos.map(u => lnd.releaseOutput(u.outPointOpt.get))
+      _ <- Future.sequence(releaseFs)
+
+      leases <- lnd.listLeases()
+    } yield assert(leases.isEmpty)
   }
 }
