@@ -1,14 +1,14 @@
 package org.bitcoins.wallet
 
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.api.wallet.db.{AddressDb, TransactionDbHelper}
-import org.bitcoins.core.crypto.{ExtKeyVersion, ExtPrivateKey}
 import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPublicKey}
+import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE, ECPublicKey}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkitcore.util.TransactionTestUtil._
 import org.scalatest.FutureOutcome
@@ -148,11 +148,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it must "be able to call initialize twice without throwing an exception if we have the same key manager" in {
     wallet: Wallet =>
       val twiceF = Wallet
-        .initialize(wallet, bip39PasswordOpt)(wallet.walletConfig,
-                                              executionContext)
+        .initialize(wallet, bip39PasswordOpt)
         .flatMap { _ =>
-          Wallet.initialize(wallet, bip39PasswordOpt)(wallet.walletConfig,
-                                                      executionContext)
+          Wallet.initialize(wallet, bip39PasswordOpt)
         }
 
       twiceF.map(_ => succeed)
@@ -163,38 +161,37 @@ class WalletUnitTest extends BitcoinSWalletTest {
     wallet: Wallet =>
       recoverToSucceededIf[RuntimeException] {
         Wallet
-          .initialize(wallet, bip39PasswordOpt)(wallet.walletConfig,
-                                                executionContext)
+          .initialize(wallet, bip39PasswordOpt)
           .flatMap { _ =>
             //use a BIP39 password to make the key-managers different
             Wallet.initialize(
               wallet,
-              Some("random-password-to-make-key-managers-different"))(
-              wallet.walletConfig,
-              executionContext)
+              Some("random-password-to-make-key-managers-different"))
           }
       }
   }
 
   it must "be able to detect different master xpubs on wallet startup" in {
     wallet: Wallet =>
-      val rootXpriv =
-        ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitMainNetPriv)
-      val uniqueKeyManager =
-        new BIP39KeyManager(rootExtPrivKey = rootXpriv,
-                            kmParams = wallet.keyManager.kmParams,
-                            creationTime = wallet.keyManager.creationTime)
-      val walletDiffKeyManager: Wallet =
-        Wallet(uniqueKeyManager,
-               wallet.nodeApi,
-               wallet.chainQueryApi,
-               wallet.feeRateApi,
-               wallet.creationTime)(wallet.walletConfig, wallet.ec)
+      println(s"================== Starting test case ==================")
+      //create new config with different entropy
+      //to make the keymanagers differetn
+      val config = ConfigFactory.parseString(
+        s"bitcoin-s.keymanager.entropy=${CryptoUtil.randomBytes(16).toHex}")
+      val uniqueEntropyWalletConfig = wallet.walletConfig.withOverrides(config)
+      val startedF = uniqueEntropyWalletConfig.start()
+      val walletDiffKeyManagerF: Future[Wallet] = for {
+        _ <- startedF
+      } yield {
+        Wallet(wallet.nodeApi, wallet.chainQueryApi, wallet.feeRateApi)(
+          uniqueEntropyWalletConfig,
+          wallet.ec)
+      }
 
       recoverToSucceededIf[IllegalArgumentException] {
-        Wallet.initialize(walletDiffKeyManager, bip39PasswordOpt)(
-          wallet.walletConfig,
-          wallet.ec)
+        walletDiffKeyManagerF.flatMap { walletDiffKeyManager =>
+          Wallet.initialize(walletDiffKeyManager, bip39PasswordOpt)
+        }
       }
   }
 

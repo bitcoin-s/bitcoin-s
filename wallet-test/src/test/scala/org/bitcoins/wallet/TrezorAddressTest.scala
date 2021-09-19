@@ -12,7 +12,10 @@ import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{MockChainQueryApi, MockNodeApi}
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+  MockChainQueryApi,
+  MockNodeApi
+}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.compatible.Assertion
 import play.api.libs.json._
@@ -154,7 +157,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
                MockChainQueryApi,
                ConstantFeeRateProvider(SatoshisPerVirtualByte.one))(config, ec)
       init <- Wallet.initialize(wallet = wallet,
-                                bip39PasswordOpt = bip39PasswordOpt)(config, ec)
+                                bip39PasswordOpt = bip39PasswordOpt)
     } yield init
   }
 

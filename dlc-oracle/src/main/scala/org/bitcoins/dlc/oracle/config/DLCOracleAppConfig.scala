@@ -69,6 +69,9 @@ case class DLCOracleAppConfig(
     val migrationsF = for {
       _ <- super.start()
       _ <- kmConf.start()
+      numMigrations = migrate()
+      _ = logger.info(s"Applied $numMigrations to the dlc oracle project")
+      isExists <- exists()
     } yield {
       if (Files.notExists(datadir)) {
         Files.createDirectories(datadir)
@@ -84,10 +87,9 @@ case class DLCOracleAppConfig(
       }
       // Move old db in network folder to oracle folder
       val oldNetworkLocation = networkDir.resolve("oracle.sqlite")
-      val existsF = exists()
-
-      val numMigrations = migrate()
-      logger.info(s"Applied $numMigrations to the dlc oracle project")
+      if (!isExists && Files.exists(oldNetworkLocation)) {
+        Files.move(oldNetworkLocation, dbPath)
+      }
 
       val migrations = migrationsApplied()
       migrations
@@ -139,15 +141,16 @@ case class DLCOracleAppConfig(
   }
 
   private def initializeKeyManager(): Future[DLCOracle] = {
-    val initF = seedExists().map {bool =>
+    val initF = seedExists().map { bool =>
       if (!bool) {
         BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
-          kmParams = kmParams,
-          bip39PasswordOpt = bip39PasswordOpt) match {
+                                   kmParams = kmParams,
+                                   bip39PasswordOpt = bip39PasswordOpt) match {
           case Left(err) => sys.error(err.toString)
           case Right(km) =>
             logger.info("Successfully generated a seed and key manager")
-            masterXPubDAO.create(km.getRootXPub)
+            masterXPubDAO
+              .create(km.getRootXPub)
               .map(_ => ())
         }
       } else {

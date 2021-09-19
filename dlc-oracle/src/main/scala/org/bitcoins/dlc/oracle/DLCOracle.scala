@@ -21,7 +21,6 @@ import org.bitcoins.db.util.MasterXPubUtil
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.dlc.oracle.util.EventDbUtil
-import org.bitcoins.keymanager.util.KeyManagerUtil
 import org.bitcoins.keymanager.{WalletStorage}
 import scodec.bits.ByteVector
 

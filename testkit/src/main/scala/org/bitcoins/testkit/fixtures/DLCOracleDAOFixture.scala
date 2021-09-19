@@ -29,7 +29,7 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(
       build = () => {
-        config.initialize().map(_ => daos)
+        config.start().map(_ => daos)
       },
       destroy = () => dropAll()
     )(test)

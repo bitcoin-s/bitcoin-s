@@ -5,7 +5,11 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
-import org.bitcoins.core.api.wallet.{AnyHDWalletApi, BlockSyncState, CoinSelectionAlgo}
+import org.bitcoins.core.api.wallet.{
+  AnyHDWalletApi,
+  BlockSyncState,
+  CoinSelectionAlgo
+}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -966,6 +970,7 @@ object Wallet extends WalletLogger {
     val countF = masterXPubDAO.count()
     //make sure we don't have a xpub in the db
     countF.flatMap { count =>
+      println(s"count=$count")
       if (count == 0) {
         masterXPubDAO.create(keyManager.getRootXPub)
       } else {
@@ -973,6 +978,7 @@ object Wallet extends WalletLogger {
           xpubs <- masterXPubDAO.findAll()
         } yield {
           if (xpubs.length == 1 && xpubs.head == keyManager.getRootXPub) {
+            println(s"xpub=${xpubs.head} kmXpub=${keyManager.getRootXPub}")
             xpubs.head
           } else {
             throw new IllegalArgumentException(
@@ -1025,9 +1031,11 @@ object Wallet extends WalletLogger {
   }
 
   def initialize(wallet: Wallet, bip39PasswordOpt: Option[String])(implicit
-      walletAppConfig: WalletAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
+    implicit val walletAppConfig = wallet.walletConfig
     val passwordOpt = walletAppConfig.aesPasswordOpt
+    println(
+      s"entropy=${walletAppConfig.kmConf.externalEntropy} xpub=${walletAppConfig.kmConf.toBip39KeyManager.getRootXPub}")
     val createMasterXpubF = createMasterXPub(wallet.keyManager)
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later
