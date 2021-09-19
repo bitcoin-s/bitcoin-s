@@ -29,9 +29,15 @@ import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.LndUtils._
 import org.bitcoins.lnd.rpc.config.{LndInstance, LndInstanceLocal}
-import scodec.bits.ByteVector
+import scodec.bits._
 import signrpc._
-import walletrpc.{FinalizePsbtRequest, SendOutputsRequest, WalletKitClient}
+import walletrpc.{
+  FinalizePsbtRequest,
+  LeaseOutputRequest,
+  ReleaseOutputRequest,
+  SendOutputsRequest,
+  WalletKitClient
+}
 
 import java.io.{File, FileInputStream}
 import java.net.InetSocketAddress
@@ -474,6 +480,47 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     }
   }
 
+  def leaseOutput(
+      outpoint: TransactionOutPoint,
+      leaseSeconds: Long): Future[Long] = {
+    val outPoint =
+      OutPoint(outpoint.txId.bytes, outputIndex = outpoint.vout.toInt)
+
+    val request = LeaseOutputRequest(id = LndRpcClient.leaseId,
+                                     outpoint = Some(outPoint),
+                                     expirationSeconds = leaseSeconds)
+
+    leaseOutput(request)
+  }
+
+  /** LeaseOutput locks an output to the given ID, preventing it from being available for any future coin selection attempts.
+    * The absolute time of the lock's expiration is returned.
+    * The expiration of the lock can be extended by successive invocations of this RPC.
+    * @param request LeaseOutputRequest
+    * @return Unix timestamp for when the lease expires
+    */
+  def leaseOutput(request: LeaseOutputRequest): Future[Long] = {
+    logger.trace("lnd calling leaseoutput")
+
+    wallet.leaseOutput(request).map(_.expiration)
+  }
+
+  def releaseOutput(outpoint: TransactionOutPoint): Future[Unit] = {
+    val outPoint =
+      OutPoint(outpoint.txId.bytes, outputIndex = outpoint.vout.toInt)
+
+    val request =
+      ReleaseOutputRequest(id = LndRpcClient.leaseId, outpoint = Some(outPoint))
+
+    releaseOutput(request)
+  }
+
+  def releaseOutput(request: ReleaseOutputRequest): Future[Unit] = {
+    logger.trace("lnd calling releaseoutput")
+
+    wallet.releaseOutput(request).map(_ => ())
+  }
+
   /** Broadcasts the given transaction
     * @return None if no error, otherwise the error string
     */
@@ -638,6 +685,12 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 }
 
 object LndRpcClient {
+
+  /** Lease id should be unique per application
+    * this is the sha256 of "lnd bitcoin-s"
+    */
+  val leaseId: ByteString =
+    hex"8c45ee0b90e3afd0fb4d6f39afa3c5d551ee5f2c7ac2d06820ed3d16582186d2"
 
   /** The current version we support of Lnd */
   private[bitcoins] val version = "0.13.1"
