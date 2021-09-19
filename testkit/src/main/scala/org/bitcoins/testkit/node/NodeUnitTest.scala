@@ -310,7 +310,6 @@ object NodeUnitTest extends P2PLogger {
       node <- createSpvNode(peer)(system,
                                   appConfig.chainConf,
                                   appConfig.nodeConf)
-      _ <- appConfig.walletConf.start()
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoind,
         node,
