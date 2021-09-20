@@ -110,16 +110,18 @@ trait RawTransactionRpc { self: Client =>
       transaction: Transaction,
       maxfeerate: Double = 0.10): Future[DoubleSha256DigestBE] = {
 
-    val feeParameter = self.version match {
+    val feeParameterF = self.version.map {
       case V21 | V20 | V19 | Experimental | Unknown =>
         JsNumber(maxfeerate)
       case V16 | V17 | V18 =>
         JsBoolean(maxfeerate == 0)
     }
 
-    bitcoindCall[DoubleSha256DigestBE](
-      "sendrawtransaction",
-      List(JsString(transaction.hex), feeParameter))
+    feeParameterF.flatMap { feeParameter =>
+      bitcoindCall[DoubleSha256DigestBE](
+        "sendrawtransaction",
+        List(JsString(transaction.hex), feeParameter))
+    }
   }
 
 }

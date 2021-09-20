@@ -6,10 +6,10 @@ object Deps {
   object V {
     val bouncyCastle = "1.69"
     val dropwizardMetricsV = "4.2.3" //https://github.com/dropwizard/metrics
-    val logback = "1.2.5"
+    val logback = "1.2.6"
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.4"
-    val scalaTest = "3.2.9"
+    val scalaTest = "3.2.10"
 
     val scalaTestPlus =
       "3.2.1.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
@@ -21,13 +21,13 @@ object Deps {
     val akkaStreamv = "2.6.16"
     val scodecV = "1.1.28"
     val junitV = "0.11"
-    val nativeLoaderV = "2.3.5"
+    val nativeLoaderV = "2.3.6"
     val typesafeConfigV = "1.4.1"
 
-    val scalaFxV = "16.0.0-R24"
-    val javaFxV = "17-ea+18"
+    val scalaFxV = "16.0.0-R25"
+    val javaFxV = "17-ea+8"
 
-    val asyncNewScalaV = "1.0.0"
+    val asyncNewScalaV = "1.0.1"
 
     val flywayV = "6.4.2"
     val postgresV = "42.2.23"

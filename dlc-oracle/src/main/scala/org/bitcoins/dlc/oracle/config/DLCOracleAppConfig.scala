@@ -55,11 +55,13 @@ case class DLCOracleAppConfig(
 
   override def start(): Future[Unit] = {
     logger.debug(s"Initializing dlc oracle setup")
-    super.start().flatMap { _ =>
+    val migrationsF = for {
+      _ <- super.start()
+      _ <- kmConf.start()
+    } yield {
       if (Files.notExists(datadir)) {
         Files.createDirectories(datadir)
       }
-
       val networkDir = {
         val lastDirname = network match {
           case MainNet  => "mainnet"
@@ -69,7 +71,6 @@ case class DLCOracleAppConfig(
         }
         baseDatadir.resolve(lastDirname)
       }
-
       // Move old db in network folder to oracle folder
       val oldNetworkLocation = networkDir.resolve("oracle.sqlite")
       if (!exists() && Files.exists(oldNetworkLocation)) {
@@ -80,32 +81,17 @@ case class DLCOracleAppConfig(
       logger.info(s"Applied $numMigrations to the dlc oracle project")
 
       val migrations = migrationsApplied()
-      val migrationWorkAroundF =
-        if (migrations == 2 || migrations == 3) { // For V2/V3 migrations
-          logger.debug(s"Doing V2/V3 Migration")
+      migrations
+    }
 
-          val dummyMigrationTLV = EnumEventDescriptorV0TLV.dummy
+    migrationsF.flatMap { migrations =>
+      val migrationWorkAroundF = v2V3MigrationWorkaround(migrations)
 
-          val eventDAO = EventDAO()(ec, appConfig)
-          for {
-            // get all old events
-            allEvents <- eventDAO.findByEventDescriptor(dummyMigrationTLV)
-            allOutcomes <- EventOutcomeDAO()(ec, appConfig).findAll()
-
-            outcomesByNonce = allOutcomes.groupBy(_.nonce)
-            // Update them to have the correct event descriptor
-            updated = allEvents.map { eventDb =>
-              val outcomeDbs = outcomesByNonce(eventDb.nonce)
-              val descriptor =
-                EventOutcomeDbHelper.createEnumEventDescriptor(outcomeDbs)
-              eventDb.copy(eventDescriptorTLV = descriptor)
-            }
-
-            _ <- eventDAO.upsertAll(updated)
-          } yield ()
-        } else Future.unit
-
-      migrationWorkAroundF.map { _ =>
+      val initializeF = initializeKeyManager()
+      for {
+        _ <- initializeF
+        _ <- migrationWorkAroundF
+      } yield {
         if (isHikariLoggingEnabled) {
           //.get is safe because hikari logging is enabled
           startHikariLogger(hikariLoggingInterval.get)
@@ -146,7 +132,7 @@ case class DLCOracleAppConfig(
     seedExists() && hasDb
   }
 
-  def initialize(): Future[DLCOracle] = {
+  private def initializeKeyManager(): Future[DLCOracle] = {
     if (!seedExists()) {
       BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
                                  kmParams = kmParams,
@@ -157,7 +143,8 @@ case class DLCOracleAppConfig(
       }
     }
 
-    DLCOracle.fromDatadir(directory, confs.toVector)
+    val o = new DLCOracle()(this)
+    Future.successful(o)
   }
 
   private lazy val rValueTable: TableQuery[Table[_]] = {
@@ -174,6 +161,38 @@ case class DLCOracleAppConfig(
 
   override def allTables: List[TableQuery[Table[_]]] =
     List(rValueTable, eventTable, eventOutcomeTable)
+
+  /** @param migrations - The number of migrations we have run */
+  private def v2V3MigrationWorkaround(migrations: Int): Future[Unit] = {
+    val migrationWorkAroundF: Future[Unit] = {
+      if (migrations == 2 || migrations == 3) { // For V2/V3 migrations
+        logger.debug(s"Doing V2/V3 Migration")
+
+        val dummyMigrationTLV = EnumEventDescriptorV0TLV.dummy
+
+        val eventDAO = EventDAO()(ec, appConfig)
+        for {
+          // get all old events
+          allEvents <- eventDAO.findByEventDescriptor(dummyMigrationTLV)
+          allOutcomes <- EventOutcomeDAO()(ec, appConfig).findAll()
+
+          outcomesByNonce = allOutcomes.groupBy(_.nonce)
+          // Update them to have the correct event descriptor
+          updated = allEvents.map { eventDb =>
+            val outcomeDbs = outcomesByNonce(eventDb.nonce)
+            val descriptor =
+              EventOutcomeDbHelper.createEnumEventDescriptor(outcomeDbs)
+            eventDb.copy(eventDescriptorTLV = descriptor)
+          }
+
+          _ <- eventDAO.upsertAll(updated)
+        } yield ()
+      } else {
+        Future.unit
+      }
+    }
+    migrationWorkAroundF
+  }
 }
 
 object DLCOracleAppConfig extends AppConfigFactory[DLCOracleAppConfig] {

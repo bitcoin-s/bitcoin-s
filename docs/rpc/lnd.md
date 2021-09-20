@@ -43,7 +43,7 @@ implicit val ec = system.dispatcher
 
 val datadirPath = Paths.get("path", "to", "datadir")
 val binaryPath = Paths.get("path", "to", "lnd-linux-amd64-v0.13.1-beta", "lnd")
-val instance = LndInstance.fromDataDir(datadirPath.toFile)
+val instance = LndInstanceLocal.fromDataDir(datadirPath.toFile)
 val client = new LndRpcClient(instance, Some(binaryPath.toFile))
 
 val startedF = client.start()

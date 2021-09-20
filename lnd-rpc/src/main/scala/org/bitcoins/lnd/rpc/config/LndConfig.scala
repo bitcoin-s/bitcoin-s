@@ -153,7 +153,7 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
     LndConfig(lines, newDatadir)
   }
 
-  lazy val lndInstance: LndInstance = LndInstance(
+  lazy val lndInstance: LndInstanceLocal = LndInstanceLocal(
     datadir.toPath,
     network,
     listenBinding,

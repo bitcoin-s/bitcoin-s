@@ -15,20 +15,30 @@ import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.LnTag.PaymentHashTag
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput,
   Transaction => Tx
 }
+import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
 import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient._
-import org.bitcoins.lnd.rpc.config.LndInstance
-import scodec.bits.ByteVector
-import signrpc.TxOut
-import walletrpc.{SendOutputsRequest, WalletKitClient}
+import org.bitcoins.lnd.rpc.LndUtils._
+import org.bitcoins.lnd.rpc.config.{LndInstance, LndInstanceLocal}
+import scodec.bits._
+import signrpc._
+import walletrpc.{
+  FinalizePsbtRequest,
+  LeaseOutputRequest,
+  ListLeasesRequest,
+  ReleaseOutputRequest,
+  SendOutputsRequest,
+  WalletKitClient
+}
 
 import java.io.{File, FileInputStream}
 import java.net.InetSocketAddress
@@ -38,19 +48,23 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-/** @param binary Path to lnd executable
+/** @param binaryOpt Path to lnd executable
   */
-class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
+class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     implicit system: ActorSystem)
     extends NativeProcessFactory
     with StartStopAsync[LndRpcClient]
     with Logging {
+  instance match {
+    case _: LndInstanceLocal =>
+      require(binaryOpt.isDefined,
+              s"Binary must be defined with a local instance of lnd")
+  }
 
   /** The command to start the daemon on the underlying OS */
-  override def cmd: String = binary match {
-    case Some(file) =>
-      s"$file --lnddir=${instance.datadir.toAbsolutePath}"
-    case None => ""
+  override def cmd: String = instance match {
+    case local: LndInstanceLocal =>
+      s"${binaryOpt.get} --lnddir=${local.datadir.toAbsolutePath}"
   }
 
   implicit val executionContext: ExecutionContext = system.dispatcher
@@ -90,6 +104,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
   lazy val lnd: LightningClient = LightningClient(clientSettings)
   lazy val wallet: WalletKitClient = WalletKitClient(clientSettings)
   lazy val unlocker: WalletUnlockerClient = WalletUnlockerClient(clientSettings)
+  lazy val signer: SignerClient = SignerClient(clientSettings)
 
   def genSeed(): Future[GenSeedResponse] = {
     logger.trace("lnd calling genseed")
@@ -139,8 +154,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
   def lookupInvoice(rHash: PaymentHashTag): Future[Invoice] = {
     logger.trace("lnd calling lookupinvoice")
 
-    val byteStr = ByteString.copyFrom(rHash.bytes.toArray)
-    val req: PaymentHash = PaymentHash(rHash = byteStr)
+    val req: PaymentHash = PaymentHash(rHash = rHash.bytes)
 
     lnd.lookupInvoice(req)
   }
@@ -171,12 +185,11 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
     lnd
       .addInvoice(invoice)
       .map { res =>
-        val paymentHashBytes = ByteVector(res.rHash.toByteArray)
         AddInvoiceResult(
-          PaymentHashTag(Sha256Digest(paymentHashBytes)),
+          PaymentHashTag(Sha256Digest(res.rHash)),
           LnInvoice.fromString(res.paymentRequest),
           res.addIndex,
-          ByteVector(res.paymentAddr.toByteArray)
+          res.paymentAddr
         )
       }
   }
@@ -193,10 +206,15 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
   }
 
   def listUnspent: Future[Vector[UTXOResult]] = {
+    val request = ListUnspentRequest(0, Int.MaxValue)
+    listUnspent(request)
+  }
+
+  def listUnspent(request: ListUnspentRequest): Future[Vector[UTXOResult]] = {
     logger.trace("lnd calling listunspent")
 
     lnd
-      .listUnspent(ListUnspentRequest())
+      .listUnspent(request)
       .map(_.utxos.toVector.map { utxo =>
         val outPointOpt = utxo.outpoint.map { out =>
           val txId = DoubleSha256DigestBE(out.txidStr)
@@ -204,9 +222,11 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
           TransactionOutPoint(txId, vout)
         }
 
+        val spkBytes = ByteVector.fromValidHex(utxo.pkScript)
+
         UTXOResult(BitcoinAddress.fromString(utxo.address),
                    Satoshis(utxo.amountSat),
-                   ScriptPubKey(utxo.pkScript),
+                   ScriptPubKey.fromAsmBytes(spkBytes),
                    outPointOpt,
                    utxo.confirmations)
 
@@ -265,7 +285,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       satPerVByte: SatoshisPerVirtualByte,
       privateChannel: Boolean): Future[Option[TransactionOutPoint]] = {
     val request = OpenChannelRequest(
-      nodePubkey = ByteString.copyFrom(nodeId.bytes.toArray),
+      nodePubkey = nodeId.bytes,
       localFundingAmount = fundingAmount.satoshis.toLong,
       satPerVbyte = satPerVByte.toLong,
       `private` = privateChannel
@@ -281,7 +301,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       satPerVByte: SatoshisPerVirtualByte,
       privateChannel: Boolean): Future[Option[TransactionOutPoint]] = {
     val request = OpenChannelRequest(
-      nodePubkey = ByteString.copyFrom(nodeId.bytes.toArray),
+      nodePubkey = nodeId.bytes,
       localFundingAmount = fundingAmount.satoshis.toLong,
       pushSat = pushAmt.satoshis.toLong,
       satPerVbyte = satPerVByte.toLong,
@@ -299,8 +319,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       .openChannelSync(request)
       .map { point =>
         point.fundingTxid.fundingTxidBytes match {
-          case Some(bytesStr) =>
-            val bytes = ByteVector(bytesStr.toByteArray)
+          case Some(bytes) =>
             val txId = DoubleSha256DigestBE(bytes)
             Some(TransactionOutPoint(txId, UInt32(point.outputIndex)))
           case None => None
@@ -373,9 +392,8 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
   def sendPayment(
       nodeId: NodeId,
       amount: CurrencyUnit): Future[SendResponse] = {
-    val request: SendRequest = SendRequest(
-      dest = ByteString.copyFrom(nodeId.bytes.toArray),
-      amt = amount.satoshis.toLong)
+    val request: SendRequest =
+      SendRequest(dest = nodeId.bytes, amt = amount.satoshis.toLong)
 
     sendPayment(request)
   }
@@ -399,12 +417,8 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
       feeRate: SatoshisPerKW,
       spendUnconfirmed: Boolean): Future[Tx] = {
 
-    val txOuts = outputs.map(out =>
-      TxOut(out.value.satoshis.toLong,
-            ByteString.copyFrom(out.scriptPubKey.asmBytes.toArray)))
-
     val request = SendOutputsRequest(satPerKw = feeRate.toLong,
-                                     outputs = txOuts,
+                                     outputs = outputs,
                                      spendUnconfirmed = spendUnconfirmed)
     sendOutputs(request)
   }
@@ -414,10 +428,115 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
 
     wallet
       .sendOutputs(request)
-      .map { res =>
-        val bytes = ByteVector(res.rawTx.toByteArray)
-        Tx(bytes)
-      }
+      .map(res => Tx(res.rawTx))
+  }
+
+  def finalizePSBT(psbt: PSBT): Future[PSBT] = {
+    val request = FinalizePsbtRequest(psbt.bytes)
+
+    finalizePSBT(request)
+  }
+
+  def finalizePSBT(request: FinalizePsbtRequest): Future[PSBT] = {
+    logger.trace("lnd calling finalizepsbt")
+
+    wallet
+      .finalizePsbt(request)
+      .map(res => PSBT(res.signedPsbt))
+  }
+
+  def computeInputScript(
+      tx: Tx,
+      inputIdx: Int,
+      output: TransactionOutput): Future[(ScriptSignature, ScriptWitness)] = {
+    val signDescriptor =
+      SignDescriptor(output = Some(output),
+                     sighash = HashType.sigHashAll.num.toInt,
+                     inputIndex = inputIdx)
+
+    computeInputScript(tx, Vector(signDescriptor)).map(_.head)
+  }
+
+  def computeInputScript(
+      tx: Tx,
+      signDescriptors: Vector[SignDescriptor]): Future[
+    Vector[(ScriptSignature, ScriptWitness)]] = {
+    val request: SignReq =
+      SignReq(tx.bytes, signDescriptors)
+
+    computeInputScript(request)
+  }
+
+  def computeInputScript(
+      request: SignReq): Future[Vector[(ScriptSignature, ScriptWitness)]] = {
+    logger.trace("lnd calling computeinputscript")
+
+    signer.computeInputScript(request).map { res =>
+      res.inputScripts.map { script =>
+        val scriptSig = ScriptSignature.fromAsmBytes(script.sigScript)
+        val witness = ScriptWitness(script.witness.reverse.toVector)
+
+        (scriptSig, witness)
+      }.toVector
+    }
+  }
+
+  def listLeases(): Future[Vector[UTXOLease]] = {
+    listLeases(ListLeasesRequest())
+  }
+
+  def listLeases(request: ListLeasesRequest): Future[Vector[UTXOLease]] = {
+    logger.trace("lnd calling listleases")
+
+    wallet
+      .listLeases(request)
+      .map(_.lockedUtxos.toVector.map { lease =>
+        val txId = DoubleSha256DigestBE(lease.outpoint.get.txidBytes)
+        val vout = UInt32(lease.outpoint.get.outputIndex)
+        val outPoint = TransactionOutPoint(txId, vout)
+        UTXOLease(lease.id, outPoint, lease.expiration)
+      })
+  }
+
+  def leaseOutput(
+      outpoint: TransactionOutPoint,
+      leaseSeconds: Long): Future[Long] = {
+    val outPoint =
+      OutPoint(outpoint.txId.bytes, outputIndex = outpoint.vout.toInt)
+
+    val request = LeaseOutputRequest(id = LndRpcClient.leaseId,
+                                     outpoint = Some(outPoint),
+                                     expirationSeconds = leaseSeconds)
+
+    leaseOutput(request)
+  }
+
+  /** LeaseOutput locks an output to the given ID, preventing it from being available for any future coin selection attempts.
+    * The absolute time of the lock's expiration is returned.
+    * The expiration of the lock can be extended by successive invocations of this RPC.
+    * @param request LeaseOutputRequest
+    * @return Unix timestamp for when the lease expires
+    */
+  def leaseOutput(request: LeaseOutputRequest): Future[Long] = {
+    logger.trace("lnd calling leaseoutput")
+
+    wallet.leaseOutput(request).map(_.expiration)
+  }
+
+  def releaseOutput(outpoint: TransactionOutPoint): Future[Unit] = {
+    val outPoint =
+      OutPoint(outpoint.txId.bytes, outputIndex = outpoint.vout.toInt)
+
+    val request =
+      ReleaseOutputRequest(id = LndRpcClient.leaseId, outpoint = Some(outPoint))
+
+    releaseOutput(request)
+  }
+
+  def releaseOutput(request: ReleaseOutputRequest): Future[Unit] = {
+    logger.trace("lnd calling releaseoutput")
+
+    wallet.releaseOutput(request).map(_ => ())
   }
 
   /** Broadcasts the given transaction
@@ -426,7 +545,7 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
   def publishTransaction(tx: Tx): Future[Option[String]] = {
     logger.trace("lnd calling publishtransaction")
 
-    val request = walletrpc.Transaction(ByteString.copyFrom(tx.bytes.toArray))
+    val request = walletrpc.Transaction(tx.bytes)
 
     wallet
       .publishTransaction(request)
@@ -513,9 +632,10 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
             // too many tries to get info about a payment
             // either Lnd is down or the payment is still in PENDING state for some reason
             // complete the promise with an exception so the runnable will be canceled
-            p.failure(new RuntimeException(
-              s"LndApi.monitorInvoice() [${instance.datadir}] too many attempts: ${attempts
-                .get()} for invoice=${rHash.hash.hex}"))
+            p.failure(
+              new RuntimeException(
+                s"LndApi.monitorInvoice() [$instance] too many attempts: ${attempts
+                  .get()} for invoice=${rHash.hash.hex}"))
           }
         }
       }
@@ -583,6 +703,12 @@ class LndRpcClient(val instance: LndInstance, binary: Option[File] = None)(
 }
 
 object LndRpcClient {
+
+  /** Lease id should be unique per application
+    * this is the sha256 of "lnd bitcoin-s"
+    */
+  val leaseId: ByteString =
+    hex"8c45ee0b90e3afd0fb4d6f39afa3c5d551ee5f2c7ac2d06820ed3d16582186d2"
 
   /** The current version we support of Lnd */
   private[bitcoins] val version = "0.13.1"

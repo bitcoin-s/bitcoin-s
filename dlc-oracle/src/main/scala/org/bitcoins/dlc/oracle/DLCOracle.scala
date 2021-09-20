@@ -6,7 +6,7 @@ import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
-import org.bitcoins.core.crypto.{ExtPrivateKeyHardened, MnemonicCode}
+import org.bitcoins.core.crypto.ExtPrivateKeyHardened
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.Bech32Address
@@ -19,7 +19,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.dlc.oracle.util.EventDbUtil
-import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
+import org.bitcoins.keymanager.WalletStorage
 import scodec.bits.ByteVector
 
 import java.nio.file.Path
@@ -435,20 +435,6 @@ object DLCOracle {
 
   // 585 is a random one I picked, unclaimed in https://github.com/satoshilabs/slips/blob/master/slip-0044.md
   val R_VALUE_PURPOSE = 585
-
-  def apply(mnemonicCode: MnemonicCode)(implicit
-      conf: DLCOracleAppConfig): DLCOracle = {
-    val decryptedMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
-    val toWrite = conf.aesPasswordOpt match {
-      case Some(password) => decryptedMnemonic.encrypt(password)
-      case None           => decryptedMnemonic
-    }
-    if (!conf.seedExists()) {
-      WalletStorage.writeSeedToDisk(conf.kmConf.seedPath, toWrite)
-    }
-
-    new DLCOracle()
-  }
 
   /** Gets the DLC oracle from the given datadir */
   def fromDatadir(path: Path, configs: Vector[Config])(implicit

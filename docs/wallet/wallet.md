@@ -62,7 +62,7 @@ import org.bitcoins.core.wallet.fee._
 import org.bitcoins.feeprovider._
 import org.bitcoins.keymanager.bip39._
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.config._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.wallet.Wallet
@@ -71,6 +71,7 @@ import com.typesafe.config.ConfigFactory
 import java.nio.file.Files
 import java.time.Instant
 import scala.concurrent._
+import akka.actor.ActorSystem
 
 val chainApi = new ChainQueryApi {
     override def epochSecondToBlockHeight(time: Long): Future[Int] = Future.successful(0)
@@ -85,7 +86,7 @@ val chainApi = new ChainQueryApi {
 
 ```scala mdoc:compile-only
 implicit val ec = scala.concurrent.ExecutionContext.global
-
+implicit val system = ActorSystem("System")
 
 val config = ConfigFactory.parseString {
     """
@@ -113,7 +114,7 @@ val configF: Future[Unit] = for {
     _ <- chainConfig.start()
 } yield ()
 
-val bitcoindInstance = BitcoindInstance.fromDatadir()
+val bitcoindInstance = BitcoindInstanceLocal.fromDatadir()
 
 val bitcoind = BitcoindRpcClient(bitcoindInstance)
 
@@ -142,23 +143,14 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
     ChainSync.sync(chainHandler, getBlockHeaderFunc, getBestBlockHashFunc)
 }
 
-//initialize our key manager, where we store our keys
-val aesPasswordOpt = Some(AesPassword.fromString("password"))
-//you can add a password here if you want
-//val bip39PasswordOpt = Some("my-password-here")
-val bip39PasswordOpt = None
-val keyManager = BIP39KeyManager.initialize(aesPasswordOpt, walletConfig.kmParams, bip39PasswordOpt).getOrElse {
-  throw new RuntimeException(s"Failed to initalize key manager")
-}
-
 // once this future completes, we have a initialized
 // wallet
-val wallet = Wallet(keyManager, new NodeApi {
+val wallet = Wallet(new NodeApi {
     override def broadcastTransactions(txs: Vector[Transaction]): Future[Unit] = Future.successful(())
     override def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.successful(())
-  }, chainApi, ConstantFeeRateProvider(SatoshisPerVirtualByte.one), creationTime = Instant.now)
+  }, chainApi, ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
 val walletF: Future[WalletApi] = configF.flatMap { _ =>
-  Wallet.initialize(wallet,bip39PasswordOpt)
+  Wallet.initialize(wallet, None)
 }
 
 // when this future completes, ww have sent a transaction

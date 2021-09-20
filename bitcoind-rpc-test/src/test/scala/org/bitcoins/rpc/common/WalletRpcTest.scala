@@ -20,6 +20,7 @@ import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{ECSignatureParams, P2WPKHV0InputInfo}
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairV21,
@@ -71,9 +72,15 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
 
   it should "be able to dump the wallet" in { nodePair: FixtureParam =>
     val client = nodePair.node1
+    val localInstance = client.getDaemon match {
+      case _: BitcoindInstanceRemote =>
+        sys.error(s"Cannot use remote bitcoind instance in test cases")
+      case local: BitcoindInstanceLocal =>
+        local
+    }
     for {
       result <- {
-        val datadir = client.getDaemon.datadir.getAbsolutePath
+        val datadir = localInstance.datadir.getAbsolutePath
         client.dumpWallet(datadir + "/test.dat")
       }
     } yield {
@@ -84,12 +91,18 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
 
   it should "be able to list wallets" in { nodePair: FixtureParam =>
     val client = nodePair.node1
+    val localInstance = client.getDaemon match {
+      case _: BitcoindInstanceRemote =>
+        sys.error(s"Cannot use remote bitcoind instance in test cases")
+      case local: BitcoindInstanceLocal =>
+        local
+    }
     for {
       wallets <- client.listWallets
     } yield {
 
       val expectedFileName =
-        if (client.instance.getVersion == BitcoindVersion.V16) "wallet.dat"
+        if (localInstance.getVersion == BitcoindVersion.V16) "wallet.dat"
         else ""
 
       assert(wallets == Vector(expectedFileName))
@@ -98,13 +111,19 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
 
   it should "be able to backup the wallet" in { nodePair: FixtureParam =>
     val client = nodePair.node1
+    val localInstance = client.getDaemon match {
+      case _: BitcoindInstanceRemote =>
+        sys.error(s"Cannot use remote bitcoind instance in test cases")
+      case local: BitcoindInstanceLocal =>
+        local
+    }
     for {
       _ <- {
-        val datadir = client.getDaemon.datadir.getAbsolutePath
+        val datadir = localInstance.datadir.getAbsolutePath
         client.backupWallet(datadir + "/backup.dat")
       }
     } yield {
-      val datadir = client.getDaemon.datadir.getAbsolutePath
+      val datadir = localInstance.datadir.getAbsolutePath
       val file = new File(datadir + "/backup.dat")
       assert(file.exists)
       assert(file.isFile)
@@ -397,7 +416,12 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
     val ecPrivateKey = ECPrivateKey.freshPrivateKey
     val publicKey = ecPrivateKey.publicKey
     val address = P2PKHAddress(publicKey, networkParam)
-
+    val localInstance = client.getDaemon match {
+      case _: BitcoindInstanceRemote =>
+        sys.error(s"Cannot use remote bitcoind instance in test cases")
+      case local: BitcoindInstanceLocal =>
+        local
+    }
     for {
       _ <- client.importPrivKey(ecPrivateKey.toPrivateKeyBytes(),
                                 rescan = false)
@@ -405,7 +429,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
       result <-
         client
           .dumpWallet(
-            client.getDaemon.datadir.getAbsolutePath + "/wallet_dump.dat")
+            localInstance.datadir.getAbsolutePath + "/wallet_dump.dat")
     } yield {
       assert(key.toPrivateKey == ecPrivateKey)
       val reader = new Scanner(result.filename)
@@ -465,11 +489,17 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
 
   it should "be able to import a wallet" in { nodePair: FixtureParam =>
     val client = nodePair.node1
+    val localInstance = client.getDaemon match {
+      case _: BitcoindInstanceRemote =>
+        sys.error(s"Cannot use remote bitcoind instance in test cases")
+      case local: BitcoindInstanceLocal =>
+        local
+    }
     for {
       walletClient <- walletClientF
       address <- client.getNewAddress
       walletFile =
-        client.getDaemon.datadir.getAbsolutePath + "/client_wallet.dat"
+        localInstance.datadir.getAbsolutePath + "/client_wallet.dat"
 
       fileResult <- client.dumpWallet(walletFile)
       _ <- walletClient.walletPassphrase(password, 1000)
@@ -482,11 +512,16 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
   it should "be able to load a wallet" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val name = "tmp_wallet"
-
+    val localInstance = client.getDaemon match {
+      case _: BitcoindInstanceRemote =>
+        sys.error(s"Cannot use remote bitcoind instance in test cases")
+      case local: BitcoindInstanceLocal =>
+        local
+    }
     for {
       walletClient <- walletClientF
       walletFile =
-        client.getDaemon.datadir.getAbsolutePath + s"/regtest/wallets/$name"
+        localInstance.datadir.getAbsolutePath + s"/regtest/wallets/$name"
 
       _ <- client.createWallet(walletFile)
       _ <- client.unloadWallet(walletFile)

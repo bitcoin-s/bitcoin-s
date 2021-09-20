@@ -3,7 +3,7 @@
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.8.1")
 
 // collect code coverage when executing tests
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.8.2")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.9.0")
 
 // report code coverage to Coveralls
 addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.3.1")
@@ -18,7 +18,7 @@ addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.10.0")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
 
 // bloop is a build server, enabling faster builds and more rapid dev feedback
-addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.4.8")
+addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.4.9")
 
 //tool to publish snapshots to sonatype after CI builds finish
 //https://github.com/olafurpg/sbt-ci-release

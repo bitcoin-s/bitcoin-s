@@ -11,16 +11,14 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.util._
 import org.bitcoins.feeprovider._
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.node._
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
-import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.config._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
-import java.time.Instant
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 ```
@@ -55,20 +53,10 @@ implicit val walletConf: WalletAppConfig =
 
 // let's use a helper method to get a v19 bitcoind
 // and a ChainApi
-val bitcoind = BitcoindV19RpcClient(BitcoindInstance.fromConfigFile())
+val instance = BitcoindInstanceLocal.fromConfigFile(BitcoindConfig.DEFAULT_CONF_FILE)
+val bitcoind = BitcoindV19RpcClient(instance)
 val chainApi = BitcoinSWalletTest.MockChainQueryApi
 val aesPasswordOpt = Some(AesPassword.fromString("password"))
-
-// Create our key manager
-val keyManagerE = BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
-                                               kmParams = walletConf.kmParams,
-                                               bip39PasswordOpt = None)
-
-val keyManager = keyManagerE match {
-    case Right(keyManager) => keyManager
-    case Left(err) =>
-      throw new RuntimeException(s"Cannot initialize key manager err=$err")
-  }
 
 // This function can be used to create a callback for when our node api calls downloadBlocks,
 // more specifically it will call the function every time we receive a block, the returned
@@ -104,7 +92,7 @@ val exampleCallback = createCallback(exampleProcessBlock)
 
 // Finally, we can initialize our wallet with our own node api
 val wallet =
-    Wallet(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi, feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one), creationTime = Instant.now)
+    Wallet(nodeApi = nodeApi, chainQueryApi = chainApi, feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
 
 // Then to trigger the event we can run
 val exampleBlock = DoubleSha256Digest(

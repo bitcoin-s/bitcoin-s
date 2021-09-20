@@ -9,7 +9,6 @@ import org.bitcoins.commons.util.{DatadirUtil, ServerArgParser}
 import org.bitcoins.core.api.node.InternalImplementationNodeType
 import org.bitcoins.gui._
 import org.bitcoins.core.api.node.NodeType._
-import org.bitcoins.server.BitcoinSAppConfig.toNodeConf
 import org.bitcoins.server._
 import scalafx.beans.property.ObjectProperty
 import scalafx.stage.Window
@@ -35,7 +34,8 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
       "Launching Wallet",
       op = {
         import system.dispatcher
-        val file = appConfig.baseDatadir.resolve("bitcoin-s-bundle.conf")
+        val file =
+          appConfig.nodeConf.baseDatadir.resolve("bitcoin-s-bundle.conf")
 
         val bundleConfStr = AppConfig.configToString(bundleConf)
 
@@ -46,7 +46,7 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
           val tmpConf =
             BitcoinSAppConfig.fromConfig(
               bundleConf.withFallback(appConfig.config))
-          val netConfF: Future[Config] = tmpConf.nodeType match {
+          val netConfF: Future[Config] = tmpConf.nodeConf.nodeType match {
             case _: InternalImplementationNodeType =>
               // If we are connecting to a node we cannot
               // know what network it is on now
@@ -84,12 +84,13 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
 
         val startedF = networkConfigF.map { networkConfig =>
           val finalAppConfig =
-            BitcoinSAppConfig.fromDatadir(appConfig.baseDatadir, networkConfig)
+            BitcoinSAppConfig.fromDatadir(appConfig.nodeConf.baseDatadir,
+                                          networkConfig)
           // use class base constructor to share the actor system
 
           GlobalData.setBitcoinNetwork(
-            finalAppConfig.network,
-            finalAppConfig.socks5ProxyParams.isDefined)
+            finalAppConfig.nodeConf.network,
+            finalAppConfig.nodeConf.socks5ProxyParams.isDefined)
           new BitcoinSServerMain(serverArgParser)(system, finalAppConfig)
             .run()
         }
