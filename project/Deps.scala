@@ -24,7 +24,7 @@ object Deps {
     val nativeLoaderV = "2.3.6"
     val typesafeConfigV = "1.4.1"
 
-    val scalaFxV = "16.0.0-R24"
+    val scalaFxV = "16.0.0-R25"
     val javaFxV = "17-ea+8"
 
     val asyncNewScalaV = "1.0.1"
