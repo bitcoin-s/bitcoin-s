@@ -69,7 +69,7 @@ case class KeyManagerAppConfig(
     * configuration file. This should be used to seed the keymanager
     * rather than randomly generating entropy.
     */
-  lazy val externalEntropy: Option[String] = {
+  private lazy val externalEntropy: Option[String] = {
     val opt = config.getStringOrNone("bitcoin-s.keymanager.entropy")
     opt
   }
