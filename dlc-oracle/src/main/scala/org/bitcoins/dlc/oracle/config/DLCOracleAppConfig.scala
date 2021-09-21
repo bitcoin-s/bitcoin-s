@@ -71,7 +71,6 @@ case class DLCOracleAppConfig(
       _ <- kmConf.start()
       numMigrations = migrate()
       _ = logger.info(s"Applied $numMigrations to the dlc oracle project")
-      isExists <- exists()
     } yield {
       if (Files.notExists(datadir)) {
         Files.createDirectories(datadir)
@@ -87,7 +86,7 @@ case class DLCOracleAppConfig(
       }
       // Move old db in network folder to oracle folder
       val oldNetworkLocation = networkDir.resolve("oracle.sqlite")
-      if (!isExists && Files.exists(oldNetworkLocation)) {
+      if (!Files.exists(dbPath) && Files.exists(oldNetworkLocation)) {
         Files.move(oldNetworkLocation, dbPath)
       }
 
