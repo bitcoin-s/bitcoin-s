@@ -17,7 +17,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl,
                                                               Vector.empty,
                                                               torAppConfigOpt =
-                                                                Some(torConfig))
+                                                                torConfigOpt)
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoinds
 

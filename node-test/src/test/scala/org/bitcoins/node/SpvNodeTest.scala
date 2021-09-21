@@ -23,7 +23,7 @@ class SpvNodeTest extends NodeTestWithCachedBitcoindNewest {
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl,
                                                          Vector.empty,
                                                          torAppConfigOpt =
-                                                           Some(torConfig))
+                                                           torConfigOpt)
 
   override type FixtureParam = SpvNodeConnectedWithBitcoind
 

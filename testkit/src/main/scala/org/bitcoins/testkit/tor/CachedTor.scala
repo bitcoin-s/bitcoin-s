@@ -17,15 +17,24 @@ import scala.concurrent.{Await, Future}
 trait CachedTor extends Logging {
   _: BitcoinSAkkaAsyncTest =>
 
-  implicit protected lazy val torConfig: TorAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig(Vector.empty, None).torConf
+  implicit protected lazy val torConfigOpt: Option[TorAppConfig] = {
+    if (TorUtil.torEnabled) {
+      val torConf =
+        BitcoinSTestAppConfig.getSpvTestConfig(Vector.empty, None).torConf
+      Some(torConf)
+    } else {
+      None
+    }
+  }
 
   protected val isTorStarted: AtomicBoolean = new AtomicBoolean(false)
 
   protected lazy val torF: Future[Unit] = {
     val _ = isTorStarted.set(true)
-
-    torConfig.start()
+    torConfigOpt match {
+      case Some(torConf) => torConf.start()
+      case None          => Future.unit
+    }
   }
 
   override def beforeAll(): Unit = {
@@ -37,7 +46,12 @@ trait CachedTor extends Logging {
 
   override def afterAll(): Unit = {
     if (TorUtil.torEnabled && isTorStarted.get) {
-      Await.result(torConfig.stop(), akkaTimeout.duration)
+      val torConf = torConfigOpt match {
+        case Some(torConf) => torConf
+        case None =>
+          sys.error(s"Tor enabled but no tor configuration?")
+      }
+      Await.result(torConf.stop(), akkaTimeout.duration)
     }
     ()
   }
@@ -48,7 +62,13 @@ trait CachedTorCustomDatadir extends CachedTor { _: BitcoinSAkkaAsyncTest =>
   /** The specific datadir we should start the tor instance from */
   def customDatadir: Path
 
-  implicit override protected lazy val torConfig: TorAppConfig = {
-    TorAppConfig.fromDatadir(customDatadir, Vector.empty)
+  implicit override protected lazy val torConfigOpt: Option[TorAppConfig] = {
+    if (TorUtil.torEnabled) {
+      val torConf = TorAppConfig.fromDatadir(customDatadir, Vector.empty)
+      Some(torConf)
+    } else {
+      None
+    }
+
   }
 }

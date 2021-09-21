@@ -48,7 +48,7 @@ trait BitcoinSAppConfigBitcoinFixtureNotStarted
         conf = buildConfig(bitcoind.instance)
         bitcoinSAppConfig = BitcoinSAppConfig(customDatadir,
                                               Vector(conf),
-                                              torAppConfigOpt = Some(torConfig))
+                                              torAppConfigOpt = torConfigOpt)
       } yield {
         bitcoinSAppConfig
       }

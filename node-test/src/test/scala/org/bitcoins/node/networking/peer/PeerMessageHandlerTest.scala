@@ -25,7 +25,7 @@ class PeerMessageHandlerTest
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig(Vector.empty, Some(torConfig))
+    BitcoinSTestAppConfig.getSpvTestConfig(Vector.empty, torConfigOpt)
 
   override type FixtureParam = Peer
 
@@ -35,7 +35,9 @@ class PeerMessageHandlerTest
     val outcomeF: Future[Outcome] = for {
       _ <- torClientF
       bitcoind <- cachedBitcoindWithFundsF
-      outcome = withBitcoindPeer(test, bitcoind, torConfig.socks5ProxyParams)
+      outcome = withBitcoindPeer(test,
+                                 bitcoind,
+                                 torConfigOpt.flatMap(_.socks5ProxyParams))
       f <- outcome.toFuture
     } yield f
     new FutureOutcome(outcomeF)

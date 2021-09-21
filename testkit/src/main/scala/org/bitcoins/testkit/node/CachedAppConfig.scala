@@ -65,7 +65,7 @@ trait CachedBitcoinSAppConfigCachedTor
   }
 
   implicit override protected lazy val cachedConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoTestConfig(Vector.empty, Some(torConfig))
+    BitcoinSTestAppConfig.getNeutrinoTestConfig(Vector.empty, torConfigOpt)
 }
 
 trait CachedChainAppConfig {

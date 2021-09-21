@@ -20,7 +20,7 @@ class UpdateBloomFilterTest extends NodeTestWithCachedBitcoindNewest {
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl,
                                                          Vector.empty,
                                                          torAppConfigOpt =
-                                                           Some(torConfig))
+                                                           torConfigOpt)
 
   override type FixtureParam = SpvNodeFundedWalletBitcoind
 

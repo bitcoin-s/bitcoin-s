@@ -14,14 +14,14 @@ class Socks5ClientTransportSpec extends BitcoinSAsyncTest with CachedTor {
 
   implicit val ec = system.dispatcher
 
-  val proxyParams = torConfig.socks5ProxyParams.get
+  def proxyParams = torConfigOpt.flatMap(_.socks5ProxyParams).get
 
-  val socks5ClientTransport = new Socks5ClientTransport(proxyParams)
+  lazy val socks5ClientTransport = new Socks5ClientTransport(proxyParams)
 
-  val clientConnectionSettings =
+  lazy val clientConnectionSettings =
     ClientConnectionSettings(system).withTransport(socks5ClientTransport)
 
-  val settings = ConnectionPoolSettings(system).withConnectionSettings(
+  lazy val settings = ConnectionPoolSettings(system).withConnectionSettings(
     clientConnectionSettings)
 
   it should "handle clear net addresses" in {

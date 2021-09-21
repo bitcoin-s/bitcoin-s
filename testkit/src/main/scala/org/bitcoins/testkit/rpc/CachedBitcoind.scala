@@ -70,7 +70,7 @@ trait CachedBitcoindNewest extends CachedBitcoindFunded[BitcoindRpcClient] {
     BitcoindRpcClient] = {
     val _ = isBitcoindUsed.set(true)
     BitcoinSFixture
-      .createBitcoindWithFunds(torAppConfigOpt = Some(torConfig),
+      .createBitcoindWithFunds(torAppConfigOpt = torConfigOpt,
                                versionOpt = Some(BitcoindVersion.newest))
   }
 }
@@ -82,7 +82,7 @@ trait CachedBitcoindV17 extends CachedBitcoindFunded[BitcoindV17RpcClient] {
     BitcoindV17RpcClient] = {
     val _ = isBitcoindUsed.set(true)
     BitcoinSFixture
-      .createBitcoindWithFunds(Some(torConfig), Some(BitcoindVersion.V17))
+      .createBitcoindWithFunds(torConfigOpt, Some(BitcoindVersion.V17))
       .map(_.asInstanceOf[BitcoindV17RpcClient])
   }
 }
@@ -94,7 +94,7 @@ trait CachedBitcoindV18 extends CachedBitcoindFunded[BitcoindV18RpcClient] {
     BitcoindV18RpcClient] = {
     val _ = isBitcoindUsed.set(true)
     BitcoinSFixture
-      .createBitcoindWithFunds(Some(torConfig), Some(BitcoindVersion.V18))
+      .createBitcoindWithFunds(torConfigOpt, Some(BitcoindVersion.V18))
       .map(_.asInstanceOf[BitcoindV18RpcClient])
   }
 }
@@ -106,7 +106,7 @@ trait CachedBitcoindV19 extends CachedBitcoindFunded[BitcoindV19RpcClient] {
     BitcoindV19RpcClient] = {
     val _ = isBitcoindUsed.set(true)
     BitcoinSFixture
-      .createBitcoindWithFunds(Some(torConfig), Some(BitcoindVersion.V19))
+      .createBitcoindWithFunds(torConfigOpt, Some(BitcoindVersion.V19))
       .map(_.asInstanceOf[BitcoindV19RpcClient])
   }
 }
@@ -118,7 +118,7 @@ trait CachedBitcoindV20 extends CachedBitcoindFunded[BitcoindV20RpcClient] {
     BitcoindV20RpcClient] = {
     val _ = isBitcoindUsed.set(true)
     BitcoinSFixture
-      .createBitcoindWithFunds(Some(torConfig), Some(BitcoindVersion.V20))
+      .createBitcoindWithFunds(torConfigOpt, Some(BitcoindVersion.V20))
       .map(_.asInstanceOf[BitcoindV20RpcClient])
   }
 }
@@ -130,7 +130,7 @@ trait CachedBitcoindV21 extends CachedBitcoindFunded[BitcoindV21RpcClient] {
     BitcoindV21RpcClient] = {
     val _ = isBitcoindUsed.set(true)
     BitcoinSFixture
-      .createBitcoindWithFunds(Some(torConfig), Some(BitcoindVersion.V21))
+      .createBitcoindWithFunds(torConfigOpt, Some(BitcoindVersion.V21))
       .map(_.asInstanceOf[BitcoindV21RpcClient])
   }
 }
@@ -182,7 +182,7 @@ trait CachedBitcoindPair[T <: BitcoindRpcClient]
 
   lazy val clientsF: Future[NodePair[T]] = {
     BitcoindRpcTestUtil
-      .createNodePair[T](version, Some(torConfig))
+      .createNodePair[T](version, torConfigOpt)
       .map(NodePair.fromTuple)
       .map { tuple =>
         isClientsUsed.set(true)
@@ -201,7 +201,7 @@ trait CachedBitcoindPairV21
 
   lazy val clientsF: Future[NodePair[BitcoindV21RpcClient]] = {
     BitcoindRpcTestUtil
-      .createNodePair[BitcoindV21RpcClient](version, Some(torConfig))
+      .createNodePair[BitcoindV21RpcClient](version, torConfigOpt)
       .map(NodePair.fromTuple)
       .map { tuple =>
         isClientsUsed.set(true)
@@ -218,7 +218,7 @@ trait CachedBitcoindTriple[T <: BitcoindRpcClient]
 
   lazy val clientsF: Future[NodeTriple[T]] = {
     BitcoindRpcTestUtil
-      .createNodeTriple[T](version, Some(torConfig))
+      .createNodeTriple[T](version, torConfigOpt)
       .map(NodeTriple.fromTuple)
       .map { triple =>
         isClientsUsed.set(true)

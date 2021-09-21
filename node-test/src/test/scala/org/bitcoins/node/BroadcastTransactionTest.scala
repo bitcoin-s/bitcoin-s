@@ -26,7 +26,7 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindNewest {
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(
       pgUrl = pgUrl,
       config = Vector.empty,
-      torAppConfigOpt = Some(torConfig))
+      torAppConfigOpt = torConfigOpt)
 
   override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
 

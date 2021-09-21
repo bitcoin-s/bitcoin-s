@@ -24,7 +24,8 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
   override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl,
                                                          Vector.empty,
-                                                         Some(torConfig))
+                                                         torAppConfigOpt =
+                                                           torConfigOpt)
 
   override type FixtureParam = SpvNodeConnectedWithBitcoindV21
 

@@ -14,13 +14,13 @@ import scala.concurrent.duration.DurationInt
 class ReConnectionTest extends BitcoindRpcTorTest {
 
   lazy val bitcoindRpcF =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt =
-                                                   Some(torConfig),
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = torConfigOpt,
                                                  clientAccum = clientAccum)
 
   lazy val bitcoindPeerF: Future[Peer] =
     bitcoindRpcF.flatMap(b =>
-      NodeTestUtil.getBitcoindPeer(b, torConfig.socks5ProxyParams))
+      NodeTestUtil.getBitcoindPeer(b,
+                                   torConfigOpt.flatMap(_.socks5ProxyParams)))
 
   behavior of "ReConnectionTest"
 

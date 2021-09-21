@@ -23,24 +23,26 @@ class P2PClientTest extends BitcoindRpcTorTest {
 
   lazy val bitcoindRpcF = for {
     rpc <- BitcoindRpcTestUtil.startedBitcoindRpcClient(
-      torAppConfigOpt = Some(torConfig),
+      torAppConfigOpt = torConfigOpt,
       clientAccum = clientAccum)
   } yield rpc
 
   lazy val bitcoindPeerF = bitcoindRpcF.flatMap { bitcoind =>
-    NodeTestUtil.getBitcoindPeer(bitcoind, torConfig.socks5ProxyParams)
+    NodeTestUtil.getBitcoindPeer(bitcoind,
+                                 torConfigOpt.flatMap(_.socks5ProxyParams))
   }
 
   lazy val bitcoindRpc2F = {
     for {
       rpc <- BitcoindRpcTestUtil.startedBitcoindRpcClient(
-        torAppConfigOpt = Some(torConfig),
+        torAppConfigOpt = torConfigOpt,
         clientAccum = clientAccum)
     } yield rpc
   }
 
   lazy val bitcoindPeer2F = bitcoindRpcF.flatMap { bitcoind =>
-    NodeTestUtil.getBitcoindPeer(bitcoind, torConfig.socks5ProxyParams)
+    NodeTestUtil.getBitcoindPeer(bitcoind,
+                                 torConfigOpt.flatMap(_.socks5ProxyParams))
   }
   behavior of "parseIndividualMessages"
 
