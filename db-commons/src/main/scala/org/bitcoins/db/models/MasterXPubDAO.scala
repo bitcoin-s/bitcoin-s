@@ -55,7 +55,7 @@ case class MasterXPubDAO()(implicit
   }
 
   def existsOneXpub(): Future[Boolean] = {
-    safeDatabase.run(table.exists.result)
+    count().map(_ == 1)
   }
 
   class MasterXpubTable(tag: Tag)
