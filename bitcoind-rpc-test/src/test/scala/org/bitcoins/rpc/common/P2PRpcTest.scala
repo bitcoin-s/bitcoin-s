@@ -16,10 +16,12 @@ import scala.concurrent.Future
 class P2PRpcTest extends BitcoindRpcTest {
 
   lazy val clientF: Future[BitcoindRpcClient] =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None,
+                                                 clientAccum = clientAccum)
 
   lazy val clientPairF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePair(clientAccum)
+    BitcoindRpcTestUtil.createNodePair(torAppConfigOpt = None,
+                                       clientAccum = clientAccum)
 
   behavior of "P2PRpcTest"
 
@@ -64,7 +66,8 @@ class P2PRpcTest extends BitcoindRpcTest {
     for {
 
       (client1, _) <-
-        BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
+        BitcoindRpcTestUtil.createNodePair(torAppConfigOpt = None,
+                                           clientAccum = clientAccum)
       _ <- client1.setBan(loopBack, SetBanCommand.Add)
 
       list <- client1.listBanned
@@ -107,7 +110,8 @@ class P2PRpcTest extends BitcoindRpcTest {
     for {
 
       (client1, _) <-
-        BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
+        BitcoindRpcTestUtil.createNodePair(torAppConfigOpt = None,
+                                           clientAccum = clientAccum)
       _ <- client1.setBan(URI.create("http://127.0.0.1"), SetBanCommand.Add)
       _ <- client1.setBan(URI.create("http://127.0.0.2"), SetBanCommand.Add)
       list <- client1.listBanned

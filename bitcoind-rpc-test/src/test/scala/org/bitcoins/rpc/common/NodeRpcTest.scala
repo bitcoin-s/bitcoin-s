@@ -12,7 +12,8 @@ import org.bitcoins.rpc.BitcoindException.MiscError
 class NodeRpcTest extends BitcoindRpcTest {
 
   lazy val clientF: Future[BitcoindRpcClient] =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None,
+                                                 clientAccum = clientAccum)
 
   behavior of "NodeRpc"
 

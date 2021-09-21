@@ -30,7 +30,9 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairV21 {
   it should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
     _: NodePair[BitcoindV21RpcClient] =>
       val instance =
-        BitcoindRpcTestUtil.instance(RpcUtil.randomPort, RpcUtil.randomPort)
+        BitcoindRpcTestUtil.instance(torAppConfigOpt = None,
+                                     port = RpcUtil.randomPort,
+                                     rpcPort = RpcUtil.randomPort)
       val dir = instance.datadir
       assert(dir.isDirectory)
       assert(dir.getPath().startsWith(scala.util.Properties.tmpDir))

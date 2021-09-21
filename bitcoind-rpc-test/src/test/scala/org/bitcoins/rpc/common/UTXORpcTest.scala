@@ -10,7 +10,8 @@ import scala.concurrent.Future
 class UTXORpcTest extends BitcoindRpcTest {
 
   lazy val clientF: Future[BitcoindRpcClient] =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None,
+                                                 clientAccum = clientAccum)
 
   behavior of "UTXORpc"
 

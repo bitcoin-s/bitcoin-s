@@ -22,7 +22,8 @@ import scala.concurrent.Future
 class RawTransactionRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePairV17(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodePairV17(torAppConfigOpt = None,
+                                          clientAccum = clientAccum)
 
   behavior of "RawTransactionRpc"
 

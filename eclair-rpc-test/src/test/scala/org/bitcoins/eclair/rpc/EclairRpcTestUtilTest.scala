@@ -12,7 +12,7 @@ class EclairRpcTestUtilTest extends BitcoinSAsyncTest {
 
   private lazy val bitcoindRpcF =
     for {
-      cli <- EclairRpcTestUtil.startedBitcoindRpcClient()
+      cli <- EclairRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None)
       address <- cli.getNewAddress
       _ <- cli.generateToAddress(200, address)
     } yield cli

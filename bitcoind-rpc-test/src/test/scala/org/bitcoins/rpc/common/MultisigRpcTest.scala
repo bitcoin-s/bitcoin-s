@@ -12,7 +12,8 @@ import scala.concurrent.Future
 class MultisigRpcTest extends BitcoindRpcTest {
 
   lazy val clientF: Future[BitcoindRpcClient] =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None,
+                                                 clientAccum = clientAccum)
 
   behavior of "MultisigRpc"
 
