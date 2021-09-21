@@ -45,10 +45,10 @@ implicit val ec = system.dispatcher
 val bitcoindV = BitcoindVersion.V19
 
 //create an instance
-val instance = BitcoindRpcTestUtil.instance(versionOpt = Some(bitcoindV))
+val instance = BitcoindRpcTestUtil.instance(torAppConfigOpt = None, versionOpt = Some(bitcoindV))
 
 //now let's create an rpc client off of that instance
-val bitcoindRpcClientF = BitcoindRpcTestUtil.startedBitcoindRpcClient(Some(instance), Vector.newBuilder)
+val bitcoindRpcClientF = BitcoindRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None,clientAccum= Vector.newBuilder,instanceOpt = Some(instance))
 
 //yay! it's started. Now you can run tests against this.
 //let's just grab the block count for an example
@@ -116,7 +116,7 @@ implicit val ec = system.dispatcher
 //we need a bitcoind to connect eclair nodes to
 lazy val bitcoindRpcClientF: Future[BitcoindRpcClient] = {
     for {
-      cli <- EclairRpcTestUtil.startedBitcoindRpcClient()
+      cli <- EclairRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None)
       // make sure we have enough money to open channels
       address <- cli.getNewAddress
       _ <- cli.generateToAddress(200, address)

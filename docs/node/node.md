@@ -65,12 +65,12 @@ implicit val ec = system.dispatcher
 
 //we also require a bitcoind instance to connect to
 //so let's start one (make sure you ran 'sbt downloadBitcoind')
-val instance = BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.Experimental))
+val instance = BitcoindRpcTestUtil.instance(torAppConfigOpt = None, versionOpt = Some(BitcoindVersion.Experimental))
 val p2pPort = instance.p2pPort
-val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient(Some(instance), Vector.newBuilder)
+val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient(torAppConfigOpt = None, Vector.newBuilder, Some(instance))
 
 //contains information on how to connect to bitcoin's p2p info
-val peerF = bitcoindF.flatMap(b => NodeUnitTest.createPeer(b))
+val peerF = bitcoindF.flatMap(b => NodeUnitTest.createPeer(b, None))
 
 // set a data directory
 val prefix = s"node-example-${System.currentTimeMillis()}"

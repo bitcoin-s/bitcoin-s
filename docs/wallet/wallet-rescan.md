@@ -61,7 +61,7 @@ implicit val walletAppConfig: WalletAppConfig = appConfig.walletConf
 val bip39PasswordOpt = None
 //ok now let's spin up a bitcoind and a bitcoin-s wallet with funds in it
 val walletWithBitcoindF = for {
-  bitcoind <- BitcoinSFixture.createBitcoindWithFunds()
+  bitcoind <- BitcoinSFixture.createBitcoindWithFunds(torAppConfigOpt = None)
   walletWithBitcoind <- BitcoinSWalletTest.createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
 } yield walletWithBitcoind
 
