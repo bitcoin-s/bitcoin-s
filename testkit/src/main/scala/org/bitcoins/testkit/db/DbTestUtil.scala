@@ -1,10 +1,10 @@
 package org.bitcoins.testkit.db
 
 import java.nio.file.{Files, Path}
-
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.db._
+import org.bitcoins.db.models.MasterXPubDAO
 import scodec.bits.ByteVector
 import slick.lifted.ProvenShape
 
@@ -32,8 +32,12 @@ trait TestDbManagement extends DbManagement {
   private lazy val testTable: TableQuery[Table[_]] =
     TestDAO()(ec, appConfig).table
 
+  private lazy val masterXpubTable: TableQuery[Table[_]] = {
+    MasterXPubDAO()(ec = ec, appConfig = appConfig).table
+  }
+
   override lazy val allTables: List[TableQuery[Table[_]]] =
-    List(testTable)
+    List(testTable, masterXpubTable)
 
 }
 

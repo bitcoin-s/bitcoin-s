@@ -1,19 +1,21 @@
 package org.bitcoins.keymanager.util
 
 import org.bitcoins.core.config.{MainNet, TestNet3}
+import org.bitcoins.core.crypto.ExtKeyPubVersion.{
+  LegacyMainNetPub,
+  LegacyTestNet3Pub,
+  NestedSegWitMainNetPub,
+  NestedSegWitTestNet3Pub,
+  SegWitMainNetPub,
+  SegWitTestNet3Pub
+}
 import org.bitcoins.core.crypto.ExtKeyVersion.{
   LegacyMainNetPriv,
-  LegacyMainNetPub,
   LegacyTestNet3Priv,
-  LegacyTestNet3Pub,
   NestedSegWitMainNetPriv,
-  NestedSegWitMainNetPub,
   NestedSegWitTestNet3Priv,
-  NestedSegWitTestNet3Pub,
   SegWitMainNetPriv,
-  SegWitMainNetPub,
-  SegWitTestNet3Priv,
-  SegWitTestNet3Pub
+  SegWitTestNet3Priv
 }
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose, HDPurposes}
 import org.bitcoins.core.util.HDUtil

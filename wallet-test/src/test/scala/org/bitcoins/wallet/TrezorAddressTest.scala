@@ -157,7 +157,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
                MockChainQueryApi,
                ConstantFeeRateProvider(SatoshisPerVirtualByte.one))(config, ec)
       init <- Wallet.initialize(wallet = wallet,
-                                bip39PasswordOpt = bip39PasswordOpt)(config, ec)
+                                bip39PasswordOpt = bip39PasswordOpt)
     } yield init
   }
 

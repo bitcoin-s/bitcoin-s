@@ -385,7 +385,7 @@ object BitcoinSWalletTest extends WalletLogger {
           Wallet(nodeApi, chainQueryApi, new RandomFeeProvider)(
             walletConfigWithBip39Pw,
             ec)
-        Wallet.initialize(wallet, bip39PasswordOpt)(walletConfigWithBip39Pw, ec)
+        Wallet.initialize(wallet, bip39PasswordOpt)
       }
     }
   }
@@ -428,9 +428,7 @@ object BitcoinSWalletTest extends WalletLogger {
           ec)
 
       Wallet
-        .initialize(wallet, bip39PasswordOpt)(
-          walletConfigWithBip39Pw.walletConf,
-          ec)
+        .initialize(wallet, bip39PasswordOpt)
         .map(_.asInstanceOf[DLCWallet])
     }
   }

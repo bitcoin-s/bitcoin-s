@@ -5,11 +5,11 @@ import org.bitcoins.commons.jsonmodels.wallet.{
   WalletStateDescriptorType
 }
 import org.bitcoins.core.config.{BitcoinNetwork, BitcoinNetworks}
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto.{ExtKeyPubVersion, _}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.hd._
-import org.bitcoins.core.number.{Int32, UInt32, UInt64}
+import org.bitcoins.core.number.{Int32, UInt32, UInt64, UInt8}
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.dlc.models.{
   ContractInfo,
@@ -133,6 +133,12 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   implicit val sha256Hash160DigestMapper: BaseColumnType[Sha256Hash160Digest] =
     MappedColumnType
       .base[Sha256Hash160Digest, String](_.hex, Sha256Hash160Digest.fromHex)
+
+  implicit val uInt8Mapper: BaseColumnType[UInt8] =
+    MappedColumnType.base[UInt8, Int](
+      tmap = _.toInt,
+      tcomap = UInt8(_)
+    )
 
   /** Responsible for mapping a [[org.bitcoins.core.number.UInt32 UInt32]] to a long in Slick, and vice versa */
   implicit val uInt32Mapper: BaseColumnType[UInt32] =
@@ -468,5 +474,14 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val lnInvoiceMapper: BaseColumnType[LnInvoice] = {
     MappedColumnType.base[LnInvoice, String](_.toString, LnInvoice.fromString)
+  }
+
+  implicit val chainCodeMapper: BaseColumnType[ChainCode] = {
+    MappedColumnType.base[ChainCode, String](_.hex, ChainCode.fromHex(_))
+  }
+
+  implicit val extKeyPubVersion: BaseColumnType[ExtKeyPubVersion] = {
+    MappedColumnType.base[ExtKeyPubVersion, String](_.hex,
+                                                    ExtKeyPubVersion.fromHex)
   }
 }

@@ -54,12 +54,12 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "write and read an encrypted mnemonic to disk" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
 
       val writtenMnemonic = getAndWriteMnemonic(walletConf)
 
       // should have been written by now
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
       val read =
         WalletStorage.decryptSeedFromDisk(seedPath, passphrase)
@@ -78,12 +78,12 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "write and read an encrypted seed to disk" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
 
       val writtenXprv = getAndWriteXprv(walletConf)
 
       // should have been written by now
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
       val read =
         WalletStorage.decryptSeedFromDisk(seedPath, passphrase)
@@ -102,14 +102,14 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "write and read an unencrypted mnemonic to disk" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
       val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
       val writtenMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
       val seedPath = getSeedPath(walletConf)
       WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
 
       // should have been written by now
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
       val read =
         WalletStorage.decryptSeedFromDisk(seedPath, None)
       read match {
@@ -127,14 +127,14 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "write and read an unencrypted xprv to disk" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
       val xprv = CryptoGenerators.extPrivateKey.sampleSome
       val writtenXprv = DecryptedExtPrivKey(xprv, TimeUtil.now)
       val seedPath = getSeedPath(walletConf)
       WalletStorage.writeSeedToDisk(seedPath, writtenXprv)
 
       // should have been written by now
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
       val read =
         WalletStorage.decryptSeedFromDisk(seedPath, None)
       read match {
@@ -152,11 +152,11 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "change the password of an encrypted mnemonic" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
 
       val writtenMnemonic = getAndWriteMnemonic(walletConf)
 
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
 
       WalletStorage.changeAesPassword(seedPath = seedPath,
@@ -180,13 +180,13 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "change the password of an unencrypted mnemonic" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
       val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
       val writtenMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
       val seedPath = getSeedPath(walletConf)
       WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
 
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
 
       WalletStorage.changeAesPassword(seedPath = seedPath,
                                       oldPasswordOpt = None,
@@ -209,11 +209,11 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "remove the password from an encrypted mnemonic" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
 
       val writtenMnemonic = getAndWriteMnemonic(walletConf)
 
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
 
       WalletStorage.changeAesPassword(seedPath = seedPath,
@@ -237,11 +237,11 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "fail to change the aes password when given the wrong password" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
 
       getAndWriteMnemonic(walletConf)
 
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
 
       assertThrows[RuntimeException](
@@ -252,11 +252,11 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "fail to change the aes password when given no password" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
 
       getAndWriteMnemonic(walletConf)
 
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
 
       assertThrows[RuntimeException](
@@ -267,13 +267,13 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "fail to set the aes password when given an oldPassword" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
       val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
       val writtenMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
       val seedPath = getSeedPath(walletConf)
       WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
 
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
 
       assertThrows[RuntimeException](
         WalletStorage.changeAesPassword(seedPath = seedPath,
@@ -564,7 +564,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "fail to read an unencrypted seed that doesn't exist" in {
     walletConf =>
-      require(!walletConf.seedExists())
+      require(!walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
       val read =
         WalletStorage.decryptSeedFromDisk(seedPath, None)
@@ -577,12 +577,12 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "throw an exception if we attempt to overwrite an existing seed" in {
     walletConf =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
 
       val _ = getAndWriteMnemonic(walletConf)
 
       // should have been written by now
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
 
       assertThrows[RuntimeException] {
         //attempt to write another mnemonic
@@ -592,7 +592,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "write and read an encrypted ExtPrivateKey from disk" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
 
       val password = getBIP39PasswordOpt().getOrElse(BIP39Seed.EMPTY_PASSWORD)
       val keyVersion = SegWitMainNetPriv
@@ -605,7 +605,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
         .toHardened
 
       // should have been written by now
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
       val read =
         WalletStorage.getPrivateKeyFromDisk(seedPath,
@@ -618,7 +618,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "write and read an unencrypted ExtPrivateKey from disk" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
       val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
       val writtenMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
       val seedPath = getSeedPath(walletConf)
@@ -634,7 +634,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
         .toHardened
 
       // should have been written by now
-      assert(walletConf.seedExists())
+      assert(walletConf.kmConf.seedExists())
       val read =
         WalletStorage.getPrivateKeyFromDisk(seedPath,
                                             keyVersion,
@@ -646,7 +646,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "fail to read unencrypted ExtPrivateKey from disk that doesn't exist" in {
     walletConf: WalletAppConfig =>
-      assert(!walletConf.seedExists())
+      assert(!walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
       val keyVersion = SegWitMainNetPriv
 
@@ -657,9 +657,9 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   it must "safely create 2 seeds in the seed folder" in {
     walletConfA: WalletAppConfig =>
-      assert(!walletConfA.seedExists())
+      assert(!walletConfA.kmConf.seedExists())
       getAndWriteMnemonic(walletConfA)
-      assert(walletConfA.seedExists())
+      assert(walletConfA.kmConf.seedExists())
 
       val otherWalletName = StringGenerators.genNonEmptyString
         .suchThat(_ != walletConfA.walletNameOpt.getOrElse(""))
@@ -669,9 +669,9 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
         ConfigFactory.parseString(
           s"bitcoin-s.wallet.walletName = $otherWalletName"))
 
-      assert(!walletConfB.seedExists())
+      assert(!walletConfB.kmConf.seedExists())
       getAndWriteXprv(walletConfB)
-      assert(walletConfB.seedExists())
+      assert(walletConfB.kmConf.seedExists())
 
       val expectedParentDir =
         walletConfA.baseDatadir.resolve(WalletStorage.SEED_FOLDER_NAME)

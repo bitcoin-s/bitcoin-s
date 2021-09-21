@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.db
 
+import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.{DbManagement, JdbcProfileComponent}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
@@ -49,6 +50,10 @@ trait WalletDbManagement extends DbManagement {
     WalletStateDescriptorDAO()(ec, appConfig).table
   }
 
+  private lazy val masterXPubTable: TableQuery[Table[_]] = {
+    MasterXPubDAO()(ec, appConfig).table
+  }
+
   // Ordering matters here, tables with a foreign key should be listed after
   // the table that key references
   override lazy val allTables: List[TableQuery[Table[_]]] = {
@@ -60,7 +65,8 @@ trait WalletDbManagement extends DbManagement {
          incomingTxTable,
          utxoTable,
          outgoingTxTable,
-         stateDescriptorTable)
+         stateDescriptorTable,
+         masterXPubTable)
   }
 
 }

@@ -14,7 +14,7 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
   it must "start the same oracle twice" in {
     dlcOracleAppConfig: DLCOracleAppConfig =>
       val started1F = dlcOracleAppConfig.start()
-      val started2F = dlcOracleAppConfig.start()
+      val started2F = started1F.flatMap(_ => dlcOracleAppConfig.start())
       for {
         _ <- started1F
         _ <- started2F

@@ -1,0 +1,1 @@
+create table if not exists "master_xpub" ("extpubkey_version" VARCHAR NOT NULL,"depth" INTEGER NOT NULL,"fingerprint" VARCHAR NOT NULL,"childnum" BIGINT NOT NULL,"chaincode" VARCHAR NOT NULL,"key" VARCHAR NOT NULL PRIMARY KEY UNIQUE)

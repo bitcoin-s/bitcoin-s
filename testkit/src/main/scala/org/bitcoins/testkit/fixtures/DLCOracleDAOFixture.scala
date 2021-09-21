@@ -19,7 +19,7 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
 
   override type FixtureParam = DLCOracleDAOs
 
-  private lazy val daos = {
+  private lazy val daos: DLCOracleDAOs = {
     val rValueDAO = RValueDAO()
     val eventDAO = EventDAO()
     val outcomeDAO = EventOutcomeDAO()
@@ -29,20 +29,15 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(
       build = () => {
-        Future(config.migrate()).map(_ => daos)
+        config.start().map(_ => daos)
       },
       destroy = () => dropAll()
     )(test)
   }
 
   private def dropAll(): Future[Unit] = {
-    val res = for {
-      _ <- config.dropTable("flyway_schema_history")
-      _ <- config.dropAll()
-    } yield ()
-    res.failed.foreach { ex =>
-      ex.printStackTrace()
+    Future {
+      config.clean()
     }
-    res
   }
 }

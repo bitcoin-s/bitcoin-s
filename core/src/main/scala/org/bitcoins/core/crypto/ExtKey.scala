@@ -127,11 +127,12 @@ object ExtKey extends Factory[ExtKey] with StringFactory[ExtKey] {
     val decoded: Try[ByteVector] = Base58.decodeCheck(base58)
     val extKey = decoded.flatMap { bytes =>
       require(bytes.size == 78, "Not 78 bytes")
-      val version: Try[ExtKeyVersion] = ExtKeyVersion(bytes.take(4)) match {
-        case Some(v) => Success(v)
-        case None =>
-          Failure(new IllegalArgumentException("Invalid version for ExtKey"))
-      }
+      val version: Try[ExtKeyVersion] =
+        ExtKeyVersion.fromBytesOpt(bytes.take(4)) match {
+          case Some(v) => Success(v)
+          case None =>
+            Failure(new IllegalArgumentException("Invalid version for ExtKey"))
+        }
       val depth = UInt8(bytes.slice(4, 5))
       val fp = bytes.slice(5, 9)
       val childNum = UInt32(bytes.slice(9, 13))
@@ -212,12 +213,12 @@ sealed abstract class ExtPrivateKey
 
   def extPublicKey: ExtPublicKey = {
     val pub = version match {
-      case SegWitMainNetPriv        => SegWitMainNetPub
-      case SegWitTestNet3Priv       => SegWitTestNet3Pub
-      case NestedSegWitMainNetPriv  => NestedSegWitMainNetPub
-      case NestedSegWitTestNet3Priv => NestedSegWitTestNet3Pub
-      case LegacyMainNetPriv        => LegacyMainNetPub
-      case LegacyTestNet3Priv       => LegacyTestNet3Pub
+      case SegWitMainNetPriv        => ExtKeyPubVersion.SegWitMainNetPub
+      case SegWitTestNet3Priv       => ExtKeyPubVersion.SegWitTestNet3Pub
+      case NestedSegWitMainNetPriv  => ExtKeyPubVersion.NestedSegWitMainNetPub
+      case NestedSegWitTestNet3Priv => ExtKeyPubVersion.NestedSegWitTestNet3Pub
+      case LegacyMainNetPriv        => ExtKeyPubVersion.LegacyMainNetPub
+      case LegacyTestNet3Priv       => ExtKeyPubVersion.LegacyTestNet3Pub
     }
     ExtPublicKey(pub, depth, fingerprint, childNum, chainCode, key.publicKey)
   }
@@ -546,5 +547,22 @@ object ExtPublicKey
       case Success(pub: ExtPublicKey) => pub
       case f: Failure[_]              => throw f.exception
     }
+  }
+
+  def tupled: (
+      (
+          ExtKeyPubVersion,
+          UInt8,
+          ByteVector,
+          UInt32,
+          ChainCode,
+          ECPublicKey)) => ExtPublicKey = {
+    ExtPublicKeyImpl.tupled
+  }
+
+  def unapply: ExtPublicKey => Option[
+    (ExtKeyPubVersion, UInt8, ByteVector, UInt32, ChainCode, ECPublicKey)] = {
+    extPubKey =>
+      ExtPublicKeyImpl.unapply(extPubKey.asInstanceOf[ExtPublicKeyImpl])
   }
 }

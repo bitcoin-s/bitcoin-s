@@ -30,7 +30,7 @@ class DLCOracleTest extends DLCOracleFixture {
   behavior of "DLCOracle"
 
   it must "correctly initialize" in { dlcOracle: DLCOracle =>
-    assert(dlcOracle.conf.exists())
+    dlcOracle.conf.exists().map(assert(_))
   }
 
   it must "start with no events" in { dlcOracle: DLCOracle =>
