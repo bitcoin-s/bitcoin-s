@@ -3,12 +3,10 @@ package org.bitcoins.server
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.util.{AkkaUtil, BitcoinSAsyncTest}
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import scala.reflect.io.Directory
 
 class ServerRunTest extends BitcoinSAsyncTest {
 
@@ -27,7 +25,6 @@ class ServerRunTest extends BitcoinSAsyncTest {
     implicit val config =
       BitcoinSTestAppConfig.getNeutrinoTestConfig(noPeersConfig)
     val datadir = config.chainConf.datadir
-    val directory = new Directory(datadir.toFile)
 
     val invalidPort = -1
     val args = Vector("--datadir",
@@ -42,9 +39,6 @@ class ServerRunTest extends BitcoinSAsyncTest {
     val assertionF: Future[Assertion] = recoverToSucceededIf[Exception] {
       val deleteDirF = for {
         _ <- runMainF
-        _ <- AkkaUtil.nonBlockingSleep(2.seconds)
-        _ = directory.deleteRecursively()
-        _ <- AkkaUtil.nonBlockingSleep(5.seconds)
       } yield ()
 
       for {
