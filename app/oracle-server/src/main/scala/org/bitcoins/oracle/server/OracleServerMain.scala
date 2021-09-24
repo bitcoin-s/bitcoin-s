@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
-import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
+import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 
 import scala.concurrent.Future
@@ -21,10 +21,12 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
       case None          => conf.rpcBindOpt
     }
 
+    val commonRoutes = CommonRoutes()
+
     for {
       _ <- conf.start()
       oracle = new DLCOracle()
-      routes = Seq(OracleRoutes(oracle))
+      routes = Seq(OracleRoutes(oracle), commonRoutes)
       server = serverArgParser.rpcPortOpt match {
         case Some(rpcport) =>
           Server(conf = conf,

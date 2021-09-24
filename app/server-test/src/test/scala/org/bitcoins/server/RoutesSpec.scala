@@ -38,7 +38,7 @@ import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.node.Node
-import org.bitcoins.server.routes.ServerCommand
+import org.bitcoins.server.routes.{CommonRoutes, ServerCommand}
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.DLCWalletUtil
 import org.bitcoins.wallet.MockWalletApi
@@ -80,6 +80,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val coreRoutes: CoreRoutes = CoreRoutes()
 
+  val commonRoutes: CommonRoutes = CommonRoutes()
   "The server" should {
 
     "combine PSBTs" in {
