@@ -1,6 +1,7 @@
 package org.bitcoins.server
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.server.routes.{CommonRoutes, ServerCommand}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
@@ -19,7 +20,7 @@ class CommonRoutesSpec
         commonRoutes.handleCommand(ServerCommand("getversion", ujson.Arr()))
       Get() ~> route ~> check {
         s"""
-           |{ "version" : "${getClass.getPackage.getImplementationVersion}" }
+           |{ "version" : "${EnvUtil.getVersion}" }
            |""".stripMargin
       }
     }
