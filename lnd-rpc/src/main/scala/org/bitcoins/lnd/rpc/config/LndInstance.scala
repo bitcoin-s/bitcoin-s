@@ -78,7 +78,7 @@ object LndInstanceLocal
       case _: MainNet  => "mainnet"
       case _: TestNet3 => "testnet"
       case _: RegTest  => "regtest"
-      case _: SigNet   => "simnet"
+      case _: SigNet   => "signet"
     }
   }
 

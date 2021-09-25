@@ -72,7 +72,7 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
   lazy val network: BitcoinNetwork = {
     val isMainnet = getValue("bitcoin.mainnet").exists(_.toLowerCase == "true")
     val isTestnet = getValue("bitcoin.testnet").exists(_.toLowerCase == "true")
-    val isSignet = getValue("bitcoin.simnet").exists(_.toLowerCase == "true")
+    val isSignet = getValue("bitcoin.signet").exists(_.toLowerCase == "true")
     val isRegtest = getValue("bitcoin.regtest").exists(_.toLowerCase == "true")
 
     if (isMainnet && !(isRegtest || isSignet || isTestnet)) MainNet
