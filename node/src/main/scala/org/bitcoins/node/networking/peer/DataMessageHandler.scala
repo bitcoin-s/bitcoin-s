@@ -45,16 +45,19 @@ case class DataMessageHandler(
                                        filterHeightOpt = None,
                                        syncing = false)
 
-  //this will be set and stored when we receive max ammount of headers once, so as to use only this one
-  //for syncing subsequently
-  private var peerMsgSenderToUseInIBD: Option[PeerMessageSender] = None
-
   def handleDataPayload(
       payload: DataPayload,
       peerMsgSender: PeerMessageSender,
       node: Node): Future[DataMessageHandler] = {
 
+    //peerMsgSender is the one corresponding to the P2PClient that received this payload.
+    //the others are random ones that we may want to use
     lazy val peerWithCompactFilters = node.randomPeerMsgSenderWithCompactFilters
+
+    val peer = node.peerData
+      .filter(_._2.peerMessageSender == peerMsgSender)
+      .head
+      ._1
 
     val resultF = payload match {
       case checkpoint: CompactFilterCheckPointMessage =>
@@ -69,7 +72,7 @@ case class DataMessageHandler(
         }
       case filterHeader: CompactFilterHeadersMessage =>
         logger.info(
-          s"Got ${filterHeader.filterHashes.size} compact filter header hashes")
+          s"Got ${filterHeader.filterHashes.size} compact filter header hashes from $peer")
         val filterHeaders = filterHeader.filterHeaders
         for {
           newChainApi <- chainApi.processFilterHeaders(
@@ -80,7 +83,7 @@ case class DataMessageHandler(
               logger.info(
                 s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
               sendNextGetCompactFilterHeadersCommand(
-                peerWithCompactFilters,
+                peerMsgSender,
                 filterHeader.stopHash.flip).map(_ => syncing)
             } else {
               logger.info(
@@ -103,7 +106,7 @@ case class DataMessageHandler(
                     filterHeaderHeightOpt = Some(newFilterHeaderHeight))
         }
       case filter: CompactFilterMessage =>
-        logger.debug(s"Received ${filter.commandName}, $filter")
+        logger.debug(s"Received ${filter.commandName}, $filter from $peer")
         val batchSizeFull: Boolean =
           currentFilterBatch.size == chainConfig.filterBatchSize - 1
         for {
@@ -150,8 +153,7 @@ case class DataMessageHandler(
             if (batchSizeFull) {
               logger.info(
                 s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
-              sendNextGetCompactFilterCommand(peerWithCompactFilters,
-                                              newFilterHeight)
+              sendNextGetCompactFilterCommand(peerMsgSender, newFilterHeight)
             } else Future.unit
         } yield {
           this.copy(
@@ -166,11 +168,12 @@ case class DataMessageHandler(
           _: GetBlocksMessage | _: GetCompactFiltersMessage |
           _: GetCompactFilterHeadersMessage |
           _: GetCompactFilterCheckPointMessage) =>
-        logger.debug(s"Received ${notHandling.commandName} message, skipping ")
+        logger.debug(
+          s"Received ${notHandling.commandName} message from $peer, skipping")
         Future.successful(this)
       case getData: GetDataMessage =>
         logger.info(
-          s"Received a getdata message for inventories=${getData.inventories}")
+          s"Received a getdata message for inventories=${getData.inventories} from $peer")
         getData.inventories.foreach { inv =>
           logger.debug(s"Looking for inv=$inv")
           inv.typeIdentifier match {
@@ -198,7 +201,8 @@ case class DataMessageHandler(
         }
         Future.successful(this)
       case HeadersMessage(count, headers) =>
-        logger.info(s"Received headers message with ${count.toInt} headers")
+        logger.info(
+          s"Received headers message with ${count.toInt} headers from $peer")
         logger.trace(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
         val chainApiF = chainApi.processHeaders(headers)
@@ -213,10 +217,6 @@ case class DataMessageHandler(
           .flatMap { newApi =>
             if (headers.nonEmpty) {
 
-              val peer = node.peerData
-                .filter(_._2.peerMessageSender == peerWithCompactFilters)
-                .head
-                ._1
               val lastHeader = headers.last
               val lastHash = lastHeader.hash
               newApi.getBlockCount().map { count =>
@@ -226,11 +226,8 @@ case class DataMessageHandler(
 
               if (count.toInt == HeadersMessage.MaxHeadersCount) {
                 logger.info(
-                  s"Received maximum amount of headers from $peer in one header message. This means we are not synced, requesting more")
-                if (peerMsgSenderToUseInIBD.isEmpty) {
-                  peerMsgSenderToUseInIBD = Some(peerMsgSender)
-                }
-                peerMsgSenderToUseInIBD.get
+                  s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
+                peerMsgSender
                   .sendGetHeadersMessage(lastHash)
                   .map(_ => syncing)
               } else {
@@ -279,7 +276,7 @@ case class DataMessageHandler(
       case msg: BlockMessage =>
         val block = msg.block
         logger.info(
-          s"Received block message with hash ${block.blockHeader.hash.flip.hex}")
+          s"Received block message with hash ${block.blockHeader.hash.flip.hex} from $peer")
 
         val newApiF = {
           chainApi

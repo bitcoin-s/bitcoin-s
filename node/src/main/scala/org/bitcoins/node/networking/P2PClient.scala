@@ -232,13 +232,13 @@ case class P2PClientActor(
     currentPeerMsgHandlerRecv.state match {
       case _: PeerMessageReceiverState.InitializedDisconnect |
           _: PeerMessageReceiverState.InitializedDisconnectDone =>
-        logger.warn(
+        logger.debug(
           s"Ignoring reconnection attempts as we initialized disconnect from peer=$peer, state=${currentPeerMsgHandlerRecv.state}")
         ()
       case PeerMessageReceiverState.Preconnection | _: Initializing |
           _: Normal | _: Disconnected =>
-        logger.info(
-          s"Attempting to reconnect to peer=$peer, previous state=${currentPeerMsgHandlerRecv.state}")
+        logger.debug(
+          s"Attempting to reconnect to peer=$peer, previous state=${currentPeerMsgHandlerRecv.state} $maxReconnectionTries")
         currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
         if (reconnectionTry >= maxReconnectionTries) {
@@ -291,7 +291,7 @@ case class P2PClientActor(
 
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed | Tcp.ErrorClosed(_)) =>
-        logger.info(
+        logger.debug(
           s"We've been disconnected by $peer command=${closeCmd} state=${currentPeerMsgHandlerRecv.state}")
         currentPeerMsgHandlerRecv = currentPeerMsgHandlerRecv.disconnect()
         unalignedBytes
@@ -395,7 +395,7 @@ case class P2PClientActor(
       case P2PClient.CloseCommand =>
         peerConnectionOpt match {
           case Some(peerConnection) =>
-            logger.info(s"Disconnecting from peer $peer")
+            logger.debug(s"Disconnecting from peer $peer")
             currentPeerMsgHandlerRecv =
               currentPeerMsgHandlerRecv.initializeDisconnect()
             peerConnection ! Tcp.Close
