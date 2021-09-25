@@ -553,4 +553,10 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
       "039c14dd6dbea913d3fa21b8aaa328cbacb9d6f1f967c3ead9a895c857958ed38a"
     )
   }
+
+  it must "parse a signet invoice" in {
+    val str =
+      "lntbs1ps5um52pp562zjpdyec3hjga5sdeh90v09km7ugasretujf3wwj3ueutyujz3sdqqcqzpgxqyz5vqsp5an8lqngrz6w3vd449eqqtvwu2x4v9ltdf9r6hpwxf4x404fhv6zs9qyyssqfdmmsuldkyy7v29kwuuc9egwkthtf3aaf79p3w93ddffq65fs5zs6vys9et89u0yv5kearpnuyttsvufzjnsnup2ehp4nteelz39exqpgd78w8"
+    assert(LnInvoice.fromStringT(str).isSuccess)
+  }
 }

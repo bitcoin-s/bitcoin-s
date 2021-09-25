@@ -41,6 +41,16 @@ object LnParams {
     override val invoicePrefix: String = "lntb"
   }
 
+  case object LnBitcoinSigNet extends LnParams {
+    override def network: SigNet.type = SigNet
+
+    override def lnRpcPort = 8080
+
+    override def lnPort = 9735
+
+    override val invoicePrefix: String = "lntbs"
+  }
+
   case object LnBitcoinRegTest extends LnParams {
     override def network: RegTest.type = RegTest
 
@@ -56,11 +66,14 @@ object LnParams {
       case MainNet  => LnBitcoinMainNet
       case TestNet3 => LnBitcoinTestNet
       case RegTest  => LnBitcoinRegTest
-      case SigNet   => LnBitcoinTestNet
+      case SigNet   => LnBitcoinSigNet
     }
 
-  private val allNetworks: Vector[LnParams] =
-    Vector(LnBitcoinMainNet, LnBitcoinTestNet, LnBitcoinRegTest)
+  val allNetworks: Vector[LnParams] =
+    Vector(LnBitcoinMainNet,
+           LnBitcoinTestNet,
+           LnBitcoinSigNet,
+           LnBitcoinRegTest)
 
   private val prefixes: Map[String, LnParams] = {
     val vec: Vector[(String, LnParams)] = {

@@ -49,6 +49,11 @@ object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
     override def network: LnParams = LnBitcoinTestNet
   }
 
+  case class lntbs(override val amount: Option[LnCurrencyUnit])
+      extends LnHumanReadablePart {
+    override def network: LnParams = LnBitcoinSigNet
+  }
+
   /** Prefix for genearting a LN invoice on the Bitcoin RegTest */
   case class lnbcrt(override val amount: Option[LnCurrencyUnit])
       extends LnHumanReadablePart {
@@ -97,6 +102,7 @@ object LnHumanReadablePart extends StringFactory[LnHumanReadablePart] {
       case LnParams.LnBitcoinMainNet => lnbc(amount)
       case LnParams.LnBitcoinTestNet => lntb(amount)
       case LnParams.LnBitcoinRegTest => lnbcrt(amount)
+      case LnParams.LnBitcoinSigNet  => lntbs(amount)
     }
   }
 
