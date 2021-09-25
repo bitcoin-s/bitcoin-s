@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.script.EmptyScriptSignature
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerKW
+import org.bitcoins.crypto._
 import org.bitcoins.testkit.fixtures.DualLndFixture
 
 import scala.concurrent.duration.DurationInt
@@ -24,6 +25,29 @@ class LndRpcClientPairTest extends DualLndFixture {
       assert(infoA.identityPubkey != infoB.identityPubkey)
       assert(infoA.blockHeight >= 0)
       assert(infoB.blockHeight >= 0)
+    }
+  }
+
+  it must "close a channel" in { param =>
+    val (bitcoind, lnd, _) = param
+
+    for {
+      channels <- lnd.listChannels()
+      channel = channels.head
+
+      (txIdStr, voutStr) = channel.channelPoint.splitAt(
+        channel.channelPoint.indexOf(":"))
+      txId = DoubleSha256DigestBE(txIdStr)
+      vout = UInt32(voutStr.tail.toLong)
+      channelPoint = TransactionOutPoint(txId, vout)
+
+      outPoint <- lnd.closeChannel(channelPoint)
+      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      tx <- bitcoind.getRawTransaction(outPoint.txIdBE)
+      find <- lnd.findChannel(channelPoint)
+    } yield {
+      assert(tx.confirmations.isDefined)
+      assert(find.isEmpty)
     }
   }
 
