@@ -238,7 +238,7 @@ case class P2PClientActor(
       case PeerMessageReceiverState.Preconnection | _: Initializing |
           _: Normal | _: Disconnected =>
         logger.debug(
-          s"Attempting to reconnect to peer=$peer, previous state=${currentPeerMsgHandlerRecv.state} $maxReconnectionTries")
+          s"Attempting to reconnect to peer=$peer, previous state=${currentPeerMsgHandlerRecv.state}")
         currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
         if (reconnectionTry >= maxReconnectionTries) {

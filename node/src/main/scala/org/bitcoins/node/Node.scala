@@ -102,7 +102,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   }
 
   def getPeersFromConf: Vector[Peer] = {
-    val addresses = nodeAppConfig.peers
+    val addresses = nodeAppConfig.peers.filter(
+      nodeAppConfig.torConf.enabled || !_.contains(".onion"))
     val inetSockets = addresses.map(
       NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
     val peers =
