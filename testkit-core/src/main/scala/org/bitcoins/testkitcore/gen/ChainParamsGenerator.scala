@@ -14,9 +14,7 @@ sealed abstract class ChainParamsGenerator {
     Gen.oneOf(MainNet, TestNet3, RegTest, SigNet)
 
   def lnNetworkParams: Gen[LnParams] = {
-    Gen.oneOf(LnParams.LnBitcoinMainNet,
-              LnParams.LnBitcoinTestNet,
-              LnParams.LnBitcoinRegTest)
+    Gen.oneOf(LnParams.allNetworks)
   }
 }
 
