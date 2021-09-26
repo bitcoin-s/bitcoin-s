@@ -366,6 +366,24 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       }
   }
 
+  def abandonChannel(
+      outPoint: TransactionOutPoint,
+      pendingFundingShimOnly: Boolean): Future[Unit] = {
+    val channelPoint: ChannelPoint = outPoint
+    val request =
+      AbandonChannelRequest(Some(channelPoint),
+                            pendingFundingShimOnly = pendingFundingShimOnly,
+                            iKnowWhatIAmDoing = true)
+
+    abandonChannel(request)
+  }
+
+  def abandonChannel(request: AbandonChannelRequest): Future[Unit] = {
+    logger.trace("lnd calling abandonChannel")
+
+    lnd.abandonChannel(request).map(_ => ())
+  }
+
   def listChannels(request: ListChannelsRequest =
     ListChannelsRequest()): Future[Vector[Channel]] = {
     logger.trace("lnd calling listchannels")
