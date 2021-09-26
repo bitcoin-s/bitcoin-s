@@ -134,7 +134,7 @@ case class NodeAppConfig(
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peers: Vector[Peer])(
+  def createNode(peers: Vector[Peer] = Vector.empty)(
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
     NodeAppConfig.createNode(peers)(this, chainConf, system)

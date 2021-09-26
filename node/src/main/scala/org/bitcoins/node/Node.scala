@@ -120,7 +120,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         override def run(): Unit = {
           val peersInDbCountF = PeerDAO().count()
           peersInDbCountF.map(cnt =>
-            if (cnt > 10) peerConnectionScheduler.cancel())
+            if (cnt > 100) peerConnectionScheduler.cancel())
           if (peersToCheckStack.size < 8)
             peersToCheckStack.pushAll(getPeersFromDnsSeeds)
           val peers = for { _ <- 0 to 7 } yield peersToCheckStack.pop()
