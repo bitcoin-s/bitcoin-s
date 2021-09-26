@@ -1,9 +1,13 @@
 package org.bitcoins.lnd.rpc
 
 import com.google.protobuf.ByteString
+import lnrpc.ChannelPoint
+import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.crypto._
 import scodec.bits._
 import signrpc.TxOut
 
@@ -33,4 +37,17 @@ object LndUtils {
   implicit def byteStringVecToByteVecs(
       byteStrings: Vector[ByteString]): Vector[ByteVector] =
     byteStrings.map(byteStringToByteVec)
+
+  implicit def channelPointToOutpoint(
+      channelPoint: ChannelPoint): TransactionOutPoint = {
+    val txIdBytes = channelPoint.fundingTxid.fundingTxidBytes.get
+    TransactionOutPoint(DoubleSha256Digest(txIdBytes),
+                        UInt32(channelPoint.outputIndex))
+  }
+
+  implicit def outPointToChannelPoint(
+      outPoint: TransactionOutPoint): ChannelPoint = {
+    val txId = FundingTxidBytes(outPoint.txId.bytes)
+    ChannelPoint(txId, outPoint.vout.toInt)
+  }
 }

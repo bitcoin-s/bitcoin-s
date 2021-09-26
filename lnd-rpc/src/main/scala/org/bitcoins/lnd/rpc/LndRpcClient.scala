@@ -2,9 +2,12 @@ package org.bitcoins.lnd.rpc
 
 import akka.actor.ActorSystem
 import akka.grpc.{GrpcClientSettings, SSLContextUtils}
+import akka.stream.scaladsl.Sink
 import com.google.protobuf.ByteString
 import grizzled.slf4j.Logging
 import io.grpc.{CallCredentials, Metadata}
+import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
+import lnrpc.CloseStatusUpdate.Update.ClosePending
 import lnrpc._
 import org.bitcoins.commons.jsonmodels.lnd._
 import org.bitcoins.commons.util.NativeProcessFactory
@@ -325,6 +328,60 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
           case None => None
         }
       }
+  }
+
+  def closeChannel(
+      outPoint: TransactionOutPoint,
+      force: Boolean,
+      feeRate: SatoshisPerVirtualByte): Future[TransactionOutPoint] = {
+    val channelPoint =
+      ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout.toInt)
+
+    closeChannel(
+      CloseChannelRequest(channelPoint = Some(channelPoint),
+                          force = force,
+                          satPerVbyte = feeRate.toLong))
+  }
+
+  def closeChannel(
+      outPoint: TransactionOutPoint): Future[TransactionOutPoint] = {
+    val channelPoint =
+      ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout.toInt)
+    closeChannel(CloseChannelRequest(Some(channelPoint)))
+  }
+
+  def closeChannel(
+      request: CloseChannelRequest): Future[TransactionOutPoint] = {
+    logger.trace("lnd calling closechannel")
+
+    lnd
+      .closeChannel(request)
+      .map(_.update)
+      .filter(_.isClosePending)
+      .runWith(Sink.head)
+      .collect { case ClosePending(closeUpdate) =>
+        val txId = DoubleSha256Digest(closeUpdate.txid)
+        val vout = UInt32(closeUpdate.outputIndex)
+        TransactionOutPoint(txId, vout)
+      }
+  }
+
+  def abandonChannel(
+      outPoint: TransactionOutPoint,
+      pendingFundingShimOnly: Boolean): Future[Unit] = {
+    val channelPoint: ChannelPoint = outPoint
+    val request =
+      AbandonChannelRequest(Some(channelPoint),
+                            pendingFundingShimOnly = pendingFundingShimOnly,
+                            iKnowWhatIAmDoing = true)
+
+    abandonChannel(request)
+  }
+
+  def abandonChannel(request: AbandonChannelRequest): Future[Unit] = {
+    logger.trace("lnd calling abandonChannel")
+
+    lnd.abandonChannel(request).map(_ => ())
   }
 
   def listChannels(request: ListChannelsRequest =
