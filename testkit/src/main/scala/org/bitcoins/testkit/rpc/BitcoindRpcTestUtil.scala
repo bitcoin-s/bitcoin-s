@@ -94,15 +94,20 @@ trait BitcoindRpcTestUtil extends Logging {
 
     /* pruning and txindex are not compatible */
     val txindex = if (pruneMode) 0 else 1
+    //windows environments don't allow the -daemon flag
+    //see: https://github.com/bitcoin-s/bitcoin-s/issues/3684
+    val isDaemon = if (EnvUtil.isWindows) 0 else 1
+    //if bitcoind is not a daemon, we get a ton of logs
+    //from bitcoind written to stdout, so turn off debug if we are not a daemon
+    val isDebug = if (isDaemon == 1) 1 else 0
     val conf = s"""
                   |regtest=1
-                  |daemon=1
                   |server=1
                   |rpcuser=$username
                   |rpcpassword=$pass
                   |rpcport=${rpcUri.getPort}
                   |port=${uri.getPort}
-                  |debug=1
+                  |debug=$isDebug
                   |walletbroadcast=1
                   |peerbloomfilters=1
                   |fallbackfee=0.0002
