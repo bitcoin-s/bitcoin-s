@@ -1,4 +1,4 @@
-name: Mac 2.13 Wallet, Node, and DLC tests
+name: Mac 2.13 Wallet, Node, DLC, appServer tests
 env:
   COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
 
@@ -28,4 +28,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: run tests
-        run: sbt ++2.13.6 downloadBitcoind coverage cryptoTestJVM/test coreTestJVM/test secp256k1jni/test dlcTest/test appCommonsTest/test walletTest/test dlcWalletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcOracleTest/test asyncUtilsTestJVM/test dlcOracle/coverageReport dlcOracle/coveralls dlcNodeTest/test
+        run: sbt ++2.13.6 downloadBitcoind coverage cryptoTestJVM/test coreTestJVM/test secp256k1jni/test dlcTest/test appCommonsTest/test walletTest/test dlcWalletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcOracleTest/test asyncUtilsTestJVM/test dlcOracle/coverageReport dlcOracle/coveralls dlcNodeTest/test appServerTest/test

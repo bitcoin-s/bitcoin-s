@@ -1,14 +1,12 @@
 package org.bitcoins.server
 
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.commons.util.ServerArgParser
-import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.util.{AkkaUtil, BitcoinSAsyncTest}
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import scala.reflect.io.Directory
 
 class ServerRunTest extends BitcoinSAsyncTest {
 
@@ -20,15 +18,19 @@ class ServerRunTest extends BitcoinSAsyncTest {
   // Note: on this test passing it will output a stack trace
   // because runMain calls err.printStackTrace() on failure
   it must "throw errors" in {
-    implicit val config = BitcoinSTestAppConfig.getNeutrinoTestConfig()
+    //custom configuration to make peers empty
+    //this should cause an exception in startBitcoinSBackend()
+    val noPeersConfig =
+      ConfigFactory.parseString(s"""bitcoin-s.node.peers=[]""")
+    implicit val config =
+      BitcoinSTestAppConfig.getNeutrinoTestConfig(noPeersConfig)
     val datadir = config.chainConf.datadir
-    val directory = new Directory(datadir.toFile)
 
-    val randPort = RpcUtil.randomPort
+    val invalidPort = -1
     val args = Vector("--datadir",
                       datadir.toAbsolutePath.toString,
                       "--rpcport",
-                      randPort.toString)
+                      invalidPort.toString)
 
     val serverArgParser = ServerArgParser(args)
     val main = new BitcoinSServerMain(serverArgParser)
@@ -37,9 +39,6 @@ class ServerRunTest extends BitcoinSAsyncTest {
     val assertionF: Future[Assertion] = recoverToSucceededIf[Exception] {
       val deleteDirF = for {
         _ <- runMainF
-        _ <- AkkaUtil.nonBlockingSleep(2.seconds)
-        _ = directory.deleteRecursively()
-        _ <- AkkaUtil.nonBlockingSleep(5.seconds)
       } yield ()
 
       for {
