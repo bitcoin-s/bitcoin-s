@@ -735,15 +735,15 @@ object ConsoleCli {
         ),
       cmd("backupwallet")
         .action((_, conf) => conf.copy(command = BackupWallet(null)))
-        .text("Backs the wallet database up")
+        .text("Backs up the wallet SQLite database")
         .children(
           arg[String]("dest")
-            .text("")
+            .text("Destination file name")
             .required()
             .action((dest, conf) =>
               conf.copy(command = conf.command match {
                 case wps: BackupWallet =>
-                  wps.copy(location = dest)
+                  wps.copy(destination = dest)
                 case other => other
               }))
         ),
@@ -1526,6 +1526,20 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("backuporacle")
+        .action((_, conf) => conf.copy(command = BackupOracle(null)))
+        .text("Backs up the oracle SQLite database")
+        .children(
+          arg[String]("dest")
+            .text("Destination file name")
+            .required()
+            .action((dest, conf) =>
+              conf.copy(command = conf.command match {
+                case wps: BackupOracle =>
+                  wps.copy(destination = dest)
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== Util ==="),
       cmd("createmultisig")
         .action((_, conf) =>
@@ -1886,6 +1900,9 @@ object ConsoleCli {
       case SignMessage(message) =>
         RequestParam("signmessage", Seq(up.writeJs(message)))
 
+      case BackupOracle(dest) =>
+        RequestParam("backuporacle", Seq(up.writeJs(dest)))
+
       case CreateMultisig(requiredKeys, keys, addressType) =>
         RequestParam("createmultisig",
                      Seq(up.writeJs(requiredKeys),
@@ -2194,7 +2211,7 @@ object CliCommand {
   case class GetBalances(isSats: Boolean) extends AppServerCliCommand
   case class GetAddressInfo(address: BitcoinAddress) extends AppServerCliCommand
   case object GetDLCWalletAccounting extends AppServerCliCommand
-  case class BackupWallet(location: String) extends AppServerCliCommand
+  case class BackupWallet(destination: String) extends AppServerCliCommand
 
   case class GetTransaction(txId: DoubleSha256DigestBE)
       extends AppServerCliCommand
@@ -2305,4 +2322,6 @@ object CliCommand {
   case class GetSignatures(eventName: String) extends OracleServerCliCommand
 
   case class SignMessage(message: String) extends OracleServerCliCommand
+
+  case class BackupOracle(destination: String) extends OracleServerCliCommand
 }

@@ -22,6 +22,7 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 import ujson._
 
+import java.nio.file.{FileSystems, Path}
 import java.time.Instant
 import scala.concurrent.Future
 
@@ -338,14 +339,15 @@ class OracleRoutesSpec
     }
 
     "backup" in {
+      val dest = FileSystems.getDefault.getPath("/tmp/location")
       (mockOracleApi
-        .backup(_: String))
-        .expects("location")
+        .backup(_: Path))
+        .expects(dest)
         .returning(Future.unit)
 
       val route =
         oracleRoutes.handleCommand(
-          ServerCommand("backuporacle", Arr(Str("location"))))
+          ServerCommand("backuporacle", Arr(Str("/tmp/location"))))
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)

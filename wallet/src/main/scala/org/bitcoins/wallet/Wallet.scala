@@ -39,6 +39,7 @@ import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._
 import scodec.bits.ByteVector
 
+import java.nio.file.Path
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Random, Success}
@@ -935,16 +936,16 @@ abstract class Wallet
     }
   }
 
-  override def backup(location: String): Future[Unit] = {
-    if (walletConfig.driver == DatabaseDriver.SQLite) {
-      val jdbcUrl = walletConfig.jdbcUrl.replace("\"", "")
-      Future { SQLiteUtil.backup(jdbcUrl, location) }
-    } else {
-      Future.failed(
-        new IllegalArgumentException(
-          "Backups are supported only for SQLite database backend"))
+  override def backup(location: Path): Future[Unit] =
+    walletConfig.driver match {
+      case DatabaseDriver.SQLite =>
+        val jdbcUrl = walletConfig.jdbcUrl.replace("\"", "")
+        Future { SQLiteUtil.backup(jdbcUrl, location) }
+      case _: DatabaseDriver =>
+        Future.failed(
+          new IllegalArgumentException(
+            "Backup is supported only for SQLite database backend"))
     }
-  }
 }
 
 // todo: create multiple wallets, need to maintain multiple databases

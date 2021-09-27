@@ -48,6 +48,7 @@ import scodec.bits.ByteVector
 import ujson.Value.InvalidData
 import ujson._
 
+import java.nio.file.{FileSystems, Path}
 import java.time.{ZoneId, ZonedDateTime}
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
@@ -1750,9 +1751,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "backup wallet" in {
+      val dest = FileSystems.getDefault.getPath("location")
       (mockWalletApi
-        .backup(_: String))
-        .expects("location")
+        .backup(_: Path))
+        .expects(dest)
         .returning(Future.unit)
 
       val route =

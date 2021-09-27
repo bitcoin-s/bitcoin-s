@@ -439,15 +439,14 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     *
     * @param location baclup file location
     */
-  override def backup(location: String): Future[Unit] = {
-    if (conf.driver == DatabaseDriver.SQLite) {
+  override def backup(location: Path): Future[Unit] = conf.driver match {
+    case DatabaseDriver.SQLite =>
       val jdbcUrl = conf.jdbcUrl.replace("\"", "")
       Future { SQLiteUtil.backup(jdbcUrl, location) }
-    } else {
+    case _: DatabaseDriver =>
       Future.failed(
         new IllegalArgumentException(
           "Backup is supported only for SQLite database backend"))
-    }
   }
 
 }
