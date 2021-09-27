@@ -138,6 +138,9 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
 
 ## Server Endpoints
 
+### Common 
+ - `getversion` - The version of our application you are using
+
 ### Blockchain
  - `getblockcount` - Get the current block height
  - `getfiltercount` - Get the number of filters

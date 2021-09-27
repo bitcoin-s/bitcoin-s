@@ -27,7 +27,7 @@ import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
-import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
+import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.Wallet
@@ -338,9 +338,15 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val chainRoutes = ChainRoutes(chainApi, nodeConf.network)
     val coreRoutes = CoreRoutes()
     val dlcRoutes = DLCRoutes(dlcNode)
+    val commonRoutes = CommonRoutes()
 
     val handlers =
-      Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes, dlcRoutes)
+      Seq(walletRoutes,
+          nodeRoutes,
+          chainRoutes,
+          coreRoutes,
+          dlcRoutes,
+          commonRoutes)
 
     val bindConfOpt = serverCmdLineArgs.rpcBindOpt match {
       case Some(rpcbind) => Some(rpcbind)
