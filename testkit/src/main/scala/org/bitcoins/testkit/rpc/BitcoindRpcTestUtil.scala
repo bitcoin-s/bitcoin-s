@@ -103,6 +103,7 @@ trait BitcoindRpcTestUtil extends Logging {
     val conf = s"""
                   |regtest=1
                   |server=1
+                  |daemon=$isDaemon
                   |rpcuser=$username
                   |rpcpassword=$pass
                   |rpcport=${rpcUri.getPort}
