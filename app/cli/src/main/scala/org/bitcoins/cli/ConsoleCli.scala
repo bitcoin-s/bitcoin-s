@@ -733,6 +733,20 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("backupwallet")
+        .action((_, conf) => conf.copy(command = BackupWallet(null)))
+        .text("Backs the wallet database up")
+        .children(
+          arg[String]("dest")
+            .text("")
+            .required()
+            .action((dest, conf) =>
+              conf.copy(command = conf.command match {
+                case wps: BackupWallet =>
+                  wps.copy(location = dest)
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== DLC ==="),
       cmd("decodecontractinfo")
         .action((_, conf) => conf.copy(command = DecodeContractInfo(null)))
@@ -1778,6 +1792,8 @@ object ConsoleCli {
                      Seq(up.writeJs(walletName),
                          up.writeJs(xprv),
                          up.writeJs(passwordOpt)))
+      case BackupWallet(location) =>
+        RequestParam("backupwallet", Seq(up.writeJs(location)))
 
       case GetBlockHeader(hash) =>
         RequestParam("getblockheader", Seq(up.writeJs(hash)))
@@ -2178,6 +2194,7 @@ object CliCommand {
   case class GetBalances(isSats: Boolean) extends AppServerCliCommand
   case class GetAddressInfo(address: BitcoinAddress) extends AppServerCliCommand
   case object GetDLCWalletAccounting extends AppServerCliCommand
+  case class BackupWallet(location: String) extends AppServerCliCommand
 
   case class GetTransaction(txId: DoubleSha256DigestBE)
       extends AppServerCliCommand

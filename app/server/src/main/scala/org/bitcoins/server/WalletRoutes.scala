@@ -822,6 +822,13 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           Server.httpSuccess(writeJs(accounting))
         }
       }
+
+    case ServerCommand("backupwallet", arr) =>
+      complete {
+        wallet.backup(arr.arr.head.str).map { _ =>
+          Server.httpSuccess("done")
+        }
+      }
   }
 
   /** Returns information about the state of our wallet */

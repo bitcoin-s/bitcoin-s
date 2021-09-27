@@ -273,5 +273,12 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
             Server.httpSuccess(ujson.Null)
           }
       }
+
+    case ServerCommand("backuporacle", arr) =>
+      complete {
+        oracle.backup(arr.arr.head.str).map { _ =>
+          Server.httpSuccess("done")
+        }
+      }
   }
 }

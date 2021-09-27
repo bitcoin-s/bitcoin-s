@@ -85,4 +85,9 @@ trait DLCOracleApi {
 
   /** Signs the SHA256 hash of the given bytes using the oracle's signing key */
   def signMessage(message: ByteVector): SchnorrDigitalSignature
+
+  /** Backup oracle database
+    * @param location baclup file location
+    */
+  def backup(location: String): Future[Unit]
 }

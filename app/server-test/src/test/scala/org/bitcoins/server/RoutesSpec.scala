@@ -1749,5 +1749,21 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    "backup wallet" in {
+      (mockWalletApi
+        .backup(_: String))
+        .expects("location")
+        .returning(Future.unit)
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("backupwallet", Arr(Str("location"))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == s"""{"result":"done","error":null}""")
+      }
+    }
+
   }
 }

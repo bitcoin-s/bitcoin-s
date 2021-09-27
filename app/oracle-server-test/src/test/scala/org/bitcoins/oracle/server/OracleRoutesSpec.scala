@@ -336,5 +336,21 @@ class OracleRoutesSpec
           responseAs[String] == s"""{"result":"${sig.hex}","error":null}""")
       }
     }
+
+    "backup" in {
+      (mockOracleApi
+        .backup(_: String))
+        .expects("location")
+        .returning(Future.unit)
+
+      val route =
+        oracleRoutes.handleCommand(
+          ServerCommand("backuporacle", Arr(Str("location"))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == s"""{"result":"done","error":null}""")
+      }
+    }
   }
 }

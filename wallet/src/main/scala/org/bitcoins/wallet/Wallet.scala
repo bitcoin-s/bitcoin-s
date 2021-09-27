@@ -32,6 +32,7 @@ import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.db.models.MasterXPubDAO
+import org.bitcoins.db.{DatabaseDriver, SQLiteUtil}
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
@@ -931,6 +932,17 @@ abstract class Wallet
     accountDAO.create(newAccountDb).map { created =>
       logger.debug(s"Created new account ${created.hdAccount}")
       this
+    }
+  }
+
+  override def backup(location: String): Future[Unit] = {
+    if (walletConfig.driver == DatabaseDriver.SQLite) {
+      val jdbcUrl = walletConfig.jdbcUrl.replace("\"", "")
+      Future { SQLiteUtil.backup(jdbcUrl, location) }
+    } else {
+      Future.failed(
+        new IllegalArgumentException(
+          "Backups are supported only for SQLite database backend"))
     }
   }
 }
