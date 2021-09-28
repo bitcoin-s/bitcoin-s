@@ -12,6 +12,7 @@ import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import ujson._
 
+import java.nio.file.FileSystems
 import scala.util.{Failure, Success}
 
 case class OracleRoutes(oracle: DLCOracleApi)(implicit
@@ -272,6 +273,14 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
 
             Server.httpSuccess(ujson.Null)
           }
+      }
+
+    case ServerCommand("backuporacle", arr) =>
+      complete {
+        val dest = FileSystems.getDefault.getPath(arr.arr.head.str)
+        oracle.backup(dest).map { _ =>
+          Server.httpSuccess("done")
+        }
       }
   }
 }

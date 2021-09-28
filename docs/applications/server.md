@@ -227,6 +227,8 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `newpassphrase` - The new passphrase
  - `keymanagerpassphraseset` `passphrase` - Encrypts the wallet with the given passphrase
     - `passphrase` - The passphrase to encrypt the wallet with
+- `backupwallet` `location` - Backs up the wallet database in a safe and consistent manner.
+   - `location` - The locations of the backup file
 
 ### DLC
  - `decodecontractinfo` `contractinfo` - Decodes a contract info into json

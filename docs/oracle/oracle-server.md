@@ -46,6 +46,8 @@ checkout [this page](build-oracle-server.md).
   - `eventName` - The event's name
 - `signmessage` `message` - Signs the SHA256 hash of the given string using the oracle's signing key
   - `message` - Message to hash and sign
+- `backuporacle` `location` - Backs up the oracle database in a safe and consistent manner.
+  - `location` - The locations of the backup file
   
 ### Create Event Example
 
