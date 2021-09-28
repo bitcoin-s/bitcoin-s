@@ -215,16 +215,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       //intentionally doesn't map on this otherwise we
       //wait until we are done syncing the entire wallet
       //which could take 1 hour
-      _ = syncWalletWithBitcoindAndStartRpcPolling(bitcoind, wallet)
-
-      // Create callbacks for processing new blocks
-      _ =
-        if (bitcoindRpcConf.zmqConfig != ZmqConfig.empty) {
-          BitcoindRpcBackendUtil.startZMQWalletCallbacks(
-            wallet,
-            bitcoindRpcConf.zmqConfig)
-        }
-
+      _ = syncWalletWithBitcoindAndStartPolling(bitcoind, wallet)
       dlcNode = dlcNodeConf.createDLCNode(wallet)
       _ <- dlcNode.start()
 
@@ -430,14 +421,15 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   /** Syncs the bitcoin-s wallet against bitcoind and then
-    * starts rpc polling if zmq isn't enabled. The key thing this helper method
-    * does is it logs errors based on the future returned by
-    * this method. This is needed because we don't want to block the
-    * rest of the application from starting if we have to do a ton of
-    * syncing. However, we don't want to swallow exceptions thrown
-    * by this method.
+    * starts rpc polling if zmq isn't enabled, otherwise it starts zmq polling.
+    *
+    * The key thing this helper method does is it logs errors based on the
+    * future returned by this method. This is needed because we don't want
+    * to block the rest of the application from starting if we have to
+    * do a ton of syncing. However, we don't want to swallow
+    * exceptions thrown by this method.
     */
-  private def syncWalletWithBitcoindAndStartRpcPolling(
+  private def syncWalletWithBitcoindAndStartPolling(
       bitcoind: BitcoindRpcClient,
       wallet: Wallet): Future[Unit] = {
     val f = BitcoindRpcBackendUtil
@@ -449,7 +441,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             .startBitcoindBlockPolling(wallet, bitcoind)
             .map(_ => ())
         } else {
-          Future.unit
+          Future {
+            BitcoindRpcBackendUtil.startZMQWalletCallbacks(
+              wallet,
+              bitcoindRpcConf.zmqConfig)
+          }
         }
       }
 
