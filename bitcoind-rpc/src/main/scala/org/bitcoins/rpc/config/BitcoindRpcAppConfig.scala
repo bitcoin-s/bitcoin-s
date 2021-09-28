@@ -155,13 +155,27 @@ case class BitcoindRpcAppConfig(
                              proxyParams = socks5ProxyParams)
   }
 
-  lazy val client: BitcoindRpcClient = {
+  /** Creates a bitcoind rpc client based on the [[bitcoindInstance]] configured */
+  lazy val clientF: Future[BitcoindRpcClient] = {
     bitcoindInstance match {
       case local: BitcoindInstanceLocal =>
         val version = versionOpt.getOrElse(local.getVersion)
-        BitcoindRpcClient.fromVersion(version, bitcoindInstance)
+        val client = BitcoindRpcClient.fromVersion(version, bitcoindInstance)
+        Future.successful(client)
       case _: BitcoindInstanceRemote =>
-        new BitcoindRpcClient(bitcoindInstance)
+        //first get a generic rpc client so we can retrieve
+        //the proper version of the remote running bitcoind
+        val noVersionRpc = new BitcoindRpcClient(bitcoindInstance)
+        val versionF = noVersionRpc.version
+
+        //if we don't retrieve the proper version, we can
+        //end up with exceptions on an rpc client that actually supports
+        //specific features that are not supported across all versions of bitcoind
+        //such as blockfilters
+        //see: https://github.com/bitcoin-s/bitcoin-s/issues/3695#issuecomment-929492945
+        versionF.map { version =>
+          BitcoindRpcClient.fromVersion(version, instance = bitcoindInstance)
+        }
     }
   }
 }

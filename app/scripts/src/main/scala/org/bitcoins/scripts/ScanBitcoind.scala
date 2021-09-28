@@ -24,13 +24,14 @@ class ScanBitcoind()(implicit
 
   override def start(): Future[Unit] = {
 
-    val bitcoind = rpcAppConfig.client
+    val bitcoindF = rpcAppConfig.clientF
 
     val startHeight = 675000
-    val endHeightF: Future[Int] = bitcoind.getBlockCount
+    val endHeightF: Future[Int] = bitcoindF.flatMap(_.getBlockCount)
 
     for {
       endHeight <- endHeightF
+      bitcoind <- bitcoindF
       _ <- countSegwitTxs(bitcoind, startHeight, endHeight)
     } yield {
       sys.exit(0)
