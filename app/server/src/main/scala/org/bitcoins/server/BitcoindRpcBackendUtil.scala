@@ -5,6 +5,7 @@ import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -259,7 +260,7 @@ object BitcoindRpcBackendUtil extends Logging {
     *                 as the wallet will need to process the new blocks
     */
   def startBitcoindBlockPolling(
-      wallet: Wallet,
+      wallet: WalletApi,
       bitcoind: BitcoindRpcClient,
       interval: FiniteDuration = 10.seconds)(implicit
       system: ActorSystem,
