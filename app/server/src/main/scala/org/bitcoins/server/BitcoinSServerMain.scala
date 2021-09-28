@@ -26,6 +26,7 @@ import org.bitcoins.feeprovider._
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
@@ -210,14 +211,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             if err.getMessage.contains("If we have spent a spendinginfodb") =>
           handleMissingSpendingInfoDb(err, wallet)
       }
-      _ = BitcoindRpcBackendUtil
-        .syncWalletToBitcoind(bitcoind, wallet)
-        .flatMap(_ => wallet.updateUtxoPendingStates())
-        .flatMap { _ =>
-          if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
-            BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet, bitcoind)
-          } else Future.unit
-        }
+
+      //intentionally doesn't map on this otherwise we
+      //wait until we are done syncing the entire wallet
+      //which could take 1 hour
+      _ = syncWalletWithBitcoindAndStartRpcPolling(bitcoind, wallet)
 
       // Create callbacks for processing new blocks
       _ =
@@ -429,6 +427,35 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                                               useCreationTime = true)
     } yield clearedWallet
     walletF.map(_ => ())
+  }
+
+  /** Syncs the bitcoin-s wallet against bitcoind and then
+    * starts rpc polling if zmq isn't enabled. The key thing this helper method
+    * does is it logs errors based on the future returned by
+    * this method. This is needed because we don't want to block the
+    * rest of the application from starting if we have to do a ton of
+    * syncing. However, we don't want to swallow exceptions thrown
+    * by this method.
+    */
+  private def syncWalletWithBitcoindAndStartRpcPolling(
+      bitcoind: BitcoindRpcClient,
+      wallet: Wallet): Future[Unit] = {
+    val f = BitcoindRpcBackendUtil
+      .syncWalletToBitcoind(bitcoind, wallet)
+      .flatMap(_ => wallet.updateUtxoPendingStates())
+      .flatMap { _ =>
+        if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
+          BitcoindRpcBackendUtil
+            .startBitcoindBlockPolling(wallet, bitcoind)
+            .map(_ => ())
+        } else {
+          Future.unit
+        }
+      }
+
+    f.failed.foreach(err =>
+      logger.error(s"Error syncing bitcoin-s wallet with bitcoind", err))
+    f
   }
 }
 
