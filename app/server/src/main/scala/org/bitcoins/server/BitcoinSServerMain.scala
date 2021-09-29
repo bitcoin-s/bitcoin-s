@@ -184,10 +184,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   def startBitcoindBackend(): Future[Unit] = {
-    val bitcoind = bitcoindRpcConf.client
+    val bitcoindF = bitcoindRpcConf.clientF
 
     for {
       _ <- bitcoindRpcConf.start()
+      bitcoind <- bitcoindF
       _ = logger.info("Started bitcoind")
 
       bitcoindNetwork <- bitcoind.getBlockChainInfo.map(_.chain)

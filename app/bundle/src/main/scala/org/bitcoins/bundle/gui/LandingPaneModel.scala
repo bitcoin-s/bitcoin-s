@@ -53,11 +53,15 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
               Future.successful(ConfigFactory.empty())
             case BitcoindBackend =>
               if (!appConfig.torConf.enabled) {
-                tmpConf.bitcoindRpcConf.client.getBlockChainInfo.map { info =>
-                  val networkStr =
-                    DatadirUtil.networkStrToDirName(info.chain.name)
-                  ConfigFactory.parseString(s"bitcoin-s.network = $networkStr")
-                }
+                val bitcoindF = tmpConf.bitcoindRpcConf.clientF
+                bitcoindF
+                  .flatMap(_.getBlockChainInfo)
+                  .map { info =>
+                    val networkStr =
+                      DatadirUtil.networkStrToDirName(info.chain.name)
+                    ConfigFactory.parseString(
+                      s"bitcoin-s.network = $networkStr")
+                  }
               } else {
                 //we cannot connect to bitcoind and determine
                 //the network over tor since tor isn't started

@@ -69,8 +69,8 @@ case class NodeAppConfig(
               BitcoindRpcAppConfig(directory, confs: _*)(system)
             bitcoindRpcAppConfig.binaryOpt match {
               case Some(_) =>
-                bitcoindRpcAppConfig.client
-                  .start()
+                bitcoindRpcAppConfig.clientF
+                  .flatMap(_.start())
                   .map(_ => ())
               case None =>
                 Future.unit
