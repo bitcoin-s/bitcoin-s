@@ -261,6 +261,31 @@ object KeyManagerPassphraseSet extends ServerJsonModels {
   }
 }
 
+case class DeleteAnnouncement(eventName: String)
+
+object DeleteAnnouncement
+    extends ServerJsonModels
+    with StringFactory[DeleteAnnouncement] {
+
+  def fromJsArray(jsArr: ujson.Arr): Try[DeleteAnnouncement] = {
+    jsArr.arr.toVector match {
+      case eventName +: Vector() =>
+        Try {
+          DeleteAnnouncement.fromString(eventName.str)
+        }
+      case Vector() =>
+        Failure(new IllegalArgumentException(s"Missing event name argument"))
+      case other =>
+        Failure(new IllegalArgumentException(
+          s"Bad number of arguments to deleteannouncement, got=${other.length} expected: 1"))
+    }
+  }
+
+  override def fromString(string: String): DeleteAnnouncement = {
+    DeleteAnnouncement(string)
+  }
+}
+
 case class DeleteAttestation(eventName: String)
 
 object DeleteAttestation
