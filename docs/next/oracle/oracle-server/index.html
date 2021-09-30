@@ -71,14 +71,14 @@ checkout <a href="/docs/next/oracle/build-oracle-server">this page</a>.</p>
 <ul>
 <li><code>getpublickey</code> - Get oracle's public key</li>
 <li><code>getstakingaddress</code> - Get oracle's staking address</li>
-<li><code>listevents</code> - Lists all event names</li>
-<li><code>createenumevent</code> <code>label</code> <code>maturationtime</code> <code>outcomes</code> - Registers an oracle enum event
+<li><code>listannouncements</code> - Lists all event names</li>
+<li><code>createenumannouncement</code> <code>label</code> <code>maturationtime</code> <code>outcomes</code> - Registers an oracle enum event
 <ul>
 <li><code>label</code> - Label for this event</li>
 <li><code>maturationtime</code> - The earliest expected time an outcome will be signed, given in ISO 8601 format</li>
 <li><code>outcomes</code> - Possible outcomes for this event</li>
 </ul></li>
-<li><code>createnumericevent</code> <code>name</code> <code>maturationtime</code> <code>minvalue</code> <code>maxvalue</code> <code>unit</code> <code>precision</code> - Registers an oracle event that uses digit decomposition when signing the number
+<li><code>createnumericannouncement</code> <code>name</code> <code>maturationtime</code> <code>minvalue</code> <code>maxvalue</code> <code>unit</code> <code>precision</code> - Registers an oracle event that uses digit decomposition when signing the number
 <ul>
 <li><code>name</code>- Name for this event</li>
 <li><code>maturationtime</code> - The earliest expected time an outcome will be signed, given in ISO 8601 format</li>
@@ -87,7 +87,7 @@ checkout <a href="/docs/next/oracle/build-oracle-server">this page</a>.</p>
 <li><code>unit</code> - The unit denomination of the outcome value</li>
 <li><code>precision</code> - The precision of the outcome representing the base exponent by which to multiply the number represented by the composition of the digits to obtain the actual outcome value.</li>
 </ul></li>
-<li><code>createdigitdecompevent</code> <code>name</code> <code>maturationtime</code> <code>base</code> <code>numdigits</code> <code>unit</code> <code>precision</code> <code>[signed]</code> - Registers an oracle event that uses digit decomposition when signing the number
+<li><code>createdigitdecompannouncement</code> <code>name</code> <code>maturationtime</code> <code>base</code> <code>numdigits</code> <code>unit</code> <code>precision</code> <code>[signed]</code> - Registers an oracle event that uses digit decomposition when signing the number
 <ul>
 <li><code>name</code>- Name for this event</li>
 <li><code>maturationtime</code> - The earliest expected time an outcome will be signed, given in epoch second</li>
@@ -97,11 +97,11 @@ checkout <a href="/docs/next/oracle/build-oracle-server">this page</a>.</p>
 <li><code>precision</code> - The precision of the outcome representing the base exponent by which to multiply the number represented by the composition of the digits to obtain the actual outcome value.</li>
 <li><code>--signed</code>- Whether the outcomes can be negative</li>
 </ul></li>
-<li><code>getevent</code> <code>event</code> - Get an event's details
+<li><code>getannouncement</code> <code>event</code> - Get an event's details
 <ul>
 <li><code>eventName</code> - The event's name</li>
 </ul></li>
-<li><code>signevent</code> <code>event</code> <code>outcome</code> - Signs an event
+<li><code>signannouncement</code> <code>event</code> <code>outcome</code> - Signs an event
 <ul>
 <li><code>eventName</code> - The event's name</li>
 <li><code>outcome</code>- Outcome to sign for this event</li>
