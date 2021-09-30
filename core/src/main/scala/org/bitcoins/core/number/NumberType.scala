@@ -327,6 +327,7 @@ object UInt16
 
   lazy val zero = checkCached(0)
   lazy val one = checkCached(1)
+  lazy val two = checkCached(2)
 
   private lazy val minUnderlying: A = 0
   private lazy val maxUnderlying: A = BigInt(65535L)

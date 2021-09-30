@@ -122,6 +122,23 @@ trait DLCOracleApi {
 
   def signDigits(oracleEventTLV: OracleEventTLV, num: Long): Future[OracleEvent]
 
+  /** Deletes an announcement with the given name
+    * WARNING: If this announcement has been published widely
+    * users will not be able to settle their DLCs.
+    * You likely should only use this in testing scenarios
+    * @return the deleted announcement
+    */
+  def deleteAnnouncement(eventName: String): Future[OracleAnnouncementTLV]
+
+  /** Deletes an announcement with the given name
+    * WARNING: If this announcement has been published widely
+    * users will not be able to settle their DLCs.
+    * You likely should only use this in testing scenarios
+    * @return the deleted announcement
+    */
+  def deleteAnnouncement(
+      announcementTLV: OracleAnnouncementTLV): Future[OracleAnnouncementTLV]
+
   /** Deletes attestations for the given event
     *
     * WARNING: if previous signatures have been made public

@@ -924,6 +924,40 @@ class DLCOracleTest extends DLCOracleFixture {
       } yield res
   }
 
+  it must "delete enum announcements" in { dlcOracle =>
+    val eventName = "test"
+    val createdF =
+      dlcOracle.createNewEnumEvent(eventName, futureTime, Vector("0", "1", "2"))
+    for {
+      c <- createdF
+      _ <- dlcOracle.deleteAnnouncement(c)
+      //make sure we can't find it
+      annOpt <- dlcOracle.findEvent(eventName)
+    } yield {
+      assert(annOpt.isEmpty)
+    }
+  }
+
+  it must "delete numeric announcements" in { dlcOracle =>
+    val eventName = "test"
+    val createdF =
+      dlcOracle.createNewDigitDecompEvent(eventName = eventName,
+                                          maturationTime = futureTime,
+                                          base = UInt16.two,
+                                          isSigned = false,
+                                          numDigits = 2,
+                                          unit = "UNIT",
+                                          precision = Int32.zero)
+    for {
+      c <- createdF
+      _ <- dlcOracle.deleteAnnouncement(c)
+      //make sure we can't find it
+      annOpt <- dlcOracle.findEvent(eventName)
+    } yield {
+      assert(annOpt.isEmpty)
+    }
+  }
+
   it must "delete enum attestation" in { dlcOracle: DLCOracle =>
     val eventName = "test"
     val createdF =

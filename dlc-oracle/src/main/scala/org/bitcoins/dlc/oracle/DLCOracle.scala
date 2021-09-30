@@ -404,6 +404,31 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     signingKey.schnorrSign(hash.bytes)
   }
 
+  /** @inheritdoc */
+  override def deleteAnnouncement(
+      eventName: String): Future[OracleAnnouncementTLV] = {
+    logger.warn(s"Deleting announcement with name=$eventName")
+    for {
+      eventOpt <- findEvent(eventName)
+      _ = require(eventOpt.isDefined,
+                  s"No announcement found by event name $eventName")
+      event = eventOpt.get
+      eventDbs <- eventDAO.findByOracleEventTLV(event.eventTLV)
+      nonces = eventDbs.map(_.nonce)
+      rVals <- rValueDAO.findByNonces(nonces)
+      outcomeDbs <- eventOutcomeDAO.findByNonces(nonces)
+      _ <- eventOutcomeDAO.deleteAll(outcomeDbs)
+      _ <- rValueDAO.deleteAll(rVals)
+      _ <- eventDAO.deleteAll(eventDbs)
+    } yield eventOpt.get.announcementTLV
+  }
+
+  /** @inheritdoc */
+  override def deleteAnnouncement(
+      announcementTLV: OracleAnnouncementTLV): Future[OracleAnnouncementTLV] = {
+    deleteAnnouncement(announcementTLV.eventTLV.eventId.toString)
+  }
+
   /** Deletes attestations for the given event
     *
     * WARNING: if previous signatures have been made public
