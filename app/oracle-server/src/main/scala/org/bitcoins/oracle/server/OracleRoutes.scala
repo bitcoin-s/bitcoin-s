@@ -14,7 +14,8 @@ import ujson._
 
 import scala.util.{Failure, Success}
 
-case class OracleRoutes(oracle: DLCOracleApi)(implicit
+case class OracleRoutes(oracle: DLCOracleApi, eventPublisher: EventPublisher)(
+    implicit
     system: ActorSystem,
     conf: DLCOracleAppConfig)
     extends ServerRoute {
@@ -273,5 +274,26 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
             Server.httpSuccess(ujson.Null)
           }
       }
+
+    case ServerCommand("publishevent", arr) =>
+      PublishEvent.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(event: PublishEvent) =>
+          complete {
+            eventPublisher.publishEvent(event)
+          }
+      }
+
+    case ServerCommand("publishattestation", arr) =>
+      PublishAttestations.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(attestations: PublishAttestations) =>
+          complete {
+            eventPublisher.publishAttestations(attestations)
+          }
+      }
+
   }
 }

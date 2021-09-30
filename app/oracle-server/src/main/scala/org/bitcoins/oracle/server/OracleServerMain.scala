@@ -1,17 +1,20 @@
 package org.bitcoins.oracle.server
 
 import akka.actor.ActorSystem
+import org.bitcoins.commons.jsonmodels.ExplorerEnv
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.routes.{BitcoinSServerRunner, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
+import org.bitcoins.tor.config.TorAppConfig
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
-    conf: DLCOracleAppConfig)
+    conf: DLCOracleAppConfig,
+    torConfig: TorAppConfig)
     extends BitcoinSServerRunner {
 
   override def start(): Future[Unit] = {
@@ -24,7 +27,12 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
     for {
       _ <- conf.start()
       oracle = new DLCOracle()
-      routes = Seq(OracleRoutes(oracle))
+      _ = println(conf.network)
+      _ = println(torConfig.socks5ProxyParams)
+      eventPublisher = new SbExplorerPublisher(
+        oracle,
+        ExplorerEnv.fromBitcoinNetwork(conf.network))
+      routes = Seq(OracleRoutes(oracle, eventPublisher))
       server = serverArgParser.rpcPortOpt match {
         case Some(rpcport) =>
           Server(conf = conf,
@@ -76,6 +84,10 @@ object OracleServerMain extends BitcoinSAppScalaDaemon {
   implicit lazy val conf: DLCOracleAppConfig =
     DLCOracleAppConfig(datadirParser.datadir, datadirParser.baseConfig)(
       system.dispatcher)
+
+  implicit lazy val torConf: TorAppConfig =
+    TorAppConfig(datadirParser.datadir, datadirParser.baseConfig)(
+      ExecutionContext.global)
 
   new OracleServerMain(serverCmdLineArgs).run()
 }

@@ -16,8 +16,9 @@ import org.bitcoins.core.protocol.tlv.{
 }
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
-import org.bitcoins.server.routes.ServerCommand
+import org.bitcoins.server.routes.{Server, ServerCommand}
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.tor.config.TorAppConfig
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 import ujson._
@@ -33,9 +34,14 @@ class OracleRoutesSpec
   implicit val conf: DLCOracleAppConfig =
     BitcoinSTestAppConfig.getDLCOracleAppConfig()
 
-  val mockOracleApi: DLCOracleApi = mock[DLCOracleApi]
+  implicit val torConf: TorAppConfig =
+    BitcoinSTestAppConfig.getSpvTestConfig().torConf
 
-  val oracleRoutes: OracleRoutes = OracleRoutes(mockOracleApi)
+  val mockOracleApi: DLCOracleApi = mock[DLCOracleApi]
+  val mockEventPublisher: EventPublisher = mock[EventPublisher]
+
+  val oracleRoutes: OracleRoutes =
+    OracleRoutes(mockOracleApi, mockEventPublisher)
 
   val testAddressStr = "bc1qvrctqwa6g70z5vtxsyft7xvsyyt749trlm80al"
   val testAddress: Bech32Address = Bech32Address.fromString(testAddressStr)
@@ -334,6 +340,39 @@ class OracleRoutesSpec
         assert(contentType == `application/json`)
         assert(
           responseAs[String] == s"""{"result":"${sig.hex}","error":null}""")
+      }
+    }
+
+    "publish event" in {
+      (mockEventPublisher
+        .publishEvent(_: PublishEvent))
+        .expects(PublishEvent("id", "oracle", "desc", None))
+        .returning(Future.successful(Server.httpSuccess("ok")))
+
+      val route =
+        oracleRoutes.handleCommand(
+          ServerCommand("publishannouncement",
+                        Arr(Str("id"), Str("oracle"), Str("desc"))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == s"""{"result":"ok","error":null}""")
+      }
+    }
+
+    "publish attestation" in {
+      (mockEventPublisher
+        .publishAttestations(_: PublishAttestations))
+        .expects(PublishAttestations("id"))
+        .returning(Future.successful(Server.httpSuccess("ok")))
+
+      val route =
+        oracleRoutes.handleCommand(
+          ServerCommand("publishattestation", Arr(Str("id"))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == s"""{"result":"ok","error":null}""")
       }
     }
   }

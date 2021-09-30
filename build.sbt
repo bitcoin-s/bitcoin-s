@@ -358,7 +358,8 @@ lazy val oracleServer = project
   .settings(CommonSettings.dockerBuildxSettings: _*)
   .dependsOn(
     dlcOracle,
-    serverRoutes
+    serverRoutes,
+    oracleExplorerClient
   )
   .enablePlugins(JavaAppPackaging, DockerPlugin)
 

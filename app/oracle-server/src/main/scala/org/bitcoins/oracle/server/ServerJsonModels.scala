@@ -212,6 +212,39 @@ object GetEvent extends ServerJsonModels {
   }
 }
 
+case class PublishEvent(
+    eventName: String,
+    oracleName: String,
+    description: String,
+    eventURI: Option[String])
+
+object PublishEvent extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[PublishEvent] = {
+    require(jsArr.arr.size == 3 || jsArr.arr.size == 4,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: up to 4")
+    Try {
+      PublishEvent(jsArr.arr(0).str,
+                   jsArr.arr(1).str,
+                   jsArr.arr(2).str,
+                   if (jsArr.arr.size == 4) Some(jsArr.arr(3).str) else None)
+    }
+  }
+}
+
+case class PublishAttestations(eventName: String)
+
+object PublishAttestations extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[PublishAttestations] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+    Try {
+      PublishAttestations(jsArr.arr.head.str)
+    }
+  }
+}
+
 case class KeyManagerPassphraseChange(
     oldPassword: AesPassword,
     newPassword: AesPassword)
