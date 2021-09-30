@@ -1900,6 +1900,10 @@ object ConsoleCli {
       case SignMessage(message) =>
         RequestParam("signmessage", Seq(up.writeJs(message)))
 
+      case DeleteAnnouncement(eventName) =>
+        RequestParam("deleteannouncement", Seq(up.writeJs(eventName)))
+      case DeleteAttestation(eventName) =>
+        RequestParam("deleteattestations", Seq(up.writeJs(eventName)))
       case BackupOracle(dest) =>
         RequestParam("backuporacle", Seq(up.writeJs(dest)))
 
@@ -2322,6 +2326,11 @@ object CliCommand {
   case class GetSignatures(eventName: String) extends OracleServerCliCommand
 
   case class SignMessage(message: String) extends OracleServerCliCommand
+
+  case class DeleteAnnouncement(eventName: String)
+      extends OracleServerCliCommand
+
+  case class DeleteAttestation(eventName: String) extends OracleServerCliCommand
 
   case class BackupOracle(destination: String) extends OracleServerCliCommand
 }
