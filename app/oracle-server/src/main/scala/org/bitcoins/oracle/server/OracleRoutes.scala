@@ -51,7 +51,7 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
         case Success(CreateEvent(label, maturationTime, outcomes)) =>
           complete {
             oracle
-              .createNewEnumEvent(label, maturationTime, outcomes)
+              .createNewEnumAnnouncement(label, maturationTime, outcomes)
               .map { announcementTLV =>
                 Server.httpSuccess(announcementTLV.hex)
               }
@@ -76,13 +76,13 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
               Math.ceil(Math.log(maxValue.toDouble) / Math.log(2)).toInt
 
             oracle
-              .createNewDigitDecompEvent(eventName,
-                                         maturationTime,
-                                         UInt16(2),
-                                         isSigned,
-                                         numDigits,
-                                         unit,
-                                         Int32(precision))
+              .createNewDigitDecompAnnouncement(eventName,
+                                                maturationTime,
+                                                UInt16(2),
+                                                isSigned,
+                                                numDigits,
+                                                unit,
+                                                Int32(precision))
               .map { announcementTLV =>
                 Server.httpSuccess(announcementTLV.hex)
               }
@@ -103,13 +103,13 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
                                      precision)) =>
           complete {
             oracle
-              .createNewDigitDecompEvent(eventName,
-                                         maturationTime,
-                                         UInt16(base),
-                                         isSigned,
-                                         numDigits,
-                                         unit,
-                                         Int32(precision))
+              .createNewDigitDecompAnnouncement(eventName,
+                                                maturationTime,
+                                                UInt16(base),
+                                                isSigned,
+                                                numDigits,
+                                                unit,
+                                                Int32(precision))
               .map { announcementTLV =>
                 Server.httpSuccess(announcementTLV.hex)
               }
@@ -193,7 +193,7 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
         case Success(SignEvent(eventName, outcome)) =>
           complete {
             oracle
-              .signEnumEvent(eventName, EnumAttestation(outcome))
+              .signEnumAnnouncement(eventName, EnumAttestation(outcome))
               .map { eventDb =>
                 val oracleEvent = OracleEvent.fromEventDbs(Vector(eventDb))
                 oracleEvent match {

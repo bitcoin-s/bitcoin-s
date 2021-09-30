@@ -28,7 +28,25 @@ trait DLCOracleApi {
 
   def findEvent(eventName: String): Future[Option[OracleEvent]]
 
+  @deprecated("Call createNewDigitDecompAnnouncement", "2021-09-30")
   def createNewDigitDecompEvent(
+      eventName: String,
+      maturationTime: Instant,
+      base: UInt16,
+      isSigned: Boolean,
+      numDigits: Int,
+      unit: String,
+      precision: Int32): Future[OracleAnnouncementTLV] = {
+    createNewDigitDecompAnnouncement(eventName = eventName,
+                                     maturationTime = maturationTime,
+                                     base = base,
+                                     isSigned = isSigned,
+                                     numDigits = numDigits,
+                                     unit = unit,
+                                     precision = precision)
+  }
+
+  def createNewDigitDecompAnnouncement(
       eventName: String,
       maturationTime: Instant,
       base: UInt16,
@@ -37,27 +55,66 @@ trait DLCOracleApi {
       unit: String,
       precision: Int32): Future[OracleAnnouncementTLV]
 
+  @deprecated("Call createNewEnumAnnouncement", "2021-09-30")
   def createNewEnumEvent(
+      eventName: String,
+      maturationTime: Instant,
+      outcomes: Vector[String]): Future[OracleAnnouncementTLV] = {
+    createNewEnumAnnouncement(eventName, maturationTime, outcomes)
+  }
+
+  def createNewEnumAnnouncement(
       eventName: String,
       maturationTime: Instant,
       outcomes: Vector[String]): Future[OracleAnnouncementTLV]
 
+  @deprecated("Call createNewAnnouncement")
   def createNewEvent(
+      eventName: String,
+      maturationTime: Instant,
+      descriptor: EventDescriptorTLV,
+      signingVersion: SigningVersion = SigningVersion.latest): Future[
+    OracleAnnouncementTLV] = {
+    createNewAnnouncement(eventName, maturationTime, descriptor, signingVersion)
+  }
+
+  def createNewAnnouncement(
       eventName: String,
       maturationTime: Instant,
       descriptor: EventDescriptorTLV,
       signingVersion: SigningVersion = SigningVersion.latest): Future[
     OracleAnnouncementTLV]
 
+  @deprecated("Call signEnumAnnouncement")
   def signEnumEvent(
+      eventName: String,
+      outcome: EnumAttestation): Future[EventDb] = {
+    signEnumAnnouncement(eventName, outcome)
+  }
+
+  def signEnumAnnouncement(
       eventName: String,
       outcome: EnumAttestation): Future[EventDb]
 
+  @deprecated("Call signEnumAnnouncement")
   def signEnumEvent(
+      oracleEventTLV: OracleEventTLV,
+      outcome: EnumAttestation): Future[EventDb] = {
+    signEnumAnnouncement(oracleEventTLV, outcome)
+  }
+
+  def signEnumAnnouncement(
       oracleEventTLV: OracleEventTLV,
       outcome: EnumAttestation): Future[EventDb]
 
+  @deprecated("Call signAnnouncement")
   def signEvent(
+      nonce: SchnorrNonce,
+      outcome: DLCAttestationType): Future[EventDb] = {
+    signAnnouncement(nonce, outcome)
+  }
+
+  def signAnnouncement(
       nonce: SchnorrNonce,
       outcome: DLCAttestationType): Future[EventDb]
 
