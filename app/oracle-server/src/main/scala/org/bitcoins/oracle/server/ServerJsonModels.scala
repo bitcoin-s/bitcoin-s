@@ -199,15 +199,15 @@ object SignDigits extends ServerJsonModels {
   }
 }
 
-case class GetEvent(eventName: String)
+case class GetAnnouncement(eventName: String)
 
-object GetEvent extends ServerJsonModels {
+object GetAnnouncement extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[GetEvent] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[GetAnnouncement] = {
     require(jsArr.arr.size == 1,
             s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
     Try {
-      GetEvent(jsArr.arr.head.str)
+      GetAnnouncement(jsArr.arr.head.str)
     }
   }
 }

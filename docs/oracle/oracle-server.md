@@ -14,7 +14,7 @@ checkout [this page](build-oracle-server.md).
 
 - `getpublickey` - Get oracle's public key
 - `getstakingaddress` - Get oracle's staking address
-- `listevents` - Lists all event names
+- `listannouncements` - Lists all event names
 - `createenumannouncement` `label` `maturationtime` `outcomes` - Registers an oracle enum event
   - `label` - Label for this event
   - `maturationtime` - The earliest expected time an outcome will be signed, given in ISO 8601 format
@@ -34,7 +34,7 @@ checkout [this page](build-oracle-server.md).
   - `unit` - The unit denomination of the outcome value
   - `precision` - The precision of the outcome representing the base exponent by which to multiply the number represented by the composition of the digits to obtain the actual outcome value.
   - `--signed`- Whether the outcomes can be negative
-- `getevent` `event` - Get an event's details
+- `getannouncement` `event` - Get an event's details
   - `eventName` - The event's name
 - `signannouncement` `event` `outcome` - Signs an event
     - `eventName` - The event's name

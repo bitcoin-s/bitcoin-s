@@ -21,7 +21,7 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
     extends ServerRoute {
   import system.dispatcher
 
-  def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
+  override def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
     case ServerCommand("getpublickey", _) =>
       complete {
         Server.httpSuccess(oracle.publicKey().hex)
@@ -34,7 +34,9 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
         Server.httpSuccess(address.toString)
       }
 
-    case ServerCommand("listevents", _) =>
+    case ServerCommand("listevents", arr) =>
+      handleCommand(ServerCommand("listannouncements", arr))
+    case ServerCommand("listannouncements", _) =>
       complete {
         oracle.listEvents().map { events =>
           val strs = events.map(_.eventName)
@@ -124,10 +126,12 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
       }
 
     case ServerCommand("getevent", arr) =>
-      GetEvent.fromJsArr(arr) match {
+      handleCommand(ServerCommand("getannouncement", arr))
+    case ServerCommand("getannouncement", arr) =>
+      GetAnnouncement.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetEvent(eventName)) =>
+        case Success(GetAnnouncement(eventName)) =>
           complete {
             oracle.findEvent(eventName).map {
               case Some(event: OracleEvent) =>
@@ -231,10 +235,10 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
       }
 
     case ServerCommand("getsignatures", arr) =>
-      GetEvent.fromJsArr(arr) match {
+      GetAnnouncement.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetEvent(eventName)) =>
+        case Success(GetAnnouncement(eventName)) =>
           complete {
             oracle.findEvent(eventName).map {
               case Some(completed: CompletedOracleEvent) =>
