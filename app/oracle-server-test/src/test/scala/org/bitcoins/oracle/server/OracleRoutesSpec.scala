@@ -384,6 +384,23 @@ class OracleRoutesSpec
       }
     }
 
+    "delete attestations" in {
+      val eventName = "test"
+      (mockOracleApi
+        .deleteAttestations(_: String))
+        .expects(eventName)
+        .returning(Future.successful(dummyOracleEvent))
+
+      val cmd = ServerCommand("deleteattestations", Arr(Str(eventName)))
+      val route = oracleRoutes.handleCommand(cmd)
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[
+          String] == s"""{"result":"${dummyOracleEvent.announcementTLV.hex}","error":null}""")
+      }
+    }
+
     "backup" in {
       val dest = FileSystems.getDefault.getPath("/tmp/location")
       (mockOracleApi

@@ -923,4 +923,41 @@ class DLCOracleTest extends DLCOracleFixture {
           dlcOracle.deleteAttestations("test"))
       } yield res
   }
+
+  it must "delete enum attestation" in { dlcOracle: DLCOracle =>
+    val eventName = "test"
+    val createdF =
+      dlcOracle.createNewEvent(eventName, futureTime, testDescriptor)
+    for {
+      _ <- createdF
+      _ <- dlcOracle.signEnumEvent(eventName, EnumAttestation("cloudy"))
+      _ <- dlcOracle.deleteAttestations(eventName)
+      eventOpt <- dlcOracle.findEvent(eventName)
+    } yield {
+      assert(eventOpt.isDefined)
+      assert(eventOpt.get.isInstanceOf[PendingEnumV0OracleEvent])
+    }
+  }
+
+  it must "delete numeric attestations" in { dlcOracle: DLCOracle =>
+    val eventName = "test"
+    val createdF =
+      dlcOracle.createNewDigitDecompEvent(eventName = eventName,
+                                          maturationTime = futureTime,
+                                          base = UInt16(2),
+                                          isSigned = false,
+                                          numDigits = 2,
+                                          unit = "UNIT",
+                                          precision = Int32.zero)
+
+    for {
+      _ <- createdF
+      _ <- dlcOracle.signDigits(eventName, 1)
+      _ <- dlcOracle.deleteAttestations(eventName)
+      eventOpt <- dlcOracle.findEvent(eventName)
+    } yield {
+      assert(eventOpt.isDefined)
+      assert(eventOpt.get.isInstanceOf[PendingDigitDecompositionV0OracleEvent])
+    }
+  }
 }
