@@ -958,6 +958,30 @@ class DLCOracleTest extends DLCOracleFixture {
     }
   }
 
+  it must "fail to delete an announcement if there are attesations associated with it" in {
+    dlcOracle =>
+      val eventName = "test"
+      val createdF =
+        dlcOracle.createNewDigitDecompEvent(eventName = eventName,
+                                            maturationTime = futureTime,
+                                            base = UInt16(2),
+                                            isSigned = false,
+                                            numDigits = 2,
+                                            unit = "UNIT",
+                                            precision = Int32.zero)
+
+      val resultF = for {
+        _ <- createdF
+        _ <- dlcOracle.signDigits(eventName, 1)
+        _ <- dlcOracle.deleteAnnouncement(eventName)
+      } yield ()
+
+      recoverToSucceededIf[RuntimeException] {
+        resultF
+      }
+
+  }
+
   it must "delete enum attestation" in { dlcOracle: DLCOracle =>
     val eventName = "test"
     val createdF =
@@ -993,5 +1017,28 @@ class DLCOracleTest extends DLCOracleFixture {
       assert(eventOpt.isDefined)
       assert(eventOpt.get.isInstanceOf[PendingDigitDecompositionV0OracleEvent])
     }
+  }
+
+  it must "delete attestations, and then delete the announcement" in {
+    dlcOracle: DLCOracle =>
+      val eventName = "test"
+      val createdF =
+        dlcOracle.createNewDigitDecompEvent(eventName = eventName,
+                                            maturationTime = futureTime,
+                                            base = UInt16(2),
+                                            isSigned = false,
+                                            numDigits = 2,
+                                            unit = "UNIT",
+                                            precision = Int32.zero)
+
+      for {
+        _ <- createdF
+        _ <- dlcOracle.signDigits(eventName, 1)
+        _ <- dlcOracle.deleteAttestations(eventName)
+        _ <- dlcOracle.deleteAnnouncement(eventName)
+        eventOpt <- dlcOracle.findEvent(eventName)
+      } yield {
+        assert(eventOpt.isEmpty)
+      }
   }
 }

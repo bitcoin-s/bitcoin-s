@@ -414,6 +414,9 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                   s"No announcement found by event name $eventName")
       event = eventOpt.get
       eventDbs <- eventDAO.findByOracleEventTLV(event.eventTLV)
+      _ = require(
+        eventDbs.forall(_.attestationOpt.isEmpty),
+        s"Cannot have attesations defined when deleting an announcement, name=$eventName")
       nonces = eventDbs.map(_.nonce)
       rVals <- rValueDAO.findByNonces(nonces)
       outcomeDbs <- eventOutcomeDAO.findByNonces(nonces)
