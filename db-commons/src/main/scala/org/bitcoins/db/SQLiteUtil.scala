@@ -7,6 +7,8 @@ import java.nio.file.{Files, Path}
 
 object SQLiteUtil extends Logging {
 
+  Class.forName("org.sqlite.JDBC")
+
   def backup(jdbcUrl: String, backupFilePath: Path): Unit = {
     val conn = java.sql.DriverManager.getConnection(jdbcUrl)
     try {
