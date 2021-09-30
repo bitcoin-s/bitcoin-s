@@ -148,7 +148,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     }
   }
 
-  override def createNewDigitDecompEvent(
+  override def createNewDigitDecompAnnouncement(
       eventName: String,
       maturationTime: Instant,
       base: UInt16,
@@ -166,10 +166,10 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                                                                unit,
                                                                precision)
 
-    createNewEvent(eventName, maturationTime, descriptorTLV)
+    createNewAnnouncement(eventName, maturationTime, descriptorTLV)
   }
 
-  override def createNewEnumEvent(
+  override def createNewEnumAnnouncement(
       eventName: String,
       maturationTime: Instant,
       outcomes: Vector[String]): Future[OracleAnnouncementTLV] = {
@@ -179,10 +179,10 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
     val descriptorTLV = EnumEventDescriptorV0TLV(outcomes)
 
-    createNewEvent(eventName, maturationTime, descriptorTLV)
+    createNewAnnouncement(eventName, maturationTime, descriptorTLV)
   }
 
-  override def createNewEvent(
+  override def createNewAnnouncement(
       eventName: String,
       maturationTime: Instant,
       descriptor: EventDescriptorTLV,
@@ -247,7 +247,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     }
   }
 
-  override def signEnumEvent(
+  override def signEnumAnnouncement(
       eventName: String,
       outcome: EnumAttestation): Future[EventDb] = {
     for {
@@ -255,11 +255,11 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       _ = require(eventDbs.size == 1,
                   "Use signLargeRange for signing multi nonce outcomes")
 
-      sign <- signEvent(eventDbs.head.nonce, outcome)
+      sign <- signAnnouncement(eventDbs.head.nonce, outcome)
     } yield sign
   }
 
-  override def signEnumEvent(
+  override def signEnumAnnouncement(
       oracleEventTLV: OracleEventTLV,
       outcome: EnumAttestation): Future[EventDb] = {
     for {
@@ -267,14 +267,14 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       _ = require(eventDbs.size == 1,
                   "Use signLargeRange for signing multi nonce outcomes")
 
-      sign <- signEvent(eventDbs.head.nonce, outcome)
+      sign <- signAnnouncement(eventDbs.head.nonce, outcome)
     } yield sign
   }
 
   /** Signs the event for the single nonce
     * This will be called multiple times by signDigits for each nonce
     */
-  override def signEvent(
+  override def signAnnouncement(
       nonce: SchnorrNonce,
       outcome: DLCAttestationType): Future[EventDb] = {
     for {
@@ -355,7 +355,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       eventDescriptorTLV match {
         case _: SignedDigitDecompositionEventDescriptor =>
           val signOutcome = DigitDecompositionSignAttestation(num >= 0)
-          signEvent(oracleEventTLV.nonces.head, signOutcome).map(db =>
+          signAnnouncement(oracleEventTLV.nonces.head, signOutcome).map(db =>
             Vector(db))
         case _: UnsignedDigitDecompositionEventDescriptor =>
           if (num >= 0) {
@@ -389,7 +389,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
     val digitSigFs = nonces.zipWithIndex.map { case (nonce, index) =>
       val digit = decomposed(index)
-      signEvent(nonce, DigitDecompositionAttestation(digit))
+      signAnnouncement(nonce, DigitDecompositionAttestation(digit))
     }
 
     for {

@@ -35,14 +35,14 @@ object SignMessage extends ServerJsonModels {
   }
 }
 
-case class CreateEvent(
+case class CreateAnnouncement(
     label: String,
     maturationTime: Instant,
     outcomes: Vector[String])
 
-object CreateEvent extends ServerJsonModels {
+object CreateAnnouncement extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[CreateEvent] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateAnnouncement] = {
     jsArr.arr.toList match {
       case labelJs :: maturationTimeJs :: outcomesJs :: Nil =>
         Try {
@@ -50,7 +50,7 @@ object CreateEvent extends ServerJsonModels {
           val maturationTime = jsISOtoInstant(maturationTimeJs)
           val outcomes = outcomesJs.arr.map(_.str).toVector
 
-          CreateEvent(label, maturationTime, outcomes)
+          CreateAnnouncement(label, maturationTime, outcomes)
         }
       case Nil =>
         Failure(
@@ -63,7 +63,7 @@ object CreateEvent extends ServerJsonModels {
   }
 }
 
-case class CreateNumericEvent(
+case class CreateNumericAnnouncement(
     eventName: String,
     maturationTime: Instant,
     minValue: Long,
@@ -71,9 +71,9 @@ case class CreateNumericEvent(
     unit: String,
     precision: Int)
 
-object CreateNumericEvent extends ServerJsonModels {
+object CreateNumericAnnouncement extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[CreateNumericEvent] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateNumericAnnouncement] = {
     jsArr.arr.toList match {
       case labelJs :: maturationTimeJs :: minJs :: maxJs :: unitJs :: precisionJs :: Nil =>
         Try {
@@ -84,12 +84,12 @@ object CreateNumericEvent extends ServerJsonModels {
           val unit = unitJs.str
           val precision = precisionJs.num.toInt
 
-          CreateNumericEvent(label,
-                             maturationTime,
-                             minValue,
-                             maxValue,
-                             unit,
-                             precision)
+          CreateNumericAnnouncement(label,
+                                    maturationTime,
+                                    minValue,
+                                    maxValue,
+                                    unit,
+                                    precision)
         }
       case Nil =>
         Failure(new IllegalArgumentException(
@@ -102,7 +102,7 @@ object CreateNumericEvent extends ServerJsonModels {
   }
 }
 
-case class CreateDigitDecompEvent(
+case class CreateDigitDecompAnnouncement(
     eventName: String,
     maturationTime: Instant,
     base: Int,
@@ -111,9 +111,9 @@ case class CreateDigitDecompEvent(
     unit: String,
     precision: Int)
 
-object CreateDigitDecompEvent extends ServerJsonModels {
+object CreateDigitDecompAnnouncement extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[CreateDigitDecompEvent] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateDigitDecompAnnouncement] = {
     jsArr.arr.toList match {
       case labelJs :: maturationTimeJs :: baseJs :: isSignedJs :: numDigitsJs :: unitJs :: precisionJs :: Nil =>
         Try {
@@ -126,13 +126,13 @@ object CreateDigitDecompEvent extends ServerJsonModels {
           val unit = unitJs.str
           val precision = precisionJs.num.toInt
 
-          CreateDigitDecompEvent(label,
-                                 maturationTime,
-                                 base,
-                                 isSigned,
-                                 numDigits,
-                                 unit,
-                                 precision)
+          CreateDigitDecompAnnouncement(label,
+                                        maturationTime,
+                                        base,
+                                        isSigned,
+                                        numDigits,
+                                        unit,
+                                        precision)
         }
       case Nil =>
         Failure(new IllegalArgumentException(
@@ -145,17 +145,17 @@ object CreateDigitDecompEvent extends ServerJsonModels {
   }
 }
 
-case class SignEvent(eventName: String, outcome: String)
+case class SignAnnouncement(eventName: String, outcome: String)
 
-object SignEvent extends ServerJsonModels {
+object SignAnnouncement extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[SignEvent] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[SignAnnouncement] = {
     jsArr.arr.toList match {
       case nameJs :: outcomeJs :: Nil =>
         Try {
           val outcome = outcomeJs.str
 
-          SignEvent(nameJs.str, outcome)
+          SignAnnouncement(nameJs.str, outcome)
         }
       case Nil =>
         Failure(
@@ -199,15 +199,15 @@ object SignDigits extends ServerJsonModels {
   }
 }
 
-case class GetEvent(eventName: String)
+case class GetAnnouncement(eventName: String)
 
-object GetEvent extends ServerJsonModels {
+object GetAnnouncement extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[GetEvent] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[GetAnnouncement] = {
     require(jsArr.arr.size == 1,
             s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
     Try {
-      GetEvent(jsArr.arr.head.str)
+      GetAnnouncement(jsArr.arr.head.str)
     }
   }
 }
