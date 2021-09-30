@@ -125,15 +125,15 @@ class OracleRoutesSpec
       }
     }
 
-    "create enum event" in {
+    "create enum announcement" in {
       (mockOracleApi
-        .createNewEnumEvent(_: String, _: Instant, _: Vector[String]))
+        .createNewEnumAnnouncement(_: String, _: Instant, _: Vector[String]))
         .expects("id", Instant.ofEpochSecond(1612396800), Vector("1", "2"))
         .returning(Future.successful(OracleAnnouncementV0TLV.dummy))
 
       val route =
         oracleRoutes.handleCommand(
-          ServerCommand("createenumevent",
+          ServerCommand("createenumannouncement",
                         Arr(Str("id"),
                             Str("2021-02-04T00:00:00Z"),
                             Arr(Str("1"), Str("2")))))
@@ -145,16 +145,16 @@ class OracleRoutesSpec
       }
     }
 
-    "create enum event with just date" in {
+    "create enum announcement with just date" in {
       (mockOracleApi
-        .createNewEnumEvent(_: String, _: Instant, _: Vector[String]))
+        .createNewEnumAnnouncement(_: String, _: Instant, _: Vector[String]))
         .expects("id", Instant.ofEpochSecond(1612396800), Vector("1", "2"))
         .returning(Future.successful(OracleAnnouncementV0TLV.dummy))
 
       val route =
         oracleRoutes.handleCommand(
           ServerCommand(
-            "createenumevent",
+            "createenumannouncement",
             Arr(Str("id"), Str("2021-02-04"), Arr(Str("1"), Str("2")))))
 
       Post() ~> route ~> check {
@@ -164,15 +164,15 @@ class OracleRoutesSpec
       }
     }
 
-    "create numeric event" in {
+    "create numeric announcement" in {
       (mockOracleApi
-        .createNewDigitDecompEvent(_: String,
-                                   _: Instant,
-                                   _: UInt16,
-                                   _: Boolean,
-                                   _: Int,
-                                   _: String,
-                                   _: Int32))
+        .createNewDigitDecompAnnouncement(_: String,
+                                          _: Instant,
+                                          _: UInt16,
+                                          _: Boolean,
+                                          _: Int,
+                                          _: String,
+                                          _: Int32))
         .expects("id",
                  Instant.ofEpochSecond(1612396800),
                  UInt16(2),
@@ -184,7 +184,7 @@ class OracleRoutesSpec
 
       val route =
         oracleRoutes.handleCommand(
-          ServerCommand("createnumericevent",
+          ServerCommand("createnumericannouncement",
                         Arr(Str("id"),
                             Str("2021-02-04T00:00:00Z"),
                             Num(0),
@@ -199,15 +199,15 @@ class OracleRoutesSpec
       }
     }
 
-    "create numeric event with just date" in {
+    "create numeric announcement with just date" in {
       (mockOracleApi
-        .createNewDigitDecompEvent(_: String,
-                                   _: Instant,
-                                   _: UInt16,
-                                   _: Boolean,
-                                   _: Int,
-                                   _: String,
-                                   _: Int32))
+        .createNewDigitDecompAnnouncement(_: String,
+                                          _: Instant,
+                                          _: UInt16,
+                                          _: Boolean,
+                                          _: Int,
+                                          _: String,
+                                          _: Int32))
         .expects("id",
                  Instant.ofEpochSecond(1612396800),
                  UInt16(2),
@@ -219,7 +219,7 @@ class OracleRoutesSpec
 
       val route =
         oracleRoutes.handleCommand(
-          ServerCommand("createnumericevent",
+          ServerCommand("createnumericannouncement",
                         Arr(Str("id"),
                             Str("2021-02-04"),
                             Num(-1),
@@ -234,15 +234,15 @@ class OracleRoutesSpec
       }
     }
 
-    "create digit decomp event" in {
+    "create digit decomp announcement" in {
       (mockOracleApi
-        .createNewDigitDecompEvent(_: String,
-                                   _: Instant,
-                                   _: UInt16,
-                                   _: Boolean,
-                                   _: Int,
-                                   _: String,
-                                   _: Int32))
+        .createNewDigitDecompAnnouncement(_: String,
+                                          _: Instant,
+                                          _: UInt16,
+                                          _: Boolean,
+                                          _: Int,
+                                          _: String,
+                                          _: Int32))
         .expects("id",
                  Instant.ofEpochSecond(1612396800),
                  UInt16(2),
@@ -254,7 +254,7 @@ class OracleRoutesSpec
 
       val route =
         oracleRoutes.handleCommand(
-          ServerCommand("createdigitdecompevent",
+          ServerCommand("createdigitdecompannouncement",
                         Arr(Str("id"),
                             Num(1612396800),
                             Num(2),
@@ -270,15 +270,15 @@ class OracleRoutesSpec
       }
     }
 
-    "sign enum event" in {
+    "sign enum announcement" in {
       (mockOracleApi
-        .signEnumEvent(_: String, _: EnumAttestation))
+        .signEnumAnnouncement(_: String, _: EnumAttestation))
         .expects("id", EnumAttestation("outcome"))
         .returning(Future.successful(dummyEventDb))
 
       val route =
         oracleRoutes.handleCommand(
-          ServerCommand("signevent", Arr(Str("id"), Str("outcome"))))
+          ServerCommand("signannouncement", Arr(Str("id"), Str("outcome"))))
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
@@ -287,7 +287,7 @@ class OracleRoutesSpec
       }
     }
 
-    "sign numeric event" in {
+    "sign numeric announcement" in {
       (mockOracleApi
         .signDigits(_: String, _: Long))
         .expects("id", 123)

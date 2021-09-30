@@ -45,6 +45,9 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
       }
 
     case ServerCommand("createenumevent", arr) =>
+      handleCommand(ServerCommand("createenumannouncement", arr))
+
+    case ServerCommand("createenumannouncement", arr) =>
       CreateAnnouncement.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
@@ -57,8 +60,9 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
               }
           }
       }
-
     case ServerCommand("createnumericevent", arr) =>
+      handleCommand(ServerCommand("createnumericannouncement", arr))
+    case ServerCommand("createnumericannouncement", arr) =>
       CreateNumericAnnouncement.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
@@ -90,6 +94,9 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
       }
 
     case ServerCommand("createdigitdecompevent", arr) =>
+      handleCommand(ServerCommand("createdigitdecompannouncement", arr))
+
+    case ServerCommand("createdigitdecompannouncement", arr) =>
       CreateDigitDecompAnnouncement.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
@@ -187,6 +194,8 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
       }
 
     case ServerCommand("signevent", arr) =>
+      handleCommand(ServerCommand("signannouncement", arr))
+    case ServerCommand("signannouncement", arr) =>
       SignAnnouncement.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
