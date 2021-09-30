@@ -45,10 +45,10 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
       }
 
     case ServerCommand("createenumevent", arr) =>
-      CreateEvent.fromJsArr(arr) match {
+      CreateAnnouncement.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(CreateEvent(label, maturationTime, outcomes)) =>
+        case Success(CreateAnnouncement(label, maturationTime, outcomes)) =>
           complete {
             oracle
               .createNewEnumAnnouncement(label, maturationTime, outcomes)
@@ -59,16 +59,16 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
       }
 
     case ServerCommand("createnumericevent", arr) =>
-      CreateNumericEvent.fromJsArr(arr) match {
+      CreateNumericAnnouncement.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-              CreateNumericEvent(eventName,
-                                 maturationTime,
-                                 minValue,
-                                 maxValue,
-                                 unit,
-                                 precision)) =>
+              CreateNumericAnnouncement(eventName,
+                                        maturationTime,
+                                        minValue,
+                                        maxValue,
+                                        unit,
+                                        precision)) =>
           complete {
 
             val isSigned = minValue < 0
@@ -90,17 +90,17 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
       }
 
     case ServerCommand("createdigitdecompevent", arr) =>
-      CreateDigitDecompEvent.fromJsArr(arr) match {
+      CreateDigitDecompAnnouncement.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-              CreateDigitDecompEvent(eventName,
-                                     maturationTime,
-                                     base,
-                                     isSigned,
-                                     numDigits,
-                                     unit,
-                                     precision)) =>
+              CreateDigitDecompAnnouncement(eventName,
+                                            maturationTime,
+                                            base,
+                                            isSigned,
+                                            numDigits,
+                                            unit,
+                                            precision)) =>
           complete {
             oracle
               .createNewDigitDecompAnnouncement(eventName,
@@ -187,10 +187,10 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
       }
 
     case ServerCommand("signevent", arr) =>
-      SignEvent.fromJsArr(arr) match {
+      SignAnnouncement.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(SignEvent(eventName, outcome)) =>
+        case Success(SignAnnouncement(eventName, outcome)) =>
           complete {
             oracle
               .signEnumAnnouncement(eventName, EnumAttestation(outcome))
