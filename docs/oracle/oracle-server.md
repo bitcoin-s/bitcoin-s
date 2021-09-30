@@ -15,18 +15,18 @@ checkout [this page](build-oracle-server.md).
 - `getpublickey` - Get oracle's public key
 - `getstakingaddress` - Get oracle's staking address
 - `listevents` - Lists all event names
-- `createenumevent` `label` `maturationtime` `outcomes` - Registers an oracle enum event
+- `createenumannouncement` `label` `maturationtime` `outcomes` - Registers an oracle enum event
   - `label` - Label for this event
   - `maturationtime` - The earliest expected time an outcome will be signed, given in ISO 8601 format
   - `outcomes` - Possible outcomes for this event
-- `createnumericevent` `name` `maturationtime` `minvalue` `maxvalue` `unit` `precision` - Registers an oracle event that uses digit decomposition when signing the number
+- `createnumericannouncement` `name` `maturationtime` `minvalue` `maxvalue` `unit` `precision` - Registers an oracle event that uses digit decomposition when signing the number
   - `name`- Name for this event
   - `maturationtime` - The earliest expected time an outcome will be signed, given in ISO 8601 format
   - `minvalue` - Minimum value of this event
   - `maxvalue` - Maximum value of this event
   - `unit` - The unit denomination of the outcome value
   - `precision` - The precision of the outcome representing the base exponent by which to multiply the number represented by the composition of the digits to obtain the actual outcome value.
-- `createdigitdecompevent` `name` `maturationtime` `base` `numdigits` `unit` `precision` `[signed]` - Registers an oracle event that uses digit decomposition when signing the number
+- `createdigitdecompannouncement` `name` `maturationtime` `base` `numdigits` `unit` `precision` `[signed]` - Registers an oracle event that uses digit decomposition when signing the number
   - `name`- Name for this event
   - `maturationtime` - The earliest expected time an outcome will be signed, given in epoch second
   - `base` - The base in which the outcome value is decomposed
@@ -36,7 +36,7 @@ checkout [this page](build-oracle-server.md).
   - `--signed`- Whether the outcomes can be negative
 - `getevent` `event` - Get an event's details
   - `eventName` - The event's name
-- `signevent` `event` `outcome` - Signs an event
+- `signannouncement` `event` `outcome` - Signs an event
     - `eventName` - The event's name
     - `outcome`- Outcome to sign for this event
 - `signdigits` `event` `outcome` - Signs an event
