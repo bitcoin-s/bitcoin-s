@@ -40,7 +40,7 @@ checkout [this page](build-oracle-server.md).
   - `name` - Name for this event
 - `getannouncement` `event` - Get an event's details
   - `eventName` - The event's name
-- `signannouncement` `event` `outcome` - Signs an event
+- `createattestation` `event` `outcome` - Signs an event
     - `eventName` - The event's name
     - `outcome`- Outcome to sign for this event
 - `signdigits` `event` `outcome` - Signs an event
@@ -83,7 +83,7 @@ $ bitcoin-s-cli getannouncement test
 }
 
 
-$ bitcoin-s-cli signannouncement test "outcome1"
+$ bitcoin-s-cli createattestation test "outcome1"
 fdd8687004746573745f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e52115000180e550759cb6275f6db3fad2b616ed51bdcccc204d0d978cd921cafae9fc1d6f33fd84ba8eea0a75f1568149f42e8466e1bc3422ea449532d4eeffad8586d14e086f7574636f6d6531
 
 $ bitcoin-s-cli getsignatures test

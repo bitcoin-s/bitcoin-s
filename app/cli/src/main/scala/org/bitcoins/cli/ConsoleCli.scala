@@ -1267,7 +1267,7 @@ object ConsoleCli {
       cmd("listannouncements")
         .action((_, conf) => conf.copy(command = ListAnnouncements))
         .text(s"Lists all announcement names"),
-      cmd("createenumannouncements")
+      cmd("createenumannouncement")
         .action((_, conf) =>
           conf.copy(command =
             CreateEnumAnnouncement("", new Date(), Seq.empty)))
@@ -1482,16 +1482,16 @@ object ConsoleCli {
                 case other => other
               }))
         ),
-      cmd("signannouncement")
-        .action((_, conf) => conf.copy(command = SignAnnouncement("", "")))
-        .text("Signs an announcement")
+      cmd("createattestation")
+        .action((_, conf) => conf.copy(command = CreateAttestation("", "")))
+        .text("Creates attestations for an announcement")
         .children(
           arg[String]("announcementName")
             .text("The announcement's name")
             .required()
             .action((eventName, conf) =>
               conf.copy(command = conf.command match {
-                case signEvent: SignAnnouncement =>
+                case signEvent: CreateAttestation =>
                   signEvent.copy(eventName = eventName)
                 case other => other
               })),
@@ -1500,7 +1500,8 @@ object ConsoleCli {
             .required()
             .action((outcome, conf) =>
               conf.copy(command = conf.command match {
-                case signEvent: SignAnnouncement =>
+                case signEvent: CreateAttestation =>
+
                   signEvent.copy(outcome = outcome)
                 case other => other
               }))
@@ -1919,8 +1920,8 @@ object ConsoleCli {
               up.writeJs(unit),
               up.writeJs(precision))
         )
-      case SignAnnouncement(eventName, outcome) =>
-        RequestParam("signannouncement",
+      case CreateAttestation(eventName, outcome) =>
+        RequestParam("createattesation",
                      Seq(up.writeJs(eventName), up.writeJs(outcome)))
       case SignDigits(eventName, num) =>
         RequestParam("signdigits", Seq(up.writeJs(eventName), up.writeJs(num)))
@@ -2347,7 +2348,7 @@ object CliCommand {
       precision: Int)
       extends OracleServerCliCommand
 
-  case class SignAnnouncement(eventName: String, outcome: String)
+  case class CreateAttestation(eventName: String, outcome: String)
       extends OracleServerCliCommand
 
   case class SignDigits(eventName: String, num: Long)

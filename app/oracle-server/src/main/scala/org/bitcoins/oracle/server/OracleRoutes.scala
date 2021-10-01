@@ -198,12 +198,12 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
       }
 
     case ServerCommand("signevent", arr) =>
-      handleCommand(ServerCommand("signannouncement", arr))
-    case ServerCommand("signannouncement", arr) =>
-      SignAnnouncement.fromJsArr(arr) match {
+      handleCommand(ServerCommand("createattestation", arr))
+    case ServerCommand("createattestation", arr) =>
+      CreateAttestation.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(SignAnnouncement(eventName, outcome)) =>
+        case Success(CreateAttestation(eventName, outcome)) =>
           complete {
             oracle
               .createEnumAttestation(eventName, EnumAttestation(outcome))

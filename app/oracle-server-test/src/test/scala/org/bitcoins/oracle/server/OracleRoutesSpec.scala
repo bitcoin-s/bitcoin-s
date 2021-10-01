@@ -324,7 +324,7 @@ class OracleRoutesSpec
 
       val route =
         oracleRoutes.handleCommand(
-          ServerCommand("signannouncement", Arr(Str("id"), Str("outcome"))))
+          ServerCommand("createattestation", Arr(Str("id"), Str("outcome"))))
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)

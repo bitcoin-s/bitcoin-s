@@ -145,17 +145,17 @@ object CreateDigitDecompAnnouncement extends ServerJsonModels {
   }
 }
 
-case class SignAnnouncement(eventName: String, outcome: String)
+case class CreateAttestation(eventName: String, outcome: String)
 
-object SignAnnouncement extends ServerJsonModels {
+object CreateAttestation extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[SignAnnouncement] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateAttestation] = {
     jsArr.arr.toList match {
       case nameJs :: outcomeJs :: Nil =>
         Try {
           val outcome = outcomeJs.str
 
-          SignAnnouncement(nameJs.str, outcome)
+          CreateAttestation(nameJs.str, outcome)
         }
       case Nil =>
         Failure(

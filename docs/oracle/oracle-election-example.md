@@ -72,7 +72,7 @@ For the purposes of the demo, we can skip this wait. The winner of the US electi
 Let's sign the announcement.
 
 ```
- ./bitcoin-s-cli signannouncement 2020-us-election Democrat_win
+ ./bitcoin-s-cli createattestation 2020-us-election Democrat_win
 fdd8688010323032302d75732d656c656374696f6ed3b04a6d7b90c9c43c09ebe5250d583e1c3fc423219b26f6a02ec394a130000a0001ae3e30df5a203ad10ee89a909df0c8ccea4836e94e0a5d34c3cdab758fcaee1447a59ba58797e55b967aa79c89ffec67023578009c4dc1e3dee2fd75277993590c44656d6f637261745f77696e
 ```
 
