@@ -403,11 +403,11 @@ class OracleRoutesSpec
     "delete attestations" in {
       val eventName = "test"
       (mockOracleApi
-        .deleteAttestations(_: String))
+        .deleteAttestation(_: String))
         .expects(eventName)
         .returning(Future.successful(dummyOracleEvent))
 
-      val cmd = ServerCommand("deleteattestations", Arr(Str(eventName)))
+      val cmd = ServerCommand("deleteattestation", Arr(Str(eventName)))
       val route = oracleRoutes.handleCommand(cmd)
 
       Post() ~> route ~> check {

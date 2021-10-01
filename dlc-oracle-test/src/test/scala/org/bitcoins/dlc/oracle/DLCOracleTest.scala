@@ -843,7 +843,7 @@ class DLCOracleTest extends DLCOracleFixture {
           }
         }
 
-        _ <- dlcOracle.deleteAttestations("test")
+        _ <- dlcOracle.deleteAttestation("test")
         event <- dlcOracle.findEvent("test").map(_.get)
       } yield {
         event match {
@@ -878,7 +878,7 @@ class DLCOracleTest extends DLCOracleFixture {
           }
         }
 
-        _ <- dlcOracle.deleteAttestations("test")
+        _ <- dlcOracle.deleteAttestation("test")
         event <- dlcOracle.findEvent("test").map(_.get)
       } yield {
         event match {
@@ -905,7 +905,7 @@ class DLCOracleTest extends DLCOracleFixture {
           signedEvent.isInstanceOf[PendingDigitDecompositionV0OracleEvent])
 
         res <- recoverToSucceededIf[IllegalArgumentException](
-          dlcOracle.deleteAttestations("test"))
+          dlcOracle.deleteAttestation("test"))
       } yield res
   }
 
@@ -920,7 +920,7 @@ class DLCOracleTest extends DLCOracleFixture {
         _ = assert(signedEvent.isInstanceOf[PendingEnumV0OracleEvent])
 
         res <- recoverToSucceededIf[IllegalArgumentException](
-          dlcOracle.deleteAttestations("test"))
+          dlcOracle.deleteAttestation("test"))
       } yield res
   }
 
@@ -989,7 +989,7 @@ class DLCOracleTest extends DLCOracleFixture {
     for {
       _ <- createdF
       _ <- dlcOracle.signEnumEvent(eventName, EnumAttestation("cloudy"))
-      _ <- dlcOracle.deleteAttestations(eventName)
+      _ <- dlcOracle.deleteAttestation(eventName)
       eventOpt <- dlcOracle.findEvent(eventName)
     } yield {
       assert(eventOpt.isDefined)
@@ -1011,7 +1011,7 @@ class DLCOracleTest extends DLCOracleFixture {
     for {
       _ <- createdF
       _ <- dlcOracle.signDigits(eventName, 1)
-      _ <- dlcOracle.deleteAttestations(eventName)
+      _ <- dlcOracle.deleteAttestation(eventName)
       eventOpt <- dlcOracle.findEvent(eventName)
     } yield {
       assert(eventOpt.isDefined)
@@ -1034,7 +1034,7 @@ class DLCOracleTest extends DLCOracleFixture {
       for {
         _ <- createdF
         _ <- dlcOracle.signDigits(eventName, 1)
-        _ <- dlcOracle.deleteAttestations(eventName)
+        _ <- dlcOracle.deleteAttestation(eventName)
         _ <- dlcOracle.deleteAnnouncement(eventName)
         eventOpt <- dlcOracle.findEvent(eventName)
       } yield {

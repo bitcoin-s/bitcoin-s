@@ -144,14 +144,14 @@ trait DLCOracleApi {
     * WARNING: if previous signatures have been made public
     * the oracle private key will be revealed.
     */
-  def deleteAttestations(eventName: String): Future[OracleEvent]
+  def deleteAttestation(eventName: String): Future[OracleEvent]
 
   /** Deletes attestations for the given event
     *
     * WARNING: if previous signatures have been made public
     * the oracle private key will be revealed.
     */
-  def deleteAttestations(oracleEventTLV: OracleEventTLV): Future[OracleEvent]
+  def deleteAttestation(oracleEventTLV: OracleEventTLV): Future[OracleEvent]
 
   /** Signs the SHA256 hash of the given string using the oracle's signing key */
   def signMessage(message: String): SchnorrDigitalSignature = {

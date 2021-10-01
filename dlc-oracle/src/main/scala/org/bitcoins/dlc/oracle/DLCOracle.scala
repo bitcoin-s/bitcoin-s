@@ -437,12 +437,12 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     * WARNING: if previous signatures have been made public
     * the oracle private key will be revealed.
     */
-  override def deleteAttestations(eventName: String): Future[OracleEvent] = {
+  override def deleteAttestation(eventName: String): Future[OracleEvent] = {
     for {
       eventOpt <- findEvent(eventName)
       _ = require(eventOpt.isDefined,
                   s"No event found by event name $eventName")
-      res <- deleteAttestations(eventOpt.get.eventTLV)
+      res <- deleteAttestation(eventOpt.get.eventTLV)
     } yield res
   }
 
@@ -451,7 +451,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     * WARNING: if previous signatures have been made public
     * the oracle private key will be revealed.
     */
-  override def deleteAttestations(
+  override def deleteAttestation(
       oracleEventTLV: OracleEventTLV): Future[OracleEvent] = {
     for {
       eventDbs <- eventDAO.findByOracleEventTLV(oracleEventTLV)

@@ -301,14 +301,14 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
             }
           }
       }
-    case ServerCommand("deleteattestations", arr) =>
+    case ServerCommand("deleteattestation", arr) =>
       DeleteAttestation.fromJsArry(arr) match {
         case Failure(err) =>
           reject(ValidationRejection("failure", Some(err)))
         case Success(deleteAttestation) =>
           complete {
             val deletedF =
-              oracle.deleteAttestations(deleteAttestation.eventName)
+              oracle.deleteAttestation(deleteAttestation.eventName)
             deletedF.map { d =>
               Server.httpSuccess(d.announcementTLV.hex)
             }
