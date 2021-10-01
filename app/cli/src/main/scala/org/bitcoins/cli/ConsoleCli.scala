@@ -1438,6 +1438,34 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("deleteannouncement")
+        .action((_, conf) => conf.copy(command = DeleteAnnouncement("")))
+        .text("Delete an announcement. WARNING: THIS CAN LEAD TO DLCs NOT SETTLING IF USERS HAVE BUILT DLCS OFF OF THIS ANNOUNCEMENT. USE WITH CARE.")
+        .children(
+          arg[String]("eventName")
+            .text("The event's name")
+            .required()
+            .action((eventName, conf) =>
+              conf.copy(command = conf.command match {
+                case delete: DeleteAnnouncement =>
+                  delete.copy(eventName = eventName)
+                case other => other
+              }))
+        ),
+      cmd("deleteattestation")
+        .action((_, conf) => conf.copy(command = DeleteAttestation("")))
+        .text("Delete an announcement. WARNING THIS CAN LEAD TO PRIVATE KEY LEAK IF YOU SIGN ANOTHER ATTESTATION AFTER DELETING A PREVIOUS ONE. USE WITH CARE.")
+        .children(
+          arg[String]("eventName")
+            .text("The event's name")
+            .required()
+            .action((eventName, conf) =>
+              conf.copy(command = conf.command match {
+                case delete: DeleteAttestation =>
+                  delete.copy(eventName = eventName)
+                case other => other
+              }))
+        ),
       cmd("getevent")
         .action((_, conf) => conf.copy(command = GetEvent("")))
         .text("Get an event's details")
@@ -1903,7 +1931,7 @@ object ConsoleCli {
       case DeleteAnnouncement(eventName) =>
         RequestParam("deleteannouncement", Seq(up.writeJs(eventName)))
       case DeleteAttestation(eventName) =>
-        RequestParam("deleteattestations", Seq(up.writeJs(eventName)))
+        RequestParam("deleteattestation", Seq(up.writeJs(eventName)))
       case BackupOracle(dest) =>
         RequestParam("backuporacle", Seq(up.writeJs(dest)))
 
