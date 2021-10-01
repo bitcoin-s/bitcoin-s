@@ -276,8 +276,7 @@ class DLCOracleTest extends DLCOracleFixture {
         dlcOracle.createNewAnnouncement("test", futureTime, descriptorV0TLV)
 
       signedEventDb <-
-        dlcOracle.createEnumAttestation(announcement.eventTLV,
-                                        EnumAttestation(outcome))
+        dlcOracle.signEnum(announcement.eventTLV, EnumAttestation(outcome))
       eventOpt <- dlcOracle.findEvent(announcement.eventTLV)
     } yield {
       assert(eventOpt.isDefined)
@@ -831,8 +830,7 @@ class DLCOracleTest extends DLCOracleFixture {
           dlcOracle.createNewAnnouncement("test", futureTime, descriptorV0TLV)
 
         _ <-
-          dlcOracle.createEnumAttestation(announcement.eventTLV,
-                                          EnumAttestation(outcome))
+          dlcOracle.signEnum(announcement.eventTLV, EnumAttestation(outcome))
 
         signedEvent <- dlcOracle.findEvent("test").map(_.get)
         _ = {

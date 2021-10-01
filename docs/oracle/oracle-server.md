@@ -40,9 +40,9 @@ checkout [this page](build-oracle-server.md).
   - `name` - Name for this event
 - `getannouncement` `event` - Get an event's details
   - `eventName` - The event's name
-- `createattestation` `event` `outcome` - Signs an event
-    - `eventName` - The event's name
-    - `outcome`- Outcome to sign for this event
+- `signenum` `event` `outcome` - Signs an outcome of an enumerated announcement
+  - `eventName` - The event's name
+  - `outcome`- Outcome to sign for this event
 - `signdigits` `event` `outcome` - Signs an event
   - `eventName` - The event's name
   - `outcome` - Number to sign for this event

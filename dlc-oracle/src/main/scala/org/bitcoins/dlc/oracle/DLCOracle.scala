@@ -247,7 +247,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     }
   }
 
-  override def createEnumAttestation(
+  override def signEnum(
       eventName: String,
       outcome: EnumAttestation): Future[EventDb] = {
     for {
@@ -259,7 +259,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     } yield sign
   }
 
-  override def createEnumAttestation(
+  override def signEnum(
       oracleEventTLV: OracleEventTLV,
       outcome: EnumAttestation): Future[EventDb] = {
     for {

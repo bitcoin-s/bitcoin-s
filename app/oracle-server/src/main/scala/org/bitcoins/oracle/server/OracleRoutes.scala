@@ -198,15 +198,15 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
       }
 
     case ServerCommand("signevent", arr) =>
-      handleCommand(ServerCommand("createattestation", arr))
-    case ServerCommand("createattestation", arr) =>
-      CreateAttestation.fromJsArr(arr) match {
+      handleCommand(ServerCommand("signenum", arr))
+    case ServerCommand("signenum", arr) =>
+      SignEnum.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(CreateAttestation(eventName, outcome)) =>
+        case Success(SignEnum(eventName, outcome)) =>
           complete {
             oracle
-              .createEnumAttestation(eventName, EnumAttestation(outcome))
+              .signEnum(eventName, EnumAttestation(outcome))
               .map { eventDb =>
                 val oracleEvent = OracleEvent.fromEventDbs(Vector(eventDb))
                 oracleEvent match {

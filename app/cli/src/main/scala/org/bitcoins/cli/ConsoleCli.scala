@@ -1482,8 +1482,8 @@ object ConsoleCli {
                 case other => other
               }))
         ),
-      cmd("createattestation")
-        .action((_, conf) => conf.copy(command = CreateAttestation("", "")))
+      cmd("signenum")
+        .action((_, conf) => conf.copy(command = SignEnum("", "")))
         .text("Creates attestations for an announcement")
         .children(
           arg[String]("announcementName")
@@ -1491,7 +1491,7 @@ object ConsoleCli {
             .required()
             .action((eventName, conf) =>
               conf.copy(command = conf.command match {
-                case signEvent: CreateAttestation =>
+                case signEvent: SignEnum =>
                   signEvent.copy(eventName = eventName)
                 case other => other
               })),
@@ -1500,7 +1500,7 @@ object ConsoleCli {
             .required()
             .action((outcome, conf) =>
               conf.copy(command = conf.command match {
-                case signEvent: CreateAttestation =>
+                case signEvent: SignEnum =>
                   signEvent.copy(outcome = outcome)
                 case other => other
               }))
@@ -1919,8 +1919,8 @@ object ConsoleCli {
               up.writeJs(unit),
               up.writeJs(precision))
         )
-      case CreateAttestation(eventName, outcome) =>
-        RequestParam("createattestation",
+      case SignEnum(eventName, outcome) =>
+        RequestParam("signenum",
                      Seq(up.writeJs(eventName), up.writeJs(outcome)))
       case SignDigits(eventName, num) =>
         RequestParam("signdigits", Seq(up.writeJs(eventName), up.writeJs(num)))
@@ -2347,7 +2347,7 @@ object CliCommand {
       precision: Int)
       extends OracleServerCliCommand
 
-  case class CreateAttestation(eventName: String, outcome: String)
+  case class SignEnum(eventName: String, outcome: String)
       extends OracleServerCliCommand
 
   case class SignDigits(eventName: String, num: Long)

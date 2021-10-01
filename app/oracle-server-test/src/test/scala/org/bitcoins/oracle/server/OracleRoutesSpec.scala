@@ -318,13 +318,13 @@ class OracleRoutesSpec
 
     "sign enum announcement" in {
       (mockOracleApi
-        .createEnumAttestation(_: String, _: EnumAttestation))
+        .signEnum(_: String, _: EnumAttestation))
         .expects("id", EnumAttestation("outcome"))
         .returning(Future.successful(dummyEventDb))
 
       val route =
         oracleRoutes.handleCommand(
-          ServerCommand("createattestation", Arr(Str("id"), Str("outcome"))))
+          ServerCommand("signenum", Arr(Str("id"), Str("outcome"))))
 
       Post() ~> route ~> check {
         assert(contentType == `application/json`)
