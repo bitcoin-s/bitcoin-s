@@ -113,6 +113,11 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     safeDatabase.run(query.delete)
   }
 
+  def deleteAll(ts: Vector[T]): Future[Int] = {
+    val query: Query[Table[_], T, Seq] = findAll(ts)
+    safeDatabase.run(query.delete)
+  }
+
   /** delete all records from the table
     */
   def deleteAll(): Future[Int] =

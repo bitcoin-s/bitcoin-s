@@ -34,6 +34,10 @@ checkout [this page](build-oracle-server.md).
   - `unit` - The unit denomination of the outcome value
   - `precision` - The precision of the outcome representing the base exponent by which to multiply the number represented by the composition of the digits to obtain the actual outcome value.
   - `--signed`- Whether the outcomes can be negative
+- `deleteannouncement` `name` - <b>WARNING THIS CAN LEAD TO DLCs NOT SETTLING IF USERS HAVE BUILT DLCS OFF OF THIS ANNOUNCEMENT. USE WITH CARE.</b>
+  - `name` - Name for this event
+- `deleteattestation` `name` - <b>WARNING THIS CAN LEAD TO PRIVATE KEY LEAK IF YOU SIGN ANOTHER ATTESTATION AFTER DELETING A PREVIOUS ONE. USE WITH CARE.</b>
+  - `name` - Name for this event
 - `getannouncement` `event` - Get an event's details
   - `eventName` - The event's name
 - `signannouncement` `event` `outcome` - Signs an event

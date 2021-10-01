@@ -122,19 +122,36 @@ trait DLCOracleApi {
 
   def signDigits(oracleEventTLV: OracleEventTLV, num: Long): Future[OracleEvent]
 
-  /** Deletes attestations for the given event
-    *
-    * WARNING: if previous signatures have been made public
-    * the oracle private key will be revealed.
+  /** Deletes an announcement with the given name
+    * WARNING: If this announcement has been published widely
+    * users will not be able to settle their DLCs.
+    * You likely should only use this in testing scenarios
+    * @return the deleted announcement
     */
-  def deleteAttestations(eventName: String): Future[OracleEvent]
+  def deleteAnnouncement(eventName: String): Future[OracleAnnouncementTLV]
+
+  /** Deletes an announcement with the given name
+    * WARNING: If this announcement has been published widely
+    * users will not be able to settle their DLCs.
+    * You likely should only use this in testing scenarios
+    * @return the deleted announcement
+    */
+  def deleteAnnouncement(
+      announcementTLV: OracleAnnouncementTLV): Future[OracleAnnouncementTLV]
 
   /** Deletes attestations for the given event
     *
     * WARNING: if previous signatures have been made public
     * the oracle private key will be revealed.
     */
-  def deleteAttestations(oracleEventTLV: OracleEventTLV): Future[OracleEvent]
+  def deleteAttestation(eventName: String): Future[OracleEvent]
+
+  /** Deletes attestations for the given event
+    *
+    * WARNING: if previous signatures have been made public
+    * the oracle private key will be revealed.
+    */
+  def deleteAttestation(oracleEventTLV: OracleEventTLV): Future[OracleEvent]
 
   /** Signs the SHA256 hash of the given string using the oracle's signing key */
   def signMessage(message: String): SchnorrDigitalSignature = {

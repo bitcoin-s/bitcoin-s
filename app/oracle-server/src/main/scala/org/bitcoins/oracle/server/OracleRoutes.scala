@@ -288,6 +288,32 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
           }
       }
 
+    case ServerCommand("deleteannouncement", arr) =>
+      DeleteAnnouncement.fromJsArray(arr) match {
+        case Failure(err) =>
+          reject(ValidationRejection("failure", Some(err)))
+        case Success(deleteAnnouncement) =>
+          complete {
+            val deletedF =
+              oracle.deleteAnnouncement(deleteAnnouncement.eventName)
+            deletedF.map { d =>
+              Server.httpSuccess(d.hex)
+            }
+          }
+      }
+    case ServerCommand("deleteattestation", arr) =>
+      DeleteAttestation.fromJsArry(arr) match {
+        case Failure(err) =>
+          reject(ValidationRejection("failure", Some(err)))
+        case Success(deleteAttestation) =>
+          complete {
+            val deletedF =
+              oracle.deleteAttestation(deleteAttestation.eventName)
+            deletedF.map { d =>
+              Server.httpSuccess(d.announcementTLV.hex)
+            }
+          }
+      }
     case ServerCommand("backuporacle", arr) =>
       complete {
         val dest = FileSystems.getDefault.getPath(arr.arr.head.str)

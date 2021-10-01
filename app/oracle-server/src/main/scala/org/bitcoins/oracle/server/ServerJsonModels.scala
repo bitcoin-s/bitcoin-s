@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.TimeUtil
-import org.bitcoins.crypto.AesPassword
+import org.bitcoins.crypto.{AesPassword, StringFactory}
 import ujson._
 
 import java.time.Instant
@@ -258,6 +258,57 @@ object KeyManagerPassphraseSet extends ServerJsonModels {
           new IllegalArgumentException(
             s"Bad number of arguments: ${other.length}. Expected: 1"))
     }
+  }
+}
+
+case class DeleteAnnouncement(eventName: String)
+
+object DeleteAnnouncement
+    extends ServerJsonModels
+    with StringFactory[DeleteAnnouncement] {
+
+  def fromJsArray(jsArr: ujson.Arr): Try[DeleteAnnouncement] = {
+    jsArr.arr.toVector match {
+      case eventName +: Vector() =>
+        Try {
+          DeleteAnnouncement.fromString(eventName.str)
+        }
+      case Vector() =>
+        Failure(new IllegalArgumentException(s"Missing event name argument"))
+      case other =>
+        Failure(new IllegalArgumentException(
+          s"Bad number of arguments to deleteannouncement, got=${other.length} expected: 1"))
+    }
+  }
+
+  override def fromString(string: String): DeleteAnnouncement = {
+    DeleteAnnouncement(string)
+  }
+}
+
+case class DeleteAttestation(eventName: String)
+
+object DeleteAttestation
+    extends ServerJsonModels
+    with StringFactory[DeleteAttestation] {
+
+  def fromJsArry(jsArr: ujson.Arr): Try[DeleteAttestation] = {
+    jsArr.arr.toVector match {
+      case eventName +: Vector() =>
+        Try {
+          DeleteAttestation.fromString(eventName.str)
+        }
+      case Vector() =>
+        Failure(new IllegalArgumentException("Missing event name argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+
+  override def fromString(string: String): DeleteAttestation = {
+    DeleteAttestation(string)
   }
 }
 

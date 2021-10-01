@@ -404,17 +404,45 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     signingKey.schnorrSign(hash.bytes)
   }
 
+  /** @inheritdoc */
+  override def deleteAnnouncement(
+      eventName: String): Future[OracleAnnouncementTLV] = {
+    logger.warn(s"Deleting announcement with name=$eventName")
+    for {
+      eventOpt <- findEvent(eventName)
+      _ = require(eventOpt.isDefined,
+                  s"No announcement found by event name $eventName")
+      event = eventOpt.get
+      eventDbs <- eventDAO.findByOracleEventTLV(event.eventTLV)
+      _ = require(
+        eventDbs.forall(_.attestationOpt.isEmpty),
+        s"Cannot have attesations defined when deleting an announcement, name=$eventName")
+      nonces = eventDbs.map(_.nonce)
+      rVals <- rValueDAO.findByNonces(nonces)
+      outcomeDbs <- eventOutcomeDAO.findByNonces(nonces)
+      _ <- eventOutcomeDAO.deleteAll(outcomeDbs)
+      _ <- rValueDAO.deleteAll(rVals)
+      _ <- eventDAO.deleteAll(eventDbs)
+    } yield eventOpt.get.announcementTLV
+  }
+
+  /** @inheritdoc */
+  override def deleteAnnouncement(
+      announcementTLV: OracleAnnouncementTLV): Future[OracleAnnouncementTLV] = {
+    deleteAnnouncement(announcementTLV.eventTLV.eventId.toString)
+  }
+
   /** Deletes attestations for the given event
     *
     * WARNING: if previous signatures have been made public
     * the oracle private key will be revealed.
     */
-  override def deleteAttestations(eventName: String): Future[OracleEvent] = {
+  override def deleteAttestation(eventName: String): Future[OracleEvent] = {
     for {
       eventOpt <- findEvent(eventName)
       _ = require(eventOpt.isDefined,
                   s"No event found by event name $eventName")
-      res <- deleteAttestations(eventOpt.get.eventTLV)
+      res <- deleteAttestation(eventOpt.get.eventTLV)
     } yield res
   }
 
@@ -423,7 +451,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     * WARNING: if previous signatures have been made public
     * the oracle private key will be revealed.
     */
-  override def deleteAttestations(
+  override def deleteAttestation(
       oracleEventTLV: OracleEventTLV): Future[OracleEvent] = {
     for {
       eventDbs <- eventDAO.findByOracleEventTLV(oracleEventTLV)
