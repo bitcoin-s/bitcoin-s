@@ -6,7 +6,6 @@ import org.bitcoins.db.DatabaseDriver._
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.{FlywayException, MigrationInfoService}
 
-import java.nio.file.Files
 import scala.concurrent.{ExecutionContext, Future}
 
 trait DbManagement extends Logging {
@@ -157,7 +156,14 @@ trait DbManagement extends Logging {
     */
   def migrate(): Int = {
     try {
-      createDbFileIfDNE()
+      appConfig.driver match {
+        case SQLite =>
+          SQLiteUtil.createDbFileIfDNE(appConfig.dbPath, appConfig.dbName)
+          val jdbcUrl = appConfig.jdbcUrl.replace("\"", "")
+          SQLiteUtil.setJournalMode(jdbcUrl, "WAL")
+        case PostgreSQL =>
+          ()
+      }
       flyway.migrate()
     } catch {
       case err: FlywayException =>
@@ -180,20 +186,5 @@ trait DbManagement extends Logging {
     */
   private[bitcoins] def clean(): Unit = {
     flyway.clean()
-  }
-
-  private def createDbFileIfDNE(): Unit = {
-    //should add a check in here that we are using sqlite
-    if (!Files.exists(appConfig.dbPath)) {
-      val _ = {
-        logger.debug(s"Creating database directory=${appConfig.dbPath}")
-        Files.createDirectories(appConfig.dbPath)
-        val dbFilePath = appConfig.dbPath.resolve(appConfig.dbName)
-        logger.debug(s"Creating database file=$dbFilePath")
-        Files.createFile(dbFilePath)
-      }
-
-      ()
-    }
   }
 }
