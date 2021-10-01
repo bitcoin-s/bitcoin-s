@@ -68,7 +68,7 @@ trait DLCOracleApi {
       maturationTime: Instant,
       outcomes: Vector[String]): Future[OracleAnnouncementTLV]
 
-  @deprecated("Call createNewAnnouncement")
+  @deprecated("Call createNewAnnouncement", "2021-09-30")
   def createNewEvent(
       eventName: String,
       maturationTime: Instant,
@@ -85,7 +85,7 @@ trait DLCOracleApi {
       signingVersion: SigningVersion = SigningVersion.latest): Future[
     OracleAnnouncementTLV]
 
-  @deprecated("Call createEnumAttestation")
+  @deprecated("Call createEnumAttestation", "2021-09-30")
   def signEnumEvent(
       eventName: String,
       outcome: EnumAttestation): Future[EventDb] = {
@@ -96,7 +96,7 @@ trait DLCOracleApi {
       eventName: String,
       outcome: EnumAttestation): Future[EventDb]
 
-  @deprecated("Call createEnumAttestation")
+  @deprecated("Call createEnumAttestation", "2021-09-30")
   def signEnumEvent(
       oracleEventTLV: OracleEventTLV,
       outcome: EnumAttestation): Future[EventDb] = {
@@ -107,7 +107,7 @@ trait DLCOracleApi {
       oracleEventTLV: OracleEventTLV,
       outcome: EnumAttestation): Future[EventDb]
 
-  @deprecated("Call createAttestation")
+  @deprecated("Call createAttestation", "2021-09-30")
   def signEvent(
       nonce: SchnorrNonce,
       outcome: DLCAttestationType): Future[EventDb] = {
