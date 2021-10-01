@@ -1264,20 +1264,21 @@ object ConsoleCli {
       cmd("getstakingaddress")
         .action((_, conf) => conf.copy(command = GetStakingAddress))
         .text(s"Get oracle's staking address"),
-      cmd("listevents")
-        .action((_, conf) => conf.copy(command = ListEvents))
-        .text(s"Lists all event names"),
-      cmd("createenumevent")
+      cmd("listannouncements")
+        .action((_, conf) => conf.copy(command = ListAnnouncements))
+        .text(s"Lists all announcement names"),
+      cmd("createenumannouncements")
         .action((_, conf) =>
-          conf.copy(command = CreateEnumEvent("", new Date(), Seq.empty)))
-        .text("Registers an oracle enum event")
+          conf.copy(command =
+            CreateEnumAnnouncement("", new Date(), Seq.empty)))
+        .text("Registers an oracle enum announcement")
         .children(
           arg[String]("label")
-            .text("Label for this event")
+            .text("Label for this announcement")
             .required()
             .action((label, conf) =>
               conf.copy(command = conf.command match {
-                case createEvent: CreateEnumEvent =>
+                case createEvent: CreateEnumAnnouncement =>
                   createEvent.copy(label = label)
                 case other => other
               })),
@@ -1286,7 +1287,7 @@ object ConsoleCli {
             .required()
             .action((date, conf) =>
               conf.copy(command = conf.command match {
-                case createEvent: CreateEnumEvent =>
+                case createEvent: CreateEnumAnnouncement =>
                   createEvent.copy(maturationTime = date)
                 case other => other
               })),
@@ -1295,27 +1296,28 @@ object ConsoleCli {
             .required()
             .action((outcomes, conf) =>
               conf.copy(command = conf.command match {
-                case createEvent: CreateEnumEvent =>
+                case createEvent: CreateEnumAnnouncement =>
                   createEvent.copy(outcomes = outcomes)
                 case other => other
               }))
         ),
-      cmd("createnumericevent")
+      cmd("createnumericannouncement")
         .action((_, conf) =>
-          conf.copy(command = CreateNumericEvent(eventName = "",
-                                                 maturationTime = new Date(),
-                                                 minValue = 0,
-                                                 maxValue = 0,
-                                                 unit = "",
-                                                 precision = 0)))
-        .text("Registers an oracle event that uses digit decomposition when signing the number")
+          conf.copy(command = CreateNumericAnnouncement(eventName = "",
+                                                        maturationTime =
+                                                          new Date(),
+                                                        minValue = 0,
+                                                        maxValue = 0,
+                                                        unit = "",
+                                                        precision = 0)))
+        .text("Registers an oracle announcement that uses digit decomposition when signing the number")
         .children(
           arg[String]("name")
-            .text("Name for this event")
+            .text("Name for this announcement")
             .required()
             .action((name, conf) =>
               conf.copy(command = conf.command match {
-                case createNumericEvent: CreateNumericEvent =>
+                case createNumericEvent: CreateNumericAnnouncement =>
                   createNumericEvent.copy(eventName = name)
                 case other => other
               })),
@@ -1324,25 +1326,25 @@ object ConsoleCli {
             .required()
             .action((date, conf) =>
               conf.copy(command = conf.command match {
-                case createNumericEvent: CreateNumericEvent =>
+                case createNumericEvent: CreateNumericAnnouncement =>
                   createNumericEvent.copy(maturationTime = date)
                 case other => other
               })),
           arg[Long]("minvalue")
-            .text("Minimum value of this event")
+            .text("Minimum value of this announcement")
             .required()
             .action((min, conf) =>
               conf.copy(command = conf.command match {
-                case createNumericEvent: CreateNumericEvent =>
+                case createNumericEvent: CreateNumericAnnouncement =>
                   createNumericEvent.copy(minValue = min)
                 case other => other
               })),
           arg[Long]("maxvalue")
-            .text("Maximum value of this event")
+            .text("Maximum value of this announcement")
             .required()
             .action((max, conf) =>
               conf.copy(command = conf.command match {
-                case createNumericEvent: CreateNumericEvent =>
+                case createNumericEvent: CreateNumericAnnouncement =>
                   createNumericEvent.copy(maxValue = max)
                 case other => other
               })),
@@ -1350,7 +1352,7 @@ object ConsoleCli {
             .text("The unit denomination of the outcome value")
             .action((unit, conf) =>
               conf.copy(command = conf.command match {
-                case createNumericEvent: CreateNumericEvent =>
+                case createNumericEvent: CreateNumericAnnouncement =>
                   createNumericEvent.copy(unit = unit)
                 case other => other
               })),
@@ -1360,28 +1362,28 @@ object ConsoleCli {
               "the composition of the digits to obtain the actual outcome value.")
             .action((precision, conf) =>
               conf.copy(command = conf.command match {
-                case createNumericEvent: CreateNumericEvent =>
+                case createNumericEvent: CreateNumericAnnouncement =>
                   createNumericEvent.copy(precision = precision)
                 case other => other
               }))
         ),
-      cmd("createdigitdecompevent")
+      cmd("createdigitdecompannouncement")
         .action((_, conf) =>
-          conf.copy(command = CreateDigitDecompEvent("",
-                                                     Instant.MIN,
-                                                     0,
-                                                     isSigned = false,
-                                                     0,
-                                                     "",
-                                                     0)))
-        .text("Registers an oracle event that uses digit decomposition when signing the number")
+          conf.copy(command = CreateDigitDecompAnnouncement("",
+                                                            Instant.MIN,
+                                                            0,
+                                                            isSigned = false,
+                                                            0,
+                                                            "",
+                                                            0)))
+        .text("Registers an oracle announcement that uses digit decomposition when signing the number")
         .children(
           arg[String]("name")
-            .text("Name for this event")
+            .text("Name for this announcement")
             .required()
             .action((name, conf) =>
               conf.copy(command = conf.command match {
-                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                case createLargeRangedEvent: CreateDigitDecompAnnouncement =>
                   createLargeRangedEvent.copy(eventName = name)
                 case other => other
               })),
@@ -1390,7 +1392,7 @@ object ConsoleCli {
             .required()
             .action((time, conf) =>
               conf.copy(command = conf.command match {
-                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                case createLargeRangedEvent: CreateDigitDecompAnnouncement =>
                   createLargeRangedEvent.copy(maturationTime = time)
                 case other => other
               })),
@@ -1399,7 +1401,7 @@ object ConsoleCli {
             .required()
             .action((base, conf) =>
               conf.copy(command = conf.command match {
-                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                case createLargeRangedEvent: CreateDigitDecompAnnouncement =>
                   createLargeRangedEvent.copy(base = base)
                 case other => other
               })),
@@ -1407,7 +1409,7 @@ object ConsoleCli {
             .text("The max number of digits the outcome can have")
             .action((num, conf) =>
               conf.copy(command = conf.command match {
-                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                case createLargeRangedEvent: CreateDigitDecompAnnouncement =>
                   createLargeRangedEvent.copy(numDigits = num)
                 case other => other
               })),
@@ -1415,7 +1417,7 @@ object ConsoleCli {
             .text("Whether the outcomes can be negative")
             .action((_, conf) =>
               conf.copy(command = conf.command match {
-                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                case createLargeRangedEvent: CreateDigitDecompAnnouncement =>
                   createLargeRangedEvent.copy(isSigned = true)
                 case other => other
               })),
@@ -1423,7 +1425,7 @@ object ConsoleCli {
             .text("The unit denomination of the outcome value")
             .action((unit, conf) =>
               conf.copy(command = conf.command match {
-                case createRangedEvent: CreateDigitDecompEvent =>
+                case createRangedEvent: CreateDigitDecompAnnouncement =>
                   createRangedEvent.copy(unit = unit)
                 case other => other
               })),
@@ -1433,7 +1435,7 @@ object ConsoleCli {
               "the composition of the digits to obtain the actual outcome value.")
             .action((precision, conf) =>
               conf.copy(command = conf.command match {
-                case createLargeRangedEvent: CreateDigitDecompEvent =>
+                case createLargeRangedEvent: CreateDigitDecompAnnouncement =>
                   createLargeRangedEvent.copy(precision = precision)
                 case other => other
               }))
@@ -1466,30 +1468,30 @@ object ConsoleCli {
                 case other => other
               }))
         ),
-      cmd("getevent")
-        .action((_, conf) => conf.copy(command = GetEvent("")))
-        .text("Get an event's details")
+      cmd("getannouncement")
+        .action((_, conf) => conf.copy(command = GetAnnouncement("")))
+        .text("Get an announcement's details")
         .children(
-          arg[String]("eventName")
-            .text("The event's name")
+          arg[String]("announcementName")
+            .text("The announcement's name")
             .required()
             .action((eventName, conf) =>
               conf.copy(command = conf.command match {
-                case getEvent: GetEvent =>
+                case getEvent: GetAnnouncement =>
                   getEvent.copy(eventName = eventName)
                 case other => other
               }))
         ),
-      cmd("signevent")
-        .action((_, conf) => conf.copy(command = SignEvent("", "")))
-        .text("Signs an event")
+      cmd("signannouncement")
+        .action((_, conf) => conf.copy(command = SignAnnouncement("", "")))
+        .text("Signs an announcement")
         .children(
-          arg[String]("eventName")
-            .text("The event's name")
+          arg[String]("announcementName")
+            .text("The announcement's name")
             .required()
             .action((eventName, conf) =>
               conf.copy(command = conf.command match {
-                case signEvent: SignEvent =>
+                case signEvent: SignAnnouncement =>
                   signEvent.copy(eventName = eventName)
                 case other => other
               })),
@@ -1498,17 +1500,17 @@ object ConsoleCli {
             .required()
             .action((outcome, conf) =>
               conf.copy(command = conf.command match {
-                case signEvent: SignEvent =>
+                case signEvent: SignAnnouncement =>
                   signEvent.copy(outcome = outcome)
                 case other => other
               }))
         ),
       cmd("signdigits")
         .action((_, conf) => conf.copy(command = SignDigits("", 0)))
-        .text("Signs a large range event")
+        .text("Signs the digits of a numeric announcement")
         .children(
-          arg[String]("eventName")
-            .text("The event's name")
+          arg[String]("announcementName")
+            .text("The announcement's name")
             .required()
             .action((eventName, conf) =>
               conf.copy(command = conf.command match {
@@ -1530,7 +1532,7 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetSignatures("")))
         .text("Get the signatures from a signed event")
         .children(
-          arg[String]("eventName")
+          arg[String]("announcementName")
             .text("The event's name")
             .required()
             .action((eventName, conf) =>
@@ -1877,22 +1879,22 @@ object ConsoleCli {
         RequestParam("getpublickey")
       case GetStakingAddress =>
         RequestParam("getstakingaddress")
-      case ListEvents =>
-        RequestParam("listevents")
-      case GetEvent(eventName) =>
-        RequestParam("getevent", Seq(up.writeJs(eventName)))
-      case CreateEnumEvent(label, time, outcomes) =>
+      case ListAnnouncements =>
+        RequestParam("listannouncements")
+      case GetAnnouncement(eventName) =>
+        RequestParam("getannouncement", Seq(up.writeJs(eventName)))
+      case CreateEnumAnnouncement(label, time, outcomes) =>
         RequestParam(
-          "createenumevent",
+          "createenumannouncement",
           Seq(up.writeJs(label), up.writeJs(time), up.writeJs(outcomes)))
-      case CreateNumericEvent(eventName,
-                              time,
-                              minValue,
-                              maxValue,
-                              unit,
-                              precision) =>
+      case CreateNumericAnnouncement(eventName,
+                                     time,
+                                     minValue,
+                                     maxValue,
+                                     unit,
+                                     precision) =>
         RequestParam(
-          "createnumericevent",
+          "createnumericannouncement",
           Seq(up.writeJs(eventName),
               up.writeJs(time),
               up.writeJs(minValue),
@@ -1900,15 +1902,15 @@ object ConsoleCli {
               up.writeJs(unit),
               up.writeJs(precision))
         )
-      case CreateDigitDecompEvent(eventName,
-                                  time,
-                                  base,
-                                  isSigned,
-                                  numDigits,
-                                  unit,
-                                  precision) =>
+      case CreateDigitDecompAnnouncement(eventName,
+                                         time,
+                                         base,
+                                         isSigned,
+                                         numDigits,
+                                         unit,
+                                         precision) =>
         RequestParam(
-          "createdigitdecompevent",
+          "createdigitdecompannouncement",
           Seq(up.writeJs(eventName),
               up.writeJs(time),
               up.writeJs(base),
@@ -1917,8 +1919,8 @@ object ConsoleCli {
               up.writeJs(unit),
               up.writeJs(precision))
         )
-      case SignEvent(eventName, outcome) =>
-        RequestParam("signevent",
+      case SignAnnouncement(eventName, outcome) =>
+        RequestParam("signannouncement",
                      Seq(up.writeJs(eventName), up.writeJs(outcome)))
       case SignDigits(eventName, num) =>
         RequestParam("signdigits", Seq(up.writeJs(eventName), up.writeJs(num)))
@@ -2316,17 +2318,17 @@ object CliCommand {
   // Oracle
   case object GetPublicKey extends OracleServerCliCommand
   case object GetStakingAddress extends OracleServerCliCommand
-  case object ListEvents extends OracleServerCliCommand
+  case object ListAnnouncements extends OracleServerCliCommand
 
-  case class GetEvent(eventName: String) extends OracleServerCliCommand
+  case class GetAnnouncement(eventName: String) extends OracleServerCliCommand
 
-  case class CreateEnumEvent(
+  case class CreateEnumAnnouncement(
       label: String,
       maturationTime: Date,
       outcomes: Seq[String])
       extends OracleServerCliCommand
 
-  case class CreateNumericEvent(
+  case class CreateNumericAnnouncement(
       eventName: String,
       maturationTime: Date,
       minValue: Long,
@@ -2335,7 +2337,7 @@ object CliCommand {
       precision: Int)
       extends OracleServerCliCommand
 
-  case class CreateDigitDecompEvent(
+  case class CreateDigitDecompAnnouncement(
       eventName: String,
       maturationTime: Instant,
       base: Int,
@@ -2345,7 +2347,7 @@ object CliCommand {
       precision: Int)
       extends OracleServerCliCommand
 
-  case class SignEvent(eventName: String, outcome: String)
+  case class SignAnnouncement(eventName: String, outcome: String)
       extends OracleServerCliCommand
 
   case class SignDigits(eventName: String, num: Long)
