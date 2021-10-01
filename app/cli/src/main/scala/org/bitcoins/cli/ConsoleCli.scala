@@ -1501,7 +1501,6 @@ object ConsoleCli {
             .action((outcome, conf) =>
               conf.copy(command = conf.command match {
                 case signEvent: CreateAttestation =>
-
                   signEvent.copy(outcome = outcome)
                 case other => other
               }))
@@ -1921,7 +1920,7 @@ object ConsoleCli {
               up.writeJs(precision))
         )
       case CreateAttestation(eventName, outcome) =>
-        RequestParam("createattesation",
+        RequestParam("createattestation",
                      Seq(up.writeJs(eventName), up.writeJs(outcome)))
       case SignDigits(eventName, num) =>
         RequestParam("signdigits", Seq(up.writeJs(eventName), up.writeJs(num)))
