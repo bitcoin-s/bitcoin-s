@@ -990,7 +990,7 @@ class DLCOracleTest extends DLCOracleFixture {
       dlcOracle.createNewAnnouncement(eventName, futureTime, testDescriptor)
     for {
       _ <- createdF
-      _ <- dlcOracle.signEnumAnnouncement(eventName, EnumAttestation("cloudy"))
+      _ <- dlcOracle.signEnum(eventName, EnumAttestation("cloudy"))
       _ <- dlcOracle.deleteAttestation(eventName)
       eventOpt <- dlcOracle.findEvent(eventName)
     } yield {
