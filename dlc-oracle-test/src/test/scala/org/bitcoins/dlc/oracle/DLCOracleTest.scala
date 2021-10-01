@@ -276,8 +276,8 @@ class DLCOracleTest extends DLCOracleFixture {
         dlcOracle.createNewAnnouncement("test", futureTime, descriptorV0TLV)
 
       signedEventDb <-
-        dlcOracle.signEnumAnnouncement(announcement.eventTLV,
-                                       EnumAttestation(outcome))
+        dlcOracle.createEnumAttestation(announcement.eventTLV,
+                                        EnumAttestation(outcome))
       eventOpt <- dlcOracle.findEvent(announcement.eventTLV)
     } yield {
       assert(eventOpt.isDefined)
@@ -578,7 +578,7 @@ class DLCOracleTest extends DLCOracleFixture {
 
       nonce = announcement.eventTLV.nonces.head
 
-      _ <- dlcOracle.signAnnouncement(nonce, EnumAttestation(outcome))
+      _ <- dlcOracle.createAttestation(nonce, EnumAttestation(outcome))
       afterPending <- dlcOracle.listPendingEventDbs()
       afterEvents <- dlcOracle.listEvents()
     } yield {
@@ -592,7 +592,8 @@ class DLCOracleTest extends DLCOracleFixture {
     dlcOracle: DLCOracle =>
       val dummyNonce = SchnorrNonce(ECPublicKey.freshPublicKey.bytes.tail)
       recoverToSucceededIf[RuntimeException](
-        dlcOracle.signAnnouncement(dummyNonce, EnumAttestation("testOutcomes")))
+        dlcOracle.createAttestation(dummyNonce,
+                                    EnumAttestation("testOutcomes")))
   }
 
   it must "fail to sign an enum outcome that doesn't exist" in {
@@ -606,8 +607,9 @@ class DLCOracleTest extends DLCOracleFixture {
 
           nonce = announcement.eventTLV.nonces.head
 
-          _ <- dlcOracle.signAnnouncement(nonce,
-                                          EnumAttestation("not a real outcome"))
+          _ <- dlcOracle.createAttestation(
+            nonce,
+            EnumAttestation("not a real outcome"))
         } yield ()
       }
   }
@@ -664,7 +666,7 @@ class DLCOracleTest extends DLCOracleFixture {
       recoverToSucceededIf[IllegalArgumentException] {
         for {
           _ <- setupF
-          _ <- dlcOracle.signAnnouncement(nonce, EnumAttestation(message))
+          _ <- dlcOracle.createAttestation(nonce, EnumAttestation(message))
         } yield ()
       }
   }
@@ -683,7 +685,7 @@ class DLCOracleTest extends DLCOracleFixture {
       recoverToSucceededIf[RuntimeException] {
         for {
           _ <- dlcOracle.rValueDAO.create(rValDb)
-          _ <- dlcOracle.signAnnouncement(nonce, EnumAttestation(message))
+          _ <- dlcOracle.createAttestation(nonce, EnumAttestation(message))
         } yield ()
       }
   }
@@ -829,8 +831,8 @@ class DLCOracleTest extends DLCOracleFixture {
           dlcOracle.createNewAnnouncement("test", futureTime, descriptorV0TLV)
 
         _ <-
-          dlcOracle.signEnumAnnouncement(announcement.eventTLV,
-                                         EnumAttestation(outcome))
+          dlcOracle.createEnumAttestation(announcement.eventTLV,
+                                          EnumAttestation(outcome))
 
         signedEvent <- dlcOracle.findEvent("test").map(_.get)
         _ = {

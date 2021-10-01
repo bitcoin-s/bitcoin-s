@@ -318,7 +318,7 @@ class OracleRoutesSpec
 
     "sign enum announcement" in {
       (mockOracleApi
-        .signEnumAnnouncement(_: String, _: EnumAttestation))
+        .createEnumAttestation(_: String, _: EnumAttestation))
         .expects("id", EnumAttestation("outcome"))
         .returning(Future.successful(dummyEventDb))
 

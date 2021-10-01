@@ -247,7 +247,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     }
   }
 
-  override def signEnumAnnouncement(
+  override def createEnumAttestation(
       eventName: String,
       outcome: EnumAttestation): Future[EventDb] = {
     for {
@@ -255,11 +255,11 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       _ = require(eventDbs.size == 1,
                   "Use signLargeRange for signing multi nonce outcomes")
 
-      sign <- signAnnouncement(eventDbs.head.nonce, outcome)
+      sign <- createAttestation(eventDbs.head.nonce, outcome)
     } yield sign
   }
 
-  override def signEnumAnnouncement(
+  override def createEnumAttestation(
       oracleEventTLV: OracleEventTLV,
       outcome: EnumAttestation): Future[EventDb] = {
     for {
@@ -267,14 +267,14 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       _ = require(eventDbs.size == 1,
                   "Use signLargeRange for signing multi nonce outcomes")
 
-      sign <- signAnnouncement(eventDbs.head.nonce, outcome)
+      sign <- createAttestation(eventDbs.head.nonce, outcome)
     } yield sign
   }
 
   /** Signs the event for the single nonce
     * This will be called multiple times by signDigits for each nonce
     */
-  override def signAnnouncement(
+  override def createAttestation(
       nonce: SchnorrNonce,
       outcome: DLCAttestationType): Future[EventDb] = {
     for {
@@ -355,7 +355,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       eventDescriptorTLV match {
         case _: SignedDigitDecompositionEventDescriptor =>
           val signOutcome = DigitDecompositionSignAttestation(num >= 0)
-          signAnnouncement(oracleEventTLV.nonces.head, signOutcome).map(db =>
+          createAttestation(oracleEventTLV.nonces.head, signOutcome).map(db =>
             Vector(db))
         case _: UnsignedDigitDecompositionEventDescriptor =>
           if (num >= 0) {
@@ -389,7 +389,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
     val digitSigFs = nonces.zipWithIndex.map { case (nonce, index) =>
       val digit = decomposed(index)
-      signAnnouncement(nonce, DigitDecompositionAttestation(digit))
+      createAttestation(nonce, DigitDecompositionAttestation(digit))
     }
 
     for {

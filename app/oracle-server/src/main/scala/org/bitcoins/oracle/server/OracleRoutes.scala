@@ -206,7 +206,7 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
         case Success(SignAnnouncement(eventName, outcome)) =>
           complete {
             oracle
-              .signEnumAnnouncement(eventName, EnumAttestation(outcome))
+              .createEnumAttestation(eventName, EnumAttestation(outcome))
               .map { eventDb =>
                 val oracleEvent = OracleEvent.fromEventDbs(Vector(eventDb))
                 oracleEvent match {
