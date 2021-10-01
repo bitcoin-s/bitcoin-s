@@ -81,7 +81,7 @@ object CETCalculator {
     val firstRange = SingletonPayoutRange(from)
 
     val (currentFunc, currentFuncIndex) =
-      if (from == firstFunc.rightEndpoint.outcome && from != to) {
+      if (from + 1 == firstFunc.rightEndpoint.outcome && from + 1 != to) {
         (function.functionComponents(firstFuncIndex + 1), firstFuncIndex + 1)
       } else {
         (firstFunc, firstFuncIndex)

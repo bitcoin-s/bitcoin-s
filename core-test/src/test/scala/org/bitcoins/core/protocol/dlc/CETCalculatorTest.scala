@@ -57,6 +57,30 @@ class CETCalculatorTest extends BitcoinSUnitTest {
     assert(ranges == expected)
   }
 
+  it should "correctly split into ranges when payout is constantly changing" in {
+    val func = DLCPayoutCurve(
+      Vector(
+        OutcomePayoutPoint(0, 1000, isEndpoint = true),
+        OutcomePayoutPoint(1, 0, isEndpoint = true),
+        OutcomePayoutPoint(2, 1000, isEndpoint = true),
+        OutcomePayoutPoint(3, 0, isEndpoint = true),
+        OutcomePayoutPoint(4, 1000, isEndpoint = true),
+        OutcomePayoutPoint(5, 0, isEndpoint = true),
+        OutcomePayoutPoint(6, 1000, isEndpoint = true),
+        OutcomePayoutPoint(7, 0, isEndpoint = true)
+      ))
+
+    val expected = Vector(VariablePayoutRange(0, 7))
+
+    val ranges = CETCalculator.splitIntoRanges(0,
+                                               7,
+                                               Satoshis(10000),
+                                               func,
+                                               RoundingIntervals.noRounding)
+
+    assert(ranges == expected)
+  }
+
   it should "correctly compute front groupings" in {
     val expected = Vector(
       Vector(1, 0, 9, 5),
