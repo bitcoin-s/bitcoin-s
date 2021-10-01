@@ -927,7 +927,9 @@ class DLCOracleTest extends DLCOracleFixture {
   it must "delete enum announcements" in { dlcOracle =>
     val eventName = "test"
     val createdF =
-      dlcOracle.createNewEnumEvent(eventName, futureTime, Vector("0", "1", "2"))
+      dlcOracle.createNewEnumAnnouncement(eventName,
+                                          futureTime,
+                                          Vector("0", "1", "2"))
     for {
       c <- createdF
       _ <- dlcOracle.deleteAnnouncement(c)
@@ -941,13 +943,13 @@ class DLCOracleTest extends DLCOracleFixture {
   it must "delete numeric announcements" in { dlcOracle =>
     val eventName = "test"
     val createdF =
-      dlcOracle.createNewDigitDecompEvent(eventName = eventName,
-                                          maturationTime = futureTime,
-                                          base = UInt16.two,
-                                          isSigned = false,
-                                          numDigits = 2,
-                                          unit = "UNIT",
-                                          precision = Int32.zero)
+      dlcOracle.createNewDigitDecompAnnouncement(eventName = eventName,
+                                                 maturationTime = futureTime,
+                                                 base = UInt16.two,
+                                                 isSigned = false,
+                                                 numDigits = 2,
+                                                 unit = "UNIT",
+                                                 precision = Int32.zero)
     for {
       c <- createdF
       _ <- dlcOracle.deleteAnnouncement(c)
@@ -962,13 +964,13 @@ class DLCOracleTest extends DLCOracleFixture {
     dlcOracle =>
       val eventName = "test"
       val createdF =
-        dlcOracle.createNewDigitDecompEvent(eventName = eventName,
-                                            maturationTime = futureTime,
-                                            base = UInt16(2),
-                                            isSigned = false,
-                                            numDigits = 2,
-                                            unit = "UNIT",
-                                            precision = Int32.zero)
+        dlcOracle.createNewDigitDecompAnnouncement(eventName = eventName,
+                                                   maturationTime = futureTime,
+                                                   base = UInt16(2),
+                                                   isSigned = false,
+                                                   numDigits = 2,
+                                                   unit = "UNIT",
+                                                   precision = Int32.zero)
 
       val resultF = for {
         _ <- createdF
@@ -985,10 +987,10 @@ class DLCOracleTest extends DLCOracleFixture {
   it must "delete enum attestation" in { dlcOracle: DLCOracle =>
     val eventName = "test"
     val createdF =
-      dlcOracle.createNewEvent(eventName, futureTime, testDescriptor)
+      dlcOracle.createNewAnnouncement(eventName, futureTime, testDescriptor)
     for {
       _ <- createdF
-      _ <- dlcOracle.signEnumEvent(eventName, EnumAttestation("cloudy"))
+      _ <- dlcOracle.signEnumAnnouncement(eventName, EnumAttestation("cloudy"))
       _ <- dlcOracle.deleteAttestation(eventName)
       eventOpt <- dlcOracle.findEvent(eventName)
     } yield {
@@ -1000,13 +1002,13 @@ class DLCOracleTest extends DLCOracleFixture {
   it must "delete numeric attestations" in { dlcOracle: DLCOracle =>
     val eventName = "test"
     val createdF =
-      dlcOracle.createNewDigitDecompEvent(eventName = eventName,
-                                          maturationTime = futureTime,
-                                          base = UInt16(2),
-                                          isSigned = false,
-                                          numDigits = 2,
-                                          unit = "UNIT",
-                                          precision = Int32.zero)
+      dlcOracle.createNewDigitDecompAnnouncement(eventName = eventName,
+                                                 maturationTime = futureTime,
+                                                 base = UInt16(2),
+                                                 isSigned = false,
+                                                 numDigits = 2,
+                                                 unit = "UNIT",
+                                                 precision = Int32.zero)
 
     for {
       _ <- createdF
@@ -1023,13 +1025,13 @@ class DLCOracleTest extends DLCOracleFixture {
     dlcOracle: DLCOracle =>
       val eventName = "test"
       val createdF =
-        dlcOracle.createNewDigitDecompEvent(eventName = eventName,
-                                            maturationTime = futureTime,
-                                            base = UInt16(2),
-                                            isSigned = false,
-                                            numDigits = 2,
-                                            unit = "UNIT",
-                                            precision = Int32.zero)
+        dlcOracle.createNewDigitDecompAnnouncement(eventName = eventName,
+                                                   maturationTime = futureTime,
+                                                   base = UInt16(2),
+                                                   isSigned = false,
+                                                   numDigits = 2,
+                                                   unit = "UNIT",
+                                                   precision = Int32.zero)
 
       for {
         _ <- createdF
