@@ -97,6 +97,14 @@ checkout <a href="/docs/next/oracle/build-oracle-server">this page</a>.</p>
 <li><code>precision</code> - The precision of the outcome representing the base exponent by which to multiply the number represented by the composition of the digits to obtain the actual outcome value.</li>
 <li><code>--signed</code>- Whether the outcomes can be negative</li>
 </ul></li>
+<li><code>deleteannouncement</code> <code>name</code> - <b>WARNING THIS CAN LEAD TO DLCs NOT SETTLING IF USERS HAVE BUILT DLCS OFF OF THIS ANNOUNCEMENT. USE WITH CARE.</b>
+<ul>
+<li><code>name</code> - Name for this event</li>
+</ul></li>
+<li><code>deleteattestation</code> <code>name</code> - <b>WARNING THIS CAN LEAD TO PRIVATE KEY LEAK IF YOU SIGN ANOTHER ATTESTATION AFTER DELETING A PREVIOUS ONE. USE WITH CARE.</b>
+<ul>
+<li><code>name</code> - Name for this event</li>
+</ul></li>
 <li><code>getannouncement</code> <code>event</code> - Get an event's details
 <ul>
 <li><code>eventName</code> - The event's name</li>
