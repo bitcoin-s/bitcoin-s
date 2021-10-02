@@ -68,7 +68,7 @@ trait DLCOracleApi {
       maturationTime: Instant,
       outcomes: Vector[String]): Future[OracleAnnouncementTLV]
 
-  @deprecated("Call createNewAnnouncement")
+  @deprecated("Call createNewAnnouncement", "2021-09-30")
   def createNewEvent(
       eventName: String,
       maturationTime: Instant,
@@ -85,36 +85,42 @@ trait DLCOracleApi {
       signingVersion: SigningVersion = SigningVersion.latest): Future[
     OracleAnnouncementTLV]
 
-  @deprecated("Call signEnumAnnouncement")
+  @deprecated("Call signEnum", "2021-09-30")
   def signEnumEvent(
       eventName: String,
       outcome: EnumAttestation): Future[EventDb] = {
-    signEnumAnnouncement(eventName, outcome)
+    signEnum(eventName, outcome)
   }
 
-  def signEnumAnnouncement(
-      eventName: String,
-      outcome: EnumAttestation): Future[EventDb]
+  /** Signs an enumerated announcement
+    * @param eventName the event name of the announcement
+    * @param outcome the outcome for the give announcement
+    */
+  def signEnum(eventName: String, outcome: EnumAttestation): Future[EventDb]
 
-  @deprecated("Call signEnumAnnouncement")
+  @deprecated("Call signEnum", "2021-09-30")
   def signEnumEvent(
       oracleEventTLV: OracleEventTLV,
       outcome: EnumAttestation): Future[EventDb] = {
-    signEnumAnnouncement(oracleEventTLV, outcome)
+    signEnum(oracleEventTLV, outcome)
   }
 
-  def signEnumAnnouncement(
+  /** Signs an enumerated announcement
+    * @param oracleEventTLV the tlv of the oracle event
+    * @param outcome the outcome for the give announcement
+    */
+  def signEnum(
       oracleEventTLV: OracleEventTLV,
       outcome: EnumAttestation): Future[EventDb]
 
-  @deprecated("Call signAnnouncement")
+  @deprecated("Call createAttestation", "2021-09-30")
   def signEvent(
       nonce: SchnorrNonce,
       outcome: DLCAttestationType): Future[EventDb] = {
-    signAnnouncement(nonce, outcome)
+    createAttestation(nonce, outcome)
   }
 
-  def signAnnouncement(
+  def createAttestation(
       nonce: SchnorrNonce,
       outcome: DLCAttestationType): Future[EventDb]
 
