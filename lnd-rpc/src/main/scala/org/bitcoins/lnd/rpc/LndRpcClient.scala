@@ -31,7 +31,7 @@ import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
 import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.LndUtils._
-import org.bitcoins.lnd.rpc.config.{LndInstance, LndInstanceLocal}
+import org.bitcoins.lnd.rpc.config._
 import scodec.bits._
 import signrpc._
 import walletrpc.{
@@ -62,12 +62,14 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     case _: LndInstanceLocal =>
       require(binaryOpt.isDefined,
               s"Binary must be defined with a local instance of lnd")
+    case _: LndInstanceRemote => ()
   }
 
   /** The command to start the daemon on the underlying OS */
   override def cmd: String = instance match {
     case local: LndInstanceLocal =>
       s"${binaryOpt.get} --lnddir=${local.datadir.toAbsolutePath}"
+    case _: LndInstanceRemote => ""
   }
 
   implicit val executionContext: ExecutionContext = system.dispatcher

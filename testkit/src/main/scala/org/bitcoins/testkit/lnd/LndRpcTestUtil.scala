@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.lnd.rpc.LndRpcClient
-import org.bitcoins.lnd.rpc.config.LndInstanceLocal
+import org.bitcoins.lnd.rpc.config.{LndInstanceLocal, LndInstanceRemote}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
@@ -22,7 +22,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.{FileUtil, TestkitBinaries}
 
 import java.io.{File, PrintWriter}
-import java.net.InetSocketAddress
+import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -75,6 +75,7 @@ trait LndRpcTestUtil extends Logging {
        |debuglevel=critical
        |listen=127.0.0.1:$port
        |rpclisten=127.0.0.1:$rpcPort
+       |externalip=127.0.0.1
        |bitcoind.rpcuser = ${bitcoindInstance.authCredentials
       .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
       .username}
@@ -164,9 +165,14 @@ trait LndRpcTestUtil extends Logging {
     val infoF = otherClient.getInfo
     val nodeIdF = client.getInfo.map(_.identityPubkey)
     val connectionF: Future[Unit] = infoF.flatMap { info =>
-      val uri = otherClient.instance.listenBinding
-      client.connectPeer(NodeId(info.identityPubkey),
-                         new InetSocketAddress(uri.getHost, uri.getPort))
+      val uriF: Future[URI] = otherClient.instance match {
+        case local: LndInstanceLocal => Future.successful(local.listenBinding)
+        case _: LndInstanceRemote =>
+          otherClient.getInfo.map(info => new URI(info.uris.head))
+      }
+      uriF.flatMap(uri =>
+        client.connectPeer(NodeId(info.identityPubkey),
+                           new InetSocketAddress(uri.getHost, uri.getPort)))
     }
 
     def isConnected: Future[Boolean] = {
