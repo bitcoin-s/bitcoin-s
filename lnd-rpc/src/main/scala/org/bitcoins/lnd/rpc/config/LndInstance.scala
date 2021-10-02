@@ -13,18 +13,8 @@ import java.nio.file._
 import scala.util.Properties
 
 sealed trait LndInstance {
-  def network: BitcoinNetwork
-  def listenBinding: URI
-  def restUri: URI
   def rpcUri: URI
-  def bitcoindAuthCredentials: PasswordBased
-  def bitcoindRpcUri: URI
-  def zmqConfig: ZmqConfig
-  def debugLevel: LogLevel
   def macaroon: String
-
-  def datadir: Path
-
   def certFile: File
 }
 
@@ -107,3 +97,6 @@ object LndInstanceLocal
     config.lndInstance
   }
 }
+
+case class LndInstanceRemote(rpcUri: URI, macaroon: String, certFile: File)
+    extends LndInstance

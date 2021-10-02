@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.lnd.rpc.LndRpcClient
+import org.bitcoins.lnd.rpc.config.LndInstanceRemote
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.lnd._
 import org.bitcoins.testkit.rpc._
@@ -57,6 +58,40 @@ trait DualLndFixture extends BitcoinSFixture with CachedBitcoindV21 {
         for {
           _ <- lndA.stop()
           _ <- lndB.stop()
+        } yield ()
+      }
+    )(test)
+  }
+}
+
+trait RemoteLndFixture extends BitcoinSFixture with CachedBitcoindV21 {
+
+  override type FixtureParam = LndRpcClient
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    withLnd(test)
+  }
+
+  def withLnd(test: OneArgAsyncTest): FutureOutcome = {
+    makeDependentFixture[LndRpcClient](
+      () => {
+        for {
+          bitcoind <- cachedBitcoindWithFundsF
+
+          // start and initialize a lnd
+          client = LndRpcTestClient.fromSbtDownload(Some(bitcoind))
+          lnd <- client.start()
+
+          // create a remote instance and client
+          remoteInstance = LndInstanceRemote(lnd.instance.rpcUri,
+                                             lnd.instance.macaroon,
+                                             lnd.instance.certFile)
+          remoteLnd = LndRpcClient(remoteInstance)
+        } yield remoteLnd
+      },
+      { lnd =>
+        for {
+          _ <- lnd.stop()
         } yield ()
       }
     )(test)
