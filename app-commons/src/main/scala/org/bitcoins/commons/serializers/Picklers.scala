@@ -1,6 +1,7 @@
 package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
+import org.bitcoins.commons.serializers.JsonReaders.jsToSatoshis
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -233,18 +234,6 @@ object Picklers {
       )
     }
 
-  implicit val contractDescriptorV0Writer: Writer[ContractDescriptorV0TLV] =
-    writer[Obj].comap { v0 =>
-      import v0._
-
-      val outcomesJs = outcomes.map { case (outcome, payout) =>
-        Obj("outcome" -> Str(outcome),
-            "localPayout" -> Num(payout.toLong.toDouble))
-      }
-
-      Obj("outcomes" -> outcomesJs)
-    }
-
   implicit val payoutFunctionV0TLVWriter: Writer[PayoutFunctionV0TLV] =
     writer[Obj].comap { payoutFunc =>
       import payoutFunc._
@@ -273,6 +262,22 @@ object Picklers {
       Obj("intervals" -> intervalsJs)
     }
 
+  implicit val contractDescriptorV0: ReadWriter[ContractDescriptorV0TLV] = {
+    readwriter[Value].bimap(contractV0Writer, contractV0Reader)
+  }
+
+  private def contractV0Reader(value: Value): ContractDescriptorV0TLV = {
+    parseContractDescriptor(value)
+  }
+
+  private def contractV0Writer(v0: ContractDescriptorV0TLV): Value = {
+    val outcomesJs: Vector[Obj] = v0.outcomes.map { case (outcome, payout) =>
+      Obj(PicklerKeys.outcomeKey -> Str(outcome),
+          PicklerKeys.localPayoutKey -> Num(payout.toLong.toDouble))
+    }
+    Obj(PicklerKeys.outcomesKey -> outcomesJs)
+  }
+
   implicit val contractDescriptorV1Writer: Writer[ContractDescriptorV1TLV] =
     writer[Obj].comap { v1 =>
       import v1._
@@ -285,7 +290,7 @@ object Picklers {
   implicit val contractDescriptorWriter: Writer[ContractDescriptorTLV] =
     writer[Value].comap {
       case v0: ContractDescriptorV0TLV =>
-        writeJs(v0)(contractDescriptorV0Writer)
+        writeJs(v0)(contractDescriptorV0)
       case v1: ContractDescriptorV1TLV =>
         writeJs(v1)(contractDescriptorV1Writer)
     }
@@ -832,4 +837,23 @@ object Picklers {
 
   implicit val addressTypePickler: ReadWriter[AddressType] =
     readwriter[String].bimap(_.toString, AddressType.fromString)
+
+  def parseContractDescriptor(payoutsVal: Value): ContractDescriptorV0TLV = {
+    println(s"ParseContractDescriptor payoutsVal=$payoutsVal")
+    val outcomes = payoutsVal(PicklerKeys.outcomesKey)
+    val payouts: Vector[(String, Satoshis)] = outcomes.arr.toVector.map {
+      case mapping: ujson.Obj =>
+        require(mapping.arr.toVector.length == 2,
+                s"Payout must have two values, [payout,outcome], got=$mapping")
+        val outcome = mapping(PicklerKeys.outcomeKey).str
+        val payout = jsToSatoshis(mapping(PicklerKeys.localPayoutKey))
+        (outcome, payout)
+      case x @ (_: ujson.Bool | _: ujson.Num | ujson.Null | _: ujson.Arr |
+          _: ujson.Str) =>
+        sys.error(
+          s"Must receive an object for parsing contract descriptor, got=$x")
+    }
+    println(s"Done parse contract descriptor")
+    ContractDescriptorV0TLV(outcomes = payouts)
+  }
 }

@@ -1,6 +1,7 @@
 package org.bitcoins.server
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
+import org.bitcoins.commons.serializers.{JsonReaders, Picklers}
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -1203,7 +1204,11 @@ object CreateContractInfo extends ServerJsonModels {
             OracleAnnouncementTLV.fromHex(announcementVal.str)
           val totalCollateral = Satoshis(totalCollateralVal.num.toLong)
           //validate that these are part of the announcement?
-          val contractDescriptor = parseContractDescriptor(payoutsVal)
+          println(s"Starting contract descriptor, =$payoutsVal")
+          val contractDescriptor = upickle.default
+            .read[ContractDescriptorV0TLV](payoutsVal)(
+              Picklers.contractDescriptorV0)
+          println(s"Done contract descriptor")
           CreateContractInfo(announcementTLV,
                              totalCollateral,
                              contractDescriptor)
@@ -1213,24 +1218,6 @@ object CreateContractInfo extends ServerJsonModels {
           s"Bad number or arguments to createcontractinfo, got=${other.length} expected=3")
         Failure(exn)
     }
-  }
-
-  private def parseContractDescriptor(
-      payoutsVal: Value): ContractDescriptorV0TLV = {
-    val outcomes: Vector[(String, Satoshis)] = payoutsVal.arr.toVector.map {
-      case mapping: ujson.Arr =>
-        require(mapping.arr.toVector.length == 2,
-                s"Payout must have two values, [payout,outcome], got=$mapping")
-        val outcome = mapping.arr(0).str
-        val payout = jsToSatoshis(mapping.arr(1))
-        (outcome, payout)
-      case x @ (_: ujson.Bool | _: ujson.Num | ujson.Null | _: ujson.Obj |
-          _: ujson.Str) =>
-        sys.error(
-          s"Must receive an array for parseing contract descriptork, got=$x")
-    }
-
-    ContractDescriptorV0TLV(outcomes = outcomes)
   }
 }
 
@@ -1274,15 +1261,7 @@ trait ServerJsonModels {
         throw Value.InvalidData(js, "Expected a UInt32")
     }
 
-  def jsToSatoshis(js: Value): Satoshis =
-    js match {
-      case str: Str =>
-        Satoshis(BigInt(str.value))
-      case num: Num =>
-        Satoshis(num.value.toLong)
-      case _: Value =>
-        throw Value.InvalidData(js, "Expected value in Satoshis")
-    }
+  def jsToSatoshis(js: Value): Satoshis = JsonReaders.jsToSatoshis(js)
 
   def jsToBitcoinAddress(js: Value): BitcoinAddress = {
     try {

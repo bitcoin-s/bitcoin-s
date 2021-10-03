@@ -7,4 +7,8 @@ object PicklerKeys {
   final val theirPayout: String = "theirPayout"
   final val pnl: String = "pnl"
   final val rateOfReturn: String = "rateOfReturn"
+
+  final val outcomeKey: String = "outcome"
+  final val localPayoutKey: String = "localPayout"
+  final val outcomesKey: String = "outcomes"
 }

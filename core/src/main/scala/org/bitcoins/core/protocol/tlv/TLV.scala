@@ -997,6 +997,8 @@ object ContractDescriptorTLV extends TLVParentFactory[ContractDescriptorTLV] {
     Vector(ContractDescriptorV0TLV, ContractDescriptorV1TLV)
 
   override val typeName: String = "ContractDescriptorTLV"
+
+  val empty: ContractDescriptorTLV = ContractDescriptorV0TLV(Vector.empty)
 }
 
 /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Messaging.md#version-0-contract_info */

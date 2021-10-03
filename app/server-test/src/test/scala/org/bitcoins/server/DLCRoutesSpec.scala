@@ -1,11 +1,12 @@
 package org.bitcoins.server
 
-import akka.http.scaladsl.model.{ContentTypes}
+import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import org.bitcoins.commons.serializers.PicklerKeys
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.dlc.models.ContractInfo
-import org.bitcoins.core.protocol.tlv.{OracleAnnouncementTLV}
+import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
 import org.bitcoins.server.routes.ServerCommand
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
@@ -30,16 +31,19 @@ class DLCRoutesSpec
   "DLC Routes" should {
     "createcontractinfo" in {
       val totalCollateral = Bitcoins.one
-      val payouts: Vector[ujson.Arr] = Vector(
-        ujson.Arr(ujson.Str("Republican_win"), ujson.Num(0)),
-        ujson.Arr(ujson.Str("Democrat_win"), ujson.Num(100000000)),
-        ujson.Arr(ujson.Str("other"), ujson.Num(60000000))
+      val map = Map(
+        "Republican_win" -> ujson.Num(0),
+        "Democrat_win" -> ujson.Num(100000000),
+        "other" -> ujson.Num(60000000)
       )
+      val payouts = ujson.Obj.from(map.toVector)
+
+      val outcomes = ujson.Obj((PicklerKeys.outcomesKey, payouts))
 
       val args = ujson.Arr(
         announcement.hex,
         ujson.Num(totalCollateral.satoshis.toLong.toDouble),
-        ujson.Arr.from(payouts)
+        outcomes
       )
       val route =
         dlcRoutes.handleCommand(ServerCommand("createcontractinfo", args))
