@@ -839,21 +839,12 @@ object Picklers {
     readwriter[String].bimap(_.toString, AddressType.fromString)
 
   def parseContractDescriptor(payoutsVal: Value): ContractDescriptorV0TLV = {
-    println(s"ParseContractDescriptor payoutsVal=$payoutsVal")
     val outcomes = payoutsVal(PicklerKeys.outcomesKey)
-    val payouts: Vector[(String, Satoshis)] = outcomes.arr.toVector.map {
-      case mapping: ujson.Obj =>
-        require(mapping.arr.toVector.length == 2,
-                s"Payout must have two values, [payout,outcome], got=$mapping")
-        val outcome = mapping(PicklerKeys.outcomeKey).str
-        val payout = jsToSatoshis(mapping(PicklerKeys.localPayoutKey))
+    val payouts: Vector[(String, Satoshis)] = outcomes.obj.toVector.map {
+      case (outcome, payoutJs) =>
+        val payout = jsToSatoshis(payoutJs.num)
         (outcome, payout)
-      case x @ (_: ujson.Bool | _: ujson.Num | ujson.Null | _: ujson.Arr |
-          _: ujson.Str) =>
-        sys.error(
-          s"Must receive an object for parsing contract descriptor, got=$x")
     }
-    println(s"Done parse contract descriptor")
     ContractDescriptorV0TLV(outcomes = payouts)
   }
 }

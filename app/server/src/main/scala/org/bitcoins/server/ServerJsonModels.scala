@@ -1204,11 +1204,9 @@ object CreateContractInfo extends ServerJsonModels {
             OracleAnnouncementTLV.fromHex(announcementVal.str)
           val totalCollateral = Satoshis(totalCollateralVal.num.toLong)
           //validate that these are part of the announcement?
-          println(s"Starting contract descriptor, =$payoutsVal")
           val contractDescriptor = upickle.default
             .read[ContractDescriptorV0TLV](payoutsVal)(
               Picklers.contractDescriptorV0)
-          println(s"Done contract descriptor")
           CreateContractInfo(announcementTLV,
                              totalCollateral,
                              contractDescriptor)
