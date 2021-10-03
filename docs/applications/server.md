@@ -231,6 +231,10 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
    - `location` - The locations of the backup file
 
 ### DLC
+ - `createcontractinfo` `announcement` `totalCollateral` `payouts`
+   - the announcement to build the contract info for
+   - the total amount of collateral in the DLC
+   - The payouts in `{ "outcomes" : { "outcome1" : 1, "outcome2": 2, ... }}`. The number is the amount of sats paid to YOU for that outcome.
  - `decodecontractinfo` `contractinfo` - Decodes a contract info into json
    - `contractinfo` - Hex encoded contract info
  - `decodeoffer` `offer` - Decodes an offer message into json
