@@ -141,7 +141,7 @@
         "title": "Testkit"
       },
       "tor/tor": {
-        "title": "Tor"
+        "title": "Tor Setup"
       },
       "wallet/address-tagging": {
         "title": "Address and UTXO tagging"
@@ -154,6 +154,9 @@
       },
       "wallet/wallet-callbacks": {
         "title": "Wallet Callbacks"
+      },
+      "wallet/wallet-election-example": {
+        "title": "Wallet Election Example"
       },
       "wallet/wallet-get-address": {
         "title": "Wallet Get Address APIs"

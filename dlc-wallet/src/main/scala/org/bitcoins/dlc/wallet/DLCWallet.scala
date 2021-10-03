@@ -1191,6 +1191,8 @@ abstract class DLCWallet
   override def executeDLC(
       contractId: ByteVector,
       sigs: Seq[OracleAttestmentTLV]): Future[Transaction] = {
+    logger.info(
+      s"Executing dlc with contractId=${contractId.toHex} sigs=${sigs.map(_.hex)}")
     require(sigs.nonEmpty, "Must provide at least one oracle signature")
 
     for {
