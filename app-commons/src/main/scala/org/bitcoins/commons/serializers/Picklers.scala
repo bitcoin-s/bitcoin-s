@@ -271,9 +271,8 @@ object Picklers {
   }
 
   private def contractV0Writer(v0: ContractDescriptorV0TLV): Value = {
-    val outcomesJs: Vector[Obj] = v0.outcomes.map { case (outcome, payout) =>
-      Obj(PicklerKeys.outcomeKey -> Str(outcome),
-          PicklerKeys.localPayoutKey -> Num(payout.toLong.toDouble))
+    val outcomesJs: ujson.Obj = v0.outcomes.map { case (outcome, payout) =>
+      outcome -> Num(payout.toLong.toDouble)
     }
     Obj(PicklerKeys.outcomesKey -> outcomesJs)
   }

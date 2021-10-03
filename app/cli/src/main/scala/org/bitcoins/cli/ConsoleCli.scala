@@ -1985,10 +1985,10 @@ object ConsoleCli {
         return Success(EnvUtil.getVersion)
 
       case CreateContractInfo(ann, totalCollateral, contractDescriptor) =>
-        RequestParam("createcontractinfo",
-                     Seq(up.writeJs(ann),
-                         up.writeJs(totalCollateral),
-                         up.writeJs(contractDescriptor)))
+        val args = Seq(up.writeJs(ann),
+                       up.writeJs(totalCollateral),
+                       up.writeJs(contractDescriptor))
+        RequestParam("createcontractinfo", args)
 
       case NoCommand => ???
     }
