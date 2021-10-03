@@ -8,6 +8,7 @@ import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
+import org.bitcoins.core.protocol.dlc.models.ContractDescriptor
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
@@ -1179,6 +1180,57 @@ object ZipDataDir extends ServerJsonModels {
           new IllegalArgumentException(
             s"Bad number of arguments: ${other.length}. Expected: 1"))
     }
+  }
+}
+
+case class CreateContractInfo(
+    announcementTLV: OracleAnnouncementTLV,
+    totalCollateral: Satoshis,
+    contractDescriptorTLV: ContractDescriptorTLV) {
+
+  def contractDescriptor: ContractDescriptor = {
+    ContractDescriptor.fromTLV(contractDescriptorTLV)
+  }
+}
+
+object CreateContractInfo extends ServerJsonModels {
+
+  def fromJsArr(arr: ujson.Arr): Try[CreateContractInfo] = {
+    arr.arr.toVector match {
+      case announcementVal +: totalCollateralVal +: payoutsVal +: Vector() =>
+        Try {
+          val announcementTLV =
+            OracleAnnouncementTLV.fromHex(announcementVal.str)
+          val totalCollateral = Satoshis(totalCollateralVal.num.toLong)
+          //validate that these are part of the announcement?
+          val contractDescriptor = parseContractDescriptor(payoutsVal)
+          CreateContractInfo(announcementTLV,
+                             totalCollateral,
+                             contractDescriptor)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to createcontractinfo, got=${other.length} expected=3")
+        Failure(exn)
+    }
+  }
+
+  private def parseContractDescriptor(
+      payoutsVal: Value): ContractDescriptorV0TLV = {
+    val outcomes: Vector[(String, Satoshis)] = payoutsVal.arr.toVector.map {
+      case mapping: ujson.Arr =>
+        require(mapping.arr.toVector.length == 2,
+                s"Payout must have two values, [payout,outcome], got=$mapping")
+        val outcome = mapping.arr(0).str
+        val payout = jsToSatoshis(mapping.arr(1))
+        (outcome, payout)
+      case x @ (_: ujson.Bool | _: ujson.Num | ujson.Null | _: ujson.Obj |
+          _: ujson.Str) =>
+        sys.error(
+          s"Must receive an array for parseing contract descriptork, got=$x")
+    }
+
+    ContractDescriptorV0TLV(outcomes = outcomes)
   }
 }
 
