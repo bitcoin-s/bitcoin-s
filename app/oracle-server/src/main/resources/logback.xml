@@ -43,8 +43,8 @@
     <!-- inspect resolved DB connection -->
     <logger name="org.bitcoins.db.SafeDatabase" level="WARN"/>
 
-    <logger name="org.bitcoins.dlc.oracle.config" level="WARN"/>
-    <logger name="org.bitcoins.dlc.oracle.storage" level="WARN"/>
+    <logger name="org.bitcoins.dlc.oracle.config" level="INFO"/>
+    <logger name="org.bitcoins.dlc.oracle.storage" level="INFO"/>
 
 
     <!-- ╔═══════════════════════════╗ -->
