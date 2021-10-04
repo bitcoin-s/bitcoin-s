@@ -96,4 +96,32 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)
   }
+
+  it must "fail to start the wallet app config if we have different seeds" in {
+    val seedFile = config.seedPath
+    val startedF = config.start()
+
+    //stop old oracle
+    val stoppedF = for {
+      _ <- startedF
+      _ <- config.stop()
+    } yield ()
+
+    val deletedF = for {
+      _ <- stoppedF
+    } yield {
+      //delete the seed so we start with a new seed
+      Files.delete(seedFile)
+    }
+
+    val start2F = for {
+      _ <- deletedF
+      _ <- config.start()
+    } yield ()
+
+    //start it again and except an exception
+    recoverToSucceededIf[RuntimeException] {
+      start2F
+    }
+  }
 }
