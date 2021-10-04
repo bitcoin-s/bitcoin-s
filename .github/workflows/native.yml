@@ -9,6 +9,8 @@ on:
   release:
     types: [published]
 jobs:
+  env:
+    DISABLE_SECP256K1: "true"
   unix:
     if: "! contains(github.event.pull_request.labels.*.name, 'documentation')"
     runs-on: ${{ matrix.os }}
