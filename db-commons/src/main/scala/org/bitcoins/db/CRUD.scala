@@ -234,3 +234,13 @@ case class UpdateFailedException(message: String)
 
 case class UpsertFailedException(message: String)
     extends RuntimeException(message)
+
+//SQLite version 3.31.1 2020-01-27 19:55:54
+//Enter ".help" for usage hints.
+//sqlite> .tables
+//event_outcomes         flyway_schema_history  r_values
+//events                 master_xpub
+//sqlite> select * from master_xpub
+//   ...> ;
+//extpubkey_version|depth|fingerprint|childnum|chaincode|key
+//045f1cf6|0|00000000|0|f5ae013c9533b7a78433223727fea2be6f39b73a2ab03533bad3bf3344252afb|03dcef9509b77be69488df9f18a40e16b207e2910b1bebd29ad470edf0981b3920

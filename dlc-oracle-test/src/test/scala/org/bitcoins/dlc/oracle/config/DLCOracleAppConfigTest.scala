@@ -74,4 +74,33 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
         assert(pubKey1 == pubKey2)
       }
   }
+
+  it must "fail to start the oracle app config if we have different seeds" in {
+    dlcOracleAppConfig: DLCOracleAppConfig =>
+      val seedFile = dlcOracleAppConfig.seedPath
+      val startedF = dlcOracleAppConfig.start()
+
+      //stop old oracle
+      val stoppedF = for {
+        _ <- startedF
+        _ <- dlcOracleAppConfig.stop()
+      } yield ()
+
+      val deletedF = for {
+        _ <- stoppedF
+      } yield {
+        //delete the seed so we start with a new seed
+        Files.delete(seedFile)
+      }
+
+      val start2F = for {
+        _ <- deletedF
+        _ <- dlcOracleAppConfig.start()
+      } yield ()
+
+      //start it again and except an exception
+      recoverToSucceededIf[RuntimeException] {
+        start2F
+      }
+  }
 }

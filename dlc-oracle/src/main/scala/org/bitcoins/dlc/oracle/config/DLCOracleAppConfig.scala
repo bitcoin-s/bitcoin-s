@@ -15,7 +15,7 @@ import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
 import org.bitcoins.db.models.MasterXPubDAO
-import org.bitcoins.db.util.DBMasterXPubApi
+import org.bitcoins.db.util.{DBMasterXPubApi, MasterXPubUtil}
 import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
@@ -100,6 +100,8 @@ case class DLCOracleAppConfig(
       val initializeF = initializeKeyManager()
       for {
         _ <- initializeF
+        oracle = new DLCOracle()(this)
+        _ <- MasterXPubUtil.checkMasterXPub(oracle.getRootXpub, masterXPubDAO)
         _ <- migrationWorkAroundF
       } yield {
         if (isHikariLoggingEnabled) {
@@ -154,6 +156,7 @@ case class DLCOracleAppConfig(
               .map(_ => ())
         }
       } else {
+        logger.info(s"Not initializing key manager, seed already exists")
         Future.unit
       }
     }
