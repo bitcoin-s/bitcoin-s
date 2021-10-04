@@ -230,11 +230,13 @@ object DLCWalletUtil extends Logging {
     totalCollateral = total
   )
 
+  /** Creates a DLC between two wallets. */
   def initDLC(
       fundedWalletA: FundedDLCWallet,
       fundedWalletB: FundedDLCWallet,
       contractInfo: ContractInfo)(implicit ec: ExecutionContext): Future[
     (InitializedDLCWallet, InitializedDLCWallet)] = {
+    println(s"initDLC")
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
 
@@ -253,6 +255,7 @@ object DLCWalletUtil extends Logging {
       tx <- walletB.broadcastDLCFundingTx(sigs.contractId)
       _ <- walletA.processTransaction(tx, None)
     } yield {
+      println(s"Done initDLC")
       (InitializedDLCWallet(FundedDLCWallet(walletA)),
        InitializedDLCWallet(FundedDLCWallet(walletB)))
     }

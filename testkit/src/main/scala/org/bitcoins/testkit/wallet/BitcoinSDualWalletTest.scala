@@ -1,15 +1,20 @@
 package org.bitcoins.testkit.wallet
 
 import org.bitcoins.commons.config.AppConfig
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models.{ContractInfo, ContractOraclePair}
-import org.bitcoins.dlc.wallet.DLCAppConfig
+import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.FutureOutcome
+
+import scala.concurrent.Future
 
 trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
   import BitcoinSWalletTest._
@@ -61,41 +66,107 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
     )(test)
   }
 
+  /** Dual funded DLC wallets that are backed by a bitcoind node */
+  def withDualFundedDLCWallets(
+      test: OneArgAsyncTest,
+      bitcoind: BitcoindRpcClient): FutureOutcome = {
+    makeDependentFixture(
+      build = () => {
+        createDualFundedDLCWallet(nodeApi = bitcoind, chainQueryApi = bitcoind)
+      },
+      destroy = { fundedWallets: (FundedDLCWallet, FundedDLCWallet) =>
+        destroyDLCWallets(dlcWallet1 = fundedWallets._1.wallet,
+                          dlcWallet2 = fundedWallets._2.wallet)
+      }
+    )(test)
+  }
+
+  private def createDualFundedDLCWallet(
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi): Future[
+    (FundedDLCWallet, FundedDLCWallet)] = {
+    val walletAF = FundWalletUtil.createFundedDLCWallet(
+      nodeApi = nodeApi,
+      chainQueryApi = chainQueryApi,
+      bip39PasswordOpt = getBIP39PasswordOpt(),
+      extraConfig = Some(segwitWalletConf))
+    val walletBF = FundWalletUtil.createFundedDLCWallet(
+      nodeApi,
+      chainQueryApi,
+      getBIP39PasswordOpt(),
+      Some(segwitWalletConf))(config2, system)
+    for {
+      walletA <- walletAF
+      walletB <- walletBF
+    } yield (walletA, walletB)
+  }
+
+  private def destroyDLCWallets(
+      dlcWallet1: DLCWallet,
+      dlcWallet2: DLCWallet): Future[Unit] = {
+    val destroy1F = destroyDLCWallet(dlcWallet1)
+    val destroy2F = destroyDLCWallet(dlcWallet2)
+    for {
+      _ <- destroy1F
+      _ <- destroy2F
+    } yield ()
+  }
+
   /** Creates 2 funded segwit wallets that have a DLC initiated */
   def withDualDLCWallets(
       test: OneArgAsyncTest,
       contractOraclePair: ContractOraclePair): FutureOutcome = {
     makeDependentFixture(
       build = () => {
-        val walletAF = {
-          FundWalletUtil.createFundedDLCWallet(nodeApi,
-                                               chainQueryApi,
-                                               getBIP39PasswordOpt(),
-                                               Some(segwitWalletConf))
-        }
-        val walletBF = {
-          FundWalletUtil.createFundedDLCWallet(
-            nodeApi,
-            chainQueryApi,
-            getBIP39PasswordOpt(),
-            Some(segwitWalletConf))(config2, system)
-        }
-
-        for {
-          walletA <- walletAF
-          walletB <- walletBF
-          amt = expectedDefaultAmt / Satoshis(2)
-          contractInfo = ContractInfo(amt.satoshis, contractOraclePair)
-          (dlcWalletA, dlcWalletB) <-
-            DLCWalletUtil.initDLC(walletA, walletB, contractInfo)
-        } yield (dlcWalletA, dlcWalletB)
+        createDualWalletsWithDLC(contractOraclePair = contractOraclePair,
+                                 nodeApi = nodeApi,
+                                 chainQueryApi = chainQueryApi)
       },
       destroy = { dlcWallets: (InitializedDLCWallet, InitializedDLCWallet) =>
-        for {
-          _ <- destroyDLCWallet(dlcWallets._1.wallet)
-          _ <- destroyDLCWallet(dlcWallets._2.wallet)
-        } yield ()
+        destroyDLCWallets(dlcWallet1 = dlcWallets._1.wallet,
+                          dlcWallet2 = dlcWallets._2.wallet)
       }
     )(test)
+  }
+
+  def withDualDLCWallets(
+      test: OneArgAsyncTest,
+      contractOraclePair: ContractOraclePair,
+      bitcoind: BitcoindRpcClient): FutureOutcome = {
+    makeDependentFixture(
+      build = () => {
+        createDualWalletsWithDLC(contractOraclePair = contractOraclePair,
+                                 nodeApi = bitcoind,
+                                 chainQueryApi = bitcoind)
+      },
+      destroy = { dlcWallets: (InitializedDLCWallet, InitializedDLCWallet) =>
+        destroyDLCWallets(dlcWallet1 = dlcWallets._1.wallet,
+                          dlcWallet2 = dlcWallets._2.wallet)
+      }
+    )(test)
+  }
+
+  private def createDualWalletsWithDLC(
+      contractOraclePair: ContractOraclePair,
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi): Future[
+    (InitializedDLCWallet, InitializedDLCWallet)] = {
+    for {
+      walletA <- FundWalletUtil.createFundedDLCWallet(nodeApi,
+                                                      chainQueryApi,
+                                                      getBIP39PasswordOpt(),
+                                                      Some(segwitWalletConf))
+      walletB <- FundWalletUtil.createFundedDLCWallet(
+        nodeApi,
+        chainQueryApi,
+        getBIP39PasswordOpt(),
+        Some(segwitWalletConf))(config2, system)
+      _ = println(s"---------------------------------")
+      amt = expectedDefaultAmt / Satoshis(2)
+      contractInfo = ContractInfo(amt.satoshis, contractOraclePair)
+      _ = println(s"@@@@@@@@@@@@@@@@@@@@@@@@@@")
+      (dlcWalletA, dlcWalletB) <-
+        DLCWalletUtil.initDLC(walletA, walletB, contractInfo)
+    } yield (dlcWalletA, dlcWalletB)
   }
 }

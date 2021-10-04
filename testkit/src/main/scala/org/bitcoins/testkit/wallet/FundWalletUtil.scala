@@ -47,10 +47,12 @@ trait FundWalletUtil extends Logging {
       }
     }
 
+    txsF.failed.foreach(err => logger.error(s"txsF", err))
     val fundedWalletF =
       txsF.flatMap(txs =>
         wallet.processTransactions(txs, Some(DoubleSha256DigestBE.empty)))
 
+    fundedWalletF.failed.foreach(err => logger.error(s"fundedWalletF", err))
     fundedWalletF.map(_.asInstanceOf[Wallet])
   }
 
@@ -182,8 +184,12 @@ object FundWalletUtil extends FundWalletUtil {
         chainQueryApi = chainQueryApi,
         bip39PasswordOpt = bip39PasswordOpt,
         extraConfig = extraConfig)
+      _ = println(s"Done creating DLC Wallet")
       funded <- FundWalletUtil.fundWallet(wallet)
-    } yield FundedDLCWallet(funded.wallet.asInstanceOf[DLCWallet])
+    } yield {
+      println(s"Done funding wallet")
+      FundedDLCWallet(funded.wallet.asInstanceOf[DLCWallet])
+    }
   }
 
   def createFundedDLCWalletWithBitcoind(

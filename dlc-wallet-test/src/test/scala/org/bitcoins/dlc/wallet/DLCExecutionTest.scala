@@ -25,7 +25,7 @@ import org.scalatest.FutureOutcome
 import scala.concurrent.Future
 
 class DLCExecutionTest extends BitcoinSDualWalletTest {
-  type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
+  override type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withDualDLCWallets(test, DLCWalletUtil.sampleContractOraclePair)
