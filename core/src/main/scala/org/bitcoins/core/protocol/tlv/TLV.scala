@@ -867,15 +867,18 @@ object OracleAnnouncementV0TLV extends TLVFactory[OracleAnnouncementV0TLV] {
   }
 
   lazy val dummy: OracleAnnouncementV0TLV = {
-    val priv = ECPrivateKey.freshPrivateKey
-    val event = OracleEventV0TLV(OrderedNonces(Vector(priv.schnorrNonce)),
-                                 UInt32.zero,
-                                 EnumEventDescriptorV0TLV.dummy,
-                                 "dummy")
+    val dummyPrivKey: ECPrivateKey = ECPrivateKey.fromHex(
+      "f04671ab68f3fefbeaa344c49149748f722287a81b19cd956b2332d07b8f6853")
+    val event = OracleEventV0TLV(
+      OrderedNonces(Vector(dummyPrivKey.schnorrNonce)),
+      UInt32.zero,
+      EnumEventDescriptorV0TLV.dummy,
+      "dummy")
     val sig =
-      priv.schnorrSign(CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
+      dummyPrivKey.schnorrSign(
+        CryptoUtil.sha256DLCAnnouncement(event.bytes).bytes)
 
-    OracleAnnouncementV0TLV(sig, priv.schnorrPublicKey, event)
+    OracleAnnouncementV0TLV(sig, dummyPrivKey.schnorrPublicKey, event)
   }
 
   def dummyForEventsAndKeys(

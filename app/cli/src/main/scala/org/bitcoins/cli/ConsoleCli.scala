@@ -2207,7 +2207,7 @@ object CliCommand {
 
   object CreateContractInfo {
 
-    val empty: CreateContractInfo = {
+    lazy val empty: CreateContractInfo = {
       CreateContractInfo(announcementTLV = OracleAnnouncementV0TLV.dummy,
                          totalCollateral = Satoshis.zero,
                          contractDescriptorTLV = ContractDescriptorTLV.empty)
