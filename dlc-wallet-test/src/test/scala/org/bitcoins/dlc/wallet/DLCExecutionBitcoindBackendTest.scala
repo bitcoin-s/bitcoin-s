@@ -49,6 +49,7 @@ class DLCExecutionBitcoindBackendTest
         bitcoind <- cachedBitcoindWithFundsF
         result <- bitcoind.getRawTransaction(broadcastB.fundingTxId)
       } yield {
+        //make sure no confirmations on the funding tx
         assert(result.confirmations.isEmpty)
       }
 
@@ -71,10 +72,13 @@ class DLCExecutionBitcoindBackendTest
         _ = assert(dlc.state == DLCState.Claimed)
         claimed = dlc.asInstanceOf[DLCStatus.Claimed]
 
+        //make sure funding tx still doesn't have confs
+        fundingTxResult <- bitcoind.getRawTransaction(claimed.fundingTxId)
         //make sure bitcoind sees it
-        result <- bitcoind.getRawTransaction(claimed.closingTxId)
+        closingTxResult <- bitcoind.getRawTransaction(claimed.closingTxId)
       } yield {
-        assert(result.confirmations.isEmpty)
+        assert(fundingTxResult.confirmations.isEmpty)
+        assert(closingTxResult.confirmations.isEmpty)
       }
       executedF
   }
