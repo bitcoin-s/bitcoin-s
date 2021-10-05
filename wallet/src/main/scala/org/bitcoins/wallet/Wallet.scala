@@ -316,10 +316,7 @@ abstract class Wallet
         HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
         utxo.state == ConfirmedReceived
       }
-      confirmedUtxos.foreach { c =>
-        println(s"c=$c")
-      }
-      println(s"^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+      
       confirmedUtxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
     }
   }
