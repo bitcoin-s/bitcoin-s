@@ -38,6 +38,7 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
 import org.bitcoins.crypto._
 import play.api.libs.json._
+import ujson.{Num, Str, Value}
 
 import java.io.File
 import java.net.{InetAddress, InetSocketAddress, URI}
@@ -1406,4 +1407,13 @@ object JsonReaders {
   implicit val walletTransactionReads: Reads[WalletTransaction] =
     Json.reads[WalletTransaction]
 
+  def jsToSatoshis(js: Value): Satoshis =
+    js match {
+      case str: Str =>
+        Satoshis(BigInt(str.value))
+      case num: Num =>
+        Satoshis(num.value.toLong)
+      case _: Value =>
+        throw Value.InvalidData(js, "Expected value in Satoshis")
+    }
 }

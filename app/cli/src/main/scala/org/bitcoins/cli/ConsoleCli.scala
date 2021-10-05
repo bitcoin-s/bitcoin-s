@@ -1136,6 +1136,38 @@ object ConsoleCli {
                 case _: GetDLC => GetDLC(dlcId)
                 case other     => other
               }))),
+      cmd("createcontractinfo")
+        .action((_, conf) => conf.copy(command = CreateContractInfo.empty))
+        .text("Create a contract info from an announcement, total collateral, and contract descriptor")
+        .children(
+          arg[OracleAnnouncementTLV]("announcement")
+            .text("The announcement we are creating a contract info for")
+            .required()
+            .action((ann, conf) =>
+              conf.copy(command = conf.command match {
+                case create: CreateContractInfo =>
+                  create.copy(announcementTLV = ann)
+                case other => other
+              })),
+          arg[Satoshis]("totalCollateral")
+            .text("The total collateral in the DLC. This is your collateral + counterparty collateral")
+            .required()
+            .action((totalCollateral, conf) =>
+              conf.copy(command = conf.command match {
+                case create: CreateContractInfo =>
+                  create.copy(totalCollateral = totalCollateral)
+                case other => other
+              })),
+          arg[ContractDescriptorTLV]("contractDescriptor")
+            .text("The contract descriptor in the DLC. This is expected to be of format [[outcome1, payout1], [outcome2, payout2], ...]")
+            .required()
+            .action((contractDescriptor, conf) =>
+              conf.copy(command = conf.command match {
+                case create: CreateContractInfo =>
+                  create.copy(contractDescriptorTLV = contractDescriptor)
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== Network ==="),
       cmd("getpeers")
         .action((_, conf) => conf.copy(command = GetPeers))
@@ -1952,6 +1984,12 @@ object ConsoleCli {
         // skip sending to server and just return version number of cli
         return Success(EnvUtil.getVersion)
 
+      case CreateContractInfo(ann, totalCollateral, contractDescriptor) =>
+        val args = Seq(up.writeJs(ann),
+                       up.writeJs(totalCollateral),
+                       up.writeJs(contractDescriptor))
+        RequestParam("createcontractinfo", args)
+
       case NoCommand => ???
     }
 
@@ -2160,6 +2198,21 @@ object CliCommand {
 
   case object GetDLCs extends AppServerCliCommand
   case class GetDLC(dlcId: Sha256Digest) extends AppServerCliCommand
+
+  case class CreateContractInfo(
+      announcementTLV: OracleAnnouncementTLV,
+      totalCollateral: Satoshis,
+      contractDescriptorTLV: ContractDescriptorTLV)
+      extends AppServerCliCommand
+
+  object CreateContractInfo {
+
+    lazy val empty: CreateContractInfo = {
+      CreateContractInfo(announcementTLV = OracleAnnouncementV0TLV.dummy,
+                         totalCollateral = Satoshis.zero,
+                         contractDescriptorTLV = ContractDescriptorTLV.empty)
+    }
+  }
 
   sealed trait SendCliCommand extends AppServerCliCommand {
     def destination: BitcoinAddress

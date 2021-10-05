@@ -1,6 +1,7 @@
 package org.bitcoins.server
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
+import org.bitcoins.commons.serializers.{JsonReaders, Picklers}
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -8,6 +9,7 @@ import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
+import org.bitcoins.core.protocol.dlc.models.ContractDescriptor
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
@@ -1182,6 +1184,41 @@ object ZipDataDir extends ServerJsonModels {
   }
 }
 
+case class CreateContractInfo(
+    announcementTLV: OracleAnnouncementTLV,
+    totalCollateral: Satoshis,
+    contractDescriptorTLV: ContractDescriptorTLV) {
+
+  def contractDescriptor: ContractDescriptor = {
+    ContractDescriptor.fromTLV(contractDescriptorTLV)
+  }
+}
+
+object CreateContractInfo extends ServerJsonModels {
+
+  def fromJsArr(arr: ujson.Arr): Try[CreateContractInfo] = {
+    arr.arr.toVector match {
+      case announcementVal +: totalCollateralVal +: payoutsVal +: Vector() =>
+        Try {
+          val announcementTLV =
+            OracleAnnouncementTLV.fromHex(announcementVal.str)
+          val totalCollateral = Satoshis(totalCollateralVal.num.toLong)
+          //validate that these are part of the announcement?
+          val contractDescriptor = upickle.default
+            .read[ContractDescriptorV0TLV](payoutsVal)(
+              Picklers.contractDescriptorV0)
+          CreateContractInfo(announcementTLV,
+                             totalCollateral,
+                             contractDescriptor)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to createcontractinfo, got=${other.length} expected=3")
+        Failure(exn)
+    }
+  }
+}
+
 trait ServerJsonModels {
 
   def jsToOracleAnnouncementTLV(js: Value): OracleAnnouncementTLV =
@@ -1222,15 +1259,7 @@ trait ServerJsonModels {
         throw Value.InvalidData(js, "Expected a UInt32")
     }
 
-  def jsToSatoshis(js: Value): Satoshis =
-    js match {
-      case str: Str =>
-        Satoshis(BigInt(str.value))
-      case num: Num =>
-        Satoshis(num.value.toLong)
-      case _: Value =>
-        throw Value.InvalidData(js, "Expected value in Satoshis")
-    }
+  def jsToSatoshis(js: Value): Satoshis = JsonReaders.jsToSatoshis(js)
 
   def jsToBitcoinAddress(js: Value): BitcoinAddress = {
     try {

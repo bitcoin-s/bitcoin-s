@@ -7,9 +7,7 @@ import org.bitcoins.core.api.dlcoracle.db.EventDb
 import org.bitcoins.core.config._
 import org.bitcoins.core.number.{Int32, UInt16}
 import org.bitcoins.core.protocol.Bech32Address
-import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv.{
-  EnumEventDescriptorV0TLV,
   NormalizedString,
   OracleAnnouncementV0TLV,
   OracleAttestmentV0TLV
@@ -18,6 +16,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkitcore.util.OracleTestUtil
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 import ujson._
@@ -38,45 +37,28 @@ class OracleRoutesSpec
 
   val oracleRoutes: OracleRoutes = OracleRoutes(mockOracleApi)
 
-  val testAddressStr = "bc1qvrctqwa6g70z5vtxsyft7xvsyyt749trlm80al"
-  val testAddress: Bech32Address = Bech32Address.fromString(testAddressStr)
+  val testAddressStr = OracleTestUtil.testAddressStr
+  val testAddress: Bech32Address = OracleTestUtil.testAddress
 
-  val kVal: ECPrivateKey = ECPrivateKey.fromHex(
-    "447d4457dfff21354d56cb1b62b2ab6e5964c5ef93e6d74ae3b30dc83b89b6a5")
+  val kVal: ECPrivateKey = OracleTestUtil.kVal
 
-  val dummyPrivKey: ECPrivateKey = ECPrivateKey.fromHex(
-    "f04671ab68f3fefbeaa344c49149748f722287a81b19cd956b2332d07b8f6853")
+  val dummyPrivKey: ECPrivateKey = OracleTestUtil.dummyPrivKey
 
-  val dummyKey: ECPublicKey = dummyPrivKey.publicKey
+  val dummyKey: ECPublicKey = OracleTestUtil.dummyKey
 
-  val outcome: NormalizedString = EnumEventDescriptorV0TLV.dummy.outcomes.head
+  val outcome: NormalizedString = OracleTestUtil.outcome
 
-  val hash: Sha256Digest = CryptoUtil.sha256DLCAttestation(outcome)
+  val hash: Sha256Digest = OracleTestUtil.hash
 
   val sig: SchnorrDigitalSignature =
-    dummyPrivKey.schnorrSignWithNonce(hash.bytes, kVal)
+    OracleTestUtil.sig
 
-  val dummyEventDb: EventDb = EventDb(
-    nonce = kVal.schnorrNonce,
-    pubkey = dummyKey.schnorrPublicKey,
-    nonceIndex = 0,
-    eventName = "id",
-    numOutcomes = 2,
-    signingVersion = SigningVersion.latest,
-    maturationTime = Instant.ofEpochSecond(0),
-    attestationOpt = Some(sig.sig),
-    outcomeOpt = Some(outcome),
-    announcementSignature = SchnorrDigitalSignature(
-      "1efe41fa42ea1dcd103a0251929dd2b192d2daece8a4ce4d81f68a183b750d92d6f02d796965dc79adf4e7786e08f861a1ecc897afbba2dab9cff6eb0a81937e"),
-    eventDescriptorTLV = EnumEventDescriptorV0TLV.dummy
-  )
+  val dummyEventDb: EventDb = OracleTestUtil.dummyEventDb
 
-  val dummyOracleEvent: CompletedOracleEvent = OracleEvent
-    .fromEventDbs(Vector(dummyEventDb))
-    .asInstanceOf[CompletedOracleEvent]
+  val dummyOracleEvent: CompletedOracleEvent = OracleTestUtil.dummyOracleEvent
 
   val dummyAttestmentTLV: OracleAttestmentV0TLV =
-    dummyOracleEvent.oracleAttestmentV0TLV
+    OracleTestUtil.dummyAttestmentTLV
 
   "The oracle server" must {
 

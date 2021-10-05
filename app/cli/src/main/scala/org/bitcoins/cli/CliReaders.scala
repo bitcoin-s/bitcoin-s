@@ -1,6 +1,7 @@
 package org.bitcoins.cli
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
+import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
@@ -117,6 +118,17 @@ object CliReaders {
 
       override def reads: String => OracleEventV0TLV = OracleEventV0TLV.fromHex
     }
+
+  implicit val contractDescriptorReads: Read[ContractDescriptorTLV] = {
+    new Read[ContractDescriptorTLV] {
+      override def arity: Int = 1
+      override def reads: String => ContractDescriptorTLV = { str =>
+        val ujsonVal = ujson.read(str)
+        upickle.default.read[ContractDescriptorV0TLV](ujsonVal)(
+          Picklers.contractDescriptorV0)
+      }
+    }
+  }
 
   implicit val instantReads: Read[Instant] =
     new Read[Instant] {
