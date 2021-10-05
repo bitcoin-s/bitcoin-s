@@ -304,7 +304,6 @@ abstract class Wallet
 
   override def getConfirmedBalance(): Future[CurrencyUnit] = {
     filterThenSum(_.state == ConfirmedReceived).map { balance =>
-      logger.trace(s"Confirmed balance=${balance.satoshis}")
       balance
     }
   }
@@ -317,6 +316,10 @@ abstract class Wallet
         HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
         utxo.state == ConfirmedReceived
       }
+      confirmedUtxos.foreach { c =>
+        println(s"c=$c")
+      }
+      println(s"^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
       confirmedUtxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
     }
   }
@@ -342,11 +345,11 @@ abstract class Wallet
     for {
       allUnspent <- spendingInfoDAO.findAllUnspent()
     } yield {
-      val confirmedUtxos = allUnspent.filter { utxo =>
+      val unconfirmed = allUnspent.filter { utxo =>
         HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
-        utxo.state == PendingConfirmationsReceived || utxo.state == BroadcastReceived
+        (utxo.state == PendingConfirmationsReceived || utxo.state == BroadcastReceived)
       }
-      confirmedUtxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
+      unconfirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
     }
   }
 
