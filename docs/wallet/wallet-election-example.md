@@ -295,7 +295,7 @@ You can check the state of the DLC with `getdlcs`
 You can find things like the `fundingTxId`, `state`, `dlcId`, and `contractId` from this RPC call. Since we just
 broadcast the funding transaction, the state of the DLC is `Broadcast`.
 
-#### Settling the DLC
+### Settling the DLC
 
 Once the oracle has broadcast their attestations, a user can close out the DLC.
 In this case of this example, you can find the oracle
