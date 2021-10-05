@@ -1,10 +1,12 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.core.protocol.dlc.models.DLCState
+import org.bitcoins.core.protocol.dlc.models.{DLCState, DLCStatus}
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.scalatest.FutureOutcome
+
+import scala.concurrent.Future
 
 class DLCExecutionBitcoindBackendTest
     extends BitcoinSDualWalletTest
@@ -31,15 +33,49 @@ class DLCExecutionBitcoindBackendTest
     wallets =>
       val dlcA = wallets._1.wallet
       val dlcB = wallets._2.wallet
-      for {
+      val broadcastBF: Future[DLCStatus.Broadcasted] = for {
         dlcAs <- dlcA.listDLCs()
         dlcBs <- dlcB.listDLCs()
       } yield {
         assert(dlcAs.length == 1)
         assert(dlcAs.head.state == DLCState.Broadcasted)
-
         assert(dlcBs.length == 1)
         assert(dlcBs.head.state == DLCState.Broadcasted)
+        dlcBs.head.asInstanceOf[DLCStatus.Broadcasted]
       }
+
+      val isFundingTxUnconfirmedF = for {
+        broadcastB <- broadcastBF
+        bitcoind <- cachedBitcoindWithFundsF
+        result <- bitcoind.getRawTransaction(broadcastB.fundingTxId)
+      } yield {
+        assert(result.confirmations.isEmpty)
+      }
+
+      val executedF = for {
+        broadcastB <- broadcastBF
+        bitcoind <- cachedBitcoindWithFundsF
+        _ <- isFundingTxUnconfirmedF
+        contractInfo = broadcastB.contractInfo
+        contractId = broadcastB.contractId
+        dlcId = broadcastB.dlcId
+        (oracleSigs, _) = DLCWalletUtil.getSigs(contractInfo)
+        closingTx <- dlcA.executeDLC(contractId, oracleSigs)
+        //broadcast the closing tx
+        _ <- dlcB.broadcastTransaction(closingTx)
+        dlcs <- dlcA
+          .listDLCs()
+          .map(_.filter(_.dlcId == dlcId))
+        _ = assert(dlcs.length == 1)
+        dlc = dlcs.head
+        _ = assert(dlc.state == DLCState.Claimed)
+        claimed = dlc.asInstanceOf[DLCStatus.Claimed]
+
+        //make sure bitcoind sees it
+        result <- bitcoind.getRawTransaction(claimed.closingTxId)
+      } yield {
+        assert(result.confirmations.isEmpty)
+      }
+      executedF
   }
 }
