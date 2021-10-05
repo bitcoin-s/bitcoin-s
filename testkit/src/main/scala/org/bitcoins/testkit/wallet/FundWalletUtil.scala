@@ -9,7 +9,6 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
@@ -47,12 +46,9 @@ trait FundWalletUtil extends Logging {
       }
     }
 
-    txsF.failed.foreach(err => logger.error(s"txsF", err))
     val fundedWalletF =
-      txsF.flatMap(txs =>
-        wallet.processTransactions(txs, Some(DoubleSha256DigestBE.empty)))
+      txsF.flatMap(txs => wallet.processTransactions(txs, None))
 
-    fundedWalletF.failed.foreach(err => logger.error(s"fundedWalletF", err))
     fundedWalletF.map(_.asInstanceOf[Wallet])
   }
 
@@ -78,6 +74,17 @@ trait FundWalletUtil extends Logging {
     } yield (tx, hashes.head)
 
     txAndHashF.map(_ => wallet)
+  }
+
+  /** Funds a bitcoin-s wallet with 3 utxos, 1,2,3 bitcoin in the utxos
+    * that are funded by REAL utxos from the given bitcoind.
+    * Other test methods such as [[fundWallet()]] create fictitious utxos
+    * that doesn't correspond to a live network.
+    */
+  def fundWalletWithBitcoind(
+      wallet: Wallet,
+      bitcoind: BitcoindRpcClient): Future[FundedTestWallet] = {
+    ???
   }
 
   /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos */
@@ -184,10 +191,8 @@ object FundWalletUtil extends FundWalletUtil {
         chainQueryApi = chainQueryApi,
         bip39PasswordOpt = bip39PasswordOpt,
         extraConfig = extraConfig)
-      _ = println(s"Done creating DLC Wallet")
       funded <- FundWalletUtil.fundWallet(wallet)
     } yield {
-      println(s"Done funding wallet")
       FundedDLCWallet(funded.wallet.asInstanceOf[DLCWallet])
     }
   }

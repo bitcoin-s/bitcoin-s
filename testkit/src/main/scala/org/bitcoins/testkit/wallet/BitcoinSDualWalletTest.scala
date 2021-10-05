@@ -136,8 +136,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
     makeDependentFixture(
       build = () => {
         createDualWalletsWithDLC(contractOraclePair = contractOraclePair,
-                                 nodeApi = bitcoind,
-                                 chainQueryApi = bitcoind)
+                                 bitcoind = bitcoind)
       },
       destroy = { dlcWallets: (InitializedDLCWallet, InitializedDLCWallet) =>
         destroyDLCWallets(dlcWallet1 = dlcWallets._1.wallet,
@@ -148,19 +147,40 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
 
   private def createDualWalletsWithDLC(
       contractOraclePair: ContractOraclePair,
+      bitcoind: BitcoindRpcClient): Future[
+    (InitializedDLCWallet, InitializedDLCWallet)] = {
+    for {
+      walletA <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
+        bitcoind,
+        getBIP39PasswordOpt(),
+        Some(segwitWalletConf))
+      walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
+        bitcoind = bitcoind,
+        bip39PasswordOpt = getBIP39PasswordOpt(),
+        extraConfig = Some(segwitWalletConf))(config2, system)
+      amt = expectedDefaultAmt / Satoshis(2)
+      contractInfo = ContractInfo(amt.satoshis, contractOraclePair)
+      (dlcWalletA, dlcWalletB) <-
+        DLCWalletUtil.initDLC(walletA, walletB, contractInfo)
+    } yield (dlcWalletA, dlcWalletB)
+  }
+
+  private def createDualWalletsWithDLC(
+      contractOraclePair: ContractOraclePair,
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi): Future[
     (InitializedDLCWallet, InitializedDLCWallet)] = {
     for {
-      walletA <- FundWalletUtil.createFundedDLCWallet(nodeApi,
-                                                      chainQueryApi,
-                                                      getBIP39PasswordOpt(),
-                                                      Some(segwitWalletConf))
+      walletA <- FundWalletUtil.createFundedDLCWallet(
+        nodeApi = nodeApi,
+        chainQueryApi = chainQueryApi,
+        bip39PasswordOpt = getBIP39PasswordOpt(),
+        extraConfig = Some(segwitWalletConf))
       walletB <- FundWalletUtil.createFundedDLCWallet(
-        nodeApi,
-        chainQueryApi,
-        getBIP39PasswordOpt(),
-        Some(segwitWalletConf))(config2, system)
+        nodeApi = nodeApi,
+        chainQueryApi = chainQueryApi,
+        bip39PasswordOpt = getBIP39PasswordOpt(),
+        extraConfig = Some(segwitWalletConf))(config2, system)
       _ = println(s"---------------------------------")
       amt = expectedDefaultAmt / Satoshis(2)
       contractInfo = ContractInfo(amt.satoshis, contractOraclePair)

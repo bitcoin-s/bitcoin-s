@@ -30,13 +30,16 @@ class DLCExecutionBitcoindBackendTest
   it must "be able to broadcast a CET when the funding tx is unconfirmed" in {
     wallets =>
       val dlcA = wallets._1.wallet
-      //val dlcB = wallets._2.wallet
-
+      val dlcB = wallets._2.wallet
       for {
-        dlcs <- dlcA.listDLCs()
+        dlcAs <- dlcA.listDLCs()
+        dlcBs <- dlcB.listDLCs()
       } yield {
-        assert(dlcs.length == 1)
-        assert(dlcs.head.state == DLCState.Broadcasted)
+        assert(dlcAs.length == 1)
+        assert(dlcAs.head.state == DLCState.Broadcasted)
+
+        assert(dlcBs.length == 1)
+        assert(dlcBs.head.state == DLCState.Broadcasted)
       }
   }
 }
