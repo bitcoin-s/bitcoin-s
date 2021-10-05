@@ -5,7 +5,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.scalatest.FutureOutcome
@@ -14,7 +14,7 @@ import org.scalatest.compatible.Assertion
 import scala.concurrent.Future
 
 class ProcessTransactionTest extends BitcoinSWalletTest {
-  override type FixtureParam = WalletApi
+  override type FixtureParam = Wallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withNewWallet(test, getBIP39PasswordOpt())(getFreshWalletAppConfig)
@@ -184,5 +184,21 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
       } yield assert(balance == amount)
 
       spendingTxF
+  }
+
+  it must "get the unconfirmed balance of an account" in { wallet: Wallet =>
+    val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
+    for {
+      address <- wallet.getNewAddress()
+      tx =
+        TransactionGenerators
+          .transactionTo(address.scriptPubKey)
+          .sampleSome
+
+      _ <- wallet.processTransaction(tx, None)
+      accountBalance <- wallet.getUnconfirmedBalance(account1)
+    } yield {
+      assert(accountBalance == CurrencyUnits.zero)
+    }
   }
 }
