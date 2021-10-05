@@ -196,7 +196,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
           .sampleSome
 
       _ <- wallet.processTransaction(tx, None)
-      accountBalance <- wallet.getBalance(account1)
+      accountBalance <- wallet.getUnconfirmedBalance(account1)
     } yield {
       assert(accountBalance == CurrencyUnits.zero)
     }
