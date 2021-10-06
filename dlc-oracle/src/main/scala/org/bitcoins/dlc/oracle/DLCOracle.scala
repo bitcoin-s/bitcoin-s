@@ -358,12 +358,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
           createAttestation(oracleEventTLV.nonces.head, signOutcome).map(db =>
             Vector(db))
         case _: UnsignedDigitDecompositionEventDescriptor =>
-          if (num >= 0) {
-            FutureUtil.emptyVec[EventDb]
-          } else {
-            Future.failed(new IllegalArgumentException(
-              s"Cannot sign a negative number for an unsigned event, got $num"))
-          }
+          FutureUtil.emptyVec[EventDb]
       }
 
     val boundedNum = if (num < eventDescriptorTLV.minNum) {
