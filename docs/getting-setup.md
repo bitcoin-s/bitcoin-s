@@ -198,6 +198,8 @@ many hours as all block filters for all testnet blocks will be downloaded.
 If you wish to speed this process up,
 download [this snapshot](https://s3-us-west-2.amazonaws.com/www.suredbits.com/chaindb-testnet-2021-02-03.zip), unzip it and put the file in your `$HOME/.bitcoin-s/testnet3` directory and then from there, run
 
+This will start syncing your testnet node from block header ~1,900,000 rather than starting from zero.
+
 ```bashrc
 $ unzip chaindb-testnet-2021-02-03.zip
 $ mv chaindb.sqlite ~/.bitcoin-s/testnet3/
