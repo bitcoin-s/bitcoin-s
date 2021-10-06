@@ -42,6 +42,7 @@ case class DatadirParser(
         val conf = ConfigFactory
           .parseFile(config.toFile)
           .withFallback(datadirConfig)
+          .resolve()
         networkConfig.withFallback(conf)
     }
   }
