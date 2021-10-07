@@ -11,7 +11,10 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.node.networking.peer.{
+  ControlMessageHandler,
+  DataMessageHandler
+}
 
 import scala.concurrent.Future
 
@@ -36,6 +39,8 @@ case class SpvNode(
   private val _bloomFilter = new Mutable(BloomFilter.empty)
 
   def bloomFilter: BloomFilter = _bloomFilter.atomicGet
+
+  val controlMessageHandler = ControlMessageHandler(this)
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 

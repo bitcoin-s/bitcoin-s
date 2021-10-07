@@ -168,68 +168,8 @@ class PeerMessageReceiver(
   private def handleControlPayload(
       payload: ControlPayload,
       sender: PeerMessageSender): Future[PeerMessageReceiver] = {
-    payload match {
-
-      case versionMsg: VersionMessage =>
-        logger.trace(s"Received versionMsg=$versionMsg from peer=$peer")
-
-        state match {
-          case bad @ (_: Disconnected | _: Normal | Preconnection |
-              _: InitializedDisconnect | _: InitializedDisconnectDone) =>
-            Future.failed(
-              new RuntimeException(
-                s"Cannot handle version message while in state=${bad}"))
-
-          case good: Initializing =>
-            val newState = good.withVersionMsg(versionMsg)
-
-            sender.sendVerackMessage()
-            node.setPeerServices(peer, versionMsg.services)
-
-            val newRecv = toState(newState)
-
-            Future.successful(newRecv)
-        }
-
-      case VerAckMessage =>
-        state match {
-          case bad @ (_: Disconnected | _: InitializedDisconnect | _: Normal |
-              _: InitializedDisconnectDone | Preconnection) =>
-            Future.failed(
-              new RuntimeException(
-                s"Cannot handle version message while in state=${bad}"))
-
-          case good: Initializing =>
-            val newState = good.toNormal(VerAckMessage)
-            val newRecv = toState(newState)
-            Future.successful(newRecv)
-        }
-
-      case ping: PingMessage =>
-        sender.sendPong(ping)
-        Future.successful(this)
-      case SendHeadersMessage =>
-        //we want peers to just send us headers
-        //we don't want to have to request them manually
-        sender.sendHeadersMessage()
-        Future.successful(this)
-      case _: AddrMessage =>
-        Future.successful(this)
-      case _: AddrV2Message =>
-        sender.sendSendAddrV2Message()
-        Future.successful(this)
-      case SendAddrV2Message =>
-        Future.successful(this)
-      case _ @(_: FilterAddMessage | _: FilterLoadMessage |
-          FilterClearMessage) =>
-        Future.successful(this)
-      case _ @(GetAddrMessage | _: PongMessage) =>
-        Future.successful(this)
-      case _: RejectMessage =>
-        Future.successful(this)
-      case _: FeeFilterMessage =>
-        Future.successful(this)
-    }
+    node.controlMessageHandler
+      .handleControlPayload(payload, sender, peer, this)
   }
 
   /** Transitions our PeerMessageReceiver to a new state */

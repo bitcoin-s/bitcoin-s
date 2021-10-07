@@ -14,7 +14,10 @@ import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.node.networking.peer.{
+  ControlMessageHandler,
+  DataMessageHandler
+}
 
 import scala.concurrent.Future
 
@@ -36,6 +39,8 @@ case class NeutrinoNode(
   override def chainAppConfig: ChainAppConfig = chainConfig
 
   override val peers: Vector[Peer] = nodePeer
+
+  val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 
