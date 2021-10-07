@@ -613,7 +613,7 @@ class DLCOracleTest extends DLCOracleFixture {
       }
   }
 
-  it must "fail to sign a negative number for a unsigned digit decomp event" in {
+  it must "sign a negative number for a unsigned digit decomp event that results in 0" in {
     dlcOracle: DLCOracle =>
       for {
         announcement <-
@@ -626,10 +626,15 @@ class DLCOracleTest extends DLCOracleFixture {
                                                      unit = "units",
                                                      precision = Int32.zero)
 
-        res <- recoverToSucceededIf[IllegalArgumentException] {
-          dlcOracle.signDigits(announcement.eventTLV, -2)
+        res <- dlcOracle.signDigits(announcement.eventTLV, -2)
+      } yield {
+        res match {
+          case p @ (_: PendingOracleEvent | _: CompletedEnumV0OracleEvent) =>
+            fail(s"Cannot be pending after creating attestations, got=$p")
+          case c: CompletedDigitDecompositionV0OracleEvent =>
+            assert(c.outcomeBase10 == 0)
         }
-      } yield res
+      }
   }
 
   it must "fail to sign an event with an outside nonce" in {
