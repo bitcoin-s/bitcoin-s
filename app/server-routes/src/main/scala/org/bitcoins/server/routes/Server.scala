@@ -63,7 +63,7 @@ case class Server(
   val route: Route =
     // TODO implement better logging
     DebuggingDirectives.logRequestResult(
-      ("http-rpc-server", Logging.DebugLevel)) {
+      ("http-rpc-server", Logging.InfoLevel)) {
       withErrorHandling {
         pathSingleSlash {
           post {
