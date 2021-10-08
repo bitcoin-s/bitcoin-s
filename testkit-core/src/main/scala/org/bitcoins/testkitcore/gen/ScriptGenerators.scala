@@ -551,7 +551,8 @@ sealed abstract class ScriptGenerators {
       case EmptyScriptPubKey   => emptyScriptSignature
       case _: CLTVScriptPubKey => cltvScriptSignature
       case _: CSVScriptPubKey  => csvScriptSignature
-      case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
+      case _: WitnessScriptPubKeyV0 | _: WitnessScriptPubKeyV1 |
+          _: UnassignedWitnessScriptPubKey =>
         emptyScriptSignature
       case x @ (_: P2SHScriptPubKey | _: NonStandardScriptPubKey |
           _: WitnessCommitment) =>

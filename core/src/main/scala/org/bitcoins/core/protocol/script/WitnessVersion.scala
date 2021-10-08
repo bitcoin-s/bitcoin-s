@@ -68,6 +68,17 @@ case object WitnessVersion0 extends WitnessVersion {
   override def version = OP_0
 }
 
+case object WitnessVersion1 extends WitnessVersion {
+
+  override def rebuild(
+      scriptWitness: ScriptWitness,
+      witnessProgram: Seq[ScriptToken]): Try[ScriptPubKey] = {
+    throw new UnsupportedOperationException("Taproot is not yet supported")
+  }
+
+  override def version: ScriptNumberOperation = OP_1
+}
+
 /** The witness version that represents all witnesses that have not been allocated yet */
 case class UnassignedWitness(version: ScriptNumberOperation)
     extends WitnessVersion {
@@ -89,9 +100,9 @@ object WitnessVersion {
   def apply(scriptNumberOp: ScriptNumberOperation): WitnessVersion =
     scriptNumberOp match {
       case OP_0 | OP_FALSE => WitnessVersion0
-      case x @ (OP_1 | OP_TRUE | OP_2 | OP_3 | OP_4 | OP_5 | OP_6 | OP_7 |
-          OP_8 | OP_9 | OP_10 | OP_11 | OP_12 | OP_13 | OP_14 | OP_15 |
-          OP_16) =>
+      case OP_1 | OP_TRUE  => WitnessVersion1
+      case x @ (OP_2 | OP_3 | OP_4 | OP_5 | OP_6 | OP_7 | OP_8 | OP_9 | OP_10 |
+          OP_11 | OP_12 | OP_13 | OP_14 | OP_15 | OP_16) =>
         UnassignedWitness(x)
       case OP_1NEGATE =>
         throw new IllegalArgumentException(

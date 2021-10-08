@@ -419,6 +419,9 @@ sealed abstract class CreditingTxGen {
             throw new IllegalArgumentException(
               "Expected P2WSHWitness for P2WSH")
         }
+      case _: WitnessScriptPubKeyV1 =>
+        throw new IllegalArgumentException(
+          s"Unexpected (unsupported) taproot SPK: $spk")
       case _: UnassignedWitnessScriptPubKey =>
         throw new IllegalArgumentException(
           s"Unexpected unassigned witness SPK: $spk")

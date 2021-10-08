@@ -213,7 +213,7 @@ class SignerTest extends BitcoinSUnitTest {
                                  UInt32(idx),
                                  o,
                                  Policy.standardFlags)
-      case _: UnassignedWitnessScriptPubKey => ???
+      case _: UnassignedWitnessScriptPubKey | _: WitnessScriptPubKeyV1 => ???
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
           _: WitnessCommitment | _: CSVScriptPubKey | _: CLTVScriptPubKey |
