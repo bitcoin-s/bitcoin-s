@@ -22,6 +22,7 @@ import org.bitcoins.node.models.{
 }
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.{
+  ControlMessageHandler,
   DataMessageHandler,
   PeerMessageReceiver,
   PeerMessageSender
@@ -85,6 +86,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * to make sure we don't corrupt our chainstate cache
     */
   def getDataMessageHandler: DataMessageHandler
+
+  def controlMessageHandler: ControlMessageHandler
 
   def nodeCallbacks: NodeCallbacks = nodeAppConfig.nodeCallbacks
 
