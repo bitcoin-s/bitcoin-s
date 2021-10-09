@@ -76,17 +76,6 @@ trait FundWalletUtil extends Logging {
     txAndHashF.map(_ => wallet)
   }
 
-  /** Funds a bitcoin-s wallet with 3 utxos, 1,2,3 bitcoin in the utxos
-    * that are funded by REAL utxos from the given bitcoind.
-    * Other test methods such as [[fundWallet()]] create fictitious utxos
-    * that doesn't correspond to a live network.
-    */
-  def fundWalletWithBitcoind(
-      wallet: Wallet,
-      bitcoind: BitcoindRpcClient): Future[FundedTestWallet] = {
-    ???
-  }
-
   /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos */
   def fundWallet(wallet: Wallet)(implicit
       ec: ExecutionContext): Future[FundedTestWallet] = {

@@ -181,10 +181,8 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
         chainQueryApi = chainQueryApi,
         bip39PasswordOpt = getBIP39PasswordOpt(),
         extraConfig = Some(segwitWalletConf))(config2, system)
-      _ = println(s"---------------------------------")
       amt = expectedDefaultAmt / Satoshis(2)
       contractInfo = ContractInfo(amt.satoshis, contractOraclePair)
-      _ = println(s"@@@@@@@@@@@@@@@@@@@@@@@@@@")
       (dlcWalletA, dlcWalletB) <-
         DLCWalletUtil.initDLC(walletA, walletB, contractInfo)
     } yield (dlcWalletA, dlcWalletB)
