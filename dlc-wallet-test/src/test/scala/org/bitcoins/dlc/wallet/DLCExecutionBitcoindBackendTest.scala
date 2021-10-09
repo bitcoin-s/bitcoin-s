@@ -61,10 +61,10 @@ class DLCExecutionBitcoindBackendTest
         contractId = broadcastB.contractId
         dlcId = broadcastB.dlcId
         (oracleSigs, _) = DLCWalletUtil.getSigs(contractInfo)
-        closingTx <- dlcA.executeDLC(contractId, oracleSigs)
+        closingTx <- dlcB.executeDLC(contractId, oracleSigs)
         //broadcast the closing tx
         _ <- dlcB.broadcastTransaction(closingTx)
-        dlcs <- dlcA
+        dlcs <- dlcB
           .listDLCs()
           .map(_.filter(_.dlcId == dlcId))
         _ = assert(dlcs.length == 1)
