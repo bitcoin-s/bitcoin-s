@@ -2,7 +2,7 @@ package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.BroadcastAbleTransactionDAO
+import org.bitcoins.node.models.{BroadcastAbleTransactionDAO, PeerDAO}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.{CachedBitcoinSAppConfig, NodeUnitTest}
@@ -10,7 +10,7 @@ import org.scalatest._
 
 import scala.concurrent.Future
 
-case class NodeDAOs(txDAO: BroadcastAbleTransactionDAO)
+case class NodeDAOs(txDAO: BroadcastAbleTransactionDAO, peerDAO: PeerDAO)
 
 /** Provides a fixture where all DAOs used by the node projects are provided */
 trait NodeDAOFixture extends NodeUnitTest with CachedBitcoinSAppConfig {
@@ -21,7 +21,8 @@ trait NodeDAOFixture extends NodeUnitTest with CachedBitcoinSAppConfig {
 
   private lazy val daos = {
     val tx = BroadcastAbleTransactionDAO()
-    NodeDAOs(tx)
+    val peerDao = PeerDAO()
+    NodeDAOs(tx, peerDao)
   }
 
   final override type FixtureParam = NodeDAOs
