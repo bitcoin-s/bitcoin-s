@@ -19,7 +19,6 @@ For a complete guide on how to get started with Bitcoin-S, see our website at [B
 - [License](#license)
 
 
-
 ### What is bitcoin-s?
 
 Bitcoin-S is a loosely coupled set of cryptocurrency libraries for the JVM. They work well together, but also can be used independently. 
@@ -28,12 +27,13 @@ This project's goal is NOT to be a full node implementation, rather a set of sca
 
 We are rapidly iterating on development with the goal of getting to a set of stable APIs that only change when the underlying bitcoin protocol changes.
 
-If you are a professional working a cryptocurrency business and have feedback on how to make your lives easier, please reach out on [slack] (https://suredbits.slack.com/ssb/redirect), [gitter](https://gitter.im/bitcoin-s-core/) or [twitter](https://twitter.com/Chris_Stewart_5/)!
+If you are a professional working a cryptocurrency business and have feedback on how to make your lives easier, please reach 
+out on [slack](https://suredbits.slack.com/ssb/redirect) or [twitter](https://twitter.com/Chris_Stewart_5/)!
 
 
 ### Is bitcoin-s production ready?
 
-Please see our latest releases [here] (https://github.com/bitcoin-s/bitcoin-s/actions/workflows/release.yml).
+Please see our latest releases [here](https://github.com/bitcoin-s/bitcoin-s/actions/workflows/release.yml).
 
 Warning! While we try out best to test every pull request in *master*, this branch may not be stable! Bad things can happen to your node! Beware! 
 
@@ -43,44 +43,64 @@ Please audit and verify any and all code in this toolkit for its suitability and
 
 ### Getting started (non-developers)
 
-For a complete guide on how to get started with bitcoin-s, see our website at [Bitcoin-S.org](https://bitcoin-s.org). This link is intended for individuals who are just interested in installing bitcoin-s rather than developing. If you are interested in development, see **Getting setup** below.
+For a complete guide on how to get started with bitcoin-s, see our [Getting started](https://bitcoin-s.org/docs/getting-started).
+
+This link is intended for individuals who are just interested in installing bitcoin-s rather than developing. If you are interested in development, see **Getting setup** below.
 
 ### Getting setup (developers)
 
-For a complete guide on how to get setup with bitcoin-s, see our website at [Bitcoin-S.org](https://bitcoin-s.org/docs/getting-setup). This link is intended for setting up development of bitcoin-s. If you want to just install bitcoin-s rather than develop, see **Getting started** above.
+For a complete guide on how to get setup with bitcoin-s, see our [Getting setup](https://bitcoin-s.org/docs/getting-setup).
+
+This link is intended for setting up development of bitcoin-s. If you want to just install bitcoin-s rather than develop, see **Getting started** above.
 
 ### Adding bitcoin-s to your library
 
-The latest release of bitcoin-s is `v0.6.0`, here is how you can use the dependencies in your projects:
+The latest release of bitcoin-s is `1.7.0`, here is how you can use the dependencies in your projects:
 
 ```
-libraryDependencies += "org.bitcoin-s" % "bitcoin-s-secp256k1jni" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" % "bitcoin-s-secp256k1jni" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-core" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-core" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-crypto" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-crypto" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-chain" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-chain" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-dlc-oracle" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-dlc-oracle" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-db-commons" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-oracle-explorer-client" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-fee-provider" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-app-commons" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-bitcoind-rpc" % "0.5.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-db-commons" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-eclair-rpc" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-fee-provider" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-key-manager" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-bitcoind-rpc" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-node" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-eclair-rpc" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-wallet" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-lnd-rpc" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-key-manager" % "1.7.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-zmq" % "0.6.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-node" % "1.7.0"
+
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-dlc-node" % "1.7.0"
+
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-wallet" % "1.7.0"
+
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-dlc-wallet" % "1.7.0"
+
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit-core" % "1.7.0"
+
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit" % "1.7.0"
+
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-zmq" % "1.7.0"
+
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-tor" % "1.7.0"
+
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-cli" % "1.7.0"
 
 ```
 
