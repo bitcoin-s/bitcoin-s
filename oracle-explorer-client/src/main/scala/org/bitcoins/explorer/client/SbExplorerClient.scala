@@ -16,7 +16,18 @@ import org.bitcoins.explorer.model.{
 }
 import org.bitcoins.explorer.picklers.ExplorerPicklers
 import org.bitcoins.tor.{Socks5ClientTransport, Socks5ProxyParams}
-import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
+import play.api.libs.json.{
+  JsArray,
+  JsBoolean,
+  JsError,
+  JsNull,
+  JsNumber,
+  JsObject,
+  JsString,
+  JsSuccess,
+  JsValue,
+  Json
+}
 
 import java.net.URI
 import scala.concurrent.Future
@@ -137,7 +148,6 @@ case class SbExplorerClient(
   }
 
   private def sendRequest(httpReq: HttpRequest): Future[JsValue] = {
-
     val responsePayloadF: Future[String] = {
       httpClient
         .singleRequest(httpReq, settings = httpConnectionPoolSettings)
@@ -147,6 +157,25 @@ case class SbExplorerClient(
             .map(payload => payload.decodeString(ByteString.UTF_8)))
     }
 
-    responsePayloadF.map(Json.parse)
+    val responseJsonF: Future[JsValue] = responsePayloadF.map(Json.parse)
+
+    responseJsonF.flatMap {
+      case x @ (_: JsNumber | _: JsString | _: JsArray | JsNull |
+          _: JsBoolean) =>
+        Future.failed(
+          new RuntimeException(
+            s"Incorrect formatted response from oracle explorer, got=$x"))
+      case obj: JsObject =>
+        val map = obj.value
+        val error = map.get("error")
+        val result = map.get("result")
+        if (error.get != JsNull) {
+          Future.failed(
+            new RuntimeException(
+              s"Error returned by oracle explroer, err=${error}"))
+        } else {
+          Future.successful(result.get)
+        }
+    }
   }
 }
