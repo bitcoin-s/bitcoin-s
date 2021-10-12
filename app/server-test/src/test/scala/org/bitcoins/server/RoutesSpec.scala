@@ -280,8 +280,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
-        assert(
-          responseAs[String] == """{"result":"50.00000000 BTC","error":null}""")
+        assert(responseAs[String] == """{"result":50,"error":null}""")
       }
     }
 
@@ -296,8 +295,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
-        assert(
-          responseAs[String] == """{"result":"5000000000 sats","error":null}""")
+        assert(responseAs[String] == """{"result":5000000000,"error":null}""")
       }
     }
 
@@ -312,8 +310,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
-        assert(
-          responseAs[String] == """{"result":"50.00000000 BTC","error":null}""")
+        assert(responseAs[String] == """{"result":50,"error":null}""")
       }
     }
 
@@ -328,8 +325,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
-        assert(
-          responseAs[String] == """{"result":"5000000000 sats","error":null}""")
+        assert(responseAs[String] == """{"result":5000000000,"error":null}""")
       }
     }
 
@@ -344,8 +340,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
-        assert(
-          responseAs[String] == """{"result":"50.00000000 BTC","error":null}""")
+        assert(responseAs[String] == """{"result":50,"error":null}""")
       }
     }
 
@@ -381,7 +376,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":{"confirmed":"5000000000 sats","unconfirmed":"5000000000 sats","reserved":"-1 sat","total":"9999999999 sats"},"error":null}""")
+          responseAs[String] == """{"result":{"confirmed":5000000000,"unconfirmed":5000000000,"reserved":-1,"total":9999999999},"error":null}""")
       }
     }
 
@@ -396,8 +391,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
-        assert(
-          responseAs[String] == """{"result":"5000000000 sats","error":null}""")
+        assert(responseAs[String] == """{"result":5000000000,"error":null}""")
       }
     }
 
