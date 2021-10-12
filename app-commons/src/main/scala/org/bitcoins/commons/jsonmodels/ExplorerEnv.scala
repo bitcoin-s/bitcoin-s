@@ -18,18 +18,18 @@ object ExplorerEnv extends StringFactory[ExplorerEnv] {
 
   case object Production extends ExplorerEnv {
     override val siteUrl: String = "https://oracle.suredbits.com/"
-    override val baseUri: String = s"${siteUrl}v1/"
+    override val baseUri: String = s"${siteUrl}v2/"
   }
 
   case object Test extends ExplorerEnv {
     override val siteUrl: String = "https://test.oracle.suredbits.com/"
-    override val baseUri: String = s"${siteUrl}v1/"
+    override val baseUri: String = s"${siteUrl}v2/"
   }
 
   /** For local testing purposes */
   case object Local extends ExplorerEnv {
     override val siteUrl: String = "http://localhost:9000/"
-    override val baseUri: String = s"${siteUrl}v1/"
+    override val baseUri: String = s"${siteUrl}v2/"
   }
 
   val all: Vector[ExplorerEnv] = Vector(Production, Test, Local)
