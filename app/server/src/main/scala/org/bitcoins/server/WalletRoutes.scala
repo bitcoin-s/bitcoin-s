@@ -89,7 +89,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
         case GetBalance(isSats) =>
           complete {
             wallet.getBalance().map { balance =>
-              val result: BigDecimal =
+              val result: Double =
                 formatCurrencyUnit(currencyUnit = balance, isSats = isSats)
               Server.httpSuccess(result)
             }
@@ -101,7 +101,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
         case GetBalance(isSats) =>
           complete {
             wallet.getConfirmedBalance().map { balance =>
-              val result: BigDecimal =
+              val result: Double =
                 formatCurrencyUnit(currencyUnit = balance, isSats = isSats)
               Server.httpSuccess(result)
             }
@@ -113,7 +113,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
         case GetBalance(isSats) =>
           complete {
             wallet.getUnconfirmedBalance().map { balance =>
-              val result: BigDecimal =
+              val result: Double =
                 formatCurrencyUnit(currencyUnit = balance, isSats = isSats)
               Server.httpSuccess(result)
             }
@@ -852,11 +852,11 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
   private def formatCurrencyUnit(
       currencyUnit: CurrencyUnit,
-      isSats: Boolean): BigDecimal = {
+      isSats: Boolean): Double = {
     if (isSats) {
-      currencyUnit.satoshis.toBigDecimal
+      currencyUnit.satoshis.toBigDecimal.toDouble
     } else {
-      currencyUnit.toBigDecimal
+      currencyUnit.toBigDecimal.toDouble
     }
   }
 }
