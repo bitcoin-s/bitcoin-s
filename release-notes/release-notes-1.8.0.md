@@ -61,6 +61,9 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## app commons 
 
+Most changes in app commons this release is related to refactoring code so that
+it can be used more generically across the code base.
+
 bfbde2abaa Add appCommonsTest to windows test matrix (#3683)
 
 0fb2cd0149 Remove implicit conversions from BitcoinSAppConfig -> {WalletAppConfig,ChainAppConfig,NodeAppConfig} etc (#3652)
@@ -75,6 +78,27 @@ b980f4894d Implement BitcoinSAppConfig with ActorSystem (#3596)
 
 ## App server
 
+The app server is the headless backend for bitcoin-s. This runs our wallet, node
+and chain management modules.
+
+The biggest change this release is integrating end to end automated negotiation for entering
+into DLCs in PR #3462. This means you can just give your tor address and an offer to a peer
+and they will be able to enter into a DLC with you automatically.
+
+This release included deprecating old endpoints that were poorly named and renaming them
+to have an announcement suffix. For instance `createenumevent` -> `createenumannouncement`.
+
+The old endpoints will be removed next release. For more information see #3703 .
+
+New rpcs added this release are 
+
+- `getversion` - returns versions of bitcoin-s
+- `backupwallet` - backs up the wallet to the provided destination
+- `decodeoffer` - decodes a dlc offer
+- `decodeannouncement` - decodes an oracle announcement
+- `decodeattestments` - decodes oracle's attestments
+
+
 26d7f99173 2021 09 30 rename endpoints (#3703)
 
 698fe9e800 Add backupwallet and backuporacle endpoints (#3694)
@@ -82,6 +106,8 @@ b980f4894d Implement BitcoinSAppConfig with ActorSystem (#3596)
 4a44f9cd58 Run appServerTest on both windows and mac (#3609)
 
 2191eb2049 Add 'getversion' endpoint to fetch the version from the backend (#3689)
+
+515e85b1c5 Decode DLC messages cli commands (#3636)
 
 f5ed232946 Bump fee by more to make sure our fee rate is increasing the test case (#3625)
 
@@ -103,6 +129,12 @@ e2c2798e60 Implemented the ability to fetch unconfirmed transactions (#3429)
 
 ## bitcoind rpc
 
+The major changes this module breaking up `BitcoindInstance` 
+to `BitcoindInstanceLocal` and `BitcoindInstanceRemote`. These require different
+parameters. We can do much more with a locally running bitcoind instance.
+
+We also can now fetch the version of a running bitcoind instance.
+
 781e77844f Implement ability to get proper version of BitcoindRpcClient from BitcoindRpcApConfig.clientF (#3699)
 
 4e56fb7901 Make it so bitcoind backend exceptions don't get swallowed (#3697)
@@ -114,6 +146,12 @@ d53f164478 BitcoindRpcClient Improvements (#3600)
 0746b14331 Move BitcoindRpcAppConfig into the bitcoind-rpc project (#3610)
 
 ## Build 
+
+We now publish docker images that are available on arm64 as well as amd64.
+
+We also allow docker containers to take a `BITCOIN_S_KEYMANAGER_ENTROPY`.
+This is useful for platforms like umbrel that allow external entropy to be
+provided by the platform. See #3679 for more information.
 
 59e953a1fc Bump CI runs to use scalac 2.12.15 (#3700)
 
@@ -137,17 +175,21 @@ c774ce3a34 Implement logic to automatically attach deb,dmg,msi installers to a r
 
 466de3e46a Update ConsoleCli endpoints, update docs (#3705)
 
-515e85b1c5 Decode DLC messages cli commands (#3636)
-
 40f89af597 Give help messages for DLC cli commands and document them (#3642)
+
 ## chain
+
+Improves filter header verification when receiving filters from a peer.
 
 fa45c74c36 Improve filter header verification (#3566)
 
-
 ## Core
 
+Bug fixes, test cases and ergonomic improvements this release for core.
+
 ba713bd98f Fixed edge case of numeric range computation (#3707)
+
+4f65022472 Fix signet parsing of LnInvoices (#3691)
 
 479f8e249c Remove unneeded CoreApi (#3599)
 
@@ -168,21 +210,33 @@ e829d03249 Add better CETSignaturesV0TLV.toString so we don't accidentally DOS i
 2597904019 Move DLCWalletApi to core module (#3438)
 
 9aa9a424c2 Implement init message from BOLT 1 (#3407)
+
 ## Db commons 
+
+The release for db commons adds a new class `MasterXPubDAO` that allows you to store the
+master xpub for a specific module like the `wallet` or `dlcOracle`. If a different 
+seed is used on statup, an exception will be thrown saying that the stored master xpub
+and the xpub generated from the seed are different. 
 
 6df0354a73 Enable WAL mode for SQLite (#3704)
 
 48213d9b81 Implement MasterXPubDAO (#3451)
 
-bedc152f33 Write unit test for SpendingInfoDAO.upsert() (#3620)
-
-b2b2ca45db Add ability to configure postgres database backends for test cases via reference.conf (#3421)
 
 ## DLC node
+
+This is a new module. This implements the networking logic to negotiate the building
+of Contract Execution Transactions (CET) and the funding transaction for a DLC.
 
 1051e6365a DLC P2P Client (#3402)
 
 ## DLC Oracle
+
+This release for DLC oracle focuses on making sure our `DLCOracle` construction is safe.
+Previously we could seed the oracle with entropy that doesn't correspond to entropy on disk
+or passed via the `BITCOIN_S_KEYMANAGER_ENTROPY` flag.
+
+One other bug fix in this release is making sure we increment the keyIndex in a thread safe way. 
 
 98ecdf7ac3 Refactor DLCOracle construction to be more safe (#3449)
 
@@ -198,8 +252,10 @@ ea1ead9a3f Add nonces to error message for easier debugging (#3430)
 
 b7b2a7099f 2021 07 15 dlc oracle pg (#3413)
 
+## DLC wallet
 
-## DLC wallet 
+Bug fixes this release. The most notable is preserving the ordering of inputs when multiple
+inputs are used to fund the DLC from one counterparty (#3647)
 
 099e4469b4 Add ordering of funding inputs to DLC Wallet (#3647)
 
@@ -216,6 +272,10 @@ a295b363bd Fix bug where we couldn't execute a DLC twice (#3426)
 892096d790 Disallow calling addDLCSigs as Initiator (#3411)
 
 ## gui 
+
+Tons of improvements to the GUI. Our thinking on the GUI is to re-write it in typescript.
+We will continue to support for the desktop GUI for now, will the goal of phasing it out
+over the long term. 
 
 656e9b1b5d Sort DLC table by last updated (#3607)
 
@@ -285,14 +345,21 @@ c1715760c6 Add connection indicator to GUI (#3381)
 
 ## keymanager 
 
+This adds `bitcoin-s.keymanager.entropy` configuration that allows you to provide
+external entropy for the modules that depend on the keymanager. These modules
+are the `wallet` and `dlcOracle` as of this writing. 
+
 132479d271 Implement ability to provide external entropy to bitcoin-s (#3672)
 
 ## Lnd rpc
+
+This release adds functionality for signing, closing, and leasing ouputs with lnd.
+
+There are various bug fixes in this release too.
+
 f6169cc3af Add LndInstanceRemote (#3710)
 
 26efbe783e Add lnd close channel function (#3692)
-
-4f65022472 Fix signet parsing of LnInvoices (#3691)
 
 e6e1fbdab8 Fix typo for signet LndInstances (#3690)
 
@@ -308,7 +375,13 @@ fd6e0864ac LndRpcClient: Fix listUnspent only showing unconfirmed utxos (#3663)
 
 35d2c6db4e Update LND to v0.13.1-beta (#3435)
 
-## node 
+## node
+
+This release of `node` lays the groundwork for multi peer block filter lite client (#3401).
+This functionality is not usable yet, but will be in the release of bitcoin-s.
+
+This release also includes P2P reconnection logic. Previously you would have to restart the 
+node to re-connect with a peer (#3572).
 
 db46e35172 Fix case where we forget to correctly assign currentPeerMsgHandlerRecv (#3662)
 
@@ -336,13 +409,25 @@ ac8bdb120c Implement PeerMessageReceiverState.InitializedDisconnect. This allows
 
 ## Oracle server
 
+This release adds two new endpoint for the oracle server in #3701
+
+**_WARNING_**
+
+These endpoints should be used VERY carefully. You can reveal your private key if you delete
+attestations that were widely shared if you re-attest with a different value. Deleting
+an announcement that users have built DLCs based on will mean those DLCs will have to exercise
+the refund clause. If you don't know what you are doing, it's best to not use these endpoints.
+
+- `deleteannouncement` - deletes the announcement
+- `deleteattestation` - deletes the attestations for an announcement
+
 6aff01ffbf createattesattion -> signenum (#3712)
 
 3d725adc92 2021 09 29 delete announcement (#3701)
 
 27d4c09d37 Add sha256 announcement/event ids on oracleServer 'getevent' for use in UI (#3673)
 
-## secp256k1jni 
+## secp256k1jni
 
 60dbd0252d Update secp256k1 precompiled binaries to use safegcd code on linux64 (#3528)
 
@@ -350,9 +435,13 @@ ac8bdb120c Implement PeerMessageReceiverState.InitializedDisconnect. This allows
 
 e3ab76fe6b update arm64 secp256k1 binaries (#3527)
 
-## wallet 
+## wallet
+
+This release for the wallet fixes bugs and adds tests. No new functionality was added.
 
 1f35dbdb85 Fix bug where we weren't waiting on a future to complete in for expression (#3627)
+
+bedc152f33 Write unit test for SpendingInfoDAO.upsert() (#3620)
 
 184bf415df More bitcoind backend wallet tests (#3605)
 
@@ -362,13 +451,21 @@ f85f969500 Revert 60 second delay on broadcast to go back to 4 hour default to n
 
 ## testkit
 
+The major new feature this release is adding the ability to configure the testkit to use
+postgres with the test harness. You can force the testkit by setting this configuration
+in your reference.conf `bitcoin-s.testkit.pg.enabled=true`
+
 2c8a2b0e32 Fix testkit depending on slf4j twice (#3644)
 
 495ab62104 Tor in Testkit (#3484)
 
 902f4aa332 The spaces after the log level cause logging levels not to work (#3545)
 
-## tor 
+b2b2ca45db Add ability to configure postgres database backends for test cases via reference.conf (#3421)
+
+## tor
+
+This is a new module introduced in 1.8. This adds support for tor in bitcoin-s.
 
 704b02ae6c Use random ports for pre-packaged Tor daemon (#3604)
 
@@ -407,6 +504,8 @@ ca40af5d94 Tor support for BTC RPC (#3470)
 
 ## Website
 
+Update various documentation. 
+
 d2a7bc02b6 Fix app server docker docs (#3575)
 
 7f7bc1f4bf Update configuration.md (#3503)
@@ -427,35 +526,67 @@ e61be252bd Updated README (#3489)
 ## Dependencies
 
 51bf5458dc Update metrics-core to 4.2.4 (#3709)
+
 bf16bab881 Update scodec-bits to 1.1.29 (#3698)
+
 f9cfd05414 Update postgresql to 42.2.24 (#3687)
+
 c17cc86ad6 Update sbt-ci-release to 1.5.9 (#3685)
+
 c53b96c77f Update native-lib-loader to 2.4.0 (#3682)
+
 9b429e98da Bump prismjs from 1.24.0 to 1.25.0 in /website (#3680)
+
 dc56c69c6a Update scalafx to 16.0.0-R25 (#3676)
+
 b80710eaaf Update native-lib-loader to 2.3.6 (#3678)
+
 619fd5a1fb Update scalatest to 3.2.10 (#3675)
+
 3c64af39d9 Update sbt-scoverage to 1.9.0 (#3671)
+
 11c3626fac Update sbt-bloop to 1.4.9 (#3664)
+
 87b8c4a138 Update scala-library to 2.12.15 (#3668)
+
 911fd3429d Update scala-async to 1.0.1 (#3656)
+
 576680a419 Update logback-classic to 1.2.6 (#3655)
+
 14ea28bfa2 Update akka-grpc-runtime_2.12, ... to 2.1.0 (#3638)
+
 3c9b30b974 Update scodec-bits to 1.1.28 (#3639)
+
 2d429db60d Update sqlite-jdbc to 3.36.0.3 (#3630)
+
 554869e72a Update akka-actor, akka-discovery, ... to 2.6.16 (#3574)
+
 168da1ae1e Update sbt-mdoc to 2.2.23 (#3613)
+
 0200ae8beb Update sqlite-jdbc to 3.36.0.2 (#3608)
+
 90c3f69713 Update scalajs-stubs to 1.1.0 (#3508)
+
 004b6cc59d Update sbt-scalajs, scalajs-compiler, ... to 1.7.0 (#3475)
+
 fc88aa077b Update sbt-mdoc to 2.2.22 (#3439)
+
 3cdc0d19c7 Update akka-http, akka-http-testkit, ... to 10.2.6 (#3488)
+
 520e8e5715 Update janino to 3.1.6 (#3457)
+
 07b4e722c1 Update akka-http, akka-http-testkit, ... to 10.2.5 (#3455)
+
 7b1c5639cc Update logback-classic to 1.2.5 (#3452)
+
 62a8897d7f Update slf4j-api to 1.7.32 (#3427)
+
 7f07ed7a7a Update metrics-core to 4.2.3 (#3419)
+
 6e04010cba Update scala-async to 1.0.0 (#3392)
+
 74964ab145 Update sbt to 1.5.5 (#3391)
+
 cddecc2075 Update sbt-scalafmt to 2.4.3 (#3386)
+
 38c55ad0c0 Update scala-collection-compat to 2.5.0 (#3387)
