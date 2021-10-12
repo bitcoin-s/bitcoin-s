@@ -33,7 +33,7 @@ class BitcoinSServerMainBitcoindTorTest
       } yield {
         assert(info.isSuccess)
         assert(balance.isSuccess)
-        assert(balance.get == "0 sats")
+        assert(balance.get == "0")
         assert(addr.isSuccess)
         assert(blockHash.isSuccess)
       }

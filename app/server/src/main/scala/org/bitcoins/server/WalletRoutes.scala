@@ -89,10 +89,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
         case GetBalance(isSats) =>
           complete {
             wallet.getBalance().map { balance =>
-              Server.httpSuccess(
-                if (isSats) balance.satoshis.toString
-                else Bitcoins(balance.satoshis).toString
-              )
+              val result: BigDecimal =
+                formatCurrencyUnit(currencyUnit = balance, isSats = isSats)
+              Server.httpSuccess(result)
             }
           }
       }
@@ -102,10 +101,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
         case GetBalance(isSats) =>
           complete {
             wallet.getConfirmedBalance().map { balance =>
-              Server.httpSuccess(
-                if (isSats) balance.satoshis.toString
-                else Bitcoins(balance.satoshis).toString
-              )
+              val result: BigDecimal =
+                formatCurrencyUnit(currencyUnit = balance, isSats = isSats)
+              Server.httpSuccess(result)
             }
           }
       }
@@ -115,10 +113,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
         case GetBalance(isSats) =>
           complete {
             wallet.getUnconfirmedBalance().map { balance =>
-              Server.httpSuccess(
-                if (isSats) balance.satoshis.toString
-                else Bitcoins(balance.satoshis).toString
-              )
+              val result: BigDecimal =
+                formatCurrencyUnit(currencyUnit = balance, isSats = isSats)
+              Server.httpSuccess(result)
             }
           }
       }
@@ -134,19 +131,18 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
               unconfirmed <- wallet.getUnconfirmedBalance()
               reservedUtxos <- wallet.listUtxos(TxoState.Reserved)
             } yield {
-              def balToStr(bal: CurrencyUnit): String = {
-                if (isSats) bal.satoshis.toString
-                else Bitcoins(bal.satoshis).toString
-              }
 
               val reserved = reservedUtxos.map(_.output.value).sum
               val total = confirmed + unconfirmed + reserved
 
               val json = Obj(
-                "confirmed" -> Str(balToStr(confirmed)),
-                "unconfirmed" -> Str(balToStr(unconfirmed)),
-                "reserved" -> Str(balToStr(reserved)),
-                "total" -> Str(balToStr(total))
+                "confirmed" -> Num(
+                  formatCurrencyUnit(confirmed, isSats).toDouble),
+                "unconfirmed" -> Num(
+                  formatCurrencyUnit(unconfirmed, isSats).toDouble),
+                "reserved" -> Num(
+                  formatCurrencyUnit(reserved, isSats).toDouble),
+                "total" -> Num(formatCurrencyUnit(total, isSats).toDouble)
               )
               Server.httpSuccess(json)
             }
@@ -851,6 +847,16 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
             "blockHash" -> Str(walletState.blockHash.hex)
           )
       )
+    }
+  }
+
+  private def formatCurrencyUnit(
+      currencyUnit: CurrencyUnit,
+      isSats: Boolean): BigDecimal = {
+    if (isSats) {
+      currencyUnit.satoshis.toBigDecimal
+    } else {
+      currencyUnit.toBigDecimal
     }
   }
 }

@@ -142,17 +142,13 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
       case Success(commandReturn) =>
         val json = ujson.read(commandReturn).obj
         val confirmedBalance =
-          GUIUtil.numberFormatter.format(
-            json("confirmed").str.split(' ').head.toLong)
+          GUIUtil.numberFormatter.format(json("confirmed").num)
         val unconfirmedBalance =
-          GUIUtil.numberFormatter.format(
-            json("unconfirmed").str.split(' ').head.toLong)
+          GUIUtil.numberFormatter.format(json("unconfirmed").num)
         val reservedBalance =
-          GUIUtil.numberFormatter.format(
-            json("reserved").str.split(' ').head.toLong)
+          GUIUtil.numberFormatter.format(json("reserved").num)
         val totalBalance =
-          GUIUtil.numberFormatter.format(
-            json("total").str.split(' ').head.toLong)
+          GUIUtil.numberFormatter.format(json("total").num)
 
         GlobalData.currentConfirmedBalance.value = confirmedBalance
         GlobalData.currentUnconfirmedBalance.value = unconfirmedBalance
