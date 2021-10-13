@@ -9,36 +9,78 @@ import scodec.bits.ByteVector
 import java.sql.SQLException
 import scala.concurrent.{ExecutionContext, Future}
 
+case class ExtPublicKeyDTO(
+    version: ExtKeyPubVersion,
+    depth: UInt8,
+    fingerprint: ByteVector,
+    child: UInt32,
+    chainCode: ChainCode,
+    publicKey: ECPublicKey,
+    name: Option[String]
+) {
+
+  def toExtPublicKey: ExtPublicKey =
+    ExtPublicKey(version, depth, fingerprint, child, chainCode, publicKey)
+
+}
+
 /** The primary key type is the public key associated with the extended public key [[ExtPublicKey.key]] */
 case class MasterXPubDAO()(implicit
     ec: ExecutionContext,
     appConfig: DbAppConfig)
-    extends CRUD[ExtPublicKey, ECPublicKey]
-    with SlickUtil[ExtPublicKey, ECPublicKey] {
+    extends CRUD[ExtPublicKeyDTO, ECPublicKey]
+    with SlickUtil[ExtPublicKeyDTO, ECPublicKey] {
   import profile.api._
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
 
   override val table: TableQuery[MasterXpubTable] = TableQuery[MasterXpubTable]
 
-  override def createAll(
-      extKeys: Vector[ExtPublicKey]): Future[Vector[ExtPublicKey]] = {
-    createAllNoAutoInc(extKeys, safeDatabase)
+  def create(
+      extPublicKey: ExtPublicKey,
+      name: Option[String] = None): Future[ExtPublicKeyDTO] = {
+    val dto = createDTO(extPublicKey, name)
+    create(dto)
   }
 
-  override def findByPrimaryKeys(
+  override def create(t: ExtPublicKeyDTO): Future[ExtPublicKeyDTO] = {
+    val recordCount = table.size.result
+
+    val action = recordCount.flatMap {
+      case 0 =>
+        table += t
+      case count @ _ =>
+        DBIO.failed(
+          new SQLException(s"Only 1 master xpub should be stored, got=$count"))
+    }
+
+    database.run(action.transactionally).map(_ => t)
+  }
+
+  override def createAll(
+      extKeys: Vector[ExtPublicKeyDTO]): Future[Vector[ExtPublicKeyDTO]] = {
+    if (extKeys.size != 1)
+      Future.failed(
+        new SQLException(
+          s"Only 1 master xpub should be stored, got=${extKeys.size}"))
+    else
+      create(extKeys.head).map(Vector(_))
+  }
+
+  override protected def findByPrimaryKeys(
       pubkeys: Vector[ECPublicKey]): profile.api.Query[
-    profile.api.Table[ExtPublicKey],
-    ExtPublicKey,
+    profile.api.Table[ExtPublicKeyDTO],
+    ExtPublicKeyDTO,
     Seq] = {
     table.filter(_.key.inSet(pubkeys))
   }
 
-  override def findAll(ts: Vector[ExtPublicKey]): profile.api.Query[
+  override protected def findAll(
+      ts: Vector[ExtPublicKeyDTO]): profile.api.Query[
     profile.api.Table[_],
-    ExtPublicKey,
+    ExtPublicKeyDTO,
     Seq] = {
-    findByPrimaryKeys(ts.map(_.key))
+    findByPrimaryKeys(ts.map(_.publicKey))
   }
 
   /** Validates the stored public key against the given xpub
@@ -48,7 +90,7 @@ case class MasterXPubDAO()(implicit
     findAll().map { xpubs =>
       require(xpubs.length == 1,
               s"Only 1 master xpub should be stored, got=${xpubs.length}")
-      if (xpub != xpubs.head) {
+      if (xpub != xpubs.head.toExtPublicKey) {
         sys.error(
           s"Keymanager xpub and stored xpub are different, stored=${xpubs.head}, keymanager=${xpub}")
       }
@@ -59,7 +101,7 @@ case class MasterXPubDAO()(implicit
     count().map(_ == 1)
   }
 
-  def findXPub(): Future[ExtPublicKey] = {
+  def findXPub(): Future[ExtPublicKeyDTO] = {
     findAll().map { xpubs =>
       require(xpubs.length == 1,
               s"Only 1 master xpub should be stored, got=${xpubs.length}")
@@ -78,11 +120,11 @@ case class MasterXPubDAO()(implicit
           new SQLException(s"Only 1 master xpub should be stored, got=$count"))
     }
 
-    database.run(action).map(_ => ())
+    database.run(action.transactionally).map(_ => ())
   }
 
   class MasterXpubTable(tag: Tag)
-      extends Table[ExtPublicKey](tag, schemaName, "master_xpub") {
+      extends Table[ExtPublicKeyDTO](tag, schemaName, "master_xpub") {
 
     def version = column[ExtKeyPubVersion]("extpubkey_version")
 
@@ -100,8 +142,22 @@ case class MasterXPubDAO()(implicit
 
     def * = {
       (version, depth, fingerprint, childNum, chaincode, key, name).<>(
-        ExtPublicKey.tupled,
-        ExtPublicKey.unapply)
+        ExtPublicKeyDTO.tupled,
+        ExtPublicKeyDTO.unapply)
     }
   }
+
+  private def createDTO(
+      epk: ExtPublicKey,
+      name: Option[String]): ExtPublicKeyDTO =
+    ExtPublicKeyDTO(
+      version = epk.version,
+      depth = epk.depth,
+      fingerprint = epk.fingerprint,
+      child = epk.childNum,
+      chainCode = epk.chainCode,
+      publicKey = epk.key,
+      name = name
+    )
+
 }

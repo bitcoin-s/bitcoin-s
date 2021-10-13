@@ -3,6 +3,8 @@ package org.bitcoins.db.models
 import org.bitcoins.core.crypto.{ExtKeyVersion, ExtPrivateKey}
 import org.bitcoins.testkit.db.{TestAppConfig, TestAppConfigFixture}
 
+import java.sql.SQLException
+
 class MasterXPubDAOTest extends TestAppConfigFixture {
   behavior of "MasterXPubDAO"
 
@@ -23,9 +25,30 @@ class MasterXPubDAOTest extends TestAppConfigFixture {
     } yield {
       readOpt match {
         case None    => fail()
-        case Some(r) => assert(r == xpub)
+        case Some(r) => assert(r.toExtPublicKey == xpub)
       }
     }
+  }
+
+  it must "create only one master xpub" in { testAppConfig: TestAppConfig =>
+    val masterXpubDAO =
+      MasterXPubDAO()(executionContext, appConfig = testAppConfig)
+
+    val xpriv = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
+    val xpub = xpriv.extPublicKey
+
+    val xpriv2 = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
+    val xpub2 = xpriv2.extPublicKey
+
+    for {
+      created <- masterXpubDAO.create(xpub)
+      _ = assert(created.toExtPublicKey == xpub)
+      // don't insert a duplicate key
+      _ <- recoverToSucceededIf[SQLException](masterXpubDAO.create(xpub))
+      // don't insert more than one key
+      _ <- recoverToSucceededIf[SQLException](masterXpubDAO.create(xpub2))
+    } yield succeed
+
   }
 
   it must "validate the masterxpub and succeed in the database" in {
