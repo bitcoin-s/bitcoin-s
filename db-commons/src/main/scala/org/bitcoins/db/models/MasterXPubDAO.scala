@@ -6,6 +6,7 @@ import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.db.{CRUD, DbAppConfig, SlickUtil}
 import scodec.bits.ByteVector
 
+import java.sql.SQLException
 import scala.concurrent.{ExecutionContext, Future}
 
 /** The primary key type is the public key associated with the extended public key [[ExtPublicKey.key]] */
@@ -58,6 +59,28 @@ case class MasterXPubDAO()(implicit
     count().map(_ == 1)
   }
 
+  def findXPub(): Future[ExtPublicKey] = {
+    findAll().map { xpubs =>
+      require(xpubs.length == 1,
+              s"Only 1 master xpub should be stored, got=${xpubs.length}")
+      xpubs.head
+    }
+  }
+
+  def updateName(name: String): Future[Unit] = {
+    val recordCount = table.size.result
+
+    val action = recordCount.flatMap {
+      case 1 =>
+        table.map(_.name).update(Option(name))
+      case count @ _ =>
+        DBIO.failed(
+          new SQLException(s"Only 1 master xpub should be stored, got=$count"))
+    }
+
+    database.run(action).map(_ => ())
+  }
+
   class MasterXpubTable(tag: Tag)
       extends Table[ExtPublicKey](tag, schemaName, "master_xpub") {
 
@@ -73,8 +96,10 @@ case class MasterXPubDAO()(implicit
 
     def key = column[ECPublicKey]("key", O.PrimaryKey, O.Unique)
 
+    def name = column[Option[String]]("name")
+
     def * = {
-      (version, depth, fingerprint, childNum, chaincode, key).<>(
+      (version, depth, fingerprint, childNum, chaincode, key, name).<>(
         ExtPublicKey.tupled,
         ExtPublicKey.unapply)
     }

@@ -415,5 +415,37 @@ class OracleRoutesSpec
         assert(responseAs[String] == s"""{"result":"done","error":null}""")
       }
     }
+
+    "get oracle name" in {
+      (mockOracleApi.oracleName: () => Future[Option[String]])
+        .expects()
+        .returning(Future.successful(Some("oracle name")))
+
+      val route =
+        oracleRoutes.handleCommand(ServerCommand("getoraclename", Arr()))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == s"""{"result":"oracle name","error":null}""")
+      }
+    }
+
+    "set oracle name" in {
+      (mockOracleApi
+        .setOracleName(_: String))
+        .expects("oracle name")
+        .returning(Future.unit)
+
+      val route =
+        oracleRoutes.handleCommand(
+          ServerCommand("setoraclename", Arr(Str("oracle name"))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == s"""{"result":"oracle name","error":null}""")
+      }
+    }
   }
 }

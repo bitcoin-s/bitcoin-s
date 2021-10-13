@@ -321,5 +321,18 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
           Server.httpSuccess("done")
         }
       }
+    case ServerCommand("getoraclename", _) =>
+      complete {
+        oracle.oracleName().map { name =>
+          Server.httpSuccessOption(name)
+        }
+      }
+    case ServerCommand("setoraclename", arr) =>
+      complete {
+        val name = arr.arr.head.str
+        oracle.setOracleName(name).map { _ =>
+          Server.httpSuccess(name)
+        }
+      }
   }
 }

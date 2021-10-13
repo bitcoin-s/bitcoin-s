@@ -1048,4 +1048,15 @@ class DLCOracleTest extends DLCOracleFixture {
         assert(eventOpt.isEmpty)
       }
   }
+
+  it must "set and retrieve oracle name" in { dlcOracle: DLCOracle =>
+    for {
+      emptyNameOpt <- dlcOracle.oracleName()
+      _ <- dlcOracle.setOracleName("test name")
+      testNameOpt <- dlcOracle.oracleName()
+    } yield {
+      assert(emptyNameOpt.isEmpty)
+      assert(testNameOpt.contains("test name"))
+    }
+  }
 }

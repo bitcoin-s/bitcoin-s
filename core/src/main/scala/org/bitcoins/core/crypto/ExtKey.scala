@@ -46,6 +46,9 @@ sealed abstract class ExtKey extends NetworkElement {
   /** The key at this path */
   def key: BaseECKey
 
+  /** The key name or description */
+  def name: Option[String]
+
   /** Derives the child pubkey at the specified index
     */
   def deriveChildPubKey(idx: UInt32): Try[ExtPublicKey] =
@@ -140,14 +143,14 @@ object ExtKey extends Factory[ExtKey] with StringFactory[ExtKey] {
       val key: Try[ExtKey] = version.map {
         case x: ExtKeyPubVersion =>
           val pub = ECPublicKey(bytes.slice(45, 78))
-          ExtPublicKey(x, depth, fp, childNum, chainCode, pub)
+          ExtPublicKey(x, depth, fp, childNum, chainCode, pub, None)
         case x: ExtKeyPrivVersion =>
           require(
             bytes(45) == 0,
             "Byte at index 46 must be zero for a ExtPrivateKey, got: " + BytesUtil
               .encodeHex(bytes(45)))
           val priv = ECPrivateKey(bytes.slice(46, 78))
-          ExtPrivateKey(x, depth, fp, childNum, chainCode, priv)
+          ExtPrivateKey(x, depth, fp, childNum, chainCode, priv, None)
       }
       key
     }
@@ -208,7 +211,13 @@ sealed abstract class ExtPrivateKey
     val tweak = CryptoUtil.add(il, key)
     val childKey = ECPrivateKey(tweak)
     val fp = CryptoUtil.sha256Hash160(key.publicKey.bytes).bytes.take(4)
-    ExtPrivateKey(version, depth + UInt8.one, fp, idx, ChainCode(ir), childKey)
+    ExtPrivateKey(version,
+                  depth + UInt8.one,
+                  fp,
+                  idx,
+                  ChainCode(ir),
+                  childKey,
+                  None)
   }
 
   def extPublicKey: ExtPublicKey = {
@@ -220,7 +229,13 @@ sealed abstract class ExtPrivateKey
       case LegacyMainNetPriv        => ExtKeyPubVersion.LegacyMainNetPub
       case LegacyTestNet3Priv       => ExtKeyPubVersion.LegacyTestNet3Pub
     }
-    ExtPublicKey(pub, depth, fingerprint, childNum, chainCode, key.publicKey)
+    ExtPublicKey(pub,
+                 depth,
+                 fingerprint,
+                 childNum,
+                 chainCode,
+                 key.publicKey,
+                 name)
   }
 
   def deriveChildPrivKey(idx: Long): Try[ExtPrivateKey] = {
@@ -258,7 +273,13 @@ sealed abstract class ExtPrivateKey
   }
 
   def toHardened: ExtPrivateKeyHardened = {
-    ExtPrivateKeyHardened(version, depth, fingerprint, childNum, chainCode, key)
+    ExtPrivateKeyHardened(version,
+                          depth,
+                          fingerprint,
+                          childNum,
+                          chainCode,
+                          key,
+                          name)
   }
 }
 
@@ -272,7 +293,8 @@ object ExtPrivateKey
       fingerprint: ByteVector,
       childNum: UInt32,
       chainCode: ChainCode,
-      key: ECPrivateKey)
+      key: ECPrivateKey,
+      name: Option[String])
       extends ExtPrivateKey {
     require(fingerprint.size == 4,
             "Fingerprint must be 4 bytes in size, got: " + fingerprint)
@@ -288,7 +310,8 @@ object ExtPrivateKey
       UInt32.zero.bytes,
       UInt32.zero,
       chainCode,
-      privKey
+      privKey,
+      None
     )
   }
 
@@ -332,8 +355,15 @@ object ExtPrivateKey
       fingerprint: ByteVector,
       child: UInt32,
       chainCode: ChainCode,
-      privateKey: ECPrivateKey): ExtPrivateKey = {
-    ExtPrivateKeyImpl(version, depth, fingerprint, child, chainCode, privateKey)
+      privateKey: ECPrivateKey,
+      name: Option[String]): ExtPrivateKey = {
+    ExtPrivateKeyImpl(version,
+                      depth,
+                      fingerprint,
+                      child,
+                      chainCode,
+                      privateKey,
+                      name)
   }
 
   /** Hard coded value according to
@@ -351,7 +381,8 @@ object ExtPrivateKey
   def apply(
       version: ExtKeyPrivVersion,
       seedOpt: Option[ByteVector] = None,
-      path: BIP32Path = BIP32Path.empty): ExtPrivateKey = {
+      path: BIP32Path = BIP32Path.empty,
+      name: Option[String] = None): ExtPrivateKey = {
     val seed: ByteVector = seedOpt match {
       case Some(bytes) => bytes
       case None        => ECPrivateKey().bytes
@@ -367,7 +398,8 @@ object ExtPrivateKey
                              fingerprint = fingerprint,
                              child = UInt32.zero,
                              chaincode,
-                             masterPrivKey)
+                             masterPrivKey,
+                             name)
 
     path.foldLeft(root)((accum, curr) =>
       accum.deriveChildPrivKey(curr.toUInt32))
@@ -387,7 +419,8 @@ case class ExtPrivateKeyHardened(
     fingerprint: ByteVector,
     childNum: UInt32,
     chainCode: ChainCode,
-    key: ECPrivateKey)
+    key: ECPrivateKey,
+    name: Option[String])
     extends ExtPrivateKey {
   require(fingerprint.size == 4,
           "Fingerprint must be 4 bytes in size, got: " + fingerprint)
@@ -425,7 +458,8 @@ object ExtPrivateKeyHardened
       UInt32.zero.bytes,
       UInt32.zero,
       chainCode,
-      privKey
+      privKey,
+      None
     )
   }
 
@@ -487,7 +521,13 @@ sealed abstract class ExtPublicKey extends ExtKey {
       val cc = ChainCode(ir)
       val fp = CryptoUtil.sha256Hash160(key.bytes).bytes.take(4)
       Success(
-        ExtPublicKey(version, depth + UInt8.one, fp, idx, cc, childPubKey))
+        ExtPublicKey(version,
+                     depth + UInt8.one,
+                     fp,
+                     idx,
+                     cc,
+                     childPubKey,
+                     name))
     }
   }
 }
@@ -502,7 +542,8 @@ object ExtPublicKey
       fingerprint: ByteVector,
       childNum: UInt32,
       chainCode: ChainCode,
-      key: ECPublicKey)
+      key: ECPublicKey,
+      name: Option[String])
       extends ExtPublicKey
 
   def apply(
@@ -511,8 +552,15 @@ object ExtPublicKey
       fingerprint: ByteVector,
       child: UInt32,
       chainCode: ChainCode,
-      publicKey: ECPublicKey): ExtPublicKey = {
-    ExtPublicKeyImpl(version, depth, fingerprint, child, chainCode, publicKey)
+      publicKey: ECPublicKey,
+      name: Option[String]): ExtPublicKey = {
+    ExtPublicKeyImpl(version,
+                     depth,
+                     fingerprint,
+                     child,
+                     chainCode,
+                     publicKey,
+                     name)
   }
 
   /** Takes in a base58 string and tries to convert it to an extended public key */
@@ -556,13 +604,20 @@ object ExtPublicKey
           ByteVector,
           UInt32,
           ChainCode,
-          ECPublicKey)) => ExtPublicKey = {
+          ECPublicKey,
+          Option[String])) => ExtPublicKey = {
     ExtPublicKeyImpl.tupled
   }
 
   def unapply: ExtPublicKey => Option[
-    (ExtKeyPubVersion, UInt8, ByteVector, UInt32, ChainCode, ECPublicKey)] = {
-    extPubKey =>
-      ExtPublicKeyImpl.unapply(extPubKey.asInstanceOf[ExtPublicKeyImpl])
+    (
+        ExtKeyPubVersion,
+        UInt8,
+        ByteVector,
+        UInt32,
+        ChainCode,
+        ECPublicKey,
+        Option[String])] = { extPubKey =>
+    ExtPublicKeyImpl.unapply(extPubKey.asInstanceOf[ExtPublicKeyImpl])
   }
 }
