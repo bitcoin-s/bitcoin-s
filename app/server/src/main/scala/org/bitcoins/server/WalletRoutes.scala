@@ -856,7 +856,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     if (isSats) {
       currencyUnit.satoshis.toBigDecimal.toDouble
     } else {
-      currencyUnit.toBigDecimal.toDouble
+      Bitcoins(currencyUnit.satoshis).toBigDecimal.toDouble
     }
   }
 }
