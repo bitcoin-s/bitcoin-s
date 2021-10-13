@@ -355,6 +355,31 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       spendingTxIdOpt = Some(DoubleSha256DigestBE.empty)
     )
 
+    "return the wallet's balances in bitcoin" in {
+      (mockWalletApi.getConfirmedBalance: () => Future[CurrencyUnit])
+        .expects()
+        .returning(Future.successful(Bitcoins(50)))
+
+      (mockWalletApi.getUnconfirmedBalance: () => Future[CurrencyUnit])
+        .expects()
+        .returning(Future.successful(Bitcoins(50)))
+
+      (mockWalletApi
+        .listUtxos(_: TxoState))
+        .expects(TxoState.Reserved)
+        .returning(Future.successful(Vector(spendingInfoDb)))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getbalances", Arr(Bool(false))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":{"confirmed":50,"unconfirmed":50,"reserved":-1.0E-8,"total":99.99999999},"error":null}""")
+      }
+    }
+
     "return the wallet's balances in sats" in {
       (mockWalletApi.getConfirmedBalance: () => Future[CurrencyUnit])
         .expects()
