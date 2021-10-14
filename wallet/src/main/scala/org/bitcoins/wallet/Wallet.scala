@@ -980,13 +980,15 @@ object Wallet extends WalletLogger {
     //make sure we don't have a xpub in the db
     countF.flatMap { count =>
       if (count == 0) {
-        masterXPubDAO.create(keyManager.getRootXPub)
+        masterXPubDAO.create(keyManager.getRootXPub).map(_.toExtPublicKey)
       } else {
         for {
           xpubs <- masterXPubDAO.findAll()
         } yield {
-          if (xpubs.length == 1 && xpubs.head == keyManager.getRootXPub) {
-            xpubs.head
+          if (
+            xpubs.length == 1 && xpubs.head.toExtPublicKey == keyManager.getRootXPub
+          ) {
+            xpubs.head.toExtPublicKey
           } else {
             throw new IllegalArgumentException(
               s"Wallet database contains different master xpubs, got=${xpubs}")

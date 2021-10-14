@@ -121,6 +121,15 @@ object Server {
     )
   }
 
+  def httpSuccessOption[T](bodyOpt: Option[T])(implicit
+      writer: up.Writer[T]): HttpEntity.Strict = {
+    val response = Response(result = bodyOpt.map(body => up.writeJs(body)))
+    HttpEntity(
+      ContentTypes.`application/json`,
+      up.write(response.toJsonMap)
+    )
+  }
+
   def httpError(
       msg: String,
       status: StatusCode = StatusCodes.InternalServerError): HttpResponse = {

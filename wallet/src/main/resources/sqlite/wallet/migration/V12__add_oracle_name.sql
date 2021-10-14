@@ -1,0 +1,1 @@
+ALTER TABLE "master_xpub" ADD COLUMN name VARCHAR(254);

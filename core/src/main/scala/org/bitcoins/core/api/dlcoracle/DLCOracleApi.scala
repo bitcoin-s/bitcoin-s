@@ -16,6 +16,10 @@ import scala.concurrent.Future
 trait DLCOracleApi {
   def publicKey(): SchnorrPublicKey
 
+  def oracleName(): Future[Option[String]]
+
+  def setOracleName(name: String): Future[Unit]
+
   def stakingAddress(network: BitcoinNetwork): Bech32Address
 
   def listEventDbs(): Future[Vector[EventDb]]

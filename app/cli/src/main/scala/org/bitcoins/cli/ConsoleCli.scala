@@ -1588,6 +1588,23 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("getoraclename")
+        .action((_, conf) => conf.copy(command = GetOracleName))
+        .text("Returns the oracle's name"),
+      cmd("setoraclename")
+        .action((_, conf) => conf.copy(command = SetOracleName(null)))
+        .text("Sets the oracle's name")
+        .children(
+          arg[String]("name")
+            .text("Oracle name")
+            .required()
+            .action((name, conf) =>
+              conf.copy(command = conf.command match {
+                case wps: SetOracleName =>
+                  wps.copy(name = name)
+                case other => other
+              }))
+        ),
       cmd("backuporacle")
         .action((_, conf) => conf.copy(command = BackupOracle(null)))
         .text("Backs up the oracle SQLite database")
@@ -1909,6 +1926,10 @@ object ConsoleCli {
       // Oracle
       case GetPublicKey =>
         RequestParam("getpublickey")
+      case GetOracleName =>
+        RequestParam("getoraclename")
+      case SetOracleName(oracleName) =>
+        RequestParam("setoraclename", Seq(up.writeJs(oracleName)))
       case GetStakingAddress =>
         RequestParam("getstakingaddress")
       case ListAnnouncements =>
@@ -2416,4 +2437,8 @@ object CliCommand {
   case class DeleteAttestation(eventName: String) extends OracleServerCliCommand
 
   case class BackupOracle(destination: String) extends OracleServerCliCommand
+
+  case object GetOracleName extends OracleServerCliCommand
+
+  case class SetOracleName(name: String) extends OracleServerCliCommand
 }

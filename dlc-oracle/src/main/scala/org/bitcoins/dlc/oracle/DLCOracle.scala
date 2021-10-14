@@ -86,6 +86,9 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   protected[bitcoins] val eventDAO: EventDAO = EventDAO()
   protected[bitcoins] val eventOutcomeDAO: EventOutcomeDAO = EventOutcomeDAO()
 
+  protected[bitcoins] val masterXpubDAO: MasterXPubDAO =
+    MasterXPubDAO()(ec, conf)
+
   private lazy val nextKeyIndexF: Future[AtomicInteger] =
     rValueDAO.maxKeyIndex.map {
       case Some(idx) => new AtomicInteger(idx + 1)
@@ -472,6 +475,13 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
           "Backup is supported only for SQLite database backend"))
   }
 
+  override def oracleName(): Future[Option[String]] = {
+    masterXpubDAO.findXPub().map(_.name)
+  }
+
+  override def setOracleName(name: String): Future[Unit] = {
+    masterXpubDAO.updateName(name)
+  }
 }
 
 object DLCOracle {
