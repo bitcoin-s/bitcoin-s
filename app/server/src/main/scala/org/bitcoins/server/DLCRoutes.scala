@@ -19,7 +19,7 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
 
-  def handleCommand: PartialFunction[ServerCommand, Route] = {
+  override def handleCommand: PartialFunction[ServerCommand, Route] = {
     case ServerCommand("getdlchostaddress", _) =>
       complete {
         dlcNode.getHostAddress.map { addr =>
@@ -40,24 +40,6 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
       }
 
     case ServerCommand("createcontractinfo", arr) =>
-      withValidServerCommand(CreateContractInfo.fromJsArr(arr)) {
-        case create: CreateContractInfo =>
-          complete {
-            val oracleInfo =
-              create.announcementTLV.eventTLV.eventDescriptor match {
-                case _: NumericEventDescriptorTLV =>
-                  NumericSingleOracleInfo(create.announcementTLV)
-                case _: EnumEventDescriptorV0TLV =>
-                  EnumSingleOracleInfo(create.announcementTLV)
-              }
-            val contractInfo = ContractInfo(create.totalCollateral,
-                                            create.contractDescriptor,
-                                            oracleInfo)
-            Server.httpSuccess(contractInfo.hex)
-          }
-      }
-
-    case ServerCommand("createnumericcontractinfo", arr) =>
       withValidServerCommand(CreateContractInfo.fromJsArr(arr)) {
         case create: CreateContractInfo =>
           complete {
