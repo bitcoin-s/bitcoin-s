@@ -234,7 +234,9 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `createcontractinfo` `announcement` `totalCollateral` `payouts`
    - the announcement to build the contract info for
    - the total amount of collateral in the DLC
-   - The payouts in `{ "outcomes" : { "outcome1" : 1, "outcome2": 2, ... }}`. The number is the amount of sats paid to YOU for that outcome.
+   - The payouts can be in two formats
+     1. `{ "outcomes" : { "outcome0" : 0, "outcome1": 1, ... }}`. The number is the amount of sats paid to YOU for that outcome.
+     2. `[{"outcome":0,"payout":0,"extraPrecision":0,"isEndpoint":true}, {"outcome":1,"payout":1,"extraPrecision":0,"isEndpoint":true}, ...]`
  - `decodecontractinfo` `contractinfo` - Decodes a contract info into json
    - `contractinfo` - Hex encoded contract info
  - `decodeoffer` `offer` - Decodes an offer message into json
