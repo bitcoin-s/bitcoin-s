@@ -56,5 +56,23 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
             Server.httpSuccess(contractInfo.hex)
           }
       }
+
+    case ServerCommand("createnumericcontractinfo", arr) =>
+      withValidServerCommand(CreateContractInfo.fromJsArr(arr)) {
+        case create: CreateContractInfo =>
+          complete {
+            val oracleInfo =
+              create.announcementTLV.eventTLV.eventDescriptor match {
+                case _: NumericEventDescriptorTLV =>
+                  NumericSingleOracleInfo(create.announcementTLV)
+                case _: EnumEventDescriptorV0TLV =>
+                  EnumSingleOracleInfo(create.announcementTLV)
+              }
+            val contractInfo = ContractInfo(create.totalCollateral,
+                                            create.contractDescriptor,
+                                            oracleInfo)
+            Server.httpSuccess(contractInfo.hex)
+          }
+      }
   }
 }

@@ -123,9 +123,17 @@ object CliReaders {
     new Read[ContractDescriptorTLV] {
       override def arity: Int = 1
       override def reads: String => ContractDescriptorTLV = { str =>
-        val ujsonVal = ujson.read(str)
-        upickle.default.read[ContractDescriptorV0TLV](ujsonVal)(
+        upickle.default.read[ContractDescriptorV0TLV](str)(
           Picklers.contractDescriptorV0)
+      }
+    }
+  }
+
+  implicit val jsonReader: Read[ujson.Value] = {
+    new Read[ujson.Value] {
+      override def arity: Int = 1
+      override def reads: String => ujson.Value = { str =>
+        ujson.read(str)
       }
     }
   }
