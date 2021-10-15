@@ -7,7 +7,7 @@ This is a developer example to show to how build a
 DLC with `bitcoin-s-cli` utility using the oracle
 we built in our [oracle election example](../oracle/oracle-election-example.md)
 
-This example will show you to colloborate with your peer
+This example will show you to collaborate with your peer
 to create the funding transaction for your DLC.
 
 The last thing we will do is close the DLC by broadcasting
@@ -51,7 +51,7 @@ The announcement that this oracle produced is
 fdd824c3988fabec9820690f366271c9ceac00fbec1412075f9b319bb0db1f86460519dd9c61478949f2c00c35aeb8e53a1507616072cb802891e2c189a9fa65a0493de5d3b04a6d7b90c9c43c09ebe5250d583e1c3fc423219b26f6a02ec394a130000afdd8225f0001ae3e30df5a203ad10ee89a909df0c8ccea4836e94e0a5d34c3cdab758fcaee1460189600fdd8062400030e52657075626c6963616e5f77696e0c44656d6f637261745f77696e056f7468657210323032302d75732d656c656374696f6e
 ```
 
-This annoouncement contains all the cryptographic information
+This announcement contains all the cryptographic information
 necessary for you and your counterparty to build a DLC.
 
 #### Contract
@@ -72,7 +72,7 @@ Suredbits oracle explorer, you can build this
 [Here](https://test.oracle.suredbits.com/contract/enum/f3650e03487941be8d3285f3eecd3689cbb9c4b49d1c6d467f92399647c45703) 
 is a completed example of what we are going to build via the `bitcoin-s-cli`
 
-Alice has decided that she wants to do a 1 bitcoin bet.
+Alice has decided that she wants to do a 100,000 sats bet.
 The amount of collateral Alice is going to contribute to the bet
 is `60,000` sats.
 
