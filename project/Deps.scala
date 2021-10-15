@@ -40,7 +40,7 @@ object Deps {
     val scalaCollectionCompatV = "2.5.0"
     val pgEmbeddedV = "0.13.4"
 
-    val breezeV = "1.3"
+    val breezeV = "2.0"
 
     val newMicroPickleV = "1.3.8"
     val newMicroJsonV = newMicroPickleV
