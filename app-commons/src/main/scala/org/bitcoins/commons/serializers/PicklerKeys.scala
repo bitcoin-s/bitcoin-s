@@ -11,4 +11,10 @@ object PicklerKeys {
   final val outcomeKey: String = "outcome"
   final val localPayoutKey: String = "localPayout"
   final val outcomesKey: String = "outcomes"
+
+  //tlv points
+  final val pointsKey = "points"
+  final val payoutKey: String = "payout"
+  final val extraPrecisionKey: String = "extraPrecision"
+  final val isEndpointKey: String = "isEndpoint"
 }
