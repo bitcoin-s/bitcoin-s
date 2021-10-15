@@ -94,10 +94,22 @@ New rpcs added this release are
 
 - `getversion` - returns versions of bitcoin-s
 - `backupwallet` - backs up the wallet to the provided destination
+- `createcontractinfo` - creates a contract info based on oracle, total collateral and payouts
 - `decodeoffer` - decodes a dlc offer
 - `decodeannouncement` - decodes an oracle announcement
 - `decodeattestments` - decodes oracle's attestments
 
+80d498d288 Fix bug where getbalances was always retruning sats (#3750)
+
+94e219befd Update getbalance rpcs to return a number rather than a string (#3746)
+
+d912665067 Remove cors handler for all requests (#3736)
+
+1b88d26095 Bump logging level back to INFO on http servers (#3734)
+
+99e12a393f Fix missing Config.resolve() call (#3727)
+
+6cbbd8825d 2021 10 02 create contract info (#3713)
 
 26d7f99173 2021 09 30 rename endpoints (#3703)
 
@@ -238,6 +250,12 @@ or passed via the `BITCOIN_S_KEYMANAGER_ENTROPY` flag.
 
 One other bug fix in this release is making sure we increment the keyIndex in a thread safe way. 
 
+5a5f1e00c7 Store oracle name in the database (#3748)
+
+b02a963ff8 Fix bug with unsigned digit decomp events and signing negative outcomes (#3728)
+
+ea375f9c55 Actually validate master xpub on startup (#3719)
+
 98ecdf7ac3 Refactor DLCOracle construction to be more safe (#3449)
 
 1032669f21 Add unit test for moving seeds and making sure we can get the same public key after moving (#3441)
@@ -255,6 +273,9 @@ b7b2a7099f 2021 07 15 dlc oracle pg (#3413)
 ## DLC wallet
 
 Bug fixes this release. The most notable is preserving the ordering of inputs when multiple
+
+9668358807 2021 10 04 issue 3715 (#3724)
+
 inputs are used to fund the DLC from one counterparty (#3647)
 
 099e4469b4 Add ordering of funding inputs to DLC Wallet (#3647)
@@ -270,6 +291,12 @@ c1ce9ca115 Disallow signing your own DLCAccept (#3453)
 a295b363bd Fix bug where we couldn't execute a DLC twice (#3426)
 
 892096d790 Disallow calling addDLCSigs as Initiator (#3411)
+
+## fee provider
+
+BitGo removed some objects from the result they return from their API
+
+3ffa997cc7 remove fields from BitGoResult (#3739)
 
 ## gui 
 
@@ -349,6 +376,10 @@ This adds `bitcoin-s.keymanager.entropy` configuration that allows you to provid
 external entropy for the modules that depend on the keymanager. These modules
 are the `wallet` and `dlcOracle` as of this writing. 
 
+3852a885e1 Try to fix CI for native
+
+3a90115067 disable secp256k1 on native images so we don't run into linking errors (#3718)
+
 132479d271 Implement ability to provide external entropy to bitcoin-s (#3672)
 
 ## Lnd rpc
@@ -356,6 +387,8 @@ are the `wallet` and `dlcOracle` as of this writing.
 This release adds functionality for signing, closing, and leasing ouputs with lnd.
 
 There are various bug fixes in this release too.
+
+98ceddfc22 update lnd to v0.13.3 (#3720)
 
 f6169cc3af Add LndInstanceRemote (#3710)
 
@@ -383,6 +416,10 @@ This functionality is not usable yet, but will be in the release of bitcoin-s.
 This release also includes P2P reconnection logic. Previously you would have to restart the 
 node to re-connect with a peer (#3572).
 
+99107b61ea Add PeerDAO (#3738)
+
+ebdf1e2382 add ControlMessageHandler (#3732)
+
 db46e35172 Fix case where we forget to correctly assign currentPeerMsgHandlerRecv (#3662)
 
 b6ef27eb3e Move block generation and synchronization of th wallet before clearing utxo/addresses (#3623)
@@ -406,6 +443,13 @@ ac8bdb120c Implement PeerMessageReceiverState.InitializedDisconnect. This allows
 1c6d728197 Made relay flag in version message configurable (#3416)
 
 45233be22d Update user agent (#3384)
+
+## Oracle explorer client
+
+Updates the API used by oracle explorer client to be `v2`. Suredbits
+released this API recently. [See the API docs for more info](https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f)
+
+ab8649a6a1 update oracle explorer client to use v2 of the API (#3747)
 
 ## Oracle server
 
@@ -438,6 +482,8 @@ e3ab76fe6b update arm64 secp256k1 binaries (#3527)
 ## wallet
 
 This release for the wallet fixes bugs and adds tests. No new functionality was added.
+
+9e43a242fa Fix logical error on getunconfirmed balance for an account (#3721)
 
 1f35dbdb85 Fix bug where we weren't waiting on a future to complete in for expression (#3627)
 
@@ -506,6 +552,18 @@ ca40af5d94 Tor support for BTC RPC (#3470)
 
 Update various documentation. 
 
+d8722c3f32 Add descriptions for modules that are being updated (#3743)
+
+9bcc79c3d0 Update README (#3745)
+
+9148212800 Clarify documentation on getting-setup.md (#3731)
+
+4c15eb5268 Fix settling section (#3725)
+
+3025a9a874 Add wallet election example to docs (#3716)
+
+aa50ca8d64 Begin adding 1.8.0 release notes (#3717)
+
 d2a7bc02b6 Fix app server docker docs (#3575)
 
 7f7bc1f4bf Update configuration.md (#3503)
@@ -525,6 +583,29 @@ e61be252bd Updated README (#3489)
 
 ## Dependencies
 
+87624d7055 Update sbt-scoverage to 1.9.1 (#3741)
+
+779b728834 Update sbt-native-packager to 1.9.5 (#3735)
+
+d807007457 Update sbt-scalajs, scalajs-compiler, ... to 1.7.1 (#3729)
+
+984d575869 Update sbt-native-packager to 1.9.0 (#3733)
+
+f6a2ec5896 Bump prismjs from 1.24.0 to 1.25.0 in /website (#3723)
+
+8cbdf8244a Update scalacheck-1-14 to 3.2.2.0 (#3722)
+
+335bc13f97 Update akka-actor, akka-discovery, ... to 2.6.17 (#3756)
+
+a6ee7360c1 Update sbt-assembly to 1.1.0 (#3641)
+
+7c5967a059 Update breeze-viz to 1.3 (#3550)
+
+41899e6ad6 Update sbt-ci-release to 1.5.10 (#3754)
+
+4b04a54f15 Update sbt-native-image to 0.3.2 (#3752)
+
+bb8997b6a0 Update sbt-native-packager to 1.9.6 (#3753)
 51bf5458dc Update metrics-core to 4.2.4 (#3709)
 
 bf16bab881 Update scodec-bits to 1.1.29 (#3698)
