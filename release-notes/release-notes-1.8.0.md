@@ -1,6 +1,6 @@
 # 1.8.0 DLC Wallet Tor negotiation
 
-LAST COMMIT IS 6aff01ffbf
+LAST COMMIT IS 335bc13f97f582c2536008682794222f7e66e132
 ## Running Bitcoin-S
 
 If you want to run the standalone server binary, after verifying gpg signatures, you
