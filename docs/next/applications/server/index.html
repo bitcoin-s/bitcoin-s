@@ -289,7 +289,11 @@ the <code>-p 9999:9999</code> port mapping on the docker container to adjust for
 <ul>
 <li>the announcement to build the contract info for</li>
 <li>the total amount of collateral in the DLC</li>
-<li>The payouts in <code>{ &quot;outcomes&quot; : { &quot;outcome1&quot; : 1, &quot;outcome2&quot;: 2, ... }}</code>. The number is the amount of sats paid to YOU for that outcome.</li>
+<li>The payouts can be in two formats
+<ol>
+<li><code>{ &quot;outcomes&quot; : { &quot;outcome0&quot; : 0, &quot;outcome1&quot;: 1, ... }}</code>. The number is the amount of sats paid to YOU for that outcome.</li>
+<li><code>[{&quot;outcome&quot;:0,&quot;payout&quot;:0,&quot;extraPrecision&quot;:0,&quot;isEndpoint&quot;:true}, {&quot;outcome&quot;:1,&quot;payout&quot;:1,&quot;extraPrecision&quot;:0,&quot;isEndpoint&quot;:true}, ...]</code></li>
+</ol></li>
 </ul></li>
 <li><code>decodecontractinfo</code> <code>contractinfo</code> - Decodes a contract info into json
 <ul>
