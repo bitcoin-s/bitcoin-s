@@ -58,7 +58,8 @@
       "wallet/wallet-sync",
       "wallet/wallet-rpc",
       "wallet/backups",
-      "wallet/wallet-election-example"
+      "wallet/wallet-election-example",
+      "wallet/wallet-price-example"
     ],
     "Tor": [
       "tor/tor"
