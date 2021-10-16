@@ -19,7 +19,7 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
 
-  def handleCommand: PartialFunction[ServerCommand, Route] = {
+  override def handleCommand: PartialFunction[ServerCommand, Route] = {
     case ServerCommand("getdlchostaddress", _) =>
       complete {
         dlcNode.getHostAddress.map { addr =>

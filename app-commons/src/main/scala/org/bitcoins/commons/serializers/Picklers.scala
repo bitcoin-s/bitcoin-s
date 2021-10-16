@@ -234,21 +234,54 @@ object Picklers {
       )
     }
 
+  implicit val tlvPointReader: Reader[TLVPoint] = {
+    reader[Obj].map { obj: Obj =>
+      val map = obj.value
+      val outcome = map(PicklerKeys.outcomeKey).num.toLong
+      val payout = jsToSatoshis(map(PicklerKeys.payoutKey))
+      val extraPrecision = map(PicklerKeys.extraPrecisionKey).num.toInt
+      val isEndPoint = map(PicklerKeys.isEndpointKey).bool
+      TLVPoint(outcome, payout, extraPrecision, isEndPoint)
+    }
+  }
+
+  implicit val tlvPointWriter: Writer[TLVPoint] = {
+    writer[Obj].comap { point =>
+      Obj(
+        PicklerKeys.outcomeKey -> Num(point.outcome.toDouble),
+        PicklerKeys.payoutKey -> Num(point.value.toLong.toDouble),
+        PicklerKeys.extraPrecisionKey -> Num(point.extraPrecision.toDouble),
+        PicklerKeys.isEndpointKey -> Bool(point.isEndpoint)
+      )
+    }
+  }
+
   implicit val payoutFunctionV0TLVWriter: Writer[PayoutFunctionV0TLV] =
     writer[Obj].comap { payoutFunc =>
       import payoutFunc._
 
       val pointsJs = points.map { point =>
-        Obj(
-          "outcome" -> Num(point.outcome.toDouble),
-          "payout" -> Num(point.value.toLong.toDouble),
-          "extraPrecision" -> Num(point.extraPrecision.toDouble),
-          "isEndpoint" -> Bool(point.isEndpoint)
-        )
+        writeJs(point)
       }
 
-      Obj("points" -> pointsJs)
+      Obj(PicklerKeys.pointsKey -> pointsJs)
     }
+
+  implicit val payoutFunctionV0TLVReader: Reader[PayoutFunctionV0TLV] = {
+    reader[Obj].map { obj: Obj =>
+      val pointsArr = obj(PicklerKeys.pointsKey).arr
+      val points: Vector[TLVPoint] = pointsArr.map {
+        case x @ (_: Arr | _: Num | Null | _: Bool | _: Str) =>
+          sys.error(
+            s"Cannot have $x when parsing payout curve points, expected json object")
+        case obj: Obj =>
+          upickle.default.read[TLVPoint](obj)
+      }.toVector
+
+      PayoutFunctionV0TLV(points)
+
+    }
+  }
 
   implicit val roundingIntervalsV0TLVWriter: Writer[RoundingIntervalsV0TLV] =
     writer[Obj].comap { roundingIntervals =>

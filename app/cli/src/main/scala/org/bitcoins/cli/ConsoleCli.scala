@@ -1158,13 +1158,13 @@ object ConsoleCli {
                   create.copy(totalCollateral = totalCollateral)
                 case other => other
               })),
-          arg[ContractDescriptorTLV]("contractDescriptor")
+          arg[ujson.Value]("contractDescriptor")
             .text("The contract descriptor in the DLC. This is expected to be of format [[outcome1, payout1], [outcome2, payout2], ...]")
             .required()
             .action((contractDescriptor, conf) =>
               conf.copy(command = conf.command match {
                 case create: CreateContractInfo =>
-                  create.copy(contractDescriptorTLV = contractDescriptor)
+                  create.copy(contractDescriptor = contractDescriptor)
                 case other => other
               }))
         ),
@@ -2223,7 +2223,7 @@ object CliCommand {
   case class CreateContractInfo(
       announcementTLV: OracleAnnouncementTLV,
       totalCollateral: Satoshis,
-      contractDescriptorTLV: ContractDescriptorTLV)
+      contractDescriptor: ujson.Value)
       extends AppServerCliCommand
 
   object CreateContractInfo {
@@ -2231,7 +2231,7 @@ object CliCommand {
     lazy val empty: CreateContractInfo = {
       CreateContractInfo(announcementTLV = OracleAnnouncementV0TLV.dummy,
                          totalCollateral = Satoshis.zero,
-                         contractDescriptorTLV = ContractDescriptorTLV.empty)
+                         contractDescriptor = ujson.Null)
     }
   }
 

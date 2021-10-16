@@ -1,7 +1,8 @@
 package org.bitcoins.server
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
-import org.bitcoins.commons.serializers.{JsonReaders, Picklers}
+import org.bitcoins.commons.jsonmodels.cli.ContractDescriptorParser
+import org.bitcoins.commons.serializers.{JsonReaders}
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -1204,9 +1205,9 @@ object CreateContractInfo extends ServerJsonModels {
             OracleAnnouncementTLV.fromHex(announcementVal.str)
           val totalCollateral = Satoshis(totalCollateralVal.num.toLong)
           //validate that these are part of the announcement?
-          val contractDescriptor = upickle.default
-            .read[ContractDescriptorV0TLV](payoutsVal)(
-              Picklers.contractDescriptorV0)
+          val contractDescriptor =
+            ContractDescriptorParser.parseCmdLine(payoutsVal, announcementTLV)
+
           CreateContractInfo(announcementTLV,
                              totalCollateral,
                              contractDescriptor)
