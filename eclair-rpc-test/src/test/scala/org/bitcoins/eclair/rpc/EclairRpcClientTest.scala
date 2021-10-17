@@ -604,7 +604,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
   }
 
-  it should "be able to pay to a hash" in {
+  it should "be able to make a spontaneous payment (keysend)" in {
     val amt = 50.msats
     val getPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
@@ -625,16 +625,14 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                 wsEventP.success(event)
               }
             }
-            invoice <- otherClient.createInvoice("foo", amt, preimage)
             paymentId <- client.sendToNode(otherClientNodeId,
                                            amt,
-                                           invoice.lnTags.paymentHash.hash,
                                            None,
                                            None,
                                            None,
                                            Some("ext_id"))
             wsEvent <- wsEventP.future
-            succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
+            succeeded <- client.getSentInfo(paymentId)
             _ <- client.close(channelId)
             bitcoind <- bitcoindRpcClientF
             address <- bitcoind.getNewAddress
@@ -651,12 +649,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             val succeededPayment = succeeded.head
             assert(succeededPayment.amount == amt)
             assert(succeededPayment.externalId.contains("ext_id"))
-            succeededPayment.status match {
-              case sent: OutgoingPaymentStatus.Succeeded =>
-                assert(sent.paymentPreimage == preimage)
-              case s: OutgoingPaymentStatus =>
-                fail(s"Unexpected payment status ${s}")
-            }
+            assert(
+              succeededPayment.status
+                .isInstanceOf[OutgoingPaymentStatus.Succeeded])
           }
         }
     }
@@ -1031,37 +1026,14 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     for {
       (channelId, oldFee) <- channelAndFeeF
       client <- clientF
-      _ <- client.updateRelayFee(channelId, oldFee * 2, 1)
+      otherClient <- otherClientF
+      info <- otherClient.getInfo
+      _ <- client.updateRelayFee(info.nodeId, oldFee * 2, 1)
       channel <- client.channel(channelId)
       newFeeOpt = channel.feeBaseMsat
     } yield {
       assert(newFeeOpt.isDefined)
       assert(newFeeOpt.get == oldFee * 2)
-    }
-  }
-
-  it should "update the relay fee of a channel with short channel id" in {
-    val channelAndFeeF = for {
-      channelId <-
-        EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
-      client <- clientF
-      channel <- client.channel(channelId)
-    } yield {
-      assert(channel.feeBaseMsat.isDefined)
-      assert(channel.feeBaseMsat.get > MilliSatoshis.zero)
-      assert(channel.shortChannelId.isDefined)
-      (channel.channelId, channel.shortChannelId.get, channel.feeBaseMsat.get)
-    }
-
-    for {
-      client <- clientF
-      (channelId, shortChannelId, oldFee) <- channelAndFeeF
-      _ <- client.updateRelayFee(shortChannelId, oldFee * 4, 1)
-      channel <- client.channel(channelId)
-      newFeeOpt = channel.feeBaseMsat
-    } yield {
-      assert(newFeeOpt.isDefined)
-      assert(newFeeOpt.get == oldFee * 4)
     }
   }
 

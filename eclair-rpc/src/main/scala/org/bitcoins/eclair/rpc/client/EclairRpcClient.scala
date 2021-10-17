@@ -489,14 +489,12 @@ class EclairRpcClient(
   override def sendToNode(
       nodeId: NodeId,
       amountMsat: MilliSatoshis,
-      paymentHash: Sha256Digest,
       maxAttempts: Option[Int],
       feeThresholdSat: Option[Satoshis],
       maxFeePct: Option[Int],
       externalId: Option[String]): Future[PaymentId] = {
     val params = Seq("nodeId" -> nodeId.toString,
-                     "amountMsat" -> amountMsat.toBigDecimal.toString,
-                     "paymentHash" -> paymentHash.hex) ++ Seq(
+                     "amountMsat" -> amountMsat.toBigDecimal.toString) ++ Seq(
       maxAttempts.map(x => "maxAttempts" -> x.toString),
       feeThresholdSat.map(x => "feeThresholdSat" -> x.toBigDecimal.toString),
       maxFeePct.map(x => "maxFeePct" -> x.toString),
@@ -532,24 +530,19 @@ class EclairRpcClient(
   }
 
   override def updateRelayFee(
-      channelId: ChannelId,
+      nodeId: NodeId,
       feeBaseMsat: MilliSatoshis,
       feeProportionalMillionths: Long): Future[UpdateRelayFeeResult] = {
-    eclairCall[UpdateRelayFeeResult](
-      "updaterelayfee",
-      "channelId" -> channelId.hex,
-      "feeBaseMsat" -> feeBaseMsat.toLong.toString,
-      "feeProportionalMillionths" -> feeProportionalMillionths.toString
-    )
+    updateRelayFee(Vector(nodeId), feeBaseMsat, feeProportionalMillionths)
   }
 
   override def updateRelayFee(
-      shortChannelId: ShortChannelId,
+      nodeIds: Vector[NodeId],
       feeBaseMsat: MilliSatoshis,
       feeProportionalMillionths: Long): Future[UpdateRelayFeeResult] = {
     eclairCall[UpdateRelayFeeResult](
       "updaterelayfee",
-      "shortChannelId" -> shortChannelId.toHumanReadableString,
+      "nodeIds" -> nodeIds.map(_.hex).mkString(","),
       "feeBaseMsat" -> feeBaseMsat.toLong.toString,
       "feeProportionalMillionths" -> feeProportionalMillionths.toString
     )
@@ -668,6 +661,9 @@ class EclairRpcClient(
             logger.error(errMsg)
             throw new RuntimeException(err.value.error)
           case _: JsError =>
+            println(s"${JsError
+              .toJson(res)
+              .toString()} JSON ${json}")
             logger.error(
               s"Could not parse JsResult for command=$commandName: ${JsError
                 .toJson(res)
@@ -962,13 +958,13 @@ object EclairRpcClient {
       implicit system: ActorSystem) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
-  private[bitcoins] val commit = "ac08560"
+  private[bitcoins] val commit = "6817d6f"
 
   /** The current version we support of Eclair */
-  private[bitcoins] val version = "0.5.0"
+  private[bitcoins] val version = "0.6.2"
 
   /** The bitcoind version that eclair is officially tested & supported with by ACINQ
-    * @see https://github.com/ACINQ/eclair/releases/tag/v0.4
+    * @see https://github.com/ACINQ/eclair/releases/tag/v0.6.2
     */
-  val bitcoindV: BitcoindVersion = BitcoindVersion.V19
+  val bitcoindV: BitcoindVersion = BitcoindVersion.V21
 }

@@ -40,6 +40,11 @@ object Feature {
     val mandatory = 2
   }
 
+  case object OptionUpfrontShutdownScript extends Feature {
+    val rfcName = "option_upfront_shutdown_script"
+    val mandatory = 4
+  }
+
   case object ChannelRangeQueries extends Feature {
     val rfcName = "gossip_queries"
     val mandatory = 6
@@ -75,14 +80,38 @@ object Feature {
     val mandatory = 18
   }
 
+  case object AnchorOutputs extends Feature {
+    val rfcName = "option_anchor_outputs"
+    val mandatory = 20
+  }
+
+  case object AnchorOutputsZeroFeeHtlcTx extends Feature {
+    val rfcName = "option_anchors_zero_fee_htlc_tx"
+    val mandatory = 22
+  }
+
+  case object ShutdownAnySegwit extends Feature {
+    val rfcName = "option_shutdown_anysegwit"
+    val mandatory = 26
+  }
+
+  // TODO: @t-bast: update feature bits once spec-ed (currently reserved here: https://github.com/lightningnetwork/lightning-rfc/issues/605)
+  // We're not advertising these bits yet in our announcements, clients have to assume support.
+  // This is why we haven't added them yet to `areSupported`.
   case object TrampolinePayment extends Feature {
     val rfcName = "trampoline_payment"
     val mandatory = 50
   }
 
+  case object KeySend extends Feature {
+    val rfcName = "keysend"
+    val mandatory = 54
+  }
+
   val knownFeatures: Set[Feature] = Set(
     OptionDataLossProtect,
     InitialRoutingSync,
+    OptionUpfrontShutdownScript,
     ChannelRangeQueries,
     VariableLengthOnion,
     ChannelRangeQueriesExtended,
@@ -90,6 +119,10 @@ object Feature {
     BasicMultiPartPayment,
     Wumbo,
     TrampolinePayment,
-    StaticRemoteKey
+    StaticRemoteKey,
+    AnchorOutputs,
+    AnchorOutputsZeroFeeHtlcTx,
+    ShutdownAnySegwit,
+    KeySend
   )
 }
