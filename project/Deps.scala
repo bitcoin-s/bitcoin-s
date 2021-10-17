@@ -19,6 +19,7 @@ object Deps {
     val akkav = "10.2.6"
     val playv = "2.9.2"
     val akkaStreamv = "2.6.17"
+    val jUnixSocketV = "2.4.0"
     val scodecV = "1.1.29"
     val junitV = "0.11"
     val nativeLoaderV = "2.4.0"
@@ -102,6 +103,9 @@ object Deps {
 
     val akkaTestkit =
       "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
+
+    val jUnixSocket =
+      "com.kohlschutter.junixsocket" % "junixsocket-core" % V.jUnixSocketV
 
     val scalaFx =
       "org.scalafx" %% "scalafx" % V.scalaFxV withSources () withJavadoc ()
@@ -475,6 +479,24 @@ object Deps {
     Compile.slf4j,
     Compile.grizzledSlf4j
   )
+
+  val clightningRpc = List(
+    Compile.akkaHttp,
+    Compile.akkaStream,
+    Compile.jUnixSocket,
+    Compile.playJson,
+    Compile.grizzledSlf4j
+  )
+
+  val clightningRpcTest = Def.setting {
+    List(
+      Test.akkaHttpTestkit,
+      Test.akkaStream,
+      Test.logback,
+      Test.scalaTest.value,
+      Test.scalacheck.value
+    )
+  }
 
   val tor: Def.Initialize[List[ModuleID]] = Def.setting {
     List(

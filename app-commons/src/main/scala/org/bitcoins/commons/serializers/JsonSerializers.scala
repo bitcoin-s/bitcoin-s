@@ -2,7 +2,6 @@ package org.bitcoins.commons.serializers
 
 import java.io.File
 import java.net.{InetAddress, URI}
-
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
@@ -15,18 +14,15 @@ import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonWriters._
-import java.time.LocalDateTime
 
+import java.time.LocalDateTime
 import org.bitcoins.commons.jsonmodels.SerializedTransaction.tokenToString
 import org.bitcoins.commons.jsonmodels._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels._
 import org.bitcoins.commons.jsonmodels.wallet._
-import org.bitcoins.core.psbt.{
-  GlobalPSBTRecord,
-  InputPSBTRecord,
-  OutputPSBTRecord
-}
+import org.bitcoins.core.psbt._
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto._
@@ -624,6 +620,83 @@ object JsonSerializers {
 
   implicit val mempoolSpaceResultReads: Reads[MempoolSpaceResult] =
     Json.reads[MempoolSpaceResult]
+
+  implicit val cLightningAddressReads: Reads[CLightningAddress] =
+    Json.reads[CLightningAddress]
+
+  implicit val cLightningInfoReads: Reads[CLightningInfo] =
+    Json.reads[CLightningInfo]
+
+  implicit val cLightningNewAddressResultReads: Reads[NewAddressResult] =
+    Json.reads[NewAddressResult]
+
+  implicit val cLightningOutputReads: Reads[Output] = Json.reads[Output]
+  implicit val cLightningChannelReads: Reads[Channel] = Json.reads[Channel]
+
+  implicit val cLightningListChannelsResultReads: Reads[ListChannelsResult] =
+    Json.reads[ListChannelsResult]
+
+  implicit val cLightningChannelFundsReads: Reads[ChannelFunds] =
+    Json.reads[ChannelFunds]
+
+  implicit val cLightningListFundsResultReads: Reads[ListFundsResult] =
+    Json.reads[ListFundsResult]
+
+  implicit val cLightningConnectResultReads: Reads[ConnectResult] =
+    Json.reads[ConnectResult]
+
+  implicit val cLightningPeerChannelReads: Reads[CLightningPeerChannel] =
+    Json.reads[CLightningPeerChannel]
+
+  implicit val cLightningPeerReads: Reads[CLightningPeer] =
+    Json.reads[CLightningPeer]
+
+  implicit val cLightningPeersReads: Reads[CLightningPeers] =
+    Json.reads[CLightningPeers]
+
+  implicit val cLightningFundChannelResultReads: Reads[FundChannelResult] =
+    Json.reads[FundChannelResult]
+
+  implicit val cLightningInvoiceResultReads: Reads[CLightningInvoiceResult] =
+    Json.reads[CLightningInvoiceResult]
+
+  implicit val cLightningLookupInvoiceResultReads: Reads[
+    CLightningLookupInvoiceResult] =
+    Json.reads[CLightningLookupInvoiceResult]
+
+  implicit val cLightningListInvoicesResultReads: Reads[
+    CLightningListInvoicesResult] =
+    Json.reads[CLightningListInvoicesResult]
+
+  implicit val cLightningPayResultReads: Reads[CLightningPayResult] =
+    Json.reads[CLightningPayResult]
+
+  implicit val cLightningPsbtResultReads: Reads[CLightningPsbtResult] =
+    Json.reads[CLightningPsbtResult]
+
+  implicit val cLightningInputReservationReads: Reads[InputReservation] =
+    Json.reads[InputReservation]
+
+  implicit val cLightningInputReservationsReads: Reads[InputReservations] =
+    Json.reads[InputReservations]
+
+  implicit val cLightningCloseChannelResultReads: Reads[CloseChannelResult] =
+    Json.reads[CloseChannelResult]
+
+  implicit val cLightningWithdrawResultReads: Reads[WithdrawResult] =
+    Json.reads[WithdrawResult]
+
+  implicit val cLightningFundChannelStartResultReads: Reads[
+    FundChannelStartResult] =
+    Json.reads[FundChannelStartResult]
+
+  implicit val cLightningFundChannelCompleteResultReads: Reads[
+    FundChannelCompleteResult] =
+    Json.reads[FundChannelCompleteResult]
+
+  implicit val cLightningFundChannelCancelResultReads: Reads[
+    FundChannelCancelResult] =
+    Json.reads[FundChannelCancelResult]
 
   implicit val byteVectorWrites: Writes[ByteVector] =
     Writes[ByteVector](bytes => JsString(bytes.toHex))
