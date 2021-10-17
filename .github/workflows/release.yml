@@ -115,7 +115,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           name: "bitcoin-s-dmg-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
-          files: ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dm
+          files: ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   linux:
