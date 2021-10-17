@@ -1,14 +1,13 @@
 # 1.8.0 DLC Wallet Tor negotiation
 
-LAST COMMIT IS 335bc13f97f582c2536008682794222f7e66e132
 ## Running Bitcoin-S
 
 If you want to run the standalone server binary, after verifying gpg signatures, you
-can `unzip bitcoin-s-server-1.7.0.zip` and then run it with `./bin/bitcoin-s-server` to start the node. You will need to
+can `unzip bitcoin-s-server-1.8.0.zip` and then run it with `./bin/bitcoin-s-server` to start the node. You will need to
 configure the node properly first, you can find example
 configurations [here](https://bitcoin-s.org/docs/config/configuration#example-configuration-file).
 
-You can then unzip the `bitcoin-s-cli-1.7.0.zip` folder and start using the `bitcoin-s-cli` like this:
+You can then unzip the `bitcoin-s-cli-1.8.0.zip` folder and start using the `bitcoin-s-cli` like this:
 
 ```bashrc
 ./bin/bitcoin-s-cli --help
@@ -36,8 +35,8 @@ Example:
 
 UPDATE ME!!!!!!!
 ```
-$ sha256sum bitcoin-s-server-1.7.0.tgz
-aa1084edb5fcd3d1dbcafe0d0fba787abf4cd455bbe38809bd9a65a49c0cd0eb bitcoin-s-server-1.7.0.tgz
+$ sha256sum bitcoin-s-server-1.8.0.tgz
+aa1084edb5fcd3d1dbcafe0d0fba787abf4cd455bbe38809bd9a65a49c0cd0eb bitcoin-s-server-1.8.0.tgz
 $ gpg --verify SHA256SUMS.asc
 gpg: Signature made Thu 24 Sep 2020 12:49:39 PM CDT
 gpg:                using RSA key 339A49229576050819083EB3F99724872F822910
@@ -58,6 +57,12 @@ https://repo1.maven.org/maven2/org/bitcoin-s/
 https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 # Executive Summary
+
+This release integrates Tor network support for opening a DLC with your counterparty.
+This is a huge UX improvement over the previous flow where 2 _manual_ round trips
+were required to open a DLC with your peer.
+
+See individual module sections for updates on per module basis.
 
 ## app commons 
 
@@ -98,6 +103,8 @@ New rpcs added this release are
 - `decodeoffer` - decodes a dlc offer
 - `decodeannouncement` - decodes an oracle announcement
 - `decodeattestments` - decodes oracle's attestments
+
+7a3497ab9c 2021 10 15 createcontractinfo numeric (#3758)
 
 80d498d288 Fix bug where getbalances was always retruning sats (#3750)
 
@@ -551,6 +558,10 @@ ca40af5d94 Tor support for BTC RPC (#3470)
 ## Website
 
 Update various documentation. 
+
+6f54fc543b 2021 10 15 wallet numeric example (#3759)
+
+6c5f8fd84a 2021 10 15 release notes update (#3760)
 
 d8722c3f32 Add descriptions for modules that are being updated (#3743)
 
