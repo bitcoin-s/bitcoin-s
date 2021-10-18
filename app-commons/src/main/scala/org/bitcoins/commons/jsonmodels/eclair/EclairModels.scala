@@ -138,8 +138,7 @@ case class NodeInfo(
     nodeId: NodeId,
     rgbColor: String,
     alias: String,
-    addresses: Vector[InetSocketAddress],
-    tlvStream: String)
+    addresses: Vector[InetSocketAddress])
 
 case class ChannelDesc(shortChannelId: ShortChannelId, a: NodeId, b: NodeId)
 

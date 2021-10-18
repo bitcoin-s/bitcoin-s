@@ -661,9 +661,6 @@ class EclairRpcClient(
             logger.error(errMsg)
             throw new RuntimeException(err.value.error)
           case _: JsError =>
-            println(s"${JsError
-              .toJson(res)
-              .toString()} JSON ${json}")
             logger.error(
               s"Could not parse JsResult for command=$commandName: ${JsError
                 .toJson(res)

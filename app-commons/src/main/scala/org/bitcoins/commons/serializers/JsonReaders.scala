@@ -850,16 +850,13 @@ object JsonReaders {
         rgbColor <- (jsValue \ "rgbColor").validate[String]
         alias <- (jsValue \ "alias").validate[String]
         addresses <- (jsValue \ "addresses").validate[Vector[InetSocketAddress]]
-//        tlvStream <- (jsValue \ "tlvStream").validate[String]
-        tlvStream = ""
       } yield NodeInfo(signature,
                        features,
                        timestamp,
                        nodeId,
                        rgbColor,
                        alias,
-                       addresses,
-                       tlvStream)
+                       addresses)
     }
   }
 
