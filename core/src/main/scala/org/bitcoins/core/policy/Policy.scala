@@ -39,7 +39,11 @@ sealed abstract class Policy {
       ScriptVerifyNullFail,
       ScriptVerifyNullDummy,
       ScriptVerifyWitnessPubKeyType,
-      ScriptVerifyDiscourageUpgradableWitnessProgram
+      ScriptVerifyDiscourageUpgradableWitnessProgram,
+      ScriptVerifyTaproot,
+      ScriptVerifyDiscourageUpgradableTaprootVersion,
+      ScriptVerifyDiscourageOpSuccess,
+      ScriptVerifyDiscourageUpgradablePubKeyType
     )
 
   def standardFlags = standardScriptVerifyFlags

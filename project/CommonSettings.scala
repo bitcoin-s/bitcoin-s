@@ -134,7 +134,7 @@ object CommonSettings {
 
   /** Compiler options for source code */
   private val scala2_13SourceCompilerOpts = {
-    Seq("-Xfatal-warnings") ++ scala2_13CompilerLinting
+    /*Seq("-Xfatal-warnings") ++*/ scala2_13CompilerLinting
   }
 
   private val nonScala2_13CompilerOpts = Seq(
@@ -175,7 +175,7 @@ object CommonSettings {
 
   lazy val testSettings: Seq[Setting[_]] = Seq(
     //show full stack trace (-oF) of failed tests and duration of tests (-oD)
-    Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
+    Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oD"),
     Test / logBuffered := false,
     skip / publish := true
   ) ++ settings

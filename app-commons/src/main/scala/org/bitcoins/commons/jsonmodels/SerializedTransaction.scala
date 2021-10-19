@@ -85,7 +85,6 @@ object SerializedTransaction {
                                        pubKey = None,
                                        signature = None,
                                        stack = Some(p2wsh.stack.toVector.tail)))
-
       case taprootWitness: TaprootWitness =>
         throw new UnsupportedOperationException(
           s"Taproot not supported, got=$taprootWitness")

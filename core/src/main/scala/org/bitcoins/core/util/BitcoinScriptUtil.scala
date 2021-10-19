@@ -405,6 +405,7 @@ trait BitcoinScriptUtil {
         //BIP143 removes requirement for calling FindAndDelete
         //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#no-findanddelete
         scriptForChecking
+      case SigVersionTaprootKeySpend | SigVersionTapscript => ???
     }
   }
 

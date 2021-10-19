@@ -103,6 +103,10 @@ trait ScriptFlagUtil {
     */
   def minimalIfEnabled(flags: Seq[ScriptFlag]): Boolean =
     flags.contains(ScriptVerifyMinimalIf)
+
+  def taprootEnabled(flags: Seq[ScriptFlag]): Boolean = {
+    flags.contains(ScriptVerifyTaproot)
+  }
 }
 
 object ScriptFlagUtil extends ScriptFlagUtil

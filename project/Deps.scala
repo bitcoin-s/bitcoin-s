@@ -385,7 +385,8 @@ object Deps {
     List(
       Test.junitInterface,
       Test.scalaTest.value,
-      Test.scalaCollectionCompat
+      Test.scalaCollectionCompat,
+      Compile.logback
     )
   }
 

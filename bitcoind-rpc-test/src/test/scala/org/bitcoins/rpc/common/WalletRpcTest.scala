@@ -647,6 +647,9 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
                 assert(p2wpkh.signature == partialSig.signature)
               case _: P2WSHWitnessV0 | EmptyScriptWitness | _: TaprootWitness =>
                 fail("Expected P2WPKH")
+              case _: TaprootWitness =>
+                throw new UnsupportedOperationException(
+                  s"Taproot not implemented")
             }
         }
       }

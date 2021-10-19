@@ -723,6 +723,9 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                         throw new UnsupportedOperationException(
                           s"Taproot not supported, got=$taprootWitness")
                       case witness: ScriptWitnessV0 => (input.outPoint, witness)
+                      case _: TaprootWitness =>
+                        throw new UnsupportedOperationException(
+                          s"Taproot not implemented")
                     }
                   case None => throw new RuntimeException("")
                 }

@@ -2,7 +2,7 @@ package org.bitcoins.core.script.flag
 
 /** Created by chris on 3/23/16.
   * This represents all of the script flags found inside of
-  * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31
+  * https://github.com/bitcoin/bitcoin/blob/986003aff93c099c400c9285b4a2ed63f4b3f180/src/script/interpreter.h#L42
   * these flags indicate how to evaluate a certain script
   */
 sealed trait ScriptFlag {
@@ -135,4 +135,54 @@ case object ScriptVerifyNullFail extends ScriptFlag {
 case object ScriptVerifyWitnessPubKeyType extends ScriptFlag {
   override def flag = 1 << 15
   override def name = "WITNESS_PUBKEYTYPE"
+}
+
+case object ScriptVerifyConstScriptCode extends ScriptFlag {
+  override val flag: Int = 1 << 16
+  override val name = "CONST_SCRIPTCODE" //not sure if this is right
+}
+
+case object ScriptVerifyTaproot extends ScriptFlag {
+  override val flag: Int = 1 << 17
+  override val name: String = "TAPROOT"
+}
+
+// Making unknown Taproot leaf versions non-standard
+//
+//SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_TAPROOT_VERSION = (1U << 18),
+case object ScriptVerifyDiscourageUpgradableTaprootVersion extends ScriptFlag {
+  override val flag: Int = 1 << 18
+  override val name: String = "DISCOURAGE_UPGRADABLE_TAPROOT_VERSION"
+}
+
+// Making unknown OP_SUCCESS non-standard
+//SCRIPT_VERIFY_DISCOURAGE_OP_SUCCESS = (1U << 19),
+case object ScriptVerifyDiscourageOpSuccess extends ScriptFlag {
+  override val flag: Int = 1 << 18
+  override val name: String = "DISCOURAGE_OP_SUCCESS"
+}
+
+// Making unknown public key versions (in BIP 342 scripts) non-standard
+//SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE = (1U << 20),
+case object ScriptVerifyDiscourageUpgradablePubKeyType extends ScriptFlag {
+  override val flag: Int = 1 << 19
+  override val name: String = "DISCOURAGE_UPGRADABLE_PUBKEYTYPE"
+}
+
+object ScriptFlag {
+
+  //what is this?
+  //https://github.com/bitcoin/bitcoin/blob/3820090bd619ac85ab35eff376c03136fe4a9f04/src/test/script_tests.cpp#L1659
+  val allConsensusFlags = Vector(
+    ScriptVerifyP2SH,
+    ScriptVerifyDerSig,
+    ScriptVerifyNullDummy,
+    ScriptVerifyCheckLocktimeVerify,
+    ScriptVerifyCheckSequenceVerify,
+    ScriptVerifyWitness,
+    ScriptVerifyTaproot,
+    ScriptVerifyDiscourageUpgradableTaprootVersion,
+    ScriptVerifyDiscourageOpSuccess,
+    ScriptVerifyDiscourageUpgradablePubKeyType
+  )
 }

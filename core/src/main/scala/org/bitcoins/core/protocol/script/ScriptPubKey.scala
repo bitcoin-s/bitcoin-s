@@ -1088,7 +1088,7 @@ object RawScriptPubKey extends ScriptFactory[RawScriptPubKey] {
 object NonWitnessScriptPubKey extends ScriptFactory[NonWitnessScriptPubKey] {
   val empty: NonWitnessScriptPubKey = fromAsm(Nil)
 
-  def fromAsm(asm: Seq[ScriptToken]): NonWitnessScriptPubKey = {
+  override def fromAsm(asm: Seq[ScriptToken]): NonWitnessScriptPubKey = {
     if (P2SHScriptPubKey.isValidAsm(asm)) {
       P2SHScriptPubKey(asm)
     } else {
@@ -1355,7 +1355,7 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
   override def fromAsm(asm: Seq[ScriptToken]): TaprootScriptPubKey = {
     buildScript(asm.toVector,
                 TaprootScriptPubKey.apply,
-                s"Given asm was not a P2WSHWitnessSPKV0, got $asm")
+                s"Given asm was not a TaprootScriptPubKey, got $asm")
   }
 
   def apply(xOnlyPubKey: XOnlyPubKey): TaprootScriptPubKey = {
@@ -1372,7 +1372,7 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
     fromPubKey(schnorrPublicKey.toXOnly)
   }
 
-  def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
     val asmBytes = BytesUtil.toByteVector(asm)
     asm.length == 3 &&
     asm.headOption.contains(OP_1) &&
