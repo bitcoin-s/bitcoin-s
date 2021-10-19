@@ -56,13 +56,13 @@ object ShortChannelId extends Factory[ShortChannelId] {
       txIndex: Int,
       outputIndex: Int): ShortChannelId = {
     require(blockHeight >= 0 && blockHeight <= 0xffffff,
-            "ShortChannelId: invalid block height")
+            s"ShortChannelId: invalid block height $blockHeight")
 
     require(txIndex >= 0 && txIndex <= 0xffffff,
-            "ShortChannelId:invalid tx index")
+            s"ShortChannelId:invalid tx index $txIndex")
 
     require(outputIndex >= 0 && outputIndex <= 0xffff,
-            "ShortChannelId: invalid output index")
+            s"ShortChannelId: invalid output index $outputIndex")
 
     val u64 = UInt64(
       ((blockHeight & 0xffffffL) << 40) | ((txIndex & 0xffffffL) << 16) | (outputIndex & 0xffffL))

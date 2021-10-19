@@ -1,6 +1,5 @@
 package org.bitcoins.testkit.fixtures
 
-import akka.actor.ActorSystem
 import com.bitcoins.clightning.rpc.CLightningRpcClient
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -9,7 +8,6 @@ import org.bitcoins.testkit.clightning.{
   CLightningRpcTestUtil
 }
 import org.bitcoins.testkit.rpc._
-import org.bitcoins.testkit.util.FileUtil
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration.DurationInt
@@ -83,17 +81,8 @@ trait CLightningChannelOpenerFixture
     makeDependentFixture[FixtureParam](
       () => {
         cachedBitcoindWithFundsF.flatMap { bitcoind =>
-          val actorSystemA =
-            ActorSystem.create(
-              "bitcoin-s-clightning-test-" + FileUtil.randomDirName)
-          val clientA = CLightningRpcTestClient
-            .fromSbtDownload(Some(bitcoind))(actorSystemA)
-
-          val actorSystemB =
-            ActorSystem.create(
-              "bitcoin-s-clightning-test-" + FileUtil.randomDirName)
-          val clientB = CLightningRpcTestClient
-            .fromSbtDownload(Some(bitcoind))(actorSystemB)
+          val clientA = CLightningRpcTestClient.fromSbtDownload(Some(bitcoind))
+          val clientB = CLightningRpcTestClient.fromSbtDownload(Some(bitcoind))
 
           val startAF = clientA.start()
           val startBF = clientB.start()
@@ -101,15 +90,6 @@ trait CLightningChannelOpenerFixture
           for {
             a <- startAF
             b <- startBF
-
-            // wait for rpc servers to start
-            _ <- TestAsyncUtil.awaitCondition(() => a.instance.rpcFile.exists(),
-                                              interval = 1.second,
-                                              maxTries = 500)
-            _ <- TestAsyncUtil.awaitCondition(() => b.instance.rpcFile.exists(),
-                                              interval = 1.second,
-                                              maxTries = 500)
-            _ <- TestAsyncUtil.nonBlockingSleep(7.seconds)
           } yield (bitcoind, a, b)
         }
       },

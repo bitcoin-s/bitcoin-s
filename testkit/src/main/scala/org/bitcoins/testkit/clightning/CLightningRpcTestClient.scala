@@ -2,7 +2,7 @@ package org.bitcoins.testkit.clightning
 
 import akka.actor.ActorSystem
 import com.bitcoins.clightning.rpc.CLightningRpcClient
-import com.bitcoins.clightning.rpc.config.CLightningInstance
+import com.bitcoins.clightning.rpc.config.CLightningInstanceLocal
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.util.{
@@ -37,7 +37,7 @@ case class CLightningRpcTestClient(
     }
   }
 
-  private lazy val instanceF: Future[CLightningInstance] = {
+  private lazy val instanceF: Future[CLightningInstanceLocal] = {
     bitcoindRpcClientF.map { bitcoind =>
       CLightningRpcTestUtil.cLightingInstance(bitcoind)
     }

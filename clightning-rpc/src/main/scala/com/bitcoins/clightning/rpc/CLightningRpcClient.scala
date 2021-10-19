@@ -1,6 +1,5 @@
 package com.bitcoins.clightning.rpc
 
-import akka.actor.ActorSystem
 import com.bitcoins.clightning.rpc.CLightningRpcClient.feeRateToJson
 import com.bitcoins.clightning.rpc.config._
 import grizzled.slf4j.Logging
@@ -24,13 +23,12 @@ import java.io.File
 import java.net.InetSocketAddress
 import scala.concurrent.{ExecutionContext, Future}
 
-class CLightningRpcClient(val instance: CLightningInstance, binary: File)(
-    implicit val system: ActorSystem)
+class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
+    implicit val executionContext: ExecutionContext)
     extends CLightningUnixSocketHandler
     with NativeProcessFactory
     with StartStopAsync[CLightningRpcClient]
     with Logging {
-  implicit override val executionContext: ExecutionContext = system.dispatcher
 
   // documentation: https://lightning.readthedocs.io/index.html
 
@@ -345,29 +343,6 @@ object CLightningRpcClient {
 
   /** The current version we support of clightning */
   val version = "0.10.1"
-
-  /** THe name we use to create actor systems. We use this to know which
-    * actor systems to shut down on node shutdown
-    */
-  private val actorSystemName =
-    "clightning-client-created-by-bitcoin-s"
-
-  /** Creates an RPC client from the given instance,
-    * together with the given actor system. This is for
-    * advanced users, where you need fine grained control
-    * over the RPC client.
-    */
-  def apply(instance: CLightningInstance, binary: File): CLightningRpcClient = {
-    implicit val system: ActorSystem = ActorSystem.create(actorSystemName)
-    withActorSystem(instance, binary)
-  }
-
-  /** Constructs a RPC client from the given datadir, or
-    * the default datadir if no directory is provided
-    */
-  def withActorSystem(instance: CLightningInstance, binary: File)(implicit
-      system: ActorSystem) =
-    new CLightningRpcClient(instance, binary)
 
   private[clightning] def feeRateToJson(feeUnit: FeeUnit): JsString = {
     // clightning only takes SatoshisPerKiloByte or SatoshisPerKW

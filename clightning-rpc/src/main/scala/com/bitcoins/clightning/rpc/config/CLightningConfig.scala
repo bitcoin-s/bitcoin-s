@@ -131,7 +131,7 @@ case class CLightningConfig(
     CLightningConfig(lines, newDatadir)
   }
 
-  lazy val instance: CLightningInstance = CLightningInstance(
+  lazy val instance: CLightningInstanceLocal = CLightningInstanceLocal(
     datadir.toPath,
     network,
     rpcFile,

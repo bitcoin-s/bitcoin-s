@@ -481,8 +481,6 @@ object Deps {
   )
 
   val clightningRpc = List(
-    Compile.akkaHttp,
-    Compile.akkaStream,
     Compile.jUnixSocket,
     Compile.playJson,
     Compile.grizzledSlf4j
@@ -490,8 +488,6 @@ object Deps {
 
   val clightningRpcTest = Def.setting {
     List(
-      Test.akkaHttpTestkit,
-      Test.akkaStream,
       Test.logback,
       Test.scalaTest.value,
       Test.scalacheck.value

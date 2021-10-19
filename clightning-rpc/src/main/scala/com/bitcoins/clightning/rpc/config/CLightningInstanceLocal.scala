@@ -10,7 +10,7 @@ import java.net.URI
 import java.nio.file.{Path, Paths}
 import scala.util.Properties
 
-case class CLightningInstance(
+case class CLightningInstanceLocal(
     datadir: Path,
     network: BitcoinNetwork,
     rpcFile: File,
@@ -19,8 +19,8 @@ case class CLightningInstance(
     bitcoindAuthCredentials: PasswordBased,
     bitcoindRpcUri: URI)
 
-object CLightningInstance
-    extends InstanceFactoryLocal[CLightningInstance, ActorSystem] {
+object CLightningInstanceLocal
+    extends InstanceFactoryLocal[CLightningInstanceLocal, ActorSystem] {
 
   override val DEFAULT_DATADIR: Path =
     Paths.get(Properties.userHome, ".lightning")
@@ -37,7 +37,7 @@ object CLightningInstance
   }
 
   override def fromConfigFile(file: File = DEFAULT_CONF_FILE.toFile)(implicit
-      system: ActorSystem): CLightningInstance = {
+      system: ActorSystem): CLightningInstanceLocal = {
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
@@ -47,7 +47,7 @@ object CLightningInstance
   }
 
   override def fromDataDir(dir: File = DEFAULT_DATADIR.toFile)(implicit
-      system: ActorSystem): CLightningInstance = {
+      system: ActorSystem): CLightningInstanceLocal = {
     require(dir.exists, s"${dir.getPath} does not exist!")
     require(dir.isDirectory, s"${dir.getPath} is not a directory!")
 
@@ -57,7 +57,7 @@ object CLightningInstance
     fromConfig(config)
   }
 
-  def fromConfig(config: CLightningConfig): CLightningInstance = {
+  def fromConfig(config: CLightningConfig): CLightningInstanceLocal = {
     config.instance
   }
 }

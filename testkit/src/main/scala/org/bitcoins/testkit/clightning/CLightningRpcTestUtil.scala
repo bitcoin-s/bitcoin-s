@@ -2,7 +2,7 @@ package org.bitcoins.testkit.clightning
 
 import akka.actor.ActorSystem
 import com.bitcoins.clightning.rpc.CLightningRpcClient
-import com.bitcoins.clightning.rpc.config.CLightningInstance
+import com.bitcoins.clightning.rpc.config.CLightningInstanceLocal
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels.FundChannelResult
 import org.bitcoins.core.currency._
@@ -101,14 +101,14 @@ trait CLightningRpcTestUtil extends Logging {
   }
 
   def cLightingInstance(bitcoindRpc: BitcoindRpcClient)(implicit
-      system: ActorSystem): CLightningInstance = {
+      system: ActorSystem): CLightningInstanceLocal = {
     val datadir = cLightningDataDir(bitcoindRpc, isCanonical = false)
     cLightingInstance(datadir)
   }
 
   def cLightingInstance(datadir: File)(implicit
-      system: ActorSystem): CLightningInstance = {
-    CLightningInstance.fromDataDir(datadir)
+      system: ActorSystem): CLightningInstanceLocal = {
+    CLightningInstanceLocal.fromDataDir(datadir)
   }
 
   /** Returns a `Future` that is completed when both clightning and bitcoind have the same block height
@@ -199,17 +199,10 @@ trait CLightningRpcTestUtil extends Logging {
     * respective [[com.bitcoins.clightning.rpc.CLightningRpcClient CLightningRpcClient]]s
     */
   def createNodePair(bitcoind: BitcoindRpcClient)(implicit
-  ec: ExecutionContext): Future[(CLightningRpcClient, CLightningRpcClient)] = {
-
-    val actorSystemA =
-      ActorSystem.create("bitcoin-s-clightning-test-" + FileUtil.randomDirName)
-    val clientA = CLightningRpcTestClient
-      .fromSbtDownload(Some(bitcoind))(actorSystemA)
-
-    val actorSystemB =
-      ActorSystem.create("bitcoin-s-clightning-test-" + FileUtil.randomDirName)
-    val clientB = CLightningRpcTestClient
-      .fromSbtDownload(Some(bitcoind))(actorSystemB)
+  system: ActorSystem): Future[(CLightningRpcClient, CLightningRpcClient)] = {
+    import system.dispatcher
+    val clientA = CLightningRpcTestClient.fromSbtDownload(Some(bitcoind))
+    val clientB = CLightningRpcTestClient.fromSbtDownload(Some(bitcoind))
 
     val startAF = clientA.start()
     val startBF = clientB.start()
