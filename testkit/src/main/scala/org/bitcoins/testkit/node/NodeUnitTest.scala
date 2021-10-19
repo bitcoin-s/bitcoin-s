@@ -226,8 +226,11 @@ object NodeUnitTest extends P2PLogger {
     for {
       node <- nodeF
       _ <- node.nodeConfig.start()
-      _ <- node.getPeers
-    } yield node
+      peers <- node.getPeers
+    } yield {
+      peers.foreach(node.addPeer)
+      node
+    }
   }
 
   def buildNode(peer: Peer, chainApi: ChainApi)(implicit

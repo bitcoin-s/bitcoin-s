@@ -90,7 +90,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     peers
   }
 
-  /** Returns all peers stores in db */
+  /** Returns all peers stored in db */
   def getPeersFromDb: Future[Vector[Peer]] = {
     val addressesF: Future[Vector[PeerDb]] =
       PeerDAO().findAll()
@@ -117,7 +117,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     peers
   }
 
+  /** Returns peers randomly taken from config, db in that order */
   def getPeers: Future[Vector[Peer]] = {
+    //currently this would only give the first peer from config
     val peersFromConfig = getPeersFromConfig
     lazy val peersFromDbF = getPeersFromDb
     val maxConnectedPeers = 1
@@ -126,7 +128,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       peersFromDb <- peersFromDbF
     } yield {
       val ret = Vector.newBuilder[Peer]
-      //choosing maxConnectedPeers no of elements from lists randomly in the order of peersFromConf, peersFromDB
       ret ++= Random.shuffle(peersFromConfig).take(maxConnectedPeers)
       if (maxConnectedPeers - ret.result().size > 0)
         ret ++= Random

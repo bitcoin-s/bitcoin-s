@@ -9,6 +9,7 @@ import org.bitcoins.testkit.node.{NodeTestUtil, NodeTestWithCachedBitcoindPair}
 import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
+import java.net.InetAddress
 import scala.concurrent.Future
 
 class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
@@ -58,6 +59,33 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         f <- isAllDisconnectedF(node)
       } yield f
       disconnF.map(assert(_))
+  }
+
+  it must "store peer after successful initialization" in {
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+      val node = nodeConnectedWithBitcoind.node
+
+      val assertConnAndInit = for {
+        _ <- node.isConnected(0).map(assert(_))
+        a2 <- node.isInitialized(0).map(assert(_))
+      } yield a2
+
+      for {
+        _ <- assertConnAndInit
+        dbPeers <- node.getPeersFromDb
+      } yield {
+        val compares = for {
+          peer <- nodeConnectedWithBitcoind.bitcoinds
+          dbPeer <- dbPeers
+        } yield {
+          val peerInet = InetAddress.getByName(peer.instance.uri.getHost)
+          val dbInet = InetAddress.getByName(dbPeer.socket.getHostString)
+
+          dbInet == peerInet && dbPeer.socket.getPort == peer.instance.uri.getPort
+        }
+
+        assert(compares.exists(p => p))
+      }
   }
 
   it must "receive notification that a block occurred on the p2p network for neutrino" in {
