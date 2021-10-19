@@ -22,11 +22,11 @@ import org.bitcoins.node.networking.peer.{
 import scala.concurrent.Future
 
 case class NeutrinoNode(
-    nodePeer: Vector[Peer],
     private var dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
-    actorSystem: ActorSystem)
+    actorSystem: ActorSystem,
+    configPeersOverride: Vector[Peer] = Vector.empty)
     extends Node {
   require(
     nodeConfig.nodeType == NodeType.NeutrinoNode,
@@ -38,11 +38,17 @@ case class NeutrinoNode(
 
   override def chainAppConfig: ChainAppConfig = chainConfig
 
-  override val peers: Vector[Peer] = nodePeer
+  override val peers: Vector[Peer] = peerData.keys.toVector
 
   val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
+
+  // if a non-empty configPeersOverride is not one of the arguments, then use peers from 'bitcoin-s.conf' file.
+  override def getPeersFromConfig: Vector[Peer] = {
+    if (configPeersOverride.isEmpty) super.getPeersFromConfig
+    else configPeersOverride
+  }
 
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): NeutrinoNode = {

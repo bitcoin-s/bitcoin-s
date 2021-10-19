@@ -5,12 +5,7 @@ import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.model.ws.Message
 import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{
-  BroadcastHub,
-  Keep,
-  Source,
-  SourceQueueWithComplete
-}
+import akka.stream.scaladsl.{BroadcastHub, Keep, Source, SourceQueueWithComplete}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -19,13 +14,8 @@ import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
-import org.bitcoins.core.api.node.{
-  ExternalImplementationNodeType,
-  InternalImplementationNodeType,
-  NodeApi,
-  NodeType
-}
-import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
+import org.bitcoins.core.api.node.{ExternalImplementationNodeType, InternalImplementationNodeType, NodeApi, NodeType}
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
@@ -35,17 +25,11 @@ import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
-import org.bitcoins.server.util.{
-  BitcoinSAppScalaDaemon,
-  ServerBindings,
-  WebsocketUtil,
-  WsServerConfig
-}
+import org.bitcoins.server.util.{BitcoinSAppScalaDaemon, ServerBindings, WebsocketUtil, WsServerConfig}
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -117,20 +101,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         "No peers specified, unable to start node")
     }
 
-    val peerSockets = {
-      nodeConf.peers.map(
-        NetworkUtil.parseInetSocketAddress(_, nodeConf.network.port)
-      )
-    }
-
-    val peers = peerSockets.map(Peer.fromSocket(_, nodeConf.socks5ProxyParams))
-
     //run chain work migration
     val chainApiF = runChainWorkCalc(
       serverArgParser.forceChainWorkRecalc || chainConf.forceRecalcChainWork)
 
     //get a node that isn't started
-    val nodeF = nodeConf.createNode(peers)(chainConf, system)
+    val nodeF = nodeConf.createNode()(chainConf, system)
 
     val feeProvider = getFeeProviderOrElse(
       MempoolSpaceProvider(HourFeeTarget,
