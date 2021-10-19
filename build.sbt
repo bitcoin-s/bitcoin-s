@@ -555,8 +555,7 @@ lazy val clightningRpcTest = project
   .settings(CommonSettings.testSettings: _*)
   .settings(
     libraryDependencies ++= Deps.clightningRpcTest.value,
-    name := "bitcoin-s-clightning-rpc-test",
-    parallelExecution := false
+    name := "bitcoin-s-clightning-rpc-test"
   )
   .dependsOn(coreJVM % testAndCompile, clightningRpc, testkit)
 
