@@ -817,16 +817,21 @@ object JsonReaders {
       SerializerUtil.processJsString(s => UnknownFeature(s.toInt))(jsValue)
     }
 
-  implicit val activatedFeatureReads: Reads[ActivatedFeature] =
+  implicit val featuresReads: Reads[Features] = {
     Reads { jsValue =>
       for {
-        feature <- (jsValue \ "name").validate[Feature]
-        support <- (jsValue \ "support").validate[FeatureSupport]
-      } yield ActivatedFeature(feature, support)
+        activatedObj <- (jsValue \ "activated")
+          .validate[Map[String, FeatureSupport]]
+        unknown <- (jsValue \ "unknown").validate[Set[UnknownFeature]]
+      } yield {
+        val activated = activatedObj.toSeq.map(x =>
+          ActivatedFeature(featuresByName(x._1), x._2))
+        Features(
+          activated = activated.toSet,
+          unknown = unknown
+        )
+      }
     }
-
-  implicit val featuresReads: Reads[Features] = {
-    Json.reads[Features]
   }
 
   implicit val getInfoResultReads: Reads[GetInfoResult] = {
@@ -855,15 +860,13 @@ object JsonReaders {
         rgbColor <- (jsValue \ "rgbColor").validate[String]
         alias <- (jsValue \ "alias").validate[String]
         addresses <- (jsValue \ "addresses").validate[Vector[InetSocketAddress]]
-        unknownFields <- (jsValue \ "unknownFields").validate[String]
       } yield NodeInfo(signature,
                        features,
                        timestamp,
                        nodeId,
                        rgbColor,
                        alias,
-                       addresses,
-                       unknownFields)
+                       addresses)
     }
   }
 
@@ -1009,6 +1012,9 @@ object JsonReaders {
         SerializerUtil.buildJsErrorMsg("jsobject", err)
     }
 
+  implicit val channelFlagsReads: Reads[ChannelFlags] =
+    Json.reads[ChannelFlags]
+
   implicit val channelUpdateReads: Reads[ChannelUpdate] = {
     Reads { jsValue =>
       for {
@@ -1017,8 +1023,7 @@ object JsonReaders {
         shortChannelId <- (jsValue \ "shortChannelId").validate[ShortChannelId]
         timestamp <- (jsValue \ "timestamp")
           .validate[Instant](instantReadsSeconds)
-        messageFlags <- (jsValue \ "messageFlags").validate[Int]
-        channelFlags <- (jsValue \ "channelFlags").validate[Int]
+        channelFlags <- (jsValue \ "channelFlags").validate[ChannelFlags]
         cltvExpiryDelta <- (jsValue \ "cltvExpiryDelta").validate[Int]
         htlcMinimumMsat <- (jsValue \ "htlcMinimumMsat").validate[MilliSatoshis]
         feeProportionalMillionths <- (jsValue \ "feeProportionalMillionths")
@@ -1031,7 +1036,6 @@ object JsonReaders {
         chainHash,
         shortChannelId,
         timestamp,
-        messageFlags,
         channelFlags,
         cltvExpiryDelta,
         htlcMinimumMsat,

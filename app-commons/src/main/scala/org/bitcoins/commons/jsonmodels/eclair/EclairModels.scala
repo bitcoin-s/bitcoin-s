@@ -27,6 +27,7 @@ case class GetInfoResult(
     version: String,
     nodeId: NodeId,
     alias: String,
+    color: String,
     features: Features,
     chainHash: DoubleSha256Digest,
     network: BitcoinNetwork,
@@ -137,8 +138,7 @@ case class NodeInfo(
     nodeId: NodeId,
     rgbColor: String,
     alias: String,
-    addresses: Vector[InetSocketAddress],
-    unknownFields: String)
+    addresses: Vector[InetSocketAddress])
 
 case class ChannelDesc(shortChannelId: ShortChannelId, a: NodeId, b: NodeId)
 
@@ -235,13 +235,14 @@ object SentPayment {
   )
 }
 
+case class ChannelFlags(isEnabled: Boolean, isNode1: Boolean)
+
 case class ChannelUpdate(
     signature: ECDigitalSignature,
     chainHash: DoubleSha256Digest,
     shortChannelId: ShortChannelId,
     timestamp: Instant, //seconds
-    messageFlags: Int,
-    channelFlags: Int,
+    channelFlags: ChannelFlags,
     cltvExpiryDelta: Int,
     htlcMinimumMsat: MilliSatoshis,
     feeProportionalMillionths: FeeProportionalMillionths,

@@ -93,12 +93,12 @@ trait EclairApi {
   def isConnected(nodeId: NodeId): Future[Boolean]
 
   def updateRelayFee(
-      channelId: ChannelId,
+      nodeId: NodeId,
       feeBaseMsat: MilliSatoshis,
       feeProportionalMillionths: Long): Future[UpdateRelayFeeResult]
 
   def updateRelayFee(
-      shortChannelId: ShortChannelId,
+      nodeIds: Vector[NodeId],
       feeBaseMsat: MilliSatoshis,
       feePropertionalMillionths: Long
   ): Future[UpdateRelayFeeResult]
@@ -244,7 +244,6 @@ trait EclairApi {
   def sendToNode(
       nodeId: NodeId,
       amountMsat: MilliSatoshis,
-      paymentHash: Sha256Digest,
       maxAttempts: Option[Int],
       feeThresholdSat: Option[Satoshis],
       maxFeePct: Option[Int],

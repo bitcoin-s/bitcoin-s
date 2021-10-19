@@ -88,7 +88,7 @@ trait EclairRpcTestUtil extends Logging {
       port: Int = RpcUtil.randomPort,
       apiPort: Int = RpcUtil.randomPort): Config = {
     val configMap = {
-      val rawBlock = bitcoindInstance.zmqConfig.rawBlock.get
+      val hashBlock = bitcoindInstance.zmqConfig.hashBlock.get
       val rawTx = bitcoindInstance.zmqConfig.rawTx.get
       Map[String, Any](
         "eclair.chain" -> "regtest",
@@ -104,7 +104,7 @@ trait EclairRpcTestUtil extends Logging {
           .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
           .password,
         "eclair.bitcoind.rpcport" -> bitcoindInstance.rpcUri.getPort,
-        "eclair.bitcoind.zmqblock" -> s"tcp://${rawBlock.getHostName}:${rawBlock.getPort}",
+        "eclair.bitcoind.zmqblock" -> s"tcp://${hashBlock.getHostName}:${hashBlock.getPort}",
         "eclair.bitcoind.zmqtx" -> s"tcp://${rawTx.getHostName}:${rawTx.getPort}",
         "eclair.api.enabled" -> true,
         "eclair.api.binding-ip" -> "127.0.0.1",
@@ -119,7 +119,8 @@ trait EclairRpcTestUtil extends Logging {
         "eclair.max-payment-fee" -> 10, // avoid complaints about too high fees
         "eclair.alias" -> "suredbits",
         "eclair.fulfill-safety-before-timeout-blocks" -> 1,
-        "eclair.min-final-expiry-delta-blocks" -> 2
+        "eclair.min-final-expiry-delta-blocks" -> 2,
+        "eclair.features.keysend" -> "optional"
       )
     }
     val c = ConfigFactory.parseMap(configMap.asJava)
