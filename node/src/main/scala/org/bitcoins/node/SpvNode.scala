@@ -34,8 +34,6 @@ case class SpvNode(
 
   override def chainAppConfig: ChainAppConfig = chainConfig
 
-  override val peers: Vector[Peer] = peerData.keys.toVector
-
   private val _bloomFilter = new Mutable(BloomFilter.empty)
 
   def bloomFilter: BloomFilter = _bloomFilter.atomicGet

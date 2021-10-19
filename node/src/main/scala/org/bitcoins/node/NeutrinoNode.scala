@@ -38,8 +38,6 @@ case class NeutrinoNode(
 
   override def chainAppConfig: ChainAppConfig = chainConfig
 
-  override val peers: Vector[Peer] = peerData.keys.toVector
-
   val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
