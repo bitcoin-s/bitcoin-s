@@ -1,6 +1,6 @@
 package org.bitcoins.eclair.network
 
-import org.bitcoins.eclair.rpc.network.NodeUri
+import org.bitcoins.core.protocol.ln.node.NodeUri
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 class NodeUriTest extends BitcoinSAsyncTest {

@@ -13,4 +13,8 @@ object TaskKeys {
   lazy val downloadLnd = taskKey[Unit] {
     "Download lnd binaries, extract ./binaries/lnd"
   }
+
+  lazy val downloadCLightning = taskKey[Unit] {
+    "Download clightning binaries, extract ./binaries/clightning"
+  }
 }

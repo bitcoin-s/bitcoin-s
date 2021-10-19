@@ -1,6 +1,5 @@
-package org.bitcoins.eclair.rpc.network
+package org.bitcoins.core.protocol.ln.node
 
-import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.crypto.StringFactory
 
 import scala.util.{Failure, Success, Try}
@@ -45,7 +44,7 @@ object NodeUri extends StringFactory[NodeUri] {
     //key is 33 bytes in size
     val (key: String, rest: String) = validUri.splitAt(66)
 
-    val (host, port) = rest.splitAt(rest.size - 5)
+    val (host, port) = rest.splitAt(rest.length - 5)
 
     val nodeId = NodeId.fromHex(key)
 

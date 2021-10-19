@@ -7,6 +7,10 @@ import scodec.bits.ByteVector
 case class ShortChannelId(u64: UInt64) extends NetworkElement {
   override def bytes: ByteVector = u64.bytes
 
+  val blockHeight: UInt64 = (u64 >> 40) & UInt64(0xffffff)
+  val txIndex: UInt64 = (u64 >> 16) & UInt64(0xffffff)
+  val outputIndex: UInt64 = u64 & UInt64(0xffff)
+
   /** Output example:
     * {{{
     * > ShortChannelId.fromHex("db0000010000")
@@ -25,9 +29,6 @@ case class ShortChannelId(u64: UInt64) extends NetworkElement {
     * }}}
     */
   def toHumanReadableString: String = {
-    val blockHeight = (u64 >> 40) & UInt64(0xffffff)
-    val txIndex = (u64 >> 16) & UInt64(0xffffff)
-    val outputIndex = u64 & UInt64(0xffff)
     s"${blockHeight.toInt}x${txIndex.toInt}x${outputIndex.toInt}"
   }
 
@@ -43,20 +44,28 @@ object ShortChannelId extends Factory[ShortChannelId] {
     str.split("x") match {
       case Array(_blockHeight, _txIndex, _outputIndex) =>
         val blockHeight = BigInt(_blockHeight)
-        require(blockHeight >= 0 && blockHeight <= 0xffffff,
-                "ShortChannelId: invalid block height")
-
         val txIndex = _txIndex.toInt
-        require(txIndex >= 0 && txIndex <= 0xffffff,
-                "ShortChannelId:invalid tx index")
-
         val outputIndex = _outputIndex.toInt
-        require(outputIndex >= 0 && outputIndex <= 0xffff,
-                "ShortChannelId: invalid output index")
 
-        val u64 = UInt64(
-          ((blockHeight & 0xffffffL) << 40) | ((txIndex & 0xffffffL) << 16) | (outputIndex & 0xffffL))
-        ShortChannelId(u64)
+        apply(blockHeight, txIndex, outputIndex)
       case _: Array[String] => fromHex(str)
     }
+
+  def apply(
+      blockHeight: BigInt,
+      txIndex: Int,
+      outputIndex: Int): ShortChannelId = {
+    require(blockHeight >= 0 && blockHeight <= 0xffffff,
+            s"ShortChannelId: invalid block height $blockHeight")
+
+    require(txIndex >= 0 && txIndex <= 0xffffff,
+            s"ShortChannelId:invalid tx index $txIndex")
+
+    require(outputIndex >= 0 && outputIndex <= 0xffff,
+            s"ShortChannelId: invalid output index $outputIndex")
+
+    val u64 = UInt64(
+      ((blockHeight & 0xffffffL) << 40) | ((txIndex & 0xffffffL) << 16) | (outputIndex & 0xffffL))
+    ShortChannelId(u64)
+  }
 }

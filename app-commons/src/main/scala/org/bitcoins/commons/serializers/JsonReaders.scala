@@ -3,6 +3,7 @@ package org.bitcoins.commons.serializers
 import org.bitcoins.commons.jsonmodels._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
 import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels._
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config._
@@ -39,6 +40,7 @@ import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
 import org.bitcoins.crypto._
 import play.api.libs.json._
 import ujson.{Num, Str, Value}
+import scodec.bits.ByteVector
 
 import java.io.File
 import java.net.{InetAddress, InetSocketAddress, URI}
@@ -746,8 +748,16 @@ object JsonReaders {
 
   implicit val msatReads: Reads[MilliSatoshis] = {
     Reads { jsValue: JsValue =>
-      SerializerUtil.processJsNumberBigInt(MilliSatoshis.apply)(jsValue)
-
+      SerializerUtil
+        .processJsNumberBigInt(MilliSatoshis.apply)(jsValue)
+        .orElse {
+          SerializerUtil.processJsString { str =>
+            require(str.endsWith("msat"))
+            val withoutUnit = str.dropRight(4)
+            val num = BigInt(withoutUnit)
+            MilliSatoshis(num)
+          }(jsValue)
+        }
     }
   }
 
@@ -860,6 +870,12 @@ object JsonReaders {
   implicit val paymentPreimageReads: Reads[PaymentPreimage] = {
     Reads { jsValue: JsValue =>
       SerializerUtil.processJsString(PaymentPreimage.fromHex)(jsValue)
+    }
+  }
+
+  implicit val paymentSecretReads: Reads[PaymentSecret] = {
+    Reads { jsValue: JsValue =>
+      SerializerUtil.processJsString(PaymentSecret.fromHex)(jsValue)
     }
   }
 
@@ -1416,4 +1432,43 @@ object JsonReaders {
       case _: Value =>
         throw Value.InvalidData(js, "Expected value in Satoshis")
     }
+
+  implicit val byteVectorReads: Reads[ByteVector] = {
+    Reads { jsValue =>
+      SerializerUtil.processJsStringOpt(str => ByteVector.fromHex(str))(jsValue)
+    }
+  }
+
+  implicit val outputStatusReads: Reads[OutputStatus] = {
+    Reads { jsValue =>
+      SerializerUtil.processJsStringOpt(OutputStatus.fromStringOpt)(jsValue)
+    }
+  }
+
+  implicit val connectionDirectionReads: Reads[ConnectionDirection] = {
+    Reads { jsValue =>
+      SerializerUtil.processJsStringOpt(ConnectionDirection.fromStringOpt)(
+        jsValue)
+    }
+  }
+
+  implicit val localOrRemoteReads: Reads[LocalOrRemote] = {
+    Reads { jsValue =>
+      SerializerUtil.processJsStringOpt(LocalOrRemote.fromStringOpt)(jsValue)
+    }
+  }
+
+  implicit val invoiceStatusReads: Reads[InvoiceStatus] = {
+    Reads { jsValue =>
+      SerializerUtil.processJsStringOpt(InvoiceStatus.fromStringOpt)(jsValue)
+    }
+  }
+
+  implicit val closedChannelTypeReads: Reads[ClosedChannelType] = {
+    Reads { jsValue =>
+      SerializerUtil.processJsStringOpt(ClosedChannelType.fromStringOpt)(
+        jsValue)
+    }
+  }
+
 }

@@ -20,7 +20,7 @@ import org.bitcoins.core.protocol.ln.channel.{
   ShortChannelId
 }
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
-import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.core.protocol.ln.node.{NodeId, NodeUri}
 import org.bitcoins.core.protocol.ln.routing.{ChannelRoute, NodeRoute, Route}
 import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage}
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -30,7 +30,6 @@ import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.config.EclairInstance
-import org.bitcoins.eclair.rpc.network.NodeUri
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.tor.Socks5ClientTransport
 import play.api.libs.json._

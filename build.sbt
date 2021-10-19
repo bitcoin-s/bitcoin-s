@@ -137,6 +137,11 @@ lazy val lndRpc = project
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
+lazy val clightningRpc = project
+  .in(file("clightning-rpc"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(asyncUtilsJVM, bitcoindRpc)
+
 lazy val tor = project
   .in(file("tor"))
   .settings(CommonSettings.prodSettings: _*)
@@ -215,7 +220,9 @@ lazy val `bitcoin-s` = project
     lndRpcTest,
     tor,
     torTest,
-    scripts
+    scripts,
+    clightningRpc,
+    clightningRpcTest
   )
   .dependsOn(
     secp256k1jni,
@@ -269,7 +276,9 @@ lazy val `bitcoin-s` = project
     lndRpcTest,
     tor,
     torTest,
-    scripts
+    scripts,
+    clightningRpc,
+    clightningRpcTest
   )
   .settings(CommonSettings.settings: _*)
   // unidoc aggregates Scaladocs for all subprojects into one big doc
@@ -541,6 +550,16 @@ lazy val eclairRpcTest = project
   )
   .dependsOn(coreJVM % testAndCompile, testkit)
 
+lazy val clightningRpcTest = project
+  .in(file("clightning-rpc-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    libraryDependencies ++= Deps.clightningRpcTest.value,
+    name := "bitcoin-s-clightning-rpc-test",
+    parallelExecution := false
+  )
+  .dependsOn(coreJVM % testAndCompile, clightningRpc, testkit)
+
 lazy val lndRpcTest = project
   .in(file("lnd-rpc-test"))
   .settings(CommonSettings.testSettings: _*)
@@ -605,6 +624,7 @@ lazy val testkit = project
     bitcoindRpc,
     eclairRpc,
     lndRpc,
+    clightningRpc,
     node,
     wallet,
     dlcWallet,
