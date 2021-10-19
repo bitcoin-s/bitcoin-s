@@ -671,7 +671,7 @@ abstract class Wallet
     sendWithAlgo(address,
                  amount,
                  feeRate,
-                 CoinSelectionAlgo.AccumulateLargest,
+                 CoinSelectionAlgo.LeastWaste,
                  fromAccount)
 
   override def sendToAddress(
@@ -684,7 +684,7 @@ abstract class Wallet
     sendWithAlgo(address,
                  amount,
                  feeRate,
-                 CoinSelectionAlgo.AccumulateLargest,
+                 CoinSelectionAlgo.LeastWaste,
                  fromAccount,
                  newTags)
 

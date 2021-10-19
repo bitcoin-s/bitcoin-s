@@ -8,7 +8,8 @@ import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.Mutable
-import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
+import org.bitcoins.core.wallet.keymanagement._
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
@@ -122,6 +123,13 @@ case class WalletAppConfig(
     require(confs >= 1,
             s"requiredConfirmations cannot be less than 1, got: $confs")
     confs
+  }
+
+  lazy val longTermFeeRate: SatoshisPerVirtualByte = {
+    val feeRate = config.getInt("bitcoin-s.wallet.longTermFeeRate")
+    require(feeRate >= 0,
+            s"longTermFeeRate cannot be less than 0, got: $feeRate")
+    SatoshisPerVirtualByte.fromLong(feeRate)
   }
 
   lazy val rebroadcastFrequency: Duration = {

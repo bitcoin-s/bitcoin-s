@@ -408,7 +408,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val walletA = FundedDLCWallets._1.wallet
       val walletB = FundedDLCWallets._2.wallet
 
-      testDLCSignVerification[NoSuchElementException](
+      testDLCSignVerification[IllegalArgumentException](
         walletA,
         walletB,
         (sign: DLCSign) =>
