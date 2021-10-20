@@ -32,14 +32,14 @@ import org.bitcoins.core.crypto._
 
 //get 256 bits of random entropy
 val entropy = MnemonicCode.getEntropy256Bits
-// entropy: scodec.bits.BitVector = BitVector(256 bits, 0xcb635b5bc8413aa3e1bfdb2767d3642c915b5c39af0cb5cfd69b9cb1d92cb009)
+// entropy: scodec.bits.BitVector = BitVector(256 bits, 0x4e2b2183caf2d1e2e4f17852b174165381a9424ec84cd9160ed1b07de5450832)
 
 val mnemonic = MnemonicCode.fromEntropy(entropy)
 // mnemonic: MnemonicCode = Masked(MnemonicCodeImpl)
 
 //you can print that mnemonic seed with this
 println(mnemonic.words)
-// Vector(slice, bracket, street, mountain, beauty, faint, manage, window, cherry, direct, suit, float, between, puppy, trade, thunder, remind, leaf, plunge, defense, budget, north, scan, color)
+// Vector(evolve, flip, genius, nominee, code, vapor, need, congress, famous, merry, airport, poem, box, patrol, depth, another, suit, race, refuse, genius, tattoo, penalty, camp, estate)
 ```
 
 Now that we have a `MnemonicCode` that was securely generated, we need to now create `KeyManagerParams` which tells us how to generate
@@ -60,7 +60,7 @@ Now we can construct a native segwit key manager for the regtest network!
 //this will create a temp directory with the prefix 'key-manager-example` that will
 //have a file in it called "encrypted-bitcoin-s-seed.json"
 val seedPath = Files.createTempDirectory("key-manager-example").resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
-// seedPath: Path = /var/folders/fg/scntn26d4h55x96zc456l0r40000gn/T/key-manager-example1673183639044643511/encrypted-bitcoin-s-seed.json
+// seedPath: Path = /tmp/key-manager-example9635890526842539338/encrypted-bitcoin-s-seed.json
 
 //let's create a native segwit key manager
 val purpose = HDPurposes.SegWit
@@ -71,19 +71,19 @@ val network = RegTest
 // network: RegTest.type = RegTest
 
 val kmParams = KeyManagerParams(seedPath, purpose, network)
-// kmParams: KeyManagerParams = KeyManagerParams(/var/folders/fg/scntn26d4h55x96zc456l0r40000gn/T/key-manager-example1673183639044643511/encrypted-bitcoin-s-seed.json,m/84',RegTest)
+// kmParams: KeyManagerParams = KeyManagerParams(/tmp/key-manager-example9635890526842539338/encrypted-bitcoin-s-seed.json,m/84',RegTest)
 
 val aesPasswordOpt = Some(AesPassword.fromString("password"))
 // aesPasswordOpt: Some[AesPassword] = Some(Masked(AesPassword))
 
 val km = BIP39KeyManager.initializeWithMnemonic(aesPasswordOpt, mnemonic, None, kmParams)
-// km: Either[KeyManagerInitializeError, BIP39KeyManager] = Right(org.bitcoins.keymanager.bip39.BIP39KeyManager@1633c6a6)
+// km: Either[KeyManagerInitializeError, BIP39KeyManager] = Right(org.bitcoins.keymanager.bip39.BIP39KeyManager@2e0b2b2f)
 
 val rootXPub = km.right.get.getRootXPub
-// rootXPub: ExtPublicKey = vpub5SLqN2bLY4WeZYoPHeAUPnfNRvwcHsUv2TJZvaC2WMh8ejD6DXcngh8W2MutwRcJNNUXToVZ7ivpMb4723bTh3n2JWX3DdXRdCa4b5UiYZz
+// rootXPub: ExtPublicKey = vpub5SLqN2bLY4WeXzMWKjW38b3MSZ5ygXdLojJugCjMGpAmsEgVDmBMebNGad9fNX4HUxMeqbfn33Tdeo7DWcY1U66B1pkj3CuEz4pVDuCbckh
 
 println(rootXPub)
-// vpub5SLqN2bLY4WeZYoPHeAUPnfNRvwcHsUv2TJZvaC2WMh8ejD6DXcngh8W2MutwRcJNNUXToVZ7ivpMb4723bTh3n2JWX3DdXRdCa4b5UiYZz
+// vpub5SLqN2bLY4WeXzMWKjW38b3MSZ5ygXdLojJugCjMGpAmsEgVDmBMebNGad9fNX4HUxMeqbfn33Tdeo7DWcY1U66B1pkj3CuEz4pVDuCbckh
 ```
 
 Which should print something that looks like this
@@ -98,17 +98,17 @@ again after initializing it once. You can use the same `mnemonic` for different 
 ```scala
 //let's create a nested segwit key manager for mainnet
 val mainnetKmParams = KeyManagerParams(seedPath, HDPurposes.SegWit, MainNet)
-// mainnetKmParams: KeyManagerParams = KeyManagerParams(/var/folders/fg/scntn26d4h55x96zc456l0r40000gn/T/key-manager-example1673183639044643511/encrypted-bitcoin-s-seed.json,m/84',MainNet)
+// mainnetKmParams: KeyManagerParams = KeyManagerParams(/tmp/key-manager-example9635890526842539338/encrypted-bitcoin-s-seed.json,m/84',MainNet)
 
 //we do not need to all `initializeWithMnemonic()` again as we have saved the seed to dis
 val mainnetKeyManager = BIP39KeyManager.fromMnemonic(mnemonic, mainnetKmParams, None, Instant.now)
-// mainnetKeyManager: BIP39KeyManager = org.bitcoins.keymanager.bip39.BIP39KeyManager@13413c18
+// mainnetKeyManager: BIP39KeyManager = org.bitcoins.keymanager.bip39.BIP39KeyManager@36fd850f
 
 val mainnetXpub = mainnetKeyManager.getRootXPub
-// mainnetXpub: ExtPublicKey = zpub6jftahH18ngZxjZrd5JyE93P7oXQ4MSuguPT49ma2PCes8U1EAH3Awm47BkEw4DyzvwkThsnxNM1tjWMtqFWszWRmsJjZGoNi6pe9Kym5i1
+// mainnetXpub: ExtPublicKey = zpub6jftahH18ngZwB7yfAeXxwRN8RfmT1bLUBPnonJtnqgJ5dwQEPqc8qzpfSz1N9fy7WpsqW41sgsqBwZUPQC4f2paVBYRNrBC4y54nGrrecr
 
 println(mainnetXpub)
-// zpub6jftahH18ngZxjZrd5JyE93P7oXQ4MSuguPT49ma2PCes8U1EAH3Awm47BkEw4DyzvwkThsnxNM1tjWMtqFWszWRmsJjZGoNi6pe9Kym5i1
+// zpub6jftahH18ngZwB7yfAeXxwRN8RfmT1bLUBPnonJtnqgJ5dwQEPqc8qzpfSz1N9fy7WpsqW41sgsqBwZUPQC4f2paVBYRNrBC4y54nGrrecr
 ```
 
 Which gives us something that looks like this

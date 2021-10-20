@@ -50,7 +50,7 @@ implicit val ec = system.dispatcher
 //so let's start one (make sure you ran 'sbt downloadBitcoind')
 val instance = BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.Experimental))
 val p2pPort = instance.p2pPort
-val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient(instance, Vector.newBuilder)
+val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient(Some(instance), Vector.newBuilder)
 
 //contains information on how to connect to bitcoin's p2p info
 val peerF = bitcoindF.flatMap(b => NodeUnitTest.createPeer(b))
@@ -77,7 +77,7 @@ val config = ConfigFactory.parseString {
     |""".stripMargin
 }
 
-implicit val appConfig = BitcoinSAppConfig(datadir, Vector(config))
+implicit val appConfig = BitcoinSAppConfig(datadir, config)
 implicit val chainConfig = appConfig.chainConf
 implicit val nodeConfig = appConfig.nodeConf
 
