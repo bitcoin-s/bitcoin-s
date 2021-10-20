@@ -35,7 +35,7 @@ case class PeerData(
   def serviceIdentifier: ServiceIdentifier = {
     _serviceIdentifier.getOrElse(
       throw new RuntimeException(
-        s"Service identifier for $peer not initialized"))
+        s"Tried using ServiceIdentifier for uninitialized peer $peer"))
   }
 
   def setServiceIdentifier(serviceIdentifier: ServiceIdentifier): Unit = {

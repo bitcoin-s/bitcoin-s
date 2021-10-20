@@ -30,7 +30,6 @@ import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import scala.util.control.NonFatal
 import scala.util.{Failure, Random, Success}
 
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
@@ -264,18 +263,15 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   def initializePeer(peer: Peer): Future[Unit] = {
     peerData(peer).peerMessageSender.connect()
-    val isInitializedF =
-      for {
-        _ <- AsyncUtil
-          .retryUntilSatisfiedF(
-            () => peerData(peer).peerMessageSender.isInitialized(),
-            maxTries = 50,
-            interval = 250.millis)
-          .recover { case NonFatal(_) =>
-            logger.debug(s"Failed to initialize $peer")
-            removePeer(peer)
-          }
-      } yield ()
+    val isInitializedF = AsyncUtil
+      .retryUntilSatisfiedF(
+        () => peerData(peer).peerMessageSender.isInitialized(),
+        maxTries = 50,
+        interval = 250.millis)
+    isInitializedF.failed
+      .foreach { err =>
+        logger.error(s"Failed to initialize with peer=$peer with err=$err")
+      }
     isInitializedF
   }
 
