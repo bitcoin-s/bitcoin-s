@@ -96,10 +96,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   def startBitcoinSBackend(): Future[Unit] = {
     logger.info(s"startBitcoinSBackend()")
     val start = System.currentTimeMillis()
-    if (nodeConf.peers.isEmpty) {
-      throw new IllegalArgumentException(
-        "No peers specified, unable to start node")
-    }
 
     //run chain work migration
     val chainApiF = runChainWorkCalc(

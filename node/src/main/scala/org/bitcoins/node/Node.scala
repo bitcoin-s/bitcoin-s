@@ -116,11 +116,13 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     peers
   }
 
-  /** Returns peers randomly taken from config, db in that order */
+  /** Returns peers randomly taken from config, db, hardcoded peers, dns seeds in that order */
   def getPeers: Future[Vector[Peer]] = {
     //currently this would only give the first peer from config
     val peersFromConfig = getPeersFromConfig
     lazy val peersFromDbF = getPeersFromDb
+    lazy val peersFromDnsSeeds= getPeersFromDnsSeeds
+    lazy val peersFromResources=getPeersFromResources
     val maxConnectedPeers = 1
 
     val allF = for {
@@ -131,6 +133,14 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       if (maxConnectedPeers - ret.result().size > 0)
         ret ++= Random
           .shuffle(peersFromDb.diff(ret.result()))
+          .take(maxConnectedPeers - ret.result().size)
+      if (maxConnectedPeers - ret.result().size > 0)
+        ret ++= Random
+          .shuffle(peersFromResources.diff(ret.result()))
+          .take(maxConnectedPeers - ret.result().size)
+      if (maxConnectedPeers - ret.result().size > 0)
+        ret ++= Random
+          .shuffle(peersFromDnsSeeds.diff(ret.result()))
           .take(maxConnectedPeers - ret.result().size)
       ret.result()
     }
