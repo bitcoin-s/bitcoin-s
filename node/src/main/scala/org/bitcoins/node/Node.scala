@@ -121,8 +121,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     //currently this would only give the first peer from config
     val peersFromConfig = getPeersFromConfig
     lazy val peersFromDbF = getPeersFromDb
-    lazy val peersFromDnsSeeds= getPeersFromDnsSeeds
-    lazy val peersFromResources=getPeersFromResources
+    lazy val peersFromDnsSeeds = getPeersFromDnsSeeds
+    lazy val peersFromResources = getPeersFromResources
     val maxConnectedPeers = 1
 
     val allF = for {
