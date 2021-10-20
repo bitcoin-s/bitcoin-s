@@ -60,35 +60,35 @@ Add this to your `build.sbt`:
 ```scala
 
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-bitcoind-rpc" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-bitcoind-rpc" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-core" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-core" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-chain" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-chain" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-dlc-oracle" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-dlc-oracle" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-eclair-rpc" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-eclair-rpc" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-fee-provider" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-fee-provider" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-key-manager" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-key-manager" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-lnd-rpc" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-lnd-rpc" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-node" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-node" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-oracle-explorer-client" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-oracle-explorer-client" % "1.8.0"
 
-libraryDependencies +="org.bitcoin-s" % "bitcoin-s-secp256k1jni" % "1.7.0"
+libraryDependencies +="org.bitcoin-s" % "bitcoin-s-secp256k1jni" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit-core" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit-core" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-wallet" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-wallet" % "1.8.0"
 
-libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-zmq" % "1.7.0"
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-zmq" % "1.8.0"
 
 ```
 
@@ -97,7 +97,7 @@ libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-zmq" % "1.7.0"
 
 You can also run on the bleeding edge of Bitcoin-S, by
 adding a snapshot build to your `build.sbt`. The most
-recent snapshot published is `1.7.0-156-4d6c4c7b-20210905-1056-SNAPSHOT`.
+recent snapshot published is `1.8.0-5-01a7c7c8-SNAPSHOT`.
 
 
 

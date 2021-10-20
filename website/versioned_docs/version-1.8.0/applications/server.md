@@ -139,8 +139,10 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
 
 ## Server Endpoints
 
-### Blockchain
+### Common 
+ - `getversion` - The version of our application you are using
 
+### Blockchain
  - `getblockcount` - Get the current block height
  - `getfiltercount` - Get the number of filters
  - `getfilterheadercount` - Get the number of filter headers
@@ -189,8 +191,8 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `amount` - Amount to send in BTC
     - `--feerate <value>` - Fee rate in sats per virtual byte
  - `sweepwallet` `address` `[options]` - Sends the entire wallet balance to the given address
-   - `address` - Address to send to
-   - `--feerate <value>` - Fee rate in sats per virtual byte
+    - `address` - Address to send to
+    - `--feerate <value>` - Fee rate in sats per virtual byte
  - `sendwithalgo` `address` `amount` `algo` `[options]` - Send money to the given address using a specific coin selection algo
     - `address` - Address to send to
     - `amount` - Amount to send in BTC
@@ -214,18 +216,80 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `unlock` - Whether to unlock (true) or lock (false) the specified transactions
     - `transactions` - The transaction outpoints to unlock/lock, empty to apply to all utxos
 - `importseed` `walletname` `words` `passphrase` - Imports a mnemonic seed as a new seed file
-   - `walletname` - Name to associate with this seed
-   - `words` - Mnemonic seed words, space separated
-   - `passphrase` - Passphrase to encrypt this seed with
+    - `walletname` - Name to associate with this seed
+    - `words` - Mnemonic seed words, space separated
+    - `passphrase` - Passphrase to encrypt this seed with
 - `importxprv` `walletname` `xprv` `passphrase` - Imports a mnemonic seed as a new seed file
-   - `walletname` - Name to associate with this seed
-   - `xprv` - base58 encoded extended private key
-   - `passphrase` - Passphrase to encrypt this seed with
+    - `walletname` - Name to associate with this seed
+    - `xprv` - base58 encoded extended private key
+    - `passphrase` - Passphrase to encrypt this seed with
  - `keymanagerpassphrasechange` `oldpassphrase` `newpassphrase` - Changes the wallet passphrase
     - `oldpassphrase` - The current passphrase
     - `newpassphrase` - The new passphrase
  - `keymanagerpassphraseset` `passphrase` - Encrypts the wallet with the given passphrase
     - `passphrase` - The passphrase to encrypt the wallet with
+- `backupwallet` `location` - Backs up the wallet database in a safe and consistent manner.
+   - `location` - The locations of the backup file
+
+### DLC
+ - `createcontractinfo` `announcement` `totalCollateral` `payouts`
+   - the announcement to build the contract info for
+   - the total amount of collateral in the DLC
+   - The payouts can be in two formats
+     1. `{ "outcomes" : { "outcome0" : 0, "outcome1": 1, ... }}`. The number is the amount of sats paid to YOU for that outcome.
+     2. `[{"outcome":0,"payout":0,"extraPrecision":0,"isEndpoint":true}, {"outcome":1,"payout":1,"extraPrecision":0,"isEndpoint":true}, ...]`
+ - `decodecontractinfo` `contractinfo` - Decodes a contract info into json
+   - `contractinfo` - Hex encoded contract info
+ - `decodeoffer` `offer` - Decodes an offer message into json
+    - `offer` - Hex encoded dlc offer message
+ - `decodeannouncement` `announcement` - Decodes an oracle announcement message into json
+    - `announcement` - Hex encoded oracle announcement message
+ - `decodeattestments` `attestments` - Decodes an oracle attestments message into json
+    - `attestments` - Hex encoded oracle attestments message
+ - `getdlchostaddress` - Returns the public listening address of the DLC Node
+ - `createdlcoffer` `contractInfo` `collateral` `[feerate]` `locktime` `refundlocktime` - Creates a DLC offer that another party can accept
+    - `contractInfo` - Hex encoded contractInfo message
+    - `collateral` - Satoshis to fund your side of the DLC
+    - `feerate` - Fee rate for both funding and closing transactions, in sats/vbytes
+    - `locktime` - Locktime of the contract execution transactions
+    - `refundlocktime` - Locktime of the refund transaction
+ - `acceptdlc` `offer` `peer` - Accepts a DLC offer given from another party
+    - `offer` - Hex encoded dlc offer message
+    - `peer` - Peer's network address
+ - `acceptdlcoffer` `offer` - Accepts a DLC offer given from another party
+    - `offer` - Hex encoded offer message
+ - `acceptdlcofferfromfile` `path` `[destination]` - Accepts a DLC offer given from another party
+    - `path` - Path to dlc offer file
+    - `destination` - Path to write dlc accept message
+ - `signdlc` `accept` - Signs a DLC
+    - `accept` - Hex encoded dlc accept message
+ - `signdlcfromfile` `path` `[destination]` - Signs a DLC
+    - `path` - Path to dlc accept file
+    - `destination` - Path to write dlc sign message
+ - `adddlcsigs` `sigs` - Adds DLC Signatures into the database
+    - `sigs` - Hex encoded dlc sign message
+ - `adddlcsigsfromfile` `path` - Adds DLC Signatures into the database
+    - `path` - Path to dlc sign file
+ - `adddlcsigsandbroadcast` `sigs` - Adds DLC Signatures into the database and broadcasts the funding transaction
+    - `sigs` - Hex encoded dlc sign message
+ - `adddlcsigsandbroadcastfromfile` `path` - Adds DLC Signatures into the database and broadcasts the funding transaction
+    - `path` - Path to dlc sign file
+ - `getdlcfundingtx` `contractId` - Returns the Funding Tx corresponding to the DLC with the given contractId
+    - `contractId` - ContractId of the DLC
+ - `broadcastdlcfundingtx` `contractId` - Broadcasts the funding Tx corresponding to the DLC with the given contractId
+    - `contractId` - ContractId of the DLC
+ - `executedlc` `contractId` `oraclesigs` `[options]` - Executes the DLC with the given contractId
+    - `contractId` - ContractId of the DLC
+    - `oraclesigs` - Array of oracle attestations
+    - `--noBroadcast` - Gives full serialized transaction instead of broadcasting
+ - `executedlcrefund` `contractId` `[options]` - Executes the Refund transaction for the given DLC
+    - `contractId` - ContractId of the DLC
+    - `--noBroadcast` - Gives full serialized transaction instead of broadcasting
+ - `canceldlc` `dlcId` - Cancels a DLC and unreserves used utxos
+    - `dlcId` - Internal id of the DLC
+ - `getdlcs` - Returns all dlcs in the wallet
+ - `getdlc` `dlcId` - Gets a specific dlc in the wallet
+    - `dlcId` - Internal id of the DLC
 
 ### Network
  - `getpeers` - List the connected peers

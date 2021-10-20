@@ -245,6 +245,10 @@ bitcoin-s {
 
         requiredConfirmations = 6
 
+        # Expected average fee rate over the long term
+        # in satoshis per virtual byte
+        longTermFeeRate = 10
+
         # How big the address queue size is before we throw an exception
         # because of an overflow
         addressQueueSize = 10
@@ -266,6 +270,11 @@ bitcoin-s {
 
         # Password that your seed is encrypted with
         aesPassword = changeMe
+        
+        # At least 16 bytes of entropy encoded in hex
+        # This will be used as the seed for any
+        # project that is dependent on the keymanager
+        entropy = ""
     }
 
     # Bitcoin-S provides manny different fee providers

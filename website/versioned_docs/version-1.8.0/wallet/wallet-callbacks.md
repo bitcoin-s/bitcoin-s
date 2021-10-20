@@ -27,23 +27,13 @@ Here is an example of constructing a wallet and registering a callback, so you c
 implicit val system: ActorSystem = ActorSystem("example")
 implicit val ec: ExecutionContextExecutor = system.dispatcher
 implicit val walletConf: WalletAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoTestConfig(Vector.empty).walletConf
+    BitcoinSTestAppConfig.getNeutrinoTestConfig().walletConf
 
 // let's use a helper method to get a v19 bitcoind
 // and a ChainApi
-val bitcoind = BitcoindV19RpcClient(BitcoindInstance.fromConfigFile())
+
+val bitcoind = BitcoindV19RpcClient(BitcoindInstanceLocal.fromConfFile())
 val aesPasswordOpt = Some(AesPassword.fromString("password"))
-
-// Create our key manager
-  val keyManagerE = BIP39KeyManager.initialize(aesPasswordOpt = aesPasswordOpt,
-                                               kmParams = walletConf.kmParams,
-                                               bip39PasswordOpt = None)
-
-val keyManager = keyManagerE match {
-    case Right(keyManager) => keyManager
-    case Left(err) =>
-      throw new RuntimeException(s"Cannot initialize key manager err=$err")
-  }
 
 // Here is a super simple example of a callback, this could be replaced with anything, from
 // relaying the transaction on the network, finding relevant wallet outputs, verifying the transaction,
@@ -57,11 +47,10 @@ val exampleCallbacks = WalletCallbacks(
 
 // Now we can create a wallet
 val wallet =
-    Wallet(keyManager = keyManager,
+    Wallet(
            nodeApi = bitcoind,
            chainQueryApi = bitcoind,
-           feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one),
-           creationTime = Instant.now)
+           feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
 
 // Finally, we can add the callbacks to our wallet config
 walletConf.addCallbacks(exampleCallbacks)
