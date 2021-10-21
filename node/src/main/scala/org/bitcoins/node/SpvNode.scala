@@ -23,7 +23,7 @@ case class SpvNode(
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem,
-    configPeersOverride: Vector[Peer] = Vector.empty)
+    configPeers: Vector[Peer] = Vector.empty)
     extends Node {
   require(nodeConfig.nodeType == NodeType.SpvNode,
           s"We need our SPV mode enabled to be able to construct a SPV node!")
@@ -42,10 +42,8 @@ case class SpvNode(
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 
-  override def getPeersFromConfig: Vector[Peer] = {
-    if (configPeersOverride.isEmpty) super.getPeersFromConfig
-    else configPeersOverride
-  }
+  override def getPeersFromConfig: Vector[Peer] =
+    configPeers ++ super.getPeersFromConfig
 
   def setBloomFilter(bloom: BloomFilter): SpvNode = {
     _bloomFilter.atomicSet(bloom)
