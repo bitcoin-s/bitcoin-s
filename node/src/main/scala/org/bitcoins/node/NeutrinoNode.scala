@@ -26,7 +26,7 @@ case class NeutrinoNode(
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem,
-    configPeers: Vector[Peer] = Vector.empty)
+    configPeersOverride: Vector[Peer] = Vector.empty)
     extends Node {
   require(
     nodeConfig.nodeType == NodeType.NeutrinoNode,
@@ -42,10 +42,11 @@ case class NeutrinoNode(
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 
-  // configPeers are additional peers to use apart from 'bitcoin-s.conf' file and is used to specify peers as
-  // an argument of NeutrinoNode
-  override def getPeersFromConfig: Vector[Peer] =
-    configPeers ++ super.getPeersFromConfig
+  // if a non-empty configPeersOverride is not one of the arguments, then use peers from 'bitcoin-s.conf' file.
+  override def getPeersFromConfig: Vector[Peer] = {
+    if (configPeersOverride.isEmpty) super.getPeersFromConfig
+    else configPeersOverride
+  }
 
   override def updateDataMessageHandler(
       dataMessageHandler: DataMessageHandler): NeutrinoNode = {
