@@ -75,7 +75,7 @@ trait BitcoinSAppConfigBitcoinFixtureNotStarted
          |bitcoin-s.bitcoind-rpc.rpcpassword="${instance.authCredentials.password}"
          |bitcoin-s.bitcoind-rpc.rpcbind="${instance.rpcUri.getHost}"
          |bitcoin-s.bitcoind-rpc.rpcport="${instance.rpcUri.getPort}"
-         |bitcoin-s.bitcoind-rpc.isRemote=true
+         |bitcoin-s.bitcoind-rpc.remote=true
          |bitcoin-s.bitcoind-rpc.version="${version}"
          |bitcoin-s.node.mode=bitcoind
          |bitcoin-s.tor.enabled=${TorUtil.torEnabled}

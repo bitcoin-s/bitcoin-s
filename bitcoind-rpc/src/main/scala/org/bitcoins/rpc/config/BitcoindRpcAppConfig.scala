@@ -51,9 +51,20 @@ case class BitcoindRpcAppConfig(
     config.getStringOrElse("bitcoin-s.bitcoind-rpc.datadir",
                            BitcoindConfig.DEFAULT_DATADIR.toString))
 
-  lazy val bind = new URI({
-    val baseUrl =
-      config.getStringOrElse("bitcoin-s.bitcoind-rpc.bind", "localhost")
+  lazy val host = new URI({
+    val baseUrl = {
+      config.getStringOrNone("bitcoin-s.bitcoind-rpc.connect") match {
+        case Some(rpcconnect) => rpcconnect
+        case None =>
+          config.getStringOrNone("bitcoin-s.bitcoind-rpc.bind") match {
+            case Some(rpcbind) =>
+              logger.warn(
+                "Config option bitcoin-s.bitcoind-rpc.bind will soon be deprecated. Use bitcoin-s.bitcoind-rpc.connect instead.")
+              rpcbind
+            case None => "localhost"
+          }
+      }
+    }
     if (baseUrl.startsWith("http")) baseUrl
     else "http://" + baseUrl
   })
@@ -61,11 +72,22 @@ case class BitcoindRpcAppConfig(
   lazy val port: Int =
     config.getIntOrElse("bitcoin-s.bitcoind-rpc.port", network.port)
 
-  lazy val uri: URI = new URI(s"$bind:$port")
+  lazy val uri: URI = new URI(s"$host:$port")
 
-  lazy val rpcBind = new URI({
-    val baseUrl =
-      config.getStringOrElse("bitcoin-s.bitcoind-rpc.rpcbind", "localhost")
+  lazy val rpcHost = new URI({
+    val baseUrl = {
+      config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcconnect") match {
+        case Some(rpcconnect) => rpcconnect
+        case None =>
+          config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcbind") match {
+            case Some(rpcbind) =>
+              logger.warn(
+                "Config option bitcoin-s.bitcoind-rpc.rpcbind will soon be deprecated. Use bitcoin-s.bitcoind-rpc.rpcconnect instead.")
+              rpcbind
+            case None => "localhost"
+          }
+      }
+    }
     if (baseUrl.startsWith("http")) baseUrl
     else "http://" + baseUrl
   })
@@ -73,7 +95,7 @@ case class BitcoindRpcAppConfig(
   lazy val rpcPort: Int =
     config.getIntOrElse("bitcoin-s.bitcoind-rpc.rpcport", network.rpcPort)
 
-  lazy val rpcUri: URI = new URI(s"$rpcBind:$rpcPort")
+  lazy val rpcUri: URI = new URI(s"$rpcHost:$rpcPort")
 
   lazy val rpcUser: Option[String] =
     config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcuser")
@@ -93,7 +115,7 @@ case class BitcoindRpcAppConfig(
       .map(BitcoindVersion.fromString)
 
   lazy val isRemote: Boolean =
-    config.getBooleanOrElse("bitcoin-s.bitcoind-rpc.isRemote", default = false)
+    config.getBooleanOrElse("bitcoin-s.bitcoind-rpc.remote", default = false)
 
   lazy val authCredentials: BitcoindAuthCredentials = rpcUser match {
     case Some(rpcUser) => {
