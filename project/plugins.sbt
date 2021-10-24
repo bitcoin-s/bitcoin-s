@@ -9,7 +9,7 @@ addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.9.1")
 addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.3.1")
 
 // sbt plugin to unify scaladoc/javadoc across multiple projects
-addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
+addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
 
 // export typed values from sbt configuration into Scala sources
 addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.10.0")
