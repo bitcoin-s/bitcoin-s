@@ -26,7 +26,7 @@ class BitcoindConfigPane(
   }
 
   private val hostTF: TextField = new TextField {
-    text = appConfig.bitcoindRpcConf.rpcBind.toString
+    text = appConfig.bitcoindRpcConf.rpcHost.toString
     minWidth = 300
   }
 
@@ -111,7 +111,7 @@ class BitcoindConfigPane(
     val configStr = proxyConfStr +
       s"""
          |bitcoin-s.node.mode = bitcoind
-         |bitcoin-s.bitcoind-rpc.isRemote = true
+         |bitcoin-s.bitcoind-rpc.remote = true
          |bitcoin-s.bitcoind-rpc.rpcbind = "${hostTF.text.value}"
          |bitcoin-s.bitcoind-rpc.rpcport = ${portTF.text.value}
          |bitcoin-s.bitcoind-rpc.rpcuser = "${rpcUserTF.text.value}"

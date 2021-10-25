@@ -174,12 +174,12 @@ bitcoin-s {
         binary = ${HOME}/.bitcoin-s/binaries/bitcoind/bitcoin-0.20.1/bin/bitcoind
         # bitcoind datadir
         datadir = ${HOME}/.bitcoin
-        # bitcoind network binding
-        bind = localhost
+        # bitcoind network host
+        connect = localhost
         # bitcoind p2p port
         port = 8333
-        # bitcoind rpc binding
-        rpcbind = localhost
+        # bitcoind rpc host
+        rpcconnect = localhost
         # bitcoind rpc port
         rpcport = 8332
     }
