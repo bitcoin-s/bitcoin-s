@@ -54,7 +54,7 @@ case class WalletAppConfig(
   override def appConfig: WalletAppConfig = this
 
   lazy val torConf: TorAppConfig =
-    TorAppConfig(directory, conf: _*)
+    TorAppConfig(directory, Some(moduleName), conf: _*)
 
   private[wallet] lazy val scheduler: ScheduledExecutorService = {
     Executors.newScheduledThreadPool(

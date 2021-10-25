@@ -42,7 +42,7 @@ case class DLCNodeAppConfig(
   override def stop(): Future[Unit] = Future.unit
 
   lazy val torConf: TorAppConfig =
-    TorAppConfig(directory, conf: _*)
+    TorAppConfig(directory, Some(moduleName), conf: _*)
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] =
     torConf.socks5ProxyParams

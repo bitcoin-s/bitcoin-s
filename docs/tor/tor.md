@@ -77,6 +77,9 @@ bitcoin-s {
 }
 ```
 
+You can override global proxy settings in subprojects, for example `bitcoin-s.dlcnode.proxy.enabled = true` 
+will enable SOCKS5 proxy for `dlcnode`.
+
 ## Creating our own Tor hidden service
 
 Enabling the tor hidden services allows for inbound connections over tor.
@@ -150,6 +153,8 @@ bitcoin-s {
     }
 }
 ```
+Similarly with proxy settings you can override global Tor settings in subprojects, 
+for example `bitcoin-s.dlcnode.tor.enabled = true` will enable Tor for `dlcnode`.
 
 ### Manually Creating a Tor Hidden Service
 
