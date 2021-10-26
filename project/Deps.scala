@@ -21,7 +21,7 @@ object Deps {
     val akkaStreamv = "2.6.17"
     val jUnixSocketV = "2.4.0"
     val scodecV = "1.1.29"
-    val junitV = "0.11"
+    val junitV = "0.13.2"
     val nativeLoaderV = "2.4.0"
     val typesafeConfigV = "1.4.1"
 
@@ -244,7 +244,7 @@ object Deps {
       "org.scala-lang.modules" %% "scala-async" % V.asyncNewScalaV % "test" withSources () withJavadoc ()
 
     val junitInterface =
-      "com.novocode" % "junit-interface" % V.junitV % "test" withSources () withJavadoc ()
+      "com.github.sbt" % "junit-interface" % V.junitV % "test" withSources () withJavadoc ()
     val logback = Compile.logback % "test"
     val grizzledSlf4j = Compile.grizzledSlf4j % "test"
 
