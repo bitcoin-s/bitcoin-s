@@ -38,7 +38,7 @@ case class BitcoinSAppConfig(
   lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
   lazy val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
   lazy val dlcConf: DLCAppConfig = DLCAppConfig(directory, confs: _*)
-  lazy val torConf: TorAppConfig = TorAppConfig(directory, confs: _*)
+  lazy val torConf: TorAppConfig = TorAppConfig(directory, None, confs: _*)
 
   lazy val dlcNodeConf: DLCNodeAppConfig =
     DLCNodeAppConfig(directory, confs: _*)

@@ -21,6 +21,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   */
 case class TorAppConfig(
     private val directory: Path,
+    private val subModuleNameOpt: Option[String],
     private val confs: Config*)(implicit ec: ExecutionContext)
     extends AppConfig {
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
@@ -29,7 +30,7 @@ case class TorAppConfig(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): TorAppConfig =
-    TorAppConfig(directory, configs: _*)
+    TorAppConfig(directory, subModuleNameOpt, configs: _*)
 
   protected[bitcoins] def baseDatadir: Path = directory
 
@@ -39,16 +40,15 @@ case class TorAppConfig(
 
   lazy val torLogFile: Path = torDir.resolve("TorLogs.txt")
 
-  lazy val torProvided = config.getBoolean("bitcoin-s.tor.provided")
+  lazy val torProvided = getBoolean("tor.provided")
 
-  lazy val useRandomPorts = config.getBoolean("bitcoin-s.tor.use-random-ports")
+  lazy val useRandomPorts = getBoolean("tor.use-random-ports")
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] = {
-    if (config.getBoolean("bitcoin-s.proxy.enabled")) {
+    if (getBoolean("proxy.enabled")) {
       val address = if (torProvided) {
-        NetworkUtil.parseInetSocketAddress(
-          config.getString("bitcoin-s.proxy.socks5"),
-          TorParams.DefaultProxyPort)
+        NetworkUtil.parseInetSocketAddress(getString("proxy.socks5"),
+                                           TorParams.DefaultProxyPort)
       } else {
         new InetSocketAddress(InetAddress.getLoopbackAddress,
                               if (useRandomPorts)
@@ -68,11 +68,10 @@ case class TorAppConfig(
   }
 
   lazy val torParams: Option[TorParams] = {
-    if (config.getBoolean("bitcoin-s.tor.enabled")) {
+    if (getBoolean("tor.enabled")) {
       val address = if (torProvided) {
-        NetworkUtil.parseInetSocketAddress(
-          config.getString("bitcoin-s.tor.control"),
-          TorParams.DefaultControlPort)
+        NetworkUtil.parseInetSocketAddress(getString("tor.control"),
+                                           TorParams.DefaultControlPort)
       } else {
         new InetSocketAddress(InetAddress.getLoopbackAddress,
                               if (useRandomPorts)
@@ -80,13 +79,13 @@ case class TorAppConfig(
                               else TorParams.DefaultControlPort)
       }
 
-      val auth = config.getStringOrNone("bitcoin-s.tor.password") match {
+      val auth = getStringOrNone("tor.password") match {
         case Some(pass) => Password(pass)
         case None       => SafeCookie()
       }
 
       val privKeyPath =
-        config.getStringOrNone("bitcoin-s.tor.privateKeyPath") match {
+        getStringOrNone("tor.privateKeyPath") match {
           case Some(path) => new File(path).toPath
           case None       => datadir.resolve("tor_priv_key")
         }
@@ -198,6 +197,29 @@ case class TorAppConfig(
 
     NetworkUtil.portIsBound(toCheck)
   }
+
+  private def getBoolean(key: String): Boolean =
+    getConfigValue(config.getBoolean)(key)
+
+  private def getString(key: String): String =
+    getConfigValue(config.getString)(key)
+
+  private def getStringOrNone(key: String): Option[String] =
+    getConfigValue(config.getStringOrNone)(key)
+
+  private def getConfigValue[V](getValue: String => V)(key: String): V = {
+    subModuleNameOpt match {
+      case Some(subModuleName) =>
+        val path = s"bitcoin-s.$subModuleName.$key"
+        if (config.hasPath(path)) {
+          getValue(path)
+        } else {
+          getValue(s"bitcoin-s.$key")
+        }
+      case None =>
+        getValue(s"bitcoin-s.$key")
+    }
+  }
 }
 
 object TorAppConfig extends AppConfigFactory[TorAppConfig] {
@@ -209,7 +231,7 @@ object TorAppConfig extends AppConfigFactory[TorAppConfig] {
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       ec: ExecutionContext): TorAppConfig =
-    TorAppConfig(datadir, confs: _*)
+    TorAppConfig(datadir, None, confs: _*)
 
   lazy val randomSocks5Port: Int = ports.proxyPort
 

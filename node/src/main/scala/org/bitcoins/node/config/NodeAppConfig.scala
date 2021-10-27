@@ -112,7 +112,7 @@ case class NodeAppConfig(
   }
 
   lazy val torConf: TorAppConfig =
-    TorAppConfig(directory, confs: _*)
+    TorAppConfig(directory, Some(moduleName), confs: _*)
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] =
     torConf.socks5ProxyParams
