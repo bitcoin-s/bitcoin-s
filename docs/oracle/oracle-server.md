@@ -52,6 +52,8 @@ checkout [this page](build-oracle-server.md).
   - `message` - Message to hash and sign
 - `backuporacle` `location` - Backs up the oracle database in a safe and consistent manner.
   - `location` - The locations of the backup file
+- `setoraclename` `oraclename` Sets the oracle name in the database
+- `getoraclename` gets the oraclename for the database
   
 ### Create Event Example
 
@@ -191,4 +193,17 @@ $ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getannounc
 
 $ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "signdigits", "params": ["numericExample", 123]}' -H "Content-Type: application/json" http://127.0.0.1:9998/
 {"result":"fdd868fd013d126578616d706c6544696769744465636f6d705f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e521150004d72282a2e9532924dc8cd79685a501202332ad0d118166328cb76138414fccf3d0646c9efd9523274014841ba24bf63219d5650d1682209d7e48af009d58e6d87051e50fd1ab30df4717da8905e400a32c5f4d793a4ac5433ed416165dd286c4c025dfd1e39de77e0418fa7d39abf2e9daf55d7fe34f8e312368cb4d45b4d4b97446ab1d71a550a0d604c3e86c40a3c9b12de8f08a86639068707822cd475621700347c52af088eda9a0245385094518134e73bb997102e11f6de0aeb36af7237139d7cabd19d6b0b9e827cdf84a4fc18c88d1882e4e096d8dfeff58759504d2f9e7a9e183b0836ad58dd646d9ab123132397109e4f51c5842958932a81bacd1012b013101320133","error":null}
+```
+
+### Set oracle name example
+```
+ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "setoraclename", "params" : ["MY_ORACLE_NAME"]}' -H "Content-Type: application/json" http://127.0.0.1:9998/
+{"result":"issue-34","error":null}
+```
+
+You can retrieve the oracle name with
+
+```
+ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getoraclename", "params" : []}' -H "Content-Type: application/json" http://127.0.0.1:9998/
+{"result":"MY_ORACLE_NAME","error":null}
 ```
