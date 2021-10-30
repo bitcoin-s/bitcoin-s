@@ -26,25 +26,9 @@ sealed abstract class MnemonicCode
 
   require({
             val entropy = toEntropyWithChecksum
-            isEntropyWithChecksumValid(entropy)
+            MnemonicCode.isEntropyWithChecksumValid(entropy, words)
           },
           "Entropy checksum is not valid!")
-
-  /** Checks that the provided entropy has a valid checksum
-    * attached at the end
-    */
-  private[crypto] def isEntropyWithChecksumValid(
-      entropyWithChecksum: BitVector): Boolean = {
-
-    val codeInfo = MnemonicCode.getMnemonicCodeInfo(words)
-    val entropyNoChecksum = entropyWithChecksum.take(codeInfo.entropyBits)
-
-    val hashedEntropy = CryptoUtil.sha256(entropyNoChecksum).bytes.toBitVector
-    val checksum = hashedEntropy.take(codeInfo.checksumLength)
-
-    entropyNoChecksum ++ checksum == entropyWithChecksum
-
-  }
 
   /** The mnemonic code itself
     */
@@ -55,7 +39,7 @@ sealed abstract class MnemonicCode
   /** Returns the entropy initially provided to construct
     * this mnemonic code
     */
-  private[bitcoins] def toEntropy: BitVector = {
+  def toEntropy: BitVector = {
     val entropyWithChecksumBits = toEntropyWithChecksum
     val lengthNoEntropy = MnemonicCode
       .getMnemonicCodeInfo(words)
@@ -67,7 +51,7 @@ sealed abstract class MnemonicCode
   /** Returns the entropy _with checksum_ originally provided
     * to construct this mnemonic code
     */
-  private[crypto] def toEntropyWithChecksum: BitVector = {
+  def toEntropyWithChecksum: BitVector = {
 
     def bitsForWord(word: String): BitVector = {
 
@@ -248,4 +232,21 @@ object MnemonicCode {
   private[crypto] lazy val ENGLISH_WORDS: Vector[String] = {
     EnglishWordsBip39.getWords
   }.ensuring(words => words.length == 2048, "Word list must be 2048 words long")
+
+  /** Checks that the provided entropy has a valid checksum
+    * attached at the end
+    */
+  def isEntropyWithChecksumValid(
+      entropyWithChecksum: BitVector,
+      words: Vector[String]): Boolean = {
+
+    val codeInfo = MnemonicCode.getMnemonicCodeInfo(words)
+    val entropyNoChecksum = entropyWithChecksum.take(codeInfo.entropyBits)
+
+    val hashedEntropy = CryptoUtil.sha256(entropyNoChecksum).bytes.toBitVector
+    val checksum = hashedEntropy.take(codeInfo.checksumLength)
+
+    entropyNoChecksum ++ checksum == entropyWithChecksum
+
+  }
 }
