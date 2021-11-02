@@ -384,7 +384,11 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] {
   }
 
   case object V22 extends BitcoindVersion {
+<<<<<<< HEAD
     override def toString: String = "v22"
+=======
+    override def toString: String = "v22.0"
+>>>>>>> bitcoind rpc client v22
   }
 
   case object V23 extends BitcoindVersion {
