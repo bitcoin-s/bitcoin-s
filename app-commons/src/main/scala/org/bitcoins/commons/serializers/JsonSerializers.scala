@@ -249,6 +249,9 @@ object JsonSerializers {
     (__ \ "bytesrecv_per_msg").read[Map[String, Int]] and
     (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(PeerPostV21)
 
+  implicit val nodeBanPostV22Reads: Reads[NodeBanPostV22] =
+    Json.reads[NodeBanPostV22]
+
   implicit val nodeBanPostV20Reads: Reads[NodeBanPostV20] =
     Json.reads[NodeBanPostV20]
 
