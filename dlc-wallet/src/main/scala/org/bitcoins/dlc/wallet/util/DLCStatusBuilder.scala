@@ -23,7 +23,7 @@ case class IntermediaryDLCStatus(
     offerDb: DLCOfferDb,
     acceptDbOpt: Option[DLCAcceptDb],
     nonceDbs: Vector[OracleNonceDb],
-    announcementsWithId: Vector[(OracleAnnouncementV0TLV, Long)],
+    announcementsWithId: Vector[(BaseOracleAnnouncement, Long)],
     announcementIds: Vector[DLCAnnouncementDb]
 ) {
 
@@ -210,7 +210,7 @@ object DLCStatusBuilder {
       contractInfo: ContractInfo,
       contractData: DLCContractDataDb,
       nonceDbs: Vector[OracleNonceDb],
-      announcementsWithId: Vector[(OracleAnnouncementV0TLV, Long)],
+      announcementsWithId: Vector[(BaseOracleAnnouncement, Long)],
       announcementIds: Vector[DLCAnnouncementDb],
       offerDb: DLCOfferDb,
       acceptDb: DLCAcceptDb,
@@ -314,7 +314,7 @@ object DLCStatusBuilder {
     */
   def getOracleOutcomeAndSigs(
       announcementIds: Vector[DLCAnnouncementDb],
-      announcementsWithId: Vector[(OracleAnnouncementV0TLV, Long)],
+      announcementsWithId: Vector[(BaseOracleAnnouncement, Long)],
       nonceDbs: Vector[OracleNonceDb]): (
       OracleOutcome,
       OrderedSchnorrSignatures) = {
@@ -328,7 +328,7 @@ object DLCStatusBuilder {
       require(usedOracles.nonEmpty,
               s"Error, no oracles used, dlcIds=${announcementIds.map(_.dlcId)}")
       announcementsWithId.head._1.eventTLV.eventDescriptor match {
-        case _: EnumEventDescriptorV0TLV =>
+        case _: EnumEventDescriptorV0TLV | _: EnumEventDescriptorDLCSubType =>
           val oracleInfos = usedOracles.map(t => EnumSingleOracleInfo(t._1))
           val outcomes = usedOracles.map { case (_, id) =>
             val nonces = noncesByAnnouncement(id)
@@ -339,7 +339,8 @@ object DLCStatusBuilder {
           require(outcomes.distinct.size == 1,
                   s"Should only be one outcome for enum, got $outcomes")
           EnumOracleOutcome(oracleInfos, outcomes.head)
-        case _: UnsignedDigitDecompositionEventDescriptor =>
+        case _: UnsignedDigitDecompositionEventDescriptor |
+            _: UnsignedDigitDecompositionEventDescriptorDLCType =>
           val oraclesAndOutcomes = usedOracles.map { case (announcement, id) =>
             val oracleInfo = NumericSingleOracleInfo(announcement)
             val nonces = noncesByAnnouncement(id).sortBy(_.index)
@@ -351,7 +352,8 @@ object DLCStatusBuilder {
             (oracleInfo, outcome)
           }
           NumericOracleOutcome(oraclesAndOutcomes)
-        case _: SignedDigitDecompositionEventDescriptor =>
+        case _: SignedDigitDecompositionEventDescriptor |
+            _: SignedDigitDecompositionEventDescriptorDLCType =>
           throw new RuntimeException(s"SignedNumericOutcome not yet supported")
       }
     }

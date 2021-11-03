@@ -10,7 +10,9 @@ sealed abstract class SigningVersion {
   def calcNonceTweak(nonce: SchnorrNonce, eventName: String): ByteVector
 
   /** Calculates the bytes to sign for an OracleAnnouncement */
-  def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector
+  def calcAnnouncementHash(
+      announcement: BaseOracleEvent,
+      metadata: OracleMetadata): ByteVector
 
   /** Calculates the bytes to sign for an event outcome */
   def calcOutcomeHash(bytes: ByteVector): ByteVector
@@ -34,8 +36,12 @@ object SigningVersion extends StringFactory[SigningVersion] {
       CryptoUtil.taggedSha256(bytes, "DLCv0/Nonce").bytes
     }
 
-    override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
-      CryptoUtil.taggedSha256(eventTLV.bytes, "DLCv0/Announcement").bytes
+    override def calcAnnouncementHash(
+        eventTLV: BaseOracleEvent,
+        metadata: OracleMetadata): ByteVector =
+      CryptoUtil
+        .taggedSha256(eventTLV.bytes ++ metadata.bytes, "DLCv0/Announcement")
+        .bytes
 
     override def calcOutcomeHash(byteVector: ByteVector): ByteVector =
       CryptoUtil.taggedSha256(byteVector, "DLCv0/Outcome").bytes
@@ -52,8 +58,10 @@ object SigningVersion extends StringFactory[SigningVersion] {
       CryptoUtil.taggedSha256(bytes, "BasicSHA256").bytes
     }
 
-    override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
-      CryptoUtil.sha256(eventTLV.bytes).bytes
+    override def calcAnnouncementHash(
+        eventTLV: BaseOracleEvent,
+        metadata: OracleMetadata): ByteVector =
+      CryptoUtil.sha256(eventTLV.bytes ++ metadata.bytes).bytes
 
     override def calcOutcomeHash(byteVector: ByteVector): ByteVector = {
       CryptoUtil.sha256(byteVector).bytes
@@ -71,8 +79,10 @@ object SigningVersion extends StringFactory[SigningVersion] {
       CryptoUtil.taggedSha256(bytes, "DLC/oracle/nonce/v0").bytes
     }
 
-    override def calcAnnouncementHash(eventTLV: OracleEventTLV): ByteVector =
-      CryptoUtil.sha256DLCAnnouncement(eventTLV.bytes).bytes
+    override def calcAnnouncementHash(
+        eventTLV: BaseOracleEvent,
+        metadata: OracleMetadata): ByteVector =
+      CryptoUtil.sha256DLCAnnouncementV1(eventTLV.bytes ++ metadata.bytes).bytes
 
     override def calcOutcomeHash(byteVector: ByteVector): ByteVector = {
       CryptoUtil.sha256DLCAttestation(byteVector).bytes

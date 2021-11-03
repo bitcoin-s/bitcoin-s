@@ -322,9 +322,12 @@ trait DLCTest {
       feeRate: SatoshisPerVirtualByte = this.feeRate,
       timeouts: DLCTimeouts = this.timeouts)(implicit
       ec: ExecutionContext): (TestDLCClient, TestDLCClient) = {
+    val tempContractId =
+      Sha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes)
     val offerDLC = TestDLCClient(
       outcomes = offerInfo,
       isInitiator = true,
+      tempContractId = tempContractId,
       fundingPrivKey = offerFundingPrivKey,
       payoutPrivKey = offerPayoutPrivKey,
       payoutSerialId = offerPayoutSerialId,
@@ -350,6 +353,7 @@ trait DLCTest {
     val acceptDLC = TestDLCClient(
       outcomes = acceptInfo,
       isInitiator = false,
+      tempContractId = tempContractId,
       fundingPrivKey = acceptFundingPrivKey,
       payoutPrivKey = acceptPayoutPrivKey,
       payoutSerialId = acceptPayoutSerialId,
@@ -475,7 +479,9 @@ trait DLCTest {
         case None =>
           NumericExactMultiOracleInfo(params.oracleThreshold, ordered)
         case Some(boundParams) =>
-          NumericMultiOracleInfo(params.oracleThreshold, ordered, boundParams)
+          NumericMultiOracleInfo(params.oracleThreshold,
+                                 ordered,
+                                 Some(boundParams))
       }
     }
 
@@ -829,7 +835,7 @@ trait DLCTest {
       chosenOracles: Vector[Int],
       contractInfo: ContractInfo,
       digits: Vector[Int],
-      paramsOpt: Option[OracleParamsV0TLV]): NumericOracleOutcome = {
+      paramsOpt: Option[OracleParamsTLV]): NumericOracleOutcome = {
     contractInfo.contracts.head.contractOraclePair match {
       case e: ContractOraclePair.EnumPair =>
         Assertions.fail(s"Expected Numeric Contract, got enum=$e")
@@ -873,7 +879,7 @@ trait DLCTest {
       contractInfo: SingleContractInfo,
       outcomes: Vector[DLCOutcomeType],
       outcomeIndex: Long,
-      paramsOpt: Option[OracleParamsV0TLV]): NumericOracleOutcome = {
+      paramsOpt: Option[OracleParamsTLV]): NumericOracleOutcome = {
     contractInfo.contractOraclePair match {
       case e: ContractOraclePair.EnumPair =>
         Assertions.fail(s"Expected Numeric Contract, got enum=$e")
@@ -926,7 +932,7 @@ trait DLCTest {
       contractInfo: SingleContractInfo,
       outcomes: Vector[DLCOutcomeType],
       outcomeIndex: Long,
-      paramsOpt: Option[OracleParamsV0TLV]): OracleOutcome = {
+      paramsOpt: Option[OracleParamsTLV]): OracleOutcome = {
     val oracleInfo = contractInfo.oracleInfos.head
 
     val oracleIndices =
@@ -952,7 +958,7 @@ trait DLCTest {
       contractInfo: SingleContractInfo,
       outcomes: Vector[DLCOutcomeType],
       outcomeIndex: Long,
-      paramsOpt: Option[OracleParamsV0TLV]): (
+      paramsOpt: Option[OracleParamsTLV]): (
       OracleOutcome,
       Vector[OracleSignatures]) = {
     val outcome = genOracleOutcome(numOutcomesOrDigits,
@@ -979,7 +985,7 @@ trait DLCTest {
       contractInfo: SingleContractInfo,
       outcomes: Vector[DLCOutcomeType],
       outcomeIndex: Long,
-      paramsOpt: Option[OracleParamsV0TLV]): Vector[OracleSignatures] = {
+      paramsOpt: Option[OracleParamsTLV]): Vector[OracleSignatures] = {
     val (_, sigs) = genOracleOutcomeAndSignatures(numOutcomesOrDigits,
                                                   isNumeric,
                                                   contractInfo,
@@ -1116,12 +1122,8 @@ trait DLCTest {
         (outcomeValueMap.length, false, None)
       case NumericContractDescriptor(_, numDigits, _) =>
         val paramsOpt = contractInfo.oracleInfos.head match {
-          case NumericMultiOracleInfo(_,
-                                      _,
-                                      maxErrorExp,
-                                      minFailExp,
-                                      maximizeCoverage) =>
-            Some(OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage))
+          case NumericMultiOracleInfo(_, _, oracleParamsOpt) =>
+            oracleParamsOpt.toOption
           case _: OracleInfo => None
         }
 
@@ -1233,7 +1235,11 @@ trait DLCTest {
       val offer = dlcOffer.offer
       val accept = dlcOffer.accept.withSigs(acceptCETSigs, acceptRefundSig)
       val sign =
-        DLCSign(offerCETSigs, offerRefundSig, offerFundingSigs, contractId)
+        DLCSign(dlcOffer.offer.protocolVersionOpt,
+                offerCETSigs,
+                offerRefundSig,
+                offerFundingSigs,
+                contractId)
 
       val (offerOracleSig, offerDLCOutcome) =
         DLCStatus

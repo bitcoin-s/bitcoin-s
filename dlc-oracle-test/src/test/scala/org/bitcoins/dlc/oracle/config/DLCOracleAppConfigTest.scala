@@ -21,7 +21,10 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
         dlcOracle1 = new DLCOracle()(dlcOracleAppConfig)
         dlcOracle2 = new DLCOracle()(dlcOracleAppConfig)
       } yield {
-        assert(dlcOracle1.publicKey == dlcOracle2.publicKey)
+        assert(
+          dlcOracle1.announcementPublicKey == dlcOracle2.announcementPublicKey)
+        assert(
+          dlcOracle2.attestationPublicKey == dlcOracle2.attestationPublicKey)
       }
   }
 
@@ -33,7 +36,7 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
         _ <- startedF
         dlcOracle = new DLCOracle()(dlcOracleAppConfig)
       } yield {
-        dlcOracle.publicKey
+        dlcOracle.announcementPublicKey
       }
 
       //stop old oracle
@@ -69,7 +72,7 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
       for {
         _ <- stoppedF
         pubKey1 <- pubKeyBeforeMoveF
-        pubKey2 <- dlcOracle2F.map(_.publicKey)
+        pubKey2 <- dlcOracle2F.map(_.announcementPublicKey)
       } yield {
         assert(pubKey1 == pubKey2)
       }

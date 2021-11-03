@@ -29,16 +29,12 @@ object DLCTLVGen {
     CryptoUtil.sha256(bytes)
   }
 
+  def getTempContractId(): Sha256Digest = hash()
+
   def genContractDescriptor(
       outcomes: Vector[String] = DLCTestUtil.genOutcomes(3),
       totalInput: CurrencyUnit = defaultAmt * 2): EnumContractDescriptor = {
     DLCTestUtil.genContractDescriptors(outcomes, totalInput)._1
-  }
-
-  def contractDescriptorParsingTestVector(
-      outcomes: Vector[String] = DLCTestUtil.genOutcomes(3),
-      totalInput: CurrencyUnit = defaultAmt * 2): DLCParsingTestVector = {
-    DLCParsingTestVector(genContractDescriptor(outcomes, totalInput).toTLV)
   }
 
   def genOracleInfo(
@@ -75,24 +71,6 @@ object DLCTLVGen {
                                          totalInput)
 
     SingleContractInfo(totalInput.satoshis, pair)
-  }
-
-  def contractInfoParsingTestVector(
-      oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
-      oracleRValue: SchnorrNonce = ECPublicKey.freshPublicKey.schnorrNonce,
-      outcomes: Vector[String] = DLCTestUtil.genOutcomes(3),
-      totalInput: CurrencyUnit = defaultAmt * 2): DLCParsingTestVector = {
-    DLCParsingTestVector(
-      genContractInfo(oraclePrivKey, oracleRValue, outcomes, totalInput).toTLV)
-  }
-
-  def oracleInfoParsingTestVector(
-      oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey,
-      oracleRValue: SchnorrNonce = ECPublicKey.freshPublicKey.schnorrNonce,
-      events: Vector[String] =
-        Vector("dummy1", "dummy2")): DLCParsingTestVector = {
-    DLCParsingTestVector(
-      genOracleInfo(oraclePrivKey, oracleRValue, events).toTLV)
   }
 
   def p2wpkh(
@@ -147,23 +125,6 @@ object DLCTLVGen {
                     redeemScriptOpt)
   }
 
-  def fundingInputParsingTestVector(
-      inputSerialId: UInt64 = DLCMessage.genSerialId(),
-      prevTx: Transaction = inputTransaction(),
-      prevTxVout: UInt32 = UInt32.zero,
-      sequence: UInt32 = TransactionConstants.enableRBFSequence,
-      maxWitnessLen: UInt16 = UInt16(107),
-      redeemScriptOpt: Option[WitnessScriptPubKey] =
-        None): DLCParsingTestVector = {
-    DLCParsingTestVector(
-      fundingInput(inputSerialId,
-                   prevTx,
-                   prevTxVout,
-                   sequence,
-                   maxWitnessLen,
-                   redeemScriptOpt).toTLV)
-  }
-
   def adaptorSig: ECAdaptorSignature = {
     ECAdaptorSignature(
       ECPublicKey.freshPublicKey,
@@ -214,25 +175,15 @@ object DLCTLVGen {
     partialSig(fundingPubKey, sigHashByte = false)
   }
 
-  def cetSigsParsingTestVector(numOutcomes: Int = 3): DLCParsingTestVector = {
-    DLCParsingTestVector(
-      CETSignaturesV0TLV((0 until numOutcomes).toVector.map(_ => adaptorSig)))
-  }
-
   def fundingSigs(
       outPoints: Vector[TransactionOutPoint] = Vector(
         outputReference().outPoint)): FundingSignatures = {
     FundingSignatures(outPoints.map(outpoint => outpoint -> p2wpkhWitnessV0()))
   }
 
-  def fundingSigsParsingTestVector(
-      outPoints: Vector[TransactionOutPoint] = Vector(
-        outputReference().outPoint)): DLCParsingTestVector = {
-    DLCParsingTestVector(fundingSigs(outPoints).toTLV)
-  }
-
   def dlcOffer(
       protocolVersionOpt: Option[Int] = DLCOfferTLV.currentVersionOpt,
+      tempContractId: Sha256Digest = getTempContractId(),
       contractInfo: ContractInfo = genContractInfo(),
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
@@ -247,6 +198,7 @@ object DLCTLVGen {
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200)): DLCOffer = {
     DLCOffer(
       protocolVersionOpt,
+      tempContractId,
       contractInfo,
       DLCPublicKeys(fundingPubKey, payoutAddress),
       totalCollateral,
@@ -262,6 +214,7 @@ object DLCTLVGen {
 
   def dlcOfferTLV(
       protocolVersionOpt: Option[Int] = DLCOfferTLV.currentVersionOpt,
+      tempContractId: Sha256Digest = getTempContractId(),
       contractInfo: ContractInfo = genContractInfo(),
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
@@ -276,6 +229,7 @@ object DLCTLVGen {
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200)): DLCOfferTLV = {
     dlcOffer(
       protocolVersionOpt,
+      tempContractId,
       contractInfo,
       fundingPubKey,
       payoutAddress,
@@ -291,40 +245,8 @@ object DLCTLVGen {
     ).toTLV
   }
 
-  def dlcOfferParsingTestVector(
-      protocolVersionOpt: Option[Int] = DLCOfferTLV.currentVersionOpt,
-      contractInfo: ContractInfo = genContractInfo(),
-      fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
-      payoutAddress: BitcoinAddress = address(),
-      payoutSerialId: UInt64 = DLCMessage.genSerialId(),
-      totalCollateral: Satoshis = defaultAmt,
-      fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
-      changeAddress: BitcoinAddress = address(),
-      changeSerialId: UInt64 = DLCMessage.genSerialId(),
-      fundOutputSerialId: UInt64 = DLCMessage.genSerialId(),
-      feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte.one,
-      contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
-      contractTimeout: BlockTimeStamp =
-        BlockTimeStamp(200)): DLCParsingTestVector = {
-    DLCParsingTestVector(
-      dlcOfferTLV(
-        protocolVersionOpt,
-        contractInfo,
-        fundingPubKey,
-        payoutAddress,
-        payoutSerialId,
-        totalCollateral,
-        fundingInputs,
-        changeAddress,
-        changeSerialId,
-        fundOutputSerialId,
-        feeRate,
-        contractMaturityBound,
-        contractTimeout
-      ))
-  }
-
   def dlcAccept(
+      protocolVersionOpt: Option[Int] = DLCOfferTLV.currentVersionOpt,
       totalCollateral: Satoshis = defaultAmt,
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
@@ -336,6 +258,7 @@ object DLCTLVGen {
       refundSignatures: PartialSignature = refundSigs(),
       tempContractId: Sha256Digest = hash()): DLCAccept = {
     DLCAccept(
+      protocolVersionOpt,
       totalCollateral,
       DLCPublicKeys(fundingPubKey, payoutAddress),
       fundingInputs,
@@ -350,6 +273,7 @@ object DLCTLVGen {
   }
 
   def dlcAcceptTLV(
+      protocolVersionOpt: Option[Int] = DLCOfferTLV.currentVersionOpt,
       totalCollateral: Satoshis = defaultAmt,
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
@@ -360,39 +284,19 @@ object DLCTLVGen {
       cetSignatures: CETSignatures = cetSigs(),
       refundSignatures: PartialSignature = refundSigs(),
       tempContractId: Sha256Digest = hash()): DLCAcceptTLV = {
-    dlcAccept(totalCollateral,
-              fundingPubKey,
-              payoutAddress,
-              payoutSerialId,
-              fundingInputs,
-              changeAddress,
-              changeSerialId,
-              cetSignatures,
-              refundSignatures,
-              tempContractId).toTLV
-  }
-
-  def dlcAcceptParsingTestVector(
-      totalCollateral: Satoshis = defaultAmt,
-      fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
-      payoutAddress: BitcoinAddress = address(),
-      payoutSerialId: UInt64 = DLCMessage.genSerialId(),
-      fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
-      changeAddress: BitcoinAddress = address(),
-      changeSerialId: UInt64 = DLCMessage.genSerialId(),
-      cetSignatures: CETSignatures = cetSigs(),
-      tempContractId: Sha256Digest = hash()): DLCParsingTestVector = {
-    DLCParsingTestVector(
-      dlcAcceptTLV(totalCollateral,
-                   fundingPubKey,
-                   payoutAddress,
-                   payoutSerialId,
-                   fundingInputs,
-                   changeAddress,
-                   changeSerialId,
-                   cetSignatures,
-                   refundSigs(),
-                   tempContractId))
+    dlcAccept(
+      protocolVersionOpt,
+      totalCollateral,
+      fundingPubKey,
+      payoutAddress,
+      payoutSerialId,
+      fundingInputs,
+      changeAddress,
+      changeSerialId,
+      cetSignatures,
+      refundSignatures,
+      tempContractId
+    ).toTLV
   }
 
   def dlcAcceptFromOffer(
@@ -419,6 +323,7 @@ object DLCTLVGen {
     val tempContractId = offer.tempContractId
 
     DLCAccept(
+      offer.protocolVersionOpt,
       totalCollateral.satoshis,
       DLCPublicKeys(fundingPubKey, payoutAddress),
       fundingInputs,
@@ -441,45 +346,44 @@ object DLCTLVGen {
       fundingInputs: Vector[DLCFundingInput] = Vector(fundingInput()),
       changeAddress: BitcoinAddress = address(),
       changeSerialId: UInt64 = DLCMessage.genSerialId()): DLCAcceptTLV = {
-    dlcAcceptFromOffer(offer,
-                       overCollateral,
-                       fundingPubKey,
-                       payoutAddress,
-                       payoutSerialId,
-                       fundingInputs,
-                       changeAddress,
-                       changeSerialId).toTLV
+    dlcAcceptFromOffer(
+      offer = offer,
+      overCollateral = overCollateral,
+      fundingPubKey = fundingPubKey,
+      payoutAddress = payoutAddress,
+      payoutSerialId = payoutSerialId,
+      fundingInputs = fundingInputs,
+      changeAddress = changeAddress,
+      changeSerialId = changeSerialId
+    ).toTLV
   }
 
   def dlcSign(
+      protocolVersionOpt: Option[Int] = DLCOfferTLV.currentVersionOpt,
       cetSignatures: CETSignatures = cetSigs(),
       refundSignatures: PartialSignature = refundSigs(),
       fundingSignatures: FundingSignatures = fundingSigs(),
       contractId: ByteVector = hash().bytes): DLCSign = {
-    DLCSign(cetSignatures, refundSignatures, fundingSignatures, contractId)
+    DLCSign(protocolVersionOpt,
+            cetSignatures,
+            refundSignatures,
+            fundingSignatures,
+            contractId)
   }
 
   def dlcSignTLV(
+      protocolVersionOpt: Option[Int] = DLCOfferTLV.currentVersionOpt,
       cetSignatures: CETSignatures = cetSigs(),
       refundSignatures: PartialSignature = refundSigs(),
       fundingSignatures: FundingSignatures = fundingSigs(),
       contractId: ByteVector = hash().bytes): DLCSignTLV = {
-    dlcSign(cetSignatures,
-            refundSignatures,
-            fundingSignatures,
-            contractId).toTLV
-  }
-
-  def dlcSignParsingTestVector(
-      cetSignatures: CETSignatures = cetSigs(),
-      refundSignatures: PartialSignature = refundSigs(),
-      fundingSignatures: FundingSignatures = fundingSigs(),
-      contractId: ByteVector = hash().bytes): DLCParsingTestVector = {
-    DLCParsingTestVector(
-      dlcSignTLV(cetSignatures,
-                 refundSignatures,
-                 fundingSignatures,
-                 contractId))
+    dlcSign(
+      protocolVersionOpt = protocolVersionOpt,
+      cetSignatures = cetSignatures,
+      refundSignatures = refundSignatures,
+      fundingSignatures = fundingSignatures,
+      contractId = contractId
+    ).toTLV
   }
 
   def dlcSignFromOffer(
@@ -494,7 +398,11 @@ object DLCTLVGen {
     }
     val refundSig = refundSigs(offer.pubKeys.fundingKey)
     val fundingSignatures = fundingSigs(offer.fundingInputs.map(_.outPoint))
-    DLCSign(cetSignatures, refundSig, fundingSignatures, contractId)
+    DLCSign(protocolVersionOpt = offer.protocolVersionOpt,
+            cetSigs = cetSignatures,
+            refundSig = refundSig,
+            fundingSigs = fundingSignatures,
+            contractId = contractId)
   }
 
   def dlcSignTLVFromOffer(

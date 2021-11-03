@@ -29,6 +29,7 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
 
   val DLCOffer(_,
                _,
+               _,
                DLCPublicKeys(offerFundingKey: ECPublicKey,
                              offerFinalAddress: BitcoinAddress),
                offerTotalCollateral: Satoshis,
@@ -46,7 +47,8 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
     case network: BitcoinNetwork => network
   }
 
-  val DLCAcceptWithoutSigs(acceptTotalCollateral: Satoshis,
+  val DLCAcceptWithoutSigs(_,
+                           acceptTotalCollateral: Satoshis,
                            DLCPublicKeys(acceptFundingKey: ECPublicKey,
                                          acceptFinalAddress: BitcoinAddress),
                            acceptFundingInputs: Vector[DLCFundingInput],

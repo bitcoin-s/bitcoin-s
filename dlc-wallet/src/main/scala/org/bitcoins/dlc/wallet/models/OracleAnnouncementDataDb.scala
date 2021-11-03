@@ -11,7 +11,7 @@ case class OracleAnnouncementDataDb(
     publicKey: SchnorrPublicKey,
     signingPublicKey: SchnorrPublicKey,
     eventId: String,
-    eventDescriptor: EventDescriptorTLV,
+    eventDescriptor: BaseEventDescriptor,
     eventMaturity: UInt32
 ) extends DbRowAutoInc[OracleAnnouncementDataDb] {
 
@@ -21,19 +21,22 @@ case class OracleAnnouncementDataDb(
 
 object OracleAnnouncementDbHelper {
 
-  def fromAnnouncement(tlv: OracleAnnouncementTLV): OracleAnnouncementDataDb = {
-    OracleAnnouncementDataDb(None,
-                             tlv.announcementSignature,
-                             tlv.publicKey,
-                             tlv.publicKey,
-                             tlv.eventTLV.eventId,
-                             tlv.eventTLV.eventDescriptor,
-                             tlv.eventTLV.eventMaturityEpoch)
+  def fromAnnouncement(
+      tlv: BaseOracleAnnouncement): OracleAnnouncementDataDb = {
+    OracleAnnouncementDataDb(
+      None,
+      tlv.announcementSignature,
+      tlv.announcementPublicKey,
+      tlv.announcementPublicKey,
+      tlv.eventTLV.eventId,
+      tlv.eventTLV.eventDescriptor,
+      tlv.eventTLV.eventMaturityEpoch
+    )
 
   }
 
   def fromAnnouncements(
-      announcementTLVs: Vector[OracleAnnouncementTLV]): Vector[
+      announcementTLVs: Vector[BaseOracleAnnouncement]): Vector[
     OracleAnnouncementDataDb] = {
     announcementTLVs.map(fromAnnouncement)
   }

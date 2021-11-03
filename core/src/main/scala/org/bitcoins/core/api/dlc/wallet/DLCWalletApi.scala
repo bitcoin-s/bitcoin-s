@@ -31,7 +31,7 @@ trait DLCWalletApi { self: WalletApi =>
       peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
-    val contractInfo = ContractInfo.fromTLV(contractInfoTLV)
+    val contractInfo = ContractInfo.fromSubType(contractInfoTLV)
     createDLCOffer(contractInfo,
                    collateral,
                    feeRateOpt,
@@ -50,7 +50,7 @@ trait DLCWalletApi { self: WalletApi =>
       peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
-    val contractInfo = ContractInfo.fromTLV(contractInfoTLV)
+    val contractInfo = ContractInfo.fromSubType(contractInfoTLV)
     createDLCOffer(contractInfo,
                    collateral,
                    feeRateOpt,

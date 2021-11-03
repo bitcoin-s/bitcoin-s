@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.tlv
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.{Int32, UInt16, UInt32, UInt64}
+import org.bitcoins.core.number.{Int32, UInt16, UInt32, UInt64, UInt8}
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.tlv.TLV.{FALSE_BYTE, TRUE_BYTE}
@@ -28,7 +28,9 @@ case class ValueIterator(value: ByteVector) {
   }
 
   def take(numBytes: Int): ByteVector = {
-    require(current.length >= numBytes)
+    require(
+      current.length >= numBytes,
+      s"Can't take numBytes=$numBytes when iter has len=${current.length}")
     val bytes = current.take(numBytes)
     skip(numBytes)
     bytes
@@ -42,6 +44,18 @@ case class ValueIterator(value: ByteVector) {
     val elem = factory(current)
     skip(elem)
     elem
+  }
+
+  def takeOpt[E <: NetworkElement](
+      factory: FactoryOptionTLV[E]): OptionDLCType[E] = {
+    val elemOpt = factory.fromBytes(current)
+    elemOpt match {
+      case SomeDLCType(e) =>
+        skip(e)
+      case NoneDLCType =>
+        skip(NoneDLCType.byteSize) //none is represented by 0x00
+    }
+    elemOpt
   }
 
   def take[E <: NetworkElement](factory: Factory[E], byteSize: Int): E = {
@@ -73,6 +87,10 @@ case class ValueIterator(value: ByteVector) {
 
   def takeU16(): UInt16 = {
     UInt16(takeBits(16))
+  }
+
+  def takeU8(): UInt8 = {
+    UInt8(takeBits(8))
   }
 
   def takeU16Prefixed[E](takeFunc: Int => E): E = {

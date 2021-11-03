@@ -34,7 +34,7 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
     lnMessage.tlv match {
       case msg @ (_: UnknownTLV | _: DLCOracleTLV | _: DLCSetupPieceTLV |
           _: ShortChannelIdTLV | _: OutgoingCLTVValueTLV | _: AmtToForwardTLV |
-          _: PaymentDataTLV) =>
+          _: PaymentDataTLV | _: OracleEventV0TLV) =>
         log.error(s"Received unhandled message $msg")
         Future.unit
       case _: InitTLV =>

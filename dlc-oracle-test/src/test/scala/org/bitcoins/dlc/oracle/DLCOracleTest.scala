@@ -24,8 +24,8 @@ class DLCOracleTest extends DLCOracleFixture {
 
   val futureTime: Instant = TimeUtil.now.plusSeconds(100000)
 
-  val testDescriptor: EnumEventDescriptorV0TLV = EnumEventDescriptorV0TLV(
-    enumOutcomes)
+  val testDescriptor: EnumEventDescriptorDLCSubType =
+    EnumEventDescriptorDLCSubType(enumOutcomes)
 
   behavior of "DLCOracle"
 
@@ -46,7 +46,7 @@ class DLCOracleTest extends DLCOracleFixture {
   }
 
   it must "not find an event it doesn't have" in { dlcOracle: DLCOracle =>
-    val dummyEvent = TLVGen.oracleEventV0TLV.sampleSome
+    val dummyEvent = TLVGen.oracleAnnouncementV1TLV(None).sampleSome
     dlcOracle.findEvent(dummyEvent).map { eventOpt =>
       assert(eventOpt.isEmpty)
     }
@@ -55,8 +55,9 @@ class DLCOracleTest extends DLCOracleFixture {
   it must "calculate the correct staking address" in { dlcOracle: DLCOracle =>
     forAllAsync(ChainParamsGenerator.bitcoinNetworkParams) { network =>
       val expected =
-        Bech32Address(P2WPKHWitnessSPKV0(dlcOracle.publicKey.publicKey),
-                      network)
+        Bech32Address(
+          P2WPKHWitnessSPKV0(dlcOracle.announcementPublicKey.publicKey),
+          network)
       assert(dlcOracle.stakingAddress(network) == expected)
     }
   }
@@ -65,18 +66,19 @@ class DLCOracleTest extends DLCOracleFixture {
     val message = "hello world"
     val signature = dlcOracle.signMessage(message)
     assert(
-      dlcOracle.publicKey.verify(CryptoUtil.sha256(message).bytes, signature))
+      dlcOracle.announcementPublicKey.verify(CryptoUtil.sha256(message).bytes,
+                                             signature))
   }
 
-  it must "get the correctly sorted nonces in an announcement " in {
+  it must "get the correctly sorted nonces in an announcement" in {
     dlcOracle: DLCOracle =>
       val eventName = "test"
       val descriptorTLV =
-        DigitDecompositionEventDescriptorV0TLV(base = UInt16(2),
-                                               isSigned = false,
-                                               numDigits = 3,
-                                               unit = "units",
-                                               precision = Int32.zero)
+        DigitDecompositionEventDescriptorDLCType(base = UInt8.two,
+                                                 isSigned = false,
+                                                 numDigits = 3,
+                                                 unit = "units",
+                                                 precision = Int32.zero)
 
       for {
         announcement <- dlcOracle.createNewAnnouncement(eventName = eventName,
@@ -112,15 +114,15 @@ class DLCOracleTest extends DLCOracleFixture {
 
       newConf.start().flatMap { _ =>
         val oracleB = new DLCOracle()(newConf)
-        assert(oracleA.publicKey == oracleB.publicKey)
+        assert(oracleA.announcementPublicKey == oracleB.announcementPublicKey)
 
         val eventName = "test"
         val descriptorTLV =
-          DigitDecompositionEventDescriptorV0TLV(base = UInt16(2),
-                                                 isSigned = false,
-                                                 numDigits = 3,
-                                                 unit = "units",
-                                                 precision = Int32.zero)
+          DigitDecompositionEventDescriptorDLCType(base = UInt8.two,
+                                                   isSigned = false,
+                                                   numDigits = 3,
+                                                   unit = "units",
+                                                   precision = Int32.zero)
 
         for {
           announcementA <- oracleA.createNewAnnouncement(eventName = eventName,
@@ -133,20 +135,14 @@ class DLCOracleTest extends DLCOracleFixture {
                                                          descriptorTLV)
 
           // Can't compare announcementTLV because different nonces might be used for signature
-          _ = assert(announcementA.publicKey == announcementB.publicKey)
+          _ = assert(
+            announcementA.announcementPublicKey == announcementB.announcementPublicKey)
           _ = assert(announcementA.eventTLV == announcementB.eventTLV)
 
           eventA <- oracleA.signDigits(eventName, 1)
           eventB <- oracleB.signDigits(eventName, 1)
         } yield {
-          (eventA, eventB) match {
-            case (completedA: CompletedDigitDecompositionV0OracleEvent,
-                  completedB: CompletedDigitDecompositionV0OracleEvent) =>
-              assert(
-                completedA.oracleAttestmentV0TLV == completedB.oracleAttestmentV0TLV)
-            case (_, _) =>
-              fail("Unexpected outcome")
-          }
+          assert(eventA.oracleAttestmentV0TLV == eventB.oracleAttestmentV0TLV)
         }
       }
   }
@@ -183,7 +179,7 @@ class DLCOracleTest extends DLCOracleFixture {
       val create1F =
         dlcOracle.createNewDigitDecompAnnouncement(eventName = "test1",
                                                    maturationTime = futureTime,
-                                                   base = UInt16(10),
+                                                   base = UInt8(10),
                                                    isSigned = false,
                                                    numDigits = 3,
                                                    unit = "units",
@@ -192,7 +188,7 @@ class DLCOracleTest extends DLCOracleFixture {
       val create2F =
         dlcOracle.createNewDigitDecompAnnouncement(eventName = "test2",
                                                    maturationTime = futureTime,
-                                                   base = UInt16(10),
+                                                   base = UInt8(10),
                                                    isSigned = false,
                                                    numDigits = 3,
                                                    unit = "units",
@@ -222,45 +218,56 @@ class DLCOracleTest extends DLCOracleFixture {
     dlcOracle: DLCOracle =>
       val time = futureTime
       val eventName = "test"
-
+      val oracleDataManagement = dlcOracle.oracleDataManagement
       for {
         announcement <-
           dlcOracle.createNewEnumAnnouncement(eventName, time, enumOutcomes)
 
-        eventOpt <- dlcOracle.findEvent(announcement.eventTLV)
+        eventOpt <- dlcOracle.findEvent(announcement)
+        metadata <- oracleDataManagement
+          .findMetadataByAttestationPubKey(
+            eventOpt.get.metadataOpt.get.attestationPublicKey)
+          .map(_.get)
       } yield {
         assert(announcement.validateSignature)
         assert(eventOpt.isDefined)
         val event = eventOpt.get
 
+        val announcementV1 = announcement.asInstanceOf[OracleAnnouncementV1TLV]
+
         assert(event.isInstanceOf[PendingEnumV0OracleEvent])
         assert(event.eventName == eventName)
         assert(event.eventDescriptorTLV == testDescriptor)
         assert(event.signingVersion == SigningVersion.latest)
-        assert(event.pubkey == dlcOracle.publicKey)
+        assert(event.pubkey == dlcOracle.attestationPublicKey)
         assert(event.maturationTime.getEpochSecond == time.getEpochSecond)
 
+        val timestamp =
+          FixedOracleEventTimestamp(UInt32(event.maturationTime.getEpochSecond))
         val expectedEventTLV =
-          OracleEventV0TLV(event.nonces.toVector,
-                           UInt32(event.maturationTime.getEpochSecond),
-                           testDescriptor,
-                           eventName)
+          OracleEventV1TLV(testDescriptor, eventName, timestamp)
 
         assert(event.eventTLV == expectedEventTLV)
 
         val expectedAnnouncementTLV =
-          OracleAnnouncementV0TLV(event.announcementSignature,
-                                  event.pubkey,
-                                  expectedEventTLV)
+          OracleAnnouncementV1TLV(announcementSignature =
+                                    event.announcementSignature,
+                                  eventTLV = expectedEventTLV,
+                                  metadata = metadata)
 
+        assert(event.eventTLV == expectedEventTLV)
+        assert(event.metadataOpt.get == metadata)
         assert(event.announcementTLV == expectedAnnouncementTLV)
 
         val announceBytes =
-          SigningVersion.latest.calcAnnouncementHash(event.eventTLV)
+          SigningVersion.latest.calcAnnouncementHash(announcement =
+                                                       event.eventTLV,
+                                                     metadata =
+                                                       announcementV1.metadata)
 
         assert(
-          dlcOracle.publicKey.verify(announceBytes,
-                                     event.announcementSignature))
+          dlcOracle.announcementPublicKey.verify(announceBytes,
+                                                 event.announcementSignature))
       }
   }
 
@@ -269,39 +276,30 @@ class DLCOracleTest extends DLCOracleFixture {
     val outcome = descriptor.outcomes.head
 
     val descriptorV0TLV =
-      EnumEventDescriptorV0TLV(descriptor.outcomes)
+      EnumEventDescriptorDLCSubType(descriptor.outcomes)
 
     for {
       announcement <-
         dlcOracle.createNewAnnouncement("test", futureTime, descriptorV0TLV)
 
-      signedEventDb <-
+      completedEvent <-
         dlcOracle.signEnum(announcement.eventTLV, EnumAttestation(outcome))
-      eventOpt <- dlcOracle.findEvent(announcement.eventTLV)
     } yield {
-      assert(eventOpt.isDefined)
-      val event = eventOpt.get
-      val sig = signedEventDb.sigOpt.get
+      val sig = completedEvent.signature
+      assert(completedEvent.attestation == sig.sig)
+      assert(completedEvent.outcomes == Vector(EnumAttestation(outcome)))
 
-      event match {
-        case completedEvent: CompletedEnumV0OracleEvent =>
-          assert(completedEvent.attestation == sig.sig)
-          assert(completedEvent.outcomes == Vector(EnumAttestation(outcome)))
+      val descriptor = completedEvent.eventDescriptorTLV
+      val hash = SigningVersion.latest.calcOutcomeHash(outcome)
 
-          val hash = SigningVersion.latest.calcOutcomeHash(outcome)
-
-          assert(dlcOracle.publicKey.verify(hash, sig))
-          assert(
-            SchnorrDigitalSignature(completedEvent.nonces.head,
-                                    completedEvent.attestation) == sig)
-          assert(
-            OracleEvent.verifyAttestations(announcement,
-                                           completedEvent.oracleAttestmentV0TLV,
-                                           signingVersion =
-                                             SigningVersion.latest))
-        case _: PendingOracleEvent | _: CompletedOracleEvent =>
-          fail()
-      }
+      assert(dlcOracle.attestationPublicKey.verify(hash, sig))
+      assert(
+        SchnorrDigitalSignature(completedEvent.nonces.head,
+                                completedEvent.attestation) == sig)
+      assert(
+        OracleEvent.verifyAttestations(announcement,
+                                       completedEvent.oracleAttestmentV0TLV,
+                                       signingVersion = SigningVersion.latest))
     }
   }
 
@@ -312,7 +310,7 @@ class DLCOracleTest extends DLCOracleFixture {
       announcement <-
         dlcOracle.createNewDigitDecompAnnouncement(eventName = "test",
                                                    maturationTime = futureTime,
-                                                   base = UInt16(10),
+                                                   base = UInt8(10),
                                                    isSigned = true,
                                                    numDigits = 3,
                                                    unit = "units",
@@ -322,57 +320,53 @@ class DLCOracleTest extends DLCOracleFixture {
 
       eventTLV = announcement.eventTLV
 
-      event <- dlcOracle.signDigits(eventTLV, outcome)
+      completedEvent <- dlcOracle.signDigits(announcement, outcome)
     } yield {
-      event match {
-        case completedEvent: CompletedDigitDecompositionV0OracleEvent =>
-          val signOutcome = DigitDecompositionSignAttestation(outcome >= 0)
-          val digitOutcomes = Vector(DigitDecompositionAttestation(3),
-                                     DigitDecompositionAttestation(2),
-                                     DigitDecompositionAttestation(1))
-          assert(completedEvent.outcomes == signOutcome +: digitOutcomes)
+      val signOutcome = DigitDecompositionSignAttestation(outcome >= 0)
+      val digitOutcomes = Vector(DigitDecompositionAttestation(3),
+                                 DigitDecompositionAttestation(2),
+                                 DigitDecompositionAttestation(1))
+      assert(completedEvent.outcomes == signOutcome +: digitOutcomes)
 
-          // Sign Signature Check
-          val signHash = SigningVersion.latest.calcOutcomeHash("-")
-          val signSig = completedEvent.signatures.head
-          assert(dlcOracle.publicKey.verify(signHash, signSig))
-          assert(
-            SchnorrDigitalSignature(
-              completedEvent.nonces.head,
-              completedEvent.attestations.head) == signSig)
+      val descriptor = completedEvent.eventDescriptorTLV
 
-          // 100s Place signature Check
-          val hash100 =
-            SigningVersion.latest.calcOutcomeHash(
-              DigitDecompositionAttestation(3).bytes)
-          val sig100 = completedEvent.signatures(1)
-          assert(dlcOracle.publicKey.verify(hash100, sig100))
-          assert(
-            SchnorrDigitalSignature(completedEvent.nonces(1),
-                                    completedEvent.attestations(1)) == sig100)
+      // Sign Signature Check
+      val signHash = SigningVersion.latest.calcOutcomeHash("-")
+      val signSig = completedEvent.signatures.head
+      assert(dlcOracle.attestationPublicKey.verify(signHash, signSig))
+      assert(
+        SchnorrDigitalSignature(completedEvent.nonces.head,
+                                completedEvent.attestations.head) == signSig)
 
-          // 10s Place signature Check
-          val hash10 =
-            SigningVersion.latest.calcOutcomeHash(
-              DigitDecompositionAttestation(2).bytes)
-          val sig10 = completedEvent.signatures(2)
-          assert(dlcOracle.publicKey.verify(hash10, sig10))
-          assert(
-            SchnorrDigitalSignature(completedEvent.nonces(2),
-                                    completedEvent.attestations(2)) == sig10)
+      // 100s Place signature Check
+      val hash100 =
+        SigningVersion.latest.calcOutcomeHash(
+          DigitDecompositionAttestation(3).bytes)
+      val sig100 = completedEvent.signatures(1)
+      assert(dlcOracle.attestationPublicKey.verify(hash100, sig100))
+      assert(
+        SchnorrDigitalSignature(completedEvent.nonces(1),
+                                completedEvent.attestations(1)) == sig100)
 
-          // 1s Place signature Check
-          val hash1 =
-            SigningVersion.latest.calcOutcomeHash(
-              DigitDecompositionAttestation(1).bytes)
-          val sig1 = completedEvent.signatures(3)
-          assert(dlcOracle.publicKey.verify(hash1, sig1))
-          assert(
-            SchnorrDigitalSignature(completedEvent.nonces(3),
-                                    completedEvent.attestations(3)) == sig1)
-        case _: PendingOracleEvent | _: CompletedOracleEvent =>
-          fail()
-      }
+      // 10s Place signature Check
+      val hash10 =
+        SigningVersion.latest.calcOutcomeHash(
+          DigitDecompositionAttestation(2).bytes)
+      val sig10 = completedEvent.signatures(2)
+      assert(dlcOracle.attestationPublicKey.verify(hash10, sig10))
+      assert(
+        SchnorrDigitalSignature(completedEvent.nonces(2),
+                                completedEvent.attestations(2)) == sig10)
+
+      // 1s Place signature Check
+      val hash1 =
+        SigningVersion.latest.calcOutcomeHash(
+          DigitDecompositionAttestation(1).bytes)
+      val sig1 = completedEvent.signatures(3)
+      assert(dlcOracle.attestationPublicKey.verify(hash1, sig1))
+      assert(
+        SchnorrDigitalSignature(completedEvent.nonces(3),
+                                completedEvent.attestations(3)) == sig1)
     }
   }
 
@@ -385,7 +379,7 @@ class DLCOracleTest extends DLCOracleFixture {
           dlcOracle.createNewDigitDecompAnnouncement(eventName = "test",
                                                      maturationTime =
                                                        futureTime,
-                                                     base = UInt16(16),
+                                                     base = UInt8(16),
                                                      isSigned = true,
                                                      numDigits = 3,
                                                      unit = "units",
@@ -395,58 +389,54 @@ class DLCOracleTest extends DLCOracleFixture {
 
         eventTLV = announcement.eventTLV
 
-        event <- dlcOracle.signDigits(eventTLV, outcome)
+        completedEvent <- dlcOracle.signDigits(announcement, outcome)
       } yield {
-        event match {
-          case completedEvent: CompletedDigitDecompositionV0OracleEvent =>
-            val signOutcome = DigitDecompositionSignAttestation(outcome >= 0)
-            val digitOutcomes = Vector(DigitDecompositionAttestation(7),
-                                       DigitDecompositionAttestation(8),
-                                       DigitDecompositionAttestation(11))
-            assert(completedEvent.outcomes == signOutcome +: digitOutcomes)
+        val signOutcome = DigitDecompositionSignAttestation(outcome >= 0)
+        val digitOutcomes = Vector(DigitDecompositionAttestation(7),
+                                   DigitDecompositionAttestation(8),
+                                   DigitDecompositionAttestation(11))
+        assert(completedEvent.outcomes == signOutcome +: digitOutcomes)
 
-            // Sign Signature Check
-            val signHash =
-              SigningVersion.latest.calcOutcomeHash("-")
-            val signSig = completedEvent.signatures.head
-            assert(dlcOracle.publicKey.verify(signHash, signSig))
-            assert(
-              SchnorrDigitalSignature(
-                completedEvent.nonces.head,
-                completedEvent.attestations.head) == signSig)
+        val descriptor = completedEvent.eventDescriptorTLV
 
-            // 100s Place signature Check
-            val hash100 =
-              SigningVersion.latest.calcOutcomeHash(
-                DigitDecompositionAttestation(7).bytes)
-            val sig100 = completedEvent.signatures(1)
-            assert(dlcOracle.publicKey.verify(hash100, sig100))
-            assert(
-              SchnorrDigitalSignature(completedEvent.nonces(1),
-                                      completedEvent.attestations(1)) == sig100)
+        // Sign Signature Check
+        val signHash =
+          SigningVersion.latest.calcOutcomeHash("-")
+        val signSig = completedEvent.signatures.head
+        assert(dlcOracle.attestationPublicKey.verify(signHash, signSig))
+        assert(
+          SchnorrDigitalSignature(completedEvent.nonces.head,
+                                  completedEvent.attestations.head) == signSig)
 
-            // 10s Place signature Check
-            val hash10 =
-              SigningVersion.latest.calcOutcomeHash(
-                DigitDecompositionAttestation(8).bytes)
-            val sig10 = completedEvent.signatures(2)
-            assert(dlcOracle.publicKey.verify(hash10, sig10))
-            assert(
-              SchnorrDigitalSignature(completedEvent.nonces(2),
-                                      completedEvent.attestations(2)) == sig10)
+        // 100s Place signature Check
+        val hash100 =
+          SigningVersion.latest.calcOutcomeHash(
+            DigitDecompositionAttestation(7).bytes)
+        val sig100 = completedEvent.signatures(1)
+        assert(dlcOracle.attestationPublicKey.verify(hash100, sig100))
+        assert(
+          SchnorrDigitalSignature(completedEvent.nonces(1),
+                                  completedEvent.attestations(1)) == sig100)
 
-            // 1s Place signature Check
-            val hash1 =
-              SigningVersion.latest.calcOutcomeHash(
-                DigitDecompositionAttestation(11).bytes)
-            val sig1 = completedEvent.signatures(3)
-            assert(dlcOracle.publicKey.verify(hash1, sig1))
-            assert(
-              SchnorrDigitalSignature(completedEvent.nonces(3),
-                                      completedEvent.attestations(3)) == sig1)
-          case _: PendingOracleEvent | _: CompletedOracleEvent =>
-            fail()
-        }
+        // 10s Place signature Check
+        val hash10 =
+          SigningVersion.latest.calcOutcomeHash(
+            DigitDecompositionAttestation(8).bytes)
+        val sig10 = completedEvent.signatures(2)
+        assert(dlcOracle.attestationPublicKey.verify(hash10, sig10))
+        assert(
+          SchnorrDigitalSignature(completedEvent.nonces(2),
+                                  completedEvent.attestations(2)) == sig10)
+
+        // 1s Place signature Check
+        val hash1 =
+          SigningVersion.latest.calcOutcomeHash(
+            DigitDecompositionAttestation(11).bytes)
+        val sig1 = completedEvent.signatures(3)
+        assert(dlcOracle.attestationPublicKey.verify(hash1, sig1))
+        assert(
+          SchnorrDigitalSignature(completedEvent.nonces(3),
+                                  completedEvent.attestations(3)) == sig1)
       }
   }
 
@@ -459,7 +449,7 @@ class DLCOracleTest extends DLCOracleFixture {
           dlcOracle.createNewDigitDecompAnnouncement(eventName = "test",
                                                      maturationTime =
                                                        futureTime,
-                                                     base = UInt16(2),
+                                                     base = UInt8.two,
                                                      isSigned = false,
                                                      numDigits = 3,
                                                      unit = "units",
@@ -469,48 +459,44 @@ class DLCOracleTest extends DLCOracleFixture {
 
         eventTLV = announcement.eventTLV
 
-        event <- dlcOracle.signDigits(eventTLV, outcome)
+        completedEvent <- dlcOracle.signDigits(announcement, outcome)
       } yield {
-        event match {
-          case completedEvent: CompletedDigitDecompositionV0OracleEvent =>
-            val digitOutcomes = Vector(DigitDecompositionAttestation(0),
-                                       DigitDecompositionAttestation(1),
-                                       DigitDecompositionAttestation(0))
-            assert(completedEvent.outcomes == digitOutcomes)
+        val digitOutcomes = Vector(DigitDecompositionAttestation(0),
+                                   DigitDecompositionAttestation(1),
+                                   DigitDecompositionAttestation(0))
+        assert(completedEvent.outcomes == digitOutcomes)
 
-            // 100s Place signature Check
-            val hash100 =
-              SigningVersion.latest.calcOutcomeHash(
-                DigitDecompositionAttestation(0).bytes)
-            val sig100 = completedEvent.signatures.head
-            assert(dlcOracle.publicKey.verify(hash100, sig100))
-            assert(
-              SchnorrDigitalSignature(
-                completedEvent.nonces.head,
-                completedEvent.attestations.head) == sig100)
+        val descriptor = completedEvent.eventDescriptorTLV
 
-            // 10s Place signature Check
-            val hash10 =
-              SigningVersion.latest.calcOutcomeHash(
-                DigitDecompositionAttestation(1).bytes)
-            val sig10 = completedEvent.signatures(1)
-            assert(dlcOracle.publicKey.verify(hash10, sig10))
-            assert(
-              SchnorrDigitalSignature(completedEvent.nonces(1),
-                                      completedEvent.attestations(1)) == sig10)
+        // 100s Place signature Check
+        val hash100 =
+          SigningVersion.latest.calcOutcomeHash(
+            DigitDecompositionAttestation(0).bytes)
+        val sig100 = completedEvent.signatures.head
+        assert(dlcOracle.attestationPublicKey.verify(hash100, sig100))
+        assert(
+          SchnorrDigitalSignature(completedEvent.nonces.head,
+                                  completedEvent.attestations.head) == sig100)
 
-            // 1s Place signature Check
-            val hash1 =
-              SigningVersion.latest.calcOutcomeHash(
-                DigitDecompositionAttestation(0).bytes)
-            val sig1 = completedEvent.signatures(2)
-            assert(dlcOracle.publicKey.verify(hash1, sig1))
-            assert(
-              SchnorrDigitalSignature(completedEvent.nonces(2),
-                                      completedEvent.attestations(2)) == sig1)
-          case _: PendingOracleEvent | _: CompletedOracleEvent =>
-            fail()
-        }
+        // 10s Place signature Check
+        val hash10 =
+          SigningVersion.latest.calcOutcomeHash(
+            DigitDecompositionAttestation(1).bytes)
+        val sig10 = completedEvent.signatures(1)
+        assert(dlcOracle.attestationPublicKey.verify(hash10, sig10))
+        assert(
+          SchnorrDigitalSignature(completedEvent.nonces(1),
+                                  completedEvent.attestations(1)) == sig10)
+
+        // 1s Place signature Check
+        val hash1 =
+          SigningVersion.latest.calcOutcomeHash(
+            DigitDecompositionAttestation(0).bytes)
+        val sig1 = completedEvent.signatures(2)
+        assert(dlcOracle.attestationPublicKey.verify(hash1, sig1))
+        assert(
+          SchnorrDigitalSignature(completedEvent.nonces(2),
+                                  completedEvent.attestations(2)) == sig1)
       }
   }
 
@@ -527,7 +513,7 @@ class DLCOracleTest extends DLCOracleFixture {
           dlcOracle.createNewDigitDecompAnnouncement(eventName = eventName,
                                                      maturationTime =
                                                        futureTime,
-                                                     base = UInt16(2),
+                                                     base = UInt8.two,
                                                      isSigned = false,
                                                      numDigits = numDigits,
                                                      unit = "units",
@@ -535,16 +521,9 @@ class DLCOracleTest extends DLCOracleFixture {
 
         _ = assert(announcement.validateSignature)
 
-        eventTLV = announcement.eventTLV
-
         event <- dlcOracle.signDigits(eventName, outcome)
       } yield {
-        event match {
-          case _: PendingOracleEvent | _: CompletedEnumV0OracleEvent =>
-            fail(s"Shouldn't be pending/enum after signDigits()")
-          case c: CompletedDigitDecompositionV0OracleEvent =>
-            assert(c.outcomeBase10 == outcome)
-        }
+        assert(event.outcomeBase10 == outcome)
       }
   }
 
@@ -559,11 +538,7 @@ class DLCOracleTest extends DLCOracleFixture {
       _ = assert(beforeEvents.size == 1)
       _ = assert(beforeEvents.head.isInstanceOf[PendingOracleEvent])
 
-      nonce = {
-        announcement.eventTLV match {
-          case v0: OracleEventV0TLV => v0.nonces.head
-        }
-      }
+      nonce = announcement.nonces.head.head
 
       _ <- dlcOracle.createAttestation(nonce, EnumAttestation(outcome))
       afterPending <- dlcOracle.listPendingEventDbs()
@@ -592,9 +567,7 @@ class DLCOracleTest extends DLCOracleFixture {
                                                 futureTime,
                                                 enumOutcomes)
 
-          nonce = announcement.eventTLV match {
-            case v0: OracleEventV0TLV => v0.nonces.head
-          }
+          nonce = announcement.nonces.head.head
 
           _ <- dlcOracle.createAttestation(
             nonce,
@@ -610,20 +583,15 @@ class DLCOracleTest extends DLCOracleFixture {
           dlcOracle.createNewDigitDecompAnnouncement(eventName = "test",
                                                      maturationTime =
                                                        futureTime,
-                                                     base = UInt16(2),
+                                                     base = UInt8.two,
                                                      isSigned = false,
                                                      numDigits = 3,
                                                      unit = "units",
                                                      precision = Int32.zero)
 
-        res <- dlcOracle.signDigits(announcement.eventTLV, -2)
+        res <- dlcOracle.signDigits(announcement, -2)
       } yield {
-        res match {
-          case p @ (_: PendingOracleEvent | _: CompletedEnumV0OracleEvent) =>
-            fail(s"Cannot be pending after creating attestations, got=$p")
-          case c: CompletedDigitDecompositionV0OracleEvent =>
-            assert(c.outcomeBase10 == 0)
-        }
+        assert(res.outcomeBase10 == 0)
       }
   }
 
@@ -710,22 +678,19 @@ class DLCOracleTest extends DLCOracleFixture {
       val eventName = "signed"
       val maturationTime = futureTime
       val descriptor =
-        SignedDigitDecompositionEventDescriptor(UInt16(2),
-                                                UInt16(3),
-                                                "unit",
-                                                Int32(0))
+        SignedDigitDecompositionEventDescriptorDLCType(UInt8.two,
+                                                       UInt16(3),
+                                                       "unit",
+                                                       Int32(0))
 
       for {
-        announcement: OracleAnnouncementTLV <-
+        announcement <-
           dlcOracle.createNewAnnouncement(eventName, maturationTime, descriptor)
         event <-
           dlcOracle
-            .signDigits(announcement.eventTLV, -2)
+            .signDigits(announcement, -2)
       } yield {
-        assert(event.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
-        val attestations = event
-          .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
-          .oracleAttestmentV0TLV
+        val attestations = event.oracleAttestmentV0TLV
         assert(
           OracleEvent.verifyAttestations(announcement,
                                          attestations,
@@ -739,22 +704,19 @@ class DLCOracleTest extends DLCOracleFixture {
       val eventName = "unsigned"
       val maturationTime = futureTime
       val descriptor =
-        UnsignedDigitDecompositionEventDescriptor(UInt16(2),
-                                                  UInt16(3),
-                                                  "unit",
-                                                  Int32(0))
+        UnsignedDigitDecompositionEventDescriptorDLCType(UInt8.two,
+                                                         UInt16(3),
+                                                         "unit",
+                                                         Int32(0))
 
       for {
-        announcement: OracleAnnouncementTLV <-
+        announcement <-
           dlcOracle.createNewAnnouncement(eventName, maturationTime, descriptor)
         event <-
           dlcOracle
-            .signDigits(announcement.eventTLV, 2)
+            .signDigits(announcement, 2)
       } yield {
-        assert(event.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
-        val attestations = event
-          .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
-          .oracleAttestmentV0TLV
+        val attestations = event.oracleAttestmentV0TLV
         assert(
           OracleEvent.verifyAttestations(announcement,
                                          attestations,
@@ -769,35 +731,29 @@ class DLCOracleTest extends DLCOracleFixture {
       val eventName2 = "unsigned2"
       val maturationTime = futureTime
       val descriptor =
-        UnsignedDigitDecompositionEventDescriptor(UInt16(2),
-                                                  UInt16(3),
-                                                  "unit",
-                                                  Int32(0))
+        UnsignedDigitDecompositionEventDescriptorDLCType(UInt8.two,
+                                                         UInt16(3),
+                                                         "unit",
+                                                         Int32(0))
 
       for {
-        announcement1: OracleAnnouncementTLV <-
+        announcement1 <-
           dlcOracle.createNewAnnouncement(eventName1,
                                           maturationTime,
                                           descriptor)
-        announcement2: OracleAnnouncementTLV <-
+        announcement2 <-
           dlcOracle.createNewAnnouncement(eventName2,
                                           maturationTime,
                                           descriptor)
         event1 <-
           dlcOracle
-            .signDigits(announcement1.eventTLV, 2)
+            .signDigits(announcement1, 2)
         event2 <-
           dlcOracle
-            .signDigits(announcement2.eventTLV, 1)
+            .signDigits(announcement2, 1)
       } yield {
-        assert(event1.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
-        val attestations1 = event1
-          .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
-          .oracleAttestmentV0TLV
-        assert(event2.isInstanceOf[CompletedDigitDecompositionV0OracleEvent])
-        val attestations2 = event2
-          .asInstanceOf[CompletedDigitDecompositionV0OracleEvent]
-          .oracleAttestmentV0TLV
+        val attestations1 = event1.oracleAttestmentV0TLV
+        val attestations2 = event2.oracleAttestmentV0TLV
 
         assert(
           !OracleEvent.verifyAttestations(announcement1,
@@ -818,7 +774,7 @@ class DLCOracleTest extends DLCOracleFixture {
       val outcome = descriptor.outcomes.head
 
       val descriptorV0TLV =
-        EnumEventDescriptorV0TLV(descriptor.outcomes)
+        EnumEventDescriptorDLCSubType(descriptor.outcomes)
 
       for {
         announcement <-
@@ -852,10 +808,10 @@ class DLCOracleTest extends DLCOracleFixture {
   it must "create and delete signatures for a decomp event" in {
     dlcOracle: DLCOracle =>
       val descriptor =
-        UnsignedDigitDecompositionEventDescriptor(UInt16(2),
-                                                  UInt16(3),
-                                                  "unit",
-                                                  Int32(0))
+        UnsignedDigitDecompositionEventDescriptorDLCType(UInt8.two,
+                                                         UInt16(3),
+                                                         "unit",
+                                                         Int32(0))
 
       for {
         _ <- dlcOracle.createNewAnnouncement("test", futureTime, descriptor)
@@ -887,10 +843,10 @@ class DLCOracleTest extends DLCOracleFixture {
   it must "fail to delete signatures for an unsigned enum event" in {
     dlcOracle: DLCOracle =>
       val descriptor =
-        UnsignedDigitDecompositionEventDescriptor(UInt16(2),
-                                                  UInt16(3),
-                                                  "unit",
-                                                  Int32(0))
+        UnsignedDigitDecompositionEventDescriptorDLCType(UInt8.two,
+                                                         UInt16(3),
+                                                         "unit",
+                                                         Int32(0))
 
       for {
         _ <- dlcOracle.createNewAnnouncement("test", futureTime, descriptor)
@@ -940,7 +896,7 @@ class DLCOracleTest extends DLCOracleFixture {
     val createdF =
       dlcOracle.createNewDigitDecompAnnouncement(eventName = eventName,
                                                  maturationTime = futureTime,
-                                                 base = UInt16.two,
+                                                 base = UInt8.two,
                                                  isSigned = false,
                                                  numDigits = 2,
                                                  unit = "UNIT",
@@ -961,7 +917,7 @@ class DLCOracleTest extends DLCOracleFixture {
       val createdF =
         dlcOracle.createNewDigitDecompAnnouncement(eventName = eventName,
                                                    maturationTime = futureTime,
-                                                   base = UInt16(2),
+                                                   base = UInt8.two,
                                                    isSigned = false,
                                                    numDigits = 2,
                                                    unit = "UNIT",
@@ -999,7 +955,7 @@ class DLCOracleTest extends DLCOracleFixture {
     val createdF =
       dlcOracle.createNewDigitDecompAnnouncement(eventName = eventName,
                                                  maturationTime = futureTime,
-                                                 base = UInt16(2),
+                                                 base = UInt8.two,
                                                  isSigned = false,
                                                  numDigits = 2,
                                                  unit = "UNIT",
@@ -1022,7 +978,7 @@ class DLCOracleTest extends DLCOracleFixture {
       val createdF =
         dlcOracle.createNewDigitDecompAnnouncement(eventName = eventName,
                                                    maturationTime = futureTime,
-                                                   base = UInt16(2),
+                                                   base = UInt8.two,
                                                    isSigned = false,
                                                    numDigits = 2,
                                                    unit = "UNIT",
@@ -1051,7 +1007,7 @@ class DLCOracleTest extends DLCOracleFixture {
   }
 
   it must "export staking address wif" in { dlcOracle: DLCOracle =>
-    val pubKey = dlcOracle.publicKey
+    val pubKey = dlcOracle.announcementPublicKey
     val wif = dlcOracle.exportSigningKeyWIF
     val privKey = ECPrivateKeyUtil.fromWIFToPrivateKey(wif)
     assert(privKey.toPrivateKey.schnorrPublicKey == pubKey)

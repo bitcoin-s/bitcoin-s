@@ -137,12 +137,14 @@ object DLCAdaptorPointComputer {
     val preComputeTable: Vector[Vector[Vector[ECPublicKey]]] =
       contractInfo.oracleInfo.singleOracleInfos.map { info =>
         val announcement = info.announcement
-        val pubKey = announcement.publicKey
+        val pubKey = announcement.announcementPublicKey
         val nonces = announcement.eventTLV match {
           case v0: OracleEventV0TLV =>
             v0.nonces.map(_.publicKey)
         }
 
+        val nonces: Vector[ECPublicKey] = announcement.nonces
+          .flatMap(_.vec.map(_.publicKey))
         nonces.map { nonce =>
           possibleOutcomes.map { outcome =>
             computePoint(pubKey, nonce, outcome)

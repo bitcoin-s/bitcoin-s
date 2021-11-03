@@ -98,8 +98,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       dlcAnnouncementDbs: Vector[DLCAnnouncementDb],
       announcementData: Vector[OracleAnnouncementDataDb],
       nonceDbs: Vector[OracleNonceDb]): Vector[
-    (OracleAnnouncementV0TLV, Long)] = {
-    val withIds = nonceDbs
+    (BaseOracleAnnouncement, Long)] = {
+    val withIds: Vector[(BaseOracleAnnouncement, Long)] = nonceDbs
       .groupBy(_.announcementId)
       .toVector
       .flatMap { case (id, nonceDbs) =>
@@ -110,16 +110,30 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
               .exists(_.used)
             if (used) {
               val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
-              val eventTLV =
-                OracleEventV0TLV(nonces,
-                                 data.eventMaturity,
-                                 data.eventDescriptor,
-                                 data.eventId)
-              Some(
-                (OracleAnnouncementV0TLV(data.announcementSignature,
-                                         data.publicKey,
-                                         eventTLV),
-                 data.id.get))
+              val result = data.eventDescriptor match {
+                case dlcType: EventDescriptorDLCType =>
+                  val eventTLV = OracleEventV1TLV(
+                    eventDescriptor = dlcType,
+                    eventId = data.eventId,
+                    timestamps = FixedOracleEventTimestamp(data.eventMaturity))
+                  (OracleAnnouncementV1TLV(data.announcementSignature,
+                                           eventTLV,
+                                           metadata = ???),
+                   data.id.get)
+                case tlv: EventDescriptorTLV =>
+                  val eventTLV = OracleEventV0TLV(
+                    nonces = nonces,
+                    eventMaturityEpoch = data.eventMaturity,
+                    eventDescriptor = tlv,
+                    eventId = data.eventId
+                  )
+                  (OracleAnnouncementV0TLV(data.announcementSignature,
+                                           data.publicKey,
+                                           eventTLV),
+                   data.id.get)
+              }
+
+              Some(result)
             } else None
           case None =>
             throw new RuntimeException(s"Error no data for announcement id $id")
@@ -144,22 +158,41 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       announcementIds: Vector[DLCAnnouncementDb],
       announcementData: Vector[OracleAnnouncementDataDb],
       nonceDbs: Vector[OracleNonceDb]): Vector[
-    (OracleAnnouncementV0TLV, Long)] = {
-    val withIds: Vector[(OracleAnnouncementV0TLV, Long)] = {
+    (BaseOracleAnnouncement, Long)] = {
+    val withIds: Vector[(BaseOracleAnnouncement, Long)] = {
       val idNonceVec: Vector[(Long, Vector[OracleNonceDb])] =
         nonceDbs.groupBy(_.announcementId).toVector
       idNonceVec.map { case (id, nonceDbs) =>
         announcementData.find(_.id.contains(id)) match {
           case Some(data) =>
             val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
-            val eventTLV = OracleEventV0TLV(nonces,
-                                            data.eventMaturity,
-                                            data.eventDescriptor,
-                                            data.eventId)
-            (OracleAnnouncementV0TLV(data.announcementSignature,
-                                     data.publicKey,
-                                     eventTLV),
-             data.id.get)
+            val announcemntWithId = data.eventDescriptor match {
+              case dlcType: EventDescriptorDLCType =>
+                val eventTLV = OracleEventV1TLV(
+                  dlcType,
+                  data.eventId,
+                  FixedOracleEventTimestamp(data.eventMaturity)
+                )
+
+                (OracleAnnouncementV1TLV(data.announcementSignature,
+                                         eventTLV,
+                                         metadata = ???),
+                 data.id.get)
+              case tlv: EventDescriptorTLV =>
+                val eventTLV = OracleEventV0TLV(
+                  nonces = nonces,
+                  eventMaturityEpoch = data.eventMaturity,
+                  eventDescriptor = tlv,
+                  eventId = data.eventId
+                )
+                (OracleAnnouncementV0TLV(data.announcementSignature,
+                                         data.publicKey,
+                                         eventTLV),
+                 data.id.get)
+            }
+
+            announcemntWithId
+
           case None =>
             throw new RuntimeException(s"Error no data for announcement id $id")
         }
@@ -191,7 +224,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     val announcementTLVs =
       getOracleAnnouncements(announcementIds, announcementData, nonceDbs)
 
-    ContractDescriptor.fromTLV(contractDataDb.contractDescriptorTLV) match {
+    ContractDescriptor.fromSubType(contractDataDb.contractDescriptorTLV) match {
       case enum: EnumContractDescriptor =>
         val oracleInfo =
           if (announcementTLVs.size == 1) {
@@ -209,11 +242,11 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
             NumericSingleOracleInfo(announcementTLVs.head)
           } else {
             contractDataDb.oracleParamsTLVOpt match {
-              case Some(params) =>
+              case SomeDLCType(params) =>
                 NumericMultiOracleInfo(contractDataDb.oracleThreshold,
                                        announcementTLVs,
-                                       params)
-              case None =>
+                                       SomeDLCType(params))
+              case NoneDLCType =>
                 NumericExactMultiOracleInfo(contractDataDb.oracleThreshold,
                                             announcementTLVs)
             }

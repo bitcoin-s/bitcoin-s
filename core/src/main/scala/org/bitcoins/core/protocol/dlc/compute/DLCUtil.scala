@@ -15,9 +15,9 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
 import org.bitcoins.core.protocol.tlv.{
-  OracleAnnouncementTLV,
   OracleAttestmentTLV,
   OracleAttestmentV0TLV,
+  BaseOracleAnnouncement,
   OracleEventV0TLV
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
@@ -260,7 +260,7 @@ object DLCUtil {
   }
 
   def matchOracleSignatures(
-      announcements: Vector[OracleAnnouncementTLV],
+      announcements: Vector[BaseOracleAnnouncement],
       oracleSignatures: Vector[OracleSignatures]): Option[OracleSignatures] = {
     val announcementNonces: Vector[Vector[SchnorrNonce]] = {
       announcements
@@ -282,7 +282,7 @@ object DLCUtil {
 
   /** Checks to see if the given oracle signatures and announcement have the same nonces */
   private def matchOracleSignaturesForAnnouncements(
-      announcement: OracleAnnouncementTLV,
+      announcement: BaseOracleAnnouncement,
       signature: OracleSignatures): Option[OracleSignatures] = {
     matchOracleSignatures(
       Vector(announcement),

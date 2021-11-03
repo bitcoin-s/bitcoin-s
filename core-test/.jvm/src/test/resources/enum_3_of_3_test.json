@@ -1,0 +1,308 @@
+{
+  "offerMessage": {
+    "message": {
+      "protocolVersion": 1,
+      "contractFlags": 0,
+      "chainHash": "06226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f",
+      "temporaryContractId": "7c78b6e5b0f5943c7afa13a729103712f26bceaaf4e867f98729174ce157dabb",
+      "contractInfo": {
+        "singleContractInfo": {
+          "totalCollateral": 200000000,
+          "contractInfo": {
+            "contractDescriptor": {
+              "enumeratedContractDescriptor": {
+                "payouts": [
+                  {
+                    "outcome": "a",
+                    "offerPayout": 200000000
+                  },
+                  {
+                    "outcome": "b",
+                    "offerPayout": 0
+                  },
+                  {
+                    "outcome": "c",
+                    "offerPayout": 200000000
+                  },
+                  {
+                    "outcome": "d",
+                    "offerPayout": 0
+                  }
+                ]
+              }
+            },
+            "oracleInfo": {
+              "multi": {
+                "threshold": 3,
+                "oracleAnnouncements": [
+                  {
+                    "announcementSignature": "49f10a8bdfa240f97cede025792c5509732c52f6d356cdf2b10ca4a98b198f4c25c1ca9e132af9e19e5fe1a1cf6ae7aaaceb3a29bf86d46eac2d3ad1562dcdbc",
+                    "oracleMetadata": {
+                      "announcementPublicKey": "adf95246fd083d3b564da66b68032a7e69eb439a39c978054a7e5b07b63c6255",
+                      "oracleName": "MockOracle",
+                      "oracleDescription": "mock oracle",
+                      "timestamp": 1,
+                      "attestationScheme": {
+                        "attestationPublicKey": "52aabb137cea4010faf2e2375e8f335373048bd6927a459c5fbb4440b05c9ed5",
+                        "oracleNonces": [
+                          "4c9416bba864d77cd27b1f5e7af455ccd86681bed699948f478556e89e8179e7"
+                        ],
+                        "proofOfKnowledge": {
+                          "attestationPublicKeyProof": "0d6d13b09dfe12d7559ba68cba4359119f639104be1c94ed3a6b2956f70b75c5082736d8f27448d5bedfbd1d358a8b209788178dc8d7faddd3da0e6d0e66a17f",
+                          "nonceProofs": [
+                            "9870ae28d6dc52e407286c0aa15e3616212b9ba2084989379e3b7afd1af3efcf98106db38b7134ac369aa58e903ef87f46f64b8e6a857876cf71c3267e4d33b4"
+                          ]
+                        }
+                      },
+                      "oracleMetaDataSignature": "8ddbb1ec968e35461a93bedd48dde69339489c728002ab98fb1554f34139b2d434c1d179370d668867c5235e6bc791c052d107bb0573521b58d81a310c6890f1"
+                    },
+                    "oracleEvent": {
+                      "timestamp": {
+                        "fixedOracleEventTimestamp": {
+                          "expectedTimeEpoch": 1623133104
+                        }
+                      },
+                      "eventDescriptor": {
+                        "enumEvent": {
+                          "outcomes": [
+                            "a",
+                            "b",
+                            "c",
+                            "d"
+                          ]
+                        }
+                      },
+                      "eventId": "Test"
+                    }
+                  },
+                  {
+                    "announcementSignature": "24a6506800184b9f31293c143050d5e853fa86f40814c6476214f93a796f70b93596a2d40ec2b448c98247afdbe028a045c6eca404c0335045435175bb04ec9e",
+                    "oracleMetadata": {
+                      "announcementPublicKey": "342b1c4a31befa42d9d26b5247833f0c6eb1499f9cffb5483072e0ea38c651b3",
+                      "oracleName": "MockOracle",
+                      "oracleDescription": "mock oracle",
+                      "timestamp": 1,
+                      "attestationScheme": {
+                        "attestationPublicKey": "700978f8166ae150c45059c181e8d4d9dc65cc38c890b2e0601b6073ccd8bd66",
+                        "oracleNonces": [
+                          "8a4095131263ba7c0275da4c2b835e9f21a0965c672b123d055610cfbac1853e"
+                        ],
+                        "proofOfKnowledge": {
+                          "attestationPublicKeyProof": "9fa6bee17fec2d634ccf0ead928aefa44d02963709e584292e5d685f56686d73658f2868db8ceaba5a7899337687f1544487cf7871a65ac2623ab96f207e4b3d",
+                          "nonceProofs": [
+                            "2b4c08de8ead3b15c7bc10c0f3bb369aa750bf3ada8c477e398be7981b894d41020b896617a1f47be9b0d8361220195c7c878854236c3e9f14f0a2119d59d41e"
+                          ]
+                        }
+                      },
+                      "oracleMetaDataSignature": "2313ec0d24130e21da07e5bda3a81c504bd5c06fc16f07866cdf3ac1645e03536ac99b5e0cdb3ea0395cfa66e885f01180fd85d4256401fff8b8362027ac34d8"
+                    },
+                    "oracleEvent": {
+                      "timestamp": {
+                        "fixedOracleEventTimestamp": {
+                          "expectedTimeEpoch": 1623133104
+                        }
+                      },
+                      "eventDescriptor": {
+                        "enumEvent": {
+                          "outcomes": [
+                            "a",
+                            "b",
+                            "c",
+                            "d"
+                          ]
+                        }
+                      },
+                      "eventId": "Test"
+                    }
+                  },
+                  {
+                    "announcementSignature": "8a678a9eabbdc0c995b8298425df52d113dda0e310ec7d5c0768188636ec186ba0c4df6b84facda1c5a78a5eecc2817459b7170b11941c82fbb4b5e082aa124a",
+                    "oracleMetadata": {
+                      "announcementPublicKey": "3bf8f7857f7f0ccd54d2ce7d667d19bb9faf0d8b353d86422ce47d8b3de1cba8",
+                      "oracleName": "MockOracle",
+                      "oracleDescription": "mock oracle",
+                      "timestamp": 1,
+                      "attestationScheme": {
+                        "attestationPublicKey": "1f97d0a4ac2ea6d20eb5033ebf391f716f53213a8ae04c38951924f8432af53d",
+                        "oracleNonces": [
+                          "12537a1a1904391fff9abd55cdf3a1f9b4e589e72ca1855c48a597699c7b30d1"
+                        ],
+                        "proofOfKnowledge": {
+                          "attestationPublicKeyProof": "6dd83a0a006825f979e4411f41a499e2938978bea0bb8826037dc68adbc9430c78f57c59efaf9884f93866ef741a2f64500fba477b74e14d3373bd6cb258021d",
+                          "nonceProofs": [
+                            "6d82ee9dd2be7904455610317f67283d4f170ad21f5bd6dd874a4fe171a736a68884825e759118c439b2988a512653b10008679dd4e1193cd75024cc824941b5"
+                          ]
+                        }
+                      },
+                      "oracleMetaDataSignature": "e156848a16b5e684a3e06d9e5c69d20f44f1cd990d4489e4fb7dc8a74713f1937c434bddb59e956417740593b0b2fe336c575f8ff32e97c8509b320d06912396"
+                    },
+                    "oracleEvent": {
+                      "timestamp": {
+                        "fixedOracleEventTimestamp": {
+                          "expectedTimeEpoch": 1623133104
+                        }
+                      },
+                      "eventDescriptor": {
+                        "enumEvent": {
+                          "outcomes": [
+                            "a",
+                            "b",
+                            "c",
+                            "d"
+                          ]
+                        }
+                      },
+                      "eventId": "Test"
+                    }
+                  }
+                ],
+                "oracleParams": null
+              }
+            }
+          }
+        }
+      },
+      "fundingPubkey": "03c9ab4999c52abc108bd415177d293eb5563573d4a0be86b1e749c8859080c79e",
+      "payoutSpk": "00147248c00026caa0c3ce301b6c1c38c24650f9c03b",
+      "payoutSerialId": "15430791970496791205",
+      "offerCollateral": 100000000,
+      "fundingInputs": [
+        {
+          "inputSerialId": "7178073368200882565",
+          "prevTx": "020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff03520101ffffffff0200f2052a01000000160014a7eb90f018f0451e7633955b1abf25c3d738f3ac0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf90120000000000000000000000000000000000000000000000000000000000000000000000000",
+          "prevTxVout": 0,
+          "sequence": 4294967295,
+          "maxWitnessLen": 107,
+          "redeemScript": ""
+        }
+      ],
+      "changeSpk": "00143c95085da7d24ad4c05f9273b9134b65ce30c0e8",
+      "changeSerialId": "16075249685045228188",
+      "fundOutputSerialId": "7475839404570464381",
+      "feeRatePerVb": 2,
+      "cetLocktime": 1623133104,
+      "refundLocktime": 1623737904
+    },
+    "serialized": "a71a000000010006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f7c78b6e5b0f5943c7afa13a729103712f26bceaaf4e867f98729174ce157dabb00000000000bebc20000040161000000000bebc200016200000000000000000163000000000bebc200016400000000000000000100030349f10a8bdfa240f97cede025792c5509732c52f6d356cdf2b10ca4a98b198f4c25c1ca9e132af9e19e5fe1a1cf6ae7aaaceb3a29bf86d46eac2d3ad1562dcdbcadf95246fd083d3b564da66b68032a7e69eb439a39c978054a7e5b07b63c62550a4d6f636b4f7261636c650b6d6f636b206f7261636c650000000152aabb137cea4010faf2e2375e8f335373048bd6927a459c5fbb4440b05c9ed5014c9416bba864d77cd27b1f5e7af455ccd86681bed699948f478556e89e8179e70d6d13b09dfe12d7559ba68cba4359119f639104be1c94ed3a6b2956f70b75c5082736d8f27448d5bedfbd1d358a8b209788178dc8d7faddd3da0e6d0e66a17f019870ae28d6dc52e407286c0aa15e3616212b9ba2084989379e3b7afd1af3efcf98106db38b7134ac369aa58e903ef87f46f64b8e6a857876cf71c3267e4d33b48ddbb1ec968e35461a93bedd48dde69339489c728002ab98fb1554f34139b2d434c1d179370d668867c5235e6bc791c052d107bb0573521b58d81a310c6890f10060bf0bb000040161016201630164045465737424a6506800184b9f31293c143050d5e853fa86f40814c6476214f93a796f70b93596a2d40ec2b448c98247afdbe028a045c6eca404c0335045435175bb04ec9e342b1c4a31befa42d9d26b5247833f0c6eb1499f9cffb5483072e0ea38c651b30a4d6f636b4f7261636c650b6d6f636b206f7261636c6500000001700978f8166ae150c45059c181e8d4d9dc65cc38c890b2e0601b6073ccd8bd66018a4095131263ba7c0275da4c2b835e9f21a0965c672b123d055610cfbac1853e9fa6bee17fec2d634ccf0ead928aefa44d02963709e584292e5d685f56686d73658f2868db8ceaba5a7899337687f1544487cf7871a65ac2623ab96f207e4b3d012b4c08de8ead3b15c7bc10c0f3bb369aa750bf3ada8c477e398be7981b894d41020b896617a1f47be9b0d8361220195c7c878854236c3e9f14f0a2119d59d41e2313ec0d24130e21da07e5bda3a81c504bd5c06fc16f07866cdf3ac1645e03536ac99b5e0cdb3ea0395cfa66e885f01180fd85d4256401fff8b8362027ac34d80060bf0bb00004016101620163016404546573748a678a9eabbdc0c995b8298425df52d113dda0e310ec7d5c0768188636ec186ba0c4df6b84facda1c5a78a5eecc2817459b7170b11941c82fbb4b5e082aa124a3bf8f7857f7f0ccd54d2ce7d667d19bb9faf0d8b353d86422ce47d8b3de1cba80a4d6f636b4f7261636c650b6d6f636b206f7261636c65000000011f97d0a4ac2ea6d20eb5033ebf391f716f53213a8ae04c38951924f8432af53d0112537a1a1904391fff9abd55cdf3a1f9b4e589e72ca1855c48a597699c7b30d16dd83a0a006825f979e4411f41a499e2938978bea0bb8826037dc68adbc9430c78f57c59efaf9884f93866ef741a2f64500fba477b74e14d3373bd6cb258021d016d82ee9dd2be7904455610317f67283d4f170ad21f5bd6dd874a4fe171a736a68884825e759118c439b2988a512653b10008679dd4e1193cd75024cc824941b5e156848a16b5e684a3e06d9e5c69d20f44f1cd990d4489e4fb7dc8a74713f1937c434bddb59e956417740593b0b2fe336c575f8ff32e97c8509b320d069123960060bf0bb00004016101620163016404546573740003c9ab4999c52abc108bd415177d293eb5563573d4a0be86b1e749c8859080c79e001600147248c00026caa0c3ce301b6c1c38c24650f9c03bd6252f8a946942a50000000005f5e10001639da3b2834e2985a8020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff03520101ffffffff0200f2052a01000000160014a7eb90f018f0451e7633955b1abf25c3d738f3ac0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf9012000000000000000000000000000000000000000000000000000000000000000000000000000000000ffffffff006b0000001600143c95085da7d24ad4c05f9273b9134b65ce30c0e8df16c26b10d4b29c67bf84546b4a507d000000000000000260bf0bb060c84630"
+  },
+  "acceptMessage": {
+    "message": {
+      "protocolVersion": 1,
+      "temporaryContractId": "7c78b6e5b0f5943c7afa13a729103712f26bceaaf4e867f98729174ce157dabb",
+      "acceptCollateral": 100000000,
+      "fundingPubkey": "028cf343211c4e56a2944b0ab6bd0706281d131fbb5564183c446b351b10523b5c",
+      "payoutSpk": "0014cbfc2b3d151b351d1f0cb8e9cb7476c0e88eff1b",
+      "payoutSerialId": "16714517492369994081",
+      "fundingInputs": [
+        {
+          "inputSerialId": "14990233617414632553",
+          "prevTx": "020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff03510101ffffffff0200f2052a01000000160014ecaf703504bb4ec5150cde02c41667feb7bb6cc90000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf90120000000000000000000000000000000000000000000000000000000000000000000000000",
+          "prevTxVout": 0,
+          "sequence": 4294967295,
+          "maxWitnessLen": 107,
+          "redeemScript": ""
+        }
+      ],
+      "changeSpk": "00141a618cfab752c9600b6044742d7ab7e67493a2c0",
+      "changeSerialId": "9553736385719363780",
+      "cetAdaptorSignatures": {
+        "ecdsaAdaptorSignatures": [
+          {
+            "signature": "038e5326d097f1c0f42a393e4f7014f3a5ffc3b6e0ef593fda5c4cad072c4f85b5038ec24890ae38b430240e8d276c94109c053ea974c7a81028efe821034872952034a77fe609a70ab7d564cb46e7ced480bbbf784406c4fa1029be0692a7eb7c52629025ed4724350fc7375727c5add74b633d0276cb7fa7487b0412de66c829d229dddcf9cf0b71ffdc10dbfa016b09609d1b04997966c44890fa89a430ce0400"
+          },
+          {
+            "signature": "0293a70183f610e1ee22eebf1a5471e1dbc6b28c34c245ceae25b31c7de5d4571b0399eba966460e7cfc79175ea9cde377d9b94151e88953cb1122c6e9c5cf7839d6fd6a5fc3e603c12134de4c5d377a0613f282a6332b8c2b72763573c7e6aefb1465e7fad5f3574958cf67d393976139805cd8c7e8e1c173f5f9a21d4e4712453f260d1d11d9647fe405128d53cad96e689c9fc6173863426d3b56fd07a332fe93"
+          },
+          {
+            "signature": "027e79c77f42657d82ed059932aa2716fccc94672141263d5e5953cac2a9c07f0602e822fa7fd5370635404bc264cd1978f553faad388fb9634326a9ffadbeaf1b3e1948b2ae97bd5b5fb4fbddad892300cc044806f270bd75a052d4d4e62b5e9b20021a736e0deb187034f01fb869559516b401070b489dddc13ae53ba4efaef84df8f9aae356b7a019b49cc2b4fea75394e8c20536d126cff502358b2eaa3fe081"
+          },
+          {
+            "signature": "03e66ba060839d9ac0651b088cea950013389e5c379eac5c2509809dd4b754a7a6024c23a0f711d20c75a37ecff558bd5ea739442d1ad650f809f1d6225e78a05d1f3f379ebdf875427eb25fcf123692425e41dbcbf3dc43c987bd85383ee20e10999350a055957b0a63a8e2249f4332de4d302aa1d979ba3111a8a683fe34dc1abd03745db23b294d7a215ede5c7fa3e89ebc0b52d012d0c1fc0027ec419e89a7c8"
+          }
+        ]
+      },
+      "refundSignature": "3044022049cb41822e11250b9aeb6415c6a35c68d0edba33b0585607a880b2c951fc8be0022044b3415f2e37b93bf2e97df7a9e883f438bc57521de1cb75c962843a4fb48645",
+      "negotiationFields": null
+    },
+    "serialized": "a71c000000017c78b6e5b0f5943c7afa13a729103712f26bceaaf4e867f98729174ce157dabb0000000005f5e100028cf343211c4e56a2944b0ab6bd0706281d131fbb5564183c446b351b10523b5c00160014cbfc2b3d151b351d1f0cb8e9cb7476c0e88eff1be7f5e51a1cc4316101d008020daa1e3469a8020000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff03510101ffffffff0200f2052a01000000160014ecaf703504bb4ec5150cde02c41667feb7bb6cc90000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf9012000000000000000000000000000000000000000000000000000000000000000000000000000000000ffffffff006b0000001600141a618cfab752c9600b6044742d7ab7e67493a2c08495b09ffc86e8c404038e5326d097f1c0f42a393e4f7014f3a5ffc3b6e0ef593fda5c4cad072c4f85b5038ec24890ae38b430240e8d276c94109c053ea974c7a81028efe821034872952034a77fe609a70ab7d564cb46e7ced480bbbf784406c4fa1029be0692a7eb7c52629025ed4724350fc7375727c5add74b633d0276cb7fa7487b0412de66c829d229dddcf9cf0b71ffdc10dbfa016b09609d1b04997966c44890fa89a430ce04000293a70183f610e1ee22eebf1a5471e1dbc6b28c34c245ceae25b31c7de5d4571b0399eba966460e7cfc79175ea9cde377d9b94151e88953cb1122c6e9c5cf7839d6fd6a5fc3e603c12134de4c5d377a0613f282a6332b8c2b72763573c7e6aefb1465e7fad5f3574958cf67d393976139805cd8c7e8e1c173f5f9a21d4e4712453f260d1d11d9647fe405128d53cad96e689c9fc6173863426d3b56fd07a332fe93027e79c77f42657d82ed059932aa2716fccc94672141263d5e5953cac2a9c07f0602e822fa7fd5370635404bc264cd1978f553faad388fb9634326a9ffadbeaf1b3e1948b2ae97bd5b5fb4fbddad892300cc044806f270bd75a052d4d4e62b5e9b20021a736e0deb187034f01fb869559516b401070b489dddc13ae53ba4efaef84df8f9aae356b7a019b49cc2b4fea75394e8c20536d126cff502358b2eaa3fe08103e66ba060839d9ac0651b088cea950013389e5c379eac5c2509809dd4b754a7a6024c23a0f711d20c75a37ecff558bd5ea739442d1ad650f809f1d6225e78a05d1f3f379ebdf875427eb25fcf123692425e41dbcbf3dc43c987bd85383ee20e10999350a055957b0a63a8e2249f4332de4d302aa1d979ba3111a8a683fe34dc1abd03745db23b294d7a215ede5c7fa3e89ebc0b52d012d0c1fc0027ec419e89a7c849cb41822e11250b9aeb6415c6a35c68d0edba33b0585607a880b2c951fc8be044b3415f2e37b93bf2e97df7a9e883f438bc57521de1cb75c962843a4fb4864500"
+  },
+  "signMessage": {
+    "message": {
+      "protocolVersion": 1,
+      "contractId": "34f2cd944c9d6dc416c001e52ec22fd4e726f81d752e3952ba5fc8ed90dc71d2",
+      "cetAdaptorSignatures": {
+        "ecdsaAdaptorSignatures": [
+          {
+            "signature": "039516986b620517a215ad4772037f3db056217b5bc4b39bccb294fbbef1f894cd02d24c39189711727ee6fb6846fc573ddd189e9f72078b721403ef9c30b4a37ac710dd594df283d023cb16278fd88c98a70446ac185afb7fc3839d56533455797683571300e4ad1046bc822bea0f3281267783426d04497f5bb309ca6a1ab75ffbf94227f435ec5123f2084e0cf76e12d416d1b3a85af46b9887bc10ac3245e494"
+          },
+          {
+            "signature": "025f07cb04af7132c8bf0a2f363502a05d2efb93f0b441f9d4cc7c323fdaf5191c0348bf4af28c6aab170a578a9ad94272b3d6ec1aeba49c24c73c279a092d54bf81519f7e9c4b865bab109a690dd4be20c685cfa1a2601f0120be49b12896ce60c222587fbb6d112318587ceb7cb8e5ab4d574c3d393ad9ca8dc33db1a2a366d78cfea09aa0391db0a5dfcc630c36567771232f6450dae74de483e3ab4f43eb9781"
+          },
+          {
+            "signature": "0217937ff04bc2e7b690e7246574244a5f6df8b543056289a4a5cd2a7439be9e6a02dcc5ccb32deee808c26822e7ca0078dac36bb128fe7b13f812617b195c4cd2ae2d1c6faed09d893edcdebe677cd76338c469645f03253da596a473105ef295575e4605db8b7eed947b8d8b277909238ecd39bebf644356525d646c3b6db023837f755f43d25779e600bfb64af7fc67a2e62573fa5cead5772aea91adef706cc2"
+          },
+          {
+            "signature": "03dd81b8f0ab9cd3fc969b1a8752fd2c8342974f77036640ae963e045ccb4927010287466a1841675fb4741eeba6ac87d6f5fff1ee2f6fc166abde20001cf2f5f2e4a3daa248832e1c02414452ba3fe08310835499fcbd0670bb7b7bdb826574b28ff1188a7ebc386b5555950b38b6fe3290587e366f5cbd18c265b24a1cfaf94ca613b1b19f97b08b3aee4350ab6182a9da8a431d95ca915f4eaf3da9c019da880d"
+          }
+        ]
+      },
+      "refundSignature": "304402202725454732309a334a6c7d4e82485d2f0c334540736560310b2d326bb9b3e9ff02202b3b0e5ff0839e7cffb0891c0978afca3381c36b25467286e73aad95dbbc9fbe",
+      "fundingSignatures": {
+        "fundingSignatures": [
+          {
+            "witnessElements": [
+              {
+                "witness": "304402200c558c91f55961f7aed0097e489881eb79c30de3d594ec9a040af165370757930220698f26d005bb20e10be2b84aff53b3ade8a1a6b760f003582ee3fff1f3d80d4601"
+              },
+              {
+                "witness": "0349fdfa43d2554b627bfddedb4cd52fafed522c532c488be03b379f8d38a69a1b"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "serialized": "a71e0000000134f2cd944c9d6dc416c001e52ec22fd4e726f81d752e3952ba5fc8ed90dc71d204039516986b620517a215ad4772037f3db056217b5bc4b39bccb294fbbef1f894cd02d24c39189711727ee6fb6846fc573ddd189e9f72078b721403ef9c30b4a37ac710dd594df283d023cb16278fd88c98a70446ac185afb7fc3839d56533455797683571300e4ad1046bc822bea0f3281267783426d04497f5bb309ca6a1ab75ffbf94227f435ec5123f2084e0cf76e12d416d1b3a85af46b9887bc10ac3245e494025f07cb04af7132c8bf0a2f363502a05d2efb93f0b441f9d4cc7c323fdaf5191c0348bf4af28c6aab170a578a9ad94272b3d6ec1aeba49c24c73c279a092d54bf81519f7e9c4b865bab109a690dd4be20c685cfa1a2601f0120be49b12896ce60c222587fbb6d112318587ceb7cb8e5ab4d574c3d393ad9ca8dc33db1a2a366d78cfea09aa0391db0a5dfcc630c36567771232f6450dae74de483e3ab4f43eb97810217937ff04bc2e7b690e7246574244a5f6df8b543056289a4a5cd2a7439be9e6a02dcc5ccb32deee808c26822e7ca0078dac36bb128fe7b13f812617b195c4cd2ae2d1c6faed09d893edcdebe677cd76338c469645f03253da596a473105ef295575e4605db8b7eed947b8d8b277909238ecd39bebf644356525d646c3b6db023837f755f43d25779e600bfb64af7fc67a2e62573fa5cead5772aea91adef706cc203dd81b8f0ab9cd3fc969b1a8752fd2c8342974f77036640ae963e045ccb4927010287466a1841675fb4741eeba6ac87d6f5fff1ee2f6fc166abde20001cf2f5f2e4a3daa248832e1c02414452ba3fe08310835499fcbd0670bb7b7bdb826574b28ff1188a7ebc386b5555950b38b6fe3290587e366f5cbd18c265b24a1cfaf94ca613b1b19f97b08b3aee4350ab6182a9da8a431d95ca915f4eaf3da9c019da880d2725454732309a334a6c7d4e82485d2f0c334540736560310b2d326bb9b3e9ff2b3b0e5ff0839e7cffb0891c0978afca3381c36b25467286e73aad95dbbc9fbe010247304402200c558c91f55961f7aed0097e489881eb79c30de3d594ec9a040af165370757930220698f26d005bb20e10be2b84aff53b3ade8a1a6b760f003582ee3fff1f3d80d4601210349fdfa43d2554b627bfddedb4cd52fafed522c532c488be03b379f8d38a69a1b"
+  },
+  "attestations": [
+    {
+      "message": {
+        "eventId": "Test",
+        "oraclePublicKey": "52aabb137cea4010faf2e2375e8f335373048bd6927a459c5fbb4440b05c9ed5",
+        "signatures": [
+          "4c9416bba864d77cd27b1f5e7af455ccd86681bed699948f478556e89e8179e70cc06e40251db3e31d209eaca6b7da04c750417b99692e64078d1fdc708389ee"
+        ],
+        "outcomes": [
+          "c"
+        ]
+      },
+      "serialized": "d83c045465737452aabb137cea4010faf2e2375e8f335373048bd6927a459c5fbb4440b05c9ed5014c9416bba864d77cd27b1f5e7af455ccd86681bed699948f478556e89e8179e70cc06e40251db3e31d209eaca6b7da04c750417b99692e64078d1fdc708389ee010163"
+    },
+    {
+      "message": {
+        "eventId": "Test",
+        "oraclePublicKey": "700978f8166ae150c45059c181e8d4d9dc65cc38c890b2e0601b6073ccd8bd66",
+        "signatures": [
+          "8a4095131263ba7c0275da4c2b835e9f21a0965c672b123d055610cfbac1853ebc031619902858a8e437799f80a8c0a69bdce89c9c535a45a30ab09258ceaa50"
+        ],
+        "outcomes": [
+          "c"
+        ]
+      },
+      "serialized": "d83c0454657374700978f8166ae150c45059c181e8d4d9dc65cc38c890b2e0601b6073ccd8bd66018a4095131263ba7c0275da4c2b835e9f21a0965c672b123d055610cfbac1853ebc031619902858a8e437799f80a8c0a69bdce89c9c535a45a30ab09258ceaa50010163"
+    },
+    {
+      "message": {
+        "eventId": "Test",
+        "oraclePublicKey": "1f97d0a4ac2ea6d20eb5033ebf391f716f53213a8ae04c38951924f8432af53d",
+        "signatures": [
+          "12537a1a1904391fff9abd55cdf3a1f9b4e589e72ca1855c48a597699c7b30d1374d71f9fcd104886131ff40cce951e883b1c10d36bea302e815ea90fb70e48b"
+        ],
+        "outcomes": [
+          "c"
+        ]
+      },
+      "serialized": "d83c04546573741f97d0a4ac2ea6d20eb5033ebf391f716f53213a8ae04c38951924f8432af53d0112537a1a1904391fff9abd55cdf3a1f9b4e589e72ca1855c48a597699c7b30d1374d71f9fcd104886131ff40cce951e883b1c10d36bea302e815ea90fb70e48b010163"
+    }
+  ]
+}

@@ -3,7 +3,7 @@ package org.bitcoins.dlc.oracle.storage
 import org.bitcoins.core.api.dlcoracle.db.{EventDb, RValueDb}
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
-import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
+import org.bitcoins.core.protocol.tlv.{EventDescriptorDLCType}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto._
 import org.bitcoins.testkitcore.Implicits._
@@ -36,7 +36,7 @@ class EventDAOTest extends DLCOracleDAOFixture {
   val dummySig: SchnorrDigitalSignature =
     SchnorrDigitalSignature(nonce, FieldElement.one)
 
-  def descriptor: EventDescriptorTLV = TLVGen.eventDescriptorTLV.sampleSome
+  def descriptor: EventDescriptorDLCType = TLVGen.eventDescriptorTLV.sampleSome
 
   it must "create an EventDb and read it" in { daos =>
     val rValDAO = daos.rValueDAO

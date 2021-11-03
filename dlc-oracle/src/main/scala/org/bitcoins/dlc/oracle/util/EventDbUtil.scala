@@ -12,13 +12,13 @@ trait EventDbUtil {
     * that can be inserted into the database.
     */
   def toEventOutcomeDbs(
-      descriptor: EventDescriptorTLV,
+      descriptor: BaseEventDescriptor,
       nonces: Vector[
         SchnorrNonce
       ], //ugh, can we enforce some sort of invariant here? can i make this method private?
       signingVersion: SigningVersion): Vector[EventOutcomeDb] = {
     descriptor match {
-      case enum: EnumEventDescriptorV0TLV =>
+      case enum: BaseEnumEventDescriptor =>
         require(nonces.size == 1, "Enum events should only have one R value")
         val nonce = nonces.head
         enum.outcomes.map { outcome =>
@@ -27,21 +27,25 @@ trait EventDbUtil {
             signingVersion.calcOutcomeHash(attestationType.bytes)
           EventOutcomeDb(nonce, outcome, hash)
         }
-      case decomp: DigitDecompositionEventDescriptorV0TLV =>
+      case decomp: BaseNumericEventDescriptorTLV =>
         val signDbs = decomp match {
-          case _: SignedDigitDecompositionEventDescriptor =>
+          case _: SignedDigitDecompositionEventDescriptor |
+              _: SignedDigitDecompositionEventDescriptorDLCType =>
             val plusHash = signingVersion.calcOutcomeHash("+")
             val minusHash = signingVersion.calcOutcomeHash("-")
             Vector(EventOutcomeDb(nonces.head, "+", plusHash),
                    EventOutcomeDb(nonces.head, "-", minusHash))
-          case _: UnsignedDigitDecompositionEventDescriptor =>
+          case _: UnsignedDigitDecompositionEventDescriptor |
+              _: UnsignedDigitDecompositionEventDescriptorDLCType =>
             Vector.empty
         }
 
         val digitNonces = decomp match {
-          case _: UnsignedDigitDecompositionEventDescriptor =>
+          case _: UnsignedDigitDecompositionEventDescriptor |
+              _: UnsignedDigitDecompositionEventDescriptorDLCType =>
             nonces
-          case _: SignedDigitDecompositionEventDescriptor =>
+          case _: SignedDigitDecompositionEventDescriptor |
+              _: SignedDigitDecompositionEventDescriptorDLCType =>
             nonces.tail
         }
 
@@ -58,37 +62,58 @@ trait EventDbUtil {
   }
 
   def toEventOutcomeDbs(
-      oracleAnnouncementV0TLV: OracleAnnouncementV0TLV,
+      oracleAnnouncementV0TLV: BaseOracleAnnouncement,
       signingVersion: SigningVersion = SigningVersion.latest): Vector[
     EventOutcomeDb] = {
-    val oracleEventV0 = oracleAnnouncementV0TLV.eventTLV match {
-      case v0: OracleEventV0TLV => v0
+    val nonces = oracleAnnouncementV0TLV match {
+      case v0: OracleAnnouncementV0TLV =>
+        v0.eventTLV.nonces
+      case v1: OracleAnnouncementV1TLV =>
+        v1.metadata.attestations.nonces.toVector
     }
     toEventOutcomeDbs(descriptor =
                         oracleAnnouncementV0TLV.eventTLV.eventDescriptor,
-                      nonces = oracleEventV0.nonces,
+                      nonces = nonces,
                       signingVersion = signingVersion)
   }
 
   def toEventDbs(
-      oracleAnnouncementV0TLV: OracleAnnouncementV0TLV,
+      baseOracleAnnouncement: BaseOracleAnnouncement,
       eventName: String,
       signingVersion: SigningVersion = SigningVersion.latest): Vector[
     EventDb] = {
-    val nonces = oracleAnnouncementV0TLV.eventTLV.nonces.toVector
+    val nonces = baseOracleAnnouncement match {
+      case v0: OracleAnnouncementV0TLV =>
+        v0.eventTLV.nonces.vec
+      case v1: OracleAnnouncementV1TLV =>
+        v1.nonces.flatMap(_.vec)
+    }
+
+    val publicKey = baseOracleAnnouncement match {
+      case v0: OracleAnnouncementV0TLV => v0.announcementPublicKey
+      case v1: OracleAnnouncementV1TLV =>
+        v1.metadata.attestationPublicKey
+    }
+
+    val maturation = baseOracleAnnouncement match {
+      case v0: OracleAnnouncementV0TLV => v0.eventTLV.maturation
+      case v1: OracleAnnouncementV1TLV =>
+        v1.eventTLV.maturation
+    }
+
     nonces.zipWithIndex.map { case (nonce, index) =>
       EventDb(
         nonce = nonce,
-        pubkey = oracleAnnouncementV0TLV.publicKey,
+        pubkey = publicKey,
         nonceIndex = index,
         eventName = eventName,
         numOutcomes = nonces.size,
         signingVersion = signingVersion,
-        maturationTime = oracleAnnouncementV0TLV.eventTLV.maturation,
+        maturationTime = maturation,
         attestationOpt = None,
         outcomeOpt = None,
-        announcementSignature = oracleAnnouncementV0TLV.announcementSignature,
-        eventDescriptorTLV = oracleAnnouncementV0TLV.eventTLV.eventDescriptor
+        announcementSignature = baseOracleAnnouncement.announcementSignature,
+        eventDescriptorTLV = baseOracleAnnouncement.eventTLV.eventDescriptor
       )
     }
   }

@@ -8,11 +8,6 @@ import org.scalatest._
 
 import scala.concurrent.Future
 
-case class DLCOracleDAOs(
-    rValueDAO: RValueDAO,
-    eventDAO: EventDAO,
-    outcomeDAO: EventOutcomeDAO)
-
 trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
 
   implicit protected val config: DLCOracleAppConfig =
@@ -24,7 +19,13 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
     val rValueDAO = RValueDAO()
     val eventDAO = EventDAO()
     val outcomeDAO = EventOutcomeDAO()
-    DLCOracleDAOs(rValueDAO, eventDAO, outcomeDAO)
+    val oracleMetadataDAO = OracleMetadataDAO()
+    val oracleSchnorrNonceDAO = OracleSchnorrNonceDAO()
+    DLCOracleDAOs(rValueDAO = rValueDAO,
+                  eventDAO = eventDAO,
+                  outcomeDAO = outcomeDAO,
+                  oracleMetadataDAO = oracleMetadataDAO,
+                  oracleSchnorrNonceDAO = oracleSchnorrNonceDAO)
   }
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {

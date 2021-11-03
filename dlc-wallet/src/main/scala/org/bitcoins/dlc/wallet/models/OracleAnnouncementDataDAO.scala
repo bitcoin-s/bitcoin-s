@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
+import org.bitcoins.core.protocol.tlv.BaseEventDescriptor
 import org.bitcoins.crypto._
 import org.bitcoins.db._
 import org.bitcoins.dlc.wallet.DLCAppConfig
@@ -66,7 +66,7 @@ case class OracleAnnouncementDataDAO()(implicit
 
     def eventId: Rep[String] = column("event_id")
 
-    def eventDescriptor: Rep[EventDescriptorTLV] = column("event_descriptor")
+    def eventDescriptor: Rep[BaseEventDescriptor] = column("event_descriptor")
 
     def eventMaturity: Rep[UInt32] = column("event_maturity")
 

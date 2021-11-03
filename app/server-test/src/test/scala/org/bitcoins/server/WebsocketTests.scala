@@ -31,7 +31,7 @@ import org.bitcoins.core.protocol.tlv.{DLCOfferTLV, LnMessage}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.server.{
   BitcoinSServerMainBitcoindFixture,
   ServerWithBitcoind
@@ -340,7 +340,22 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
       val promise: Promise[Option[Message]] = notificationsF._2._2
 
-      val expectedHash = CryptoUtil.sha256(offer.tlv.bytes)
+      val str = "a71a000000010006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f50a38b0f6bc6627a330f93ef6" +
+        "2b1685e45d390f0c2e008784a494ae3f77e047500000000000bebc20000040161000000000bebc200016200000000000000000163000000" +
+        "000bebc2000164000000000000000000fdd8249d288a4ac72f3f627ceecf61753f94c437f9e761950ce1dd4ad787cdf6f525ce11b6cea81" +
+        "689ad41511d4366db5fb591b40864f59c4e9e0cf2c7dac89224d98c553d563caec479d618bad3cb0e844f57dcd977f23e5d6d84e1e3be51" +
+        "bb33133cb0fdd8223900015c1785f8ab4273d56ac67d4b0429c40107cec5875246a2b68872792c2096e3a760bf0bb0fdd8060a000401610" +
+        "1620163016404546573740284014ca41f49f56553b01d7da4f6c19afed76ac5d2fecde0bab6a878b57092ed001600148ac3370f8bb58401" +
+        "12756ec4a48d4f417c958b6843e2078bcda6b45e0000000005f5e1000149fb24ec0ff14a9ca802000000000101000000000000000000000" +
+        "0000000000000000000000000000000000000000000ffffffff03520101ffffffff0200f2052a01000000160014dbd4ce44e8f4db05f35c" +
+        "a1c16378c56017b0582b0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8" +
+        "cf9012000000000000000000000000000000000000000000000000000000000000000000000000000000000ffffffff006b000000160014" +
+        "b742726c4817779988527052274d2a6f95c2cfb1da1acbdfc795a1b47d8adb8865f91fc9000000000000000260bf0bb060c84630"
+
+      val offer: LnMessage[DLCOfferTLV] =
+        LnMessageFactory(DLCOfferTLV).fromHex(str)
+
+      val expectedHash = offer.tlv.tempContractId
 
       ConsoleCli
         .exec(

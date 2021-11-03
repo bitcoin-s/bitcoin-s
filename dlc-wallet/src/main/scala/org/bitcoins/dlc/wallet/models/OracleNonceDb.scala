@@ -1,6 +1,7 @@
 package org.bitcoins.dlc.wallet.models
 
-import org.bitcoins.core.protocol.tlv.{OracleAnnouncementTLV, OracleEventV0TLV}
+import org.bitcoins.core.protocol.tlv.{OracleEventV0TLV, OracleEventV1TLV}
+import org.bitcoins.core.protocol.tlv.BaseOracleAnnouncement
 import org.bitcoins.crypto._
 
 case class OracleNonceDb(
@@ -16,7 +17,7 @@ object OracleNonceDbHelper {
 
   def fromAnnouncement(
       id: Long,
-      tlv: OracleAnnouncementTLV): Vector[OracleNonceDb] = {
+      tlv: BaseOracleAnnouncement): Vector[OracleNonceDb] = {
     tlv.eventTLV match {
       case v0: OracleEventV0TLV =>
         v0.nonces.zipWithIndex.map { case (nonce, index) =>
@@ -26,12 +27,15 @@ object OracleNonceDbHelper {
                         nonce,
                         None,
                         None)
-        }
     }
+      case _: OracleEventV1TLV =>
+        tlv.nonces.flatMap(_.toVector).zipWithIndex.map { case (nonce, index) =>
+          OracleNonceDb(id, index, SchnorrDigitalSignature.dummy, nonce, None, None)
+        }
   }
 
   def fromAnnouncements(
-      announcementsWithId: Vector[(OracleAnnouncementTLV, Long)]): Vector[
+      announcementsWithId: Vector[(BaseOracleAnnouncement, Long)]): Vector[
     OracleNonceDb] = {
     announcementsWithId.flatMap { case (announcement, id) =>
       fromAnnouncement(id, announcement)

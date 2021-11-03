@@ -7,7 +7,7 @@ import org.bitcoins.crypto._
 /** Specifies the set of oracles and their corresponding announcements
   * and parameters to be used in a DLC.
   */
-sealed trait OracleInfo extends TLVSerializable[OracleInfoTLV] {
+sealed trait OracleInfo extends DLCSpecTypeSerializable[OracleInfoTLV] {
 
   /** The number of oracles required for execution */
   def threshold: Int
@@ -30,13 +30,20 @@ sealed trait NumericOracleInfo extends OracleInfo {
 }
 
 object OracleInfo
-    extends TLVDeserializable[OracleInfoTLV, OracleInfo](OracleInfoTLV) {
+    extends DLCSpecTypeDeserializable[OracleInfoTLV, OracleInfo](
+      OracleInfoTLV) {
 
-  override def fromTLV(tlv: OracleInfoTLV): OracleInfo = {
+  override def fromSubType(tlv: OracleInfoTLV): OracleInfo = {
     tlv match {
-      case tlv: OracleInfoV0TLV => SingleOracleInfo.fromTLV(tlv)
-      case tlv: OracleInfoV1TLV => ExactMultiOracleInfo.fromTLV(tlv)
-      case tlv: OracleInfoV2TLV => NumericMultiOracleInfo.fromTLV(tlv)
+      case tlv: OracleInfoV0TLV => SingleOracleInfo.fromSubType(tlv)
+      case tlv: OracleInfoV1TLV =>
+        tlv.oracleParamsOpt match {
+          case SomeDLCType(_) =>
+            NumericMultiOracleInfo.fromSubType(tlv)
+          case NoneDLCType =>
+            ExactMultiOracleInfo.fromSubType(tlv)
+        }
+
     }
   }
 
@@ -46,10 +53,9 @@ object OracleInfo
           _: EnumMultiOracleInfo =>
         None
       case numeric: NumericMultiOracleInfo =>
-        Some(
-          OracleParamsV0TLV(numeric.maxErrorExp,
-                            numeric.minFailExp,
-                            numeric.maximizeCoverage))
+        numeric.oracleParamsOpt.map { case v0: OracleParamsV0TLV =>
+          v0
+        }.toOption
     }
   }
 }
@@ -57,22 +63,24 @@ object OracleInfo
 /** Specifies a single oracles' information through an announcement */
 sealed trait SingleOracleInfo
     extends OracleInfo
-    with TLVSerializable[OracleInfoV0TLV] {
+    with DLCSpecTypeSerializable[OracleInfoV0TLV] {
   override val numOracles: Int = 1
   override val threshold: Int = 1
 
   override def singleOracleInfos: Vector[this.type] = Vector(this)
 
-  def announcement: OracleAnnouncementTLV
+  def announcement: BaseOracleAnnouncement
 
   /** The oracle's public key */
-  def publicKey: SchnorrPublicKey = announcement.publicKey
+  def publicKey: SchnorrPublicKey = announcement.announcementPublicKey
 
   /** The oracle's pre-committed nonces, in the correct order */
   def nonces: Vector[SchnorrNonce] = {
     announcement.eventTLV match {
       case v0: OracleEventV0TLV =>
         v0.nonces
+      case _: OracleEventV1TLV =>
+        announcement.nonces.head
     }
   }
 
@@ -95,18 +103,23 @@ sealed trait SingleOracleInfo
       .schnorrNonce
   }
 
-  override def toTLV: OracleInfoV0TLV = OracleInfoV0TLV(announcement)
+  override def toSubType: OracleInfoV0TLV =
+    OracleInfoV0TLV(announcement, DLCSerializationVersion.current)
 }
 
 object SingleOracleInfo
-    extends TLVDeserializable[OracleInfoV0TLV, SingleOracleInfo](
+    extends DLCSpecTypeDeserializable[OracleInfoV0TLV, SingleOracleInfo](
       OracleInfoV0TLV) {
 
-  def apply(announcement: OracleAnnouncementTLV): SingleOracleInfo = {
+  def apply(announcement: BaseOracleAnnouncement): SingleOracleInfo = {
     announcement.eventTLV.eventDescriptor match {
       case _: EnumEventDescriptorV0TLV =>
         EnumSingleOracleInfo(announcement)
       case _: NumericEventDescriptorTLV =>
+        NumericSingleOracleInfo(announcement)
+      case _: EnumEventDescriptorDLCSubType =>
+        EnumSingleOracleInfo(announcement)
+      case _: NumericEventDescriptorDLCType =>
         NumericSingleOracleInfo(announcement)
     }
   }
@@ -115,7 +128,7 @@ object SingleOracleInfo
     SingleOracleInfo(tlv.announcement)
   }
 
-  override def fromTLV(tlv: OracleInfoV0TLV): SingleOracleInfo = {
+  override def fromSubType(tlv: OracleInfoV0TLV): SingleOracleInfo = {
     SingleOracleInfo(tlv)
   }
 }
@@ -123,12 +136,16 @@ object SingleOracleInfo
 /** Specifies a single oracles' information for an Enumerated Outcome DLC
   * through an announcement
   */
-case class EnumSingleOracleInfo(announcement: OracleAnnouncementTLV)
+case class EnumSingleOracleInfo(announcement: BaseOracleAnnouncement)
     extends SingleOracleInfo
     with EnumOracleInfo {
-  require(announcement.eventTLV.eventDescriptor
-            .isInstanceOf[EnumEventDescriptorV0TLV],
-          s"Enum OracleInfo requires EnumEventDescriptor, $announcement")
+  require(
+    announcement.eventTLV.eventDescriptor
+      .isInstanceOf[
+        EnumEventDescriptorV0TLV] || announcement.eventTLV.eventDescriptor
+      .isInstanceOf[EnumEventDescriptorDLCSubType],
+    s"Enum OracleInfo requires EnumEventDescriptor, $announcement"
+  )
 
   val nonce: SchnorrNonce = {
     announcement.eventTLV match {
@@ -164,7 +181,7 @@ case class EnumSingleOracleInfo(announcement: OracleAnnouncementTLV)
 }
 
 object EnumSingleOracleInfo
-    extends TLVDeserializable[OracleInfoV0TLV, EnumSingleOracleInfo](
+    extends DLCSpecTypeDeserializable[OracleInfoV0TLV, EnumSingleOracleInfo](
       OracleInfoV0TLV) {
 
   def dummyForKeys(
@@ -176,7 +193,7 @@ object EnumSingleOracleInfo
         .dummyForEventsAndKeys(privKey, nonce, events))
   }
 
-  override def fromTLV(tlv: OracleInfoV0TLV): EnumSingleOracleInfo = {
+  override def fromSubType(tlv: OracleInfoV0TLV): EnumSingleOracleInfo = {
     EnumSingleOracleInfo(tlv.announcement)
   }
 }
@@ -184,12 +201,16 @@ object EnumSingleOracleInfo
 /** Specifies a single oracles' information for an Numeric Outcome DLC
   * through an announcement
   */
-case class NumericSingleOracleInfo(announcement: OracleAnnouncementTLV)
+case class NumericSingleOracleInfo(announcement: BaseOracleAnnouncement)
     extends SingleOracleInfo
     with NumericOracleInfo {
-  require(announcement.eventTLV.eventDescriptor
-            .isInstanceOf[NumericEventDescriptorTLV],
-          s"Numeric OracleInfo requires NumericEventDescriptor, $announcement")
+  require(
+    announcement.eventTLV.eventDescriptor
+      .isInstanceOf[
+        NumericEventDescriptorTLV] || announcement.eventTLV.eventDescriptor
+      .isInstanceOf[NumericEventDescriptorDLCType],
+    s"Numeric OracleInfo requires NumericEventDescriptor, $announcement"
+  )
 
   /** @inheritdoc */
   override def verifySigs(
@@ -244,7 +265,7 @@ object NumericSingleOracleInfo {
   */
 sealed trait MultiOracleInfo[+T <: SingleOracleInfo]
     extends OracleInfo
-    with TLVSerializable[MultiOracleInfoTLV] {
+    with DLCSpecTypeSerializable[MultiOracleInfoTLV] {
   override def numOracles: Int = announcements.length
 
   def announcements: OrderedAnnouncements
@@ -262,27 +283,30 @@ sealed trait MultiOracleInfo[+T <: SingleOracleInfo]
   */
 sealed trait ExactMultiOracleInfo[+T <: SingleOracleInfo]
     extends MultiOracleInfo[T]
-    with TLVSerializable[OracleInfoV1TLV] {
+    with DLCSpecTypeSerializable[OracleInfoV1TLV] {
 
-  override def toTLV: OracleInfoV1TLV =
-    OracleInfoV1TLV(threshold, announcements)
+  override def toSubType: OracleInfoV1TLV =
+    OracleInfoV1TLV(threshold,
+                    announcements,
+                    NoneDLCType,
+                    DLCSerializationVersion.current)
 }
 
 object ExactMultiOracleInfo
-    extends TLVDeserializable[
+    extends DLCSpecTypeDeserializable[
       OracleInfoV1TLV,
       ExactMultiOracleInfo[SingleOracleInfo]](OracleInfoV1TLV) {
 
   def apply(tlv: OracleInfoV1TLV): ExactMultiOracleInfo[SingleOracleInfo] = {
     tlv.oracles.head.eventTLV.eventDescriptor match {
-      case _: EnumEventDescriptorV0TLV =>
+      case _: EnumEventDescriptorV0TLV | _: EnumEventDescriptorDLCSubType =>
         EnumMultiOracleInfo(tlv.threshold, tlv.oracles)
-      case _: NumericEventDescriptorTLV =>
+      case _: NumericEventDescriptorTLV | _: NumericEventDescriptorDLCType =>
         NumericExactMultiOracleInfo(tlv.threshold, tlv.oracles)
     }
   }
 
-  override def fromTLV(
+  override def fromSubType(
       tlv: OracleInfoV1TLV): ExactMultiOracleInfo[SingleOracleInfo] = {
     ExactMultiOracleInfo(tlv)
   }
@@ -320,43 +344,47 @@ case class NumericExactMultiOracleInfo(
 case class NumericMultiOracleInfo(
     threshold: Int,
     announcements: OrderedAnnouncements,
-    maxErrorExp: Int,
-    minFailExp: Int,
-    maximizeCoverage: Boolean)
+    oracleParamsOpt: OptionDLCType[OracleParamsTLV])
     extends MultiOracleInfo[NumericSingleOracleInfo]
-    with TLVSerializable[OracleInfoV2TLV]
+    with DLCSpecTypeSerializable[OracleInfoV1TLV]
     with NumericOracleInfo {
 
   override val singleOracleInfos: Vector[NumericSingleOracleInfo] =
     announcements.toVector.map(NumericSingleOracleInfo.apply)
 
-  override def toTLV: OracleInfoV2TLV = {
-    OracleInfoV2TLV(
-      threshold,
-      announcements,
-      OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage))
+  override def toSubType: OracleInfoV1TLV = {
+    oracleParamsOpt match {
+      case SomeDLCType(params) =>
+        params match {
+          case v0: OracleParamsV0TLV =>
+            OracleInfoV1TLV(threshold,
+                            announcements,
+                            SomeDLCType(v0),
+                            DLCSerializationVersion.current)
+        }
+      case NoneDLCType =>
+        OracleInfoV1TLV(threshold,
+                        announcements,
+                        NoneDLCType,
+                        DLCSerializationVersion.current)
+    }
   }
 }
 
 object NumericMultiOracleInfo
-    extends TLVDeserializable[OracleInfoV2TLV, NumericMultiOracleInfo](
-      OracleInfoV2TLV) {
+    extends DLCSpecTypeDeserializable[OracleInfoV1TLV, NumericMultiOracleInfo](
+      OracleInfoV1TLV) {
 
   def apply(
       threshold: Int,
       announcements: OrderedAnnouncements,
-      params: OracleParamsTLV): NumericMultiOracleInfo = {
-    params match {
-      case OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage) =>
-        NumericMultiOracleInfo(threshold,
+      paramsOpt: Option[OracleParamsTLV]): NumericMultiOracleInfo = {
+    new NumericMultiOracleInfo(threshold,
                                announcements,
-                               maxErrorExp,
-                               minFailExp,
-                               maximizeCoverage)
-    }
+                               OptionDLCType(paramsOpt))
   }
 
-  override def fromTLV(tlv: OracleInfoV2TLV): NumericMultiOracleInfo = {
-    NumericMultiOracleInfo(tlv.threshold, tlv.oracles, tlv.params)
+  override def fromSubType(tlv: OracleInfoV1TLV): NumericMultiOracleInfo = {
+    NumericMultiOracleInfo(tlv.threshold, tlv.oracles, tlv.oracleParamsOpt)
   }
 }

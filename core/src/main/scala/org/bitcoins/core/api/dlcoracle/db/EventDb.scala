@@ -2,7 +2,12 @@ package org.bitcoins.core.api.dlcoracle.db
 
 import org.bitcoins.core.api.dlcoracle.OracleEvent
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
-import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
+import org.bitcoins.core.protocol.tlv.{
+  BaseEventDescriptor,
+  EventDescriptorDLCType,
+  EventDescriptorTLV,
+  OracleMetadata
+}
 import org.bitcoins.crypto.{
   FieldElement,
   SchnorrDigitalSignature,
@@ -34,10 +39,23 @@ case class EventDb(
     attestationOpt: Option[FieldElement],
     outcomeOpt: Option[String],
     announcementSignature: SchnorrDigitalSignature,
-    eventDescriptorTLV: EventDescriptorTLV) {
+    eventDescriptorTLV: BaseEventDescriptor) {
 
   lazy val sigOpt: Option[SchnorrDigitalSignature] =
     attestationOpt.map(SchnorrDigitalSignature(nonce, _))
 
-  lazy val toOracleEvent: OracleEvent = OracleEvent.fromEventDbs(Vector(this))
+  def toOracleEvent(metadataOpt: Option[OracleMetadata]): OracleEvent = {
+    eventDescriptorTLV match {
+      case _: EventDescriptorTLV =>
+      //don't need metadata for v0 of the spec
+      case v1: EventDescriptorDLCType =>
+        require(metadataOpt.isDefined,
+                s"Must have metadata to create a v1 oracle event, got=$v1")
+    }
+
+    OracleEvent.fromEventDbs(
+      eventDbs = Vector(this),
+      metadataOpt = metadataOpt
+    )
+  }
 }

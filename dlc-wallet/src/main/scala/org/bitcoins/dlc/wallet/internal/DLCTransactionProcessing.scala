@@ -383,7 +383,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             }
           }
 
-      DLCSign(cetSigs,
+      DLCSign(DLCOfferTLV.currentVersionOpt,
+              cetSigs,
               offerRefundSig,
               FundingSignatures(fundingSigs),
               contractId)

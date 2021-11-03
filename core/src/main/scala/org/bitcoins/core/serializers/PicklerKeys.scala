@@ -49,8 +49,8 @@ object PicklerKeys {
   final val networkKey: String = "network"
 
   final val outcomeKey: String = "outcome"
-  final val localPayoutKey: String = "localPayout"
-  final val outcomesKey: String = "outcomes"
+
+  final val offerPayoutKey: String = "offerPayout"
 
   final val torStartedKey: String = "torStarted"
   final val syncKey: String = "syncing"
@@ -59,57 +59,14 @@ object PicklerKeys {
   //tlv points
   final val pointsKey = "points"
   final val payoutKey: String = "payout"
-  final val extraPrecisionKey: String = "extraPrecision"
-  final val isEndpointKey: String = "isEndpoint"
 
   //offers
   final val protocolVersionKey: String = "protocolVersion"
   final val tempContractIdKey: String = "temporaryContractId"
 
-  //accepts
-  final val fundingPubKeyKey: String = "fundingPubkey"
-  final val acceptCollateralKey: String = "acceptCollateral"
-  final val payoutSpkKey: String = "payoutSpk"
-  final val payoutSerialIdKey: String = "payoutSerialId"
-  final val fundingInputsKey: String = "fundingInputs"
-  final val changeSpkKey = "changeSpk"
-  final val changeSerialIdKey: String = "changeSerialId"
   final val negotiationFieldsKey: String = "negotiationFields"
 
-  //contract info
-  final val totalCollateralKey = "totalCollateral"
-  final val contractDescriptorKey = "contractDescriptor"
-  final val oracleInfoKey = "oracleInfo"
   final val pairsKey = "pairs"
-
-  val contractFlagsKey = "contractFlags"
-  val chainHashKey = "chainHash"
-
-  val contractInfoKey = "contractInfo"
-  val singleContractInfoKey = "singleContractInfo"
-
-  val enumeratedContractDescriptorKey = "enumeratedContractDescriptor"
-  val numericOutcomeContractDescriptorKey = "numericOutcomeContractDescriptor"
-  val payoutsKey = "payouts"
-
-  //numeric contract descriptor
-  val numDigitsKey = "numDigits"
-  val payFunctionKey = "payoutFunction"
-  val payoutFunctionPiecesKey = "payoutFunctionPieces"
-  val leftEndPointKey = "leftEndPoint"
-  val eventOutcomeKey = "eventOutcome"
-  val outcomePayoutKey = "outcomePayout"
-
-  val payoutCurvePieceKey = "payoutCurvePiece"
-  val polynomialPayoutCurvePieceKey = "polynomialPayoutCurvePiece"
-  val payoutPointsKey = "payoutPoints"
-
-  val lastEndpointKey = "lastEndpoint"
-
-  val roundingIntervalsKey = "roundingIntervals"
-  val intervalsKey = "intervals"
-  val beginIntervalKey = "beginInterval"
-  val roundingModKey = "roundingMod"
 
   val usePositivePiece = "usePositivePiece"
   val translateOutcome = "translateOutcome"
@@ -119,16 +76,38 @@ object PicklerKeys {
   val c = "c"
   val d = "d"
 
-  val singleKey = "single"
+  val oracleMetadataKey = "oracleMetadata"
+  val attestationPublicKeyKey = "attestationPublicKey"
 
-  val oracleAnnouncementKey = "oracleAnnouncement"
-  val announcementSignatureKey = "announcementSignature"
-  val oraclePublicKeyKey = "oraclePublicKey"
-  val oracleEventKey = "oracleEvent"
-  val oracleNoncesKey = "oracleNonces"
-  val eventMaturityEpochKey = "eventMaturityEpoch"
-  val eventDescriptorKey = "eventDescriptor"
-  val enumEventKey = "enumEvent"
+  val schnorrKey = "schnorr"
+  val proofOfKnowledgeKey = "proofOfKnowledge"
+  val attestationPublicKeyProofKey = "attestationPublicKeyProof"
+  val nonceProofsKey = "nonceProofs"
+
+  val timestampKey: String = "timestamp"
+  val oracleNameKey = "oracleName"
+  val oracleDescriptionKey = "oracleDescription"
+  val attestationSchemeKey = "attestationScheme"
+  val oracleMetaDataSignatureKey = "oracleMetaDataSignature"
+
+  val usePositivePieceKey = "usePositivePiece"
+  val translateOutcomeKey = "translateOutcome"
+  val translatePayoutKey = "translatePayout"
+  val isEndpointKey = "isEndpoint"
+  val aKey = "a"
+  val bKey = "b"
+  val cKey = "c"
+  val dKey = "d"
+
+  val oracleInfoKey = "oracleInfo"
+  val singleKey = "single"
+  val multiKey = "multi"
+  val oracleParamsKey = "oracleParams"
+
+  //oracle params
+  val maxErrorExpKey = "maxErrorExp"
+  val minFailExpKey = "minFailExp"
+  val maximizeCoverageKey = "maximizeCoverage"
 
   val digitDecompositionEventKey = "digitDecompositionEvent"
   val baseKey = "base"
@@ -137,16 +116,86 @@ object PicklerKeys {
   val precisionKey = "precision"
   val nbDigitsKey = "nbDigits"
 
-  val eventIdKey = "eventId"
-
-  val offerCollateralKey = "offerCollateral"
-
-  val fundOutputSerialIdKey = "fundOutputSerialId"
-  val feeRatePerKbKey = "feeRatePerVb"
   val contractMaturityBoundKey = "contractMaturityBound"
   val contractTimeoutKey = "contractTimeout"
 
-  val acceptMessageKey = "accept_message"
+  //ws types
+  final val typeKey: String = "type"
+  final val payloadKey: String = "payload"
+
+  val offerMessageKey = "offerMessage"
+  val msgKey = "message"
+  val messageKey = msgKey
+
+  val contractFlagsKey = "contractFlags"
+  val chainHashKey = "chainHash"
+
+  val contractInfoKey = "contractInfo"
+  val contractInfosKey = "contractInfos"
+  val singleContractInfoKey = "singleContractInfo"
+  val disjointContractInfoKey = "disjointContractInfo"
+
+  val totalCollateralKey = "totalCollateral"
+  val contractDescriptorKey = "contractDescriptor"
+  val enumeratedContractDescriptorKey = "enumeratedContractDescriptor"
+  val numericOutcomeContractDescriptorKey = "numericOutcomeContractDescriptor"
+  val payoutsKey = "payouts"
+  val localPayoutKey = "localPayout"
+
+  //numeric contract descriptor
+  final val numDigitsKey: String = "numDigits"
+  val payoutFunctionKey = "payoutFunction"
+  val payoutFunctionPiecesKey = "payoutFunctionPieces"
+  val endPointKey = "endPoint"
+  val eventOutcomeKey = "eventOutcome"
+  val outcomePayoutKey = "outcomePayout"
+  val extraPrecisionKey = "extraPrecision"
+
+  val payoutCurvePieceKey = "payoutCurvePiece"
+  val polynomialPayoutCurvePieceKey = "polynomialPayoutCurvePiece"
+  val hyperbolaPayoutCurvePieceKey = "hyperbolaPayoutCurvePiece"
+  val payoutPointsKey = "payoutPoints"
+
+  val lastEndpointKey = "lastEndpoint"
+
+  val roundingIntervalsKey = "roundingIntervals"
+  val intervalsKey = "intervals"
+  val beginIntervalKey = "beginInterval"
+  val roundingModKey = "roundingMod"
+
+  val oracleAnnouncementKey = "oracleAnnouncement"
+  final val announcementPublicKeyKey: String = "announcementPublicKey"
+  val announcementSignatureKey = "announcementSignature"
+  val oraclePublicKeyKey = "oraclePublicKey"
+  val oracleEventKey = "oracleEvent"
+  val oracleNoncesKey = "oracleNonces"
+  val eventMaturityEpochKey = "eventMaturityEpoch"
+  val eventDescriptorKey = "eventDescriptor"
+  val enumEventKey = "enumEvent"
+  val outcomesKey = "outcomes"
+  val eventIdKey = "eventId"
+
+  val fixedOracleEventTimestampKey = "fixedOracleEventTimestamp"
+  val expectedTimeEpochKey = "expectedTimeEpoch"
+
+  val thresholdKey = "threshold"
+  val oracleAnnouncementsKey = "oracleAnnouncements"
+
+  val fundingPubKeyKey = "fundingPubkey"
+  val payoutSpkKey = "payoutSpk"
+  val payoutSerialIdKey = "payoutSerialId"
+  val offerCollateralKey = "offerCollateral"
+  val fundingInputsKey = "fundingInputs"
+  val changeSpkKey = "changeSpk"
+  val changeSerialIdKey = "changeSerialId"
+  val fundOutputSerialIdKey = "fundOutputSerialId"
+  val feeRatePerKbKey = "feeRatePerVb"
+  val cetLocktimeKey = "cetLocktime"
+  val refundLocktimeKey = "refundLocktime"
+
+  val acceptMessageKey = "acceptMessage"
+  val temporaryContractIdKey = "temporaryContractId"
+  val acceptCollateralKey = "acceptCollateral"
   val inputSerialIdKey = "inputSerialId"
   val prevTxKey = "prevTx"
   val prevTxVoutKey = "prevTxVout"
@@ -158,7 +207,7 @@ object PicklerKeys {
   val signatureKey = "signature"
   val refundSignatureKey = "refundSignature"
 
-  val signMessageKey = "sign_message"
+  val signMessageKey = "signMessage"
   val contractIdKey = "contractId"
   val fundingSignaturesKey = "fundingSignatures"
   val witnessElementsKey = "witnessElements"
@@ -170,5 +219,8 @@ object PicklerKeys {
   final val payloadKey: String = "payload"
 
   val errorKey: String = "error"
+
+  final val attestationsKey: String = "attestations"
+  final val signaturesKey: String = "signatures"
 
 }

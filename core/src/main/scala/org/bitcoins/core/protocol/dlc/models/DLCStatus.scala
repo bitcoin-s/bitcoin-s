@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
   DLCOffer,
   DLCSign
 }
-import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
+import org.bitcoins.core.protocol.tlv.{BaseOracleAnnouncement}
 import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -38,7 +38,7 @@ sealed trait DLCStatus {
   def payoutAddress: Option[PayoutAddress]
   def peer(): Option[String]
 
-  lazy val announcements: Vector[OracleAnnouncementTLV] = {
+  lazy val announcements: Vector[BaseOracleAnnouncement] = {
     oracleInfos.flatMap(_.singleOracleInfos.map(_.announcement))
   }
 

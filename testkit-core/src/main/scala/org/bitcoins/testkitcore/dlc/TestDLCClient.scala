@@ -137,6 +137,7 @@ object TestDLCClient {
   def apply(
       outcomes: ContractInfo,
       isInitiator: Boolean,
+      tempContractId: Sha256Digest,
       fundingPrivKey: ECPrivateKey,
       payoutPrivKey: ECPrivateKey,
       payoutSerialId: UInt64,
@@ -227,6 +228,7 @@ object TestDLCClient {
 
     val offer = DLCMessage.DLCOffer(
       protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+      tempContractId = tempContractId,
       contractInfo = offerOutcomes,
       pubKeys = offerPubKeys,
       collateral = offerInput.satoshis,
@@ -247,6 +249,7 @@ object TestDLCClient {
     }
 
     val accept = DLCMessage.DLCAcceptWithoutSigs(
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       totalCollateral = acceptInput.satoshis,
       pubKeys = acceptPubKeys,
       fundingInputs = acceptFundingInputs,

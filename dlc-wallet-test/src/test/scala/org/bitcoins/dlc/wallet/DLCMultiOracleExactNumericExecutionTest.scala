@@ -239,6 +239,7 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
         }
         val eventId = oracleInfo.announcement.eventTLV match {
           case v0: OracleEventV0TLV => v0.eventId
+          case v1: OracleEventV1TLV => v1.eventId
         }
 
         require(kValues.length == sigs.length,

@@ -4,6 +4,7 @@ import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.rpc._
+import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
@@ -1985,7 +1986,10 @@ object ConsoleCli {
       case DecodeOffer(offer) =>
         RequestParam("decodeoffer", Seq(up.writeJs(offer)))
       case DecodeAnnouncement(announcement) =>
-        RequestParam("decodeannouncement", Seq(up.writeJs(announcement)))
+        RequestParam(
+          "decodeannouncement",
+          Seq(
+            up.writeJs(announcement)(Picklers.oracleAnnouncementTLVJsonWriter)))
 
       case DecodeAttestments(attestments) =>
         RequestParam("decodeattestments", Seq(up.writeJs(attestments)))

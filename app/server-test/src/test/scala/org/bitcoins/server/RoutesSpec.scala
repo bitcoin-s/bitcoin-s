@@ -976,10 +976,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       )
 
     val contractInfo = SingleContractInfo(contractDesc, oracleInfo)
-    val contractInfoTLV = contractInfo.toTLV
+    val contractInfoTLV = contractInfo.toSubType
 
     val offer = DLCOffer(
       protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+      tempContractId =
+        Sha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
       contractInfo = contractInfo,
       pubKeys = dummyDLCKeys,
       collateral = Satoshis(3),
@@ -1059,6 +1061,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     val accept = DLCAccept(
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       collateral = Satoshis(1000),
       pubKeys = dummyDLCKeys,
       fundingInputs = Vector(fundingInput),
@@ -1092,6 +1095,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     val sign = DLCSign(
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       CETSignatures(dummyOutcomeSigs),
       dummyPartialSig,
       FundingSignatures(Vector((EmptyTransactionOutPoint, dummyScriptWitness))),

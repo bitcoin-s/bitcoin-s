@@ -2,7 +2,10 @@ package org.bitcoins.core.protocol.dlc.models
 
 import org.bitcoins.core.number.{UInt16, UInt32, UInt64}
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.tlv.FundingInputV0TLV
+import org.bitcoins.core.protocol.tlv.{
+  DLCSerializationVersion,
+  FundingInputV0TLV
+}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.DualFundingInput
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
@@ -45,7 +48,8 @@ sealed trait DLCFundingInput {
       prevTxVout,
       sequence,
       maxWitnessLen,
-      redeemScriptOpt
+      redeemScriptOpt,
+      DLCSerializationVersion.current
     )
   }
 

@@ -965,7 +965,7 @@ object DecodeOffer extends ServerJsonModels {
   }
 }
 
-case class DecodeAnnouncement(announcement: OracleAnnouncementTLV)
+case class DecodeAnnouncement(announcement: BaseOracleAnnouncement)
     extends CliCommand
     with AppServerCliCommand
 
@@ -1456,7 +1456,7 @@ case class CreateContractInfo(
     with ServerJsonModels {
 
   def ContractDescriptorTLV: ContractDescriptor = {
-    ContractDescriptor.fromTLV(contractDescriptor)
+    ContractDescriptor.fromSubType(contractDescriptor)
   }
 }
 

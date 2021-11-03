@@ -12,7 +12,7 @@ import org.bitcoins.core.crypto.{
   ExtPublicKey
 }
 import org.bitcoins.core.hd._
-import org.bitcoins.core.number._
+import org.bitcoins.core.number.{UInt32, _}
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
@@ -25,7 +25,6 @@ import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.util.MasterXPubUtil
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
-import org.bitcoins.dlc.oracle.util.EventDbUtil
 import org.bitcoins.keymanager.WalletStorage
 import scodec.bits.ByteVector
 
@@ -68,7 +67,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
   def getRootXpub: ExtPublicKey = extPrivateKey.extPublicKey
 
-  private def signingKey: ECPrivateKey = {
+  private def announcementPrivKey: ECPrivateKey = {
     val coin = HDCoin(HDPurposes.SegWit, coinType)
     val account = HDAccount(coin, 0)
     val purpose = coin.purpose
@@ -80,14 +79,37 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     extPrivateKey.deriveChildPrivKey(path).key
   }
 
-  override val publicKey: SchnorrPublicKey = signingKey.schnorrPublicKey
+  private def attestationPrivKey: ECPrivateKey = {
+    val coin = HDCoin(HDPurposes.SegWit, coinType)
+    val account = HDAccount(coin, 0)
+    val purpose = coin.purpose
+    val chain = HDChainType.External
+    val index = 1 //increment the index by one
+
+    val path = BIP32Path.fromHardenedString(
+      s"m/${purpose.constant}'/${coin.coinType.toInt}'/${account.index}'/${chain.index}'/$index'")
+    extPrivateKey.deriveChildPrivKey(path).key
+  }
+
+  override val announcementPublicKey: SchnorrPublicKey =
+    announcementPrivKey.schnorrPublicKey
+
+  override val attestationPublicKey: SchnorrPublicKey =
+    attestationPrivKey.schnorrPublicKey
 
   override def stakingAddress(network: BitcoinNetwork): Bech32Address =
-    Bech32Address(P2WPKHWitnessSPKV0(publicKey.publicKey), network)
+    Bech32Address(P2WPKHWitnessSPKV0(announcementPublicKey.publicKey), network)
 
-  protected[bitcoins] val rValueDAO: RValueDAO = RValueDAO()
-  protected[bitcoins] val eventDAO: EventDAO = EventDAO()
-  protected[bitcoins] val eventOutcomeDAO: EventOutcomeDAO = EventOutcomeDAO()
+  private val daos: DLCOracleDAOs = DLCOracleDAOs(
+    RValueDAO(),
+    EventDAO(),
+    EventOutcomeDAO(),
+    OracleMetadataDAO(),
+    OracleSchnorrNonceDAO()
+  )
+  protected[bitcoins] val rValueDAO: RValueDAO = daos.rValueDAO
+  protected[bitcoins] val eventDAO: EventDAO = daos.eventDAO
+  protected[bitcoins] val eventOutcomeDAO: EventOutcomeDAO = daos.outcomeDAO
 
   protected[bitcoins] val masterXpubDAO: MasterXPubDAO =
     MasterXPubDAO()(ec, conf)
@@ -137,63 +159,114 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     eventDAO.getCompletedEvents
 
   override def listEvents(): Future[Vector[OracleEvent]] = {
-    eventDAO.findAll().map { eventDbs =>
-      val events = eventDbs.groupBy(_.announcementSignature)
-      events.values.map(dbs => OracleEvent.fromEventDbs(dbs)).toVector
+    eventDAO.findAll().flatMap { eventDbs =>
+      getFullOracleEvents(eventDbs)
     }
   }
 
-  override def listPendingEvents(): Future[Vector[OracleEvent]] = {
-    listPendingEventDbs().map { eventDbs =>
-      val events = eventDbs.groupBy(_.announcementSignature)
-      events.values.map(dbs => OracleEvent.fromEventDbs(dbs)).toVector
+  private def getFullOracleEvents(
+      eventDbs: Vector[EventDb]): Future[Vector[OracleEvent]] = {
+    val eventDb = eventDbs.head
+    eventDb.attestationOpt match {
+      case Some(_) => getCompleteOracleEvent(eventDbs)
+      case None    => getPendingOracleEvent(eventDbs)
     }
   }
 
-  override def listCompletedEvents(): Future[Vector[OracleEvent]] = {
-    listCompletedEventDbs().map { eventDbs =>
-      val events = eventDbs.groupBy(_.announcementSignature)
-      events.values.map(dbs => OracleEvent.fromEventDbs(dbs)).toVector
+  private def getPendingOracleEvent(
+      eventDbs: Vector[EventDb]): Future[Vector[PendingOracleEvent]] = {
+    val events = eventDbs.groupBy(_.announcementSignature)
+    val resultNested = events.values.map { dbs =>
+      require(
+        dbs.map(_.pubkey).distinct.length == 1,
+        s"Attestation pubkey must be the same for all events with the same announcement signature")
+      val metadataOptF =
+        oracleDataManagement.findMetadataByAttestationPubKey(dbs.head.pubkey)
+      metadataOptF.map { metadataOpt =>
+        val e = OracleEvent.fromPendingEventDbs(dbs, metadataOpt)
+        Some(e)
+      }
+    }
+
+    Future
+      .sequence(resultNested)
+      .map(_.flatten.toVector)
+  }
+
+  private def getCompleteOracleEvent(
+      eventDbs: Vector[EventDb]): Future[Vector[CompletedOracleEvent]] = {
+    val events = eventDbs.groupBy(_.announcementSignature)
+    val resultNested = events.values.map { dbs =>
+      require(
+        dbs.map(_.pubkey).distinct.length == 1,
+        s"Attestation pubkey must be the same for all events with the same announcement signature")
+      val metadataOptF =
+        oracleDataManagement.findMetadataByAttestationPubKey(dbs.head.pubkey)
+      metadataOptF.map { metadataOpt =>
+        val e = OracleEvent.fromCompletedEventDbs(dbs, metadataOpt)
+        Some(e)
+      }
+    }
+
+    Future
+      .sequence(resultNested)
+      .map(_.flatten.toVector)
+  }
+
+  override def listPendingEvents(): Future[Vector[PendingOracleEvent]] = {
+    listPendingEventDbs().flatMap { eventDbs =>
+      getPendingOracleEvent(eventDbs)
+    }
+  }
+
+  override def listCompletedEvents(): Future[Vector[CompletedOracleEvent]] = {
+    listCompletedEventDbs().flatMap { eventDbs =>
+      getCompleteOracleEvent(eventDbs)
     }
   }
 
   override def findEvent(
-      oracleEventTLV: OracleEventTLV): Future[Option[OracleEvent]] = {
-    eventDAO.findByOracleEventTLV(oracleEventTLV).map { dbs =>
+      announcement: BaseOracleAnnouncement): Future[Option[OracleEvent]] = {
+    eventDAO.findByAnnouncement(announcement).flatMap { dbs =>
       if (dbs.isEmpty) {
-        None
-      } else Some(OracleEvent.fromEventDbs(dbs))
+        Future.successful(None)
+      } else {
+        getFullOracleEvents(dbs)
+          .map(_.headOption)
+      }
     }
   }
 
   override def findEvent(eventName: String): Future[Option[OracleEvent]] = {
-    eventDAO.findByEventName(eventName).map { dbs =>
+    eventDAO.findByEventName(eventName).flatMap { dbs =>
       if (dbs.isEmpty) {
-        None
-      } else Some(OracleEvent.fromEventDbs(dbs))
+        Future.successful(None)
+      } else {
+        getFullOracleEvents(dbs)
+          .map(_.headOption)
+      }
     }
   }
 
   override def createNewDigitDecompAnnouncement(
       eventName: String,
       maturationTime: Instant,
-      base: UInt16,
+      base: UInt8,
       isSigned: Boolean,
       numDigits: Int,
       unit: String,
-      precision: Int32): Future[OracleAnnouncementTLV] = {
-    require(base > UInt16.zero,
-            s"base cannot be less than 1, got ${base.toInt}")
+      precision: Int32): Future[BaseOracleAnnouncement] = {
+    require(base > UInt8.zero, s"base cannot be less than 1, got ${base.toInt}")
     require(numDigits > 0, s"numDigits cannot be less than 1, got $numDigits")
 
     logger.info(
       s"Create new digit decomp event with eventId=$eventName base=$base numDigits=$numDigits unit=$unit")
 
-    val descriptorTLV = DigitDecompositionEventDescriptorV0TLV(base,
-                                                               isSigned,
-                                                               numDigits,
-                                                               unit,
-                                                               precision)
+    val descriptorTLV = DigitDecompositionEventDescriptorDLCType(base,
+                                                                 isSigned,
+                                                                 numDigits,
+                                                                 unit,
+                                                                 precision)
 
     createNewAnnouncement(eventName, maturationTime, descriptorTLV)
   }
@@ -201,34 +274,33 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   override def createNewEnumAnnouncement(
       eventName: String,
       maturationTime: Instant,
-      outcomes: Vector[String]): Future[OracleAnnouncementTLV] = {
+      outcomes: Vector[String]): Future[BaseOracleAnnouncement] = {
     require(outcomes.nonEmpty, "Cannot make an event with no outcomes")
     require(outcomes.distinct.size == outcomes.size,
             s"Cannot have duplicate outcomes, got $outcomes")
 
     logger.info(
       s"Creating new enum announcement eventName=$eventName outcomes=$outcomes")
-    val descriptorTLV = EnumEventDescriptorV0TLV(outcomes)
+    val descriptorTLV = EnumEventDescriptorDLCSubType(outcomes)
 
     createNewAnnouncement(eventName, maturationTime, descriptorTLV)
   }
 
+  val oracleDataManagement: OracleDataManagement =
+    OracleDataManagement(daos = daos)
+
   override def createNewAnnouncement(
       eventName: String,
       maturationTime: Instant,
-      descriptor: EventDescriptorTLV,
+      descriptor: EventDescriptorDLCType,
       signingVersion: SigningVersion = SigningVersion.latest): Future[
-    OracleAnnouncementTLV] = {
+    BaseOracleAnnouncement] = {
     require(maturationTime.isAfter(TimeUtil.now),
             s"Event cannot mature in the past, got $maturationTime")
 
-    for {
-      dbs <- eventDAO.findByEventName(eventName)
-      _ = require(dbs.isEmpty, s"Event name ($eventName) is already being used")
-
+    val rValueDbsF = for {
       index <- nextKeyIndexF
       firstIndex = index.getAndAdd(descriptor.noncesNeeded)
-
       rValueDbs =
         0.until(descriptor.noncesNeeded)
           .map { num =>
@@ -243,46 +315,55 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                            keyIndex = index)
           }
           .toVector
+    } yield rValueDbs
 
-      epoch = UInt32(maturationTime.getEpochSecond)
 
-      nonces = rValueDbs.map(_.nonce)
-
-      eventTLV = OracleEventV0TLV(OrderedNonces.fromUnsorted(nonces).toVector,
-                                  epoch,
-                                  descriptor,
-                                  eventName)
-
-      announcementBytes = signingVersion.calcAnnouncementHash(eventTLV)
-      announcementSignature = signingKey.schnorrSign(announcementBytes)
-
-      oracleAnnouncement = OracleAnnouncementV0TLV(announcementSignature =
-                                                     announcementSignature,
-                                                   publicKey = publicKey,
-                                                   eventTLV = eventTLV)
-
-      eventOutcomeDbs = EventDbUtil.toEventOutcomeDbs(
-        oracleAnnouncementV0TLV = oracleAnnouncement,
-        signingVersion = signingVersion)
-
-      eventDbs = EventDbUtil.toEventDbs(oracleAnnouncementV0TLV =
-                                          oracleAnnouncement,
-                                        eventName = eventName,
-                                        signingVersion = signingVersion)
-
-      rValueA = rValueDAO.createAllAction(rValueDbs)
-      eventDbsA = eventDAO.createAllAction(eventDbs)
-      eventOutcomeDbsA = eventOutcomeDAO.createAllAction(eventOutcomeDbs)
-      actions = DBIO.seq(rValueA, eventDbsA, eventOutcomeDbsA)
-      _ <- safeDatabase.run(actions)
+    val metadataF: Future[OracleMetadata] = for {
+      rValues <- rValueDbsF
+      nonces = OrderedNonces.fromUnsorted(rValues.map(_.nonce))
+      attestations = SchnorrAttestation.build(
+        announcementPrivKey,
+        attestationPrivKey.schnorrPublicKey,
+        nonces)
+      oracleName = NormalizedString("Oracle_name") //how do i get this?
+      oracleDescription = NormalizedString("oracle description")
+      creationTime = UInt32(Instant.now().getEpochSecond)
+      metadataSignature = OracleMetadataSignature.buildSignature(
+        announcementPrivKey = announcementPrivKey,
+        oracleName = oracleName,
+        oracleDescription = oracleDescription,
+        creationTime = creationTime,
+        schnorrAttestation = attestations
+      )
     } yield {
-      OracleEvent.fromEventDbs(eventDbs).announcementTLV
+      OracleMetadata(
+        announcementPublicKey = announcementPublicKey,
+        oracleName = oracleName,
+        oracleDescription = oracleDescription,
+        creationTime = creationTime,
+        attestations = attestations,
+        metadataSignature = metadataSignature
+      )
     }
+
+    for {
+      rValues <- rValueDbsF
+      metadata <- metadataF
+      created <- oracleDataManagement.createNewAnnouncement(
+        eventName = eventName,
+        maturationTime = maturationTime,
+        descriptor = descriptor,
+        announcementPrivKey = announcementPrivKey,
+        metadata = metadata,
+        rValueDbs = rValues
+      )
+    } yield created
+
   }
 
   override def signEnum(
       eventName: String,
-      outcome: EnumAttestation): Future[EventDb] = {
+      outcome: EnumAttestation): Future[CompletedEnumV0OracleEvent] = {
     logger.info(s"Signing enum eventName=$eventName outcome=$outcome")
     for {
       eventDbs <- eventDAO.findByEventName(eventName)
@@ -290,21 +371,24 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                   "Use signLargeRange for signing multi nonce outcomes")
 
       sign <- createAttestation(eventDbs.head.nonce, outcome)
-    } yield sign
+      oracleEvent <- getCompleteOracleEvent(Vector(sign))
+        .map(_.head)
+    } yield {
+      oracleEvent match {
+        case enum: CompletedEnumV0OracleEvent => enum
+        case numeric: CompletedDigitDecompositionV0OracleEvent =>
+          sys.error(
+            s"Cannot have a numeric event when signing enum event, got=$numeric")
+      }
+    }
   }
 
   override def signEnum(
-      oracleEventTLV: OracleEventTLV,
-      outcome: EnumAttestation): Future[EventDb] = {
+      oracleEventTLV: BaseOracleEvent,
+      outcome: EnumAttestation): Future[CompletedEnumV0OracleEvent] = {
     logger.info(
       s"Signing enum eventName=${oracleEventTLV.eventId} outcome=$outcome")
-    for {
-      eventDbs <- eventDAO.findByOracleEventTLV(oracleEventTLV)
-      _ = require(eventDbs.size == 1,
-                  "Use signLargeRange for signing multi nonce outcomes")
-
-      sign <- createAttestation(eventDbs.head.nonce, outcome)
-    } yield sign
+    signEnum(oracleEventTLV.eventId, outcome)
   }
 
   private def createAttestationActionF(
@@ -353,7 +437,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       )
 
       hashBytes = eventOutcomeDb.hashedMessage
-      sig = signingKey.schnorrSignWithNonce(hashBytes, kVal)
+      sig = attestationPrivKey.schnorrSignWithNonce(hashBytes, kVal)
 
       updated = eventDb.copy(attestationOpt = Some(sig.sig),
                              outcomeOpt = Some(outcome.outcomeString))
@@ -371,22 +455,36 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     actionF.flatMap(action => safeDatabase.run(action))
   }
 
-  override def signDigits(eventName: String, num: Long): Future[OracleEvent] = {
+  override def signDigits(
+      eventName: String,
+      num: Long): Future[CompletedDigitDecompositionV0OracleEvent] = {
     for {
       eventOpt <- findEvent(eventName)
       _ = require(eventOpt.isDefined,
                   s"No event found by event name $eventName")
-      res <- signDigits(eventOpt.get.announcementTLV.eventTLV, num)
+      res <- signDigits(eventOpt.get.announcementTLV, num)
     } yield res
   }
 
   override def signDigits(
-      oracleEventTLV: OracleEventTLV,
-      num: Long): Future[OracleEvent] = {
+      oracleAnnouncement: BaseOracleAnnouncement,
+      num: Long): Future[CompletedDigitDecompositionV0OracleEvent] = {
     logger.info(
-      s"Signing digits for eventName=${oracleEventTLV.eventId} num=$num")
+      s"Signing digits for eventName=${oracleAnnouncement.eventTLV.eventId} num=$num")
+    oracleAnnouncement match {
+      case v1: OracleAnnouncementV1TLV =>
+        signDigitsV1Announcement(announcementV1 = v1, num = num)
+      case v0: OracleAnnouncementV0TLV =>
+        signDigitsV0Announcement(announcementV0 = v0, num = num)
+    }
+  }
+
+  private def signDigitsV0Announcement(
+      announcementV0: OracleAnnouncementV0TLV,
+      num: Long): Future[CompletedDigitDecompositionV0OracleEvent] = {
+    val oracleEventV0TLV = announcementV0.eventTLV
     val eventDescriptorTLV: DigitDecompositionEventDescriptorV0TLV = {
-      oracleEventTLV.eventDescriptor match {
+      oracleEventV0TLV.eventDescriptor match {
         case _: EnumEventDescriptorV0TLV =>
           throw new IllegalArgumentException(
             "Must have a DigitDecomposition event descriptor use signEvent instead")
@@ -400,10 +498,13 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       eventDescriptorTLV match {
         case _: SignedDigitDecompositionEventDescriptor =>
           val signOutcome = DigitDecompositionSignAttestation(num >= 0)
-          val signNonce = oracleEventTLV match {
+          val signNonce = oracleEventV0TLV match {
             case v0: OracleEventV0TLV => v0.nonces.head
+            case v1: OracleEventV1TLV =>
+              sys.error(s"Cannot have a v1 event when creating a v0 attestation, got=$v1")
           }
           createAttestation(signNonce, signOutcome).map(db => Vector(db))
+
         case _: UnsignedDigitDecompositionEventDescriptor =>
           FutureUtil.emptyVec[EventDb]
       }
@@ -422,9 +523,11 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                                           eventDescriptorTLV.base.toInt,
                                           eventDescriptorTLV.numDigits.toInt)
 
-    val oracleEventNonces = oracleEventTLV match {
+    val oracleEventNonces = oracleEventV0TLV match {
       case v0: OracleEventV0TLV =>
         v0.nonces
+      case v1: OracleEventV1TLV =>
+        sys.error(s"Cannot have a v1 event when creating a v0 attestation, got=$v1")
     }
     val nonces = eventDescriptorTLV match {
       case _: UnsignedDigitDecompositionEventDescriptor =>
@@ -449,25 +552,117 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       signSig <- signSigF
       digitSigA <- digitSigAF
       digitSigs <- safeDatabase.run(digitSigA)
-    } yield OracleEvent.fromEventDbs(signSig ++ digitSigs)
+    } yield {
+      val event = OracleEvent.fromCompletedEventDbs(
+        eventDbs = signSig ++ digitSigs,
+        metadataOpt = None
+      )
+      event match {
+        case enum: CompletedEnumV0OracleEvent =>
+          sys.error(
+            s"Cannot have an enum oracle event when signing a numeric announcement, got=$enum")
+        case numeric: CompletedDigitDecompositionV0OracleEvent =>
+          numeric
+      }
+    }
+  }
+
+  private def signDigitsV1Announcement(
+      announcementV1: OracleAnnouncementV1TLV,
+      num: Long): Future[CompletedDigitDecompositionV0OracleEvent] = {
+    val oracleEventV0TLV = announcementV1.eventTLV
+    val metadata = announcementV1.metadata
+    val metadataNonces = metadata.attestations.nonces
+
+    val eventDescriptorTLV: DigitDecompositionEventDescriptorDLCType = {
+      oracleEventV0TLV.eventDescriptor match {
+        case _: EnumEventDescriptorDLCSubType =>
+          throw new IllegalArgumentException(
+            "Must have a DigitDecomposition event descriptor use signEvent instead")
+        case decomp: DigitDecompositionEventDescriptorDLCType =>
+          decomp
+      }
+    }
+
+    // Make this a vec so it is easier to add on
+    val signSigF =
+      eventDescriptorTLV match {
+        case _: SignedDigitDecompositionEventDescriptorDLCType =>
+          val signOutcome = DigitDecompositionSignAttestation(num >= 0)
+          createAttestation(metadataNonces.head, signOutcome)
+            .map(db => Vector(db))
+        case _: UnsignedDigitDecompositionEventDescriptorDLCType =>
+          FutureUtil.emptyVec[EventDb]
+      }
+
+    val boundedNum = if (num < eventDescriptorTLV.minNum) {
+      logger.info(
+        s"Number given $num is less than the minimum, signing minimum instead")
+      eventDescriptorTLV.minNum.toLong
+    } else if (num > eventDescriptorTLV.maxNum) {
+      logger.info(
+        s"Number given $num is greater than the maximum, signing maximum instead")
+      eventDescriptorTLV.maxNum.toLong
+    } else num
+
+    val decomposed = NumberUtil.decompose(Math.abs(boundedNum),
+                                          eventDescriptorTLV.base.toInt,
+                                          eventDescriptorTLV.numDigits.toInt)
+
+    val nonces: OrderedNonces = eventDescriptorTLV match {
+      case _: UnsignedDigitDecompositionEventDescriptor |
+          _: UnsignedDigitDecompositionEventDescriptorDLCType =>
+        metadataNonces
+      case _: SignedDigitDecompositionEventDescriptor |
+          _: SignedDigitDecompositionEventDescriptorDLCType =>
+        OrderedNonces(metadataNonces.tail.toVector)
+    }
+
+    val digitSigAVecF: Future[
+      Vector[DBIOAction[EventDb, NoStream, Effect.Write]]] = Future.sequence {
+      nonces.zipWithIndex.map { case (nonce, index) =>
+        val digit = decomposed(index)
+        createAttestationActionF(nonce, DigitDecompositionAttestation(digit))
+      }.toVector
+    }
+    val digitSigAF: Future[
+      DBIOAction[Vector[EventDb], NoStream, Effect.Write]] = {
+      digitSigAVecF.map(digitSigs => DBIO.sequence(digitSigs))
+    }
+
+    for {
+      signSig <- signSigF
+      digitSigA <- digitSigAF
+      digitSigs <- safeDatabase.run(digitSigA)
+    } yield {
+      val event =
+        OracleEvent.fromCompletedEventDbs(signSig ++ digitSigs, Some(metadata))
+      event match {
+        case enum: CompletedEnumV0OracleEvent =>
+          sys.error(
+            s"Cannot have an enum oracle event when signing a numeric announcement, got=$enum")
+        case numeric: CompletedDigitDecompositionV0OracleEvent =>
+          numeric
+      }
+    }
   }
 
   /** @inheritdoc */
   def signMessage(message: ByteVector): SchnorrDigitalSignature = {
     val hash = CryptoUtil.sha256(message)
-    signingKey.schnorrSign(hash.bytes)
+    announcementPrivKey.schnorrSign(hash.bytes)
   }
 
   /** @inheritdoc */
   override def deleteAnnouncement(
-      eventName: String): Future[OracleAnnouncementTLV] = {
+      eventName: String): Future[BaseOracleAnnouncement] = {
     logger.warn(s"Deleting announcement with name=$eventName")
     for {
       eventOpt <- findEvent(eventName)
       _ = require(eventOpt.isDefined,
                   s"No announcement found by event name $eventName")
       event = eventOpt.get
-      eventDbs <- eventDAO.findByOracleEventTLV(event.eventTLV)
+      eventDbs <- eventDAO.findByAnnouncement(event.announcementTLV)
       _ = require(
         eventDbs.forall(_.attestationOpt.isEmpty),
         s"Cannot have attesations defined when deleting an announcement, name=$eventName")
@@ -482,7 +677,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
   /** @inheritdoc */
   override def deleteAnnouncement(
-      announcementTLV: OracleAnnouncementTLV): Future[OracleAnnouncementTLV] = {
+      announcementTLV: BaseOracleAnnouncement): Future[
+    BaseOracleAnnouncement] = {
     deleteAnnouncement(announcementTLV.eventTLV.eventId.toString)
   }
 
@@ -496,7 +692,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       eventOpt <- findEvent(eventName)
       _ = require(eventOpt.isDefined,
                   s"No event found by event name $eventName")
-      res <- deleteAttestation(eventOpt.get.eventTLV)
+      res <- deleteAttestation(eventOpt.get.announcementTLV)
     } yield res
   }
 
@@ -506,15 +702,16 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     * the oracle private key will be revealed.
     */
   override def deleteAttestation(
-      oracleEventTLV: OracleEventTLV): Future[OracleEvent] = {
+      announcement: BaseOracleAnnouncement): Future[OracleEvent] = {
     for {
-      eventDbs <- eventDAO.findByOracleEventTLV(oracleEventTLV)
+      eventDbs <- eventDAO.findByAnnouncement(announcement)
       _ = require(eventDbs.exists(_.attestationOpt.isDefined),
                   s"Event given is unsigned")
 
       updated = eventDbs.map(_.copy(outcomeOpt = None, attestationOpt = None))
       _ <- eventDAO.updateAll(updated)
-    } yield OracleEvent.fromEventDbs(eventDbs)
+      oracleEvents <- getFullOracleEvents(eventDbs)
+    } yield oracleEvents.head
   }
 
   override def oracleName(): Future[Option[String]] = {
@@ -526,7 +723,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   }
 
   override def exportSigningKeyWIF: String = {
-    ECPrivateKeyUtil.toWIF(privKey = signingKey.toPrivateKeyBytes(false),
+    ECPrivateKeyUtil.toWIF(privKey =
+                             announcementPrivKey.toPrivateKeyBytes(false),
                            network = MainNet)
   }
 }
@@ -548,8 +746,9 @@ object DLCOracle {
       _ <- appConfig.start()
       _ <- MasterXPubUtil.checkMasterXPub(oracle.getRootXpub, masterXpubDAO)
       differentKeyDbs <- oracle.eventDAO.findDifferentPublicKey(
-        oracle.publicKey)
-      fixedDbs = differentKeyDbs.map(_.copy(pubkey = oracle.publicKey))
+        oracle.announcementPublicKey)
+      fixedDbs = differentKeyDbs.map(
+        _.copy(pubkey = oracle.announcementPublicKey))
       _ <- oracle.eventDAO.updateAll(fixedDbs)
     } yield oracle
   }

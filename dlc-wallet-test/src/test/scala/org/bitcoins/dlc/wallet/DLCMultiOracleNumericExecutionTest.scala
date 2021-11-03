@@ -61,7 +61,7 @@ class DLCMultiOracleNumericExecutionTest
   val oracleInfo: NumericMultiOracleInfo =
     NumericMultiOracleInfo(threshold = threshold,
                            announcements = OrderedAnnouncements(announcements),
-                           params = params)
+                           paramsOpt = Some(params))
 
   val contractOraclePair: ContractOraclePair.NumericPair =
     ContractOraclePair.NumericPair(contractDescriptor, oracleInfo)
@@ -249,6 +249,7 @@ class DLCMultiOracleNumericExecutionTest
         }
         val eventId = oracleInfo.announcement.eventTLV match {
           case v0: OracleEventV0TLV => v0.eventId
+          case v1: OracleEventV1TLV => v1.eventId
         }
 
         require(kValues.length == sigs.length,

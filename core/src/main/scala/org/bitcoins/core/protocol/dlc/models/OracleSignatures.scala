@@ -130,7 +130,7 @@ case class EnumOracleSignature(
   }
 
   override def toString: String =
-    s"EnumOracleSignature(${oracle.announcement.publicKey}, $sig)"
+    s"EnumOracleSignature(${oracle.announcement.announcementPublicKey}, $sig)"
 }
 
 sealed trait NumericOracleSignatures extends OracleSignatures {
@@ -166,7 +166,7 @@ sealed trait NumericOracleSignatures extends OracleSignatures {
   }
 
   override def toString: String =
-    s"${getClass.getSimpleName}(${oracle.announcement.publicKey}, $sigs)"
+    s"${getClass.getSimpleName}(${oracle.announcement.announcementPublicKey}, $sigs)"
 }
 
 /** Wraps a set of oracle signatures of numeric digits that are sorted by nonces */

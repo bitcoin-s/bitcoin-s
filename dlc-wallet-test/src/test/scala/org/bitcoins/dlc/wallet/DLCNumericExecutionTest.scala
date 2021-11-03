@@ -75,6 +75,7 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
     val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
     val eventId = DLCWalletUtil.sampleOracleInfo.announcement.eventTLV match {
       case v0: OracleEventV0TLV => v0.eventId
+      case v1: OracleEventV1TLV => v1.eventId
     }
 
     (OracleAttestmentV0TLV(eventId,

@@ -3,7 +3,7 @@ package org.bitcoins.dlc.oracle.storage
 import org.bitcoins.core.api.dlcoracle.db.{EventDb, EventOutcomeDb, RValueDb}
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
-import org.bitcoins.core.protocol.tlv.EventDescriptorTLV
+import org.bitcoins.core.protocol.tlv.{EventDescriptorDLCType}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto._
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
@@ -36,7 +36,7 @@ class EventOutcomeDAOTest extends DLCOracleDAOFixture {
   val dummyRValDb: RValueDb =
     RValueDb(nonce, eventName, HDPurpose(0), HDCoinType.Bitcoin, 0, 0, 0)
 
-  def descriptor: EventDescriptorTLV = TLVGen.eventDescriptorTLV.sampleSome
+  def descriptor: EventDescriptorDLCType = TLVGen.eventDescriptorTLV.sampleSome
 
   val dummyEventDb: EventDb =
     EventDb(nonce,

@@ -120,6 +120,14 @@ trait CryptoRuntime {
     sha256(dlcAttestationTagBytes ++ bytes)
   }
 
+  private val metadataSignatureBytes: Sha256Digest = {
+    CryptoUtil.sha256("oraclemetadata/v0")
+  }
+
+  def sha256MetadataSignature(bytes: ByteVector): Sha256Digest = {
+    sha256(metadataSignatureBytes.bytes ++ bytes)
+  }
+
   def sha256DLCAttestation(str: String): Sha256Digest = {
     sha256DLCAttestation(serializeForHash(str))
   }
@@ -134,6 +142,13 @@ trait CryptoRuntime {
 
   def sha256DLCAnnouncement(bytes: ByteVector): Sha256Digest = {
     sha256(dlcAnnouncementTagBytes ++ bytes)
+  }
+
+  private val dlcAnnouncementV1TagBytes =
+    CryptoUtil.sha256("announcement/v1").bytes
+
+  def sha256DLCAnnouncementV1(bytes: ByteVector): Sha256Digest = {
+    sha256(dlcAnnouncementV1TagBytes ++ bytes)
   }
 
   /** Recover public keys from a signature and the message that was signed. This method will return 2 public keys, and the signature

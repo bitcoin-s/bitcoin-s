@@ -3,9 +3,10 @@ package org.bitcoins.dlc.oracle.storage
 import org.bitcoins.core.api.dlcoracle.db.{EventDb, RValueDb}
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv.{
-  EventDescriptorTLV,
-  OracleEventTLV,
-  OracleEventV0TLV
+  BaseEventDescriptor,
+  BaseOracleAnnouncement,
+  OracleAnnouncementV0TLV,
+  OracleAnnouncementV1TLV
 }
 import org.bitcoins.crypto._
 import org.bitcoins.db.{CRUD, DbCommonsColumnMappers, SlickUtil}
@@ -62,19 +63,22 @@ case class EventDAO()(implicit
   }
 
   def findByEventDescriptor(
-      descriptorTLV: EventDescriptorTLV): Future[Vector[EventDb]] = {
+      descriptorTLV: BaseEventDescriptor): Future[Vector[EventDb]] = {
     val query = table.filter(_.eventDescriptorTLV === descriptorTLV)
 
     safeDatabase.runVec(query.result)
   }
 
-  def findByOracleEventTLV(
-      oracleEvent: OracleEventTLV): Future[Vector[EventDb]] = {
-    val query = oracleEvent match {
-      case v0: OracleEventV0TLV =>
-        table.filter(_.nonce.inSet(v0.nonces))
+  def findByAnnouncement(
+      announcement: BaseOracleAnnouncement): Future[Vector[EventDb]] = {
+    val nonces = announcement match {
+      case v0: OracleAnnouncementV0TLV =>
+        v0.eventTLV.nonces
+      case v1: OracleAnnouncementV1TLV =>
+        v1.metadata.attestations.nonces
     }
 
+    val query = table.filter(_.nonce.inSet(nonces))
     safeDatabase.runVec(query.result)
   }
 
@@ -107,7 +111,7 @@ case class EventDAO()(implicit
     def announcementSignature: Rep[SchnorrDigitalSignature] =
       column("announcement_signature")
 
-    def eventDescriptorTLV: Rep[EventDescriptorTLV] =
+    def eventDescriptorTLV: Rep[BaseEventDescriptor] =
       column("event_descriptor_tlv")
 
     def * : ProvenShape[EventDb] =
