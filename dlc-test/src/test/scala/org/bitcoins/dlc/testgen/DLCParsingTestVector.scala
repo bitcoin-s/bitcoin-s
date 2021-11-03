@@ -301,8 +301,13 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
                        feeRate,
                        contractMaturityBound,
                        contractTimeout) =>
-        val fields = Vector(
-          PicklerKeys.protocolVersionKey -> Element(UInt16(versionOpt.get)),
+        val version = versionOpt match {
+          case Some(version) =>
+            Vector(PicklerKeys.protocolVersionKey -> Element(UInt16(version)))
+          case None =>
+            Vector.empty
+        }
+        val fields = version ++ Vector(
           "tpe" -> Element(UInt16(DLCOfferTLV.tpe.toInt)),
           "contractFlags" -> Element(ByteVector(contractFlags)),
           "chainHash" -> Element(chainHash),

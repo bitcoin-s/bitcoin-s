@@ -1507,7 +1507,12 @@ case class DLCOfferTLV(
   override val tpe: BigSizeUInt = DLCOfferTLV.tpe
 
   override val value: ByteVector = {
-    ByteVector(contractFlags) ++
+    val versionBytes = protocolVersionOpt match {
+      case Some(v) => UInt32(v).bytes
+      case None    => ByteVector.empty
+    }
+    versionBytes ++
+      ByteVector(contractFlags) ++
       chainHash.bytes ++
       contractInfo.bytes ++
       fundingPubKey.bytes ++
@@ -1561,7 +1566,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
       fundingPubKey = fundingPubKey,
       payoutSPK = payoutSPK,
       payoutSerialId = payoutSerialId,
-      offerCollateralSatoshis = totalCollateralSatoshis,
+      totalCollateralSatoshis = totalCollateralSatoshis,
       fundingInputs = fundingInputs,
       changeSPK = changeSPK,
       changeSerialId = changeSerialId,
