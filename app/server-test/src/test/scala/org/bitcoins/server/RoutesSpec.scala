@@ -928,6 +928,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val contractInfoTLV = contractInfo.toTLV
 
     val offer = DLCOffer(
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       contractInfo = contractInfo,
       pubKeys = dummyDLCKeys,
       totalCollateral = Satoshis(2500),

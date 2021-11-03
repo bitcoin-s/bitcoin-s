@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCAccept
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.dlc.sign.DLCTxSigner
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.tlv.DLCOfferTLV
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
@@ -208,6 +209,7 @@ object TestDLCClient {
     }
 
     val offer = DLCMessage.DLCOffer(
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       contractInfo = offerOutcomes,
       pubKeys = offerPubKeys,
       totalCollateral = offerInput.satoshis,

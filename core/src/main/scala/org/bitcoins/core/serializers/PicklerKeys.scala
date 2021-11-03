@@ -1,4 +1,4 @@
-package org.bitcoins.commons.serializers
+package org.bitcoins.core.serializers
 
 object PicklerKeys {
   final val myCollateral: String = "myCollateral"
@@ -17,4 +17,7 @@ object PicklerKeys {
   final val payoutKey: String = "payout"
   final val extraPrecisionKey: String = "extraPrecision"
   final val isEndpointKey: String = "isEndpoint"
+
+  //offers
+  final val protocolVersionKey: String = "protocolVersion"
 }

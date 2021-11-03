@@ -372,6 +372,7 @@ abstract class DLCWallet
                              BlockTimeStamp(refundLocktime))
 
       offer = DLCOffer(
+        protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
         contractInfo = contractInfo,
         pubKeys = dlcPubKeys,
         totalCollateral = collateral.satoshis,

@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.util.TimeUtil._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte

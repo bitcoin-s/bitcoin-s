@@ -229,6 +229,7 @@ object DLCTLVGen {
   }
 
   def dlcOffer(
+      protocolVersionOpt: Option[Int] = DLCOfferTLV.currentVersionOpt,
       contractInfo: ContractInfo = genContractInfo(),
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
@@ -242,6 +243,7 @@ object DLCTLVGen {
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200)): DLCOffer = {
     DLCOffer(
+      protocolVersionOpt,
       contractInfo,
       DLCPublicKeys(fundingPubKey, payoutAddress),
       totalCollateral,
@@ -256,6 +258,7 @@ object DLCTLVGen {
   }
 
   def dlcOfferTLV(
+      protocolVersionOpt: Option[Int] = DLCOfferTLV.currentVersionOpt,
       contractInfo: ContractInfo = genContractInfo(),
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
@@ -269,6 +272,7 @@ object DLCTLVGen {
       contractMaturityBound: BlockTimeStamp = BlockTimeStamp(100),
       contractTimeout: BlockTimeStamp = BlockTimeStamp(200)): DLCOfferTLV = {
     dlcOffer(
+      protocolVersionOpt,
       contractInfo,
       fundingPubKey,
       payoutAddress,
@@ -285,6 +289,7 @@ object DLCTLVGen {
   }
 
   def dlcOfferParsingTestVector(
+      protocolVersionOpt: Option[Int] = DLCOfferTLV.currentVersionOpt,
       contractInfo: ContractInfo = genContractInfo(),
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       payoutAddress: BitcoinAddress = address(),
@@ -300,6 +305,7 @@ object DLCTLVGen {
         BlockTimeStamp(200)): DLCParsingTestVector = {
     DLCParsingTestVector(
       dlcOfferTLV(
+        protocolVersionOpt,
         contractInfo,
         fundingPubKey,
         payoutAddress,
