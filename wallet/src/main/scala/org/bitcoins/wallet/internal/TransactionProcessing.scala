@@ -707,9 +707,10 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
 
       Future.successful(Vector.empty)
     } else {
-      val filteredOutputs =
+      val filteredOutputs = {
         transaction.outputs.zipWithIndex.filter(o =>
-          relevantReceivedOutputs.contains(OutputWithIndex(o._1, o._2)))
+          relevantReceivedOutputs.exists(_ == OutputWithIndex(o._1, o._2)))
+      }
 
       if (filteredOutputs.isEmpty) {
         //no relevant outputs in this tx, return early

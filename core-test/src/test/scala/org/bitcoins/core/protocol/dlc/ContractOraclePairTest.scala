@@ -5,7 +5,8 @@ import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv.{
   DLCSerializationVersion,
   EnumOutcome,
-  OracleAnnouncementV0TLV
+  OracleAnnouncementV0TLV,
+  OracleParamsV0TLV
 }
 import org.bitcoins.core.util.sorted.OrderedAnnouncements
 import org.bitcoins.crypto.ECPrivateKey
@@ -81,11 +82,12 @@ class ContractOraclePairTest extends BitcoinSUnitTest {
       OrderedAnnouncements(
         Vector(oracleInfo1, oracleInfo2, oracleInfo3).map(_.announcement))
     val multiOracleInfoExact = NumericExactMultiOracleInfo(2, announcements)
-    val multiOracleInfo = NumericMultiOracleInfo(2,
-                                                 announcements,
-                                                 maxErrorExp = 2,
-                                                 minFailExp = 1,
-                                                 maximizeCoverage = true)
+    val params = OracleParamsV0TLV(maxErrorExp = 2,
+                                   minFailExp = 1,
+                                   maximizeCoverage = true)
+    val multiOracleInfo = NumericMultiOracleInfo(threshold = 2,
+                                                 announcements = announcements,
+                                                 paramsOpt = Some(params))
 
     assertThrows[IllegalArgumentException](
       ContractOraclePair.NumericPair(contractDescriptor, oracleInfo1)

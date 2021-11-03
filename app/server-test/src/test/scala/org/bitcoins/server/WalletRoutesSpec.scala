@@ -61,8 +61,9 @@ class WalletRoutesSpec
       }
     }
 
-    "getdlcoffer" in {
+    "getdlcoffer for beta dlc spec" in {
 
+      //old offer message, we need to support these for backwards compatability though
       val hex = "a71a006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000fdd82efd00fe00000000000186a0fd" +
         "a7101802035945530000000000000000024e4f00000000000186a0fda712d6fdd824d253132dd9798d0a35439d03959989ff099c57eb" +
         "68452fd3670413a02028b1366a117470e7a452c379ce1e96c256897499571b412e2561e4781124857edf8237ee3a46bbd9eab0646b12" +
@@ -76,6 +77,76 @@ class WalletRoutesSpec
         "fd9e08a93ae8ca8bc88515ecabc91498e534902cc29842b88dc4d3385225951012103f1a388a0b85964c576ee59f408e26a86db60b9a" +
         "212ae9dacca91710462b916ef0000000000000001fffffffd006b00000016001476b7c5e332fdc6c7d1075d92589d17f50116bffeb08" +
         "eebe8da4c4e72c70af43b6844c7f4000000000000000261bc276061c561e0"
+
+      //the gamma version of the offer
+      val expectedHex =
+        "a71a006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d61900000000000000000000000186a000020359455300000000000" +
+          "00000024e4f00000000000186a000fdd824d253132dd9798d0a35439d03959989ff099c57eb68452fd3670413a02028b1366a117470e7" +
+          "a452c379ce1e96c256897499571b412e2561e4781124857edf8237ee3a46bbd9eab0646b12d2fc402373b4886931e9fcb74dcf8a95e9c" +
+          "c2c620ef3e4fdd8226e00011d9565a789ab074c31dfb7c350203060093224e551903aa9c8ab5851384fd64461bc2760fdd80609000203" +
+          "594553024e4f3a426974636f696e2061626f7665202435302c303030206f6e20323032312d31322d31363a30303a30303a30305554432" +
+          "04020436f696e626173650344f27e85e4a9ac3f7e8c64cf44242134e833c36bf291271fd135edfce3471d2000160014e90a3dc8e531b0" +
+          "703348fe2e6e11d2fc8de79bed9d6c51aa723e07fd000000000000c3500165f0f3fe17fd6c10de02000000000101b3a09d05f122a7d3a" +
+          "d466840ce687b9868d84cd6f317eebca76c5e07c39f8ec6000000000000000000027c6f0b0000000000160014cea305ee870ef0c69654" +
+          "3c100c800224f3edf45690d0030000000000160014c7868579385af4d1108b1583b3e3daf6a643596e024730440220667652339e16bf2" +
+          "8e885d0f0503209f8aa96bf6006e35694287180eff37232f002207fd9e08a93ae8ca8bc88515ecabc91498e534902cc29842b88dc4d33" +
+          "85225951012103f1a388a0b85964c576ee59f408e26a86db60b9a212ae9dacca91710462b916ef0000000000000001fffffffd006b000" +
+          "00016001476b7c5e332fdc6c7d1075d92589d17f50116bffeb08eebe8da4c4e72c70af43b6844c7f4000000000000000261bc276061c5" +
+          "61e0"
+
+      val lnMessage = LnMessageFactory(DLCOfferTLV).fromHex(hex)
+
+      val offer = DLCOffer.fromMessage(lnMessage)
+
+      val tempContractId = offer.tempContractId
+
+      val dlcId = Sha256Digest.empty
+
+      val status = DLCStatus.Offered(
+        dlcId = dlcId,
+        isInitiator = false,
+        lastUpdated = null,
+        tempContractId = tempContractId,
+        contractInfo = null,
+        timeouts = null,
+        feeRate = null,
+        totalCollateral = null,
+        localCollateral = null,
+        payoutAddress = None
+      )
+
+      (mockWalletApi.findDLCByTemporaryContractId: Sha256Digest => Future[
+        Option[DLCStatus]])
+        .expects(tempContractId)
+        .returning(Future.successful(Some(status)))
+      (mockWalletApi.getDLCOffer: Sha256Digest => Future[Option[DLCOffer]])
+        .expects(dlcId)
+        .returning(Future.successful(Some(offer)))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getdlcoffer", ujson.Arr(tempContractId.hex)))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == s"""{"result":"$expectedHex","error":null}""")
+      }
+    }
+
+    "getdlcoffer for gamma dlc spec" in {
+
+      val hex = "a71a000000010006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f50a38b0f6bc6627a330f93ef6" +
+        "2b1685e45d390f0c2e008784a494ae3f77e047500000000000bebc20000040161000000000bebc200016200000000000000000163000000" +
+        "000bebc2000164000000000000000000fdd8249d288a4ac72f3f627ceecf61753f94c437f9e761950ce1dd4ad787cdf6f525ce11b6cea81" +
+        "689ad41511d4366db5fb591b40864f59c4e9e0cf2c7dac89224d98c553d563caec479d618bad3cb0e844f57dcd977f23e5d6d84e1e3be51" +
+        "bb33133cb0fdd8223900015c1785f8ab4273d56ac67d4b0429c40107cec5875246a2b68872792c2096e3a760bf0bb0fdd8060a000401610" +
+        "1620163016404546573740284014ca41f49f56553b01d7da4f6c19afed76ac5d2fecde0bab6a878b57092ed001600148ac3370f8bb58401" +
+        "12756ec4a48d4f417c958b6843e2078bcda6b45e0000000005f5e1000149fb24ec0ff14a9ca802000000000101000000000000000000000" +
+        "0000000000000000000000000000000000000000000ffffffff03520101ffffffff0200f2052a01000000160014dbd4ce44e8f4db05f35c" +
+        "a1c16378c56017b0582b0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8" +
+        "cf9012000000000000000000000000000000000000000000000000000000000000000000000000000000000ffffffff006b000000160014" +
+        "b742726c4817779988527052274d2a6f95c2cfb1da1acbdfc795a1b47d8adb8865f91fc9000000000000000260bf0bb060c84630"
 
       val lnMessage = LnMessageFactory(DLCOfferTLV).fromHex(hex)
 

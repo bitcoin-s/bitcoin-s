@@ -35,14 +35,15 @@ object ContractDescriptorParser {
         val payoutCurve = DLCPayoutCurve
           .fromPoints(payoutPoints,
                       serializationVersion = DLCSerializationVersion.Beta)
-          .toTLV
+          .toSubType
         val numDigits = announcementTLV.eventTLV.eventDescriptor
           .asInstanceOf[DigitDecompositionEventDescriptorV0TLV]
           .numDigits
           .toInt
         ContractDescriptorV1TLV(numDigits,
                                 payoutCurve,
-                                RoundingIntervalsV0TLV.noRounding)
+                                RoundingIntervalsV0TLV.noRounding,
+                                DLCSerializationVersion.current)
       case fail @ (_: Num | _: Bool | Null | _: Str) =>
         sys.error(
           s"Cannot parse contract descriptor from $fail, expected json object or array")

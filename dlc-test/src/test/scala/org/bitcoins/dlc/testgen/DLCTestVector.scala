@@ -117,6 +117,7 @@ case class DLCPartyParams(
   def toOffer(params: DLCParams): DLCOffer = {
     DLCOffer(
       DLCOfferTLV.currentVersionOpt,
+      params.tempContractId,
       SingleContractInfo(
         EnumContractDescriptor(params.contractInfo.map(_.toMapEntry)),
         params.oracleInfo),
@@ -156,6 +157,7 @@ object SerializedContractInfoEntry {
 }
 
 case class DLCParams(
+    tempContractId: Sha256Digest,
     oracleInfo: EnumSingleOracleInfo,
     contractInfo: Vector[SerializedContractInfoEntry],
     contractMaturityBound: BlockTimeStamp,
@@ -173,15 +175,16 @@ case class ValidTestInputs(
 
   def accept: DLCAcceptWithoutSigs =
     DLCAcceptWithoutSigs(
-      acceptParams.collateral.satoshis,
-      DLCPublicKeys(acceptParams.fundingPrivKey.publicKey,
-                    acceptParams.payoutAddress),
-      acceptParams.fundingInputs,
-      acceptParams.changeAddress,
-      acceptParams.payoutSerialId,
-      acceptParams.changeSerialId,
-      DLCAccept.NoNegotiationFields,
-      offer.tempContractId
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+      totalCollateral = acceptParams.collateral.satoshis,
+      pubKeys = DLCPublicKeys(acceptParams.fundingPrivKey.publicKey,
+                              acceptParams.payoutAddress),
+      fundingInputs = acceptParams.fundingInputs,
+      changeAddress = acceptParams.changeAddress,
+      payoutSerialId = acceptParams.payoutSerialId,
+      changeSerialId = acceptParams.changeSerialId,
+      negotiationFields = DLCAccept.NoNegotiationFields,
+      tempContractId = offer.tempContractId
     )
 
   def builder: DLCTxBuilder = DLCTxBuilder(offer, accept)

@@ -25,6 +25,7 @@ import org.bitcoins.crypto.{AdaptorSign, Sha256Digest}
 import org.bitcoins.dlc.wallet.models.{
   DLCAcceptDb,
   DLCContractDataDb,
+  DLCContractDataDbHelper,
   DLCWalletDAOs
 }
 import org.bitcoins.wallet.models.TransactionDAO
@@ -78,6 +79,7 @@ object DLCAcceptUtil extends Logging {
     val changeSerialId = DLCMessage.genSerialId(
       Vector(offer.fundOutputSerialId, offer.changeSerialId))
     val acceptWithoutSigs = DLCAcceptWithoutSigs(
+      offer.protocolVersionOpt,
       totalCollateral = collateral.satoshis,
       pubKeys = dlcPubKeys,
       fundingInputs = utxos,
@@ -97,11 +99,11 @@ object DLCAcceptUtil extends Logging {
       offer: DLCOffer): DLCContractDataDb = {
     val oracleParamsOpt =
       OracleInfo.getOracleParamsOpt(contractInfo.oracleInfos.head)
-    DLCContractDataDb(
+    DLCContractDataDbHelper(
       dlcId = dlcId,
       oracleThreshold = contractInfo.oracleInfos.head.threshold,
       oracleParamsTLVOpt = oracleParamsOpt,
-      contractDescriptorTLV = contractInfo.contractDescriptors.head.toTLV,
+      contractDescriptorTLV = contractInfo.contractDescriptors.head.toSubType,
       contractMaturity = offer.timeouts.contractMaturity,
       contractTimeout = offer.timeouts.contractTimeout,
       totalCollateral = contractInfo.totalCollateral
@@ -152,7 +154,7 @@ object DLCAcceptUtil extends Logging {
       collateral = collateral,
       changeAddress = acceptWithoutSigs.changeAddress,
       changeSerialId = acceptWithoutSigs.changeSerialId,
-      negotiationFieldsTLV = NoNegotiationFields.toTLV
+      negotiationFieldsTLV = NoNegotiationFields.toSubType
     )
   }
 

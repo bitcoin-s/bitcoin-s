@@ -31,7 +31,7 @@ class ContractGUIModel() extends Logging {
           case Failure(_) => None
           case Success(contractInfo) =>
             contractInfo.oracleInfo match {
-              case OracleInfoV0TLV(announcement) =>
+              case OracleInfoV0TLV(announcement, _) =>
                 onAddContract(
                   announcement.asInstanceOf[OracleAnnouncementV0TLV],
                   Some(contractInfo))

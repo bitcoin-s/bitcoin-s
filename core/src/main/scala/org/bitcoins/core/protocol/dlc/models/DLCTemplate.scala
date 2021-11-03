@@ -62,12 +62,15 @@ case class MultiOracleDLCTemplate(
     minFailExp < maxErrorExp,
     s"minFailExp ($minFailExp) must be less than maxErrorExp ($maxErrorExp)")
 
-  override val oracleInfo: NumericMultiOracleInfo =
+  private val oracleParamsTLV =
+    OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage)
+
+  override val oracleInfo: NumericMultiOracleInfo = {
+
     NumericMultiOracleInfo(threshold = oracleThreshold,
                            announcements = OrderedAnnouncements(oracles),
-                           maxErrorExp = maxErrorExp,
-                           minFailExp = minFailExp,
-                           maximizeCoverage = maximizeCoverage)
+                           Some(oracleParamsTLV))
+  }
 
   override val toContractInfo: ContractInfo = {
     val pair: NumericPair =

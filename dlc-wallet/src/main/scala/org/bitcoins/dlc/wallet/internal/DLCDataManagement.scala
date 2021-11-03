@@ -190,7 +190,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     val announcementTLVs =
       getOracleAnnouncements(announcementIds, announcementData, nonceDbs)
 
-    ContractDescriptor.fromTLV(contractDataDb.contractDescriptorTLV) match {
+    ContractDescriptor.fromSubType(contractDataDb.contractDescriptorTLV) match {
       case enum: EnumContractDescriptor =>
         val oracleInfo =
           if (announcementTLVs.size == 1) {
@@ -208,11 +208,11 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
             NumericSingleOracleInfo(announcementTLVs.head)
           } else {
             contractDataDb.oracleParamsTLVOpt match {
-              case Some(params) =>
+              case SomeTLV(params) =>
                 NumericMultiOracleInfo(contractDataDb.oracleThreshold,
                                        announcementTLVs,
-                                       params)
-              case None =>
+                                       SomeTLV(params))
+              case NoneTLV =>
                 NumericExactMultiOracleInfo(contractDataDb.oracleThreshold,
                                             announcementTLVs)
             }

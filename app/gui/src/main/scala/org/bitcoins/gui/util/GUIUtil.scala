@@ -204,7 +204,7 @@ object GUIUtil {
   def getOraclePubKeyEventId(
       contractInfo: ContractInfoTLV): (SchnorrPublicKey, String) = {
     contractInfo match {
-      case ContractInfoV0TLV(_, _, oracleInfo) =>
+      case ContractInfoV0TLV(_, _, oracleInfo, _) =>
         (oracleInfo.announcements.head.publicKey,
          oracleInfo.announcements.head.eventTLV.eventId)
       case ContractInfoV1TLV(_, contractOraclePairs) =>

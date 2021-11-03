@@ -270,7 +270,8 @@ object Picklers {
       UInt32(prevTxVout),
       sequence,
       maxWitnessLen,
-      redeemScriptOpt
+      redeemScriptOpt,
+      DLCSerializationVersion.current
     )
   }
 
@@ -286,7 +287,7 @@ object Picklers {
   private def parseCetAdaptorSignatures(obj: ujson.Obj): CETSignaturesTLV = {
     val ecAdaptorSignaturesArr = obj(PicklerKeys.ecdsaAdaptorSignaturesKey).arr
     val adaptorSigs = parseAdaptorSignatures(ecAdaptorSignaturesArr)
-    CETSignaturesV0TLV(adaptorSigs)
+    CETSignaturesV0TLV(adaptorSigs, DLCSerializationVersion.current)
   }
 
   private def parseAdaptorSignatures(
@@ -342,6 +343,7 @@ object Picklers {
     }
 
     val acceptTLV = DLCAcceptTLV(
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       tempContractId = tempContractId,
       acceptCollateralSatoshis = acceptCollateral,
       fundingPubKey = fundingPubKey,
@@ -382,7 +384,7 @@ object Picklers {
     val fundingSignatures: Vector[ujson.Value] = obj(
       PicklerKeys.fundingSignaturesKey).arr.toVector
     val witV0 = paresFundingSignaturesArr(fundingSignatures)
-    FundingSignaturesV0TLV(witV0)
+    FundingSignaturesV0TLV(witV0, DLCSerializationVersion.current)
   }
 
   private def paresFundingSignaturesArr(
@@ -427,8 +429,13 @@ object Picklers {
     val fundingSignatures = parseFundingSignatures(
       obj(PicklerKeys.fundingSignaturesKey).obj)
 
-    val signTLV =
-      DLCSignTLV(contractId, adaptorSigs, refundSignature, fundingSignatures)
+    val signTLV = DLCSignTLV(
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+      contractId = contractId,
+      cetSignatures = adaptorSigs,
+      refundSignature = refundSignature,
+      fundingSignatures = fundingSignatures
+    )
 
     signTLV
 
@@ -574,7 +581,7 @@ object Picklers {
       val outcome = map(PicklerKeys.outcomeKey).num.toLong
       val payout = jsToSatoshis(map(PicklerKeys.payoutKey))
       val extraPrecision = map(PicklerKeys.extraPrecisionKey).num.toInt
-      TLVPoint(outcome, payout, extraPrecision)
+      TLVPoint(outcome, payout, extraPrecision, DLCSerializationVersion.current)
     }
   }
 
@@ -648,7 +655,7 @@ object Picklers {
 
       DLCPayoutCurve
         .fromPoints(points, serializationVersion = DLCSerializationVersion.Beta)
-        .toTLV
+        .toSubType
     }
   }
 
@@ -707,9 +714,12 @@ object Picklers {
   implicit val oracleInfoV1TLVWriter: Writer[OracleInfoV1TLV] =
     writer[Obj].comap { oracleInfo =>
       import oracleInfo._
-      Obj("threshold" -> Num(threshold.toDouble),
-          "announcements" -> oracles.map(o =>
-            writeJs(o)(oracleAnnouncementTLVJsonWriter)))
+      Obj(
+        "threshold" -> Num(threshold.toDouble),
+        "announcements" -> oracles.map(o =>
+          writeJs(o)(oracleAnnouncementTLVJsonWriter)),
+        "params" -> writeJs(oracleInfo.oracleParamsOpt.toOption)
+      )
     }
 
   implicit val oracleParamsV0TLVWriter: Writer[OracleParamsV0TLV] =
@@ -725,20 +735,10 @@ object Picklers {
       writeJs(v0)
     }
 
-  implicit val oracleInfoV2TLVWriter: Writer[OracleInfoV2TLV] =
-    writer[Obj].comap { oracleInfo =>
-      import oracleInfo._
-      Obj("threshold" -> Num(threshold.toDouble),
-          "announcements" -> oracles.map(o =>
-            writeJs(o)(oracleAnnouncementTLVJsonWriter)),
-          "params" -> writeJs(params))
-    }
-
   implicit val oracleInfoTLVWriter: Writer[OracleInfoTLV] =
     writer[Value].comap {
       case v0: OracleInfoV0TLV => writeJs(v0)
       case v1: OracleInfoV1TLV => writeJs(v1)
-      case v2: OracleInfoV2TLV => writeJs(v2)
     }
 
   // can't make implicit because it will overlap with ones needed for cli
@@ -1248,7 +1248,7 @@ object Picklers {
           isInitiator,
           lastUpdated,
           tempContractId,
-          ContractInfo.fromTLV(contractInfoTLV),
+          ContractInfo.fromSubType(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
           totalCollateral,
@@ -1263,7 +1263,7 @@ object Picklers {
           lastUpdated,
           tempContractId,
           contractId,
-          ContractInfo.fromTLV(contractInfoTLV),
+          ContractInfo.fromSubType(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
           totalCollateral,
@@ -1278,7 +1278,7 @@ object Picklers {
           lastUpdated,
           tempContractId,
           contractId,
-          ContractInfo.fromTLV(contractInfoTLV),
+          ContractInfo.fromSubType(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
           totalCollateral,
@@ -1293,7 +1293,7 @@ object Picklers {
           lastUpdated,
           tempContractId,
           contractId,
-          ContractInfo.fromTLV(contractInfoTLV),
+          ContractInfo.fromSubType(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
           totalCollateral,
@@ -1309,7 +1309,7 @@ object Picklers {
           lastUpdated,
           tempContractId,
           contractId,
-          ContractInfo.fromTLV(contractInfoTLV),
+          ContractInfo.fromSubType(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
           totalCollateral,
@@ -1325,7 +1325,7 @@ object Picklers {
           lastUpdated,
           tempContractId,
           contractId,
-          ContractInfo.fromTLV(contractInfoTLV),
+          ContractInfo.fromSubType(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
           totalCollateral,
@@ -1341,7 +1341,7 @@ object Picklers {
           lastUpdated,
           tempContractId,
           contractId,
-          ContractInfo.fromTLV(contractInfoTLV),
+          ContractInfo.fromSubType(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
           totalCollateral,
@@ -1357,7 +1357,7 @@ object Picklers {
           lastUpdated,
           tempContractId,
           contractId,
-          ContractInfo.fromTLV(contractInfoTLV),
+          ContractInfo.fromSubType(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
           totalCollateral,
@@ -1380,7 +1380,7 @@ object Picklers {
           lastUpdated,
           tempContractId,
           contractId,
-          ContractInfo.fromTLV(contractInfoTLV),
+          ContractInfo.fromSubType(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
           totalCollateral,
@@ -1401,7 +1401,7 @@ object Picklers {
           lastUpdated,
           tempContractId,
           contractId,
-          ContractInfo.fromTLV(contractInfoTLV),
+          ContractInfo.fromSubType(contractInfoTLV),
           DLCTimeouts(contractMaturity, contractTimeout),
           feeRate,
           totalCollateral,
@@ -1463,7 +1463,7 @@ object Picklers {
         val payout = jsToSatoshis(payoutJs.num)
         (outcome, payout)
     }
-    ContractDescriptorV0TLV(outcomes = payouts)
+    ContractDescriptorV0TLV(outcomes = payouts, DLCSerializationVersion.current)
   }
 
   private def readBlockHeaderResult(obj: Obj): GetBlockHeaderResult = {

@@ -28,7 +28,9 @@ case class ValueIterator(value: ByteVector) {
   }
 
   def take(numBytes: Int): ByteVector = {
-    require(current.length >= numBytes)
+    require(
+      current.length >= numBytes,
+      s"Can't take numBytes=$numBytes when iter has len=${current.length}")
     val bytes = current.take(numBytes)
     skip(numBytes)
     bytes
@@ -42,6 +44,18 @@ case class ValueIterator(value: ByteVector) {
     val elem = factory(current)
     skip(elem)
     elem
+  }
+
+  def takeOpt[E <: NetworkElement](
+      factory: FactoryOptionTLV[E]): OptionTLV[E] = {
+    val elemOpt = factory.fromBytes(current)
+    elemOpt match {
+      case SomeTLV(e) =>
+        skip(e)
+      case NoneTLV =>
+        skip(NoneTLV.byteSize) //none is represented by 0x00
+    }
+    elemOpt
   }
 
   def take[E <: NetworkElement](factory: Factory[E], byteSize: Int): E = {

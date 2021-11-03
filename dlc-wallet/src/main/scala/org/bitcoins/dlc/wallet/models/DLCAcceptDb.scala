@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCAccept.NegotiationFields
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.core.protocol.tlv.NegotiationFieldsTLV
+import org.bitcoins.core.protocol.tlv.{DLCOfferTLV, NegotiationFieldsTLV}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.crypto._
 
@@ -32,6 +32,7 @@ case class DLCAcceptDb(
       DLCPublicKeys(fundingKey, payoutAddress)
     val cetSigs = CETSignatures(outcomeSigs)
     DLCAccept(
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       collateral = collateral.satoshis,
       pubKeys = pubKeys,
       fundingInputs = fundingInputs,
@@ -52,6 +53,7 @@ case class DLCAcceptDb(
       DLCPublicKeys(fundingKey, payoutAddress)
 
     DLCAcceptWithoutSigs(
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       totalCollateral = collateral.satoshis,
       pubKeys = pubKeys,
       fundingInputs = fundingInputs,
@@ -75,7 +77,7 @@ object DLCAcceptDbHelper {
       accept.collateral,
       accept.changeAddress,
       accept.changeSerialId,
-      accept.negotiationFields.toTLV
+      accept.negotiationFields.toSubType
     )
   }
 }
