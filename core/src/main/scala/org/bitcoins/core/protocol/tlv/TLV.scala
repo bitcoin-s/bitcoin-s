@@ -1484,6 +1484,7 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
 sealed trait DLCSetupTLV extends TLV
 
 case class DLCOfferTLV(
+    protocolVersionOpt: Option[Int],
     contractFlags: Byte,
     chainHash: DoubleSha256Digest,
     contractInfo: ContractInfoV0TLV,
@@ -1524,11 +1525,18 @@ case class DLCOfferTLV(
 }
 
 object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
+
+  /** No version for now */
+  val currentVersionOpt: Option[Int] = None
+
+  val currentVersionU32: Option[UInt32] = {
+    currentVersionOpt.map(UInt32(_))
+  }
   override val tpe: BigSizeUInt = BigSizeUInt(42778)
 
   override def fromTLVValue(value: ByteVector): DLCOfferTLV = {
     val iter = ValueIterator(value)
-
+    val protocolVersionOpt = None
     val contractFlags = iter.take(1).head
     val chainHash = iter.take(DoubleSha256Digest, 32)
     val contractInfo = iter.take(ContractInfoV0TLV)
@@ -1546,20 +1554,21 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
     val contractTimeout = BlockTimeStamp(iter.takeU32())
 
     DLCOfferTLV(
-      contractFlags,
-      chainHash,
-      contractInfo,
-      fundingPubKey,
-      payoutSPK,
-      payoutSerialId,
-      totalCollateralSatoshis,
-      fundingInputs,
-      changeSPK,
-      changeSerialId,
-      fundingOutputSerialId,
-      feeRate,
-      contractMaturityBound,
-      contractTimeout
+      protocolVersionOpt = protocolVersionOpt,
+      contractFlags = contractFlags,
+      chainHash = chainHash,
+      contractInfo = contractInfo,
+      fundingPubKey = fundingPubKey,
+      payoutSPK = payoutSPK,
+      payoutSerialId = payoutSerialId,
+      offerCollateralSatoshis = totalCollateralSatoshis,
+      fundingInputs = fundingInputs,
+      changeSPK = changeSPK,
+      changeSerialId = changeSerialId,
+      fundOutputSerialId = fundingOutputSerialId,
+      feeRate = feeRate,
+      contractMaturityBound = contractMaturityBound,
+      contractTimeout = contractTimeout
     )
   }
 

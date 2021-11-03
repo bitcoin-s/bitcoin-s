@@ -2,11 +2,11 @@ package org.bitcoins.server
 
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.bitcoins.commons.serializers.PicklerKeys
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.dlc.models.ContractInfo
 import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
+import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.server.routes.ServerCommand
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec

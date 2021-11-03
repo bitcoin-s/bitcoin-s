@@ -4,6 +4,7 @@ import org.bitcoins.core.number.{UInt16, UInt64}
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.crypto.{CryptoUtil, NetworkElement}
 import org.bitcoins.dlc.testgen.ByteVectorWrapper._
 import play.api.libs.json._
@@ -285,7 +286,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
           })
         )
         DLCTLVTestVector(tlv, "funding_signatures_v0", fields)
-      case DLCOfferTLV(contractFlags,
+      case DLCOfferTLV(versionOpt,
+                       contractFlags,
                        chainHash,
                        contractInfo,
                        fundingPubKey,
@@ -300,6 +302,7 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
                        contractMaturityBound,
                        contractTimeout) =>
         val fields = Vector(
+          PicklerKeys.protocolVersionKey -> Element(UInt16(versionOpt.get)),
           "tpe" -> Element(UInt16(DLCOfferTLV.tpe.toInt)),
           "contractFlags" -> Element(ByteVector(contractFlags)),
           "chainHash" -> Element(chainHash),

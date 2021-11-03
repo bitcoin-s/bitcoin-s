@@ -147,6 +147,7 @@ object DLCWalletUtil extends Logging {
     DLCMessage.genSerialId(Vector(sampleOfferChangeSerialId))
 
   lazy val sampleDLCOffer: DLCOffer = DLCOffer(
+    protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
     contractInfo = sampleContractInfo,
     pubKeys = dummyDLCKeys,
     totalCollateral = half,

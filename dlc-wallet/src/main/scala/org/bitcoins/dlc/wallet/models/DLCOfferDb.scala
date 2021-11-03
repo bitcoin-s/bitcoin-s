@@ -6,6 +6,7 @@ import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.tlv.DLCOfferTLV
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 
@@ -39,6 +40,7 @@ case class DLCOfferDb(
       feeRate: SatoshisPerVirtualByte,
       dlcTimeouts: DLCTimeouts): DLCOffer = {
     DLCOffer(
+      protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       contractInfo = contractInfo,
       pubKeys = dlcPubKeys,
       totalCollateral = collateral.satoshis,

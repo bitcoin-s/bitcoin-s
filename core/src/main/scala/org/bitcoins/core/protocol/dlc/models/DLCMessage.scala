@@ -77,6 +77,7 @@ object DLCMessage {
     * @param timeouts        The set of timeouts for the CETs
     */
   case class DLCOffer(
+      protocolVersionOpt: Option[Int],
       contractInfo: ContractInfo,
       pubKeys: DLCPublicKeys,
       totalCollateral: Satoshis,
@@ -110,9 +111,10 @@ object DLCMessage {
         changeAddress.networkParameters.chainParams.genesisBlock.blockHeader.hash
 
       DLCOfferTLV(
+        protocolVersionOpt = protocolVersionOpt,
         contractFlags = 0x00,
         chainHash = chainHash,
-        contractInfo.toTLV,
+        contractInfo = contractInfo.toTLV,
         fundingPubKey = pubKeys.fundingKey,
         payoutSPK = pubKeys.payoutAddress.scriptPubKey,
         payoutSerialId = payoutSerialId,
@@ -140,6 +142,7 @@ object DLCMessage {
       val contractInfo = ContractInfo.fromTLV(offer.contractInfo)
 
       DLCOffer(
+        protocolVersionOpt = offer.protocolVersionOpt,
         contractInfo = contractInfo,
         pubKeys = DLCPublicKeys(
           offer.fundingPubKey,

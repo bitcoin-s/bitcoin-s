@@ -403,6 +403,7 @@ trait TLVGen {
       }
 
       DLCOfferTLV(
+        protocolVersionOpt = None, //TODO: Comeback and change this
         contractFlags = 0.toByte,
         chainHash = chainHash,
         contractInfo = contractInfo,

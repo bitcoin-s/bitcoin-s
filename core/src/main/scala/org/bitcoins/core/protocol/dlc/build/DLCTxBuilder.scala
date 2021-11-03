@@ -28,6 +28,7 @@ import scodec.bits.ByteVector
 case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
 
   val DLCOffer(_,
+               _,
                DLCPublicKeys(offerFundingKey: ECPublicKey,
                              offerFinalAddress: BitcoinAddress),
                offerTotalCollateral: Satoshis,
