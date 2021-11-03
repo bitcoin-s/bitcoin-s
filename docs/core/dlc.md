@@ -174,6 +174,7 @@ Currently, only the most basic Lightning messages are defined (`Ping`, `Pong`, `
 
 ```scala mdoc:to-string
 val offerTLV = DLCOfferTLV(
+    protocolVersionOpt = None,
     contractFlags = 0.toByte,
     chainHash = DoubleSha256Digest.empty,
     contractInfo = contractInfo.toTLV,
