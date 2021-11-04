@@ -123,7 +123,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("getbalances", arr) =>
       GetBalance.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(GetBalance(isSats)) =>
           complete {
             for {
@@ -260,7 +260,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("getdlc", arr) =>
       GetDLC.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(GetDLC(paramHash)) =>
           complete {
             wallet.findDLC(paramHash).map {
@@ -274,7 +274,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("canceldlc", arr) =>
       GetDLC.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(GetDLC(paramHash)) =>
           complete {
             wallet.cancelDLC(paramHash).map { _ =>
@@ -286,7 +286,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("createdlcoffer", arr) =>
       CreateDLCOffer.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(
               CreateDLCOffer(contractInfo,
                              collateral,
@@ -320,7 +320,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("acceptdlcoffer", arr) =>
       AcceptDLCOffer.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(AcceptDLCOffer(offer)) =>
           complete {
             wallet
@@ -334,7 +334,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("acceptdlcofferfromfile", arr) =>
       DLCDataFromFile.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(DLCDataFromFile(path, destOpt)) =>
           complete {
 
@@ -354,7 +354,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("signdlc", arr) =>
       SignDLC.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(SignDLC(accept)) =>
           complete {
             wallet
@@ -368,7 +368,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("signdlcfromfile", arr) =>
       DLCDataFromFile.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(DLCDataFromFile(path, destOpt)) =>
           complete {
 
@@ -388,7 +388,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("adddlcsigs", arr) =>
       AddDLCSigs.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(AddDLCSigs(sigs)) =>
           complete {
             wallet.addDLCSigs(sigs.tlv).map { db =>
@@ -401,7 +401,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("adddlcsigsfromfile", arr) =>
       DLCDataFromFile.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(DLCDataFromFile(path, _)) =>
           complete {
 
@@ -419,7 +419,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("adddlcsigsandbroadcast", arr) =>
       AddDLCSigs.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(AddDLCSigs(sigs)) =>
           complete {
             for {
@@ -432,7 +432,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("adddlcsigsandbroadcastfromfile", arr) =>
       DLCDataFromFile.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(DLCDataFromFile(path, _)) =>
           val hex = Files.readAllLines(path).get(0)
 
@@ -448,7 +448,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("getdlcfundingtx", arr) =>
       GetDLCFundingTx.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(GetDLCFundingTx(contractId)) =>
           complete {
             wallet.getDLCFundingTx(contractId).map { tx =>
@@ -460,7 +460,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("broadcastdlcfundingtx", arr) =>
       BroadcastDLCFundingTx.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(BroadcastDLCFundingTx(contractId)) =>
           complete {
             wallet.broadcastDLCFundingTx(contractId).map { tx =>
@@ -472,7 +472,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("executedlc", arr) =>
       ExecuteDLC.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(ExecuteDLC(contractId, sigs, noBroadcast)) =>
           complete {
             for {
@@ -487,7 +487,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     case ServerCommand("executedlcrefund", arr) =>
       ExecuteDLCRefund.fromJsArr(arr) match {
         case Failure(exception) =>
-          reject(ValidationRejection("failure", Some(exception)))
+          complete(Server.httpBadRequest(exception))
         case Success(ExecuteDLCRefund(contractId, noBroadcast)) =>
           complete {
             for {

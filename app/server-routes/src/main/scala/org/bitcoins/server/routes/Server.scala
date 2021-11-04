@@ -130,6 +130,22 @@ object Server {
     )
   }
 
+  def httpBadRequest(ex: Throwable): HttpResponse = {
+    httpBadRequest(ex.getMessage)
+  }
+
+  def httpBadRequest(msg: String): HttpResponse = {
+
+    val entity = {
+      val response = Response(error = Some(msg))
+      HttpEntity(
+        ContentTypes.`application/json`,
+        up.write(response.toJsonMap)
+      )
+    }
+    HttpResponse(status = StatusCodes.BadRequest, entity = entity)
+  }
+
   def httpError(
       msg: String,
       status: StatusCode = StatusCodes.InternalServerError): HttpResponse = {
