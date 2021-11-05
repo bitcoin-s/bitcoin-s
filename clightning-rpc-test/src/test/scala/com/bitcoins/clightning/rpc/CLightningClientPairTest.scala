@@ -22,10 +22,16 @@ class CLightningClientPairTest extends DualCLightningFixture {
     for {
       infoA <- clightningA.getInfo
       infoB <- clightningB.getInfo
+
+      txs <- clightningA.listTransactions()
+      funds <- clightningB.listFunds
     } yield {
       assert(infoA.id != infoB.id)
       assert(infoA.blockheight >= 0)
       assert(infoB.blockheight >= 0)
+
+      assert(txs.nonEmpty)
+      assert(funds.outputs.nonEmpty)
     }
   }
 

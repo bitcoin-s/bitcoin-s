@@ -256,6 +256,10 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
     clightningCall[CLightningPsbtResult]("signpsbt", params).map(_.signed_psbt)
   }
 
+  def listTransactions(): Future[Vector[CLightningTransaction]] =
+    clightningCall[ListTransactionsResults]("listtransactions").map(
+      _.transactions)
+
   def withdraw(
       address: BitcoinAddress,
       amount: Satoshis): Future[WithdrawResult] =

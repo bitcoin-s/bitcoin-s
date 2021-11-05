@@ -332,4 +332,17 @@ object CLightningJsonModels {
   case class FundChannelCancelResult(
       cancelled: String
   ) extends CLightningJsonModel
+
+  case class CLightningTransaction(
+      hash: DoubleSha256DigestBE,
+      rawtx: Transaction,
+      blockheight: Int,
+      txindex: Int,
+      locktime: Long,
+      version: Int
+  ) extends CLightningJsonModel
+
+  case class ListTransactionsResults(
+      transactions: Vector[CLightningTransaction]
+  ) extends CLightningJsonModel
 }
