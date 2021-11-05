@@ -12,7 +12,19 @@ import scala.concurrent.duration.FiniteDuration
 
 sealed abstract class RawTransactionResult
 
-case class RpcTransaction(
+sealed abstract class RpcTransaction extends RawTransactionResult {
+  def txid: DoubleSha256DigestBE
+  def hash: DoubleSha256DigestBE
+  def version: Int
+  def size: Int
+  def vsize: Int
+  def locktime: UInt32
+  def vin: Vector[TransactionInput]
+  def vout: Vector[RpcTransactionOutput]
+  def hex: Option[Transaction]
+}
+
+case class RpcTransactionPreV22(
     txid: DoubleSha256DigestBE,
     hash: DoubleSha256DigestBE,
     version: Int,
@@ -20,31 +32,76 @@ case class RpcTransaction(
     vsize: Int,
     locktime: UInt32,
     vin: Vector[TransactionInput],
-    vout: Vector[RpcTransactionOutput],
+    vout: Vector[RpcTransactionOutputPreV22],
     hex: Option[Transaction])
-    extends RawTransactionResult
+    extends RpcTransaction
 
-case class RpcTransactionOutput(
+case class RpcTransactionV22(
+    txid: DoubleSha256DigestBE,
+    hash: DoubleSha256DigestBE,
+    version: Int,
+    size: Int,
+    vsize: Int,
+    locktime: UInt32,
+    vin: Vector[TransactionInput],
+    vout: Vector[RpcTransactionOutputV22],
+    hex: Option[Transaction])
+    extends RpcTransaction
+
+sealed abstract trait RpcTransactionOutput extends RawTransactionResult {
+  def value: Bitcoins
+  def n: Int
+  def scriptPubKey: RpcScriptPubKey
+}
+
+case class RpcTransactionOutputPreV22(
     value: Bitcoins,
     n: Int,
-    scriptPubKey: RpcScriptPubKey)
-    extends RawTransactionResult
+    scriptPubKey: RpcScriptPubKeyPreV22)
+    extends RpcTransactionOutput
 
-case class RpcScriptPubKey(
+case class RpcTransactionOutputV22(
+    value: Bitcoins,
+    n: Int,
+    scriptPubKey: RpcScriptPubKeyV22)
+    extends RpcTransactionOutput
+
+sealed abstract trait RpcScriptPubKey extends RawTransactionResult {
+  def asm: String
+  def hex: String
+  def scriptType: ScriptType
+}
+
+case class RpcScriptPubKeyPreV22(
     asm: String,
     hex: String,
     reqSigs: Option[Int],
     scriptType: ScriptType,
     addresses: Option[Vector[BitcoinAddress]])
-    extends RawTransactionResult
+    extends RpcScriptPubKey
 
-case class DecodeScriptResult(
+case class RpcScriptPubKeyV22(asm: String, hex: String, scriptType: ScriptType)
+    extends RpcScriptPubKey
+
+sealed abstract trait DecodeScriptResult extends RawTransactionResult {
+  def asm: String
+  def typeOfScript: Option[ScriptType]
+  def p2sh: P2SHAddress
+}
+
+case class DecodeScriptResultPreV22(
     asm: String,
     typeOfScript: Option[ScriptType],
     reqSigs: Option[Int],
     addresses: Option[Vector[P2PKHAddress]],
     p2sh: P2SHAddress)
-    extends RawTransactionResult
+    extends DecodeScriptResult
+
+case class DecodeScriptResultV22(
+    asm: String,
+    typeOfScript: Option[ScriptType],
+    p2sh: P2SHAddress)
+    extends DecodeScriptResult
 
 case class FundRawTransactionResult(
     hex: Transaction,
@@ -57,7 +114,24 @@ case class SignRawTransactionWithWalletResult(
     complete: Boolean
 )
 
-case class GetRawTransactionResult(
+sealed abstract trait GetRawTransactionResult extends RawTransactionResult {
+  def in_active_blockchain: Option[Boolean]
+  def hex: Transaction
+  def txid: DoubleSha256DigestBE
+  def hash: DoubleSha256DigestBE
+  def size: Int
+  def vsize: Int
+  def version: Int
+  def locktime: UInt32
+  def vin: Vector[GetRawTransactionVin]
+  def vout: Vector[RpcTransactionOutput]
+  def blockhash: Option[DoubleSha256DigestBE]
+  def confirmations: Option[Int]
+  def time: Option[UInt32]
+  def blocktime: Option[UInt32]
+}
+
+case class GetRawTransactionResultPreV22(
     in_active_blockchain: Option[Boolean],
     hex: Transaction,
     txid: DoubleSha256DigestBE,
@@ -67,12 +141,29 @@ case class GetRawTransactionResult(
     version: Int,
     locktime: UInt32,
     vin: Vector[GetRawTransactionVin],
-    vout: Vector[RpcTransactionOutput],
+    vout: Vector[RpcTransactionOutputPreV22],
     blockhash: Option[DoubleSha256DigestBE],
     confirmations: Option[Int],
     time: Option[UInt32],
     blocktime: Option[UInt32])
-    extends RawTransactionResult
+    extends GetRawTransactionResult
+
+case class GetRawTransactionResultV22(
+    in_active_blockchain: Option[Boolean],
+    hex: Transaction,
+    txid: DoubleSha256DigestBE,
+    hash: DoubleSha256DigestBE,
+    size: Int,
+    vsize: Int,
+    version: Int,
+    locktime: UInt32,
+    vin: Vector[GetRawTransactionVin],
+    vout: Vector[RpcTransactionOutputV22],
+    blockhash: Option[DoubleSha256DigestBE],
+    confirmations: Option[Int],
+    time: Option[UInt32],
+    blocktime: Option[UInt32])
+    extends GetRawTransactionResult
 
 case class GetRawTransactionVin(
     txid: Option[DoubleSha256DigestBE],
