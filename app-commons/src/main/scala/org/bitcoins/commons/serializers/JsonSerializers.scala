@@ -698,6 +698,13 @@ object JsonSerializers {
     FundChannelCancelResult] =
     Json.reads[FundChannelCancelResult]
 
+  implicit val CLightningTransactionReads: Reads[CLightningTransaction] =
+    Json.reads[CLightningTransaction]
+
+  implicit val CLightningListTransactionsResultsReads: Reads[
+    ListTransactionsResults] =
+    Json.reads[ListTransactionsResults]
+
   implicit val byteVectorWrites: Writes[ByteVector] =
     Writes[ByteVector](bytes => JsString(bytes.toHex))
 

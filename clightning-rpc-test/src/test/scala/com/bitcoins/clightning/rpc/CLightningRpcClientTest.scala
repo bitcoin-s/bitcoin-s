@@ -55,4 +55,10 @@ class CLightningRpcClientTest extends CLightningFixture {
       assert(funds.channels.isEmpty)
     }
   }
+
+  it must "list txs" in { client =>
+    for {
+      txs <- client.listTransactions()
+    } yield assert(txs.isEmpty)
+  }
 }
