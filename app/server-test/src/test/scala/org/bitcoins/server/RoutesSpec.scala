@@ -1,6 +1,7 @@
 package org.bitcoins.server
 
 import akka.http.scaladsl.model.ContentTypes._
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import org.bitcoins.core.api.chain.ChainApi
@@ -975,6 +976,25 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         assert(contentType == `application/json`)
         assert(responseAs[String] == s"""{"result":"${LnMessage(
           offer.toTLV).hex}","error":null}""")
+      }
+
+      val badRoute = walletRoutes.handleCommand(
+        ServerCommand(
+          "createdlcoffer",
+          Arr(
+            Str(contractInfoTLV.hex),
+            Num(2500),
+            Num(1),
+            Str("abcd"),
+            Num(contractTimeout)
+          )
+        ))
+
+      Post() ~> badRoute ~> check {
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(responseAs[
+          String] == s"""{"result":null,"error":"For input string: \\"abcd\\""}""")
       }
     }
 
