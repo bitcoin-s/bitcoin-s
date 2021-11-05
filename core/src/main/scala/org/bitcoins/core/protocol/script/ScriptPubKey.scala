@@ -1319,7 +1319,7 @@ object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
                 s"Given asm was not a P2WSHWitnessSPKV0, got $asm")
   }
 
-  def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
     val asmBytes = BytesUtil.toByteVector(asm)
     WitnessScriptPubKeyV0.isValidAsm(asm) &&
     asmBytes.size == 34
