@@ -4,11 +4,12 @@ import org.bitcoins.core.script.bitwise.OP_EQUALVERIFY
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.stack.OP_DUP
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.CryptoGenerators
-import org.bitcoins.testkitcore.util.TestUtil
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TestUtil}
+import scodec.bits.ByteVector
 
 /** Created by chris on 1/14/16.
   */
@@ -37,6 +38,24 @@ class ScriptPubKeyTest extends BitcoinSUnitTest {
     val witnessScriptPubKey = WitnessScriptPubKey(asm)
     witnessScriptPubKey.witnessVersion must be(WitnessVersion0)
     witnessScriptPubKey.witnessProgram must be(witnessProgram)
+  }
+
+  it must "construct valid witness spk v1 for taproot" in {
+    val pubKey = CryptoGenerators.schnorrPublicKey.sample.get
+    val witSPKV1 = WitnessScriptPubKeyV1.fromPubKey(pubKey)
+    assert(witSPKV1.pubKey == pubKey)
+  }
+
+  it must "fail to construct a valid witness spk v1 when the coordinate is not on the curve" in {
+    //all zeroes
+    val pubKey = ByteVector.fill(32)(0.toByte)
+    //reconstruct asm
+    val asm = OP_1 +: (BitcoinScriptUtil.calculatePushOp(pubKey) ++ Vector(
+      ScriptConstant(pubKey)))
+
+    assertThrows[IllegalArgumentException] {
+      WitnessScriptPubKeyV1.fromAsm(asm)
+    }
   }
 
   it must "determine the correct descriptors" in {
