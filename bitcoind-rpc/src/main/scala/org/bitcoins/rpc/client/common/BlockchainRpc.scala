@@ -77,9 +77,18 @@ trait BlockchainRpc { self: Client =>
   def getBlockWithTransactions(headerHash: DoubleSha256DigestBE): Future[
     GetBlockWithTransactionsResult] = {
     val isVerboseJsonObject = JsNumber(2)
-    bitcoindCall[GetBlockWithTransactionsResult](
-      "getblock",
-      List(JsString(headerHash.hex), isVerboseJsonObject))
+    self.version.flatMap {
+      case V22 | Unknown =>
+        bitcoindCall[GetBlockWithTransactionsResultV22](
+          "getblock",
+          List(JsString(headerHash.hex), isVerboseJsonObject))
+
+      case V16 | V17 | V18 | V19 | V20 | V21 | Experimental =>
+        bitcoindCall[GetBlockWithTransactionsResultPreV22](
+          "getblock",
+          List(JsString(headerHash.hex), isVerboseJsonObject))
+    }
+
   }
 
   def getBlockWithTransactions(headerHash: DoubleSha256Digest): Future[

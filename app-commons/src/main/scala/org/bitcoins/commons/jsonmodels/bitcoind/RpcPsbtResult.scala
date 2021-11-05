@@ -18,16 +18,48 @@ sealed abstract class FinalizePsbtResult extends RpcPsbtResult
 final case class FinalizedPsbt(hex: Transaction) extends FinalizePsbtResult
 final case class NonFinalizedPsbt(psbt: PSBT) extends FinalizePsbtResult
 
-final case class DecodePsbtResult(
-    tx: RpcTransaction,
+sealed abstract class DecodePsbtResult extends RpcPsbtResult {
+  def tx: RpcTransaction
+  def unknown: Map[String, String]
+  def inputs: Vector[RpcPsbtInput]
+  def outputs: Vector[RpcPsbtOutput]
+  def fee: Option[Bitcoins]
+}
+
+final case class DecodePsbtResultPreV22(
+    tx: RpcTransactionPreV22,
     unknown: Map[String, String],
-    inputs: Vector[RpcPsbtInput],
+    inputs: Vector[RpcPsbtInputPreV22],
     outputs: Vector[RpcPsbtOutput],
     fee: Option[Bitcoins])
-    extends RpcPsbtResult
+    extends DecodePsbtResult
 
-final case class RpcPsbtInput(
-    nonWitnessUtxo: Option[RpcTransaction],
+final case class DecodePsbtResultV22(
+    tx: RpcTransactionV22,
+    unknown: Map[String, String],
+    inputs: Vector[RpcPsbtInputV22],
+    outputs: Vector[RpcPsbtOutput],
+    fee: Option[Bitcoins])
+    extends DecodePsbtResult
+
+sealed abstract class RpcPsbtInput extends RpcPsbtResult {
+  def nonWitnessUtxo: Option[RpcTransaction]
+  def witnessUtxo: Option[PsbtWitnessUtxoInput]
+  def partialSignatures: Option[Map[ECPublicKey, ECDigitalSignature]]
+  def sighash: Option[HashType]
+  def redeemScript: Option[RpcPsbtScript]
+  def witnessScript: Option[RpcPsbtScript]
+  def bip32Derivs: Option[Vector[PsbtBIP32Deriv]]
+  def finalScriptSig: Option[RpcPsbtScript]
+
+  def finalScriptwitness: Option[
+    Vector[String]
+  ] // todo(torkelrogstad) needs example of what this looks like
+  def unknown: Option[Map[String, String]] // The unknown global fields
+}
+
+final case class RpcPsbtInputPreV22(
+    nonWitnessUtxo: Option[RpcTransactionPreV22],
     witnessUtxo: Option[PsbtWitnessUtxoInput],
     partialSignatures: Option[Map[ECPublicKey, ECDigitalSignature]],
     sighash: Option[HashType],
@@ -39,7 +71,22 @@ final case class RpcPsbtInput(
       Vector[String]
     ], // todo(torkelrogstad) needs example of what this looks like
     unknown: Option[Map[String, String]] // The unknown global fields
-) extends RpcPsbtResult
+) extends RpcPsbtInput
+
+final case class RpcPsbtInputV22(
+    nonWitnessUtxo: Option[RpcTransactionV22],
+    witnessUtxo: Option[PsbtWitnessUtxoInput],
+    partialSignatures: Option[Map[ECPublicKey, ECDigitalSignature]],
+    sighash: Option[HashType],
+    redeemScript: Option[RpcPsbtScript],
+    witnessScript: Option[RpcPsbtScript],
+    bip32Derivs: Option[Vector[PsbtBIP32Deriv]],
+    finalScriptSig: Option[RpcPsbtScript],
+    finalScriptwitness: Option[
+      Vector[String]
+    ], // todo(torkelrogstad) needs example of what this looks like
+    unknown: Option[Map[String, String]] // The unknown global fields
+) extends RpcPsbtInput
 
 final case class RpcPsbtScript(
     asm: String, // todo(torkelrogstad) split into Vector[ScriptToken]?

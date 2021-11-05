@@ -565,12 +565,12 @@ object JsonReaders {
                                  implicitly[Reads[ECDigitalSignature]])
   }
 
-  implicit object RpcPsbtInputReads extends Reads[RpcPsbtInput] {
+  implicit object RpcPsbtInputV22Reads extends Reads[RpcPsbtInputV22] {
 
-    override def reads(json: JsValue): JsResult[RpcPsbtInput] =
+    override def reads(json: JsValue): JsResult[RpcPsbtInputV22] =
       for {
         nonWitnessUtxo <- (json \ "non_witness_utxo")
-          .validateOpt[RpcTransaction]
+          .validateOpt[RpcTransactionV22]
         witnessUtxo <- (json \ "witness_utxo").validateOpt[PsbtWitnessUtxoInput]
         finalScriptSig <- (json \ "final_scriptSig").validateOpt[RpcPsbtScript]
         redeemScript <- (json \ "redeem_script").validateOpt[RpcPsbtScript]
@@ -584,7 +584,42 @@ object JsonReaders {
           JsSuccess(None) // todo(torkelrogstad) find an example of this
         unknown <- (json \ "unknown").validateOpt[Map[String, String]]
       } yield {
-        bitcoind.RpcPsbtInput(
+        bitcoind.RpcPsbtInputV22(
+          nonWitnessUtxo = nonWitnessUtxo,
+          witnessUtxo = witnessUtxo,
+          partialSignatures = partialSignatures,
+          sighash = sighash,
+          redeemScript = redeemScript,
+          witnessScript = witnessScript,
+          bip32Derivs = bip32Derivs,
+          finalScriptSig = finalScriptSig,
+          finalScriptwitness = finalScriptWitness,
+          unknown = unknown
+        )
+      }
+
+  }
+
+  implicit object RpcPsbtInputPreV22Reads extends Reads[RpcPsbtInputPreV22] {
+
+    override def reads(json: JsValue): JsResult[RpcPsbtInputPreV22] =
+      for {
+        nonWitnessUtxo <- (json \ "non_witness_utxo")
+          .validateOpt[RpcTransactionPreV22]
+        witnessUtxo <- (json \ "witness_utxo").validateOpt[PsbtWitnessUtxoInput]
+        finalScriptSig <- (json \ "final_scriptSig").validateOpt[RpcPsbtScript]
+        redeemScript <- (json \ "redeem_script").validateOpt[RpcPsbtScript]
+        sighash <- (json \ "sighash").validateOpt[HashType]
+        partialSignatures <- (json \ "partial_signatures")
+          .validateOpt[Map[ECPublicKey, ECDigitalSignature]]
+        witnessScript <- (json \ "witness_script").validateOpt[RpcPsbtScript]
+        bip32Derivs <- (json \ "bi32_derivs")
+          .validateOpt[Vector[PsbtBIP32Deriv]]
+        finalScriptWitness <-
+          JsSuccess(None) // todo(torkelrogstad) find an example of this
+        unknown <- (json \ "unknown").validateOpt[Map[String, String]]
+      } yield {
+        bitcoind.RpcPsbtInputPreV22(
           nonWitnessUtxo = nonWitnessUtxo,
           witnessUtxo = witnessUtxo,
           partialSignatures = partialSignatures,
