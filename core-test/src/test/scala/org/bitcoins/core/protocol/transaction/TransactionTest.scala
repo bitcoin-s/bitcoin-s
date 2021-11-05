@@ -5,16 +5,20 @@ import org.bitcoins.core.crypto.{
   WitnessTxSigComponentP2SH,
   WitnessTxSigComponentRaw
 }
-import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
-import org.bitcoins.crypto.CryptoUtil
+import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
 import org.bitcoins.testkitcore.gen.TransactionGenerators
-import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TestUtil}
+import org.bitcoins.testkitcore.util.{
+  BitcoinSUnitTest,
+  TestUtil,
+  TransactionTestUtil
+}
 import scodec.bits._
 
 class TransactionTest extends BitcoinSUnitTest {
@@ -306,6 +310,43 @@ class TransactionTest extends BitcoinSUnitTest {
       "0200000002924942b0b7c12ece0dc8100d74a1cd29acd6cfc60698bfc3f07d83890eec20b6000000006a47304402202831d3708867f9bfb4268690cbcf97a686ccec1f5a4334cf0256fd442a88d0b802206fa8fa5550df8bfcc9c31cc8b6aad035be68b767b67e2b823f844680a79349650121038991058ce7ef4b00194e8426e3630dffd32822f819c150938f26113ba751c9a100000000924942b0b7c12ece0dc8100d74a1cd29acd6cfc60698bfc3f07d83890eec20b6010000006a47304402202e4cf01174afb9f97b0ab8f24c64c796ae4b3bb91d1838099bf262e8842e6480022006399d769d6d4ba099c2d3188f62caa5b51f572e7c2775a9bc23495c020dd1090121038991058ce7ef4b00194e8426e3630dffd32822f819c150938f26113ba751c9a1000000000288130000000000001976a914cc1fe3e943bd91e0e263f08a93f0d2a5299a7e5e88ac32600000000000001976a914af84620f44464d1a404386485885d1cd9e5d396d88ac00000000"
     val btx = BaseTransaction.fromHex(hex)
     ScriptInterpreter.checkTransaction(btx) must be(true)
+  }
+
+  it must "construct a base transaction that pays to a taproot address" in {
+    val output = TransactionOutput(Bitcoins.one,
+                                   TransactionTestUtil.bech32mAddr.scriptPubKey)
+    val btx = BaseTransaction(
+      TransactionConstants.validLockVersion,
+      Vector(
+        TransactionInput(EmptyTransactionOutPoint,
+                         ScriptSignature.empty,
+                         UInt32.max)),
+      Vector(output),
+      TransactionConstants.lockTime
+    )
+    assert(BaseTransaction.fromHex(btx.hex) == btx)
+  }
+
+  it must "construct a witness transaction that pays to a taproot address" in {
+    val output = TransactionOutput(Bitcoins.one,
+                                   TransactionTestUtil.bech32mAddr.scriptPubKey)
+    val inputs: Vector[TransactionInput] = Vector(
+      TransactionInput(EmptyTransactionOutPoint,
+                       ScriptSignature.empty,
+                       UInt32.max))
+
+    val pubKeyWit = ECPublicKey.freshPublicKey
+    val p2WPKHWitnessV0 = P2WPKHWitnessV0(pubKeyWit)
+    val witness: TransactionWitness =
+      TransactionWitness(Vector(p2WPKHWitnessV0))
+    val wtx = WitnessTransaction(
+      TransactionConstants.validLockVersion,
+      inputs,
+      Vector(output),
+      TransactionConstants.lockTime,
+      witness
+    )
+    assert(WitnessTransaction.fromHex(wtx.hex) == wtx)
   }
 
   private def findInput(

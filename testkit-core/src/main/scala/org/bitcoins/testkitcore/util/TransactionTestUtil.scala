@@ -3,6 +3,7 @@ package org.bitcoins.testkitcore.util
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.Bech32mAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
@@ -29,6 +30,9 @@ trait TransactionTestUtil {
     * the first input is signed for this tx
     */
   def signedMultiSignatureTx = Transaction(rawSignedMultiSignatureTx)
+
+  def bech32mAddr: Bech32mAddress = Bech32mAddress.fromString(
+    "tb1prp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q98lawz")
 
   /** Mimics this test utility found in bitcoin core
     * https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/test/script_tests.cpp#L57

@@ -72,6 +72,9 @@ object DLCFundingInput {
                   maxWitnessLen == UInt16(107) || maxWitnessLen == UInt16(108),
                   s"P2WPKH max witness length must be 107 or 108, got $maxWitnessLen")
               case _: P2WSHWitnessSPKV0 => ()
+              case spk: WitnessScriptPubKeyV1 =>
+                throw new IllegalArgumentException(
+                  s"Taproot not yet supported: $spk")
               case spk: UnassignedWitnessScriptPubKey =>
                 throw new IllegalArgumentException(
                   s"Unknown segwit version: $spk")
@@ -98,6 +101,8 @@ object DLCFundingInput {
                                prevTxVout,
                                sequence,
                                maxWitnessLen)
+      case spk: WitnessScriptPubKeyV1 =>
+        throw new IllegalArgumentException(s"Taproot not yet supported: $spk")
       case spk: UnassignedWitnessScriptPubKey =>
         throw new IllegalArgumentException(s"Unknown segwit version: $spk")
       case spk: RawScriptPubKey =>

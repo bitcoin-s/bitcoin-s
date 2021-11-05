@@ -305,6 +305,9 @@ sealed abstract class ScriptInterpreter {
               //treat the segwit scriptpubkey as any other redeem script
               run(scriptPubKeyExecutedProgram, p2wsh)
             }
+          case spk: WitnessScriptPubKeyV1 =>
+            throw new IllegalArgumentException(
+              s"Taproot not yet supported: $spk")
           case s @ (_: P2SHScriptPubKey | _: P2PKHScriptPubKey |
               _: P2PKWithTimeoutScriptPubKey | _: P2PKScriptPubKey |
               _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey |
@@ -363,6 +366,9 @@ sealed abstract class ScriptInterpreter {
                 Success(
                   scriptPubKeyExecutedProgram.failExecution(
                     ScriptErrorWitnessProgramWitnessEmpty))
+              case WitnessVersion1 =>
+                throw new IllegalArgumentException(
+                  "Taproot is not yet supported")
               case UnassignedWitness(_) =>
                 evaluateUnassignedWitness(b)
             }
@@ -461,6 +467,8 @@ sealed abstract class ScriptInterpreter {
                                                 error = Some(err))
             Success(program)
         }
+      case WitnessVersion1 =>
+        evaluateUnassignedWitness(wTxSigComponent)
       case UnassignedWitness(_) =>
         evaluateUnassignedWitness(wTxSigComponent)
     }

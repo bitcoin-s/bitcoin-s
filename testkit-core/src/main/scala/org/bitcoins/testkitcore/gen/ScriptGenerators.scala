@@ -357,6 +357,15 @@ sealed abstract class ScriptGenerators {
   def witnessScriptPubKeyV0: Gen[(WitnessScriptPubKeyV0, Seq[ECPrivateKey])] =
     Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0.map(truncate))
 
+  def witnessScriptPubKeyV1: Gen[(WitnessScriptPubKeyV1, Seq[ECPrivateKey])] = {
+    for {
+      priv <- CryptoGenerators.privateKey
+      pubKey = priv.schnorrPublicKey
+    } yield {
+      (WitnessScriptPubKeyV1.fromPubKey(pubKey), Vector(priv))
+    }
+  }
+
   /** Creates an unassigned witness scriptPubKey.
     * Currently this is any witness script pubkey besides
     * [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 WitnessScriptPubKeyV0]]
@@ -375,7 +384,7 @@ sealed abstract class ScriptGenerators {
 
   def assignedWitnessScriptPubKey: Gen[
     (WitnessScriptPubKey, Seq[ECPrivateKey])] = {
-    Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0.map(truncate))
+    Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0.map(truncate), witnessScriptPubKeyV1)
   }
 
   def witnessCommitment: Gen[(WitnessCommitment, Seq[ECPrivateKey])] =
@@ -551,7 +560,8 @@ sealed abstract class ScriptGenerators {
       case EmptyScriptPubKey   => emptyScriptSignature
       case _: CLTVScriptPubKey => cltvScriptSignature
       case _: CSVScriptPubKey  => csvScriptSignature
-      case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
+      case _: WitnessScriptPubKeyV0 | _: WitnessScriptPubKeyV1 |
+          _: UnassignedWitnessScriptPubKey =>
         emptyScriptSignature
       case x @ (_: P2SHScriptPubKey | _: NonStandardScriptPubKey |
           _: WitnessCommitment) =>

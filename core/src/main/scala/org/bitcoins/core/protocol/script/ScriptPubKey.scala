@@ -1159,7 +1159,8 @@ object WitnessScriptPubKey extends ScriptFactory[WitnessScriptPubKey] {
                                                          OP_15,
                                                          OP_16)
 
-  val unassignedWitVersions: Seq[ScriptNumberOperation] = validWitVersions.tail
+  val unassignedWitVersions: Seq[ScriptNumberOperation] =
+    validWitVersions.tail.tail
 
   def apply(asm: Seq[ScriptToken]): WitnessScriptPubKey = fromAsm(asm)
 
@@ -1169,6 +1170,8 @@ object WitnessScriptPubKey extends ScriptFactory[WitnessScriptPubKey] {
         P2WPKHWitnessSPKV0.fromAsm(asm)
       case _ if P2WSHWitnessSPKV0.isValidAsm(asm) =>
         P2WSHWitnessSPKV0.fromAsm(asm)
+      case _ if WitnessScriptPubKeyV1.isValidAsm(asm) =>
+        WitnessScriptPubKeyV1.fromAsm(asm)
       case _ if WitnessScriptPubKey.isValidAsm(asm) =>
         UnassignedWitnessScriptPubKey(asm)
       case _ =>
@@ -1316,7 +1319,7 @@ object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
                 s"Given asm was not a P2WSHWitnessSPKV0, got $asm")
   }
 
-  def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
     val asmBytes = BytesUtil.toByteVector(asm)
     WitnessScriptPubKeyV0.isValidAsm(asm) &&
     asmBytes.size == 34
@@ -1334,6 +1337,39 @@ object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
     val hash = CryptoUtil.sha256(spk.asmBytes)
     val pushop = BitcoinScriptUtil.calculatePushOp(hash.bytes)
     fromAsm(Seq(OP_0) ++ pushop ++ Seq(ScriptConstant(hash.bytes)))
+  }
+}
+
+case class WitnessScriptPubKeyV1(override val asm: Vector[ScriptToken])
+    extends WitnessScriptPubKey {
+  override def witnessProgram: Seq[ScriptToken] = asm.tail.tail
+  override val scriptType: ScriptType = ScriptType.WITNESS_V1
+
+  val pubKey: SchnorrPublicKey = SchnorrPublicKey.fromBytes(asm(2).bytes)
+}
+
+object WitnessScriptPubKeyV1 extends ScriptFactory[WitnessScriptPubKeyV1] {
+
+  override def fromAsm(asm: Seq[ScriptToken]): WitnessScriptPubKeyV1 = {
+    buildScript(asm.toVector,
+                WitnessScriptPubKeyV1.apply,
+                s"Given asm was not a P2WSHWitnessSPKV0, got $asm")
+  }
+
+  def apply(schnorrPubKey: SchnorrPublicKey): WitnessScriptPubKeyV1 = {
+    fromPubKey(schnorrPubKey)
+  }
+
+  def fromPubKey(schnorrPubKey: SchnorrPublicKey): WitnessScriptPubKeyV1 = {
+    val pushOp = BitcoinScriptUtil.calculatePushOp(schnorrPubKey.bytes)
+    val asm = OP_1 +: (pushOp ++ Vector(ScriptConstant(schnorrPubKey.bytes)))
+    fromAsm(asm)
+  }
+
+  def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
+    val asmBytes = BytesUtil.toByteVector(asm)
+    asm.headOption.contains(OP_1) && WitnessScriptPubKey.isValidAsm(
+      asm) && asmBytes.size == 34
   }
 }
 

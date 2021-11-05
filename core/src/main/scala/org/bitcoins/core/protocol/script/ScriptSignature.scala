@@ -281,6 +281,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
       case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
           _: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
           _: UnassignedWitnessScriptPubKey | _: WitnessScriptPubKeyV0 |
+          _: WitnessScriptPubKeyV1 |
           _: ConditionalScriptPubKey => // Conditional SPKs are not recursively checked
         true
       case EmptyScriptPubKey => isRecursiveCall // Fine if nested
