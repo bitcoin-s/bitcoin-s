@@ -384,7 +384,7 @@ sealed abstract class ScriptGenerators {
 
   def assignedWitnessScriptPubKey: Gen[
     (WitnessScriptPubKey, Seq[ECPrivateKey])] = {
-    Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0.map(truncate))
+    Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0.map(truncate), witnessScriptPubKeyV1)
   }
 
   def witnessCommitment: Gen[(WitnessCommitment, Seq[ECPrivateKey])] =
