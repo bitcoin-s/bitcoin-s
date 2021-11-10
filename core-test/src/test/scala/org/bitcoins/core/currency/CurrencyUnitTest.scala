@@ -213,7 +213,7 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
     }
   }
 
-  it must "convert to and from BigDemimals correctly" in {
+  it must "convert to and from BigDecimals correctly" in {
     forAll(CurrencyUnitGenerator.bitcoins) { num =>
       assert(Bitcoins(num.toBigDecimal) == num)
     }
@@ -223,5 +223,10 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
     forAll(CurrencyUnitGenerator.bitcoins) { num =>
       assert(Satoshis.fromHex(num.hex) == num)
     }
+  }
+
+  it must "correctly print in Bitcoins.toString" in {
+    val btc = Bitcoins(12.3456789)
+    assert(btc.toString == "12.34567890 BTC")
   }
 }

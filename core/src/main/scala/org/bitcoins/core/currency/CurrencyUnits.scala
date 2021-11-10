@@ -140,7 +140,9 @@ object Satoshis
 sealed abstract class Bitcoins extends CurrencyUnit {
   override type A = BigDecimal
 
-  override def toString: String = s"$toBigDecimal BTC"
+  override def toString: String = s"$decimalString BTC"
+
+  def decimalString: String = "%.8f".format(toBigDecimal)
 
   override def toBigDecimal: BigDecimal = underlying
 
