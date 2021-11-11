@@ -334,14 +334,21 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
   override def unmarkUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
-    val unreserved = utxos.filterNot(_.state == TxoState.Reserved)
-    require(unreserved.isEmpty, s"Some utxos are not reserved, got $unreserved")
+    val updatedUtxosF = Future {
+      //make sure exception isn't thrown outside of a future to fix
+      //see: https://github.com/bitcoin-s/bitcoin-s/issues/3813
+      val unreserved = utxos.filterNot(_.state == TxoState.Reserved)
+      require(unreserved.isEmpty,
+              s"Some utxos are not reserved, got $unreserved")
 
-    // unmark all utxos are reserved
-    val updatedUtxos = utxos
-      .map(_.copyWithState(TxoState.PendingConfirmationsReceived))
+      // unmark all utxos are reserved
+      val updatedUtxos = utxos
+        .map(_.copyWithState(TxoState.PendingConfirmationsReceived))
+      updatedUtxos
+    }
 
     for {
+      updatedUtxos <- updatedUtxosF
       // update the confirmed utxos
       updatedConfirmed <- updateUtxoConfirmedStates(updatedUtxos)
 
