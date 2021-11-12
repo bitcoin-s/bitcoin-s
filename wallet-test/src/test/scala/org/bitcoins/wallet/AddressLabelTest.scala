@@ -21,9 +21,15 @@ class AddressLabelTest extends BitcoinSWalletTest {
     val addressF = for {
       address <- wallet.getNewAddress(Vector(tag1))
       //add another tag to address
-      _ <- wallet.tagAddress(address, tag2)
-      _ <- wallet.tagAddress(address, tag1)
-    } yield succeed
+      tagDb1 <- wallet.tagAddress(address, tag1)
+      tagDb2 <- wallet.tagAddress(address, tag2)
+    } yield {
+      assert(tagDb1.address == address)
+      assert(tagDb1.tagName == tag1.tagName)
+
+      assert(tagDb2.tagName == tag2.tagName)
+      assert(tagDb2.address == address)
+    }
 
     addressF
   }
