@@ -274,4 +274,18 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         res1 <- wallet.isChange(output1)
       } yield assert(res1)
   }
+
+  it must "generate an address with a label, and then clear all addresses in the wallet" in {
+    fundedWallet: FundedWallet =>
+      val wallet = fundedWallet.wallet
+      val tag = AddressLabelTag("test")
+      val addressF = wallet.getNewAddress(Vector(tag))
+      for {
+        _ <- addressF
+        _ <- wallet.clearAllUtxosAndAddresses()
+        tags <- wallet.getAddressTags
+      } yield {
+        assert(tags.isEmpty)
+      }
+  }
 }

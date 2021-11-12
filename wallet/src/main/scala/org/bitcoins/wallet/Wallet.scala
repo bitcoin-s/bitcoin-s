@@ -258,6 +258,7 @@ abstract class Wallet
 
   override def clearAllUtxosAndAddresses(): Future[Wallet] = {
     val resultedF = for {
+      _ <- addressTagDAO.deleteAll()
       _ <- spendingInfoDAO.deleteAll()
       _ <- addressDAO.deleteAll()
       _ <- scriptPubKeyDAO.deleteAll()
