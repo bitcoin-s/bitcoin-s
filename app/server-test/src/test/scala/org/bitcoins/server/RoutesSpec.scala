@@ -587,14 +587,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return a new address" in {
-      (mockWalletApi
-        .getNewAddress(_: Vector[AddressTag]))
-        .expects(Vector.empty)
+      (mockWalletApi.getNewAddress: () => Future[BitcoinAddress])
+        .expects()
         .returning(Future.successful(testAddress))
 
       val route =
-        walletRoutes.handleCommand(
-          ServerCommand("getnewaddress", Arr(ujson.Null)))
+        walletRoutes.handleCommand(ServerCommand("getnewaddress", Arr()))
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
@@ -1807,6 +1805,5 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         assert(responseAs[String] == s"""{"result":"done","error":null}""")
       }
     }
-
   }
 }

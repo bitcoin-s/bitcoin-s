@@ -153,10 +153,13 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       withValidServerCommand(GetNewAddress.fromJsArr(arr)) {
         case GetNewAddress(labelOpt) =>
           complete {
-            val labelVec = Vector(labelOpt).flatten
-            wallet.getNewAddress(labelVec).map { address =>
-              Server.httpSuccess(address)
+            val addressF = labelOpt match {
+              case Some(label) =>
+                wallet.getNewAddress(Vector(label))
+              case None =>
+                wallet.getNewAddress()
             }
+            addressF.map(address => Server.httpSuccess(address))
           }
       }
 

@@ -31,17 +31,20 @@ case class GetNewAddress(labelOpt: Option[AddressLabelTag])
 object GetNewAddress extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetNewAddress] = {
-    require(jsArr.arr.size == 1,
-            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+    if (jsArr.value.length == 1) {
+      val labelOpt = nullToOpt(jsArr.arr.head).map {
+        case Str(str) =>
+          AddressLabelTag(str)
+        case value: Value =>
+          throw Value.InvalidData(value, "Expected a String")
+      }
 
-    val labelOpt = nullToOpt(jsArr.arr.head).map {
-      case Str(str) =>
-        AddressLabelTag(str)
-      case value: Value =>
-        throw Value.InvalidData(value, "Expected a String")
+      Try(GetNewAddress(labelOpt))
+    } else if (jsArr.value.isEmpty) {
+      Success(GetNewAddress(None))
+    } else {
+      sys.error(s"Too many argumements for GetNewAddress, got=$jsArr")
     }
-
-    Try(GetNewAddress(labelOpt))
   }
 }
 
