@@ -283,6 +283,9 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       for {
         _ <- addressF
         _ <- wallet.clearAllUtxosAndAddresses()
-      } yield succeed
+        tags <- wallet.getAddressTags
+      } yield {
+        assert(tags.isEmpty)
+      }
   }
 }
