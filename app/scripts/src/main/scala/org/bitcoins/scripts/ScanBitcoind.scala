@@ -100,7 +100,7 @@ class ScanBitcoind()(implicit
     for {
       count <- countF
       endTime = System.currentTimeMillis()
-      _ = println(
+      _ = logger.info(
         s"Count of segwit txs from height=${startHeight} to endHeight=${endHeight} is ${count}. It took ${endTime - startTime}ms ")
     } yield ()
   }
@@ -117,13 +117,8 @@ class ScanBitcoind()(implicit
         .flatMap(_.outputs)
         .filter(_.scriptPubKey.isInstanceOf[WitnessScriptPubKeyV1])
 
-      val inputs = block.transactions.tail //get rid of coinbase tx
-        .collect { case wtx: WitnessTransaction => wtx }
-        .filter(_.witness.witnesses.exists(_.stack.length == 1))
-      println(
+      logger.info(
         s"addresses=${outputs.map(_.scriptPubKey).map(spk => Bech32mAddress(spk.asInstanceOf[WitnessScriptPubKeyV1], MainNet))}")
-      println(s"taproot input?")
-      inputs.foreach(tx => println(s"txid=${tx.txIdBE.hex}"))
       outputs.length
     }
 
@@ -136,7 +131,7 @@ class ScanBitcoind()(implicit
     for {
       count <- countF
       endTime = System.currentTimeMillis()
-      _ = println(
+      _ = logger.info(
         s"Count of taproot outputs from height=${startHeight} to endHeight=${endHeight} is ${count}. It took ${endTime - startTime}ms ")
     } yield count
   }
@@ -144,18 +139,11 @@ class ScanBitcoind()(implicit
   def countWitV1MempoolTxs(bitcoind: BitcoindRpcClient): Future[Int] = {
     val memPoolSourceF = getMemPoolSource(bitcoind)
     val countF = memPoolSourceF.flatMap(_.runFold(0) { case (count, tx) =>
-      val inputs = Vector(tx)
-        .collect { case wtx: WitnessTransaction => wtx }
-        .filter(_.witness.witnesses.exists(_.stack.length == 1))
-      if (inputs.nonEmpty) {
-        println(s"taproot spend inputs=${inputs.map(_.txIdBE.hex)}")
-      }
-
       count + tx.outputs.count(
         _.scriptPubKey.isInstanceOf[WitnessScriptPubKeyV1])
     })
     countF.foreach(c =>
-      println(
+      logger.info(
         s"Found $c mempool transactions with witness v1 outputs at ${Instant.now}"))
     countF
   }
