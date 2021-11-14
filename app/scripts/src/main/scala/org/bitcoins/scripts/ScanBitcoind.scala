@@ -3,6 +3,8 @@ package org.bitcoins.scripts
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Keep, Sink, Source}
+import org.bitcoins.core.config.MainNet
+import org.bitcoins.core.protocol.Bech32mAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
@@ -31,13 +33,17 @@ class ScanBitcoind()(implicit
     val bitcoindF = rpcAppConfig.clientF
 
     //    val startHeight = 675000
-    //val endHeightF: Future[Int] = bitcoindF.flatMap(_.getBlockCount)
+    val endHeightF: Future[Int] = bitcoindF.flatMap(_.getBlockCount)
 
     system.scheduler.scheduleAtFixedRate(0.seconds, 1.minutes) { () =>
-      val _ = for {
+      val f = for {
         bitcoind <- bitcoindF
+        endHeight <- endHeightF
         _ <- countWitV1MempoolTxs(bitcoind)
+        _ <- countTaprootTxsInBlocks(endHeight, 6, bitcoind)
       } yield ()
+      f.failed.foreach(err =>
+        logger.error(s"Failed to count witnes v1 mempool txs", err))
       ()
     }
     Future.unit
@@ -99,9 +105,52 @@ class ScanBitcoind()(implicit
     } yield ()
   }
 
+  def countTaprootTxsInBlocks(
+      endHeight: Int,
+      lastBlocks: Int,
+      bitcoind: BitcoindRpcClient): Future[Int] = {
+    val startTime = System.currentTimeMillis()
+    val startHeight = endHeight - lastBlocks
+    val source: Source[Int, NotUsed] = Source(startHeight.to(endHeight))
+    val countTaprootOutputs: Block => Int = { block =>
+      val outputs = block.transactions
+        .flatMap(_.outputs)
+        .filter(_.scriptPubKey.isInstanceOf[WitnessScriptPubKeyV1])
+
+      val inputs = block.transactions.tail //get rid of coinbase tx
+        .collect { case wtx: WitnessTransaction => wtx }
+        .filter(_.witness.witnesses.exists(_.stack.length == 1))
+      println(
+        s"addresses=${outputs.map(_.scriptPubKey).map(spk => Bech32mAddress(spk.asInstanceOf[WitnessScriptPubKeyV1], MainNet))}")
+      println(s"taproot input?")
+      inputs.foreach(tx => println(s"txid=${tx.txIdBE.hex}"))
+      outputs.length
+    }
+
+    val countsF: Future[Seq[Int]] = for {
+      counts <- searchBlocks[Int](bitcoind, source, countTaprootOutputs)
+    } yield counts
+
+    val countF: Future[Int] = countsF.map(_.sum)
+
+    for {
+      count <- countF
+      endTime = System.currentTimeMillis()
+      _ = println(
+        s"Count of taproot outputs from height=${startHeight} to endHeight=${endHeight} is ${count}. It took ${endTime - startTime}ms ")
+    } yield count
+  }
+
   def countWitV1MempoolTxs(bitcoind: BitcoindRpcClient): Future[Int] = {
     val memPoolSourceF = getMemPoolSource(bitcoind)
     val countF = memPoolSourceF.flatMap(_.runFold(0) { case (count, tx) =>
+      val inputs = Vector(tx)
+        .collect { case wtx: WitnessTransaction => wtx }
+        .filter(_.witness.witnesses.exists(_.stack.length == 1))
+      if (inputs.nonEmpty) {
+        println(s"taproot spend inputs=${inputs.map(_.txIdBE.hex)}")
+      }
+
       count + tx.outputs.count(
         _.scriptPubKey.isInstanceOf[WitnessScriptPubKeyV1])
     })

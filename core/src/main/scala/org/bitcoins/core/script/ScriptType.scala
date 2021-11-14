@@ -27,7 +27,7 @@ sealed abstract class ScriptType {
       case NULLDATA                   => "nulldata"
       case WITNESS_V0_KEYHASH         => "witness_v0_keyhash"
       case WITNESS_V0_SCRIPTHASH      => "witness_v0_scripthash"
-      case WITNESS_V1                 => "witness_v1"
+      case WITNESS_V1_TAPROOT         => "witness_v1_taproot"
       case WITNESS_UNKNOWN            => "witness_unknown"
       case WITNESS_COMMITMENT         => "witness_commitment"
     }
@@ -50,6 +50,7 @@ object ScriptType extends StringFactory[ScriptType] {
     NULLDATA,
     WITNESS_V0_KEYHASH,
     WITNESS_V0_SCRIPTHASH,
+    WITNESS_V1_TAPROOT,
     WITNESS_UNKNOWN,
     CLTV,
     CSV,
@@ -91,7 +92,7 @@ object ScriptType extends StringFactory[ScriptType] {
   final case object NULLDATA extends ScriptType
   final case object WITNESS_V0_KEYHASH extends ScriptType
   final case object WITNESS_V0_SCRIPTHASH extends ScriptType
-  final case object WITNESS_V1 extends ScriptType
+  final case object WITNESS_V1_TAPROOT extends ScriptType
 
   /** Only for Witness versions not already defined */
   final case object WITNESS_UNKNOWN extends ScriptType
