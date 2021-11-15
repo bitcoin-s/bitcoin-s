@@ -323,7 +323,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       s"Processing transaction=${transaction.txIdBE.hex} with blockHash=${blockHashOpt
         .map(_.hex)}")
 
-    val receivedSpendingInfoDbsF: Future[Vector[SpendingInfoDb]] = {
+    def receivedSpendingInfoDbsF: Future[Vector[SpendingInfoDb]] = {
       receivedSpendingInfoDbsOpt match {
         case Some(received) =>
           //spending info dbs are cached, so fetch the one relevant for this tx
@@ -335,7 +335,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       }
 
     }
-    val spentSpendingInfoDbsF: Future[Vector[SpendingInfoDb]] = {
+    def spentSpendingInfoDbsF: Future[Vector[SpendingInfoDb]] = {
       spentSpendingInfoDbsOpt match {
         case Some(spent) =>
           //spending info dbs are cached, so filter for outpoints related to this tx

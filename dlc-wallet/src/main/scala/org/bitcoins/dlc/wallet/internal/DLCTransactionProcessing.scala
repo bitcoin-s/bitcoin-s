@@ -24,7 +24,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   /** Calculates the new state of the DLCDb based on the closing transaction,
     * will delete old CET sigs that are no longer needed after execution
     */
-  def calculateAndSetState(dlcDb: DLCDb): Future[DLCDb] = {
+  def calculateAndSetState(
+      dlcDb: DLCDb,
+      closingTx: Transaction): Future[DLCDb] = {
     (dlcDb.contractIdOpt, dlcDb.closingTxIdOpt) match {
       case (Some(id), Some(txId)) =>
         executorAndSetupFromDb(id).flatMap { case (_, setup) =>
@@ -38,7 +40,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
               for {
                 // update so we can calculate correct DLCStatus
                 _ <- dlcDAO.update(withState)
-                withOutcome <- calculateAndSetOutcome(withState)
+                withOutcome <- calculateAndSetOutcome(withState, closingTx)
               } yield withOutcome
             } else Future.successful(withState)
           }
@@ -69,9 +71,11 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   }
 
   /** Calculates the outcome used for execution
-    *  based on the closing transaction
+    * based on the closing transaction
     */
-  def calculateAndSetOutcome(dlcDb: DLCDb): Future[DLCDb] = {
+  def calculateAndSetOutcome(
+      dlcDb: DLCDb,
+      closingTx: Transaction): Future[DLCDb] = {
     if (dlcDb.state == DLCState.RemoteClaimed) {
       val dlcId = dlcDb.dlcId
       for {
@@ -91,10 +95,30 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
           dlcDb.dlcId)
 
-        cet <-
-          transactionDAO
+        cet <- for {
+          txFromDb <- transactionDAO
             .read(dlcDb.closingTxIdOpt.get)
-            .map(_.get.transaction.asInstanceOf[WitnessTransaction])
+            .map(_.get.transaction)
+        } yield {
+          require(
+            txFromDb.txIdBE == closingTx.txIdBE,
+            s"Got closing tx ID from DB: ${txFromDb.txIdBE}, but over the wire it was: ${closingTx.txIdBE}")
+          val tx = if (txFromDb.isInstanceOf[WitnessTransaction]) {
+            txFromDb
+          } else if (closingTx.isInstanceOf[WitnessTransaction]) {
+            logger.debug(
+              s"Closing transaction: ${closingTx} tx from DB: ${txFromDb}")
+            logger.warn(
+              s"Read a non-SegWit closing transaction from DB, trying to use the received one. Tx ID=${dlcDb.closingTxIdOpt.get}")
+            closingTx
+          } else {
+            logger.debug(
+              s"Closing transaction: ${closingTx} tx from DB: ${txFromDb}")
+            throw new RuntimeException(
+              s"The peer sent us a non-SegWit closing transaction. Tx ID=${closingTx.txIdBE}")
+          }
+          tx.asInstanceOf[WitnessTransaction]
+        }
 
         (sig, outcome) = {
           val offerDb = offerDbOpt.get
@@ -260,7 +284,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             } else FutureUtil.unit
 
           withTx = dlcDbs.map(_.updateClosingTxId(transaction.txIdBE))
-          updatedFs = withTx.map(calculateAndSetState)
+          updatedFs = withTx.map(calculateAndSetState(_, transaction))
           updated <- Future.sequence(updatedFs)
 
           _ <- dlcDAO.updateAll(updated)

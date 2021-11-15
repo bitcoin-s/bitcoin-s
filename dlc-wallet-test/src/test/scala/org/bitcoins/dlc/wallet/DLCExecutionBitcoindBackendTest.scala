@@ -2,8 +2,8 @@ package org.bitcoins.dlc.wallet
 
 import org.bitcoins.core.protocol.dlc.models.{DLCState, DLCStatus}
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
-import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
+import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
