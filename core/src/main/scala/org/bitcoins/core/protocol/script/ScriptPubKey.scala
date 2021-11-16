@@ -1343,7 +1343,7 @@ object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
 case class WitnessScriptPubKeyV1(override val asm: Vector[ScriptToken])
     extends WitnessScriptPubKey {
   override def witnessProgram: Seq[ScriptToken] = asm.tail.tail
-  override val scriptType: ScriptType = ScriptType.WITNESS_V1
+  override val scriptType: ScriptType = ScriptType.WITNESS_V1_TAPROOT
 
   val pubKey: SchnorrPublicKey = SchnorrPublicKey.fromBytes(asm(2).bytes)
 }

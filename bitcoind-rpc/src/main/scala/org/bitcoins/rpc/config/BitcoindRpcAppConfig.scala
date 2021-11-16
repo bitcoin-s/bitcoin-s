@@ -95,7 +95,10 @@ case class BitcoindRpcAppConfig(
   lazy val rpcPort: Int =
     config.getIntOrElse("bitcoin-s.bitcoind-rpc.rpcport", network.rpcPort)
 
-  lazy val rpcUri: URI = new URI(s"$rpcHost:$rpcPort")
+  lazy val rpcUri: URI = {
+    val u = new URI(s"$rpcHost:$rpcPort")
+    u
+  }
 
   lazy val rpcUser: Option[String] =
     config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcuser")
