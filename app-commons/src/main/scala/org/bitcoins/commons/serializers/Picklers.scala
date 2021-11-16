@@ -170,13 +170,15 @@ object Picklers {
 
       val descriptorJson = announcement.eventTLV.eventDescriptor match {
         case EnumEventDescriptorV0TLV(outcomes) =>
-          Obj("outcomes" -> outcomes.map(Str(_)))
+          Obj("outcomes" -> outcomes.map(Str(_)),
+              "hex" -> announcement.eventTLV.eventDescriptor.hex)
         case numeric: NumericEventDescriptorTLV =>
           Obj(
             "base" -> Num(numeric.base.toLong.toDouble),
             "isSigned" -> Bool(numeric.isSigned),
             "unit" -> Str(numeric.unit),
-            "precision" -> Num(numeric.precision.toLong.toDouble)
+            "precision" -> Num(numeric.precision.toLong.toDouble),
+            "hex" -> announcement.eventTLV.eventDescriptor.hex
           )
       }
 
@@ -191,7 +193,9 @@ object Picklers {
       Obj(
         "announcementSignature" -> Str(announcement.announcementSignature.hex),
         "publicKey" -> Str(announcement.publicKey.hex),
-        "event" -> eventJson)
+        "event" -> eventJson,
+        "hex" -> announcement.hex
+      )
     }
 
   // can't make implicit because it will overlap with ones needed for cli
@@ -208,7 +212,8 @@ object Picklers {
 
       Obj("eventId" -> Str(attestments.eventId),
           "signatures" -> sigsJson,
-          "values" -> valuesJson)
+          "values" -> valuesJson,
+          "hex" -> attestments.hex)
     }
 
   implicit val fundingInputV0Writer: Writer[FundingInputTLV] =
@@ -308,7 +313,7 @@ object Picklers {
     val outcomesJs: ujson.Obj = v0.outcomes.map { case (outcome, payout) =>
       outcome -> Num(payout.toLong.toDouble)
     }
-    Obj(PicklerKeys.outcomesKey -> outcomesJs)
+    Obj(PicklerKeys.outcomesKey -> outcomesJs, "hex" -> v0.hex)
   }
 
   implicit val contractDescriptorV1Writer: Writer[ContractDescriptorV1TLV] =
@@ -317,7 +322,8 @@ object Picklers {
 
       Obj("numDigits" -> Num(numDigits.toDouble),
           "payoutFunction" -> writeJs(payoutFunction),
-          "roundingIntervals" -> writeJs(roundingIntervals))
+          "roundingIntervals" -> writeJs(roundingIntervals),
+          "hex" -> v1.hex)
     }
 
   implicit val contractDescriptorWriter: Writer[ContractDescriptorTLV] =
