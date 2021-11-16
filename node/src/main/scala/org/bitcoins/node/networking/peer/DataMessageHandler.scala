@@ -395,6 +395,8 @@ case class DataMessageHandler(
           case NodeType.BitcoindBackend =>
             throw new RuntimeException("This is impossible")
         }
+      case Inventory(TypeIdentifier.MsgTx, hash) =>
+        Some(Inventory(TypeIdentifier.MsgWitnessTx, hash))
       case other: Inventory => Some(other)
     })
     peerMsgSender.sendMsg(getData).map(_ => this)
