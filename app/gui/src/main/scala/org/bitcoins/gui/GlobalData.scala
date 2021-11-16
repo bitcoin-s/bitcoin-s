@@ -13,7 +13,7 @@ object GlobalData {
   val currentTotalBalance: StringProperty = StringProperty("0")
 
   val currentPNL: StringProperty = StringProperty("0")
-  val rateOfReturn: StringProperty = StringProperty("0%")
+  val rateOfReturn: StringProperty = StringProperty("0")
 
   val syncHeight: StringProperty = StringProperty("Syncing headers...")
 
