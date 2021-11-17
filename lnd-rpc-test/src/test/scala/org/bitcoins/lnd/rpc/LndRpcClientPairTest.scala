@@ -1,14 +1,18 @@
 package org.bitcoins.lnd.rpc
 
+import akka.stream.scaladsl.Sink
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.currency.{currencyUnitNumeric, Bitcoins, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.script.EmptyScriptSignature
+import org.bitcoins.core.protocol.tlv.UnknownTLV
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerKW
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.fixtures.DualLndFixture
+import scodec.bits.HexStringSyntax
 
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
@@ -146,6 +150,25 @@ class LndRpcClientPairTest extends DualLndFixture {
       assert(details.txId == tx.txIdBE)
       assert(details.destAddresses.contains(addr))
       assert(details.amount == sendAmt)
+    }
+  }
+
+  it must "send and receive a custom message" in { params =>
+    val (_, lndA, lndB) = params
+
+    val customMessage = UnknownTLV(BigSizeUInt(48000), hex"0094355324")
+
+    val subscribeF = lndA.subscribeCustomMessages().runWith(Sink.head)
+
+    for {
+      nodeIdA <- lndA.nodeId
+      nodeIdB <- lndB.nodeId
+
+      _ <- lndB.sendCustomMessage(nodeIdA, customMessage)
+      (nodeId, tlv) <- subscribeF
+    } yield {
+      assert(nodeId == nodeIdB)
+      assert(tlv == customMessage)
     }
   }
 }

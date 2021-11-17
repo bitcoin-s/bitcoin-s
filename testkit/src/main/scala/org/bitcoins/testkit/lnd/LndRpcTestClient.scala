@@ -125,7 +125,7 @@ object LndRpcTestClient extends SbtBinaryFactory {
       else sys.error(s"Unsupported OS: ${Properties.osName}")
 
     val path = binaryDirectory
-      .resolve(s"lnd-$platform-v$versionStr-beta")
+      .resolve(s"lnd-$platform-$versionStr")
       .resolve("lnd")
 
     if (Files.exists(path)) {
