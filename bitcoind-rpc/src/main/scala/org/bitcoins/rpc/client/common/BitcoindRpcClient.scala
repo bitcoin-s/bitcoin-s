@@ -27,6 +27,7 @@ import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
+import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.config.{
   BitcoindConfig,
   BitcoindInstance,
@@ -219,14 +220,14 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   protected def filtersUnsupported: Future[Nothing] = {
     version.map { v =>
       throw new UnsupportedOperationException(
-        s"bitcoind $v does not support block filters")
+        s"Bitcoin Core $v does not support block filters")
     }
   }
 
   protected def filterHeadersUnsupported: Future[Nothing] = {
     version.map { v =>
       throw new UnsupportedOperationException(
-        s"bitcoind $v does not support block filters headers through the rpc")
+        s"Bitcoin Core $v does not support block filters headers through the rpc")
     }
   }
 }
@@ -282,11 +283,12 @@ object BitcoindRpcClient {
       case BitcoindVersion.V19 => BitcoindV19RpcClient.withActorSystem(instance)
       case BitcoindVersion.V20 => BitcoindV20RpcClient.withActorSystem(instance)
       case BitcoindVersion.V21 => BitcoindV21RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V22 => BitcoindV22RpcClient.withActorSystem(instance)
       case BitcoindVersion.Experimental =>
         BitcoindV18RpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
-          s"Cannot create a bitcoind from a unknown or experimental version")
+          s"Cannot create a Bitcoin Core RPC client: unsupported version")
     }
 
     bitcoind
@@ -304,9 +306,10 @@ sealed trait BitcoindVersion
 object BitcoindVersion extends StringFactory[BitcoindVersion] {
 
   /** The newest version of `bitcoind` we support */
-  val newest: BitcoindVersion = V21
+  val newest: BitcoindVersion = V22
 
-  val standard: Vector[BitcoindVersion] = Vector(V16, V17, V18, V19, V20, V21)
+  val standard: Vector[BitcoindVersion] =
+    Vector(V16, V17, V18, V19, V20, V21, V22)
 
   val known: Vector[BitcoindVersion] = standard :+ Experimental
 
@@ -332,6 +335,10 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] {
 
   case object V21 extends BitcoindVersion {
     override def toString: String = "v0.21"
+  }
+
+  case object V22 extends BitcoindVersion {
+    override def toString: String = "v22"
   }
 
   case object Experimental extends BitcoindVersion {
@@ -366,6 +373,7 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] {
       case "19" => V19
       case "20" => V20
       case "21" => V21
+      case "22" => V22
       case _    => Unknown
     }
   }

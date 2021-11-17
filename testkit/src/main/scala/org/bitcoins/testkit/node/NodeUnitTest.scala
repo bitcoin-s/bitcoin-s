@@ -10,9 +10,9 @@ import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer._
-import org.bitcoins.rpc.client.common.BitcoindVersion.{V18, V21}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{V18, V22}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
+import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.chain.ChainUnitTest
@@ -26,7 +26,7 @@ import org.bitcoins.testkit.node.fixture.{
   NeutrinoNodeConnectedWithBitcoind,
   NodeConnectedWithBitcoind,
   SpvNodeConnectedWithBitcoind,
-  SpvNodeConnectedWithBitcoindV21
+  SpvNodeConnectedWithBitcoindV22
 }
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.bitcoins.testkitcore.node.P2PMessageTestUtil
@@ -93,24 +93,24 @@ trait NodeUnitTest extends BaseNodeTest {
     )(test)
   }
 
-  def withSpvNodeConnectedToBitcoindV21(test: OneArgAsyncTest)(implicit
+  def withSpvNodeConnectedToBitcoindV22(test: OneArgAsyncTest)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
-      SpvNodeConnectedWithBitcoindV21] = { () =>
+      SpvNodeConnectedWithBitcoindV22] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
       for {
         bitcoind <-
           BitcoinSFixture
-            .createBitcoindWithFunds(Some(V21))
-            .map(_.asInstanceOf[BitcoindV21RpcClient])
+            .createBitcoindWithFunds(Some(V22))
+            .map(_.asInstanceOf[BitcoindV22RpcClient])
         peer <- createPeer(bitcoind)
         node <- NodeUnitTest.createSpvNode(peer)(system,
                                                  appConfig.chainConf,
                                                  appConfig.nodeConf)
         started <- node.start()
         _ <- NodeUnitTest.syncSpvNode(started, bitcoind)
-      } yield SpvNodeConnectedWithBitcoindV21(node, bitcoind)
+      } yield SpvNodeConnectedWithBitcoindV22(node, bitcoind)
     }
 
     makeDependentFixture(

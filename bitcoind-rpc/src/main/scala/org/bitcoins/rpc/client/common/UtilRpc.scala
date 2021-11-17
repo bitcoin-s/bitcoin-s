@@ -26,7 +26,7 @@ trait UtilRpc { self: Client =>
 
   def getIndexInfo: Future[Map[String, IndexInfoResult]] = {
     version.flatMap {
-      case V21 | Unknown =>
+      case V22 | V21 | Unknown =>
         bitcoindCall[Map[String, IndexInfoResult]]("getindexinfo")
       case V16 | V17 | V18 | V19 | V20 | Experimental =>
         Future.failed(
@@ -37,7 +37,7 @@ trait UtilRpc { self: Client =>
 
   def getIndexInfo(indexName: String): Future[IndexInfoResult] = {
     version.flatMap {
-      case V21 | Unknown =>
+      case V22 | V21 | Unknown =>
         bitcoindCall[Map[String, IndexInfoResult]](
           "getindexinfo",
           List(JsString(indexName))).map(_.head._2)

@@ -31,7 +31,7 @@ trait BlockchainRpc { self: Client =>
     self.version.flatMap {
       case V16 | V17 | V18 =>
         bitcoindCall[GetBlockChainInfoResultPreV19]("getblockchaininfo")
-      case V21 | V20 | V19 | Experimental | Unknown =>
+      case V22 | V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[GetBlockChainInfoResultPostV19]("getblockchaininfo")
     }
   }

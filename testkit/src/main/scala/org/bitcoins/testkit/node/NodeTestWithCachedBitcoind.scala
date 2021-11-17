@@ -2,22 +2,22 @@ package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
 import org.bitcoins.core.api.node.NodeType
-import org.bitcoins.node.models.Peer
 import org.bitcoins.node.Node
+import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
+import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest.{createPeer, syncNeutrinoNode}
 import org.bitcoins.testkit.node.fixture.{
   NeutrinoNodeConnectedWithBitcoind,
   NeutrinoNodeConnectedWithBitcoinds,
   SpvNodeConnectedWithBitcoind,
-  SpvNodeConnectedWithBitcoindV21
+  SpvNodeConnectedWithBitcoindV19
 }
 import org.bitcoins.testkit.rpc.{
   CachedBitcoind,
   CachedBitcoindNewest,
-  CachedBitcoindPairV21,
+  CachedBitcoindPairV22,
   CachedBitcoindV19
 }
 import org.bitcoins.testkit.tor.CachedTor
@@ -49,7 +49,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
           bitcoind = bitcoind)(
           system, // Force V18 because Spv is disabled on versions after
           appConfig),
-      { case x: SpvNodeFundedWalletBitcoind =>
+      { x: SpvNodeFundedWalletBitcoind =>
         tearDownNodeWithBitcoind(x)
       }
     )(test)
@@ -75,7 +75,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
 
     makeDependentFixture[SpvNodeConnectedWithBitcoind](
       build = nodeWithBitcoindBuilder,
-      { case x: SpvNodeConnectedWithBitcoind =>
+      { x: SpvNodeConnectedWithBitcoind =>
         NodeUnitTest.destroyNode(x.node)
       })(test)
   }
@@ -96,7 +96,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
       build = nodeWithBitcoindBuilder,
-      { case x: NeutrinoNodeConnectedWithBitcoind =>
+      { x: NeutrinoNodeConnectedWithBitcoind =>
         tearDownNode(x.node)
       })(test)
   }
@@ -120,7 +120,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
-      { case x: NeutrinoNodeConnectedWithBitcoinds =>
+      { x: NeutrinoNodeConnectedWithBitcoinds =>
         tearDownNode(x.node)
       })(test)
   }
@@ -139,7 +139,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
             bip39PasswordOpt = bip39PasswordOpt,
             bitcoind,
             walletCallbacks = walletCallbacks)(system, appConfig),
-      { case x: NeutrinoNodeFundedWalletBitcoind =>
+      { x: NeutrinoNodeFundedWalletBitcoind =>
         tearDownNodeWithBitcoind(x)
       }
     )(test)
@@ -188,10 +188,10 @@ trait NodeTestWithCachedBitcoindNewest
 
 trait NodeTestWithCachedBitcoindPair
     extends NodeTestWithCachedBitcoind
-    with CachedBitcoindPairV21 {
+    with CachedBitcoindPairV22 {
 
   override def afterAll(): Unit = {
-    super[CachedBitcoindPairV21].afterAll()
+    super[CachedBitcoindPairV22].afterAll()
     super[NodeTestWithCachedBitcoind].afterAll()
   }
 }
@@ -202,11 +202,11 @@ trait NodeTestWithCachedBitcoindV19
 
   def withSpvNodeConnectedToBitcoindV19Cached(
       test: OneArgAsyncTest,
-      bitcoind: BitcoindV21RpcClient)(implicit
+      bitcoind: BitcoindV19RpcClient)(implicit
       system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
     val nodeWithBitcoindBuilder: () => Future[
-      SpvNodeConnectedWithBitcoindV21] = { () =>
+      SpvNodeConnectedWithBitcoindV19] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
       for {
         peer <- createPeer(bitcoind)
@@ -215,12 +215,12 @@ trait NodeTestWithCachedBitcoindV19
                                                  appConfig.nodeConf)
         started <- node.start()
         _ <- NodeUnitTest.syncSpvNode(started, bitcoind)
-      } yield SpvNodeConnectedWithBitcoindV21(node, bitcoind)
+      } yield SpvNodeConnectedWithBitcoindV19(node, bitcoind)
     }
 
-    makeDependentFixture[SpvNodeConnectedWithBitcoindV21](
+    makeDependentFixture[SpvNodeConnectedWithBitcoindV19](
       build = nodeWithBitcoindBuilder,
-      { case x: SpvNodeConnectedWithBitcoindV21 =>
+      { x: SpvNodeConnectedWithBitcoindV19 =>
         NodeUnitTest.destroyNode(x.node)
       }
     )(test)
