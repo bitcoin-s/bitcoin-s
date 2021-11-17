@@ -63,6 +63,14 @@ object TypeIdentifier extends Factory[TypeIdentifier] {
     val num: UInt32 = MsgFilteredBlock.num | MsgWitnessFlag
   }
 
+  private lazy val assigned = Vector(MsgTx,
+                                     MsgBlock,
+                                     MsgFilteredBlock,
+                                     MsgCompactBlock,
+                                     MsgWitnessTx,
+                                     MsgWitnessBlock,
+                                     MsgFilteredWitnessBlock)
+
   /** from the docs at https://bitcoin.org/en/developer-reference#data-messages
     * These (witness block and tx) are the same as their respective type
     * identifier but with their 30th bit set to indicate witness.
@@ -78,10 +86,5 @@ object TypeIdentifier extends Factory[TypeIdentifier] {
   def apply(num: Long): TypeIdentifier = TypeIdentifier(UInt32(num))
 
   def apply(uInt32: UInt32): TypeIdentifier =
-    uInt32 match {
-      case UInt32.one               => MsgTx
-      case _ if uInt32 == UInt32(2) => MsgBlock
-      case _ if uInt32 == UInt32(3) => MsgFilteredBlock
-      case x: UInt32                => MsgUnassignedImpl(x)
-    }
+    assigned.find(_.num == uInt32).getOrElse(MsgUnassignedImpl(uInt32))
 }
