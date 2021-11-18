@@ -1414,9 +1414,9 @@ object VersionMessage extends Factory[VersionMessage] {
     val nonce = UInt64.zero
     VersionMessage(
       version = ProtocolVersion.default,
-      services = ServiceIdentifier.NODE_NONE,
+      services = ServiceIdentifier.NODE_WITNESS,
       timestamp = Int64(java.time.Instant.now.getEpochSecond),
-      addressReceiveServices = ServiceIdentifier.NODE_NONE,
+      addressReceiveServices = ServiceIdentifier.NODE_WITNESS,
       addressReceiveIpAddress = receivingIpAddress,
       addressReceivePort = network.port,
       addressTransServices = ServiceIdentifier.NODE_NETWORK,

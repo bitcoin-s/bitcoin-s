@@ -8,7 +8,7 @@ import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.BroadcastAbleTransactionDAO
+import org.bitcoins.node.models._
 import org.bitcoins.node.{Node, P2PLogger}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -171,13 +171,20 @@ case class DataMessageHandler(
         getData.inventories.foreach { inv =>
           logger.debug(s"Looking for inv=$inv")
           inv.typeIdentifier match {
-            case TypeIdentifier.MsgTx | TypeIdentifier.MsgWitnessTx =>
-              txDAO.findByHash(inv.hash).map {
-                case Some(tx) =>
-                  peerMsgSender.sendTransactionMessage(tx.transaction)
+            case msgTx @ (TypeIdentifier.MsgTx | TypeIdentifier.MsgWitnessTx) =>
+              txDAO.findByHash(inv.hash).flatMap {
+                case Some(BroadcastAbleTransaction(tx)) =>
+                  val txToBroadcast =
+                    if (msgTx == TypeIdentifier.MsgTx) {
+                      // send non-witness serialization
+                      tx.toBaseTx
+                    } else tx // send normal serialization
+
+                  peerMsgSender.sendTransactionMessage(txToBroadcast)
                 case None =>
                   logger.warn(
                     s"Got request to send data with hash=${inv.hash}, but found nothing")
+                  Future.unit
               }
             case other @ (TypeIdentifier.MsgBlock |
                 TypeIdentifier.MsgFilteredBlock |

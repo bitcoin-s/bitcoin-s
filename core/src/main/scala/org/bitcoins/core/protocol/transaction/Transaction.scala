@@ -100,6 +100,10 @@ sealed abstract class Transaction extends NetworkElement {
   }
 
   lazy val totalOutput: CurrencyUnit = outputs.map(_.value).sum
+
+  def toBaseTx: BaseTransaction = {
+    BaseTransaction(version, inputs, outputs, lockTime)
+  }
 }
 
 object Transaction extends Factory[Transaction] {
@@ -176,9 +180,6 @@ case object EmptyTransaction extends NonWitnessTransaction {
   override def inputs: Vector[TransactionInput] = Vector.empty
   override def outputs: Vector[TransactionOutput] = Vector.empty
   override def lockTime: UInt32 = TransactionConstants.lockTime
-
-  def toBaseTx: BaseTransaction =
-    BaseTransaction(version, inputs, outputs, lockTime)
 }
 
 case class WitnessTransaction(
@@ -192,10 +193,6 @@ case class WitnessTransaction(
     inputs.length == witness.length,
     s"Must have same amount of inputs and witnesses in witness tx, inputs=${inputs.length} witnesses=${witness.length}"
   )
-
-  def toBaseTx: BaseTransaction = {
-    BaseTransaction(version, inputs, outputs, lockTime)
-  }
 
   /** The txId for the witness transaction from satoshi's original serialization */
   override def txId: DoubleSha256Digest = {
