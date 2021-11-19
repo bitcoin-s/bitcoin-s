@@ -171,7 +171,7 @@ case class DataMessageHandler(
         getData.inventories.foreach { inv =>
           logger.debug(s"Looking for inv=$inv")
           inv.typeIdentifier match {
-            case TypeIdentifier.MsgTx =>
+            case TypeIdentifier.MsgTx | TypeIdentifier.MsgWitnessTx =>
               txDAO.findByHash(inv.hash).map {
                 case Some(tx) =>
                   peerMsgSender.sendTransactionMessage(tx.transaction)
@@ -183,7 +183,7 @@ case class DataMessageHandler(
                 TypeIdentifier.MsgFilteredBlock |
                 TypeIdentifier.MsgCompactBlock |
                 TypeIdentifier.MsgFilteredWitnessBlock |
-                TypeIdentifier.MsgWitnessBlock | TypeIdentifier.MsgWitnessTx) =>
+                TypeIdentifier.MsgWitnessBlock) =>
               logger.warn(
                 s"Got request to send data type=$other, this is not implemented yet")
 
