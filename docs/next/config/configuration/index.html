@@ -336,7 +336,15 @@ to ensure the entire module is initialized correctly.</p>
     dlcnode {
         <span class="hljs-comment"># The address we are listening on for incoming connections for DLCs</span>
         <span class="hljs-comment"># Binding to 0.0.0.0 makes us listen to all incoming connections</span>
+        <span class="hljs-comment"># Consider using 127.0.0.1 listen address if Tor is enabled.</span>
         <span class="hljs-attr">listen</span> = <span class="hljs-string">"0.0.0.0:2862"</span>
+        
+        <span class="hljs-comment"># The address our peers use to connect to our node. </span>
+        <span class="hljs-comment"># By default it's the same as the listen address, </span>
+        <span class="hljs-comment"># or if Tor is enabled, the hidden service's onion address.</span>
+        <span class="hljs-comment"># You can specify a port number like this "192.168.0.1:12345", </span>
+        <span class="hljs-comment"># The default port number is the same as in the listen adrress  </span>
+        <span class="hljs-comment"># external-ip = "192.168.0.1"  </span>
     }
 
     server {
