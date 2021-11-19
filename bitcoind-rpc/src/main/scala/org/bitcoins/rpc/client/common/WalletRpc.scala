@@ -307,7 +307,7 @@ trait WalletRpc { self: Client =>
   ): Future[SetWalletFlagResult] = {
 
     self.version.flatMap {
-      case V21 | V20 | V19 | Experimental | Unknown =>
+      case V22 | V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[SetWalletFlagResult](
           "setwalletflag",
           List(JsString(flag.toString), Json.toJson(value)),
@@ -321,7 +321,7 @@ trait WalletRpc { self: Client =>
 
   def getBalances: Future[GetBalancesResult] = {
     self.version.flatMap {
-      case V21 | V20 | V19 | Experimental | Unknown =>
+      case V22 | V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[GetBalancesResult]("getbalances")
       case V16 | V17 | V18 =>
         Future.failed(
@@ -332,7 +332,7 @@ trait WalletRpc { self: Client =>
 
   def getBalances(walletName: String): Future[GetBalancesResult] = {
     self.version.flatMap {
-      case V21 | V20 | V19 | Experimental | Unknown =>
+      case V22 | V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[GetBalancesResult]("getbalances",
                                         uriExtensionOpt =
                                           Some(walletExtension(walletName)))
@@ -405,7 +405,7 @@ trait WalletRpc { self: Client =>
       blank: Boolean = false,
       passphrase: String = ""): Future[CreateWalletResult] =
     self.version.flatMap {
-      case V21 | V20 | V19 | Experimental | Unknown =>
+      case V22 | V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[CreateWalletResult]("createwallet",
                                          List(JsString(walletName),
                                               JsBoolean(disablePrivateKeys),
@@ -433,7 +433,7 @@ trait WalletRpc { self: Client =>
           "getaddressinfo",
           List(JsString(address.value)),
           uriExtensionOpt = walletNameOpt.map(walletExtension))
-      case V21 | Unknown =>
+      case V22 | V21 | Unknown =>
         bitcoindCall[AddressInfoResultPostV21](
           "getaddressinfo",
           List(JsString(address.value)),

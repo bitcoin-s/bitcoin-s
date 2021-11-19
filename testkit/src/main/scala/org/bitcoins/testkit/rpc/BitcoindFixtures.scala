@@ -7,6 +7,7 @@ import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
+import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.util.{NodePair, NodeTriple}
 import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
@@ -185,6 +186,40 @@ trait BitcoindFixturesFundedCachedV21
 
   override def afterAll(): Unit = {
     super[CachedBitcoindV21].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
+}
+
+/** Test trait that caches a [[BitcoindV22RpcClient]] that is funded
+  * and available to use with fixtures
+  */
+trait BitcoindFixturesFundedCachedV22
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesFundedCached
+    with CachedBitcoindV22 {
+  override type FixtureParam = BitcoindV22RpcClient
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val f: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      futOutcome = withV22FundedBitcoindCached(test, bitcoind)
+      fut <- futOutcome.toFuture
+    } yield fut
+    new FutureOutcome(f)
+  }
+
+  def withV22FundedBitcoindCached(
+      test: OneArgAsyncTest,
+      bitcoind: BitcoindV22RpcClient): FutureOutcome = {
+    makeDependentFixture[BitcoindV22RpcClient](
+      () => Future.successful(bitcoind),
+      { case _ =>
+        Future.unit // don't want to destroy anything since it is cached
+      })(test)
+  }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindV22].afterAll()
     super[BitcoinSAsyncFixtureTest].afterAll()
   }
 }

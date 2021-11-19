@@ -13,7 +13,7 @@ import scala.concurrent.Future
 class UtilRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodePairV21(clientAccum = clientAccum)
 
   behavior of "RpcUtilTest"
 

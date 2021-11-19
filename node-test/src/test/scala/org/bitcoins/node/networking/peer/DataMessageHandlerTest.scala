@@ -12,7 +12,7 @@ import org.bitcoins.node._
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest
-import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoindV21
+import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoindV22
 import org.bitcoins.testkit.tor.CachedTor
 import org.scalatest.FutureOutcome
 
@@ -24,14 +24,14 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
   override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, Vector.empty)
 
-  override type FixtureParam = SpvNodeConnectedWithBitcoindV21
+  override type FixtureParam = SpvNodeConnectedWithBitcoindV22
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeConnectedToBitcoindV21(test)(system, getFreshConfig)
+    withSpvNodeConnectedToBitcoindV22(test)(system, getFreshConfig)
 
   it must "catch errors and not fail when processing an invalid payload" in {
-    param: SpvNodeConnectedWithBitcoindV21 =>
-      val SpvNodeConnectedWithBitcoindV21(spv, _) = param
+    param: SpvNodeConnectedWithBitcoindV22 =>
+      val SpvNodeConnectedWithBitcoindV22(spv, _) = param
 
       val sender = spv.peerMsgSenders(0)
       for {
@@ -55,7 +55,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
   it must "verify OnMerkleBlock callbacks are executed" in {
     param: FixtureParam =>
-      val SpvNodeConnectedWithBitcoindV21(spv, bitcoind) = param
+      val SpvNodeConnectedWithBitcoindV22(spv, bitcoind) = param
 
       val resultP: Promise[(MerkleBlock, Vector[Transaction])] = Promise()
 
@@ -92,7 +92,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
   it must "verify OnBlockReceived callbacks are executed" in {
     param: FixtureParam =>
-      val SpvNodeConnectedWithBitcoindV21(spv, bitcoind) = param
+      val SpvNodeConnectedWithBitcoindV22(spv, bitcoind) = param
 
       val resultP: Promise[Block] = Promise()
 
@@ -124,7 +124,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
   it must "verify OnBlockHeadersReceived callbacks are executed" in {
     param: FixtureParam =>
-      val SpvNodeConnectedWithBitcoindV21(spv, bitcoind) = param
+      val SpvNodeConnectedWithBitcoindV22(spv, bitcoind) = param
 
       val resultP: Promise[Vector[BlockHeader]] = Promise()
 
@@ -159,7 +159,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
   it must "verify OnCompactFilterReceived callbacks are executed" in {
     param: FixtureParam =>
-      val SpvNodeConnectedWithBitcoindV21(spv, bitcoind) = param
+      val SpvNodeConnectedWithBitcoindV22(spv, bitcoind) = param
 
       val resultP: Promise[Vector[(DoubleSha256Digest, GolombFilter)]] =
         Promise()
