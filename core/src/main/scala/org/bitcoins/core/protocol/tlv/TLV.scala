@@ -194,6 +194,11 @@ object TLV extends TLVParentFactory[TLV] {
     }
   }
 
+  def fromTypeAndValue(tpe: BigSizeUInt, value: ByteVector): TLV = {
+    val bytes = tpe.bytes ++ BigSizeUInt.calcFor(value).bytes ++ value
+    fromBytes(bytes)
+  }
+
   def getStringBytes(str: NormalizedString): ByteVector = {
     val strBytes = str.bytes
     val size = BigSizeUInt(strBytes.size)

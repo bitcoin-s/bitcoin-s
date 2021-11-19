@@ -1,8 +1,9 @@
 package org.bitcoins.lnd.rpc
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.grpc.{GrpcClientSettings, SSLContextUtils}
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{Sink, Source}
 import com.google.protobuf.ByteString
 import grizzled.slf4j.Logging
 import io.grpc.{CallCredentials, Metadata}
@@ -13,12 +14,13 @@ import org.bitcoins.commons.jsonmodels.lnd._
 import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.LnTag.PaymentHashTag
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput,
@@ -35,12 +37,10 @@ import org.bitcoins.lnd.rpc.config._
 import scodec.bits._
 import signrpc._
 import walletrpc.{
-  FinalizePsbtRequest,
-  LeaseOutputRequest,
-  ListLeasesRequest,
-  ReleaseOutputRequest,
-  SendOutputsRequest,
-  WalletKitClient
+  AddressType => _,
+  ListUnspentRequest => _,
+  Transaction => _,
+  _
 }
 
 import java.io.{File, FileInputStream}
@@ -598,6 +598,43 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     wallet.releaseOutput(request).map(_ => ())
   }
 
+  def sendCustomMessage(
+      peer: NodeId,
+      lnMessage: LnMessage[TLV]): Future[Unit] = {
+    sendCustomMessage(peer, lnMessage.tlv)
+  }
+
+  def sendCustomMessage(peer: NodeId, tlv: TLV): Future[Unit] = {
+    sendCustomMessage(peer, tlv.tpe, tlv.value)
+  }
+
+  def sendCustomMessage(
+      peer: NodeId,
+      tpe: BigSizeUInt,
+      data: ByteVector): Future[Unit] = {
+    val request = SendCustomMessageRequest(peer = peer.bytes,
+                                           `type` = tpe.toInt,
+                                           data = data)
+    sendCustomMessage(request)
+  }
+
+  def sendCustomMessage(request: SendCustomMessageRequest): Future[Unit] = {
+    logger.trace("lnd calling sendcustommessage")
+
+    lnd.sendCustomMessage(request).map(_ => ())
+  }
+
+  def subscribeCustomMessages(): Source[(NodeId, TLV), NotUsed] = {
+    lnd.subscribeCustomMessages(SubscribeCustomMessagesRequest()).map {
+      response =>
+        val nodeId = NodeId(response.peer)
+        val tpe = BigSizeUInt(response.`type`)
+        val tlv = TLV.fromTypeAndValue(tpe, response.data)
+
+        (nodeId, tlv)
+    }
+  }
+
   /** Broadcasts the given transaction
     * @return None if no error, otherwise the error string
     */
@@ -770,7 +807,7 @@ object LndRpcClient {
     hex"8c45ee0b90e3afd0fb4d6f39afa3c5d551ee5f2c7ac2d06820ed3d16582186d2"
 
   /** The current version we support of Lnd */
-  private[bitcoins] val version = "0.13.3"
+  private[bitcoins] val version = "v0.14.0-beta"
 
   /** Key used for adding the macaroon to the gRPC header */
   private[lnd] val macaroonKey = "macaroon"

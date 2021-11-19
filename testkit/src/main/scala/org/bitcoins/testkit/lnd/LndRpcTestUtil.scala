@@ -76,6 +76,7 @@ trait LndRpcTestUtil extends Logging {
        |listen=127.0.0.1:$port
        |rpclisten=127.0.0.1:$rpcPort
        |externalip=127.0.0.1
+       |maxpendingchannels=10
        |bitcoind.rpcuser = ${bitcoindInstance.authCredentials
       .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
       .username}
