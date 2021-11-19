@@ -302,7 +302,15 @@ bitcoin-s {
     dlcnode {
         # The address we are listening on for incoming connections for DLCs
         # Binding to 0.0.0.0 makes us listen to all incoming connections
+        # Consider using 127.0.0.1 listen address if Tor is enabled.
         listen = "0.0.0.0:2862"
+        
+        # The address our peers use to connect to our node. 
+        # By default it's the same as the listen address, 
+        # or if Tor is enabled, the hidden service's onion address.
+        # You can specify a port number like this "192.168.0.1:12345", 
+        # The default port number is the same as in the listen adrress  
+        # external-ip = "192.168.0.1"  
     }
 
     server {
