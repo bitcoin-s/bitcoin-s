@@ -39,7 +39,10 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     Promise[InetSocketAddress]()
 
   def getHostAddress: Future[InetSocketAddress] = {
-    hostAddressP.future
+    config.externalIP match {
+      case Some(address) => Future.successful(address)
+      case None          => hostAddressP.future
+    }
   }
 
   override def start(): Future[Unit] = {

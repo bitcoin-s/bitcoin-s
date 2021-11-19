@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory}
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
@@ -53,6 +53,16 @@ case class DLCNodeAppConfig(
     val str = config.getString(s"bitcoin-s.$moduleName.listen")
     val uri = new URI("tcp://" + str)
     new InetSocketAddress(uri.getHost, uri.getPort)
+  }
+
+  lazy val externalIP: Option[InetSocketAddress] = {
+    val path = s"bitcoin-s.$moduleName.external-ip"
+    if (config.hasPath(path)) {
+      val str = config.getString(path)
+      Some(NetworkUtil.parseInetSocketAddress(str, listenAddress.getPort))
+    } else {
+      None
+    }
   }
 
   def createDLCNode(dlcWallet: DLCWalletApi)(implicit
