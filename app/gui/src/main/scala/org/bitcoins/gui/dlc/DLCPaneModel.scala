@@ -304,15 +304,25 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
               case Success(txId) =>
                 logger.info(s"Successfully rebroadcast funding tx " + txId)
                 // Looking for Event Hash in status, but don't see it
-                val announcementHash =
-                  status.oracleInfo.singleOracleInfos.head.announcement.sha256.hex
-                Platform.runLater(
-                  FundingTransactionDialog.show(
-                    parentWindow.value,
-                    txId,
-                    GUIUtil.epochToDateString(status.timeouts.contractTimeout),
-                    GlobalData.buildAnnouncementUrl(announcementHash),
-                    true))
+                status.contractInfo match {
+                  case single: SingleContractInfo =>
+                    val announcementHash =
+                      single.oracleInfos.head.singleOracleInfos.head.announcement.sha256.hex
+                    Platform.runLater(
+                      FundingTransactionDialog.show(
+                        parentWindow.value,
+                        txId,
+                        GUIUtil.epochToDateString(
+                          status.timeouts.contractTimeout),
+                        GlobalData.buildAnnouncementUrl(announcementHash),
+                        true))
+                  case disjointUnionContractInfo: DisjointUnionContractInfo =>
+                    logger.error(
+                      s"Don't know how to show correcit funding transaction dialog for" +
+                        s"disjoint untion contracts, contracts=${disjointUnionContractInfo.contracts}")
+                    ()
+                }
+
               case Failure(err) => throw err
             }
           }

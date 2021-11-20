@@ -1,15 +1,11 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BlockStamp.BlockHash
 import org.bitcoins.core.protocol.dlc.models.{
-  ContractInfo,
   DLCState,
-  EnumContractDescriptor,
-  NumericContractDescriptor
+  DisjointUnionContractInfo,
+  SingleContractInfo
 }
-import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{DLCWalletUtil, DualWalletTestCachedBitcoind}
@@ -35,7 +31,15 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
     for {
       contractId <- getContractId(wallet)
       status <- getDLCStatus(wallet)
-      (sig, _) = getSigs(status.contractInfo)
+      (sig, _) = {
+        status.contractInfo match {
+          case single: SingleContractInfo =>
+            DLCWalletUtil.getSigs(single)
+          case disjoint: DisjointUnionContractInfo =>
+            sys.error(
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+        }
+      }
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
       result <- dlcExecutionTest(wallets = (walletA, walletB),
@@ -66,7 +70,15 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
     for {
       contractId <- getContractId(wallet)
       status <- getDLCStatus(wallet)
-      (sig, _) = getSigs(status.contractInfo)
+      (sig, _) = {
+        status.contractInfo match {
+          case single: SingleContractInfo =>
+            DLCWalletUtil.getSigs(single)
+          case disjoint: DisjointUnionContractInfo =>
+            sys.error(
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+        }
+      }
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
       result <- dlcExecutionTest(wallets = (walletA, walletB),
@@ -86,50 +98,5 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
 
       postStatus <- getDLCStatus(wallet)
     } yield assert(postStatus.state == DLCState.RemoteClaimed)
-  }
-
-  private def getSigs(contractInfo: ContractInfo): (
-      OracleAttestmentTLV,
-      OracleAttestmentTLV) = {
-    val desc: EnumContractDescriptor = contractInfo.contractDescriptor match {
-      case desc: EnumContractDescriptor => desc
-      case _: NumericContractDescriptor =>
-        throw new IllegalArgumentException("Unexpected Contract Info")
-    }
-
-    // Get a hash that the initiator wins for
-    val initiatorWinStr =
-      desc
-        .maxBy(_._2.toLong)
-        ._1
-        .outcome
-    val initiatorWinSig = DLCWalletUtil.oraclePrivKey
-      .schnorrSignWithNonce(CryptoUtil
-                              .sha256DLCAttestation(initiatorWinStr)
-                              .bytes,
-                            DLCWalletUtil.kValue)
-
-    // Get a hash that the recipient wins for
-    val recipientWinStr =
-      desc.find(_._2 == Satoshis.zero).get._1.outcome
-    val recipientWinSig = DLCWalletUtil.oraclePrivKey
-      .schnorrSignWithNonce(CryptoUtil
-                              .sha256DLCAttestation(recipientWinStr)
-                              .bytes,
-                            DLCWalletUtil.kValue)
-
-    val publicKey = DLCWalletUtil.oraclePrivKey.schnorrPublicKey
-    val eventId = DLCWalletUtil.sampleOracleInfo.announcement.eventTLV match {
-      case v0: OracleEventV0TLV => v0.eventId
-    }
-
-    (OracleAttestmentV0TLV(eventId,
-                           publicKey,
-                           Vector(initiatorWinSig),
-                           Vector(initiatorWinStr)),
-     OracleAttestmentV0TLV(eventId,
-                           publicKey,
-                           Vector(recipientWinSig),
-                           Vector(recipientWinStr)))
   }
 }

@@ -595,9 +595,6 @@ class CreateDLCOfferDialog
             pointMap.toVector.sortBy(_._1).map(_._2),
             textFields
           )
-        val contractMap = inputs.map { case (str, value) =>
-          EnumOutcome(str) -> Satoshis(value)
-        }.toVector
 
         SingleContractInfo(totalCollateral,
                            numericContractDescriptor,

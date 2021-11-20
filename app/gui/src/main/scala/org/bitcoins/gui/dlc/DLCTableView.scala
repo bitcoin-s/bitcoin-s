@@ -164,7 +164,7 @@ class DLCTableView(model: DLCPaneModel) {
             onAction = _ => {
               val dlc = selectionModel.value.getSelectedItem
               val primaryOracle =
-                dlc.oracleInfo.singleOracleInfos.head.announcement
+                dlc.oracleInfos.head.singleOracleInfos.head.announcement
               val url =
                 GUIUtil.getAnnouncementUrl(GlobalData.network, primaryOracle)
               GUIUtil.openUrl(url)

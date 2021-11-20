@@ -356,7 +356,7 @@ object DLCWalletUtil extends Logging {
     }
   }
 
-  def getSigs(contractInfo: ContractInfo): (
+  def getSigs(contractInfo: SingleContractInfo): (
       OracleAttestmentTLV,
       OracleAttestmentTLV) = {
     val desc: EnumContractDescriptor = contractInfo.contractDescriptor match {
