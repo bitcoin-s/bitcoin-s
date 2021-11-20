@@ -7,6 +7,8 @@ import org.bitcoins.testkit.lnd._
 import org.bitcoins.testkit.rpc._
 import org.scalatest.FutureOutcome
 
+import scala.io.Source
+
 /** A trait that is useful if you need Lnd fixtures for your test suite */
 trait LndFixture extends BitcoinSFixture with CachedBitcoindV21 {
 
@@ -82,10 +84,20 @@ trait RemoteLndFixture extends BitcoinSFixture with CachedBitcoindV21 {
           client = LndRpcTestClient.fromSbtDownload(Some(bitcoind))
           lnd <- client.start()
 
+          // get certificate as a string
+          cert = {
+            val file = lnd.instance.certFileOpt.get
+            val source = Source.fromFile(file)
+            val str = source.getLines().toVector.mkString("\n")
+            source.close()
+
+            str
+          }
+
           // create a remote instance and client
           remoteInstance = LndInstanceRemote(lnd.instance.rpcUri,
                                              lnd.instance.macaroon,
-                                             lnd.instance.certFile)
+                                             cert)
           remoteLnd = LndRpcClient(remoteInstance)
         } yield remoteLnd
       },
