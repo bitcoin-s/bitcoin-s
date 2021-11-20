@@ -20,4 +20,10 @@ object PicklerKeys {
 
   //offers
   final val protocolVersionKey: String = "protocolVersion"
+
+  //contract info
+  final val totalCollateralKey = "totalCollateral"
+  final val contractDescriptorKey = "contractDescriptor"
+  final val oracleInfoKey = "oracleInfo"
+  final val pairsKey = "pairs"
 }
