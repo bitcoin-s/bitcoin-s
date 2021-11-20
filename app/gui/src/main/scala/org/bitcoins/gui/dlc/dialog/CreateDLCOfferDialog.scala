@@ -578,29 +578,31 @@ class CreateDLCOfferDialog
             s"You missed outcomes $missing. Please enter payouts for these situations")
         }
 
-            val contractMap = inputs.map { case (str, value) =>
-              EnumOutcome(str) -> Satoshis(value)
-            }.toVector
+        val contractMap = inputs.map { case (str, value) =>
+          EnumOutcome(str) -> Satoshis(value)
+        }.toVector
 
-            val descriptor = EnumContractDescriptor(contractMap)
+        val descriptor = EnumContractDescriptor(contractMap)
 
-            SingleContractInfo(descriptor, oracleInfo).toTLV
-          case oracleInfo: NumericOracleInfo =>
-            val textFields: Vector[(TextField, TextField)] = {
-              roundingMap.toVector.sortBy(_._1).map(_._2)
-            }
-            val (totalCollateral, numericContractDescriptor) = getNumericContractInfo(
-              decompOpt,
-              pointMap.toVector.sortBy(_._1).map(_._2),
-              textFields
-            )
-            val contractMap = inputs.map { case (str, value) =>
-              EnumOutcome(str) -> Satoshis(value)
-            }.toVector
-
-            SingleContractInfo(totalCollateral,numericContractDescriptor, oracleInfo).toTLV
+        SingleContractInfo(descriptor, oracleInfo).toTLV
+      case oracleInfo: NumericOracleInfo =>
+        val textFields: Vector[(TextField, TextField)] = {
+          roundingMap.toVector.sortBy(_._1).map(_._2)
         }
+        val (totalCollateral, numericContractDescriptor) =
+          getNumericContractInfo(
+            decompOpt,
+            pointMap.toVector.sortBy(_._1).map(_._2),
+            textFields
+          )
+        val contractMap = inputs.map { case (str, value) =>
+          EnumOutcome(str) -> Satoshis(value)
+        }.toVector
 
+        SingleContractInfo(totalCollateral,
+                           numericContractDescriptor,
+                           oracleInfo).toTLV
+    }
 
     CreateDLCOffer(
       contractInfo = contractInfo,

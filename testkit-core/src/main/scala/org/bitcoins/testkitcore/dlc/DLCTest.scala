@@ -385,7 +385,8 @@ trait DLCTest {
     val oracleInfo = if (params.numOracles == 1) {
       EnumSingleOracleInfo(announcements.head)
     } else {
-      EnumMultiOracleInfo(params.oracleThreshold, announcements)
+      val ordered = OrderedAnnouncements(announcements)
+      EnumMultiOracleInfo(params.oracleThreshold, ordered)
     }
 
     val (outcomesDesc, otherOutcomesDesc) =
@@ -459,13 +460,12 @@ trait DLCTest {
     val oracleInfo = if (params.numOracles == 1) {
       NumericSingleOracleInfo(announcements.head)
     } else {
+      val ordered = OrderedAnnouncements(announcements)
       params.paramsOpt match {
         case None =>
-          NumericExactMultiOracleInfo(params.oracleThreshold, announcements)
+          NumericExactMultiOracleInfo(params.oracleThreshold, ordered)
         case Some(boundParams) =>
-          NumericMultiOracleInfo(params.oracleThreshold,
-                                 announcements,
-                                 boundParams)
+          NumericMultiOracleInfo(params.oracleThreshold, ordered, boundParams)
       }
     }
 
