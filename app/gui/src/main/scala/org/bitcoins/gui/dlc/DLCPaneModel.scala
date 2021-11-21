@@ -241,7 +241,7 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
 
   def cancelDLC(status: DLCStatus): Unit = {
     val eventId =
-      status.oracleInfos.head.singleOracleInfos.head.announcement.eventTLV.eventId
+      status.eventId
 
     val confirmed = status.state match {
       case DLCState.Offered | DLCState.Accepted =>
@@ -307,7 +307,7 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
                 status.contractInfo match {
                   case single: SingleContractInfo =>
                     val announcementHash =
-                      single.oracleInfos.head.singleOracleInfos.head.announcement.sha256.hex
+                      single.announcements.head.sha256.hex
                     Platform.runLater(
                       FundingTransactionDialog.show(
                         parentWindow.value,

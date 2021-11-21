@@ -107,13 +107,16 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
     }
 
     def showOfferTerms(offer: DLCOfferTLV): Unit = {
-      val (oracleKey, eventId) =
-        offer.contractInfo.asInstanceOf[ContractInfoV0TLV].oracleInfo match {
-          case OracleInfoV0TLV(announcement) =>
-            (announcement.publicKey.hex, announcement.eventTLV.eventId)
-          case _: MultiOracleInfoTLV =>
-            throw new RuntimeException("This is impossible.")
+      val (oracleKey, eventId) = {
+        offer.contractInfo match {
+          case ContractInfoV0TLV(_, _, oracleInfo) =>
+            (oracleInfo.announcements.head.publicKey.hex,
+             oracleInfo.announcements.head.eventTLV.eventId)
+          case ContractInfoV1TLV(_, contractOraclePairs) =>
+            (contractOraclePairs.head._2.announcements.head.publicKey.hex,
+             contractOraclePairs.head._2.announcements.head.eventTLV.eventId)
         }
+      }
 
       gridPane.add(new Label("Event Id"), 0, nextRow)
       gridPane.add(

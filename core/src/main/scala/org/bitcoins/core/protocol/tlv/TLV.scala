@@ -1062,7 +1062,9 @@ object ContractDescriptorV1TLV extends TLVFactory[ContractDescriptorV1TLV] {
   override val typeName: String = "ContractDescriptorV1TLV"
 }
 
-sealed trait OracleInfoTLV extends DLCSetupPieceTLV
+sealed trait OracleInfoTLV extends DLCSetupPieceTLV {
+  def announcements: Vector[OracleAnnouncementTLV]
+}
 
 object OracleInfoTLV extends TLVParentFactory[OracleInfoTLV] {
 
@@ -1078,6 +1080,10 @@ case class OracleInfoV0TLV(announcement: OracleAnnouncementTLV)
 
   override val value: ByteVector = {
     announcement.bytes
+  }
+
+  override val announcements: Vector[OracleAnnouncementTLV] = {
+    Vector(announcement)
   }
 }
 
@@ -1098,6 +1104,10 @@ object OracleInfoV0TLV extends TLVFactory[OracleInfoV0TLV] {
 sealed trait MultiOracleInfoTLV extends OracleInfoTLV {
   def threshold: Int
   def oracles: OrderedAnnouncements
+
+  override val announcements: Vector[OracleAnnouncementTLV] = {
+    oracles.toVector
+  }
 }
 
 case class OracleInfoV1TLV(threshold: Int, oracles: OrderedAnnouncements)
@@ -1168,6 +1178,8 @@ case class OracleInfoV2TLV(
   override val value: ByteVector = {
     UInt16(threshold).bytes ++ u16PrefixedList(oracles.toVector) ++ params.bytes
   }
+
+  override val announcements: Vector[OracleAnnouncementTLV] = oracles.toVector
 }
 
 object OracleInfoV2TLV extends TLVFactory[OracleInfoV2TLV] {

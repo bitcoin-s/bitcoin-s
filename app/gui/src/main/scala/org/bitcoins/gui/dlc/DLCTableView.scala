@@ -21,7 +21,7 @@ class DLCTableView(model: DLCPaneModel) {
       prefWidth = 230
       cellValueFactory = { status =>
         val eventIdStr =
-          status.value.oracleInfos.head.singleOracleInfos.head.announcement.eventTLV.eventId
+          status.value.eventId
 
         new StringProperty(status, "Event Id", eventIdStr)
       }
@@ -164,7 +164,7 @@ class DLCTableView(model: DLCPaneModel) {
             onAction = _ => {
               val dlc = selectionModel.value.getSelectedItem
               val primaryOracle =
-                dlc.oracleInfos.head.singleOracleInfos.head.announcement
+                dlc.announcements.head
               val url =
                 GUIUtil.getAnnouncementUrl(GlobalData.network, primaryOracle)
               GUIUtil.openUrl(url)

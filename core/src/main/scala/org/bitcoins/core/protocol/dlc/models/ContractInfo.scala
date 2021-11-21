@@ -9,11 +9,16 @@ import org.bitcoins.core.protocol.dlc.compute.{
   CETCalculator,
   DLCAdaptorPointComputer
 }
+import org.bitcoins.core.protocol.dlc.models.ContractOraclePair.{
+  EnumPair,
+  NumericPair
+}
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCAccept
 import org.bitcoins.core.protocol.tlv.{
   ContractInfoTLV,
   ContractInfoV0TLV,
   ContractInfoV1TLV,
+  OracleAnnouncementTLV,
   TLVDeserializable,
   TLVSerializable,
   UnsignedNumericOutcome
@@ -181,6 +186,15 @@ case class SingleContractInfo(
     contractOraclePair.contractDescriptor
 
   def oracleInfo: OracleInfo = contractOraclePair.oracleInfo
+
+  def announcements: Vector[OracleAnnouncementTLV] = {
+    contractOraclePair match {
+      case EnumPair(_, oracleInfo) =>
+        oracleInfo.singleOracleInfos.map(_.announcement)
+      case NumericPair(_, oracleInfo) =>
+        oracleInfo.singleOracleInfos.map(_.announcement)
+    }
+  }
 
   override def contractDescriptors: Vector[ContractDescriptor] = Vector(
     contractDescriptor)

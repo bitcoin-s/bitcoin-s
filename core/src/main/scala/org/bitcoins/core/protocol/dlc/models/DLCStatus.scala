@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
   DLCOffer,
   DLCSign
 }
+import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
 import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto._
@@ -30,6 +31,15 @@ sealed trait DLCStatus {
   def totalCollateral: CurrencyUnit
   def localCollateral: CurrencyUnit
   def remoteCollateral: CurrencyUnit = totalCollateral - localCollateral
+
+  def announcements: Vector[OracleAnnouncementTLV] = {
+    oracleInfos.flatMap(_.singleOracleInfos.map(_.announcement))
+  }
+
+  def eventId: String = {
+    //is it right to pick this one?
+    announcements.head.eventTLV.eventId
+  }
 
   lazy val statusString: String = state.toString
 }
