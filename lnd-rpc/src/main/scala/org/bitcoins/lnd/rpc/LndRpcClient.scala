@@ -43,7 +43,7 @@ import walletrpc.{
   _
 }
 
-import java.io.{File, FileInputStream}
+import java.io._
 import java.net.InetSocketAddress
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicInteger
@@ -76,8 +76,19 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
   // These need to be lazy so we don't try and fetch
   // the tls certificate before it is generated
-
-  private[this] lazy val certStream = new FileInputStream(instance.certFile)
+  private[this] lazy val certStreamOpt: Option[InputStream] = {
+    instance.certFileOpt match {
+      case Some(file) => Some(new FileInputStream(file))
+      case None =>
+        instance.certificateOpt match {
+          case Some(cert) =>
+            Some(
+              new ByteArrayInputStream(
+                cert.getBytes(java.nio.charset.StandardCharsets.UTF_8.name)))
+          case None => None
+        }
+    }
+  }
 
   private lazy val callCredentials = new CallCredentials {
 
@@ -99,11 +110,21 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   // Configure the client
-  private lazy val clientSettings: GrpcClientSettings =
-    GrpcClientSettings
+  private lazy val clientSettings: GrpcClientSettings = {
+    val trustManagerOpt = certStreamOpt match {
+      case Some(stream) => Some(SSLContextUtils.trustManagerFromStream(stream))
+      case None         => None
+    }
+
+    val client = GrpcClientSettings
       .connectToServiceAt(instance.rpcUri.getHost, instance.rpcUri.getPort)
-      .withTrustManager(SSLContextUtils.trustManagerFromStream(certStream))
       .withCallCredentials(callCredentials)
+
+    trustManagerOpt match {
+      case Some(trustManager) => client.withTrustManager(trustManager)
+      case None               => client
+    }
+  }
 
   // Create a client-side stub for the services
   lazy val lnd: LightningClient = LightningClient(clientSettings)
