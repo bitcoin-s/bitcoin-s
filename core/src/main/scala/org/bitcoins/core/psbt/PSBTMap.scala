@@ -4,10 +4,11 @@ import org.bitcoins.core.byteVectorOrdering
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.script.constant.OP_TRUE
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{HashType, _}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -649,11 +650,15 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
             Failure(new UnsupportedOperationException(
               s"Cannot finalize the following input because no key spend signature was provided: $this"))
         }
-      case _: NonStandardScriptPubKey | _: UnassignedWitnessScriptPubKey |
-          _: WitnessCommitment =>
-        Failure(
-          new UnsupportedOperationException(
-            s"$spkToSatisfy is not yet supported"))
+      case spk @ (_: NonStandardScriptPubKey |
+          _: UnassignedWitnessScriptPubKey | _: WitnessCommitment) =>
+        if (spk == ScriptPubKey.fromAsm(Vector(OP_TRUE))) {
+          val scriptSig = TrivialTrueScriptSignature
+          Success(wipeAndAdd(scriptSig))
+        } else
+          Failure(
+            new UnsupportedOperationException(
+              s"$spkToSatisfy is not yet supported"))
     }
   }
 
