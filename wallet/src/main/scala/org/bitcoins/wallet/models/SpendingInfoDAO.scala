@@ -15,7 +15,7 @@ import java.sql.SQLException
 import scala.concurrent.{ExecutionContext, Future}
 
 case class SpendingInfoDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: WalletAppConfig)
     extends CRUDAutoInc[UTXORecord] {
   import profile.api._

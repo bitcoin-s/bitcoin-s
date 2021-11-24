@@ -91,7 +91,7 @@ trait TxDAO[DbEntryType <: TxDB]
 }
 
 case class TransactionDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: WalletAppConfig)
     extends TxDAO[TransactionDb] {
 

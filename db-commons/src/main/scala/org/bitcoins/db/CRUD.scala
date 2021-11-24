@@ -16,9 +16,11 @@ import scala.concurrent.{ExecutionContext, Future}
   * the table and the database you are connecting to.
   */
 abstract class CRUD[T, PrimaryKeyType](implicit
-    private val ec: ExecutionContext,
+    override
+    val ec: ExecutionContext,
     override val appConfig: DbAppConfig)
-    extends JdbcProfileComponent[DbAppConfig] {
+    extends CRUDAction[T, PrimaryKeyType]
+    with JdbcProfileComponent[DbAppConfig] {
 
   val schemaName: Option[String] = appConfig.schemaName
 
@@ -43,9 +45,6 @@ abstract class CRUD[T, PrimaryKeyType](implicit
       tableQuery: TableQuery[SomeT]): TableQuery[SpecificT] = {
     tableQuery.asInstanceOf[TableQuery[SpecificT]]
   }
-
-  /** The table inside our database we are inserting into */
-  val table: profile.api.TableQuery[_ <: profile.api.Table[T]]
 
   /** Binding to the actual database itself, this is what is used to run querys */
   def safeDatabase: SafeDatabase = SafeDatabase(this)

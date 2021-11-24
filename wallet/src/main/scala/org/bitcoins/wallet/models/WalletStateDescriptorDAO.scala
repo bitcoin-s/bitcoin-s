@@ -20,7 +20,7 @@ case class WalletStateDescriptorDb(
 }
 
 case class WalletStateDescriptorDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: WalletAppConfig)
     extends CRUD[WalletStateDescriptorDb, WalletStateDescriptorType]
     with SlickUtil[WalletStateDescriptorDb, WalletStateDescriptorType] {

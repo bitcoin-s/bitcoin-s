@@ -10,7 +10,7 @@ import slick.lifted.ProvenShape
 import scala.concurrent.{ExecutionContext, Future}
 
 case class RValueDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCOracleAppConfig)
     extends CRUD[RValueDb, SchnorrNonce]
     with SlickUtil[RValueDb, SchnorrNonce] {
