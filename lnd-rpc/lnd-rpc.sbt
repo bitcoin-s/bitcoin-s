@@ -1,4 +1,5 @@
 import java.nio.file._
+import java.security.MessageDigest
 import scala.util.Properties
 
 name := "bitcoin-s-lnd-rpc"
@@ -49,11 +50,32 @@ TaskKeys.downloadLnd := {
     val downloadCommand = url(location) #> archiveLocation.toFile
     downloadCommand.!!
 
-    logger.info(s"Download complete, unzipping result")
+    val bytes = Files.readAllBytes(archiveLocation)
+    val hash = MessageDigest
+      .getInstance("SHA-256")
+      .digest(bytes)
+      .map("%02x" format _)
+      .mkString
 
-    val extractCommand = s"tar -xzf $archiveLocation --directory $binaryDir"
-    logger.info(s"Extracting archive with command: $extractCommand")
-    extractCommand.!!
+    val expectedHash =
+      if (Properties.isLinux)
+        "7034e4aea3f404a9bbb1d157653741eb0e020c3d3272f854d3e2cefa0070f24a"
+      else if (Properties.isMac)
+        "046409faf7e5049d6ddfdbe2a556fa0b5e6cc651bccce039c6f736b72390ad1d"
+      else if (Properties.isWin)
+        "661d0538ca04c4f890d3d9a72717916f41350e810ae06f884e7ed97b38bf783f"
+      else sys.error(s"Unsupported OS: ${Properties.osName}")
+
+    if (hash.equalsIgnoreCase(expectedHash)) {
+      logger.info(s"Download complete and verified, unzipping result")
+
+      val extractCommand = s"tar -xzf $archiveLocation --directory $binaryDir"
+      logger.info(s"Extracting archive with command: $extractCommand")
+      extractCommand.!!
+    } else {
+      logger.error(
+        s"Downloaded invalid version of lnd, got $hash, expected $expectedHash")
+    }
 
     logger.info(s"Deleting archive")
     Files.delete(archiveLocation)

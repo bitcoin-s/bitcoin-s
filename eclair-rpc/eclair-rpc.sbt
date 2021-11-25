@@ -1,5 +1,5 @@
 import java.nio.file._
-
+import java.security.MessageDigest
 import scala.util.Properties
 
 name := "bitcoin-s-eclair-rpc"
@@ -40,9 +40,26 @@ TaskKeys.downloadEclair := {
       s"Downloading Eclair $version from location: $location, to destination: $archiveLocation")
     (url(location) #> archiveLocation.toFile).!!
 
-    val extractCommand = s"unzip $archiveLocation -d $versionDir"
-    logger.info(s"Extracting archive with command: $extractCommand")
-    extractCommand.!!
+    val bytes = Files.readAllBytes(archiveLocation)
+    val hash = MessageDigest
+      .getInstance("SHA-256")
+      .digest(bytes)
+      .map("%02x" format _)
+      .mkString
+
+    val expectedHash =
+      "e2407173036d9e2176c129f2328018c543c732a96d1f05c0fb35864c15efc9ba"
+
+    if (hash.equalsIgnoreCase(expectedHash)) {
+      logger.info(s"Download complete and verified, unzipping result")
+
+      val extractCommand = s"unzip $archiveLocation -d $versionDir"
+      logger.info(s"Extracting archive with command: $extractCommand")
+      extractCommand.!!
+    } else {
+      logger.error(
+        s"Downloaded invalid version of eclair, got $hash, expected $expectedHash")
+    }
 
     logger.info(s"Deleting archive")
     Files.delete(archiveLocation)
