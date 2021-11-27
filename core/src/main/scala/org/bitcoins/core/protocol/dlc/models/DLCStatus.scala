@@ -32,13 +32,13 @@ sealed trait DLCStatus {
   def localCollateral: CurrencyUnit
   def remoteCollateral: CurrencyUnit = totalCollateral - localCollateral
 
-  def announcements: Vector[OracleAnnouncementTLV] = {
+  lazy val announcements: Vector[OracleAnnouncementTLV] = {
     oracleInfos.flatMap(_.singleOracleInfos.map(_.announcement))
   }
 
-  def eventId: String = {
+  lazy val eventIds: Vector[String] = {
     //is it right to pick this one?
-    announcements.head.eventTLV.eventId
+    announcements.map(_.eventTLV.eventId)
   }
 
   lazy val statusString: String = state.toString

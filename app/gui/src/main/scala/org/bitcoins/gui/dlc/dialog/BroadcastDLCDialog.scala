@@ -135,12 +135,7 @@ object BroadcastDLCDialog
       vbox.children.add(gridPane)
 
       val (oracleKey, eventId) =
-        status.contractInfo.oracleInfos.head.toTLV match {
-          case OracleInfoV0TLV(announcement) =>
-            (announcement.publicKey.hex, announcement.eventTLV.eventId)
-          case _: MultiOracleInfoTLV =>
-            throw new RuntimeException("This is impossible.")
-        }
+        GUIUtil.getOraclePubKeyEventId(status.contractInfo.toTLV)
 
       gridPane.add(new Label("Event Id"), 0, nextRow)
       gridPane.add(
@@ -157,7 +152,7 @@ object BroadcastDLCDialog
       gridPane.add(new Label("Oracle Public Key"), 0, nextRow)
       gridPane.add(
         new TextField() {
-          text = oracleKey
+          text = oracleKey.hex
           editable = false
         },
         1,

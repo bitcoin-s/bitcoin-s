@@ -20,10 +20,15 @@ class DLCTableView(model: DLCPaneModel) {
       text = "Event Id"
       prefWidth = 230
       cellValueFactory = { status =>
-        val eventIdStr =
-          status.value.eventId
-
-        new StringProperty(status, "Event Id", eventIdStr)
+        status.value.contractInfo match {
+          case _: SingleContractInfo =>
+            val eventIdStr =
+              status.value.eventIds.head
+            new StringProperty(status, "Event Id", eventIdStr)
+          case _: DisjointUnionContractInfo =>
+            sys.error(
+              s"Disjoint contracts are not supported via the GUI, cannot add to table")
+        }
       }
     }
 
