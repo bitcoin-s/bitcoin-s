@@ -32,6 +32,7 @@ import org.bitcoins.dlc.wallet.util.DLCStatusBuilder
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
+import slick.dbio.DBIOAction
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -506,18 +507,18 @@ abstract class DLCWallet
               totalCollateral = contractInfo.totalCollateral
             )
           }
-
           _ <- writeDLCKeysToAddressDb(account, chainType, nextIndex)
+          groupedAnnouncements <- groupedAnnouncementsF
           writtenDLCAction = dlcDAO.createAction(dlc)
           contractAction = contractDataDAO.createAction(contractDataDb)
-          actions = writtenDLCAction.flatMap { dlcDb =>
+          createdDbsAction = announcementDAO.createAllAction(
+            groupedAnnouncements.newAnnouncements)
+          zipped = writtenDLCAction.zip(createdDbsAction)
+          actions = zipped.flatMap { dlcDb =>
             contractAction.map(_ => dlcDb)
           }
-          writtenDLC <- contractDataDAO.safeDatabase.run(actions)
-          groupedAnnouncements <- groupedAnnouncementsF
-          createdDbs <- announcementDAO.createAll(
-            groupedAnnouncements.newAnnouncements)
-
+          safeDatabase = contractDataDAO.safeDatabase
+          (writtenDLC, createdDbs) <- safeDatabase.run(actions)
           announcementDataDbs =
             createdDbs ++ groupedAnnouncements.existingAnnouncements
 
@@ -533,7 +534,7 @@ abstract class DLCWallet
           }
           nonceDbs = OracleNonceDbHelper.fromAnnouncements(
             newAnnouncementsWithId)
-          _ <- oracleNonceDAO.createAll(nonceDbs)
+          createNonceAction = oracleNonceDAO.createAllAction(nonceDbs)
 
           dlcAnnouncementDbs = announcementDataDbs.zipWithIndex.map {
             case (a, index) =>
@@ -542,7 +543,11 @@ abstract class DLCWallet
                                 index = index,
                                 used = false)
           }
-          _ <- dlcAnnouncementDAO.createAll(dlcAnnouncementDbs)
+          createAnnouncementAction = dlcAnnouncementDAO.createAllAction(
+            dlcAnnouncementDbs)
+
+          _ <- safeDatabase.run(
+            DBIOAction.seq(createNonceAction, createAnnouncementAction))
         } yield (writtenDLC, account)
     }
   }
