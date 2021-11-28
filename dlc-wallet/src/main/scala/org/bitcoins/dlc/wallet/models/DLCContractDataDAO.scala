@@ -11,7 +11,7 @@ import slick.lifted._
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCContractDataDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCContractDataDb, Sha256Digest]
     with SlickUtil[DLCContractDataDb, Sha256Digest] {

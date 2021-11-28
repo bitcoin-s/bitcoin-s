@@ -10,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCCETSignaturesPrimaryKey(dlcId: Sha256Digest, contractIndex: Long)
 
 case class DLCCETSignaturesDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCCETSignaturesDb, DLCCETSignaturesPrimaryKey]
     with SlickUtil[DLCCETSignaturesDb, DLCCETSignaturesPrimaryKey] {

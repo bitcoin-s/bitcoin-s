@@ -12,7 +12,7 @@ import slick.lifted.{ForeignKeyQuery, ProvenShape}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCOfferDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCOfferDb, Sha256Digest]
     with SlickUtil[DLCOfferDb, Sha256Digest] {

@@ -10,7 +10,7 @@ import slick.lifted.{ForeignKeyQuery, ProvenShape}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCRefundSigsDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCRefundSigsDb, Sha256Digest]
     with SlickUtil[DLCRefundSigsDb, Sha256Digest] {

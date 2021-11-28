@@ -16,7 +16,7 @@ import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCDb, Sha256Digest]
     with SlickUtil[DLCDb, Sha256Digest] {

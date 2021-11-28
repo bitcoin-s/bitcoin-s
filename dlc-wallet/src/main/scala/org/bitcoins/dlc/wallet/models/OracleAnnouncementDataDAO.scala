@@ -10,7 +10,7 @@ import slick.lifted.ProvenShape
 import scala.concurrent.{ExecutionContext, Future}
 
 case class OracleAnnouncementDataDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUDAutoInc[OracleAnnouncementDataDb] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)

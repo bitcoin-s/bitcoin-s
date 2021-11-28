@@ -15,7 +15,7 @@ import slick.lifted.{ForeignKeyQuery, ProvenShape}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCFundingInputDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCFundingInputDb, TransactionOutPoint]
     with SlickUtil[DLCFundingInputDb, TransactionOutPoint] {

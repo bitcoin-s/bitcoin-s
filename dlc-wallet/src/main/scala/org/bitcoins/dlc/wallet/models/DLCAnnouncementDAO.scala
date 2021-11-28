@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class DLCAnnouncementPrimaryKey(dlcId: Sha256Digest, announcementId: Long)
 
 case class DLCAnnouncementDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCAnnouncementDb, DLCAnnouncementPrimaryKey]
     with SlickUtil[DLCAnnouncementDb, DLCAnnouncementPrimaryKey] {

@@ -76,7 +76,7 @@ case class TestAppConfig(
 case class TestDb(pk: String, data: ByteVector)
 
 case class TestDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: TestAppConfig)
     extends CRUD[TestDb, String]
     with SlickUtil[TestDb, String] {

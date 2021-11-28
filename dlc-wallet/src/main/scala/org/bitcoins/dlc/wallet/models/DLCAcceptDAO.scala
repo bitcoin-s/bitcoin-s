@@ -13,7 +13,7 @@ import slick.lifted.{ForeignKeyQuery, ProvenShape}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCAcceptDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCAcceptDb, Sha256Digest]
     with SlickUtil[DLCAcceptDb, Sha256Digest] {

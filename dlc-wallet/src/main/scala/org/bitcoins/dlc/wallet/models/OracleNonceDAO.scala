@@ -10,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class OracleNoncePrimaryKey(announcementId: Long, index: Long)
 
 case class OracleNonceDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[OracleNonceDb, OracleNoncePrimaryKey]
     with SlickUtil[OracleNonceDb, OracleNoncePrimaryKey] {
