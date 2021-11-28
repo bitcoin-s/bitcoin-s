@@ -14,4 +14,9 @@ object EnvUtil {
   lazy val isCI: Boolean = Properties.envOrNone("CI").contains("true")
 
   def getVersion: String = getClass.getPackage.getImplementationVersion
+
+  def isNativeSecp256k1Disabled: Boolean = {
+    val secpDisabled = System.getenv("DISABLE_SECP256K1")
+    secpDisabled != null && (secpDisabled.toLowerCase == "true" || secpDisabled == "1")
+  }
 }
