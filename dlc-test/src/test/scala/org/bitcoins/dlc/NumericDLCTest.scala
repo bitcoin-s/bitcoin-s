@@ -1,14 +1,12 @@
 package org.bitcoins.dlc
 
-import org.bitcoins.core.protocol.tlv.{
-  OracleParamsV0TLV,
-  UnsignedNumericOutcome
-}
-import org.bitcoins.core.util.NumberUtil
+import org.bitcoin.Secp256k1Context
+import org.bitcoins.core.protocol.tlv.{OracleParamsV0TLV, UnsignedNumericOutcome}
+import org.bitcoins.core.util.{EnvUtil, NumberUtil}
 import org.bitcoins.testkitcore.dlc.DLCTest
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
-import scala.util.Random
+import scala.util.{Properties, Random}
 
 class NumericDLCTest extends BitcoinSJvmTest with DLCTest {
   behavior of "Numeric DLC"
@@ -31,7 +29,12 @@ class NumericDLCTest extends BitcoinSJvmTest with DLCTest {
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the large numeric case" in {
-    val numDigits = 17
+    val numDigits = if (Properties.envOrNone("DISABLE_SECP256K1").isDefined) {
+      17
+    } else  {
+      //optimization for CI, tests are much slower when secp256k1 isnt used
+      12
+    }
     val contractParams =
       NumericContractParams(numDigits, oracleThreshold = 1, numOracles = 1)
     val nums = tenRandomNums(numDigits)
