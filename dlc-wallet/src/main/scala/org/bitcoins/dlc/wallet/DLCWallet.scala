@@ -508,9 +508,12 @@ abstract class DLCWallet
           }
 
           _ <- writeDLCKeysToAddressDb(account, chainType, nextIndex)
-          writtenDLC <- dlcDAO.create(dlc)
-          _ <- contractDataDAO.create(contractDataDb)
-
+          writtenDLCAction = dlcDAO.createAction(dlc)
+          contractAction = contractDataDAO.createAction(contractDataDb)
+          actions = writtenDLCAction.flatMap { dlcDb =>
+            contractAction.map(_ => dlcDb)
+          }
+          writtenDLC <- contractDataDAO.safeDatabase.run(actions)
           groupedAnnouncements <- groupedAnnouncementsF
           createdDbs <- announcementDAO.createAll(
             groupedAnnouncements.newAnnouncements)
