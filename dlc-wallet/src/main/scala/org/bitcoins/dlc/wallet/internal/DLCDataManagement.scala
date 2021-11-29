@@ -31,21 +31,22 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       Vector[OracleAnnouncementDataDb],
       Vector[OracleNonceDb])] = {
     val announcementsF = dlcAnnouncementDAO.findByDLCId(dlcId)
-    val announcementIdsF = for {
+    val announcementIdsF: Future[Vector[Long]] = for {
       announcements <- announcementsF
       announcementIds = announcements.map(_.announcementId)
     } yield announcementIds
-
     val announcementDataF =
       announcementIdsF.flatMap(ids => announcementDAO.findByIds(ids))
-    val nonceDbsF =
+    val noncesDbF =
       announcementIdsF.flatMap(ids => oracleNonceDAO.findByAnnouncementIds(ids))
 
     for {
       announcements <- announcementsF
       announcementData <- announcementDataF
-      nonceDbs <- nonceDbsF
-    } yield (announcements, announcementData, nonceDbs)
+      nonceDbs <- noncesDbF
+    } yield {
+      (announcements, announcementData, nonceDbs)
+    }
   }
 
   /** Fetches the oracle announcements of the oracles
@@ -215,13 +216,12 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
     val contractDataAction = contractDataDAO.findByDLCIdAction(dlcId)
     val dlcOfferAction = dlcOfferDAO.findByDLCIdAction(dlcId)
     val fundingInputsAction = dlcInputsDAO.findByDLCIdAction(dlcId)
-    val combined = dlcDbAction.flatMap(a =>
-      contractDataAction
-        .map(c => (a, c))
-        .flatMap(b => dlcOfferAction.map(o => (b._1, b._2, o)))
-        .flatMap(c =>
-          fundingInputsAction.map(i =>
-            (c._1.headOption, c._2.headOption, c._3.headOption, i))))
+    val combined = for {
+      dlcDb <- dlcDbAction
+      contractData <- contractDataAction
+      offer <- dlcOfferAction
+      inputs <- fundingInputsAction
+    } yield (dlcDb, contractData, offer, inputs)
 
     combined
   }
@@ -253,7 +253,9 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
                                      nonceDbs)
 
       sortedInputs = fundingInputDbs.sortBy(_.index)
-    } yield (dlcDb, contractData, dlcOffer, sortedInputs, contractInfo)
+    } yield {
+      (dlcDb, contractData, dlcOffer, sortedInputs, contractInfo)
+    }
   }
 
   private[wallet] def getDLCFundingData(dlcId: Sha256Digest): Future[
@@ -368,7 +370,6 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
 
       (_, contractData, dlcOffer, fundingInputsDb, contractInfo) <-
         getDLCOfferData(dlcDb.dlcId)
-
       localFundingInputs = fundingInputsDb.filter(_.isInitiator)
 
       prevTxs <-
@@ -376,13 +377,12 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
     } yield {
       val offerFundingInputs =
         matchPrevTxsWithInputs(localFundingInputs, prevTxs)
+      val offer = dlcOffer.toDLCOffer(contractInfo,
+                                      offerFundingInputs,
+                                      dlcDb,
+                                      contractData)
 
-      val builder =
-        DLCTxBuilder(dlcOffer.toDLCOffer(contractInfo,
-                                         offerFundingInputs,
-                                         dlcDb,
-                                         contractData),
-                     accept.withoutSigs)
+      val builder = DLCTxBuilder(offer, accept.withoutSigs)
 
       DLCSignatureVerifier(builder, dlcDb.isInitiator)
     }
@@ -654,7 +654,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
   }
 
   def getCetAndRefundSigsAction(dlcId: Sha256Digest): DBIOAction[
-    (Vector[DLCCETSignaturesDb], Vector[DLCRefundSigsDb]),
+    (Vector[DLCCETSignaturesDb], Option[DLCRefundSigsDb]),
     NoStream,
     Effect.Read] = {
     val cetSigsAction = dlcSigsDAO.findByDLCIdAction(dlcId)
@@ -666,7 +666,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
   }
 
   def getCetAndRefundSigs(dlcId: Sha256Digest): Future[
-    (Vector[DLCCETSignaturesDb], Vector[DLCRefundSigsDb])] = {
+    (Vector[DLCCETSignaturesDb], Option[DLCRefundSigsDb])] = {
     val action = getCetAndRefundSigsAction(dlcId)
     safeDatabase.run(action)
   }

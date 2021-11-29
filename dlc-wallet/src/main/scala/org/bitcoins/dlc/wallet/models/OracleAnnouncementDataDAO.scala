@@ -42,6 +42,10 @@ case class OracleAnnouncementDataDAO()(implicit
     safeDatabase.runVec(query.result)
   }
 
+  def findById(id: Long): Future[Option[OracleAnnouncementDataDb]] = {
+    findByIds(Vector(id)).map(_.headOption)
+  }
+
   class OracleAnnouncementsTable(tag: Tag)
       extends TableAutoInc[OracleAnnouncementDataDb](
         tag,

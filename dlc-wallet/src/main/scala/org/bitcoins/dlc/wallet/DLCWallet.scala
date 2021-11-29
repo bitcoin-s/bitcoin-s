@@ -779,10 +779,7 @@ abstract class DLCWallet
       }
     } yield (dlcDb, acceptDbOpt)
 
-    val acceptDbsOpt = dbsF.map { case (dlcDb, acceptVec) =>
-      (dlcDb, acceptVec.headOption)
-    }
-    acceptDbsOpt.flatMap {
+    dbsF.flatMap {
       case (dlc, None) =>
         require(
           dlc.isInitiator,
@@ -887,7 +884,9 @@ abstract class DLCWallet
       case (dlc, Some(_)) =>
         logger.debug(
           s"DLC Accept (${dlc.contractIdOpt.get.toHex}) has already been registered")
-        dlcSigsDAO.findByDLCId(dlc.dlcId).map((dlc, _))
+        dlcSigsDAO
+          .findByDLCId(dlc.dlcId)
+          .map(sigOpt => (dlc, sigOpt))
     }
   }
 
@@ -946,9 +945,9 @@ abstract class DLCWallet
 
           val signatures = refundSigsDb.initiatorSig match {
             case Some(sig) =>
-              CETSignatures(outcomeSigs, sig)
+              CETSignatures(outcomeSigs.toVector, sig)
             case None =>
-              CETSignatures(outcomeSigs, signer.signRefundTx)
+              CETSignatures(outcomeSigs.toVector, signer.signRefundTx)
           }
           Future.successful(signatures)
         }

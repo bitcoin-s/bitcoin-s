@@ -19,7 +19,7 @@ case class DLCFundingInputDAO()(implicit
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCFundingInputDb, TransactionOutPoint]
     with SlickUtil[DLCFundingInputDb, TransactionOutPoint]
-    with DLCIdDaoUtil[DLCFundingInputDb, TransactionOutPoint] {
+    with DLCIdDaoUtilNoPK[DLCFundingInputDb] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._

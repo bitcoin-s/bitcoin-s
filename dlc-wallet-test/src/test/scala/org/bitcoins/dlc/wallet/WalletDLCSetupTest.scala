@@ -105,11 +105,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     } yield {
       assert(dlcDb.contractIdOpt.get == sign.contractId)
 
-      assert(refundSigsA.length == 1)
-      assert(refundSigsB.length == 1)
-      assert(refundSigsA.head.initiatorSig.isDefined)
-      assert(refundSigsA.head.initiatorSig == refundSigsB.head.initiatorSig)
-      assert(refundSigsA.head.accepterSig == refundSigsB.head.accepterSig)
+      assert(refundSigsA.isDefined)
+      assert(refundSigsB.isDefined)
+      assert(refundSigsA.get.initiatorSig.isDefined)
+      assert(refundSigsA.get.initiatorSig == refundSigsB.get.initiatorSig)
+      assert(refundSigsA.get.accepterSig == refundSigsB.get.accepterSig)
 
       assert(sign.cetSigs.outcomeSigs.forall { case (outcome, sig) =>
         outcomeSigs.exists(dbSig =>
@@ -318,11 +318,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       } yield {
         assert(dlcDb.contractIdOpt.get == sign.contractId)
 
-        assert(refundSigsA.length == 1)
-        assert(refundSigsB.length == 1)
-        assert(refundSigsA.head.initiatorSig.isDefined)
-        assert(refundSigsA.head.initiatorSig == refundSigsB.head.initiatorSig)
-        assert(refundSigsA.head.accepterSig == refundSigsB.head.accepterSig)
+        assert(refundSigsA.isDefined)
+        assert(refundSigsB.isDefined)
+        assert(refundSigsA.get.initiatorSig.isDefined)
+        assert(refundSigsA.get.initiatorSig == refundSigsB.get.initiatorSig)
+        assert(refundSigsA.get.accepterSig == refundSigsB.get.accepterSig)
 
         assert(sign.cetSigs.outcomeSigs.forall { case (outcome, sig) =>
           outcomeSigs.exists(dbSig =>
@@ -776,11 +776,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ = {
           assert(dlcDb.contractIdOpt.get == sign.contractId)
 
-          assert(refundSigsA.length == 1)
-          assert(refundSigsB.length == 1)
-          assert(refundSigsA.head.initiatorSig.isDefined)
-          assert(refundSigsA.head.initiatorSig == refundSigsB.head.initiatorSig)
-          assert(refundSigsA.head.accepterSig == refundSigsB.head.accepterSig)
+          assert(refundSigsA.isDefined)
+          assert(refundSigsB.isDefined)
+          assert(refundSigsA.get.initiatorSig.isDefined)
+          assert(refundSigsA.get.initiatorSig == refundSigsB.get.initiatorSig)
+          assert(refundSigsA.get.accepterSig == refundSigsB.get.accepterSig)
 
           assert(sign.cetSigs.outcomeSigs.forall { case (outcome, sig) =>
             outcomeSigs.exists(dbSig =>

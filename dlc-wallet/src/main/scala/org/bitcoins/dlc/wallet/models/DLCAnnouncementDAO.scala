@@ -15,7 +15,7 @@ case class DLCAnnouncementDAO()(implicit
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCAnnouncementDb, DLCAnnouncementPrimaryKey]
     with SlickUtil[DLCAnnouncementDb, DLCAnnouncementPrimaryKey]
-    with DLCIdDaoUtil[DLCAnnouncementDb, DLCAnnouncementPrimaryKey] {
+    with DLCIdDaoUtilNoPK[DLCAnnouncementDb] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._

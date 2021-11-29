@@ -44,11 +44,11 @@ case class DLCDAO()(implicit
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
   override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Vector[DLCDb],
+    Option[DLCDb],
     profile.api.NoStream,
     profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
-    q.result.map(_.toVector)
+    q.result.map(_.headOption)
   }
 
   override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[

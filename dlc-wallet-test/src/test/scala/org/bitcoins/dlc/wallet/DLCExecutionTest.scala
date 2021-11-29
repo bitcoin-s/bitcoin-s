@@ -47,11 +47,11 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
       fundingTx <- dlcB.getDLCFundingTx(contractId)
     } yield {
-      assert(offerOpt.length == 1)
-      assert(acceptOpt.length == 1)
+      assert(offerOpt.isDefined)
+      assert(acceptOpt.isDefined)
 
-      val offer = offerOpt.head
-      val accept = acceptOpt.head
+      val offer = offerOpt.get
+      val accept = acceptOpt.get
 
       val comparableInputsA = inputsA
         .sortBy(_.outPoint.hex)
