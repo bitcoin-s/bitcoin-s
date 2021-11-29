@@ -24,6 +24,7 @@ import scala.concurrent._
 
 /** Handles fetching and constructing different DLC datastructures from the database */
 private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
+  private lazy val safeDatabase = dlcDAO.safeDatabase
 
   private[wallet] def getDLCAnnouncementDbs(dlcId: Sha256Digest): Future[(
       Vector[DLCAnnouncementDb],
@@ -199,6 +200,32 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
              contractInfo)
   }
 
+  /** Retrieves a DBIOAction that fetches the global dlc db,
+    * the contract, the offer, and funding inputs
+    */
+  def getDLCOfferDataAction(dlcId: Sha256Digest): DBIOAction[
+    (
+        Option[DLCDb],
+        Option[DLCContractDataDb],
+        Option[DLCOfferDb],
+        Vector[DLCFundingInputDb]),
+    NoStream,
+    Effect.Read] = {
+    val dlcDbAction = dlcDAO.findByDLCIdAction(dlcId)
+    val contractDataAction = contractDataDAO.findByDLCIdAction(dlcId)
+    val dlcOfferAction = dlcOfferDAO.findByDLCIdAction(dlcId)
+    val fundingInputsAction = dlcInputsDAO.findByDLCIdAction(dlcId)
+    val combined = dlcDbAction.flatMap(a =>
+      contractDataAction
+        .map(c => (a, c))
+        .flatMap(b => dlcOfferAction.map(o => (b._1, b._2, o)))
+        .flatMap(c =>
+          fundingInputsAction.map(i =>
+            (c._1.headOption, c._2.headOption, c._3.headOption, i))))
+
+    combined
+  }
+
   private[wallet] def getDLCOfferData(dlcId: Sha256Digest): Future[
     (
         DLCDb,
@@ -206,24 +233,8 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         DLCOfferDb,
         Vector[DLCFundingInputDb],
         ContractInfo)] = {
-    val safeDatabase = dlcDAO.safeDatabase
-    val dlcDbAction = dlcDAO.findByDLCIdAction(dlcId)
-    val contractDataAction = contractDataDAO.findByDLCIdAction(dlcId)
-    val dlcOfferAction = dlcOfferDAO.findByDLCIdAction(dlcId)
-    val fundingInputsAction = dlcInputsDAO.findByDLCIdAction(dlcId)
-    val combined: DBIOAction[
-      (
-          Vector[DLCDb],
-          Vector[DLCContractDataDb],
-          Vector[DLCOfferDb],
-          Vector[DLCFundingInputDb]),
-      NoStream,
-      Effect.Read] = dlcDbAction.flatMap(a =>
-      contractDataAction
-        .map(c => (a, c))
-        .flatMap(b => dlcOfferAction.map(o => (b._1, b._2, o)))
-        .flatMap(c => fundingInputsAction.map(i => (c._1, c._2, c._3, i))))
 
+    val combined = getDLCOfferDataAction(dlcId)
     val combinedF = safeDatabase.run(combined)
     for {
       (dlcDbs, contractDataDbs, offerDbs, fundingInputDbs) <- combinedF
@@ -640,5 +651,23 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
 
         Future.fromTry(setupF.map((executor, _)))
       }
+  }
+
+  def getCetAndRefundSigsAction(dlcId: Sha256Digest): DBIOAction[
+    (Vector[DLCCETSignaturesDb], Vector[DLCRefundSigsDb]),
+    NoStream,
+    Effect.Read] = {
+    val cetSigsAction = dlcSigsDAO.findByDLCIdAction(dlcId)
+    val refundSigsAction = dlcRefundSigDAO.findByDLCIdAction(dlcId)
+    for {
+      cetSigs <- cetSigsAction
+      refundSigs <- refundSigsAction
+    } yield (cetSigs, refundSigs)
+  }
+
+  def getCetAndRefundSigs(dlcId: Sha256Digest): Future[
+    (Vector[DLCCETSignaturesDb], Vector[DLCRefundSigsDb])] = {
+    val action = getCetAndRefundSigsAction(dlcId)
+    safeDatabase.run(action)
   }
 }
