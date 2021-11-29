@@ -839,8 +839,9 @@ abstract class DLCWallet
             s"CET Signatures for tempContractId ${accept.tempContractId.hex} were valid, adding to database")
 
           _ <- remoteTxDAO.upsertAll(acceptPrevTxs)
-          _ <- dlcInputsDAO.createAll(acceptInputs)
-          _ <- dlcSigsDAO.createAll(sigsDbs)
+          inputAction = dlcInputsDAO.createAllAction(acceptInputs)
+          sigsAction = dlcSigsDAO.createAllAction(sigsDbs)
+          _ <- safeDatabase.run(DBIO.sequence(Vector(inputAction, sigsAction)))
           _ <- dlcRefundSigDAO.upsert(refundSigsDb)
           _ <- dlcAcceptDAO.upsert(dlcAcceptDb)
 
