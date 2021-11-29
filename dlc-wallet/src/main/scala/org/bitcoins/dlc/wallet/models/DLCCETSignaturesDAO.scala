@@ -13,7 +13,8 @@ case class DLCCETSignaturesDAO()(implicit
     override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCCETSignaturesDb, DLCCETSignaturesPrimaryKey]
-    with SlickUtil[DLCCETSignaturesDb, DLCCETSignaturesPrimaryKey] {
+    with SlickUtil[DLCCETSignaturesDb, DLCCETSignaturesPrimaryKey]
+    with DLCIdDaoUtil[DLCCETSignaturesDb, DLCCETSignaturesPrimaryKey] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -69,14 +70,20 @@ case class DLCCETSignaturesDAO()(implicit
     findByPrimaryKeys(
       dlcs.map(sig => DLCCETSignaturesPrimaryKey(sig.dlcId, sig.index)))
 
-  def findByDLCId(dlcId: Sha256Digest): Future[Vector[DLCCETSignaturesDb]] = {
+  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
+    Vector[DLCCETSignaturesDb],
+    profile.api.NoStream,
+    profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
-    safeDatabase.runVec(q.result)
+    q.result.map(_.toVector)
   }
 
-  def deleteByDLCId(dlcId: Sha256Digest): Future[Int] = {
+  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
+    Int,
+    profile.api.NoStream,
+    profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
-    safeDatabase.run(q.delete)
+    q.delete
   }
 
   class DLCCETSignatureTable(tag: Tag)

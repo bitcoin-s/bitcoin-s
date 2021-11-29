@@ -13,7 +13,8 @@ case class DLCRefundSigsDAO()(implicit
     override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCRefundSigsDb, Sha256Digest]
-    with SlickUtil[DLCRefundSigsDb, Sha256Digest] {
+    with SlickUtil[DLCRefundSigsDb, Sha256Digest]
+    with DLCIdDaoUtil[DLCRefundSigsDb, Sha256Digest] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -47,15 +48,20 @@ case class DLCRefundSigsDAO()(implicit
     Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  def deleteByDLCId(dlcId: Sha256Digest): Future[Int] = {
+  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
+    Vector[DLCRefundSigsDb],
+    profile.api.NoStream,
+    profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
-    safeDatabase.run(q.delete)
+    q.result.map(_.toVector)
   }
 
-  def findByDLCId(dlcId: Sha256Digest): Future[Option[DLCRefundSigsDb]] = {
+  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
+    Int,
+    profile.api.NoStream,
+    profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
-
-    safeDatabase.runVec(q.result).map(_.headOption)
+    q.delete
   }
 
   class DLCRefundSigTable(tag: Tag)

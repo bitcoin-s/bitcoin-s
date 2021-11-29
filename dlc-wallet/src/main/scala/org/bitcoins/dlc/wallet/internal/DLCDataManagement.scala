@@ -18,6 +18,7 @@ import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.dlc.wallet.models._
 import scodec.bits._
+import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import scala.concurrent._
 
@@ -205,14 +206,32 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         DLCOfferDb,
         Vector[DLCFundingInputDb],
         ContractInfo)] = {
+    val safeDatabase = dlcDAO.safeDatabase
+    val dlcDbAction = dlcDAO.findByDLCIdAction(dlcId)
+    val contractDataAction = contractDataDAO.findByDLCIdAction(dlcId)
+    val dlcOfferAction = dlcOfferDAO.findByDLCIdAction(dlcId)
+    val fundingInputsAction = dlcInputsDAO.findByDLCIdAction(dlcId)
+    val combined: DBIOAction[
+      (
+          Vector[DLCDb],
+          Vector[DLCContractDataDb],
+          Vector[DLCOfferDb],
+          Vector[DLCFundingInputDb]),
+      NoStream,
+      Effect.Read] = dlcDbAction.flatMap(a =>
+      contractDataAction
+        .map(c => (a, c))
+        .flatMap(b => dlcOfferAction.map(o => (b._1, b._2, o)))
+        .flatMap(c => fundingInputsAction.map(i => (c._1, c._2, c._3, i))))
+
+    val combinedF = safeDatabase.run(combined)
     for {
-      dlcDbOpt <- dlcDAO.findByDLCId(dlcId)
-      dlcDb = dlcDbOpt.get
-      contractDataOpt <- contractDataDAO.findByDLCId(dlcId)
-      contractData = contractDataOpt.get
-      dlcOfferOpt <- dlcOfferDAO.findByDLCId(dlcId)
-      dlcOffer = dlcOfferOpt.get
-      fundingInputs <- dlcInputsDAO.findByDLCId(dlcId)
+      (dlcDbs, contractDataDbs, offerDbs, fundingInputDbs) <- combinedF
+      dlcDb = dlcDbs.head
+
+      contractData = contractDataDbs.head
+
+      dlcOffer = offerDbs.head
 
       (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
         dlcId)
@@ -222,7 +241,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
                                      announcementData,
                                      nonceDbs)
 
-      sortedInputs = fundingInputs.sortBy(_.index)
+      sortedInputs = fundingInputDbs.sortBy(_.index)
     } yield (dlcDb, contractData, dlcOffer, sortedInputs, contractInfo)
   }
 
@@ -238,7 +257,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       (dlcDb, contractData, dlcOffer, fundingInputs, contractInfo) <-
         getDLCOfferData(dlcId)
       dlcAcceptOpt <- dlcAcceptDAO.findByDLCId(dlcId)
-      dlcAccept = dlcAcceptOpt.get
+      dlcAccept = dlcAcceptOpt.head
     } yield (dlcDb,
              contractData,
              dlcOffer,
@@ -289,16 +308,22 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         ContractInfo,
         Vector[DLCFundingInputDb],
         Vector[DLCCETSignaturesDb])] = {
+    val safeDatabase = dlcRefundSigDAO.safeDatabase
+    val refundSigDLCs = dlcRefundSigDAO.findByDLCIdAction(dlcId)
+    val sigDLCs = dlcSigsDAO.findByDLCIdAction(dlcId)
+
+    val refundAndOutcomeSigsAction =
+      refundSigDLCs.flatMap(r => sigDLCs.map(s => (r, s)))
+    val refundAndOutcomeSigsF = safeDatabase.run(refundAndOutcomeSigsAction)
     for {
       (dlcDb, contractData, dlcOffer, dlcAccept, fundingInputs, contractInfo) <-
         getDLCFundingData(dlcId)
-      refundSig <- dlcRefundSigDAO.findByDLCId(dlcId)
-      outcomeSigs <- dlcSigsDAO.findByDLCId(dlcId)
+      (refundSigs, outcomeSigs) <- refundAndOutcomeSigsF
     } yield (dlcDb,
              contractData,
              dlcOffer,
              dlcAccept,
-             refundSig.get,
+             refundSigs.head,
              contractInfo,
              fundingInputs,
              outcomeSigs)

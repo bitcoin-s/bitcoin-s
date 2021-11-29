@@ -567,8 +567,8 @@ abstract class DLCWallet
     logger.debug(s"Checking if Accept (${dlcId.hex}) has already been made")
     for {
       (dlc, account) <- initDLCForAccept(offer)
-      dlcAcceptDbOpt <- dlcAcceptDAO.findByDLCId(dlcId)
-      dlcAccept <- dlcAcceptDbOpt match {
+      dlcAcceptDbs <- dlcAcceptDAO.findByDLCId(dlcId)
+      dlcAccept <- dlcAcceptDbs.headOption match {
         case Some(dlcAcceptDb) =>
           logger.debug(
             s"DLC Accept (${dlcId.hex}) has already been made, returning accept")
@@ -779,7 +779,10 @@ abstract class DLCWallet
       }
     } yield (dlcDb, acceptDbOpt)
 
-    dbsF.flatMap {
+    val acceptDbsOpt = dbsF.map { case (dlcDb, acceptVec) =>
+      (dlcDb, acceptVec.headOption)
+    }
+    acceptDbsOpt.flatMap {
       case (dlc, None) =>
         require(
           dlc.isInitiator,
@@ -840,7 +843,7 @@ abstract class DLCWallet
           _ <- dlcAcceptDAO.upsert(dlcAcceptDb)
 
           // .get is safe here because we must have an offer if we have a dlcDAO
-          offerDb <- dlcOfferDAO.findByDLCId(dlc.dlcId).map(_.get)
+          offerDb <- dlcOfferDAO.findByDLCId(dlc.dlcId).map(_.head)
           offerInputs <-
             dlcInputsDAO.findByDLCId(dlc.dlcId, isInitiator = true)
           prevTxs <-
@@ -920,7 +923,7 @@ abstract class DLCWallet
       signer <- signerFromDb(dlc.dlcId)
 
       mySigs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
-      refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.get)
+      refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.head)
       cetSigs <-
         if (mySigs.forall(_.initiatorSig.isEmpty)) {
           logger.info(s"Creating CET Sigs for contract ${contractId.toHex}")
@@ -1087,7 +1090,7 @@ abstract class DLCWallet
                 throw new IllegalArgumentException(
                   s"CET sigs provided are not valid! got ${sign.cetSigs.outcomeSigs}")
 
-              refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.get)
+              refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.head)
               sigsDbs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
 
               updatedRefund = refundSigsDb.copy(initiatorSig =
@@ -1309,8 +1312,8 @@ abstract class DLCWallet
       refundSigsDbOpt <- dlcRefundSigDAO.findByDLCId(dlcDb.dlcId)
 
       refundSig =
-        if (dlcDb.isInitiator) refundSigsDbOpt.get.accepterSig
-        else refundSigsDbOpt.get.initiatorSig.get
+        if (dlcDb.isInitiator) refundSigsDbOpt.head.accepterSig
+        else refundSigsDbOpt.head.initiatorSig.get
 
       refundTx = executor.executeRefundDLC(refundSig).refundTx
       _ = logger.info(
