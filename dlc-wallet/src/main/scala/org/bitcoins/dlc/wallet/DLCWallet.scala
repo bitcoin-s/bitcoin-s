@@ -518,7 +518,6 @@ abstract class DLCWallet
           actions = zipped.flatMap { dlcDb =>
             contractAction.map(_ => dlcDb)
           }
-          safeDatabase = contractDataDAO.safeDatabase
           (writtenDLC, createdDbs) <- safeDatabase.run(actions)
           announcementDataDbs =
             createdDbs ++ groupedAnnouncements.existingAnnouncements
@@ -744,13 +743,18 @@ abstract class DLCWallet
                   "Offer and Accept have differing tempContractIds!")
 
       _ <- remoteTxDAO.upsertAll(offerPrevTxs)
-      _ <- dlcInputsDAO.createAll(offerInputs ++ acceptInputs)
-      _ <- dlcOfferDAO.create(dlcOfferDb)
-      _ <- dlcAcceptDAO.create(dlcAcceptDb)
-      _ <- dlcSigsDAO.createAll(sigsDbs)
-      _ <- dlcRefundSigDAO.create(refundSigsDb)
+      inputAction = dlcInputsDAO.createAllAction(offerInputs ++ acceptInputs)
+      offerAction = dlcOfferDAO.createAction(dlcOfferDb)
+      acceptAction = dlcAcceptDAO.createAction(dlcAcceptDb)
+      sigsAction = dlcSigsDAO.createAllAction(sigsDbs)
+      refundSigAction = dlcRefundSigDAO.createAction(refundSigsDb)
+      actions = Vector(inputAction,
+                       offerAction,
+                       acceptAction,
+                       sigsAction,
+                       refundSigAction)
+      _ <- safeDatabase.run(DBIO.sequence(actions))
       dlcDb <- updateDLCContractIds(offer, accept)
-
       _ = logger.info(
         s"Created DLCAccept for tempContractId ${offer.tempContractId.hex} with contract Id ${contractId.toHex}")
 
