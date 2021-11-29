@@ -267,15 +267,7 @@ abstract class DLCWallet
       dbs <- spendingInfoDAO.findByOutPoints(inputs.map(_.outPoint))
       // allow this to fail in the case they have already been unreserved
       _ <- unmarkUTXOsAsReserved(dbs).recover { case _: Throwable => () }
-
-      _ <- dlcSigsDAO.deleteByDLCId(dlcId)
-      _ <- dlcRefundSigDAO.deleteByDLCId(dlcId)
-      _ <- dlcInputsDAO.deleteByDLCId(dlcId)
-      _ <- dlcAcceptDAO.deleteByDLCId(dlcId)
-      _ <- dlcOfferDAO.deleteByDLCId(dlcId)
-      _ <- contractDataDAO.deleteByDLCId(dlcId)
-      _ <- dlcAnnouncementDAO.deleteByDLCId(dlcId)
-      _ <- dlcDAO.deleteByDLCId(dlcId)
+      _ <- deleteDLC(dlcId)
     } yield ()
   }
 
@@ -945,9 +937,9 @@ abstract class DLCWallet
 
           val signatures = refundSigsDb.initiatorSig match {
             case Some(sig) =>
-              CETSignatures(outcomeSigs.toVector, sig)
+              CETSignatures(outcomeSigs, sig)
             case None =>
-              CETSignatures(outcomeSigs.toVector, signer.signRefundTx)
+              CETSignatures(outcomeSigs, signer.signRefundTx)
           }
           Future.successful(signatures)
         }
