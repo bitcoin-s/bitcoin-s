@@ -26,13 +26,14 @@ import org.bitcoins.core.util.{FutureUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
+import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.internal._
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.dlc.wallet.util.DLCStatusBuilder
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
-import slick.dbio.DBIOAction
+import slick.dbio.{DBIO, DBIOAction}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -61,6 +62,8 @@ abstract class DLCWallet
   private[bitcoins] val dlcSigsDAO: DLCCETSignaturesDAO = DLCCETSignaturesDAO()
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
+
+  private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
 
   private def calcContractId(offer: DLCOffer, accept: DLCAccept): ByteVector = {
     val builder = DLCTxBuilder(offer, accept.withoutSigs)
@@ -409,10 +412,6 @@ abstract class DLCWallet
         contractTimeout = timeouts.contractTimeout,
         totalCollateral = contractInfo.totalCollateral
       )
-
-      _ <- dlcDAO.create(dlcDb)
-      _ <- contractDataDAO.create(contractDataDb)
-      _ <- dlcAnnouncementDAO.createAll(dlcAnnouncementDbs)
       dlcOfferDb = DLCOfferDbHelper.fromDLCOffer(dlcId, offer)
 
       dlcInputs = spendingInfos.zip(utxos).zipWithIndex.map {
@@ -430,11 +429,21 @@ abstract class DLCWallet
             witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
           )
       }
-
       _ = logger.info(
         s"Created offer with tempContractId ${offer.tempContractId.hex}")
-      _ <- dlcInputsDAO.createAll(dlcInputs)
-      _ <- dlcOfferDAO.create(dlcOfferDb)
+      globalAction = dlcDAO.createAction(dlcDb)
+      contractAction = contractDataDAO.createAction(contractDataDb)
+      announcementAction = dlcAnnouncementDAO.createAllAction(
+        dlcAnnouncementDbs)
+      inputsAction = dlcInputsDAO.createAllAction(dlcInputs)
+      offerAction = dlcOfferDAO.createAction(dlcOfferDb)
+      actions = Vector(globalAction,
+                       contractAction,
+                       announcementAction,
+                       inputsAction,
+                       offerAction)
+      allActions = DBIO.sequence(actions)
+      _ <- safeDatabase.run(allActions)
     } yield offer
   }
 
