@@ -37,7 +37,6 @@ sealed trait DLCStatus {
   }
 
   lazy val eventIds: Vector[String] = {
-    //is it right to pick this one?
     announcements.map(_.eventTLV.eventId)
   }
 
