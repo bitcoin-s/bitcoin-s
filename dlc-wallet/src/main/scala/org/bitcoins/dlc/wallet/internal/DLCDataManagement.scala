@@ -201,31 +201,6 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
              contractInfo)
   }
 
-  /** Retrieves a DBIOAction that fetches the global dlc db,
-    * the contract, the offer, and funding inputs
-    */
-  def getDLCOfferDataAction(dlcId: Sha256Digest): DBIOAction[
-    (
-        Option[DLCDb],
-        Option[DLCContractDataDb],
-        Option[DLCOfferDb],
-        Vector[DLCFundingInputDb]),
-    NoStream,
-    Effect.Read] = {
-    val dlcDbAction = dlcDAO.findByDLCIdAction(dlcId)
-    val contractDataAction = contractDataDAO.findByDLCIdAction(dlcId)
-    val dlcOfferAction = dlcOfferDAO.findByDLCIdAction(dlcId)
-    val fundingInputsAction = dlcInputsDAO.findByDLCIdAction(dlcId)
-    val combined = for {
-      dlcDb <- dlcDbAction
-      contractData <- contractDataAction
-      offer <- dlcOfferAction
-      inputs <- fundingInputsAction
-    } yield (dlcDb, contractData, offer, inputs)
-
-    combined
-  }
-
   private[wallet] def getDLCOfferData(dlcId: Sha256Digest): Future[
     (
         DLCDb,
@@ -234,7 +209,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         Vector[DLCFundingInputDb],
         ContractInfo)] = {
 
-    val combined = getDLCOfferDataAction(dlcId)
+    val combined = actionBuilder.getDLCOfferDataAction(dlcId)
     val combinedF = safeDatabase.run(combined)
     for {
       (dlcDbs, contractDataDbs, offerDbs, fundingInputDbs) <- combinedF
@@ -668,42 +643,6 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
   def getCetAndRefundSigs(dlcId: Sha256Digest): Future[
     (Vector[DLCCETSignaturesDb], Option[DLCRefundSigsDb])] = {
     val action = getCetAndRefundSigsAction(dlcId)
-    safeDatabase.run(action)
-  }
-
-  /** Creates the action to delete the given dlc from our database.
-    * This removes references to the dlc in our various tables
-    */
-  def deleteDLCAction(
-      dlcId: Sha256Digest): DBIOAction[Unit, NoStream, Effect.Write] = {
-    val deleteSigA = dlcSigsDAO.deleteByDLCIdAction(dlcId)
-    val deleteRefundSigA = dlcRefundSigDAO.deleteByDLCIdAction(dlcId)
-    val deleteInputSigA = dlcInputsDAO.deleteByDLCIdAction(dlcId)
-    val deleteAcceptA = dlcAcceptDAO.deleteByDLCIdAction(dlcId)
-    val deleteOfferA = dlcOfferDAO.deleteByDLCIdAction(dlcId)
-    val deleteContractDataA = contractDataDAO.deleteByDLCIdAction(dlcId)
-    val deleteAnnouncementDataA = dlcAnnouncementDAO.deleteByDLCIdAction(dlcId)
-    val deleteDlcA = dlcDAO.deleteByDLCIdAction(dlcId)
-
-    val action = for {
-      _ <- deleteSigA
-      _ <- deleteRefundSigA
-      _ <- deleteInputSigA
-      _ <- deleteAcceptA
-      _ <- deleteOfferA
-      _ <- deleteContractDataA
-      _ <- deleteAnnouncementDataA
-      _ <- deleteDlcA
-    } yield ()
-
-    action
-  }
-
-  /** Deletes the given dlc from our database. This removes
-    * references to the dlc in our various tables
-    */
-  def deleteDLC(dlcId: Sha256Digest): Future[Unit] = {
-    val action = deleteDLCAction(dlcId)
     safeDatabase.run(action)
   }
 }

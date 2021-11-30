@@ -63,7 +63,7 @@ abstract class DLCWallet
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
 
-  private lazy val actionBuilder: DLCActionBuilder = {
+  protected lazy val actionBuilder: DLCActionBuilder = {
     DLCActionBuilder(
       dlcDAO = dlcDAO,
       contractDataDAO = contractDataDAO,
@@ -283,7 +283,8 @@ abstract class DLCWallet
       dbs <- spendingInfoDAO.findByOutPoints(inputs.map(_.outPoint))
       // allow this to fail in the case they have already been unreserved
       _ <- unmarkUTXOsAsReserved(dbs).recover { case _: Throwable => () }
-      _ <- deleteDLC(dlcId)
+      action = actionBuilder.deleteDLCAction(dlcId)
+      _ <- safeDatabase.run(action)
     } yield ()
   }
 
