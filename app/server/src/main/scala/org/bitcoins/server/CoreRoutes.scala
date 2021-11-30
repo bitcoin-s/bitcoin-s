@@ -153,7 +153,13 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
             Server.httpSuccess(writeJs(offerTLV))
           }
       }
-
+    case ServerCommand("decodeaccept", arr) =>
+      withValidServerCommand(DecodeAccept.fromJsArr(arr)) {
+        case DecodeAccept(accept) =>
+          complete {
+            Server.httpSuccess(writeJs(accept))
+          }
+      }
     case ServerCommand("decodecontractinfo", arr) =>
       withValidServerCommand(DecodeContractInfo.fromJsArr(arr)) {
         case DecodeContractInfo(contractInfo) =>

@@ -1535,6 +1535,8 @@ sealed trait NegotiationFieldsTLV extends DLCSetupPieceTLV
 
 object NegotiationFieldsTLV extends TLVParentFactory[NegotiationFieldsTLV] {
 
+  final val empty: NoNegotiationFieldsTLV.type = NoNegotiationFieldsTLV
+
   override val allFactories: Vector[TLVFactory[NegotiationFieldsTLV]] =
     Vector(NoNegotiationFieldsTLVFactory, NegotiationFieldsV1TLV)
 

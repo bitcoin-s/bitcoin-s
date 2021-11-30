@@ -7,9 +7,10 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.hd.AddressType
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt16, UInt32, UInt64}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
@@ -123,8 +124,142 @@ object Picklers {
   implicit val lnMessageDLCOfferTLVPickler: ReadWriter[LnMessage[DLCOfferTLV]] =
     readwriter[String].bimap(_.hex, LnMessageFactory(DLCOfferTLV).fromHex)
 
-  implicit val dlcAcceptTLVPickler: ReadWriter[DLCAcceptTLV] =
-    readwriter[String].bimap(_.hex, DLCAcceptTLV.fromHex)
+  private def parseU64(str: ujson.Str): UInt64 = {
+    UInt64(BigInt(str.str))
+  }
+
+  private def parseFundingInput(obj: ujson.Obj): FundingInputTLV = {
+    val inputSerialId = parseU64(obj(PicklerKeys.inputSerialIdKey).str)
+    val prevTx = Transaction.fromHex(obj(PicklerKeys.prevTxKey).str)
+    val prevTxVout = obj(PicklerKeys.prevTxVoutKey).num.toLong
+    val sequence = UInt32(obj(PicklerKeys.sequenceKey).num.toLong)
+    val maxWitnessLen = UInt16(obj(PicklerKeys.maxWitnessLenKey).num.toLong)
+    val redeemScriptStr = obj(PicklerKeys.redeemScriptKey).str
+    val redeemScriptOpt = if (redeemScriptStr.nonEmpty) {
+      val spk =
+        WitnessScriptPubKey.fromAsmHex(obj(PicklerKeys.redeemScriptKey).str)
+      Some(spk)
+    } else {
+      None
+    }
+
+    FundingInputV0TLV(
+      inputSerialId,
+      prevTx,
+      UInt32(prevTxVout),
+      sequence,
+      maxWitnessLen,
+      redeemScriptOpt
+    )
+  }
+
+  private def parseFundingInputs(arr: ujson.Arr): Vector[FundingInputTLV] = {
+    arr.value.toVector.map {
+      case inputObj: ujson.Obj =>
+        parseFundingInput(inputObj)
+      case x: ujson.Value =>
+        sys.error(s"Expected obj, got=$x")
+    }
+  }
+
+  private def parseCetAdaptorSignatures(obj: ujson.Obj): CETSignaturesTLV = {
+    val ecAdaptorSignaturesArr = obj(PicklerKeys.ecdsaAdaptorSignaturesKey).arr
+    val adaptorSigs = parseAdaptorSignatures(ecAdaptorSignaturesArr)
+    CETSignaturesV0TLV(adaptorSigs)
+  }
+
+  private def parseAdaptorSignatures(
+      arr: ujson.Arr): Vector[ECAdaptorSignature] = {
+    arr.value.toVector.map {
+      case obj: ujson.Obj =>
+        ECAdaptorSignature.fromHex(obj(PicklerKeys.signatureKey).str)
+      case x: ujson.Value =>
+        sys.error(s"Excpected string for ecdsa adaptor siganture, got obj=$x")
+    }
+  }
+
+  private def writeAdaptorSignatures(
+      sigs: Vector[ECAdaptorSignature]): Vector[ujson.Obj] = {
+    sigs.map { sig =>
+      ujson.Obj(PicklerKeys.signatureKey -> Str(sig.hex))
+    }
+  }
+
+  private def writeCetAdaptorSigs(
+      cetSignaturesTLV: CETSignaturesTLV): ujson.Obj = {
+    cetSignaturesTLV match {
+      case v0: CETSignaturesV0TLV =>
+        val sigsVec = writeAdaptorSignatures(v0.sigs)
+        ujson.Obj(
+          PicklerKeys.ecdsaAdaptorSignaturesKey -> ujson.Arr.from(sigsVec))
+    }
+  }
+
+  private def readAcceptTLV(obj: ujson.Obj): DLCAcceptTLV = {
+    val tempContractId =
+      Sha256Digest.fromHex(obj(PicklerKeys.temporaryContractIdKey).str)
+    val acceptCollateral = Satoshis(
+      obj(PicklerKeys.acceptCollateralKey).num.toLong)
+    val fundingPubKey =
+      ECPublicKey.fromHex(obj(PicklerKeys.fundingPubKeyKey).str)
+    val payoutSpk = ScriptPubKey.fromAsmHex(obj(PicklerKeys.payoutSpkKey).str)
+    val payoutSerialId = parseU64(obj(PicklerKeys.payoutSerialIdKey).str)
+    val fundingInputs = parseFundingInputs(
+      obj(PicklerKeys.fundingInputsKey).arr)
+    val changeSpk = ScriptPubKey.fromAsmHex(obj(PicklerKeys.changeSpkKey).str)
+    val changeSerialId = parseU64(obj(PicklerKeys.changeSerialIdKey).str)
+    val cetAdaptorSigs = parseCetAdaptorSignatures(
+      obj(PicklerKeys.cetAdaptorSignaturesKey).obj)
+    val refundSignature =
+      ECDigitalSignature.fromHex(obj(PicklerKeys.refundSignatureKey).str)
+    val negotiationFields = {
+      obj(PicklerKeys.negotiationFieldsKey).strOpt match {
+        case Some(str) =>
+          sys.error(s"Don't know how to parse negotiation fields, got=$str")
+        case None => NegotiationFieldsTLV.empty
+      }
+    }
+
+    val acceptTLV = DLCAcceptTLV(
+      tempContractId = tempContractId,
+      totalCollateralSatoshis = acceptCollateral,
+      fundingPubKey = fundingPubKey,
+      payoutSPK = payoutSpk,
+      payoutSerialId = payoutSerialId,
+      fundingInputs = fundingInputs,
+      changeSPK = changeSpk,
+      changeSerialId = changeSerialId,
+      cetSignatures = cetAdaptorSigs,
+      refundSignature = refundSignature,
+      negotiationFields = negotiationFields
+    )
+
+    acceptTLV
+  }
+
+  private def writeAcceptTLV(accept: DLCAcceptTLV): ujson.Obj = {
+    Obj(
+      PicklerKeys.tempContractIdKey -> Str(accept.tempContractId.hex),
+      PicklerKeys.acceptCollateralKey -> Num(
+        accept.totalCollateralSatoshis.toLong.toDouble),
+      PicklerKeys.fundingPubKeyKey -> Str(accept.fundingPubKey.hex),
+      PicklerKeys.payoutSpkKey -> Str(accept.payoutSPK.asmHex),
+      PicklerKeys.payoutSerialIdKey -> Str(
+        accept.payoutSerialId.toBigInt.toString()),
+      PicklerKeys.fundingInputsKey -> writeJs(accept.fundingInputs),
+      PicklerKeys.changeSpkKey -> Str(accept.changeSPK.asmHex),
+      PicklerKeys.changeSerialIdKey -> Str(
+        accept.changeSerialId.toBigInt.toString()),
+      PicklerKeys.cetAdaptorSignaturesKey -> writeCetAdaptorSigs(
+        accept.cetSignatures),
+      PicklerKeys.refundSignatureKey -> Str(accept.refundSignature.hex),
+      PicklerKeys.negotiationFieldsKey -> ujson.Null
+    )
+  }
+
+  implicit val dlcAcceptTLVPickler: ReadWriter[DLCAcceptTLV] = {
+    readwriter[ujson.Obj].bimap(writeAcceptTLV, readAcceptTLV)
+  }
 
   implicit val lnMessageDLCAcceptTLVPickler: ReadWriter[
     LnMessage[DLCAcceptTLV]] =
@@ -227,11 +362,11 @@ object Picklers {
 
       val redeemScriptJson = redeemScriptOpt match {
         case Some(rs) => Str(rs.hex)
-        case None     => ujson.Null
+        case None     => Str("")
       }
 
       Obj(
-        "inputSerialId" -> Num(inputSerialId.toBigInt.toDouble),
+        "inputSerialId" -> Str(inputSerialId.toBigInt.toString()),
         "prevTx" -> Str(prevTx.hex),
         "prevTxVout" -> Num(prevTxVout.toLong.toDouble),
         "sequence" -> Num(sequence.toLong.toDouble),
@@ -433,7 +568,7 @@ object Picklers {
           totalCollateralSatoshis.toLong.toDouble),
         "fundingInputs" -> fundingInputs.map(i => writeJs(i)),
         "changeSPK" -> Str(changeSPK.hex),
-        "changeSerialId" -> Num(changeSerialId.toBigInt.toDouble),
+        "changeSerialId" -> Str(changeSerialId.toBigInt.toString()),
         "fundOutputSerialId" -> Num(fundOutputSerialId.toBigInt.toDouble),
         "feeRatePerVb" -> Num(feeRate.toLong.toDouble),
         "cetLocktime" -> Num(contractMaturityBound.toUInt32.toLong.toDouble),

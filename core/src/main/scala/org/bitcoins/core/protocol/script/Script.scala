@@ -32,4 +32,5 @@ abstract class Script extends NetworkElement {
   /** The full byte serialization for a script on the network */
   override val bytes: ByteVector = compactSizeUInt.bytes ++ asmBytes
 
+  lazy val asmHex: String = asmBytes.toHex
 }
