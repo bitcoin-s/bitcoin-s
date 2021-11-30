@@ -19,7 +19,6 @@ import org.bitcoins.dlc.wallet.models.{
   DLCRefundSigsDAO,
   DLCRefundSigsDb
 }
-import slick.dbio.{DBIO, DBIOAction, Effect, NoStream}
 
 import scala.concurrent.ExecutionContext
 
@@ -34,6 +33,9 @@ case class DLCActionBuilder(
     dlcSigsDAO: DLCCETSignaturesDAO,
     dlcRefundSigDAO: DLCRefundSigsDAO) {
 
+  //idk if it matters which profile api i import, but i need access to transactionally
+  import dlcDAO.profile.api._
+
   /** Builds an offer in our database, adds relevant information to the global table,
     * contract data, announcements, funding inputs, and the actual offer itself
     */
@@ -42,8 +44,10 @@ case class DLCActionBuilder(
       contractDataDb: DLCContractDataDb,
       dlcAnnouncementDbs: Vector[DLCAnnouncementDb],
       dlcInputs: Vector[DLCFundingInputDb],
-      dlcOfferDb: DLCOfferDb)(implicit
-      ec: ExecutionContext): DBIOAction[Unit, NoStream, Effect.Write] = {
+      dlcOfferDb: DLCOfferDb)(implicit ec: ExecutionContext): DBIOAction[
+    Unit,
+    NoStream,
+    Effect.Write with Effect.Transactional] = {
     val globalAction = dlcDAO.createAction(dlcDb)
     val contractAction = contractDataDAO.createAction(contractDataDb)
     val announcementAction =
@@ -58,6 +62,7 @@ case class DLCActionBuilder(
     val allActions = DBIO
       .sequence(actions)
       .map(_ => ())
+      .transactionally
     allActions
   }
 
@@ -70,8 +75,10 @@ case class DLCActionBuilder(
       offerInputs: Vector[DLCFundingInputDb],
       acceptInputs: Vector[DLCFundingInputDb],
       cetSigsDb: Vector[DLCCETSignaturesDb],
-      refundSigsDb: DLCRefundSigsDb)(implicit
-      ec: ExecutionContext): DBIOAction[Unit, NoStream, Effect.Write] = {
+      refundSigsDb: DLCRefundSigsDb)(implicit ec: ExecutionContext): DBIOAction[
+    Unit,
+    NoStream,
+    Effect.Write with Effect.Transactional] = {
     val inputAction = dlcInputsDAO.createAllAction(offerInputs ++ acceptInputs)
     val offerAction = dlcOfferDAO.createAction(dlcOfferDb)
     val acceptAction = dlcAcceptDAO.createAction(dlcAcceptDb)
@@ -86,6 +93,7 @@ case class DLCActionBuilder(
     val allActions = DBIO
       .sequence(actions)
       .map(_ => ())
+      .transactionally
     allActions
   }
 
@@ -93,7 +101,10 @@ case class DLCActionBuilder(
     * This removes references to the dlc in our various tables
     */
   def deleteDLCAction(dlcId: Sha256Digest)(implicit
-      ec: ExecutionContext): DBIOAction[Unit, NoStream, Effect.Write] = {
+      ec: ExecutionContext): DBIOAction[
+    Unit,
+    NoStream,
+    Effect.Write with Effect.Transactional] = {
     val deleteSigA = dlcSigsDAO.deleteByDLCIdAction(dlcId)
     val deleteRefundSigA = dlcRefundSigDAO.deleteByDLCIdAction(dlcId)
     val deleteInputSigA = dlcInputsDAO.deleteByDLCIdAction(dlcId)
@@ -114,7 +125,7 @@ case class DLCActionBuilder(
       _ <- deleteDlcA
     } yield ()
 
-    action
+    action.transactionally
   }
 
   /** Retrieves a DBIOAction that fetches the global dlc db,
