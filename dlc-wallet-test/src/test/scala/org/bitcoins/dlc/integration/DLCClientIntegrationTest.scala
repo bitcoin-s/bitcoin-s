@@ -255,10 +255,10 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
           )
       }
 
+      val params =
+        EnumContractParams(numOutcomes, oracleThreshold = 1, numOracles = 1)
       constructEnumDLCClients(
-        numOutcomes,
-        oracleThreshold = 1,
-        numOracles = 1,
+        params,
         localFundingPrivKey,
         localPayoutPrivKey,
         remoteFundingPrivKey,
@@ -362,7 +362,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest with DLCTest {
         constructAndSetupDLC(numOutcomes)
 
       oracleSig = genEnumOracleSignature(
-        offerDLC.offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
+        offerDLC.offer.oracleInfos.head.asInstanceOf[EnumSingleOracleInfo],
         outcomes(outcomeIndex).outcome)
 
       (unilateralDLC, unilateralSetup, otherDLC, otherSetup) = {

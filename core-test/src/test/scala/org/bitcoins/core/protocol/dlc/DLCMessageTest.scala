@@ -48,7 +48,7 @@ class DLCMessageTest extends BitcoinSJvmTest {
     assertThrows[IllegalArgumentException](
       DLCOffer(
         protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
-        contractInfo = ContractInfo.dummy,
+        contractInfo = SingleContractInfo.dummy,
         pubKeys = DLCPublicKeys(dummyPubKey, dummyAddress),
         totalCollateral = Satoshis(-1),
         fundingInputs = Vector.empty,
@@ -65,7 +65,7 @@ class DLCMessageTest extends BitcoinSJvmTest {
     assertThrows[IllegalArgumentException](
       DLCOffer(
         protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
-        contractInfo = ContractInfo.dummy,
+        contractInfo = SingleContractInfo.dummy,
         pubKeys = DLCPublicKeys(dummyPubKey, dummyAddress),
         totalCollateral = Satoshis(-1),
         fundingInputs = Vector.empty,

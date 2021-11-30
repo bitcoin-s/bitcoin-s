@@ -134,12 +134,8 @@ object BroadcastDLCDialog
       }
       vbox.children.add(gridPane)
 
-      val (oracleKey, eventId) = status.contractInfo.oracleInfo.toTLV match {
-        case OracleInfoV0TLV(announcement) =>
-          (announcement.publicKey.hex, announcement.eventTLV.eventId)
-        case _: MultiOracleInfoTLV =>
-          throw new RuntimeException("This is impossible.")
-      }
+      val (oracleKey, eventId) =
+        GUIUtil.getOraclePubKeyEventId(status.contractInfo.toTLV)
 
       gridPane.add(new Label("Event Id"), 0, nextRow)
       gridPane.add(
@@ -156,7 +152,7 @@ object BroadcastDLCDialog
       gridPane.add(new Label("Oracle Public Key"), 0, nextRow)
       gridPane.add(
         new TextField() {
-          text = oracleKey
+          text = oracleKey.hex
           editable = false
         },
         1,
@@ -182,56 +178,62 @@ object BroadcastDLCDialog
                    nextRow)
       nextRow += 1
 
-      status.contractInfo.contractDescriptor.toTLV match {
-        case v0: ContractDescriptorV0TLV =>
-          gridPane.add(new Label("Potential Outcome"), 0, nextRow)
-          gridPane.add(new Label("Payouts"), 1, nextRow)
-          nextRow += 1
+      status.contractInfo match {
+        case singleContractInfo: SingleContractInfo =>
+          singleContractInfo.contractDescriptor.toTLV match {
+            case v0: ContractDescriptorV0TLV =>
+              gridPane.add(new Label("Potential Outcome"), 0, nextRow)
+              gridPane.add(new Label("Payouts"), 1, nextRow)
+              nextRow += 1
 
-          val descriptor = EnumContractDescriptor
-            .fromTLV(v0)
-            .flip(status.totalCollateral.satoshis)
+              val descriptor = EnumContractDescriptor
+                .fromTLV(v0)
+                .flip(status.totalCollateral.satoshis)
 
-          descriptor.foreach { case (str, satoshis) =>
-            gridPane.add(new TextField() {
-                           text = str.outcome
-                           editable = false
-                         },
-                         0,
-                         nextRow)
-            gridPane.add(new TextField() {
-                           text = satoshis.toString
-                           editable = false
-                         },
-                         1,
-                         nextRow)
-            nextRow += 1
-          }
-        case v1: ContractDescriptorV1TLV =>
-          val previewGraphButton: Button = new Button("Preview Graph") {
-            onAction = _ => {
-              val descriptor = NumericContractDescriptor.fromTLV(v1)
-              val payoutCurve = if (status.isInitiator) {
-                descriptor.outcomeValueFunc
-              } else {
-                descriptor
-                  .flip(status.totalCollateral.satoshis)
-                  .outcomeValueFunc
+              descriptor.foreach { case (str, satoshis) =>
+                gridPane.add(new TextField() {
+                               text = str.outcome
+                               editable = false
+                             },
+                             0,
+                             nextRow)
+                gridPane.add(new TextField() {
+                               text = satoshis.toString
+                               editable = false
+                             },
+                             1,
+                             nextRow)
+                nextRow += 1
+              }
+            case v1: ContractDescriptorV1TLV =>
+              val previewGraphButton: Button = new Button("Preview Graph") {
+                onAction = _ => {
+                  val descriptor = NumericContractDescriptor.fromTLV(v1)
+                  val payoutCurve = if (status.isInitiator) {
+                    descriptor.outcomeValueFunc
+                  } else {
+                    descriptor
+                      .flip(status.totalCollateral.satoshis)
+                      .outcomeValueFunc
+                  }
+
+                  DLCPlotUtil.plotCETs(base = 2,
+                                       descriptor.numDigits,
+                                       payoutCurve,
+                                       status.contractInfo.totalCollateral,
+                                       descriptor.roundingIntervals,
+                                       None)
+                  ()
+                }
               }
 
-              DLCPlotUtil.plotCETs(base = 2,
-                                   descriptor.numDigits,
-                                   payoutCurve,
-                                   status.contractInfo.totalCollateral,
-                                   descriptor.roundingIntervals,
-                                   None)
-              ()
-            }
+              gridPane.add(new Label("Payout Function"), 0, nextRow)
+              gridPane.add(previewGraphButton, 1, nextRow)
+              nextRow += 1
           }
-
-          gridPane.add(new Label("Payout Function"), 0, nextRow)
-          gridPane.add(previewGraphButton, 1, nextRow)
-          nextRow += 1
+        case _: DisjointUnionContractInfo =>
+          sys.error(
+            s"Disjoint union contract is not supported in the broadcast dialog")
       }
 
       gridPane.add(new Label("Fee Rate"), 0, nextRow)

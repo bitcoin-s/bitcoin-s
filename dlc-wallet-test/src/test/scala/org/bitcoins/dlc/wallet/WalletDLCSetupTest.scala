@@ -46,7 +46,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       _ = {
         assert(find1.isDefined)
         assert(dlcA1Opt.get.state == DLCState.Offered)
-        assert(offer.oracleInfo == offerData.oracleInfo)
+        assert(offer.oracleInfos == offerData.oracleInfos)
         assert(offer.contractInfo == offerData.contractInfo)
         assert(offer.totalCollateral == offerData.totalCollateral)
         assert(offer.feeRate == offerData.feeRate)
@@ -152,7 +152,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         ContractOraclePair.EnumPair(EnumContractDescriptor(outcomes),
                                     sampleOracleInfo)
 
-      val contractInfo: ContractInfo = ContractInfo(totalCol, oraclePair)
+      val contractInfo: ContractInfo = SingleContractInfo(totalCol, oraclePair)
 
       val offerData =
         sampleDLCOffer.copy(contractInfo = contractInfo,
@@ -209,7 +209,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         ContractOraclePair.EnumPair(EnumContractDescriptor(outcomes),
                                     sampleOracleInfo)
 
-      val contractInfo: ContractInfo = ContractInfo(totalCol, oraclePair)
+      val contractInfo: ContractInfo = SingleContractInfo(totalCol, oraclePair)
 
       val offerData =
         sampleDLCOffer.copy(contractInfo = contractInfo,
@@ -270,7 +270,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ = {
           assert(dlcA1Opt.isDefined)
           assert(dlcA1Opt.get.state == DLCState.Offered)
-          assert(offer.oracleInfo == offerData.oracleInfo)
+          assert(offer.oracleInfos == offerData.oracleInfos)
           assert(offer.contractInfo == offerData.contractInfo)
           assert(offer.totalCollateral == offerData.totalCollateral)
           assert(offer.feeRate == offerData.feeRate)
@@ -495,7 +495,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
 
       val announcementTLVs =
-        offerData.contractInfo.oracleInfo.singleOracleInfos.map(_.announcement)
+        offerData.contractInfo.oracleInfos.head.singleOracleInfos
+          .map(_.announcement)
       assert(announcementTLVs.size == 1)
       val announcementTLV = announcementTLVs.head
 
@@ -710,7 +711,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       val offerData = DLCOffer(
         DLCOfferTLV.currentVersionOpt,
-        ContractInfo(contractDescriptor, oracleInfo),
+        SingleContractInfo(contractDescriptor, oracleInfo),
         dummyDLCKeys,
         Satoshis(5000),
         Vector(dummyFundingInputs.head),
@@ -736,7 +737,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractTimeout.toUInt32
         )
         _ = {
-          assert(offer.oracleInfo == offerData.oracleInfo)
+          assert(offer.oracleInfos == offerData.oracleInfos)
           assert(offer.contractInfo == offerData.contractInfo)
           assert(offer.totalCollateral == offerData.totalCollateral)
           assert(offer.feeRate == offerData.feeRate)

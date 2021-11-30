@@ -5,9 +5,9 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.protocol.dlc.models.{
-  ContractInfo,
   EnumSingleOracleInfo,
-  NumericSingleOracleInfo
+  NumericSingleOracleInfo,
+  SingleContractInfo
 }
 import org.bitcoins.core.protocol.tlv.{
   EnumEventDescriptorV0TLV,
@@ -50,9 +50,9 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
                 case _: EnumEventDescriptorV0TLV =>
                   EnumSingleOracleInfo(create.announcementTLV)
               }
-            val contractInfo = ContractInfo(create.totalCollateral,
-                                            create.contractDescriptor,
-                                            oracleInfo)
+            val contractInfo = SingleContractInfo(create.totalCollateral,
+                                                  create.contractDescriptor,
+                                                  oracleInfo)
             Server.httpSuccess(contractInfo.hex)
           }
       }

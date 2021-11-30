@@ -3,7 +3,11 @@ package org.bitcoins.dlc.wallet
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCOffer
-import org.bitcoins.core.protocol.dlc.models.DLCState
+import org.bitcoins.core.protocol.dlc.models.{
+  DLCState,
+  DisjointUnionContractInfo,
+  SingleContractInfo
+}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.{
   Claimed,
   Refunded,
@@ -95,7 +99,15 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     for {
       contractId <- getContractId(wallets._1.wallet)
       status <- getDLCStatus(wallets._1.wallet)
-      (sig, _) = getSigs(status.contractInfo)
+      (sig, _) = {
+        status.contractInfo match {
+          case single: SingleContractInfo =>
+            DLCWalletUtil.getSigs(single)
+          case disjoint: DisjointUnionContractInfo =>
+            sys.error(
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+        }
+      }
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
       result <- dlcExecutionTest(wallets = wallets,
@@ -131,7 +143,15 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     for {
       contractId <- getContractId(wallets._1.wallet)
       status <- getDLCStatus(wallets._2.wallet)
-      (_, sig) = getSigs(status.contractInfo)
+      (_, sig) = {
+        status.contractInfo match {
+          case single: SingleContractInfo =>
+            DLCWalletUtil.getSigs(single)
+          case disjoint: DisjointUnionContractInfo =>
+            sys.error(
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+        }
+      }
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
       result <- dlcExecutionTest(wallets = wallets,
@@ -171,7 +191,15 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     for {
       contractId <- getContractId(wallet)
       status <- getDLCStatus(wallet)
-      (sig, _) = getSigs(status.contractInfo)
+      (sig, _) = {
+        status.contractInfo match {
+          case single: SingleContractInfo =>
+            DLCWalletUtil.getSigs(single)
+          case disjoint: DisjointUnionContractInfo =>
+            sys.error(
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+        }
+      }
 
       tx1 <- wallet.executeDLC(contractId, sig)
       tx2 <- wallet.executeDLC(contractId, sig)
@@ -185,7 +213,15 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       contractId <- getContractId(wallets._1.wallet)
       status <- getDLCStatus(dlcA)
       // use dlcB winning sigs
-      (_, sig) = getSigs(status.contractInfo)
+      (_, sig) = {
+        status.contractInfo match {
+          case single: SingleContractInfo =>
+            DLCWalletUtil.getSigs(single)
+          case disjoint: DisjointUnionContractInfo =>
+            sys.error(
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+        }
+      }
 
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
@@ -354,7 +390,15 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       for {
         contractId <- getContractId(walletA)
         status <- getDLCStatus(walletB)
-        (_, sig) = getSigs(status.contractInfo)
+        (_, sig) = {
+          status.contractInfo match {
+            case single: SingleContractInfo =>
+              DLCWalletUtil.getSigs(single)
+            case disjoint: DisjointUnionContractInfo =>
+              sys.error(
+                s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+          }
+        }
         func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
 
         result <- dlcExecutionTest(wallets = wallets,

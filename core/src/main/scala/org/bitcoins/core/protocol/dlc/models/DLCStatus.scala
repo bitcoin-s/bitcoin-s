@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
   DLCOffer,
   DLCSign
 }
+import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
 import org.bitcoins.core.protocol.transaction.WitnessTransaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto._
@@ -24,12 +25,20 @@ sealed trait DLCStatus {
   def lastUpdated: Instant
   def tempContractId: Sha256Digest
   def contractInfo: ContractInfo
-  def oracleInfo: OracleInfo = contractInfo.oracleInfo
+  def oracleInfos: Vector[OracleInfo] = contractInfo.oracleInfos
   def timeouts: DLCTimeouts
   def feeRate: FeeUnit
   def totalCollateral: CurrencyUnit
   def localCollateral: CurrencyUnit
   def remoteCollateral: CurrencyUnit = totalCollateral - localCollateral
+
+  lazy val announcements: Vector[OracleAnnouncementTLV] = {
+    oracleInfos.flatMap(_.singleOracleInfos.map(_.announcement))
+  }
+
+  lazy val eventIds: Vector[String] = {
+    announcements.map(_.eventTLV.eventId)
+  }
 
   lazy val statusString: String = state.toString
 }

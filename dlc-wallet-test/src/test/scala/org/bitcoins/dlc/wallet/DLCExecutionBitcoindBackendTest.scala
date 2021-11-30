@@ -1,6 +1,11 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.core.protocol.dlc.models.{DLCState, DLCStatus}
+import org.bitcoins.core.protocol.dlc.models.{
+  DLCState,
+  DLCStatus,
+  DisjointUnionContractInfo,
+  SingleContractInfo
+}
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
@@ -60,7 +65,15 @@ class DLCExecutionBitcoindBackendTest
         contractInfo = broadcastB.contractInfo
         contractId = broadcastB.contractId
         dlcId = broadcastB.dlcId
-        (oracleSigs, _) = DLCWalletUtil.getSigs(contractInfo)
+        (oracleSigs, _) = {
+          contractInfo match {
+            case single: SingleContractInfo =>
+              DLCWalletUtil.getSigs(single)
+            case disjoint: DisjointUnionContractInfo =>
+              sys.error(
+                s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+          }
+        }
         closingTx <- dlcB.executeDLC(contractId, oracleSigs)
         //broadcast the closing tx
         _ <- dlcB.broadcastTransaction(closingTx)

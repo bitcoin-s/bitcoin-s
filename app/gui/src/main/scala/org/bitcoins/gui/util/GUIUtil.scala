@@ -4,7 +4,13 @@ import javafx.beans.value.ObservableValue
 import org.bitcoins.commons.jsonmodels.ExplorerEnv
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.protocol.BlockTimeStamp
-import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
+import org.bitcoins.core.protocol.tlv.{
+  ContractInfoTLV,
+  ContractInfoV0TLV,
+  ContractInfoV1TLV,
+  OracleAnnouncementTLV
+}
+import org.bitcoins.crypto.SchnorrPublicKey
 import org.bitcoins.gui.{GUI, GlobalData}
 import scalafx.beans.property.StringProperty
 import scalafx.scene.control.{Button, TextField, Tooltip}
@@ -194,4 +200,16 @@ object GUIUtil {
   val logoTestnet = new Image("/icons/bitcoin-s-testnet.png")
   val logoSignet = new Image("/icons/bitcoin-s-signet.png")
   val logoRegtest = new Image("/icons/bitcoin-s-regtest.png")
+
+  def getOraclePubKeyEventId(
+      contractInfo: ContractInfoTLV): (SchnorrPublicKey, String) = {
+    contractInfo match {
+      case ContractInfoV0TLV(_, _, oracleInfo) =>
+        (oracleInfo.announcements.head.publicKey,
+         oracleInfo.announcements.head.eventTLV.eventId)
+      case ContractInfoV1TLV(_, contractOraclePairs) =>
+        (contractOraclePairs.head._2.announcements.head.publicKey,
+         contractOraclePairs.head._2.announcements.head.eventTLV.eventId)
+    }
+  }
 }

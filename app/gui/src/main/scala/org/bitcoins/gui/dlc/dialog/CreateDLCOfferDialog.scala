@@ -561,6 +561,14 @@ class CreateDLCOfferDialog
       UInt32(instant.getEpochSecond)
     }
 
+    val inputs = fields.values.flatMap { case (str, value) =>
+      if (str.text.value.nonEmpty && value.text.value.nonEmpty) {
+        val amount =
+          numberFormatter.parse(value.text.value).longValue()
+        Some((str.text.value, amount))
+      } else None
+    }
+
     val contractInfo = oracleInfo match {
       case oracleInfo: EnumOracleInfo =>
         val missingOutcomes = fields.values.filter(_._2.text.value.isEmpty)
@@ -570,27 +578,27 @@ class CreateDLCOfferDialog
             s"You missed outcomes $missing. Please enter payouts for these situations")
         }
 
-        val inputs = fields.values.flatMap { case (str, value) =>
-          if (str.text.value.nonEmpty && value.text.value.nonEmpty) {
-            val amount =
-              numberFormatter.parse(value.text.value).longValue()
-            Some((str.text.value, amount))
-          } else None
-        }
         val contractMap = inputs.map { case (str, value) =>
           EnumOutcome(str) -> Satoshis(value)
         }.toVector
 
         val descriptor = EnumContractDescriptor(contractMap)
 
-        ContractInfo(descriptor, oracleInfo).toTLV
+        SingleContractInfo(descriptor, oracleInfo).toTLV
       case oracleInfo: NumericOracleInfo =>
-        val (totalCol, numeric) = getNumericContractInfo(
-          decompOpt,
-          pointMap.toVector.sortBy(_._1).map(_._2),
-          roundingMap.toVector.sortBy(_._1).map(_._2))
+        val textFields: Vector[(TextField, TextField)] = {
+          roundingMap.toVector.sortBy(_._1).map(_._2)
+        }
+        val (totalCollateral, numericContractDescriptor) =
+          getNumericContractInfo(
+            decompOpt,
+            pointMap.toVector.sortBy(_._1).map(_._2),
+            textFields
+          )
 
-        ContractInfo(totalCol, numeric, oracleInfo).toTLV
+        SingleContractInfo(totalCollateral,
+                           numericContractDescriptor,
+                           oracleInfo).toTLV
     }
 
     CreateDLCOffer(

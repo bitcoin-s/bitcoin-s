@@ -54,8 +54,23 @@ object ViewDLCDialog {
   }
 
   def buildView(status: DLCStatus, model: DLCPaneModel) = {
+    status.contractInfo match {
+      case singleContractInfo: SingleContractInfo =>
+        buildGridPane(status, singleContractInfo, model)
+      case _: DisjointUnionContractInfo =>
+        sys.error(s"Disjoint union contracts are not supported")
+    }
+  }
+
+  private def buildGridPane(
+      status: DLCStatus,
+      singleContractInfo: SingleContractInfo,
+      model: DLCPaneModel) = {
+    require(status.contractInfo == singleContractInfo,
+            s"Conflicting contract infos")
     val closingTxId: StringProperty = StringProperty(
       DLCStatus.getClosingTxId(status).map(_.hex).getOrElse(""))
+
     new GridPane() {
       alignment = Pos.Center
       padding = Insets(10)
@@ -68,11 +83,7 @@ object ViewDLCDialog {
 
       row += 1
       add(getLabel("Event Id"), 0, row)
-      add(
-        getTextField(
-          status.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId),
-        columnIndex = 1,
-        rowIndex = row)
+      add(getTextField(status.eventIds.head), columnIndex = 1, rowIndex = row)
 
       row += 1
       add(getLabel("Initiator"), 0, row)
@@ -217,7 +228,7 @@ object ViewDLCDialog {
       // TODO : Refund button and discriminator
 
       row += 1
-      status.contractInfo.contractDescriptor match {
+      singleContractInfo.contractDescriptor match {
         case _: EnumContractDescriptor => ()
         case descriptor: NumericContractDescriptor =>
           val previewGraphButton: Button = new Button("Preview Graph") {

@@ -1,9 +1,9 @@
 package org.bitcoins.core.protocol.dlc.compute
 
 import org.bitcoins.core.protocol.dlc.models.{
-  ContractInfo,
   EnumContractDescriptor,
-  NumericContractDescriptor
+  NumericContractDescriptor,
+  SingleContractInfo
 }
 import org.bitcoins.core.protocol.tlv.{
   EnumOutcome,
@@ -121,7 +121,8 @@ object DLCAdaptorPointComputer {
   /** Efficiently computes all adaptor points, in order, for a given ContractInfo.
     * @see https://medium.com/crypto-garage/optimizing-numeric-outcome-dlc-creation-6d6091ac0e47
     */
-  def computeAdaptorPoints(contractInfo: ContractInfo): Vector[ECPublicKey] = {
+  def computeAdaptorPoints(
+      contractInfo: SingleContractInfo): Vector[ECPublicKey] = {
     // The possible messages a single nonce may be used to sign
     val possibleOutcomes: Vector[ByteVector] =
       contractInfo.contractDescriptor match {

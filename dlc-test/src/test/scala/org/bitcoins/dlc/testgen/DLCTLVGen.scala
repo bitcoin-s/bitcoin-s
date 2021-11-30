@@ -74,8 +74,7 @@ object DLCTLVGen {
                                          outcomes,
                                          totalInput)
 
-    //this doesn't ever try numeric contracts?
-    ContractInfo(totalInput.satoshis, pair)
+    SingleContractInfo(totalInput.satoshis, pair)
   }
 
   def contractInfoParsingTestVector(
@@ -403,7 +402,7 @@ object DLCTLVGen {
       cetSigs(
         offer.contractInfo.allOutcomes.map(
           _.asInstanceOf[EnumOracleOutcome].outcome),
-        offer.contractInfo.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
+        offer.contractInfo.oracleInfos.head.asInstanceOf[EnumSingleOracleInfo],
         fundingPubKey
       )
 
@@ -470,7 +469,7 @@ object DLCTLVGen {
       cetSigs(
         offer.contractInfo.allOutcomes.map(
           _.asInstanceOf[EnumOracleOutcome].outcome),
-        offer.oracleInfo.asInstanceOf[EnumSingleOracleInfo],
+        offer.oracleInfos.head.asInstanceOf[EnumSingleOracleInfo],
         offer.pubKeys.fundingKey
       )
     val fundingSignatures = fundingSigs(offer.fundingInputs.map(_.outPoint))

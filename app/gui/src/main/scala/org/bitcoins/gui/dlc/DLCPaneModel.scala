@@ -240,56 +240,61 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
   }
 
   def cancelDLC(status: DLCStatus): Unit = {
-    val eventId =
-      status.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
+    status.contractInfo match {
+      case _: SingleContractInfo =>
+        val eventId = status.eventIds.head
 
-    val confirmed = status.state match {
-      case DLCState.Offered | DLCState.Accepted =>
-        new Alert(AlertType.Confirmation) {
-          initOwner(owner)
-          headerText = "Confirm Canceling DLC"
-          contentText =
-            s"Are you sure you want to cancel this DLC for $eventId?\n" +
-              "This cannot be undone."
-        }.showAndWait() match {
-          case Some(ButtonType.OK) => true
-          case None | Some(_)      => false
+        val confirmed = status.state match {
+          case DLCState.Offered | DLCState.Accepted =>
+            new Alert(AlertType.Confirmation) {
+              initOwner(owner)
+              headerText = "Confirm Canceling DLC"
+              contentText =
+                s"Are you sure you want to cancel this DLC for $eventId?\n" +
+                  "This cannot be undone."
+            }.showAndWait() match {
+              case Some(ButtonType.OK) => true
+              case None | Some(_)      => false
+            }
+          case DLCState.Signed =>
+            new Alert(AlertType.Confirmation) {
+              initOwner(owner)
+              headerText = "Confirm Unsafe Canceling DLC"
+              contentText =
+                "Danger! If your counter-party has received your sign message then they will be able to execute the DLC even if you cancel!\n"
+              s"Are you sure you want to cancel this DLC for $eventId?\n" +
+                "This cannot be undone.\n"
+            }.showAndWait() match {
+              case Some(ButtonType.OK) => true
+              case None | Some(_)      => false
+            }
+          case DLCState.Broadcasted | DLCState.Confirmed | DLCState.Claimed |
+              DLCState.RemoteClaimed | DLCState.Refunded =>
+            new Alert(AlertType.Error) {
+              initOwner(owner)
+              headerText = "Failed to Cancel DLC"
+              contentText = "Cannot cancel a DLC after it has been signed"
+            }.showAndWait()
+            false
         }
-      case DLCState.Signed =>
-        new Alert(AlertType.Confirmation) {
-          initOwner(owner)
-          headerText = "Confirm Unsafe Canceling DLC"
-          contentText =
-            "Danger! If your counter-party has received your sign message then they will be able to execute the DLC even if you cancel!\n"
-          s"Are you sure you want to cancel this DLC for $eventId?\n" +
-            "This cannot be undone.\n"
-        }.showAndWait() match {
-          case Some(ButtonType.OK) => true
-          case None | Some(_)      => false
-        }
-      case DLCState.Broadcasted | DLCState.Confirmed | DLCState.Claimed |
-          DLCState.RemoteClaimed | DLCState.Refunded =>
-        new Alert(AlertType.Error) {
-          initOwner(owner)
-          headerText = "Failed to Cancel DLC"
-          contentText = "Cannot cancel a DLC after it has been signed"
-        }.showAndWait()
-        false
-    }
 
-    if (confirmed) {
-      taskRunner.run(
-        caption = "Canceling DLC",
-        op = {
-          ConsoleCli.exec(CancelDLC(status.dlcId),
-                          GlobalData.consoleCliConfig) match {
-            case Success(_)   => ()
-            case Failure(err) => throw err
-          }
-          updateDLCs()
-          Platform.runLater(GUI.model.updateBalance())
+        if (confirmed) {
+          taskRunner.run(
+            caption = "Canceling DLC",
+            op = {
+              ConsoleCli.exec(CancelDLC(status.dlcId),
+                              GlobalData.consoleCliConfig) match {
+                case Success(_)   => ()
+                case Failure(err) => throw err
+              }
+              updateDLCs()
+              Platform.runLater(GUI.model.updateBalance())
+            }
+          )
         }
-      )
+      case _: DisjointUnionContractInfo =>
+        sys.error(
+          s"Disjoint contract infos are not supported via the GUI, cannot cancel")
     }
   }
 
@@ -304,15 +309,24 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
               case Success(txId) =>
                 logger.info(s"Successfully rebroadcast funding tx " + txId)
                 // Looking for Event Hash in status, but don't see it
-                val announcementHash =
-                  status.oracleInfo.singleOracleInfos.head.announcement.sha256.hex
-                Platform.runLater(
-                  FundingTransactionDialog.show(
-                    parentWindow.value,
-                    txId,
-                    GUIUtil.epochToDateString(status.timeouts.contractTimeout),
-                    GlobalData.buildAnnouncementUrl(announcementHash),
-                    true))
+                status.contractInfo match {
+                  case single: SingleContractInfo =>
+                    val announcementHash =
+                      single.announcements.head.sha256.hex
+                    Platform.runLater(
+                      FundingTransactionDialog.show(
+                        parentWindow.value,
+                        txId,
+                        GUIUtil.epochToDateString(
+                          status.timeouts.contractTimeout),
+                        GlobalData.buildAnnouncementUrl(announcementHash),
+                        true))
+                  case disjointUnionContractInfo: DisjointUnionContractInfo =>
+                    sys.error(
+                      s"Don't know how to show correcit funding transaction dialog for" +
+                        s"disjoint union contracts, contracts=${disjointUnionContractInfo.contracts}")
+                }
+
               case Failure(err) => throw err
             }
           }

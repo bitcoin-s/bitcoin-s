@@ -20,9 +20,15 @@ class DLCTableView(model: DLCPaneModel) {
       text = "Event Id"
       prefWidth = 230
       cellValueFactory = { status =>
-        val eventIdStr =
-          status.value.oracleInfo.singleOracleInfos.head.announcement.eventTLV.eventId
-        new StringProperty(status, "Event Id", eventIdStr)
+        status.value.contractInfo match {
+          case _: SingleContractInfo =>
+            val eventIdStr =
+              status.value.eventIds.head
+            new StringProperty(status, "Event Id", eventIdStr)
+          case _: DisjointUnionContractInfo =>
+            sys.error(
+              s"Disjoint contracts are not supported via the GUI, cannot add to table")
+        }
       }
     }
 
@@ -163,7 +169,7 @@ class DLCTableView(model: DLCPaneModel) {
             onAction = _ => {
               val dlc = selectionModel.value.getSelectedItem
               val primaryOracle =
-                dlc.oracleInfo.singleOracleInfos.head.announcement
+                dlc.announcements.head
               val url =
                 GUIUtil.getAnnouncementUrl(GlobalData.network, primaryOracle)
               GUIUtil.openUrl(url)

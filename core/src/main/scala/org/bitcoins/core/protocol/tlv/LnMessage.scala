@@ -42,7 +42,8 @@ object LnMessage extends Factory[LnMessage[TLV]] {
       case unknown: UnknownTLV =>
         throw new IllegalArgumentException(s"Parsed unknown TLV $unknown")
       case _: DLCSetupTLV | _: DLCSetupPieceTLV | _: InitTLV | _: DLCOracleTLV |
-          _: ErrorTLV | _: PingTLV | _: PongTLV =>
+          _: ErrorTLV | _: PingTLV | _: PongTLV | _: ContractInfoV0TLV |
+          _: ContractInfoV1TLV =>
         ()
     }
 

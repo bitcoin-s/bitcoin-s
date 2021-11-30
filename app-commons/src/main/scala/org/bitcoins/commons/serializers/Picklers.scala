@@ -383,10 +383,41 @@ object Picklers {
     writer[Obj].comap { contractInfo =>
       import contractInfo._
 
-      Obj("totalCollateral" -> Num(totalCollateral.toLong.toDouble),
-          "contractDescriptor" -> writeJs(contractDescriptor),
-          "oracleInfo" -> writeJs(oracleInfo))
+      Obj(
+        PicklerKeys.totalCollateralKey -> writeJs(totalCollateral),
+        PicklerKeys.contractDescriptorKey -> writeJs(contractDescriptor),
+        PicklerKeys.oracleInfoKey -> writeJs(oracleInfo)
+      )
     }
+
+  val contractInfoV1TLVJsonWriter: Writer[ContractInfoV1TLV] = {
+    writer[Obj].comap { contractInfo =>
+      val arrayVec: Vector[ujson.Obj] = contractInfo.contractOraclePairs.map {
+        case (c, o) =>
+          val contractDescriptorJson = writeJs(c)
+          val oracleInfoJson = writeJs(o)
+          ujson.Obj(PicklerKeys.contractDescriptorKey -> contractDescriptorJson,
+                    PicklerKeys.oracleInfoKey -> oracleInfoJson)
+      }
+
+      val arrayJson = ujson.Arr.from(arrayVec)
+
+      Obj(
+        PicklerKeys.totalCollateralKey -> Num(
+          contractInfo.totalCollateral.toLong.toDouble),
+        PicklerKeys.pairsKey -> arrayJson
+      )
+    }
+  }
+
+  val contractInfoJsonWriter: Writer[ContractInfoTLV] = {
+    writer[ujson.Value].comap {
+      case contractInfoV0TLV: ContractInfoV0TLV =>
+        writeJs(contractInfoV0TLV)(contractInfoV0TLVJsonWriter)
+      case contractInfoV1TLV: ContractInfoV1TLV =>
+        writeJs(contractInfoV1TLV)(contractInfoV1TLVJsonWriter)
+    }
+  }
 
   implicit val offerTLVWriter: Writer[DLCOfferTLV] =
     writer[Obj].comap { offer =>
@@ -394,7 +425,7 @@ object Picklers {
       Obj(
         "contractFlags" -> Str(contractFlags.toHexString),
         "chainHash" -> Str(chainHash.hex),
-        "contractInfo" -> writeJs(contractInfo)(contractInfoV0TLVJsonWriter),
+        "contractInfo" -> writeJs(contractInfo)(contractInfoJsonWriter),
         "fundingPubKey" -> Str(fundingPubKey.hex),
         "payoutSPK" -> Str(payoutSPK.hex),
         "payoutSerialId" -> Num(payoutSerialId.toBigInt.toDouble),
