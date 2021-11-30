@@ -19,7 +19,7 @@ TaskKeys.downloadCLightning := {
     Files.createDirectories(binaryDir)
   }
 
-  val version = "0.10.1"
+  val version = "0.10.2"
 
   val (platform, suffix) =
     if (Properties.isLinux) ("Ubuntu-20.04", "tar.xz")
@@ -53,7 +53,7 @@ TaskKeys.downloadCLightning := {
 
     val expectedHash =
       if (Properties.isLinux)
-        "c99e1879e36f108e4c7d9bef597a4179e6c6b5b92b1142f2bc9e888cf0cf6ea6"
+        "de61bb1dec0f656e192f896de7dcb08f4b07cf9c2bdaef8c78d860cd80ea6776"
       else sys.error(s"Unsupported OS: ${Properties.osName}")
 
     if (hash.equalsIgnoreCase(expectedHash)) {

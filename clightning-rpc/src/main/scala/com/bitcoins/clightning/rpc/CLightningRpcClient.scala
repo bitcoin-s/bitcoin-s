@@ -346,7 +346,7 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
 object CLightningRpcClient {
 
   /** The current version we support of clightning */
-  val version = "0.10.1"
+  val version = "0.10.2"
 
   private[clightning] def feeRateToJson(feeUnit: FeeUnit): JsString = {
     // clightning only takes SatoshisPerKiloByte or SatoshisPerKW
