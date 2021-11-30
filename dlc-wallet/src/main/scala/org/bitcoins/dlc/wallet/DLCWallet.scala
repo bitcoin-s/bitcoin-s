@@ -29,7 +29,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.internal._
 import org.bitcoins.dlc.wallet.models._
-import org.bitcoins.dlc.wallet.util.DLCStatusBuilder
+import org.bitcoins.dlc.wallet.util.{DLCActionBuilder, DLCStatusBuilder}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
@@ -62,6 +62,19 @@ abstract class DLCWallet
   private[bitcoins] val dlcSigsDAO: DLCCETSignaturesDAO = DLCCETSignaturesDAO()
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
+
+  private lazy val actionBuilder: DLCActionBuilder = {
+    DLCActionBuilder(
+      dlcDAO = dlcDAO,
+      contractDataDAO = contractDataDAO,
+      dlcAnnouncementDAO = dlcAnnouncementDAO,
+      dlcInputsDAO = dlcInputsDAO,
+      dlcOfferDAO = dlcOfferDAO,
+      dlcAcceptDAO = dlcAcceptDAO,
+      dlcSigsDAO = dlcSigsDAO,
+      dlcRefundSigDAO = dlcRefundSigDAO
+    )
+  }
 
   private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
 
@@ -431,19 +444,15 @@ abstract class DLCWallet
       }
       _ = logger.info(
         s"Created offer with tempContractId ${offer.tempContractId.hex}")
-      globalAction = dlcDAO.createAction(dlcDb)
-      contractAction = contractDataDAO.createAction(contractDataDb)
-      announcementAction = dlcAnnouncementDAO.createAllAction(
-        dlcAnnouncementDbs)
-      inputsAction = dlcInputsDAO.createAllAction(dlcInputs)
-      offerAction = dlcOfferDAO.createAction(dlcOfferDb)
-      actions = Vector(globalAction,
-                       contractAction,
-                       announcementAction,
-                       inputsAction,
-                       offerAction)
-      allActions = DBIO.sequence(actions)
-      _ <- safeDatabase.run(allActions)
+
+      offerActions = actionBuilder.buildCreateOfferAction(
+        dlcDb = dlcDb,
+        contractDataDb = contractDataDb,
+        dlcAnnouncementDbs = dlcAnnouncementDbs,
+        dlcInputs = dlcInputs,
+        dlcOfferDb = dlcOfferDb)
+
+      _ <- safeDatabase.run(offerActions)
     } yield offer
   }
 
@@ -743,17 +752,14 @@ abstract class DLCWallet
                   "Offer and Accept have differing tempContractIds!")
 
       _ <- remoteTxDAO.upsertAll(offerPrevTxs)
-      inputAction = dlcInputsDAO.createAllAction(offerInputs ++ acceptInputs)
-      offerAction = dlcOfferDAO.createAction(dlcOfferDb)
-      acceptAction = dlcAcceptDAO.createAction(dlcAcceptDb)
-      sigsAction = dlcSigsDAO.createAllAction(sigsDbs)
-      refundSigAction = dlcRefundSigDAO.createAction(refundSigsDb)
-      actions = Vector(inputAction,
-                       offerAction,
-                       acceptAction,
-                       sigsAction,
-                       refundSigAction)
-      _ <- safeDatabase.run(DBIO.sequence(actions))
+      actions = actionBuilder.buildCreateAcceptAction(
+        dlcOfferDb = dlcOfferDb,
+        dlcAcceptDb = dlcAcceptDb,
+        offerInputs = offerInputs,
+        acceptInputs = acceptInputs,
+        cetSigsDb = sigsDbs,
+        refundSigsDb = refundSigsDb)
+      _ <- safeDatabase.run(actions)
       dlcDb <- updateDLCContractIds(offer, accept)
       _ = logger.info(
         s"Created DLCAccept for tempContractId ${offer.tempContractId.hex} with contract Id ${contractId.toHex}")
