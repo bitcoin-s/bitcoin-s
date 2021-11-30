@@ -13,10 +13,11 @@ import slick.lifted.{ForeignKeyQuery, ProvenShape}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCAcceptDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCAcceptDb, Sha256Digest]
-    with SlickUtil[DLCAcceptDb, Sha256Digest] {
+    with SlickUtil[DLCAcceptDb, Sha256Digest]
+    with DLCIdDaoUtil[DLCAcceptDb, Sha256Digest] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -44,23 +45,20 @@ case class DLCAcceptDAO()(implicit
       dlcs: Vector[DLCAcceptDb]): Query[DLCAcceptTable, DLCAcceptDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  def deleteByDLCId(dlcId: Sha256Digest): Future[Int] = {
+  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
+    Option[DLCAcceptDb],
+    profile.api.NoStream,
+    profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
-    safeDatabase.run(q.delete)
+    q.result.map(_.headOption)
   }
 
-  def findByDLCId(dlcId: Sha256Digest): Future[Option[DLCAcceptDb]] = {
+  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
+    Int,
+    profile.api.NoStream,
+    profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
-
-    safeDatabase.run(q.result).map {
-      case h +: Vector() =>
-        Some(h)
-      case Vector() =>
-        None
-      case dlcs: Vector[DLCAcceptDb] =>
-        throw new RuntimeException(
-          s"More than one DLCAccept per dlcId ($dlcId), got: $dlcs")
-    }
+    q.delete
   }
 
   class DLCAcceptTable(tag: Tag)

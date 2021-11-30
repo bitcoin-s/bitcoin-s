@@ -16,7 +16,7 @@ import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 case class EventDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCOracleAppConfig)
     extends CRUD[EventDb, SchnorrNonce]
     with SlickUtil[EventDb, SchnorrNonce] {

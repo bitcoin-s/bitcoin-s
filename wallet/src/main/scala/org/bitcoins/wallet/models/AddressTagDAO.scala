@@ -19,7 +19,7 @@ import slick.lifted.{PrimaryKey, ProvenShape}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class AddressTagDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: WalletAppConfig)
     extends CRUD[AddressTagDb, (BitcoinAddress, AddressTagType)]
     with SlickUtil[AddressTagDb, (BitcoinAddress, AddressTagType)] {

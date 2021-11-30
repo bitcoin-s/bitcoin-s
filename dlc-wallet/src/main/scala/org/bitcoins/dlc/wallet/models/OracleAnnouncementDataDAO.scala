@@ -10,7 +10,7 @@ import slick.lifted.ProvenShape
 import scala.concurrent.{ExecutionContext, Future}
 
 case class OracleAnnouncementDataDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUDAutoInc[OracleAnnouncementDataDb] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
@@ -40,6 +40,10 @@ case class OracleAnnouncementDataDAO()(implicit
     val query = table.filter(_.id.inSet(ids))
 
     safeDatabase.runVec(query.result)
+  }
+
+  def findById(id: Long): Future[Option[OracleAnnouncementDataDb]] = {
+    findByIds(Vector(id)).map(_.headOption)
   }
 
   class OracleAnnouncementsTable(tag: Tag)

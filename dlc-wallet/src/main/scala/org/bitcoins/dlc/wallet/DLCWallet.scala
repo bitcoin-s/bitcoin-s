@@ -26,12 +26,14 @@ import org.bitcoins.core.util.{FutureUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
+import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.internal._
 import org.bitcoins.dlc.wallet.models._
-import org.bitcoins.dlc.wallet.util.DLCStatusBuilder
+import org.bitcoins.dlc.wallet.util.{DLCActionBuilder, DLCStatusBuilder}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
+import slick.dbio.{DBIO, DBIOAction}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -60,6 +62,21 @@ abstract class DLCWallet
   private[bitcoins] val dlcSigsDAO: DLCCETSignaturesDAO = DLCCETSignaturesDAO()
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
+
+  protected lazy val actionBuilder: DLCActionBuilder = {
+    DLCActionBuilder(
+      dlcDAO = dlcDAO,
+      contractDataDAO = contractDataDAO,
+      dlcAnnouncementDAO = dlcAnnouncementDAO,
+      dlcInputsDAO = dlcInputsDAO,
+      dlcOfferDAO = dlcOfferDAO,
+      dlcAcceptDAO = dlcAcceptDAO,
+      dlcSigsDAO = dlcSigsDAO,
+      dlcRefundSigDAO = dlcRefundSigDAO
+    )
+  }
+
+  private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
 
   private def calcContractId(offer: DLCOffer, accept: DLCAccept): ByteVector = {
     val builder = DLCTxBuilder(offer, accept.withoutSigs)
@@ -266,15 +283,8 @@ abstract class DLCWallet
       dbs <- spendingInfoDAO.findByOutPoints(inputs.map(_.outPoint))
       // allow this to fail in the case they have already been unreserved
       _ <- unmarkUTXOsAsReserved(dbs).recover { case _: Throwable => () }
-
-      _ <- dlcSigsDAO.deleteByDLCId(dlcId)
-      _ <- dlcRefundSigDAO.deleteByDLCId(dlcId)
-      _ <- dlcInputsDAO.deleteByDLCId(dlcId)
-      _ <- dlcAcceptDAO.deleteByDLCId(dlcId)
-      _ <- dlcOfferDAO.deleteByDLCId(dlcId)
-      _ <- contractDataDAO.deleteByDLCId(dlcId)
-      _ <- dlcAnnouncementDAO.deleteByDLCId(dlcId)
-      _ <- dlcDAO.deleteByDLCId(dlcId)
+      action = actionBuilder.deleteDLCAction(dlcId)
+      _ <- safeDatabase.run(action)
     } yield ()
   }
 
@@ -416,10 +426,6 @@ abstract class DLCWallet
         contractTimeout = timeouts.contractTimeout,
         totalCollateral = contractInfo.totalCollateral
       )
-
-      _ <- dlcDAO.create(dlcDb)
-      _ <- contractDataDAO.create(contractDataDb)
-      _ <- dlcAnnouncementDAO.createAll(dlcAnnouncementDbs)
       dlcOfferDb = DLCOfferDbHelper.fromDLCOffer(dlcId, offer)
 
       dlcInputs = spendingInfos.zip(utxos).zipWithIndex.map {
@@ -437,11 +443,17 @@ abstract class DLCWallet
             witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
           )
       }
-
       _ = logger.info(
         s"Created offer with tempContractId ${offer.tempContractId.hex}")
-      _ <- dlcInputsDAO.createAll(dlcInputs)
-      _ <- dlcOfferDAO.create(dlcOfferDb)
+
+      offerActions = actionBuilder.buildCreateOfferAction(
+        dlcDb = dlcDb,
+        contractDataDb = contractDataDb,
+        dlcAnnouncementDbs = dlcAnnouncementDbs,
+        dlcInputs = dlcInputs,
+        dlcOfferDb = dlcOfferDb)
+
+      _ <- safeDatabase.run(offerActions)
     } yield offer
   }
 
@@ -506,15 +518,17 @@ abstract class DLCWallet
               totalCollateral = contractInfo.totalCollateral
             )
           }
-
           _ <- writeDLCKeysToAddressDb(account, chainType, nextIndex)
-          writtenDLC <- dlcDAO.create(dlc)
-          _ <- contractDataDAO.create(contractDataDb)
-
           groupedAnnouncements <- groupedAnnouncementsF
-          createdDbs <- announcementDAO.createAll(
+          writtenDLCAction = dlcDAO.createAction(dlc)
+          contractAction = contractDataDAO.createAction(contractDataDb)
+          createdDbsAction = announcementDAO.createAllAction(
             groupedAnnouncements.newAnnouncements)
-
+          zipped = writtenDLCAction.zip(createdDbsAction)
+          actions = zipped.flatMap { dlcDb =>
+            contractAction.map(_ => dlcDb)
+          }
+          (writtenDLC, createdDbs) <- safeDatabase.run(actions)
           announcementDataDbs =
             createdDbs ++ groupedAnnouncements.existingAnnouncements
 
@@ -530,7 +544,7 @@ abstract class DLCWallet
           }
           nonceDbs = OracleNonceDbHelper.fromAnnouncements(
             newAnnouncementsWithId)
-          _ <- oracleNonceDAO.createAll(nonceDbs)
+          createNonceAction = oracleNonceDAO.createAllAction(nonceDbs)
 
           dlcAnnouncementDbs = announcementDataDbs.zipWithIndex.map {
             case (a, index) =>
@@ -539,7 +553,11 @@ abstract class DLCWallet
                                 index = index,
                                 used = false)
           }
-          _ <- dlcAnnouncementDAO.createAll(dlcAnnouncementDbs)
+          createAnnouncementAction = dlcAnnouncementDAO.createAllAction(
+            dlcAnnouncementDbs)
+
+          _ <- safeDatabase.run(
+            DBIOAction.seq(createNonceAction, createAnnouncementAction))
         } yield (writtenDLC, account)
     }
   }
@@ -559,8 +577,8 @@ abstract class DLCWallet
     logger.debug(s"Checking if Accept (${dlcId.hex}) has already been made")
     for {
       (dlc, account) <- initDLCForAccept(offer)
-      dlcAcceptDbOpt <- dlcAcceptDAO.findByDLCId(dlcId)
-      dlcAccept <- dlcAcceptDbOpt match {
+      dlcAcceptDbs <- dlcAcceptDAO.findByDLCId(dlcId)
+      dlcAccept <- dlcAcceptDbs.headOption match {
         case Some(dlcAcceptDb) =>
           logger.debug(
             s"DLC Accept (${dlcId.hex}) has already been made, returning accept")
@@ -735,13 +753,15 @@ abstract class DLCWallet
                   "Offer and Accept have differing tempContractIds!")
 
       _ <- remoteTxDAO.upsertAll(offerPrevTxs)
-      _ <- dlcInputsDAO.createAll(offerInputs ++ acceptInputs)
-      _ <- dlcOfferDAO.create(dlcOfferDb)
-      _ <- dlcAcceptDAO.create(dlcAcceptDb)
-      _ <- dlcSigsDAO.createAll(sigsDbs)
-      _ <- dlcRefundSigDAO.create(refundSigsDb)
+      actions = actionBuilder.buildCreateAcceptAction(
+        dlcOfferDb = dlcOfferDb,
+        dlcAcceptDb = dlcAcceptDb,
+        offerInputs = offerInputs,
+        acceptInputs = acceptInputs,
+        cetSigsDb = sigsDbs,
+        refundSigsDb = refundSigsDb)
+      _ <- safeDatabase.run(actions)
       dlcDb <- updateDLCContractIds(offer, accept)
-
       _ = logger.info(
         s"Created DLCAccept for tempContractId ${offer.tempContractId.hex} with contract Id ${contractId.toHex}")
 
@@ -826,13 +846,14 @@ abstract class DLCWallet
             s"CET Signatures for tempContractId ${accept.tempContractId.hex} were valid, adding to database")
 
           _ <- remoteTxDAO.upsertAll(acceptPrevTxs)
-          _ <- dlcInputsDAO.createAll(acceptInputs)
-          _ <- dlcSigsDAO.createAll(sigsDbs)
+          inputAction = dlcInputsDAO.createAllAction(acceptInputs)
+          sigsAction = dlcSigsDAO.createAllAction(sigsDbs)
+          _ <- safeDatabase.run(DBIO.sequence(Vector(inputAction, sigsAction)))
           _ <- dlcRefundSigDAO.upsert(refundSigsDb)
           _ <- dlcAcceptDAO.upsert(dlcAcceptDb)
 
           // .get is safe here because we must have an offer if we have a dlcDAO
-          offerDb <- dlcOfferDAO.findByDLCId(dlc.dlcId).map(_.get)
+          offerDb <- dlcOfferDAO.findByDLCId(dlc.dlcId).map(_.head)
           offerInputs <-
             dlcInputsDAO.findByDLCId(dlc.dlcId, isInitiator = true)
           prevTxs <-
@@ -876,7 +897,9 @@ abstract class DLCWallet
       case (dlc, Some(_)) =>
         logger.debug(
           s"DLC Accept (${dlc.contractIdOpt.get.toHex}) has already been registered")
-        dlcSigsDAO.findByDLCId(dlc.dlcId).map((dlc, _))
+        dlcSigsDAO
+          .findByDLCId(dlc.dlcId)
+          .map(sigOpt => (dlc, sigOpt))
     }
   }
 
@@ -912,7 +935,7 @@ abstract class DLCWallet
       signer <- signerFromDb(dlc.dlcId)
 
       mySigs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
-      refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.get)
+      refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.head)
       cetSigs <-
         if (mySigs.forall(_.initiatorSig.isEmpty)) {
           logger.info(s"Creating CET Sigs for contract ${contractId.toHex}")
@@ -1079,7 +1102,7 @@ abstract class DLCWallet
                 throw new IllegalArgumentException(
                   s"CET sigs provided are not valid! got ${sign.cetSigs.outcomeSigs}")
 
-              refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.get)
+              refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.head)
               sigsDbs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
 
               updatedRefund = refundSigsDb.copy(initiatorSig =
@@ -1301,8 +1324,8 @@ abstract class DLCWallet
       refundSigsDbOpt <- dlcRefundSigDAO.findByDLCId(dlcDb.dlcId)
 
       refundSig =
-        if (dlcDb.isInitiator) refundSigsDbOpt.get.accepterSig
-        else refundSigsDbOpt.get.initiatorSig.get
+        if (dlcDb.isInitiator) refundSigsDbOpt.head.accepterSig
+        else refundSigsDbOpt.head.initiatorSig.get
 
       refundTx = executor.executeRefundDLC(refundSig).refundTx
       _ = logger.info(

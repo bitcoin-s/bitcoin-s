@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 final case class BroadcastAbleTransactionDAO()(implicit
     override val appConfig: NodeAppConfig,
-    val ec: ExecutionContext)
+    override val ec: ExecutionContext)
     extends CRUD[BroadcastAbleTransaction, DoubleSha256DigestBE]
     with SlickUtil[BroadcastAbleTransaction, DoubleSha256DigestBE] {
 

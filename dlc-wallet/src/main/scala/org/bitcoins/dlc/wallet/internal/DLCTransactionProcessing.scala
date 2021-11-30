@@ -74,20 +74,14 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   def calculateAndSetOutcome(dlcDb: DLCDb): Future[DLCDb] = {
     if (dlcDb.state == DLCState.RemoteClaimed) {
       val dlcId = dlcDb.dlcId
+
       for {
-        // .get should be safe here
-        contractData <- contractDataDAO.read(dlcId).map(_.get)
-        offerDbOpt <- dlcOfferDAO.findByDLCId(dlcId)
+        (_, contractData, offerDb, fundingInputDbs, _) <- getDLCOfferData(dlcId)
         acceptDbOpt <- dlcAcceptDAO.findByDLCId(dlcId)
-        fundingInputDbs <- dlcInputsDAO
-          .findByDLCId(dlcId)
-          .map(_.sortBy(_.index))
         txIds = fundingInputDbs.map(_.outPoint.txIdBE)
         remotePrevTxs <- remoteTxDAO.findByTxIdBEs(txIds)
         localPrevTxs <- transactionDAO.findByTxIdBEs(txIds)
-        refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlcId)
-        sigDbs <- dlcSigsDAO.findByDLCId(dlcId)
-
+        (sigDbs, refundSigsDb) <- getCetAndRefundSigs(dlcId)
         (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
           dlcDb.dlcId)
 
@@ -97,7 +91,6 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             .map(_.get.transaction.asInstanceOf[WitnessTransaction])
 
         (sig, outcome) = {
-          val offerDb = offerDbOpt.get
           val prevTxs = (remotePrevTxs ++ localPrevTxs).map(_.transaction)
           val txs = prevTxs.groupBy(_.txIdBE)
 
@@ -106,7 +99,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           val fundingInputs = fundingInputDbs.map(input =>
             input.toFundingInput(txs(input.outPoint.txIdBE).head))
 
-          val offerRefundSigOpt = refundSigsDb.flatMap(_.initiatorSig)
+          val offerRefundSigOpt = refundSigsDb.map(_.initiatorSig)
           val acceptRefundSigOpt = refundSigsDb.map(_.accepterSig)
 
           val contractInfo =
@@ -123,14 +116,14 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                             fundingInputs,
                             sigDbs.map(dbSig =>
                               (dbSig.sigPoint, dbSig.accepterSig)),
-                            acceptRefundSigOpt.get))
-            .get
+                            acceptRefundSigOpt.head))
+            .head
 
           val sign: DLCSign = {
             val cetSigs: CETSignatures =
               CETSignatures(
                 sigDbs.map(dbSig => (dbSig.sigPoint, dbSig.initiatorSig.get)),
-                offerRefundSigOpt.get)
+                offerRefundSigOpt.head.get)
 
             val contractId = dlcDb.contractIdOpt.get
             val fundingSigs =

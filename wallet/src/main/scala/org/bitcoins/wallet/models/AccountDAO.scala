@@ -10,7 +10,7 @@ import slick.lifted.{PrimaryKey, ProvenShape}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class AccountDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: WalletAppConfig)
     extends CRUD[AccountDb, (HDCoin, Int)]
     with SlickUtil[AccountDb, (HDCoin, Int)] {

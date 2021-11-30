@@ -92,8 +92,10 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
   val acceptTotalFunding: CurrencyUnit =
     acceptFundingInputs.map(_.output.value).sum
 
-  require(offer.tempContractId == tempContractId,
-          "Offer and accept (without sigs) must refer to same event")
+  require(
+    offer.tempContractId == tempContractId,
+    s"Offer and accept (without sigs) must refer to same event, offer.tempContractId=${offer.tempContractId.hex} tempContractId=${tempContractId.hex}"
+  )
   require(acceptFinalAddress.networkParameters == network,
           "Offer and accept (without sigs) must be on the same network")
   require(offerChangeAddress.networkParameters == network,

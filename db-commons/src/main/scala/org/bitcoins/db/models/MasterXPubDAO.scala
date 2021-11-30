@@ -43,6 +43,16 @@ case class MasterXPubDAO()(implicit
     create(dto)
   }
 
+  override def createAllAction(
+      ts: Vector[ExtPublicKeyDTO]): profile.api.DBIOAction[
+    Vector[ExtPublicKeyDTO],
+    profile.api.NoStream,
+    Effect.Write] = {
+    val fixedSqlAction = table ++= ts
+
+    fixedSqlAction.map(_ => ts)
+  }
+
   override def create(t: ExtPublicKeyDTO): Future[ExtPublicKeyDTO] = {
     val recordCount = table.size.result
 

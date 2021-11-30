@@ -15,10 +15,11 @@ import slick.lifted.{ForeignKeyQuery, ProvenShape}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCFundingInputDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCFundingInputDb, TransactionOutPoint]
-    with SlickUtil[DLCFundingInputDb, TransactionOutPoint] {
+    with SlickUtil[DLCFundingInputDb, TransactionOutPoint]
+    with DLCIdDaoUtilNoPK[DLCFundingInputDb] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -55,15 +56,20 @@ case class DLCFundingInputDAO()(implicit
     Seq] =
     findByPrimaryKeys(dlcs.map(_.outPoint))
 
-  def deleteByDLCId(dlcId: Sha256Digest): Future[Int] = {
+  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
+    Vector[DLCFundingInputDb],
+    profile.api.NoStream,
+    profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
-    safeDatabase.run(q.delete)
+    q.result.map(_.toVector)
   }
 
-  def findByDLCId(dlcId: Sha256Digest): Future[Vector[DLCFundingInputDb]] = {
+  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
+    Int,
+    profile.api.NoStream,
+    profile.api.Effect.Write] = {
     val q = table.filter(_.dlcId === dlcId)
-
-    safeDatabase.run(q.result).map(_.toVector)
+    q.delete
   }
 
   def findByDLCId(

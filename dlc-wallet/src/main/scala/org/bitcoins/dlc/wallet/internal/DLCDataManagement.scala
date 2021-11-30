@@ -18,32 +18,35 @@ import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.dlc.wallet.models._
 import scodec.bits._
+import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import scala.concurrent._
 
 /** Handles fetching and constructing different DLC datastructures from the database */
 private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
+  private lazy val safeDatabase = dlcDAO.safeDatabase
 
   private[wallet] def getDLCAnnouncementDbs(dlcId: Sha256Digest): Future[(
       Vector[DLCAnnouncementDb],
       Vector[OracleAnnouncementDataDb],
       Vector[OracleNonceDb])] = {
     val announcementsF = dlcAnnouncementDAO.findByDLCId(dlcId)
-    val announcementIdsF = for {
+    val announcementIdsF: Future[Vector[Long]] = for {
       announcements <- announcementsF
       announcementIds = announcements.map(_.announcementId)
     } yield announcementIds
-
     val announcementDataF =
       announcementIdsF.flatMap(ids => announcementDAO.findByIds(ids))
-    val nonceDbsF =
+    val noncesDbF =
       announcementIdsF.flatMap(ids => oracleNonceDAO.findByAnnouncementIds(ids))
 
     for {
       announcements <- announcementsF
       announcementData <- announcementDataF
-      nonceDbs <- nonceDbsF
-    } yield (announcements, announcementData, nonceDbs)
+      nonceDbs <- noncesDbF
+    } yield {
+      (announcements, announcementData, nonceDbs)
+    }
   }
 
   /** Fetches the oracle announcements of the oracles
@@ -205,14 +208,16 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         DLCOfferDb,
         Vector[DLCFundingInputDb],
         ContractInfo)] = {
+
+    val combined = actionBuilder.getDLCOfferDataAction(dlcId)
+    val combinedF = safeDatabase.run(combined)
     for {
-      dlcDbOpt <- dlcDAO.findByDLCId(dlcId)
-      dlcDb = dlcDbOpt.get
-      contractDataOpt <- contractDataDAO.findByDLCId(dlcId)
-      contractData = contractDataOpt.get
-      dlcOfferOpt <- dlcOfferDAO.findByDLCId(dlcId)
-      dlcOffer = dlcOfferOpt.get
-      fundingInputs <- dlcInputsDAO.findByDLCId(dlcId)
+      (dlcDbs, contractDataDbs, offerDbs, fundingInputDbs) <- combinedF
+      dlcDb = dlcDbs.head
+
+      contractData = contractDataDbs.head
+
+      dlcOffer = offerDbs.head
 
       (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
         dlcId)
@@ -222,8 +227,10 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
                                      announcementData,
                                      nonceDbs)
 
-      sortedInputs = fundingInputs.sortBy(_.index)
-    } yield (dlcDb, contractData, dlcOffer, sortedInputs, contractInfo)
+      sortedInputs = fundingInputDbs.sortBy(_.index)
+    } yield {
+      (dlcDb, contractData, dlcOffer, sortedInputs, contractInfo)
+    }
   }
 
   private[wallet] def getDLCFundingData(dlcId: Sha256Digest): Future[
@@ -238,7 +245,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       (dlcDb, contractData, dlcOffer, fundingInputs, contractInfo) <-
         getDLCOfferData(dlcId)
       dlcAcceptOpt <- dlcAcceptDAO.findByDLCId(dlcId)
-      dlcAccept = dlcAcceptOpt.get
+      dlcAccept = dlcAcceptOpt.head
     } yield (dlcDb,
              contractData,
              dlcOffer,
@@ -289,16 +296,22 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         ContractInfo,
         Vector[DLCFundingInputDb],
         Vector[DLCCETSignaturesDb])] = {
+    val safeDatabase = dlcRefundSigDAO.safeDatabase
+    val refundSigDLCs = dlcRefundSigDAO.findByDLCIdAction(dlcId)
+    val sigDLCs = dlcSigsDAO.findByDLCIdAction(dlcId)
+
+    val refundAndOutcomeSigsAction =
+      refundSigDLCs.flatMap(r => sigDLCs.map(s => (r, s)))
+    val refundAndOutcomeSigsF = safeDatabase.run(refundAndOutcomeSigsAction)
     for {
       (dlcDb, contractData, dlcOffer, dlcAccept, fundingInputs, contractInfo) <-
         getDLCFundingData(dlcId)
-      refundSig <- dlcRefundSigDAO.findByDLCId(dlcId)
-      outcomeSigs <- dlcSigsDAO.findByDLCId(dlcId)
+      (refundSigs, outcomeSigs) <- refundAndOutcomeSigsF
     } yield (dlcDb,
              contractData,
              dlcOffer,
              dlcAccept,
-             refundSig.get,
+             refundSigs.head,
              contractInfo,
              fundingInputs,
              outcomeSigs)
@@ -332,7 +345,6 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
 
       (_, contractData, dlcOffer, fundingInputsDb, contractInfo) <-
         getDLCOfferData(dlcDb.dlcId)
-
       localFundingInputs = fundingInputsDb.filter(_.isInitiator)
 
       prevTxs <-
@@ -340,13 +352,12 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
     } yield {
       val offerFundingInputs =
         matchPrevTxsWithInputs(localFundingInputs, prevTxs)
+      val offer = dlcOffer.toDLCOffer(contractInfo,
+                                      offerFundingInputs,
+                                      dlcDb,
+                                      contractData)
 
-      val builder =
-        DLCTxBuilder(dlcOffer.toDLCOffer(contractInfo,
-                                         offerFundingInputs,
-                                         dlcDb,
-                                         contractData),
-                     accept.withoutSigs)
+      val builder = DLCTxBuilder(offer, accept.withoutSigs)
 
       DLCSignatureVerifier(builder, dlcDb.isInitiator)
     }
@@ -615,5 +626,23 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
 
         Future.fromTry(setupF.map((executor, _)))
       }
+  }
+
+  def getCetAndRefundSigsAction(dlcId: Sha256Digest): DBIOAction[
+    (Vector[DLCCETSignaturesDb], Option[DLCRefundSigsDb]),
+    NoStream,
+    Effect.Read] = {
+    val cetSigsAction = dlcSigsDAO.findByDLCIdAction(dlcId)
+    val refundSigsAction = dlcRefundSigDAO.findByDLCIdAction(dlcId)
+    for {
+      cetSigs <- cetSigsAction
+      refundSigs <- refundSigsAction
+    } yield (cetSigs, refundSigs)
+  }
+
+  def getCetAndRefundSigs(dlcId: Sha256Digest): Future[
+    (Vector[DLCCETSignaturesDb], Option[DLCRefundSigsDb])] = {
+    val action = getCetAndRefundSigsAction(dlcId)
+    safeDatabase.run(action)
   }
 }

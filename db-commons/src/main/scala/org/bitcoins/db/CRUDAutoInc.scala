@@ -14,13 +14,21 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
   /** The table inside our database we are inserting into */
   override val table: profile.api.TableQuery[_ <: TableAutoInc[T]]
 
-  override def createAll(ts: Vector[T]): Future[Vector[T]] = {
+  override def createAllAction(ts: Vector[T]): profile.api.DBIOAction[
+    Vector[T],
+    profile.api.NoStream,
+    Effect.Write] = {
     val idQuery = table.map(_.id)
     val idAutoInc = table.returning(idQuery)
     val query = {
       idAutoInc.into((t, id) => t.copyWithId(id = id))
     }
     val actions = query.++=(ts)
+    actions.map(_.toVector)
+  }
+
+  override def createAll(ts: Vector[T]): Future[Vector[T]] = {
+    val actions = createAllAction(ts)
     safeDatabase.runVec(actions.transactionally)
   }
 

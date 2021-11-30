@@ -12,7 +12,7 @@ import slick.lifted.ProvenShape
 import scala.concurrent.ExecutionContext
 
 case class DLCRemoteTxDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends TxDAO[TransactionDb] {
 

@@ -16,10 +16,11 @@ import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCDAO()(implicit
-    val ec: ExecutionContext,
+    override val ec: ExecutionContext,
     override val appConfig: DLCAppConfig)
     extends CRUD[DLCDb, Sha256Digest]
-    with SlickUtil[DLCDb, Sha256Digest] {
+    with SlickUtil[DLCDb, Sha256Digest]
+    with DLCIdDaoUtil[DLCDb, Sha256Digest] {
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
   import profile.api._
@@ -42,9 +43,20 @@ case class DLCDAO()(implicit
   override def findAll(dlcs: Vector[DLCDb]): Query[DLCTable, DLCDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  def deleteByDLCId(dlcId: Sha256Digest): Future[Int] = {
+  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
+    Option[DLCDb],
+    profile.api.NoStream,
+    profile.api.Effect.Read] = {
     val q = table.filter(_.dlcId === dlcId)
-    safeDatabase.run(q.delete)
+    q.result.map(_.headOption)
+  }
+
+  override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
+    Int,
+    profile.api.NoStream,
+    profile.api.Effect.Write] = {
+    val q = table.filter(_.dlcId === dlcId)
+    q.delete
   }
 
   def findByTempContractId(
@@ -77,20 +89,6 @@ case class DLCDAO()(implicit
       case dlcs: Vector[DLCDb] =>
         throw new RuntimeException(
           s"More than one DLC per contractId (${contractId.toHex}), got: $dlcs")
-    }
-  }
-
-  def findByDLCId(dlcId: Sha256Digest): Future[Option[DLCDb]] = {
-    val q = table.filter(_.dlcId === dlcId)
-
-    safeDatabase.run(q.result).map {
-      case h +: Vector() =>
-        Some(h)
-      case Vector() =>
-        None
-      case dlcs: Vector[DLCDb] =>
-        throw new RuntimeException(
-          s"More than one DLC per dlcId (${dlcId.hex}), got: $dlcs")
     }
   }
 

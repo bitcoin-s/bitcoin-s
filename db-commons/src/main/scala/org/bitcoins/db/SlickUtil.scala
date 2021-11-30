@@ -5,7 +5,22 @@ import slick.jdbc.JdbcProfile
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 
-trait SlickUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
+trait SlickUtilAction[T, PrimaryKeyType] { _: CRUDAction[T, PrimaryKeyType] =>
+
+  def profile: JdbcProfile
+
+  import profile.api._
+
+  def createAllAction(
+      ts: Vector[T]): DBIOAction[Vector[T], NoStream, Effect.Write] = {
+    val fixedSqlAction = table ++= ts
+
+    fixedSqlAction.map(_ => ts)
+  }
+}
+
+trait SlickUtil[T, PrimaryKeyType] extends SlickUtilAction[T, PrimaryKeyType] {
+  _: CRUD[T, PrimaryKeyType] =>
   def profile: JdbcProfile
 
   import profile.api._
