@@ -253,6 +253,12 @@ object Socks5ProxyParams {
 
   val DefaultPort = 9050
 
+  val defaultProxyParams: Socks5ProxyParams =
+    Socks5ProxyParams(
+      address = InetSocketAddress.createUnresolved("127.0.0.1", DefaultPort),
+      credentialsOpt = None,
+      randomizeCredentials = true)
+
   def proxyCredentials(
       proxyParams: Socks5ProxyParams): Option[Socks5Connection.Credentials] =
     if (proxyParams.randomizeCredentials) {
