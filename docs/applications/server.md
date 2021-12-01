@@ -241,6 +241,10 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
    - `contractinfo` - Hex encoded contract info
  - `decodeoffer` `offer` - Decodes an offer message into json
     - `offer` - Hex encoded dlc offer message
+ - `decodeaccept` `accept` - Decodes an accept message into json
+   - `accept` - Hex encoded dlc accept message
+ - `decodesign` `sign` - Decodes a sign message into json
+   - `sign` - Hex encoded dlc sign message
  - `decodeannouncement` `announcement` - Decodes an oracle announcement message into json
     - `announcement` - Hex encoded oracle announcement message
  - `decodeattestments` `attestments` - Decodes an oracle attestments message into json

@@ -24,7 +24,7 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
     extends ServerRoute {
   import system.dispatcher
 
-  def handleCommand: PartialFunction[ServerCommand, Route] = {
+  override def handleCommand: PartialFunction[ServerCommand, Route] = {
     case ServerCommand("finalizepsbt", arr) =>
       withValidServerCommand(FinalizePSBT.fromJsArr(arr)) {
         case FinalizePSBT(psbt) =>
@@ -153,7 +153,20 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
             Server.httpSuccess(writeJs(offerTLV))
           }
       }
-
+    case ServerCommand("decodeaccept", arr) =>
+      withValidServerCommand(DecodeAccept.fromJsArr(arr)) {
+        case DecodeAccept(accept) =>
+          complete {
+            Server.httpSuccess(writeJs(accept))
+          }
+      }
+    case ServerCommand("decodesign", arr) =>
+      withValidServerCommand(DecodeSign.fromJsArr(arr)) {
+        case DecodeSign(accept) =>
+          complete {
+            Server.httpSuccess(writeJs(accept))
+          }
+      }
     case ServerCommand("decodecontractinfo", arr) =>
       withValidServerCommand(DecodeContractInfo.fromJsArr(arr)) {
         case DecodeContractInfo(contractInfo) =>
