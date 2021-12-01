@@ -10,7 +10,12 @@ import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.number.{UInt16, UInt32, UInt64}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
+import org.bitcoins.core.protocol.script.{
+  ScriptPubKey,
+  ScriptWitness,
+  ScriptWitnessV0,
+  WitnessScriptPubKey
+}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
@@ -257,16 +262,100 @@ object Picklers {
     )
   }
 
+  private def parseFundingSignatures(obj: ujson.Obj): FundingSignaturesTLV = {
+    val fundingSignatures: Vector[ujson.Value] = obj(
+      PicklerKeys.fundingSignaturesKey).arr.toVector
+    val witV0 = paresFundingSignaturesArr(fundingSignatures)
+    FundingSignaturesV0TLV(witV0)
+  }
+
+  private def paresFundingSignaturesArr(
+      arr: Vector[ujson.Value]): Vector[ScriptWitnessV0] = {
+    arr.map {
+      case obj: ujson.Obj =>
+        val witnessElementsArr = obj(PicklerKeys.witnessElementsKey).arr
+        val witnesses: Vector[ByteVector] = {
+          parseWitnessElements(witnessElementsArr)
+        }
+
+        val scriptWitnessV0 = ScriptWitness
+          .apply(witnesses.reverse)
+          .asInstanceOf[ScriptWitnessV0]
+        scriptWitnessV0
+      case x =>
+        sys.error(s"Expected array of objects for funding signatures, got=$x")
+    }
+  }
+
+  private def parseWitnessElements(arr: ujson.Arr): Vector[ByteVector] = {
+    arr.value.toVector.map {
+      case obj: ujson.Obj =>
+        val witnessStr = obj(PicklerKeys.witnessKey).str
+        ByteVector.fromValidHex(witnessStr)
+      case x: ujson.Value =>
+        sys.error(s"Expected witness json object, got=$x")
+    }
+  }
+
+  private def writeWitnessElements(witness: ScriptWitness): ujson.Obj = {
+    val vec: Vector[ujson.Obj] = witness.stack.reverse.map { w =>
+      ujson.Obj(PicklerKeys.witnessKey -> Str(w.toHex))
+    }.toVector
+
+    ujson.Obj(PicklerKeys.witnessElementsKey -> ujson.Arr.from(vec))
+  }
+
+  private def writeFundingSignatures(
+      fundingSigs: FundingSignaturesTLV): ujson.Obj = {
+    val sigs: Vector[ujson.Obj] = fundingSigs match {
+      case v0: FundingSignaturesV0TLV =>
+        val witnessJson: Vector[ujson.Obj] =
+          v0.witnesses.map(writeWitnessElements)
+        witnessJson
+    }
+    ujson.Obj(
+      PicklerKeys.fundingSignaturesKey -> ujson.Arr.from(sigs)
+    )
+  }
+
+  private def readSignTLV(obj: ujson.Obj): DLCSignTLV = {
+    val contractId = ByteVector.fromValidHex(obj(PicklerKeys.contractIdKey).str)
+    val adaptorSigs = parseCetAdaptorSignatures(
+      obj(PicklerKeys.cetAdaptorSignaturesKey).obj)
+    val refundSignature =
+      ECDigitalSignature.fromHex(obj(PicklerKeys.refundSignatureKey).str)
+    val fundingSignatures = parseFundingSignatures(
+      obj(PicklerKeys.fundingSignaturesKey).obj)
+
+    val signTLV =
+      DLCSignTLV(contractId, adaptorSigs, refundSignature, fundingSignatures)
+
+    signTLV
+
+  }
+
+  private def writeSignTLV(sign: DLCSignTLV): ujson.Obj = {
+    ujson.Obj(
+      PicklerKeys.contractIdKey -> sign.contractId.toHex,
+      PicklerKeys.cetAdaptorSignaturesKey -> writeCetAdaptorSigs(
+        sign.cetSignatures),
+      PicklerKeys.refundSignatureKey -> ujson.Str(sign.refundSignature.hex),
+      PicklerKeys.fundingSignaturesKey ->
+        writeFundingSignatures(sign.fundingSignatures)
+    )
+  }
+
   implicit val dlcAcceptTLVPickler: ReadWriter[DLCAcceptTLV] = {
     readwriter[ujson.Obj].bimap(writeAcceptTLV, readAcceptTLV)
+  }
+
+  implicit val dlcSignTLVPickler: ReadWriter[DLCSignTLV] = {
+    readwriter[ujson.Obj].bimap(writeSignTLV, readSignTLV)
   }
 
   implicit val lnMessageDLCAcceptTLVPickler: ReadWriter[
     LnMessage[DLCAcceptTLV]] =
     readwriter[String].bimap(_.hex, LnMessageFactory(DLCAcceptTLV).fromHex)
-
-  implicit val dlcSignTLVPickler: ReadWriter[DLCSignTLV] =
-    readwriter[String].bimap(_.hex, DLCSignTLV.fromHex)
 
   implicit val lnMessageDLCSignTLVPickler: ReadWriter[LnMessage[DLCSignTLV]] =
     readwriter[String].bimap(_.hex, LnMessageFactory(DLCSignTLV).fromHex)

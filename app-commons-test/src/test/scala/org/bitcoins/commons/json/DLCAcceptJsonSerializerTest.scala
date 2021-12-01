@@ -49,7 +49,7 @@ class DLCAcceptJsonSerializerTest extends BitcoinSUnitTest {
        |    }
        |""".stripMargin
 
-  it must "read/write a accept json message" in {
+  it must "have serialization symmetry for a accept json message" in {
     val accept = upickle.default.read[DLCAcceptTLV](testString)(
       Picklers.dlcAcceptTLVPickler)
     val json: String =
