@@ -1,6 +1,6 @@
 package org.bitcoins.crypto
 
-import org.scalatest.{Assertion, Outcome, Succeeded}
+import org.scalatest.{Assertion, Canceled, Outcome}
 import scodec.bits.ByteVector
 
 class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
@@ -14,7 +14,7 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
     CryptoContext.default match {
       case CryptoContext.LibSecp256k1 => super.withFixture(test)
       case CryptoContext.BouncyCastle | CryptoContext.BCrypto =>
-        Succeeded
+        Canceled("native libsecp256k1 is not available")
     }
   }
 
