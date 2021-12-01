@@ -765,6 +765,36 @@ object DecodeAccept extends ServerJsonModels {
   }
 }
 
+case class DecodeSign(sign: DLCSignTLV)
+
+object DecodeSign extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DecodeSign] = {
+    jsArr.arr.toList match {
+      case signJs :: Nil =>
+        Try {
+          val accept: LnMessage[DLCSignTLV] =
+            LnMessageFactory(DLCSignTLV).fromHex(signJs.str)
+          DecodeSign(accept.tlv)
+        } match {
+          case Success(value) =>
+            Success(value)
+          case Failure(_) =>
+            Try {
+              val sign = DLCSignTLV.fromHex(signJs.str)
+              DecodeSign(sign)
+            }
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException(s"Missing accept announcement"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length} Expected: 1"))
+    }
+  }
+}
+
 case class DecodeAnnouncement(announcement: OracleAnnouncementTLV)
 
 object DecodeAnnouncement extends ServerJsonModels {

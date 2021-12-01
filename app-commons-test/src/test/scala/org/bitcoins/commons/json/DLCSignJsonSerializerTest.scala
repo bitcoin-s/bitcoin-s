@@ -1,7 +1,7 @@
 package org.bitcoins.commons.json
 
 import org.bitcoins.commons.serializers.Picklers
-import org.bitcoins.core.protocol.tlv.DLCSignTLV
+import org.bitcoins.core.protocol.tlv.{DLCSignTLV, LnMessage}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class DLCSignJsonSerializerTest extends BitcoinSUnitTest {
@@ -47,10 +47,11 @@ class DLCSignJsonSerializerTest extends BitcoinSUnitTest {
   }
 
   it must "have serialization symmetry for dlc sign messages" in {
-    val accept =
+    val sign =
       upickle.default.read[DLCSignTLV](testString)(Picklers.dlcSignTLVPickler)
+    println(s"accept=${LnMessage(sign).hex}")
     val json: String =
-      upickle.default.write(accept)(Picklers.dlcSignTLVPickler)
+      upickle.default.write(sign)(Picklers.dlcSignTLVPickler)
     assert(json == testString.replaceAll("\\s", ""))
   }
 }
