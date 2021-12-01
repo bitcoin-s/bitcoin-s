@@ -220,6 +220,10 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       }
   }
 
+  def subscribeInvoices(): Source[Invoice, NotUsed] = {
+    lnd.subscribeInvoices(InvoiceSubscription())
+  }
+
   def getNewAddress: Future[BitcoinAddress] = {
     logger.trace("lnd calling newaddress")
 
