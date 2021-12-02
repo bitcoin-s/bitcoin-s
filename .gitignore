@@ -36,8 +36,6 @@ tests
 exhaustive_tests
 gen_context
 *.exe
-*.so
-*.a
 !.gitignore
 
 Makefile
