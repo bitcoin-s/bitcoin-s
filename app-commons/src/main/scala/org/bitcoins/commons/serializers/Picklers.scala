@@ -26,12 +26,13 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
 import org.bitcoins.core.util.TimeUtil._
+import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{AddressLabelTag, TxoState}
 import org.bitcoins.crypto._
@@ -496,8 +497,12 @@ object Picklers {
 
       val descriptorJson = announcement.eventTLV.eventDescriptor match {
         case EnumEventDescriptorV0TLV(outcomes) =>
-          Obj("outcomes" -> outcomes.map(Str(_)),
-              "hex" -> announcement.eventTLV.eventDescriptor.hex)
+          Obj(
+            PicklerKeys.enumEventKey ->
+              Obj(
+                PicklerKeys.outcomesKey -> outcomes.map(Str(_))
+              )
+          )
         case numeric: NumericEventDescriptorTLV =>
           Obj(
             "base" -> Num(numeric.base.toLong.toDouble),
@@ -508,19 +513,19 @@ object Picklers {
           )
       }
 
-      val maturityStr =
-        TimeUtil.iso8601ToString(Date.from(announcement.eventTLV.maturation))
-
-      val eventJson = Obj("nonces" -> noncesJson,
-                          "maturity" -> Str(maturityStr),
-                          "descriptor" -> descriptorJson,
-                          "eventId" -> Str(announcement.eventTLV.eventId))
+      val eventJson = Obj(
+        PicklerKeys.oracleNoncesKey -> noncesJson,
+        PicklerKeys.eventMaturityEpochKey -> Num(
+          announcement.eventTLV.maturation.getEpochSecond.toDouble),
+        PicklerKeys.eventDescriptorKey -> descriptorJson,
+        PicklerKeys.eventIdKey -> Str(announcement.eventTLV.eventId)
+      )
 
       Obj(
-        "announcementSignature" -> Str(announcement.announcementSignature.hex),
-        "publicKey" -> Str(announcement.publicKey.hex),
-        "event" -> eventJson,
-        "hex" -> announcement.hex
+        PicklerKeys.announcementSignatureKey -> Str(
+          announcement.announcementSignature.hex),
+        PicklerKeys.oraclePublicKeyKey -> Str(announcement.publicKey.hex),
+        PicklerKeys.oracleEventKey -> eventJson
       )
     }
 
@@ -671,10 +676,15 @@ object Picklers {
   }
 
   private def contractV0Writer(v0: ContractDescriptorV0TLV): Value = {
-    val outcomesJs: ujson.Obj = v0.outcomes.map { case (outcome, payout) =>
-      outcome -> Num(payout.toLong.toDouble)
+    val outcomesVec: Vector[Obj] = v0.outcomes.map { case (outcome, payout) =>
+      Obj(
+        PicklerKeys.outcomeKey -> Str(outcome),
+        PicklerKeys.localPayoutKey -> Num(payout.toLong.toDouble)
+      )
     }
-    Obj(PicklerKeys.outcomesKey -> outcomesJs, "hex" -> v0.hex)
+
+    val arr = ujson.Arr.from(outcomesVec)
+    Obj(PicklerKeys.payoutsKey -> arr)
   }
 
   implicit val contractDescriptorV1Writer: Writer[ContractDescriptorV1TLV] =
@@ -695,12 +705,15 @@ object Picklers {
         writeJs(v1)(contractDescriptorV1Writer)
     }
 
-  implicit val oracleInfoV0TLVWriter: Writer[OracleInfoV0TLV] =
+  implicit val oracleInfoV0TLVWriter: Writer[OracleInfoV0TLV] = {
     writer[Obj].comap { oracleInfo =>
       Obj(
-        "announcement" -> writeJs(oracleInfo.announcement)(
-          oracleAnnouncementTLVJsonWriter))
+        PicklerKeys.singleKey -> Obj(
+          PicklerKeys.oracleAnnouncementKey -> writeJs(oracleInfo.announcement)(
+            oracleAnnouncementTLVJsonWriter))
+      )
     }
+  }
 
   implicit val oracleInfoV1TLVWriter: Writer[OracleInfoV1TLV] =
     writer[Obj].comap { oracleInfo =>
@@ -739,17 +752,38 @@ object Picklers {
       case v2: OracleInfoV2TLV => writeJs(v2)
     }
 
+  private def writeContractDescriptor(
+      contractDescriptor: ContractDescriptorTLV): Obj = {
+    contractDescriptor match {
+      case v0: ContractDescriptorV0TLV =>
+        val obj = Obj(
+          PicklerKeys.enumeratedContractDescriptorKey ->
+            writeJs(v0)
+        )
+
+        obj
+      case v1: ContractDescriptorV1TLV =>
+        sys.error(s"Cannot write v1 contract descriptor tlv, got=$v1")
+    }
+  }
+
   // can't make implicit because it will overlap with ones needed for cli
-  val contractInfoV0TLVJsonWriter: Writer[ContractInfoV0TLV] =
+  val contractInfoV0TLVJsonWriter: Writer[ContractInfoV0TLV] = {
     writer[Obj].comap { contractInfo =>
       import contractInfo._
-
-      Obj(
+      val nestedObj = Obj(
         PicklerKeys.totalCollateralKey -> writeJs(totalCollateral),
-        PicklerKeys.contractDescriptorKey -> writeJs(contractDescriptor),
-        PicklerKeys.oracleInfoKey -> writeJs(oracleInfo)
+        PicklerKeys.contractInfoKey -> {
+          val o =
+            Obj(PicklerKeys.contractDescriptorKey ->
+                  writeContractDescriptor(contractInfo.contractDescriptor),
+                PicklerKeys.oracleInfoKey -> writeJs(oracleInfo))
+          o
+        }
       )
+      Obj(PicklerKeys.singleContractInfoKey -> nestedObj)
     }
+  }
 
   val contractInfoV1TLVJsonWriter: Writer[ContractInfoV1TLV] = {
     writer[Obj].comap { contractInfo =>
@@ -817,6 +851,245 @@ object Picklers {
         .map(pa => writeJs(pa))
         .getOrElse(Null)
     }
+
+  private def parseOfferTLV(obj: ujson.Obj): DLCOfferTLV = {
+    val protocolVersionOpt =
+      obj.value.get(PicklerKeys.protocolVersionKey).numOpt.map(_.toInt)
+    val contractFlags = obj(PicklerKeys.contractFlagsKey)
+    val chainHash =
+      DoubleSha256Digest.fromHex(obj(PicklerKeys.chainHashKey).str)
+    val contractInfo = parseContractInfo(obj(PicklerKeys.contractInfoKey).obj)
+
+    val fundingPubKey =
+      ECPublicKey.fromHex(obj(PicklerKeys.fundingPubKeyKey).str)
+    val payoutSpk = ScriptPubKey.fromAsmHex(obj(PicklerKeys.payoutSpkKey).str)
+    val payoutSerialId = parseU64(obj(PicklerKeys.payoutSerialIdKey).str)
+
+    val offerCollateral = Satoshis(
+      obj(PicklerKeys.offerCollateralKey).num.toLong)
+
+    val fundingInputs: Vector[FundingInputTLV] = {
+      parseFundingInputs(obj(PicklerKeys.fundingInputsKey).arr)
+    }
+
+    val changeSpk = ScriptPubKey.fromAsmHex(obj(PicklerKeys.changeSpkKey).str)
+    val changeSerialId = parseU64(obj(PicklerKeys.changeSerialIdKey).str)
+    val fundingOutputSerialId = parseU64(
+      obj(PicklerKeys.fundOutputSerialIdKey).str)
+
+    val feeRatePerVb = SatoshisPerVirtualByte
+      .fromLong(obj(PicklerKeys.feeRatePerKbKey).num.toLong)
+    val contractMaturityBond = obj(
+      PicklerKeys.contractMaturityBoundKey).num.toLong
+    val contractTimeout = obj(PicklerKeys.contractTimeoutKey).num.toLong
+
+    val offerTLV = DLCOfferTLV(
+      protocolVersionOpt = protocolVersionOpt,
+      contractFlags = contractFlags.num.toByte,
+      chainHash = chainHash,
+      contractInfo = contractInfo,
+      fundingPubKey = fundingPubKey,
+      payoutSPK = payoutSpk,
+      payoutSerialId = payoutSerialId,
+      offererCollateralSatoshis = offerCollateral,
+      fundingInputs = fundingInputs,
+      changeSPK = changeSpk,
+      changeSerialId = changeSerialId,
+      fundOutputSerialId = fundingOutputSerialId,
+      feeRate = feeRatePerVb,
+      contractMaturityBound =
+        BlockTimeStamp.fromUInt32(UInt32(contractMaturityBond)),
+      contractTimeout = BlockTimeStamp.fromUInt32(UInt32(contractTimeout))
+    )
+
+    offerTLV
+  }
+
+  private def parseContractInfo(obj: ujson.Obj): ContractInfoV0TLV = {
+    val singleContractObj = obj(PicklerKeys.singleContractInfoKey).obj
+    val contractInfoObj = singleContractObj(PicklerKeys.contractInfoKey).obj
+    val totalCollateral: Satoshis = Satoshis(
+      singleContractObj(PicklerKeys.totalCollateralKey).num.toLong)
+    val contractDescriptorObj = contractInfoObj(
+      PicklerKeys.contractDescriptorKey).obj
+    val contractDescriptorTLV = parseContractDescriptor(contractDescriptorObj)
+    val oracleInfoObj = contractInfoObj(PicklerKeys.oracleInfoKey).obj
+    val oracleInfo = parseOracleInfo(oracleInfoObj)
+
+    ContractInfoV0TLV(totalCollateral, contractDescriptorTLV, oracleInfo)
+  }
+
+  private def parseContractDescriptor(obj: ujson.Obj): ContractDescriptorTLV = {
+    val isEnum = obj.value.get(PicklerKeys.enumeratedContractDescriptorKey)
+    val isNumeric =
+      obj.value.get(PicklerKeys.numericOutcomeContractDescriptorKey)
+    if (isEnum.isDefined) {
+      parseEnumContractDescriptor(isEnum.get.obj).toTLV
+    } else if (isNumeric.isDefined) {
+      parseNumericContractDescriptor(isNumeric.get.obj).toTLV
+    } else {
+      sys.error(s"Not enum contract descriptor, got=$obj")
+    }
+  }
+
+  private def parseEnumContractDescriptor(
+      obj: ujson.Obj): EnumContractDescriptor = {
+    val outcomes =
+      obj(PicklerKeys.payoutsKey).arr.toVector.map {
+        case payoutsObj: ujson.Obj =>
+          val outcome = EnumOutcome(payoutsObj(PicklerKeys.outcomeKey).str)
+          val payout =
+            Satoshis(payoutsObj(PicklerKeys.localPayoutKey).num.toLong)
+          (outcome, payout)
+        case x: ujson.Value =>
+          sys.error(s"Cannot parse payout from $x expected ujson.Obj")
+      }
+
+    EnumContractDescriptor(outcomes)
+  }
+
+  private def parseNumericContractDescriptor(
+      obj: ujson.Obj): NumericContractDescriptor = {
+    //needs to have changes in https://github.com/bitcoin-s/bitcoin-s/pull/3859
+    /*    val payoutFunctionObj = obj(PicklerKeys.payFunctionKey).obj
+    val payoutFunctionPieces = payoutFunctionObj(
+      PicklerKeys.payoutFunctionPiecesKey).arr
+    val leftEndPoint = parseEndPoint(payoutFunctionPieces.toVector.head.obj)
+
+    val _ = parsePayoutFunctionPieces(payoutFunctionPieces.tail)
+
+    val lastEndPointObj = obj(PicklerKeys.lastEndpointKey).obj
+    val lastEndPoint = parseEndPoint(lastEndPointObj)
+
+    val points = Vector(leftEndPoint, lastEndPoint)
+      .map(_.toOutcomePayoutPoint)
+
+    val payoutCurve: DLCPayoutCurve = DLCPayoutCurve(points)
+    val roundingIntervals: RoundingIntervals = {
+      parseRoundingIntervals(obj(PicklerKeys.roundingIntervalsKey).obj)
+    }
+
+    NumericContractDescriptor(payoutCurve, numDigits = 3, roundingIntervals)*/
+
+    ???
+  }
+
+  private def parseOracleInfo(obj: ujson.Obj): OracleInfoTLV = {
+    val isSingle = obj.value.get(PicklerKeys.singleKey)
+    if (isSingle.isDefined) {
+      val singleObj = isSingle.get
+      val announcementObj = singleObj(PicklerKeys.oracleAnnouncementKey).obj
+      val announcement = parseOracleAnnouncement(announcementObj)
+      SingleOracleInfo(announcement).toTLV
+    } else {
+      sys.error(s"Multi oracle not supported yet, got=$obj")
+    }
+  }
+
+  private def parseOracleAnnouncement(obj: ujson.Obj): OracleAnnouncementTLV = {
+    val signature = SchnorrDigitalSignature
+      .fromHex(obj(PicklerKeys.announcementSignatureKey).str)
+    val oraclePubKey =
+      SchnorrPublicKey.fromHex(obj(PicklerKeys.oraclePublicKeyKey).str)
+    val oracleEventObj = obj(PicklerKeys.oracleEventKey).obj
+    val oracleEventTLV = parseOracleEvent(oracleEventObj)
+
+    OracleAnnouncementV0TLV.apply(signature, oraclePubKey, oracleEventTLV)
+  }
+
+  private def parseOracleEvent(obj: ujson.Obj): OracleEventV0TLV = {
+    val eventMaturityEpoch = obj(PicklerKeys.eventMaturityEpochKey).num.toLong
+    val eventDescriptorObj = obj(PicklerKeys.eventDescriptorKey).obj
+    val eventDescriptor = parseEventDescriptor(eventDescriptorObj)
+    val eventId = NormalizedString(obj(PicklerKeys.eventIdKey).str)
+    val nonces = obj(PicklerKeys.oracleNoncesKey).arr.toVector.map {
+      case str: ujson.Str =>
+        SchnorrNonce.fromHex(str.str)
+      case x: ujson.Value =>
+        sys.error(s"Expected json string for nonces, got=$x")
+    }
+
+    val orderedNonces = OrderedNonces(nonces)
+
+    OracleEventV0TLV(nonces = orderedNonces,
+                     eventMaturityEpoch = UInt32(eventMaturityEpoch),
+                     eventDescriptor = eventDescriptor,
+                     eventId = eventId)
+  }
+
+  private def parseEventDescriptor(obj: ujson.Obj): EventDescriptorTLV = {
+    val isEnumDescriptor = obj.value.get(PicklerKeys.enumEventKey)
+    val isDigitDecompEvent =
+      obj.value.get(PicklerKeys.digitDecompositionEventKey)
+    if (isEnumDescriptor.isDefined) {
+      val enumDescriptorObj = isEnumDescriptor.get.obj
+      parseEnumEventDescriptor(enumDescriptorObj)
+    } else if (isDigitDecompEvent.isDefined) {
+      parseDigitDecompEvent(isDigitDecompEvent.get.obj)
+    } else {
+      sys.error(s"Can only parse enum event descriptor so far")
+    }
+  }
+
+  private def parseEnumEventDescriptor(
+      obj: ujson.Obj): EnumEventDescriptorV0TLV = {
+    val outcomes = obj(PicklerKeys.outcomesKey).arr.toVector.map {
+      case str: ujson.Str =>
+        NormalizedString(str.str)
+      case x =>
+        sys.error(s"Expected string for enum outcome, got=$x")
+    }
+    EnumEventDescriptorV0TLV(outcomes)
+  }
+
+  private def parseDigitDecompEvent(
+      obj: ujson.Obj): DigitDecompositionEventDescriptorV0TLV = {
+    val base = obj(PicklerKeys.baseKey).num.toInt
+    val isSigned = obj(PicklerKeys.isSignedKey).bool
+    val unit = obj(PicklerKeys.unitKey).str
+    val precision = obj(PicklerKeys.precisionKey).num.toInt
+    val nbDigits = obj(PicklerKeys.nbDigitsKey).num.toInt
+
+    DigitDecompositionEventDescriptorV0TLV(base = UInt16(base),
+                                           isSigned = isSigned,
+                                           numDigits = nbDigits,
+                                           unit = unit,
+                                           precision = Int32(precision))
+  }
+
+  private def writeOfferTLV(offerTLV: DLCOfferTLV): ujson.Obj = {
+    import offerTLV._
+    Obj(
+      PicklerKeys.contractFlagsKey -> Num(contractFlags),
+      PicklerKeys.chainHashKey -> Str(chainHash.hex),
+      PicklerKeys.contractInfoKey -> writeJs(contractInfo)(
+        contractInfoJsonWriter),
+      PicklerKeys.fundingPubKeyKey -> Str(fundingPubKey.hex),
+      PicklerKeys.payoutSpkKey -> Str(payoutSPK.asmHex),
+      PicklerKeys.payoutSerialIdKey -> Str(payoutSerialId.toBigInt.toString()),
+      PicklerKeys.offerCollateralKey -> Num(
+        offererCollateralSatoshis.toLong.toDouble),
+      PicklerKeys.fundingInputsKey -> fundingInputs.map(i => writeJs(i)),
+      PicklerKeys.changeSpkKey -> Str(changeSPK.asmHex),
+      PicklerKeys.changeSerialIdKey -> Str(changeSerialId.toBigInt.toString()),
+      PicklerKeys.fundOutputSerialIdKey -> Str(
+        fundOutputSerialId.toBigInt.toString()),
+      PicklerKeys.feeRatePerKbKey -> Num(feeRate.toLong.toDouble),
+      PicklerKeys.contractMaturityBoundKey -> Num(
+        contractMaturityBound.toUInt32.toLong.toDouble),
+      PicklerKeys.contractTimeoutKey -> Num(
+        contractTimeout.toUInt32.toLong.toDouble),
+      PicklerKeys.tempContractIdKey -> Str(offerTLV.tempContractId.hex)
+    )
+  }
+
+  private def readOfferTLV(obj: ujson.Obj): DLCOfferTLV = {
+    parseOfferTLV(obj)
+  }
+
+  implicit val dlcOfferTLVPickler: ReadWriter[DLCOfferTLV] = {
+    readwriter[ujson.Obj].bimap(writeOfferTLV, readOfferTLV)
+  }
 
   implicit val offeredW: Writer[Offered] =
     writer[Obj].comap { offered =>
