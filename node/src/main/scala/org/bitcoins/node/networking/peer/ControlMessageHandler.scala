@@ -36,7 +36,9 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
           case good: Initializing =>
             val newState = good.withVersionMsg(versionMsg)
 
-            node.peerData(peer).setServiceIdentifier(versionMsg.services)
+            node.peerManager
+              .peerData(peer)
+              .setServiceIdentifier(versionMsg.services)
 
             val newRecv = peerMessageReceiver.toState(newState)
 
@@ -88,8 +90,10 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
         nodeType match {
           case NodeType.FullNode =>
             throw new Exception("Node cannot be FullNode")
-          case NodeType.NeutrinoNode => node.createInDb(peer).map(_ => ())
-          case NodeType.SpvNode      => node.createInDb(peer).map(_ => ())
+          case NodeType.NeutrinoNode =>
+            node.peerManager.createInDb(peer).map(_ => ())
+          case NodeType.SpvNode =>
+            node.peerManager.createInDb(peer).map(_ => ())
         }
       case nodeType: ExternalImplementationNodeType =>
         nodeType match {

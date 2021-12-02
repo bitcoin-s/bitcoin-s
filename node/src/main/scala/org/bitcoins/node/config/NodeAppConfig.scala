@@ -127,6 +127,12 @@ case class NodeAppConfig(
     }
   }
 
+  lazy val maxConnectedPeers: Int = {
+    if (config.hasPath("bitcoin-s.node.maxConnectedPeers"))
+      config.getInt("bitcoin-s.node.maxConnectedPeers")
+    else 1
+  }
+
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
   def createNode(peers: Vector[Peer] = Vector.empty[Peer])(
       chainConf: ChainAppConfig,

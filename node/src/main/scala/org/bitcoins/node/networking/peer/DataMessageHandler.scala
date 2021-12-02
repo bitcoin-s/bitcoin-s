@@ -50,8 +50,9 @@ case class DataMessageHandler(
       peerMsgSender: PeerMessageSender,
       node: Node): Future[DataMessageHandler] = {
 
-    lazy val peerWithCompactFilters = node.randomPeerMsgSenderWithCompactFilters
-    lazy val randomPeer = node.randomPeerMsgSender
+    lazy val peerWithCompactFilters =
+      node.peerManager.randomPeerMsgSenderWithCompactFilters
+    lazy val randomPeer = node.peerManager.randomPeerMsgSender
 
     val resultF = payload match {
       case checkpoint: CompactFilterCheckPointMessage =>

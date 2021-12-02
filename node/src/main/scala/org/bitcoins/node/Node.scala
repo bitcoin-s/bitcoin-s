@@ -13,7 +13,6 @@ import org.bitcoins.core.api.chain._
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
@@ -23,14 +22,10 @@ import org.bitcoins.node.networking.peer.{
   DataMessageHandler,
   PeerMessageSender
 }
-import scodec.bits.ByteVector
 
-import java.net.{InetAddress, UnknownHostException}
-import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
-import scala.io.Source
-import scala.util.{Failure, Random, Success}
+import scala.util.{Failure, Success}
 
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
@@ -44,171 +39,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def executionContext: ExecutionContext = system.dispatcher
 
-  private val _peerData: mutable.Map[Peer, PeerData] =
-    mutable.Map.empty
-
-  def peerData: Map[Peer, PeerData] = _peerData.toMap
-
-  def peers: Vector[Peer] = peerData.keys.toVector
-
-  /** Returns peers by querying each dns seed once. These will be IPv4 addresses. */
-  def getPeersFromDnsSeeds: Vector[Peer] = {
-    val dnsSeeds = nodeAppConfig.network.dnsSeeds
-    val addresses = dnsSeeds
-      .flatMap(seed => {
-        try {
-          InetAddress
-            .getAllByName(seed)
-        } catch {
-          case _: UnknownHostException =>
-            logger.debug(s"DNS seed $seed is unavailable")
-            Vector()
-        }
-      })
-      .distinct
-      .filter(_.isReachable(500))
-      .map(_.getHostAddress)
-    val inetSockets = addresses.map(
-      NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
-    val peers =
-      inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
-    peers.toVector
-  }
-
-  /** Returns peers from hardcoded addresses taken from https://github.com/bitcoin/bitcoin/blob/master/contrib/seeds/nodes_main.txt */
-  def getPeersFromResources: Vector[Peer] = {
-    val source = Source.fromURL(getClass.getResource("/hardcoded-peers.txt"))
-    val addresses = source
-      .getLines()
-      .toVector
-      .filter(nodeAppConfig.torConf.enabled || !_.contains(".onion"))
-    val inetSockets = addresses.map(
-      NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
-    val peers =
-      inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
-    peers
-  }
-
-  /** Returns all peers stored in db */
-  def getPeersFromDb: Future[Vector[Peer]] = {
-    val addressesF: Future[Vector[PeerDb]] =
-      PeerDAO().findAll()
-    val peersF = addressesF.map { addresses =>
-      val filteredAddresses = addresses.filter(
-        nodeAppConfig.torConf.enabled || _.networkId != AddrV2Message.TOR_V3_NETWORK_BYTE)
-      val inetSockets = filteredAddresses.map(a => {
-        NetworkUtil.parseInetSocketAddress(a.address, a.port)
-      })
-      val peers =
-        inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
-      peers
-    }
-    peersF
-  }
-
-  def getPeersFromConfig: Vector[Peer] = {
-    val addresses = nodeAppConfig.peers.filter(
-      nodeAppConfig.torConf.enabled || !_.contains(".onion"))
-    val inetSockets = addresses.map(
-      NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
-    val peers =
-      inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
-    peers
-  }
-
-  /** Returns peers randomly taken from config, db, hardcoded peers, dns seeds in that order */
-  def getPeers: Future[Vector[Peer]] = {
-    //currently this would only give the first peer from config
-    val peersFromConfig = getPeersFromConfig
-    lazy val peersFromDbF = getPeersFromDb
-    lazy val peersFromDnsSeeds = getPeersFromDnsSeeds
-    lazy val peersFromResources = getPeersFromResources
-    val maxConnectedPeers = 1
-
-    val allF = for {
-      peersFromDb <- peersFromDbF
-    } yield {
-      val ret = Vector.newBuilder[Peer]
-      ret ++= Random.shuffle(peersFromConfig).take(maxConnectedPeers)
-      if (maxConnectedPeers - ret.result().size > 0)
-        ret ++= Random
-          .shuffle(peersFromDb.diff(ret.result()))
-          .take(maxConnectedPeers - ret.result().size)
-      if (maxConnectedPeers - ret.result().size > 0)
-        ret ++= Random
-          .shuffle(peersFromResources.diff(ret.result()))
-          .take(maxConnectedPeers - ret.result().size)
-      if (maxConnectedPeers - ret.result().size > 0)
-        ret ++= Random
-          .shuffle(peersFromDnsSeeds.diff(ret.result()))
-          .take(maxConnectedPeers - ret.result().size)
-      ret.result()
-    }
-    allF
-  }
-
-  def randomPeerMsgSenderWithService(
-      f: ServiceIdentifier => Boolean): PeerMessageSender = {
-    val filteredPeers =
-      peerData.values.filter(p => f(p.serviceIdentifier)).toVector
-    if (filteredPeers.isEmpty)
-      throw new RuntimeException("No peers supporting compact filters!")
-    val randomPeerData = filteredPeers(Random.nextInt(filteredPeers.length))
-    randomPeerData.peerMessageSender
-  }
-
-  def randomPeerMsgSenderWithCompactFilters: PeerMessageSender = {
-    randomPeerMsgSenderWithService(_.nodeCompactFilters)
-  }
-
-  def randomPeerMsgSender: PeerMessageSender = {
-    peerMsgSenders(Random.nextInt(peerMsgSenders.length))
-  }
-
-  def addPeer(
-      peer: Peer
-  ): Unit = {
-    if (!_peerData.contains(peer))
-      _peerData.put(peer, PeerData(peer, this))
-    else logger.debug(s"Peer $peer already added.")
-    ()
-  }
-
-  def removePeer(peer: Peer): Future[Unit] = {
-    if (_peerData.contains(peer)) {
-      val connF = peerData(peer).peerMessageSender.isConnected()
-      val disconnectF = connF.map { conn =>
-        if (conn) peerData(peer).peerMessageSender.disconnect()
-        else Future.unit
-      }
-      for {
-        _ <- disconnectF
-        _ <- removePeer(peer)
-      } yield ()
-    } else {
-      logger.debug(s"Key $peer not found in peerData")
-      Future.unit
-    }
-  }
-
-  def createInDb(peer: Peer): Future[PeerDb] = {
-    logger.debug(s"Adding peer to db $peer")
-    val addrBytes =
-      if (peer.socket.getHostString.contains(".onion"))
-        NetworkUtil.torV3AddressToBytes(peer.socket.getHostString)
-      else
-        InetAddress.getByName(peer.socket.getHostString).getAddress
-    val networkByte = addrBytes.length match {
-      case AddrV2Message.IPV4_ADDR_LENGTH   => AddrV2Message.IPV4_NETWORK_BYTE
-      case AddrV2Message.IPV6_ADDR_LENGTH   => AddrV2Message.IPV6_NETWORK_BYTE
-      case AddrV2Message.TOR_V3_ADDR_LENGTH => AddrV2Message.TOR_V3_NETWORK_BYTE
-      case unknownSize =>
-        throw new IllegalArgumentException(
-          s"Unsupported address type of size $unknownSize bytes")
-    }
-    PeerDAO()
-      .upsertPeer(ByteVector(addrBytes), peer.socket.getPort, networkByte)
-  }
+  val peerManager: PeerManager
 
   /** The current data message handler.
     * It should be noted that the dataMessageHandler contains
@@ -241,12 +72,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
     * the [[ChainApi chain api]] is updated inside of the p2p client
     */
-  def clients: Vector[P2PClient] = peerData.values.map(_.client).toVector
+  def clients: Vector[P2PClient] = peerManager.clients
 
-  def peerMsgSenders: Vector[PeerMessageSender] =
-    peerData.values
-      .map(_.peerMessageSender)
-      .toVector
+  def peerMsgSenders: Vector[PeerMessageSender] = peerManager.peerMsgSenders
 
   /** Sends the given P2P to our peer.
     * This method is useful for playing around
@@ -272,10 +100,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     peerMsgSenders(idx).isDisconnected()
 
   def initializePeer(peer: Peer): Future[Unit] = {
-    peerData(peer).peerMessageSender.connect()
+    peerManager.peerDataOf(peer).peerMessageSender.connect()
     val isInitializedF = AsyncUtil
       .retryUntilSatisfiedF(
-        () => peerData(peer).peerMessageSender.isInitialized(),
+        () => peerManager.peerDataOf(peer).peerMessageSender.isInitialized(),
         maxTries = 50,
         interval = 250.millis)
     isInitializedF.failed
@@ -298,8 +126,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val chainApiF = startConfsF.flatMap(_ => chainApiFromDb())
 
     val startNodeF = for {
-      peers <- getPeers
-      _ = peers.foreach(addPeer)
+      peers <- peerManager.getPeers
+      _ = peers.foreach(peerManager.addPeer)
       _ <- Future.sequence(peers.map(initializePeer))
     } yield {
       logger.info(s"Our node has been full started. It took=${System
@@ -380,7 +208,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      _ <- randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
+      _ <- peerManager.randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
     } yield {
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE}")
@@ -414,8 +242,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
           logger.info(s"Sending out tx message for tx=$txIds")
           peerMsgSenders(0).sendInventoryMessage(transactions: _*)
         } else {
-          Future.failed(new RuntimeException(
-            s"Error broadcasting transaction $txIds, peer is disconnected ${peers(0)}"))
+          Future.failed(
+            new RuntimeException(
+              s"Error broadcasting transaction $txIds, peer is disconnected ${peerManager
+                .peers(0)}"))
         }
       }
     } yield res

@@ -42,10 +42,7 @@ case class SpvNode(
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 
-  override def getPeersFromConfig: Vector[Peer] = {
-    if (configPeersOverride.isEmpty) super.getPeersFromConfig
-    else configPeersOverride
-  }
+  override val peerManager: PeerManager = PeerManager(this, configPeersOverride)
 
   def setBloomFilter(bloom: BloomFilter): SpvNode = {
     _bloomFilter.atomicSet(bloom)
@@ -95,7 +92,8 @@ case class SpvNode(
       _ <- AsyncUtil.retryUntilSatisfiedF(() => isConnected(0))
       _ <- peerMsgSenders(0).sendFilterLoadMessage(bloomFilter)
     } yield {
-      logger.info(s"Sending bloomfilter=${bloomFilter.hex} to ${peers(0)}")
+      logger.info(
+        s"Sending bloomfilter=${bloomFilter.hex} to ${peerManager.peers(0)}")
       node.asInstanceOf[SpvNode]
     }
   }
