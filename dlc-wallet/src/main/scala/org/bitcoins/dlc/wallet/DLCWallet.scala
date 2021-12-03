@@ -72,7 +72,8 @@ abstract class DLCWallet
       dlcOfferDAO = dlcOfferDAO,
       dlcAcceptDAO = dlcAcceptDAO,
       dlcSigsDAO = dlcSigsDAO,
-      dlcRefundSigDAO = dlcRefundSigDAO
+      dlcRefundSigDAO = dlcRefundSigDAO,
+      oracleNonceDAO = oracleNonceDAO
     )
   }
 
@@ -198,25 +199,10 @@ abstract class DLCWallet
 
     require(outcomeAndSigByNonce.forall(t => t._1 == t._2._2.rx),
             "nonces out of order")
-
+    val updateOracleSigsA =
+      actionBuilder.updateDLCOracleSigsAction(outcomeAndSigByNonce)
     for {
-      nonceDbs <- oracleNonceDAO.findByNonces(
-        outcomeAndSigByNonce.keys.toVector)
-      _ = assert(nonceDbs.size == outcomeAndSigByNonce.keys.size,
-                 "Didn't receive all nonce dbs")
-
-      updated = nonceDbs.map { db =>
-        val (outcome, sig) = outcomeAndSigByNonce(db.nonce)
-        db.copy(outcomeOpt = Some(outcome), signatureOpt = Some(sig))
-      }
-
-      updates <- oracleNonceDAO.updateAll(updated)
-
-      announcementIds = updates.map(_.announcementId).distinct
-      announcementDbs <- dlcAnnouncementDAO.findByAnnouncementIds(
-        announcementIds)
-      updatedDbs = announcementDbs.map(_.copy(used = true))
-      _ <- dlcAnnouncementDAO.updateAll(updatedDbs)
+      updates <- safeDatabase.runVec(updateOracleSigsA)
     } yield updates
   }
 
