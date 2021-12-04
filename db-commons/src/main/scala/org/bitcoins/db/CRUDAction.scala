@@ -20,7 +20,12 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
   }
 
   def updateAction(t: T): DBIOAction[T, NoStream, Effect.Write] = {
-    updateAllAction(Vector(t)).map(_.head)
+    updateAllAction(Vector(t)).map { ts =>
+      ts.headOption match {
+        case Some(updated) => updated
+        case None          => throw UpdateFailedException("Update failed for: " + t)
+      }
+    }
   }
 
   protected def find(t: T): Query[Table[_], T, Seq] = findAll(Vector(t))
