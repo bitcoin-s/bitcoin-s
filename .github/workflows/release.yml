@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main, "2021-12-03-installer-rename"]
+    branches: [master, main]
     tags: ["*"]
   release:
     types: [ published ]
