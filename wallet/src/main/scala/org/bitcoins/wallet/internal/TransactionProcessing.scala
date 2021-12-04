@@ -626,7 +626,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         val totalIncoming = outputsWithIndex.map(_.output.value).sum
 
         val spks = outputsWithIndex.map(_.output.scriptPubKey)
-        val spksInDbF = addressDAO.findByScriptPubKeys(spks.toVector)
+        val spksInDbF = addressDAO.findByScriptPubKeys(spks)
 
         val ourOutputsF = for {
           spksInDb <- spksInDbF
@@ -658,7 +658,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
               .fromScriptPubKey(out.output.scriptPubKey, networkParameters)
             tagsToUse.map(tag => AddressTagDb(address, tag))
           }
-          created <- addressTagDAO.createAll(newTagDbs.toVector)
+          created <- addressTagDAO.createAll(newTagDbs)
         } yield created
 
         for {

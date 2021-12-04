@@ -1,7 +1,7 @@
 package org.bitcoins.dlc.wallet.util
 
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
-import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce, Sha256Digest}
 import org.bitcoins.dlc.wallet.models.{
   DLCAcceptDAO,
   DLCAcceptDb,
@@ -17,7 +17,9 @@ import org.bitcoins.dlc.wallet.models.{
   DLCOfferDAO,
   DLCOfferDb,
   DLCRefundSigsDAO,
-  DLCRefundSigsDb
+  DLCRefundSigsDb,
+  OracleNonceDAO,
+  OracleNonceDb
 }
 
 import scala.concurrent.ExecutionContext
@@ -31,7 +33,8 @@ case class DLCActionBuilder(
     dlcOfferDAO: DLCOfferDAO,
     dlcAcceptDAO: DLCAcceptDAO,
     dlcSigsDAO: DLCCETSignaturesDAO,
-    dlcRefundSigDAO: DLCRefundSigsDAO) {
+    dlcRefundSigDAO: DLCRefundSigsDAO,
+    oracleNonceDAO: OracleNonceDAO) {
 
   //idk if it matters which profile api i import, but i need access to transactionally
   import dlcDAO.profile.api._
@@ -152,5 +155,40 @@ case class DLCActionBuilder(
     } yield (dlcDb, contractData, offer, inputs)
 
     combined
+  }
+
+  /** Updates various tables in our database with oracle attestations
+    * that are published by the oracle
+    */
+  def updateDLCOracleSigsAction(
+      outcomeAndSigByNonce: Map[
+        SchnorrNonce,
+        (String, SchnorrDigitalSignature)])(implicit
+      ec: ExecutionContext): DBIOAction[
+    Vector[OracleNonceDb],
+    NoStream,
+    Effect.Write with Effect.Read with Effect.Transactional] = {
+    val updateAction = for {
+      nonceDbs <- oracleNonceDAO.findByNoncesAction(
+        outcomeAndSigByNonce.keys.toVector)
+      _ = assert(nonceDbs.size == outcomeAndSigByNonce.keys.size,
+                 "Didn't receive all nonce dbs")
+
+      updated = nonceDbs.map { db =>
+        val (outcome, sig) = outcomeAndSigByNonce(db.nonce)
+        db.copy(outcomeOpt = Some(outcome), signatureOpt = Some(sig))
+      }
+
+      updateNonces <- oracleNonceDAO.updateAllAction(updated)
+
+      announcementDbs <- {
+        val announcementIds = updateNonces.map(_.announcementId).distinct
+        dlcAnnouncementDAO.findByAnnouncementIdsAction(announcementIds)
+      }
+      updatedDbs = announcementDbs.map(_.copy(used = true))
+      _ <- dlcAnnouncementDAO.updateAllAction(updatedDbs)
+    } yield updateNonces
+
+    updateAction.transactionally
   }
 }

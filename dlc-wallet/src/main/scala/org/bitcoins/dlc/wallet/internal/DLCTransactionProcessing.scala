@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.AddressTag
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.wallet.internal.TransactionProcessing
 
@@ -20,6 +21,9 @@ import scala.concurrent._
   */
 private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   self: DLCWallet =>
+
+  import dlcDAO.profile.api._
+  private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
 
   /** Calculates the new state of the DLCDb based on the closing transaction,
     * will delete old CET sigs that are no longer needed after execution
@@ -76,8 +80,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       val dlcId = dlcDb.dlcId
 
       for {
-        (_, contractData, offerDb, fundingInputDbs, _) <- getDLCOfferData(dlcId)
-        acceptDbOpt <- dlcAcceptDAO.findByDLCId(dlcId)
+        (_, contractData, offerDb, acceptDb, fundingInputDbs, _) <-
+          getDLCFundingData(dlcId)
         txIds = fundingInputDbs.map(_.outPoint.txIdBE)
         remotePrevTxs <- remoteTxDAO.findByTxIdBEs(txIds)
         localPrevTxs <- transactionDAO.findByTxIdBEs(txIds)
@@ -110,14 +114,12 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
 
           val offer =
             offerDb.toDLCOffer(contractInfo, fundingInputs, dlcDb, contractData)
-          val accept = acceptDbOpt
-            .map(
-              _.toDLCAccept(dlcDb.tempContractId,
-                            fundingInputs,
-                            sigDbs.map(dbSig =>
-                              (dbSig.sigPoint, dbSig.accepterSig)),
-                            acceptRefundSigOpt.head))
-            .head
+          val accept =
+            acceptDb.toDLCAccept(
+              dlcDb.tempContractId,
+              fundingInputs,
+              sigDbs.map(dbSig => (dbSig.sigPoint, dbSig.accepterSig)),
+              acceptRefundSigOpt.head)
 
           val sign: DLCSign = {
             val cetSigs: CETSignatures =
@@ -187,9 +189,11 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
 
           }
         }
-        _ <- oracleNonceDAO.updateAll(updatedNonces)
-
-        _ <- dlcAnnouncementDAO.updateAll(updatedAnnouncements)
+        updateNonceA = oracleNonceDAO.updateAllAction(updatedNonces)
+        updateAnnouncementA = dlcAnnouncementDAO.updateAllAction(
+          updatedAnnouncements)
+        actions = DBIO.seq(updateNonceA, updateAnnouncementA).transactionally
+        _ <- safeDatabase.run(actions)
       } yield dlcDb.copy(aggregateSignatureOpt = Some(sig))
     } else {
       Future.successful(dlcDb)
