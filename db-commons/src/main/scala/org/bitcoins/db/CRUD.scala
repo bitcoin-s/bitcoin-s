@@ -91,19 +91,21 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     */
   def delete(t: T): Future[Int] = {
     logger.debug("Deleting record: " + t)
-    val query: Query[Table[_], T, Seq] = find(t)
-    safeDatabase.run(query.delete)
+    val action = deleteAction(t)
+    safeDatabase.run(action.transactionally)
   }
 
   def deleteAll(ts: Vector[T]): Future[Int] = {
-    val query: Query[Table[_], T, Seq] = findAll(ts)
-    safeDatabase.run(query.delete)
+    val action = deleteAllAction(ts).transactionally
+    safeDatabase.run(action)
   }
 
   /** delete all records from the table
     */
-  def deleteAll(): Future[Int] =
-    safeDatabase.run(table.delete.transactionally)
+  def deleteAll(): Future[Int] = {
+    val action = deleteAllAction().transactionally
+    safeDatabase.run(action)
+  }
 
   /** insert the record if it does not exist, update it if it does
     *

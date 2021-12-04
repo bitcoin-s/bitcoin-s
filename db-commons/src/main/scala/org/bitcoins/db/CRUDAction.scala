@@ -62,4 +62,23 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
     //thus cannot be updated
     sequencedA.map(_.flatten)
   }
+
+  def deleteAction(t: T): DBIOAction[Int, NoStream, Effect.Write] = {
+    deleteAllAction(Vector(t))
+  }
+
+  def deleteAllAction(
+      ts: Vector[T]): DBIOAction[Int, NoStream, Effect.Write] = {
+    val query = findAll(ts)
+    query.delete
+  }
+
+  /** WARNING: Deletes all rows in table, use with care */
+  def deleteAllAction(): DBIOAction[
+    Int,
+    NoStream,
+    Effect.Write with Effect.Transactional] = {
+    table.delete.transactionally
+  }
+
 }
