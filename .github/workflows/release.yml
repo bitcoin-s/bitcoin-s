@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, "2021-12-03-installer-rename"]
     tags: ["*"]
   release:
     types: [ published ]
@@ -108,13 +108,13 @@ jobs:
       - name: Upload dmg
         uses: actions/upload-artifact@v1
         with:
-          name: "bitcoin-s-dmg-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
+          name: "mac-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
           path: ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
       - name: Upload if release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: "bitcoin-s-dmg-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
+          name: "mac-${{steps.previoustag.outputs.tag}}-${{github.sha}}"
           files: ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -184,13 +184,13 @@ jobs:
       - name: Upload installer
         uses: actions/upload-artifact@v1
         with:
-          name: bitcoin-s-msi-${{steps.previoustag.outputs.tag}}-${{github.sha}}
+          name: windows-${{steps.previoustag.outputs.tag}}-${{github.sha}}
           path: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
       - name: Upload if release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: bitcoin-s-msi-${{steps.previoustag.outputs.tag}}-${{github.sha}}
+          name: windows-${{steps.previoustag.outputs.tag}}-${{github.sha}}
           files: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
