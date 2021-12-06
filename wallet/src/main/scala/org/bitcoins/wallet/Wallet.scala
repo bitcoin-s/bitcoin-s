@@ -32,12 +32,13 @@ import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.db.models.MasterXPubDAO
-import org.bitcoins.db.{DatabaseDriver, SQLiteUtil}
+import org.bitcoins.db.{DatabaseDriver, SQLiteUtil, SafeDatabase}
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._
 import scodec.bits.ByteVector
+import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import java.nio.file.Path
 import java.time.Instant
@@ -86,6 +87,7 @@ abstract class Wallet
   private[bitcoins] val stateDescriptorDAO: WalletStateDescriptorDAO =
     WalletStateDescriptorDAO()
 
+  private val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
   val creationTime: Instant = keyManager.creationTime
@@ -257,22 +259,25 @@ abstract class Wallet
   }
 
   override def clearAllUtxosAndAddresses(): Future[Wallet] = {
-    val resultedF = for {
-      _ <- addressTagDAO.deleteAll()
-      _ <- spendingInfoDAO.deleteAll()
-      _ <- addressDAO.deleteAll()
-      _ <- scriptPubKeyDAO.deleteAll()
+    val aggregatedActions: DBIOAction[
+      Unit,
+      NoStream,
+      Effect.Write with Effect.Transactional] = for {
+      _ <- addressTagDAO.deleteAllAction()
+      _ <- spendingInfoDAO.deleteAllAction()
+      _ <- addressDAO.deleteAllAction()
+      _ <- scriptPubKeyDAO.deleteAllAction()
     } yield {
-      logger.info(
-        s"Done clearing all utxos, addresses and scripts from the database")
-      this
+      ()
     }
+
+    val resultedF = safeDatabase.run(aggregatedActions)
     resultedF.failed.foreach(err =>
       logger.error(
         s"Failed to clear utxos, addresses and scripts from the database",
         err))
 
-    resultedF
+    resultedF.map(_ => this)
   }
 
   /** Sums up the value of all unspent
