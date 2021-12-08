@@ -48,14 +48,4 @@ class BlockTest extends BitcoinSJvmTest {
       assert(Block(block.hex) == block)
     }
   }
-
-  it must "parse block 0000000000000000000593310d3b0cdc082af49f38b8a1611239072aef8433a8" in {
-    val fileName =
-      "/0000000000000000000593310d3b0cdc082af49f38b8a1611239072aef8433a8.txt"
-
-    //66cc4de192001d970244ffe32896282a1994fef80f01d35b216033aeacac1651
-    val lines = Source.fromURL(getClass.getResource(fileName)).mkString
-    val _ = timeBlockParsing(Block.fromHex(lines))
-    succeed
-  }
 }
