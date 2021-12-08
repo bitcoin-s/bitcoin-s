@@ -705,6 +705,9 @@ object JsonSerializers {
     ListTransactionsResults] =
     Json.reads[ListTransactionsResults]
 
+  implicit val SendCustomMessageResultReads: Reads[SendCustomMessageResult] =
+    Json.reads[SendCustomMessageResult]
+
   implicit val byteVectorWrites: Writes[ByteVector] =
     Writes[ByteVector](bytes => JsString(bytes.toHex))
 

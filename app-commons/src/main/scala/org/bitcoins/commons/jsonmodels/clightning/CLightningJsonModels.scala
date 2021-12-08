@@ -345,4 +345,8 @@ object CLightningJsonModels {
   case class ListTransactionsResults(
       transactions: Vector[CLightningTransaction]
   ) extends CLightningJsonModel
+
+  case class SendCustomMessageResult(
+      status: String
+  ) extends CLightningJsonModel
 }
