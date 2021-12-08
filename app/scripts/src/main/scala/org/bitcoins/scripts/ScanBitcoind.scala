@@ -14,7 +14,6 @@ import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 
 import java.time.Instant
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 /** Useful script for scanning bitcoind
   * This file assumes you have pre-configured the connection
