@@ -109,34 +109,27 @@ sealed abstract class Transaction extends NetworkElement {
 object Transaction extends Factory[Transaction] {
   def newBuilder: RawTxBuilder = RawTxBuilder()
 
-  private var count = 0
-
   override def fromBytes(bytes: ByteVector): Transaction = {
     //see BIP141 for marker/flag bytes
     //https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id
-    val tx =
-      if (
-        bytes(4) == WitnessTransaction.marker && bytes(
-          5) == WitnessTransaction.flag
-      ) {
-        //this throw/catch is _still_ necessary for the case where we have unsigned base transactions
-        //with zero inputs and 1 output which is serialized as "0001" at bytes 4 and 5.
-        //these transactions will not have a script witness associated with them making them invalid
-        //witness transactions (you need to have a witness to be considered a witness tx)
-        //see: https://github.com/bitcoin-s/bitcoin-s/blob/01d89df1b7c6bc4b1594406d54d5e6019705c654/core-test/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionTest.scala#L88
-        try {
-          WitnessTransaction.fromBytes(bytes)
-        } catch {
-          case scala.util.control.NonFatal(_) =>
-            BaseTransaction.fromBytes(bytes)
-        }
-      } else {
-        BaseTransaction.fromBytes(bytes)
+    if (
+      bytes(4) == WitnessTransaction.marker && bytes(
+        5) == WitnessTransaction.flag
+    ) {
+      //this throw/catch is _still_ necessary for the case where we have unsigned base transactions
+      //with zero inputs and 1 output which is serialized as "0001" at bytes 4 and 5.
+      //these transactions will not have a script witness associated with them making them invalid
+      //witness transactions (you need to have a witness to be considered a witness tx)
+      //see: https://github.com/bitcoin-s/bitcoin-s/blob/01d89df1b7c6bc4b1594406d54d5e6019705c654/core-test/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionTest.scala#L88
+      try {
+        WitnessTransaction.fromBytes(bytes)
+      } catch {
+        case scala.util.control.NonFatal(_) =>
+          BaseTransaction.fromBytes(bytes)
       }
-
-    println(s"parsed tx=${tx.txIdBE.hex} idx=$count")
-    count = count + 1
-    tx
+    } else {
+      BaseTransaction.fromBytes(bytes)
+    }
   }
 }
 
