@@ -3,8 +3,6 @@ package org.bitcoins.scripts
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Keep, Sink, Source}
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.protocol.Bech32mAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
@@ -39,8 +37,8 @@ class ScanBitcoind()(implicit
       val f = for {
         bitcoind <- bitcoindF
         endHeight <- endHeightF
-        _ <- countWitV1MempoolTxs(bitcoind)
-        _ <- countTaprootTxsInBlocks(endHeight, 6, bitcoind)
+        //_ <- countWitV1MempoolTxs(bitcoind)
+        _ <- countTaprootTxsInBlocks(endHeight, 10000, bitcoind)
       } yield ()
       f.failed.foreach(err =>
         logger.error(s"Failed to count witnes v1 mempool txs", err))
@@ -61,7 +59,7 @@ class ScanBitcoind()(implicit
       source: Source[Int, NotUsed],
       f: Block => T,
       numParallelism: Int =
-        Runtime.getRuntime.availableProcessors() * 2): Future[Seq[T]] = {
+        Runtime.getRuntime.availableProcessors()): Future[Seq[T]] = {
     source
       .mapAsync(parallelism = numParallelism) { height =>
         bitcoind
@@ -116,9 +114,6 @@ class ScanBitcoind()(implicit
       val outputs = block.transactions
         .flatMap(_.outputs)
         .filter(_.scriptPubKey.isInstanceOf[WitnessScriptPubKeyV1])
-
-      logger.info(
-        s"addresses=${outputs.map(_.scriptPubKey).map(spk => Bech32mAddress(spk.asInstanceOf[WitnessScriptPubKeyV1], MainNet))}")
       outputs.length
     }
 
