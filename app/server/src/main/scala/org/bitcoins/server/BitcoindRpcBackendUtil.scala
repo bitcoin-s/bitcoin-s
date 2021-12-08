@@ -20,7 +20,6 @@ import org.bitcoins.zmq.ZMQSubscriber
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success}
 
 /** Useful utilities to use in the wallet project for syncing things against bitcoind */
 object BitcoindRpcBackendUtil extends Logging {
@@ -295,12 +294,12 @@ object BitcoindRpcBackendUtil extends Logging {
               } yield logger.debug(
                 "Successfully polled bitcoind for new blocks")
 
-              requestsBlocksF.onComplete {
-                case Success(_) => ()
-                case Failure(err) =>
-                  atomicPrevCount.set(prevCount)
-                  logger.error("Requesting blocks from bitcoind polling failed",
-                               err)
+              requestsBlocksF.failed.foreach { case err =>
+                val failedCount = atomicPrevCount.get
+                atomicPrevCount.set(prevCount)
+                logger.error(
+                  s"Requesting blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
+                  err)
               }
 
               requestsBlocksF
