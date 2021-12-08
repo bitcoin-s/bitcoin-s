@@ -33,17 +33,14 @@ class ScanBitcoind()(implicit
     //    val startHeight = 675000
     val endHeightF: Future[Int] = bitcoindF.flatMap(_.getBlockCount)
 
-    system.scheduler.scheduleAtFixedRate(0.seconds, 1.minutes) { () =>
-      val f = for {
-        bitcoind <- bitcoindF
-        endHeight <- endHeightF
-        //_ <- countWitV1MempoolTxs(bitcoind)
-        _ <- countTaprootTxsInBlocks(endHeight, 10000, bitcoind)
-      } yield ()
-      f.failed.foreach(err =>
-        logger.error(s"Failed to count witnes v1 mempool txs", err))
-      ()
-    }
+    val f = for {
+      bitcoind <- bitcoindF
+      endHeight <- endHeightF
+      //_ <- countWitV1MempoolTxs(bitcoind)
+      _ <- countTaprootTxsInBlocks(endHeight, 10000, bitcoind)
+    } yield ()
+    f.failed.foreach(err =>
+      logger.error(s"Failed to count witness v1 mempool txs", err))
     Future.unit
   }
 
@@ -58,8 +55,8 @@ class ScanBitcoind()(implicit
       bitcoind: BitcoindRpcClient,
       source: Source[Int, NotUsed],
       f: Block => T,
-      numParallelism: Int =
-        Runtime.getRuntime.availableProcessors()): Future[Seq[T]] = {
+      numParallelism: Int = Runtime.getRuntime.availableProcessors()): Future[
+    Seq[T]] = {
     source
       .mapAsync(parallelism = numParallelism) { height =>
         bitcoind
