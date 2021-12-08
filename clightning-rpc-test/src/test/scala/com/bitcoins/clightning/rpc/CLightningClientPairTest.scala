@@ -2,6 +2,7 @@ package com.bitcoins.clightning.rpc
 
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number._
+import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.script.EmptyScriptSignature
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
@@ -9,6 +10,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerKW
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.clightning.CLightningRpcTestUtil
 import org.bitcoins.testkit.fixtures.DualCLightningFixture
+import scodec.bits._
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -158,6 +160,20 @@ class CLightningClientPairTest extends DualCLightningFixture {
       assert(newBalB == oldBalB + sendAmt)
       // account for variance in fees
       assert(newBalA === oldBalA - sendAmt - feeRate.calc(tx) +- Satoshis(200))
+    }
+  }
+
+  it must "send a custom message to another peer" in { params =>
+    val (_, clightningA, clightningB) = params
+
+    for {
+      nodeId <- clightningB.nodeId
+      result <- clightningA.sendCustomMessage(
+        nodeId,
+        BigSizeUInt(48001),
+        hex"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+    } yield {
+      assert(result.status.nonEmpty)
     }
   }
 }
