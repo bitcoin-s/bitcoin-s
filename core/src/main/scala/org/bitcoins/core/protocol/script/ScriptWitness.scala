@@ -8,6 +8,7 @@ import org.bitcoins.core.serializers.script.{
 }
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.{
+  CryptoUtil,
   ECDigitalSignature,
   ECPublicKey,
   ECPublicKeyBytes,
@@ -180,9 +181,9 @@ object ScriptWitness extends Factory[ScriptWitness] {
     //TODO: eventually only compressed public keys will be allowed in v0 scripts
     //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
     val isPubKey = {
-      stack.nonEmpty &&
-      ((stack.head.size == 33 && (stack.head.head == 0x02 || stack.head.head == 0x03))
-        || (stack.head.size == 65 && stack.head.head == 0x04))
+      stack.nonEmpty && (stack.head.size == 33 && (stack.head.head == 0x02 || stack.head.head == 0x03)
+        || (stack.head.size == 65 && stack.head.head == 0x04 && CryptoUtil
+          .isValidPubKey(ECPublicKeyBytes(stack.head))))
     }
     if (stack.isEmpty) {
       EmptyScriptWitness
