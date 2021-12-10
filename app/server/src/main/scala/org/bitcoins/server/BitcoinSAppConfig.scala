@@ -8,7 +8,7 @@ import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.util.{FutureUtil, StartStopAsync, TimeUtil}
+import org.bitcoins.core.util.{StartStopAsync, TimeUtil}
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
@@ -61,16 +61,22 @@ case class BitcoinSAppConfig(
   override def start(): Future[Unit] = {
     val start = TimeUtil.currentEpochMs
     //configurations that don't depend on tor startup
+    //start these in parallel as an optimization
     val nonTorConfigs = Vector(kmConf, chainConf, walletConf)
 
-    val configs = List(torConf, nodeConf, bitcoindRpcConf, dlcConf)
+    val torConfig = torConf.start()
+    val torDependentConfigs = Vector(nodeConf, bitcoindRpcConf, dlcConf)
+
+    val startedTorDependentConfigsF = for {
+      _ <- torConfig
+      _ <- Future.sequence(torDependentConfigs.map(_.start()))
+    } yield ()
 
     val startedNonTorConfigs = Future.sequence(nonTorConfigs.map(_.start()))
-    val started = FutureUtil.sequentially(configs)(_.start()).map(_ => ())
 
     for {
       _ <- startedNonTorConfigs
-      _ <- started
+      _ <- startedTorDependentConfigsF
     } yield {
       logger.info(
         s"Done starting BitcoinSAppConfig, it took=${TimeUtil.currentEpochMs - start}ms")
