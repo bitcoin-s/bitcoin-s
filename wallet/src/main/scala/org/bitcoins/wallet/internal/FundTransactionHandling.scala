@@ -107,7 +107,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         val utxosStr = utxoSpendingInfos
           .map { utxo =>
             import utxo.outPoint
-            s"${outPoint.txId.hex}:${outPoint.vout.toInt}"
+            s"${outPoint.txIdBE.hex}:${outPoint.vout.toInt}"
           }
           .mkString(", ")
         s"Spending UTXOs: $utxosStr"
