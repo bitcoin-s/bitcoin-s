@@ -28,6 +28,30 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
     }
   }
 
+  /** return all rows that have a certain primary key
+    *
+    * @param id
+    * @return Query object corresponding to the selected rows
+    */
+  protected def findByPrimaryKey(id: PrimaryKeyType): Query[Table[_], T, Seq] =
+    findByPrimaryKeys(Vector(id))
+
+  /** Finds the rows that correlate to the given primary keys */
+  protected def findByPrimaryKeys(
+      ids: Vector[PrimaryKeyType]): Query[Table[T], T, Seq]
+
+  protected def findByPrimaryKeysAction(ids: Vector[
+    PrimaryKeyType]): DBIOAction[Vector[T], NoStream, Effect.Read] = {
+    findByPrimaryKeys(ids).result
+      .map(_.toVector)
+  }
+
+  def findByPrimaryKeyAction(
+      id: PrimaryKeyType): DBIOAction[Option[T], NoStream, Effect.Read] = {
+    findByPrimaryKeysAction(Vector(id))
+      .map(_.headOption)
+  }
+
   protected def find(t: T): Query[Table[_], T, Seq] = findAll(Vector(t))
 
   protected def findAll(ts: Vector[T]): Query[Table[_], T, Seq]

@@ -195,7 +195,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   /** Returns blockchain info, in case of  [[InWarmUp]] exception it retries.
     */
   private def getBlockChainInfo(
-      client: BitcoindRpcClient): Future[GetBlockChainInfoResult] = {
+                                 client: BitcoindRpcClient): Future[GetBlockChainInfoResult] = {
     val promise = Promise[GetBlockChainInfoResult]()
     for {
       _ <- AsyncUtil.retryUntilSatisfiedF(
@@ -212,6 +212,19 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   def startBitcoindBackend(): Future[Unit] = {
+
+    val bitcoindF = for {
+      client <- bitcoindRpcConf.clientF
+      _ <- client.start()
+    } yield client
+
+    val tmpWalletF = bitcoindF.flatMap { bitcoind =>
+      val feeProvider = getFeeProviderOrElse(bitcoind)
+      dlcConf.createDLCWallet(nodeApi = bitcoind,
+        chainQueryApi = bitcoind,
+        feeRateApi = feeProvider)
+    }
+
     for {
       _ <- bitcoindRpcConf.start()
       bitcoind <- bitcoindRpcConf.clientF
@@ -223,10 +236,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         s"bitcoind ($bitcoindNetwork) on different network than wallet (${walletConf.network})")
 
       _ = logger.info("Creating wallet")
-      feeProvider = getFeeProviderOrElse(bitcoind)
-      tmpWallet <- dlcConf.createDLCWallet(nodeApi = bitcoind,
-                                           chainQueryApi = bitcoind,
-                                           feeRateApi = feeProvider)
+      tmpWallet <- tmpWalletF
       wallet = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
         bitcoind,
         tmpWallet)

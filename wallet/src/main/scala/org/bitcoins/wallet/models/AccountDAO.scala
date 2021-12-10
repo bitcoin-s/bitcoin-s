@@ -24,7 +24,19 @@ case class AccountDAO()(implicit
     createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[(HDCoin, Int)]): Query[AccountTable, AccountDb, Seq] = ???
+      ids: Vector[(HDCoin, Int)]): Query[AccountTable, AccountDb, Seq] = {
+    val queries = ids.map(findByPrimaryKey(_))
+
+    if (queries.isEmpty) {
+      TableQuery.apply[AccountTable]
+    } else if (queries.length == 1) {
+      queries.head
+    } else {
+      queries.tail.foldLeft(queries.head) { case (agg, q) =>
+        agg.union(q)
+      }
+    }
+  }
 
   override def findByPrimaryKey(
       id: (HDCoin, Int)): Query[AccountTable, AccountDb, Seq] = {
