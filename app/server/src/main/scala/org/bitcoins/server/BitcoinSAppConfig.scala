@@ -8,7 +8,7 @@ import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.util.{FutureUtil, StartStopAsync}
+import org.bitcoins.core.util.{FutureUtil, StartStopAsync, TimeUtil}
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
@@ -32,7 +32,8 @@ import scala.concurrent.Future
 case class BitcoinSAppConfig(
     private val directory: Path,
     private val confs: Config*)(implicit system: ActorSystem)
-    extends StartStopAsync[Unit] {
+    extends StartStopAsync[Unit]
+    with Logging {
   import system.dispatcher
   lazy val walletConf: WalletAppConfig = WalletAppConfig(directory, confs: _*)
   lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
@@ -58,6 +59,7 @@ case class BitcoinSAppConfig(
 
   /** Initializes the wallet, node and chain projects */
   override def start(): Future[Unit] = {
+    val start = TimeUtil.currentEpochMs
     val configs = List(kmConf,
                        walletConf,
                        torConf,
@@ -66,7 +68,12 @@ case class BitcoinSAppConfig(
                        bitcoindRpcConf,
                        dlcConf)
 
-    FutureUtil.sequentially(configs)(_.start()).map(_ => ())
+    val started = FutureUtil.sequentially(configs)(_.start()).map(_ => ())
+    started.map { _ =>
+      logger.info(
+        s"Done starting BitcoinSAppConfig, it took=${TimeUtil.currentEpochMs - start}ms")
+      ()
+    }
   }
 
   override def stop(): Future[Unit] = {
