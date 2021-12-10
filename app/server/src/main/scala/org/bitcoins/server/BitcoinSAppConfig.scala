@@ -60,16 +60,18 @@ case class BitcoinSAppConfig(
   /** Initializes the wallet, node and chain projects */
   override def start(): Future[Unit] = {
     val start = TimeUtil.currentEpochMs
-    val configs = List(kmConf,
-                       walletConf,
-                       torConf,
-                       nodeConf,
-                       chainConf,
-                       bitcoindRpcConf,
-                       dlcConf)
+    //configurations that don't depend on tor startup
+    val nonTorConfigs = Vector(kmConf, chainConf, walletConf)
 
+    val configs = List(torConf, nodeConf, bitcoindRpcConf, dlcConf)
+
+    val startedNonTorConfigs = Future.sequence(nonTorConfigs.map(_.start()))
     val started = FutureUtil.sequentially(configs)(_.start()).map(_ => ())
-    started.map { _ =>
+
+    for {
+      _ <- startedNonTorConfigs
+      _ <- started
+    } yield {
       logger.info(
         s"Done starting BitcoinSAppConfig, it took=${TimeUtil.currentEpochMs - start}ms")
       ()
