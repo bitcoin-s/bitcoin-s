@@ -195,8 +195,8 @@ case class SpendingInfoDAO()(implicit
     findOutputsReceived(txs.map(_.txIdBE))
   }
 
-  private def _findOutputsBeingSpent(
-      txs: Vector[Transaction]): Future[Vector[UTXORecord]] = {
+  private def _findOutputsBeingSpentQuery(
+      txs: Vector[Transaction]): Query[SpendingInfoTable, UTXORecord, Seq] = {
     val outPoints = txs
       .flatMap(_.inputs)
       .map(_.previousOutput)
@@ -205,8 +205,7 @@ case class SpendingInfoDAO()(implicit
       .filter { case txo =>
         txo.outPoint.inSet(outPoints)
       }
-
-    safeDatabase.runVec(filtered.result)
+    filtered
   }
 
   /** Finds all the outputs being spent in the given
@@ -216,14 +215,31 @@ case class SpendingInfoDAO()(implicit
     findOutputsBeingSpent(Vector(tx))
   }
 
+  private def findOutputsBeingSpentQuery(txs: Vector[Transaction]): Query[
+    (SpendingInfoTable, ScriptPubKeyDAO#ScriptPubKeyTable),
+    (UTXORecord, ScriptPubKeyDAO#ScriptPubKeyTable#TableElementType),
+    Seq] = {
+    _findOutputsBeingSpentQuery(txs)
+      .join(spkTable)
+      .on(_.scriptPubKeyId === _.id)
+  }
+
   def findOutputsBeingSpent(
       txs: Vector[Transaction]): Future[Vector[SpendingInfoDb]] = {
+    val action: DBIOAction[
+      Vector[(UTXORecord, ScriptPubKeyDb)],
+      NoStream,
+      Effect.Read] = findOutputsBeingSpentQuery(txs).result
+      .map(_.toVector)
+
+    val resultsF = safeDatabase.runVec(action)
+
     for {
-      utxos <- _findOutputsBeingSpent(txs)
-      spks <- findScriptPubKeysByUtxos(utxos)
+      results <- resultsF
     } yield {
-      utxos.map(utxo =>
-        utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey))
+      results.map { case (utxo, spk) =>
+        utxo.toSpendingInfoDb(spk.scriptPubKey)
+      }
     }
   }
 
