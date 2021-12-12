@@ -3,9 +3,11 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.Http
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -26,6 +28,7 @@ import org.bitcoins.feeprovider._
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
@@ -34,6 +37,7 @@ import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
@@ -183,15 +187,32 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
   }
 
-  def startBitcoindBackend(): Future[Unit] = {
-    val bitcoindF = bitcoindRpcConf.clientF
+  /** Returns blockchain info, in case of  [[InWarmUp]] exception it retries.
+    */
+  private def getBlockChainInfo(
+      client: BitcoindRpcClient): Future[GetBlockChainInfoResult] = {
+    val promise = Promise[GetBlockChainInfoResult]()
+    for {
+      _ <- AsyncUtil.retryUntilSatisfiedF(
+        conditionF = { () =>
+          val infoF = client.getBlockChainInfo
+          val res = infoF.map(promise.success).map(_ => true)
+          res.recover { case _: InWarmUp => false }
+        },
+        interval = 1.second,
+        maxTries = 100
+      )
+      info <- promise.future
+    } yield info
+  }
 
+  def startBitcoindBackend(): Future[Unit] = {
     for {
       _ <- bitcoindRpcConf.start()
-      bitcoind <- bitcoindF
+      bitcoind <- bitcoindRpcConf.clientF
       _ = logger.info("Started bitcoind")
 
-      bitcoindNetwork <- bitcoind.getBlockChainInfo.map(_.chain)
+      bitcoindNetwork <- getBlockChainInfo(bitcoind).map(_.chain)
       _ = require(
         bitcoindNetwork == walletConf.network,
         s"bitcoind ($bitcoindNetwork) on different network than wallet (${walletConf.network})")
