@@ -10,7 +10,6 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config._
-import org.bitcoins.wallet.models.ScriptPubKeyDAO.ScriptPubKeyTable
 
 import java.sql.SQLException
 import scala.concurrent.{ExecutionContext, Future}
@@ -222,7 +221,7 @@ case class SpendingInfoDAO()(implicit
     Seq] = {
     _findOutputsBeingSpentQuery(txs)
       .join(spkTable)
-      .on(_.id === _.id)
+      .on(_.scriptPubKeyId === _.id)
   }
 
   def findOutputsBeingSpent(
