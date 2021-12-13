@@ -1,5 +1,6 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -478,6 +479,38 @@ class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
         assert(
           updatedCoins.forall(_.state == TxoState.PendingConfirmationsSpent))
         assert(updatedCoins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
+      }
+  }
+
+  it must "fail to mark utxos as reserved if one of the utxos is already reserved" in {
+    param =>
+      val WalletWithBitcoindRpc(wallet, _) = param
+      val utxosF = wallet.listUtxos()
+
+      val reservedUtxoF: Future[SpendingInfoDb] = for {
+        utxos <- utxosF
+        first = utxos.head
+        //just reserve this one to start
+        reserved <- wallet.markUTXOsAsReserved(Vector(first))
+        //now try to reserve them all
+        //this should fail as the first utxo is reserved
+      } yield reserved.head
+
+      val reserveFailedF = for {
+        utxos <- utxosF
+        _ <- reservedUtxoF
+        _ <- wallet.markUTXOsAsReserved(utxos)
+      } yield ()
+
+      val assertionF = recoverToSucceededIf[RuntimeException](reserveFailedF)
+
+      for {
+        _ <- assertionF
+        reserved <- reservedUtxoF
+        utxos <- wallet.listUtxos(TxoState.Reserved)
+      } yield {
+        assert(utxos.length == 1)
+        assert(reserved.outPoint == utxos.head.outPoint)
       }
   }
 }

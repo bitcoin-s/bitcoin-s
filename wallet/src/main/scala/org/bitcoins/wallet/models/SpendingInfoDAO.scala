@@ -463,18 +463,23 @@ case class SpendingInfoDAO()(implicit
       ) //must be available to reserve
       .map(_.state)
       .update(TxoState.Reserved)
+      .flatMap { count =>
+        if (count != ts.length) {
+          val exn = new RuntimeException(
+            s"Failed to reserve all utxos, expected=${ts.length} actual=$count")
+          DBIO.failed(exn)
+        } else {
+
+          DBIO.successful(count)
+        }
+      }
+      //this needs to be at the end, to make sure we rollback correctly if
+      //the utxo is already reserved
       .transactionally
 
     safeDatabase
       .run(action)
-      .map { count =>
-        if (count != ts.length) {
-          sys.error(
-            s"Failed to reserve all utxos, expected=${ts.length} actual=$count")
-        } else {
-          ts.map(_.copyWithState(TxoState.Reserved))
-        }
-      }
+      .map(_ => ts.map(_.copyWithState(TxoState.Reserved)))
   }
 
   private def findScriptPubKeys(
