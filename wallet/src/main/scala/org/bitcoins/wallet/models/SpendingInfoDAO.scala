@@ -447,6 +447,25 @@ case class SpendingInfoDAO()(implicit
       })
   }
 
+  def markAsReserved(
+      ts: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    //1. Check if any are reserved already
+    //2. if not, reserve them
+    //3. if they are reserved, throw an exception?
+    val txIds = ts.map(_.txid)
+    val reservedVec = Vector(TxoState.Reserved)
+    val action = table
+      .filter(_.txid.inSet(txIds))
+      .filterNot(_.state.inSet(reservedVec))
+      .map(_.state)
+      .update(TxoState.Reserved)
+      .transactionally
+
+    safeDatabase
+      .run(action)
+      .map(_ => ts.map(_.copyWithState(TxoState.Reserved)))
+  }
+
   private def findScriptPubKeys(
       ids: Seq[Long]): Future[Map[Long, ScriptPubKeyDb]] = {
     val query = spkTable.filter(t => t.id.inSet(ids))

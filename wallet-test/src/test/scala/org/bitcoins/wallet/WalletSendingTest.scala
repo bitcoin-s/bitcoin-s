@@ -493,4 +493,34 @@ class WalletSendingTest extends BitcoinSWalletTest {
   it should "correctly send with standard accumulate" in { fundedWallet =>
     testSendWithAlgo(fundedWallet.wallet, CoinSelectionAlgo.StandardAccumulate)
   }
+
+  it must "it must not double spend utxos used to fund other txs in the wallet" in {
+    fundedWallet =>
+      //i expected an error saying insufficient balance
+
+      val addr1F = fundedWallet.wallet.getNewAddress()
+      val addr2F = fundedWallet.wallet.getNewAddress()
+      val balanceF = fundedWallet.wallet.getBalance()
+
+      val failedTx = for {
+        balance <- balanceF
+        addr1 <- addr1F
+        addr2 <- addr2F
+        amt = balance - Satoshis(
+          500000
+        ) // for fee, fee rates are random so we might need a lot
+        tx1F = fundedWallet.wallet.sendToAddress(addr1, amt, None)
+        tx2F = fundedWallet.wallet.sendToAddress(addr2, amt, None)
+        tx1 <- tx1F
+        tx2 <- tx2F
+      } yield {
+        val allOutpoints = {
+          Vector(tx1, tx2).flatMap(_.inputs.map(_.previousOutput))
+        }
+        allOutpoints.foreach(o => println(s"o=$o"))
+        assert(allOutpoints == allOutpoints.distinct)
+      }
+
+      failedTx
+  }
 }
