@@ -1079,12 +1079,12 @@ object Wallet extends WalletLogger {
       }
       accounts
     }
-
+    import wallet.accountDAO.profile.api._
     for {
       _ <- createMasterXpubF
       actions = createAccountActions
       accounts <- wallet.accountDAO.safeDatabase.runVec(
-        DBIOAction.sequence(actions))
+        DBIOAction.sequence(actions).transactionally)
       _ = accounts.foreach { a =>
         logger.info(s"Created account=${a} to DB")
       }
