@@ -452,18 +452,29 @@ case class SpendingInfoDAO()(implicit
     //1. Check if any are reserved already
     //2. if not, reserve them
     //3. if they are reserved, throw an exception?
-    val txIds = ts.map(_.txid)
-    val reservedVec = Vector(TxoState.Reserved)
-    val action = table
-      .filter(_.txid.inSet(txIds))
-      .filterNot(_.state.inSet(reservedVec))
+    val outPoints = ts.map(_.outPoint)
+    val action: DBIOAction[
+      Int,
+      NoStream,
+      Effect.Write with Effect.Transactional] = table
+      .filter(_.outPoint.inSet(outPoints))
+      .filter(
+        _.state.inSet(TxoState.receivedStates)
+      ) //must be available to reserve
       .map(_.state)
       .update(TxoState.Reserved)
       .transactionally
 
     safeDatabase
       .run(action)
-      .map(_ => ts.map(_.copyWithState(TxoState.Reserved)))
+      .map { count =>
+        if (count != ts.length) {
+          sys.error(
+            s"Failed to reserve all utxos, expected=${ts.length} actual=$count")
+        } else {
+          ts.map(_.copyWithState(TxoState.Reserved))
+        }
+      }
   }
 
   private def findScriptPubKeys(

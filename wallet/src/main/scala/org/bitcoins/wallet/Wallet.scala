@@ -662,7 +662,8 @@ abstract class Wallet
         feeRate = feeRate,
         fromAccount = fromAccount,
         coinSelectionAlgo = algo,
-        fromTagOpt = None)
+        fromTagOpt = None,
+        markAsReserved = true)
 
       tx <- finishSend(txBuilder, utxoInfos, amount, feeRate, newTags)
     } yield tx

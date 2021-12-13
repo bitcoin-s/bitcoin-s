@@ -6,7 +6,8 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.builder.RawTxSigner
+import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.crypto.ECPublicKey
@@ -397,13 +398,20 @@ class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
       val dummyOutput =
         TransactionOutput(Satoshis(100000),
                           P2PKHScriptPubKey(ECPublicKey.freshPublicKey))
-
+      val accountF = wallet.getDefaultAccount()
       for {
         oldTransactions <- wallet.listTransactions()
-        tx <- wallet.sendToOutputs(Vector(dummyOutput), None)
-        _ <- wallet.processTransaction(tx, None)
-        _ <- wallet.markUTXOsAsReserved(tx)
-
+        account <- accountF
+        (txBuilder, params) <- wallet.fundRawTransactionInternal(
+          destinations = Vector(dummyOutput),
+          feeRate = SatoshisPerVirtualByte.one,
+          fromAccount = account,
+          fromTagOpt = None,
+          markAsReserved = true
+        )
+        builderResult = txBuilder.builder.result()
+        unsignedTx = txBuilder.finalizer.buildTx(builderResult)
+        tx = RawTxSigner.sign(unsignedTx, params)
         allReserved <- wallet.listUtxos(TxoState.Reserved)
         _ = assert(
           tx.inputs

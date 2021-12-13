@@ -502,25 +502,27 @@ class WalletSendingTest extends BitcoinSWalletTest {
       val addr2F = fundedWallet.wallet.getNewAddress()
       val balanceF = fundedWallet.wallet.getBalance()
 
-      val failedTx = for {
+      val failedTx: Future[Unit] = for {
         balance <- balanceF
         addr1 <- addr1F
         addr2 <- addr2F
         amt = balance - Satoshis(
           500000
         ) // for fee, fee rates are random so we might need a lot
+
+        //build these transactions in parallel intentionally
         tx1F = fundedWallet.wallet.sendToAddress(addr1, amt, None)
         tx2F = fundedWallet.wallet.sendToAddress(addr2, amt, None)
-        tx1 <- tx1F
-        tx2 <- tx2F
-      } yield {
-        val allOutpoints = {
-          Vector(tx1, tx2).flatMap(_.inputs.map(_.previousOutput))
-        }
-        allOutpoints.foreach(o => println(s"o=$o"))
-        assert(allOutpoints == allOutpoints.distinct)
-      }
+        //one of these should fail because we don't have enough money
+        _ <- tx1F
+        _ <- tx2F
+      } yield ()
 
-      failedTx
+      val exnF: Future[RuntimeException] =
+        recoverToExceptionIf[RuntimeException](failedTx)
+
+      exnF.map(err =>
+        assert(err.getMessage.contains("Failed to reserve all utxos")))
+
   }
 }
