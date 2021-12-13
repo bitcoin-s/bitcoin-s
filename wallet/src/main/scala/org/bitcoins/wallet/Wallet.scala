@@ -744,7 +744,9 @@ abstract class Wallet
         feeRate = feeRate,
         fromAccount = fromAccount,
         coinSelectionAlgo = CoinSelectionAlgo.RandomSelection,
-        fromTagOpt = None)
+        fromTagOpt = None,
+        markAsReserved = true
+      )
       tx <- finishSend(txBuilder,
                        utxoInfos,
                        CurrencyUnits.zero,
@@ -764,7 +766,8 @@ abstract class Wallet
         destinations = outputs,
         feeRate = feeRate,
         fromAccount = fromAccount,
-        fromTagOpt = None)
+        fromTagOpt = None,
+        markAsReserved = true)
       sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
       tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate, newTags)
     } yield tx

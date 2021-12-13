@@ -53,7 +53,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       fromAccount: AccountDb,
       coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.LeastWaste,
       fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean = false): Future[(
+      markAsReserved: Boolean): Future[(
       RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
       Vector[ScriptSignatureParams[InputInfo]])] = {
     val utxosF: Future[Vector[(SpendingInfoDb, Transaction)]] =
