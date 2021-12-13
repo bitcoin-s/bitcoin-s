@@ -138,18 +138,6 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     }
   }
 
-  /** return all rows that have a certain primary key
-    *
-    * @param id
-    * @return Query object corresponding to the selected rows
-    */
-  protected def findByPrimaryKey(id: PrimaryKeyType): Query[Table[_], T, Seq] =
-    findByPrimaryKeys(Vector(id))
-
-  /** Finds the rows that correlate to the given primary keys */
-  protected def findByPrimaryKeys(
-      ids: Vector[PrimaryKeyType]): Query[Table[T], T, Seq]
-
   /** Finds all elements in the table */
   def findAll(): Future[Vector[T]] =
     safeDatabase.run(table.result).map(_.toVector)

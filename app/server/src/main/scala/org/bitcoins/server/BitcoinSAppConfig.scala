@@ -8,7 +8,7 @@ import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.util.{FutureUtil, StartStopAsync}
+import org.bitcoins.core.util.{StartStopAsync, TimeUtil}
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
@@ -32,7 +32,8 @@ import scala.concurrent.Future
 case class BitcoinSAppConfig(
     private val directory: Path,
     private val confs: Config*)(implicit system: ActorSystem)
-    extends StartStopAsync[Unit] {
+    extends StartStopAsync[Unit]
+    with Logging {
   import system.dispatcher
   lazy val walletConf: WalletAppConfig = WalletAppConfig(directory, confs: _*)
   lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
@@ -58,15 +59,29 @@ case class BitcoinSAppConfig(
 
   /** Initializes the wallet, node and chain projects */
   override def start(): Future[Unit] = {
-    val configs = List(kmConf,
-                       walletConf,
-                       torConf,
-                       nodeConf,
-                       chainConf,
-                       bitcoindRpcConf,
-                       dlcConf)
+    val start = TimeUtil.currentEpochMs
+    //configurations that don't depend on tor startup
+    //start these in parallel as an optimization
+    val nonTorConfigs = Vector(kmConf, chainConf, walletConf)
 
-    FutureUtil.sequentially(configs)(_.start()).map(_ => ())
+    val torConfig = torConf.start()
+    val torDependentConfigs = Vector(nodeConf, bitcoindRpcConf, dlcConf)
+
+    val startedTorDependentConfigsF = for {
+      _ <- torConfig
+      _ <- Future.sequence(torDependentConfigs.map(_.start()))
+    } yield ()
+
+    val startedNonTorConfigs = Future.sequence(nonTorConfigs.map(_.start()))
+
+    for {
+      _ <- startedNonTorConfigs
+      _ <- startedTorDependentConfigsF
+    } yield {
+      logger.info(
+        s"Done starting BitcoinSAppConfig, it took=${TimeUtil.currentEpochMs - start}ms")
+      ()
+    }
   }
 
   override def stop(): Future[Unit] = {

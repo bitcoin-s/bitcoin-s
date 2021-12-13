@@ -1007,7 +1007,10 @@ object Wallet extends WalletLogger {
 
   /** Creates the level 0 account for the given HD purpose, if the root account exists do nothing */
   private def createRootAccount(wallet: Wallet, keyManager: BIP39KeyManager)(
-      implicit ec: ExecutionContext): Future[AccountDb] = {
+      implicit ec: ExecutionContext): DBIOAction[
+    AccountDb,
+    NoStream,
+    Effect.Read with Effect.Write] = {
     val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
     val coin =
       HDCoin(purpose = keyManager.kmParams.purpose, coinType = coinType)
@@ -1022,27 +1025,24 @@ object Wallet extends WalletLogger {
     //2. We already have this account in our database, so we do nothing
     //3. We have this account in our database, with a DIFFERENT xpub. This is bad. Fail with an exception
     //   this most likely means that we have a different key manager than we expected
-    wallet.accountDAO.read((account.coin, account.index)).flatMap {
-      case Some(account) =>
-        if (account.xpub != xpub) {
-          val errorMsg =
-            s"Divergent xpubs for account=${account}. Existing database xpub=${account.xpub}, new xpub=${xpub}. " +
-              s"It is possible we have a different key manager being used than expected, keymanager=${keyManager.kmParams.seedPath.toAbsolutePath.toString}"
-          Future.failed(new RuntimeException(errorMsg))
-        } else {
-          logger.debug(
-            s"Account already exists in database, no need to create it, account=${account}")
-          Future.successful(account)
-        }
-      case None =>
-        wallet.accountDAO
-          .create(accountDb)
-          .map { written =>
-            logger.info(s"Created account=${accountDb} to DB")
-            written
+    wallet.accountDAO
+      .findByPrimaryKeyAction((account.coin, account.index))
+      .flatMap {
+        case Some(account) =>
+          if (account.xpub != xpub) {
+            val errorMsg =
+              s"Divergent xpubs for account=${account}. Existing database xpub=${account.xpub}, new xpub=${xpub}. " +
+                s"It is possible we have a different key manager being used than expected, keymanager=${keyManager.kmParams.seedPath.toAbsolutePath.toString}"
+            DBIOAction.failed(new RuntimeException(errorMsg))
+          } else {
+            logger.debug(
+              s"Account already exists in database, no need to create it, account=${account}")
+            DBIOAction.successful(account)
           }
-    }
-
+        case None =>
+          wallet.accountDAO
+            .createAction(accountDb)
+      }
   }
 
   def initialize(wallet: Wallet, bip39PasswordOpt: Option[String])(implicit
@@ -1054,36 +1054,40 @@ object Wallet extends WalletLogger {
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later
     // and still have their wallet work
-    def createAccountFutures: Future[Vector[Future[AccountDb]]] = {
-      for {
-        _ <- walletAppConfig.start()
-        accounts = HDPurposes.singleSigPurposes.map { purpose =>
-          //we need to create key manager params for each purpose
-          //and then initialize a key manager to derive the correct xpub
-          val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
-          val kmE = {
-            BIP39KeyManager.fromParams(kmParams = kmParams,
-                                       passwordOpt = passwordOpt,
-                                       bip39PasswordOpt = bip39PasswordOpt)
-          }
-          kmE match {
-            case Right(km) =>
-              createRootAccount(wallet = wallet, keyManager = km)
-            case Left(err) =>
-              //probably means you haven't initialized the key manager via the
-              //'CreateKeyManagerApi'
-              Future.failed(new RuntimeException(
-                s"Failed to create keymanager with params=$kmParams err=$err"))
-          }
-
+    val createAccountActions: Vector[
+      DBIOAction[AccountDb, NoStream, Effect.Read with Effect.Write]] = {
+      val accounts = HDPurposes.singleSigPurposes.map { purpose =>
+        //we need to create key manager params for each purpose
+        //and then initialize a key manager to derive the correct xpub
+        val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
+        val kmE = {
+          BIP39KeyManager.fromParams(kmParams = kmParams,
+                                     passwordOpt = passwordOpt,
+                                     bip39PasswordOpt = bip39PasswordOpt)
         }
-      } yield accounts
-    }
+        kmE match {
+          case Right(km) =>
+            createRootAccount(wallet = wallet, keyManager = km)
+          case Left(err) =>
+            //probably means you haven't initialized the key manager via the
+            //'CreateKeyManagerApi'
+            DBIOAction.failed(
+              new RuntimeException(
+                s"Failed to create keymanager with params=$kmParams err=$err"))
+        }
 
+      }
+      accounts
+    }
+    import wallet.accountDAO.profile.api._
     for {
       _ <- createMasterXpubF
-      _ <- createAccountFutures.flatMap(accounts =>
-        FutureUtil.collect(accounts))
+      actions = createAccountActions
+      accounts <- wallet.accountDAO.safeDatabase.runVec(
+        DBIOAction.sequence(actions).transactionally)
+      _ = accounts.foreach { a =>
+        logger.info(s"Created account=${a} to DB")
+      }
     } yield {
       logger.debug(s"Created root level accounts for wallet")
       wallet

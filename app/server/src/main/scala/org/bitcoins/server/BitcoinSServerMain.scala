@@ -17,7 +17,7 @@ import org.bitcoins.core.api.node.{
   NodeApi,
   NodeType
 }
-import org.bitcoins.core.util.NetworkUtil
+import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
@@ -55,6 +55,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
   override def start(): Future[Unit] = {
     logger.info("Starting appServer")
+    val startTime = TimeUtil.currentEpochMs
     val startedConfigF = conf.start()
 
     logger.info(s"Start on network ${walletConf.network}")
@@ -75,7 +76,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         }
 
       }
-    } yield start
+    } yield {
+      logger.info(
+        s"Done start BitcoinSServerMain, it took=${TimeUtil.currentEpochMs - startTime}ms")
+      start
+    }
   }
 
   override def stop(): Future[Unit] = {
@@ -207,6 +212,19 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   def startBitcoindBackend(): Future[Unit] = {
+
+    val bitcoindF = for {
+      client <- bitcoindRpcConf.clientF
+      _ <- client.start()
+    } yield client
+
+    val tmpWalletF = bitcoindF.flatMap { bitcoind =>
+      val feeProvider = getFeeProviderOrElse(bitcoind)
+      dlcConf.createDLCWallet(nodeApi = bitcoind,
+                              chainQueryApi = bitcoind,
+                              feeRateApi = feeProvider)
+    }
+
     for {
       _ <- bitcoindRpcConf.start()
       bitcoind <- bitcoindRpcConf.clientF
@@ -218,10 +236,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         s"bitcoind ($bitcoindNetwork) on different network than wallet (${walletConf.network})")
 
       _ = logger.info("Creating wallet")
-      feeProvider = getFeeProviderOrElse(bitcoind)
-      tmpWallet <- dlcConf.createDLCWallet(nodeApi = bitcoind,
-                                           chainQueryApi = bitcoind,
-                                           feeRateApi = feeProvider)
+      tmpWallet <- tmpWalletF
       wallet = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
         bitcoind,
         tmpWallet)
