@@ -492,13 +492,13 @@ class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
         first = utxos.head
         //just reserve this one to start
         reserved <- wallet.markUTXOsAsReserved(Vector(first))
-        //now try to reserve them all
-        //this should fail as the first utxo is reserved
       } yield reserved.head
 
       val reserveFailedF = for {
         utxos <- utxosF
         _ <- reservedUtxoF
+        //now try to reserve them all
+        //this should fail as the first utxo is reserved
         _ <- wallet.markUTXOsAsReserved(utxos)
       } yield ()
 
@@ -509,6 +509,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
         reserved <- reservedUtxoF
         utxos <- wallet.listUtxos(TxoState.Reserved)
       } yield {
+        //make sure only 1 utxo is still reserved
         assert(utxos.length == 1)
         assert(reserved.outPoint == utxos.head.outPoint)
       }
