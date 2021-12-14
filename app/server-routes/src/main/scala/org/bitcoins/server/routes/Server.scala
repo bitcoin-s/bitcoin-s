@@ -10,7 +10,14 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.DebuggingDirectives
 import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.scaladsl.{
+  BroadcastHub,
+  Flow,
+  Keep,
+  Sink,
+  Source,
+  SourceQueueWithComplete
+}
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import org.bitcoins.commons.config.AppConfig
 import upickle.{default => up}
@@ -109,9 +116,15 @@ case class Server(
     httpFut
   }
 
-  private val tuple = Source
-    .queue[Message](1, OverflowStrategy.backpressure)
-    .preMaterialize()
+  private val tuple = {
+    //from: https://github.com/akka/akka-http/issues/3039#issuecomment-610263181
+    //the BroadcastHub.sink is needed to avoid these errors
+    // 'Websocket handler failed with Processor actor'
+    Source
+      .queue[Message](50, OverflowStrategy.backpressure)
+      .toMat(BroadcastHub.sink)(Keep.both)
+      .run()
+  }
 
   def walletQueue: SourceQueueWithComplete[Message] = tuple._1
   def source: Source[Message, NotUsed] = tuple._2
@@ -124,7 +137,7 @@ case class Server(
 
   private def wsHandler: Flow[Message, Message, Any] = {
     //we don't allow input, so use Sink.ignore
-    Flow.fromSinkAndSourceMat(Sink.ignore, source)(Keep.none)
+    Flow.fromSinkAndSource(Sink.ignore, source)
   }
 
 }
