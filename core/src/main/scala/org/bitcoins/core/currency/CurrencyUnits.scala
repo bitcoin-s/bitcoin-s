@@ -152,6 +152,11 @@ sealed abstract class Bitcoins extends CurrencyUnit {
     val sat = underlying * CurrencyUnits.btcToSatoshiScalar
     Satoshis(sat.toLongExact)
   }
+
+  def satoshisRounded: Satoshis = {
+    val sat = underlying * CurrencyUnits.btcToSatoshiScalar
+    Satoshis(sat.toLong)
+  }
 }
 
 object Bitcoins extends BaseNumbers[Bitcoins] with Bounded[Bitcoins] {
