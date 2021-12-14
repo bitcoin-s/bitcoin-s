@@ -1,24 +1,26 @@
 package org.bitcoins.server
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.ws.Message
-import akka.http.scaladsl.server.Directives.{handleWebSocketMessages, path}
-import akka.http.scaladsl.server.Route
-import akka.stream.OverflowStrategy
-import akka.stream.javadsl.SourceQueueWithComplete
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
+import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
+import org.bitcoins.commons.jsonmodels.ws.{WalletNotification, WalletWsType}
+import org.bitcoins.commons.serializers.{Picklers, WsPicklers}
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
-import org.bitcoins.core.api.node.{ExternalImplementationNodeType, InternalImplementationNodeType, NodeApi, NodeType}
+import org.bitcoins.core.api.node.{
+  ExternalImplementationNodeType,
+  InternalImplementationNodeType,
+  NodeApi,
+  NodeType
+}
 import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.DLCNode
@@ -36,8 +38,13 @@ import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 import org.bitcoins.tor.config.TorAppConfig
-import org.bitcoins.wallet.{OnNewAddressGenerated, OnReservedUtxos, OnTransactionBroadcast, OnTransactionProcessed, Wallet, WalletCallbacks}
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.{
+  OnNewAddressGenerated,
+  OnTransactionProcessed,
+  Wallet,
+  WalletCallbacks
+}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -132,8 +139,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       chainApi <- chainApiF
       _ = logger.info("Initialized chain api")
       wallet <- dlcConf.createDLCWallet(node, chainApi, feeProvider)
-      callbacks <- createCallbacks(wallet)
-      _ = nodeConf.addCallbacks(callbacks)
+      nodeCallbacks <- createCallbacks(wallet)
+      _ = nodeConf.addCallbacks(nodeCallbacks)
     } yield {
       logger.info(
         s"Done configuring wallet, it took=${System.currentTimeMillis() - start}ms")
@@ -174,11 +181,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       dlcNode <- dlcNodeF
       _ <- dlcNode.start()
 
-      binding <- startHttpServer(nodeApi = node,
-                                 chainApi = chainApi,
-                                 wallet = wallet,
-                                 dlcNode = dlcNode,
-                                 serverCmdLineArgs = serverArgParser)
+      server <- startHttpServer(nodeApi = node,
+                                chainApi = chainApi,
+                                wallet = wallet,
+                                dlcNode = dlcNode,
+                                serverCmdLineArgs = serverArgParser)
+      walletCallbacks = buildWalletCallbacks(server.walletQueue)
+      _ = walletConf.addCallbacks(walletCallbacks)
       _ = {
         logger.info(
           s"Starting ${nodeConf.nodeType.shortName} node sync, it took=${System
@@ -354,7 +363,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       dlcNode: DLCNode,
       serverCmdLineArgs: ServerArgParser)(implicit
       system: ActorSystem,
-      conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
+      conf: BitcoinSAppConfig): Future[Server] = {
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
     implicit val walletConf: WalletAppConfig = conf.walletConf
 
@@ -392,7 +401,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                  rpcport = conf.rpcPort)
       }
     }
-    server.start()
+    val bindingF = server.start()
+    BitcoinSServer.startedFP.success(bindingF)
+    bindingF.map(_ => server)
   }
 
   /** Gets a Fee Provider from the given wallet app config
@@ -490,33 +501,38 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     f
   }
 
+  private def buildWalletCallbacks(
+      walletQueue: SourceQueueWithComplete[Message]): WalletCallbacks = {
+    val onAddressCreated: OnNewAddressGenerated = { addr =>
+      val f = Future {
+        val addressJson =
+          upickle.default.writeJs(addr)(Picklers.bitcoinAddressPickler)
+        val notification =
+          WalletNotification(WalletWsType.NewAddress, addressJson)
+        val notificationJson = upickle.default.writeJs(notification)(
+          WsPicklers.walletNotificationPickler)
+        val msg = TextMessage.Strict(notificationJson.toString())
+        walletQueue.offer(msg)
+      }
 
-  private def buildWalletCallbacks(walletQueue: SourceQueueWithComplete[Message]): WalletCallbacks = {
+      f.map(_ => ())
+    }
+
     val onTxProcessed: OnTransactionProcessed = { tx =>
-      ???
+      val f = Future {
+        val txJson = upickle.default.writeJs(tx)(Picklers.transactionPickler)
+        val notification =
+          WalletNotification(WalletWsType.TxProcessed, txJson)
+        val notificationJson = upickle.default.writeJs(notification)(
+          WsPicklers.walletNotificationPickler)
+        val msg = TextMessage.Strict(notificationJson.toString())
+        walletQueue.offer(msg)
+      }
 
+      f.map(_ => ())
     }
-    val onTxBroadcast: OnTransactionBroadcast = ???
-    val onReservedUtxos: OnReservedUtxos = ???
-    val onNewAddressGenerated: OnNewAddressGenerated = ???
-  }
-
-  private val (
-    walletQueue: SourceQueueWithComplete[Message],
-    source: Source[Message, NotUsed]
-    ) =  Source
-    .queue[Message](1, OverflowStrategy.backpressure)
-    .preMaterialize()
-
-  private val wsHandler: Flow[Message,Message,Any] = {
-    //we don't allow input, so use Sink.ignore
-    Flow.fromSinkAndSource(Sink.ignore, source)
-  }
-
-  private val wsRoutes: Route = {
-    path("events") {
-      handleWebSocketMessages(wsHandler)
-    }
+    WalletCallbacks(onTransactionProcessed = Vector(onTxProcessed),
+                    onNewAddressGenerated = Vector(onAddressCreated))
   }
 }
 

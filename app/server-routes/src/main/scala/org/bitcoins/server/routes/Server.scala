@@ -1,5 +1,6 @@
 package org.bitcoins.server.routes
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl._
@@ -8,7 +9,8 @@ import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.DebuggingDirectives
-import akka.stream.scaladsl.Flow
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import org.bitcoins.commons.config.AppConfig
 import upickle.{default => up}
@@ -88,8 +90,43 @@ case class Server(
     httpFut.foreach { http =>
       logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
     }
+    def wsFut = startWsServer()
+
+    for {
+      http <- httpFut
+      _ <- wsFut
+    } yield http
+  }
+
+  private def startWsServer(): Future[Http.ServerBinding] = {
+    val httpFut =
+      Http()
+        .newServerAt("localhost", 19999)
+        .bindFlow(wsRoutes)
+    httpFut.foreach { http =>
+      logger.info(s"Started Bitcoin-S websocket at ${http.localAddress}")
+    }
     httpFut
   }
+
+  private val tuple = Source
+    .queue[Message](1, OverflowStrategy.backpressure)
+    .preMaterialize()
+
+  def walletQueue: SourceQueueWithComplete[Message] = tuple._1
+  def source: Source[Message, NotUsed] = tuple._2
+
+  private def wsRoutes: Route = {
+    path("events") {
+      Directives.handleWebSocketMessages(wsHandler)
+    }
+  }
+
+  private def wsHandler: Flow[Message, Message, Any] = {
+    //we don't allow input, so use Sink.ignore
+    Flow.fromSinkAndSourceMat(Sink.ignore, source)(Keep.none)
+  }
+
 }
 
 object Server {
