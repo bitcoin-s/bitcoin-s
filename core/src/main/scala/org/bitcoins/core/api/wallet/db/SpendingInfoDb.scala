@@ -34,7 +34,6 @@ case class SegwitV0SpendingInfo(
   override val redeemScriptOpt: Option[ScriptPubKey] = None
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
 
-  override type PathType = SegWitHDPath
   override type SpendingInfoType = SegwitV0SpendingInfo
 
   override def copyWithState(state: TxoState): SegwitV0SpendingInfo =
@@ -64,7 +63,6 @@ case class LegacySpendingInfo(
 
   override def scriptWitnessOpt: Option[ScriptWitness] = None
 
-  override type PathType = LegacyHDPath
   type SpendingInfoType = LegacySpendingInfo
 
   override def copyWithId(id: Long): LegacySpendingInfo =
@@ -96,7 +94,6 @@ case class NestedSegwitV0SpendingInfo(
   override val redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
 
-  override type PathType = NestedSegWitHDPath
   override type SpendingInfoType = NestedSegwitV0SpendingInfo
 
   override def copyWithState(state: TxoState): NestedSegwitV0SpendingInfo =
@@ -126,8 +123,6 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
       s"If we have spent a spendinginfodb, the spendingTxId must be defined. Outpoint=${outPoint.toString}")
   }
 
-  protected type PathType <: HDPath
-
   /** This type is here to ensure copyWithSpent returns the same
     * type as the one it was called on.
     */
@@ -136,7 +131,7 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   def id: Option[Long]
   def outPoint: TransactionOutPoint
   def output: TransactionOutput
-  def privKeyPath: PathType
+  def privKeyPath: HDPath
   def redeemScriptOpt: Option[ScriptPubKey]
   def scriptWitnessOpt: Option[ScriptWitness]
 
@@ -192,5 +187,23 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
       hashType
     )
   }
+}
 
+object SpendingInfoDb {
+
+  def apply(
+      id: Option[Long],
+      outpoint: TransactionOutPoint,
+      output: TransactionOutput,
+      hdPath: HDPath,
+      redeemScriptOpt: Option[ScriptPubKey],
+      scriptWitnessOpt: Option[ScriptWitness],
+      state: TxoState,
+      txId: DoubleSha256DigestBE,
+      spendingTxIdOpt: Option[DoubleSha256DigestBE]): SpendingInfoDb = {
+    require(
+      txId == outpoint.txIdBE,
+      s"Outpoint and crediting txid not the same, got=$txId expected=${outpoint.txIdBE}")
+    ???
+  }
 }

@@ -97,7 +97,7 @@ case class Server(
     httpFut.foreach { http =>
       logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
     }
-    def wsFut = startWsServer()
+    val wsFut = startWsServer()
 
     for {
       http <- httpFut

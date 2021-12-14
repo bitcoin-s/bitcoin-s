@@ -21,6 +21,7 @@ import org.bitcoins.core.api.node.{
   NodeApi,
   NodeType
 }
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.DLCNode
@@ -41,6 +42,8 @@ import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{
   OnNewAddressGenerated,
+  OnReservedUtxos,
+  OnTransactionBroadcast,
   OnTransactionProcessed,
   Wallet,
   WalletCallbacks
@@ -514,25 +517,57 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         val msg = TextMessage.Strict(notificationJson.toString())
         walletQueue.offer(msg)
       }
-
       f.map(_ => ())
     }
 
     val onTxProcessed: OnTransactionProcessed = { tx =>
+      buildTxNotification(wsType = WalletWsType.TxProcessed,
+                          tx = tx,
+                          walletQueue = walletQueue)
+    }
+
+    val onTxBroadcast: OnTransactionBroadcast = { tx =>
+      buildTxNotification(wsType = WalletWsType.TxBroadcast,
+                          tx = tx,
+                          walletQueue = walletQueue)
+    }
+
+    val onReservedUtxo: OnReservedUtxos = { utxos =>
       val f = Future {
-        val txJson = upickle.default.writeJs(tx)(Picklers.transactionPickler)
+        val utxosJson = ujson.Arr.from(
+          utxos.map(upickle.default.writeJs(_)(Picklers.spendingInfoDbPickler)))
         val notification =
-          WalletNotification(WalletWsType.TxProcessed, txJson)
+          WalletNotification(WalletWsType.ReservedUtxos, utxosJson)
         val notificationJson = upickle.default.writeJs(notification)(
           WsPicklers.walletNotificationPickler)
         val msg = TextMessage.Strict(notificationJson.toString())
         walletQueue.offer(msg)
       }
-
       f.map(_ => ())
     }
-    WalletCallbacks(onTransactionProcessed = Vector(onTxProcessed),
-                    onNewAddressGenerated = Vector(onAddressCreated))
+
+    WalletCallbacks(
+      onTransactionProcessed = Vector(onTxProcessed),
+      onNewAddressGenerated = Vector(onAddressCreated),
+      onReservedUtxos = Vector(onReservedUtxo),
+      onTransactionBroadcast = Vector(onTxBroadcast)
+    )
+  }
+
+  private def buildTxNotification(
+      wsType: WalletWsType,
+      tx: Transaction,
+      walletQueue: SourceQueueWithComplete[Message]): Future[Unit] = {
+    val f = Future {
+      val txJson = upickle.default.writeJs(tx)(Picklers.transactionPickler)
+      val notification =
+        WalletNotification(wsType, txJson)
+      val notificationJson = upickle.default.writeJs(notification)(
+        WsPicklers.walletNotificationPickler)
+      val msg = TextMessage.Strict(notificationJson.toString())
+      walletQueue.offer(msg)
+    }
+    f.map(_ => ())
   }
 }
 

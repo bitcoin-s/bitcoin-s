@@ -1,6 +1,17 @@
 package org.bitcoins.core.serializers
 
 object PicklerKeys {
+
+  final val idKey: String = "id"
+  final val outPointKey: String = "outpoint"
+  final val outputKey: String = "output"
+  final val satoshisKey: String = "satoshis"
+  final val scriptPubKeyKey: String = "scriptPubKey"
+  final val hdPathKey: String = "hdPath"
+  final val txIdKey: String = "txid"
+  final val stateKey: String = "state"
+  final val spendingTxIdKey: String = "spendingTxId"
+
   final val myCollateral: String = "myCollateral"
   final val theirCollateral: String = "theirCollateral"
   final val myPayout: String = "myPayout"
