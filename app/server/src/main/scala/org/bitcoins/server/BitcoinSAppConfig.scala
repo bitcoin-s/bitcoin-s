@@ -9,6 +9,7 @@ import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.{StartStopAsync, TimeUtil}
+import org.bitcoins.db.SQLiteUtil
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
@@ -125,16 +126,8 @@ case class BitcoinSAppConfig(
 
   /** Zips $HOME/.bitcoin-s
     */
-  def zipDatadir(target: Path): Path = {
-    FileUtil.zipDirectory(
-      source = directory,
-      target = target,
-      // we don't want to store chaindb.sqlite as these databases are huge
-      // skip logs and binaries as these can be large as well
-      fileNameFilter =
-        Vector(".*chaindb.sqlite$".r, ".*bitcoin-s.log$".r, ".*/binaries/.*".r)
-    )
-  }
+  def zipDatadir(target: Path): Path =
+    BitcoinSAppConfig.zipDatadir(directory, target)
 }
 
 /** Implicit conversions that allow a unified configuration
@@ -237,4 +230,34 @@ object BitcoinSAppConfig extends Logging {
     conf.bitcoindRpcConf
   }
 
+  def zipDatadir(source: Path, target: Path): Path = {
+    val temp = Files.createTempDirectory(source, "backup")
+    try {
+      // we don't want to store chaindb.sqlite as these databases are huge
+      // skip logs and binaries as these can be large as well
+      val tempRE = (".*" + temp.getFileName + "$").r
+
+      FileUtil.copyDirectory(source = source,
+                             target = temp,
+                             fileNameFilter = Vector(".*.sqlite$".r,
+                                                     ".*bitcoin-s.log$".r,
+                                                     ".*/tor/.*".r,
+                                                     ".*/binaries/.*".r,
+                                                     ".*.zip$".r,
+                                                     tempRE))
+
+      SQLiteUtil.backupDirectory(source = source,
+                                 target = temp,
+                                 fileNameFilter =
+                                   Vector(".*chaindb.sqlite$".r, tempRE))
+
+      FileUtil.zipDirectory(
+        source = temp,
+        target = target
+      )
+    } finally {
+      FileUtil.removeDirectory(temp)
+      ()
+    }
+  }
 }
