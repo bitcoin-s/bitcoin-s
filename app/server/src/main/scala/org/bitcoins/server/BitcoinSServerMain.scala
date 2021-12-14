@@ -1,8 +1,15 @@
 package org.bitcoins.server
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.ws.Message
+import akka.http.scaladsl.server.Directives.{handleWebSocketMessages, path}
+import akka.http.scaladsl.server.Route
+import akka.stream.OverflowStrategy
+import akka.stream.javadsl.SourceQueueWithComplete
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -11,12 +18,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
-import org.bitcoins.core.api.node.{
-  ExternalImplementationNodeType,
-  InternalImplementationNodeType,
-  NodeApi,
-  NodeType
-}
+import org.bitcoins.core.api.node.{ExternalImplementationNodeType, InternalImplementationNodeType, NodeApi, NodeType}
 import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.DLCNode
@@ -34,7 +36,7 @@ import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 import org.bitcoins.tor.config.TorAppConfig
-import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.{OnNewAddressGenerated, OnReservedUtxos, OnTransactionBroadcast, OnTransactionProcessed, Wallet, WalletCallbacks}
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.duration.DurationInt
@@ -486,6 +488,35 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     f.failed.foreach(err =>
       logger.error(s"Error syncing bitcoin-s wallet with bitcoind", err))
     f
+  }
+
+
+  private def buildWalletCallbacks(walletQueue: SourceQueueWithComplete[Message]): WalletCallbacks = {
+    val onTxProcessed: OnTransactionProcessed = { tx =>
+      ???
+
+    }
+    val onTxBroadcast: OnTransactionBroadcast = ???
+    val onReservedUtxos: OnReservedUtxos = ???
+    val onNewAddressGenerated: OnNewAddressGenerated = ???
+  }
+
+  private val (
+    walletQueue: SourceQueueWithComplete[Message],
+    source: Source[Message, NotUsed]
+    ) =  Source
+    .queue[Message](1, OverflowStrategy.backpressure)
+    .preMaterialize()
+
+  private val wsHandler: Flow[Message,Message,Any] = {
+    //we don't allow input, so use Sink.ignore
+    Flow.fromSinkAndSource(Sink.ignore, source)
+  }
+
+  private val wsRoutes: Route = {
+    path("events") {
+      handleWebSocketMessages(wsHandler)
+    }
   }
 }
 
