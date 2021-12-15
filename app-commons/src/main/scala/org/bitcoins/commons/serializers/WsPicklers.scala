@@ -22,7 +22,7 @@ object WsPicklers {
 
   private def readWalletNotification(obj: ujson.Obj): WalletNotification = {
     val typeObj = read[WalletWsType](obj(PicklerKeys.typeKey))
-    val payloadObj = obj(PicklerKeys.payloadKey).obj
+    val payloadObj = obj(PicklerKeys.payloadKey)
     WalletNotification(typeObj, payloadObj)
   }
 

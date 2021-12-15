@@ -2,7 +2,6 @@ package org.bitcoins.server
 
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.asyncutil.AsyncUtil
@@ -37,7 +36,7 @@ import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
-import org.bitcoins.server.util.BitcoinSAppScalaDaemon
+import org.bitcoins.server.util.{BitcoinSAppScalaDaemon, ServerBindings}
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{
@@ -54,7 +53,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
-    conf: BitcoinSAppConfig)
+    val conf: BitcoinSAppConfig)
     extends BitcoinSServerRunner {
 
   implicit lazy val walletConf: WalletAppConfig = conf.walletConf
@@ -86,7 +85,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           case NodeType.BitcoindBackend =>
             startBitcoindBackend()
         }
-
       }
     } yield {
       logger.info(
@@ -98,14 +96,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   override def stop(): Future[Unit] = {
     logger.error(s"Exiting process")
     for {
-      _ <- walletConf.stop()
-      _ <- nodeConf.stop()
-      _ <- chainConf.stop()
-      _ <- torConf.stop()
+      _ <- conf.stop()
+      _ <- serverBindingsOpt match {
+        case Some(bindings) => bindings.stop()
+        case None           => Future.unit
+      }
       _ = logger.info(s"Stopped ${nodeConf.nodeType.shortName} node")
-      _ <- system.terminate()
     } yield {
-      logger.info(s"Actor system terminated")
       ()
     }
   }
@@ -267,12 +264,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ = syncWalletWithBitcoindAndStartPolling(bitcoind, wallet)
       dlcNode = dlcNodeConf.createDLCNode(wallet)
       _ <- dlcNode.start()
-
-      _ <- startHttpServer(nodeApi = bitcoind,
-                           chainApi = bitcoind,
-                           wallet = wallet,
-                           dlcNode = dlcNode,
-                           serverCmdLineArgs = serverArgParser)
+      server <- startHttpServer(nodeApi = bitcoind,
+                                chainApi = bitcoind,
+                                wallet = wallet,
+                                dlcNode = dlcNode,
+                                serverCmdLineArgs = serverArgParser)
+      walletCallbacks = buildWalletCallbacks(server.walletQueue)
+      _ = walletConf.addCallbacks(walletCallbacks)
     } yield {
       logger.info(s"Done starting Main!")
       ()
@@ -359,6 +357,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     } yield chainApiWithWork
   }
 
+  private var serverBindingsOpt: Option[ServerBindings] = None
+
   private def startHttpServer(
       nodeApi: NodeApi,
       chainApi: ChainApi,
@@ -406,7 +406,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
     val bindingF = server.start()
     BitcoinSServer.startedFP.success(bindingF)
-    bindingF.map(_ => server)
+    bindingF.map { bindings =>
+      serverBindingsOpt = Some(bindings)
+      server
+    }
   }
 
   /** Gets a Fee Provider from the given wallet app config
@@ -507,6 +510,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   private def buildWalletCallbacks(
       walletQueue: SourceQueueWithComplete[Message]): WalletCallbacks = {
     val onAddressCreated: OnNewAddressGenerated = { addr =>
+      println(s"@@@@ address callback=$addr")
       val f = Future {
         val addressJson =
           upickle.default.writeJs(addr)(Picklers.bitcoinAddressPickler)

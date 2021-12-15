@@ -20,6 +20,7 @@ import akka.stream.scaladsl.{
 }
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import org.bitcoins.commons.config.AppConfig
+import org.bitcoins.server.util.ServerBindings
 import upickle.{default => up}
 
 import scala.concurrent.Future
@@ -89,7 +90,7 @@ case class Server(
       }
     }
 
-  def start(): Future[Http.ServerBinding] = {
+  def start(): Future[ServerBindings] = {
     val httpFut =
       Http()
         .newServerAt(rpcbindOpt.getOrElse("localhost"), rpcport)
@@ -101,8 +102,8 @@ case class Server(
 
     for {
       http <- httpFut
-      _ <- wsFut
-    } yield http
+      ws <- wsFut
+    } yield ServerBindings(http, ws)
   }
 
   private def startWsServer(): Future[Http.ServerBinding] = {
