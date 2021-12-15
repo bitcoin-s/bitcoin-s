@@ -3,7 +3,12 @@ package org.bitcoins.core.api.wallet.db
 import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.hd._
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
+import org.bitcoins.core.protocol.script.{
+  P2SHScriptPubKey,
+  ScriptPubKey,
+  ScriptWitness,
+  WitnessScriptPubKey
+}
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
@@ -204,6 +209,61 @@ object SpendingInfoDb {
     require(
       txId == outpoint.txIdBE,
       s"Outpoint and crediting txid not the same, got=$txId expected=${outpoint.txIdBE}")
-    ???
+
+    output.scriptPubKey match {
+      case _: P2SHScriptPubKey =>
+        if (scriptWitnessOpt.isDefined) {
+          require(
+            hdPath.isInstanceOf[NestedSegWitHDPath],
+            s"hdPath must be SegwitHdPath for SegwitV0SpendingInfo, got=$hdPath")
+          NestedSegwitV0SpendingInfo(outpoint,
+                                     output,
+                                     hdPath.asInstanceOf[NestedSegWitHDPath],
+                                     redeemScriptOpt.get,
+                                     scriptWitnessOpt.get,
+                                     txId,
+                                     state,
+                                     spendingTxIdOpt,
+                                     id)
+        } else {
+          require(
+            hdPath.isInstanceOf[LegacyHDPath],
+            s"hdPath must be LegacyHDPath for LegacySpendingInfo, got=$hdPath")
+          LegacySpendingInfo(outPoint = outpoint,
+                             output = output,
+                             privKeyPath = hdPath.asInstanceOf[LegacyHDPath],
+                             state = state,
+                             txid = txId,
+                             spendingTxIdOpt = spendingTxIdOpt,
+                             id = id)
+        }
+      case _: WitnessScriptPubKey =>
+        require(
+          hdPath.isInstanceOf[SegWitHDPath],
+          s"hdPath must be SegwitHdPath for SegwitV0SpendingInfo, got=$hdPath")
+        require(scriptWitnessOpt.isDefined,
+                s"ScriptWitness must be defined for SegwitV0SpendingInfo")
+        SegwitV0SpendingInfo(
+          outPoint = outpoint,
+          output = output,
+          privKeyPath = hdPath.asInstanceOf[SegWitHDPath],
+          scriptWitness = scriptWitnessOpt.get,
+          txid = txId,
+          state = state,
+          spendingTxIdOpt = spendingTxIdOpt,
+          id = id
+        )
+      case _ =>
+        require(
+          hdPath.isInstanceOf[LegacyHDPath],
+          s"hdPath must be LegacyHDPath for LegacySpendingInfo, got=$hdPath")
+        LegacySpendingInfo(outPoint = outpoint,
+                           output = output,
+                           privKeyPath = hdPath.asInstanceOf[LegacyHDPath],
+                           state = state,
+                           txid = txId,
+                           spendingTxIdOpt = spendingTxIdOpt,
+                           id = id)
+    }
   }
 }
