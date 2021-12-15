@@ -419,7 +419,7 @@ abstract class Wallet
     val utx = txBuilder.buildTx()
     val signed = RawTxSigner.sign(utx, utxoInfos, feeRate)
 
-    for {
+    val processedTxF = for {
       ourOuts <- findOurOuts(signed)
       creditingAmount = utxoInfos.foldLeft(CurrencyUnits.zero)(_ + _.amount)
       _ <- processOurTransaction(transaction = signed,
@@ -437,6 +437,12 @@ abstract class Wallet
         logger.trace(s"    $out")
       }
       signed
+    }
+
+    processedTxF.recoverWith { case _ =>
+      //if something fails, we need to unreserve the utxos associated with this tx
+      //and then propogate the failed future upwards
+      unmarkUTXOsAsReserved(signed).flatMap(_ => processedTxF)
     }
   }
 
@@ -662,7 +668,8 @@ abstract class Wallet
         feeRate = feeRate,
         fromAccount = fromAccount,
         coinSelectionAlgo = algo,
-        fromTagOpt = None)
+        fromTagOpt = None,
+        markAsReserved = true)
 
       tx <- finishSend(txBuilder, utxoInfos, amount, feeRate, newTags)
     } yield tx
@@ -743,7 +750,9 @@ abstract class Wallet
         feeRate = feeRate,
         fromAccount = fromAccount,
         coinSelectionAlgo = CoinSelectionAlgo.RandomSelection,
-        fromTagOpt = None)
+        fromTagOpt = None,
+        markAsReserved = true
+      )
       tx <- finishSend(txBuilder,
                        utxoInfos,
                        CurrencyUnits.zero,
@@ -763,7 +772,8 @@ abstract class Wallet
         destinations = outputs,
         feeRate = feeRate,
         fromAccount = fromAccount,
-        fromTagOpt = None)
+        fromTagOpt = None,
+        markAsReserved = true)
       sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
       tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate, newTags)
     } yield tx

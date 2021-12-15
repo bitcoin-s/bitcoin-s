@@ -81,7 +81,8 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
           .fundRawTransactionInternal(destinations = Vector(output),
                                       feeRate = feeRate,
                                       fromAccount = account,
-                                      fromTagOpt = Some(exampleTag))
+                                      fromTagOpt = Some(exampleTag),
+                                      markAsReserved = true)
       }
       utx = txBuilder.buildTx()
       signedTx = RawTxSigner.sign(utx, utxoInfos, feeRate)

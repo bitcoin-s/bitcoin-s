@@ -58,6 +58,11 @@ trait TxDAO[DbEntryType <: TxDB]
     findByTxId(outPoint.txId)
   }
 
+  def findByOutPoints(
+      outPoints: Vector[TransactionOutPoint]): Future[Vector[DbEntryType]] = {
+    findByTxIds(outPoints.map(_.txIdBE))
+  }
+
   def findByTxIds(
       txIdBEs: Vector[DoubleSha256DigestBE]): Future[Vector[DbEntryType]] = {
     val q = table.filter(_.txIdBE.inSet(txIdBEs))

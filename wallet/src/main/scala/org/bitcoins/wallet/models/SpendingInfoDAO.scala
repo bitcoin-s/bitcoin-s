@@ -447,6 +447,41 @@ case class SpendingInfoDAO()(implicit
       })
   }
 
+  def markAsReserved(
+      ts: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    //1. Check if any are reserved already
+    //2. if not, reserve them
+    //3. if they are reserved, throw an exception?
+    val outPoints = ts.map(_.outPoint)
+    val action: DBIOAction[
+      Int,
+      NoStream,
+      Effect.Write with Effect.Transactional] = table
+      .filter(_.outPoint.inSet(outPoints))
+      .filter(
+        _.state.inSet(TxoState.receivedStates)
+      ) //must be available to reserve
+      .map(_.state)
+      .update(TxoState.Reserved)
+      .flatMap { count =>
+        if (count != ts.length) {
+          val exn = new RuntimeException(
+            s"Failed to reserve all utxos, expected=${ts.length} actual=$count")
+          DBIO.failed(exn)
+        } else {
+
+          DBIO.successful(count)
+        }
+      }
+      //this needs to be at the end, to make sure we rollback correctly if
+      //the utxo is already reserved
+      .transactionally
+
+    safeDatabase
+      .run(action)
+      .map(_ => ts.map(_.copyWithState(TxoState.Reserved)))
+  }
+
   private def findScriptPubKeys(
       ids: Seq[Long]): Future[Map[Long, ScriptPubKeyDb]] = {
     val query = spkTable.filter(t => t.id.inSet(ids))
