@@ -10,7 +10,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
 import org.bitcoins.commons.jsonmodels.ws.{WalletNotification, WalletWsType}
-import org.bitcoins.commons.serializers.{Picklers, WsPicklers}
+import org.bitcoins.commons.serializers.WsPicklers
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -38,15 +38,8 @@ import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util.{BitcoinSAppScalaDaemon, ServerBindings}
 import org.bitcoins.tor.config.TorAppConfig
+import org.bitcoins.wallet._
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.{
-  OnNewAddressGenerated,
-  OnReservedUtxos,
-  OnTransactionBroadcast,
-  OnTransactionProcessed,
-  Wallet,
-  WalletCallbacks
-}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -510,15 +503,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   private def buildWalletCallbacks(
       walletQueue: SourceQueueWithComplete[Message]): WalletCallbacks = {
     val onAddressCreated: OnNewAddressGenerated = { addr =>
-      println(s"@@@@ address callback=$addr")
       val f = Future {
-        val addressJson =
-          upickle.default.writeJs(addr)(Picklers.bitcoinAddressPickler)
-        val notification =
-          WalletNotification(WalletWsType.NewAddress, addressJson)
-        val notificationJson = upickle.default.writeJs(notification)(
-          WsPicklers.walletNotificationPickler)
-        val msg = TextMessage.Strict(notificationJson.toString())
+        val notification = WalletNotification.NewAddressNotification(addr)
+        val json =
+          upickle.default.writeJs(notification)(WsPicklers.newAddressPickler)
+        val msg = TextMessage.Strict(json.toString())
         walletQueue.offer(msg)
       }
       f.map(_ => ())
@@ -538,12 +527,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     val onReservedUtxo: OnReservedUtxos = { utxos =>
       val f = Future {
-        val utxosJson = ujson.Arr.from(
-          utxos.map(upickle.default.writeJs(_)(Picklers.spendingInfoDbPickler)))
         val notification =
-          WalletNotification(WalletWsType.ReservedUtxos, utxosJson)
-        val notificationJson = upickle.default.writeJs(notification)(
-          WsPicklers.walletNotificationPickler)
+          WalletNotification.ReservedUtxosNotification(utxos)
+        val notificationJson =
+          upickle.default.writeJs(notification)(WsPicklers.reservedUtxosPickler)
         val msg = TextMessage.Strict(notificationJson.toString())
         walletQueue.offer(msg)
       }
@@ -563,12 +550,18 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       tx: Transaction,
       walletQueue: SourceQueueWithComplete[Message]): Future[Unit] = {
     val f = Future {
-      val txJson = upickle.default.writeJs(tx)(Picklers.transactionPickler)
-      val notification =
-        WalletNotification(wsType, txJson)
-      val notificationJson = upickle.default.writeJs(notification)(
-        WsPicklers.walletNotificationPickler)
-      val msg = TextMessage.Strict(notificationJson.toString())
+      val json = wsType match {
+        case WalletWsType.TxProcessed =>
+          val notification = WalletNotification.TxProcessedNotification(tx)
+          upickle.default.writeJs(notification)(WsPicklers.txProcessedPickler)
+        case WalletWsType.TxBroadcast =>
+          val notification = WalletNotification.TxBroadcastNotification(tx)
+          upickle.default.writeJs(notification)(WsPicklers.txBroadcastPickler)
+        case x @ (WalletWsType.NewAddress | WalletWsType.ReservedUtxos) =>
+          sys.error(s"Cannot build tx notification for $x")
+      }
+
+      val msg = TextMessage.Strict(json.toString())
       walletQueue.offer(msg)
     }
     f.map(_ => ())

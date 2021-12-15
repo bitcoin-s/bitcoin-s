@@ -1,5 +1,8 @@
 package org.bitcoins.commons.jsonmodels.ws
 
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.StringFactory
 
 sealed trait WsType
@@ -32,9 +35,34 @@ object WalletWsType extends StringFactory[WalletWsType] {
 }
 
 sealed trait WsPushNotification[T] {
-  def `type`: WsType
+  def `type`: WalletWsType
   def payload: T
 }
 
-case class WalletNotification(`type`: WalletWsType, payload: ujson.Value)
-    extends WsPushNotification[ujson.Value]
+sealed trait WalletNotification[T] extends WsPushNotification[T] {
+  override def `type`: WalletWsType
+}
+
+object WalletNotification {
+
+  case class NewAddressNotification(payload: BitcoinAddress)
+      extends WalletNotification[BitcoinAddress] {
+    override val `type`: WalletWsType = WalletWsType.NewAddress
+  }
+
+  case class TxProcessedNotification(payload: Transaction)
+      extends WalletNotification[Transaction] {
+    override val `type`: WalletWsType = WalletWsType.TxProcessed
+  }
+
+  case class TxBroadcastNotification(payload: Transaction)
+      extends WalletNotification[Transaction] {
+    override val `type`: WalletWsType = WalletWsType.TxBroadcast
+  }
+
+  case class ReservedUtxosNotification(payload: Vector[SpendingInfoDb])
+      extends WalletNotification[Vector[SpendingInfoDb]] {
+    override val `type`: WalletWsType = WalletWsType.ReservedUtxos
+  }
+
+}
