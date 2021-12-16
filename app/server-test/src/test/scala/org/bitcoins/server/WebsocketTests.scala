@@ -6,10 +6,19 @@ import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification
-import org.bitcoins.commons.jsonmodels.ws.WalletNotification.NewAddressNotification
+import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
+  NewAddressNotification,
+  TxBroadcastNotification
+}
 import org.bitcoins.commons.serializers.WsPicklers
+import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.testkit.server.BitcoinSServerMainBitcoindFixture
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.testkit.server.{
+  BitcoinSServerMainBitcoindFixture,
+  ServerWithBitcoind
+}
 
 import scala.concurrent.Future
 
@@ -34,37 +43,71 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     case msg =>
       fail(s"Unexpected msg type received in the sink, msg=$msg")
   }
+  val req = WebSocketRequest("ws://localhost:19999/events")
 
-  it must "receive updates when an address is generated" in { server =>
-    val req = WebSocketRequest("ws://localhost:19999/events")
+  val sink: Sink[WalletNotification[_], Future[WalletNotification[_]]] =
+    Sink.head[WalletNotification[_]]
 
-    val sink: Sink[WalletNotification[_], Future[WalletNotification[_]]] =
-      Sink.head[WalletNotification[_]]
-
-    val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
-
-    //start the websocket
-    val notificationF: Future[WalletNotification[_]] = {
-      Http()
-        .webSocketClientFlow(req)
-        .viaMat(flow)(Keep.right)
-        .runWith(Source.empty, sink)
-        ._2
-    }
-
-    val expectedAddressStr = ConsoleCli
-      .exec(CliCommand.GetNewAddress(labelOpt = None), cliConfig)
-      .get
-    val expectedAddress = BitcoinAddress.fromString(expectedAddressStr)
-    for {
-      notification <- notificationF
-    } yield {
-      notification match {
-        case NewAddressNotification(actualAddress) =>
-          assert(actualAddress == expectedAddress)
-        case x =>
-          fail(s"Expected address notitfication, got=$x")
+  it must "receive updates when an address is generated" in {
+    serverWithBitcoind =>
+      val ServerWithBitcoind(_, server) = serverWithBitcoind
+      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
+      //start the websocket
+      val notificationF: Future[WalletNotification[_]] = {
+        Http()
+          .webSocketClientFlow(req)
+          .viaMat(flow)(Keep.right)
+          .runWith(Source.empty, sink)
+          ._2
       }
-    }
+      val expectedAddressStr = ConsoleCli
+        .exec(CliCommand.GetNewAddress(labelOpt = None), cliConfig)
+        .get
+      val expectedAddress = BitcoinAddress.fromString(expectedAddressStr)
+      for {
+        notification <- notificationF
+      } yield {
+        notification match {
+          case NewAddressNotification(actualAddress) =>
+            assert(actualAddress == expectedAddress)
+          case x =>
+            fail(s"Expected address notitfication, got=$x")
+        }
+      }
+  }
+
+  it must "receive updates when a transaction is broadcast" in {
+    serverWithBitcoind =>
+      val ServerWithBitcoind(bitcoind, server) = serverWithBitcoind
+      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
+      //start the websocket
+      val notificationF: Future[WalletNotification[_]] = {
+        Http()
+          .webSocketClientFlow(req)
+          .viaMat(flow)(Keep.right)
+          .runWith(Source.empty, sink)
+          ._2
+      }
+
+      val addressF = bitcoind.getNewAddress
+      for {
+        address <- addressF
+        cmd = CliCommand.SendToAddress(destination = address,
+                                       amount = Bitcoins.one,
+                                       satoshisPerVirtualByte =
+                                         Some(SatoshisPerVirtualByte.one),
+                                       noBroadcast = false)
+        balance = ConsoleCli.exec(CliCommand.GetBalance(false), cliConfig)
+        txIdStr = ConsoleCli.exec(cmd, cliConfig)
+        expectedTxId = DoubleSha256DigestBE.fromHex(txIdStr.get)
+        notification <- notificationF
+      } yield {
+        notification match {
+          case TxBroadcastNotification(tx) =>
+            assert(tx.txIdBE == expectedTxId)
+          case x =>
+            fail(s"Expected tx broadcast notitfication, got=$x")
+        }
+      }
   }
 }

@@ -14,8 +14,7 @@ import org.bitcoins.testkit.rpc.{
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   createWalletWithBitcoind,
   createWalletWithBitcoindCallbacks,
-  destroyWallet,
-  fundWalletWithBitcoind
+  destroyWallet
 }
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.{FutureOutcome, Outcome}
@@ -50,7 +49,8 @@ trait BitcoinSWalletTestCachedBitcoind
         walletWithBitcoind <- createWalletWithBitcoindCallbacks(
           bitcoind = bitcoind,
           bip39PasswordOpt = bip39PasswordOpt)
-        fundedWallet <- fundWalletWithBitcoind(walletWithBitcoind)
+        fundedWallet <- FundWalletUtil.fundWalletWithBitcoind(
+          walletWithBitcoind)
         _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,
                                            bitcoind = bitcoind)
         _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
@@ -170,8 +170,8 @@ trait BitcoinSWalletTestCachedBitcoinV19
           bip39PasswordOpt = bip39PasswordOpt)
         walletWithBitcoindV19 = WalletWithBitcoindV19(walletWithBitcoind.wallet,
                                                       bitcoind)
-        fundedWallet <- fundWalletWithBitcoind[WalletWithBitcoindV19](
-          walletWithBitcoindV19)
+        fundedWallet <- FundWalletUtil
+          .fundWalletWithBitcoind[WalletWithBitcoindV19](walletWithBitcoindV19)
         _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,
                                            bitcoind = bitcoind)
         _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
