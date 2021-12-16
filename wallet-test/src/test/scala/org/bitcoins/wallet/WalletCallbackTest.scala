@@ -2,6 +2,7 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.blockchain.{Block, RegTestNetChainParams}
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
@@ -139,5 +140,28 @@ class WalletCallbackTest extends BitcoinSWalletTest {
         result <- resultP.future
         // just compare outPoints because states will be changed so they won't be equal
       } yield assert(result.map(_.outPoint) == reserved.map(_.outPoint))
+  }
+
+  it must "verify OnBlockProcessed callbacks are executed" in {
+    fundedWallet: FundedWallet =>
+      val resultP: Promise[Block] = Promise()
+      val block = RegTestNetChainParams.genesisBlock
+      val callback: OnBlockProcessed = (b: Block) => {
+        Future {
+          resultP.success(b)
+          ()
+        }
+      }
+
+      val callbacks = WalletCallbacks.onBlockProcessed(callback)
+
+      fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+
+      val wallet = fundedWallet.wallet
+
+      for {
+        _ <- wallet.processBlock(block)
+        result <- resultP.future
+      } yield assert(result == block)
   }
 }

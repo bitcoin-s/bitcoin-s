@@ -4,6 +4,7 @@ import grizzled.slf4j.Logger
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -26,6 +27,8 @@ trait WalletCallbacks {
   def onNewAddressGenerated: CallbackHandler[
     BitcoinAddress,
     OnNewAddressGenerated]
+
+  def onBlockProcessed: CallbackHandler[Block, OnBlockProcessed]
 
   def +(other: WalletCallbacks): WalletCallbacks
 
@@ -68,6 +71,15 @@ trait WalletCallbacks {
           err))
   }
 
+  def executeOnBlockProcessed(logger: Logger, block: Block)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    onBlockProcessed.execute(
+      block,
+      (err: Throwable) =>
+        logger.error(s"${onBlockProcessed.name} Callback failed with error: ",
+                     err))
+  }
+
 }
 
 /** Callback for handling a processed transaction */
@@ -78,6 +90,8 @@ trait OnTransactionBroadcast extends Callback[Transaction]
 trait OnReservedUtxos extends Callback[Vector[SpendingInfoDb]]
 
 trait OnNewAddressGenerated extends Callback[BitcoinAddress]
+
+trait OnBlockProcessed extends Callback[Block]
 
 object WalletCallbacks {
 
@@ -91,7 +105,8 @@ object WalletCallbacks {
       onReservedUtxos: CallbackHandler[Vector[SpendingInfoDb], OnReservedUtxos],
       onNewAddressGenerated: CallbackHandler[
         BitcoinAddress,
-        OnNewAddressGenerated]
+        OnNewAddressGenerated],
+      onBlockProcessed: CallbackHandler[Block, OnBlockProcessed]
   ) extends WalletCallbacks {
 
     override def +(other: WalletCallbacks): WalletCallbacks =
@@ -102,7 +117,8 @@ object WalletCallbacks {
           onTransactionBroadcast ++ other.onTransactionBroadcast,
         onReservedUtxos = onReservedUtxos ++ other.onReservedUtxos,
         onNewAddressGenerated =
-          onNewAddressGenerated ++ other.onNewAddressGenerated
+          onNewAddressGenerated ++ other.onNewAddressGenerated,
+        onBlockProcessed = onBlockProcessed ++ other.onBlockProcessed
       )
   }
 
@@ -122,15 +138,20 @@ object WalletCallbacks {
   def onNewAddressGenerated(f: OnNewAddressGenerated): WalletCallbacks =
     WalletCallbacks(onNewAddressGenerated = Vector(f))
 
+  def onBlockProcessed(f: OnBlockProcessed): WalletCallbacks = {
+    WalletCallbacks(onBlockProcessed = Vector(f))
+  }
+
   /** Empty callbacks that does nothing with the received data */
   val empty: WalletCallbacks =
-    apply(Vector.empty, Vector.empty, Vector.empty, Vector.empty)
+    apply(Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty)
 
   def apply(
       onTransactionProcessed: Vector[OnTransactionProcessed] = Vector.empty,
       onTransactionBroadcast: Vector[OnTransactionBroadcast] = Vector.empty,
       onReservedUtxos: Vector[OnReservedUtxos] = Vector.empty,
-      onNewAddressGenerated: Vector[OnNewAddressGenerated] = Vector.empty
+      onNewAddressGenerated: Vector[OnNewAddressGenerated] = Vector.empty,
+      onBlockProcessed: Vector[OnBlockProcessed] = Vector.empty
   ): WalletCallbacks = {
     WalletCallbacksImpl(
       onTransactionProcessed =
@@ -148,7 +169,11 @@ object WalletCallbacks {
       onNewAddressGenerated =
         CallbackHandler[BitcoinAddress, OnNewAddressGenerated](
           "onNewAddressGenerated",
-          onNewAddressGenerated)
+          onNewAddressGenerated),
+      onBlockProcessed = CallbackHandler[Block, OnBlockProcessed](
+        "onBlockProcessed",
+        onBlockProcessed
+      )
     )
   }
 }
