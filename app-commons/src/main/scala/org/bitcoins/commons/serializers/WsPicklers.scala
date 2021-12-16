@@ -1,6 +1,7 @@
 package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
+  BlockProcessedNotification,
   NewAddressNotification,
   ReservedUtxosNotification,
   TxBroadcastNotification,
@@ -30,6 +31,8 @@ object WsPicklers {
         val vec = utxos.map(u =>
           upickle.default.writeJs(u)(Picklers.spendingInfoDbPickler))
         ujson.Arr.from(vec)
+      case BlockProcessedNotification(block) =>
+        upickle.default.writeJs(block)(Picklers.getBlockHeaderResultPickler)
     }
 
     val notificationObj = ujson.Obj(
@@ -50,7 +53,6 @@ object WsPicklers {
         val tx = upickle.default.read(payloadObj)(Picklers.transactionPickler)
         TxProcessedNotification(tx)
       case WalletWsType.NewAddress =>
-        println(s"obj=${obj.toString()}")
         val address =
           upickle.default.read(payloadObj)(Picklers.bitcoinAddressPickler)
         NewAddressNotification(address)
@@ -59,6 +61,10 @@ object WsPicklers {
           upickle.default.read(utxoJson)(Picklers.spendingInfoDbPickler)
         }
         ReservedUtxosNotification(utxos)
+      case WalletWsType.BlockProcessed =>
+        val block =
+          upickle.default.read(payloadObj)(Picklers.getBlockHeaderResultPickler)
+        BlockProcessedNotification(block)
     }
   }
 
@@ -88,5 +94,12 @@ object WsPicklers {
 
   implicit val walletNotificationPickler: ReadWriter[WalletNotification[_]] = {
     readwriter[ujson.Obj].bimap(writeWalletNotification, readWalletNotification)
+  }
+
+  implicit val blockProcessedPickler: ReadWriter[BlockProcessedNotification] = {
+    readwriter[ujson.Obj].bimap(
+      writeWalletNotification(_),
+      readWalletNotification(_).asInstanceOf[BlockProcessedNotification]
+    )
   }
 }

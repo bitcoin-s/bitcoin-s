@@ -1,5 +1,6 @@
 package org.bitcoins.commons.serializers
 
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.serializers.JsonReaders.jsToSatoshis
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
@@ -8,7 +9,8 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.hd.{AddressType, HDPath}
-import org.bitcoins.core.number.{UInt16, UInt32, UInt64}
+import org.bitcoins.core.number.{Int32, UInt16, UInt32, UInt64}
+import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.{
@@ -462,6 +464,10 @@ object Picklers {
 
   implicit val transactionPickler: ReadWriter[Transaction] =
     readwriter[String].bimap(_.hex, Transaction.fromHex)
+
+  implicit val blockPickler: ReadWriter[Block] = {
+    readwriter[String].bimap(_.hex, Block.fromHex)
+  }
 
   implicit val extPubKeyPickler: ReadWriter[ExtPublicKey] =
     readwriter[String].bimap(_.toString, ExtPublicKey.fromString)
@@ -1234,5 +1240,82 @@ object Picklers {
         (outcome, payout)
     }
     ContractDescriptorV0TLV(outcomes = payouts)
+  }
+
+  private def readBlockHeaderResult(obj: Obj): GetBlockHeaderResult = {
+    val hash = DoubleSha256DigestBE.fromHex(obj(PicklerKeys.hashKey).str)
+    val confirmations = obj(PicklerKeys.confirmationsKey).num.toInt
+    val height = obj(PicklerKeys.heightKey).num.toInt
+    val version = obj(PicklerKeys.versionKey).num.toInt
+    val versionHex = Int32.fromHex(obj(PicklerKeys.versionHexKey).str)
+    val merkleroot =
+      DoubleSha256DigestBE.fromHex(obj(PicklerKeys.merklerootKey).str)
+    val time = UInt32(obj(PicklerKeys.timeKey).num.toLong)
+    val mediantime = UInt32(obj(PicklerKeys.mediantimeKey).num.toLong)
+    val nonce = UInt32(obj(PicklerKeys.nonceKey).num.toLong)
+    val bits = UInt32.fromHex(obj(PicklerKeys.bitsKey).str)
+    val difficulty = obj(PicklerKeys.difficultyKey).num
+    val chainWork = obj(PicklerKeys.chainworkKey).str
+    val previousBlockHash = obj(PicklerKeys.previousblockhashKey).strOpt.map {
+      str =>
+        DoubleSha256DigestBE.fromHex(str)
+    }
+
+    val nextblockhash = obj(PicklerKeys.nextblockhashKey).strOpt.map { str =>
+      DoubleSha256DigestBE.fromHex(str)
+    }
+
+    GetBlockHeaderResult(
+      hash = hash,
+      confirmations = confirmations,
+      height = height,
+      version = version,
+      versionHex = versionHex,
+      merkleroot = merkleroot,
+      time = time,
+      mediantime = mediantime,
+      nonce = nonce,
+      bits = bits,
+      difficulty = difficulty,
+      chainwork = chainWork,
+      previousblockhash = previousBlockHash,
+      nextblockhash = nextblockhash
+    )
+  }
+
+  private def writeBlockHeaderResult(header: GetBlockHeaderResult): Obj = {
+    val json = Obj(
+      PicklerKeys.rawKey -> Str(header.blockHeader.hex),
+      PicklerKeys.hashKey -> Str(header.hash.hex),
+      PicklerKeys.confirmationsKey -> Num(header.confirmations),
+      PicklerKeys.heightKey -> Num(header.height),
+      PicklerKeys.versionKey -> Num(header.version.toLong.toDouble),
+      PicklerKeys.versionHexKey -> Str(Int32(header.version).hex),
+      PicklerKeys.merklerootKey -> Str(header.merkleroot.hex),
+      PicklerKeys.timeKey -> Num(header.time.toBigInt.toDouble),
+      PicklerKeys.mediantimeKey -> Num(header.mediantime.toLong.toDouble),
+      PicklerKeys.nonceKey -> Num(header.nonce.toBigInt.toDouble),
+      PicklerKeys.bitsKey -> Str(header.bits.hex),
+      PicklerKeys.difficultyKey -> Num(header.difficulty.toDouble),
+      PicklerKeys.chainworkKey -> Str(header.chainwork),
+      PicklerKeys.previousblockhashKey -> {
+        header.previousblockhash.map(_.hex) match {
+          case Some(str) => Str(str)
+          case None      => ujson.Null
+        }
+      },
+      PicklerKeys.nextblockhashKey -> {
+        header.nextblockhash.map(_.hex) match {
+          case Some(str) => Str(str)
+          case None      => ujson.Null
+        }
+      }
+    )
+    json
+  }
+
+  implicit val getBlockHeaderResultPickler: ReadWriter[GetBlockHeaderResult] = {
+    readwriter[ujson.Obj]
+      .bimap(writeBlockHeaderResult(_), readBlockHeaderResult(_))
   }
 }

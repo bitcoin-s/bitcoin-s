@@ -1,5 +1,6 @@
 package org.bitcoins.commons.jsonmodels.ws
 
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -21,8 +22,10 @@ object WalletWsType extends StringFactory[WalletWsType] {
   case object TxBroadcast extends WalletWsType
   case object ReservedUtxos extends WalletWsType
   case object NewAddress extends WalletWsType
+  case object BlockProcessed extends WalletWsType
 
-  private val all = Vector(TxProcessed, TxBroadcast, ReservedUtxos, NewAddress)
+  private val all =
+    Vector(TxProcessed, TxBroadcast, ReservedUtxos, NewAddress, BlockProcessed)
 
   override def fromStringOpt(string: String): Option[WalletWsType] = {
     all.find(_.toString.toLowerCase() == string.toLowerCase)
@@ -65,4 +68,8 @@ object WalletNotification {
     override val `type`: WalletWsType = WalletWsType.ReservedUtxos
   }
 
+  case class BlockProcessedNotification(payload: GetBlockHeaderResult)
+      extends WalletNotification[GetBlockHeaderResult] {
+    override val `type`: WalletWsType = WalletWsType.BlockProcessed
+  }
 }

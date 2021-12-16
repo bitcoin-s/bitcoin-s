@@ -36,7 +36,11 @@ import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
-import org.bitcoins.server.util.{BitcoinSAppScalaDaemon, ServerBindings}
+import org.bitcoins.server.util.{
+  BitcoinSAppScalaDaemon,
+  ChainUtil,
+  ServerBindings
+}
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -179,7 +183,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                                 wallet = wallet,
                                 dlcNode = dlcNode,
                                 serverCmdLineArgs = serverArgParser)
-      walletCallbacks = buildWalletCallbacks(server.walletQueue)
+      walletCallbacks = buildWalletCallbacks(server.walletQueue, chainApi)
       _ = walletConf.addCallbacks(walletCallbacks)
       _ = {
         logger.info(
@@ -262,7 +266,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                                 wallet = wallet,
                                 dlcNode = dlcNode,
                                 serverCmdLineArgs = serverArgParser)
-      walletCallbacks = buildWalletCallbacks(server.walletQueue)
+      walletCallbacks = buildWalletCallbacks(server.walletQueue, bitcoind)
       _ = walletConf.addCallbacks(walletCallbacks)
     } yield {
       logger.info(s"Done starting Main!")
@@ -501,7 +505,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   private def buildWalletCallbacks(
-      walletQueue: SourceQueueWithComplete[Message]): WalletCallbacks = {
+      walletQueue: SourceQueueWithComplete[Message],
+      chainApi: ChainApi): WalletCallbacks = {
     val onAddressCreated: OnNewAddressGenerated = { addr =>
       val f = Future {
         val notification = WalletNotification.NewAddressNotification(addr)
@@ -537,11 +542,29 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       f.map(_ => ())
     }
 
+    val onBlockProcessed: OnBlockProcessed = { block =>
+      val resultF =
+        ChainUtil.getBlockHeaderResult(block.blockHeader.hashBE, chainApi)
+      val f = for {
+        result <- resultF
+        notification =
+          WalletNotification.BlockProcessedNotification(result)
+        notificationJson =
+          upickle.default.writeJs(notification)(
+            WsPicklers.blockProcessedPickler)
+        msg = TextMessage.Strict(notificationJson.toString())
+        _ <- walletQueue.offer(msg)
+      } yield ()
+
+      f
+    }
+
     WalletCallbacks(
       onTransactionProcessed = Vector(onTxProcessed),
       onNewAddressGenerated = Vector(onAddressCreated),
       onReservedUtxos = Vector(onReservedUtxo),
-      onTransactionBroadcast = Vector(onTxBroadcast)
+      onTransactionBroadcast = Vector(onTxBroadcast),
+      onBlockProcessed = Vector(onBlockProcessed)
     )
   }
 
@@ -557,7 +580,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         case WalletWsType.TxBroadcast =>
           val notification = WalletNotification.TxBroadcastNotification(tx)
           upickle.default.writeJs(notification)(WsPicklers.txBroadcastPickler)
-        case x @ (WalletWsType.NewAddress | WalletWsType.ReservedUtxos) =>
+        case x @ (WalletWsType.NewAddress | WalletWsType.ReservedUtxos |
+            WalletWsType.BlockProcessed) =>
           sys.error(s"Cannot build tx notification for $x")
       }
 
