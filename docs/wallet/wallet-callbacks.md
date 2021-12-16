@@ -11,6 +11,7 @@ Bitcoin-S support call backs for the following events that happen in the wallet:
 2. onTransactionBroadcast
 3. onReservedUtxos
 4. onNewAddressGenerated
+5. onBlockProcessed
 
 That means every time one of these events happens, we will call your callback
 so that you can be notified of the event. These callbacks will be run after the message has been
