@@ -130,7 +130,6 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       if (markAsReserved) {
         for {
           utxos <- selectedUtxosF
-          _ = utxos.foreach(u => logger.info(s"Unreserving ${u._1.outPoint}"))
           _ <- unmarkUTXOsAsReserved(utxos.map(_._1))
         } yield error
       } else Future.failed(error)
