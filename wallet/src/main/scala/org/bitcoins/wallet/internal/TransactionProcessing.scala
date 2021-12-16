@@ -487,7 +487,9 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           // since it has been included in a block
           val unreservedTxo = foundTxo.state match {
             case TxoState.Reserved =>
-              foundTxo.copyWithState(TxoState.PendingConfirmationsSpent)
+              foundTxo
+                .copyWithSpendingTxId(transaction.txIdBE)
+                .copyWithState(TxoState.PendingConfirmationsSpent)
             case TxoState.PendingConfirmationsReceived |
                 TxoState.ConfirmedReceived |
                 TxoState.PendingConfirmationsSpent | TxoState.ConfirmedSpent |
