@@ -315,6 +315,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
   override def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    val outPoints = utxos.map(_.outPoint)
+    logger.info(s"Reserving utxos=$outPoints")
     val updated = utxos.map(_.copyWithState(TxoState.Reserved))
     for {
       utxos <- spendingInfoDAO.markAsReserved(updated)

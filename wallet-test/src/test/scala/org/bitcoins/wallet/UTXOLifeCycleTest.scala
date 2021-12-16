@@ -1,7 +1,8 @@
 package org.bitcoins.wallet
 
+import grizzled.slf4j.Logging
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
@@ -21,7 +22,9 @@ import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
-class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
+class UTXOLifeCycleTest
+    extends BitcoinSWalletTestCachedBitcoindNewest
+    with Logging {
 
   behavior of "Wallet Txo States"
 
@@ -512,6 +515,46 @@ class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
         //make sure only 1 utxo is still reserved
         assert(utxos.length == 1)
         assert(reserved.outPoint == utxos.head.outPoint)
+      }
+  }
+
+  it must "mark a utxo as reserved that is still receiving confirmations and not unreserve the utxo" in {
+    param =>
+      val WalletWithBitcoindRpc(wallet, bitcoind) = param
+      val addressF = wallet.getNewAddress()
+      val txIdF =
+        addressF.flatMap(addr => bitcoind.sendToAddress(addr, Bitcoins.one))
+      val throwAwayAddrF = bitcoind.getNewAddress
+      for {
+        txId <- txIdF
+        //generate a few blocks to make the utxo pending confirmations received
+        throwAwayAddr <- throwAwayAddrF
+        hashes <- bitcoind.generateToAddress(blocks = 1, throwAwayAddr)
+        block <- bitcoind.getBlockRaw(hashes.head)
+        _ <- wallet.processBlock(block)
+
+        //make sure the utxo is pending confirmations received
+        utxos <- wallet.listUtxos(TxoState.PendingConfirmationsReceived)
+        _ = assert(utxos.length == 1)
+        utxo = utxos.head
+        _ = assert(utxo.txid == txId)
+        _ = assert(utxo.state == TxoState.PendingConfirmationsReceived)
+
+        //now mark the utxo as reserved
+        _ <- wallet.markUTXOsAsReserved(Vector(utxo))
+
+        //now process another block
+        hashes2 <- bitcoind.generateToAddress(blocks = 1, throwAwayAddr)
+        _ = logger.info(s"hash2=${hashes2.head.hex}")
+        block2 <- bitcoind.getBlockRaw(hashes2.head)
+        _ <- wallet.processBlock(block2)
+
+        //the utxo should still be reserved
+        reservedUtxos <- wallet.listUtxos(TxoState.Reserved)
+        reservedUtxo = reservedUtxos.head
+      } yield {
+        assert(reservedUtxo.txid == txId)
+        assert(reservedUtxo.state == TxoState.Reserved)
       }
   }
 }

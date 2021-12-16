@@ -469,6 +469,8 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       foundTxo: SpendingInfoDb): Future[SpendingInfoDb] = {
+    logger.info(
+      s"processExistingReceivedTxo txId=${transaction.txIdBE.hex} foundingTxo.outPoint=${foundTxo.outPoint}")
     if (foundTxo.txid != transaction.txIdBE) {
       val errMsg =
         Seq(
@@ -488,7 +490,6 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           val unreservedTxo = foundTxo.state match {
             case TxoState.Reserved =>
               foundTxo
-                .copyWithSpendingTxId(transaction.txIdBE)
                 .copyWithState(TxoState.PendingConfirmationsSpent)
             case TxoState.PendingConfirmationsReceived |
                 TxoState.ConfirmedReceived |
