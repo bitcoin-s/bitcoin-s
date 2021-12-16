@@ -56,6 +56,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       markAsReserved: Boolean): Future[(
       RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
       Vector[ScriptSignatureParams[InputInfo]])] = {
+    val amt = destinations.map(_.value).sum
+    logger.info(s"Attempting to fund a tx for amt=${amt} with feeRate=$feeRate")
     val utxosF: Future[Vector[(SpendingInfoDb, Transaction)]] =
       for {
         utxos <- fromTagOpt match {
@@ -103,15 +105,10 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         }
       }
     } yield {
-      logger.info {
-        val utxosStr = utxoSpendingInfos
-          .map { utxo =>
-            import utxo.outPoint
-            s"${outPoint.txIdBE.hex}:${outPoint.vout.toInt}"
-          }
-          .mkString(", ")
-        s"Spending UTXOs: $utxosStr"
+      val utxosStr = selectedUtxos.map { utxo =>
+        s"${utxo._1.outPoint} state=${utxo._1.state}"
       }
+      logger.info(s"Spending UTXOs: $utxosStr")
 
       utxoSpendingInfos.zipWithIndex.foreach { case (utxo, index) =>
         logger.info(s"UTXO $index details: ${utxo.output}")
@@ -127,6 +124,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
     }
 
     resultF.recoverWith { case NonFatal(error) =>
+      logger.error(
+        s"Failed to reserve utxos for amount=${amt} feeRate=$feeRate, unreserving the selected utxos")
       // un-reserve utxos since we failed to create valid spending infos
       if (markAsReserved) {
         for {

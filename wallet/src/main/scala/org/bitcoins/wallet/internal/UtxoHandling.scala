@@ -334,6 +334,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
   override def unmarkUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    logger.info(s"Unreserving utxos ${utxos.map(_.outPoint)}")
     val updatedUtxosF = Future {
       //make sure exception isn't thrown outside of a future to fix
       //see: https://github.com/bitcoin-s/bitcoin-s/issues/3813
