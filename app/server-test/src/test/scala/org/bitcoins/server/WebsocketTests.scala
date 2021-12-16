@@ -26,7 +26,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
   behavior of "Websocket Tests"
 
-  def flow: Flow[Message, WalletNotification[_], NotUsed] = Flow[Message].map {
+  val flow: Flow[Message, WalletNotification[_], NotUsed] = Flow[Message].map {
     case message: TextMessage.Strict =>
       //we should be able to parse the address message
       val text = message.text

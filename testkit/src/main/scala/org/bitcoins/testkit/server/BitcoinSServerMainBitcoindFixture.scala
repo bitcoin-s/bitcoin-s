@@ -6,8 +6,8 @@ import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
 import org.bitcoins.testkit.wallet.{
-  BitcoinSWalletTest,
   FundWalletUtil,
+  WalletTestUtil,
   WalletWithBitcoindRpc
 }
 import org.scalatest.FutureOutcome
@@ -32,11 +32,14 @@ trait BitcoinSServerMainBitcoindFixture
         server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
         _ <- server.start()
         //need to create account 2 to use FundWalletUtil.fundWalletWithBitcoind
-        wallet <- BitcoinSWalletTest.createDLCWallet2Accounts(
-          nodeApi = bitcoind,
-          chainQueryApi = bitcoind,
-          bip39PasswordOpt = None,
-          extraConfig = None)(server.conf, system)
+        wallet <- server.walletConf.createHDWallet(bitcoind, bitcoind, bitcoind)
+        _ <- wallet.start()
+        account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
+
+        //needed for fundWalletWithBitcoind
+        _ <- wallet.createNewAccount(hdAccount = account1,
+                                     kmParams = wallet.keyManager.kmParams)
+
         _ <- FundWalletUtil.fundWalletWithBitcoind(
           WalletWithBitcoindRpc(wallet, bitcoind))
       } yield {
