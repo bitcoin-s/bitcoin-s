@@ -157,7 +157,8 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
       withValidServerCommand(DecodeAccept.fromJsArr(arr)) {
         case DecodeAccept(accept) =>
           complete {
-            Server.httpSuccess(writeJs(accept))
+            val json = writeJs(accept)
+            Server.httpSuccess()
           }
       }
     case ServerCommand("decodesign", arr) =>
