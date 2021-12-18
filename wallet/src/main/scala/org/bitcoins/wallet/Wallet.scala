@@ -32,15 +32,13 @@ import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.db.models.MasterXPubDAO
-import org.bitcoins.db.{DatabaseDriver, SQLiteUtil, SafeDatabase}
+import org.bitcoins.db.SafeDatabase
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._
 import scodec.bits.ByteVector
 import slick.dbio.{DBIOAction, Effect, NoStream}
-
-import java.nio.file.Path
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Random, Success}
@@ -951,17 +949,6 @@ abstract class Wallet
       this
     }
   }
-
-  override def backup(location: Path): Future[Unit] =
-    walletConfig.driver match {
-      case DatabaseDriver.SQLite =>
-        val jdbcUrl = walletConfig.jdbcUrl.replace("\"", "")
-        Future { SQLiteUtil.backup(jdbcUrl, location) }
-      case _: DatabaseDriver =>
-        Future.failed(
-          new IllegalArgumentException(
-            "Backup is supported only for SQLite database backend"))
-    }
 }
 
 // todo: create multiple wallets, need to maintain multiple databases
