@@ -3,6 +3,7 @@ package org.bitcoins.commons.jsonmodels.ws
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.StringFactory
 
@@ -24,6 +25,7 @@ object WalletWsType extends StringFactory[WalletWsType] {
   case object ReservedUtxos extends WalletWsType
   case object NewAddress extends WalletWsType
   case object BlockProcessed extends WalletWsType
+  case object DLCStateChange extends WalletWsType
 
   private val all =
     Vector(TxProcessed, TxBroadcast, ReservedUtxos, NewAddress, BlockProcessed)
@@ -77,5 +79,10 @@ object WalletNotification {
   case class BlockProcessedNotification(payload: GetBlockHeaderResult)
       extends WalletNotification[GetBlockHeaderResult] {
     override val `type`: WalletWsType = WalletWsType.BlockProcessed
+  }
+
+  case class DLCStateChangeNotification(payload: DLCStatus)
+      extends WalletNotification[DLCStatus] {
+    override val `type`: WalletWsType = WalletWsType.DLCStateChange
   }
 }

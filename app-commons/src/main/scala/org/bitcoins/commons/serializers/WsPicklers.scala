@@ -2,6 +2,7 @@ package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
   BlockProcessedNotification,
+  DLCStateChangeNotification,
   NewAddressNotification,
   ReservedUtxosNotification,
   TxBroadcastNotification,
@@ -33,6 +34,8 @@ object WsPicklers {
         ujson.Arr.from(vec)
       case BlockProcessedNotification(block) =>
         upickle.default.writeJs(block)(Picklers.getBlockHeaderResultPickler)
+      case DLCStateChangeNotification(status) =>
+        upickle.default.writeJs(status)(Picklers.dlcStatusW)
     }
 
     val notificationObj = ujson.Obj(
@@ -65,6 +68,9 @@ object WsPicklers {
         val block =
           upickle.default.read(payloadObj)(Picklers.getBlockHeaderResultPickler)
         BlockProcessedNotification(block)
+      case WalletWsType.DLCStateChange =>
+        val status = upickle.default.read(payloadObj)(Picklers.dlcStatusR)
+        DLCStateChangeNotification(status)
     }
   }
 
@@ -101,5 +107,11 @@ object WsPicklers {
       writeWalletNotification(_),
       readWalletNotification(_).asInstanceOf[BlockProcessedNotification]
     )
+  }
+
+  implicit val dlcStateChangePickler: ReadWriter[DLCStateChangeNotification] = {
+    readwriter[ujson.Obj].bimap(
+      writeWalletNotification(_),
+      readWalletNotification(_).asInstanceOf[DLCStateChangeNotification])
   }
 }
