@@ -43,6 +43,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                 // update so we can calculate correct DLCStatus
                 _ <- dlcDAO.update(withState)
                 withOutcome <- calculateAndSetOutcome(withState)
+                dlc <- findDLC(dlcDb.dlcId)
+                _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
+                                                                      dlc.get)
               } yield withOutcome
             } else Future.successful(withState)
           }
@@ -189,12 +192,18 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
 
           }
         }
+        updatedDlcDbA = dlcDAO.updateAction(
+          dlcDb.copy(aggregateSignatureOpt = Some(sig)))
         updateNonceA = oracleNonceDAO.updateAllAction(updatedNonces)
         updateAnnouncementA = dlcAnnouncementDAO.updateAllAction(
           updatedAnnouncements)
-        actions = DBIO.seq(updateNonceA, updateAnnouncementA).transactionally
+        actions = DBIO
+          .seq(updatedDlcDbA, updateNonceA, updateAnnouncementA)
+          .transactionally
         _ <- safeDatabase.run(actions)
-      } yield dlcDb.copy(aggregateSignatureOpt = Some(sig))
+      } yield {
+        dlcDb.copy(aggregateSignatureOpt = Some(sig))
+      }
     } else {
       Future.successful(dlcDb)
     }
@@ -233,6 +242,12 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           }
 
           _ <- dlcDAO.updateAll(updated)
+          dlcIds = updated.map(_.dlcId).distinct
+          updatedDlcDbs <- Future.sequence(dlcIds.map(findDLC))
+          _ <- Future.sequence {
+            updatedDlcDbs.map(u =>
+              dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, u.get))
+          }
         } yield res
       }
   }
@@ -259,7 +274,6 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           withTx = dlcDbs.map(_.updateClosingTxId(transaction.txIdBE))
           updatedFs = withTx.map(calculateAndSetState)
           updated <- Future.sequence(updatedFs)
-
           _ <- dlcDAO.updateAll(updated)
         } yield res
       }

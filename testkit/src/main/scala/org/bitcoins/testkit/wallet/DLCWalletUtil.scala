@@ -251,7 +251,6 @@ object DLCWalletUtil extends Logging {
       accept <- walletB.acceptDLCOffer(offer)
       sigs <- walletA.signDLC(accept)
       _ <- walletB.addDLCSigs(sigs)
-
       tx <- walletB.broadcastDLCFundingTx(sigs.contractId)
       _ <- walletA.processTransaction(tx, None)
     } yield {
