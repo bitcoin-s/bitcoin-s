@@ -59,6 +59,8 @@ trait ChainQueryApi {
   def getFiltersBetweenHeights(
       startHeight: Int,
       endHeight: Int): Future[Vector[FilterResponse]]
+      
+  def getMedianTimePast(): Future[Long]
 }
 ```
 
@@ -180,6 +182,8 @@ val chainApi = new ChainQueryApi {
 
       Future.sequence(filterFs)
     }
+    
+    override def getMedianTimePast(): Future[Long] = bitcoind.getMedianTimePast()
   }
 
 // Finally, we can initialize our wallet with our own node api

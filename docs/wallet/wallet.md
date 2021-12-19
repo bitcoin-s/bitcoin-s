@@ -81,6 +81,7 @@ val chainApi = new ChainQueryApi {
     override def getFilterCount(): Future[Int] = Future.successful(0)
     override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] = Future.successful(0)
     override def getFiltersBetweenHeights(startHeight: Int, endHeight: Int): Future[Vector[FilterResponse]] = Future.successful(Vector.empty)
+    override def getMedianTimePast(): Future[Long] = Future.successful(0L)
   }
 ```
 

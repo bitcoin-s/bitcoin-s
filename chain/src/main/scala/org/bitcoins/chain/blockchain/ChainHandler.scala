@@ -1013,8 +1013,7 @@ class ChainHandler(
         header.time.toLong
       })
       .map { times =>
-        val (_, upper) = times.sorted.splitAt(times.size / 2)
-        upper.head
+        times.sorted.apply(times.size / 2)
       }
   }
 }
