@@ -87,6 +87,9 @@ object ConsoleCli {
                 case gbh: GetBlockHeader => gbh.copy(hash = hash)
                 case other               => other
               }))),
+      cmd("getmediantimepast")
+        .action((_, conf) => conf.copy(command = GetMedianTimePast))
+        .text(s"Get the median time past"),
       cmd("decoderawtransaction")
         .action((_, conf) =>
           conf.copy(command = DecodeRawTransaction(EmptyTransaction)))
@@ -1706,6 +1709,8 @@ object ConsoleCli {
     val requestParam: RequestParam = command match {
       case GetInfo =>
         RequestParam("getinfo")
+      case GetMedianTimePast =>
+        RequestParam("getmediantimepast")
       case GetUtxos =>
         RequestParam("getutxos")
       case ListReservedUtxos =>
@@ -2357,6 +2362,8 @@ object CliCommand {
 
   case class GetBlockHeader(hash: DoubleSha256DigestBE)
       extends AppServerCliCommand
+
+  case object GetMedianTimePast extends AppServerCliCommand
 
   case class DecodeRawTransaction(transaction: Transaction)
       extends AppServerCliCommand

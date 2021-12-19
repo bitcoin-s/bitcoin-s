@@ -342,4 +342,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   override def epochSecondToBlockHeight(time: Long): Future[Int] =
     chainApiFromDb().flatMap(_.epochSecondToBlockHeight(time))
 
+  override def getMedianTimePast(): Future[Long] =
+    chainApiFromDb().flatMap(_.getMedianTimePast())
+
 }

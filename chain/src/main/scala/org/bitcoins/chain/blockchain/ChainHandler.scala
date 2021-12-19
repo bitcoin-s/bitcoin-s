@@ -966,6 +966,57 @@ class ChainHandler(
   def toChainHandlerCached: Future[ChainHandlerCached] = {
     ChainHandler.toChainHandlerCached(this)
   }
+
+  /** calculates the median time passed */
+  override def getMedianTimePast(): Future[Long] = {
+    /*
+        static constexpr int nMedianTimeSpan = 11;
+
+    int64_t GetMedianTimePast() const
+    {
+        int64_t pmedian[nMedianTimeSpan];
+        int64_t* pbegin = &pmedian[nMedianTimeSpan];
+        int64_t* pend = &pmedian[nMedianTimeSpan];
+
+        const CBlockIndex* pindex = this;
+        for (int i = 0; i < nMedianTimeSpan && pindex; i++, pindex = pindex->pprev)
+     *(--pbegin) = pindex->GetBlockTime();
+
+        std::sort(pbegin, pend);
+        return pbegin[(pend - pbegin)/2];
+    }
+     */
+    val nMedianTimeSpan = 11
+
+    @tailrec
+    def getNTopHeaders(
+        n: Int,
+        acc: Vector[Future[Option[BlockHeaderDb]]]): Vector[
+      Future[Option[BlockHeaderDb]]] = {
+      if (n == 1)
+        acc
+      else {
+        val prev: Future[Option[BlockHeaderDb]] = acc.last.flatMap {
+          case None       => Future.successful(None)
+          case Some(last) => getHeader(last.previousBlockHashBE)
+        }
+        getNTopHeaders(n - 1, acc :+ prev)
+      }
+    }
+
+    val top11 = getNTopHeaders(nMedianTimeSpan,
+                               Vector(getBestBlockHeader().map(Option.apply)))
+
+    Future
+      .sequence(top11)
+      .map(_.collect { case Some(header) =>
+        header.time.toLong
+      })
+      .map { times =>
+        val (_, upper) = times.sorted.splitAt(times.size / 2)
+        upper.head
+      }
+  }
 }
 
 object ChainHandler {

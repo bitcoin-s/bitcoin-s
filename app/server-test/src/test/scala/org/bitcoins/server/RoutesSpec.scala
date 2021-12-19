@@ -269,6 +269,20 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    "return the median time past" in {
+      (mockChainApi.getMedianTimePast: () => Future[Long])
+        .expects()
+        .returning(Future.successful(1234567890L))
+
+      val route =
+        chainRoutes.handleCommand(ServerCommand("getmediantimepast", Arr()))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(responseAs[String] == """{"result":1234567890,"error":null}""")
+      }
+    }
+
     "return the wallet's balance" in {
       (mockWalletApi
         .getBalance()(_: ExecutionContext))

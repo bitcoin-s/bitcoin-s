@@ -107,7 +107,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   }
 
   /** Gets the number of compact filters in the database */
-  override def getFilterCount(): Future[Int] = ???
+  override def getFilterCount(): Future[Int] = Future.failed(
+    new UnsupportedOperationException(s"Not implemented: getFilterCount"))
 
   /** Returns the block height of the given block stamp */
   override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
@@ -128,6 +129,13 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   /** Gets the block height of the closest block to the given time */
   override def epochSecondToBlockHeight(time: Long): Future[Int] =
     Future.successful(0)
+
+  override def getMedianTimePast(): Future[Long] = {
+    for {
+      hash <- getBestBlockHash
+      header <- getBlockHeader(hash)
+    } yield header.mediantime.toLong
+  }
 
   // Node Api
 

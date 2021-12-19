@@ -95,6 +95,13 @@ case class ChainRoutes(chain: ChainApi, network: BitcoinNetwork)(implicit
           Server.httpSuccess(info.toJson)
         }
       }
+
+    case ServerCommand("getmediantimepast", _) =>
+      complete {
+        chain.getMedianTimePast().map { mtp =>
+          Server.httpSuccess(mtp)
+        }
+      }
   }
 
 }

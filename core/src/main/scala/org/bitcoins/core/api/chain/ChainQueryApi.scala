@@ -41,6 +41,8 @@ trait ChainQueryApi {
   /** Gets the block height of the closest block to the given time */
   def epochSecondToBlockHeight(time: Long): Future[Int]
 
+  /** calculates the median time passed */
+  def getMedianTimePast(): Future[Long]
 }
 
 object ChainQueryApi {
