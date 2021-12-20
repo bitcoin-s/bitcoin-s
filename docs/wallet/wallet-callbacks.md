@@ -3,7 +3,7 @@ title: Wallet Callbacks
 id: wallet-callbacks
 ---
 
-#### Callbacks
+#### Wallet Callbacks
 
 Bitcoin-S support call backs for the following events that happen in the wallet:
 
@@ -17,6 +17,14 @@ That means every time one of these events happens, we will call your callback
 so that you can be notified of the event. These callbacks will be run after the message has been
 recieved and will execute synchronously. If any of them fail an error log will be output, and the remainder of the callbacks will continue.
 Let's make an easy one:
+
+#### DLC Wallet callbacks
+Bitcoin-s support callbacks for the following events in the DLC wallet: 
+1. onStateChange
+
+That means everytime a DLC's state changes, your callback will be executed so
+that you are notified of the event. For instance, if your DLC transitions from
+`Offered` -> `Accepted`, your callback will be executed.
 
 #### Example
 
