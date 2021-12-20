@@ -182,8 +182,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           s"Starting ${nodeConf.nodeType.shortName} node sync, it took=${System
             .currentTimeMillis() - start}ms")
       }
-      _ = BitcoinSServer.startedFP.success(Future.successful(binding))
-
       _ <- node.sync()
     } yield {
       logger.info(
@@ -256,12 +254,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       dlcNode = dlcNodeConf.createDLCNode(wallet)
       _ <- dlcNode.start()
 
-      binding <- startHttpServer(nodeApi = bitcoind,
-                                 chainApi = bitcoind,
-                                 wallet = wallet,
-                                 dlcNode = dlcNode,
-                                 serverCmdLineArgs = serverArgParser)
-      _ = BitcoinSServer.startedFP.success(Future.successful(binding))
+      _ <- startHttpServer(nodeApi = bitcoind,
+                           chainApi = bitcoind,
+                           wallet = wallet,
+                           dlcNode = dlcNode,
+                           serverCmdLineArgs = serverArgParser)
     } yield {
       logger.info(s"Done starting Main!")
       ()
@@ -513,23 +510,4 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
                       serverCmdLineArgs.toConfig)(system)
 
   new BitcoinSServerMain(serverCmdLineArgs).run()
-}
-
-object BitcoinSServer {
-  private[server] var startedFP = Promise[Future[Http.ServerBinding]]()
-
-  /** Allows the above server to be bundled with other projects.
-    *
-    * Main.startFut will be null when called from elsewhere due
-    * to the delayed initialization of scala Apps.
-    *
-    * In contrast this Future will be initialized immediately and
-    * only initialized to to Main's startFut when that future has
-    * been initialized.
-    */
-  val startedF: Future[Http.ServerBinding] = startedFP.future.flatten
-
-  def reset(): Unit = {
-    startedFP = Promise[Future[Http.ServerBinding]]()
-  }
 }

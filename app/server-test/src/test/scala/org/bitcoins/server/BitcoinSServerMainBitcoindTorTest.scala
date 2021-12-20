@@ -21,8 +21,6 @@ class BitcoinSServerMainBitcoindTorTest
       for {
         _ <- torF
         _ <- server.start()
-        // Await RPC server started
-        _ <- BitcoinSServer.startedF
 
         info = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
         balance = ConsoleCli.exec(CliCommand.GetBalance(isSats = true),
@@ -37,10 +35,5 @@ class BitcoinSServerMainBitcoindTorTest
         assert(addr.isSuccess)
         assert(blockHash.isSuccess)
       }
-  }
-
-  override def afterAll(): Unit = {
-    super.afterAll()
-    BitcoinSServer.reset()
   }
 }
