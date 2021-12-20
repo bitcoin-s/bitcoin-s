@@ -8,8 +8,6 @@ import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
-
-import java.nio.file.Path
 import java.time.Instant
 import scala.concurrent.Future
 
@@ -170,9 +168,4 @@ trait DLCOracleApi {
 
   /** Signs the SHA256 hash of the given bytes using the oracle's signing key */
   def signMessage(message: ByteVector): SchnorrDigitalSignature
-
-  /** Backup oracle database. Works only for the SQLite database driver.
-    * @param location backup file location
-    */
-  def backup(location: Path): Future[Unit]
 }

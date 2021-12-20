@@ -20,7 +20,6 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType, TxoState}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
-import java.nio.file.Path
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -403,11 +402,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def isChange(output: TransactionOutput): Future[Boolean]
 
   def getSyncState(): Future[BlockSyncState]
-
-  /** Backup oracle database. Works only for the SQLite database driver.
-    * @param location backup file location
-    */
-  def backup(location: Path): Future[Unit]
 }
 
 /** An HDWallet that uses Neutrino to sync */

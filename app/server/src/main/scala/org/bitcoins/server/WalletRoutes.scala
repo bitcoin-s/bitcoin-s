@@ -19,7 +19,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import ujson._
 import upickle.default._
 
-import java.nio.file.{FileSystems, Files, Path}
+import java.nio.file.{Files, Path}
 import java.time.Instant
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -819,14 +819,6 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       complete {
         wallet.getWalletAccounting().map { accounting =>
           Server.httpSuccess(writeJs(accounting))
-        }
-      }
-
-    case ServerCommand("backupwallet", arr) =>
-      complete {
-        val dest = FileSystems.getDefault.getPath(arr.arr.head.str)
-        wallet.backup(dest).map { _ =>
-          Server.httpSuccess("done")
         }
       }
   }

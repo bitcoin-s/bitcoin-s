@@ -140,6 +140,8 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
 
 ### Common 
  - `getversion` - The version of our application you are using
+ - `zipdatadir` `location` - Backs up the datadir in a safe and consistent manner.
+   - `location` - The locations of the backup zip
 
 ### Blockchain
  - `getblockcount` - Get the current block height
@@ -227,8 +229,6 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `newpassphrase` - The new passphrase
  - `keymanagerpassphraseset` `passphrase` - Encrypts the wallet with the given passphrase
     - `passphrase` - The passphrase to encrypt the wallet with
-- `backupwallet` `location` - Backs up the wallet database in a safe and consistent manner.
-   - `location` - The locations of the backup file
 
 ### DLC
  - `createcontractinfo` `announcement` `totalCollateral` `payouts`
