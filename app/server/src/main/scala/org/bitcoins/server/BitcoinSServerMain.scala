@@ -402,7 +402,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       }
     }
     val bindingF = server.start()
-    BitcoinSServer.startedFP.success(bindingF)
+
     bindingF.map { bindings =>
       serverBindingsOpt = Some(bindings)
       server

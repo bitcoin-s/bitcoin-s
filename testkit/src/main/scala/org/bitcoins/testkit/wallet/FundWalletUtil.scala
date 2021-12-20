@@ -34,7 +34,6 @@ trait FundWalletUtil extends Logging {
     val (wallet, bitcoind) = (pair.wallet, pair.bitcoind)
 
     val defaultAccount = wallet.walletConfig.defaultAccount
-    logger.info(s"defaultAccount=$defaultAccount")
     val fundedDefaultAccountWalletF =
       FundWalletUtil.fundAccountForWalletWithBitcoind(
         amts = defaultAcctAmts,
@@ -44,7 +43,6 @@ trait FundWalletUtil extends Logging {
       )
 
     val hdAccount1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
-    logger.info(s"hdAccount1=$hdAccount1")
     val fundedAccount1WalletF = for {
       fundedDefaultAcct <- fundedDefaultAccountWalletF
 
