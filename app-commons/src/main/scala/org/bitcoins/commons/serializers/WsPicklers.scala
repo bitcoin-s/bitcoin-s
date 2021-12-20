@@ -57,7 +57,7 @@ object WsPicklers {
           upickle.default.read(payloadObj)(Picklers.bitcoinAddressPickler)
         NewAddressNotification(address)
       case WalletWsType.ReservedUtxos =>
-        val utxos = obj.arr.toVector.map { utxoJson =>
+        val utxos = obj(PicklerKeys.payloadKey).arr.toVector.map { utxoJson =>
           upickle.default.read(utxoJson)(Picklers.spendingInfoDbPickler)
         }
         ReservedUtxosNotification(utxos)
