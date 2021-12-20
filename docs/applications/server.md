@@ -150,6 +150,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
      - `hash` - The block hash
  - `decoderawtransaction` `tx` - `Decode the given raw hex transaction`
      - `tx` - Transaction encoded in hex to decode
+ - `getmediantimepast` - Returns the median time past
 
 ### Wallet
  - `rescan` `[options]` - Rescan for wallet UTXOs

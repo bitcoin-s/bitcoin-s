@@ -132,9 +132,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   override def getMedianTimePast(): Future[Long] = {
     for {
-      hash <- getBestBlockHash
-      header <- getBlockHeader(hash)
-    } yield header.mediantime.toLong
+      info <- getBlockChainInfo
+    } yield info.mediantime.toLong
   }
 
   // Node Api
