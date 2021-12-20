@@ -18,7 +18,8 @@ object ChainUtil {
       headerOpt <- headerOptF
       confsOpt <- confsOptF
     } yield {
-      val zipped: Option[(BlockHeaderDb, Int)] = headerOpt.zip(confsOpt)
+      val zipped: Option[(BlockHeaderDb, Int)] =
+        headerOpt.zip(confsOpt).headOption
       zipped match {
         case None =>
           sys.error(
