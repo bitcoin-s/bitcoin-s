@@ -1293,7 +1293,8 @@ abstract class DLCWallet
 
       _ <- processTransaction(tx, None)
       dlcStatusOpt <- findDLC(dlcId = dlcDb.dlcId)
-      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, dlcStatusOpt.get)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
+                                                             dlcStatusOpt.get)
     } yield tx
   }
 
