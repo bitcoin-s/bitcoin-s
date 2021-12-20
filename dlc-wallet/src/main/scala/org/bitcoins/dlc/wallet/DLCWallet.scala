@@ -972,7 +972,6 @@ abstract class DLCWallet
       _ <- updateDLCState(dlc.contractIdOpt.get, DLCState.Signed)
       _ = logger.info(s"DLC ${contractId.toHex} is signed")
       status <- findDLC(dlcId)
-      _ = println(s"before SIGN state=${status.get.state}")
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield DLCSign(cetSigs, FundingSignatures(sortedSigVec), contractId)
   }
@@ -1293,8 +1292,8 @@ abstract class DLCWallet
       _ <- updateAggregateSignature(contractId, aggSig)
 
       _ <- processTransaction(tx, None)
-      dlcDb <- findDLC(dlcId = dlcDb.dlcId)
-      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, dlcDb.get)
+      dlcStatusOpt <- findDLC(dlcId = dlcDb.dlcId)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, dlcStatusOpt.get)
     } yield tx
   }
 
