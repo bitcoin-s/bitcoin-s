@@ -305,7 +305,9 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         .flatten
       processed <- spendingInfoDAO.updateAllSpendingInfoDb(toBeUpdated)
       _ <- updateUtxoConfirmedStates(processed)
-    } yield processed
+    } yield {
+      processed
+    }
   }
 
   /** Does the grunt work of processing a TX.

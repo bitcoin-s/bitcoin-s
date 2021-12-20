@@ -440,6 +440,8 @@ abstract class DLCWallet
         dlcOfferDb = dlcOfferDb)
 
       _ <- safeDatabase.run(offerActions)
+      status <- findDLC(dlcId)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield offer
   }
 
@@ -588,6 +590,8 @@ abstract class DLCWallet
         case None =>
           createNewDLCAccept(dlc, account, collateral, offer)
       }
+      status <- findDLC(dlcId)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield dlcAccept
   }
 
@@ -917,7 +921,7 @@ abstract class DLCWallet
       (dlc, cetSigsDbs) <- registerDLCAccept(accept)
       // .get should be safe now
       contractId = dlc.contractIdOpt.get
-
+      dlcId = dlc.dlcId
       signer <- signerFromDb(dlc.dlcId)
 
       mySigs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
@@ -967,6 +971,8 @@ abstract class DLCWallet
 
       _ <- updateDLCState(dlc.contractIdOpt.get, DLCState.Signed)
       _ = logger.info(s"DLC ${contractId.toHex} is signed")
+      status <- findDLC(dlcId)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield DLCSign(cetSigs, FundingSignatures(sortedSigVec), contractId)
   }
 
@@ -1165,6 +1171,7 @@ abstract class DLCWallet
 
   override def broadcastDLCFundingTx(
       contractId: ByteVector): Future[Transaction] = {
+    logger.info(s"broadcasting $contractId")
     val dlcDbOptF = dlcDAO.findByContractId(contractId)
     val fundingTxF = getDLCFundingTx(contractId)
     for {
@@ -1181,6 +1188,7 @@ abstract class DLCWallet
       _ = logger.info(
         s"Broadcasting funding transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}")
       _ <- broadcastTransaction(tx)
+      _ = logger.info(s"Done broadcast tx ${contractId}")
     } yield tx
   }
 
@@ -1275,7 +1283,7 @@ abstract class DLCWallet
 
       _ <- updateDLCOracleSigs(sigsUsed)
       _ <- updateDLCState(contractId, DLCState.Claimed)
-      _ <- updateClosingTxId(contractId, tx.txIdBE)
+      dlcDb <- updateClosingTxId(contractId, tx.txIdBE)
 
       oracleSigSum =
         OracleSignatures.computeAggregateSignature(outcome, sigsUsed)
@@ -1284,6 +1292,9 @@ abstract class DLCWallet
       _ <- updateAggregateSignature(contractId, aggSig)
 
       _ <- processTransaction(tx, None)
+      dlcStatusOpt <- findDLC(dlcId = dlcDb.dlcId)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
+                                                             dlcStatusOpt.get)
     } yield tx
   }
 

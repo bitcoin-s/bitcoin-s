@@ -59,6 +59,11 @@ case class DLCDAO()(implicit
     q.delete
   }
 
+  def findByDLCIds(dlcIds: Vector[Sha256Digest]): Future[Vector[DLCDb]] = {
+    val action = table.filter(_.dlcId.inSet(dlcIds)).result
+    safeDatabase.runVec(action)
+  }
+
   def findByTempContractId(
       tempContractId: Sha256Digest): Future[Option[DLCDb]] = {
     val q = table.filter(_.tempContractId === tempContractId)
