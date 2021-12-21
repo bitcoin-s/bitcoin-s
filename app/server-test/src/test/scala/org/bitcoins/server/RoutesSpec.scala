@@ -250,6 +250,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       (mockChainApi
         .getHeader(_: DoubleSha256DigestBE))
         .expects(blockHeader.hashBE)
+        .twice()
         .returning(Future.successful(Some(blockHeaderDb)))
 
       (mockChainApi
@@ -264,7 +265,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":{"raw":"${blockHeader.hex}","hash":"${blockHeader.hashBE.hex}","confirmations":1,"height":1899697,"version":${blockHeader.version.toLong},"versionHex":"${blockHeader.version.hex}","merkleroot":"${blockHeader.merkleRootHashBE.hex}","time":${blockHeader.time.toLong},"nonce":${blockHeader.nonce.toLong},"bits":"${blockHeader.nBits.hex}","difficulty":${blockHeader.difficulty.toDouble},"chainwork":"$chainworkStr","previousblockhash":"${blockHeader.previousBlockHashBE.hex}"},"error":null}""")
+          String] == s"""{"result":{"raw":"${blockHeader.hex}","hash":"${blockHeader.hashBE.hex}","confirmations":1,"height":1899697,"version":${blockHeader.version.toLong},"versionHex":"${blockHeader.version.hex}","merkleroot":"${blockHeader.merkleRootHashBE.hex}","time":${blockHeader.time.toLong},"mediantime":${blockHeaderDb.time.toLong},"nonce":${blockHeader.nonce.toLong},"bits":"${blockHeader.nBits.hex}","difficulty":${blockHeader.difficulty.toDouble},"chainwork":"$chainworkStr","previousblockhash":"${blockHeader.previousBlockHashBE.hex}","nextblockhash":null},"error":null}""")
       }
     }
 
