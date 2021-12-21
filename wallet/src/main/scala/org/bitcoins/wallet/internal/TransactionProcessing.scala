@@ -71,8 +71,8 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       hash = block.blockHeader.hashBE
       height <- chainQueryApi.getBlockHeight(hash)
       _ <- stateDescriptorDAO.updateSyncHeight(hash, height.get)
+      _ <- walletConfig.walletCallbacks.executeOnBlockProcessed(logger, block)
     } yield {
-      walletConfig.walletCallbacks.executeOnBlockProcessed(logger, block)
       res
     }
 

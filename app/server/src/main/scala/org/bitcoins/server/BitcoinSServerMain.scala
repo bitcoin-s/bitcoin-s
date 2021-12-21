@@ -554,7 +554,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             WsPicklers.blockProcessedPickler)
         msg = TextMessage.Strict(notificationJson.toString())
         _ <- walletQueue.offer(msg)
-      } yield ()
+      } yield {
+        ()
+      }
 
       f
     }
