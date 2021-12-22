@@ -524,14 +524,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       walletQueue: SourceQueueWithComplete[Message],
       chainApi: ChainApi): WalletCallbacks = {
     val onAddressCreated: OnNewAddressGenerated = { addr =>
-      val f = Future {
-        val notification = WalletNotification.NewAddressNotification(addr)
-        val json =
-          upickle.default.writeJs(notification)(WsPicklers.newAddressPickler)
-        val msg = TextMessage.Strict(json.toString())
-        walletQueue.offer(msg)
-      }
-      f.map(_ => ())
+      val notification = WalletNotification.NewAddressNotification(addr)
+      val json =
+        upickle.default.writeJs(notification)(WsPicklers.newAddressPickler)
+      val msg = TextMessage.Strict(json.toString())
+      val offerF = walletQueue.offer(msg)
+      offerF.map(_ => ())
     }
 
     val onTxProcessed: OnTransactionProcessed = { tx =>
@@ -547,15 +545,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
 
     val onReservedUtxo: OnReservedUtxos = { utxos =>
-      val f = Future {
         val notification =
           WalletNotification.ReservedUtxosNotification(utxos)
         val notificationJson =
           upickle.default.writeJs(notification)(WsPicklers.reservedUtxosPickler)
         val msg = TextMessage.Strict(notificationJson.toString())
-        walletQueue.offer(msg)
-      }
-      f.map(_ => ())
+        val offerF = walletQueue.offer(msg)
+      offerF.map(_ => ())
     }
 
     val onBlockProcessed: OnBlockProcessed = { block =>
@@ -590,23 +586,21 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       wsType: WalletWsType,
       tx: Transaction,
       walletQueue: SourceQueueWithComplete[Message]): Future[Unit] = {
-    val f = Future {
-      val json = wsType match {
-        case WalletWsType.TxProcessed =>
-          val notification = WalletNotification.TxProcessedNotification(tx)
-          upickle.default.writeJs(notification)(WsPicklers.txProcessedPickler)
-        case WalletWsType.TxBroadcast =>
-          val notification = WalletNotification.TxBroadcastNotification(tx)
-          upickle.default.writeJs(notification)(WsPicklers.txBroadcastPickler)
-        case x @ (WalletWsType.NewAddress | WalletWsType.ReservedUtxos |
-            WalletWsType.BlockProcessed) =>
-          sys.error(s"Cannot build tx notification for $x")
-      }
-
-      val msg = TextMessage.Strict(json.toString())
-      walletQueue.offer(msg)
+    val json = wsType match {
+      case WalletWsType.TxProcessed =>
+        val notification = WalletNotification.TxProcessedNotification(tx)
+        upickle.default.writeJs(notification)(WsPicklers.txProcessedPickler)
+      case WalletWsType.TxBroadcast =>
+        val notification = WalletNotification.TxBroadcastNotification(tx)
+        upickle.default.writeJs(notification)(WsPicklers.txBroadcastPickler)
+      case x @ (WalletWsType.NewAddress | WalletWsType.ReservedUtxos |
+          WalletWsType.BlockProcessed) =>
+        sys.error(s"Cannot build tx notification for $x")
     }
-    f.map(_ => ())
+
+    val msg = TextMessage.Strict(json.toString())
+    val offerF = walletQueue.offer(msg)
+    offerF.map(_ => ())
   }
 }
 
