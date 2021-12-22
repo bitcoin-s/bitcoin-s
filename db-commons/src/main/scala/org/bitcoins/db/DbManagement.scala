@@ -38,7 +38,7 @@ trait DbManagement extends Logging {
     // Remove "s needed for config
     val url = appConfig.jdbcUrl.replace("\"", "")
     config
-      .dataSource(url, username, password)
+      .dataSource(url, dbUsername, dbPassword)
       .load
   }
 
