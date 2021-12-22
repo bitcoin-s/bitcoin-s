@@ -299,6 +299,10 @@ object BitcoinSWalletTest extends WalletLogger {
 
     override def epochSecondToBlockHeight(time: Long): Future[Int] =
       Future.successful(0)
+
+    /** calculates the median time passed */
+    override def getMedianTimePast(): Future[Long] =
+      Future.successful(0L)
   }
 
   private[bitcoins] class RandomFeeProvider extends FeeRateApi {

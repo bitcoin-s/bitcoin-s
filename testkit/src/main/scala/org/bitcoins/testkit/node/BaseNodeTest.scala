@@ -165,5 +165,9 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
 
     override def epochSecondToBlockHeight(time: Long): Future[Int] =
       Future.successful(0)
+
+    /** calculates the median time passed */
+    override def getMedianTimePast(): Future[Long] =
+      Future.successful(0L)
   }
 }
