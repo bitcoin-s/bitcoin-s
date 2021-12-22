@@ -86,8 +86,9 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         .get
       val expectedAddress = BitcoinAddress.fromString(expectedAddressStr)
 
-      promise.success(None)
       for {
+        _ <- AkkaUtil.nonBlockingSleep(500.millis)
+        _ = promise.success(None)
         notifications <- walletNotificationsF
       } yield {
         assert(
@@ -132,6 +133,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         getTxCmd = CliCommand.GetTransaction(expectedTxId)
         expectedTxStr = ConsoleCli.exec(getTxCmd, cliConfig)
         expectedTx = Transaction.fromHex(expectedTxStr.get)
+        _ <- AkkaUtil.nonBlockingSleep(500.millis)
         _ = promise.success(None)
         notifications <- notificationsF
       } yield {
@@ -176,6 +178,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         getTxCmd = CliCommand.GetTransaction(expectedTxId)
         expectedTxStr = ConsoleCli.exec(getTxCmd, cliConfig)
         expectedTx = Transaction.fromHex(expectedTxStr.get)
+        _ <- AkkaUtil.nonBlockingSleep(500.millis)
         _ = promise.success(None)
         notifications <- notificationsF
       } yield {
