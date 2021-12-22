@@ -306,7 +306,7 @@ sealed trait BitcoindVersion
 object BitcoindVersion extends StringFactory[BitcoindVersion] {
 
   /** The newest version of `bitcoind` we support */
-  val newest: BitcoindVersion = V21
+  val newest: BitcoindVersion = V22
 
   val standard: Vector[BitcoindVersion] =
     Vector(V16, V17, V18, V19, V20, V21, V22)

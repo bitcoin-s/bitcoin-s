@@ -11,7 +11,7 @@ import org.bitcoins.rpc.config.{
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.util.TorUtil
+import org.bitcoins.testkit.util.{FileUtil, TorUtil}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -49,11 +49,7 @@ object BitcoinSServerMainUtil {
   def buildBitcoindBitcoinSAppConfig(bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem): BitcoinSAppConfig = {
     val conf = BitcoinSServerMainUtil.buildBitcoindConfig(bitcoind.instance)
-    val datadir = bitcoind.instance match {
-      case local: BitcoindInstanceLocal => local.datadir
-      case _: BitcoindInstanceRemote =>
-        sys.error("Remote instance should not be used in tests")
-    }
+    val datadir = FileUtil.tmpDir()
     BitcoinSAppConfig(datadir.toPath, conf)
   }
 

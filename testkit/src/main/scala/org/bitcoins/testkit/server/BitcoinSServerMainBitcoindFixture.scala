@@ -26,14 +26,11 @@ trait BitcoinSServerMainBitcoindFixture
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[ServerWithBitcoind] = () => {
-      println(s"START SERVERWITHBITCOIND")
       for {
         bitcoind <- cachedBitcoindWithFundsF
-        _ = println(s"1 SERVERWITHBITCOIND")
         config = BitcoinSServerMainUtil.buildBitcoindBitcoinSAppConfig(bitcoind)
         server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
         _ <- server.start()
-        _ = println(s"2 SERVERWITHBITCOIND")
         //need to create account 2 to use FundWalletUtil.fundWalletWithBitcoind
         wallet <- server.walletConf.createHDWallet(bitcoind, bitcoind, bitcoind)
         _ <- wallet.start()
@@ -46,7 +43,6 @@ trait BitcoinSServerMainBitcoindFixture
         _ <- FundWalletUtil.fundWalletWithBitcoind(
           WalletWithBitcoindRpc(wallet, bitcoind))
       } yield {
-        println(s"done setup SERVERWITHBITCOIND")
         ServerWithBitcoind(bitcoind, server)
       }
     }
@@ -55,11 +51,9 @@ trait BitcoinSServerMainBitcoindFixture
       val stopF = serverWithBitcoind.server.stop()
       for {
         _ <- stopF
-        _ = println(s"SERVERWITHBITCOIND")
         _ <- BitcoinSServerMainUtil
           .destroyBitcoinSAppConfig(serverWithBitcoind.server.conf)
       } yield {
-        println(s"SERVERWITHBITCOIND DESTROY APPCONFIG")
         ()
       }
     }
