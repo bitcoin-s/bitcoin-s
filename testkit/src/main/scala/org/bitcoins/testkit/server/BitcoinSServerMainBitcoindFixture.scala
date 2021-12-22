@@ -58,4 +58,10 @@ trait BitcoinSServerMainBitcoindFixture
 
     makeDependentFixture(builder, destroy)(test)
   }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindNewest].afterAll()
+    super[EmbeddedPg].afterAll()
+    super[BitcoinSFixture].afterAll()
+  }
 }
