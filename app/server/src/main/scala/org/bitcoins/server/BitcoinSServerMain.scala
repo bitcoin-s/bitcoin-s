@@ -39,7 +39,8 @@ import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util.{
   BitcoinSAppScalaDaemon,
   ChainUtil,
-  ServerBindings
+  ServerBindings,
+  WsServerConfig
 }
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet._
@@ -382,23 +383,38 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           dlcRoutes,
           commonRoutes)
 
-    val bindConfOpt = serverCmdLineArgs.rpcBindOpt match {
+    val rpcBindConfOpt = serverCmdLineArgs.rpcBindOpt match {
       case Some(rpcbind) => Some(rpcbind)
       case None          => conf.rpcBindOpt
     }
+
+    val wsBindConfOpt = serverCmdLineArgs.wsBindOpt match {
+      case Some(wsbind) => Some(wsbind)
+      case None         => conf.wsBindOpt
+    }
+
+    val wsPort = serverCmdLineArgs.wsPortOpt match {
+      case Some(wsPort) => wsPort
+      case None         => conf.wsPort
+    }
+
+    val wsServerConfig =
+      WsServerConfig(wsBindConfOpt.getOrElse("localhost"), wsPort = wsPort)
 
     val server = {
       serverCmdLineArgs.rpcPortOpt match {
         case Some(rpcport) =>
           Server(conf = nodeConf,
                  handlers = handlers,
-                 rpcbindOpt = bindConfOpt,
-                 rpcport = rpcport)
+                 rpcbindOpt = rpcBindConfOpt,
+                 rpcport = rpcport,
+                 wsConfigOpt = Some(wsServerConfig))
         case None =>
           Server(conf = nodeConf,
                  handlers = handlers,
-                 rpcbindOpt = bindConfOpt,
-                 rpcport = conf.rpcPort)
+                 rpcbindOpt = rpcBindConfOpt,
+                 rpcport = conf.rpcPort,
+                 wsConfigOpt = Some(wsServerConfig))
       }
     }
     val bindingF = server.start()

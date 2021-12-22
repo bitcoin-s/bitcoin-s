@@ -20,7 +20,7 @@ import akka.stream.scaladsl.{
 }
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import org.bitcoins.commons.config.AppConfig
-import org.bitcoins.server.util.ServerBindings
+import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
 import upickle.{default => up}
 
 import scala.concurrent.Future
@@ -29,7 +29,8 @@ case class Server(
     conf: AppConfig,
     handlers: Seq[ServerRoute],
     rpcbindOpt: Option[String],
-    rpcport: Int)(implicit system: ActorSystem)
+    rpcport: Int,
+    wsConfigOpt: Option[WsServerConfig])(implicit system: ActorSystem)
     extends HttpLogger {
 
   import system.dispatcher
@@ -106,15 +107,20 @@ case class Server(
     } yield ServerBindings(http, ws)
   }
 
-  private def startWsServer(): Future[Http.ServerBinding] = {
-    val httpFut =
-      Http()
-        .newServerAt("localhost", 19999)
-        .bindFlow(wsRoutes)
-    httpFut.foreach { http =>
-      logger.info(s"Started Bitcoin-S websocket at ${http.localAddress}")
+  private def startWsServer(): Future[Option[Http.ServerBinding]] = {
+    wsConfigOpt match {
+      case Some(wsConfig) =>
+        val httpFut =
+          Http()
+            .newServerAt(wsConfig.wsBind, wsConfig.wsPort)
+            .bindFlow(wsRoutes)
+        httpFut.foreach { http =>
+          logger.info(s"Started Bitcoin-S websocket at ${http.localAddress}")
+        }
+        httpFut.map(Some(_))
+      case None =>
+        Future.successful(None)
     }
-    httpFut
   }
 
   private val tuple = {

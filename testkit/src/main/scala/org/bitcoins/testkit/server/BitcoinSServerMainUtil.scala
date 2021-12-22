@@ -39,6 +39,7 @@ object BitcoinSServerMainUtil {
          |bitcoin-s.proxy.enabled=${TorUtil.torEnabled}
          |bitcoin-s.dlcnode.listen = "0.0.0.0:${RpcUtil.randomPort}"
          |bitcoin-s.server.rpcport = ${RpcUtil.randomPort}
+         |bitcoin-s.server.wsport= ${RpcUtil.randomPort}
          |""".stripMargin
 
     ConfigFactory.parseString(configStr)

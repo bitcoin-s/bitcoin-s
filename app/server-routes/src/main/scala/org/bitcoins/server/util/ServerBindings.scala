@@ -6,14 +6,19 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class ServerBindings(
     httpServer: Http.ServerBinding,
-    webSocketServer: Http.ServerBinding) {
+    webSocketServerOpt: Option[Http.ServerBinding]) {
 
   def stop()(implicit ec: ExecutionContext): Future[Unit] = {
     val stopHttp = httpServer.unbind()
-    val stopWs = webSocketServer.unbind()
+    val stopWsFOpt = webSocketServerOpt.map(_.unbind())
     for {
       _ <- stopHttp
-      _ <- stopWs
+      _ <- stopWsFOpt match {
+        case Some(doneF) =>
+          doneF
+        case None =>
+          Future.unit
+      }
     } yield ()
   }
 }

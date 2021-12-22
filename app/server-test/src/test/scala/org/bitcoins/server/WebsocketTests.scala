@@ -52,7 +52,9 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     }
     .toMat(endSink)(Keep.right)
 
-  val req = WebSocketRequest("ws://localhost:19999/events")
+  def buildReq(conf: BitcoinSAppConfig): WebSocketRequest = {
+    WebSocketRequest(s"ws://localhost:${conf.wsPort}/events")
+  }
 
   it must "receive updates when an address is generated" in {
     serverWithBitcoind =>
@@ -67,6 +69,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
           .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
       }
 
+      val req = buildReq(server.conf)
       val notificationsF: (
           Future[WebSocketUpgradeResponse],
           (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
@@ -104,6 +107,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
           .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
       }
 
+      val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
           (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
@@ -147,6 +151,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
           .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
       }
 
+      val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
           (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
@@ -189,6 +194,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
     }
 
+    val req = buildReq(server.conf)
     val tuple: (
         Future[WebSocketUpgradeResponse],
         (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
@@ -234,6 +240,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
           .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
       }
 
+      val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
           (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
