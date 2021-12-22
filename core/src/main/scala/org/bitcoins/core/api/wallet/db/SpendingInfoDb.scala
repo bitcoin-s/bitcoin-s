@@ -5,6 +5,7 @@ import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.{
   P2SHScriptPubKey,
+  RawScriptPubKey,
   ScriptPubKey,
   ScriptWitness,
   WitnessScriptPubKey
@@ -253,7 +254,7 @@ object SpendingInfoDb {
           spendingTxIdOpt = spendingTxIdOpt,
           id = id
         )
-      case _ =>
+      case _: RawScriptPubKey =>
         require(
           hdPath.isInstanceOf[LegacyHDPath],
           s"hdPath must be LegacyHDPath for LegacySpendingInfo, got=$hdPath")

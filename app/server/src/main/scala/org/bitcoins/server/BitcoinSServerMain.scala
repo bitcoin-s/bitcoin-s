@@ -545,12 +545,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
 
     val onReservedUtxo: OnReservedUtxos = { utxos =>
-        val notification =
-          WalletNotification.ReservedUtxosNotification(utxos)
-        val notificationJson =
-          upickle.default.writeJs(notification)(WsPicklers.reservedUtxosPickler)
-        val msg = TextMessage.Strict(notificationJson.toString())
-        val offerF = walletQueue.offer(msg)
+      val notification =
+        WalletNotification.ReservedUtxosNotification(utxos)
+      val notificationJson =
+        upickle.default.writeJs(notification)(WsPicklers.reservedUtxosPickler)
+      val msg = TextMessage.Strict(notificationJson.toString())
+      val offerF = walletQueue.offer(msg)
       offerF.map(_ => ())
     }
 
