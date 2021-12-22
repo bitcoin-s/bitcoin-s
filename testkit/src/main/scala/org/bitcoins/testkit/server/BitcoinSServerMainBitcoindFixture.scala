@@ -51,9 +51,13 @@ trait BitcoinSServerMainBitcoindFixture
       val stopF = serverWithBitcoind.server.stop()
       for {
         _ <- stopF
+        _ = println(s"SERVERWITHBITCOIND")
         _ <- BitcoinSServerMainUtil
           .destroyBitcoinSAppConfig(serverWithBitcoind.server.conf)
-      } yield ()
+      } yield {
+        println(s"SERVERWITHBITCOIND DESTROY APPCONFIG")
+        ()
+      }
     }
 
     makeDependentFixture(builder, destroy)(test)
