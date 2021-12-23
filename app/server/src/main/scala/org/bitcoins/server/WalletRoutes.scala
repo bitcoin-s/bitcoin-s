@@ -828,6 +828,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     for {
       accountDb <- wallet.getDefaultAccount()
       walletState <- wallet.getSyncState()
+      rescan <- wallet.isRescanning()
     } yield {
       Obj(
         WalletAppConfig.moduleName ->
@@ -839,7 +840,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
             "xpub" -> Str(accountDb.xpub.toString),
             "hdPath" -> Str(accountDb.hdAccount.toString),
             "height" -> Num(walletState.height),
-            "blockHash" -> Str(walletState.blockHash.hex)
+            "blockHash" -> Str(walletState.blockHash.hex),
+            "rescan" -> rescan
           )
       )
     }

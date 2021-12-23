@@ -14,13 +14,19 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.{ExecutionContext, Future}
 
 private[wallet] trait RescanHandling extends WalletLogger {
   self: Wallet =>
 
+  private val rescanning = new AtomicBoolean(false)
+
   /////////////////////
   // Public facing API
+
+  override def isRescanning(): Future[Boolean] =
+    Future.successful(rescanning.get())
 
   /** @inheritdoc */
   override def rescanNeutrinoWallet(
@@ -46,6 +52,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
       addressBatchSize: Int,
       useCreationTime: Boolean = true): Future[Unit] = {
 
+    rescanning.set(true)
+
     logger.info(s"Starting rescanning the wallet from ${startOpt} to ${endOpt}")
 
     val start = System.currentTimeMillis()
@@ -66,6 +74,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     } yield ()
 
     res.onComplete { _ =>
+      rescanning.set(false)
       logger.info(
         s"Finished rescanning the wallet. It took ${System.currentTimeMillis() - start}ms")
     }
