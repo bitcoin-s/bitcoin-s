@@ -14,24 +14,14 @@ import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.{UInt32, UInt64}
-import org.bitcoins.core.protocol.BlockStamp.{
-  BlockHash,
-  BlockHeight,
-  BlockTime,
-  InvalidBlockStamp
-}
+import org.bitcoins.core.protocol.BlockStamp.{BlockHash, BlockHeight, BlockTime, InvalidBlockStamp}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.{EmptyScriptWitness, P2WPKHWitnessV0}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{
-  Bech32Address,
-  BitcoinAddress,
-  BlockStamp,
-  P2PKHAddress
-}
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, BlockStamp, P2PKHAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
@@ -42,6 +32,7 @@ import org.bitcoins.node.Node
 import org.bitcoins.server.routes.{CommonRoutes, ServerCommand}
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.DLCWalletUtil
+import org.bitcoins.testkitcore.util.TransactionTestUtil
 import org.bitcoins.wallet.MockWalletApi
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
@@ -345,16 +336,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
-    val spendingInfoDb = SegwitV0SpendingInfo(
-      outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
-      output = EmptyTransactionOutput,
-      privKeyPath =
-        SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
-      scriptWitness = EmptyScriptWitness,
-      txid = DoubleSha256DigestBE.empty,
-      state = TxoState.PendingConfirmationsSpent,
-      spendingTxIdOpt = Some(DoubleSha256DigestBE.empty)
-    )
+    val spendingInfoDb = TransactionTestUtil.spendingInfoDb
 
     "return the wallet's balances in bitcoin" in {
       (mockWalletApi.getConfirmedBalance: () => Future[CurrencyUnit])
