@@ -161,10 +161,12 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
     def condition(): Future[Boolean] = {
       for {
+        rescan <- wallet.isRescanning()
         balance <- wallet.getBalance()
         addresses <- wallet.listAddresses()
         utxos <- wallet.listUtxos()
       } yield {
+        !rescan &&
         balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount &&
         utxos.size == 4 &&
         addresses.map(_.scriptPubKey.hex).sorted == utxos
@@ -201,6 +203,8 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ = assert(addresses.isEmpty)
       _ = assert(utxos.isEmpty)
 
+      rescan <- wallet.isRescanning()
+      _ = assert(!rescan)
       _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
 
       _ <- AsyncUtil.awaitConditionF(condition)
