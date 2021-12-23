@@ -2,20 +2,20 @@ package org.bitcoins.server
 
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
-import akka.http.scaladsl.model.ws.{Message, TextMessage}
-import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
-import org.bitcoins.commons.jsonmodels.ws.{WalletNotification, WalletWsType}
-import org.bitcoins.commons.serializers.WsPicklers
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
-import org.bitcoins.core.api.node.{ExternalImplementationNodeType, InternalImplementationNodeType, NodeApi, NodeType}
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.api.node.{
+  ExternalImplementationNodeType,
+  InternalImplementationNodeType,
+  NodeApi,
+  NodeType
+}
 import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.DLCNode
@@ -31,7 +31,12 @@ import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
-import org.bitcoins.server.util.{BitcoinSAppScalaDaemon, ChainUtil, ServerBindings, WebsocketUtil, WsServerConfig}
+import org.bitcoins.server.util.{
+  BitcoinSAppScalaDaemon,
+  ServerBindings,
+  WebsocketUtil,
+  WsServerConfig
+}
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -174,7 +179,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                                 wallet = wallet,
                                 dlcNode = dlcNode,
                                 serverCmdLineArgs = serverArgParser)
-      walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.walletQueue, chainApi)
+      walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.walletQueue,
+                                                           chainApi)
       _ = walletConf.addCallbacks(walletCallbacks)
       _ = {
         logger.info(
@@ -257,7 +263,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                                 wallet = wallet,
                                 dlcNode = dlcNode,
                                 serverCmdLineArgs = serverArgParser)
-      walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.walletQueue, bitcoind)
+      walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.walletQueue,
+                                                           bitcoind)
       _ = walletConf.addCallbacks(walletCallbacks)
     } yield {
       logger.info(s"Done starting Main!")
