@@ -56,25 +56,25 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     WebSocketRequest(s"ws://localhost:${conf.wsPort}/events")
   }
 
+  def websocketFlow: Flow[
+    Message,
+    Message,
+    (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])] = {
+    Flow
+      .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
+  }
+
   it must "receive updates when an address is generated" in {
     serverWithBitcoind =>
       val ServerWithBitcoind(_, server) = serverWithBitcoind
       val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
-      //start the websocket
-      val f: Flow[
-        Message,
-        Message,
-        (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])] = {
-        Flow
-          .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
-      }
 
       val req = buildReq(server.conf)
       val notificationsF: (
           Future[WebSocketUpgradeResponse],
           (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
         Http()
-          .singleWebSocketRequest(req, f)
+          .singleWebSocketRequest(req, websocketFlow)
       }
 
       val walletNotificationsF: Future[Seq[WalletNotification[_]]] =
@@ -100,20 +100,13 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     serverWithBitcoind =>
       val ServerWithBitcoind(bitcoind, server) = serverWithBitcoind
       val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
-      val f: Flow[
-        Message,
-        Message,
-        (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])] = {
-        Flow
-          .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
-      }
 
       val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
           (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
         Http()
-          .singleWebSocketRequest(req, f)
+          .singleWebSocketRequest(req, websocketFlow)
       }
 
       val notificationsF = tuple._2._1
@@ -145,20 +138,13 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     serverWithBitcoind =>
       val ServerWithBitcoind(bitcoind, server) = serverWithBitcoind
       val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
-      val f: Flow[
-        Message,
-        Message,
-        (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])] = {
-        Flow
-          .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
-      }
 
       val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
           (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
         Http()
-          .singleWebSocketRequest(req, f)
+          .singleWebSocketRequest(req, websocketFlow)
       }
 
       val notificationsF = tuple._2._1
@@ -189,20 +175,13 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   it must "receive updates when a block is processed" in { serverWithBitcoind =>
     val ServerWithBitcoind(bitcoind, server) = serverWithBitcoind
     val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
-    val f: Flow[
-      Message,
-      Message,
-      (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])] = {
-      Flow
-        .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
-    }
 
     val req = buildReq(server.conf)
     val tuple: (
         Future[WebSocketUpgradeResponse],
         (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
       Http()
-        .singleWebSocketRequest(req, f)
+        .singleWebSocketRequest(req, websocketFlow)
     }
 
     val notificationsF = tuple._2._1
@@ -235,20 +214,12 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val ServerWithBitcoind(_, server) = serverWithBitcoind
       val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
 
-      val f: Flow[
-        Message,
-        Message,
-        (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])] = {
-        Flow
-          .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
-      }
-
       val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
           (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
         Http()
-          .singleWebSocketRequest(req, f)
+          .singleWebSocketRequest(req, websocketFlow)
       }
 
       val notificationsF: Future[Seq[WalletNotification[_]]] = tuple._2._1

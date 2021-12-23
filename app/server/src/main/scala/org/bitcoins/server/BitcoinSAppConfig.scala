@@ -90,9 +90,7 @@ case class BitcoinSAppConfig(
       _ <- nodeConf.stop()
       _ <- walletConf.stop()
       _ <- chainConf.stop()
-      //this is needed because we don't want to shutdown
-      //bitcoind in test cases
-      //_ <- bitcoindRpcConf.stop()
+      _ <- bitcoindRpcConf.stop()
       _ <- torConf.stop()
     } yield ()
   }

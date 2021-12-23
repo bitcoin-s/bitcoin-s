@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.StringFactory
 
+/** The event type being sent over the websocket. An example is [[WalletWsType.BlockProcessed]] */
 sealed trait WsType
 
 object WsType extends StringFactory[WsType] {
@@ -37,12 +38,17 @@ object WalletWsType extends StringFactory[WalletWsType] {
   }
 }
 
-sealed trait WsPushNotification[T] {
-  def `type`: WalletWsType
+/** A notification that we send over the websocket.
+  * The type of the notification is indicated by [[WsType]].
+  * An example is [[org.bitcoins.commons.jsonmodels.ws.WalletNotification.NewAddressNotification]]
+  * This sends a notification that the wallet generated a new address
+  */
+sealed trait WsNotification[T] {
+  def `type`: WsType
   def payload: T
 }
 
-sealed trait WalletNotification[T] extends WsPushNotification[T] {
+sealed trait WalletNotification[T] extends WsNotification[T] {
   override def `type`: WalletWsType
 }
 
