@@ -2,7 +2,7 @@ package org.bitcoins.testkitcore.util
 
 import org.bitcoins.core.api.wallet.db.SegwitV0SpendingInfo
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.hd.{HDChainType, HDCoinType, SegWitHDPath}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.Bech32mAddress
@@ -13,6 +13,7 @@ import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
+  ECPublicKey,
   ECPublicKeyBytes
 }
 
@@ -272,9 +273,13 @@ trait TransactionTestUtil {
     PSBT.fromUnsignedTx(dummyTx(prevTxId, scriptSig, spk))
   }
 
+  val segwitV0 = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
+
+  val output = TransactionOutput(Bitcoins.one, segwitV0)
+
   val spendingInfoDb = SegwitV0SpendingInfo(
     outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
-    output = EmptyTransactionOutput,
+    output = output,
     privKeyPath = SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
     scriptWitness = EmptyScriptWitness,
     txid = DoubleSha256DigestBE.empty,
