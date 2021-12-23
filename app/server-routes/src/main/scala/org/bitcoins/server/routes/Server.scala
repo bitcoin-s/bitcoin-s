@@ -123,12 +123,17 @@ case class Server(
     }
   }
 
+  private val maxBufferSize: Int = 25
+
+  /** This will queue [[maxBufferSize]] elements in the queue. Once the buffer size is reached,
+    * we will drop the first element in the buffer
+    */
   private val tuple = {
     //from: https://github.com/akka/akka-http/issues/3039#issuecomment-610263181
     //the BroadcastHub.sink is needed to avoid these errors
     // 'Websocket handler failed with Processor actor'
     Source
-      .queue[Message](50, OverflowStrategy.backpressure)
+      .queue[Message](maxBufferSize, OverflowStrategy.dropHead)
       .toMat(BroadcastHub.sink)(Keep.both)
       .run()
   }
