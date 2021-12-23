@@ -141,8 +141,10 @@ case class Server(
   def walletQueue: SourceQueueWithComplete[Message] = tuple._1
   def source: Source[Message, NotUsed] = tuple._2
 
+  private val eventsRoute = "events"
+
   private def wsRoutes: Route = {
-    path("events") {
+    path(eventsRoute) {
       Directives.handleWebSocketMessages(wsHandler)
     }
   }

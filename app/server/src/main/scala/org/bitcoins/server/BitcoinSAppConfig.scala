@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.commons.config.AppConfig
+import org.bitcoins.commons.config.{AppConfig, ConfigOps}
 import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.core.config.NetworkParameters
@@ -19,7 +19,9 @@ import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import java.nio.file.{Files, Path, Paths}
+import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 /** A unified config class for all submodules of Bitcoin-S
   * that accepts configuration. Thanks to implicit definitions
@@ -108,7 +110,24 @@ case class BitcoinSAppConfig(
 
   def rpcPort: Int = config.getInt("bitcoin-s.server.rpcport")
 
-  def wsPort: Int = config.getInt("bitcoin-s.server.wsport")
+  def wsPort: Int = config.getIntOrElse("bitcoin-s.server.wsport", 19999)
+
+  /** How long until we forcefully terminate connections to the server
+    * when shutting down the server
+    */
+  def terminationDeadline: FiniteDuration = {
+    val opt = config.getDurationOpt("bitcoin-s.server.termination-deadline")
+    opt match {
+      case Some(duration) =>
+        if (duration.isFinite) {
+          new FiniteDuration(duration.toNanos, TimeUnit.NANOSECONDS)
+        } else {
+          sys.error(
+            s"Can only have a finite duration for termination deadline, got=$duration")
+        }
+      case None => 5.seconds //5 seconds by default
+    }
+  }
 
   def rpcBindOpt: Option[String] = {
     if (config.hasPath("bitcoin-s.server.rpcbind")) {

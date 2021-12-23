@@ -56,7 +56,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     WebSocketRequest(s"ws://localhost:${conf.wsPort}/events")
   }
 
-  def websocketFlow: Flow[
+  val websocketFlow: Flow[
     Message,
     Message,
     (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])] = {
