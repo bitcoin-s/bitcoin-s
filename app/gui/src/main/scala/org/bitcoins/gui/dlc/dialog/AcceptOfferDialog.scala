@@ -21,9 +21,9 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
   override def getCliCommand(): AcceptDLCCliCommand = {
     val offerHex = offerTLVTF.text.value
     val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerHex)
-    if (peerAddressTF.text.value.nonEmpty) {
-      val peer =
-        NetworkUtil.parseInetSocketAddress(peerAddressTF.text.value, 2862)
+    val text = peerAddressTF.text.value.trim
+    if (text.nonEmpty) {
+      val peer = NetworkUtil.parseInetSocketAddress(text, 2862)
 
       AcceptDLC(offer, peer)
     } else {
