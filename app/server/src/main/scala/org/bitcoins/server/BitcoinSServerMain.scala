@@ -2,7 +2,6 @@ package org.bitcoins.server
 
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
-import akka.http.scaladsl.Http
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -32,9 +31,14 @@ import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
-import org.bitcoins.server.util.BitcoinSAppScalaDaemon
+import org.bitcoins.server.util.{
+  BitcoinSAppScalaDaemon,
+  ServerBindings,
+  WebsocketUtil,
+  WsServerConfig
+}
 import org.bitcoins.tor.config.TorAppConfig
-import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet._
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.duration.DurationInt
@@ -42,7 +46,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
-    conf: BitcoinSAppConfig)
+    val conf: BitcoinSAppConfig)
     extends BitcoinSServerRunner {
 
   implicit lazy val walletConf: WalletAppConfig = conf.walletConf
@@ -74,7 +78,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           case NodeType.BitcoindBackend =>
             startBitcoindBackend()
         }
-
       }
     } yield {
       logger.info(
@@ -86,14 +89,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   override def stop(): Future[Unit] = {
     logger.error(s"Exiting process")
     for {
-      _ <- walletConf.stop()
-      _ <- nodeConf.stop()
-      _ <- chainConf.stop()
-      _ <- torConf.stop()
+      _ <- conf.stop()
+      _ <- serverBindingsOpt match {
+        case Some(bindings) => bindings.stop()
+        case None           => Future.unit
+      }
       _ = logger.info(s"Stopped ${nodeConf.nodeType.shortName} node")
-      _ <- system.terminate()
     } yield {
-      logger.info(s"Actor system terminated")
       ()
     }
   }
@@ -130,8 +132,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       chainApi <- chainApiF
       _ = logger.info("Initialized chain api")
       wallet <- dlcConf.createDLCWallet(node, chainApi, feeProvider)
-      callbacks <- createCallbacks(wallet)
-      _ = nodeConf.addCallbacks(callbacks)
+      nodeCallbacks <- createCallbacks(wallet)
+      _ = nodeConf.addCallbacks(nodeCallbacks)
     } yield {
       logger.info(
         s"Done configuring wallet, it took=${System.currentTimeMillis() - start}ms")
@@ -172,11 +174,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       dlcNode <- dlcNodeF
       _ <- dlcNode.start()
 
-      binding <- startHttpServer(nodeApi = node,
-                                 chainApi = chainApi,
-                                 wallet = wallet,
-                                 dlcNode = dlcNode,
-                                 serverCmdLineArgs = serverArgParser)
+      server <- startHttpServer(nodeApi = node,
+                                chainApi = chainApi,
+                                wallet = wallet,
+                                dlcNode = dlcNode,
+                                serverCmdLineArgs = serverArgParser)
+      walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.walletQueue,
+                                                           chainApi)
+      _ = walletConf.addCallbacks(walletCallbacks)
       _ = {
         logger.info(
           s"Starting ${nodeConf.nodeType.shortName} node sync, it took=${System
@@ -253,12 +258,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ = syncWalletWithBitcoindAndStartPolling(bitcoind, wallet)
       dlcNode = dlcNodeConf.createDLCNode(wallet)
       _ <- dlcNode.start()
-
-      _ <- startHttpServer(nodeApi = bitcoind,
-                           chainApi = bitcoind,
-                           wallet = wallet,
-                           dlcNode = dlcNode,
-                           serverCmdLineArgs = serverArgParser)
+      server <- startHttpServer(nodeApi = bitcoind,
+                                chainApi = bitcoind,
+                                wallet = wallet,
+                                dlcNode = dlcNode,
+                                serverCmdLineArgs = serverArgParser)
+      walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.walletQueue,
+                                                           bitcoind)
+      _ = walletConf.addCallbacks(walletCallbacks)
     } yield {
       logger.info(s"Done starting Main!")
       ()
@@ -345,6 +352,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     } yield chainApiWithWork
   }
 
+  private var serverBindingsOpt: Option[ServerBindings] = None
+
   private def startHttpServer(
       nodeApi: NodeApi,
       chainApi: ChainApi,
@@ -352,7 +361,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       dlcNode: DLCNode,
       serverCmdLineArgs: ServerArgParser)(implicit
       system: ActorSystem,
-      conf: BitcoinSAppConfig): Future[Http.ServerBinding] = {
+      conf: BitcoinSAppConfig): Future[Server] = {
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
     implicit val walletConf: WalletAppConfig = conf.walletConf
 
@@ -371,26 +380,46 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           dlcRoutes,
           commonRoutes)
 
-    val bindConfOpt = serverCmdLineArgs.rpcBindOpt match {
+    val rpcBindConfOpt = serverCmdLineArgs.rpcBindOpt match {
       case Some(rpcbind) => Some(rpcbind)
       case None          => conf.rpcBindOpt
     }
+
+    val wsBindConfOpt = serverCmdLineArgs.wsBindOpt match {
+      case Some(wsbind) => Some(wsbind)
+      case None         => conf.wsBindOpt
+    }
+
+    val wsPort = serverCmdLineArgs.wsPortOpt match {
+      case Some(wsPort) => wsPort
+      case None         => conf.wsPort
+    }
+
+    val wsServerConfig =
+      WsServerConfig(wsBindConfOpt.getOrElse("localhost"), wsPort = wsPort)
 
     val server = {
       serverCmdLineArgs.rpcPortOpt match {
         case Some(rpcport) =>
           Server(conf = nodeConf,
                  handlers = handlers,
-                 rpcbindOpt = bindConfOpt,
-                 rpcport = rpcport)
+                 rpcbindOpt = rpcBindConfOpt,
+                 rpcport = rpcport,
+                 wsConfigOpt = Some(wsServerConfig))
         case None =>
           Server(conf = nodeConf,
                  handlers = handlers,
-                 rpcbindOpt = bindConfOpt,
-                 rpcport = conf.rpcPort)
+                 rpcbindOpt = rpcBindConfOpt,
+                 rpcport = conf.rpcPort,
+                 wsConfigOpt = Some(wsServerConfig))
       }
     }
-    server.start()
+    val bindingF = server.start()
+
+    bindingF.map { bindings =>
+      serverBindingsOpt = Some(bindings)
+      server
+    }
   }
 
   /** Gets a Fee Provider from the given wallet app config
@@ -487,6 +516,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       logger.error(s"Error syncing bitcoin-s wallet with bitcoind", err))
     f
   }
+
 }
 
 object BitcoinSServerMain extends BitcoinSAppScalaDaemon {

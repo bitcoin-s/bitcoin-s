@@ -1,14 +1,26 @@
 package org.bitcoins.server.routes
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl._
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.DebuggingDirectives
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{
+  BroadcastHub,
+  Flow,
+  Keep,
+  Sink,
+  Source,
+  SourceQueueWithComplete
+}
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import org.bitcoins.commons.config.AppConfig
+import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
 import upickle.{default => up}
 
 import scala.concurrent.Future
@@ -17,7 +29,8 @@ case class Server(
     conf: AppConfig,
     handlers: Seq[ServerRoute],
     rpcbindOpt: Option[String],
-    rpcport: Int)(implicit system: ActorSystem)
+    rpcport: Int,
+    wsConfigOpt: Option[WsServerConfig])(implicit system: ActorSystem)
     extends HttpLogger {
 
   import system.dispatcher
@@ -78,7 +91,7 @@ case class Server(
       }
     }
 
-  def start(): Future[Http.ServerBinding] = {
+  def start(): Future[ServerBindings] = {
     val httpFut =
       Http()
         .newServerAt(rpcbindOpt.getOrElse("localhost"), rpcport)
@@ -86,8 +99,61 @@ case class Server(
     httpFut.foreach { http =>
       logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
     }
-    httpFut
+    val wsFut = startWsServer()
+
+    for {
+      http <- httpFut
+      ws <- wsFut
+    } yield ServerBindings(http, ws)
   }
+
+  private def startWsServer(): Future[Option[Http.ServerBinding]] = {
+    wsConfigOpt match {
+      case Some(wsConfig) =>
+        val httpFut =
+          Http()
+            .newServerAt(wsConfig.wsBind, wsConfig.wsPort)
+            .bindFlow(wsRoutes)
+        httpFut.foreach { http =>
+          logger.info(s"Started Bitcoin-S websocket at ${http.localAddress}")
+        }
+        httpFut.map(Some(_))
+      case None =>
+        Future.successful(None)
+    }
+  }
+
+  private val maxBufferSize: Int = 25
+
+  /** This will queue [[maxBufferSize]] elements in the queue. Once the buffer size is reached,
+    * we will drop the first element in the buffer
+    */
+  private val tuple = {
+    //from: https://github.com/akka/akka-http/issues/3039#issuecomment-610263181
+    //the BroadcastHub.sink is needed to avoid these errors
+    // 'Websocket handler failed with Processor actor'
+    Source
+      .queue[Message](maxBufferSize, OverflowStrategy.dropHead)
+      .toMat(BroadcastHub.sink)(Keep.both)
+      .run()
+  }
+
+  def walletQueue: SourceQueueWithComplete[Message] = tuple._1
+  def source: Source[Message, NotUsed] = tuple._2
+
+  private val eventsRoute = "events"
+
+  private def wsRoutes: Route = {
+    path(eventsRoute) {
+      Directives.handleWebSocketMessages(wsHandler)
+    }
+  }
+
+  private def wsHandler: Flow[Message, Message, Any] = {
+    //we don't allow input, so use Sink.ignore
+    Flow.fromSinkAndSource(Sink.ignore, source)
+  }
+
 }
 
 object Server {

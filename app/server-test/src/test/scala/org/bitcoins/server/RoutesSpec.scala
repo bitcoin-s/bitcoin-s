@@ -23,7 +23,7 @@ import org.bitcoins.core.protocol.BlockStamp.{
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.core.protocol.script.{EmptyScriptWitness, P2WPKHWitnessV0}
+import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{
@@ -42,6 +42,7 @@ import org.bitcoins.node.Node
 import org.bitcoins.server.routes.{CommonRoutes, ServerCommand}
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.DLCWalletUtil
+import org.bitcoins.testkitcore.util.TransactionTestUtil
 import org.bitcoins.wallet.MockWalletApi
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
@@ -250,6 +251,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       (mockChainApi
         .getHeader(_: DoubleSha256DigestBE))
         .expects(blockHeader.hashBE)
+        .twice()
         .returning(Future.successful(Some(blockHeaderDb)))
 
       (mockChainApi
@@ -264,7 +266,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(responseAs[
-          String] == s"""{"result":{"raw":"${blockHeader.hex}","hash":"${blockHeader.hashBE.hex}","confirmations":1,"height":1899697,"version":${blockHeader.version.toLong},"versionHex":"${blockHeader.version.hex}","merkleroot":"${blockHeader.merkleRootHashBE.hex}","time":${blockHeader.time.toLong},"nonce":${blockHeader.nonce.toLong},"bits":"${blockHeader.nBits.hex}","difficulty":${blockHeader.difficulty.toDouble},"chainwork":"$chainworkStr","previousblockhash":"${blockHeader.previousBlockHashBE.hex}"},"error":null}""")
+          String] == s"""{"result":{"raw":"${blockHeader.hex}","hash":"${blockHeader.hashBE.hex}","confirmations":1,"height":1899697,"version":${blockHeader.version.toLong},"versionHex":"${blockHeader.version.hex}","merkleroot":"${blockHeader.merkleRootHashBE.hex}","time":${blockHeader.time.toLong},"mediantime":${blockHeaderDb.time.toLong},"nonce":${blockHeader.nonce.toLong},"bits":"${blockHeader.nBits.hex}","difficulty":${blockHeader.difficulty.toDouble},"chainwork":"$chainworkStr","previousblockhash":"${blockHeader.previousBlockHashBE.hex}","nextblockhash":null},"error":null}""")
       }
     }
 
@@ -358,16 +360,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
-    val spendingInfoDb = SegwitV0SpendingInfo(
-      outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
-      output = EmptyTransactionOutput,
-      privKeyPath =
-        SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
-      scriptWitness = EmptyScriptWitness,
-      txid = DoubleSha256DigestBE.empty,
-      state = TxoState.PendingConfirmationsSpent,
-      spendingTxIdOpt = Some(DoubleSha256DigestBE.empty)
-    )
+    val spendingInfoDb = TransactionTestUtil.spendingInfoDb
 
     "return the wallet's balances in bitcoin" in {
       (mockWalletApi.getConfirmedBalance: () => Future[CurrencyUnit])
@@ -390,7 +383,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":{"confirmed":50,"unconfirmed":50,"reserved":-1.0E-8,"total":99.99999999},"error":null}""")
+          responseAs[String] == """{"result":{"confirmed":50,"unconfirmed":50,"reserved":1,"total":101},"error":null}""")
       }
     }
 
@@ -415,7 +408,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":{"confirmed":5000000000,"unconfirmed":5000000000,"reserved":-1,"total":9999999999},"error":null}""")
+          responseAs[String] == """{"result":{"confirmed":5000000000,"unconfirmed":5000000000,"reserved":100000000,"total":10100000000},"error":null}""")
       }
     }
 
@@ -460,7 +453,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":[{"outpoint":{"txid":"0000000000000000000000000000000000000000000000000000000000000000","vout":0},"value":-1}],"error":null}""")
+          responseAs[String] == """{"result":[{"outpoint":{"txid":"0000000000000000000000000000000000000000000000000000000000000000","vout":0},"value":100000000}],"error":null}""")
       }
     }
 
@@ -477,7 +470,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
-          responseAs[String] == """{"result":[{"outpoint":{"txid":"0000000000000000000000000000000000000000000000000000000000000000","vout":0},"value":-1}],"error":null}""")
+          responseAs[String] == """{"result":[{"outpoint":{"txid":"0000000000000000000000000000000000000000000000000000000000000000","vout":0},"value":100000000}],"error":null}""")
       }
     }
 

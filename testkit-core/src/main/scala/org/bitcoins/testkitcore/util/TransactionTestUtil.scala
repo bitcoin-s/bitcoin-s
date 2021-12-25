@@ -1,13 +1,21 @@
 package org.bitcoins.testkitcore.util
 
+import org.bitcoins.core.api.wallet.db.SegwitV0SpendingInfo
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, CurrencyUnits}
+import org.bitcoins.core.hd.{HDChainType, HDCoinType, SegWitHDPath}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.Bech32mAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKeyBytes}
+import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPublicKey,
+  ECPublicKeyBytes
+}
 
 /** Created by chris on 2/12/16.
   */
@@ -264,6 +272,20 @@ trait TransactionTestUtil {
       spk: ScriptPubKey = EmptyScriptPubKey): PSBT = {
     PSBT.fromUnsignedTx(dummyTx(prevTxId, scriptSig, spk))
   }
+
+  val segwitV0 = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
+
+  val output = TransactionOutput(Bitcoins.one, segwitV0)
+
+  val spendingInfoDb = SegwitV0SpendingInfo(
+    outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
+    output = output,
+    privKeyPath = SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
+    scriptWitness = EmptyScriptWitness,
+    txid = DoubleSha256DigestBE.empty,
+    state = TxoState.PendingConfirmationsSpent,
+    spendingTxIdOpt = Some(DoubleSha256DigestBE.empty)
+  )
 }
 
 object TransactionTestUtil extends TransactionTestUtil

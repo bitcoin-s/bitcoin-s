@@ -319,6 +319,12 @@ bitcoin-s {
 
         # The ip address we bind our server too
         rpcbind = "127.0.0.1"
+        
+        # The port we bind our websocket server on
+        wsport = 19999
+        
+        # The ip address we bind the websocket server too
+        wsbind = "127.0.0.1"
     }
 
     oracle {

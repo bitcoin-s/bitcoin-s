@@ -32,12 +32,14 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
           Server(conf = conf,
                  handlers = routes,
                  rpcbindOpt = bindConfOpt,
-                 rpcport = rpcport)
+                 rpcport = rpcport,
+                 None)
         case None =>
           Server(conf = conf,
                  handlers = routes,
                  rpcbindOpt = bindConfOpt,
-                 rpcport = conf.rpcPort)
+                 rpcport = conf.rpcPort,
+                 None)
       }
 
       _ <- server.start()

@@ -133,6 +133,11 @@ object RpcOpts {
 
   object LockUnspentOutputParameter {
 
+    def fromOutPoint(
+        outPoint: TransactionOutPoint): LockUnspentOutputParameter = {
+      LockUnspentOutputParameter(outPoint.txIdBE, outPoint.vout.toInt)
+    }
+
     def fromJsonString(str: String): LockUnspentOutputParameter = {
       val json = ujson.read(str)
       fromJson(json)
