@@ -15,6 +15,13 @@ sealed trait AddressGenerator {
       addr = P2PKHAddress(hash, network)
     } yield addr
 
+  def decompressedP2pkhAddress: Gen[P2PKHAddress] =
+    for {
+      pubKey <- CryptoGenerators.publicKey
+      network <- ChainParamsGenerator.networkParams
+      addr = P2PKHAddress.fromDecompressedPubKey(pubKey, network)
+    } yield addr
+
   def p2shAddress: Gen[P2SHAddress] =
     for {
       hash <- CryptoGenerators.sha256Hash160Digest
@@ -37,7 +44,11 @@ sealed trait AddressGenerator {
     } yield Bech32mAddress(witSPK, network)
 
   def bitcoinAddress: Gen[BitcoinAddress] =
-    Gen.oneOf(p2pkhAddress, p2shAddress, bech32Address, bech32mAddress)
+    Gen.oneOf(p2pkhAddress,
+              decompressedP2pkhAddress,
+              p2shAddress,
+              bech32Address,
+              bech32mAddress)
 
   def address: Gen[Address] = bitcoinAddress
 }
