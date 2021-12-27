@@ -37,7 +37,7 @@ object Deps {
     val sqliteV = "3.36.0.3"
 
     val scalameterV = "0.17"
-    val scalamockV = "5.1.0"
+    val scalamockV = "5.2.0"
     val scalaCollectionCompatV = "2.6.0"
     val pgEmbeddedV = "0.13.4"
 
