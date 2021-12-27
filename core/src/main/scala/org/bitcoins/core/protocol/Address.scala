@@ -372,6 +372,13 @@ object P2PKHAddress extends AddressFactory[P2PKHAddress] {
     P2PKHAddress(spk.pubKeyHash, networkParameters)
   }
 
+  def fromDecompressedPubKey(
+      pubKey: ECPublicKey,
+      networkParameters: NetworkParameters): P2PKHAddress = {
+    val hash = CryptoUtil.sha256Hash160(pubKey.decompressedBytes)
+    P2PKHAddressImpl(hash, networkParameters)
+  }
+
   override def fromString(address: String): P2PKHAddress = {
     val decodeCheckP2PKH: Try[ByteVector] = Base58.decodeCheck(address)
     val p2pkhT = decodeCheckP2PKH.flatMap { bytes =>
