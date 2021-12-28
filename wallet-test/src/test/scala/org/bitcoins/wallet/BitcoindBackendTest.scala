@@ -206,7 +206,8 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
         bip39PasswordOpt = walletAppConfig.bip39PasswordOpt)
     } yield {
       BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(bitcoind,
-                                                               tmpWallet)
+                                                               tmpWallet,
+                                                               None)
     }
   }
 }

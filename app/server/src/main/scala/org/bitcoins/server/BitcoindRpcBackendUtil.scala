@@ -4,7 +4,8 @@ import akka.Done
 import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import grizzled.slf4j.Logging
-import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.{ChainCallbacks}
+
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.gcs.FilterType
@@ -114,9 +115,9 @@ object BitcoindRpcBackendUtil extends Logging {
 
   def createWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
-      wallet: Wallet)(implicit
-      system: ActorSystem,
-      chainAppConfig: ChainAppConfig): Wallet = {
+      wallet: Wallet,
+      chainCallbacksOpt: Option[ChainCallbacks])(implicit
+      system: ActorSystem): Wallet = {
     // We need to create a promise so we can inject the wallet with the callback
     // after we have created it into SyncUtil.getNodeApiWalletCallback
     // so we don't lose the internal state of the wallet
@@ -124,8 +125,9 @@ object BitcoindRpcBackendUtil extends Logging {
 
     val pairedWallet = Wallet(
       nodeApi =
-        BitcoindRpcBackendUtil.getNodeApiWalletCallback(bitcoind,
-                                                        walletCallbackP.future),
+        BitcoindRpcBackendUtil.buildBitcoindNodeApi(bitcoind,
+                                                    walletCallbackP.future,
+                                                    chainCallbacksOpt),
       chainQueryApi = bitcoind,
       feeRateApi = wallet.feeRateApi
     )(wallet.walletConfig, wallet.ec)
@@ -175,9 +177,9 @@ object BitcoindRpcBackendUtil extends Logging {
 
   def createDLCWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
-      wallet: DLCWallet)(implicit
-      system: ActorSystem,
-      chainAppConfig: ChainAppConfig): DLCWallet = {
+      wallet: DLCWallet,
+      chainCallbacksOpt: Option[ChainCallbacks])(implicit
+      system: ActorSystem): DLCWallet = {
     // We need to create a promise so we can inject the wallet with the callback
     // after we have created it into SyncUtil.getNodeApiWalletCallback
     // so we don't lose the internal state of the wallet
@@ -185,8 +187,9 @@ object BitcoindRpcBackendUtil extends Logging {
 
     val pairedWallet = DLCWallet(
       nodeApi =
-        BitcoindRpcBackendUtil.getNodeApiWalletCallback(bitcoind,
-                                                        walletCallbackP.future),
+        BitcoindRpcBackendUtil.buildBitcoindNodeApi(bitcoind,
+                                                    walletCallbackP.future,
+                                                    chainCallbacksOpt),
       chainQueryApi = bitcoind,
       feeRateApi = wallet.feeRateApi
     )(wallet.walletConfig, wallet.dlcConfig, wallet.ec)
@@ -224,11 +227,14 @@ object BitcoindRpcBackendUtil extends Logging {
     }
   }
 
-  private def getNodeApiWalletCallback(
+  /** Creates an anonymous [[NodeApi]] that downloads blocks using
+    * akka streams from bitcoind, and then calls [[Wallet.processBlock]]
+    */
+  private def buildBitcoindNodeApi(
       bitcoindRpcClient: BitcoindRpcClient,
-      walletF: Future[Wallet])(implicit
-      system: ActorSystem,
-      chainAppConfig: ChainAppConfig): NodeApi = {
+      walletF: Future[Wallet],
+      chainCallbacksOpt: Option[ChainCallbacks])(implicit
+      system: ActorSystem): NodeApi = {
     import system.dispatcher
     new NodeApi {
 
@@ -251,12 +257,16 @@ object BitcoindRpcBackendUtil extends Logging {
                 val blockProcessedF = wallet.processBlock(block)
                 val executeCallbackF: Future[Wallet] = blockProcessedF.flatMap {
                   wallet =>
-                    val f = chainAppConfig.chainCallbacks
-                      .executeOnBlockHeaderConnectedCallbacks(
-                        logger,
-                        blockHeaderResult.height,
-                        blockHeaderResult.blockHeader)
-                    f.map(_ => wallet)
+                    chainCallbacksOpt match {
+                      case None => Future.successful(wallet)
+                      case Some(callback) =>
+                        val f = callback
+                          .executeOnBlockHeaderConnectedCallbacks(
+                            logger,
+                            blockHeaderResult.height,
+                            blockHeaderResult.blockHeader)
+                        f.map(_ => wallet)
+                    }
                 }
                 executeCallbackF
               }

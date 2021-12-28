@@ -46,8 +46,10 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       tmpWallet <-
         BitcoinSWalletTest.createDefaultWallet(bitcoind, bitcoind, None)
       wallet =
-        BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(bitcoind,
-                                                                 tmpWallet)
+        BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(
+          bitcoind = bitcoind,
+          wallet = tmpWallet,
+          chainCallbacksOpt = None)
       // Assert wallet is empty
       isEmpty <- wallet.isEmpty()
       _ = assert(isEmpty)
