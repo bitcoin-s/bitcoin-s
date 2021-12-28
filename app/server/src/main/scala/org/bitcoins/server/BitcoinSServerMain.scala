@@ -166,23 +166,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       node = dlcNodeConf.createDLCNode(wallet)
     } yield node
 
-    val maxBufferSize: Int = 25
-
-    /** This will queue [[maxBufferSize]] elements in the queue. Once the buffer size is reached,
-      * we will drop the first element in the buffer
-      */
-    val tuple = {
-      //from: https://github.com/akka/akka-http/issues/3039#issuecomment-610263181
-      //the BroadcastHub.sink is needed to avoid these errors
-      // 'Websocket handler failed with Processor actor'
-      Source
-        .queue[Message](maxBufferSize, OverflowStrategy.dropHead)
-        .toMat(BroadcastHub.sink)(Keep.both)
-        .run()
-    }
+    val tuple = buildWsSource
 
     val wsQueue: SourceQueueWithComplete[Message] = tuple._1
-    val source: Source[Message, NotUsed] = tuple._2
+    val wsSource: Source[Message, NotUsed] = tuple._2
     //start our http server now that we are synced
     for {
       node <- configuredNodeF
@@ -206,7 +193,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                            wallet = wallet,
                            dlcNode = dlcNode,
                            serverCmdLineArgs = serverArgParser,
-                           source)
+                           wsSource = wsSource)
       walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue)
       _ = walletConf.addCallbacks(walletCallbacks)
       dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
@@ -257,23 +244,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                               feeRateApi = feeProvider)
     }
 
-    val maxBufferSize: Int = 25
-
-    /** This will queue [[maxBufferSize]] elements in the queue. Once the buffer size is reached,
-      * we will drop the first element in the buffer
-      */
-    val tuple = {
-      //from: https://github.com/akka/akka-http/issues/3039#issuecomment-610263181
-      //the BroadcastHub.sink is needed to avoid these errors
-      // 'Websocket handler failed with Processor actor'
-      Source
-        .queue[Message](maxBufferSize, OverflowStrategy.dropHead)
-        .toMat(BroadcastHub.sink)(Keep.both)
-        .run()
-    }
-
+    val tuple = buildWsSource
     val wsQueue: SourceQueueWithComplete[Message] = tuple._1
-    val source: Source[Message, NotUsed] = tuple._2
+    val wsSource: Source[Message, NotUsed] = tuple._2
 
     for {
       _ <- bitcoindRpcConf.start()
@@ -309,7 +282,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                            wallet = wallet,
                            dlcNode = dlcNode,
                            serverCmdLineArgs = serverArgParser,
-                           source)
+                           wsSource = wsSource)
       walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue)
       _ = walletConf.addCallbacks(walletCallbacks)
 
@@ -413,7 +386,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       wallet: DLCWallet,
       dlcNode: DLCNode,
       serverCmdLineArgs: ServerArgParser,
-      source: Source[Message, NotUsed])(implicit
+      wsSource: Source[Message, NotUsed])(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Server] = {
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
@@ -460,14 +433,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                  rpcbindOpt = rpcBindConfOpt,
                  rpcport = rpcport,
                  wsConfigOpt = Some(wsServerConfig),
-                 source)
+                 wsSource)
         case None =>
           Server(conf = nodeConf,
                  handlers = handlers,
                  rpcbindOpt = rpcBindConfOpt,
                  rpcport = conf.rpcPort,
                  wsConfigOpt = Some(wsServerConfig),
-                 source)
+                 wsSource)
       }
     }
     val bindingF = server.start()
@@ -571,6 +544,31 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     f.failed.foreach(err =>
       logger.error(s"Error syncing bitcoin-s wallet with bitcoind", err))
     f
+  }
+
+  /** Builds a websocket queue that you can feed elements to.
+    * The Source can be wired up with Directives.handleWebSocketMessages
+    * to create a flow that emits websocket messages
+    */
+  private def buildWsSource: (
+      SourceQueueWithComplete[Message],
+      Source[Message, NotUsed]) = {
+    val maxBufferSize: Int = 25
+
+    /** This will queue [[maxBufferSize]] elements in the queue. Once the buffer size is reached,
+      * we will drop the first element in the buffer
+      */
+    val tuple = {
+      //from: https://github.com/akka/akka-http/issues/3039#issuecomment-610263181
+      //the BroadcastHub.sink is needed to avoid these errors
+      // 'Websocket handler failed with Processor actor'
+      Source
+        .queue[Message](maxBufferSize, OverflowStrategy.dropHead)
+        .toMat(BroadcastHub.sink)(Keep.both)
+        .run()
+    }
+
+    tuple
   }
 }
 

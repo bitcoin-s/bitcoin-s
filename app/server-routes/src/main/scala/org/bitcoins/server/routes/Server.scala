@@ -23,7 +23,7 @@ case class Server(
     rpcbindOpt: Option[String],
     rpcport: Int,
     wsConfigOpt: Option[WsServerConfig],
-    source: Source[Message, NotUsed])(implicit system: ActorSystem)
+    wsSource: Source[Message, NotUsed])(implicit system: ActorSystem)
     extends HttpLogger {
 
   import system.dispatcher
@@ -126,7 +126,7 @@ case class Server(
 
   private def wsHandler: Flow[Message, Message, Any] = {
     //we don't allow input, so use Sink.ignore
-    Flow.fromSinkAndSource(Sink.ignore, source)
+    Flow.fromSinkAndSource(Sink.ignore, wsSource)
   }
 
 }
