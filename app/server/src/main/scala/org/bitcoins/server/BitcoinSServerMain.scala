@@ -194,6 +194,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                            dlcNode = dlcNode,
                            serverCmdLineArgs = serverArgParser,
                            wsSource = wsSource)
+      chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, chainApi)
+      _ = chainConf.addCallbacks(chainCallbacks)
       walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue)
       _ = walletConf.addCallbacks(walletCallbacks)
       dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
@@ -260,7 +262,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
       _ = logger.info("Creating wallet")
       chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, bitcoind)
-      _ = chainConf.addCallbacks(chainCallbacks)
       tmpWallet <- tmpWalletF
       wallet = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
         bitcoind,
