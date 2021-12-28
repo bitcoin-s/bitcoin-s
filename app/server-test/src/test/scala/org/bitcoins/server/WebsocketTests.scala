@@ -8,14 +8,15 @@ import akka.http.scaladsl.model.ws.{
   WebSocketUpgradeResponse
 }
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
-import org.bitcoins.commons.jsonmodels.ws.{WalletNotification, WalletWsType}
+import org.bitcoins.commons.jsonmodels.ws.ChainNotification.BlockProcessedNotification
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
-  BlockProcessedNotification,
   NewAddressNotification,
   TxBroadcastNotification,
   TxProcessedNotification
 }
+import org.bitcoins.commons.jsonmodels.ws.{WalletNotification, WalletWsType}
 import org.bitcoins.commons.serializers.{Picklers, WsPicklers}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -192,13 +193,14 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     for {
       address <- addressF
       hashes <- bitcoind.generateToAddress(1, address)
+      header <- bitcoind.getBlockHeader(hashes.head)
+      handler = ChainHandler.fromDatabase()(executionContext, server.chainConf)
+      _ <- handler.processHeaders(Vector(header.blockHeader))
+
       cmd = CliCommand.GetBlockHeader(hash = hashes.head)
       getBlockHeaderResultStr = ConsoleCli.exec(cmd, cliConfig)
       getBlockHeaderResult = upickle.default.read(getBlockHeaderResultStr.get)(
         Picklers.getBlockHeaderResultPickler)
-      block <- bitcoind.getBlockRaw(hashes.head)
-      wallet <- server.walletConf.createHDWallet(bitcoind, bitcoind, bitcoind)
-      _ <- wallet.processBlock(block)
       _ <- AkkaUtil.nonBlockingSleep(500.millis)
       _ = promise.success(None)
       notifications <- notificationsF

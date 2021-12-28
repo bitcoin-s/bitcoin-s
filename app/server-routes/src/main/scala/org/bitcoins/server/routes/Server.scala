@@ -138,7 +138,7 @@ case class Server(
       .run()
   }
 
-  def walletQueue: SourceQueueWithComplete[Message] = tuple._1
+  def wsQueue: SourceQueueWithComplete[Message] = tuple._1
   def source: Source[Message, NotUsed] = tuple._2
 
   private val eventsRoute = "events"

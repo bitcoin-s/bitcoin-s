@@ -179,11 +179,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                                 wallet = wallet,
                                 dlcNode = dlcNode,
                                 serverCmdLineArgs = serverArgParser)
-      walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.walletQueue,
-                                                           chainApi)
+      chainCallbacks = WebsocketUtil.buildChainCallbacks(server.wsQueue,
+                                                         chainApi)
+      _ = chainConf.addCallbacks(chainCallbacks)
+      walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.wsQueue)
       _ = walletConf.addCallbacks(walletCallbacks)
-      dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(
-        server.walletQueue)
+      dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(server.wsQueue)
       _ = dlcConf.addCallbacks(dlcWalletCallbacks)
       _ = {
         logger.info(
@@ -266,11 +267,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                                 wallet = wallet,
                                 dlcNode = dlcNode,
                                 serverCmdLineArgs = serverArgParser)
-      walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.walletQueue,
-                                                           bitcoind)
+      chainCallbacks = WebsocketUtil.buildChainCallbacks(server.wsQueue,
+                                                         bitcoind)
+      _ = chainConf.addCallbacks(chainCallbacks)
+      walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.wsQueue)
       _ = walletConf.addCallbacks(walletCallbacks)
-      dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(
-        server.walletQueue)
+      dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(server.wsQueue)
       _ = dlcConf.addCallbacks(dlcWalletCallbacks)
     } yield {
       logger.info(s"Done starting Main!")
