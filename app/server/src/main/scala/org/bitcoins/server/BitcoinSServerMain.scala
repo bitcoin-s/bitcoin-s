@@ -101,6 +101,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   def startBitcoinSBackend(): Future[Unit] = {
+    logger.info(s"startBitcoinSBackend()")
     val start = System.currentTimeMillis()
     if (nodeConf.peers.isEmpty) {
       throw new IllegalArgumentException(
@@ -219,7 +220,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   def startBitcoindBackend(): Future[Unit] = {
-
+    logger.info(s"startBitcoindBackend()")
     val bitcoindF = for {
       client <- bitcoindRpcConf.clientF
       _ <- client.start()
@@ -256,10 +257,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           handleMissingSpendingInfoDb(err, wallet)
       }
 
-      //intentionally doesn't map on this otherwise we
-      //wait until we are done syncing the entire wallet
-      //which could take 1 hour
-      _ = syncWalletWithBitcoindAndStartPolling(bitcoind, wallet)
       dlcNode = dlcNodeConf.createDLCNode(wallet)
       _ <- dlcNode.start()
       server <- startHttpServer(nodeApi = bitcoind,
@@ -272,6 +269,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ = chainConf.addCallbacks(chainCallbacks)
       walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.wsQueue)
       _ = walletConf.addCallbacks(walletCallbacks)
+
+      //intentionally doesn't map on this otherwise we
+      //wait until we are done syncing the entire wallet
+      //which could take 1 hour
+      _ = syncWalletWithBitcoindAndStartPolling(bitcoind, wallet)
       dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(server.wsQueue)
       _ = dlcConf.addCallbacks(dlcWalletCallbacks)
     } yield {

@@ -4,6 +4,7 @@ import akka.Done
 import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import grizzled.slf4j.Logging
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.gcs.FilterType
@@ -32,6 +33,8 @@ object BitcoindRpcBackendUtil extends Logging {
     for {
       bitcoindHeight <- bitcoind.getBlockCount
       walletStateOpt <- wallet.getSyncDescriptorOpt()
+      _ = logger.info(
+        s"bitcoindHeight=$bitcoindHeight walletStateOpt=$walletStateOpt")
       _ <- walletStateOpt match {
         case None =>
           for {
@@ -40,9 +43,10 @@ object BitcoindRpcBackendUtil extends Logging {
             _ <- lastConfirmedOpt match {
               case None =>
                 for {
-                  header <- bitcoind.getBestBlockHeader()
-                  _ <- wallet.stateDescriptorDAO.updateSyncHeight(header.hashBE,
-                                                                  header.height)
+                  _ <- doSync(walletHeight = 0,
+                              bitcoindHeight = bitcoindHeight,
+                              bitcoind = bitcoind,
+                              wallet = wallet)
                 } yield ()
               case Some(txDb) =>
                 for {
@@ -81,7 +85,7 @@ object BitcoindRpcBackendUtil extends Logging {
 
       val hasFiltersF = bitcoind
         .getFilter(wallet.walletConfig.chain.genesisHashBE)
-        .map(_ => true)
+        .map(_ => false)
         .recover { case _: Throwable => false }
 
       val blockRange = walletHeight.to(bitcoindHeight).tail
@@ -110,7 +114,9 @@ object BitcoindRpcBackendUtil extends Logging {
 
   def createWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
-      wallet: Wallet)(implicit system: ActorSystem): Wallet = {
+      wallet: Wallet)(implicit
+      system: ActorSystem,
+      chainAppConfig: ChainAppConfig): Wallet = {
     // We need to create a promise so we can inject the wallet with the callback
     // after we have created it into SyncUtil.getNodeApiWalletCallback
     // so we don't lose the internal state of the wallet
@@ -169,7 +175,9 @@ object BitcoindRpcBackendUtil extends Logging {
 
   def createDLCWalletWithBitcoindCallbacks(
       bitcoind: BitcoindRpcClient,
-      wallet: DLCWallet)(implicit system: ActorSystem): DLCWallet = {
+      wallet: DLCWallet)(implicit
+      system: ActorSystem,
+      chainAppConfig: ChainAppConfig): DLCWallet = {
     // We need to create a promise so we can inject the wallet with the callback
     // after we have created it into SyncUtil.getNodeApiWalletCallback
     // so we don't lose the internal state of the wallet
@@ -218,7 +226,9 @@ object BitcoindRpcBackendUtil extends Logging {
 
   private def getNodeApiWalletCallback(
       bitcoindRpcClient: BitcoindRpcClient,
-      walletF: Future[Wallet])(implicit system: ActorSystem): NodeApi = {
+      walletF: Future[Wallet])(implicit
+      system: ActorSystem,
+      chainAppConfig: ChainAppConfig): NodeApi = {
     import system.dispatcher
     new NodeApi {
 
@@ -230,10 +240,25 @@ object BitcoindRpcBackendUtil extends Logging {
           .flatMap { wallet =>
             val runStream: Future[Done] = Source(blockHashes)
               .mapAsync(parallelism = numParallelism) { hash =>
-                bitcoindRpcClient.getBlockRaw(hash)
+                val blockF = bitcoindRpcClient.getBlockRaw(hash)
+                val blockHeaderResultF = bitcoindRpcClient.getBlockHeader(hash)
+                for {
+                  block <- blockF
+                  blockHeaderResult <- blockHeaderResultF
+                } yield (block, blockHeaderResult)
               }
-              .foldAsync(wallet) { case (wallet, block) =>
-                wallet.processBlock(block)
+              .foldAsync(wallet) { case (wallet, (block, blockHeaderResult)) =>
+                val blockProcessedF = wallet.processBlock(block)
+                val executeCallbackF: Future[Wallet] = blockProcessedF.flatMap {
+                  wallet =>
+                    val f = chainAppConfig.chainCallbacks
+                      .executeOnBlockHeaderConnectedCallbacks(
+                        logger,
+                        blockHeaderResult.height,
+                        blockHeaderResult.blockHeader)
+                    f.map(_ => wallet)
+                }
+                executeCallbackF
               }
               .run()
             runStream.map(_ => wallet)
@@ -264,16 +289,21 @@ object BitcoindRpcBackendUtil extends Logging {
       interval: FiniteDuration = 10.seconds)(implicit
       system: ActorSystem,
       ec: ExecutionContext): Future[Cancellable] = {
-    bitcoind.getBlockCount.map { startCount =>
+    val walletSyncStateF = wallet.getSyncState()
+    val resultF: Future[Cancellable] = for {
+      walletSyncState <- walletSyncStateF
+    } yield {
       val numParallelism = Runtime.getRuntime.availableProcessors()
-      val atomicPrevCount: AtomicInteger = new AtomicInteger(startCount)
+      val atomicPrevCount: AtomicInteger = new AtomicInteger(
+        walletSyncState.height)
       system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
         {
-          logger.debug("Polling bitcoind for block count")
+          logger.info("Polling bitcoind for block count")
           bitcoind.getBlockCount.flatMap { count =>
             val prevCount = atomicPrevCount.get()
             if (prevCount < count) {
-              logger.debug("Bitcoind has new block(s), requesting...")
+              logger.info(
+                s"Bitcoind has new block(s), requesting... ${count - prevCount} blocks")
 
               // use .tail so we don't process the previous block that we already did
               val range = prevCount.to(count).tail
@@ -306,11 +336,16 @@ object BitcoindRpcBackendUtil extends Logging {
             } else if (prevCount > count) {
               Future.failed(new RuntimeException(
                 s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
-            } else Future.unit
+            } else {
+              logger.info(s"In sync $prevCount count=$count")
+              Future.unit
+            }
           }
           ()
         }
       }
     }
+
+    resultF
   }
 }

@@ -13,7 +13,11 @@ sealed trait WsType
 object WsType extends StringFactory[WsType] {
 
   override def fromString(string: String): WsType = {
-    WalletWsType.fromString(string)
+    ChainWsType.fromStringOpt(string) match {
+      case Some(t) => t
+      case None =>
+        WalletWsType.fromString(string)
+    }
   }
 }
 
@@ -52,7 +56,7 @@ object ChainWsType extends StringFactory[ChainWsType] {
 
   override def fromString(string: String): ChainWsType = {
     fromStringOpt(string)
-      .getOrElse(sys.error(s"Cannot find wallet ws type for string=$string"))
+      .getOrElse(sys.error(s"Cannot find chain ws type for string=$string"))
   }
 }
 

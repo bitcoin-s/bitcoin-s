@@ -2,6 +2,7 @@ package org.bitcoins.server.util
 
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.stream.scaladsl.SourceQueueWithComplete
+import grizzled.slf4j.Logging
 import org.bitcoins.chain.{ChainCallbacks, OnBlockHeaderConnected}
 import org.bitcoins.commons.jsonmodels.ws.{
   ChainNotification,
@@ -23,7 +24,7 @@ import org.bitcoins.wallet.{
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object WebsocketUtil {
+object WebsocketUtil extends Logging {
 
   def buildChainCallbacks(
       queue: SourceQueueWithComplete[Message],
