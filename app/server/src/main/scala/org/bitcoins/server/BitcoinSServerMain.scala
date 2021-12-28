@@ -182,6 +182,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.walletQueue,
                                                            chainApi)
       _ = walletConf.addCallbacks(walletCallbacks)
+      dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(
+        server.walletQueue)
+      _ = dlcConf.addCallbacks(dlcWalletCallbacks)
       _ = {
         logger.info(
           s"Starting ${nodeConf.nodeType.shortName} node sync, it took=${System
@@ -266,6 +269,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.walletQueue,
                                                            bitcoind)
       _ = walletConf.addCallbacks(walletCallbacks)
+      dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(
+        server.walletQueue)
+      _ = dlcConf.addCallbacks(dlcWalletCallbacks)
     } yield {
       logger.info(s"Done starting Main!")
       ()
@@ -516,7 +522,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       logger.error(s"Error syncing bitcoin-s wallet with bitcoind", err))
     f
   }
-
 }
 
 object BitcoinSServerMain extends BitcoinSAppScalaDaemon {

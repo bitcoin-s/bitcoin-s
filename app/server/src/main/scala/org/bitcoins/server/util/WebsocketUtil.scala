@@ -5,7 +5,9 @@ import akka.stream.scaladsl.SourceQueueWithComplete
 import org.bitcoins.commons.jsonmodels.ws.{WalletNotification, WalletWsType}
 import org.bitcoins.commons.serializers.WsPicklers
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.dlc.wallet.{DLCWalletCallbacks, OnDLCStateChange}
 import org.bitcoins.wallet.{
   OnBlockProcessed,
   OnNewAddressGenerated,
@@ -95,12 +97,26 @@ object WebsocketUtil {
         val notification = WalletNotification.TxBroadcastNotification(tx)
         upickle.default.writeJs(notification)(WsPicklers.txBroadcastPickler)
       case x @ (WalletWsType.NewAddress | WalletWsType.ReservedUtxos |
-          WalletWsType.BlockProcessed) =>
+          WalletWsType.BlockProcessed | WalletWsType.DLCStateChange) =>
         sys.error(s"Cannot build tx notification for $x")
     }
 
     val msg = TextMessage.Strict(json.toString())
     val offerF = walletQueue.offer(msg)
     offerF.map(_ => ())
+  }
+
+  def buildDLCWalletCallbacks(walletQueue: SourceQueueWithComplete[Message])(
+      implicit ec: ExecutionContext): DLCWalletCallbacks = {
+    val onStateChange: OnDLCStateChange = { status: DLCStatus =>
+      val notification = WalletNotification.DLCStateChangeNotification(status)
+      val json =
+        upickle.default.writeJs(notification)(WsPicklers.dlcStateChangePickler)
+      val msg = TextMessage.Strict(json.toString())
+      val offerF = walletQueue.offer(msg)
+      offerF.map(_ => ())
+    }
+
+    DLCWalletCallbacks.onDLCStateChange(onStateChange)
   }
 }
