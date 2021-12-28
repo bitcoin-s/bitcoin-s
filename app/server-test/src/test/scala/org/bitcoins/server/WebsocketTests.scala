@@ -205,13 +205,13 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       getBlockHeaderResultStr = ConsoleCli.exec(cmd, cliConfig)
       getBlockHeaderResult = upickle.default.read(getBlockHeaderResultStr.get)(
         Picklers.getBlockHeaderResultPickler)
-      _ <- AkkaUtil.nonBlockingSleep(1500.millis)
+      _ <- AkkaUtil.nonBlockingSleep(2500.millis)
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
       assert(
-        notifications.exists(
-          _ == BlockProcessedNotification(getBlockHeaderResult)))
+        notifications.count(
+          _ == BlockProcessedNotification(getBlockHeaderResult)) == 1)
     }
   }
 
