@@ -10,7 +10,8 @@ import scala.util.{Failure, Success, Try}
   * initialization vector (IV). Both the cipher text and the IV
   * is needed to decrypt the cipher text.
   */
-final case class AesEncryptedData(cipherText: ByteVector, iv: AesIV) {
+final case class AesEncryptedData(cipherText: ByteVector, iv: AesIV)
+    extends NetworkElement {
 
   /** We serialize IV and ciphertext by prepending the IV
     * to the ciphertext, and converting it to base64.
@@ -19,12 +20,14 @@ final case class AesEncryptedData(cipherText: ByteVector, iv: AesIV) {
     * ciphertext.
     */
   lazy val toBase64: String = {
-    val bytes = iv.bytes ++ cipherText
     bytes.toBase64
   }
+
+  /** The byte representation of the AesEncryptedData */
+  override val bytes: ByteVector = iv.bytes ++ cipherText
 }
 
-object AesEncryptedData {
+object AesEncryptedData extends Factory[AesEncryptedData] {
 
   /** We serialize IV and ciphertext by prepending the IV
     * to the ciphertext, and converting it to base64.
@@ -36,12 +39,10 @@ object AesEncryptedData {
     ByteVector.fromBase64(base64) match {
       case None => None
       // we got passed valid base64, but it was too short
-      // to be a proper encoding of AesEncryptedDatt
+      // to be a proper encoding of AesEncryptedData
       case Some(bytes) if bytes.length <= AesIV.length => None
       case Some(bytes) =>
-        val (ivBytes, cipherText) = bytes.splitAt(AesIV.length)
-        val iv = AesIV.fromValidBytes(ivBytes)
-        Some(AesEncryptedData(cipherText, iv))
+        Some(fromBytes(bytes))
     }
   }
 
@@ -59,6 +60,16 @@ object AesEncryptedData {
         )
       case Some(enc) => enc
     }
+
+  /** Creates a AesEncryptedData out of a sequence of bytes. */
+  override def fromBytes(bytes: ByteVector): AesEncryptedData = {
+    require(
+      bytes.length > AesIV.length,
+      s"AesEncryptedData must be longer than ${AesIV.length} bytes, got $bytes")
+    val (ivBytes, cipherText) = bytes.splitAt(AesIV.length)
+    val iv = AesIV.fromValidBytes(ivBytes)
+    AesEncryptedData(cipherText, iv)
+  }
 }
 
 /** Represents a salt used to derive a AES key from
