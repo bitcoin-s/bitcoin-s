@@ -1,7 +1,16 @@
 package org.bitcoins.server
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
+import akka.http.scaladsl.model.ws.Message
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{
+  BroadcastHub,
+  Keep,
+  Source,
+  SourceQueueWithComplete
+}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -101,6 +110,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   def startBitcoinSBackend(): Future[Unit] = {
+    logger.info(s"startBitcoinSBackend()")
     val start = System.currentTimeMillis()
     if (nodeConf.peers.isEmpty) {
       throw new IllegalArgumentException(
@@ -156,6 +166,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       node = dlcNodeConf.createDLCNode(wallet)
     } yield node
 
+    val tuple = buildWsSource
+
+    val wsQueue: SourceQueueWithComplete[Message] = tuple._1
+    val wsSource: Source[Message, NotUsed] = tuple._2
     //start our http server now that we are synced
     for {
       node <- configuredNodeF
@@ -174,16 +188,17 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       dlcNode <- dlcNodeF
       _ <- dlcNode.start()
 
-      server <- startHttpServer(nodeApi = node,
-                                chainApi = chainApi,
-                                wallet = wallet,
-                                dlcNode = dlcNode,
-                                serverCmdLineArgs = serverArgParser)
-      walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.walletQueue,
-                                                           chainApi)
+      _ <- startHttpServer(nodeApi = node,
+                           chainApi = chainApi,
+                           wallet = wallet,
+                           dlcNode = dlcNode,
+                           serverCmdLineArgs = serverArgParser,
+                           wsSource = wsSource)
+      chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, chainApi)
+      _ = chainConf.addCallbacks(chainCallbacks)
+      walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue)
       _ = walletConf.addCallbacks(walletCallbacks)
-      dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(
-        server.walletQueue)
+      dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
       _ = dlcConf.addCallbacks(dlcWalletCallbacks)
       _ = {
         logger.info(
@@ -218,7 +233,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   def startBitcoindBackend(): Future[Unit] = {
-
+    logger.info(s"startBitcoindBackend()")
     val bitcoindF = for {
       client <- bitcoindRpcConf.clientF
       _ <- client.start()
@@ -231,6 +246,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                               feeRateApi = feeProvider)
     }
 
+    val tuple = buildWsSource
+    val wsQueue: SourceQueueWithComplete[Message] = tuple._1
+    val wsSource: Source[Message, NotUsed] = tuple._2
+
     for {
       _ <- bitcoindRpcConf.start()
       bitcoind <- bitcoindRpcConf.clientF
@@ -242,10 +261,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         s"bitcoind ($bitcoindNetwork) on different network than wallet (${walletConf.network})")
 
       _ = logger.info("Creating wallet")
+      chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, bitcoind)
       tmpWallet <- tmpWalletF
       wallet = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
         bitcoind,
-        tmpWallet)
+        tmpWallet,
+        Some(chainCallbacks))
       _ = logger.info("Starting wallet")
       _ <- wallet.start().recoverWith {
         //https://github.com/bitcoin-s/bitcoin-s/issues/2917
@@ -255,22 +276,22 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           handleMissingSpendingInfoDb(err, wallet)
       }
 
+      dlcNode = dlcNodeConf.createDLCNode(wallet)
+      _ <- dlcNode.start()
+      _ <- startHttpServer(nodeApi = bitcoind,
+                           chainApi = bitcoind,
+                           wallet = wallet,
+                           dlcNode = dlcNode,
+                           serverCmdLineArgs = serverArgParser,
+                           wsSource = wsSource)
+      walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue)
+      _ = walletConf.addCallbacks(walletCallbacks)
+
       //intentionally doesn't map on this otherwise we
       //wait until we are done syncing the entire wallet
       //which could take 1 hour
       _ = syncWalletWithBitcoindAndStartPolling(bitcoind, wallet)
-      dlcNode = dlcNodeConf.createDLCNode(wallet)
-      _ <- dlcNode.start()
-      server <- startHttpServer(nodeApi = bitcoind,
-                                chainApi = bitcoind,
-                                wallet = wallet,
-                                dlcNode = dlcNode,
-                                serverCmdLineArgs = serverArgParser)
-      walletCallbacks = WebsocketUtil.buildWalletCallbacks(server.walletQueue,
-                                                           bitcoind)
-      _ = walletConf.addCallbacks(walletCallbacks)
-      dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(
-        server.walletQueue)
+      dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
       _ = dlcConf.addCallbacks(dlcWalletCallbacks)
     } yield {
       logger.info(s"Done starting Main!")
@@ -365,7 +386,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       chainApi: ChainApi,
       wallet: DLCWallet,
       dlcNode: DLCNode,
-      serverCmdLineArgs: ServerArgParser)(implicit
+      serverCmdLineArgs: ServerArgParser,
+      wsSource: Source[Message, NotUsed])(implicit
       system: ActorSystem,
       conf: BitcoinSAppConfig): Future[Server] = {
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
@@ -411,13 +433,15 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                  handlers = handlers,
                  rpcbindOpt = rpcBindConfOpt,
                  rpcport = rpcport,
-                 wsConfigOpt = Some(wsServerConfig))
+                 wsConfigOpt = Some(wsServerConfig),
+                 wsSource)
         case None =>
           Server(conf = nodeConf,
                  handlers = handlers,
                  rpcbindOpt = rpcBindConfOpt,
                  rpcport = conf.rpcPort,
-                 wsConfigOpt = Some(wsServerConfig))
+                 wsConfigOpt = Some(wsServerConfig),
+                 wsSource)
       }
     }
     val bindingF = server.start()
@@ -521,6 +545,31 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     f.failed.foreach(err =>
       logger.error(s"Error syncing bitcoin-s wallet with bitcoind", err))
     f
+  }
+
+  /** Builds a websocket queue that you can feed elements to.
+    * The Source can be wired up with Directives.handleWebSocketMessages
+    * to create a flow that emits websocket messages
+    */
+  private def buildWsSource: (
+      SourceQueueWithComplete[Message],
+      Source[Message, NotUsed]) = {
+    val maxBufferSize: Int = 25
+
+    /** This will queue [[maxBufferSize]] elements in the queue. Once the buffer size is reached,
+      * we will drop the first element in the buffer
+      */
+    val tuple = {
+      //from: https://github.com/akka/akka-http/issues/3039#issuecomment-610263181
+      //the BroadcastHub.sink is needed to avoid these errors
+      // 'Websocket handler failed with Processor actor'
+      Source
+        .queue[Message](maxBufferSize, OverflowStrategy.dropHead)
+        .toMat(BroadcastHub.sink)(Keep.both)
+        .run()
+    }
+
+    tuple
   }
 }
 

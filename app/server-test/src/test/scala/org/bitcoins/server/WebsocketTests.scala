@@ -9,12 +9,17 @@ import akka.http.scaladsl.model.ws.{
 }
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
-import org.bitcoins.commons.jsonmodels.ws.{WalletNotification, WalletWsType}
+import org.bitcoins.commons.jsonmodels.ws.ChainNotification.BlockProcessedNotification
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
-  BlockProcessedNotification,
   NewAddressNotification,
   TxBroadcastNotification,
   TxProcessedNotification
+}
+import org.bitcoins.commons.jsonmodels.ws.{
+  ChainNotification,
+  WalletNotification,
+  WalletWsType,
+  WsNotification
 }
 import org.bitcoins.commons.serializers.{Picklers, WsPicklers}
 import org.bitcoins.core.currency.Bitcoins
@@ -30,23 +35,27 @@ import org.bitcoins.testkit.util.AkkaUtil
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
+import scala.util.Try
 
 class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
   behavior of "Websocket Tests"
 
-  val endSink: Sink[WalletNotification[_], Future[Seq[WalletNotification[_]]]] =
-    Sink.seq[WalletNotification[_]]
+  val endSink: Sink[WsNotification[_], Future[Seq[WsNotification[_]]]] =
+    Sink.seq[WsNotification[_]]
 
-  val sink: Sink[Message, Future[Seq[WalletNotification[_]]]] = Flow[Message]
+  val sink: Sink[Message, Future[Seq[WsNotification[_]]]] = Flow[Message]
     .map {
       case message: TextMessage.Strict =>
         //we should be able to parse the address message
         val text = message.text
-        val notification: WalletNotification[_] =
+        val walletNotificationOpt: Option[WalletNotification[_]] = Try(
           upickle.default.read[WalletNotification[_]](text)(
-            WsPicklers.walletNotificationPickler)
-        notification
+            WsPicklers.walletNotificationPickler)).toOption
+        val chainNotificationOpt: Option[ChainNotification[_]] = Try(
+          upickle.default.read[ChainNotification[_]](text)(
+            WsPicklers.chainNotificationPickler)).toOption
+        walletNotificationOpt.getOrElse(chainNotificationOpt.get)
       case msg =>
         fail(s"Unexpected msg type received in the sink, msg=$msg")
     }
@@ -59,7 +68,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   val websocketFlow: Flow[
     Message,
     Message,
-    (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])] = {
+    (Future[Seq[WsNotification[_]]], Promise[Option[Message]])] = {
     Flow
       .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
   }
@@ -72,12 +81,12 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val req = buildReq(server.conf)
       val notificationsF: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
+          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
 
-      val walletNotificationsF: Future[Seq[WalletNotification[_]]] =
+      val walletNotificationsF: Future[Seq[WsNotification[_]]] =
         notificationsF._2._1
 
       val promise: Promise[Option[Message]] = notificationsF._2._2
@@ -104,7 +113,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
+          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
@@ -142,7 +151,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
+          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
@@ -179,7 +188,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val req = buildReq(server.conf)
     val tuple: (
         Future[WebSocketUpgradeResponse],
-        (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
+        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
@@ -188,7 +197,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val promise = tuple._2._2
 
     val addressF = bitcoind.getNewAddress
-
+    val timeout =
+      15.seconds //any way we can remove this timeout and just check?
     for {
       address <- addressF
       hashes <- bitcoind.generateToAddress(1, address)
@@ -196,16 +206,13 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       getBlockHeaderResultStr = ConsoleCli.exec(cmd, cliConfig)
       getBlockHeaderResult = upickle.default.read(getBlockHeaderResultStr.get)(
         Picklers.getBlockHeaderResultPickler)
-      block <- bitcoind.getBlockRaw(hashes.head)
-      wallet <- server.walletConf.createHDWallet(bitcoind, bitcoind, bitcoind)
-      _ <- wallet.processBlock(block)
-      _ <- AkkaUtil.nonBlockingSleep(500.millis)
+      _ <- AkkaUtil.nonBlockingSleep(timeout)
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
-      assert(
-        notifications.exists(
-          _ == BlockProcessedNotification(getBlockHeaderResult)))
+      val count = notifications.count(
+        _ == BlockProcessedNotification(getBlockHeaderResult))
+      assert(count == 1, s"count=$count")
     }
   }
 
@@ -217,12 +224,12 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WalletNotification[_]]], Promise[Option[Message]])) = {
+          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
 
-      val notificationsF: Future[Seq[WalletNotification[_]]] = tuple._2._1
+      val notificationsF: Future[Seq[WsNotification[_]]] = tuple._2._1
       val promise = tuple._2._2
 
       //lock all utxos

@@ -9,15 +9,7 @@ import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.DebuggingDirectives
-import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{
-  BroadcastHub,
-  Flow,
-  Keep,
-  Sink,
-  Source,
-  SourceQueueWithComplete
-}
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
@@ -30,7 +22,8 @@ case class Server(
     handlers: Seq[ServerRoute],
     rpcbindOpt: Option[String],
     rpcport: Int,
-    wsConfigOpt: Option[WsServerConfig])(implicit system: ActorSystem)
+    wsConfigOpt: Option[WsServerConfig],
+    wsSource: Source[Message, NotUsed])(implicit system: ActorSystem)
     extends HttpLogger {
 
   import system.dispatcher
@@ -123,24 +116,6 @@ case class Server(
     }
   }
 
-  private val maxBufferSize: Int = 25
-
-  /** This will queue [[maxBufferSize]] elements in the queue. Once the buffer size is reached,
-    * we will drop the first element in the buffer
-    */
-  private val tuple = {
-    //from: https://github.com/akka/akka-http/issues/3039#issuecomment-610263181
-    //the BroadcastHub.sink is needed to avoid these errors
-    // 'Websocket handler failed with Processor actor'
-    Source
-      .queue[Message](maxBufferSize, OverflowStrategy.dropHead)
-      .toMat(BroadcastHub.sink)(Keep.both)
-      .run()
-  }
-
-  def walletQueue: SourceQueueWithComplete[Message] = tuple._1
-  def source: Source[Message, NotUsed] = tuple._2
-
   private val eventsRoute = "events"
 
   private def wsRoutes: Route = {
@@ -151,7 +126,7 @@ case class Server(
 
   private def wsHandler: Flow[Message, Message, Any] = {
     //we don't allow input, so use Sink.ignore
-    Flow.fromSinkAndSource(Sink.ignore, source)
+    Flow.fromSinkAndSource(Sink.ignore, wsSource)
   }
 
 }

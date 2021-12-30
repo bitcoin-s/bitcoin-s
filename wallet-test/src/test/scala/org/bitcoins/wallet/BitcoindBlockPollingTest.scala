@@ -27,7 +27,8 @@ class BitcoindBlockPollingTest
           BitcoinSWalletTest.createDefaultWallet(bitcoind, bitcoind, None)
         wallet =
           BitcoindRpcBackendUtil.createWalletWithBitcoindCallbacks(bitcoind,
-                                                                   tmpWallet)
+                                                                   tmpWallet,
+                                                                   None)
         // Assert wallet is empty
         isEmpty <- wallet.isEmpty()
         _ = assert(isEmpty)

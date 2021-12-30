@@ -13,22 +13,27 @@ sealed trait WsType
 object WsType extends StringFactory[WsType] {
 
   override def fromString(string: String): WsType = {
-    WalletWsType.fromString(string)
+    ChainWsType.fromStringOpt(string) match {
+      case Some(t) => t
+      case None =>
+        WalletWsType.fromString(string)
+    }
   }
 }
 
 sealed trait WalletWsType extends WsType
+sealed trait ChainWsType extends WsType
 
 object WalletWsType extends StringFactory[WalletWsType] {
   case object TxProcessed extends WalletWsType
   case object TxBroadcast extends WalletWsType
   case object ReservedUtxos extends WalletWsType
   case object NewAddress extends WalletWsType
-  case object BlockProcessed extends WalletWsType
+
   case object DLCStateChange extends WalletWsType
 
   private val all =
-    Vector(TxProcessed, TxBroadcast, ReservedUtxos, NewAddress, BlockProcessed)
+    Vector(TxProcessed, TxBroadcast, ReservedUtxos, NewAddress)
 
   override def fromStringOpt(string: String): Option[WalletWsType] = {
     all.find(_.toString.toLowerCase() == string.toLowerCase)
@@ -40,6 +45,21 @@ object WalletWsType extends StringFactory[WalletWsType] {
   }
 }
 
+object ChainWsType extends StringFactory[ChainWsType] {
+  case object BlockProcessed extends ChainWsType
+
+  private val all: Vector[ChainWsType] = Vector(BlockProcessed)
+
+  override def fromStringOpt(string: String): Option[ChainWsType] = {
+    all.find(_.toString.toLowerCase() == string.toLowerCase)
+  }
+
+  override def fromString(string: String): ChainWsType = {
+    fromStringOpt(string)
+      .getOrElse(sys.error(s"Cannot find chain ws type for string=$string"))
+  }
+}
+
 /** A notification that we send over the websocket.
   * The type of the notification is indicated by [[WsType]].
   * An example is [[org.bitcoins.commons.jsonmodels.ws.WalletNotification.NewAddressNotification]]
@@ -48,6 +68,10 @@ object WalletWsType extends StringFactory[WalletWsType] {
 sealed trait WsNotification[T] {
   def `type`: WsType
   def payload: T
+}
+
+sealed trait ChainNotification[T] extends WsNotification[T] {
+  override def `type`: ChainWsType
 }
 
 sealed trait WalletNotification[T] extends WsNotification[T] {
@@ -76,13 +100,16 @@ object WalletNotification {
     override val `type`: WalletWsType = WalletWsType.ReservedUtxos
   }
 
-  case class BlockProcessedNotification(payload: GetBlockHeaderResult)
-      extends WalletNotification[GetBlockHeaderResult] {
-    override val `type`: WalletWsType = WalletWsType.BlockProcessed
-  }
-
   case class DLCStateChangeNotification(payload: DLCStatus)
       extends WalletNotification[DLCStatus] {
     override val `type`: WalletWsType = WalletWsType.DLCStateChange
+  }
+}
+
+object ChainNotification {
+
+  case class BlockProcessedNotification(payload: GetBlockHeaderResult)
+      extends ChainNotification[GetBlockHeaderResult] {
+    override val `type`: ChainWsType = ChainWsType.BlockProcessed
   }
 }
