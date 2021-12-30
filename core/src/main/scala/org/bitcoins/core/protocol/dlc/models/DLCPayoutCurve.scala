@@ -8,7 +8,9 @@ import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try}
 
 /** A DLC payout curve defined by piecewise interpolating points */
-case class DLCPayoutCurve(pieces: Vector[DLCPayoutCurvePiece])
+case class DLCPayoutCurve(
+    pieces: Vector[DLCPayoutCurvePiece],
+    isOldSerialization: Boolean)
     extends TLVSerializable[PayoutFunctionV0TLV] {
 
   val endpoints: Vector[OutcomePayoutPoint] = {
@@ -24,7 +26,7 @@ case class DLCPayoutCurve(pieces: Vector[DLCPayoutCurvePiece])
     val tlvEndpoints = endpoints.map(_.toTLVPoint)
     val tlvPieces = pieces.map(_.toTLV)
 
-    PayoutFunctionV0TLV(tlvEndpoints, tlvPieces)
+    PayoutFunctionV0TLV(tlvEndpoints, tlvPieces, isOldSerialization)
   }
 
   private lazy val endpointOutcomes = endpoints.map(_.outcome)
@@ -73,7 +75,8 @@ case class DLCPayoutCurve(pieces: Vector[DLCPayoutCurvePiece])
     getPayout(outcome, rounding, totalCollateral)
 
   def flip(totalCollateral: Satoshis): DLCPayoutCurve = {
-    DLCPayoutCurve(pieces.map(_.flip(totalCollateral)))
+    DLCPayoutCurve(pieces.map(_.flip(totalCollateral)),
+                   isOldSerialization = false)
   }
 }
 
@@ -88,44 +91,57 @@ object DLCPayoutCurve
           DLCPayoutCurvePiece.fromTLV(leftEndpoint, tlvPiece, rightEndpoint)
       }
 
-    DLCPayoutCurve(pieces)
+    DLCPayoutCurve(pieces, tlv.isOldSerialization)
   }
 
   def polynomialInterpolate(
-      points: Vector[PiecewisePolynomialPoint]): DLCPayoutCurve = {
+      points: Vector[PiecewisePolynomialPoint],
+      isOldSerialization: Boolean): DLCPayoutCurve = {
     require(points.head.isEndpoint && points.last.isEndpoint,
             s"First and last points must be endpoints: $points")
 
-    val (_, _, pieces) = points.tail.foldLeft(
-      (points.head,
-       Vector.empty[PiecewisePolynomialMidpoint],
-       Vector.empty[DLCPolynomialPayoutCurvePiece])) {
-      case ((lastEndpoint, midpointsSoFar, piecesSoFar), point) =>
-        point match {
-          case midpoint: PiecewisePolynomialMidpoint =>
-            (lastEndpoint, midpointsSoFar.:+(midpoint), piecesSoFar)
-          case endpoint: PiecewisePolynomialEndpoint =>
-            val points = midpointsSoFar
-              .+:(lastEndpoint)
-              .:+(endpoint)
-              .map(_.toOutcomePayoutPoint)
+    println(s"polyPieces=$points")
+    val initMidpoints = Vector.empty[PiecewisePolynomialMidpoint]
+    val initCurvePieces = Vector.empty[DLCPolynomialPayoutCurvePiece]
+    val (_, _, pieces) =
+      points.tail.foldLeft((points.head, initMidpoints, initCurvePieces)) {
+        case ((lastEndpoint, midpointsSoFar, piecesSoFar), point) =>
+          println(
+            s"lastEndPoint=$lastEndpoint piecesSoFar=$piecesSoFar point=$point")
+          point match {
+            case midpoint: PiecewisePolynomialMidpoint =>
+              (lastEndpoint, midpointsSoFar.:+(midpoint), piecesSoFar)
+            case endpoint: PiecewisePolynomialEndpoint =>
+              val all = midpointsSoFar
+                .+:(lastEndpoint)
+                .:+(endpoint)
+              println(s"all=$all")
+              val points = all.map(_.toOutcomePayoutPoint)
+              println(s"points=$points")
+              (endpoint,
+               Vector.empty,
+               piecesSoFar.:+(DLCPolynomialPayoutCurvePiece(points)))
+          }
+      }
 
-            (endpoint,
-             Vector.empty,
-             piecesSoFar.:+(DLCPolynomialPayoutCurvePiece(points)))
-        }
-    }
-
-    DLCPayoutCurve(pieces)
+    DLCPayoutCurve(pieces, isOldSerialization)
   }
 
-  def fromPoints(points: Vector[TLVPoint]): DLCPayoutCurve = {
+  def fromPoints(
+      points: Vector[TLVPoint],
+      isOldSerialization: Boolean): DLCPayoutCurve = {
 
     val pieceEndpoints = points.map { p =>
       PiecewisePolynomialEndpoint(p.outcome, p.value)
     }
 
-    DLCPayoutCurve.polynomialInterpolate(pieceEndpoints)
+    DLCPayoutCurve.polynomialInterpolate(pieceEndpoints, isOldSerialization)
+  }
+
+  def fromOldPoints(points: Vector[OldTLVPoint]): DLCPayoutCurve = {
+    val newPoints =
+      points.map(p => TLVPoint(p.outcome, p.value, p.extraPrecision))
+    fromPoints(newPoints, isOldSerialization = true)
   }
 }
 
@@ -147,7 +163,7 @@ trait DLCPoint {
   }
 
   def toOutcomePayoutPoint: OutcomePayoutPoint = {
-    OutcomePayoutPoint(outcome, payout)
+    OutcomePayoutPoint(outcome = outcome, payout = payout)
   }
 }
 
@@ -157,7 +173,12 @@ trait DLCPoint {
   * payout: The payout to the local party corresponding to outcome
   */
 case class OutcomePayoutPoint(outcome: Long, payout: BigDecimal)
-    extends DLCPoint
+    extends DLCPoint {
+
+  override def toString: String = {
+    s"OutcomePayoutPoint(outcome=$outcome,payout=$payout)"
+  }
+}
 
 object OutcomePayoutPoint {
 

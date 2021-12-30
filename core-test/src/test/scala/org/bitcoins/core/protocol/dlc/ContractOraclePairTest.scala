@@ -56,7 +56,8 @@ class ContractOraclePairTest extends BitcoinSUnitTest {
       NumericContractDescriptor(
         DLCPayoutCurve.polynomialInterpolate(
           Vector(PiecewisePolynomialEndpoint(0, 0),
-                 PiecewisePolynomialEndpoint((1L << 7) - 1, 1))),
+                 PiecewisePolynomialEndpoint((1L << 7) - 1, 1)),
+          isOldSerialization = false),
         numDigits = 7,
         RoundingIntervals.noRounding
       )

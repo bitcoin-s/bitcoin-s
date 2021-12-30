@@ -82,7 +82,9 @@ object DLCTestUtil {
         PiecewisePolynomialEndpoint(botCollar + 1, leftVal),
         PiecewisePolynomialEndpoint(topCollar, rightVal),
         PiecewisePolynomialEndpoint(overMaxValue - 1, rightVal)
-      ))
+      ),
+      isOldSerialization = false
+    )
     val roundingIntervalsToUse =
       if (numRounds > 0 && roundingIntervals == RoundingIntervals.noRounding) {
         val intervalStarts = 0.until(numRounds).toVector.map { num =>
