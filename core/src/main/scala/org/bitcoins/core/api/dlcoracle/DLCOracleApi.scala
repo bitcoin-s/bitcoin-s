@@ -24,7 +24,13 @@ trait DLCOracleApi {
 
   def listPendingEventDbs(): Future[Vector[EventDb]]
 
+  def listCompletedEventDbs(): Future[Vector[EventDb]]
+
   def listEvents(): Future[Vector[OracleEvent]]
+
+  def listPendingEvents(): Future[Vector[OracleEvent]]
+
+  def listCompletedEvents(): Future[Vector[OracleEvent]]
 
   def findEvent(oracleEventTLV: OracleEventTLV): Future[Option[OracleEvent]]
 
