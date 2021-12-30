@@ -86,7 +86,7 @@ object BitcoindRpcBackendUtil extends Logging {
 
       val hasFiltersF = bitcoind
         .getFilter(wallet.walletConfig.chain.genesisHashBE)
-        .map(_ => false)
+        .map(_ => true)
         .recover { case _: Throwable => false }
 
       val blockRange = walletHeight.to(bitcoindHeight).tail
@@ -105,9 +105,9 @@ object BitcoindRpcBackendUtil extends Logging {
         hashes <- hashFs.map(_.toVector)
         hasFilters <- hasFiltersF
         _ <- {
-          if (hasFilters)
+          if (hasFilters) {
             filterSync(hashes, bitcoind.asInstanceOf[V19BlockFilterRpc], wallet)
-          else wallet.nodeApi.downloadBlocks(hashes)
+          } else wallet.nodeApi.downloadBlocks(hashes)
         }
       } yield wallet
     }
