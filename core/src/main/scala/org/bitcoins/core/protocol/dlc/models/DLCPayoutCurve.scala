@@ -120,11 +120,12 @@ object DLCPayoutCurve
   }
 
   def fromPoints(points: Vector[TLVPoint]): DLCPayoutCurve = {
-    //i don't think this is right
-    val curvePiece = DLCPolynomialPayoutCurvePiece(
-      points.map(_.outcomePayoutPoint))
-    val payoutCurve = DLCPayoutCurve(Vector(curvePiece))
-    payoutCurve
+
+    val pieceEndpoints = points.map { p =>
+      PiecewisePolynomialEndpoint(p.outcome, p.value)
+    }
+
+    DLCPayoutCurve.polynomialInterpolate(pieceEndpoints)
   }
 }
 

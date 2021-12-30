@@ -85,6 +85,9 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
     val descriptor =
       NumericContractDescriptor(func, 2, RoundingIntervals.noRounding)
 
+    //i need to write a test case to make sure we can parse both the old serialization
+    //format and the new serialization format
+    //i also need to verify that the data structures above are correct in the diff
     val expected = ContractDescriptorV1TLV.fromHex(
       "fda720260002fda7261a0002010000000000000000000000010300000000000000640000fda724020000")
     assert(descriptor.toTLV == expected)
