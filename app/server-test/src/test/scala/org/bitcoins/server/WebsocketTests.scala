@@ -205,13 +205,15 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       getBlockHeaderResultStr = ConsoleCli.exec(cmd, cliConfig)
       getBlockHeaderResult = upickle.default.read(getBlockHeaderResultStr.get)(
         Picklers.getBlockHeaderResultPickler)
-      _ <- AkkaUtil.nonBlockingSleep(2500.millis)
+      _ <- AkkaUtil.nonBlockingSleep(
+        10000.millis
+      ) //anyway we can remove this timeout and just check?
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
-      assert(
-        notifications.count(
-          _ == BlockProcessedNotification(getBlockHeaderResult)) == 1)
+      val count = notifications.count(
+        _ == BlockProcessedNotification(getBlockHeaderResult))
+      assert(count == 1, s"count=$count")
     }
   }
 
