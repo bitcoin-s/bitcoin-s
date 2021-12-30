@@ -31,7 +31,9 @@ object ContractDescriptorParser {
             .read[TLVPoint](pointJs)(Picklers.tlvPointReader)
         }
 
-        val payoutCurve = DLCPayoutCurve.fromPoints(payoutPoints).toTLV
+        val payoutCurve = DLCPayoutCurve
+          .fromPoints(payoutPoints, isOldSerialization = false)
+          .toTLV
         val numDigits = announcementTLV.eventTLV.eventDescriptor
           .asInstanceOf[DigitDecompositionEventDescriptorV0TLV]
           .numDigits

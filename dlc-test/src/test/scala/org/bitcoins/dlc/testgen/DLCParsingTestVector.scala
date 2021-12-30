@@ -141,7 +141,9 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
 
   def apply(tlv: TLV): DLCParsingTestVector = {
     tlv match {
-      case PayoutFunctionV0TLV(endpoints, pieces) =>
+      case old: OldPayoutFunctionV0TLV =>
+        sys.error(s"Should have old payout function here=$old")
+      case PayoutFunctionV0TLV(endpoints, pieces, _) =>
         val fields = Vector(
           "tpe" -> Element(PayoutFunctionV0TLV.tpe),
           "length" -> Element(tlv.length),
