@@ -126,8 +126,25 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   override def listPendingEventDbs(): Future[Vector[EventDb]] =
     eventDAO.getPendingEvents
 
+  override def listCompletedEventDbs(): Future[Vector[EventDb]] =
+    eventDAO.getCompletedEvents
+
   override def listEvents(): Future[Vector[OracleEvent]] = {
     eventDAO.findAll().map { eventDbs =>
+      val events = eventDbs.groupBy(_.announcementSignature)
+      events.values.map(dbs => OracleEvent.fromEventDbs(dbs)).toVector
+    }
+  }
+
+  override def listPendingEvents(): Future[Vector[OracleEvent]] = {
+    listPendingEventDbs().map { eventDbs =>
+      val events = eventDbs.groupBy(_.announcementSignature)
+      events.values.map(dbs => OracleEvent.fromEventDbs(dbs)).toVector
+    }
+  }
+
+  override def listCompletedEvents(): Future[Vector[OracleEvent]] = {
+    listCompletedEventDbs().map { eventDbs =>
       val events = eventDbs.groupBy(_.announcementSignature)
       events.values.map(dbs => OracleEvent.fromEventDbs(dbs)).toVector
     }
