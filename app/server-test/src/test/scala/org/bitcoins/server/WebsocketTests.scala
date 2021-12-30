@@ -197,7 +197,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val promise = tuple._2._2
 
     val addressF = bitcoind.getNewAddress
-
+    val timeout =
+      15.seconds //any way we can remove this timeout and just check?
     for {
       address <- addressF
       hashes <- bitcoind.generateToAddress(1, address)
@@ -205,9 +206,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       getBlockHeaderResultStr = ConsoleCli.exec(cmd, cliConfig)
       getBlockHeaderResult = upickle.default.read(getBlockHeaderResultStr.get)(
         Picklers.getBlockHeaderResultPickler)
-      _ <- AkkaUtil.nonBlockingSleep(
-        10000.millis
-      ) //anyway we can remove this timeout and just check?
+      _ <- AkkaUtil.nonBlockingSleep(timeout)
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {

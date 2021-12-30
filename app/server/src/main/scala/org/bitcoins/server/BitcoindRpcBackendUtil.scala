@@ -44,7 +44,7 @@ object BitcoindRpcBackendUtil extends Logging {
             _ <- lastConfirmedOpt match {
               case None =>
                 for {
-                  _ <- doSync(walletHeight = 0,
+                  _ <- doSync(walletHeight = bitcoindHeight - 1,
                               bitcoindHeight = bitcoindHeight,
                               bitcoind = bitcoind,
                               wallet = wallet)
