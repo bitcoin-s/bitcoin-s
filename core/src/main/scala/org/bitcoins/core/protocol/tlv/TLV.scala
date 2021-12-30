@@ -1260,9 +1260,6 @@ case class ContractDescriptorV1TLV(
   override val tpe: BigSizeUInt = ContractDescriptorV1TLV.tpe
 
   override val value: ByteVector = {
-    println(s"numDigits=$numDigits hex=${UInt16(numDigits).hex}")
-    println(s"payoutFunction=${payoutFunction.hex}")
-    println(s"roundingIntervals=${roundingIntervals.hex}")
     UInt16(numDigits).bytes ++
       payoutFunction.bytes ++
       roundingIntervals.bytes

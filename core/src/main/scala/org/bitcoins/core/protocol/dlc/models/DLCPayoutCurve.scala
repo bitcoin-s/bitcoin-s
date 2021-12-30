@@ -100,14 +100,11 @@ object DLCPayoutCurve
     require(points.head.isEndpoint && points.last.isEndpoint,
             s"First and last points must be endpoints: $points")
 
-    println(s"polyPieces=$points")
     val initMidpoints = Vector.empty[PiecewisePolynomialMidpoint]
     val initCurvePieces = Vector.empty[DLCPolynomialPayoutCurvePiece]
     val (_, _, pieces) =
       points.tail.foldLeft((points.head, initMidpoints, initCurvePieces)) {
         case ((lastEndpoint, midpointsSoFar, piecesSoFar), point) =>
-          println(
-            s"lastEndPoint=$lastEndpoint piecesSoFar=$piecesSoFar point=$point")
           point match {
             case midpoint: PiecewisePolynomialMidpoint =>
               (lastEndpoint, midpointsSoFar.:+(midpoint), piecesSoFar)
@@ -115,15 +112,12 @@ object DLCPayoutCurve
               val all = midpointsSoFar
                 .+:(lastEndpoint)
                 .:+(endpoint)
-              println(s"all=$all")
               val points = all.map(_.toOutcomePayoutPoint)
-              println(s"points=$points")
               (endpoint,
                Vector.empty,
                piecesSoFar.:+(DLCPolynomialPayoutCurvePiece(points)))
           }
       }
-
     DLCPayoutCurve(pieces, isOldSerialization)
   }
 

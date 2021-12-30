@@ -81,7 +81,10 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
       NumericContractDescriptor(func, 2, RoundingIntervals.noRounding))
   }
 
-  it should "correctly create a NumericContractDescriptor" in {
+  it should "parse a numeric contract descriptor pre 144" in {
+    //we have to be able to parse old numeric contract descriptors
+    //pre pr 144 as we have old wallets deployed with this
+    //https://github.com/discreetlogcontracts/dlcspecs/pull/144
     val func = DLCPayoutCurve.polynomialInterpolate(
       Vector(
         PiecewisePolynomialPoint(outcome = 0,
@@ -94,7 +97,7 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
       isOldSerialization = false
     )
 
-    val descriptor =
+    val expected =
       NumericContractDescriptor(outcomeValueFunc = func,
                                 numDigits = 2,
                                 roundingIntervals =
@@ -106,12 +109,8 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
     //i need to write a test case to make sure we can parse both the old serialization
     //format and the new serialization format
     //i also need to verify that the data structures above are correct in the diff
-    val expected = ContractDescriptorV1TLV.fromHex(oldHex)
+    val actual = ContractDescriptorV1TLV.fromHex(oldHex)
 
-    //assert(descriptor.hex == oldHex)
-
-    assert(descriptor.toTLV.hex == expected.hex)
-
-    assert(descriptor.toTLV == expected)
+    assert(actual.hex == expected.toTLV.hex)
   }
 }
