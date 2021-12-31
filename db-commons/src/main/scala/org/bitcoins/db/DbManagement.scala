@@ -184,7 +184,7 @@ trait DbManagement extends Logging {
     *
     * @see https://flywaydb.org/documentation/command/clean
     */
-  private[bitcoins] def clean(): Unit = {
+  def clean(): Unit = {
     flyway.clean()
   }
 }

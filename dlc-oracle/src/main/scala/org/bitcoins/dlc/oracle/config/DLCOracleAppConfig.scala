@@ -165,6 +165,10 @@ case class DLCOracleAppConfig(
 
   private val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
 
+  private lazy val masterXPubTable: TableQuery[Table[_]] = {
+    masterXPubDAO.table
+  }
+
   private lazy val rValueTable: TableQuery[Table[_]] = {
     RValueDAO()(ec, appConfig).table
   }
@@ -178,7 +182,7 @@ case class DLCOracleAppConfig(
   }
 
   override def allTables: List[TableQuery[Table[_]]] =
-    List(rValueTable, eventTable, eventOutcomeTable)
+    List(masterXPubTable, rValueTable, eventTable, eventOutcomeTable)
 
   /** @param migrations - The number of migrations we have run */
   private def v2V3MigrationWorkaround(migrations: Int): Future[Unit] = {
