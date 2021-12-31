@@ -153,7 +153,6 @@ object TLV extends TLVParentFactory[TLV] {
       s"Length specified was $length but not enough bytes in ${bytes.drop(prefixSize)}")
 
     val value = bytes.drop(prefixSize).take(length.num.toLong)
-
     DecodeTLVResult(tpe, length, value)
   }
 
@@ -1218,13 +1217,22 @@ case class PayoutFunctionV0TLV(
   def piecewisePolynomialEndpoints: Vector[PiecewisePolynomialEndpoint] = {
     endpoints.map(e => PiecewisePolynomialEndpoint(e.outcome, e.value))
   }
+
+  override val byteSize: Long = {
+    if (isOldSerialization) {
+      val old = OldPayoutFunctionV0TLV(endpoints.map(p =>
+        OldTLVPoint(p.outcome, p.value, p.extraPrecision, true)))
+      old.byteSize
+    } else {
+      super.byteSize
+    }
+  }
 }
 
 object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
   override val tpe: BigSizeUInt = BigSizeUInt(42790)
 
   override def fromTLVValue(value: ByteVector): PayoutFunctionV0TLV = {
-
     val t = Try {
       val iter = ValueIterator(value)
 
@@ -1259,10 +1267,24 @@ case class ContractDescriptorV1TLV(
     extends ContractDescriptorTLV {
   override val tpe: BigSizeUInt = ContractDescriptorV1TLV.tpe
 
+  val numDigitsU16: UInt16 = UInt16(numDigits)
+
   override val value: ByteVector = {
-    UInt16(numDigits).bytes ++
+    numDigitsU16.bytes ++
       payoutFunction.bytes ++
       roundingIntervals.bytes
+  }
+
+  override val byteSize: Long = {
+    if (payoutFunction.isOldSerialization) {
+      val payloadSize =
+        numDigitsU16.byteSize + payoutFunction.byteSize + roundingIntervals.byteSize
+      val total =
+        tpe.byteSize + BigSizeUInt(payloadSize).byteSize + payloadSize
+      total
+    } else {
+      super.byteSize
+    }
   }
 }
 
@@ -1273,16 +1295,7 @@ object ContractDescriptorV1TLV extends TLVFactory[ContractDescriptorV1TLV] {
     val iter = ValueIterator(value)
 
     val numDigits = iter.takeU16()
-    val payoutFunction = iter.takeNoSkip(PayoutFunctionV0TLV)
-    //since we don't know if we are using new or old serialization, we need to skip buffer now that we know byte size
-    val skipSize = if (payoutFunction.isOldSerialization) {
-      val old = OldPayoutFunctionV0TLV(payoutFunction.endpoints.map(p =>
-        OldTLVPoint(p.outcome, p.value, p.extraPrecision, true)))
-      old.byteSize
-    } else payoutFunction.byteSize
-
-    iter.skip(skipSize)
-
+    val payoutFunction = iter.take(PayoutFunctionV0TLV)
     val roundingIntervals = iter.take(RoundingIntervalsV0TLV)
 
     ContractDescriptorV1TLV(numDigits.toInt, payoutFunction, roundingIntervals)
@@ -1468,7 +1481,9 @@ object ContractInfoV0TLV extends TLVFactory[ContractInfoV0TLV] {
     val iter = ValueIterator(value)
 
     val totalCollateral = iter.takeSats()
+
     val contractDescriptor = iter.take(ContractDescriptorTLV)
+
     val oracleInfo = iter.take(OracleInfoTLV)
 
     ContractInfoV0TLV(totalCollateral, contractDescriptor, oracleInfo)
