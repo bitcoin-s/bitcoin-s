@@ -19,7 +19,7 @@ case class DLCPayoutCurve(
 
   require(pieces.map(_.rightEndpoint) == endpoints.tail,
           s"Endpoints must line up: $this")
-  
+
   override def toTLV: PayoutFunctionV0TLV = {
     val tlvEndpoints = endpoints.map(_.toTLVPoint)
     val tlvPieces = pieces.map(_.toTLV)
