@@ -26,9 +26,6 @@ object FileUtil extends Logging {
     //create directories for target if they DNE
     Files.createDirectories(target.getParent)
 
-    //create the file itself
-    Files.createFile(target)
-
     val zos = new ZipOutputStream(new FileOutputStream(target.toFile))
 
     Files.walkFileTree(
