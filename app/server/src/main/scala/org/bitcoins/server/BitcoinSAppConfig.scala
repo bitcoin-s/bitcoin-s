@@ -18,10 +18,12 @@ import org.bitcoins.rpc.config.BitcoindRpcAppConfig
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 
+import java.io.IOException
 import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.util.Try
 
 /** A unified config class for all submodules of Bitcoin-S
   * that accepts configuration. Thanks to implicit definitions
@@ -155,7 +157,7 @@ case class BitcoinSAppConfig(
 
   /** Zips $HOME/.bitcoin-s
     */
-  def zipDatadir(target: Path): Path =
+  def zipDatadir(target: Path): Try[Path] =
     BitcoinSAppConfig.zipDatadir(directory, target)
 }
 
@@ -259,21 +261,30 @@ object BitcoinSAppConfig extends Logging {
     conf.bitcoindRpcConf
   }
 
-  def zipDatadir(source: Path, target: Path): Path = {
+  def zipDatadir(source: Path, target: Path): Try[Path] = Try {
+    if (Files.exists(target)) {
+      throw new IOException(
+        s"Cannot zip datadir. Target file already exists: $target")
+    }
     val temp = Files.createTempDirectory(source, "backup")
     try {
       // we don't want to store chaindb.sqlite as these databases are huge
       // skip logs and binaries as these can be large as well
-      val tempRE = (".*" + temp.getFileName + "$").r
+      val tempRE = (".*/" + temp.getFileName + "/.*").r
 
-      FileUtil.copyDirectory(source = source,
-                             target = temp,
-                             fileNameFilter = Vector(".*.sqlite$".r,
-                                                     ".*bitcoin-s.log$".r,
-                                                     ".*/tor/.*".r,
-                                                     ".*/binaries/.*".r,
-                                                     ".*.zip$".r,
-                                                     tempRE))
+      FileUtil.copyDirectory(
+        source = source,
+        target = temp,
+        fileNameFilter = Vector(".*.sqlite$".r,
+                                ".*.sqlite-shm$".r,
+                                ".*.sqlite-wal$".r,
+                                ".*bitcoin-s.log$".r,
+                                ".*/seeds/.*".r,
+                                ".*/tor/.*".r,
+                                ".*/binaries/.*".r,
+                                ".*.zip$".r,
+                                tempRE)
+      )
 
       SQLiteUtil.backupDirectory(source = source,
                                  target = temp,
