@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   PiecewisePolynomialEndpoint,
   PiecewisePolynomialMidpoint
 }
+import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 
@@ -313,8 +314,9 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     val point0 = PiecewisePolynomialEndpoint(0, Satoshis.zero)
     val point1 = PiecewisePolynomialEndpoint(10, Satoshis(100))
 
-    val line = DLCPayoutCurve.polynomialInterpolate(Vector(point0, point1),
-                                                    isOldSerialization = false)
+    val line = DLCPayoutCurve.polynomialInterpolate(
+      Vector(point0, point1),
+      serializationVersion = DLCSerializationVersion.Post144Pre163)
     val lineFunc = line.pieces
     assert(
       lineFunc == Vector(OutcomePayoutLine(point0.toOutcomePayoutPoint,
@@ -324,8 +326,9 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     val point3 = PiecewisePolynomialEndpoint(30, Satoshis(300))
 
     val quad =
-      DLCPayoutCurve.polynomialInterpolate(Vector(point1, point2, point3),
-                                           isOldSerialization = false)
+      DLCPayoutCurve.polynomialInterpolate(
+        Vector(point1, point2, point3),
+        serializationVersion = DLCSerializationVersion.Post144Pre163)
     val quadFunc = quad.pieces
     assert(
       quadFunc == Vector(
@@ -338,8 +341,9 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
     val point6 = PiecewisePolynomialEndpoint(60, Satoshis(700))
     val cubicPoints = Vector(point3, point4, point5, point6)
 
-    val cubic = DLCPayoutCurve.polynomialInterpolate(cubicPoints,
-                                                     isOldSerialization = false)
+    val cubic = DLCPayoutCurve.polynomialInterpolate(
+      cubicPoints,
+      serializationVersion = DLCSerializationVersion.Post144Pre163)
     val cubicFunc = cubic.pieces
     assert(
       cubicFunc == Vector(
@@ -350,7 +354,7 @@ class DLCPayoutCurveTest extends BitcoinSUnitTest {
 
     val func = DLCPayoutCurve.polynomialInterpolate(
       Vector(point0, point1, point2, point3, point4, point5, point6),
-      isOldSerialization = false)
+      serializationVersion = DLCSerializationVersion.Post144Pre163)
     val allFuncs = func.pieces
     assert(allFuncs == lineFunc ++ quadFunc ++ cubicFunc)
 

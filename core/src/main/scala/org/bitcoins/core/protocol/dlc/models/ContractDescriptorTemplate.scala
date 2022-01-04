@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.dlc.models
 
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.dlc.compute.CETCalculator
+import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 
 sealed trait ContractDescriptorTemplate {
   def individualCollateral: CurrencyUnit
@@ -116,8 +117,9 @@ sealed trait OptionTemplate extends ContractDescriptorTemplate {
 
         val pointC =
           PiecewisePolynomialEndpoint(maxNum, totalCollateral.satoshis)
-        DLCPayoutCurve.polynomialInterpolate(Vector(pointA, pointB, pointC),
-                                             isOldSerialization = false)
+        DLCPayoutCurve.polynomialInterpolate(
+          Vector(pointA, pointB, pointC),
+          serializationVersion = DLCSerializationVersion.Post144Pre163)
       case _: PutOption =>
         val pointA = PiecewisePolynomialEndpoint(0L, totalCollateral.satoshis)
 
@@ -128,8 +130,9 @@ sealed trait OptionTemplate extends ContractDescriptorTemplate {
         val pointC =
           PiecewisePolynomialEndpoint(maxNum,
                                       (individualCollateral - premium).satoshis)
-        DLCPayoutCurve.polynomialInterpolate(Vector(pointA, pointB, pointC),
-                                             isOldSerialization = false)
+        DLCPayoutCurve.polynomialInterpolate(
+          Vector(pointA, pointB, pointC),
+          serializationVersion = DLCSerializationVersion.Post144Pre163)
     }
 
     NumericContractDescriptor(curve, numDigits = numDigits, roundingIntervals)

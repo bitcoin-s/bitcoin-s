@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   PiecewisePolynomialPoint,
   RoundingIntervals
 }
+import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
@@ -37,7 +38,7 @@ class CETCalculatorTest extends BitcoinSUnitTest {
         PiecewisePolynomialPoint(100, 11000, isEndpoint = false),
         PiecewisePolynomialPoint(110, 9000, isEndpoint = true)
       ),
-      isOldSerialization = false
+      serializationVersion = DLCSerializationVersion.Post144Pre163
     )
 
     val expected = Vector(
@@ -71,7 +72,7 @@ class CETCalculatorTest extends BitcoinSUnitTest {
         PiecewisePolynomialPoint(6, 1000, isEndpoint = true),
         PiecewisePolynomialPoint(7, 0, isEndpoint = true)
       ),
-      isOldSerialization = false
+      serializationVersion = DLCSerializationVersion.Post144Pre163
     )
 
     val expected = Vector(VariablePayoutRange(0, 7))
@@ -275,7 +276,7 @@ class CETCalculatorTest extends BitcoinSUnitTest {
         PiecewisePolynomialPoint(100, 11000, isEndpoint = false),
         PiecewisePolynomialPoint(110, 9000, isEndpoint = true)
       ),
-      isOldSerialization = false
+      serializationVersion = DLCSerializationVersion.Post144Pre163
     )
 
     val firstZeroRange = Vector(

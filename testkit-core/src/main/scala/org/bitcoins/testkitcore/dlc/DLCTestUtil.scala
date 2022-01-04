@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   PiecewisePolynomialEndpoint,
   RoundingIntervals
 }
-import org.bitcoins.core.protocol.tlv.EnumOutcome
+import org.bitcoins.core.protocol.tlv.{DLCSerializationVersion, EnumOutcome}
 import org.bitcoins.core.util.NumberUtil
 
 object DLCTestUtil {
@@ -83,7 +83,7 @@ object DLCTestUtil {
         PiecewisePolynomialEndpoint(topCollar, rightVal),
         PiecewisePolynomialEndpoint(overMaxValue - 1, rightVal)
       ),
-      isOldSerialization = false
+      serializationVersion = DLCSerializationVersion.Post144Pre163
     )
     val roundingIntervalsToUse =
       if (numRounds > 0 && roundingIntervals == RoundingIntervals.noRounding) {

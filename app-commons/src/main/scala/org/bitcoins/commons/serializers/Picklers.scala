@@ -604,7 +604,11 @@ object Picklers {
           upickle.default.read[TLVPoint](obj)
       }.toVector
 
-      DLCPayoutCurve.fromPoints(points, isOldSerialization = false).toTLV
+      DLCPayoutCurve
+        .fromPoints(points,
+                    serializationVersion =
+                      DLCSerializationVersion.Post144Pre163)
+        .toTLV
     }
   }
 

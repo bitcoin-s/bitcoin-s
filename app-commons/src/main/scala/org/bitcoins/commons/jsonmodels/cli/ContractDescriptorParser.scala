@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.tlv.{
   ContractDescriptorTLV,
   ContractDescriptorV0TLV,
   ContractDescriptorV1TLV,
+  DLCSerializationVersion,
   DigitDecompositionEventDescriptorV0TLV,
   OracleAnnouncementTLV,
   RoundingIntervalsV0TLV,
@@ -32,7 +33,9 @@ object ContractDescriptorParser {
         }
 
         val payoutCurve = DLCPayoutCurve
-          .fromPoints(payoutPoints, isOldSerialization = false)
+          .fromPoints(payoutPoints,
+                      serializationVersion =
+                        DLCSerializationVersion.Post144Pre163)
           .toTLV
         val numDigits = announcementTLV.eventTLV.eventDescriptor
           .asInstanceOf[DigitDecompositionEventDescriptorV0TLV]

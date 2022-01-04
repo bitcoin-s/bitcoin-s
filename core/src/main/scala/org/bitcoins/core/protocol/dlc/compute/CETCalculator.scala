@@ -4,6 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv.{
   DLCOutcomeType,
+  DLCSerializationVersion,
   EnumOutcome,
   SignedNumericOutcome,
   UnsignedNumericOutcome
@@ -495,7 +496,7 @@ object CETCalculator {
       interval: Int): DLCPayoutCurve = {
     DLCPayoutCurve.polynomialInterpolate(
       payoutSampleByInterval(func, numDigits, interval),
-      isOldSerialization = false)
+      serializationVersion = DLCSerializationVersion.Post144Pre163)
   }
 
   /** Computes all combinations of threshold oracles, preserving order. */

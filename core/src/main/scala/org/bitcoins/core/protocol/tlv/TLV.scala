@@ -1198,7 +1198,7 @@ case class OldPayoutFunctionV0TLV(points: Vector[OldTLVPoint])
 case class PayoutFunctionV0TLV(
     endpoints: Vector[TLVPoint],
     pieces: Vector[PayoutCurvePieceTLV],
-    isOldSerialization: Boolean)
+    serializationVersion: DLCSerializationVersion)
     extends DLCSetupPieceTLV {
   require(
     endpoints.length == pieces.length + 1,
@@ -1219,12 +1219,13 @@ case class PayoutFunctionV0TLV(
   }
 
   override val byteSize: Long = {
-    if (isOldSerialization) {
-      val old = OldPayoutFunctionV0TLV(endpoints.map(p =>
-        OldTLVPoint(p.outcome, p.value, p.extraPrecision, true)))
-      old.byteSize
-    } else {
-      super.byteSize
+    serializationVersion match {
+      case DLCSerializationVersion.PrePR144 =>
+        val old = OldPayoutFunctionV0TLV(endpoints.map(p =>
+          OldTLVPoint(p.outcome, p.value, p.extraPrecision, true)))
+        old.byteSize
+      case DLCSerializationVersion.Post144Pre163 =>
+        super.byteSize
     }
   }
 }
@@ -1245,7 +1246,10 @@ object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
       val endpoints = endpointsAndPieces.map(_._1).:+(rightEndpoint)
       val pieces = endpointsAndPieces.map(_._2)
 
-      PayoutFunctionV0TLV(endpoints, pieces, isOldSerialization = false)
+      PayoutFunctionV0TLV(endpoints,
+                          pieces,
+                          serializationVersion =
+                            DLCSerializationVersion.Post144Pre163)
     }
 
     t.getOrElse(oldfromTLVValue(value))
@@ -1254,7 +1258,7 @@ object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
   private def oldfromTLVValue(value: ByteVector): PayoutFunctionV0TLV = {
     val iter = ValueIterator(value)
     val points = iter.takeU16PrefixedList(() => iter.take(OldTLVPoint))
-    DLCPayoutCurve.fromOldPoints(points).toTLV
+    DLCPayoutCurve.fromPointsPre144(points).toTLV
   }
 
   override val typeName: String = "PayoutFunctionV0TLV"
@@ -1276,14 +1280,14 @@ case class ContractDescriptorV1TLV(
   }
 
   override val byteSize: Long = {
-    if (payoutFunction.isOldSerialization) {
-      val payloadSize =
-        numDigitsU16.byteSize + payoutFunction.byteSize + roundingIntervals.byteSize
-      val total =
-        tpe.byteSize + BigSizeUInt(payloadSize).byteSize + payloadSize
-      total
-    } else {
-      super.byteSize
+    payoutFunction.serializationVersion match {
+      case DLCSerializationVersion.Post144Pre163 => super.byteSize
+      case DLCSerializationVersion.PrePR144 =>
+        val payloadSize =
+          numDigitsU16.byteSize + payoutFunction.byteSize + roundingIntervals.byteSize
+        val total =
+          tpe.byteSize + BigSizeUInt(payloadSize).byteSize + payloadSize
+        total
     }
   }
 }

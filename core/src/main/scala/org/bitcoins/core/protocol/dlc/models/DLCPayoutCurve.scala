@@ -10,7 +10,7 @@ import scala.util.{Failure, Success, Try}
 /** A DLC payout curve defined by piecewise interpolating points */
 case class DLCPayoutCurve(
     pieces: Vector[DLCPayoutCurvePiece],
-    isOldSerialization: Boolean)
+    serializationVersion: DLCSerializationVersion)
     extends TLVSerializable[PayoutFunctionV0TLV] {
 
   val endpoints: Vector[OutcomePayoutPoint] = {
@@ -24,7 +24,7 @@ case class DLCPayoutCurve(
     val tlvEndpoints = endpoints.map(_.toTLVPoint)
     val tlvPieces = pieces.map(_.toTLV)
 
-    PayoutFunctionV0TLV(tlvEndpoints, tlvPieces, isOldSerialization)
+    PayoutFunctionV0TLV(tlvEndpoints, tlvPieces, serializationVersion)
   }
 
   private lazy val endpointOutcomes = endpoints.map(_.outcome)
@@ -74,7 +74,7 @@ case class DLCPayoutCurve(
 
   def flip(totalCollateral: Satoshis): DLCPayoutCurve = {
     DLCPayoutCurve(pieces.map(_.flip(totalCollateral)),
-                   isOldSerialization = false)
+                   serializationVersion = serializationVersion)
   }
 }
 
@@ -89,12 +89,12 @@ object DLCPayoutCurve
           DLCPayoutCurvePiece.fromTLV(leftEndpoint, tlvPiece, rightEndpoint)
       }
 
-    DLCPayoutCurve(pieces, tlv.isOldSerialization)
+    DLCPayoutCurve(pieces, tlv.serializationVersion)
   }
 
   def polynomialInterpolate(
       points: Vector[PiecewisePolynomialPoint],
-      isOldSerialization: Boolean): DLCPayoutCurve = {
+      serializationVersion: DLCSerializationVersion): DLCPayoutCurve = {
     require(points.head.isEndpoint && points.last.isEndpoint,
             s"First and last points must be endpoints: $points")
 
@@ -116,24 +116,25 @@ object DLCPayoutCurve
                piecesSoFar.:+(DLCPolynomialPayoutCurvePiece(points)))
           }
       }
-    DLCPayoutCurve(pieces, isOldSerialization)
+    DLCPayoutCurve(pieces, serializationVersion)
   }
 
   def fromPoints(
       points: Vector[TLVPoint],
-      isOldSerialization: Boolean): DLCPayoutCurve = {
+      serializationVersion: DLCSerializationVersion): DLCPayoutCurve = {
 
     val pieceEndpoints = points.map { p =>
       PiecewisePolynomialEndpoint(p.outcome, p.value)
     }
 
-    DLCPayoutCurve.polynomialInterpolate(pieceEndpoints, isOldSerialization)
+    DLCPayoutCurve.polynomialInterpolate(pieceEndpoints, serializationVersion)
   }
 
-  def fromOldPoints(points: Vector[OldTLVPoint]): DLCPayoutCurve = {
+  def fromPointsPre144(points: Vector[OldTLVPoint]): DLCPayoutCurve = {
     val newPoints =
       points.map(p => TLVPoint(p.outcome, p.value, p.extraPrecision))
-    fromPoints(newPoints, isOldSerialization = true)
+    fromPoints(newPoints,
+               serializationVersion = DLCSerializationVersion.PrePR144)
   }
 }
 
