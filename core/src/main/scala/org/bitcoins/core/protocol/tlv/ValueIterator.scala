@@ -34,11 +34,6 @@ case class ValueIterator(value: ByteVector) {
     bytes
   }
 
-  /** Same as [[take]] but doesn't forward the iterator */
-  def takeNoSkip[E <: NetworkElement](factory: Factory[E]): E = {
-    factory(current)
-  }
-
   /** IMPORTANT: This only works for factories which read off of
     * the front of a ByteVector without consuming the whole thing.
     * If this is not the case, you must specify how many bytes.
