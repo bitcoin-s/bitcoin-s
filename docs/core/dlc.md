@@ -45,7 +45,7 @@ val pts = Vector(
     PiecewisePolynomialEndpoint(2000, 1000),
     PiecewisePolynomialEndpoint(maxVal, 1000)
 )
-val curve = DLCPayoutCurve.polynomialInterpolate(pts, isOldSerialization = false)
+val curve = DLCPayoutCurve.polynomialInterpolate(pts,DLCSerializationVersion.Post144Pre163)
 
 // Let's evalute the curve's values at varios points
 curve(500)
