@@ -421,15 +421,19 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                  handlers = handlers,
                  rpcbindOpt = rpcBindConfOpt,
                  rpcport = rpcport,
+                 rpcPassword = conf.rpcPassword,
                  wsConfigOpt = Some(wsServerConfig),
                  wsSource)
         case None =>
-          Server(conf = nodeConf,
-                 handlers = handlers,
-                 rpcbindOpt = rpcBindConfOpt,
-                 rpcport = conf.rpcPort,
-                 wsConfigOpt = Some(wsServerConfig),
-                 wsSource)
+          Server(
+            conf = nodeConf,
+            handlers = handlers,
+            rpcbindOpt = rpcBindConfOpt,
+            rpcport = conf.rpcPort,
+            rpcPassword = conf.rpcPassword,
+            wsConfigOpt = Some(wsServerConfig),
+            wsSource
+          )
       }
     }
     val bindingF = server.start()

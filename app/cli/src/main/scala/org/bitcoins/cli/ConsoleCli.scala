@@ -53,6 +53,9 @@ object ConsoleCli {
       opt[Int]("rpcport")
         .action((port, conf) => conf.copy(rpcPortOpt = Some(port)))
         .text(s"The port to send our rpc request to on the server"),
+      opt[String]("password")
+        .action((password, conf) => conf.copy(rpcPassword = password))
+        .text(s"The password to send our rpc request to on the server"),
       opt[Unit]("version")
         .action((_, conf) => conf.copy(command = GetVersion))
         .hidden(),
@@ -1661,7 +1664,7 @@ object ConsoleCli {
                 case other => other
               }))),
       checkConfig {
-        case Config(NoCommand, _, _, _) =>
+        case Config(NoCommand, _, _, _, _) =>
           failure("You need to provide a command!")
         case _ => success
       }
@@ -2011,6 +2014,8 @@ object ConsoleCli {
         sttp
           .post(uri"http://$host:${config.rpcPort}/")
           .contentType("application/json")
+          .auth
+          .basic("bitcoins", config.rpcPassword)
           .body {
             val uuid = java.util.UUID.randomUUID.toString
             val paramsWithID: Map[String, ujson.Value] =
@@ -2088,7 +2093,8 @@ case class Config(
     command: CliCommand = CliCommand.NoCommand,
     network: Option[NetworkParameters] = None,
     debug: Boolean = false,
-    rpcPortOpt: Option[Int] = None) {
+    rpcPortOpt: Option[Int] = None,
+    rpcPassword: String = "") {
 
   val rpcPort: Int = rpcPortOpt match {
     case Some(port) => port

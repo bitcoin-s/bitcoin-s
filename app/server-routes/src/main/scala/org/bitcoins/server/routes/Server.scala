@@ -1,6 +1,5 @@
 package org.bitcoins.server.routes
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl._
@@ -8,8 +7,9 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.server.directives.DebuggingDirectives
+import akka.http.scaladsl.server.directives.{Credentials, DebuggingDirectives}
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.{Done, NotUsed}
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
@@ -22,6 +22,7 @@ case class Server(
     handlers: Seq[ServerRoute],
     rpcbindOpt: Option[String],
     rpcport: Int,
+    rpcPassword: String,
     wsConfigOpt: Option[WsServerConfig],
     wsSource: Source[Message, NotUsed])(implicit system: ActorSystem)
     extends HttpLogger {
@@ -65,19 +66,29 @@ case class Server(
     }
   }
 
+  def authenticator(credentials: Credentials): Option[Done] =
+    credentials match {
+      case p @ Credentials.Provided(_)
+          if rpcPassword.nonEmpty && p.verify(rpcPassword) =>
+        Some(Done)
+      case _ => None
+    }
+
   val route: Route =
     // TODO implement better logging
     DebuggingDirectives.logRequestResult(
       ("http-rpc-server", Logging.DebugLevel)) {
       withErrorHandling {
-        pathSingleSlash {
-          post {
-            entity(as[ServerCommand]) { cmd =>
-              val init = PartialFunction.empty[ServerCommand, Route]
-              val handler = handlers.foldLeft(init) { case (accum, curr) =>
-                accum.orElse(curr.handleCommand)
+        authenticateBasic("auth", authenticator) { _ =>
+          pathSingleSlash {
+            post {
+              entity(as[ServerCommand]) { cmd =>
+                val init = PartialFunction.empty[ServerCommand, Route]
+                val handler = handlers.foldLeft(init) { case (accum, curr) =>
+                  accum.orElse(curr.handleCommand)
+                }
+                handler.orElse(catchAllHandler).apply(cmd)
               }
-              handler.orElse(catchAllHandler).apply(cmd)
             }
           }
         }
@@ -119,8 +130,10 @@ case class Server(
   private val eventsRoute = "events"
 
   private def wsRoutes: Route = {
-    path(eventsRoute) {
-      Directives.handleWebSocketMessages(wsHandler)
+    authenticateBasic("auth", authenticator) { _ =>
+      path(eventsRoute) {
+        Directives.handleWebSocketMessages(wsHandler)
+      }
     }
   }
 

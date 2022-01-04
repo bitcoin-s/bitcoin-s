@@ -1,6 +1,7 @@
 package org.bitcoins.server
 
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.model.ws.{
   Message,
   TextMessage,
@@ -62,7 +63,10 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     .toMat(endSink)(Keep.right)
 
   def buildReq(conf: BitcoinSAppConfig): WebSocketRequest = {
-    WebSocketRequest(s"ws://localhost:${conf.wsPort}/events")
+    WebSocketRequest(
+      s"ws://localhost:${conf.wsPort}/events",
+      extraHeaders =
+        Seq(Authorization(BasicHttpCredentials("bitcoins", conf.rpcPassword))))
   }
 
   val websocketFlow: Flow[
@@ -76,7 +80,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   it must "receive updates when an address is generated" in {
     serverWithBitcoind =>
       val ServerWithBitcoind(_, server) = serverWithBitcoind
-      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
+      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
+                             rpcPassword = server.conf.rpcPassword)
 
       val req = buildReq(server.conf)
       val notificationsF: (
@@ -108,7 +113,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   it must "receive updates when a transaction is broadcast" in {
     serverWithBitcoind =>
       val ServerWithBitcoind(bitcoind, server) = serverWithBitcoind
-      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
+      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
+                             rpcPassword = server.conf.rpcPassword)
 
       val req = buildReq(server.conf)
       val tuple: (
@@ -146,7 +152,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   it must "receive updates when a transaction is processed" in {
     serverWithBitcoind =>
       val ServerWithBitcoind(bitcoind, server) = serverWithBitcoind
-      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
+      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
+                             rpcPassword = server.conf.rpcPassword)
 
       val req = buildReq(server.conf)
       val tuple: (
@@ -183,7 +190,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
   it must "receive updates when a block is processed" in { serverWithBitcoind =>
     val ServerWithBitcoind(bitcoind, server) = serverWithBitcoind
-    val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
+    val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
+                           rpcPassword = server.conf.rpcPassword)
 
     val req = buildReq(server.conf)
     val tuple: (
@@ -219,7 +227,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   it must "get notifications for reserving and unreserving utxos" in {
     serverWithBitcoind =>
       val ServerWithBitcoind(_, server) = serverWithBitcoind
-      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort))
+      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
+                             rpcPassword = server.conf.rpcPassword)
 
       val req = buildReq(server.conf)
       val tuple: (

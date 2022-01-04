@@ -34,6 +34,7 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
                  handlers = routes,
                  rpcbindOpt = bindConfOpt,
                  rpcport = rpcport,
+                 rpcPassword = conf.rpcPassword,
                  None,
                  Source.empty)
         case None =>
@@ -41,6 +42,7 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
                  handlers = routes,
                  rpcbindOpt = bindConfOpt,
                  rpcport = conf.rpcPort,
+                 rpcPassword = conf.rpcPassword,
                  None,
                  Source.empty)
       }

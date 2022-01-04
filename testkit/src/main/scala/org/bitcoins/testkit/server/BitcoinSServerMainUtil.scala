@@ -40,6 +40,7 @@ object BitcoinSServerMainUtil {
          |bitcoin-s.dlcnode.listen = "0.0.0.0:${RpcUtil.randomPort}"
          |bitcoin-s.server.rpcport = ${RpcUtil.randomPort}
          |bitcoin-s.server.wsport= ${RpcUtil.randomPort}
+         |bitcoin-s.server.password=topsecret
          |""".stripMargin
 
     ConfigFactory.parseString(configStr)

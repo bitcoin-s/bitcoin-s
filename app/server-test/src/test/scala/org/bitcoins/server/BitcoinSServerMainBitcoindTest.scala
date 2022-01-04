@@ -14,7 +14,8 @@ class BitcoinSServerMainBitcoindTest
     config: BitcoinSAppConfig =>
       val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
 
-      val cliConfig = Config(rpcPortOpt = Some(config.rpcPort))
+      val cliConfig = Config(rpcPortOpt = Some(config.rpcPort),
+                             rpcPassword = config.rpcPassword)
 
       for {
         _ <- server.start()

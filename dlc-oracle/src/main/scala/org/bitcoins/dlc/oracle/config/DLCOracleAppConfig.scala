@@ -125,6 +125,8 @@ case class DLCOracleAppConfig(
     }
   }
 
+  def rpcPassword: String = config.getString("bitcoin-s.oracle.password")
+
   lazy val kmParams: KeyManagerParams =
     KeyManagerParams(kmConf.seedPath,
                      HDPurpose(DLCOracle.R_VALUE_PURPOSE),

@@ -325,6 +325,9 @@ bitcoin-s {
         
         # The ip address we bind the websocket server too
         wsbind = "127.0.0.1"
+        
+        # The basic auth password. It must me must be non empty.
+        password = topsecret
     }
 
     oracle {
@@ -333,6 +336,9 @@ bitcoin-s {
 
         # The ip address we bind our server too
         rpcbind = "127.0.0.1"
+
+        # The basic auth password. It must me must be non empty.
+        password = supersecret
 
         hikari-logging = true
         hikari-logging-interval = 10 minute
