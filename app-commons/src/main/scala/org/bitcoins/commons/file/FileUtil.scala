@@ -19,7 +19,15 @@ object FileUtil extends Logging {
       source: Path,
       target: Path,
       fileNameFilter: Vector[Regex] = Vector.empty): Path = {
+    require(
+      !Files.exists(target),
+      s"Cannot overwrite existing target directory=${target.toAbsolutePath}")
+
+    //create directories for target if they DNE
+    Files.createDirectories(target.getParent)
+
     val zos = new ZipOutputStream(new FileOutputStream(target.toFile))
+
     Files.walkFileTree(
       source,
       new SimpleFileVisitor[Path]() {
