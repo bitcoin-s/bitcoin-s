@@ -1111,17 +1111,11 @@ case class Signed16PTLVNumber(
 object Signed16PTLVNumber extends Factory[Signed16PTLVNumber] {
 
   override def fromBytes(bytes: ByteVector): Signed16PTLVNumber = {
-    val sign = bytes.head match {
-      case 0 => false
-      case 1 => true
-      case b: Byte =>
-        throw new IllegalArgumentException(
-          s"Did not recognize leading byte: $b")
-    }
+    val iter = ValueIterator(bytes)
+    val sign = iter.takeBoolean()
 
-    val withoutPrecision = BigSizeUInt(bytes.tail)
-    val extraPrecision = UInt16(
-      bytes.drop(1 + withoutPrecision.byteSize).take(2))
+    val withoutPrecision = iter.takeBigSize()
+    val extraPrecision = iter.takeU16()
 
     Signed16PTLVNumber(sign, withoutPrecision.toLong, extraPrecision.toInt)
   }

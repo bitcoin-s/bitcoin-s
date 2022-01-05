@@ -300,7 +300,7 @@ case class DLCHyperbolaPayoutCurvePiece(
     rightEndpoint: OutcomePayoutPoint)
     extends DLCPayoutCurvePiece
     with TLVSerializable[HyperbolaPayoutCurvePieceTLV] {
-  require(a * d != b * c, s"ad cannot equal bc: $this")
+  require(a * d != b * c, s"a*d cannot equal b*c: $this")
 
   override def apply(outcome: Long): Satoshis = {
     val resultT = Try {
