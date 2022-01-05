@@ -4,6 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv.{
   DLCOutcomeType,
+  DLCSerializationVersion,
   EnumOutcome,
   SignedNumericOutcome,
   UnsignedNumericOutcome
@@ -82,7 +83,7 @@ object CETCalculator {
 
     val (currentFunc, currentFuncIndex) =
       if (from + 1 == firstFunc.rightEndpoint.outcome && from + 1 != to) {
-        (function.functionComponents(firstFuncIndex + 1), firstFuncIndex + 1)
+        (function.pieces(firstFuncIndex + 1), firstFuncIndex + 1)
       } else {
         (firstFunc, firstFuncIndex)
       }
@@ -161,8 +162,7 @@ object CETCalculator {
       if (
         constantTo + 1 == currentFunc.rightEndpoint.outcome && constantTo + 1 != to
       ) {
-        (function.functionComponents(currentFuncIndex + 1),
-         currentFuncIndex + 1)
+        (function.pieces(currentFuncIndex + 1), currentFuncIndex + 1)
       } else {
         (currentFunc, currentFuncIndex)
       }
@@ -471,21 +471,21 @@ object CETCalculator {
   def payoutSample(
       func: Long => Long,
       numDigits: Int,
-      numPoints: Long): Vector[OutcomePayoutEndpoint] = {
+      numPoints: Long): Vector[PiecewisePolynomialEndpoint] = {
     val maxVal = (1L << numDigits) - 1
     0L.until(maxVal, maxVal / numPoints)
       .toVector
       .map { outcome =>
         val payout = func(outcome)
-        OutcomePayoutEndpoint(outcome, payout)
+        PiecewisePolynomialEndpoint(outcome, payout)
       }
-      .:+(OutcomePayoutEndpoint(maxVal, func(maxVal)))
+      .:+(PiecewisePolynomialEndpoint(maxVal, func(maxVal)))
   }
 
   def payoutSampleByInterval(
       func: Long => Long,
       numDigits: Int,
-      interval: Int): Vector[OutcomePayoutEndpoint] = {
+      interval: Int): Vector[PiecewisePolynomialEndpoint] = {
     val maxVal = (1L << numDigits) - 1
     payoutSample(func, numDigits, maxVal / interval)
   }
@@ -494,7 +494,9 @@ object CETCalculator {
       func: Long => Long,
       numDigits: Int,
       interval: Int): DLCPayoutCurve = {
-    DLCPayoutCurve(payoutSampleByInterval(func, numDigits, interval))
+    DLCPayoutCurve.polynomialInterpolate(
+      payoutSampleByInterval(func, numDigits, interval),
+      serializationVersion = DLCSerializationVersion.Post144Pre163)
   }
 
   /** Computes all combinations of threshold oracles, preserving order. */

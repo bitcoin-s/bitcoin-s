@@ -570,8 +570,7 @@ object Picklers {
       val outcome = map(PicklerKeys.outcomeKey).num.toLong
       val payout = jsToSatoshis(map(PicklerKeys.payoutKey))
       val extraPrecision = map(PicklerKeys.extraPrecisionKey).num.toInt
-      val isEndPoint = map(PicklerKeys.isEndpointKey).bool
-      TLVPoint(outcome, payout, extraPrecision, isEndPoint)
+      TLVPoint(outcome, payout, extraPrecision)
     }
   }
 
@@ -580,17 +579,14 @@ object Picklers {
       Obj(
         PicklerKeys.outcomeKey -> Num(point.outcome.toDouble),
         PicklerKeys.payoutKey -> Num(point.value.toLong.toDouble),
-        PicklerKeys.extraPrecisionKey -> Num(point.extraPrecision.toDouble),
-        PicklerKeys.isEndpointKey -> Bool(point.isEndpoint)
+        PicklerKeys.extraPrecisionKey -> Num(point.extraPrecision.toDouble)
       )
     }
   }
 
   implicit val payoutFunctionV0TLVWriter: Writer[PayoutFunctionV0TLV] =
     writer[Obj].comap { payoutFunc =>
-      import payoutFunc._
-
-      val pointsJs = points.map { point =>
+      val pointsJs = payoutFunc.endpoints.map { point =>
         writeJs(point)
       }
 
@@ -608,8 +604,11 @@ object Picklers {
           upickle.default.read[TLVPoint](obj)
       }.toVector
 
-      PayoutFunctionV0TLV(points)
-
+      DLCPayoutCurve
+        .fromPoints(points,
+                    serializationVersion =
+                      DLCSerializationVersion.Post144Pre163)
+        .toTLV
     }
   }
 

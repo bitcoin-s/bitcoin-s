@@ -24,6 +24,7 @@ case class ValueIterator(value: ByteVector) {
 
   def skip(bytes: NetworkElement): Unit = {
     skip(bytes.byteSize)
+    ()
   }
 
   def take(numBytes: Int): ByteVector = {
