@@ -119,7 +119,7 @@ sealed trait OptionTemplate extends ContractDescriptorTemplate {
           PiecewisePolynomialEndpoint(maxNum, totalCollateral.satoshis)
         DLCPayoutCurve.polynomialInterpolate(
           Vector(pointA, pointB, pointC),
-          serializationVersion = DLCSerializationVersion.Post144Pre163)
+          serializationVersion = DLCSerializationVersion.Beta)
       case _: PutOption =>
         val pointA = PiecewisePolynomialEndpoint(0L, totalCollateral.satoshis)
 
@@ -132,7 +132,7 @@ sealed trait OptionTemplate extends ContractDescriptorTemplate {
                                       (individualCollateral - premium).satoshis)
         DLCPayoutCurve.polynomialInterpolate(
           Vector(pointA, pointB, pointC),
-          serializationVersion = DLCSerializationVersion.Post144Pre163)
+          serializationVersion = DLCSerializationVersion.Beta)
     }
 
     NumericContractDescriptor(curve, numDigits = numDigits, roundingIntervals)

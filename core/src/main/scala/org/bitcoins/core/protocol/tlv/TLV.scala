@@ -1214,11 +1214,11 @@ case class PayoutFunctionV0TLV(
 
   override val byteSize: Long = {
     serializationVersion match {
-      case DLCSerializationVersion.PrePR144 =>
+      case DLCSerializationVersion.Alpha =>
         val old = OldPayoutFunctionV0TLV(endpoints.map(p =>
           OldTLVPoint(p.outcome, p.value, p.extraPrecision, true)))
         old.byteSize
-      case DLCSerializationVersion.Post144Pre163 =>
+      case DLCSerializationVersion.Beta =>
         super.byteSize
     }
   }
@@ -1243,7 +1243,7 @@ object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
       PayoutFunctionV0TLV(endpoints,
                           pieces,
                           serializationVersion =
-                            DLCSerializationVersion.Post144Pre163)
+                            DLCSerializationVersion.Beta)
     }
 
     t.getOrElse(oldfromTLVValue(value))
@@ -1275,8 +1275,8 @@ case class ContractDescriptorV1TLV(
 
   override val byteSize: Long = {
     payoutFunction.serializationVersion match {
-      case DLCSerializationVersion.Post144Pre163 => super.byteSize
-      case DLCSerializationVersion.PrePR144 =>
+      case DLCSerializationVersion.Beta => super.byteSize
+      case DLCSerializationVersion.Alpha =>
         val payloadSize =
           numDigitsU16.byteSize + payoutFunction.byteSize + roundingIntervals.byteSize
         val total =

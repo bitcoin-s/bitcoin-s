@@ -607,7 +607,7 @@ object Picklers {
       DLCPayoutCurve
         .fromPoints(points,
                     serializationVersion =
-                      DLCSerializationVersion.Post144Pre163)
+                      DLCSerializationVersion.Beta)
         .toTLV
     }
   }

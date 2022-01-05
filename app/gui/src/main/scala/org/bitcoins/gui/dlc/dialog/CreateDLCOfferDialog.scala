@@ -666,7 +666,7 @@ object CreateDLCOfferDialog {
 
           val func = DLCPayoutCurve.polynomialInterpolate(
             outcomesValuePoints,
-            serializationVersion = DLCSerializationVersion.Post144Pre163)
+            serializationVersion = DLCSerializationVersion.Beta)
           (totalCollateral,
            NumericContractDescriptor(
              func,
