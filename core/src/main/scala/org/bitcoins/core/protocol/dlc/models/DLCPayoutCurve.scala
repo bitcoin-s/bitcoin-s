@@ -133,8 +133,7 @@ object DLCPayoutCurve
   def fromPointsPre144(points: Vector[OldTLVPoint]): DLCPayoutCurve = {
     val newPoints =
       points.map(p => TLVPoint(p.outcome, p.value, p.extraPrecision))
-    fromPoints(newPoints,
-               serializationVersion = DLCSerializationVersion.Alpha)
+    fromPoints(newPoints, serializationVersion = DLCSerializationVersion.Alpha)
   }
 }
 

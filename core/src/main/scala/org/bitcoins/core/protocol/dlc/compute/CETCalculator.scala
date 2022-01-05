@@ -496,7 +496,7 @@ object CETCalculator {
       interval: Int): DLCPayoutCurve = {
     DLCPayoutCurve.polynomialInterpolate(
       payoutSampleByInterval(func, numDigits, interval),
-      serializationVersion = DLCSerializationVersion.Post144Pre163)
+      serializationVersion = DLCSerializationVersion.Beta)
   }
 
   /** Computes all combinations of threshold oracles, preserving order. */

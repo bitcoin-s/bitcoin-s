@@ -1242,8 +1242,7 @@ object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
 
       PayoutFunctionV0TLV(endpoints,
                           pieces,
-                          serializationVersion =
-                            DLCSerializationVersion.Beta)
+                          serializationVersion = DLCSerializationVersion.Beta)
     }
 
     t.getOrElse(oldfromTLVValue(value))

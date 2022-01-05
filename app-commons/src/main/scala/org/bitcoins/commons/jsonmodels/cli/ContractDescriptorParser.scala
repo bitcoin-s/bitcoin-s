@@ -34,8 +34,7 @@ object ContractDescriptorParser {
 
         val payoutCurve = DLCPayoutCurve
           .fromPoints(payoutPoints,
-                      serializationVersion =
-                        DLCSerializationVersion.Beta)
+                      serializationVersion = DLCSerializationVersion.Beta)
           .toTLV
         val numDigits = announcementTLV.eventTLV.eventDescriptor
           .asInstanceOf[DigitDecompositionEventDescriptorV0TLV]
