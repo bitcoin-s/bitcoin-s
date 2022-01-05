@@ -4,7 +4,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.dlc.compute.CETCalculator
 import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 
-sealed trait ContractDescriptorTemplate {
+trait ContractDescriptorTemplate {
   def individualCollateral: CurrencyUnit
 
   def totalCollateral: CurrencyUnit
