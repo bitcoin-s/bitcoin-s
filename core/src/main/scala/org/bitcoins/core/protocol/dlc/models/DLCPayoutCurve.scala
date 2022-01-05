@@ -133,8 +133,7 @@ object DLCPayoutCurve
   def fromPointsPre144(points: Vector[OldTLVPoint]): DLCPayoutCurve = {
     val newPoints =
       points.map(p => TLVPoint(p.outcome, p.value, p.extraPrecision))
-    fromPoints(newPoints,
-               serializationVersion = DLCSerializationVersion.PrePR144)
+    fromPoints(newPoints, serializationVersion = DLCSerializationVersion.Alpha)
   }
 }
 
@@ -300,7 +299,7 @@ case class DLCHyperbolaPayoutCurvePiece(
     rightEndpoint: OutcomePayoutPoint)
     extends DLCPayoutCurvePiece
     with TLVSerializable[HyperbolaPayoutCurvePieceTLV] {
-  require(a * d != b * c, s"ad cannot equal bc: $this")
+  require(a * d != b * c, s"a*d cannot equal b*c: $this")
 
   override def apply(outcome: Long): Satoshis = {
     val resultT = Try {

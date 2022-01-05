@@ -36,7 +36,7 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
           PiecewisePolynomialPoint(0, Satoshis(0), isEndpoint = false),
           PiecewisePolynomialPoint(3, Satoshis(100), isEndpoint = true)
         ),
-        serializationVersion = DLCSerializationVersion.Post144Pre163
+        serializationVersion = DLCSerializationVersion.Beta
       )
       NumericContractDescriptor(func, 2, RoundingIntervals.noRounding)
     }
@@ -49,7 +49,7 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
           PiecewisePolynomialPoint(0, Satoshis(0), isEndpoint = true),
           PiecewisePolynomialPoint(3, Satoshis(100), isEndpoint = false)
         ),
-        serializationVersion = DLCSerializationVersion.Post144Pre163
+        serializationVersion = DLCSerializationVersion.Beta
       )
       NumericContractDescriptor(func, 2, RoundingIntervals.noRounding)
     }
@@ -61,7 +61,7 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
         PiecewisePolynomialPoint(-1, Satoshis(0), isEndpoint = true),
         PiecewisePolynomialPoint(3, Satoshis(100), isEndpoint = true)
       ),
-      serializationVersion = DLCSerializationVersion.Post144Pre163
+      serializationVersion = DLCSerializationVersion.Beta
     )
     assertThrows[IllegalArgumentException](
       NumericContractDescriptor(func, 2, RoundingIntervals.noRounding))
@@ -73,7 +73,7 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
         PiecewisePolynomialPoint(1, Satoshis(0), isEndpoint = true),
         PiecewisePolynomialPoint(3, Satoshis(100), isEndpoint = true)
       ),
-      serializationVersion = DLCSerializationVersion.Post144Pre163
+      serializationVersion = DLCSerializationVersion.Beta
     )
     assertThrows[IllegalArgumentException](
       NumericContractDescriptor(func, 2, RoundingIntervals.noRounding))
@@ -85,7 +85,7 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
         PiecewisePolynomialPoint(0, Satoshis(0), isEndpoint = true),
         PiecewisePolynomialPoint(2, Satoshis(100), isEndpoint = true)
       ),
-      serializationVersion = DLCSerializationVersion.Post144Pre163
+      serializationVersion = DLCSerializationVersion.Beta
     )
     assertThrows[IllegalArgumentException](
       NumericContractDescriptor(func, 2, RoundingIntervals.noRounding))
@@ -97,7 +97,7 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
         PiecewisePolynomialPoint(0, Satoshis(0), isEndpoint = true),
         PiecewisePolynomialPoint(4, Satoshis(100), isEndpoint = true)
       ),
-      serializationVersion = DLCSerializationVersion.Post144Pre163
+      serializationVersion = DLCSerializationVersion.Beta
     )
     assertThrows[IllegalArgumentException](
       NumericContractDescriptor(func, 2, RoundingIntervals.noRounding))
@@ -116,7 +116,7 @@ class ContractDescriptorTest extends BitcoinSUnitTest {
                                  payout = Satoshis(100),
                                  isEndpoint = true)
       ),
-      serializationVersion = DLCSerializationVersion.Post144Pre163
+      serializationVersion = DLCSerializationVersion.Beta
     )
 
     val expected =

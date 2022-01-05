@@ -1111,17 +1111,11 @@ case class Signed16PTLVNumber(
 object Signed16PTLVNumber extends Factory[Signed16PTLVNumber] {
 
   override def fromBytes(bytes: ByteVector): Signed16PTLVNumber = {
-    val sign = bytes.head match {
-      case 0 => false
-      case 1 => true
-      case b: Byte =>
-        throw new IllegalArgumentException(
-          s"Did not recognize leading byte: $b")
-    }
+    val iter = ValueIterator(bytes)
+    val sign = iter.takeBoolean()
 
-    val withoutPrecision = BigSizeUInt(bytes.tail)
-    val extraPrecision = UInt16(
-      bytes.drop(1 + withoutPrecision.byteSize).take(2))
+    val withoutPrecision = iter.takeBigSize()
+    val extraPrecision = iter.takeU16()
 
     Signed16PTLVNumber(sign, withoutPrecision.toLong, extraPrecision.toInt)
   }
@@ -1220,11 +1214,11 @@ case class PayoutFunctionV0TLV(
 
   override val byteSize: Long = {
     serializationVersion match {
-      case DLCSerializationVersion.PrePR144 =>
+      case DLCSerializationVersion.Alpha =>
         val old = OldPayoutFunctionV0TLV(endpoints.map(p =>
           OldTLVPoint(p.outcome, p.value, p.extraPrecision, true)))
         old.byteSize
-      case DLCSerializationVersion.Post144Pre163 =>
+      case DLCSerializationVersion.Beta =>
         super.byteSize
     }
   }
@@ -1248,8 +1242,7 @@ object PayoutFunctionV0TLV extends TLVFactory[PayoutFunctionV0TLV] {
 
       PayoutFunctionV0TLV(endpoints,
                           pieces,
-                          serializationVersion =
-                            DLCSerializationVersion.Post144Pre163)
+                          serializationVersion = DLCSerializationVersion.Beta)
     }
 
     t.getOrElse(oldfromTLVValue(value))
@@ -1281,8 +1274,8 @@ case class ContractDescriptorV1TLV(
 
   override val byteSize: Long = {
     payoutFunction.serializationVersion match {
-      case DLCSerializationVersion.Post144Pre163 => super.byteSize
-      case DLCSerializationVersion.PrePR144 =>
+      case DLCSerializationVersion.Beta => super.byteSize
+      case DLCSerializationVersion.Alpha =>
         val payloadSize =
           numDigitsU16.byteSize + payoutFunction.byteSize + roundingIntervals.byteSize
         val total =

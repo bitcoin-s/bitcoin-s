@@ -13,11 +13,11 @@ object DLCSerializationVersion {
     * on the DLC spec repo. See the diff below
     * @see [[https://github.com/discreetlogcontracts/dlcspecs/pull/144]]
     */
-  case object PrePR144 extends DLCSerializationVersion
+  case object Alpha extends DLCSerializationVersion
 
   /** This represents binary serialization for the case where we have
     * included support for 144, but not included support for 163 yet
     * @see [[https://github.com/discreetlogcontracts/dlcspecs/pull/144]]
     */
-  case object Post144Pre163 extends DLCSerializationVersion
+  case object Beta extends DLCSerializationVersion
 }

@@ -38,7 +38,7 @@ class CETCalculatorTest extends BitcoinSUnitTest {
         PiecewisePolynomialPoint(100, 11000, isEndpoint = false),
         PiecewisePolynomialPoint(110, 9000, isEndpoint = true)
       ),
-      serializationVersion = DLCSerializationVersion.Post144Pre163
+      serializationVersion = DLCSerializationVersion.Beta
     )
 
     val expected = Vector(
@@ -72,7 +72,7 @@ class CETCalculatorTest extends BitcoinSUnitTest {
         PiecewisePolynomialPoint(6, 1000, isEndpoint = true),
         PiecewisePolynomialPoint(7, 0, isEndpoint = true)
       ),
-      serializationVersion = DLCSerializationVersion.Post144Pre163
+      serializationVersion = DLCSerializationVersion.Beta
     )
 
     val expected = Vector(VariablePayoutRange(0, 7))
@@ -276,7 +276,7 @@ class CETCalculatorTest extends BitcoinSUnitTest {
         PiecewisePolynomialPoint(100, 11000, isEndpoint = false),
         PiecewisePolynomialPoint(110, 9000, isEndpoint = true)
       ),
-      serializationVersion = DLCSerializationVersion.Post144Pre163
+      serializationVersion = DLCSerializationVersion.Beta
     )
 
     val firstZeroRange = Vector(

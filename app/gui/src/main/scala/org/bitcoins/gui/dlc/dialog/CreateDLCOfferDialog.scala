@@ -664,9 +664,10 @@ object CreateDLCOfferDialog {
           require(sorted == outcomesValuePoints,
                   s"Must be sorted by outcome, got $outcomesValuePoints")
 
-          val func = DLCPayoutCurve.polynomialInterpolate(
-            outcomesValuePoints,
-            serializationVersion = DLCSerializationVersion.Post144Pre163)
+          val func =
+            DLCPayoutCurve.polynomialInterpolate(outcomesValuePoints,
+                                                 serializationVersion =
+                                                   DLCSerializationVersion.Beta)
           (totalCollateral,
            NumericContractDescriptor(
              func,
