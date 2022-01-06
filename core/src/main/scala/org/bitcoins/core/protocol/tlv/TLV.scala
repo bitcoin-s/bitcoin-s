@@ -1604,6 +1604,9 @@ sealed trait CETSignaturesTLV extends DLCSetupPieceTLV
 
 case class CETSignaturesV0TLV(sigs: Vector[ECAdaptorSignature])
     extends CETSignaturesTLV {
+
+  require(sigs.nonEmpty, s"Cannot have empty adaptor signatures")
+
   override val tpe: BigSizeUInt = CETSignaturesV0TLV.tpe
 
   override val value: ByteVector = {

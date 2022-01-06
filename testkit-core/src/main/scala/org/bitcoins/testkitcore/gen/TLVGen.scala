@@ -355,7 +355,7 @@ trait TLVGen {
 
   def cetSignaturesV0TLV: Gen[CETSignaturesV0TLV] = {
     Gen
-      .listOf(CryptoGenerators.adaptorSignature)
+      .nonEmptyListOf(CryptoGenerators.adaptorSignature)
       .map(sigs => CETSignaturesV0TLV(sigs.toVector))
   }
 
