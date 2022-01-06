@@ -8,7 +8,9 @@ import org.bitcoins.core.protocol.tlv._
 case class OrderedAnnouncements(vec: Vector[OracleAnnouncementTLV])
     extends SortedVec[OracleAnnouncementTLV, OracleAnnouncementTLV](
       vec,
-      SortedVec.forOrdered(vec))
+      SortedVec.forOrdered(vec)) {
+  require(vec.nonEmpty, s"Cannot have empty OrderedAnnouncements")
+}
 
 /** Represents an ordered set of OracleAnnouncementV0TLV
   * The ordering represents the ranked preference of the user

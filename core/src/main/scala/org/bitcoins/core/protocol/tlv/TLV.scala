@@ -1705,6 +1705,8 @@ case class DLCOfferTLV(
     changeSerialId != fundOutputSerialId,
     s"changeSerialId ($changeSerialId) cannot be equal to fundOutputSerialId ($fundOutputSerialId)")
 
+  require(fundingInputs.nonEmpty,
+          s"Cannot have empty funding inputs for a DLCOffer")
   override val tpe: BigSizeUInt = DLCOfferTLV.tpe
 
   override val value: ByteVector = {
