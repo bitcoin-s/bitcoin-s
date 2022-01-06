@@ -308,7 +308,7 @@ object BitcoindRpcBackendUtil extends Logging {
         walletSyncState.height)
       system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
         {
-          logger.info("Polling bitcoind for block count")
+          logger.trace("Polling bitcoind for block count")
           bitcoind.getBlockCount.flatMap { count =>
             val prevCount = atomicPrevCount.get()
             if (prevCount < count) {
