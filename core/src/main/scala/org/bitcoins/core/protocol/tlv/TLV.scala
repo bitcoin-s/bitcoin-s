@@ -1493,6 +1493,10 @@ case class ContractInfoV1TLV(
     totalCollateral: Satoshis,
     contractOraclePairs: Vector[(ContractDescriptorTLV, OracleInfoTLV)])
     extends ContractInfoTLV {
+
+  require(contractOraclePairs.nonEmpty,
+          s"Cannot have empty contract oracle pairs for ContractInfoV1TLV")
+
   override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
 
   override val value: ByteVector = {
