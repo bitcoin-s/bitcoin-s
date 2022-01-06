@@ -1494,9 +1494,6 @@ case class ContractInfoV1TLV(
     contractOraclePairs: Vector[(ContractDescriptorTLV, OracleInfoTLV)])
     extends ContractInfoTLV {
 
-  require(contractOraclePairs.nonEmpty,
-          s"Cannot have empty contract oracle pairs for ContractInfoV1TLV")
-
   override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
 
   override val value: ByteVector = {
@@ -1616,8 +1613,6 @@ sealed trait CETSignaturesTLV extends DLCSetupPieceTLV
 case class CETSignaturesV0TLV(sigs: Vector[ECAdaptorSignature])
     extends CETSignaturesTLV {
 
-  require(sigs.nonEmpty, s"Cannot have empty adaptor signatures")
-
   override val tpe: BigSizeUInt = CETSignaturesV0TLV.tpe
 
   override val value: ByteVector = {
@@ -1653,8 +1648,6 @@ sealed trait FundingSignaturesTLV extends DLCSetupPieceTLV
 
 case class FundingSignaturesV0TLV(witnesses: Vector[ScriptWitnessV0])
     extends FundingSignaturesTLV {
-  require(witnesses.nonEmpty,
-          s"Cannot have empty witnesses for funding signatures")
   override val tpe: BigSizeUInt = FundingSignaturesV0TLV.tpe
 
   override val value: ByteVector = {
@@ -1712,8 +1705,6 @@ case class DLCOfferTLV(
     changeSerialId != fundOutputSerialId,
     s"changeSerialId ($changeSerialId) cannot be equal to fundOutputSerialId ($fundOutputSerialId)")
 
-  require(fundingInputs.nonEmpty,
-          s"Cannot have empty funding inputs for a DLCOffer")
   override val tpe: BigSizeUInt = DLCOfferTLV.tpe
 
   override val value: ByteVector = {
