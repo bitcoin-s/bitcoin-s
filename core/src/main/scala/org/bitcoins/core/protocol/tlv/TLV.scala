@@ -1642,6 +1642,8 @@ sealed trait FundingSignaturesTLV extends DLCSetupPieceTLV
 
 case class FundingSignaturesV0TLV(witnesses: Vector[ScriptWitnessV0])
     extends FundingSignaturesTLV {
+  require(witnesses.nonEmpty,
+          s"Cannot have empty witnesses for funding signatures")
   override val tpe: BigSizeUInt = FundingSignaturesV0TLV.tpe
 
   override val value: ByteVector = {
