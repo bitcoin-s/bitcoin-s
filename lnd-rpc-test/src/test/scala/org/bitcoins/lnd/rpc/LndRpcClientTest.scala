@@ -5,6 +5,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkit.fixtures.LndFixture
 
 import scala.concurrent.Future
@@ -27,6 +28,21 @@ class LndRpcClientTest extends LndFixture {
       val invoice = invoiceResult.invoice
 
       assert(invoice.lnTags.description.map(_.string).contains(memo))
+      assert(invoice.amount.map(_.toSatoshis).contains(amount))
+    }
+  }
+
+  it must "create an invoice using a description hash" in { lnd =>
+    val memo = "this is my memo"
+    val hash = CryptoUtil.sha256(memo)
+    val amount = Satoshis(1000)
+
+    for {
+      invoiceResult <- lnd.addInvoice(hash, amount, 1000)
+    } yield {
+      val invoice = invoiceResult.invoice
+
+      assert(invoice.lnTags.descriptionHash.exists(_.hash == hash))
       assert(invoice.amount.map(_.toSatoshis).contains(amount))
     }
   }
