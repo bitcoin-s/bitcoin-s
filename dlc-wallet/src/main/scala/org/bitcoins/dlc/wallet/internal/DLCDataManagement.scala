@@ -548,8 +548,11 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
     signerFromDb(dlcId).map(DLCExecutor.apply)
   }
 
+  /** Builds an [[DLCExecutor]] and [[SetupDLC]] for a given contract id
+    * @return the executor and setup if we still have CET signatures else return None
+    */
   private[wallet] def executorAndSetupFromDb(
-      contractId: ByteVector): Future[Option[(DLCExecutor, SetupDLC)]] = {
+      contractId: ByteVector): Future[Option[DLCExecutorWithSetup]] = {
     getAllDLCData(contractId).flatMap {
       case (dlcDb,
             contractData,
@@ -571,8 +574,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
                                    outcomeSigsDbs).map(Some(_))
           case None =>
             //means we cannot re-create messages because
-            //we don't have the cets in the database
-            //anymore
+            //we don't have the cets in the database anymore
             Future.successful(None)
 
         }
@@ -589,7 +591,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       contractInfo: ContractInfo,
       fundingInputs: Vector[DLCFundingInputDb],
       outcomeSigsDbs: Vector[DLCCETSignaturesDb]): Future[
-    (DLCExecutor, SetupDLC)] = {
+    DLCExecutorWithSetup] = {
 
     val dlcExecutorF = executorFromDb(dlcDb,
                                       contractDataDb,
@@ -642,7 +644,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs), None)
       }
 
-      Future.fromTry(setupF.map((executor, _)))
+      Future.fromTry(setupF.map(DLCExecutorWithSetup(executor, _)))
     }
   }
 

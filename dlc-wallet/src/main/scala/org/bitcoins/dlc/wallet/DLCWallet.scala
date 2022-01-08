@@ -1272,15 +1272,57 @@ abstract class DLCWallet
       contractId: ByteVector,
       oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
     require(oracleSigs.nonEmpty, "Must provide at least one oracle signature")
+    val executorWithSetupOptF = executorAndSetupFromDb(contractId)
     for {
-      (executor, setup) <- executorAndSetupFromDb(contractId)
+      executorWithSetupOpt <- executorWithSetupOptF
+      tx <- {
+        executorWithSetupOpt match {
+          case Some(executorWithSetup) =>
+            buildExecutionTxWithExecutor(executorWithSetup,
+                                         oracleSigs,
+                                         contractId)
+          case None =>
+            //means we don't have cet sigs in the db anymore
+            //can we retrieve the CET some other way?
 
-      executed = executor.executeDLC(setup, oracleSigs)
-      (tx, outcome, sigsUsed) =
-        (executed.cet, executed.outcome, executed.sigsUsed)
-      _ = logger.info(
-        s"Created DLC execution transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}")
+            //lets try to retrieve it from our transactionDAO
+            val dlcDbOptF = dlcDAO.findByContractId(contractId)
 
+            for {
+              dlcDbOpt <- dlcDbOptF
+              _ = require(
+                dlcDbOpt.isDefined,
+                s"Could not find dlc associated with this contractId=${contractId}")
+              dlcDb = dlcDbOpt.get
+              _ = require(
+                dlcDb.closingTxIdOpt.isDefined,
+                s"If we don't have CET signatures, the closing tx must be defined, contractId=$contractId")
+              closingTxId = dlcDb.closingTxIdOpt.get
+              closingTxOpt <- transactionDAO.findByTxId(closingTxId)
+            } yield {
+              require(
+                closingTxOpt.isDefined,
+                s"Could not find closing tx for DLC in db, contactId=$contractId closingTxId=$closingTxId")
+              closingTxOpt.get.transaction
+            }
+        }
+      }
+    } yield tx
+  }
+
+  private def buildExecutionTxWithExecutor(
+      executorWithSetup: DLCExecutorWithSetup,
+      oracleSigs: Vector[OracleSignatures],
+      contractId: ByteVector): Future[Transaction] = {
+    val executor = executorWithSetup.executor
+    val setup = executorWithSetup.setup
+    val executed = executor.executeDLC(setup, oracleSigs)
+    val (tx, outcome, sigsUsed) =
+      (executed.cet, executed.outcome, executed.sigsUsed)
+    logger.info(
+      s"Created DLC execution transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}")
+
+    for {
       _ <- updateDLCOracleSigs(sigsUsed)
       _ <- updateDLCState(contractId, DLCState.Claimed)
       dlcDb <- updateClosingTxId(contractId, tx.txIdBE)

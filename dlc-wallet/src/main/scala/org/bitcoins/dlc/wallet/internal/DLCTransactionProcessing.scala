@@ -2,6 +2,7 @@ package org.bitcoins.dlc.wallet.internal
 
 import org.bitcoins.core.api.dlc.wallet.db._
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
+import org.bitcoins.core.protocol.dlc.execution.SetupDLC
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script._
@@ -31,48 +32,62 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   def calculateAndSetState(dlcDb: DLCDb): Future[DLCDb] = {
     (dlcDb.contractIdOpt, dlcDb.closingTxIdOpt) match {
       case (Some(id), Some(txId)) =>
-        executorAndSetupFromDb(id).flatMap { case (_, setup) =>
-          val updatedF = if (txId == setup.refundTx.txIdBE) {
-            Future.successful(dlcDb.copy(state = DLCState.Refunded))
-          } else if (dlcDb.state == DLCState.Claimed) {
-            Future.successful(dlcDb.copy(state = DLCState.Claimed))
-          } else {
-            val withState = dlcDb.updateState(DLCState.RemoteClaimed)
-            if (dlcDb.state != DLCState.RemoteClaimed) {
-              for {
-                // update so we can calculate correct DLCStatus
-                _ <- dlcDAO.update(withState)
-                withOutcome <- calculateAndSetOutcome(withState)
-                dlc <- findDLC(dlcDb.dlcId)
-                _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
-                                                                      dlc.get)
-              } yield withOutcome
-            } else Future.successful(withState)
+        val executorWithSetupOptF = executorAndSetupFromDb(id)
+        executorWithSetupOptF.flatMap { case executorWithSetupOpt =>
+          executorWithSetupOpt match {
+            case Some(exeutorWithSetup) =>
+              calculateAndSetStateWithSetupDLC(exeutorWithSetup.setup,
+                                               dlcDb,
+                                               txId)
+            case None =>
+              //what do we do if we don't have the cet sigs?
+              //this means we have already deleted the cet sigs
+              //just return the dlcdb given to us?
+              Future.successful(dlcDb)
           }
-
-          for {
-            updated <- updatedF
-
-            _ <- {
-              updated.state match {
-                case DLCState.Claimed | DLCState.RemoteClaimed |
-                    DLCState.Refunded =>
-                  val contractId = updated.contractIdOpt.get.toHex
-                  logger.info(
-                    s"Deleting unneeded DLC signatures for contract $contractId")
-
-                  dlcSigsDAO.deleteByDLCId(updated.dlcId)
-                case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
-                    DLCState.Broadcasted | DLCState.Confirmed =>
-                  FutureUtil.unit
-              }
-            }
-
-          } yield updated
         }
       case (None, None) | (None, Some(_)) | (Some(_), None) =>
         Future.successful(dlcDb)
     }
+  }
+
+  private def calculateAndSetStateWithSetupDLC(
+      setup: SetupDLC,
+      dlcDb: DLCDb,
+      closingTxId: DoubleSha256DigestBE): Future[DLCDb] = {
+    val updatedF = if (closingTxId == setup.refundTx.txIdBE) {
+      Future.successful(dlcDb.copy(state = DLCState.Refunded))
+    } else if (dlcDb.state == DLCState.Claimed) {
+      Future.successful(dlcDb.copy(state = DLCState.Claimed))
+    } else {
+      val withState = dlcDb.updateState(DLCState.RemoteClaimed)
+      if (dlcDb.state != DLCState.RemoteClaimed) {
+        for {
+          // update so we can calculate correct DLCStatus
+          _ <- dlcDAO.update(withState)
+          withOutcome <- calculateAndSetOutcome(withState)
+          dlc <- findDLC(dlcDb.dlcId)
+          _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, dlc.get)
+        } yield withOutcome
+      } else Future.successful(withState)
+    }
+
+    for {
+      updated <- updatedF
+      _ <- {
+        updated.state match {
+          case DLCState.Claimed | DLCState.RemoteClaimed | DLCState.Refunded =>
+            val contractId = updated.contractIdOpt.get.toHex
+            logger.info(
+              s"Deleting unneeded DLC signatures for contract $contractId")
+
+            dlcSigsDAO.deleteByDLCId(updated.dlcId)
+          case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
+              DLCState.Broadcasted | DLCState.Confirmed =>
+            FutureUtil.unit
+        }
+      }
+    } yield updated
   }
 
   /** Calculates the outcome used for execution
@@ -290,3 +305,5 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     }
   }
 }
+
+object DLCTransactionProcessing {}
