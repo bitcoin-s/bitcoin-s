@@ -40,9 +40,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                                                dlcDb,
                                                txId)
             case None =>
-              //what do we do if we don't have the cet sigs?
               //this means we have already deleted the cet sigs
-              //just return the dlcdb given to us?
+              //just return the dlcdb given to us
               Future.successful(dlcDb)
           }
         }

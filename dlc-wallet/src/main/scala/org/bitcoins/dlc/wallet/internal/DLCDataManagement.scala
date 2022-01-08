@@ -308,7 +308,6 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         getDLCFundingData(dlcId)
       (refundSigs, outcomeSigs) <- refundAndOutcomeSigsF
     } yield {
-      logger.info(s"outcomeSigs=$outcomeSigs dlcId=${dlcId.hex}")
 
       val sigsOpt = if (outcomeSigs.isEmpty) None else Some(outcomeSigs)
 

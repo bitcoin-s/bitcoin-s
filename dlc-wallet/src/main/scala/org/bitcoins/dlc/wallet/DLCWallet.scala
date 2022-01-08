@@ -1292,17 +1292,17 @@ abstract class DLCWallet
               dlcDbOpt <- dlcDbOptF
               _ = require(
                 dlcDbOpt.isDefined,
-                s"Could not find dlc associated with this contractId=${contractId}")
+                s"Could not find dlc associated with this contractId=${contractId.toHex}")
               dlcDb = dlcDbOpt.get
               _ = require(
                 dlcDb.closingTxIdOpt.isDefined,
-                s"If we don't have CET signatures, the closing tx must be defined, contractId=$contractId")
+                s"If we don't have CET signatures, the closing tx must be defined, contractId=${contractId.toHex}")
               closingTxId = dlcDb.closingTxIdOpt.get
               closingTxOpt <- transactionDAO.findByTxId(closingTxId)
             } yield {
               require(
                 closingTxOpt.isDefined,
-                s"Could not find closing tx for DLC in db, contactId=$contractId closingTxId=$closingTxId")
+                s"Could not find closing tx for DLC in db, contactId=${contractId.toHex} closingTxId=${closingTxId.hex}")
               closingTxOpt.get.transaction
             }
         }
