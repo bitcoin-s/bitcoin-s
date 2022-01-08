@@ -1493,6 +1493,7 @@ case class ContractInfoV1TLV(
     totalCollateral: Satoshis,
     contractOraclePairs: Vector[(ContractDescriptorTLV, OracleInfoTLV)])
     extends ContractInfoTLV {
+
   override val tpe: BigSizeUInt = ContractInfoV0TLV.tpe
 
   override val value: ByteVector = {
@@ -1598,12 +1599,20 @@ object FundingInputV0TLV extends TLVFactory[FundingInputV0TLV] {
   }
 
   override val typeName: String = "FundingInputV0TLV"
+
+  val dummy: FundingInputV0TLV = FundingInputV0TLV(UInt64.zero,
+                                                   EmptyTransaction,
+                                                   prevTxVout = UInt32.zero,
+                                                   UInt32.zero,
+                                                   UInt16.zero,
+                                                   None)
 }
 
 sealed trait CETSignaturesTLV extends DLCSetupPieceTLV
 
 case class CETSignaturesV0TLV(sigs: Vector[ECAdaptorSignature])
     extends CETSignaturesTLV {
+
   override val tpe: BigSizeUInt = CETSignaturesV0TLV.tpe
 
   override val value: ByteVector = {

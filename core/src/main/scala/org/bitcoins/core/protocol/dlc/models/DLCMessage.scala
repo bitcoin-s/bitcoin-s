@@ -90,6 +90,8 @@ object DLCMessage {
       timeouts: DLCTimeouts)
       extends DLCSetupMessage {
 
+    require(fundingInputs.nonEmpty, s"DLCOffer fundingINnputs cannot be empty")
+
     require(
       fundingInputs.map(_.inputSerialId).distinct.size == fundingInputs.size,
       "All funding input serial ids must be unique")

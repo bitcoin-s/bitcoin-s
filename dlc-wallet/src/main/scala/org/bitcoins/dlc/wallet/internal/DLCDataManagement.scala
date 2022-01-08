@@ -263,7 +263,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         DLCRefundSigsDb,
         ContractInfo,
         Vector[DLCFundingInputDb],
-        Vector[DLCCETSignaturesDb])] = {
+        Option[Vector[DLCCETSignaturesDb]])] = {
     for {
       dlcDbOpt <- dlcDAO.findByContractId(contractId)
       dlcDb = dlcDbOpt.get
@@ -295,7 +295,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         DLCRefundSigsDb,
         ContractInfo,
         Vector[DLCFundingInputDb],
-        Vector[DLCCETSignaturesDb])] = {
+        Option[Vector[DLCCETSignaturesDb]])] = {
     val safeDatabase = dlcRefundSigDAO.safeDatabase
     val refundSigDLCs = dlcRefundSigDAO.findByDLCIdAction(dlcId)
     val sigDLCs = dlcSigsDAO.findByDLCIdAction(dlcId)
@@ -307,14 +307,19 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       (dlcDb, contractData, dlcOffer, dlcAccept, fundingInputs, contractInfo) <-
         getDLCFundingData(dlcId)
       (refundSigs, outcomeSigs) <- refundAndOutcomeSigsF
-    } yield (dlcDb,
-             contractData,
-             dlcOffer,
-             dlcAccept,
-             refundSigs.head,
-             contractInfo,
-             fundingInputs,
-             outcomeSigs)
+    } yield {
+
+      val sigsOpt = if (outcomeSigs.isEmpty) None else Some(outcomeSigs)
+
+      (dlcDb,
+       contractData,
+       dlcOffer,
+       dlcAccept,
+       refundSigs.head,
+       contractInfo,
+       fundingInputs,
+       sigsOpt)
+    }
   }
 
   private[wallet] def fundingUtxosFromDb(
@@ -542,8 +547,11 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
     signerFromDb(dlcId).map(DLCExecutor.apply)
   }
 
+  /** Builds an [[DLCExecutor]] and [[SetupDLC]] for a given contract id
+    * @return the executor and setup if we still have CET signatures else return None
+    */
   private[wallet] def executorAndSetupFromDb(
-      contractId: ByteVector): Future[(DLCExecutor, SetupDLC)] = {
+      contractId: ByteVector): Future[Option[DLCExecutorWithSetup]] = {
     getAllDLCData(contractId).flatMap {
       case (dlcDb,
             contractData,
@@ -552,15 +560,24 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
             refundSigs,
             contractInfo,
             fundingInputsDb,
-            outcomeSigsDbs) =>
-        executorAndSetupFromDb(dlcDb,
-                               contractData,
-                               dlcOffer,
-                               dlcAccept,
-                               refundSigs,
-                               contractInfo,
-                               fundingInputsDb,
-                               outcomeSigsDbs)
+            outcomeSigsDbsOpt) =>
+        outcomeSigsDbsOpt match {
+          case Some(outcomeSigsDbs) =>
+            executorAndSetupFromDb(dlcDb,
+                                   contractData,
+                                   dlcOffer,
+                                   dlcAccept,
+                                   refundSigs,
+                                   contractInfo,
+                                   fundingInputsDb,
+                                   outcomeSigsDbs).map(Some(_))
+          case None =>
+            //means we cannot re-create messages because
+            //we don't have the cets in the database anymore
+            Future.successful(None)
+
+        }
+
     }
   }
 
@@ -573,59 +590,61 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       contractInfo: ContractInfo,
       fundingInputs: Vector[DLCFundingInputDb],
       outcomeSigsDbs: Vector[DLCCETSignaturesDb]): Future[
-    (DLCExecutor, SetupDLC)] = {
+    DLCExecutorWithSetup] = {
 
-    executorFromDb(dlcDb,
-                   contractDataDb,
-                   dlcOffer,
-                   dlcAccept,
-                   fundingInputs,
-                   contractInfo)
-      .flatMap { executor =>
-        // Filter for only counterparty's outcome sigs
-        val outcomeSigs =
-          if (dlcDb.isInitiator) {
-            outcomeSigsDbs
-              .map { dbSig =>
-                dbSig.sigPoint -> dbSig.accepterSig
-              }
-          } else {
-            outcomeSigsDbs
-              .map { dbSig =>
-                dbSig.sigPoint -> dbSig.initiatorSig.get
-              }
+    val dlcExecutorF = executorFromDb(dlcDb,
+                                      contractDataDb,
+                                      dlcOffer,
+                                      dlcAccept,
+                                      fundingInputs,
+                                      contractInfo)
+
+    dlcExecutorF.flatMap { executor =>
+      // Filter for only counterparty's outcome sigs
+      val outcomeSigs = if (dlcDb.isInitiator) {
+        outcomeSigsDbs
+          .map { dbSig =>
+            dbSig.sigPoint -> dbSig.accepterSig
           }
-
-        val refundSig = if (dlcDb.isInitiator) {
-          refundSigsDb.accepterSig
-        } else refundSigsDb.initiatorSig.get
-
-        val cetSigs = CETSignatures(outcomeSigs, refundSig)
-
-        val setupF = if (dlcDb.isInitiator) {
-          // Note that the funding tx in this setup is not signed
-          executor.setupDLCOffer(cetSigs)
-        } else {
-          val fundingSigs =
-            fundingInputs
-              .filter(_.isInitiator)
-              .map { input =>
-                input.witnessScriptOpt match {
-                  case Some(witnessScript) =>
-                    witnessScript match {
-                      case EmptyScriptWitness =>
-                        throw new RuntimeException(
-                          "Script witness cannot be empty")
-                      case witness: ScriptWitnessV0 => (input.outPoint, witness)
-                    }
-                  case None => throw new RuntimeException("")
-                }
-              }
-          executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs), None)
-        }
-
-        Future.fromTry(setupF.map((executor, _)))
+      } else {
+        outcomeSigsDbs
+          .map { dbSig =>
+            dbSig.sigPoint -> dbSig.initiatorSig.get
+          }
       }
+      val refundSig = if (dlcDb.isInitiator) {
+        refundSigsDb.accepterSig
+      } else refundSigsDb.initiatorSig.get
+
+      //sometimes we do not have cet signatures, for instance
+      //if we have settled a DLC, we prune the cet signatures
+      //from the database
+      val cetSigs = CETSignatures(outcomeSigs, refundSig)
+
+      val setupF = if (dlcDb.isInitiator) {
+        // Note that the funding tx in this setup is not signed
+        executor.setupDLCOffer(cetSigs)
+      } else {
+        val fundingSigs =
+          fundingInputs
+            .filter(_.isInitiator)
+            .map { input =>
+              input.witnessScriptOpt match {
+                case Some(witnessScript) =>
+                  witnessScript match {
+                    case EmptyScriptWitness =>
+                      throw new RuntimeException(
+                        "Script witness cannot be empty")
+                    case witness: ScriptWitnessV0 => (input.outPoint, witness)
+                  }
+                case None => throw new RuntimeException("")
+              }
+            }
+        executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs), None)
+      }
+
+      Future.fromTry(setupF.map(DLCExecutorWithSetup(executor, _)))
+    }
   }
 
   def getCetAndRefundSigsAction(dlcId: Sha256Digest): DBIOAction[

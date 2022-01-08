@@ -14,6 +14,8 @@ case class FundingSignatures(
     extends SeqWrapper[(TransactionOutPoint, ScriptWitnessV0)]
     with DLCSignatures {
 
+  require(sigs.nonEmpty, s"FundingSignatures.sigs cannot be empty")
+
   override protected def wrapped: Vector[
     (TransactionOutPoint, ScriptWitnessV0)] = sigs
 
@@ -38,6 +40,9 @@ case class CETSignatures(
     outcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)],
     refundSig: PartialSignature)
     extends DLCSignatures {
+
+  require(outcomeSigs.nonEmpty,
+          s"CETSignatures cannot have outcomeSigs be empty")
   lazy val keys: Vector[ECPublicKey] = outcomeSigs.map(_._1)
   lazy val adaptorSigs: Vector[ECAdaptorSignature] = outcomeSigs.map(_._2)
 
