@@ -51,6 +51,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     }
   }
 
+  /** Calculates the new closing state for a DLC if we still
+    * have adaptor signatures available to us in the database
+    */
   private def calculateAndSetStateWithSetupDLC(
       setup: SetupDLC,
       dlcDb: DLCDb,
@@ -305,5 +308,3 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     }
   }
 }
-
-object DLCTransactionProcessing {}
