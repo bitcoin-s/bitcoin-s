@@ -20,6 +20,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   private lazy val sha256 = SHA256Factory.create()
   private lazy val sha512 = SHA512Factory.create()
   private lazy val hmac = SHA512.hmac.apply().asInstanceOf[HMAC]
+  private lazy val sha3_256 = new SHA3_256
 
   private lazy val randomBytesFunc: Int => ByteVector = { int =>
     try {
@@ -75,6 +76,15 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
     val hashBuffer = sha256.`final`()
     val hashByteVec = CryptoJsUtil.toByteVector(hashBuffer)
     Sha256Digest.fromBytes(hashByteVec)
+  }
+
+  override def sha3_256(bytes: ByteVector): Sha3_256Digest = {
+    val buffer = CryptoJsUtil.toNodeBuffer(bytes)
+    sha3_256.init()
+    sha3_256.update(buffer)
+    val hashBuffer = sha3_256.`final`()
+    val hashByteVec = CryptoJsUtil.toByteVector(hashBuffer)
+    Sha3_256Digest.fromBytes(hashByteVec)
   }
 
   def sha512(bytes: ByteVector): ByteVector = {

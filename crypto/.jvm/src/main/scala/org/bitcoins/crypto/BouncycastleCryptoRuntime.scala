@@ -114,6 +114,11 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     Sha256Digest(ByteVector(hash))
   }
 
+  override def sha3_256(bytes: ByteVector): Sha3_256Digest = {
+    val hash = MessageDigest.getInstance("SHA3-256").digest(bytes.toArray)
+    Sha3_256Digest(ByteVector(hash))
+  }
+
   override def sha1(bytes: ByteVector): Sha1Digest = {
     val hash = MessageDigest.getInstance("SHA-1").digest(bytes.toArray).toList
     Sha1Digest(ByteVector(hash))
