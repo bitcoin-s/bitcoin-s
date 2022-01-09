@@ -1,6 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.p2p.AddrV2Message
+import org.bitcoins.crypto.CryptoUtil
 import scodec.bits.ByteVector
 
 import java.net._
@@ -50,16 +51,9 @@ abstract class NetworkUtil {
 
   /** Parses TorV3 address bytes (pubkey) to string address */
   def parseUnresolvedInetSocketAddress(bytes: ByteVector): String = {
-    def sha3(bytes: Array[Byte]): ByteVector = {
-      import java.security.MessageDigest
-      val digest: MessageDigest = MessageDigest.getInstance("SHA3-256")
-      val hashBytes: Array[Byte] = digest.digest(bytes)
-      ByteVector(hashBytes)
-    }
-
     val version = BigInt(0x03).toByteArray
     val pubkey = bytes.toArray
-    val checksum = sha3(".onion checksum".getBytes ++ pubkey ++ version)
+    val checksum = CryptoUtil.sha3_256(ByteVector(".onion checksum".getBytes ++ pubkey ++ version)).bytes
     val address =
       ByteVector(
         pubkey ++ checksum.take(2).toArray ++ version).toBase32 + ".onion"
