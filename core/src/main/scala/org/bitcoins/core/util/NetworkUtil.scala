@@ -53,7 +53,9 @@ abstract class NetworkUtil {
   def parseUnresolvedInetSocketAddress(bytes: ByteVector): String = {
     val version = BigInt(0x03).toByteArray
     val pubkey = bytes.toArray
-    val checksum = CryptoUtil.sha3_256(ByteVector(".onion checksum".getBytes ++ pubkey ++ version)).bytes
+    val checksum = CryptoUtil
+      .sha3_256(ByteVector(".onion checksum".getBytes ++ pubkey ++ version))
+      .bytes
     val address =
       ByteVector(
         pubkey ++ checksum.take(2).toArray ++ version).toBase32 + ".onion"
