@@ -1,5 +1,10 @@
 package org.bitcoins.node.networking.peer
 
+import org.bitcoins.core.api.node.{
+  ExternalImplementationNodeType,
+  InternalImplementationNodeType,
+  NodeType
+}
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
@@ -31,13 +36,16 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
           case good: Initializing =>
             val newState = good.withVersionMsg(versionMsg)
 
-            sender.sendVerackMessage()
-            node.setPeerServices(peer, versionMsg.services)
+            node.peerManager
+              .peerData(peer)
+              .setServiceIdentifier(versionMsg.services)
 
             val newRecv = peerMessageReceiver.toState(newState)
 
-            Future.successful(newRecv)
-
+            for {
+              _ <- sender.sendVerackMessage()
+              _ <- onPeerInitialization(peer)
+            } yield newRecv
         }
 
       case VerAckMessage =>
@@ -73,6 +81,25 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
         Future.successful(peerMessageReceiver)
       case _: FeeFilterMessage =>
         Future.successful(peerMessageReceiver)
+    }
+  }
+
+  def onPeerInitialization(peer: Peer): Future[Unit] = {
+    node.nodeAppConfig.nodeType match {
+      case nodeType: InternalImplementationNodeType =>
+        nodeType match {
+          case NodeType.FullNode =>
+            throw new Exception("Node cannot be FullNode")
+          case NodeType.NeutrinoNode =>
+            node.peerManager.createInDb(peer).map(_ => ())
+          case NodeType.SpvNode =>
+            node.peerManager.createInDb(peer).map(_ => ())
+        }
+      case nodeType: ExternalImplementationNodeType =>
+        nodeType match {
+          case NodeType.BitcoindBackend =>
+            throw new Exception("Node cannot be BitcoindBackend")
+        }
     }
   }
 }

@@ -10,28 +10,22 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.api.chain._
-import org.bitcoins.core.api.node.{NodeApi, NodeType}
-import org.bitcoins.core.p2p.{NetworkPayload, ServiceIdentifier, TypeIdentifier}
+import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{
-  BroadcastAbleTransaction,
-  BroadcastAbleTransactionDAO,
-  Peer
-}
+import org.bitcoins.node.models._
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.{
   ControlMessageHandler,
   DataMessageHandler,
-  PeerMessageReceiver,
   PeerMessageSender
 }
 
-import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Random, Success}
+import scala.util.{Failure, Success}
 
 /**  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
@@ -45,39 +39,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def executionContext: ExecutionContext = system.dispatcher
 
-  val peers: Vector[Peer]
-
-  private val _peerServices: mutable.Map[Peer, ServiceIdentifier] =
-    mutable.Map.empty
-
-  def peerServices: Map[Peer, ServiceIdentifier] = _peerServices.toMap
-
-  def setPeerServices(
-      peer: Peer,
-      serviceIdentifier: ServiceIdentifier): Unit = {
-    _peerServices.put(peer, serviceIdentifier)
-    ()
-  }
-
-  def randomPeerMsgSenderWithService(
-      f: ServiceIdentifier => Boolean): PeerMessageSender = {
-    val filteredPeers =
-      peerServices.filter(p => f(p._2)).keys.toVector
-    if (filteredPeers.isEmpty)
-      throw new RuntimeException("No peers supporting compact filters!")
-    val peer = filteredPeers(Random.nextInt(filteredPeers.length))
-    peerMsgSenders
-      .find(_.client.peer == peer)
-      .getOrElse(throw new RuntimeException("This should not happen."))
-  }
-
-  def randomPeerMsgSenderWithCompactFilters: PeerMessageSender = {
-    randomPeerMsgSenderWithService(_.nodeCompactFilters)
-  }
-
-  def randomPeerMsgSender: PeerMessageSender = {
-    peerMsgSenders(Random.nextInt(peerMsgSenders.length))
-  }
+  val peerManager: PeerManager
 
   /** The current data message handler.
     * It should be noted that the dataMessageHandler contains
@@ -110,22 +72,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
     * the [[ChainApi chain api]] is updated inside of the p2p client
     */
-  lazy val clients: Vector[P2PClient] = {
-    val peerMsgRecvs: Vector[PeerMessageReceiver] =
-      peers.map(x => PeerMessageReceiver.newReceiver(node = this, peer = x))
-    val zipped = peers.zip(peerMsgRecvs)
-    val p2p = zipped.map { case (peer, peerMsgRecv) =>
-      P2PClient(context = system,
-                peer = peer,
-                peerMessageReceiver = peerMsgRecv,
-                onReconnect = sync)
-    }
-    p2p
-  }
+  def clients: Vector[P2PClient] = peerManager.clients
 
-  lazy val peerMsgSenders: Vector[PeerMessageSender] = {
-    clients.map(PeerMessageSender(_))
-  }
+  def peerMsgSenders: Vector[PeerMessageSender] = peerManager.peerMsgSenders
 
   /** Sends the given P2P to our peer.
     * This method is useful for playing around
@@ -150,6 +99,20 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def isDisconnected(idx: Int): Future[Boolean] =
     peerMsgSenders(idx).isDisconnected()
 
+  def initializePeer(peer: Peer): Future[Unit] = {
+    peerManager.peerDataOf(peer).peerMessageSender.connect()
+    val isInitializedF = AsyncUtil
+      .retryUntilSatisfiedF(
+        () => peerManager.peerDataOf(peer).peerMessageSender.isInitialized(),
+        maxTries = 50,
+        interval = 250.millis)
+    isInitializedF.failed
+      .foreach { err =>
+        logger.error(s"Failed to initialize with peer=$peer with err=$err")
+      }
+    isInitializedF
+  }
+
   /** Starts our node */
   def start(): Future[Node] = {
     logger.info("Starting node")
@@ -162,41 +125,14 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
     val chainApiF = startConfsF.flatMap(_ => chainApiFromDb())
 
-    val startNodeF = {
-      val isInitializedFs = peerMsgSenders.indices.map { idx =>
-        peerMsgSenders(idx).connect()
-        val isInitializedF = for {
-          _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized(idx),
-                                              maxTries = 1024,
-                                              interval = 250.millis)
-        } yield ()
-        isInitializedF.failed.foreach { err =>
-          logger.error(
-            s"Failed to connect with peer=${peers(idx)} with err=$err")
-        }
-        isInitializedF.map { _ =>
-          nodeAppConfig.nodeType match {
-            case NodeType.NeutrinoNode => {
-              if (peerServices(peers(idx)).nodeCompactFilters) {
-                logger.info(s"Our peer=${peers(idx)} has been initialized")
-              } else {
-                logger.info(
-                  s"Our peer=${peers(idx)} does not support compact filters. Disconnecting.")
-                peerMsgSenders(idx).disconnect()
-              }
-            }
-            case NodeType.SpvNode         =>
-            case NodeType.BitcoindBackend =>
-            case NodeType.FullNode        =>
-          }
-        }
-      }
-
-      Future.sequence(isInitializedFs).map { _ =>
-        logger.info(s"Our node has been full started. It took=${System
-          .currentTimeMillis() - start}ms")
-        this
-      }
+    val startNodeF = for {
+      peers <- peerManager.getPeers
+      _ = peers.foreach(peerManager.addPeer)
+      _ <- Future.sequence(peers.map(initializePeer))
+    } yield {
+      logger.info(s"Our node has been full started. It took=${System
+        .currentTimeMillis() - start}ms")
+      this
     }
 
     val bestHashF = chainApiF.flatMap(_.getBestBlockHash())
@@ -272,7 +208,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      _ <- randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
+      _ <- peerManager.randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
     } yield {
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE}")
@@ -306,8 +242,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
           logger.info(s"Sending out tx message for tx=$txIds")
           peerMsgSenders(0).sendInventoryMessage(transactions: _*)
         } else {
-          Future.failed(new RuntimeException(
-            s"Error broadcasting transaction $txIds, peer is disconnected ${peers(0)}"))
+          Future.failed(
+            new RuntimeException(
+              s"Error broadcasting transaction $txIds, peer is disconnected ${peerManager
+                .peers(0)}"))
         }
       }
     } yield res

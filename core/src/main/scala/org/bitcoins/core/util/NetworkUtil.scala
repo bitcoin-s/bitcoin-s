@@ -1,5 +1,9 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.core.p2p.AddrV2Message
+import org.bitcoins.crypto.CryptoUtil
+import scodec.bits.ByteVector
+
 import java.net._
 import scala.annotation.tailrec
 import scala.util.{Failure, Random, Success, Try}
@@ -15,6 +19,58 @@ abstract class NetworkUtil {
     val uri = new URI("tcp://" + address)
     val port = if (uri.getPort < 0) defaultPort else uri.getPort
     InetSocketAddress.createUnresolved(uri.getHost, port)
+  }
+
+  /** Parses IPV4,IPV6 ad TorV3 address bytes to string address */
+  def parseInetSocketAddress(
+      address: ByteVector,
+      port: Int): InetSocketAddress = {
+    val uri: URI = {
+      address.size match {
+        case AddrV2Message.IPV4_ADDR_LENGTH =>
+          val hostAddress =
+            InetAddress.getByAddress(address.toArray).getHostAddress
+          new URI("tcp://" + hostAddress)
+        case AddrV2Message.IPV6_ADDR_LENGTH =>
+          val hostAddress =
+            InetAddress.getByAddress(address.toArray).getHostAddress
+          new URI(s"tcp://[$hostAddress]")
+        case AddrV2Message.TOR_V3_ADDR_LENGTH =>
+          val hostAddress = parseUnresolvedInetSocketAddress(address)
+          new URI("tcp://" + hostAddress)
+        case unknownSize =>
+          sys.error(
+            s"Attempted to parse InetSocketAddress with unknown size, got=${unknownSize}")
+      }
+    }
+    InetSocketAddress.createUnresolved(uri.getHost, port)
+  }
+
+  // AddrV2 messages give pubkey bytes for TorV3 addresses and in config files addresses are as strings like
+  // dfghj...vbnm.onion hence such conversions to and from bytes to string is needed
+
+  /** Parses TorV3 address bytes (pubkey) to string address */
+  def parseUnresolvedInetSocketAddress(bytes: ByteVector): String = {
+    val version = BigInt(0x03).toByteArray
+    val pubkey = bytes.toArray
+    val checksum = CryptoUtil
+      .sha3_256(ByteVector(".onion checksum".getBytes ++ pubkey ++ version))
+      .bytes
+    val address =
+      ByteVector(
+        pubkey ++ checksum.take(2).toArray ++ version).toBase32 + ".onion"
+    address.toLowerCase
+  }
+
+  /** converts a string TorV3 address to pubkey bytes */
+  def torV3AddressToBytes(address: String): Array[Byte] = {
+    val encoded = address.substring(0, address.indexOf('.')).toUpperCase
+    val decoded = ByteVector.fromBase32(encoded) match {
+      case Some(value) => value.toArray
+      case None =>
+        throw new IllegalArgumentException("Invalid TorV3 onion address")
+    }
+    decoded.slice(0, decoded.length - 3)
   }
 
   def isLocalhost(hostName: String): Boolean = {

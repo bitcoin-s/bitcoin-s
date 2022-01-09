@@ -50,6 +50,11 @@ trait CryptoUtil extends CryptoRuntime {
     cryptoRuntime.taggedSha256(serializeForHash(str), tag)
   }
 
+  /** Performs SHA3-256(bytes) */
+  override def sha3_256(bytes: ByteVector): Sha3_256Digest = {
+    cryptoRuntime.sha3_256(bytes)
+  }
+
   /** Performs SHA1(bytes). */
   override def sha1(bytes: ByteVector): Sha1Digest = {
     cryptoRuntime.sha1(bytes)
