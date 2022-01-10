@@ -1,6 +1,7 @@
 package org.bitcoins.server
 
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.model.ws.{
   Message,
@@ -63,10 +64,10 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     .toMat(endSink)(Keep.right)
 
   def buildReq(conf: BitcoinSAppConfig): WebSocketRequest = {
-    WebSocketRequest(
-      s"ws://localhost:${conf.wsPort}/events",
-      extraHeaders =
-        Seq(Authorization(BasicHttpCredentials("bitcoins", conf.rpcPassword))))
+    val headers: Vector[HttpHeader] = Vector(
+      Authorization(BasicHttpCredentials("bitcoins", conf.rpcPassword)))
+    WebSocketRequest(s"ws://localhost:${conf.wsPort}/events",
+                     extraHeaders = headers)
   }
 
   val websocketFlow: Flow[
