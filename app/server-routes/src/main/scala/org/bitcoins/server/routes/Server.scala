@@ -29,6 +29,15 @@ case class Server(
 
   import system.dispatcher
 
+  if (rpcPassword.isEmpty) {
+    if (rpchost == "localhost" || rpchost == "127.0.0.1") {
+      logger.warn(s"RPC password is not set (rpchost=$rpchost)")
+    } else {
+      require(rpcPassword.nonEmpty,
+              s"RPC password must be set (rpchost=$rpchost)")
+    }
+  }
+
   /** Handles all server commands by throwing a MethodNotFound */
   private val catchAllHandler: PartialFunction[ServerCommand, StandardRoute] = {
     case ServerCommand(name, _) => throw HttpError.MethodNotFound(name)
@@ -66,10 +75,12 @@ case class Server(
     }
   }
 
+  def rpchost: String = rpcbindOpt.getOrElse("localhost")
+
   def authenticator(credentials: Credentials): Option[Done] =
     credentials match {
       case p @ Credentials.Provided(_)
-          if rpcPassword.nonEmpty && p.verify(rpcPassword) =>
+          if rpcPassword.isEmpty || p.verify(rpcPassword) =>
         Some(Done)
       case _ => None
     }
@@ -98,7 +109,7 @@ case class Server(
   def start(): Future[ServerBindings] = {
     val httpFut =
       Http()
-        .newServerAt(rpcbindOpt.getOrElse("localhost"), rpcport)
+        .newServerAt(rpchost, rpcport)
         .bindFlow(route)
     httpFut.foreach { http =>
       logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
