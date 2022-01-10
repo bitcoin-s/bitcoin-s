@@ -1,7 +1,6 @@
 package org.bitcoins.server
 
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.http.scaladsl.model.ws.{
   Message,
@@ -9,6 +8,7 @@ import akka.http.scaladsl.model.ws.{
   WebSocketRequest,
   WebSocketUpgradeResponse
 }
+import akka.http.scaladsl.model.{HttpHeader, StatusCodes}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.ws.ChainNotification.BlockProcessedNotification
@@ -63,9 +63,13 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     }
     .toMat(endSink)(Keep.right)
 
-  def buildReq(conf: BitcoinSAppConfig): WebSocketRequest = {
+  def buildReq(
+      conf: BitcoinSAppConfig,
+      rpcPassword: Option[String] = None): WebSocketRequest = {
     val headers: Vector[HttpHeader] = Vector(
-      Authorization(BasicHttpCredentials("bitcoins", conf.rpcPassword)))
+      Authorization(
+        BasicHttpCredentials("bitcoins",
+                             rpcPassword.getOrElse(conf.rpcPassword))))
     WebSocketRequest(s"ws://localhost:${conf.wsPort}/events",
                      extraHeaders = headers)
   }
@@ -76,6 +80,27 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     (Future[Seq[WsNotification[_]]], Promise[Option[Message]])] = {
     Flow
       .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
+  }
+
+  it must "fail if RPC password is incorrect" in { serverWithBitcoind =>
+    val ServerWithBitcoind(_, server) = serverWithBitcoind
+    val req = buildReq(server.conf, Some("wrong password"))
+    val notificationsF = Http().singleWebSocketRequest(req, websocketFlow)
+
+    for {
+      response <- notificationsF._1
+    } yield {
+      assert(response.response.status == StatusCodes.Unauthorized)
+
+      val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
+                             rpcPassword = "wrong password")
+      val cliResponse =
+        ConsoleCli.exec(CliCommand.GetNewAddress(labelOpt = None), cliConfig)
+
+      assert(cliResponse.isFailure)
+      assert(
+        cliResponse.failed.get.getMessage == "The supplied authentication is invalid")
+    }
   }
 
   it must "receive updates when an address is generated" in {

@@ -2040,7 +2040,10 @@ object ConsoleCli {
         Try(ujson.read(rawBody).obj)
           .transform[mutable.LinkedHashMap[String, ujson.Value]](
             Success(_),
-            _ => error(s"Response was not a JSON object! Got: $rawBody"))
+            _ =>
+              Success(
+                mutable.LinkedHashMap[String, ujson.Value](
+                  "error" -> Str(rawBody))))
 
       /** Gets the given key from jsObj if it exists
         * and is not null
