@@ -154,10 +154,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       node = dlcNodeConf.createDLCNode(wallet)
     } yield node
 
-    val tupleF = buildWsSource()
+    val tuple = buildWsSource
 
-    val wsQueueF: Future[SourceQueueWithComplete[Message]] = tupleF.map(_._1)
-    val wsSourceF: Future[Source[Message, NotUsed]] = tupleF.map(_._2)
+    val wsQueue: SourceQueueWithComplete[Message] = tuple._1
+    val wsSource: Source[Message, NotUsed] = tuple._2
     //start our http server now that we are synced
     for {
       node <- configuredNodeF
@@ -175,10 +175,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
       dlcNode <- dlcNodeF
       _ <- dlcNode.start()
-      _ = println(s"before wsQueue/wsSource")
-      wsQueue <- wsQueueF
-      wsSource <- wsSourceF
-      _ = println(s"after wsQueue/wsSource")
+
       _ <- startHttpServer(nodeApi = node,
                            chainApi = chainApi,
                            wallet = wallet,
@@ -237,9 +234,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                               feeRateApi = feeProvider)
     }
 
-    val tupleF = buildWsSource()
-    val wsQueueF: Future[SourceQueueWithComplete[Message]] = tupleF.map(_._1)
-    val wsSourceF: Future[Source[Message, NotUsed]] = tupleF.map(_._2)
+    val tuple = buildWsSource
+    val wsQueue: SourceQueueWithComplete[Message] = tuple._1
+    val wsSource: Source[Message, NotUsed] = tuple._2
 
     for {
       _ <- bitcoindRpcConf.start()
@@ -251,10 +248,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         bitcoindNetwork == walletConf.network,
         s"bitcoind ($bitcoindNetwork) on different network than wallet (${walletConf.network})")
 
-      _ = println(s"before wsQueue/wsSource")
-      wsQueue <- wsQueueF
-      wsSource <- wsSourceF
-      _ = println(s"after wsQueue/wsSource")
       _ = logger.info("Creating wallet")
       chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, bitcoind)
       tmpWallet <- tmpWalletF
@@ -546,8 +539,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     * The Source can be wired up with Directives.handleWebSocketMessages
     * to create a flow that emits websocket messages
     */
-  private def buildWsSource()(implicit ec: ExecutionContext): Future[
-    (SourceQueueWithComplete[Message], Source[Message, NotUsed])] = {
+  private def buildWsSource: (
+      SourceQueueWithComplete[Message],
+      Source[Message, NotUsed]) = {
     val maxBufferSize: Int = 25
 
     /** This will queue [[maxBufferSize]] elements in the queue. Once the buffer size is reached,
@@ -564,11 +558,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
 
     //need to drain the websocket queue if noone is connected
-    val ignoredF: Future[Done] = tuple._2.runWith(Sink.ignore)
+    val _: Future[Done] = tuple._2.runWith(Sink.ignore)
 
-    for {
-      _ <- ignoredF
-    } yield tuple
+    tuple
   }
 }
 
