@@ -74,7 +74,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
           .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
 
       account <- wallet.getDefaultAccount()
-      feeRate <- wallet.getFeeRate
+      feeRate <- wallet.getFeeRate()
       (txBuilder, utxoInfos) <- bitcoind.getNewAddress.flatMap { addr =>
         val output = TransactionOutput(valueToBitcoind, addr.scriptPubKey)
         wallet
