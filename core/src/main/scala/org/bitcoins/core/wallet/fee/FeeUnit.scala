@@ -35,6 +35,13 @@ sealed abstract class FeeUnit {
   def toLong: Long = currencyUnit.satoshis.toLong
 
   override def toString: String = s"$toLong ${factory.unitString}"
+
+  def toSatsPerVByte: SatoshisPerVirtualByte = this match {
+    case s: SatoshisPerVirtualByte => s
+    case s: SatoshisPerByte        => s.toSatsPerVByte
+    case s: SatoshisPerKiloByte    => s.toSatsPerVByte
+    case s: SatoshisPerKW          => s.toSatsPerVByte
+  }
 }
 
 trait FeeUnitFactory[+T <: FeeUnit] {

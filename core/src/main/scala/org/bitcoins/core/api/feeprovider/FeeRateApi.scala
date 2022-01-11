@@ -6,6 +6,6 @@ import scala.concurrent.Future
 
 trait FeeRateApi {
 
-  def getFeeRate: Future[FeeUnit]
+  def getFeeRate(): Future[FeeUnit]
 
 }

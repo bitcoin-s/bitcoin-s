@@ -83,7 +83,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   // Fee Rate Provider
 
-  override def getFeeRate: Future[FeeUnit] =
+  override def getFeeRate(): Future[FeeUnit] =
     estimateSmartFee(blocks = 6).flatMap { result =>
       result.feerate match {
         case Some(feeRate) => Future.successful(feeRate)

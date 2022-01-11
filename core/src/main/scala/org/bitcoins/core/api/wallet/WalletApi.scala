@@ -40,7 +40,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
 
-  def getFeeRate: Future[FeeUnit] = feeRateApi.getFeeRate
+  def getFeeRate(): Future[FeeUnit] = feeRateApi.getFeeRate()
 
   def start(): Future[WalletApi]
 
@@ -239,7 +239,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   protected def determineFeeRate(feeRateOpt: Option[FeeUnit]): Future[FeeUnit] =
     feeRateOpt match {
       case None =>
-        feeRateApi.getFeeRate
+        feeRateApi.getFeeRate()
       case Some(feeRate) =>
         Future.successful(feeRate)
     }
