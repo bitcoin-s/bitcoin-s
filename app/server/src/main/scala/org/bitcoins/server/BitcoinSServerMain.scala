@@ -557,7 +557,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         .run()
     }
 
-    //need to drain the websocket queue if noone is connected
+    //need to drain the websocket queue if no one is connected
     val _: Future[Done] = tuple._2.runWith(Sink.ignore)
 
     tuple
