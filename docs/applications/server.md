@@ -57,13 +57,13 @@ docker build app/server/target/docker/stage/ -t bitcoin-s-server:latest
 
 Finally, let's run the image! It's important that you correctly configure port forwarding with the docker container so
 you can interact with the running container with `bitcoin-s-cli` or `curl`. By default, our oracle
-server listens for requests on port `9999`.
+server listens for requests on port `9999`. By default, the server listens for websocket connections on port `19999` at `/events`.
 
 This means we need to forward requests on the host machine to the docker container correctly.
 
 This can be done with the following command
 ```
-docker run -d -p 9999:9999 bitcoin-s-server:latest
+docker run -d -p 9999:9999 -p 19999:19999 bitcoin-s-server:latest
 ```
 
 Now you can send requests with `bitcoin-s-cli` or `curl`.
@@ -96,6 +96,12 @@ You can also pass in a custom `rpcport` to bind to
 ./app/server/target/universal/stage/bin/bitcoin-s-server --rpcport 12345
 ```
 
+Or set a custom `wsport` to bind to
+
+```bash
+./app/server/target/universal/stage/bin/bitcoin-s-server --wsport 54321
+```
+
 For more information on configuring the server please see our [configuration](../config/configuration.md) document
 
 For more information on how to use our built in `cli` to interact with the server please see [cli.md](cli.md)
@@ -111,7 +117,7 @@ You can use bitcoin-s with docker volumes. You can also pass in a custom configu
 
 ```basrc
 docker volume create bitcoin-s
-docker run -p 9999:9999 \
+docker run -p 9999:9999 -p 19999:19999 \
 --mount source=bitcoin-s,target=/home/bitcoin-s/ bitcoinscala/bitcoin-s-server:latest
 ```
 
@@ -128,7 +134,7 @@ the default one we provide [here](https://github.com/bitcoin-s/bitcoin-s/blob/ma
 You can do this with the following command
 
 ```bashrc
-docker run -p 9999:9999 \
+docker run -p 9999:9999 -p 19999:19999 \
 --mount type=bind,source=/my/new/config/,target=/home/bitcoin-s/.bitcoin-s/ \
 bitcoinscala/bitcoin-s-server:latest --conf /home/bitcoin-s/.bitcoin-s/bitcoin-s.conf
 ```
