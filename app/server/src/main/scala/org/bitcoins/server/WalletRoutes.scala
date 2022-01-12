@@ -810,8 +810,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
     case ServerCommand("estimatefee", _) =>
       complete {
-        wallet.getFeeRate.map { fee =>
-          Server.httpSuccess(fee.toString)
+        wallet.getFeeRate().map { fee =>
+          Server.httpSuccess(fee.toSatsPerVByte)
         }
       }
 

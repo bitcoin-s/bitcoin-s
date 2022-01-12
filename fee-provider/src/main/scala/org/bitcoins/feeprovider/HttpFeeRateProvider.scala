@@ -38,7 +38,7 @@ abstract class HttpFeeRateProvider[T <: FeeUnit] extends FeeRateApi {
 
   protected def proxyParams: Option[Socks5ProxyParams]
 
-  def getFeeRate: Future[T] = {
+  override def getFeeRate(): Future[T] = {
     HttpFeeRateProvider
       .makeApiCall(uri, proxyParams)
       .flatMap(ret => Future.fromTry(converter(ret)))(system.dispatcher)
@@ -54,13 +54,13 @@ abstract class CachedHttpFeeRateProvider[T <: FeeUnit]
 
   private def updateFeeRate(): Future[T] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
-    super.getFeeRate.map { feeRate =>
+    super.getFeeRate().map { feeRate =>
       cachedFeeRateOpt = Some((feeRate, TimeUtil.now))
       feeRate
     }
   }
 
-  override def getFeeRate: Future[T] = {
+  override def getFeeRate(): Future[T] = {
     cachedFeeRateOpt match {
       case None =>
         updateFeeRate()

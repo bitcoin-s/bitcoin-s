@@ -383,7 +383,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
     for {
       parent <- wallet.sendToAddress(testAddress, amountToSend, None)
-      bumpRate <- wallet.feeRateApi.getFeeRate
+      bumpRate <- wallet.feeRateApi.getFeeRate()
       child <- wallet.bumpFeeCPFP(parent.txIdBE, bumpRate)
 
       received <- wallet.spendingInfoDAO.findTx(child).map(_.nonEmpty)
@@ -463,7 +463,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
       algo: CoinSelectionAlgo): Future[Assertion] = {
     for {
       account <- wallet.getDefaultAccount()
-      feeRate <- wallet.getFeeRate
+      feeRate <- wallet.getFeeRate()
       allUtxos <- wallet.listUtxos(account.hdAccount)
       output = TransactionOutput(amountToSend, testAddress.scriptPubKey)
       expectedUtxos =

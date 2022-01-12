@@ -309,7 +309,7 @@ object BitcoinSWalletTest extends WalletLogger {
     // Useful for tests
     var lastFeeRate: Option[FeeUnit] = None
 
-    override def getFeeRate: Future[FeeUnit] = {
+    override def getFeeRate(): Future[FeeUnit] = {
       val feeRate = FeeUnitGen.feeUnit.sampleSome
 
       lastFeeRate = Some(feeRate)
