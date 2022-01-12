@@ -249,4 +249,26 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         assert(notifications.count(_.`type` == WalletWsType.ReservedUtxos) == 2)
       }
   }
+
+  it must "not queue things on the websocket while there is no one connected" in {
+    serverWithBitcoind =>
+      val ServerWithBitcoind(_, server) = serverWithBitcoind
+
+      val req = buildReq(server.conf)
+      val tuple: (
+          Future[WebSocketUpgradeResponse],
+          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+        Http()
+          .singleWebSocketRequest(req, websocketFlow)
+      }
+
+      val notificationsF: Future[Seq[WsNotification[_]]] = tuple._2._1
+      val promise = tuple._2._2
+
+      for {
+        _ <- AkkaUtil.nonBlockingSleep(2.seconds)
+        _ = promise.success(None)
+        notifications <- notificationsF
+      } yield assert(notifications.isEmpty)
+  }
 }

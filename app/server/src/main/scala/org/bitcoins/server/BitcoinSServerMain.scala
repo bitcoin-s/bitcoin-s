@@ -1,6 +1,6 @@
 package org.bitcoins.server
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.model.ws.Message
@@ -8,6 +8,7 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{
   BroadcastHub,
   Keep,
+  Sink,
   Source,
   SourceQueueWithComplete
 }
@@ -555,6 +556,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         .toMat(BroadcastHub.sink)(Keep.both)
         .run()
     }
+
+    //need to drain the websocket queue if no one is connected
+    val _: Future[Done] = tuple._2.runWith(Sink.ignore)
 
     tuple
   }
