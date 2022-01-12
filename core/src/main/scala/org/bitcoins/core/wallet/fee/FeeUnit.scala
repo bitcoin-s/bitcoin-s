@@ -205,6 +205,9 @@ object SatoshisPerVirtualByte extends FeeUnitFactory[SatoshisPerVirtualByte] {
   val zero: SatoshisPerVirtualByte = SatoshisPerVirtualByte(CurrencyUnits.zero)
   val one: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis.one)
 
+  /** Used to indicate we could not retrieve a fee from a [[org.bitcoins.core.api.feeprovider.FeeRateApi]] */
+  val negativeOne: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis(-1))
+
   override val unitString: String = "sats/vbyte"
 }
 
