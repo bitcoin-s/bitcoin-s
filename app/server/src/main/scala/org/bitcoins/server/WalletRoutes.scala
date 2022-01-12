@@ -813,7 +813,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
     case ServerCommand("estimatefee", _) =>
       complete {
-        val feeRateF = wallet.getFeeRate
+        val feeRateF = wallet
+          .getFeeRate()
           .recover { case scala.util.control.NonFatal(exn) =>
             logger.error(
               s"Failed to fetch fee rate from wallet, returning -1 sats/vbyte",
