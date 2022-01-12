@@ -34,4 +34,24 @@ class BitcoinSServerMainBitcoindTest
         assert(blockHash.isSuccess)
       }
   }
+
+  it must "fail to send requests to the app server if the password is bad" in {
+    config: BitcoinSAppConfig =>
+      val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
+
+      val cliConfig =
+        Config(rpcPortOpt = Some(config.rpcPort), rpcPassword = "bad_password")
+
+      val failF = for {
+        _ <- server.start()
+        infoT = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
+      } yield {
+        assert(infoT.isFailure)
+        assert(
+          infoT.failed.get.getMessage
+            .contains("The supplied authentication is invalid"))
+      }
+
+      failF
+  }
 }

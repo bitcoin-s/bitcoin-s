@@ -7,6 +7,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.directives.Credentials.Missing
 import akka.http.scaladsl.server.directives.{Credentials, DebuggingDirectives}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
@@ -77,13 +78,15 @@ case class Server(
 
   def rpchost: String = rpcbindOpt.getOrElse("localhost")
 
-  def authenticator(credentials: Credentials): Option[Done] =
+  private def authenticator(credentials: Credentials): Option[Done] = {
     credentials match {
-      case p @ Credentials.Provided(_)
-          if rpcPassword.isEmpty || p.verify(rpcPassword) =>
-        Some(Done)
-      case _ => None
+      case p @ Credentials.Provided(_) =>
+        if (rpcPassword.isEmpty || p.verify(rpcPassword)) {
+          Some(Done)
+        } else None
+      case Missing => None
     }
+  }
 
   val route: Route =
     // TODO implement better logging
