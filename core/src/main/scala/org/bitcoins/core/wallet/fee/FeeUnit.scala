@@ -36,12 +36,8 @@ sealed abstract class FeeUnit {
 
   override def toString: String = s"$toLong ${factory.unitString}"
 
-  def toSatsPerVByte: SatoshisPerVirtualByte = this match {
-    case s: SatoshisPerVirtualByte => s
-    case s: SatoshisPerByte        => s.toSatsPerVByte
-    case s: SatoshisPerKiloByte    => s.toSatsPerVByte
-    case s: SatoshisPerKW          => s.toSatsPerVByte
-  }
+  /** Converts the current fee unit to sats/vybte */
+  def toSatsPerVByte: SatoshisPerVirtualByte
 }
 
 trait FeeUnitFactory[+T <: FeeUnit] {
@@ -91,6 +87,9 @@ case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
   }
 
   override def factory: FeeUnitFactory[SatoshisPerByte] = SatoshisPerByte
+
+  override val toSatsPerVByte: SatoshisPerVirtualByte = SatoshisPerVirtualByte(
+    currencyUnit)
 }
 
 object SatoshisPerByte extends FeeUnitFactory[SatoshisPerByte] {
@@ -139,6 +138,10 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
 
   lazy val toSatPerByte: SatoshisPerByte = toSatPerByteExact
 
+  /** Converts sats/kb -> sats/vbyte with rounding if necessary. */
+  override val toSatsPerVByte: SatoshisPerVirtualByte =
+    toSatPerByteRounded.toSatsPerVByte
+
   override def factory: FeeUnitFactory[SatoshisPerKiloByte] =
     SatoshisPerKiloByte
 
@@ -179,6 +182,9 @@ case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit)
   override def toString: String = s"$toLong sats/vbyte"
 
   lazy val toSatoshisPerKW: SatoshisPerKW = SatoshisPerKW(currencyUnit * 250)
+
+  override val toSatsPerVByte: SatoshisPerVirtualByte = this
+
 }
 
 object SatoshisPerVirtualByte extends FeeUnitFactory[SatoshisPerVirtualByte] {
@@ -217,6 +223,9 @@ case class SatoshisPerKW(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
   override def factory: FeeUnitFactory[SatoshisPerKW] = SatoshisPerKW
 
   override def toString: String = s"$toLong sats/kw"
+
+  override val toSatsPerVByte: SatoshisPerVirtualByte = SatoshisPerVirtualByte(
+    currencyUnit / Satoshis(250))
 }
 
 object SatoshisPerKW extends FeeUnitFactory[SatoshisPerKW] {

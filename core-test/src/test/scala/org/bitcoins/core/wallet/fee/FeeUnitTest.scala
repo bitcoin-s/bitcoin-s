@@ -65,10 +65,25 @@ class FeeUnitTest extends BitcoinSUnitTest {
     assert(satPerKb.toSatPerByte == SatoshisPerByte(Satoshis(3)))
   }
 
-  it must "correctly convert SatoshisPerVirtualByte to SatoshisPerKW" in {
-    val satPerVb = SatoshisPerVirtualByte(Satoshis(3))
+  it must "correctly convert SatoshisPerKiloByte to SatoshisPerVirtualByte and vice versa" in {
+    val satPerKb = SatoshisPerKiloByte(Satoshis(3000))
+    val expectedSatsPerVByte = SatoshisPerVirtualByte(Satoshis(3))
 
-    assert(satPerVb.toSatoshisPerKW == SatoshisPerKW(Satoshis(750)))
+    assert(satPerKb.toSatsPerVByte == expectedSatsPerVByte)
+  }
+
+  it must "correctly convert SatoshisPerVirtualByte to SatoshisPerKW and vice versa" in {
+    val satPerVb = SatoshisPerVirtualByte(Satoshis(3))
+    val expectedSatsPerKW = SatoshisPerKW(Satoshis(750))
+    assert(satPerVb.toSatoshisPerKW == expectedSatsPerKW)
+
+    assert(expectedSatsPerKW.toSatsPerVByte == satPerVb)
+  }
+
+  it must "correctly convert SatoshisPerByte to SatoshisPerVirtualByte and vice versa" in {
+    val satsPerVb = SatoshisPerVirtualByte(Satoshis(100))
+    val expectedSatsPerByte = SatoshisPerByte(Satoshis(100))
+    assert(expectedSatsPerByte.toSatsPerVByte == satsPerVb)
   }
 
   it must "calculate the same fee when using SatoshisPerVirtualByte.toSatoshisPerKW" in {
