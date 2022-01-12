@@ -142,7 +142,7 @@ val nodeF = for {
   peer &lt;- peerF
 } yield {
     val dataMessageHandler = DataMessageHandler(chainApi)
-    NeutrinoNode(nodePeer = Vector(peer),
+    NeutrinoNode(configPeersOverride = Vector(peer),
                dataMessageHandler = dataMessageHandler,
                nodeConfig = nodeConfig,
                chainConfig = chainConfig,
