@@ -22,10 +22,7 @@ import scala.concurrent.{Await, Future}
   * This does mean that test cases have to be written in such a way where assertions
   * are not dependent on specific bitcoind state.
   */
-trait CachedBitcoind[T <: BitcoindRpcClient] { _: BitcoinSAkkaAsyncTest => }
-
-trait CachedBitcoindFunded[T <: BitcoindRpcClient] extends CachedBitcoind[T] {
-  _: BitcoinSAkkaAsyncTest =>
+trait CachedBitcoind[T <: BitcoindRpcClient] { _: BitcoinSAkkaAsyncTest =>
 
   /** Flag to indicate if the bitcoind was used
     *
@@ -38,6 +35,44 @@ trait CachedBitcoindFunded[T <: BitcoindRpcClient] extends CachedBitcoind[T] {
     * cleaned up in the same method.
     */
   protected val isBitcoindUsed: AtomicBoolean = new AtomicBoolean(false)
+
+}
+
+/** A cached bitcoind that has zero blocks in its chainstate. This is useful for
+  * testing at certain times when we need to make sure bitcoind is ONLY initialized, no chain state.
+  */
+trait CachedBitcoindNoFunds[T <: BitcoindRpcClient] extends CachedBitcoind[T] {
+  _: BitcoinSAkkaAsyncTest =>
+  def cachedBitcoind: Future[T]
+
+  override def afterAll(): Unit = {
+    if (isBitcoindUsed.get()) {
+      //if it was used, shut down the cached bitcoind
+      val stoppedF = for {
+        cachedBitcoind <- cachedBitcoind
+        _ <- BitcoindRpcTestUtil.stopServer(cachedBitcoind)
+      } yield ()
+
+      Await.result(stoppedF, duration)
+    } else {
+      //do nothing since bitcoind wasn't used
+    }
+  }
+}
+
+trait CachedBitcoindNoFundsNewest
+    extends CachedBitcoindNoFunds[BitcoindRpcClient] {
+  _: BitcoinSAkkaAsyncTest =>
+
+  override lazy val cachedBitcoind: Future[BitcoindRpcClient] = {
+    val _ = isBitcoindUsed.set(true)
+    BitcoinSFixture
+      .createBitcoind(Some(BitcoindVersion.newest))
+  }
+}
+
+trait CachedBitcoindFunded[T <: BitcoindRpcClient] extends CachedBitcoind[T] {
+  _: BitcoinSAkkaAsyncTest =>
 
   /** The bitcoind instance, lazyily created */
   protected lazy val cachedBitcoindWithFundsF: Future[BitcoindRpcClient] = {
