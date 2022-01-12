@@ -7,7 +7,10 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-case class AggregateFeeRateApi(providers: Vector[FeeRateApi])(implicit
+/** Takes multiple [[FeeRateApi FeeRateApis]] and attempts to get a fee rate from
+  * one in order until one succeeds.
+  */
+case class FallbackFeeRateApi(providers: Vector[FeeRateApi])(implicit
     ec: ExecutionContext)
     extends FeeRateApi {
 

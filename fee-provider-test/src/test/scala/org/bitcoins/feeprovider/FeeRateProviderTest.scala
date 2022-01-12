@@ -104,7 +104,7 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
     val providerA = ConstantFeeRateProvider(expected)
     val providerB = ConstantFeeRateProvider(SatoshisPerByte(Satoshis(2)))
 
-    val provider = AggregateFeeRateApi(Vector(providerA, providerB))
+    val provider = FallbackFeeRateApi(Vector(providerA, providerB))
 
     provider.getFeeRate().map { feeRate =>
       assert(feeRate == expected)
