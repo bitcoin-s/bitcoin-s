@@ -99,6 +99,18 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
     }
   }
 
+  it must "use an aggregate of fee providers" in {
+    val expected = SatoshisPerByte(Satoshis(4))
+    val providerA = ConstantFeeRateProvider(expected)
+    val providerB = ConstantFeeRateProvider(SatoshisPerByte(Satoshis(2)))
+
+    val provider = FallbackFeeRateApi(Vector(providerA, providerB))
+
+    provider.getFeeRate().map { feeRate =>
+      assert(feeRate == expected)
+    }
+  }
+
   private def testProvider(provider: FeeRateApi): Future[Assertion] = {
     provider.getFeeRate().map { feeRate =>
       assert(feeRate.toLong > 0)
