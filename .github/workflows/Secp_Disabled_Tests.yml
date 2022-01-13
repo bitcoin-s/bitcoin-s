@@ -30,4 +30,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: run tests
-        run: sbt ++2.13.6 cryptoTestJVM/test coreTestJVM/test dlcTest/test
+        run: sbt ++2.13.7 cryptoTestJVM/test coreTestJVM/test dlcTest/test
