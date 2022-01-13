@@ -3,7 +3,7 @@
 addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.7")
 
 // collect code coverage when executing tests
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.9.2")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.9.3")
 
 // report code coverage to Coveralls
 addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.3.1")
@@ -38,7 +38,7 @@ addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.3.2")
 addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.1.2")
 
 // Scala.js
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.7.1")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.8.0")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.20.0")
 
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.1.0")
