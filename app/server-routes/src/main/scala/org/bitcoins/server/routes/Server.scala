@@ -81,33 +81,40 @@ case class Server(
   private def authenticator(credentials: Credentials): Option[Done] = {
     credentials match {
       case p @ Credentials.Provided(_) =>
-        if (rpcPassword.isEmpty || p.verify(rpcPassword)) {
-          Some(Done)
-        } else None
+        if (p.verify(rpcPassword)) Some(Done) else None
       case Missing => None
     }
   }
 
-  val route: Route =
-    // TODO implement better logging
-    DebuggingDirectives.logRequestResult(
-      ("http-rpc-server", Logging.DebugLevel)) {
-      withErrorHandling {
-        authenticateBasic("auth", authenticator) { _ =>
-          pathSingleSlash {
-            post {
-              entity(as[ServerCommand]) { cmd =>
-                val init = PartialFunction.empty[ServerCommand, Route]
-                val handler = handlers.foldLeft(init) { case (accum, curr) =>
-                  accum.orElse(curr.handleCommand)
-                }
-                handler.orElse(catchAllHandler).apply(cmd)
-              }
+  val route: Route = {
+
+    val commonRoute = withErrorHandling {
+      pathSingleSlash {
+        post {
+          entity(as[ServerCommand]) { cmd =>
+            val init = PartialFunction.empty[ServerCommand, Route]
+            val handler = handlers.foldLeft(init) { case (accum, curr) =>
+              accum.orElse(curr.handleCommand)
             }
+            handler.orElse(catchAllHandler).apply(cmd)
           }
         }
       }
     }
+
+    val authenticatedRoute = if (rpcPassword.isEmpty) {
+      commonRoute
+    } else {
+      authenticateBasic("auth", authenticator) { _ =>
+        commonRoute
+      }
+    }
+
+    DebuggingDirectives.logRequestResult(
+      ("http-rpc-server", Logging.DebugLevel)) {
+      authenticatedRoute
+    }
+  }
 
   def start(): Future[ServerBindings] = {
     val httpFut =
@@ -144,9 +151,15 @@ case class Server(
   private val eventsRoute = "events"
 
   private def wsRoutes: Route = {
-    authenticateBasic("auth", authenticator) { _ =>
-      path(eventsRoute) {
-        Directives.handleWebSocketMessages(wsHandler)
+    val commonRoute = path(eventsRoute) {
+      Directives.handleWebSocketMessages(wsHandler)
+    }
+
+    if (rpcPassword.isEmpty) {
+      commonRoute
+    } else {
+      authenticateBasic("auth", authenticator) { _ =>
+        commonRoute
       }
     }
   }
