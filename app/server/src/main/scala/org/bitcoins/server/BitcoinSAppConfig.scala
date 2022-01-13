@@ -147,6 +147,8 @@ case class BitcoinSAppConfig(
     }
   }
 
+  def rpcPassword: String = config.getString("bitcoin-s.server.password")
+
   def exists(): Boolean = {
     directory.resolve("bitcoin-s.conf").toFile.isFile
   }

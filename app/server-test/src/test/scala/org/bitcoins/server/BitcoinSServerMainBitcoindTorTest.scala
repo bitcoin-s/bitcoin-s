@@ -16,7 +16,8 @@ class BitcoinSServerMainBitcoindTorTest
     config: BitcoinSAppConfig =>
       val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
 
-      val cliConfig: Config = Config(rpcPortOpt = Some(config.rpcPort))
+      val cliConfig = Config(rpcPortOpt = Some(config.rpcPort),
+                             rpcPassword = config.rpcPassword)
 
       for {
         _ <- torF
