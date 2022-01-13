@@ -28,4 +28,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: run tests
-        run: sbt ++2.13.7 downloadBitcoind coverage nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcNodeTest/test
+        run: sbt ++2.13.8 downloadBitcoind coverage nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcNodeTest/test
