@@ -32,7 +32,6 @@
         <appender-ref ref="FILE"/>
     </root>
 
-    <logger name="akka" level="DEBUG"/>
     <!-- ╔═══════════════════════╗ -->
     <!-- ║   Bitcoin-S logging   ║-->
     <!-- ╚═══════════════════════╝ -->
