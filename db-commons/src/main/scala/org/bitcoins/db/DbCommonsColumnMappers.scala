@@ -489,4 +489,11 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType.base[ExtKeyPubVersion, String](_.hex,
                                                     ExtKeyPubVersion.fromHex)
   }
+
+  implicit val dlcSerializationVersion: BaseColumnType[
+    DLCSerializationVersion] = {
+    MappedColumnType.base[DLCSerializationVersion, String](
+      _.toString,
+      DLCSerializationVersion.fromString)
+  }
 }

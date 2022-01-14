@@ -2,42 +2,25 @@ package org.bitcoins.dlc.wallet.util
 
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce, Sha256Digest}
-import org.bitcoins.dlc.wallet.models.{
-  DLCAcceptDAO,
-  DLCAcceptDb,
-  DLCAnnouncementDAO,
-  DLCAnnouncementDb,
-  DLCCETSignaturesDAO,
-  DLCCETSignaturesDb,
-  DLCContractDataDAO,
-  DLCContractDataDb,
-  DLCDAO,
-  DLCFundingInputDAO,
-  DLCFundingInputDb,
-  DLCOfferDAO,
-  DLCOfferDb,
-  DLCRefundSigsDAO,
-  DLCRefundSigsDb,
-  OracleNonceDAO,
-  OracleNonceDb
-}
+import org.bitcoins.dlc.wallet.models._
 
 import scala.concurrent.ExecutionContext
 
 /** Utility class to help build actions to insert things into our DLC tables */
-case class DLCActionBuilder(
-    dlcDAO: DLCDAO,
-    contractDataDAO: DLCContractDataDAO,
-    dlcAnnouncementDAO: DLCAnnouncementDAO,
-    dlcInputsDAO: DLCFundingInputDAO,
-    dlcOfferDAO: DLCOfferDAO,
-    dlcAcceptDAO: DLCAcceptDAO,
-    dlcSigsDAO: DLCCETSignaturesDAO,
-    dlcRefundSigDAO: DLCRefundSigsDAO,
-    oracleNonceDAO: OracleNonceDAO) {
+case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
+
+  private val dlcDAO = dlcWalletDAOs.dlcDAO
+  private val dlcAnnouncementDAO = dlcWalletDAOs.dlcAnnouncementDAO
+  private val dlcInputsDAO = dlcWalletDAOs.dlcInputsDAO
+  private val dlcOfferDAO = dlcWalletDAOs.dlcOfferDAO
+  private val contractDataDAO = dlcWalletDAOs.contractDataDAO
+  private val dlcAcceptDAO = dlcWalletDAOs.dlcAcceptDAO
+  private val dlcSigsDAO = dlcWalletDAOs.dlcSigsDAO
+  private val dlcRefundSigDAO = dlcWalletDAOs.dlcRefundSigDAO
+  private val oracleNonceDAO = dlcWalletDAOs.oracleNonceDAO
 
   //idk if it matters which profile api i import, but i need access to transactionally
-  import dlcDAO.profile.api._
+  import dlcWalletDAOs.dlcDAO.profile.api._
 
   /** Builds an offer in our database, adds relevant information to the global table,
     * contract data, announcements, funding inputs, and the actual offer itself
