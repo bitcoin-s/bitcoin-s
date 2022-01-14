@@ -26,15 +26,28 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   import dlcDAO.profile.api._
   private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
 
+  private lazy val dlcDataManagement: DLCDataManagement = DLCDataManagement(
+    dlcWalletDAOs)
+
   /** Calculates the new state of the DLCDb based on the closing transaction,
     * will delete old CET sigs that are no longer needed after execution
     */
   def calculateAndSetState(dlcDb: DLCDb): Future[DLCDb] = {
     (dlcDb.contractIdOpt, dlcDb.closingTxIdOpt) match {
       case (Some(id), Some(txId)) =>
-        val executorWithSetupOptF = executorAndSetupFromDb(id)
-        executorWithSetupOptF.flatMap { case executorWithSetupOpt =>
-          executorWithSetupOpt match {
+        val fundingInputsF = dlcInputsDAO.findByDLCId(dlcDb.dlcId)
+        val scriptSigParamsF =
+          fundingInputsF.flatMap(inputs => getScriptSigParams(dlcDb, inputs))
+
+        for {
+          scriptSigParams <- scriptSigParamsF
+          executorWithSetupOpt <- dlcDataManagement.executorAndSetupFromDb(
+            id,
+            transactionDAO,
+            remoteTxDAO,
+            scriptSigParams,
+            keyManager)
+          updatedDlcDb <- executorWithSetupOpt match {
             case Some(exeutorWithSetup) =>
               calculateAndSetStateWithSetupDLC(exeutorWithSetup.setup,
                                                dlcDb,
@@ -44,7 +57,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
               //just return the dlcdb given to us
               Future.successful(dlcDb)
           }
-        }
+        } yield updatedDlcDb
       case (None, None) | (None, Some(_)) | (Some(_), None) =>
         Future.successful(dlcDb)
     }
@@ -101,13 +114,13 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
 
       for {
         (_, contractData, offerDb, acceptDb, fundingInputDbs, _) <-
-          getDLCFundingData(dlcId)
+          dlcDataManagement.getDLCFundingData(dlcId)
         txIds = fundingInputDbs.map(_.outPoint.txIdBE)
         remotePrevTxs <- remoteTxDAO.findByTxIdBEs(txIds)
         localPrevTxs <- transactionDAO.findByTxIdBEs(txIds)
-        (sigDbs, refundSigsDb) <- getCetAndRefundSigs(dlcId)
-        (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
-          dlcDb.dlcId)
+        (sigDbs, refundSigsDb) <- dlcDataManagement.getCetAndRefundSigs(dlcId)
+        (announcements, announcementData, nonceDbs) <- dlcDataManagement
+          .getDLCAnnouncementDbs(dlcDb.dlcId)
 
         cet <-
           transactionDAO
@@ -127,10 +140,10 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           val acceptRefundSigOpt = refundSigsDb.map(_.accepterSig)
 
           val contractInfo =
-            getContractInfo(contractData,
-                            announcements,
-                            announcementData,
-                            nonceDbs)
+            dlcDataManagement.getContractInfo(contractData,
+                                              announcements,
+                                              announcementData,
+                                              nonceDbs)
 
           val offer =
             offerDb.toDLCOffer(contractInfo, fundingInputs, dlcDb, contractData)
@@ -176,9 +189,10 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         noncesByAnnouncement = nonceDbs
           .groupBy(_.announcementId)
 
-        announcementsWithId = getOracleAnnouncementsWithId(announcements,
-                                                           announcementData,
-                                                           nonceDbs)
+        announcementsWithId = dlcDataManagement.getOracleAnnouncementsWithId(
+          announcements,
+          announcementData,
+          nonceDbs)
 
         usedIds = announcementsWithId
           .filter(t => oracleInfos.exists(_.announcement == t._1))

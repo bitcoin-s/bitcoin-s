@@ -1,7 +1,6 @@
 package org.bitcoins.dlc.wallet.internal
 
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
-import org.bitcoins.core.api.wallet.db.TransactionDb
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.execution._
@@ -15,7 +14,7 @@ import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.wallet.models._
-import org.bitcoins.dlc.wallet.util.DLCActionBuilder
+import org.bitcoins.dlc.wallet.util.{DLCActionBuilder, DLCTxUtil}
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.models.TransactionDAO
 import scodec.bits._
@@ -353,7 +352,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
         transactionDAO.findByTxIdBEs(localFundingInputs.map(_.outPoint.txIdBE))
     } yield {
       val offerFundingInputs =
-        matchPrevTxsWithInputs(localFundingInputs, prevTxs)
+        DLCTxUtil.matchPrevTxsWithInputs(localFundingInputs, prevTxs)
       val offer = dlcOffer.toDLCOffer(contractInfo,
                                       offerFundingInputs,
                                       dlcDb,
@@ -412,13 +411,13 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       remotePrevTxs <-
         remoteTxDAO.findByTxIdBEs(remoteDbFundingInputs.map(_.outPoint.txIdBE))
     } yield {
-      val localFundingInputs = matchPrevTxsWithInputs(inputs =
-                                                        localDbFundingInputs,
-                                                      prevTxs = localPrevTxs)
+      val localFundingInputs = DLCTxUtil.matchPrevTxsWithInputs(
+        inputs = localDbFundingInputs,
+        prevTxs = localPrevTxs)
 
-      val remoteFundingInputs = matchPrevTxsWithInputs(inputs =
-                                                         remoteDbFundingInputs,
-                                                       prevTxs = remotePrevTxs)
+      val remoteFundingInputs = DLCTxUtil.matchPrevTxsWithInputs(
+        inputs = remoteDbFundingInputs,
+        prevTxs = remotePrevTxs)
 
       val (offerFundingInputs, acceptFundingInputs) = if (dlcDb.isInitiator) {
         (localFundingInputs, remoteFundingInputs)
@@ -436,23 +435,6 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                                                     acceptFundingInputs)
 
       DLCTxBuilder(offer, accept)
-    }
-  }
-
-  /** Takes in a list of inputs to fund DLCs, and pairs them with the full funding transaction for this input
-    * and then converts the input tx pair to a [[DLCFundingInput]]
-    * @throws NoSuchElementException when we have an input we cannot find the funding transaction for
-    */
-  private[wallet] def matchPrevTxsWithInputs(
-      inputs: Vector[DLCFundingInputDb],
-      prevTxs: Vector[TransactionDb]): Vector[DLCFundingInput] = {
-    inputs.sortBy(_.index).map { i =>
-      prevTxs.find(_.txId == i.outPoint.txId) match {
-        case Some(txDb) => i.toFundingInput(txDb.transaction)
-        case None =>
-          throw new NoSuchElementException(
-            s"Could not find previous transaction with txIdBE=${i.outPoint.txId.flip.hex}")
-      }
     }
   }
 

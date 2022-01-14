@@ -29,7 +29,11 @@ import org.bitcoins.crypto._
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.internal._
 import org.bitcoins.dlc.wallet.models._
-import org.bitcoins.dlc.wallet.util.{DLCActionBuilder, DLCStatusBuilder}
+import org.bitcoins.dlc.wallet.util.{
+  DLCActionBuilder,
+  DLCStatusBuilder,
+  DLCTxUtil
+}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
@@ -62,7 +66,7 @@ abstract class DLCWallet
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
 
-  private val dlcWalletDAOs = DLCWalletDAOs(
+  private[wallet] val dlcWalletDAOs = DLCWalletDAOs(
     dlcDAO,
     contractDataDAO,
     dlcAnnouncementDAO,
@@ -583,7 +587,7 @@ abstract class DLCWallet
             refundSigsDb <- dlcRefundSigDAO.read(dlcId)
           } yield {
             val inputRefs =
-              dlcDataManagement.matchPrevTxsWithInputs(fundingInputs, prevTxs)
+              DLCTxUtil.matchPrevTxsWithInputs(fundingInputs, prevTxs)
 
             dlcAcceptDb.toDLCAccept(offer.tempContractId,
                                     inputRefs,
@@ -866,7 +870,7 @@ abstract class DLCWallet
           offer =
             offerDb.toDLCOffer(
               contractInfo,
-              dlcDataManagement.matchPrevTxsWithInputs(offerInputs, prevTxs),
+              DLCTxUtil.matchPrevTxsWithInputs(offerInputs, prevTxs),
               dlc,
               contractData)
 
@@ -1157,7 +1161,7 @@ abstract class DLCWallet
     }
   }
 
-  private def getScriptSigParams(
+  private[wallet] def getScriptSigParams(
       dlcDb: DLCDb,
       fundingInputs: Vector[DLCFundingInputDb]): Future[
     Vector[ScriptSignatureParams[InputInfo]]] = {
