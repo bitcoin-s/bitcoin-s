@@ -368,6 +368,16 @@ class TransactionTest extends BitcoinSUnitTest {
     assert(tx.hex == hex)
   }
 
+  it must "parse 37d5ec4bca7bd077992a6dd8679ab676a22986e63ebaf2c6ea1aebe5e5f5e817" in {
+    //has an invalid x coordinate in the wit v1 spk
+    //https://blockstream.info/tx/37d5ec4bca7bd077992a6dd8679ab676a22986e63ebaf2c6ea1aebe5e5f5e817
+
+    val hex =
+      "0100000001a76e1bb0e40d989cf3613c5b73bff552adaa09bdf79264cc0c44b968502db3be01000000fdfd000047304402200b0e9309480146ed5923a14cb3cd607facf9cf7b4f51ac9d448e0c8c3030aa5602201850641a5dd1c002e6ed9b723404a069a002608f45f77af1e3eb96e911d17afd01483045022100c7063f26164395e0ac8127b827cf6ad6a472fa8516197ef9ff565d7465b08dff022073329ded25b9559ce0dfef313ed084f9e294da47ddc814d2eab8839a8a4a9f16014c69522102b09c72ee2fa77abc24613b227d1cb6944c70af7f96711d5f1c4675daaa7554d221029787faf77569cdc59db5a34e0e9f552b9950b61d593e797ae12ac1d69eb5f98821022e9df5da07c71f7e8f5f639a28900d967714f2ae72b096c69c93fd76837b01a753aeffffffff02204e000000000000225120658204033e46a1fa8cceb84013cfe2d376ca72d5f595319497b95b08aa64a97014be00000000000017a914d06f57927ef98f7dfd25e9abdf5de65e1e7215698700000000"
+    val _ = BaseTransaction.fromHex(hex)
+    succeed
+  }
+
   private def findInput(
       tx: Transaction,
       outPoint: TransactionOutPoint): Option[(TransactionInput, Int)] = {
