@@ -51,24 +51,41 @@ object GlobalData {
 
   var darkThemeEnabled: Boolean = true
 
-  def currentStyleSheets: Seq[String] =
+  def currentStyleSheets: Seq[String] = {
     if (GlobalData.darkThemeEnabled) {
       Seq(Themes.DarkTheme.fileLocation)
     } else {
       Seq.empty
     }
+  }
 
   var rpcPortOpt: Option[Int] = None
 
   var debug = false
 
-  def consoleCliConfig: Config =
-    rpcPortOpt match {
+  private var passwordOpt: Option[String] = None
+
+  /** Sets the rpc password for the GUI */
+  def setPassword(password: String): Unit = {
+    passwordOpt = Some(password)
+  }
+
+  def consoleCliConfig: Config = {
+    val rpcConfigAndDebug = rpcPortOpt match {
       case None =>
         Config(debug = debug)
       case Some(rpcPort) =>
         Config(debug = debug, rpcPortOpt = Some(rpcPort))
     }
+
+    val passwordConfig = passwordOpt match {
+      case Some(password) =>
+        rpcConfigAndDebug.copy(rpcPassword = password)
+      case None =>
+        rpcConfigAndDebug
+    }
+    passwordConfig
+  }
 
   lazy val broadcastUrl: String = GlobalData.network match {
     case MainNet =>
