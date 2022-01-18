@@ -77,7 +77,7 @@ class TorClient()(implicit
 object TorClient extends Logging {
 
   // made by doing ./tor --version
-  val TOR_VERSION = "Tor version 0.4.5.7 (git-83f895c015de5520)."
+  val TOR_VERSION = "Tor version 0.4.6.9 (git-ea2ada6d1459f829)."
   val versionFileName = "version.txt"
 
   lazy val DEFAULT_TOR_LOCATION: Option[File] = {
@@ -182,7 +182,9 @@ object TorClient extends Logging {
         "linux_64/libssl.so.1.1",
         "linux_64/libevent-2.1.so.7",
         "linux_64/libcrypto.so.1.1",
-        "linux_64/libstdc++/libstdc++.so.6"
+        "linux_64/libstdc++/libstdc++.so.6",
+        "linux_64/PluggableTransports/obfs4proxy",
+        "linux_64/PluggableTransports/snowflake-client"
       )
     )
   }
@@ -193,7 +195,12 @@ object TorClient extends Logging {
         "osx_64/tor",
         "osx_64/tor.real"
       ),
-      fileList = Vector("osx_64/LICENSE", "osx_64/libevent-2.1.7.dylib")
+      fileList = Vector(
+        "osx_64/LICENSE",
+        "osx_64/libevent-2.1.7.dylib",
+        "osx_64/PluggableTransports/obfs4proxy",
+        "osx_64/PluggableTransports/snowflake-client"
+      )
     )
   }
 
@@ -210,7 +217,9 @@ object TorClient extends Logging {
         "windows_64/libssp-0.dll",
         "windows_64/libwinpthread-1.dll",
         "windows_64/LICENSE",
-        "windows_64/zlib1.dll"
+        "windows_64/zlib1.dll",
+        "windows_64/PluggableTransports/obfs4proxy.exe",
+        "windows_64/PluggableTransports/snowflake-client.exe"
       )
     )
   }
