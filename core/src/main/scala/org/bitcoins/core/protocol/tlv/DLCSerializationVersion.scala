@@ -11,6 +11,8 @@ sealed trait DLCSerializationVersion
 
 object DLCSerializationVersion extends StringFactory[DLCSerializationVersion] {
 
+  val current: DLCSerializationVersion = Beta
+
   /** This format existed in our wallet before we merged support for this PR
     * on the DLC spec repo. See the diff below
     * @see [[https://github.com/discreetlogcontracts/dlcspecs/pull/144]]

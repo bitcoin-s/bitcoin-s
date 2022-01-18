@@ -408,7 +408,8 @@ abstract class DLCWallet
         fundingOutPointOpt = None,
         fundingTxIdOpt = None,
         closingTxIdOpt = None,
-        aggregateSignatureOpt = None
+        aggregateSignatureOpt = None,
+        serializationVersion = Some(contractInfo.serializationVersion)
       )
 
       contractDataDb = DLCContractDataDb(
@@ -497,7 +498,8 @@ abstract class DLCWallet
               fundingOutPointOpt = None,
               fundingTxIdOpt = None,
               closingTxIdOpt = None,
-              aggregateSignatureOpt = None
+              aggregateSignatureOpt = None,
+              serializationVersion = Some(contractInfo.serializationVersion)
             )
 
           contractDataDb = {

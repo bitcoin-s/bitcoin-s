@@ -226,7 +226,8 @@ object DLCWalletUtil extends Logging {
     fundingOutPointOpt = None,
     fundingTxIdOpt = None,
     closingTxIdOpt = None,
-    aggregateSignatureOpt = None
+    aggregateSignatureOpt = None,
+    serializationVersion = Some(DLCSerializationVersion.current)
   )
 
   lazy val sampleContractDataDb: DLCContractDataDb = DLCContractDataDb(

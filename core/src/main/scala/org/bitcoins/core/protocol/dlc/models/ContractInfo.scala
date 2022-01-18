@@ -18,6 +18,7 @@ import org.bitcoins.core.protocol.tlv.{
   ContractInfoTLV,
   ContractInfoV0TLV,
   ContractInfoV1TLV,
+  DLCSerializationVersion,
   OracleAnnouncementTLV,
   TLVDeserializable,
   TLVSerializable,
@@ -148,6 +149,17 @@ sealed trait ContractInfo extends TLVSerializable[ContractInfoTLV] {
   def updateOnAccept(
       newTotalCollateral: Satoshis,
       negotiationFields: DLCAccept.NegotiationFields): ContractInfo
+
+  def serializationVersion: DLCSerializationVersion = {
+    contractDescriptors.head match {
+      case _: EnumContractDescriptor =>
+        //enum contracts weren't broken by
+        //https://github.com/bitcoin-s/bitcoin-s/pull/3854
+        DLCSerializationVersion.Beta
+      case n: NumericContractDescriptor =>
+        n.outcomeValueFunc.serializationVersion
+    }
+  }
 }
 
 object ContractInfo

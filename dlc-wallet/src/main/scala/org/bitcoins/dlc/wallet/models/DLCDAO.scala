@@ -178,6 +178,7 @@ case class DLCDAO()(implicit
        fundingOutPointOpt,
        fundingTxIdOpt,
        closingTxIdOpt,
-       aggregateSignatureOpt).<>(DLCDb.tupled, DLCDb.unapply)
+       aggregateSignatureOpt,
+       serializationVersion).<>(DLCDb.tupled, DLCDb.unapply)
   }
 }

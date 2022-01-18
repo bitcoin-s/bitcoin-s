@@ -30,7 +30,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   val dlcDAO = dlcWalletDAOs.dlcDAO
   private val dlcAnnouncementDAO = dlcWalletDAOs.dlcAnnouncementDAO
   //private val dlcInputsDAO = dlcWalletDAOs.dlcInputsDAO
-  val dlcOfferDAO = dlcWalletDAOs.dlcOfferDAO
+  //private val dlcOfferDAO = dlcWalletDAOs.dlcOfferDAO
   private val contractDataDAO = dlcWalletDAOs.contractDataDAO
   private val dlcAcceptDAO = dlcWalletDAOs.dlcAcceptDAO
   private val dlcSigsDAO = dlcWalletDAOs.dlcSigsDAO
@@ -41,7 +41,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private val actionBuilder: DLCActionBuilder = {
     DLCActionBuilder(dlcWalletDAOs)
   }
-  lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
+  private val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
 
   private[wallet] def getDLCAnnouncementDbs(dlcId: Sha256Digest): Future[(
       Vector[DLCAnnouncementDb],

@@ -6,14 +6,13 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.protocol.dlc.models.ContractInfo
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
 import org.bitcoins.dlc.wallet.internal.DLCDataManagement
-import org.bitcoins.dlc.wallet.models.DLCOfferDb
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
-import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import java.nio.file._
 import scala.concurrent.{ExecutionContext, Future}
@@ -113,42 +112,37 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   private def serializationVersionMigration(): Future[Unit] = {
     val dlcManagement = DLCDataManagement.fromDbAppConfig()(this, ec)
     val dlcDAO = dlcManagement.dlcDAO
-    val offerDAO = dlcManagement.dlcOfferDAO
-    val safeDatabase = dlcManagement.safeDatabase
     //read all existing DLCs
-    val allDlcsA = dlcDAO.findAllAction()
+    val allDlcsF = dlcDAO.findAll()
 
     //get the offers so we can figure out what the serialization version is
-    val offersWithGlobalDLCA: DBIOAction[
-      Vector[(DLCDb, DLCOfferDb)],
-      NoStream,
-      Effect.Read] = for {
-      allDlcs <- allDlcsA
-      dlcWithOfferA = allDlcs.map(a =>
-        offerDAO
-          .findByDLCIdAction(a.dlcId)
-          .map(oOpt => (a, oOpt.get)))
-      seq <- DBIOAction.sequence(dlcWithOfferA)
-    } yield seq
-
-    val offersWithGlobalDLCF: Future[Vector[(DLCDb, DLCOfferDb)]] = {
-      safeDatabase.runVec(offersWithGlobalDLCA)
-    }
+    val globalWithContractInfoF: Future[Vector[(DLCDb, ContractInfo)]] = for {
+      allDlcs <- allDlcsF
+      nested = allDlcs.map { a =>
+        dlcManagement
+          .getContractInfo(a.dlcId)
+          .map(c => (a, c))
+      }
+      contractInfoWithDlcs <- Future.sequence(nested)
+    } yield contractInfoWithDlcs
 
     //now we need to insert the serialization type
     //into global_dlc_data
     val updatedDLCDbsF = for {
-      offersWithGlobalDLC <- offersWithGlobalDLCF
-    } yield parseSerializationVersions(offersWithGlobalDLC)
+      globalWithContractInfo <- globalWithContractInfoF
+    } yield setSerializationVersions(globalWithContractInfo)
 
     val updatedInDbF = updatedDLCDbsF.flatMap(dlcDAO.updateAll)
 
     updatedInDbF.map(_ => ())
   }
 
-  private def parseSerializationVersions(
-      vec: Vector[(DLCDb, DLCOfferDb)]): Vector[DLCDb] = {
-    ???
+  /** Sets serialization versions on [[DLCDb]] based on the corresponding [[ContractInfo]] */
+  private def setSerializationVersions(
+      vec: Vector[(DLCDb, ContractInfo)]): Vector[DLCDb] = {
+    vec.map { case (dlcDb, contractInfo) =>
+      dlcDb.copy(serializationVersion = Some(contractInfo.serializationVersion))
+    }
   }
 }
 
