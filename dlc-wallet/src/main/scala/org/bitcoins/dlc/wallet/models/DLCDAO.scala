@@ -158,7 +158,7 @@ case class DLCDAO()(implicit
     def aggregateSignatureOpt: Rep[Option[SchnorrDigitalSignature]] = column(
       "aggregate_signature")
 
-    def * : ProvenShape[DLCDb] =
+    override def * : ProvenShape[DLCDb] =
       (dlcId,
        tempContractId,
        contractId,
