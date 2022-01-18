@@ -300,6 +300,12 @@ class AesCryptTest extends BitcoinSCryptoTest {
     }
   }
 
+  it must "have bytes/fromBytes symmetry" in {
+    forAll(CryptoGenerators.aesEncryptedData) { enc =>
+      assert(AesEncryptedData.fromBytes(enc.bytes) == enc)
+    }
+  }
+
   it must "fail to decrypt with the wrong key" in {
     forAll(NumberGenerator.bytevector.suchThat(_.size > 3)) { bytes =>
       val encrypted = AesCrypt.encrypt(bytes, aesKey)

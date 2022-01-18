@@ -83,7 +83,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   // Fee Rate Provider
 
-  override def getFeeRate: Future[FeeUnit] =
+  override def getFeeRate(): Future[FeeUnit] =
     estimateSmartFee(blocks = 6).flatMap { result =>
       result.feerate match {
         case Some(feeRate) => Future.successful(feeRate)
@@ -107,7 +107,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   }
 
   /** Gets the number of compact filters in the database */
-  override def getFilterCount(): Future[Int] = ???
+  override def getFilterCount(): Future[Int] = Future.failed(
+    new UnsupportedOperationException(s"Not implemented: getFilterCount"))
 
   /** Returns the block height of the given block stamp */
   override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
@@ -128,6 +129,12 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   /** Gets the block height of the closest block to the given time */
   override def epochSecondToBlockHeight(time: Long): Future[Int] =
     Future.successful(0)
+
+  override def getMedianTimePast(): Future[Long] = {
+    for {
+      info <- getBlockChainInfo
+    } yield info.mediantime.toLong
+  }
 
   // Node Api
 

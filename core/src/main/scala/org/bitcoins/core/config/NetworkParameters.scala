@@ -75,7 +75,8 @@ sealed abstract class MainNet extends BitcoinNetwork {
       "seed.btc.petertodd.org",
       "seed.bitcoin.jonasschnelli.ch",
       "seed.bitcoin.sprovoost.nl",
-      "dnsseed.emzy.de"
+      "dnsseed.emzy.de",
+      "seed.bitcoin.wiz.biz"
     )
   }
 

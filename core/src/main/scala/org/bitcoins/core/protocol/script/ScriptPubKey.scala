@@ -1368,8 +1368,12 @@ object WitnessScriptPubKeyV1 extends ScriptFactory[WitnessScriptPubKeyV1] {
 
   def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
     val asmBytes = BytesUtil.toByteVector(asm)
-    asm.headOption.contains(OP_1) && WitnessScriptPubKey.isValidAsm(
-      asm) && asmBytes.size == 34
+    asm.length == 3 &&
+    asm.headOption.contains(OP_1) &&
+    WitnessScriptPubKey.isValidAsm(asm) &&
+    asmBytes.size == 34 &&
+    //have to make sure we have a valid xonly pubkey, not just 32 bytes
+    SchnorrPublicKey.fromBytesT(asm(2).bytes).isSuccess
   }
 }
 

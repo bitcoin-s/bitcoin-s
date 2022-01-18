@@ -44,7 +44,15 @@ case class EventDAO()(implicit
     findByPrimaryKeys(ts.map(_.nonce))
 
   def getPendingEvents: Future[Vector[EventDb]] = {
-    findAll().map(_.filter(_.attestationOpt.isEmpty))
+    val query = table.filter(_.attestationOpt.isEmpty)
+
+    safeDatabase.runVec(query.result.transactionally)
+  }
+
+  def getCompletedEvents: Future[Vector[EventDb]] = {
+    val query = table.filter(_.attestationOpt.isDefined)
+
+    safeDatabase.runVec(query.result.transactionally)
   }
 
   def findByEventName(name: String): Future[Vector[EventDb]] = {

@@ -77,9 +77,16 @@ case class DLCAnnouncementDAO()(implicit
 
   def findByAnnouncementIds(
       ids: Vector[Long]): Future[Vector[DLCAnnouncementDb]] = {
-    val query = table.filter(_.announcementId.inSet(ids))
+    val action = findByAnnouncementIdsAction(ids)
+    safeDatabase.runVec(action)
+  }
 
-    safeDatabase.runVec(query.result)
+  def findByAnnouncementIdsAction(ids: Vector[Long]): DBIOAction[
+    Vector[DLCAnnouncementDb],
+    NoStream,
+    Effect.Read] = {
+    val query = table.filter(_.announcementId.inSet(ids))
+    query.result.map(_.toVector)
   }
 
   override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[

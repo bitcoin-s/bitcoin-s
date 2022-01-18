@@ -3,7 +3,13 @@ package org.bitcoins.core.api.wallet.db
 import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.hd._
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
+import org.bitcoins.core.protocol.script.{
+  P2SHScriptPubKey,
+  RawScriptPubKey,
+  ScriptPubKey,
+  ScriptWitness,
+  WitnessScriptPubKey
+}
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
@@ -34,7 +40,6 @@ case class SegwitV0SpendingInfo(
   override val redeemScriptOpt: Option[ScriptPubKey] = None
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
 
-  override type PathType = SegWitHDPath
   override type SpendingInfoType = SegwitV0SpendingInfo
 
   override def copyWithState(state: TxoState): SegwitV0SpendingInfo =
@@ -64,7 +69,6 @@ case class LegacySpendingInfo(
 
   override def scriptWitnessOpt: Option[ScriptWitness] = None
 
-  override type PathType = LegacyHDPath
   type SpendingInfoType = LegacySpendingInfo
 
   override def copyWithId(id: Long): LegacySpendingInfo =
@@ -96,7 +100,6 @@ case class NestedSegwitV0SpendingInfo(
   override val redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
 
-  override type PathType = NestedSegWitHDPath
   override type SpendingInfoType = NestedSegwitV0SpendingInfo
 
   override def copyWithState(state: TxoState): NestedSegwitV0SpendingInfo =
@@ -126,8 +129,6 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
       s"If we have spent a spendinginfodb, the spendingTxId must be defined. Outpoint=${outPoint.toString}")
   }
 
-  protected type PathType <: HDPath
-
   /** This type is here to ensure copyWithSpent returns the same
     * type as the one it was called on.
     */
@@ -136,7 +137,7 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   def id: Option[Long]
   def outPoint: TransactionOutPoint
   def output: TransactionOutput
-  def privKeyPath: PathType
+  def privKeyPath: HDPath
   def redeemScriptOpt: Option[ScriptPubKey]
   def scriptWitnessOpt: Option[ScriptWitness]
 
@@ -192,5 +193,78 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
       hashType
     )
   }
+}
 
+object SpendingInfoDb {
+
+  def apply(
+      id: Option[Long],
+      outpoint: TransactionOutPoint,
+      output: TransactionOutput,
+      hdPath: HDPath,
+      redeemScriptOpt: Option[ScriptPubKey],
+      scriptWitnessOpt: Option[ScriptWitness],
+      state: TxoState,
+      txId: DoubleSha256DigestBE,
+      spendingTxIdOpt: Option[DoubleSha256DigestBE]): SpendingInfoDb = {
+    require(
+      txId == outpoint.txIdBE,
+      s"Outpoint and crediting txid not the same, got=$txId expected=${outpoint.txIdBE}")
+
+    output.scriptPubKey match {
+      case _: P2SHScriptPubKey =>
+        if (scriptWitnessOpt.isDefined) {
+          require(
+            hdPath.isInstanceOf[NestedSegWitHDPath],
+            s"hdPath must be SegwitHdPath for SegwitV0SpendingInfo, got=$hdPath")
+          NestedSegwitV0SpendingInfo(outpoint,
+                                     output,
+                                     hdPath.asInstanceOf[NestedSegWitHDPath],
+                                     redeemScriptOpt.get,
+                                     scriptWitnessOpt.get,
+                                     txId,
+                                     state,
+                                     spendingTxIdOpt,
+                                     id)
+        } else {
+          require(
+            hdPath.isInstanceOf[LegacyHDPath],
+            s"hdPath must be LegacyHDPath for LegacySpendingInfo, got=$hdPath")
+          LegacySpendingInfo(outPoint = outpoint,
+                             output = output,
+                             privKeyPath = hdPath.asInstanceOf[LegacyHDPath],
+                             state = state,
+                             txid = txId,
+                             spendingTxIdOpt = spendingTxIdOpt,
+                             id = id)
+        }
+      case _: WitnessScriptPubKey =>
+        require(
+          hdPath.isInstanceOf[SegWitHDPath],
+          s"hdPath must be SegwitHdPath for SegwitV0SpendingInfo, got=$hdPath")
+        require(scriptWitnessOpt.isDefined,
+                s"ScriptWitness must be defined for SegwitV0SpendingInfo")
+        SegwitV0SpendingInfo(
+          outPoint = outpoint,
+          output = output,
+          privKeyPath = hdPath.asInstanceOf[SegWitHDPath],
+          scriptWitness = scriptWitnessOpt.get,
+          txid = txId,
+          state = state,
+          spendingTxIdOpt = spendingTxIdOpt,
+          id = id
+        )
+      case _: RawScriptPubKey =>
+        require(
+          hdPath.isInstanceOf[LegacyHDPath],
+          s"hdPath must be LegacyHDPath for LegacySpendingInfo, got=$hdPath")
+        LegacySpendingInfo(outPoint = outpoint,
+                           output = output,
+                           privKeyPath = hdPath.asInstanceOf[LegacyHDPath],
+                           state = state,
+                           txid = txId,
+                           spendingTxIdOpt = spendingTxIdOpt,
+                           id = id)
+    }
+  }
 }

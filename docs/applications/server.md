@@ -57,13 +57,13 @@ docker build app/server/target/docker/stage/ -t bitcoin-s-server:latest
 
 Finally, let's run the image! It's important that you correctly configure port forwarding with the docker container so
 you can interact with the running container with `bitcoin-s-cli` or `curl`. By default, our oracle
-server listens for requests on port `9999`.
+server listens for requests on port `9999`. By default, the server listens for websocket connections on port `19999` at `/events`.
 
 This means we need to forward requests on the host machine to the docker container correctly.
 
 This can be done with the following command
 ```
-docker run -d -p 9999:9999 bitcoin-s-server:latest
+docker run -d -p 9999:9999 -p 19999:19999 bitcoin-s-server:latest
 ```
 
 Now you can send requests with `bitcoin-s-cli` or `curl`.
@@ -96,6 +96,12 @@ You can also pass in a custom `rpcport` to bind to
 ./app/server/target/universal/stage/bin/bitcoin-s-server --rpcport 12345
 ```
 
+Or set a custom `wsport` to bind to
+
+```bash
+./app/server/target/universal/stage/bin/bitcoin-s-server --wsport 54321
+```
+
 For more information on configuring the server please see our [configuration](../config/configuration.md) document
 
 For more information on how to use our built in `cli` to interact with the server please see [cli.md](cli.md)
@@ -111,7 +117,7 @@ You can use bitcoin-s with docker volumes. You can also pass in a custom configu
 
 ```basrc
 docker volume create bitcoin-s
-docker run -p 9999:9999 \
+docker run -p 9999:9999 -p 19999:19999 \
 --mount source=bitcoin-s,target=/home/bitcoin-s/ bitcoinscala/bitcoin-s-server:latest
 ```
 
@@ -128,7 +134,7 @@ the default one we provide [here](https://github.com/bitcoin-s/bitcoin-s/blob/ma
 You can do this with the following command
 
 ```bashrc
-docker run -p 9999:9999 \
+docker run -p 9999:9999 -p 19999:19999 \
 --mount type=bind,source=/my/new/config/,target=/home/bitcoin-s/.bitcoin-s/ \
 bitcoinscala/bitcoin-s-server:latest --conf /home/bitcoin-s/.bitcoin-s/bitcoin-s.conf
 ```
@@ -140,6 +146,8 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
 
 ### Common 
  - `getversion` - The version of our application you are using
+ - `zipdatadir` `location` - Backs up the datadir in a safe and consistent manner.
+   - `location` - The locations of the backup zip
 
 ### Blockchain
  - `getblockcount` - Get the current block height
@@ -150,6 +158,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
      - `hash` - The block hash
  - `decoderawtransaction` `tx` - `Decode the given raw hex transaction`
      - `tx` - Transaction encoded in hex to decode
+ - `getmediantimepast` - Returns the median time past
 
 ### Wallet
  - `rescan` `[options]` - Rescan for wallet UTXOs
@@ -227,8 +236,6 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `newpassphrase` - The new passphrase
  - `keymanagerpassphraseset` `passphrase` - Encrypts the wallet with the given passphrase
     - `passphrase` - The passphrase to encrypt the wallet with
-- `backupwallet` `location` - Backs up the wallet database in a safe and consistent manner.
-   - `location` - The locations of the backup file
 
 ### DLC
  - `createcontractinfo` `announcement` `totalCollateral` `payouts`
@@ -334,4 +341,32 @@ CURL:
 ```bash
 $ curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "signpsbt", "params": ["cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA"]}' -H "Content-Type: application/json" http://127.0.0.1:9999/
 {"result":"cHNidP8BAP0FAQIAAAABWUWxYiPKgdGfXcIxJ6MRDxEpUecw59Gk4NpROI5oukoBAAAAAAAAAAAEPttkvdwAAAAXqRSOVAp6Qe/u2hq74e/ThB8foBKn7IfZYMgGCAAAAADbmaQ2nwAAAEdRIQLpfVqyaL9Jb/IkveatNyVeONE8Q/6TzXAWosxLo9e21SECc5G3XiK7xKLlkBG7prMx7p0fMeQwMH5e9H10mBon39JSrtgtgjjLAQAAUGMhAn2YaZnv25I6d6vbb1kw6Xp5IToDrEzl/0VBIW21gHrTZwXg5jGdALJ1IQKyNpDNiOiN6lWpYethib04+XC9bpFXrdpec+xO3U5IM2is9ckf5AABAD0CAAAAAALuiOL0rRcAABYAFPnpLByQq1Gg3vwiP6qR8FmOOjwxvVllM08DAAALBfXJH+QAsXUAAK4AAAAAAQcBAAAAAAAA","error":null}
+```
+
+## Websocket endpoints
+
+Bitcoin-s offers websocket endpoints. By default, the endpoint is `ws://localhost:1999/events`
+
+You can configure where how the endpoints are configured inside your `bitcoin-s.conf` 
+
+```
+bitcoin-s.server.wsbind=localhost
+bitcoin-s.server.wsport=19999
+```
+
+These events are implemented using our [internal callback mechanism](../wallet/wallet-callbacks.md#wallet-callbacks).
+
+An example event that is defined is our `blockprocess` event.
+Everytime our wallet processes a block, our wallet will notify you via websockets.
+Here is an example payload
+
+The current types of events defined are 
+
+1. `txprocessed` - when the wallet processes a transaction. Every transaction in a block will get relayed currently
+2. `reservedutxos` - when the wallet reserves OR unreserves utxos
+3. `newaddress` - when the wallet generates a new address 
+4. `txbroadcast` - when the wallet broadcasts a tx
+5. `blockprocessed` - when the wallet processes a block
+```
+{"type":"blockprocessed","payload":{"raw":"04e0ff2ffce8c3e866e367d305886a3f9d353e557524f61f9cf0c26c46000000000000001206d2e396387bff1c13cbe572d4646abae1ae405f4066ab5e6f5edd6d8f028008a8bb61ffff001af23dd47e","hash":"00000000000000de21f23f6945f028d5ecb47863428f6e9e035ab2fb7a3ef356","confirmations":1,"height":2131641,"version":805298180,"versionHex":"2fffe004","merkleroot":"80028f6ddd5e6f5eab66405f40aee1ba6a64d472e5cb131cff7b3896e3d20612","time":1639688200,"mediantime":1639688200,"nonce":2127838706,"bits":"1a00ffff","difficulty":1.6069135243303364E60,"chainwork":"00000000000000000000000000000000000000000000062438437ddd009e698b","previousblockhash":"00000000000000466cc2f09c1ff62475553e359d3f6a8805d367e366e8c3e8fc","nextblockhash":null}}
 ```

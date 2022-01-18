@@ -458,20 +458,24 @@ class CreateDLCOfferDialog
                   throw new RuntimeException(
                     "Got incompatible contract info and announcement")
                 case descriptor: ContractDescriptorV1TLV =>
-                  descriptor.payoutFunction.points.init.foreach { point =>
-                    addPointRow(
-                      xOpt = Some(numberFormatter.format(point.outcome)),
-                      yOpt = Some(numberFormatter.format(point.value.toLong)),
-                      isEndPoint = point.isEndpoint)
-                  }
+                  descriptor.payoutFunction.piecewisePolynomialEndpoints.init
+                    .foreach { point =>
+                      addPointRow(
+                        xOpt = Some(numberFormatter.format(point.outcome)),
+                        yOpt = Some(
+                          numberFormatter.format(point.payout.toLongExact)),
+                        isEndPoint = point.isEndpoint)
+                    }
                   // handle last specially so user can add more rows
-                  val last = descriptor.payoutFunction.points.last
+                  val last =
+                    descriptor.payoutFunction.piecewisePolynomialEndpoints.last
 
-                  addPointRow(xOpt = Some(numberFormatter.format(last.outcome)),
-                              yOpt =
-                                Some(numberFormatter.format(last.value.toLong)),
-                              isEndPoint = last.isEndpoint,
-                              row = 9999)
+                  addPointRow(
+                    xOpt = Some(numberFormatter.format(last.outcome)),
+                    yOpt =
+                      Some(numberFormatter.format(last.payout.toLongExact)),
+                    isEndPoint = last.isEndpoint,
+                    row = 9999)
                   nextPointRow -= 1 // do this so the max is the last row
 
                   // add rounding intervals
@@ -629,8 +633,12 @@ object CreateDLCOfferDialog {
               if (xTF.text.value.nonEmpty && yTF.text.value.nonEmpty) {
                 val x = numberFormatter.parse(xTF.text.value).longValue()
                 val y = numberFormatter.parse(yTF.text.value).longValue()
-                Some(
-                  OutcomePayoutPoint(x, Satoshis(y), checkBox.selected.value))
+                val point = if (checkBox.selected.value) {
+                  PiecewisePolynomialMidpoint(x, y)
+                } else {
+                  PiecewisePolynomialEndpoint(x, y)
+                }
+                Some(point)
               } else {
                 None
               }
@@ -656,7 +664,10 @@ object CreateDLCOfferDialog {
           require(sorted == outcomesValuePoints,
                   s"Must be sorted by outcome, got $outcomesValuePoints")
 
-          val func = DLCPayoutCurve(outcomesValuePoints)
+          val func =
+            DLCPayoutCurve.polynomialInterpolate(outcomesValuePoints,
+                                                 serializationVersion =
+                                                   DLCSerializationVersion.Beta)
           (totalCollateral,
            NumericContractDescriptor(
              func,

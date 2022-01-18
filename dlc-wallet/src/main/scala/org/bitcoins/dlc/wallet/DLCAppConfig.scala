@@ -5,7 +5,7 @@ import org.bitcoins.commons.config.{AppConfigFactory, ConfigOps}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, Mutable}
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -90,6 +90,14 @@ case class DLCAppConfig(private val directory: Path, private val conf: Config*)(
     DLCAppConfig.createDLCWallet(nodeApi = nodeApi,
                                  chainQueryApi = chainQueryApi,
                                  feeRateApi = feeRateApi)(walletConf, this, ec)
+  }
+
+  private val callbacks = new Mutable(DLCWalletCallbacks.empty)
+
+  def walletCallbacks: DLCWalletCallbacks = callbacks.atomicGet
+
+  def addCallbacks(newCallbacks: DLCWalletCallbacks): DLCWalletCallbacks = {
+    callbacks.atomicUpdate(newCallbacks)(_ + _)
   }
 }
 

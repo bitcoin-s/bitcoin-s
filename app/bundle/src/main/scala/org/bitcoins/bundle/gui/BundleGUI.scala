@@ -105,6 +105,10 @@ object BundleGUI extends WalletGUI with BitcoinSAppJFX3 {
         datadirParser.datadir,
         serverArgParser)(system)
 
+    if (appConfig.rpcPassword.nonEmpty) {
+      GlobalData.setPassword(appConfig.rpcPassword)
+    }
+
     validatePreferenceValues()
 
     val landingPane = new LandingPane(glassPane, serverArgParser)

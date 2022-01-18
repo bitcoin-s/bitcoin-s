@@ -1,7 +1,6 @@
 package org.bitcoins.dlc.wallet.internal
 
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
-import org.bitcoins.core.api.wallet.db.TransactionDb
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.execution._
@@ -11,19 +10,35 @@ import org.bitcoins.core.protocol.dlc.sign.DLCTxSigner
 import org.bitcoins.core.protocol.dlc.verify.DLCSignatureVerifier
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.Sha256Digest
-import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.dlc.wallet.models._
+import org.bitcoins.dlc.wallet.util.{DLCActionBuilder, DLCTxUtil}
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.wallet.models.TransactionDAO
 import scodec.bits._
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import scala.concurrent._
 
 /** Handles fetching and constructing different DLC datastructures from the database */
-private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
+case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
+    ec: ExecutionContext) {
+  private val dlcDAO = dlcWalletDAOs.dlcDAO
+  private val dlcAnnouncementDAO = dlcWalletDAOs.dlcAnnouncementDAO
+  //private val dlcInputsDAO = dlcWalletDAOs.dlcInputsDAO
+  // private val dlcOfferDAO = dlcWalletDAOs.dlcOfferDAO
+  private val contractDataDAO = dlcWalletDAOs.contractDataDAO
+  private val dlcAcceptDAO = dlcWalletDAOs.dlcAcceptDAO
+  private val dlcSigsDAO = dlcWalletDAOs.dlcSigsDAO
+  private val dlcRefundSigDAO = dlcWalletDAOs.dlcRefundSigDAO
+  private val announcementDAO = dlcWalletDAOs.oracleAnnouncementDAO
+  private val oracleNonceDAO = dlcWalletDAOs.oracleNonceDAO
+
+  private val actionBuilder: DLCActionBuilder = {
+    DLCActionBuilder(dlcWalletDAOs)
+  }
   private lazy val safeDatabase = dlcDAO.safeDatabase
 
   private[wallet] def getDLCAnnouncementDbs(dlcId: Sha256Digest): Future[(
@@ -263,7 +278,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         DLCRefundSigsDb,
         ContractInfo,
         Vector[DLCFundingInputDb],
-        Vector[DLCCETSignaturesDb])] = {
+        Option[Vector[DLCCETSignaturesDb]])] = {
     for {
       dlcDbOpt <- dlcDAO.findByContractId(contractId)
       dlcDb = dlcDbOpt.get
@@ -295,7 +310,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         DLCRefundSigsDb,
         ContractInfo,
         Vector[DLCFundingInputDb],
-        Vector[DLCCETSignaturesDb])] = {
+        Option[Vector[DLCCETSignaturesDb]])] = {
     val safeDatabase = dlcRefundSigDAO.safeDatabase
     val refundSigDLCs = dlcRefundSigDAO.findByDLCIdAction(dlcId)
     val sigDLCs = dlcSigsDAO.findByDLCIdAction(dlcId)
@@ -307,38 +322,24 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       (dlcDb, contractData, dlcOffer, dlcAccept, fundingInputs, contractInfo) <-
         getDLCFundingData(dlcId)
       (refundSigs, outcomeSigs) <- refundAndOutcomeSigsF
-    } yield (dlcDb,
-             contractData,
-             dlcOffer,
-             dlcAccept,
-             refundSigs.head,
-             contractInfo,
-             fundingInputs,
-             outcomeSigs)
-  }
+    } yield {
 
-  private[wallet] def fundingUtxosFromDb(
-      dlcDb: DLCDb,
-      fundingInputs: Vector[DLCFundingInputDb]): Future[
-    Vector[ScriptSignatureParams[InputInfo]]] = {
-    val outPoints =
-      fundingInputs.filter(_.isInitiator == dlcDb.isInitiator).map(_.outPoint)
+      val sigsOpt = if (outcomeSigs.isEmpty) None else Some(outcomeSigs)
 
-    for {
-      utxos <- listUtxos(outPoints)
-      scriptSigParams <-
-        FutureUtil.foldLeftAsync(Vector.empty[ScriptSignatureParams[InputInfo]],
-                                 utxos) { (accum, utxo) =>
-          transactionDAO
-            .findByOutPoint(utxo.outPoint)
-            .map(txOpt =>
-              utxo.toUTXOInfo(keyManager, txOpt.get.transaction) +: accum)
-        }
-    } yield scriptSigParams
+      (dlcDb,
+       contractData,
+       dlcOffer,
+       dlcAccept,
+       refundSigs.head,
+       contractInfo,
+       fundingInputs,
+       sigsOpt)
+    }
   }
 
   private[wallet] def verifierFromAccept(
-      accept: DLCAccept): Future[DLCSignatureVerifier] = {
+      accept: DLCAccept,
+      transactionDAO: TransactionDAO): Future[DLCSignatureVerifier] = {
     for {
       dlcDbOpt <- dlcDAO.findByTempContractId(accept.tempContractId)
       dlcDb = dlcDbOpt.get
@@ -351,7 +352,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
         transactionDAO.findByTxIdBEs(localFundingInputs.map(_.outPoint.txIdBE))
     } yield {
       val offerFundingInputs =
-        matchPrevTxsWithInputs(localFundingInputs, prevTxs)
+        DLCTxUtil.matchPrevTxsWithInputs(localFundingInputs, prevTxs)
       val offer = dlcOffer.toDLCOffer(contractInfo,
                                       offerFundingInputs,
                                       dlcDb,
@@ -364,7 +365,9 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
   }
 
   private[wallet] def verifierFromDb(
-      contractId: ByteVector): Future[DLCSignatureVerifier] = {
+      contractId: ByteVector,
+      transactionDAO: TransactionDAO,
+      remoteTxDAO: DLCRemoteTxDAO): Future[DLCSignatureVerifier] = {
     getDLCFundingData(contractId).flatMap {
       case (dlcDb,
             contractData,
@@ -372,12 +375,16 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
             dlcAccept,
             fundingInputsDb,
             contractInfo) =>
-        verifierFromDbData(dlcDb,
-                           contractData,
-                           dlcOffer,
-                           dlcAccept,
-                           fundingInputsDb,
-                           contractInfo)
+        verifierFromDbData(
+          dlcDb = dlcDb,
+          contractData = contractData,
+          dlcOffer = dlcOffer,
+          dlcAccept = dlcAccept,
+          fundingInputsDb = fundingInputsDb,
+          contractInfo = contractInfo,
+          transactionDAO = transactionDAO,
+          remoteTxDAO = remoteTxDAO
+        )
     }
   }
 
@@ -387,7 +394,9 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
       fundingInputsDb: Vector[DLCFundingInputDb],
-      contractInfo: ContractInfo): Future[DLCTxBuilder] = {
+      contractInfo: ContractInfo,
+      transactionDAO: TransactionDAO,
+      remoteTxDAO: DLCRemoteTxDAO): Future[DLCTxBuilder] = {
     val (localDbFundingInputs, remoteDbFundingInputs) = if (dlcDb.isInitiator) {
       (fundingInputsDb.filter(_.isInitiator),
        fundingInputsDb.filterNot(_.isInitiator))
@@ -402,13 +411,13 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       remotePrevTxs <-
         remoteTxDAO.findByTxIdBEs(remoteDbFundingInputs.map(_.outPoint.txIdBE))
     } yield {
-      val localFundingInputs = matchPrevTxsWithInputs(inputs =
-                                                        localDbFundingInputs,
-                                                      prevTxs = localPrevTxs)
+      val localFundingInputs = DLCTxUtil.matchPrevTxsWithInputs(
+        inputs = localDbFundingInputs,
+        prevTxs = localPrevTxs)
 
-      val remoteFundingInputs = matchPrevTxsWithInputs(inputs =
-                                                         remoteDbFundingInputs,
-                                                       prevTxs = remotePrevTxs)
+      val remoteFundingInputs = DLCTxUtil.matchPrevTxsWithInputs(
+        inputs = remoteDbFundingInputs,
+        prevTxs = remotePrevTxs)
 
       val (offerFundingInputs, acceptFundingInputs) = if (dlcDb.isInitiator) {
         (localFundingInputs, remoteFundingInputs)
@@ -429,42 +438,36 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
     }
   }
 
-  /** Takes in a list of inputs to fund DLCs, and pairs them with the full funding transaction for this input
-    * and then converts the input tx pair to a [[DLCFundingInput]]
-    * @throws NoSuchElementException when we have an input we cannot find the funding transaction for
-    */
-  private[wallet] def matchPrevTxsWithInputs(
-      inputs: Vector[DLCFundingInputDb],
-      prevTxs: Vector[TransactionDb]): Vector[DLCFundingInput] = {
-    inputs.sortBy(_.index).map { i =>
-      prevTxs.find(_.txId == i.outPoint.txId) match {
-        case Some(txDb) => i.toFundingInput(txDb.transaction)
-        case None =>
-          throw new NoSuchElementException(
-            s"Could not find previous transaction with txIdBE=${i.outPoint.txId.flip.hex}")
-      }
-    }
-  }
-
   private[wallet] def verifierFromDbData(
       dlcDb: DLCDb,
       contractData: DLCContractDataDb,
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
       fundingInputsDb: Vector[DLCFundingInputDb],
-      contractInfo: ContractInfo): Future[DLCSignatureVerifier] = {
+      contractInfo: ContractInfo,
+      transactionDAO: TransactionDAO,
+      remoteTxDAO: DLCRemoteTxDAO): Future[DLCSignatureVerifier] = {
     val builderF =
-      builderFromDbData(dlcDb,
-                        contractData,
-                        dlcOffer,
-                        dlcAccept,
-                        fundingInputsDb,
-                        contractInfo)
+      builderFromDbData(
+        dlcDb = dlcDb,
+        contractDataDb = contractData,
+        dlcOffer = dlcOffer,
+        dlcAccept = dlcAccept,
+        fundingInputsDb = fundingInputsDb,
+        contractInfo = contractInfo,
+        transactionDAO = transactionDAO,
+        remoteTxDAO = remoteTxDAO
+      )
 
     builderF.map(DLCSignatureVerifier(_, dlcDb.isInitiator))
   }
 
-  private[wallet] def signerFromDb(dlcId: Sha256Digest): Future[DLCTxSigner] = {
+  private[wallet] def signerFromDb(
+      dlcId: Sha256Digest,
+      transactionDAO: TransactionDAO,
+      remoteTxDAO: DLCRemoteTxDAO,
+      fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
+      keyManager: BIP39KeyManager): Future[DLCTxSigner] = {
     for {
       (dlcDb,
        contractData,
@@ -473,12 +476,18 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
        fundingInputsDb,
        contractInfo) <-
         getDLCFundingData(dlcId)
-      signer <- signerFromDb(dlcDb,
-                             contractData,
-                             dlcOffer,
-                             dlcAccept,
-                             fundingInputsDb,
-                             contractInfo)
+      signer <- signerFromDb(
+        dlcDb = dlcDb,
+        contractDataDb = contractData,
+        dlcOffer = dlcOffer,
+        dlcAccept = dlcAccept,
+        fundingInputsDb = fundingInputsDb,
+        fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
+        contractInfo = contractInfo,
+        transactionDAO = transactionDAO,
+        remoteTxDAO = remoteTxDAO,
+        keyManager = keyManager
+      )
     } yield signer
   }
 
@@ -488,15 +497,22 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
       fundingInputsDb: Vector[DLCFundingInputDb],
-      contractInfo: ContractInfo): Future[DLCTxSigner] = {
+      fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
+      contractInfo: ContractInfo,
+      transactionDAO: TransactionDAO,
+      remoteTxDAO: DLCRemoteTxDAO,
+      keyManager: BIP39KeyManager): Future[DLCTxSigner] = {
     for {
-      fundingUtxos <- fundingUtxosFromDb(dlcDb, fundingInputsDb)
-      builder <- builderFromDbData(dlcDb = dlcDb,
-                                   contractDataDb = contractDataDb,
-                                   dlcOffer = dlcOffer,
-                                   dlcAccept = dlcAccept,
-                                   fundingInputsDb = fundingInputsDb,
-                                   contractInfo = contractInfo)
+      builder <- builderFromDbData(
+        dlcDb = dlcDb,
+        contractDataDb = contractDataDb,
+        dlcOffer = dlcOffer,
+        dlcAccept = dlcAccept,
+        fundingInputsDb = fundingInputsDb,
+        contractInfo = contractInfo,
+        transactionDAO = transactionDAO,
+        remoteTxDAO = remoteTxDAO
+      )
     } yield {
       val (fundingKey, payoutAddress) = if (dlcDb.isInitiator) {
         (dlcOffer.fundingKey, dlcOffer.payoutAddress)
@@ -518,7 +534,7 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
                   isInitiator = dlcDb.isInitiator,
                   fundingKey = fundingPrivKey,
                   finalAddress = payoutAddress,
-                  fundingUtxos = fundingUtxos)
+                  fundingUtxos = fundingUtxoScriptSigParams)
     }
   }
 
@@ -528,22 +544,47 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
       fundingInputsDb: Vector[DLCFundingInputDb],
-      contractInfo: ContractInfo): Future[DLCExecutor] = {
-    signerFromDb(dlcDb,
-                 contractDataDb,
-                 dlcOffer,
-                 dlcAccept,
-                 fundingInputsDb,
-                 contractInfo).map(DLCExecutor.apply)
+      fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
+      contractInfo: ContractInfo,
+      transactionDAO: TransactionDAO,
+      remoteTxDAO: DLCRemoteTxDAO,
+      keyManager: BIP39KeyManager): Future[DLCExecutor] = {
+    signerFromDb(
+      dlcDb = dlcDb,
+      contractDataDb = contractDataDb,
+      dlcOffer = dlcOffer,
+      dlcAccept = dlcAccept,
+      fundingInputsDb = fundingInputsDb,
+      fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
+      contractInfo = contractInfo,
+      transactionDAO = transactionDAO,
+      remoteTxDAO = remoteTxDAO,
+      keyManager = keyManager
+    ).map(DLCExecutor.apply)
   }
 
   private[wallet] def executorFromDb(
-      dlcId: Sha256Digest): Future[DLCExecutor] = {
-    signerFromDb(dlcId).map(DLCExecutor.apply)
+      dlcId: Sha256Digest,
+      transactionDAO: TransactionDAO,
+      remoteTxDAO: DLCRemoteTxDAO,
+      fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
+      keyManager: BIP39KeyManager): Future[DLCExecutor] = {
+    signerFromDb(dlcId = dlcId,
+                 transactionDAO = transactionDAO,
+                 remoteTxDAO = remoteTxDAO,
+                 fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
+                 keyManager = keyManager).map(DLCExecutor.apply)
   }
 
+  /** Builds an [[DLCExecutor]] and [[SetupDLC]] for a given contract id
+    * @return the executor and setup if we still have CET signatures else return None
+    */
   private[wallet] def executorAndSetupFromDb(
-      contractId: ByteVector): Future[(DLCExecutor, SetupDLC)] = {
+      contractId: ByteVector,
+      transactionDAO: TransactionDAO,
+      remoteTxDAO: DLCRemoteTxDAO,
+      fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
+      keyManager: BIP39KeyManager): Future[Option[DLCExecutorWithSetup]] = {
     getAllDLCData(contractId).flatMap {
       case (dlcDb,
             contractData,
@@ -552,15 +593,30 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
             refundSigs,
             contractInfo,
             fundingInputsDb,
-            outcomeSigsDbs) =>
-        executorAndSetupFromDb(dlcDb,
-                               contractData,
-                               dlcOffer,
-                               dlcAccept,
-                               refundSigs,
-                               contractInfo,
-                               fundingInputsDb,
-                               outcomeSigsDbs)
+            outcomeSigsDbsOpt) =>
+        outcomeSigsDbsOpt match {
+          case Some(outcomeSigsDbs) =>
+            executorAndSetupFromDb(
+              dlcDb = dlcDb,
+              contractDataDb = contractData,
+              dlcOffer = dlcOffer,
+              dlcAccept = dlcAccept,
+              refundSigsDb = refundSigs,
+              contractInfo = contractInfo,
+              fundingInputs = fundingInputsDb,
+              outcomeSigsDbs = outcomeSigsDbs,
+              transactionDAO = transactionDAO,
+              remoteTxDAO = remoteTxDAO,
+              fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
+              keyManager = keyManager
+            ).map(Some(_))
+          case None =>
+            //means we cannot re-create messages because
+            //we don't have the cets in the database anymore
+            Future.successful(None)
+
+        }
+
     }
   }
 
@@ -572,60 +628,71 @@ private[bitcoins] trait DLCDataManagement { self: DLCWallet =>
       refundSigsDb: DLCRefundSigsDb,
       contractInfo: ContractInfo,
       fundingInputs: Vector[DLCFundingInputDb],
-      outcomeSigsDbs: Vector[DLCCETSignaturesDb]): Future[
-    (DLCExecutor, SetupDLC)] = {
+      outcomeSigsDbs: Vector[DLCCETSignaturesDb],
+      transactionDAO: TransactionDAO,
+      remoteTxDAO: DLCRemoteTxDAO,
+      fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
+      keyManager: BIP39KeyManager): Future[DLCExecutorWithSetup] = {
 
-    executorFromDb(dlcDb,
-                   contractDataDb,
-                   dlcOffer,
-                   dlcAccept,
-                   fundingInputs,
-                   contractInfo)
-      .flatMap { executor =>
-        // Filter for only counterparty's outcome sigs
-        val outcomeSigs =
-          if (dlcDb.isInitiator) {
-            outcomeSigsDbs
-              .map { dbSig =>
-                dbSig.sigPoint -> dbSig.accepterSig
-              }
-          } else {
-            outcomeSigsDbs
-              .map { dbSig =>
-                dbSig.sigPoint -> dbSig.initiatorSig.get
-              }
+    val dlcExecutorF = executorFromDb(
+      dlcDb = dlcDb,
+      contractDataDb = contractDataDb,
+      dlcOffer = dlcOffer,
+      dlcAccept = dlcAccept,
+      fundingInputsDb = fundingInputs,
+      fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
+      contractInfo = contractInfo,
+      transactionDAO = transactionDAO,
+      remoteTxDAO = remoteTxDAO,
+      keyManager = keyManager
+    )
+
+    dlcExecutorF.flatMap { executor =>
+      // Filter for only counterparty's outcome sigs
+      val outcomeSigs = if (dlcDb.isInitiator) {
+        outcomeSigsDbs
+          .map { dbSig =>
+            dbSig.sigPoint -> dbSig.accepterSig
           }
-
-        val refundSig = if (dlcDb.isInitiator) {
-          refundSigsDb.accepterSig
-        } else refundSigsDb.initiatorSig.get
-
-        val cetSigs = CETSignatures(outcomeSigs, refundSig)
-
-        val setupF = if (dlcDb.isInitiator) {
-          // Note that the funding tx in this setup is not signed
-          executor.setupDLCOffer(cetSigs)
-        } else {
-          val fundingSigs =
-            fundingInputs
-              .filter(_.isInitiator)
-              .map { input =>
-                input.witnessScriptOpt match {
-                  case Some(witnessScript) =>
-                    witnessScript match {
-                      case EmptyScriptWitness =>
-                        throw new RuntimeException(
-                          "Script witness cannot be empty")
-                      case witness: ScriptWitnessV0 => (input.outPoint, witness)
-                    }
-                  case None => throw new RuntimeException("")
-                }
-              }
-          executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs), None)
-        }
-
-        Future.fromTry(setupF.map((executor, _)))
+      } else {
+        outcomeSigsDbs
+          .map { dbSig =>
+            dbSig.sigPoint -> dbSig.initiatorSig.get
+          }
       }
+      val refundSig = if (dlcDb.isInitiator) {
+        refundSigsDb.accepterSig
+      } else refundSigsDb.initiatorSig.get
+
+      //sometimes we do not have cet signatures, for instance
+      //if we have settled a DLC, we prune the cet signatures
+      //from the database
+      val cetSigs = CETSignatures(outcomeSigs, refundSig)
+
+      val setupF = if (dlcDb.isInitiator) {
+        // Note that the funding tx in this setup is not signed
+        executor.setupDLCOffer(cetSigs)
+      } else {
+        val fundingSigs =
+          fundingInputs
+            .filter(_.isInitiator)
+            .map { input =>
+              input.witnessScriptOpt match {
+                case Some(witnessScript) =>
+                  witnessScript match {
+                    case EmptyScriptWitness =>
+                      throw new RuntimeException(
+                        "Script witness cannot be empty")
+                    case witness: ScriptWitnessV0 => (input.outPoint, witness)
+                  }
+                case None => throw new RuntimeException("")
+              }
+            }
+        executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs), None)
+      }
+
+      Future.fromTry(setupF.map(DLCExecutorWithSetup(executor, _)))
+    }
   }
 
   def getCetAndRefundSigsAction(dlcId: Sha256Digest): DBIOAction[

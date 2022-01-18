@@ -1,5 +1,6 @@
 package org.bitcoins.node.models
 
+import org.bitcoins.core.p2p.AddrV2Message
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.node.config.NodeAppConfig
 import scodec.bits.ByteVector
@@ -43,6 +44,13 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
     val bytes = ByteVector(address.getBytes)
     val q = table.filter(_.address === bytes)
     safeDatabase.run(q.delete)
+  }
+
+  /** returns only non onion addresses if tor is disabled, all otherwise */
+  def findAllWithTorFilter(torEnabled: Boolean): Future[Vector[PeerDb]] = {
+    val q = table.filterIf(!torEnabled)(
+      _.networkId =!= AddrV2Message.TOR_V3_NETWORK_BYTE)
+    safeDatabase.run(q.result).map(_.toVector)
   }
 
   def upsertPeer(

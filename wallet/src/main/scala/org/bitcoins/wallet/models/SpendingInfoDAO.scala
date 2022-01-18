@@ -195,8 +195,8 @@ case class SpendingInfoDAO()(implicit
     findOutputsReceived(txs.map(_.txIdBE))
   }
 
-  private def _findOutputsBeingSpent(
-      txs: Vector[Transaction]): Future[Vector[UTXORecord]] = {
+  private def _findOutputsBeingSpentQuery(
+      txs: Vector[Transaction]): Query[SpendingInfoTable, UTXORecord, Seq] = {
     val outPoints = txs
       .flatMap(_.inputs)
       .map(_.previousOutput)
@@ -205,8 +205,7 @@ case class SpendingInfoDAO()(implicit
       .filter { case txo =>
         txo.outPoint.inSet(outPoints)
       }
-
-    safeDatabase.runVec(filtered.result)
+    filtered
   }
 
   /** Finds all the outputs being spent in the given
@@ -216,14 +215,31 @@ case class SpendingInfoDAO()(implicit
     findOutputsBeingSpent(Vector(tx))
   }
 
+  private def findOutputsBeingSpentQuery(txs: Vector[Transaction]): Query[
+    (SpendingInfoTable, ScriptPubKeyDAO#ScriptPubKeyTable),
+    (UTXORecord, ScriptPubKeyDAO#ScriptPubKeyTable#TableElementType),
+    Seq] = {
+    _findOutputsBeingSpentQuery(txs)
+      .join(spkTable)
+      .on(_.scriptPubKeyId === _.id)
+  }
+
   def findOutputsBeingSpent(
       txs: Vector[Transaction]): Future[Vector[SpendingInfoDb]] = {
+    val action: DBIOAction[
+      Vector[(UTXORecord, ScriptPubKeyDb)],
+      NoStream,
+      Effect.Read] = findOutputsBeingSpentQuery(txs).result
+      .map(_.toVector)
+
+    val resultsF = safeDatabase.runVec(action)
+
     for {
-      utxos <- _findOutputsBeingSpent(txs)
-      spks <- findScriptPubKeysByUtxos(utxos)
+      results <- resultsF
     } yield {
-      utxos.map(utxo =>
-        utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey))
+      results.map { case (utxo, spk) =>
+        utxo.toSpendingInfoDb(spk.scriptPubKey)
+      }
     }
   }
 
@@ -429,6 +445,41 @@ case class SpendingInfoDAO()(implicit
       .map(_.map { case (((utxoRecord, spkDb), _), _) =>
         utxoRecord.toSpendingInfoDb(spkDb.scriptPubKey)
       })
+  }
+
+  def markAsReserved(
+      ts: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    //1. Check if any are reserved already
+    //2. if not, reserve them
+    //3. if they are reserved, throw an exception?
+    val outPoints = ts.map(_.outPoint)
+    val action: DBIOAction[
+      Int,
+      NoStream,
+      Effect.Write with Effect.Transactional] = table
+      .filter(_.outPoint.inSet(outPoints))
+      .filter(
+        _.state.inSet(TxoState.receivedStates)
+      ) //must be available to reserve
+      .map(_.state)
+      .update(TxoState.Reserved)
+      .flatMap { count =>
+        if (count != ts.length) {
+          val exn = new RuntimeException(
+            s"Failed to reserve all utxos, expected=${ts.length} actual=$count")
+          DBIO.failed(exn)
+        } else {
+
+          DBIO.successful(count)
+        }
+      }
+      //this needs to be at the end, to make sure we rollback correctly if
+      //the utxo is already reserved
+      .transactionally
+
+    safeDatabase
+      .run(action)
+      .map(_ => ts.map(_.copyWithState(TxoState.Reserved)))
   }
 
   private def findScriptPubKeys(

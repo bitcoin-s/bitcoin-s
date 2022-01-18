@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.Materializer
+import grizzled.slf4j.Logging
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
@@ -12,6 +13,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.{AddressLabelTagType, TxoState}
 import org.bitcoins.crypto.NetworkElement
 import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
@@ -19,7 +21,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import ujson._
 import upickle.default._
 
-import java.nio.file.{FileSystems, Files, Path}
+import java.nio.file.{Files, Path}
 import java.time.Instant
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -27,7 +29,8 @@ import scala.util.{Failure, Success}
 case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     system: ActorSystem,
     walletConf: WalletAppConfig)
-    extends ServerRoute {
+    extends ServerRoute
+    with Logging {
   import system.dispatcher
 
   implicit val kmConf: KeyManagerAppConfig = walletConf.kmConf
@@ -810,23 +813,22 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
     case ServerCommand("estimatefee", _) =>
       complete {
-        wallet.getFeeRate.map { fee =>
-          Server.httpSuccess(fee.toString)
-        }
+        val feeRateF = wallet
+          .getFeeRate()
+          .recover { case scala.util.control.NonFatal(exn) =>
+            logger.error(
+              s"Failed to fetch fee rate from wallet, returning -1 sats/vbyte",
+              exn)
+            SatoshisPerVirtualByte.negativeOne
+          }
+
+        feeRateF.map(f => Server.httpSuccess(f.toSatsPerVByte))
       }
 
     case ServerCommand("getdlcwalletaccounting", _) =>
       complete {
         wallet.getWalletAccounting().map { accounting =>
           Server.httpSuccess(writeJs(accounting))
-        }
-      }
-
-    case ServerCommand("backupwallet", arr) =>
-      complete {
-        val dest = FileSystems.getDefault.getPath(arr.arr.head.str)
-        wallet.backup(dest).map { _ =>
-          Server.httpSuccess("done")
         }
       }
   }
@@ -836,6 +838,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
     for {
       accountDb <- wallet.getDefaultAccount()
       walletState <- wallet.getSyncState()
+      rescan <- wallet.isRescanning()
     } yield {
       Obj(
         WalletAppConfig.moduleName ->
@@ -847,7 +850,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
             "xpub" -> Str(accountDb.xpub.toString),
             "hdPath" -> Str(accountDb.hdAccount.toString),
             "height" -> Num(walletState.height),
-            "blockHash" -> Str(walletState.blockHash.hex)
+            "blockHash" -> Str(walletState.blockHash.hex),
+            "rescan" -> rescan
           )
       )
     }

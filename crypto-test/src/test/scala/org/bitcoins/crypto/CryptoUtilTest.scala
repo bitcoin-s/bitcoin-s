@@ -238,4 +238,12 @@ class CryptoUtilTest extends BitcoinSCryptoTest {
       assert(CryptoUtil.checkEntropy(bytes))
     }
   }
+
+  it must "perform a SHA3-256 hash" in {
+    val hash = CryptoUtil.sha3_256(hex"")
+    val expected =
+      "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+    hash.hex must be(expected)
+    hash.flip.flip.hex must be(expected)
+  }
 }

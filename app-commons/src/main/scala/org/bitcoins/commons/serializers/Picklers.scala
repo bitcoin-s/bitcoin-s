@@ -1,13 +1,16 @@
 package org.bitcoins.commons.serializers
 
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.serializers.JsonReaders.jsToSatoshis
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
-import org.bitcoins.core.hd.AddressType
-import org.bitcoins.core.number.{UInt16, UInt32, UInt64}
+import org.bitcoins.core.hd.{AddressType, HDPath}
+import org.bitcoins.core.number.{Int32, UInt16, UInt32, UInt64}
+import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.{
@@ -17,7 +20,11 @@ import org.bitcoins.core.protocol.script.{
   WitnessScriptPubKey
 }
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
@@ -25,7 +32,7 @@ import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.util.TimeUtil._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.AddressLabelTag
+import org.bitcoins.core.wallet.utxo.{AddressLabelTag, TxoState}
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import ujson._
@@ -128,6 +135,111 @@ object Picklers {
 
   implicit val lnMessageDLCOfferTLVPickler: ReadWriter[LnMessage[DLCOfferTLV]] =
     readwriter[String].bimap(_.hex, LnMessageFactory(DLCOfferTLV).fromHex)
+
+  implicit val txoStatePickler: ReadWriter[TxoState] = {
+    readwriter[String].bimap(_.toString.toLowerCase, TxoState.fromString)
+  }
+
+  implicit val privKeyPathPickler: ReadWriter[HDPath] = {
+    readwriter[String].bimap(_.toString, HDPath.fromString)
+  }
+
+  implicit val scriptPubKeyPickler: ReadWriter[ScriptPubKey] = {
+    readwriter[String].bimap(_.asmHex, ScriptPubKey.fromAsmHex(_))
+  }
+
+  private def parseWitnessElements(arr: ujson.Arr): ScriptWitness = {
+    val stackElements = arr.value.toVector.map {
+      case obj: ujson.Obj =>
+        val witnessStr = obj(PicklerKeys.witnessKey).str
+        ByteVector.fromValidHex(witnessStr)
+      case x: ujson.Value =>
+        sys.error(s"Expected witness json object, got=$x")
+    }
+
+    ScriptWitness.apply(stackElements.reverse)
+  }
+
+  private def writeWitnessElements(witness: ScriptWitness): ujson.Arr = {
+    val vec: Vector[ujson.Obj] = witness.stack.reverse.map { w =>
+      ujson.Obj(PicklerKeys.witnessKey -> Str(w.toHex))
+    }.toVector
+
+    ujson.Arr.from(vec)
+  }
+
+  implicit val scriptWitnessPickler: ReadWriter[ScriptWitness] = {
+    readwriter[Arr].bimap(writeWitnessElements, parseWitnessElements)
+  }
+
+  private def writeOutput(o: TransactionOutput): Obj = {
+    Obj(
+      PicklerKeys.satoshisKey -> writeJs(o.value.satoshis),
+      PicklerKeys.scriptPubKeyKey -> writeJs(o.scriptPubKey)
+    )
+  }
+
+  private def readOutput(obj: Obj): TransactionOutput = {
+    val sats = Satoshis(obj(PicklerKeys.satoshisKey).num.toLong)
+    val scriptPubKey =
+      ScriptPubKey.fromAsmHex(obj(PicklerKeys.scriptPubKeyKey).str)
+    TransactionOutput(sats, scriptPubKey)
+  }
+
+  implicit val txOutputPickler: ReadWriter[TransactionOutput] =
+    readwriter[Obj].bimap(writeOutput, readOutput)
+
+  private def writeSpendingInfoDb(si: SpendingInfoDb): Obj = {
+    Obj(
+      PicklerKeys.idKey -> {
+        si.id match {
+          case None     => ujson.Null
+          case Some(id) => Num(id.toDouble)
+        }
+      },
+      PicklerKeys.outPointKey -> writeJs(si.outPoint),
+      PicklerKeys.outputKey -> writeJs(si.output),
+      PicklerKeys.hdPathKey -> writeJs(si.privKeyPath),
+      PicklerKeys.redeemScriptKey -> writeJs(si.redeemScriptOpt),
+      PicklerKeys.witnessKey -> writeJs(si.scriptWitnessOpt),
+      PicklerKeys.stateKey -> writeJs(si.state),
+      PicklerKeys.txIdKey -> writeJs(si.txid),
+      PicklerKeys.spendingTxIdKey -> writeJs(si.spendingTxIdOpt)
+    )
+  }
+
+  private def readSpendingInfoDb(obj: Obj): SpendingInfoDb = {
+    val id = obj(PicklerKeys.idKey).numOpt.map(_.toLong)
+    val outpoint =
+      upickle.default.read[TransactionOutPoint](obj(PicklerKeys.outPointKey))
+    val output =
+      upickle.default.read[TransactionOutput](obj(PicklerKeys.outputKey))
+    val hdPath = upickle.default.read[HDPath](obj(PicklerKeys.hdPathKey))
+    val redeemScript = upickle.default.read[Option[ScriptPubKey]](
+      obj(PicklerKeys.redeemScriptKey))
+    val scriptWitness =
+      upickle.default.read[Option[ScriptWitness]](obj(PicklerKeys.witnessKey))
+    val state = upickle.default.read[TxoState](obj(PicklerKeys.stateKey))
+    val txId =
+      upickle.default.read[DoubleSha256DigestBE](obj(PicklerKeys.txIdKey))
+    val spendingTxId = upickle.default.read[Option[DoubleSha256DigestBE]](
+      obj(PicklerKeys.spendingTxIdKey))
+    SpendingInfoDb(
+      id = id,
+      outpoint = outpoint,
+      output = output,
+      hdPath = hdPath,
+      redeemScriptOpt = redeemScript,
+      scriptWitnessOpt = scriptWitness,
+      state = state,
+      txId = txId,
+      spendingTxIdOpt = spendingTxId
+    )
+  }
+
+  implicit val spendingInfoDbPickler: ReadWriter[SpendingInfoDb] = {
+    readwriter[Obj].bimap(writeSpendingInfoDb, readSpendingInfoDb)
+  }
 
   private def parseU64(str: ujson.Str): UInt64 = {
     UInt64(BigInt(str.str))
@@ -274,43 +386,27 @@ object Picklers {
     arr.map {
       case obj: ujson.Obj =>
         val witnessElementsArr = obj(PicklerKeys.witnessElementsKey).arr
-        val witnesses: Vector[ByteVector] = {
+        val witness: ScriptWitness = {
           parseWitnessElements(witnessElementsArr)
         }
 
-        val scriptWitnessV0 = ScriptWitness
-          .apply(witnesses.reverse)
-          .asInstanceOf[ScriptWitnessV0]
+        val scriptWitnessV0 = witness.asInstanceOf[ScriptWitnessV0]
         scriptWitnessV0
       case x =>
         sys.error(s"Expected array of objects for funding signatures, got=$x")
     }
   }
 
-  private def parseWitnessElements(arr: ujson.Arr): Vector[ByteVector] = {
-    arr.value.toVector.map {
-      case obj: ujson.Obj =>
-        val witnessStr = obj(PicklerKeys.witnessKey).str
-        ByteVector.fromValidHex(witnessStr)
-      case x: ujson.Value =>
-        sys.error(s"Expected witness json object, got=$x")
-    }
-  }
-
-  private def writeWitnessElements(witness: ScriptWitness): ujson.Obj = {
-    val vec: Vector[ujson.Obj] = witness.stack.reverse.map { w =>
-      ujson.Obj(PicklerKeys.witnessKey -> Str(w.toHex))
-    }.toVector
-
-    ujson.Obj(PicklerKeys.witnessElementsKey -> ujson.Arr.from(vec))
-  }
-
   private def writeFundingSignatures(
       fundingSigs: FundingSignaturesTLV): ujson.Obj = {
     val sigs: Vector[ujson.Obj] = fundingSigs match {
       case v0: FundingSignaturesV0TLV =>
-        val witnessJson: Vector[ujson.Obj] =
-          v0.witnesses.map(writeWitnessElements)
+        val witnessJson: Vector[Obj] = {
+          v0.witnesses.map { wit =>
+            val witJson = writeWitnessElements(wit)
+            ujson.Obj(PicklerKeys.witnessElementsKey -> witJson)
+          }
+        }
         witnessJson
     }
     ujson.Obj(
@@ -368,6 +464,10 @@ object Picklers {
 
   implicit val transactionPickler: ReadWriter[Transaction] =
     readwriter[String].bimap(_.hex, Transaction.fromHex)
+
+  implicit val blockPickler: ReadWriter[Block] = {
+    readwriter[String].bimap(_.hex, Block.fromHex)
+  }
 
   implicit val extPubKeyPickler: ReadWriter[ExtPublicKey] =
     readwriter[String].bimap(_.toString, ExtPublicKey.fromString)
@@ -470,8 +570,7 @@ object Picklers {
       val outcome = map(PicklerKeys.outcomeKey).num.toLong
       val payout = jsToSatoshis(map(PicklerKeys.payoutKey))
       val extraPrecision = map(PicklerKeys.extraPrecisionKey).num.toInt
-      val isEndPoint = map(PicklerKeys.isEndpointKey).bool
-      TLVPoint(outcome, payout, extraPrecision, isEndPoint)
+      TLVPoint(outcome, payout, extraPrecision)
     }
   }
 
@@ -480,17 +579,14 @@ object Picklers {
       Obj(
         PicklerKeys.outcomeKey -> Num(point.outcome.toDouble),
         PicklerKeys.payoutKey -> Num(point.value.toLong.toDouble),
-        PicklerKeys.extraPrecisionKey -> Num(point.extraPrecision.toDouble),
-        PicklerKeys.isEndpointKey -> Bool(point.isEndpoint)
+        PicklerKeys.extraPrecisionKey -> Num(point.extraPrecision.toDouble)
       )
     }
   }
 
   implicit val payoutFunctionV0TLVWriter: Writer[PayoutFunctionV0TLV] =
     writer[Obj].comap { payoutFunc =>
-      import payoutFunc._
-
-      val pointsJs = points.map { point =>
+      val pointsJs = payoutFunc.endpoints.map { point =>
         writeJs(point)
       }
 
@@ -508,8 +604,9 @@ object Picklers {
           upickle.default.read[TLVPoint](obj)
       }.toVector
 
-      PayoutFunctionV0TLV(points)
-
+      DLCPayoutCurve
+        .fromPoints(points, serializationVersion = DLCSerializationVersion.Beta)
+        .toTLV
     }
   }
 
@@ -1140,5 +1237,82 @@ object Picklers {
         (outcome, payout)
     }
     ContractDescriptorV0TLV(outcomes = payouts)
+  }
+
+  private def readBlockHeaderResult(obj: Obj): GetBlockHeaderResult = {
+    val hash = DoubleSha256DigestBE.fromHex(obj(PicklerKeys.hashKey).str)
+    val confirmations = obj(PicklerKeys.confirmationsKey).num.toInt
+    val height = obj(PicklerKeys.heightKey).num.toInt
+    val version = obj(PicklerKeys.versionKey).num.toInt
+    val versionHex = Int32.fromHex(obj(PicklerKeys.versionHexKey).str)
+    val merkleroot =
+      DoubleSha256DigestBE.fromHex(obj(PicklerKeys.merklerootKey).str)
+    val time = UInt32(obj(PicklerKeys.timeKey).num.toLong)
+    val mediantime = UInt32(obj(PicklerKeys.mediantimeKey).num.toLong)
+    val nonce = UInt32(obj(PicklerKeys.nonceKey).num.toLong)
+    val bits = UInt32.fromHex(obj(PicklerKeys.bitsKey).str)
+    val difficulty = obj(PicklerKeys.difficultyKey).num
+    val chainWork = obj(PicklerKeys.chainworkKey).str
+    val previousBlockHash = obj(PicklerKeys.previousblockhashKey).strOpt.map {
+      str =>
+        DoubleSha256DigestBE.fromHex(str)
+    }
+
+    val nextblockhash = obj(PicklerKeys.nextblockhashKey).strOpt.map { str =>
+      DoubleSha256DigestBE.fromHex(str)
+    }
+
+    GetBlockHeaderResult(
+      hash = hash,
+      confirmations = confirmations,
+      height = height,
+      version = version,
+      versionHex = versionHex,
+      merkleroot = merkleroot,
+      time = time,
+      mediantime = mediantime,
+      nonce = nonce,
+      bits = bits,
+      difficulty = difficulty,
+      chainwork = chainWork,
+      previousblockhash = previousBlockHash,
+      nextblockhash = nextblockhash
+    )
+  }
+
+  private def writeBlockHeaderResult(header: GetBlockHeaderResult): Obj = {
+    val json = Obj(
+      PicklerKeys.rawKey -> Str(header.blockHeader.hex),
+      PicklerKeys.hashKey -> Str(header.hash.hex),
+      PicklerKeys.confirmationsKey -> Num(header.confirmations),
+      PicklerKeys.heightKey -> Num(header.height),
+      PicklerKeys.versionKey -> Num(header.version.toLong.toDouble),
+      PicklerKeys.versionHexKey -> Str(Int32(header.version).hex),
+      PicklerKeys.merklerootKey -> Str(header.merkleroot.hex),
+      PicklerKeys.timeKey -> Num(header.time.toBigInt.toDouble),
+      PicklerKeys.mediantimeKey -> Num(header.mediantime.toLong.toDouble),
+      PicklerKeys.nonceKey -> Num(header.nonce.toBigInt.toDouble),
+      PicklerKeys.bitsKey -> Str(header.bits.hex),
+      PicklerKeys.difficultyKey -> Num(header.difficulty.toDouble),
+      PicklerKeys.chainworkKey -> Str(header.chainwork),
+      PicklerKeys.previousblockhashKey -> {
+        header.previousblockhash.map(_.hex) match {
+          case Some(str) => Str(str)
+          case None      => ujson.Null
+        }
+      },
+      PicklerKeys.nextblockhashKey -> {
+        header.nextblockhash.map(_.hex) match {
+          case Some(str) => Str(str)
+          case None      => ujson.Null
+        }
+      }
+    )
+    json
+  }
+
+  implicit val getBlockHeaderResultPickler: ReadWriter[GetBlockHeaderResult] = {
+    readwriter[ujson.Obj]
+      .bimap(writeBlockHeaderResult(_), readBlockHeaderResult(_))
   }
 }

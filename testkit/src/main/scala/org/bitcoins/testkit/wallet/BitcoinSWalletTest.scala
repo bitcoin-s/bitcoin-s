@@ -214,7 +214,7 @@ trait BitcoinSWalletTest
             .createBitcoindWithFunds(Some(BitcoindVersion.V19))
             .map(_.asInstanceOf[BitcoindV19RpcClient])
         wallet <- createWalletWithBitcoindCallbacks(bitcoind, bip39PasswordOpt)
-        fundedWallet <- fundWalletWithBitcoind(wallet)
+        fundedWallet <- FundWalletUtil.fundWalletWithBitcoind(wallet)
         _ <- SyncUtil.syncWalletFullBlocks(wallet = fundedWallet.wallet,
                                            bitcoind = bitcoind)
         _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)
@@ -299,13 +299,17 @@ object BitcoinSWalletTest extends WalletLogger {
 
     override def epochSecondToBlockHeight(time: Long): Future[Int] =
       Future.successful(0)
+
+    /** calculates the median time passed */
+    override def getMedianTimePast(): Future[Long] =
+      Future.successful(0L)
   }
 
   private[bitcoins] class RandomFeeProvider extends FeeRateApi {
     // Useful for tests
     var lastFeeRate: Option[FeeUnit] = None
 
-    override def getFeeRate: Future[FeeUnit] = {
+    override def getFeeRate(): Future[FeeUnit] = {
       val feeRate = FeeUnitGen.feeUnit.sampleSome
 
       lastFeeRate = Some(feeRate)
@@ -616,7 +620,7 @@ object BitcoinSWalletTest extends WalletLogger {
         chainQueryApi,
         bip39PasswordOpt)(config.walletConf, system)
       withBitcoind <- createWalletWithBitcoind(wallet, versionOpt)
-      funded <- fundWalletWithBitcoind(withBitcoind)
+      funded <- FundWalletUtil.fundWalletWithBitcoind(withBitcoind)
     } yield funded
   }
 
@@ -647,36 +651,8 @@ object BitcoinSWalletTest extends WalletLogger {
         BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(wallet)
       _ = config.nodeConf.addCallbacks(nodeCallbacks)
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
-      funded <- fundWalletWithBitcoind(withBitcoind)
+      funded <- FundWalletUtil.fundWalletWithBitcoind(withBitcoind)
     } yield funded
-  }
-
-  /** Funds the given wallet with money from the given bitcoind */
-  def fundWalletWithBitcoind[T <: WalletWithBitcoind](pair: T)(implicit
-      ec: ExecutionContext): Future[T] = {
-    val (wallet, bitcoind) = (pair.wallet, pair.bitcoind)
-
-    val defaultAccount = wallet.walletConfig.defaultAccount
-    val fundedDefaultAccountWalletF =
-      FundWalletUtil.fundAccountForWalletWithBitcoind(
-        amts = defaultAcctAmts,
-        account = defaultAccount,
-        wallet = wallet,
-        bitcoind = bitcoind
-      )
-
-    val hdAccount1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
-    val fundedAccount1WalletF = for {
-      fundedDefaultAcct <- fundedDefaultAccountWalletF
-      fundedAcct1 <- FundWalletUtil.fundAccountForWalletWithBitcoind(
-        amts = account1Amt,
-        account = hdAccount1,
-        wallet = fundedDefaultAcct,
-        bitcoind = bitcoind
-      )
-    } yield fundedAcct1
-
-    fundedAccount1WalletF.map(_ => pair)
   }
 
   def destroyWalletWithBitcoind(walletWithBitcoind: WalletWithBitcoind)(implicit

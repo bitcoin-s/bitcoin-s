@@ -30,7 +30,7 @@ lazy val commonJsSettings = {
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.CommonJSModule)
     }
-  ) ++ CommonSettings.settings
+  ) ++ CommonSettings.settings ++ Seq(scalacOptions += "-P:scalajs:nowarnGlobalExecutionContext")
 }
 
 lazy val crypto = crossProject(JVMPlatform, JSPlatform)

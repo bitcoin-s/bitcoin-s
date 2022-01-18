@@ -246,3 +246,56 @@ object Sha256Hash160DigestBE extends Factory[Sha256Hash160DigestBE] {
     Sha256Hash160DigestBEImpl(bytes)
   }
 }
+
+/** Represents the result of SHA3-256()
+  */
+sealed trait Sha3_256Digest extends Any with HashDigest {
+  override def flip: Sha3_256DigestBE = Sha3_256DigestBE(bytes.reverse)
+}
+
+object Sha3_256Digest extends Factory[Sha3_256Digest] {
+
+  private case class Sha3_256DigestImpl(bytes: ByteVector)
+      extends AnyVal
+      with Sha3_256Digest {
+    override def toString = s"Sha3-256DigestImpl($hex)"
+    // $COVERAGE-ON$
+  }
+
+  override def fromBytes(bytes: ByteVector): Sha3_256Digest = {
+    require(bytes.length == 32,
+            // $COVERAGE-OFF$
+            "Sha3-256Digest must be 32 bytes in size, got: " + bytes.length)
+    Sha3_256DigestImpl(bytes)
+  }
+
+  private val e = ByteVector(Array.fill(32)(0.toByte))
+
+  val empty: Sha3_256Digest = Sha3_256Digest.fromBytes(e)
+
+}
+
+/** Represents the result of SHA3-256()
+  */
+sealed trait Sha3_256DigestBE extends Any with HashDigest {
+  override def flip: Sha3_256Digest = Sha3_256Digest(bytes.reverse)
+}
+
+object Sha3_256DigestBE extends Factory[Sha3_256DigestBE] {
+
+  private case class Sha3_256DigestBEImpl(bytes: ByteVector)
+      extends AnyVal
+      with Sha3_256DigestBE {
+    override def toString = s"Sha3-256DigestBEImpl($hex)"
+    // $COVERAGE-ON$
+  }
+
+  override def fromBytes(bytes: ByteVector): Sha3_256DigestBE = {
+    require(bytes.length == 32,
+            // $COVERAGE-OFF$
+            "Sha3-256Digest must be 32 bytes in size, got: " + bytes.length)
+    Sha3_256DigestBEImpl(bytes)
+  }
+
+  lazy val empty: Sha256DigestBE = Sha256DigestBE(ByteVector.low(32))
+}

@@ -22,11 +22,11 @@ import org.bitcoins.node.networking.peer.{
 import scala.concurrent.Future
 
 case class NeutrinoNode(
-    nodePeer: Vector[Peer],
     private var dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
-    actorSystem: ActorSystem)
+    actorSystem: ActorSystem,
+    configPeersOverride: Vector[Peer] = Vector.empty)
     extends Node {
   require(
     nodeConfig.nodeType == NodeType.NeutrinoNode,
@@ -38,9 +38,9 @@ case class NeutrinoNode(
 
   override def chainAppConfig: ChainAppConfig = chainConfig
 
-  override val peers: Vector[Peer] = nodePeer
-
   val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
+
+  override val peerManager: PeerManager = PeerManager(this, configPeersOverride)
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 
@@ -55,7 +55,7 @@ case class NeutrinoNode(
       node <- super.start()
       chainApi <- chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash()
-      _ <- randomPeerMsgSenderWithCompactFilters
+      _ <- peerManager.randomPeerMsgSenderWithCompactFilters
         .sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
     } yield {
       node.asInstanceOf[NeutrinoNode]
@@ -84,7 +84,7 @@ case class NeutrinoNode(
       blockchains <- blockchainsF
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      _ <- randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
+      _ <- peerManager.randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
       _ <- syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
                        bestFilterOpt = bestFilterOpt,
                        bestBlockHeader = header,
@@ -137,7 +137,7 @@ case class NeutrinoNode(
       chainApi: ChainApi,
       bestFilterOpt: Option[CompactFilterDb]): Future[Unit] = {
     val sendCompactFilterHeaderMsgF = {
-      randomPeerMsgSenderWithCompactFilters
+      peerManager.randomPeerMsgSenderWithCompactFilters
         .sendNextGetCompactFilterHeadersCommand(
           chainApi = chainApi,
           filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
@@ -153,7 +153,7 @@ case class NeutrinoNode(
         //means we are not syncing filter headers, and our filters are NOT
         //in sync with our compact filter headers
         logger.info(s"Starting sync filters in NeutrinoNode.sync()")
-        randomPeerMsgSenderWithCompactFilters
+        peerManager.randomPeerMsgSenderWithCompactFilters
           .sendNextGetCompactFilterCommand(
             chainApi = chainApi,
             filterBatchSize = chainConfig.filterBatchSize,

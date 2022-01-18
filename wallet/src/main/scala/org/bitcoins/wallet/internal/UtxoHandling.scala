@@ -277,7 +277,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     } yield {
       val writtenOut = written.outPoint
       logger.info(
-        s"Successfully inserted UTXO ${writtenOut.txId.hex}:${writtenOut.vout.toInt} into DB")
+        s"Successfully inserted UTXO ${writtenOut.txIdBE.hex}:${writtenOut.vout.toInt} into DB")
       logger.debug(s"UTXO details: ${written.output}")
       written
     }
@@ -298,7 +298,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       val output = transaction.outputs(vout.toInt)
       val outPoint = TransactionOutPoint(transaction.txId, vout)
       logger.info(
-        s"Adding UTXO to wallet: ${transaction.txId.hex}:${vout.toInt} amt=${output.value}")
+        s"Adding UTXO to wallet: ${transaction.txIdBE.hex}:${vout.toInt} amt=${output.value}")
       // insert the UTXO into the DB
       val insertedUtxoEF: Either[AddUtxoError, Future[SpendingInfoDb]] = for {
         addressDb <- addressDbE
@@ -318,7 +318,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     val updated = utxos.map(_.copyWithState(TxoState.Reserved))
     for {
-      utxos <- spendingInfoDAO.updateAllSpendingInfoDb(updated)
+      utxos <- spendingInfoDAO.markAsReserved(updated)
       _ <- walletCallbacks.executeOnReservedUtxos(logger, utxos)
     } yield utxos
   }
@@ -334,6 +334,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
   override def unmarkUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    logger.info(s"Unreserving utxos ${utxos.map(_.outPoint)}")
     val updatedUtxosF = Future {
       //make sure exception isn't thrown outside of a future to fix
       //see: https://github.com/bitcoin-s/bitcoin-s/issues/3813

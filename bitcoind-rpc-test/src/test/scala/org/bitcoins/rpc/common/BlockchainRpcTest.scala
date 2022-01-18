@@ -236,6 +236,16 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairV17 {
     }
   }
 
+  it should "calculate median time past" in { nodePair =>
+    val client = nodePair.node1
+    for {
+      medianTime <- client.getMedianTimePast()
+    } yield {
+      val oneHourAgo = (System.currentTimeMillis() / 1000) - 60 * 60
+      assert(medianTime > oneHourAgo)
+    }
+  }
+
   override def afterAll(): Unit = {
     val stoppedF = pruneClientF.flatMap(BitcoindRpcTestUtil.stopServer)
     val _ = Await.result(stoppedF, duration)

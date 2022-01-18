@@ -156,7 +156,10 @@ object BitcoindException {
 
   /** Transaction or block was rejected by network rules */
   final case class VerifyRejected(private val message: String)
-      extends BitcoindException(message) {
+      extends BitcoindException(
+        if (message == "non-final")
+          "Transaction is not final. Try again in a bit."
+        else message) {
     val code: Int = -26
   }
 

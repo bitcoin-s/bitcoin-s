@@ -30,6 +30,10 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     BouncycastleCryptoRuntime.sha256(bytes)
   }
 
+  override def sha3_256(bytes: ByteVector): Sha3_256Digest = {
+    BouncycastleCryptoRuntime.sha3_256(bytes)
+  }
+
   override def sha1(bytes: ByteVector): Sha1Digest = {
     BouncycastleCryptoRuntime.sha1(bytes)
   }

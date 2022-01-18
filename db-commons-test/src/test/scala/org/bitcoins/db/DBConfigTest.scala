@@ -2,6 +2,7 @@ package org.bitcoins.db
 
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -9,10 +10,8 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.wallet.config.WalletAppConfig
 
-import java.io.{File, IOException}
+import java.io.File
 import java.nio.file._
-import java.nio.file.attribute.BasicFileAttributes
-import scala.reflect.io.Directory
 
 class DBConfigTest extends BitcoinSAsyncTest {
 
@@ -101,26 +100,7 @@ class DBConfigTest extends BitcoinSAsyncTest {
     try {
       f(dir)
     } finally {
-      Files.walkFileTree(
-        dir,
-        new SimpleFileVisitor[Path] {
-          override def visitFile(
-              file: Path,
-              attrs: BasicFileAttributes): FileVisitResult = {
-            val directory = new Directory(file.toFile)
-            directory.deleteRecursively()
-            FileVisitResult.CONTINUE
-          }
-
-          override def postVisitDirectory(
-              dir: Path,
-              exc: IOException): FileVisitResult = {
-            val directory = new Directory(dir.toFile)
-            directory.deleteRecursively()
-            FileVisitResult.CONTINUE
-          }
-        }
-      )
+      FileUtil.removeDirectory(dir)
       ()
     }
   }

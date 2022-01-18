@@ -1,40 +1,26 @@
 package org.bitcoins.dlc.wallet.util
 
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
-import org.bitcoins.crypto.Sha256Digest
-import org.bitcoins.dlc.wallet.models.{
-  DLCAcceptDAO,
-  DLCAcceptDb,
-  DLCAnnouncementDAO,
-  DLCAnnouncementDb,
-  DLCCETSignaturesDAO,
-  DLCCETSignaturesDb,
-  DLCContractDataDAO,
-  DLCContractDataDb,
-  DLCDAO,
-  DLCFundingInputDAO,
-  DLCFundingInputDb,
-  DLCOfferDAO,
-  DLCOfferDb,
-  DLCRefundSigsDAO,
-  DLCRefundSigsDb
-}
+import org.bitcoins.crypto.{SchnorrDigitalSignature, SchnorrNonce, Sha256Digest}
+import org.bitcoins.dlc.wallet.models._
 
 import scala.concurrent.ExecutionContext
 
 /** Utility class to help build actions to insert things into our DLC tables */
-case class DLCActionBuilder(
-    dlcDAO: DLCDAO,
-    contractDataDAO: DLCContractDataDAO,
-    dlcAnnouncementDAO: DLCAnnouncementDAO,
-    dlcInputsDAO: DLCFundingInputDAO,
-    dlcOfferDAO: DLCOfferDAO,
-    dlcAcceptDAO: DLCAcceptDAO,
-    dlcSigsDAO: DLCCETSignaturesDAO,
-    dlcRefundSigDAO: DLCRefundSigsDAO) {
+case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
+
+  private val dlcDAO = dlcWalletDAOs.dlcDAO
+  private val dlcAnnouncementDAO = dlcWalletDAOs.dlcAnnouncementDAO
+  private val dlcInputsDAO = dlcWalletDAOs.dlcInputsDAO
+  private val dlcOfferDAO = dlcWalletDAOs.dlcOfferDAO
+  private val contractDataDAO = dlcWalletDAOs.contractDataDAO
+  private val dlcAcceptDAO = dlcWalletDAOs.dlcAcceptDAO
+  private val dlcSigsDAO = dlcWalletDAOs.dlcSigsDAO
+  private val dlcRefundSigDAO = dlcWalletDAOs.dlcRefundSigDAO
+  private val oracleNonceDAO = dlcWalletDAOs.oracleNonceDAO
 
   //idk if it matters which profile api i import, but i need access to transactionally
-  import dlcDAO.profile.api._
+  import dlcWalletDAOs.dlcDAO.profile.api._
 
   /** Builds an offer in our database, adds relevant information to the global table,
     * contract data, announcements, funding inputs, and the actual offer itself
@@ -152,5 +138,40 @@ case class DLCActionBuilder(
     } yield (dlcDb, contractData, offer, inputs)
 
     combined
+  }
+
+  /** Updates various tables in our database with oracle attestations
+    * that are published by the oracle
+    */
+  def updateDLCOracleSigsAction(
+      outcomeAndSigByNonce: Map[
+        SchnorrNonce,
+        (String, SchnorrDigitalSignature)])(implicit
+      ec: ExecutionContext): DBIOAction[
+    Vector[OracleNonceDb],
+    NoStream,
+    Effect.Write with Effect.Read with Effect.Transactional] = {
+    val updateAction = for {
+      nonceDbs <- oracleNonceDAO.findByNoncesAction(
+        outcomeAndSigByNonce.keys.toVector)
+      _ = assert(nonceDbs.size == outcomeAndSigByNonce.keys.size,
+                 "Didn't receive all nonce dbs")
+
+      updated = nonceDbs.map { db =>
+        val (outcome, sig) = outcomeAndSigByNonce(db.nonce)
+        db.copy(outcomeOpt = Some(outcome), signatureOpt = Some(sig))
+      }
+
+      updateNonces <- oracleNonceDAO.updateAllAction(updated)
+
+      announcementDbs <- {
+        val announcementIds = updateNonces.map(_.announcementId).distinct
+        dlcAnnouncementDAO.findByAnnouncementIdsAction(announcementIds)
+      }
+      updatedDbs = announcementDbs.map(_.copy(used = true))
+      _ <- dlcAnnouncementDAO.updateAllAction(updatedDbs)
+    } yield updateNonces
+
+    updateAction.transactionally
   }
 }

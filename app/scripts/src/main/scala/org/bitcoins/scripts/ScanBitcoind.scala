@@ -3,8 +3,6 @@ package org.bitcoins.scripts
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Keep, Sink, Source}
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.protocol.Bech32mAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
@@ -16,7 +14,6 @@ import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 
 import java.time.Instant
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 /** Useful script for scanning bitcoind
   * This file assumes you have pre-configured the connection
@@ -35,17 +32,14 @@ class ScanBitcoind()(implicit
     //    val startHeight = 675000
     val endHeightF: Future[Int] = bitcoindF.flatMap(_.getBlockCount)
 
-    system.scheduler.scheduleAtFixedRate(0.seconds, 1.minutes) { () =>
-      val f = for {
-        bitcoind <- bitcoindF
-        endHeight <- endHeightF
-        _ <- countWitV1MempoolTxs(bitcoind)
-        _ <- countTaprootTxsInBlocks(endHeight, 6, bitcoind)
-      } yield ()
-      f.failed.foreach(err =>
-        logger.error(s"Failed to count witnes v1 mempool txs", err))
-      ()
-    }
+    val f = for {
+      bitcoind <- bitcoindF
+      endHeight <- endHeightF
+      //_ <- countWitV1MempoolTxs(bitcoind)
+      _ <- countTaprootTxsInBlocks(endHeight, 10000, bitcoind)
+    } yield ()
+    f.failed.foreach(err =>
+      logger.error(s"Failed to count witness v1 mempool txs", err))
     Future.unit
   }
 
@@ -60,8 +54,8 @@ class ScanBitcoind()(implicit
       bitcoind: BitcoindRpcClient,
       source: Source[Int, NotUsed],
       f: Block => T,
-      numParallelism: Int =
-        Runtime.getRuntime.availableProcessors() * 2): Future[Seq[T]] = {
+      numParallelism: Int = Runtime.getRuntime.availableProcessors()): Future[
+    Seq[T]] = {
     source
       .mapAsync(parallelism = numParallelism) { height =>
         bitcoind
@@ -116,9 +110,6 @@ class ScanBitcoind()(implicit
       val outputs = block.transactions
         .flatMap(_.outputs)
         .filter(_.scriptPubKey.isInstanceOf[WitnessScriptPubKeyV1])
-
-      logger.info(
-        s"addresses=${outputs.map(_.scriptPubKey).map(spk => Bech32mAddress(spk.asInstanceOf[WitnessScriptPubKeyV1], MainNet))}")
       outputs.length
     }
 

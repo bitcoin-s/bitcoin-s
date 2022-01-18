@@ -30,6 +30,20 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
     }
   }
 
+  lazy val wsBindOpt: Option[String] = {
+    val wsBindOpt = argsWithIndex.find(_._1.toLowerCase == "--wsbind")
+    wsBindOpt.map { case (_, idx) =>
+      commandLineArgs(idx + 1)
+    }
+  }
+
+  lazy val wsPortOpt: Option[Int] = {
+    val portOpt = argsWithIndex.find(_._1.toLowerCase == "--wsport")
+    portOpt.map { case (_, idx) =>
+      commandLineArgs(idx + 1).toInt
+    }
+  }
+
   lazy val networkOpt: Option[BitcoinNetwork] = {
     val netOpt = argsWithIndex.find(_._1.toLowerCase == "--network")
     netOpt.map { case (_, idx) =>
@@ -109,10 +123,27 @@ case class ServerArgParser(commandLineArgs: Vector[String]) {
       ""
     }
 
+    val wsBindString = wsBindOpt match {
+      case Some(wsBind) =>
+        s"bitcoin-s.server.wsbind=$wsBind\n"
+      case None => ""
+    }
+
+    val wsPortString = wsPortOpt match {
+      case Some(wsport) =>
+        s"bitcoin-s.server.wsport=$wsport\n"
+      case None => ""
+    }
+
     //omitting configOpt as i don't know if we can do anything with that?
 
     val all =
-      rpcPortString + rpcBindString + datadirString + forceChainWorkRecalcString
+      rpcPortString +
+        rpcBindString +
+        datadirString +
+        forceChainWorkRecalcString +
+        wsBindString +
+        wsPortString
 
     ConfigFactory.parseString(all)
   }

@@ -75,30 +75,13 @@ abstract class CRUD[T, PrimaryKeyType](implicit
 
   /** Update the corresponding record in the database */
   def update(t: T): Future[T] = {
-    updateAll(Vector(t)).map { ts =>
-      ts.headOption match {
-        case Some(updated) => updated
-        case None          => throw UpdateFailedException("Update failed for: " + t)
-      }
-    }
+    val action = updateAction(t).transactionally
+    safeDatabase.run(action)
   }
 
   def updateAll(ts: Vector[T]): Future[Vector[T]] = {
-    if (ts.isEmpty) {
-      Future.successful(ts)
-    } else {
-      val actions = ts.map(t => find(t).update(t))
-      for {
-        numUpdated <- safeDatabase.runVec(
-          DBIO.sequence(actions).transactionally)
-        tsUpdated <- {
-          if (numUpdated.sum == ts.length) Future.successful(ts)
-          else
-            Future.failed(new RuntimeException(
-              s"Unexpected number of updates completed ${numUpdated.sum} of ${ts.length}"))
-        }
-      } yield tsUpdated
-    }
+    val actions = updateAllAction(ts).transactionally
+    safeDatabase.runVec(actions)
   }
 
   /** delete the corresponding record in the database
@@ -108,19 +91,21 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     */
   def delete(t: T): Future[Int] = {
     logger.debug("Deleting record: " + t)
-    val query: Query[Table[_], T, Seq] = find(t)
-    safeDatabase.run(query.delete)
+    val action = deleteAction(t)
+    safeDatabase.run(action.transactionally)
   }
 
   def deleteAll(ts: Vector[T]): Future[Int] = {
-    val query: Query[Table[_], T, Seq] = findAll(ts)
-    safeDatabase.run(query.delete)
+    val action = deleteAllAction(ts).transactionally
+    safeDatabase.run(action)
   }
 
   /** delete all records from the table
     */
-  def deleteAll(): Future[Int] =
-    safeDatabase.run(table.delete.transactionally)
+  def deleteAll(): Future[Int] = {
+    val action = deleteAllAction().transactionally
+    safeDatabase.run(action)
+  }
 
   /** insert the record if it does not exist, update it if it does
     *
@@ -152,27 +137,6 @@ abstract class CRUD[T, PrimaryKeyType](implicit
       oldUpsertAll(Vector(t)).map(accum ++ _)
     }
   }
-
-  /** return all rows that have a certain primary key
-    *
-    * @param id
-    * @return Query object corresponding to the selected rows
-    */
-  protected def findByPrimaryKey(id: PrimaryKeyType): Query[Table[_], T, Seq] =
-    findByPrimaryKeys(Vector(id))
-
-  /** Finds the rows that correlate to the given primary keys */
-  protected def findByPrimaryKeys(
-      ids: Vector[PrimaryKeyType]): Query[Table[T], T, Seq]
-
-  /** return the row that corresponds with this record
-    *
-    * @param t - the row to find
-    * @return query - the sql query to find this record
-    */
-  protected def find(t: T): Query[Table[_], T, Seq] = findAll(Vector(t))
-
-  protected def findAll(ts: Vector[T]): Query[Table[_], T, Seq]
 
   /** Finds all elements in the table */
   def findAll(): Future[Vector[T]] =

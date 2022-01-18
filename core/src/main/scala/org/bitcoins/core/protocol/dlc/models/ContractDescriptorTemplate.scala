@@ -2,8 +2,9 @@ package org.bitcoins.core.protocol.dlc.models
 
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.dlc.compute.CETCalculator
+import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 
-sealed trait ContractDescriptorTemplate {
+trait ContractDescriptorTemplate {
   def individualCollateral: CurrencyUnit
 
   def totalCollateral: CurrencyUnit
@@ -106,29 +107,32 @@ sealed trait OptionTemplate extends ContractDescriptorTemplate {
 
     val curve = this match {
       case _: CallOption =>
-        val pointA = OutcomePayoutEndpoint(
+        val pointA = PiecewisePolynomialEndpoint(
           0L,
-          individualCollateral.satoshis - premium.satoshis)
+          (individualCollateral - premium).satoshis)
 
-        val pointB = OutcomePayoutEndpoint(
+        val pointB = PiecewisePolynomialEndpoint(
           strikePrice,
-          individualCollateral.satoshis - premium.satoshis)
+          (individualCollateral - premium).satoshis)
 
         val pointC =
-          OutcomePayoutEndpoint(maxNum, totalCollateral)
-        DLCPayoutCurve(Vector(pointA, pointB, pointC))
+          PiecewisePolynomialEndpoint(maxNum, totalCollateral.satoshis)
+        DLCPayoutCurve.polynomialInterpolate(Vector(pointA, pointB, pointC),
+                                             serializationVersion =
+                                               DLCSerializationVersion.Beta)
       case _: PutOption =>
-        val pointA = OutcomePayoutEndpoint(0L, totalCollateral)
+        val pointA = PiecewisePolynomialEndpoint(0L, totalCollateral.satoshis)
 
-        val pointB = OutcomePayoutEndpoint(
+        val pointB = PiecewisePolynomialEndpoint(
           strikePrice,
-          individualCollateral.satoshis - premium.satoshis)
+          (individualCollateral - premium).satoshis)
 
         val pointC =
-          OutcomePayoutEndpoint(
-            maxNum,
-            individualCollateral.satoshis - premium.satoshis)
-        DLCPayoutCurve(Vector(pointA, pointB, pointC))
+          PiecewisePolynomialEndpoint(maxNum,
+                                      (individualCollateral - premium).satoshis)
+        DLCPayoutCurve.polynomialInterpolate(Vector(pointA, pointB, pointC),
+                                             serializationVersion =
+                                               DLCSerializationVersion.Beta)
     }
 
     NumericContractDescriptor(curve, numDigits = numDigits, roundingIntervals)

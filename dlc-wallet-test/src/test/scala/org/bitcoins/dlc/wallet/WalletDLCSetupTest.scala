@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto._
+import org.bitcoins.dlc.wallet.internal.DLCDataManagement
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
@@ -31,7 +32,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       offerData: DLCOffer): Future[Assertion] = {
     val walletA = fundedDLCWallets._1.wallet
     val walletB = fundedDLCWallets._2.wallet
-
+    val walletADLCManagement = DLCDataManagement(walletA.dlcWalletDAOs)
+    val walletBDLCManagement = DLCDataManagement(walletB.dlcWalletDAOs)
     for {
       offer <- walletA.createDLCOffer(
         offerData.contractInfo,
@@ -91,17 +93,19 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       walletBChange <- walletB.addressDAO.read(accept.changeAddress)
       walletBFinal <- walletB.addressDAO.read(accept.pubKeys.payoutAddress)
 
-      (announcementsA, announcementDataA, nonceDbsA) <- walletA
+      (announcementsA, announcementDataA, nonceDbsA) <- walletADLCManagement
         .getDLCAnnouncementDbs(dlcDb.dlcId)
-      announcementTLVsA = walletA.getOracleAnnouncements(announcementsA,
-                                                         announcementDataA,
-                                                         nonceDbsA)
+      announcementTLVsA = walletADLCManagement.getOracleAnnouncements(
+        announcementsA,
+        announcementDataA,
+        nonceDbsA)
 
-      (announcementsB, announcementDataB, nonceDbsB) <- walletA
+      (announcementsB, announcementDataB, nonceDbsB) <- walletADLCManagement
         .getDLCAnnouncementDbs(dlcDb.dlcId)
-      announcementTLVsB = walletB.getOracleAnnouncements(announcementsB,
-                                                         announcementDataB,
-                                                         nonceDbsB)
+      announcementTLVsB = walletBDLCManagement.getOracleAnnouncements(
+        announcementsB,
+        announcementDataB,
+        nonceDbsB)
     } yield {
       assert(dlcDb.contractIdOpt.get == sign.contractId)
 

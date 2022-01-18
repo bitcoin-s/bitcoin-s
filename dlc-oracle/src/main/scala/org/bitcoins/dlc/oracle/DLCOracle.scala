@@ -16,7 +16,6 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.util.{FutureUtil, NumberUtil, TimeUtil}
 import org.bitcoins.crypto._
-import org.bitcoins.db.{DatabaseDriver, SQLiteUtil}
 import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.util.MasterXPubUtil
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
@@ -127,8 +126,25 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   override def listPendingEventDbs(): Future[Vector[EventDb]] =
     eventDAO.getPendingEvents
 
+  override def listCompletedEventDbs(): Future[Vector[EventDb]] =
+    eventDAO.getCompletedEvents
+
   override def listEvents(): Future[Vector[OracleEvent]] = {
     eventDAO.findAll().map { eventDbs =>
+      val events = eventDbs.groupBy(_.announcementSignature)
+      events.values.map(dbs => OracleEvent.fromEventDbs(dbs)).toVector
+    }
+  }
+
+  override def listPendingEvents(): Future[Vector[OracleEvent]] = {
+    listPendingEventDbs().map { eventDbs =>
+      val events = eventDbs.groupBy(_.announcementSignature)
+      events.values.map(dbs => OracleEvent.fromEventDbs(dbs)).toVector
+    }
+  }
+
+  override def listCompletedEvents(): Future[Vector[OracleEvent]] = {
+    listCompletedEventDbs().map { eventDbs =>
       val events = eventDbs.groupBy(_.announcementSignature)
       events.values.map(dbs => OracleEvent.fromEventDbs(dbs)).toVector
     }
@@ -459,20 +475,6 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       updated = eventDbs.map(_.copy(outcomeOpt = None, attestationOpt = None))
       _ <- eventDAO.updateAll(updated)
     } yield OracleEvent.fromEventDbs(eventDbs)
-  }
-
-  /** Backup oracle database
-    *
-    * @param location baclup file location
-    */
-  override def backup(location: Path): Future[Unit] = conf.driver match {
-    case DatabaseDriver.SQLite =>
-      val jdbcUrl = conf.jdbcUrl.replace("\"", "")
-      Future { SQLiteUtil.backup(jdbcUrl, location) }
-    case _: DatabaseDriver =>
-      Future.failed(
-        new IllegalArgumentException(
-          "Backup is supported only for SQLite database backend"))
   }
 
   override def oracleName(): Future[Option[String]] = {

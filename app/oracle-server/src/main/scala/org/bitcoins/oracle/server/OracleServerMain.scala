@@ -1,6 +1,7 @@
 package org.bitcoins.oracle.server
 
 import akka.actor.ActorSystem
+import akka.stream.scaladsl.Source
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
@@ -32,12 +33,18 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
           Server(conf = conf,
                  handlers = routes,
                  rpcbindOpt = bindConfOpt,
-                 rpcport = rpcport)
+                 rpcport = rpcport,
+                 rpcPassword = conf.rpcPassword,
+                 None,
+                 Source.empty)
         case None =>
           Server(conf = conf,
                  handlers = routes,
                  rpcbindOpt = bindConfOpt,
-                 rpcport = conf.rpcPort)
+                 rpcport = conf.rpcPort,
+                 rpcPassword = conf.rpcPassword,
+                 None,
+                 Source.empty)
       }
 
       _ <- server.start()

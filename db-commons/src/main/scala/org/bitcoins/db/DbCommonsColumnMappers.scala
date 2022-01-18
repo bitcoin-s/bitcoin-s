@@ -17,6 +17,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   SingleOracleInfo
 }
 import org.bitcoins.core.protocol.ln.LnInvoice
+import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
@@ -476,6 +477,10 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType.base[LnInvoice, String](_.toString, LnInvoice.fromString)
   }
 
+  implicit val nodeIdMapper: BaseColumnType[NodeId] = {
+    MappedColumnType.base[NodeId, String](_.hex, NodeId.fromHex)
+  }
+
   implicit val chainCodeMapper: BaseColumnType[ChainCode] = {
     MappedColumnType.base[ChainCode, String](_.hex, ChainCode.fromHex(_))
   }
@@ -483,5 +488,12 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   implicit val extKeyPubVersion: BaseColumnType[ExtKeyPubVersion] = {
     MappedColumnType.base[ExtKeyPubVersion, String](_.hex,
                                                     ExtKeyPubVersion.fromHex)
+  }
+
+  implicit val dlcSerializationVersion: BaseColumnType[
+    DLCSerializationVersion] = {
+    MappedColumnType.base[DLCSerializationVersion, String](
+      _.toString,
+      DLCSerializationVersion.fromString)
   }
 }

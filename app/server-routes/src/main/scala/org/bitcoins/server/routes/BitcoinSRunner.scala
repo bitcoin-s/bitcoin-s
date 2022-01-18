@@ -14,7 +14,7 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
   implicit lazy val ec: ExecutionContext = system.dispatcher
 
   // start everything!
-  final def run(): Unit = {
+  final def run(): Future[Unit] = {
 
     //We need to set the system property before any logger instances
     //are in instantiated. If we don't do this, we will not log to
@@ -29,6 +29,8 @@ trait BitcoinSRunner extends StartStopAsync[Unit] with Logging {
     runner.failed.foreach { err =>
       logger.error(s"Failed to startup server!", err)
     }(scala.concurrent.ExecutionContext.Implicits.global)
+
+    runner
   }
 }
 

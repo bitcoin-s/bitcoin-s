@@ -19,11 +19,11 @@ import org.bitcoins.node.networking.peer.{
 import scala.concurrent.Future
 
 case class SpvNode(
-    nodePeer: Vector[Peer],
     dataMessageHandler: DataMessageHandler,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
-    actorSystem: ActorSystem)
+    actorSystem: ActorSystem,
+    configPeersOverride: Vector[Peer] = Vector.empty)
     extends Node {
   require(nodeConfig.nodeType == NodeType.SpvNode,
           s"We need our SPV mode enabled to be able to construct a SPV node!")
@@ -34,8 +34,6 @@ case class SpvNode(
 
   override def chainAppConfig: ChainAppConfig = chainConfig
 
-  override val peers: Vector[Peer] = nodePeer
-
   private val _bloomFilter = new Mutable(BloomFilter.empty)
 
   def bloomFilter: BloomFilter = _bloomFilter.atomicGet
@@ -43,6 +41,8 @@ case class SpvNode(
   val controlMessageHandler = ControlMessageHandler(this)
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
+
+  override val peerManager: PeerManager = PeerManager(this, configPeersOverride)
 
   def setBloomFilter(bloom: BloomFilter): SpvNode = {
     _bloomFilter.atomicSet(bloom)
@@ -92,7 +92,8 @@ case class SpvNode(
       _ <- AsyncUtil.retryUntilSatisfiedF(() => isConnected(0))
       _ <- peerMsgSenders(0).sendFilterLoadMessage(bloomFilter)
     } yield {
-      logger.info(s"Sending bloomfilter=${bloomFilter.hex} to ${peers(0)}")
+      logger.info(
+        s"Sending bloomfilter=${bloomFilter.hex} to ${peerManager.peers(0)}")
       node.asInstanceOf[SpvNode]
     }
   }

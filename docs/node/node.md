@@ -8,7 +8,7 @@ Bitcoin-s has node module that allows you to connect to the p2p network.
 ### Neutrino Node
 
 Bitcoin-s has experimental support for neutrino which is a new lite client proposal on the bitcoin p2p network. You can
-read more about how neutrino works [here](https://suredbits.com/neutrino-what-is-it-and-why-we-need-it/). At this time, 
+read more about how neutrino works [here](https://suredbits.com/neutrino-what-is-it-and-why-we-need-it/). At this time,
 bitcoin-s only supports connecting to one trusted peer.
 
 #### Limitations
@@ -113,7 +113,7 @@ val nodeF = for {
   peer <- peerF
 } yield {
     val dataMessageHandler = DataMessageHandler(chainApi)
-    NeutrinoNode(nodePeer = Vector(peer),
+    NeutrinoNode(configPeersOverride = Vector(peer),
                dataMessageHandler = dataMessageHandler,
                nodeConfig = nodeConfig,
                chainConfig = chainConfig,

@@ -2,6 +2,7 @@ package org.bitcoins.dlc.wallet.internal
 
 import org.bitcoins.core.api.dlc.wallet.db._
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
+import org.bitcoins.core.protocol.dlc.execution.SetupDLC
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script._
@@ -10,6 +11,7 @@ import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.AddressTag
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.wallet.internal.TransactionProcessing
 
@@ -21,51 +23,86 @@ import scala.concurrent._
 private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   self: DLCWallet =>
 
+  import dlcDAO.profile.api._
+  private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
+
+  private lazy val dlcDataManagement: DLCDataManagement = DLCDataManagement(
+    dlcWalletDAOs)
+
   /** Calculates the new state of the DLCDb based on the closing transaction,
     * will delete old CET sigs that are no longer needed after execution
     */
   def calculateAndSetState(dlcDb: DLCDb): Future[DLCDb] = {
     (dlcDb.contractIdOpt, dlcDb.closingTxIdOpt) match {
       case (Some(id), Some(txId)) =>
-        executorAndSetupFromDb(id).flatMap { case (_, setup) =>
-          val updatedF = if (txId == setup.refundTx.txIdBE) {
-            Future.successful(dlcDb.copy(state = DLCState.Refunded))
-          } else if (dlcDb.state == DLCState.Claimed) {
-            Future.successful(dlcDb.copy(state = DLCState.Claimed))
-          } else {
-            val withState = dlcDb.updateState(DLCState.RemoteClaimed)
-            if (dlcDb.state != DLCState.RemoteClaimed) {
-              for {
-                // update so we can calculate correct DLCStatus
-                _ <- dlcDAO.update(withState)
-                withOutcome <- calculateAndSetOutcome(withState)
-              } yield withOutcome
-            } else Future.successful(withState)
+        val fundingInputsF = dlcInputsDAO.findByDLCId(dlcDb.dlcId)
+        val scriptSigParamsF =
+          fundingInputsF.flatMap(inputs => getScriptSigParams(dlcDb, inputs))
+
+        for {
+          scriptSigParams <- scriptSigParamsF
+          executorWithSetupOpt <- dlcDataManagement.executorAndSetupFromDb(
+            id,
+            transactionDAO,
+            remoteTxDAO,
+            scriptSigParams,
+            keyManager)
+          updatedDlcDb <- executorWithSetupOpt match {
+            case Some(exeutorWithSetup) =>
+              calculateAndSetStateWithSetupDLC(exeutorWithSetup.setup,
+                                               dlcDb,
+                                               txId)
+            case None =>
+              //this means we have already deleted the cet sigs
+              //just return the dlcdb given to us
+              Future.successful(dlcDb)
           }
-
-          for {
-            updated <- updatedF
-
-            _ <- {
-              updated.state match {
-                case DLCState.Claimed | DLCState.RemoteClaimed |
-                    DLCState.Refunded =>
-                  val contractId = updated.contractIdOpt.get.toHex
-                  logger.info(
-                    s"Deleting unneeded DLC signatures for contract $contractId")
-
-                  dlcSigsDAO.deleteByDLCId(updated.dlcId)
-                case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
-                    DLCState.Broadcasted | DLCState.Confirmed =>
-                  FutureUtil.unit
-              }
-            }
-
-          } yield updated
-        }
+        } yield updatedDlcDb
       case (None, None) | (None, Some(_)) | (Some(_), None) =>
         Future.successful(dlcDb)
     }
+  }
+
+  /** Calculates the new closing state for a DLC if we still
+    * have adaptor signatures available to us in the database
+    */
+  private def calculateAndSetStateWithSetupDLC(
+      setup: SetupDLC,
+      dlcDb: DLCDb,
+      closingTxId: DoubleSha256DigestBE): Future[DLCDb] = {
+    val updatedF = if (closingTxId == setup.refundTx.txIdBE) {
+      Future.successful(dlcDb.copy(state = DLCState.Refunded))
+    } else if (dlcDb.state == DLCState.Claimed) {
+      Future.successful(dlcDb.copy(state = DLCState.Claimed))
+    } else {
+      val withState = dlcDb.updateState(DLCState.RemoteClaimed)
+      if (dlcDb.state != DLCState.RemoteClaimed) {
+        for {
+          // update so we can calculate correct DLCStatus
+          _ <- dlcDAO.update(withState)
+          withOutcome <- calculateAndSetOutcome(withState)
+          dlc <- findDLC(dlcDb.dlcId)
+          _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, dlc.get)
+        } yield withOutcome
+      } else Future.successful(withState)
+    }
+
+    for {
+      updated <- updatedF
+      _ <- {
+        updated.state match {
+          case DLCState.Claimed | DLCState.RemoteClaimed | DLCState.Refunded =>
+            val contractId = updated.contractIdOpt.get.toHex
+            logger.info(
+              s"Deleting unneeded DLC signatures for contract $contractId")
+
+            dlcSigsDAO.deleteByDLCId(updated.dlcId)
+          case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
+              DLCState.Broadcasted | DLCState.Confirmed =>
+            FutureUtil.unit
+        }
+      }
+    } yield updated
   }
 
   /** Calculates the outcome used for execution
@@ -76,14 +113,14 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       val dlcId = dlcDb.dlcId
 
       for {
-        (_, contractData, offerDb, fundingInputDbs, _) <- getDLCOfferData(dlcId)
-        acceptDbOpt <- dlcAcceptDAO.findByDLCId(dlcId)
+        (_, contractData, offerDb, acceptDb, fundingInputDbs, _) <-
+          dlcDataManagement.getDLCFundingData(dlcId)
         txIds = fundingInputDbs.map(_.outPoint.txIdBE)
         remotePrevTxs <- remoteTxDAO.findByTxIdBEs(txIds)
         localPrevTxs <- transactionDAO.findByTxIdBEs(txIds)
-        (sigDbs, refundSigsDb) <- getCetAndRefundSigs(dlcId)
-        (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
-          dlcDb.dlcId)
+        (sigDbs, refundSigsDb) <- dlcDataManagement.getCetAndRefundSigs(dlcId)
+        (announcements, announcementData, nonceDbs) <- dlcDataManagement
+          .getDLCAnnouncementDbs(dlcDb.dlcId)
 
         cet <-
           transactionDAO
@@ -103,21 +140,19 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           val acceptRefundSigOpt = refundSigsDb.map(_.accepterSig)
 
           val contractInfo =
-            getContractInfo(contractData,
-                            announcements,
-                            announcementData,
-                            nonceDbs)
+            dlcDataManagement.getContractInfo(contractData,
+                                              announcements,
+                                              announcementData,
+                                              nonceDbs)
 
           val offer =
             offerDb.toDLCOffer(contractInfo, fundingInputs, dlcDb, contractData)
-          val accept = acceptDbOpt
-            .map(
-              _.toDLCAccept(dlcDb.tempContractId,
-                            fundingInputs,
-                            sigDbs.map(dbSig =>
-                              (dbSig.sigPoint, dbSig.accepterSig)),
-                            acceptRefundSigOpt.head))
-            .head
+          val accept =
+            acceptDb.toDLCAccept(
+              dlcDb.tempContractId,
+              fundingInputs,
+              sigDbs.map(dbSig => (dbSig.sigPoint, dbSig.accepterSig)),
+              acceptRefundSigOpt.head)
 
           val sign: DLCSign = {
             val cetSigs: CETSignatures =
@@ -154,9 +189,10 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         noncesByAnnouncement = nonceDbs
           .groupBy(_.announcementId)
 
-        announcementsWithId = getOracleAnnouncementsWithId(announcements,
-                                                           announcementData,
-                                                           nonceDbs)
+        announcementsWithId = dlcDataManagement.getOracleAnnouncementsWithId(
+          announcements,
+          announcementData,
+          nonceDbs)
 
         usedIds = announcementsWithId
           .filter(t => oracleInfos.exists(_.announcement == t._1))
@@ -187,10 +223,18 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
 
           }
         }
-        _ <- oracleNonceDAO.updateAll(updatedNonces)
-
-        _ <- dlcAnnouncementDAO.updateAll(updatedAnnouncements)
-      } yield dlcDb.copy(aggregateSignatureOpt = Some(sig))
+        updatedDlcDbA = dlcDAO.updateAction(
+          dlcDb.copy(aggregateSignatureOpt = Some(sig)))
+        updateNonceA = oracleNonceDAO.updateAllAction(updatedNonces)
+        updateAnnouncementA = dlcAnnouncementDAO.updateAllAction(
+          updatedAnnouncements)
+        actions = DBIO
+          .seq(updatedDlcDbA, updateNonceA, updateAnnouncementA)
+          .transactionally
+        _ <- safeDatabase.run(actions)
+      } yield {
+        dlcDb.copy(aggregateSignatureOpt = Some(sig))
+      }
     } else {
       Future.successful(dlcDb)
     }
@@ -229,6 +273,12 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           }
 
           _ <- dlcDAO.updateAll(updated)
+          dlcIds = updated.map(_.dlcId).distinct
+          updatedDlcDbs <- Future.sequence(dlcIds.map(findDLC))
+          _ <- Future.sequence {
+            updatedDlcDbs.map(u =>
+              dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, u.get))
+          }
         } yield res
       }
   }
@@ -255,7 +305,6 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           withTx = dlcDbs.map(_.updateClosingTxId(transaction.txIdBE))
           updatedFs = withTx.map(calculateAndSetState)
           updated <- Future.sequence(updatedFs)
-
           _ <- dlcDAO.updateAll(updated)
         } yield res
       }

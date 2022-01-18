@@ -196,11 +196,35 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   def addInvoice(
+      descriptionHash: Sha256Digest,
+      value: Satoshis,
+      expiry: Long): Future[AddInvoiceResult] = {
+    val invoice: Invoice =
+      Invoice(value = value.toLong,
+              expiry = expiry,
+              descriptionHash = descriptionHash.bytes)
+
+    addInvoice(invoice)
+  }
+
+  def addInvoice(
       memo: String,
       value: MilliSatoshis,
       expiry: Long): Future[AddInvoiceResult] = {
     val invoice: Invoice =
       Invoice(memo = memo, valueMsat = value.toLong, expiry = expiry)
+
+    addInvoice(invoice)
+  }
+
+  def addInvoice(
+      descriptionHash: Sha256Digest,
+      value: MilliSatoshis,
+      expiry: Long): Future[AddInvoiceResult] = {
+    val invoice: Invoice =
+      Invoice(valueMsat = value.toLong,
+              expiry = expiry,
+              descriptionHash = descriptionHash.bytes)
 
     addInvoice(invoice)
   }

@@ -100,7 +100,6 @@ case class ChainAppConfig(
       logger.info(s"Applied ${numMigrations} to chain project")
       ()
     }
-
   }
 
   override def stop(): Future[Unit] = {

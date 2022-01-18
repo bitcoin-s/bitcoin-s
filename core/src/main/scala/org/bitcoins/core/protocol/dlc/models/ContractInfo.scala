@@ -370,6 +370,8 @@ object SingleContractInfo
 case class DisjointUnionContractInfo(contracts: Vector[SingleContractInfo])
     extends ContractInfo
     with TLVSerializable[ContractInfoV1TLV] {
+  require(contracts.nonEmpty,
+          s"Cannot have empty contract oracle pairs for ContractInfoV1TLV")
 
   override val totalCollateral: Satoshis = contracts.head.totalCollateral
 

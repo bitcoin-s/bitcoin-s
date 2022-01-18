@@ -1,12 +1,14 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.builder.RawTxSigner
+import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.crypto.ECPublicKey
@@ -314,7 +316,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
     for {
       oldTransactions <- wallet.listTransactions()
-      feeRate <- wallet.getFeeRate
+      feeRate <- wallet.getFeeRate()
       tx <- wallet.fundRawTransaction(Vector(dummyOutput),
                                       feeRate,
                                       fromTagOpt = None,
@@ -340,7 +342,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       for {
         oldTransactions <- wallet.listTransactions()
-        feeRate <- wallet.getFeeRate
+        feeRate <- wallet.getFeeRate()
         tx <- wallet.fundRawTransaction(Vector(dummyOutput),
                                         feeRate,
                                         fromTagOpt = None,
@@ -370,7 +372,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       for {
         oldTransactions <- wallet.listTransactions()
-        feeRate <- wallet.getFeeRate
+        feeRate <- wallet.getFeeRate()
         tx <- wallet.fundRawTransaction(Vector(dummyOutput),
                                         feeRate,
                                         fromTagOpt = None,
@@ -397,13 +399,20 @@ class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
       val dummyOutput =
         TransactionOutput(Satoshis(100000),
                           P2PKHScriptPubKey(ECPublicKey.freshPublicKey))
-
+      val accountF = wallet.getDefaultAccount()
       for {
         oldTransactions <- wallet.listTransactions()
-        tx <- wallet.sendToOutputs(Vector(dummyOutput), None)
-        _ <- wallet.processTransaction(tx, None)
-        _ <- wallet.markUTXOsAsReserved(tx)
-
+        account <- accountF
+        (txBuilder, params) <- wallet.fundRawTransactionInternal(
+          destinations = Vector(dummyOutput),
+          feeRate = SatoshisPerVirtualByte.one,
+          fromAccount = account,
+          fromTagOpt = None,
+          markAsReserved = true
+        )
+        builderResult = txBuilder.builder.result()
+        unsignedTx = txBuilder.finalizer.buildTx(builderResult)
+        tx = RawTxSigner.sign(unsignedTx, params)
         allReserved <- wallet.listUtxos(TxoState.Reserved)
         _ = assert(
           tx.inputs
@@ -470,6 +479,39 @@ class UTXOLifeCycleTest extends BitcoinSWalletTestCachedBitcoindNewest {
         assert(
           updatedCoins.forall(_.state == TxoState.PendingConfirmationsSpent))
         assert(updatedCoins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
+      }
+  }
+
+  it must "fail to mark utxos as reserved if one of the utxos is already reserved" in {
+    param =>
+      val WalletWithBitcoindRpc(wallet, _) = param
+      val utxosF = wallet.listUtxos()
+
+      val reservedUtxoF: Future[SpendingInfoDb] = for {
+        utxos <- utxosF
+        first = utxos.head
+        //just reserve this one to start
+        reserved <- wallet.markUTXOsAsReserved(Vector(first))
+      } yield reserved.head
+
+      val reserveFailedF = for {
+        utxos <- utxosF
+        _ <- reservedUtxoF
+        //now try to reserve them all
+        //this should fail as the first utxo is reserved
+        _ <- wallet.markUTXOsAsReserved(utxos)
+      } yield ()
+
+      val assertionF = recoverToSucceededIf[RuntimeException](reserveFailedF)
+
+      for {
+        _ <- assertionF
+        reserved <- reservedUtxoF
+        utxos <- wallet.listUtxos(TxoState.Reserved)
+      } yield {
+        //make sure only 1 utxo is still reserved
+        assert(utxos.length == 1)
+        assert(reserved.outPoint == utxos.head.outPoint)
       }
   }
 }

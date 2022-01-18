@@ -4,11 +4,16 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl._
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.server.directives.DebuggingDirectives
+import akka.http.scaladsl.server.directives.Credentials.Missing
+import akka.http.scaladsl.server.directives.{Credentials, DebuggingDirectives}
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.{Done, NotUsed}
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import org.bitcoins.commons.config.AppConfig
+import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
 import upickle.{default => up}
 
 import scala.concurrent.Future
@@ -17,10 +22,22 @@ case class Server(
     conf: AppConfig,
     handlers: Seq[ServerRoute],
     rpcbindOpt: Option[String],
-    rpcport: Int)(implicit system: ActorSystem)
+    rpcport: Int,
+    rpcPassword: String,
+    wsConfigOpt: Option[WsServerConfig],
+    wsSource: Source[Message, NotUsed])(implicit system: ActorSystem)
     extends HttpLogger {
 
   import system.dispatcher
+
+  if (rpcPassword.isEmpty) {
+    if (rpchost == "localhost" || rpchost == "127.0.0.1") {
+      logger.warn(s"RPC password is not set (rpchost=$rpchost)")
+    } else {
+      require(rpcPassword.nonEmpty,
+              s"RPC password must be set (rpchost=$rpchost)")
+    }
+  }
 
   /** Handles all server commands by throwing a MethodNotFound */
   private val catchAllHandler: PartialFunction[ServerCommand, StandardRoute] = {
@@ -59,35 +76,99 @@ case class Server(
     }
   }
 
-  val route: Route =
-    // TODO implement better logging
-    DebuggingDirectives.logRequestResult(
-      ("http-rpc-server", Logging.DebugLevel)) {
-      withErrorHandling {
-        pathSingleSlash {
-          post {
-            entity(as[ServerCommand]) { cmd =>
-              val init = PartialFunction.empty[ServerCommand, Route]
-              val handler = handlers.foldLeft(init) { case (accum, curr) =>
-                accum.orElse(curr.handleCommand)
-              }
-              handler.orElse(catchAllHandler).apply(cmd)
+  def rpchost: String = rpcbindOpt.getOrElse("localhost")
+
+  private def authenticator(credentials: Credentials): Option[Done] = {
+    credentials match {
+      case p @ Credentials.Provided(_) =>
+        if (p.verify(rpcPassword)) Some(Done) else None
+      case Missing => None
+    }
+  }
+
+  val route: Route = {
+
+    val commonRoute = withErrorHandling {
+      pathSingleSlash {
+        post {
+          entity(as[ServerCommand]) { cmd =>
+            val init = PartialFunction.empty[ServerCommand, Route]
+            val handler = handlers.foldLeft(init) { case (accum, curr) =>
+              accum.orElse(curr.handleCommand)
             }
+            handler.orElse(catchAllHandler).apply(cmd)
           }
         }
       }
     }
 
-  def start(): Future[Http.ServerBinding] = {
+    val authenticatedRoute = if (rpcPassword.isEmpty) {
+      commonRoute
+    } else {
+      authenticateBasic("auth", authenticator) { _ =>
+        commonRoute
+      }
+    }
+
+    DebuggingDirectives.logRequestResult(
+      ("http-rpc-server", Logging.DebugLevel)) {
+      authenticatedRoute
+    }
+  }
+
+  def start(): Future[ServerBindings] = {
     val httpFut =
       Http()
-        .newServerAt(rpcbindOpt.getOrElse("localhost"), rpcport)
+        .newServerAt(rpchost, rpcport)
         .bindFlow(route)
     httpFut.foreach { http =>
       logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
     }
-    httpFut
+    val wsFut = startWsServer()
+
+    for {
+      http <- httpFut
+      ws <- wsFut
+    } yield ServerBindings(http, ws)
   }
+
+  private def startWsServer(): Future[Option[Http.ServerBinding]] = {
+    wsConfigOpt match {
+      case Some(wsConfig) =>
+        val httpFut =
+          Http()
+            .newServerAt(wsConfig.wsBind, wsConfig.wsPort)
+            .bindFlow(wsRoutes)
+        httpFut.foreach { http =>
+          logger.info(s"Started Bitcoin-S websocket at ${http.localAddress}")
+        }
+        httpFut.map(Some(_))
+      case None =>
+        Future.successful(None)
+    }
+  }
+
+  private val eventsRoute = "events"
+
+  private def wsRoutes: Route = {
+    val commonRoute = path(eventsRoute) {
+      Directives.handleWebSocketMessages(wsHandler)
+    }
+
+    if (rpcPassword.isEmpty) {
+      commonRoute
+    } else {
+      authenticateBasic("auth", authenticator) { _ =>
+        commonRoute
+      }
+    }
+  }
+
+  private def wsHandler: Flow[Message, Message, Any] = {
+    //we don't allow input, so use Sink.ignore
+    Flow.fromSinkAndSource(Sink.ignore, wsSource)
+  }
+
 }
 
 object Server {

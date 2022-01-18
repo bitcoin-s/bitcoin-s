@@ -1,6 +1,33 @@
 package org.bitcoins.core.serializers
 
 object PicklerKeys {
+
+  final val idKey: String = "id"
+  final val outPointKey: String = "outpoint"
+  final val outputKey: String = "output"
+  final val satoshisKey: String = "satoshis"
+  final val scriptPubKeyKey: String = "scriptPubKey"
+  final val hdPathKey: String = "hdPath"
+  final val txIdKey: String = "txid"
+  final val stateKey: String = "state"
+  final val spendingTxIdKey: String = "spendingTxId"
+
+  //chain
+  final val rawKey: String = "raw"
+  final val hashKey: String = "hash"
+  final val confirmationsKey: String = "confirmations"
+  final val heightKey: String = "height"
+  final val versionKey: String = "version"
+  final val versionHexKey: String = "versionHex"
+  final val merklerootKey: String = "merkleroot"
+  final val timeKey: String = "time"
+  final val mediantimeKey: String = "mediantime"
+  final val nonceKey: String = "nonce"
+  final val bitsKey: String = "bits"
+  final val difficultyKey: String = "difficulty"
+  final val chainworkKey: String = "chainwork"
+  final val previousblockhashKey: String = "previousblockhash"
+  final val nextblockhashKey: String = "nextblockhash"
   final val myCollateral: String = "myCollateral"
   final val theirCollateral: String = "theirCollateral"
   final val myPayout: String = "myPayout"
@@ -113,4 +140,9 @@ object PicklerKeys {
   val witnessElementsKey = "witnessElements"
   val witnessKey = "witness"
   val serializedKey = "serialized"
+
+  //ws types
+  final val typeKey: String = "type"
+  final val payloadKey: String = "payload"
+
 }

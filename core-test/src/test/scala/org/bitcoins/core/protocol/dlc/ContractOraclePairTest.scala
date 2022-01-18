@@ -2,7 +2,11 @@ package org.bitcoins.core.protocol.dlc
 
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.core.protocol.tlv.{EnumOutcome, OracleAnnouncementV0TLV}
+import org.bitcoins.core.protocol.tlv.{
+  DLCSerializationVersion,
+  EnumOutcome,
+  OracleAnnouncementV0TLV
+}
 import org.bitcoins.core.util.sorted.OrderedAnnouncements
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
@@ -54,11 +58,13 @@ class ContractOraclePairTest extends BitcoinSUnitTest {
   it should "not be able to construct an invalid numeric contract oracle pair" in {
     val contractDescriptor =
       NumericContractDescriptor(
-        DLCPayoutCurve(
-          Vector(OutcomePayoutEndpoint(0, 0),
-                 OutcomePayoutEndpoint((1L << 7) - 1, 1))),
+        DLCPayoutCurve.polynomialInterpolate(
+          Vector(PiecewisePolynomialEndpoint(0, 0),
+                 PiecewisePolynomialEndpoint((1L << 7) - 1, 1)),
+          serializationVersion = DLCSerializationVersion.Beta),
         numDigits = 7,
-        RoundingIntervals.noRounding)
+        RoundingIntervals.noRounding
+      )
 
     def numericOracleInfo(numDigits: Int): NumericSingleOracleInfo = {
       NumericSingleOracleInfo(

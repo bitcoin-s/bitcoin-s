@@ -8,16 +8,18 @@ import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.util.NativeProcessFactory
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.AddressType
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.channel.{FundedChannelId, ShortChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.{NodeId, NodeUri}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.crypto.Sha256Digest
 import play.api.libs.json._
+import scodec.bits._
 
 import java.io.File
 import java.net.InetSocketAddress
@@ -324,6 +326,33 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
     val params = JsArray(Vector(JsString(nodeId.toString)))
 
     clightningCall[FundChannelCancelResult]("fundchannel_cancel", params)
+  }
+
+  def sendCustomMessage(
+      peer: NodeId,
+      tpe: BigSizeUInt,
+      data: ByteVector): Future[SendCustomMessageResult] = {
+    val tlv = TLV.fromTypeAndValue(tpe, data)
+    sendCustomMessage(peer, tlv)
+  }
+
+  def sendCustomMessage(
+      peer: NodeId,
+      tlv: TLV): Future[SendCustomMessageResult] = {
+    val lnMessage = LnMessage[TLV](tlv)
+    sendCustomMessage(peer, lnMessage)
+  }
+
+  def sendCustomMessage(
+      peer: NodeId,
+      lnMessage: LnMessage[TLV]): Future[SendCustomMessageResult] = {
+    val params = JsObject(
+      Vector(
+        "node_id" -> JsString(peer.toString),
+        "msg" -> JsString(lnMessage.hex)
+      ))
+
+    clightningCall[SendCustomMessageResult]("sendcustommsg", params)
   }
 
   override val cmd: String = {

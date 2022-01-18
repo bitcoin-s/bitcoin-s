@@ -1,5 +1,7 @@
 package org.bitcoins.core.protocol
 
+import org.bitcoins.core.config.MainNet
+import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkitcore.gen.AddressGenerator
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TestUtil}
 
@@ -24,6 +26,14 @@ class AddressTest extends BitcoinSUnitTest {
         case Failure(exception) => fail(exception.getMessage)
       }
     }
+  }
+
+  it must "have different results when constructing compressed and decompressed p2pkh" in {
+    val pubKey = ECPublicKey.freshPublicKey
+    val compressed = P2PKHAddress(pubKey, MainNet)
+    val decompressed = P2PKHAddress.fromDecompressedPubKey(pubKey, MainNet)
+    assert(compressed.value != decompressed.value)
+    assert(compressed != decompressed)
   }
 
   it must "serialize a bech32 address correctly" in {

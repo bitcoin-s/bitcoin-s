@@ -279,7 +279,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       walletBal1 <- wallet.getBalance()
 
       // Create child tx
-      childFeeRate <- wallet.feeRateApi.getFeeRate
+      childFeeRate <- wallet.feeRateApi.getFeeRate()
       childTx <- wallet.bumpFeeCPFP(parentTx.txIdBE, childFeeRate)
       _ <- bitcoind.sendRawTransaction(childTx)
 

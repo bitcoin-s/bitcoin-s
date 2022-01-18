@@ -7,6 +7,7 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.server.BitcoinSAppConfig
@@ -56,10 +57,15 @@ trait BaseWalletTest extends EmbeddedPg { _: Suite with BitcoinSAkkaAsyncTest =>
 
       /** Gets the height of the given block */
       override def getBlockHeight(
-          blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
-        if (blockHash == testBlockHash)
+          blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+        if (blockHash == testBlockHash) {
           Future.successful(Some(1))
-        else FutureUtil.none
+        } else if (
+          blockHash == RegTestNetChainParams.genesisBlock.blockHeader.hashBE
+        ) {
+          Future.successful(Some(1))
+        } else FutureUtil.none
+      }
 
       /** Gets the hash of the block that is what we consider "best" */
       override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
@@ -67,10 +73,11 @@ trait BaseWalletTest extends EmbeddedPg { _: Suite with BitcoinSAkkaAsyncTest =>
 
       /** Gets number of confirmations for the given block hash */
       override def getNumberOfConfirmations(
-          blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
-        if (blockHash == testBlockHash)
+          blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+        if (blockHash == testBlockHash) {
           Future.successful(Some(6))
-        else FutureUtil.none
+        } else FutureUtil.none
+      }
 
       /** Gets the number of compact filters in the database */
       override def getFilterCount(): Future[Int] = Future.successful(1)
@@ -122,6 +129,10 @@ trait BaseWalletTest extends EmbeddedPg { _: Suite with BitcoinSAkkaAsyncTest =>
 
       override def epochSecondToBlockHeight(time: Long): Future[Int] =
         Future.successful(0)
+
+      /** calculates the median time passed */
+      override def getMedianTimePast(): Future[Long] =
+        Future.successful(0L)
     }
 
 }

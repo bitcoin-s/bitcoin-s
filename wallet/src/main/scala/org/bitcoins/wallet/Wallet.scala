@@ -32,14 +32,13 @@ import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.db.models.MasterXPubDAO
-import org.bitcoins.db.{DatabaseDriver, SQLiteUtil}
+import org.bitcoins.db.SafeDatabase
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._
 import scodec.bits.ByteVector
-
-import java.nio.file.Path
+import slick.dbio.{DBIOAction, Effect, NoStream}
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Random, Success}
@@ -86,6 +85,7 @@ abstract class Wallet
   private[bitcoins] val stateDescriptorDAO: WalletStateDescriptorDAO =
     WalletStateDescriptorDAO()
 
+  private val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
   val creationTime: Instant = keyManager.creationTime
@@ -257,22 +257,25 @@ abstract class Wallet
   }
 
   override def clearAllUtxosAndAddresses(): Future[Wallet] = {
-    val resultedF = for {
-      _ <- addressTagDAO.deleteAll()
-      _ <- spendingInfoDAO.deleteAll()
-      _ <- addressDAO.deleteAll()
-      _ <- scriptPubKeyDAO.deleteAll()
+    val aggregatedActions: DBIOAction[
+      Unit,
+      NoStream,
+      Effect.Write with Effect.Transactional] = for {
+      _ <- addressTagDAO.deleteAllAction()
+      _ <- spendingInfoDAO.deleteAllAction()
+      _ <- addressDAO.deleteAllAction()
+      _ <- scriptPubKeyDAO.deleteAllAction()
     } yield {
-      logger.info(
-        s"Done clearing all utxos, addresses and scripts from the database")
-      this
+      ()
     }
+
+    val resultedF = safeDatabase.run(aggregatedActions)
     resultedF.failed.foreach(err =>
       logger.error(
         s"Failed to clear utxos, addresses and scripts from the database",
         err))
 
-    resultedF
+    resultedF.map(_ => this)
   }
 
   /** Sums up the value of all unspent
@@ -414,7 +417,7 @@ abstract class Wallet
     val utx = txBuilder.buildTx()
     val signed = RawTxSigner.sign(utx, utxoInfos, feeRate)
 
-    for {
+    val processedTxF = for {
       ourOuts <- findOurOuts(signed)
       creditingAmount = utxoInfos.foldLeft(CurrencyUnits.zero)(_ + _.amount)
       _ <- processOurTransaction(transaction = signed,
@@ -432,6 +435,12 @@ abstract class Wallet
         logger.trace(s"    $out")
       }
       signed
+    }
+
+    processedTxF.recoverWith { case _ =>
+      //if something fails, we need to unreserve the utxos associated with this tx
+      //and then propogate the failed future upwards
+      unmarkUTXOsAsReserved(signed).flatMap(_ => processedTxF)
     }
   }
 
@@ -657,7 +666,8 @@ abstract class Wallet
         feeRate = feeRate,
         fromAccount = fromAccount,
         coinSelectionAlgo = algo,
-        fromTagOpt = None)
+        fromTagOpt = None,
+        markAsReserved = true)
 
       tx <- finishSend(txBuilder, utxoInfos, amount, feeRate, newTags)
     } yield tx
@@ -738,7 +748,9 @@ abstract class Wallet
         feeRate = feeRate,
         fromAccount = fromAccount,
         coinSelectionAlgo = CoinSelectionAlgo.RandomSelection,
-        fromTagOpt = None)
+        fromTagOpt = None,
+        markAsReserved = true
+      )
       tx <- finishSend(txBuilder,
                        utxoInfos,
                        CurrencyUnits.zero,
@@ -758,7 +770,8 @@ abstract class Wallet
         destinations = outputs,
         feeRate = feeRate,
         fromAccount = fromAccount,
-        fromTagOpt = None)
+        fromTagOpt = None,
+        markAsReserved = true)
       sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
       tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate, newTags)
     } yield tx
@@ -936,17 +949,6 @@ abstract class Wallet
       this
     }
   }
-
-  override def backup(location: Path): Future[Unit] =
-    walletConfig.driver match {
-      case DatabaseDriver.SQLite =>
-        val jdbcUrl = walletConfig.jdbcUrl.replace("\"", "")
-        Future { SQLiteUtil.backup(jdbcUrl, location) }
-      case _: DatabaseDriver =>
-        Future.failed(
-          new IllegalArgumentException(
-            "Backup is supported only for SQLite database backend"))
-    }
 }
 
 // todo: create multiple wallets, need to maintain multiple databases
@@ -1002,7 +1004,10 @@ object Wallet extends WalletLogger {
 
   /** Creates the level 0 account for the given HD purpose, if the root account exists do nothing */
   private def createRootAccount(wallet: Wallet, keyManager: BIP39KeyManager)(
-      implicit ec: ExecutionContext): Future[AccountDb] = {
+      implicit ec: ExecutionContext): DBIOAction[
+    AccountDb,
+    NoStream,
+    Effect.Read with Effect.Write] = {
     val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
     val coin =
       HDCoin(purpose = keyManager.kmParams.purpose, coinType = coinType)
@@ -1017,27 +1022,24 @@ object Wallet extends WalletLogger {
     //2. We already have this account in our database, so we do nothing
     //3. We have this account in our database, with a DIFFERENT xpub. This is bad. Fail with an exception
     //   this most likely means that we have a different key manager than we expected
-    wallet.accountDAO.read((account.coin, account.index)).flatMap {
-      case Some(account) =>
-        if (account.xpub != xpub) {
-          val errorMsg =
-            s"Divergent xpubs for account=${account}. Existing database xpub=${account.xpub}, new xpub=${xpub}. " +
-              s"It is possible we have a different key manager being used than expected, keymanager=${keyManager.kmParams.seedPath.toAbsolutePath.toString}"
-          Future.failed(new RuntimeException(errorMsg))
-        } else {
-          logger.debug(
-            s"Account already exists in database, no need to create it, account=${account}")
-          Future.successful(account)
-        }
-      case None =>
-        wallet.accountDAO
-          .create(accountDb)
-          .map { written =>
-            logger.info(s"Created account=${accountDb} to DB")
-            written
+    wallet.accountDAO
+      .findByPrimaryKeyAction((account.coin, account.index))
+      .flatMap {
+        case Some(account) =>
+          if (account.xpub != xpub) {
+            val errorMsg =
+              s"Divergent xpubs for account=${account}. Existing database xpub=${account.xpub}, new xpub=${xpub}. " +
+                s"It is possible we have a different key manager being used than expected, keymanager=${keyManager.kmParams.seedPath.toAbsolutePath.toString}"
+            DBIOAction.failed(new RuntimeException(errorMsg))
+          } else {
+            logger.debug(
+              s"Account already exists in database, no need to create it, account=${account}")
+            DBIOAction.successful(account)
           }
-    }
-
+        case None =>
+          wallet.accountDAO
+            .createAction(accountDb)
+      }
   }
 
   def initialize(wallet: Wallet, bip39PasswordOpt: Option[String])(implicit
@@ -1049,36 +1051,40 @@ object Wallet extends WalletLogger {
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later
     // and still have their wallet work
-    def createAccountFutures: Future[Vector[Future[AccountDb]]] = {
-      for {
-        _ <- walletAppConfig.start()
-        accounts = HDPurposes.singleSigPurposes.map { purpose =>
-          //we need to create key manager params for each purpose
-          //and then initialize a key manager to derive the correct xpub
-          val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
-          val kmE = {
-            BIP39KeyManager.fromParams(kmParams = kmParams,
-                                       passwordOpt = passwordOpt,
-                                       bip39PasswordOpt = bip39PasswordOpt)
-          }
-          kmE match {
-            case Right(km) =>
-              createRootAccount(wallet = wallet, keyManager = km)
-            case Left(err) =>
-              //probably means you haven't initialized the key manager via the
-              //'CreateKeyManagerApi'
-              Future.failed(new RuntimeException(
-                s"Failed to create keymanager with params=$kmParams err=$err"))
-          }
-
+    val createAccountActions: Vector[
+      DBIOAction[AccountDb, NoStream, Effect.Read with Effect.Write]] = {
+      val accounts = HDPurposes.singleSigPurposes.map { purpose =>
+        //we need to create key manager params for each purpose
+        //and then initialize a key manager to derive the correct xpub
+        val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
+        val kmE = {
+          BIP39KeyManager.fromParams(kmParams = kmParams,
+                                     passwordOpt = passwordOpt,
+                                     bip39PasswordOpt = bip39PasswordOpt)
         }
-      } yield accounts
-    }
+        kmE match {
+          case Right(km) =>
+            createRootAccount(wallet = wallet, keyManager = km)
+          case Left(err) =>
+            //probably means you haven't initialized the key manager via the
+            //'CreateKeyManagerApi'
+            DBIOAction.failed(
+              new RuntimeException(
+                s"Failed to create keymanager with params=$kmParams err=$err"))
+        }
 
+      }
+      accounts
+    }
+    import wallet.accountDAO.profile.api._
     for {
       _ <- createMasterXpubF
-      _ <- createAccountFutures.flatMap(accounts =>
-        FutureUtil.collect(accounts))
+      actions = createAccountActions
+      accounts <- wallet.accountDAO.safeDatabase.runVec(
+        DBIOAction.sequence(actions).transactionally)
+      _ = accounts.foreach { a =>
+        logger.info(s"Created account=${a} to DB")
+      }
     } yield {
       logger.debug(s"Created root level accounts for wallet")
       wallet

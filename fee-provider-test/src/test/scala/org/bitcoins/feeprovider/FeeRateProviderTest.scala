@@ -81,9 +81,9 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
   it must "get a cached fee rate from a cachedHttpFeeRateProvider" in {
     val provider = MempoolSpaceProvider(FastestFeeTarget, MainNet, proxyParams)
     for {
-      feeRate <- provider.getFeeRate
+      feeRate <- provider.getFeeRate()
       _ <- AsyncUtil.nonBlockingSleep(20.seconds)
-      cached <- provider.getFeeRate
+      cached <- provider.getFeeRate()
     } yield assert(feeRate == cached)
   }
 
@@ -94,13 +94,25 @@ class FeeRateProviderTest extends BitcoinSAsyncTest {
 
   it must "get the correct fee rate from a ConstantFeeRateProvider" in {
     val provider = ConstantFeeRateProvider(SatoshisPerByte(Satoshis(4)))
-    provider.getFeeRate.map { feeRate =>
+    provider.getFeeRate().map { feeRate =>
       assert(feeRate == SatoshisPerByte(Satoshis(4)))
     }
   }
 
+  it must "use an aggregate of fee providers" in {
+    val expected = SatoshisPerByte(Satoshis(4))
+    val providerA = ConstantFeeRateProvider(expected)
+    val providerB = ConstantFeeRateProvider(SatoshisPerByte(Satoshis(2)))
+
+    val provider = FallbackFeeRateApi(Vector(providerA, providerB))
+
+    provider.getFeeRate().map { feeRate =>
+      assert(feeRate == expected)
+    }
+  }
+
   private def testProvider(provider: FeeRateApi): Future[Assertion] = {
-    provider.getFeeRate.map { feeRate =>
+    provider.getFeeRate().map { feeRate =>
       assert(feeRate.toLong > 0)
     }
   }

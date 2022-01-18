@@ -29,7 +29,11 @@ import org.bitcoins.crypto._
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.internal._
 import org.bitcoins.dlc.wallet.models._
-import org.bitcoins.dlc.wallet.util.{DLCActionBuilder, DLCStatusBuilder}
+import org.bitcoins.dlc.wallet.util.{
+  DLCActionBuilder,
+  DLCStatusBuilder,
+  DLCTxUtil
+}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
@@ -41,7 +45,6 @@ import scala.concurrent.{ExecutionContext, Future}
 abstract class DLCWallet
     extends Wallet
     with AnyDLCHDWalletApi
-    with DLCDataManagement
     with DLCTransactionProcessing {
 
   implicit val dlcConfig: DLCAppConfig
@@ -63,17 +66,23 @@ abstract class DLCWallet
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
 
+  private[wallet] val dlcWalletDAOs = DLCWalletDAOs(
+    dlcDAO,
+    contractDataDAO,
+    dlcAnnouncementDAO,
+    dlcInputsDAO,
+    dlcOfferDAO,
+    dlcAcceptDAO,
+    dlcSigsDAO,
+    dlcRefundSigDAO,
+    oracleNonceDAO,
+    announcementDAO
+  )
+
+  private val dlcDataManagement = DLCDataManagement(dlcWalletDAOs)
+
   protected lazy val actionBuilder: DLCActionBuilder = {
-    DLCActionBuilder(
-      dlcDAO = dlcDAO,
-      contractDataDAO = contractDataDAO,
-      dlcAnnouncementDAO = dlcAnnouncementDAO,
-      dlcInputsDAO = dlcInputsDAO,
-      dlcOfferDAO = dlcOfferDAO,
-      dlcAcceptDAO = dlcAcceptDAO,
-      dlcSigsDAO = dlcSigsDAO,
-      dlcRefundSigDAO = dlcRefundSigDAO
-    )
+    DLCActionBuilder(dlcWalletDAOs)
   }
 
   private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
@@ -198,25 +207,10 @@ abstract class DLCWallet
 
     require(outcomeAndSigByNonce.forall(t => t._1 == t._2._2.rx),
             "nonces out of order")
-
+    val updateOracleSigsA =
+      actionBuilder.updateDLCOracleSigsAction(outcomeAndSigByNonce)
     for {
-      nonceDbs <- oracleNonceDAO.findByNonces(
-        outcomeAndSigByNonce.keys.toVector)
-      _ = assert(nonceDbs.size == outcomeAndSigByNonce.keys.size,
-                 "Didn't receive all nonce dbs")
-
-      updated = nonceDbs.map { db =>
-        val (outcome, sig) = outcomeAndSigByNonce(db.nonce)
-        db.copy(outcomeOpt = Some(outcome), signatureOpt = Some(sig))
-      }
-
-      updates <- oracleNonceDAO.updateAll(updated)
-
-      announcementIds = updates.map(_.announcementId).distinct
-      announcementDbs <- dlcAnnouncementDAO.findByAnnouncementIds(
-        announcementIds)
-      updatedDbs = announcementDbs.map(_.copy(used = true))
-      _ <- dlcAnnouncementDAO.updateAll(updatedDbs)
+      updates <- safeDatabase.runVec(updateOracleSigsA)
     } yield updates
   }
 
@@ -454,6 +448,8 @@ abstract class DLCWallet
         dlcOfferDb = dlcOfferDb)
 
       _ <- safeDatabase.run(offerActions)
+      status <- findDLC(dlcId)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield offer
   }
 
@@ -590,7 +586,8 @@ abstract class DLCWallet
             outcomeSigsDbs <- dlcSigsDAO.findByDLCId(dlcId)
             refundSigsDb <- dlcRefundSigDAO.read(dlcId)
           } yield {
-            val inputRefs = matchPrevTxsWithInputs(fundingInputs, prevTxs)
+            val inputRefs =
+              DLCTxUtil.matchPrevTxsWithInputs(fundingInputs, prevTxs)
 
             dlcAcceptDb.toDLCAccept(offer.tempContractId,
                                     inputRefs,
@@ -602,6 +599,8 @@ abstract class DLCWallet
         case None =>
           createNewDLCAccept(dlc, account, collateral, offer)
       }
+      status <- findDLC(dlcId)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield dlcAccept
   }
 
@@ -860,19 +859,20 @@ abstract class DLCWallet
             transactionDAO.findByTxIdBEs(offerInputs.map(_.outPoint.txIdBE))
 
           contractData <- contractDataDAO.read(dlcId).map(_.get)
-          (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
-            dlcId)
+          (announcements, announcementData, nonceDbs) <- dlcDataManagement
+            .getDLCAnnouncementDbs(dlcId)
 
-          contractInfo = getContractInfo(contractData,
-                                         announcements,
-                                         announcementData,
-                                         nonceDbs)
+          contractInfo = dlcDataManagement.getContractInfo(contractData,
+                                                           announcements,
+                                                           announcementData,
+                                                           nonceDbs)
 
           offer =
-            offerDb.toDLCOffer(contractInfo,
-                               matchPrevTxsWithInputs(offerInputs, prevTxs),
-                               dlc,
-                               contractData)
+            offerDb.toDLCOffer(
+              contractInfo,
+              DLCTxUtil.matchPrevTxsWithInputs(offerInputs, prevTxs),
+              dlc,
+              contractData)
 
           dlcDb <- updateDLCContractIds(offer, accept)
 
@@ -914,7 +914,7 @@ abstract class DLCWallet
           Future.failed(new RuntimeException(
             s"No DLC found with corresponding tempContractId ${tempId.hex}, this wallet did not create the corresponding offer"))
       }
-      contractInfo <- getContractInfo(dlcDb.dlcId)
+      contractInfo <- dlcDataManagement.getContractInfo(dlcDb.dlcId)
 
       accept =
         DLCAccept.fromTLV(acceptTLV, walletConfig.network, contractInfo)
@@ -931,8 +931,15 @@ abstract class DLCWallet
       (dlc, cetSigsDbs) <- registerDLCAccept(accept)
       // .get should be safe now
       contractId = dlc.contractIdOpt.get
-
-      signer <- signerFromDb(dlc.dlcId)
+      dlcId = dlc.dlcId
+      fundingInputs <- dlcInputsDAO.findByDLCId(dlcId)
+      scriptSigParams <- getScriptSigParams(dlc, fundingInputs)
+      signer <- dlcDataManagement.signerFromDb(dlcId = dlc.dlcId,
+                                               transactionDAO = transactionDAO,
+                                               remoteTxDAO = remoteTxDAO,
+                                               fundingUtxoScriptSigParams =
+                                                 scriptSigParams,
+                                               keyManager = keyManager)
 
       mySigs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
       refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.head)
@@ -981,33 +988,48 @@ abstract class DLCWallet
 
       _ <- updateDLCState(dlc.contractIdOpt.get, DLCState.Signed)
       _ = logger.info(s"DLC ${contractId.toHex} is signed")
+      status <- findDLC(dlcId)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield DLCSign(cetSigs, FundingSignatures(sortedSigVec), contractId)
   }
 
   def verifyCETSigs(accept: DLCAccept): Future[Boolean] = {
-    verifierFromAccept(accept).flatMap(
-      _.verifyCETSigs(accept.cetSigs.indexedOutcomeSigs))
+    val verifierAcceptF =
+      dlcDataManagement.verifierFromAccept(accept, transactionDAO)
+    verifierAcceptF.flatMap(_.verifyCETSigs(accept.cetSigs.indexedOutcomeSigs))
   }
 
   def verifyCETSigs(sign: DLCSign): Future[Boolean] = {
-    verifierFromDb(sign.contractId).flatMap(
-      _.verifyCETSigs(sign.cetSigs.indexedOutcomeSigs))
+    val verifierF = dlcDataManagement.verifierFromDb(sign.contractId,
+                                                     transactionDAO,
+                                                     remoteTxDAO)
+    verifierF.flatMap(_.verifyCETSigs(sign.cetSigs.indexedOutcomeSigs))
   }
 
   def verifyRefundSig(accept: DLCAccept): Future[Boolean] = {
-    verifierFromAccept(accept).map(_.verifyRefundSig(accept.cetSigs.refundSig))
+    val verifierF = dlcDataManagement.verifierFromAccept(accept, transactionDAO)
+
+    verifierF.map(_.verifyRefundSig(accept.cetSigs.refundSig))
   }
 
   def verifyRefundSig(sign: DLCSign): Future[Boolean] = {
-    verifierFromDb(sign.contractId).map(
-      _.verifyRefundSig(sign.cetSigs.refundSig))
+    val verifierF = dlcDataManagement.verifierFromDb(
+      contractId = sign.contractId,
+      transactionDAO = transactionDAO,
+      remoteTxDAO = remoteTxDAO)
+
+    verifierF.map(_.verifyRefundSig(sign.cetSigs.refundSig))
   }
 
   def verifyFundingSigs(
       inputs: Vector[DLCFundingInputDb],
       sign: DLCSign): Future[Boolean] = {
     if (inputs.count(_.isInitiator) == sign.fundingSigs.length) {
-      verifierFromDb(sign.contractId).map { verifier =>
+      val verifierF = dlcDataManagement.verifierFromDb(
+        contractId = sign.contractId,
+        transactionDAO = transactionDAO,
+        remoteTxDAO = remoteTxDAO)
+      verifierF.map { verifier =>
         verifier.verifyRemoteFundingSigs(sign.fundingSigs)
       }
     } else {
@@ -1062,13 +1084,17 @@ abstract class DLCWallet
             s"No DLC found with corresponding contractId ${contractId.toHex}"))
       }
       (_, contractData, dlcOffer, dlcAccept, fundingInputs, contractInfo) <-
-        getDLCFundingData(dlcDb.dlcId)
-      builder <- builderFromDbData(dlcDb,
-                                   contractData,
-                                   dlcOffer,
-                                   dlcAccept,
-                                   fundingInputs,
-                                   contractInfo)
+        dlcDataManagement.getDLCFundingData(dlcDb.dlcId)
+      builder <- dlcDataManagement.builderFromDbData(
+        dlcDb = dlcDb,
+        contractDataDb = contractData,
+        dlcOffer = dlcOffer,
+        dlcAccept = dlcAccept,
+        fundingInputsDb = fundingInputs,
+        contractInfo = contractInfo,
+        transactionDAO = transactionDAO,
+        remoteTxDAO = remoteTxDAO
+      )
 
       sign = DLCSign.fromTLV(signTLV, builder.offer)
       result <- addDLCSigs(sign)
@@ -1135,17 +1161,44 @@ abstract class DLCWallet
     }
   }
 
+  private[wallet] def getScriptSigParams(
+      dlcDb: DLCDb,
+      fundingInputs: Vector[DLCFundingInputDb]): Future[
+    Vector[ScriptSignatureParams[InputInfo]]] = {
+    val outPoints =
+      fundingInputs.filter(_.isInitiator == dlcDb.isInitiator).map(_.outPoint)
+    val utxosF = listUtxos(outPoints)
+    for {
+      utxos <- utxosF
+      scriptSigParams <-
+        FutureUtil.foldLeftAsync(Vector.empty[ScriptSignatureParams[InputInfo]],
+                                 utxos) { (accum, utxo) =>
+          transactionDAO
+            .findByOutPoint(utxo.outPoint)
+            .map(txOpt =>
+              utxo.toUTXOInfo(keyManager, txOpt.get.transaction) +: accum)
+        }
+    } yield scriptSigParams
+  }
+
   override def getDLCFundingTx(contractId: ByteVector): Future[Transaction] = {
     for {
       (dlcDb, contractData, dlcOffer, dlcAccept, fundingInputs, contractInfo) <-
-        getDLCFundingData(contractId)
+        dlcDataManagement.getDLCFundingData(contractId)
 
-      signer <- signerFromDb(dlcDb,
-                             contractData,
-                             dlcOffer,
-                             dlcAccept,
-                             fundingInputs,
-                             contractInfo)
+      scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
+      signer <- dlcDataManagement.signerFromDb(
+        dlcDb = dlcDb,
+        contractDataDb = contractData,
+        dlcOffer = dlcOffer,
+        dlcAccept = dlcAccept,
+        fundingInputsDb = fundingInputs,
+        fundingUtxoScriptSigParams = scriptSigParams,
+        contractInfo = contractInfo,
+        transactionDAO = transactionDAO,
+        remoteTxDAO = remoteTxDAO,
+        keyManager = keyManager
+      )
       fundingTx <-
         if (dlcDb.isInitiator) {
           transactionDAO.findByTxId(signer.builder.buildFundingTx.txIdBE).map {
@@ -1179,6 +1232,7 @@ abstract class DLCWallet
 
   override def broadcastDLCFundingTx(
       contractId: ByteVector): Future[Transaction] = {
+    logger.info(s"broadcasting $contractId")
     val dlcDbOptF = dlcDAO.findByContractId(contractId)
     val fundingTxF = getDLCFundingTx(contractId)
     for {
@@ -1195,6 +1249,7 @@ abstract class DLCWallet
       _ = logger.info(
         s"Broadcasting funding transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}")
       _ <- broadcastTransaction(tx)
+      _ = logger.info(s"Done broadcast tx ${contractId}")
     } yield tx
   }
 
@@ -1225,12 +1280,13 @@ abstract class DLCWallet
     for {
       dlcDb <- dlcDAO.findByContractId(contractId).map(_.get)
 
-      (announcements, announcementData, nonceDbs) <- getDLCAnnouncementDbs(
-        dlcDb.dlcId)
+      (announcements, announcementData, nonceDbs) <- dlcDataManagement
+        .getDLCAnnouncementDbs(dlcDb.dlcId)
 
-      announcementTLVs = getOracleAnnouncements(announcements,
-                                                announcementData,
-                                                nonceDbs)
+      announcementTLVs = dlcDataManagement.getOracleAnnouncements(
+        announcements,
+        announcementData,
+        nonceDbs)
 
       oracleSigs =
         sigs.foldLeft(Vector.empty[OracleSignatures]) { (acc, sig) =>
@@ -1279,17 +1335,66 @@ abstract class DLCWallet
       oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
     require(oracleSigs.nonEmpty, "Must provide at least one oracle signature")
     for {
-      (executor, setup) <- executorAndSetupFromDb(contractId)
+      (dlcDb, _, _, _, fundingInputs, _) <-
+        dlcDataManagement.getDLCFundingData(contractId)
+      scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
+      executorWithSetupOpt <- dlcDataManagement.executorAndSetupFromDb(
+        contractId = contractId,
+        transactionDAO = transactionDAO,
+        remoteTxDAO = remoteTxDAO,
+        fundingUtxoScriptSigParams = scriptSigParams,
+        keyManager = keyManager)
+      tx <- {
+        executorWithSetupOpt match {
+          case Some(executorWithSetup) =>
+            buildExecutionTxWithExecutor(executorWithSetup,
+                                         oracleSigs,
+                                         contractId)
+          case None =>
+            //means we don't have cet sigs in the db anymore
+            //can we retrieve the CET some other way?
 
-      executed = executor.executeDLC(setup, oracleSigs)
-      (tx, outcome, sigsUsed) =
-        (executed.cet, executed.outcome, executed.sigsUsed)
-      _ = logger.info(
-        s"Created DLC execution transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}")
+            //lets try to retrieve it from our transactionDAO
+            val dlcDbOptF = dlcDAO.findByContractId(contractId)
 
+            for {
+              dlcDbOpt <- dlcDbOptF
+              _ = require(
+                dlcDbOpt.isDefined,
+                s"Could not find dlc associated with this contractId=${contractId.toHex}")
+              dlcDb = dlcDbOpt.get
+              _ = require(
+                dlcDb.closingTxIdOpt.isDefined,
+                s"If we don't have CET signatures, the closing tx must be defined, contractId=${contractId.toHex}")
+              closingTxId = dlcDb.closingTxIdOpt.get
+              closingTxOpt <- transactionDAO.findByTxId(closingTxId)
+            } yield {
+              require(
+                closingTxOpt.isDefined,
+                s"Could not find closing tx for DLC in db, contactId=${contractId.toHex} closingTxId=${closingTxId.hex}")
+              closingTxOpt.get.transaction
+            }
+        }
+      }
+    } yield tx
+  }
+
+  private def buildExecutionTxWithExecutor(
+      executorWithSetup: DLCExecutorWithSetup,
+      oracleSigs: Vector[OracleSignatures],
+      contractId: ByteVector): Future[Transaction] = {
+    val executor = executorWithSetup.executor
+    val setup = executorWithSetup.setup
+    val executed = executor.executeDLC(setup, oracleSigs)
+    val (tx, outcome, sigsUsed) =
+      (executed.cet, executed.outcome, executed.sigsUsed)
+    logger.info(
+      s"Created DLC execution transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}")
+
+    for {
       _ <- updateDLCOracleSigs(sigsUsed)
       _ <- updateDLCState(contractId, DLCState.Claimed)
-      _ <- updateClosingTxId(contractId, tx.txIdBE)
+      dlcDb <- updateClosingTxId(contractId, tx.txIdBE)
 
       oracleSigSum =
         OracleSignatures.computeAggregateSignature(outcome, sigsUsed)
@@ -1298,6 +1403,9 @@ abstract class DLCWallet
       _ <- updateAggregateSignature(contractId, aggSig)
 
       _ <- processTransaction(tx, None)
+      dlcStatusOpt <- findDLC(dlcId = dlcDb.dlcId)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
+                                                             dlcStatusOpt.get)
     } yield tx
   }
 
@@ -1305,6 +1413,9 @@ abstract class DLCWallet
     for {
       dlcDbOpt <- dlcDAO.findByContractId(contractId)
       dlcDb = dlcDbOpt.get
+      offerDbOpt <- dlcOfferDAO.findByDLCId(dlcDb.dlcId)
+      _ = require(offerDbOpt.nonEmpty,
+                  s"Invalid DLC $dlcDb.dlcId: no offer data")
       contractData <- contractDataDAO.read(dlcDb.dlcId).map(_.get)
 
       currentHeight <- chainQueryApi.getBestHashBlockHeight()
@@ -1320,7 +1431,13 @@ abstract class DLCWallet
             s"Refund transaction is not valid yet, current time: $currentTime, refund valid at time $time")
       }
 
-      executor <- executorFromDb(dlcDb.dlcId)
+      fundingInputs <- dlcInputsDAO.findByDLCId(dlcDb.dlcId)
+      scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
+      executor <- dlcDataManagement.executorFromDb(dlcDb.dlcId,
+                                                   transactionDAO,
+                                                   remoteTxDAO,
+                                                   scriptSigParams,
+                                                   keyManager)
       refundSigsDbOpt <- dlcRefundSigDAO.findByDLCId(dlcDb.dlcId)
 
       refundSig =
@@ -1332,9 +1449,17 @@ abstract class DLCWallet
         s"Created DLC refund transaction ${refundTx.txIdBE.hex} for contract ${contractId.toHex}")
 
       _ <- updateDLCState(contractId, DLCState.Refunded)
-      _ <- updateClosingTxId(contractId, refundTx.txIdBE)
+      updatedDlcDb <- updateClosingTxId(contractId, refundTx.txIdBE)
 
       _ <- processTransaction(refundTx, blockHashOpt = None)
+      closingTxOpt <- getClosingTxOpt(updatedDlcDb)
+      dlcAcceptOpt <- dlcAcceptDAO.findByDLCId(updatedDlcDb.dlcId)
+      status <- buildDLCStatus(updatedDlcDb,
+                               contractData,
+                               offerDbOpt.get,
+                               dlcAcceptOpt,
+                               closingTxOpt)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield refundTx
   }
 
@@ -1423,18 +1548,20 @@ abstract class DLCWallet
     val aggregatedF: Future[(
         Vector[DLCAnnouncementDb],
         Vector[OracleAnnouncementDataDb],
-        Vector[OracleNonceDb])] = getDLCAnnouncementDbs(dlcDb.dlcId)
+        Vector[OracleNonceDb])] =
+      dlcDataManagement.getDLCAnnouncementDbs(dlcDb.dlcId)
 
     val contractInfoAndAnnouncementsF: Future[
       (ContractInfo, Vector[(OracleAnnouncementV0TLV, Long)])] = {
       aggregatedF.map { case (announcements, announcementData, nonceDbs) =>
-        val contractInfo = getContractInfo(contractData,
-                                           announcements,
-                                           announcementData,
-                                           nonceDbs)
-        val announcementsWithId = getOracleAnnouncementsWithId(announcements,
-                                                               announcementData,
-                                                               nonceDbs)
+        val contractInfo = dlcDataManagement.getContractInfo(contractData,
+                                                             announcements,
+                                                             announcementData,
+                                                             nonceDbs)
+        val announcementsWithId =
+          dlcDataManagement.getOracleAnnouncementsWithId(announcements,
+                                                         announcementData,
+                                                         nonceDbs)
         (contractInfo, announcementsWithId)
       }
     }

@@ -34,6 +34,8 @@ trait CryptoRuntime {
     sha256(bitVector.toByteVector)
   }
 
+  def sha3_256(bytes: ByteVector): Sha3_256Digest
+
   def taggedSha256(bytes: ByteVector, tag: String): Sha256Digest = {
     val tagHash = sha256(tag)
     val tagBytes = tagHash.bytes ++ tagHash.bytes

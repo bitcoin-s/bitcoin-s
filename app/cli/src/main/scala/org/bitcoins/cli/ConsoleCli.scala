@@ -53,6 +53,9 @@ object ConsoleCli {
       opt[Int]("rpcport")
         .action((port, conf) => conf.copy(rpcPortOpt = Some(port)))
         .text(s"The port to send our rpc request to on the server"),
+      opt[String]("password")
+        .action((password, conf) => conf.copy(rpcPassword = password))
+        .text(s"The password to send our rpc request to on the server"),
       opt[Unit]("version")
         .action((_, conf) => conf.copy(command = GetVersion))
         .hidden(),
@@ -87,6 +90,9 @@ object ConsoleCli {
                 case gbh: GetBlockHeader => gbh.copy(hash = hash)
                 case other               => other
               }))),
+      cmd("getmediantimepast")
+        .action((_, conf) => conf.copy(command = GetMedianTimePast))
+        .text(s"Get the median time past"),
       cmd("decoderawtransaction")
         .action((_, conf) =>
           conf.copy(command = DecodeRawTransaction(EmptyTransaction)))
@@ -730,20 +736,6 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case wps: KeyManagerPassphraseSet =>
                   wps.copy(password = pass)
-                case other => other
-              }))
-        ),
-      cmd("backupwallet")
-        .action((_, conf) => conf.copy(command = BackupWallet(null)))
-        .text("Backs up the wallet SQLite database")
-        .children(
-          arg[String]("dest")
-            .text("Destination file name")
-            .required()
-            .action((dest, conf) =>
-              conf.copy(command = conf.command match {
-                case wps: BackupWallet =>
-                  wps.copy(destination = dest)
                 case other => other
               }))
         ),
@@ -1672,7 +1664,7 @@ object ConsoleCli {
                 case other => other
               }))),
       checkConfig {
-        case Config(NoCommand, _, _, _) =>
+        case Config(NoCommand, _, _, _, _) =>
           failure("You need to provide a command!")
         case _ => success
       }
@@ -1706,6 +1698,8 @@ object ConsoleCli {
     val requestParam: RequestParam = command match {
       case GetInfo =>
         RequestParam("getinfo")
+      case GetMedianTimePast =>
+        RequestParam("getmediantimepast")
       case GetUtxos =>
         RequestParam("getutxos")
       case ListReservedUtxos =>
@@ -1885,8 +1879,6 @@ object ConsoleCli {
                      Seq(up.writeJs(walletName),
                          up.writeJs(xprv),
                          up.writeJs(passwordOpt)))
-      case BackupWallet(location) =>
-        RequestParam("backupwallet", Seq(up.writeJs(location)))
 
       case GetBlockHeader(hash) =>
         RequestParam("getblockheader", Seq(up.writeJs(hash)))
@@ -2022,6 +2014,8 @@ object ConsoleCli {
         sttp
           .post(uri"http://$host:${config.rpcPort}/")
           .contentType("application/json")
+          .auth
+          .basic("bitcoins", config.rpcPassword)
           .body {
             val uuid = java.util.UUID.randomUUID.toString
             val paramsWithID: Map[String, ujson.Value] =
@@ -2046,7 +2040,10 @@ object ConsoleCli {
         Try(ujson.read(rawBody).obj)
           .transform[mutable.LinkedHashMap[String, ujson.Value]](
             Success(_),
-            _ => error(s"Response was not a JSON object! Got: $rawBody"))
+            _ =>
+              Success(
+                mutable.LinkedHashMap[String, ujson.Value](
+                  "error" -> Str(rawBody))))
 
       /** Gets the given key from jsObj if it exists
         * and is not null
@@ -2099,7 +2096,8 @@ case class Config(
     command: CliCommand = CliCommand.NoCommand,
     network: Option[NetworkParameters] = None,
     debug: Boolean = false,
-    rpcPortOpt: Option[Int] = None) {
+    rpcPortOpt: Option[Int] = None,
+    rpcPassword: String = "") {
 
   val rpcPort: Int = rpcPortOpt match {
     case Some(port) => port
@@ -2319,7 +2317,6 @@ object CliCommand {
   case class GetBalances(isSats: Boolean) extends AppServerCliCommand
   case class GetAddressInfo(address: BitcoinAddress) extends AppServerCliCommand
   case object GetDLCWalletAccounting extends AppServerCliCommand
-  case class BackupWallet(destination: String) extends AppServerCliCommand
 
   case class GetTransaction(txId: DoubleSha256DigestBE)
       extends AppServerCliCommand
@@ -2357,6 +2354,8 @@ object CliCommand {
 
   case class GetBlockHeader(hash: DoubleSha256DigestBE)
       extends AppServerCliCommand
+
+  case object GetMedianTimePast extends AppServerCliCommand
 
   case class DecodeRawTransaction(transaction: Transaction)
       extends AppServerCliCommand

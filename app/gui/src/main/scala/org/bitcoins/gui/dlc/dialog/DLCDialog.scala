@@ -132,7 +132,7 @@ abstract class DLCDialog[T <: CliCommand](
     val result = dialog.showAndWait()
 
     result match {
-      case Some(someT: Some[T]) => someT
+      case Some(someT: Some[_]) => someT.asInstanceOf[Option[T]]
       case Some(_) | None       => None
     }
   }

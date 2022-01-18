@@ -68,11 +68,13 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
 
     val f = for {
       res <- resF
-
       hash = block.blockHeader.hashBE
       height <- chainQueryApi.getBlockHeight(hash)
       _ <- stateDescriptorDAO.updateSyncHeight(hash, height.get)
-    } yield res
+      _ <- walletConfig.walletCallbacks.executeOnBlockProcessed(logger, block)
+    } yield {
+      res
+    }
 
     f.onComplete(failure =>
       signalBlockProcessingCompletion(block.blockHeader.hash, failure))
@@ -303,7 +305,9 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         .flatten
       processed <- spendingInfoDAO.updateAllSpendingInfoDb(toBeUpdated)
       _ <- updateUtxoConfirmedStates(processed)
-    } yield processed
+    } yield {
+      processed
+    }
   }
 
   /** Does the grunt work of processing a TX.
@@ -351,16 +355,31 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
 
     for {
       receivedSpendingInfoDbs <- receivedSpendingInfoDbsF
+      receivedStart = TimeUtil.currentEpochMs
       incoming <- processReceivedUtxos(transaction = transaction,
                                        blockHashOpt = blockHashOpt,
                                        spendingInfoDbs =
                                          receivedSpendingInfoDbs,
                                        newTags = newTags)
+      _ = if (incoming.nonEmpty) {
+        logger.info(
+          s"Finished processing ${incoming.length} received outputs, it took=${TimeUtil.currentEpochMs - receivedStart}ms")
+      }
+
       spentSpendingInfoDbs <- spentSpendingInfoDbsF
+      spentStart = TimeUtil.currentEpochMs
       outgoing <- processSpentUtxos(transaction = transaction,
                                     outputsBeingSpent = spentSpendingInfoDbs,
                                     blockHashOpt = blockHashOpt)
-      _ <- walletCallbacks.executeOnTransactionProcessed(logger, transaction)
+      _ = if (outgoing.nonEmpty) {
+        logger.info(
+          s"Finished processing ${outgoing.length} spent outputs, it took=${TimeUtil.currentEpochMs - spentStart}ms")
+      }
+      _ <-
+        // only notify about our transactions
+        if (incoming.nonEmpty || outgoing.nonEmpty)
+          walletCallbacks.executeOnTransactionProcessed(logger, transaction)
+        else Future.unit
     } yield {
       ProcessTxResult(incoming, outgoing)
     }
@@ -626,7 +645,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         val totalIncoming = outputsWithIndex.map(_.output.value).sum
 
         val spks = outputsWithIndex.map(_.output.scriptPubKey)
-        val spksInDbF = addressDAO.findByScriptPubKeys(spks.toVector)
+        val spksInDbF = addressDAO.findByScriptPubKeys(spks)
 
         val ourOutputsF = for {
           spksInDb <- spksInDbF
@@ -658,7 +677,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
               .fromScriptPubKey(out.output.scriptPubKey, networkParameters)
             tagsToUse.map(tag => AddressTagDb(address, tag))
           }
-          created <- addressTagDAO.createAll(newTagDbs.toVector)
+          created <- addressTagDAO.createAll(newTagDbs)
         } yield created
 
         for {

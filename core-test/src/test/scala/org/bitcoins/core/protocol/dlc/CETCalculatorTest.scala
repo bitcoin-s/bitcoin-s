@@ -5,9 +5,10 @@ import org.bitcoins.core.protocol.dlc.compute.CETCalculator
 import org.bitcoins.core.protocol.dlc.compute.CETCalculator._
 import org.bitcoins.core.protocol.dlc.models.{
   DLCPayoutCurve,
-  OutcomePayoutPoint,
+  PiecewisePolynomialPoint,
   RoundingIntervals
 }
+import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
@@ -23,20 +24,22 @@ class CETCalculatorTest extends BitcoinSUnitTest {
   private val baseGen: Gen[Int] = Gen.choose(2, 256)
 
   it should "correctly split into ranges" in {
-    val func = DLCPayoutCurve(
+    val func = DLCPayoutCurve.polynomialInterpolate(
       Vector(
-        OutcomePayoutPoint(0, Satoshis(-1000), isEndpoint = true),
-        OutcomePayoutPoint(10, Satoshis(-1000), isEndpoint = true),
-        OutcomePayoutPoint(20, Satoshis(0), isEndpoint = false),
-        OutcomePayoutPoint(30, Satoshis(3000), isEndpoint = true),
-        OutcomePayoutPoint(40, Satoshis(4000), isEndpoint = true),
-        OutcomePayoutPoint(50, Satoshis(4000), isEndpoint = true),
-        OutcomePayoutPoint(70, Satoshis(0), isEndpoint = false),
-        OutcomePayoutPoint(80, Satoshis(1000), isEndpoint = true),
-        OutcomePayoutPoint(90, Satoshis(1000), isEndpoint = true),
-        OutcomePayoutPoint(100, Satoshis(11000), isEndpoint = false),
-        OutcomePayoutPoint(110, Satoshis(9000), isEndpoint = true)
-      ))
+        PiecewisePolynomialPoint(0, -1000, isEndpoint = true),
+        PiecewisePolynomialPoint(10, -1000, isEndpoint = true),
+        PiecewisePolynomialPoint(20, 0, isEndpoint = false),
+        PiecewisePolynomialPoint(30, 3000, isEndpoint = true),
+        PiecewisePolynomialPoint(40, 4000, isEndpoint = true),
+        PiecewisePolynomialPoint(50, 4000, isEndpoint = true),
+        PiecewisePolynomialPoint(70, 0, isEndpoint = false),
+        PiecewisePolynomialPoint(80, 1000, isEndpoint = true),
+        PiecewisePolynomialPoint(90, 1000, isEndpoint = true),
+        PiecewisePolynomialPoint(100, 11000, isEndpoint = false),
+        PiecewisePolynomialPoint(110, 9000, isEndpoint = true)
+      ),
+      serializationVersion = DLCSerializationVersion.Beta
+    )
 
     val expected = Vector(
       ConstantPayoutRange(0, 20), // 0
@@ -58,17 +61,19 @@ class CETCalculatorTest extends BitcoinSUnitTest {
   }
 
   it should "correctly split into ranges when payout is constantly changing" in {
-    val func = DLCPayoutCurve(
+    val func = DLCPayoutCurve.polynomialInterpolate(
       Vector(
-        OutcomePayoutPoint(0, 1000, isEndpoint = true),
-        OutcomePayoutPoint(1, 0, isEndpoint = true),
-        OutcomePayoutPoint(2, 1000, isEndpoint = true),
-        OutcomePayoutPoint(3, 0, isEndpoint = true),
-        OutcomePayoutPoint(4, 1000, isEndpoint = true),
-        OutcomePayoutPoint(5, 0, isEndpoint = true),
-        OutcomePayoutPoint(6, 1000, isEndpoint = true),
-        OutcomePayoutPoint(7, 0, isEndpoint = true)
-      ))
+        PiecewisePolynomialPoint(0, 1000, isEndpoint = true),
+        PiecewisePolynomialPoint(1, 0, isEndpoint = true),
+        PiecewisePolynomialPoint(2, 1000, isEndpoint = true),
+        PiecewisePolynomialPoint(3, 0, isEndpoint = true),
+        PiecewisePolynomialPoint(4, 1000, isEndpoint = true),
+        PiecewisePolynomialPoint(5, 0, isEndpoint = true),
+        PiecewisePolynomialPoint(6, 1000, isEndpoint = true),
+        PiecewisePolynomialPoint(7, 0, isEndpoint = true)
+      ),
+      serializationVersion = DLCSerializationVersion.Beta
+    )
 
     val expected = Vector(VariablePayoutRange(0, 7))
 
@@ -257,20 +262,22 @@ class CETCalculatorTest extends BitcoinSUnitTest {
   }
 
   it should "correctly compute all needed CETs" in {
-    val func = DLCPayoutCurve(
+    val func = DLCPayoutCurve.polynomialInterpolate(
       Vector(
-        OutcomePayoutPoint(0, Satoshis(-1000), isEndpoint = true),
-        OutcomePayoutPoint(10, Satoshis(-1000), isEndpoint = true),
-        OutcomePayoutPoint(20, Satoshis(0), isEndpoint = false),
-        OutcomePayoutPoint(30, Satoshis(3000), isEndpoint = true),
-        OutcomePayoutPoint(40, Satoshis(4000), isEndpoint = true),
-        OutcomePayoutPoint(50, Satoshis(4000), isEndpoint = true),
-        OutcomePayoutPoint(70, Satoshis(0), isEndpoint = false),
-        OutcomePayoutPoint(80, Satoshis(1000), isEndpoint = true),
-        OutcomePayoutPoint(90, Satoshis(1000), isEndpoint = true),
-        OutcomePayoutPoint(100, Satoshis(11000), isEndpoint = false),
-        OutcomePayoutPoint(110, Satoshis(9000), isEndpoint = true)
-      ))
+        PiecewisePolynomialPoint(0, -1000, isEndpoint = true),
+        PiecewisePolynomialPoint(10, -1000, isEndpoint = true),
+        PiecewisePolynomialPoint(20, 0, isEndpoint = false),
+        PiecewisePolynomialPoint(30, 3000, isEndpoint = true),
+        PiecewisePolynomialPoint(40, 4000, isEndpoint = true),
+        PiecewisePolynomialPoint(50, 4000, isEndpoint = true),
+        PiecewisePolynomialPoint(70, 0, isEndpoint = false),
+        PiecewisePolynomialPoint(80, 1000, isEndpoint = true),
+        PiecewisePolynomialPoint(90, 1000, isEndpoint = true),
+        PiecewisePolynomialPoint(100, 11000, isEndpoint = false),
+        PiecewisePolynomialPoint(110, 9000, isEndpoint = true)
+      ),
+      serializationVersion = DLCSerializationVersion.Beta
+    )
 
     val firstZeroRange = Vector(
       Vector(0, 0) -> Satoshis(0),

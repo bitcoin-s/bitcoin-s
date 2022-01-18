@@ -383,7 +383,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
     for {
       parent <- wallet.sendToAddress(testAddress, amountToSend, None)
-      bumpRate <- wallet.feeRateApi.getFeeRate
+      bumpRate <- wallet.feeRateApi.getFeeRate()
       child <- wallet.bumpFeeCPFP(parent.txIdBE, bumpRate)
 
       received <- wallet.spendingInfoDAO.findTx(child).map(_.nonEmpty)
@@ -463,7 +463,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
       algo: CoinSelectionAlgo): Future[Assertion] = {
     for {
       account <- wallet.getDefaultAccount()
-      feeRate <- wallet.getFeeRate
+      feeRate <- wallet.getFeeRate()
       allUtxos <- wallet.listUtxos(account.hdAccount)
       output = TransactionOutput(amountToSend, testAddress.scriptPubKey)
       expectedUtxos =
@@ -492,5 +492,37 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   it should "correctly send with standard accumulate" in { fundedWallet =>
     testSendWithAlgo(fundedWallet.wallet, CoinSelectionAlgo.StandardAccumulate)
+  }
+
+  it must "it must not double spend utxos used to fund other txs in the wallet" in {
+    fundedWallet =>
+      //i expected an error saying insufficient balance
+
+      val addr1F = fundedWallet.wallet.getNewAddress()
+      val addr2F = fundedWallet.wallet.getNewAddress()
+      val balanceF = fundedWallet.wallet.getBalance()
+
+      val failedTx: Future[Unit] = for {
+        balance <- balanceF
+        addr1 <- addr1F
+        addr2 <- addr2F
+        amt = balance - Satoshis(
+          500000
+        ) // for fee, fee rates are random so we might need a lot
+
+        //build these transactions in parallel intentionally
+        tx1F = fundedWallet.wallet.sendToAddress(addr1, amt, None)
+        tx2F = fundedWallet.wallet.sendToAddress(addr2, amt, None)
+        //one of these should fail because we don't have enough money
+        _ <- tx1F
+        _ <- tx2F
+      } yield ()
+
+      val exnF: Future[RuntimeException] =
+        recoverToExceptionIf[RuntimeException](failedTx)
+
+      exnF.map(err =>
+        assert(err.getMessage.contains("Failed to reserve all utxos")))
+
   }
 }

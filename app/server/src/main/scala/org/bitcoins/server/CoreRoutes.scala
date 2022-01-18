@@ -19,6 +19,7 @@ import upickle.default._
 
 import scala.collection.mutable
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
     extends ServerRoute {
@@ -225,8 +226,10 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
       withValidServerCommand(ZipDataDir.fromJsArr(arr)) {
         case ZipDataDir(path) =>
           complete {
-            config.zipDatadir(path)
-            Server.httpSuccess(ujson.Null)
+            config.zipDatadir(path) match {
+              case Success(_)  => Server.httpSuccess(ujson.Null)
+              case Failure(ex) => Server.httpError(ex.getMessage)
+            }
           }
       }
   }

@@ -209,7 +209,14 @@ private[wallet] trait AddressHandling extends WalletLogger {
       chainType: HDChainType
   ): Future[BitcoinAddress] = {
     val p = Promise[AddressDb]()
-    addressRequestQueue.add((account, chainType, p))
+    val addressRequest = AddressRequest(account, chainType, p)
+    val result = addressRequestQueue.add(addressRequest)
+
+    if (!result) {
+      logger.error(
+        s"Failed to add address request to queue, request=$addressRequest")
+    }
+
     for {
       addressDb <- p.future
       _ <-
@@ -441,23 +448,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
     addressTagDAO.dropByAddressAndTag(address, addressTagType)
   }
 
-  /** Background thread meant to ensure safety when calling [[getNewAddress()]]
-    * We to ensure independent calls to getNewAddress don't result in a race condition
-    * to the database that would generate the same address and cause an error.
-    * With this background thread, we poll the [[addressRequestQueue]] seeing if there
-    * are any elements in it, if there are, we process them and complete the Promise in the queue.
-    */
-  lazy val addressQueueThread = {
-    val t = new Thread(AddressQueueRunnable)
-    t.setName(s"bitcoin-s-address-queue-${System.currentTimeMillis()}")
-    t
-  }
-
-  lazy val addressRequestQueue = {
-    val queue = new java.util.concurrent.ArrayBlockingQueue[(
-        AccountDb,
-        HDChainType,
-        Promise[AddressDb])](
+  private lazy val addressRequestQueue = {
+    val queue = new java.util.concurrent.ArrayBlockingQueue[AddressRequest](
       walletConfig.addressQueueSize
     )
 
@@ -478,40 +470,51 @@ private[wallet] trait AddressHandling extends WalletLogger {
   private case object AddressQueueRunnable extends Runnable {
 
     override def run(): Unit = {
-      while (!addressQueueThread.isInterrupted) {
-        val (account, chainType, promise) =
-          try {
-            addressRequestQueue.take()
-          } catch {
-            case _: java.lang.InterruptedException =>
-              return ()
-            case err: Throwable => throw err
-          }
-        logger.debug(
-          s"Processing $account $chainType in our address request queue")
-
-        val resultF = for {
-          addressDb <- getNewAddressDb(account, chainType)
-          writtenAddressDb <- addressDAO.create(addressDb)
-        } yield {
-          promise.success(writtenAddressDb)
-          writtenAddressDb
-        }
-        //make sure this is completed before we iterate to the next one
-        //otherwise we will possibly have a race condition
-
+      val addressRequestOpt: Option[AddressRequest] = {
         try {
-          Await.result(resultF, walletConfig.addressQueueTimeout)
+          //don't want to block forever if queue is empty
+          if (!addressRequestQueue.isEmpty) {
+            Some(addressRequestQueue.take())
+          } else {
+            None
+          }
         } catch {
-          case timeout: TimeoutException =>
-            logger.error(
-              s"Timeout for generating address account=$account chainType=$chainType!",
-              timeout)
-          //continue executing
-          case scala.util.control.NonFatal(exn) =>
-            logger.error(s"Failed to generate address for $account $chainType",
-                         exn)
+          case _: java.lang.InterruptedException =>
+            return ()
+          case err: Throwable => throw err
         }
+      }
+
+      addressRequestOpt match {
+        case None => //no requests, do nothing
+        case Some(addressRequest) =>
+          val AddressRequest(account, chainType, promise) = addressRequest
+          logger.debug(
+            s"Processing $account $chainType in our address request queue")
+          val resultF = for {
+            addressDb <- getNewAddressDb(account, chainType)
+            writtenAddressDb <- addressDAO.create(addressDb)
+          } yield {
+            promise.success(writtenAddressDb)
+            writtenAddressDb
+          }
+          //make sure this is completed before we iterate to the next one
+          //otherwise we will possibly have a race condition
+
+          try {
+            Await.result(resultF, walletConfig.addressQueueTimeout)
+            ()
+          } catch {
+            case timeout: TimeoutException =>
+              logger.error(
+                s"Timeout for generating address account=$account chainType=$chainType!",
+                timeout)
+            //continue executing
+            case scala.util.control.NonFatal(exn) =>
+              logger.error(
+                s"Failed to generate address for $account $chainType",
+                exn)
+          }
       }
     }
   }
