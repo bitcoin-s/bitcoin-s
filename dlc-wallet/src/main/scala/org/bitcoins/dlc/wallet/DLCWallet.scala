@@ -1413,6 +1413,9 @@ abstract class DLCWallet
     for {
       dlcDbOpt <- dlcDAO.findByContractId(contractId)
       dlcDb = dlcDbOpt.get
+      offerDbOpt <- dlcOfferDAO.findByDLCId(dlcDb.dlcId)
+      _ = require(offerDbOpt.nonEmpty,
+                  s"Invalid DLC $dlcDb.dlcId: no offer data")
       contractData <- contractDataDAO.read(dlcDb.dlcId).map(_.get)
 
       currentHeight <- chainQueryApi.getBestHashBlockHeight()
@@ -1446,9 +1449,17 @@ abstract class DLCWallet
         s"Created DLC refund transaction ${refundTx.txIdBE.hex} for contract ${contractId.toHex}")
 
       _ <- updateDLCState(contractId, DLCState.Refunded)
-      _ <- updateClosingTxId(contractId, refundTx.txIdBE)
+      updatedDlcDb <- updateClosingTxId(contractId, refundTx.txIdBE)
 
       _ <- processTransaction(refundTx, blockHashOpt = None)
+      closingTxOpt <- getClosingTxOpt(updatedDlcDb)
+      dlcAcceptOpt <- dlcAcceptDAO.findByDLCId(updatedDlcDb.dlcId)
+      status <- buildDLCStatus(updatedDlcDb,
+                               contractData,
+                               offerDbOpt.get,
+                               dlcAcceptOpt,
+                               closingTxOpt)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield refundTx
   }
 
