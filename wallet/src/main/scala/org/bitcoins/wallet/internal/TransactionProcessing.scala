@@ -375,7 +375,11 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         logger.info(
           s"Finished processing ${outgoing.length} spent outputs, it took=${TimeUtil.currentEpochMs - spentStart}ms")
       }
-      _ <- walletCallbacks.executeOnTransactionProcessed(logger, transaction)
+      _ <-
+        // only notify about our transactions
+        if (incoming.nonEmpty || outgoing.nonEmpty)
+          walletCallbacks.executeOnTransactionProcessed(logger, transaction)
+        else Future.unit
     } yield {
       ProcessTxResult(incoming, outgoing)
     }
