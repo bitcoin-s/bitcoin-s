@@ -56,6 +56,13 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
 
   protected def findAll(ts: Vector[T]): Query[Table[_], T, Seq]
 
+  def findAllAction(): DBIOAction[
+    Vector[T],
+    profile.api.NoStream,
+    profile.api.Effect.Read] = {
+    table.result.map(_.toVector)
+  }
+
   /** Updates all of the given ts.
     * Returns all ts that actually existed in the database and got updated
     * This method discards things that did not exist in the database,

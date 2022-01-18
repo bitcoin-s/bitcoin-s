@@ -12,6 +12,14 @@ trait DLCIdDaoUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
   def findByDLCIdAction(dlcId: Sha256Digest): profile.api.DBIOAction[
     Option[T],
     profile.api.NoStream,
+    profile.api.Effect.Read] = {
+    findByDLCIdsAction(Vector(dlcId))
+      .map(_.headOption)
+  }
+
+  def findByDLCIdsAction(dlcId: Vector[Sha256Digest]): profile.api.DBIOAction[
+    Vector[T],
+    profile.api.NoStream,
     profile.api.Effect.Read]
 
   def findByDLCId(dlcId: Sha256Digest): Future[Option[T]] = {

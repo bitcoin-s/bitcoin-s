@@ -48,12 +48,12 @@ case class DLCRefundSigsDAO()(implicit
     Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Option[DLCRefundSigsDb],
+  override def findByDLCIdsAction(dlcIds: Vector[Sha256Digest]): DBIOAction[
+    Vector[DLCRefundSigsDb],
     profile.api.NoStream,
     profile.api.Effect.Read] = {
-    val q = table.filter(_.dlcId === dlcId)
-    q.result.map(_.headOption)
+    val q = table.filter(_.dlcId.inSet(dlcIds))
+    q.result.map(_.toVector)
   }
 
   override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[

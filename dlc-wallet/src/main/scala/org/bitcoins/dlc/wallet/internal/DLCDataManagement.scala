@@ -13,6 +13,8 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.db.SafeDatabase
+import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.dlc.wallet.util.{DLCActionBuilder, DLCTxUtil}
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
@@ -25,10 +27,10 @@ import scala.concurrent._
 /** Handles fetching and constructing different DLC datastructures from the database */
 case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     ec: ExecutionContext) {
-  private val dlcDAO = dlcWalletDAOs.dlcDAO
+  val dlcDAO = dlcWalletDAOs.dlcDAO
   private val dlcAnnouncementDAO = dlcWalletDAOs.dlcAnnouncementDAO
   //private val dlcInputsDAO = dlcWalletDAOs.dlcInputsDAO
-  // private val dlcOfferDAO = dlcWalletDAOs.dlcOfferDAO
+  val dlcOfferDAO = dlcWalletDAOs.dlcOfferDAO
   private val contractDataDAO = dlcWalletDAOs.contractDataDAO
   private val dlcAcceptDAO = dlcWalletDAOs.dlcAcceptDAO
   private val dlcSigsDAO = dlcWalletDAOs.dlcSigsDAO
@@ -39,7 +41,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private val actionBuilder: DLCActionBuilder = {
     DLCActionBuilder(dlcWalletDAOs)
   }
-  private lazy val safeDatabase = dlcDAO.safeDatabase
+  lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
 
   private[wallet] def getDLCAnnouncementDbs(dlcId: Sha256Digest): Future[(
       Vector[DLCAnnouncementDb],
@@ -714,5 +716,43 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     (Vector[DLCCETSignaturesDb], Option[DLCRefundSigsDb])] = {
     val action = getCetAndRefundSigsAction(dlcId)
     safeDatabase.run(action)
+  }
+}
+
+object DLCDataManagement {
+
+  def fromDbAppConfig()(implicit
+      dbAppConfig: DLCAppConfig,
+      ec: ExecutionContext): DLCDataManagement = {
+    val announcementDAO: OracleAnnouncementDataDAO =
+      OracleAnnouncementDataDAO()
+    val oracleNonceDAO: OracleNonceDAO = OracleNonceDAO()
+
+    val dlcAnnouncementDAO: DLCAnnouncementDAO =
+      DLCAnnouncementDAO()
+    val dlcOfferDAO: DLCOfferDAO = DLCOfferDAO()
+    val dlcAcceptDAO: DLCAcceptDAO = DLCAcceptDAO()
+    val dlcDAO: DLCDAO = DLCDAO()
+
+    val contractDataDAO: DLCContractDataDAO =
+      DLCContractDataDAO()
+    val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
+    val dlcSigsDAO: DLCCETSignaturesDAO = DLCCETSignaturesDAO()
+    val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
+
+    val dlcWalletDAOs = DLCWalletDAOs(
+      dlcDAO,
+      contractDataDAO,
+      dlcAnnouncementDAO,
+      dlcInputsDAO,
+      dlcOfferDAO,
+      dlcAcceptDAO,
+      dlcSigsDAO,
+      dlcRefundSigDAO,
+      oracleNonceDAO,
+      announcementDAO
+    )
+
+    DLCDataManagement(dlcWalletDAOs)
   }
 }
