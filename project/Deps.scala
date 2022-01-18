@@ -26,7 +26,7 @@ object Deps {
     val typesafeConfigV = "1.4.1"
 
     val scalaFxV = "16.0.0-R25"
-    val javaFxV = "17-ea+8"
+    val javaFxV = "18-ea+9"
 
     val asyncNewScalaV = "1.0.1"
 
