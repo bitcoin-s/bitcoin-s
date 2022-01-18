@@ -182,9 +182,7 @@ object TorClient extends Logging {
         "linux_64/libssl.so.1.1",
         "linux_64/libevent-2.1.so.7",
         "linux_64/libcrypto.so.1.1",
-        "linux_64/libstdc++/libstdc++.so.6",
-        "linux_64/PluggableTransports/obfs4proxy",
-        "linux_64/PluggableTransports/snowflake-client"
+        "linux_64/libstdc++/libstdc++.so.6"
       )
     )
   }
@@ -197,9 +195,7 @@ object TorClient extends Logging {
       ),
       fileList = Vector(
         "osx_64/LICENSE",
-        "osx_64/libevent-2.1.7.dylib",
-        "osx_64/PluggableTransports/obfs4proxy",
-        "osx_64/PluggableTransports/snowflake-client"
+        "osx_64/libevent-2.1.7.dylib"
       )
     )
   }
@@ -217,9 +213,7 @@ object TorClient extends Logging {
         "windows_64/libssp-0.dll",
         "windows_64/libwinpthread-1.dll",
         "windows_64/LICENSE",
-        "windows_64/zlib1.dll",
-        "windows_64/PluggableTransports/obfs4proxy.exe",
-        "windows_64/PluggableTransports/snowflake-client.exe"
+        "windows_64/zlib1.dll"
       )
     )
   }
