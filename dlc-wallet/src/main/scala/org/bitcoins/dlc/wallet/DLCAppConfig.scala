@@ -181,13 +181,13 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
             s"Updating contractId for dlcId=${dlcDb.dlcId.hex} old contractId=${dlcDb.contractIdOpt} new contractId=${contractId.toHex}")
           dlcDb.copy(tempContractId = offer.tempContractId,
                      contractIdOpt = Some(contractId),
-                     serializationVersion = Some(DLCSerializationVersion.Beta))
+                     serializationVersion = DLCSerializationVersion.Beta)
         case None =>
           //if we don't have an accept message, we can only calculate tempContractId
           logger.info(
             s"Updating tempContractId for dlcId=${dlcDb.dlcId.hex} old tempContractId=${dlcDb.tempContractId} new contractId=${offer.tempContractId}")
           dlcDb.copy(tempContractId = offer.tempContractId,
-                     serializationVersion = Some(DLCSerializationVersion.Beta))
+                     serializationVersion = DLCSerializationVersion.Beta)
       }
       updatedDlcDb
     }

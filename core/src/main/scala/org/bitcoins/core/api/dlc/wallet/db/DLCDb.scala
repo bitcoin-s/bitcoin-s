@@ -37,7 +37,7 @@ case class DLCDb(
     fundingTxIdOpt: Option[DoubleSha256DigestBE],
     closingTxIdOpt: Option[DoubleSha256DigestBE],
     aggregateSignatureOpt: Option[SchnorrDigitalSignature],
-    serializationVersion: Option[DLCSerializationVersion]
+    serializationVersion: DLCSerializationVersion
 ) extends LastUpdatedDb {
 
   def updateState(newState: DLCState): DLCDb = {

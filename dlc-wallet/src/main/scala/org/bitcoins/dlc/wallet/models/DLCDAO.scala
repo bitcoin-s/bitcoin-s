@@ -159,7 +159,7 @@ case class DLCDAO()(implicit
     def aggregateSignatureOpt: Rep[Option[SchnorrDigitalSignature]] = column(
       "aggregate_signature")
 
-    def serializationVersion: Rep[Option[DLCSerializationVersion]] = column(
+    def serializationVersion: Rep[DLCSerializationVersion] = column(
       "serialization_version")
 
     override def * : ProvenShape[DLCDb] =
