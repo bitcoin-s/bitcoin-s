@@ -76,7 +76,8 @@ abstract class DLCWallet
     dlcSigsDAO,
     dlcRefundSigDAO,
     oracleNonceDAO,
-    announcementDAO
+    announcementDAO,
+    remoteTxDAO
   )
 
   private val dlcDataManagement = DLCDataManagement(dlcWalletDAOs)

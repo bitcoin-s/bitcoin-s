@@ -37,6 +37,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private val dlcRefundSigDAO = dlcWalletDAOs.dlcRefundSigDAO
   private val announcementDAO = dlcWalletDAOs.oracleAnnouncementDAO
   private val oracleNonceDAO = dlcWalletDAOs.oracleNonceDAO
+  private val remoteTxDAO = dlcWalletDAOs.dlcRemoteTxDAO
 
   private val actionBuilder: DLCActionBuilder = {
     DLCActionBuilder(dlcWalletDAOs)
@@ -390,6 +391,31 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     }
   }
 
+  def getOffer(
+      dlcId: Sha256Digest,
+      transactionDAO: TransactionDAO): Future[DLCOffer] = {
+    val dataF = getAllDLCData(dlcId)
+    dataF.flatMap {
+      case (dlcDb,
+            contractDataDb,
+            offerDb,
+            acceptDb,
+            _,
+            contractInfo,
+            fundingInputsDb,
+            _) =>
+        builderFromDbData(dlcDb,
+                          contractDataDb,
+                          offerDb,
+                          acceptDb,
+                          fundingInputsDb,
+                          contractInfo,
+                          transactionDAO,
+                          remoteTxDAO = remoteTxDAO)
+          .map(_.offer)
+    }
+  }
+
   private[wallet] def builderFromDbData(
       dlcDb: DLCDb,
       contractDataDb: DLCContractDataDb,
@@ -739,6 +765,7 @@ object DLCDataManagement {
     val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
     val dlcSigsDAO: DLCCETSignaturesDAO = DLCCETSignaturesDAO()
     val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
+    val dlcRemoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
 
     val dlcWalletDAOs = DLCWalletDAOs(
       dlcDAO,
@@ -750,7 +777,8 @@ object DLCDataManagement {
       dlcSigsDAO,
       dlcRefundSigDAO,
       oracleNonceDAO,
-      announcementDAO
+      announcementDAO,
+      dlcRemoteTxDAO
     )
 
     DLCDataManagement(dlcWalletDAOs)

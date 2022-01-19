@@ -7,11 +7,13 @@ import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.protocol.dlc.models.ContractInfo
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCOffer
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
 import org.bitcoins.dlc.wallet.internal.DLCDataManagement
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.TransactionDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import java.nio.file._
@@ -115,21 +117,31 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     //read all existing DLCs
     val allDlcsF = dlcDAO.findAll()
 
+    val txDAO: TransactionDAO = ???
     //get the offers so we can figure out what the serialization version is
-    val globalWithContractInfoF: Future[Vector[(DLCDb, ContractInfo)]] = for {
+    val dlcDbContractInfoOfferF: Future[
+      Vector[(DLCDb, ContractInfo, DLCOffer)]] = for {
       allDlcs <- allDlcsF
-      nested = allDlcs.map { a =>
+      nestedContractInfo = allDlcs.map { a =>
         dlcManagement
           .getContractInfo(a.dlcId)
           .map(c => (a, c))
       }
-      contractInfoWithDlcs <- Future.sequence(nested)
-    } yield contractInfoWithDlcs
+      nestedOffer = allDlcs.map { a =>
+        dlcManagement.getOffer(a.dlcId, transactionDAO = txDAO)
+      }
+
+      contractInfoWithDlcs <- Future.sequence(nestedContractInfo)
+      offers <- Future.sequence(nestedOffer)
+    } yield contractInfoWithDlcs.zip(offers).map { case (x, y) =>
+      (x._1, x._2, y)
+    }
 
     //now we need to insert the serialization type
     //into global_dlc_data
     val updatedDLCDbsF = for {
-      globalWithContractInfo <- globalWithContractInfoF
+      dlcDbContractInfoOffer <- dlcDbContractInfoOfferF
+      globalWithContractInfo = dlcDbContractInfoOffer.map(x => (x._1, x._2))
     } yield setSerializationVersions(globalWithContractInfo)
 
     val updatedInDbF = updatedDLCDbsF.flatMap(dlcDAO.updateAll)
