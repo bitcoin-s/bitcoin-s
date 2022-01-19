@@ -84,6 +84,11 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       DoubleSha256DigestBE.fromHex
     )
 
+  implicit val doubleSha256DigestMapper: BaseColumnType[DoubleSha256Digest] =
+    MappedColumnType.base[DoubleSha256Digest, String](
+      _.hex,
+      DoubleSha256Digest.fromHex)
+
   implicit val bigIntMapper: BaseColumnType[BigInt] =
     MappedColumnType
       .base[BigInt, String](
