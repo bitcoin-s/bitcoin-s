@@ -933,7 +933,7 @@ abstract class DLCWallet
       dlcId = dlc.dlcId
       fundingInputs <- dlcInputsDAO.findByDLCId(dlcId)
       scriptSigParams <- getScriptSigParams(dlc, fundingInputs)
-      signer <- dlcDataManagement.signerFromDb(dlcId = dlc.dlcId,
+      signerOpt <- dlcDataManagement.signerFromDb(dlcId = dlc.dlcId,
                                                transactionDAO = transactionDAO,
                                                fundingUtxoScriptSigParams =
                                                  scriptSigParams,

@@ -23,6 +23,7 @@ import scodec.bits._
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import scala.concurrent._
+import scala.util.Try
 
 /** Handles fetching and constructing different DLC datastructures from the database */
 case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
@@ -203,18 +204,18 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
         DLCDb,
         DLCContractDataDb,
         DLCOfferDb,
-        DLCAcceptDb,
+        Option[DLCAcceptDb],
         Vector[DLCFundingInputDb],
         ContractInfo)] = {
     for {
       dlcDbOpt <- dlcDAO.findByContractId(contractId)
       dlcDb = dlcDbOpt.get
-      (_, contractData, dlcOffer, dlcAccept, fundingInputs, contractInfo) <-
+      (_, contractData, dlcOffer, dlcAcceptOpt, fundingInputs, contractInfo) <-
         getDLCFundingData(dlcDb.dlcId)
     } yield (dlcDb,
              contractData,
              dlcOffer,
-             dlcAccept,
+             dlcAcceptOpt,
              fundingInputs,
              contractInfo)
   }
@@ -256,18 +257,17 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
         DLCDb,
         DLCContractDataDb,
         DLCOfferDb,
-        DLCAcceptDb,
+        Option[DLCAcceptDb],
         Vector[DLCFundingInputDb],
         ContractInfo)] = {
     for {
       (dlcDb, contractData, dlcOffer, fundingInputs, contractInfo) <-
         getDLCOfferData(dlcId)
       dlcAcceptOpt <- dlcAcceptDAO.findByDLCId(dlcId)
-      dlcAccept = dlcAcceptOpt.head
     } yield (dlcDb,
              contractData,
              dlcOffer,
-             dlcAccept,
+             dlcAcceptOpt,
              fundingInputs,
              contractInfo)
   }
@@ -277,7 +277,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
         DLCDb,
         DLCContractDataDb,
         DLCOfferDb,
-        DLCAcceptDb,
+        Option[DLCAcceptDb],
         DLCRefundSigsDb,
         ContractInfo,
         Vector[DLCFundingInputDb],
@@ -288,7 +288,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       (_,
        contractData,
        dlcOffer,
-       dlcAccept,
+       dlcAcceptOpt,
        refundSig,
        contractInfo,
        fundingInputs,
@@ -297,7 +297,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     } yield (dlcDb,
              contractData,
              dlcOffer,
-             dlcAccept,
+             dlcAcceptOpt,
              refundSig,
              contractInfo,
              fundingInputs,
@@ -309,7 +309,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
         DLCDb,
         DLCContractDataDb,
         DLCOfferDb,
-        DLCAcceptDb,
+        Option[DLCAcceptDb],
         DLCRefundSigsDb,
         ContractInfo,
         Vector[DLCFundingInputDb],
@@ -322,7 +322,12 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       refundSigDLCs.flatMap(r => sigDLCs.map(s => (r, s)))
     val refundAndOutcomeSigsF = safeDatabase.run(refundAndOutcomeSigsAction)
     for {
-      (dlcDb, contractData, dlcOffer, dlcAccept, fundingInputs, contractInfo) <-
+      (dlcDb,
+       contractData,
+       dlcOffer,
+       dlcAcceptOpt,
+       fundingInputs,
+       contractInfo) <-
         getDLCFundingData(dlcId)
       (refundSigs, outcomeSigs) <- refundAndOutcomeSigsF
     } yield {
@@ -332,7 +337,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       (dlcDb,
        contractData,
        dlcOffer,
-       dlcAccept,
+       dlcAcceptOpt,
        refundSigs.head,
        contractInfo,
        fundingInputs,
@@ -375,7 +380,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                 Vector[DLCFundingInputDb],
                 ContractInfo),
             Vector[DLCFundingInputDb])] =
-        offerDataOpt.zip(localFundingInputsOpt)
+        offerDataOpt.zip(localFundingInputsOpt).headOption
       opt match {
         case Some(
               ((dlcDb, contractData, dlcOffer, _, contractInfo),
@@ -401,8 +406,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     dlcDAO.findByContractId(contractId).flatMap { case dlcDbOpt =>
       val optF = dlcDbOpt.map(verifierFromDbData(_, transactionDAO))
       optF match {
-        case Some(sigVerifier) => sigVerifier.map(Some(_))
-        case None              => Future.successful(None)
+        case Some(sigVerifierFOpt) => sigVerifierFOpt
+        case None                  => Future.successful(None)
       }
     }
   }
@@ -410,13 +415,13 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   def getOfferAndAcceptWithoutSigs(
       dlcId: Sha256Digest,
       transactionDAO: TransactionDAO): Future[
-    (DLCOffer, DLCAcceptWithoutSigs)] = {
+    (DLCOffer, Option[DLCAcceptWithoutSigs])] = {
     val dataF = getAllDLCData(dlcId)
     dataF.flatMap {
       case (dlcDb,
             contractDataDb,
             offerDb,
-            acceptDb,
+            acceptDbOpt,
             _,
             contractInfo,
             fundingInputsDb,
@@ -458,113 +463,139 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                                          dlcDb.feeRate,
                                          contractDataDb.dlcTimeouts)
 
-          val accept = acceptDb.toDLCAcceptWithoutSigs(dlcDb.tempContractId,
-                                                       acceptFundingInputs)
-          (offer, accept)
+          val acceptOpt = acceptDbOpt.map(
+            _.toDLCAcceptWithoutSigs(dlcDb.tempContractId, acceptFundingInputs))
+          (offer, acceptOpt)
         }
     }
   }
 
   private[wallet] def builderFromDbData(
       dlcDb: DLCDb,
-      transactionDAO: TransactionDAO): Future[DLCTxBuilder] = {
+      transactionDAO: TransactionDAO): Future[Option[DLCTxBuilder]] = {
     for {
-      (offer, accept) <- getOfferAndAcceptWithoutSigs(dlcDb.dlcId,
-                                                      transactionDAO)
-    } yield DLCTxBuilder(offer, accept)
+      (offer, acceptOpt) <- getOfferAndAcceptWithoutSigs(dlcDb.dlcId,
+                                                         transactionDAO)
+    } yield {
+      acceptOpt.map(DLCTxBuilder(offer, _))
+    }
   }
 
   private[wallet] def verifierFromDbData(
       dlcDb: DLCDb,
-      transactionDAO: TransactionDAO): Future[DLCSignatureVerifier] = {
-    val builderF =
+      transactionDAO: TransactionDAO): Future[Option[DLCSignatureVerifier]] = {
+    val builderOptF =
       builderFromDbData(dlcDb = dlcDb, transactionDAO = transactionDAO)
 
-    builderF.map(DLCSignatureVerifier(_, dlcDb.isInitiator))
+    builderOptF.map {
+      case Some(builder) =>
+        val verifier = DLCSignatureVerifier(builder, dlcDb.isInitiator)
+        Some(verifier)
+      case None => None
+    }
   }
 
   private[wallet] def signerFromDb(
       dlcId: Sha256Digest,
       transactionDAO: TransactionDAO,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
-      keyManager: BIP39KeyManager): Future[DLCTxSigner] = {
+      keyManager: BIP39KeyManager): Future[Option[DLCTxSigner]] = {
     for {
-      (dlcDb, _, dlcOffer, dlcAccept, _, _) <-
-        getDLCFundingData(dlcId)
-      signer <- signerFromDb(
-        dlcDb = dlcDb,
-        dlcOffer = dlcOffer,
-        dlcAccept = dlcAccept,
-        fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
-        transactionDAO = transactionDAO,
-        keyManager = keyManager
-      )
-    } yield signer
+      dlcDbOpt <- dlcDAO.findByDLCId(dlcId)
+      signerOpt <- {
+        dlcDbOpt match {
+          case Some(dlcDb) =>
+            val signerOptF = signerFromDb(
+              dlcDb = dlcDb,
+              fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
+              transactionDAO = transactionDAO,
+              keyManager = keyManager
+            )
+            signerOptF
+          case None =>
+            Future.successful(None)
+        }
+      }
+    } yield signerOpt
   }
 
   private[wallet] def signerFromDb(
       dlcDb: DLCDb,
-      dlcOffer: DLCOfferDb,
-      dlcAccept: DLCAcceptDb,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
       transactionDAO: TransactionDAO,
-      keyManager: BIP39KeyManager): Future[DLCTxSigner] = {
+      keyManager: BIP39KeyManager): Future[Option[DLCTxSigner]] = {
     for {
-      builder <- builderFromDbData(
+      builderOpt <- builderFromDbData(
         dlcDb = dlcDb,
         transactionDAO = transactionDAO
       )
     } yield {
-      val (fundingKey, payoutAddress) = if (dlcDb.isInitiator) {
-        (dlcOffer.fundingKey, dlcOffer.payoutAddress)
-      } else {
-        (dlcAccept.fundingKey, dlcAccept.payoutAddress)
+      builderOpt match {
+        case Some(builder) =>
+          val dlcOffer = builder.offer
+          val dlcAccept = builder.accept
+          val (fundingKey, payoutAddress) = if (dlcDb.isInitiator) {
+            (dlcOffer.pubKeys.fundingKey, dlcOffer.pubKeys.payoutAddress)
+          } else {
+            (dlcAccept.pubKeys.fundingKey, dlcAccept.pubKeys.payoutAddress)
+          }
+
+          val bip32Path = BIP32Path(
+            dlcDb.account.path ++ Vector(
+              BIP32Node(dlcDb.changeIndex.index, hardened = false),
+              BIP32Node(dlcDb.keyIndex, hardened = false)))
+
+          val privKeyPath = HDPath.fromString(bip32Path.toString)
+          val fundingPrivKey = keyManager.toSign(privKeyPath)
+
+          require(fundingKey == fundingPrivKey.publicKey)
+
+          val signer = DLCTxSigner(builder = builder,
+                                   isInitiator = dlcDb.isInitiator,
+                                   fundingKey = fundingPrivKey,
+                                   finalAddress = payoutAddress,
+                                   fundingUtxos = fundingUtxoScriptSigParams)
+          Some(signer)
+        case None => None
       }
-
-      val bip32Path = BIP32Path(
-        dlcDb.account.path ++ Vector(
-          BIP32Node(dlcDb.changeIndex.index, hardened = false),
-          BIP32Node(dlcDb.keyIndex, hardened = false)))
-
-      val privKeyPath = HDPath.fromString(bip32Path.toString)
-      val fundingPrivKey = keyManager.toSign(privKeyPath)
-
-      require(fundingKey == fundingPrivKey.publicKey)
-
-      DLCTxSigner(builder = builder,
-                  isInitiator = dlcDb.isInitiator,
-                  fundingKey = fundingPrivKey,
-                  finalAddress = payoutAddress,
-                  fundingUtxos = fundingUtxoScriptSigParams)
     }
   }
 
   private[wallet] def executorFromDb(
       dlcDb: DLCDb,
-      dlcOffer: DLCOfferDb,
-      dlcAccept: DLCAcceptDb,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
       transactionDAO: TransactionDAO,
-      keyManager: BIP39KeyManager): Future[DLCExecutor] = {
-    signerFromDb(
+      keyManager: BIP39KeyManager): Future[Option[DLCExecutor]] = {
+    val signerOptF = signerFromDb(
       dlcDb = dlcDb,
-      dlcOffer = dlcOffer,
-      dlcAccept = dlcAccept,
       fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
       transactionDAO = transactionDAO,
       keyManager = keyManager
-    ).map(DLCExecutor.apply)
+    )
+    signerOptF.map {
+      case Some(dlcTxSigner) =>
+        val e = DLCExecutor(dlcTxSigner)
+        Some(e)
+      case None => None
+    }
   }
 
   private[wallet] def executorFromDb(
       dlcId: Sha256Digest,
       transactionDAO: TransactionDAO,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
-      keyManager: BIP39KeyManager): Future[DLCExecutor] = {
-    signerFromDb(dlcId = dlcId,
-                 transactionDAO = transactionDAO,
-                 fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
-                 keyManager = keyManager).map(DLCExecutor.apply)
+      keyManager: BIP39KeyManager): Future[Option[DLCExecutor]] = {
+    val signerOptF = signerFromDb(dlcId = dlcId,
+                                  transactionDAO = transactionDAO,
+                                  fundingUtxoScriptSigParams =
+                                    fundingUtxoScriptSigParams,
+                                  keyManager = keyManager)
+    signerOptF.map {
+      case Some(dlcTxSigner) =>
+        val e = DLCExecutor(dlcTxSigner)
+        Some(e)
+      case None => None
+    }
   }
 
   /** Builds an [[DLCExecutor]] and [[SetupDLC]] for a given contract id
@@ -588,15 +619,13 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
           case Some(outcomeSigsDbs) =>
             executorAndSetupFromDb(
               dlcDb = dlcDb,
-              dlcOffer = dlcOffer,
-              dlcAccept = dlcAccept,
               refundSigsDb = refundSigs,
               fundingInputs = fundingInputsDb,
               outcomeSigsDbs = outcomeSigsDbs,
               transactionDAO = transactionDAO,
               fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
               keyManager = keyManager
-            ).map(Some(_))
+            )
           case None =>
             //means we cannot re-create messages because
             //we don't have the cets in the database anymore
@@ -609,72 +638,72 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def executorAndSetupFromDb(
       dlcDb: DLCDb,
-      dlcOffer: DLCOfferDb,
-      dlcAccept: DLCAcceptDb,
       refundSigsDb: DLCRefundSigsDb,
       fundingInputs: Vector[DLCFundingInputDb],
       outcomeSigsDbs: Vector[DLCCETSignaturesDb],
       transactionDAO: TransactionDAO,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
-      keyManager: BIP39KeyManager): Future[DLCExecutorWithSetup] = {
+      keyManager: BIP39KeyManager): Future[Option[DLCExecutorWithSetup]] = {
 
-    val dlcExecutorF = executorFromDb(
+    val dlcExecutorOptF = executorFromDb(
       dlcDb = dlcDb,
-      dlcOffer = dlcOffer,
-      dlcAccept = dlcAccept,
       fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
       transactionDAO = transactionDAO,
       keyManager = keyManager
     )
 
-    dlcExecutorF.flatMap { executor =>
-      // Filter for only counterparty's outcome sigs
-      val outcomeSigs = if (dlcDb.isInitiator) {
-        outcomeSigsDbs
-          .map { dbSig =>
-            dbSig.sigPoint -> dbSig.accepterSig
-          }
-      } else {
-        outcomeSigsDbs
-          .map { dbSig =>
-            dbSig.sigPoint -> dbSig.initiatorSig.get
-          }
-      }
-      val refundSig = if (dlcDb.isInitiator) {
-        refundSigsDb.accepterSig
-      } else refundSigsDb.initiatorSig.get
-
-      //sometimes we do not have cet signatures, for instance
-      //if we have settled a DLC, we prune the cet signatures
-      //from the database
-      val cetSigs = CETSignatures(outcomeSigs)
-
-      val setupF = if (dlcDb.isInitiator) {
-        // Note that the funding tx in this setup is not signed
-        executor.setupDLCOffer(cetSigs, refundSig)
-      } else {
-        val fundingSigs =
-          fundingInputs
-            .filter(_.isInitiator)
-            .map { input =>
-              input.witnessScriptOpt match {
-                case Some(witnessScript) =>
-                  witnessScript match {
-                    case EmptyScriptWitness =>
-                      throw new RuntimeException(
-                        "Script witness cannot be empty")
-                    case witness: ScriptWitnessV0 => (input.outPoint, witness)
-                  }
-                case None => throw new RuntimeException("")
-              }
+    dlcExecutorOptF.flatMap {
+      case Some(executor) =>
+        // Filter for only counterparty's outcome sigs
+        val outcomeSigs = if (dlcDb.isInitiator) {
+          outcomeSigsDbs
+            .map { dbSig =>
+              dbSig.sigPoint -> dbSig.accepterSig
             }
-        executor.setupDLCAccept(cetSigs,
-                                refundSig,
-                                FundingSignatures(fundingSigs),
-                                None)
-      }
+        } else {
+          outcomeSigsDbs
+            .map { dbSig =>
+              dbSig.sigPoint -> dbSig.initiatorSig.get
+            }
+        }
+        val refundSig = if (dlcDb.isInitiator) {
+          refundSigsDb.accepterSig
+        } else refundSigsDb.initiatorSig.get
 
-      Future.fromTry(setupF.map(DLCExecutorWithSetup(executor, _)))
+        //sometimes we do not have cet signatures, for instance
+        //if we have settled a DLC, we prune the cet signatures
+        //from the database
+        val cetSigs = CETSignatures(outcomeSigs)
+
+        val setupF: Try[SetupDLC] = if (dlcDb.isInitiator) {
+          // Note that the funding tx in this setup is not signed
+          executor.setupDLCOffer(cetSigs, refundSig)
+        } else {
+          val fundingSigs =
+            fundingInputs
+              .filter(_.isInitiator)
+              .map { input =>
+                input.witnessScriptOpt match {
+                  case Some(witnessScript) =>
+                    witnessScript match {
+                      case EmptyScriptWitness =>
+                        throw new RuntimeException(
+                          "Script witness cannot be empty")
+                      case witness: ScriptWitnessV0 => (input.outPoint, witness)
+                    }
+                  case None => throw new RuntimeException("")
+                }
+              }
+          executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs), None)
+        }
+
+        val x: Try[DLCExecutorWithSetup] =
+          setupF.map(DLCExecutorWithSetup(executor, _))
+        Future
+          .fromTry(x)
+          .map(Some(_))
+      case None =>
+        Future.successful(None)
     }
   }
 
