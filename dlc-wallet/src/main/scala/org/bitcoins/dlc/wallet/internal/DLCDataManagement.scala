@@ -609,8 +609,8 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     getAllDLCData(contractId).flatMap {
       case (dlcDb,
             _,
-            dlcOffer,
-            dlcAccept,
+            _,
+            _,
             refundSigs,
             _,
             fundingInputsDb,

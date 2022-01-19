@@ -933,56 +933,55 @@ abstract class DLCWallet
       dlcId = dlc.dlcId
       fundingInputs <- dlcInputsDAO.findByDLCId(dlcId)
       scriptSigParams <- getScriptSigParams(dlc, fundingInputs)
-      signerOpt <- dlcDataManagement.signerFromDb(dlcId = dlc.dlcId,
-                                               transactionDAO = transactionDAO,
-                                               fundingUtxoScriptSigParams =
-                                                 scriptSigParams,
-                                               keyManager = keyManager)
+      signerOpt <- dlcDataManagement.signerFromDb(
+        dlcId = dlc.dlcId,
+        transactionDAO = transactionDAO,
+        fundingUtxoScriptSigParams = scriptSigParams,
+        keyManager = keyManager)
 
       mySigs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
       refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.head)
-      refundSig = {
-        refundSigsDb.initiatorSig match {
-          case Some(sig) => sig
-          case None      => signer.signRefundTx
+      cetSigsOpt <- {
+        signerOpt match {
+          case Some(signer) =>
+            val cetSigsF = getCetSigs(signer = signer,
+                                      contractId = contractId,
+                                      cetSigsDbs = cetSigsDbs,
+                                      mySigs = mySigs,
+                                      refundSigsDb = refundSigsDb)
+            cetSigsF.map(Some(_))
+          case None =>
+            Future.successful(None)
         }
       }
-      cetSigs <-
-        if (mySigs.forall(_.initiatorSig.isEmpty)) {
-          logger.info(s"Creating CET Sigs for contract ${contractId.toHex}")
-          for {
-            sigs <- signer.createCETSigsAsync()
-
-            sigsDbs: Vector[DLCCETSignaturesDb] = sigs.outcomeSigs
-              .zip(cetSigsDbs.sortBy(_.index))
-              .map { case (sig, db) =>
-                db.copy(initiatorSig = Some(sig._2))
-              }
-            _ <- dlcSigsDAO.updateAll(sigsDbs)
-          } yield sigs
-
-        } else {
-          logger.debug(s"CET Sigs already created for ${contractId.toHex}")
-          val outcomeSigs = mySigs.map { dbSig =>
-            dbSig.sigPoint -> dbSig.initiatorSig.get
-          }
-
-          val signatures = CETSignatures(outcomeSigs)
-
-          Future.successful(signatures)
-        }
 
       _ = logger.info(s"Creating funding sigs for ${contractId.toHex}")
-      fundingSigs <- Future.fromTry(signer.signFundingTx())
+      fundingSigsOpt <- {
+        signerOpt match {
+          case Some(signer) =>
+            val fundingSignaturesT = signer.signFundingTx()
+            Future
+              .fromTry(fundingSignaturesT)
+              .map(Some(_))
+          case None =>
+            Future.successful(None)
+        }
+      }
 
       // order fundingSigs by index
       inputDbs <- dlcInputsDAO.findByDLCId(dlc.dlcId, isInitiator = true)
+
+      _ = require(
+        fundingSigsOpt.isDefined,
+        s"Cannot sign a DLC message when we cannot generate funding signatures, dlcId=${dlcId}")
+      fundingSigs = fundingSigsOpt.get
+      cetSigs = cetSigsOpt.get
       sortedSigVec = inputDbs.sortBy(_.index).map { db =>
         val sig = fundingSigs(db.outPoint)
         (db.outPoint, sig)
       }
 
-      updatedRefundSigsDb = refundSigsDb.copy(initiatorSig = Some(refundSig))
+      updatedRefundSigsDb = refundSigsDb.copy(initiatorSig = signerOpt.map(_.signRefundTx))
       _ <- dlcRefundSigDAO.update(updatedRefundSigsDb)
 
       _ <- updateDLCState(dlc.contractIdOpt.get, DLCState.Signed)
@@ -991,7 +990,42 @@ abstract class DLCWallet
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield {
       //?? is signer.signRefundTx persisted anywhere ??
-      DLCSign(cetSigs, refundSig, FundingSignatures(sortedSigVec), contractId)
+      DLCSign(cetSigs, signerOpt.map(_.signRefundTx).get, FundingSignatures(sortedSigVec), contractId)
+    }
+  }
+
+  private def getCetSigs(
+      signer: DLCTxSigner,
+      contractId: ByteVector,
+      cetSigsDbs: Vector[DLCCETSignaturesDb],
+      mySigs: Vector[DLCCETSignaturesDb],
+      refundSigsDb: DLCRefundSigsDb): Future[CETSignatures] = {
+    if (mySigs.forall(_.initiatorSig.isEmpty)) {
+      logger.info(s"Creating CET Sigs for contract ${contractId.toHex}")
+      for {
+        sigs <- signer.createCETSigsAsync()
+
+        sigsDbs: Vector[DLCCETSignaturesDb] = sigs.outcomeSigs
+          .zip(cetSigsDbs.sortBy(_.index))
+          .map { case (sig, db) =>
+            db.copy(initiatorSig = Some(sig._2))
+          }
+        _ <- dlcSigsDAO.updateAll(sigsDbs)
+      } yield sigs
+
+    } else {
+      logger.debug(s"CET Sigs already created for ${contractId.toHex}")
+      val outcomeSigs = mySigs.map { dbSig =>
+        dbSig.sigPoint -> dbSig.initiatorSig.get
+      }
+
+      val signatures = refundSigsDb.initiatorSig match {
+        case Some(sig) =>
+          CETSignatures(outcomeSigs, sig)
+        case None =>
+          CETSignatures(outcomeSigs, signer.signRefundTx)
+      }
+      Future.successful(signatures)
     }
   }
 
@@ -1114,11 +1148,15 @@ abstract class DLCWallet
           Future.failed(new RuntimeException(
             s"No DLC found with corresponding contractId ${contractId.toHex}"))
       }
-      builder <- dlcDataManagement.builderFromDbData(
+      builderOpt <- dlcDataManagement.builderFromDbData(
         dlcDb = dlcDb,
         transactionDAO = transactionDAO
       )
 
+      _ = require(
+        builderOpt.isDefined,
+        s"Cannot add DLC sigs when the builder is not defined, dlcId=${dlcDb.dlcId.hex}")
+      builder = builderOpt.get
       sign = DLCSign.fromTLV(signTLV, builder.offer)
       result <- addDLCSigs(sign)
     } yield result
@@ -1210,14 +1248,16 @@ abstract class DLCWallet
         dlcDataManagement.getDLCFundingData(contractId)
 
       scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
-      signer <- dlcDataManagement.signerFromDb(
+      signerOpt <- dlcDataManagement.signerFromDb(
         dlcDb = dlcDb,
-        dlcOffer = dlcOffer,
-        dlcAccept = dlcAccept,
         fundingUtxoScriptSigParams = scriptSigParams,
         transactionDAO = transactionDAO,
         keyManager = keyManager
       )
+      _ = require(
+        signerOpt.isDefined,
+        s"Cannot get dlc funding tx when signerOpt isn't defined, dlcId=${dlcDb.dlcId.hex}")
+      signer = signerOpt.get
       fundingTx <-
         if (dlcDb.isInitiator) {
           transactionDAO.findByTxId(signer.builder.buildFundingTx.txIdBE).map {
@@ -1451,10 +1491,14 @@ abstract class DLCWallet
 
       fundingInputs <- dlcInputsDAO.findByDLCId(dlcDb.dlcId)
       scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
-      executor <- dlcDataManagement.executorFromDb(dlcDb.dlcId,
-                                                   transactionDAO,
-                                                   scriptSigParams,
-                                                   keyManager)
+      executorOpt <- dlcDataManagement.executorFromDb(dlcDb.dlcId,
+                                                      transactionDAO,
+                                                      scriptSigParams,
+                                                      keyManager)
+      _ = require(
+        executorOpt.isDefined,
+        s"Cannot execute refund transaction when the executor isn't defined, dlcId=${dlcDb.dlcId.hex}")
+      executor = executorOpt.get
       refundSigsDbOpt <- dlcRefundSigDAO.findByDLCId(dlcDb.dlcId)
 
       refundSig =

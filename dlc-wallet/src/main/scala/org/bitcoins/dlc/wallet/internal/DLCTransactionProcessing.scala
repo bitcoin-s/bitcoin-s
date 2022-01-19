@@ -112,7 +112,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       val dlcId = dlcDb.dlcId
 
       for {
-        (_, contractData, offerDb, acceptDb, fundingInputDbs, _) <-
+        (_, contractData, offerDb, acceptDbOpt, fundingInputDbs, _) <-
           dlcDataManagement.getDLCFundingData(dlcId)
         txIds = fundingInputDbs.map(_.outPoint.txIdBE)
         remotePrevTxs <- remoteTxDAO.findByTxIdBEs(txIds)
@@ -144,8 +144,13 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                                               announcementData,
                                               nonceDbs)
 
-          val offer =
+          val offer = {
             offerDb.toDLCOffer(contractInfo, fundingInputs, dlcDb, contractData)
+          }
+          require(
+            acceptDbOpt.isDefined,
+            s"Cannot calculate and set outcome if we haven't seen an accept message, dlcId=${dlcId.hex}")
+          val acceptDb = acceptDbOpt.get
           val accept =
             acceptDb.toDLCAccept(
               dlcDb.tempContractId,
