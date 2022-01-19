@@ -405,20 +405,47 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
             contractInfo,
             fundingInputsDb,
             _) =>
-        val builder = builderFromDbData(dlcDb,
-                                        contractDataDb,
-                                        offerDb,
-                                        acceptDb,
-                                        fundingInputsDb,
-                                        contractInfo,
-                                        transactionDAO,
-                                        remoteTxDAO = remoteTxDAO)
-        val offerF = builder.map(_.offer)
-        val acceptF = builder.map(_.accept)
+        val (localDbFundingInputs, remoteDbFundingInputs) =
+          if (dlcDb.isInitiator) {
+            (fundingInputsDb.filter(_.isInitiator),
+             fundingInputsDb.filterNot(_.isInitiator))
+          } else {
+            (fundingInputsDb.filterNot(_.isInitiator),
+             fundingInputsDb.filter(_.isInitiator))
+          }
+
         for {
-          offer <- offerF
-          accept <- acceptF
-        } yield (offer, accept)
+          localPrevTxs <- transactionDAO.findByTxIdBEs(
+            localDbFundingInputs.map(_.outPoint.txIdBE))
+          remotePrevTxs <-
+            remoteTxDAO.findByTxIdBEs(
+              remoteDbFundingInputs.map(_.outPoint.txIdBE))
+        } yield {
+          val localFundingInputs =
+            DLCTxUtil.matchPrevTxsWithInputs(inputs = localDbFundingInputs,
+                                             prevTxs = localPrevTxs)
+
+          val remoteFundingInputs =
+            DLCTxUtil.matchPrevTxsWithInputs(inputs = remoteDbFundingInputs,
+                                             prevTxs = remotePrevTxs)
+
+          val (offerFundingInputs, acceptFundingInputs) =
+            if (dlcDb.isInitiator) {
+              (localFundingInputs, remoteFundingInputs)
+            } else {
+              (remoteFundingInputs, localFundingInputs)
+            }
+
+          val offer = offerDb.toDLCOffer(contractInfo,
+                                         offerFundingInputs,
+                                         dlcDb.fundOutputSerialId,
+                                         dlcDb.feeRate,
+                                         contractDataDb.dlcTimeouts)
+
+          val accept = acceptDb.toDLCAcceptWithoutSigs(dlcDb.tempContractId,
+                                                       acceptFundingInputs)
+          (offer, accept)
+        }
     }
   }
 
