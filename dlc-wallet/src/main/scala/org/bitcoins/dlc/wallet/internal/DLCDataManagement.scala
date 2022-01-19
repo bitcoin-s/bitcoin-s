@@ -391,9 +391,10 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     }
   }
 
-  def getOffer(
+  def getOfferAndAcceptWithoutSigs(
       dlcId: Sha256Digest,
-      transactionDAO: TransactionDAO): Future[DLCOffer] = {
+      transactionDAO: TransactionDAO): Future[
+    (DLCOffer, DLCAcceptWithoutSigs)] = {
     val dataF = getAllDLCData(dlcId)
     dataF.flatMap {
       case (dlcDb,
@@ -404,15 +405,20 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
             contractInfo,
             fundingInputsDb,
             _) =>
-        builderFromDbData(dlcDb,
-                          contractDataDb,
-                          offerDb,
-                          acceptDb,
-                          fundingInputsDb,
-                          contractInfo,
-                          transactionDAO,
-                          remoteTxDAO = remoteTxDAO)
-          .map(_.offer)
+        val builder = builderFromDbData(dlcDb,
+                                        contractDataDb,
+                                        offerDb,
+                                        acceptDb,
+                                        fundingInputsDb,
+                                        contractInfo,
+                                        transactionDAO,
+                                        remoteTxDAO = remoteTxDAO)
+        val offerF = builder.map(_.offer)
+        val acceptF = builder.map(_.accept)
+        for {
+          offer <- offerF
+          accept <- acceptF
+        } yield (offer, accept)
     }
   }
 

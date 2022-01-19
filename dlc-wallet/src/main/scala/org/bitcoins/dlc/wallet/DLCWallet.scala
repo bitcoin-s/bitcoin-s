@@ -14,6 +14,7 @@ import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
+import org.bitcoins.core.protocol.dlc.compute.DLCUtil
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCAccept._
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models.DLCState._
@@ -88,11 +89,6 @@ abstract class DLCWallet
 
   private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
 
-  private def calcContractId(offer: DLCOffer, accept: DLCAccept): ByteVector = {
-    val builder = DLCTxBuilder(offer, accept.withoutSigs)
-    builder.calcContractId
-  }
-
   /** Updates the contract Id in the wallet database for the given offer and accept */
   private def updateDLCContractIds(
       offer: DLCOffer,
@@ -109,7 +105,7 @@ abstract class DLCWallet
             new IllegalArgumentException(
               s"No DLCDb found with dlcId ${dlcId.hex}"))
       }
-      contractId = calcContractId(offer, accept)
+      contractId = DLCUtil.calcContractId(offer, accept)
 
       newDLCDb = dlcDb.updateContractId(contractId)
       _ = logger.debug(s"Updating DLC contract Ids")

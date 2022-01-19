@@ -2,6 +2,12 @@ package org.bitcoins.core.protocol.dlc.compute
 
 import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
+  DLCAccept,
+  DLCAcceptWithoutSigs,
+  DLCOffer
+}
 import org.bitcoins.core.protocol.dlc.models.{ContractInfo, OracleOutcome}
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
@@ -130,5 +136,16 @@ object DLCUtil {
 
       (SchnorrDigitalSignature(outcome.aggregateNonce, s), outcome)
     }
+  }
+
+  def calcContractId(offer: DLCOffer, accept: DLCAccept): ByteVector = {
+    calcContractId(offer, accept.withoutSigs)
+  }
+
+  def calcContractId(
+      offer: DLCOffer,
+      acceptWithoutSigs: DLCAcceptWithoutSigs): ByteVector = {
+    val builder = DLCTxBuilder(offer, acceptWithoutSigs)
+    builder.calcContractId
   }
 }

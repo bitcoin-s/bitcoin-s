@@ -6,8 +6,13 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.protocol.dlc.compute.DLCUtil
 import org.bitcoins.core.protocol.dlc.models.ContractInfo
-import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCOffer
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
+  DLCAcceptWithoutSigs,
+  DLCOffer
+}
+import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
@@ -45,11 +50,13 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       Files.createDirectories(datadir)
     }
 
+    logger.info(s"Applying DLCAppConfig migrations")
     val numMigrations = {
       migrate()
     }
 
     val f = if (migrationsApplied() == 5) {
+      logger.info(s"Running serialization version migration code")
       serializationVersionMigration()
     } else {
       Future.unit
@@ -117,32 +124,36 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     //read all existing DLCs
     val allDlcsF = dlcDAO.findAll()
 
-    val txDAO: TransactionDAO = ???
+    //ugh, this is kinda nasty, idk how to make better though
+    val walletAppConfig =
+      WalletAppConfig(directory = directory, conf = conf: _*)
+    val txDAO: TransactionDAO =
+      TransactionDAO()(ec = ec, appConfig = walletAppConfig)
     //get the offers so we can figure out what the serialization version is
     val dlcDbContractInfoOfferF: Future[
-      Vector[(DLCDb, ContractInfo, DLCOffer)]] = for {
+      Vector[(DLCDb, ContractInfo, DLCOffer, DLCAcceptWithoutSigs)]] = for {
       allDlcs <- allDlcsF
       nestedContractInfo = allDlcs.map { a =>
         dlcManagement
           .getContractInfo(a.dlcId)
           .map(c => (a, c))
       }
-      nestedOffer = allDlcs.map { a =>
-        dlcManagement.getOffer(a.dlcId, transactionDAO = txDAO)
+      nestedOfferAndAccept = allDlcs.map { a =>
+        dlcManagement.getOfferAndAcceptWithoutSigs(a.dlcId,
+                                                   transactionDAO = txDAO)
       }
 
       contractInfoWithDlcs <- Future.sequence(nestedContractInfo)
-      offers <- Future.sequence(nestedOffer)
-    } yield contractInfoWithDlcs.zip(offers).map { case (x, y) =>
-      (x._1, x._2, y)
+      offerAndAccepts <- Future.sequence(nestedOfferAndAccept)
+    } yield contractInfoWithDlcs.zip(offerAndAccepts).map { case (x, y) =>
+      (x._1, x._2, y._1, y._2)
     }
 
     //now we need to insert the serialization type
     //into global_dlc_data
     val updatedDLCDbsF = for {
       dlcDbContractInfoOffer <- dlcDbContractInfoOfferF
-      globalWithContractInfo = dlcDbContractInfoOffer.map(x => (x._1, x._2))
-    } yield setSerializationVersions(globalWithContractInfo)
+    } yield setSerializationVersions(dlcDbContractInfoOffer)
 
     val updatedInDbF = updatedDLCDbsF.flatMap(dlcDAO.updateAll)
 
@@ -150,10 +161,16 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   }
 
   /** Sets serialization versions on [[DLCDb]] based on the corresponding [[ContractInfo]] */
-  private def setSerializationVersions(
-      vec: Vector[(DLCDb, ContractInfo)]): Vector[DLCDb] = {
-    vec.map { case (dlcDb, contractInfo) =>
-      dlcDb.copy(serializationVersion = Some(contractInfo.serializationVersion))
+  private def setSerializationVersions(vec: Vector[
+    (DLCDb, ContractInfo, DLCOffer, DLCAcceptWithoutSigs)]): Vector[DLCDb] = {
+    vec.map { case (dlcDb, _, offer, acceptWithoutSigs) =>
+      val contractId = DLCUtil.calcContractId(offer, acceptWithoutSigs)
+      logger.info(
+        s"Updating contractId for dlcId=${dlcDb.dlcId.hex} old contractId=${dlcDb.contractIdOpt} new contractId=${contractId.toHex}")
+
+      dlcDb.copy(tempContractId = offer.tempContractId,
+                 contractIdOpt = Some(contractId),
+                 serializationVersion = Some(DLCSerializationVersion.Beta))
     }
   }
 }
