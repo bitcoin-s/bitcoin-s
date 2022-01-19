@@ -51,14 +51,21 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     }
 
     logger.info(s"Applying DLCAppConfig migrations")
+
+    //get migrations applied the last time the wallet was started
+    val initMigrations = migrationsApplied()
+
     val numMigrations = {
       migrate()
     }
 
-    val f = if (migrationsApplied() == 5) {
+    val f = if (initMigrations != 0 && initMigrations <= 5) {
+      //means we have an old wallet that we need to migrate
       logger.info(s"Running serialization version migration code")
       serializationVersionMigration()
     } else {
+      //the wallet is new enough where we cannot have any old
+      //DLCs in the database with a broken contractId
       Future.unit
     }
 
