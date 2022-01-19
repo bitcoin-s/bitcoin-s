@@ -831,12 +831,12 @@ abstract class DLCWallet
         logger.info(
           s"Verifying ${accept.cetSigs.outcomeSigs.size} CET Signatures")
         for {
-          isCETSigsValid <- verifyCETSigs(accept)
-          _ = if (!isCETSigsValid)
+          isCETSigsValidOpt <- verifyCETSigs(accept)
+          _ = if (!(isCETSigsValidOpt.getOrElse(false)))
             throw new IllegalArgumentException(
               s"CET sigs provided are not valid! got ${accept.cetSigs.outcomeSigs}")
           isRefundSigValid <- verifyRefundSig(accept)
-          _ = if (!isRefundSigValid)
+          _ = if (!(isRefundSigValid.getOrElse(false)))
             throw new IllegalArgumentException(
               s"Refund sig provided is not valid! got ${accept.refundSig}")
 
@@ -935,7 +935,6 @@ abstract class DLCWallet
       scriptSigParams <- getScriptSigParams(dlc, fundingInputs)
       signer <- dlcDataManagement.signerFromDb(dlcId = dlc.dlcId,
                                                transactionDAO = transactionDAO,
-                                               remoteTxDAO = remoteTxDAO,
                                                fundingUtxoScriptSigParams =
                                                  scriptSigParams,
                                                keyManager = keyManager)
@@ -996,49 +995,78 @@ abstract class DLCWallet
     }
   }
 
-  def verifyCETSigs(accept: DLCAccept): Future[Boolean] = {
-    val verifierAcceptF =
+  /** Verify CET sigs for the given accept message if it exists
+    * If it doesnt not exist, return None
+    */
+  def verifyCETSigs(accept: DLCAccept): Future[Option[Boolean]] = {
+    val verifierAcceptOptF =
       dlcDataManagement.verifierFromAccept(accept, transactionDAO)
-    verifierAcceptF.flatMap(_.verifyCETSigs(accept.cetSigs.indexedOutcomeSigs))
+    verifierAcceptOptF.flatMap {
+      case Some(verifier) =>
+        verifier
+          .verifyCETSigs(accept.cetSigs.indexedOutcomeSigs)
+          .map(Some(_))
+      case None => Future.successful(None)
+    }
   }
 
-  def verifyCETSigs(sign: DLCSign): Future[Boolean] = {
-    val verifierF = dlcDataManagement.verifierFromDb(sign.contractId,
-                                                     transactionDAO,
-                                                     remoteTxDAO)
-    verifierF.flatMap(_.verifyCETSigs(sign.cetSigs.indexedOutcomeSigs))
+  /** Verify CET sigs for the given sign message if it exists
+    * If it doesnt not exist, return None
+    */
+  def verifyCETSigs(sign: DLCSign): Future[Option[Boolean]] = {
+    val verifierF =
+      dlcDataManagement.verifierFromDb(sign.contractId, transactionDAO)
+    verifierF.flatMap {
+      case Some(verifier) =>
+        val boolF = verifier.verifyCETSigs(sign.cetSigs.indexedOutcomeSigs)
+        boolF.map(Some(_))
+      case None =>
+        Future.successful(None)
+    }
   }
 
-  def verifyRefundSig(accept: DLCAccept): Future[Boolean] = {
-    val verifierF = dlcDataManagement.verifierFromAccept(accept, transactionDAO)
-
-    verifierF.map(_.verifyRefundSig(accept.refundSig))
+  def verifyRefundSig(accept: DLCAccept): Future[Option[Boolean]] = {
+    val verifierOptF =
+      dlcDataManagement.verifierFromAccept(accept, transactionDAO)
+    verifierOptF.map {
+      case Some(verifier) =>
+        val bool = verifier.verifyRefundSig(accept.refundSig)
+        Some(bool)
+      case None => None
+    }
   }
 
-  def verifyRefundSig(sign: DLCSign): Future[Boolean] = {
-    val verifierF = dlcDataManagement.verifierFromDb(
+  def verifyRefundSig(sign: DLCSign): Future[Option[Boolean]] = {
+    val verifierOptF = dlcDataManagement.verifierFromDb(
       contractId = sign.contractId,
-      transactionDAO = transactionDAO,
-      remoteTxDAO = remoteTxDAO)
-
-    verifierF.map(_.verifyRefundSig(sign.refundSig))
+      transactionDAO = transactionDAO)
+    verifierOptF.map {
+      case Some(verifier) =>
+        val bool = verifier.verifyRefundSig(sign.refundSig)
+        Some(bool)
+      case None =>
+        None
+    }
   }
 
   def verifyFundingSigs(
       inputs: Vector[DLCFundingInputDb],
-      sign: DLCSign): Future[Boolean] = {
+      sign: DLCSign): Future[Option[Boolean]] = {
     if (inputs.count(_.isInitiator) == sign.fundingSigs.length) {
-      val verifierF = dlcDataManagement.verifierFromDb(
+      val verifierOptF = dlcDataManagement.verifierFromDb(
         contractId = sign.contractId,
-        transactionDAO = transactionDAO,
-        remoteTxDAO = remoteTxDAO)
-      verifierF.map { verifier =>
-        verifier.verifyRemoteFundingSigs(sign.fundingSigs)
+        transactionDAO = transactionDAO)
+      verifierOptF.map {
+        case Some(verifier) =>
+          val bool = verifier.verifyRemoteFundingSigs(sign.fundingSigs)
+          Some(bool)
+        case None =>
+          None
       }
     } else {
       logger.info(
         "Funding Signatures provided did not have the correct amount of inputs")
-      Future.successful(false)
+      Future.successful(Some(false))
     }
   }
 
@@ -1052,9 +1080,9 @@ abstract class DLCWallet
 
       _ = logger.info(
         s"Verifying ${sign.fundingSigs.length} funding sigs for contract ${sign.contractId.toHex}")
-      isValid <- verifyFundingSigs(inputs = inputs, sign = sign)
+      isValidOpt <- verifyFundingSigs(inputs = inputs, sign = sign)
       _ <- {
-        if (!isValid)
+        if (!(isValidOpt.getOrElse(false)))
           Future.failed(new IllegalArgumentException(
             s"Funding Signatures provided are not valid! got ${sign.fundingSigs}"))
         else FutureUtil.unit
@@ -1086,17 +1114,9 @@ abstract class DLCWallet
           Future.failed(new RuntimeException(
             s"No DLC found with corresponding contractId ${contractId.toHex}"))
       }
-      (_, contractData, dlcOffer, dlcAccept, fundingInputs, contractInfo) <-
-        dlcDataManagement.getDLCFundingData(dlcDb.dlcId)
       builder <- dlcDataManagement.builderFromDbData(
         dlcDb = dlcDb,
-        contractDataDb = contractData,
-        dlcOffer = dlcOffer,
-        dlcAccept = dlcAccept,
-        fundingInputsDb = fundingInputs,
-        contractInfo = contractInfo,
-        transactionDAO = transactionDAO,
-        remoteTxDAO = remoteTxDAO
+        transactionDAO = transactionDAO
       )
 
       sign = DLCSign.fromTLV(signTLV, builder.offer)
@@ -1122,12 +1142,12 @@ abstract class DLCWallet
               s"Verifying CET Signatures for contract ${sign.contractId.toHex}")
             for {
               isRefundSigValid <- verifyRefundSig(sign)
-              _ = if (!isRefundSigValid)
+              _ = if (!(isRefundSigValid.getOrElse(false)))
                 throw new IllegalArgumentException(
                   s"Refund sig provided is not valid! got ${sign.refundSig}")
 
               isCETSigsValid <- verifyCETSigs(sign)
-              _ = if (!isCETSigsValid)
+              _ = if (!(isCETSigsValid.getOrElse(false)))
                 throw new IllegalArgumentException(
                   s"CET sigs provided are not valid! got ${sign.cetSigs.outcomeSigs}")
 
@@ -1192,14 +1212,10 @@ abstract class DLCWallet
       scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
       signer <- dlcDataManagement.signerFromDb(
         dlcDb = dlcDb,
-        contractDataDb = contractData,
         dlcOffer = dlcOffer,
         dlcAccept = dlcAccept,
-        fundingInputsDb = fundingInputs,
         fundingUtxoScriptSigParams = scriptSigParams,
-        contractInfo = contractInfo,
         transactionDAO = transactionDAO,
-        remoteTxDAO = remoteTxDAO,
         keyManager = keyManager
       )
       fundingTx <-
@@ -1344,7 +1360,6 @@ abstract class DLCWallet
       executorWithSetupOpt <- dlcDataManagement.executorAndSetupFromDb(
         contractId = contractId,
         transactionDAO = transactionDAO,
-        remoteTxDAO = remoteTxDAO,
         fundingUtxoScriptSigParams = scriptSigParams,
         keyManager = keyManager)
       tx <- {
@@ -1438,7 +1453,6 @@ abstract class DLCWallet
       scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
       executor <- dlcDataManagement.executorFromDb(dlcDb.dlcId,
                                                    transactionDAO,
-                                                   remoteTxDAO,
                                                    scriptSigParams,
                                                    keyManager)
       refundSigsDbOpt <- dlcRefundSigDAO.findByDLCId(dlcDb.dlcId)

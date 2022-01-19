@@ -44,7 +44,6 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           executorWithSetupOpt <- dlcDataManagement.executorAndSetupFromDb(
             id,
             transactionDAO,
-            remoteTxDAO,
             scriptSigParams,
             keyManager)
           updatedDlcDb <- executorWithSetupOpt match {

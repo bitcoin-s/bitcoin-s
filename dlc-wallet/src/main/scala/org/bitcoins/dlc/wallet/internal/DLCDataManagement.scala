@@ -340,54 +340,70 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     }
   }
 
+  /** Build a verifier from an accept message.
+    * Returns None if there is no DLC in the database associated with this accept message
+    */
   private[wallet] def verifierFromAccept(
       accept: DLCAccept,
-      transactionDAO: TransactionDAO): Future[DLCSignatureVerifier] = {
+      transactionDAO: TransactionDAO): Future[Option[DLCSignatureVerifier]] = {
     for {
       dlcDbOpt <- dlcDAO.findByTempContractId(accept.tempContractId)
-      dlcDb = dlcDbOpt.get
 
-      (_, contractData, dlcOffer, fundingInputsDb, contractInfo) <-
-        getDLCOfferData(dlcDb.dlcId)
-      localFundingInputs = fundingInputsDb.filter(_.isInitiator)
+      offerDataOpt <- {
+        dlcDbOpt.map(d => getDLCOfferData(d.dlcId)) match {
+          case Some(value) => value.map(Some(_))
+          case None        => Future.successful(None)
+        }
+      }
+      localFundingInputsOpt = offerDataOpt.map(o => o._4.filter(_.isInitiator))
 
-      prevTxs <-
-        transactionDAO.findByTxIdBEs(localFundingInputs.map(_.outPoint.txIdBE))
+      prevTxs <- {
+        offerDataOpt match {
+          case Some(offerData) =>
+            transactionDAO.findByTxIdBEs(offerData._4.map(_.outPoint.txIdBE))
+          case None =>
+            Future.successful(Vector.empty)
+        }
+      }
     } yield {
-      val offerFundingInputs =
-        DLCTxUtil.matchPrevTxsWithInputs(localFundingInputs, prevTxs)
-      val offer = dlcOffer.toDLCOffer(contractInfo,
-                                      offerFundingInputs,
-                                      dlcDb,
-                                      contractData)
+      val opt: Option[
+        (
+            (
+                DLCDb,
+                DLCContractDataDb,
+                DLCOfferDb,
+                Vector[DLCFundingInputDb],
+                ContractInfo),
+            Vector[DLCFundingInputDb])] =
+        offerDataOpt.zip(localFundingInputsOpt)
+      opt match {
+        case Some(
+              ((dlcDb, contractData, dlcOffer, _, contractInfo),
+               localFundingInputs)) =>
+          val offerFundingInputs =
+            DLCTxUtil.matchPrevTxsWithInputs(localFundingInputs, prevTxs)
+          val offer = dlcOffer.toDLCOffer(contractInfo,
+                                          offerFundingInputs,
+                                          dlcDb,
+                                          contractData)
+          val builder = DLCTxBuilder(offer, accept.withoutSigs)
 
-      val builder = DLCTxBuilder(offer, accept.withoutSigs)
-
-      DLCSignatureVerifier(builder, dlcDb.isInitiator)
+          val verifier = DLCSignatureVerifier(builder, dlcDb.isInitiator)
+          Some(verifier)
+        case None => None
+      }
     }
   }
 
   private[wallet] def verifierFromDb(
       contractId: ByteVector,
-      transactionDAO: TransactionDAO,
-      remoteTxDAO: DLCRemoteTxDAO): Future[DLCSignatureVerifier] = {
-    getDLCFundingData(contractId).flatMap {
-      case (dlcDb,
-            contractData,
-            dlcOffer,
-            dlcAccept,
-            fundingInputsDb,
-            contractInfo) =>
-        verifierFromDbData(
-          dlcDb = dlcDb,
-          contractData = contractData,
-          dlcOffer = dlcOffer,
-          dlcAccept = dlcAccept,
-          fundingInputsDb = fundingInputsDb,
-          contractInfo = contractInfo,
-          transactionDAO = transactionDAO,
-          remoteTxDAO = remoteTxDAO
-        )
+      transactionDAO: TransactionDAO): Future[Option[DLCSignatureVerifier]] = {
+    dlcDAO.findByContractId(contractId).flatMap { case dlcDbOpt =>
+      val optF = dlcDbOpt.map(verifierFromDbData(_, transactionDAO))
+      optF match {
+        case Some(sigVerifier) => sigVerifier.map(Some(_))
+        case None              => Future.successful(None)
+      }
     }
   }
 
@@ -451,74 +467,18 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def builderFromDbData(
       dlcDb: DLCDb,
-      contractDataDb: DLCContractDataDb,
-      dlcOffer: DLCOfferDb,
-      dlcAccept: DLCAcceptDb,
-      fundingInputsDb: Vector[DLCFundingInputDb],
-      contractInfo: ContractInfo,
-      transactionDAO: TransactionDAO,
-      remoteTxDAO: DLCRemoteTxDAO): Future[DLCTxBuilder] = {
-    val (localDbFundingInputs, remoteDbFundingInputs) = if (dlcDb.isInitiator) {
-      (fundingInputsDb.filter(_.isInitiator),
-       fundingInputsDb.filterNot(_.isInitiator))
-    } else {
-      (fundingInputsDb.filterNot(_.isInitiator),
-       fundingInputsDb.filter(_.isInitiator))
-    }
-
+      transactionDAO: TransactionDAO): Future[DLCTxBuilder] = {
     for {
-      localPrevTxs <- transactionDAO.findByTxIdBEs(
-        localDbFundingInputs.map(_.outPoint.txIdBE))
-      remotePrevTxs <-
-        remoteTxDAO.findByTxIdBEs(remoteDbFundingInputs.map(_.outPoint.txIdBE))
-    } yield {
-      val localFundingInputs = DLCTxUtil.matchPrevTxsWithInputs(
-        inputs = localDbFundingInputs,
-        prevTxs = localPrevTxs)
-
-      val remoteFundingInputs = DLCTxUtil.matchPrevTxsWithInputs(
-        inputs = remoteDbFundingInputs,
-        prevTxs = remotePrevTxs)
-
-      val (offerFundingInputs, acceptFundingInputs) = if (dlcDb.isInitiator) {
-        (localFundingInputs, remoteFundingInputs)
-      } else {
-        (remoteFundingInputs, localFundingInputs)
-      }
-
-      val offer = dlcOffer.toDLCOffer(contractInfo,
-                                      offerFundingInputs,
-                                      dlcDb.fundOutputSerialId,
-                                      dlcDb.feeRate,
-                                      contractDataDb.dlcTimeouts)
-
-      val accept = dlcAccept.toDLCAcceptWithoutSigs(dlcDb.tempContractId,
-                                                    acceptFundingInputs)
-
-      DLCTxBuilder(offer, accept)
-    }
+      (offer, accept) <- getOfferAndAcceptWithoutSigs(dlcDb.dlcId,
+                                                      transactionDAO)
+    } yield DLCTxBuilder(offer, accept)
   }
 
   private[wallet] def verifierFromDbData(
       dlcDb: DLCDb,
-      contractData: DLCContractDataDb,
-      dlcOffer: DLCOfferDb,
-      dlcAccept: DLCAcceptDb,
-      fundingInputsDb: Vector[DLCFundingInputDb],
-      contractInfo: ContractInfo,
-      transactionDAO: TransactionDAO,
-      remoteTxDAO: DLCRemoteTxDAO): Future[DLCSignatureVerifier] = {
+      transactionDAO: TransactionDAO): Future[DLCSignatureVerifier] = {
     val builderF =
-      builderFromDbData(
-        dlcDb = dlcDb,
-        contractDataDb = contractData,
-        dlcOffer = dlcOffer,
-        dlcAccept = dlcAccept,
-        fundingInputsDb = fundingInputsDb,
-        contractInfo = contractInfo,
-        transactionDAO = transactionDAO,
-        remoteTxDAO = remoteTxDAO
-      )
+      builderFromDbData(dlcDb = dlcDb, transactionDAO = transactionDAO)
 
     builderF.map(DLCSignatureVerifier(_, dlcDb.isInitiator))
   }
@@ -526,27 +486,17 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private[wallet] def signerFromDb(
       dlcId: Sha256Digest,
       transactionDAO: TransactionDAO,
-      remoteTxDAO: DLCRemoteTxDAO,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
       keyManager: BIP39KeyManager): Future[DLCTxSigner] = {
     for {
-      (dlcDb,
-       contractData,
-       dlcOffer,
-       dlcAccept,
-       fundingInputsDb,
-       contractInfo) <-
+      (dlcDb, _, dlcOffer, dlcAccept, _, _) <-
         getDLCFundingData(dlcId)
       signer <- signerFromDb(
         dlcDb = dlcDb,
-        contractDataDb = contractData,
         dlcOffer = dlcOffer,
         dlcAccept = dlcAccept,
-        fundingInputsDb = fundingInputsDb,
         fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
-        contractInfo = contractInfo,
         transactionDAO = transactionDAO,
-        remoteTxDAO = remoteTxDAO,
         keyManager = keyManager
       )
     } yield signer
@@ -554,25 +504,15 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def signerFromDb(
       dlcDb: DLCDb,
-      contractDataDb: DLCContractDataDb,
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
-      fundingInputsDb: Vector[DLCFundingInputDb],
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
-      contractInfo: ContractInfo,
       transactionDAO: TransactionDAO,
-      remoteTxDAO: DLCRemoteTxDAO,
       keyManager: BIP39KeyManager): Future[DLCTxSigner] = {
     for {
       builder <- builderFromDbData(
         dlcDb = dlcDb,
-        contractDataDb = contractDataDb,
-        dlcOffer = dlcOffer,
-        dlcAccept = dlcAccept,
-        fundingInputsDb = fundingInputsDb,
-        contractInfo = contractInfo,
-        transactionDAO = transactionDAO,
-        remoteTxDAO = remoteTxDAO
+        transactionDAO = transactionDAO
       )
     } yield {
       val (fundingKey, payoutAddress) = if (dlcDb.isInitiator) {
@@ -601,25 +541,17 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def executorFromDb(
       dlcDb: DLCDb,
-      contractDataDb: DLCContractDataDb,
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
-      fundingInputsDb: Vector[DLCFundingInputDb],
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
-      contractInfo: ContractInfo,
       transactionDAO: TransactionDAO,
-      remoteTxDAO: DLCRemoteTxDAO,
       keyManager: BIP39KeyManager): Future[DLCExecutor] = {
     signerFromDb(
       dlcDb = dlcDb,
-      contractDataDb = contractDataDb,
       dlcOffer = dlcOffer,
       dlcAccept = dlcAccept,
-      fundingInputsDb = fundingInputsDb,
       fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
-      contractInfo = contractInfo,
       transactionDAO = transactionDAO,
-      remoteTxDAO = remoteTxDAO,
       keyManager = keyManager
     ).map(DLCExecutor.apply)
   }
@@ -627,12 +559,10 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private[wallet] def executorFromDb(
       dlcId: Sha256Digest,
       transactionDAO: TransactionDAO,
-      remoteTxDAO: DLCRemoteTxDAO,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
       keyManager: BIP39KeyManager): Future[DLCExecutor] = {
     signerFromDb(dlcId = dlcId,
                  transactionDAO = transactionDAO,
-                 remoteTxDAO = remoteTxDAO,
                  fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
                  keyManager = keyManager).map(DLCExecutor.apply)
   }
@@ -643,31 +573,27 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private[wallet] def executorAndSetupFromDb(
       contractId: ByteVector,
       transactionDAO: TransactionDAO,
-      remoteTxDAO: DLCRemoteTxDAO,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
       keyManager: BIP39KeyManager): Future[Option[DLCExecutorWithSetup]] = {
     getAllDLCData(contractId).flatMap {
       case (dlcDb,
-            contractData,
+            _,
             dlcOffer,
             dlcAccept,
             refundSigs,
-            contractInfo,
+            _,
             fundingInputsDb,
             outcomeSigsDbsOpt) =>
         outcomeSigsDbsOpt match {
           case Some(outcomeSigsDbs) =>
             executorAndSetupFromDb(
               dlcDb = dlcDb,
-              contractDataDb = contractData,
               dlcOffer = dlcOffer,
               dlcAccept = dlcAccept,
               refundSigsDb = refundSigs,
-              contractInfo = contractInfo,
               fundingInputs = fundingInputsDb,
               outcomeSigsDbs = outcomeSigsDbs,
               transactionDAO = transactionDAO,
-              remoteTxDAO = remoteTxDAO,
               fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
               keyManager = keyManager
             ).map(Some(_))
@@ -683,28 +609,21 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def executorAndSetupFromDb(
       dlcDb: DLCDb,
-      contractDataDb: DLCContractDataDb,
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
       refundSigsDb: DLCRefundSigsDb,
-      contractInfo: ContractInfo,
       fundingInputs: Vector[DLCFundingInputDb],
       outcomeSigsDbs: Vector[DLCCETSignaturesDb],
       transactionDAO: TransactionDAO,
-      remoteTxDAO: DLCRemoteTxDAO,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
       keyManager: BIP39KeyManager): Future[DLCExecutorWithSetup] = {
 
     val dlcExecutorF = executorFromDb(
       dlcDb = dlcDb,
-      contractDataDb = contractDataDb,
       dlcOffer = dlcOffer,
       dlcAccept = dlcAccept,
-      fundingInputsDb = fundingInputs,
       fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
-      contractInfo = contractInfo,
       transactionDAO = transactionDAO,
-      remoteTxDAO = remoteTxDAO,
       keyManager = keyManager
     )
 
