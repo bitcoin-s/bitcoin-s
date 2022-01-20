@@ -2,12 +2,11 @@ package org.bitcoins.db
 
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.bitcoins.testkit.util.{BitcoinSAsyncTest, FileUtil}
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import java.io.File
@@ -95,13 +94,6 @@ class DBConfigTest extends BitcoinSAsyncTest {
     assert(mainNetChainAppConfig.network == MainNet)
   }
 
-  def withTempDir[T](f: Path => T): T = {
-    val dir = Files.createTempDirectory(getClass.getName)
-    try {
-      f(dir)
-    } finally {
-      FileUtil.removeDirectory(dir)
-      ()
-    }
-  }
+  def withTempDir[T](f: Path => T): T =
+    FileUtil.withTempDir(getClass.getName)(f)
 }

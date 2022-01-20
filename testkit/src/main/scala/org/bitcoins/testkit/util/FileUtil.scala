@@ -3,7 +3,7 @@ package org.bitcoins.testkit.util
 import grizzled.slf4j.Logging
 
 import java.io.File
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 import scala.annotation.tailrec
 import scala.util.{Properties, Random}
 
@@ -60,4 +60,15 @@ object FileUtil extends Logging {
     f.mkdirs()
     f
   }
+
+  def withTempDir[T](prefix: String)(f: Path => T): T = {
+    val dir = Files.createTempDirectory(prefix)
+    try {
+      f(dir)
+    } finally {
+      deleteTmpDir(dir)
+      ()
+    }
+  }
+
 }

@@ -1,13 +1,10 @@
 package org.bitcoins.server
 
 import org.bitcoins.testkit.fixtures.BitcoinSAppConfigBitcoinFixtureNotStarted
-import org.bitcoins.testkit.util.FileUtil
-
-import java.nio.file.Files
-import scala.concurrent.Future
 
 class BitcoinSAppConfigTest extends BitcoinSAppConfigBitcoinFixtureNotStarted {
 
+  /*
   behavior of "BitcoinSAppConfig"
 
   it must "zipdatadir if the target directory is not created" in { config =>
@@ -32,4 +29,6 @@ class BitcoinSAppConfigTest extends BitcoinSAppConfigBitcoinFixtureNotStarted {
       assert(Files.exists(target))
     }
   }
+
+   */
 }

@@ -22,7 +22,7 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
       case None          => conf.rpcBindOpt
     }
 
-    val commonRoutes = CommonRoutes()
+    val commonRoutes = CommonRoutes(conf.baseDatadir)
 
     for {
       _ <- conf.start()

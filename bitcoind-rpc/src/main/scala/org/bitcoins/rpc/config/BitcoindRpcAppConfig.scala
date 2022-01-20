@@ -35,7 +35,7 @@ case class BitcoindRpcAppConfig(
       configs: Seq[Config]): BitcoindRpcAppConfig =
     BitcoindRpcAppConfig(directory, configs: _*)
 
-  protected[bitcoins] def baseDatadir: Path = directory
+  override def baseDatadir: Path = directory
 
   override def start(): Future[Unit] = Future.unit
 
