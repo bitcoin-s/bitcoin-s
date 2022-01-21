@@ -22,15 +22,18 @@ object DatadirUtil {
       FileUtil.copyDirectory(
         source = source,
         target = temp,
-        fileNameFilter = Vector(".*.sqlite$".r,
-                                ".*.sqlite-shm$".r,
-                                ".*.sqlite-wal$".r,
-                                ".*bitcoin-s.log$".r,
-                                ".*/seeds/.*".r,
-                                ".*/tor/.*".r,
-                                ".*/binaries/.*".r,
-                                ".*.zip$".r,
-                                tempRE)
+        fileNameFilter = Vector(
+          ".*.sqlite$".r,
+          ".*.sqlite-shm$".r,
+          ".*.sqlite-wal$".r,
+          ".*bitcoin-s.log$".r,
+          ".*/seeds/.*".r,
+          ".*/tor/.*".r,
+          ".*/binaries/.*".r,
+          ".*.zip$".r,
+          ".*.DS_Store".r,
+          tempRE
+        )
       )
 
       SQLiteUtil.backupDirectory(source = source,
