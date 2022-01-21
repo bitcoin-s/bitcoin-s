@@ -386,7 +386,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val chainRoutes = ChainRoutes(chainApi, nodeConf.network)
     val coreRoutes = CoreRoutes()
     val dlcRoutes = DLCRoutes(dlcNode)
-    val commonRoutes = CommonRoutes()
+    val commonRoutes = CommonRoutes(conf.datadir)
 
     val handlers =
       Seq(walletRoutes,

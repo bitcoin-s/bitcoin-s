@@ -2,6 +2,7 @@ package org.bitcoins.scripts
 
 import akka.actor.ActorSystem
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
+import org.bitcoins.db.DatadirUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.routes.BitcoinSServerRunner
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
@@ -19,7 +20,7 @@ class ZipDatadir(override val serverArgParser: ServerArgParser)(implicit
 
     //replace the line below with where you want to zip too
     val path = Paths.get("/tmp", "bitcoin-s.zip")
-    val target = conf.zipDatadir(path)
+    val target = DatadirUtil.zipDatadir(conf.datadir, path)
     logger.info(s"Done zipping to $target!")
     for {
       _ <- system.terminate()
