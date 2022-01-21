@@ -2,6 +2,7 @@ package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.api.wallet.{CoinSelectionAlgo, CoinSelector}
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder._
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -83,9 +84,15 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
     val selectedUtxosF: Future[Vector[(SpendingInfoDb, Transaction)]] =
       for {
         walletUtxos <- utxosF
+
+        // filter out dust
+        selectableUtxos = walletUtxos
+          .map(_._1)
+          .filter(_.output.value > Policy.dustThreshold)
+
         utxos = CoinSelector.selectByAlgo(
           coinSelectionAlgo = coinSelectionAlgo,
-          walletUtxos = walletUtxos.map(_._1),
+          walletUtxos = selectableUtxos,
           outputs = destinations,
           feeRate = feeRate,
           longTermFeeRateOpt = Some(self.walletConfig.longTermFeeRate)
