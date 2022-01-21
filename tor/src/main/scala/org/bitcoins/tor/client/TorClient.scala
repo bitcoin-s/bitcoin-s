@@ -77,7 +77,7 @@ class TorClient()(implicit
 object TorClient extends Logging {
 
   // made by doing ./tor --version
-  val TOR_VERSION = "Tor version 0.4.5.7 (git-83f895c015de5520)."
+  val TOR_VERSION = "Tor version 0.4.6.9 (git-ea2ada6d1459f829)."
   val versionFileName = "version.txt"
 
   lazy val DEFAULT_TOR_LOCATION: Option[File] = {
@@ -193,7 +193,10 @@ object TorClient extends Logging {
         "osx_64/tor",
         "osx_64/tor.real"
       ),
-      fileList = Vector("osx_64/LICENSE", "osx_64/libevent-2.1.7.dylib")
+      fileList = Vector(
+        "osx_64/LICENSE",
+        "osx_64/libevent-2.1.7.dylib"
+      )
     )
   }
 

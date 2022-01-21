@@ -35,7 +35,6 @@ bench_internal
 tests
 exhaustive_tests
 gen_context
-*.exe
 !.gitignore
 
 Makefile
