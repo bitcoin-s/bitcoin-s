@@ -140,18 +140,25 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     val dlcDbContractInfoOfferF: Future[Vector[DLCSetupDbState]] = {
       for {
         allDlcs <- allDlcsF
-        nestedContractInfo = allDlcs.map { a =>
-          dlcManagement
-            .getContractInfo(a.dlcId)
-            .map(c => (a, c))
-        }
         nestedOfferAndAccept = allDlcs.map { a =>
-          dlcManagement.getDLCFundingData(a.dlcId, txDAO = txDAO)
+          val setupDbOptF =
+            dlcManagement.getDLCFundingData(a.dlcId, txDAO = txDAO)
+
+          setupDbOptF.foreach {
+            case Some(_) => //happy path, do nothing
+            case None =>
+              logger.warn(s"Corrupted dlcId=${a.dlcId.hex} state=${a.state}, " +
+                s"this is likely because of issue 4001 https://github.com/bitcoin-s/bitcoin-s/issues/4001 . " +
+                s"This DLC will not have its contractId migrated to DLSerializationVersion.Beta")
+          }
+          setupDbOptF
         }
         offerAndAccepts <- Future.sequence(nestedOfferAndAccept)
       } yield {
-        require(offerAndAccepts.forall(_.isDefined),
-                s"Cannot have bad dlcIds here")
+        offerAndAccepts.foreach { case o =>
+          logger.info(
+            s"o.dlcId=${o.map(_.dlcDb.dlcId)} tempContractId=${o.map(_.dlcDb.tempContractId.hex)}")
+        }
         offerAndAccepts.flatten
       }
     }
@@ -178,7 +185,8 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
           val dlcDb = acceptDbState.dlcDb
           val contractId = DLCUtil.calcContractId(offer, acceptWithoutSigs)
           logger.info(
-            s"Updating contractId for dlcId=${dlcDb.dlcId.hex} old contractId=${dlcDb.contractIdOpt} new contractId=${contractId.toHex}")
+            s"Updating contractId for dlcId=${dlcDb.dlcId.hex} old contractId=${dlcDb.contractIdOpt
+              .map(_.toHex)} new contractId=${contractId.toHex}")
           dlcDb.copy(tempContractId = offer.tempContractId,
                      contractIdOpt = Some(contractId),
                      serializationVersion = DLCSerializationVersion.Beta)
@@ -187,7 +195,7 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
           val dlcDb = offerDbState.dlcDb
           val offer = offerDbState.offer
           logger.info(
-            s"Updating tempContractId for dlcId=${dlcDb.dlcId.hex} old tempContractId=${dlcDb.tempContractId} new contractId=${offer.tempContractId}")
+            s"Updating tempContractId for dlcId=${dlcDb.dlcId.hex} old tempContractId=${dlcDb.tempContractId.hex} new contractId=${offer.tempContractId.hex}")
           dlcDb.copy(tempContractId = offer.tempContractId,
                      serializationVersion = DLCSerializationVersion.Beta)
       }
