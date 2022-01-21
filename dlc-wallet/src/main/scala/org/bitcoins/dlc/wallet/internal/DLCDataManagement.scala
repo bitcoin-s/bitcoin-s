@@ -310,8 +310,6 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
         f.map(Some(_))
       case None => Future.successful(None)
     }
-
-    resultF.foreach(_ => logger.info(s"getFundingData dlcId=${dlcId.hex}"))
     resultF
   }
 
