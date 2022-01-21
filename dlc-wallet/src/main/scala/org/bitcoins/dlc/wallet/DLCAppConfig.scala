@@ -140,7 +140,10 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     val dlcDbContractInfoOfferF: Future[Vector[DLCSetupDbState]] = {
       for {
         allDlcs <- allDlcsF
-        nestedOfferAndAccept = allDlcs.map { a =>
+        //only DLC with the alpha version need to be migrated
+        alphaVersionDLCs = allDlcs.filter(
+          _.serializationVersion == DLCSerializationVersion.Alpha)
+        nestedOfferAndAccept = alphaVersionDLCs.map { a =>
           val setupDbOptF =
             dlcManagement.getDLCFundingData(a.dlcId, txDAO = txDAO)
 
@@ -155,10 +158,6 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
         }
         offerAndAccepts <- Future.sequence(nestedOfferAndAccept)
       } yield {
-        offerAndAccepts.foreach { case o =>
-          logger.info(
-            s"o.dlcId=${o.map(_.dlcDb.dlcId)} tempContractId=${o.map(_.dlcDb.tempContractId.hex)}")
-        }
         offerAndAccepts.flatten
       }
     }
