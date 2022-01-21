@@ -1244,9 +1244,20 @@ abstract class DLCWallet
 
   override def getDLCFundingTx(contractId: ByteVector): Future[Transaction] = {
     for {
-      (dlcDb, contractData, dlcOffer, dlcAccept, fundingInputs, contractInfo) <-
-        dlcDataManagement.getDLCFundingData(contractId)
-
+      setupStateOpt <- dlcDataManagement.getDLCFundingData(contractId,
+                                                           txDAO =
+                                                             transactionDAO)
+      acceptState = {
+        setupStateOpt.map {
+          case _: OfferedDbState =>
+            sys.error(
+              s"Cannot retrieve funding transaction when DLC is in offered state")
+          case accept: AcceptDbState => accept
+        }.get //bad but going to have to save this refactor for future
+      }
+      dlcDb = acceptState.dlcDb
+      //is this right? We don't have counterpart scriptSigParams
+      fundingInputs = acceptState.allFundingInputs
       scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
       signerOpt <- dlcDataManagement.signerFromDb(
         dlcDb = dlcDb,
@@ -1394,12 +1405,20 @@ abstract class DLCWallet
       oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
     require(oracleSigs.nonEmpty, "Must provide at least one oracle signature")
     for {
-      (dlcDb, _, _, _, fundingInputs, _) <-
-        dlcDataManagement.getDLCFundingData(contractId)
+      setupStateOpt <-
+        dlcDataManagement.getDLCFundingData(contractId, txDAO = transactionDAO)
+      _ = require(setupStateOpt.isDefined,
+                  s"Must have setup state defined to create execution tx")
+      _ = require(
+        setupStateOpt.get.isInstanceOf[AcceptDbState],
+        s"Setup state must be accept to create dlc execution tx, got=${setupStateOpt.get.state}")
+      setupState = setupStateOpt.get.asInstanceOf[AcceptDbState]
+      dlcDb = setupState.dlcDb
+      fundingInputs = setupState.allFundingInputs
       scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
       executorWithSetupOpt <- dlcDataManagement.executorAndSetupFromDb(
         contractId = contractId,
-        transactionDAO = transactionDAO,
+        txDAO = transactionDAO,
         fundingUtxoScriptSigParams = scriptSigParams,
         keyManager = keyManager)
       tx <- {

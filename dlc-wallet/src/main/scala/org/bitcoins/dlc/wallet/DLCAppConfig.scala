@@ -7,16 +7,16 @@ import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.protocol.dlc.compute.DLCUtil
-import org.bitcoins.core.protocol.dlc.models.ContractInfo
-import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
-  DLCAcceptWithoutSigs,
-  DLCOffer
-}
 import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
 import org.bitcoins.dlc.wallet.internal.DLCDataManagement
+import org.bitcoins.dlc.wallet.models.{
+  AcceptDbState,
+  DLCSetupDbState,
+  OfferedDbState
+}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.TransactionDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
@@ -137,8 +137,7 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     val txDAO: TransactionDAO =
       TransactionDAO()(ec = ec, appConfig = walletAppConfig)
     //get the offers so we can figure out what the serialization version is
-    val dlcDbContractInfoOfferF: Future[
-      Vector[(DLCDb, ContractInfo, DLCOffer, Option[DLCAcceptWithoutSigs])]] =
+    val dlcDbContractInfoOfferF: Future[Vector[DLCSetupDbState]] = {
       for {
         allDlcs <- allDlcsF
         nestedContractInfo = allDlcs.map { a =>
@@ -147,15 +146,15 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
             .map(c => (a, c))
         }
         nestedOfferAndAccept = allDlcs.map { a =>
-          dlcManagement.getOfferAndAcceptWithoutSigs(a.dlcId,
-                                                     transactionDAO = txDAO)
+          dlcManagement.getDLCFundingData(a.dlcId, txDAO = txDAO)
         }
-
-        contractInfoWithDlcs <- Future.sequence(nestedContractInfo)
         offerAndAccepts <- Future.sequence(nestedOfferAndAccept)
-      } yield contractInfoWithDlcs.zip(offerAndAccepts).map { case (x, y) =>
-        (x._1, x._2, y._1, y._2)
+      } yield {
+        require(offerAndAccepts.forall(_.isDefined),
+                s"Cannot have bad dlcIds here")
+        offerAndAccepts.flatten
       }
+    }
 
     //now we need to insert the serialization type
     //into global_dlc_data
@@ -170,20 +169,23 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   /** Sets serialization versions on [[DLCDb]] based on the corresponding [[ContractInfo]] */
   private def setSerializationVersions(
-      vec: Vector[
-        (DLCDb, ContractInfo, DLCOffer, Option[DLCAcceptWithoutSigs])]): Vector[
-    DLCDb] = {
-    vec.map { case (dlcDb, _, offer, acceptWithoutSigsOpt) =>
-      val updatedDlcDb: DLCDb = acceptWithoutSigsOpt match {
-        case Some(acceptWithoutSigs) =>
+      vec: Vector[DLCSetupDbState]): Vector[DLCDb] = {
+    vec.map { case state: DLCSetupDbState =>
+      val updatedDlcDb: DLCDb = state match {
+        case acceptDbState: AcceptDbState =>
+          val offer = acceptDbState.offer
+          val acceptWithoutSigs = acceptDbState.acceptWithoutSigs
+          val dlcDb = acceptDbState.dlcDb
           val contractId = DLCUtil.calcContractId(offer, acceptWithoutSigs)
           logger.info(
             s"Updating contractId for dlcId=${dlcDb.dlcId.hex} old contractId=${dlcDb.contractIdOpt} new contractId=${contractId.toHex}")
           dlcDb.copy(tempContractId = offer.tempContractId,
                      contractIdOpt = Some(contractId),
                      serializationVersion = DLCSerializationVersion.Beta)
-        case None =>
+        case offerDbState: OfferedDbState =>
           //if we don't have an accept message, we can only calculate tempContractId
+          val dlcDb = offerDbState.dlcDb
+          val offer = offerDbState.offer
           logger.info(
             s"Updating tempContractId for dlcId=${dlcDb.dlcId.hex} old tempContractId=${dlcDb.tempContractId} new contractId=${offer.tempContractId}")
           dlcDb.copy(tempContractId = offer.tempContractId,

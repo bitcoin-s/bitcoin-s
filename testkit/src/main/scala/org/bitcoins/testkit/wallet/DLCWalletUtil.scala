@@ -333,8 +333,8 @@ object DLCWalletUtil extends Logging {
         else dlcA.processTransaction(tx, None)
       }
       _ <- dlcA.broadcastTransaction(tx)
-
       dlcDb <- dlcA.dlcDAO.findByContractId(contractId)
+
       _ <- verifyProperlySetTxIds(dlcA)
       _ <- verifyProperlySetTxIds(dlcB)
     } yield {

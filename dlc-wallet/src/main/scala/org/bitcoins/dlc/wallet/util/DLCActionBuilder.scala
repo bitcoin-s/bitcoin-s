@@ -135,7 +135,9 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
       contractData <- contractDataAction
       offer <- dlcOfferAction
       inputs <- fundingInputsAction
-    } yield (dlcDb, contractData, offer, inputs)
+      //only want offerer inputs
+      offerInputs = inputs.filter(_.isInitiator)
+    } yield (dlcDb, contractData, offer, offerInputs)
 
     combined
   }
