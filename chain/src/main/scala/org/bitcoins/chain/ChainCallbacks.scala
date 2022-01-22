@@ -1,7 +1,7 @@
 package org.bitcoins.chain
 
 import grizzled.slf4j.Logger
-import org.bitcoins.core.api.{Callback2, CallbackHandler}
+import org.bitcoins.core.api.{Callback, CallbackHandler}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -9,18 +9,18 @@ import scala.concurrent.{ExecutionContext, Future}
 trait ChainCallbacks {
 
   def onBlockHeaderConnected: CallbackHandler[
-    (Int, BlockHeader),
+    Vector[(Int, BlockHeader)],
     OnBlockHeaderConnected]
 
   def +(other: ChainCallbacks): ChainCallbacks
 
   def executeOnBlockHeaderConnectedCallbacks(
       logger: Logger,
-      height: Int,
-      header: BlockHeader)(implicit ec: ExecutionContext): Future[Unit] = {
+      heightHeaderTuple: Vector[(Int, BlockHeader)])(implicit
+      ec: ExecutionContext): Future[Unit] = {
 
     onBlockHeaderConnected.execute(
-      (height, header),
+      heightHeaderTuple,
       (err: Throwable) =>
         logger.error(
           s"${onBlockHeaderConnected.name} Callback failed with error: ",
@@ -30,13 +30,13 @@ trait ChainCallbacks {
 }
 
 /** Callback for handling a received block header */
-trait OnBlockHeaderConnected extends Callback2[Int, BlockHeader]
+trait OnBlockHeaderConnected extends Callback[Vector[(Int, BlockHeader)]]
 
 object ChainCallbacks {
 
   private case class ChainCallbacksImpl(
       onBlockHeaderConnected: CallbackHandler[
-        (Int, BlockHeader),
+        Vector[(Int, BlockHeader)],
         OnBlockHeaderConnected])
       extends ChainCallbacks {
 
@@ -56,7 +56,7 @@ object ChainCallbacks {
       onBlockHeaderConnected: Vector[OnBlockHeaderConnected] =
         Vector.empty): ChainCallbacks =
     ChainCallbacksImpl(onBlockHeaderConnected =
-      CallbackHandler[(Int, BlockHeader), OnBlockHeaderConnected](
+      CallbackHandler[Vector[(Int, BlockHeader)], OnBlockHeaderConnected](
         "onBlockHeaderConnected",
         onBlockHeaderConnected))
 }

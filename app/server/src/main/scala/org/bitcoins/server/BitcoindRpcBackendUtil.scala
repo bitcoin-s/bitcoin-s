@@ -258,13 +258,15 @@ object BitcoindRpcBackendUtil extends Logging {
                 val executeCallbackF: Future[Wallet] = blockProcessedF.flatMap {
                   wallet =>
                     chainCallbacksOpt match {
-                      case None => Future.successful(wallet)
+                      case None           => Future.successful(wallet)
                       case Some(callback) =>
+                        //this can be slow as we aren't batching headers at all
+                        val headerWithHeights =
+                          Vector((blockHeaderResult.height, block.blockHeader))
                         val f = callback
                           .executeOnBlockHeaderConnectedCallbacks(
                             logger,
-                            blockHeaderResult.height,
-                            blockHeaderResult.blockHeader)
+                            headerWithHeights)
                         f.map(_ => wallet)
                     }
                 }

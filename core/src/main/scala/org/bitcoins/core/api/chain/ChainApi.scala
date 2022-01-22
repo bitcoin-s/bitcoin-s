@@ -40,6 +40,9 @@ trait ChainApi extends ChainQueryApi {
   /** Gets a [[org.bitcoins.core.api.chain.db.BlockHeaderDb]] from the chain's database */
   def getHeader(hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]]
 
+  def getHeaders(hashes: Vector[DoubleSha256DigestBE]): Future[
+    Vector[Option[BlockHeaderDb]]]
+
   /** Gets all [[org.bitcoins.core.api.chain.db.BlockHeaderDb]]s at a given height */
   def getHeadersAtHeight(height: Int): Future[Vector[BlockHeaderDb]]
 

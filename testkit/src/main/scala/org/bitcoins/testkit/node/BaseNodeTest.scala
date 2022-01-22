@@ -80,6 +80,11 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
         hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] =
       Future.successful(None)
 
+    override def getHeaders(hashes: Vector[DoubleSha256DigestBE]): Future[
+      Vector[Option[BlockHeaderDb]]] = {
+      Future.successful(Vector.fill(hashes.length)(None))
+    }
+
     override def getHeadersAtHeight(
         height: Int): Future[Vector[BlockHeaderDb]] =
       Future.successful(Vector.empty)

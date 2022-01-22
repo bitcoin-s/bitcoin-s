@@ -98,15 +98,12 @@ class ChainHandler(
   /** @inheritdoc */
   override def getHeader(
       hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] = {
-    blockHeaderDAO.findByHash(hash).map { header =>
-      logger.debug(s"Looking for header by hash=$hash")
-      val resultStr = header
-        .map(h =>
-          s"height=${h.height}, hash=${h.hashBE}, chain work=${h.chainWork}")
-        .getOrElse("None")
-      logger.debug(s"getHeader result: $resultStr")
-      header
-    }
+    getHeaders(Vector(hash)).map(_.head)
+  }
+
+  override def getHeaders(hashes: Vector[DoubleSha256DigestBE]): Future[
+    Vector[Option[BlockHeaderDb]]] = {
+    blockHeaderDAO.findByHashes(hashes)
   }
 
   protected def processHeadersWithChains(
@@ -129,7 +126,7 @@ class ChainHandler(
       val successfullyValidatedHeaders = blockchainUpdates
         .flatMap(_.successfulHeaders)
 
-      val headersToBeCreated = {
+      val headersToBeCreated: Vector[BlockHeaderDb] = {
         // During reorgs, we can be sent a header twice
         successfullyValidatedHeaders.distinct
       }
@@ -153,18 +150,13 @@ class ChainHandler(
 
         createdF.map { headers =>
           if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
-            headersToBeCreated.reverseIterator.foldLeft(Future.unit) {
-              (acc, header) =>
-                for {
-                  _ <- acc
-                  _ <-
-                    chainConfig.chainCallbacks
-                      .executeOnBlockHeaderConnectedCallbacks(
-                        logger,
-                        header.height,
-                        header.blockHeader)
-                } yield ()
-            }
+            val headersWithHeight: Vector[(Int, BlockHeader)] = {
+              headersToBeCreated.reverseIterator.map(h =>
+                (h.height, h.blockHeader))
+            }.toVector
+
+            chainConfig.chainCallbacks
+              .executeOnBlockHeaderConnectedCallbacks(logger, headersWithHeight)
           }
           chains.foreach { c =>
             logger.info(
