@@ -171,6 +171,35 @@ object DLCMessage {
     }
   }
 
+  /** DLC Accept message that contains refund signatures, but does not contain cet signatures */
+  case class DLCAcceptWithoutCetSigs(
+      totalCollateral: Satoshis,
+      pubKeys: DLCPublicKeys,
+      fundingInputs: Vector[DLCFundingInput],
+      changeAddress: BitcoinAddress,
+      payoutSerialId: UInt64,
+      changeSerialId: UInt64,
+      refundSig: PartialSignature,
+      negotiationFields: DLCAccept.NegotiationFields,
+      tempContractId: Sha256Digest) {
+
+    def withCetSigs(cetSigs: CETSignatures): DLCAccept = {
+      DLCAccept(
+        totalCollateral = totalCollateral,
+        pubKeys = pubKeys,
+        fundingInputs = fundingInputs,
+        changeAddress = changeAddress,
+        payoutSerialId = payoutSerialId,
+        changeSerialId = changeSerialId,
+        cetSigs = cetSigs,
+        refundSig = refundSig,
+        negotiationFields = negotiationFields,
+        tempContractId = tempContractId
+      )
+    }
+  }
+
+  /** DLC accept message that does not contain cet signatures or refund signatures */
   case class DLCAcceptWithoutSigs(
       totalCollateral: Satoshis,
       pubKeys: DLCPublicKeys,
@@ -180,6 +209,20 @@ object DLCMessage {
       changeSerialId: UInt64,
       negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest) {
+
+    def withRefundSigs(refundSig: PartialSignature): DLCAcceptWithoutCetSigs = {
+      DLCAcceptWithoutCetSigs(
+        totalCollateral = totalCollateral,
+        pubKeys = pubKeys,
+        fundingInputs = fundingInputs,
+        changeAddress = changeAddress,
+        payoutSerialId = payoutSerialId,
+        changeSerialId = changeSerialId,
+        refundSig = refundSig,
+        negotiationFields = negotiationFields,
+        tempContractId = tempContractId
+      )
+    }
 
     def withSigs(
         cetSigs: CETSignatures,
@@ -245,6 +288,20 @@ object DLCMessage {
         changeAddress = changeAddress,
         payoutSerialId = payoutSerialId,
         changeSerialId = changeSerialId,
+        negotiationFields = negotiationFields,
+        tempContractId = tempContractId
+      )
+    }
+
+    def withoutCetSigs: DLCAcceptWithoutCetSigs = {
+      DLCAcceptWithoutCetSigs(
+        totalCollateral = totalCollateral,
+        pubKeys = pubKeys,
+        fundingInputs = fundingInputs,
+        changeAddress = changeAddress,
+        payoutSerialId = payoutSerialId,
+        changeSerialId = changeSerialId,
+        refundSig = refundSig,
         negotiationFields = negotiationFields,
         tempContractId = tempContractId
       )
