@@ -947,8 +947,7 @@ abstract class DLCWallet
             val cetSigsF = getCetSigs(signer = signer,
                                       contractId = contractId,
                                       cetSigsDbs = cetSigsDbs,
-                                      mySigs = mySigs,
-                                      refundSigsDb = refundSigsDb)
+                                      mySigs = mySigs)
             cetSigsF.map(Some(_))
           case None =>
             Future.successful(None)
@@ -981,7 +980,8 @@ abstract class DLCWallet
         (db.outPoint, sig)
       }
 
-      updatedRefundSigsDb = refundSigsDb.copy(initiatorSig = signerOpt.map(_.signRefundTx))
+      updatedRefundSigsDb = refundSigsDb.copy(initiatorSig =
+        signerOpt.map(_.signRefundTx))
       _ <- dlcRefundSigDAO.update(updatedRefundSigsDb)
 
       _ <- updateDLCState(dlc.contractIdOpt.get, DLCState.Signed)
@@ -990,7 +990,10 @@ abstract class DLCWallet
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield {
       //?? is signer.signRefundTx persisted anywhere ??
-      DLCSign(cetSigs, signerOpt.map(_.signRefundTx).get, FundingSignatures(sortedSigVec), contractId)
+      DLCSign(cetSigs,
+              signerOpt.map(_.signRefundTx).get,
+              FundingSignatures(sortedSigVec),
+              contractId)
     }
   }
 
@@ -998,8 +1001,7 @@ abstract class DLCWallet
       signer: DLCTxSigner,
       contractId: ByteVector,
       cetSigsDbs: Vector[DLCCETSignaturesDb],
-      mySigs: Vector[DLCCETSignaturesDb],
-      refundSigsDb: DLCRefundSigsDb): Future[CETSignatures] = {
+      mySigs: Vector[DLCCETSignaturesDb]): Future[CETSignatures] = {
     if (mySigs.forall(_.initiatorSig.isEmpty)) {
       logger.info(s"Creating CET Sigs for contract ${contractId.toHex}")
       for {
@@ -1019,12 +1021,7 @@ abstract class DLCWallet
         dbSig.sigPoint -> dbSig.initiatorSig.get
       }
 
-      val signatures = refundSigsDb.initiatorSig match {
-        case Some(sig) =>
-          CETSignatures(outcomeSigs, sig)
-        case None =>
-          CETSignatures(outcomeSigs, signer.signRefundTx)
-      }
+      val signatures = CETSignatures(outcomeSigs)
       Future.successful(signatures)
     }
   }

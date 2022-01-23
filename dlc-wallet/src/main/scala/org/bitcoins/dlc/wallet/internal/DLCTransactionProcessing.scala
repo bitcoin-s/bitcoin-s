@@ -167,15 +167,25 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           val fundingInputDbs = acceptDbState.allFundingInputs
           val offerRefundSigOpt = refundSigsDb.flatMap(_.initiatorSig)
 
-          val sign: DLCSign = buildSignMessage(
-            dlcDb = dlcDb,
-            sigDbs = sigDbs,
-            offerRefundSigOpt = offerRefundSigOpt,
-            fundingInputDbs = fundingInputDbs
-          )
-
-          acceptOpt.flatMap(accept =>
-            DLCStatus.calculateOutcomeAndSig(isInit, offer, accept, sign, cet))
+          val signOpt: Option[DLCSign] = offerRefundSigOpt.map { refundSig =>
+            buildSignMessage(
+              dlcDb = dlcDb,
+              sigDbs = sigDbs,
+              offerRefundSig = refundSig,
+              fundingInputDbs = fundingInputDbs
+            )
+          }
+          for {
+            accept <- acceptOpt
+            sign <- signOpt
+            sigsAndOutcomeOpt <- DLCStatus.calculateOutcomeAndSig(isInit,
+                                                                  offer,
+                                                                  accept,
+                                                                  sign,
+                                                                  cet)
+          } yield {
+            sigsAndOutcomeOpt
+          }
         }
         sigOpt = sigAndOutcomeOpt.map(_._1)
         outcomeOpt = sigAndOutcomeOpt.map(_._2)
@@ -336,15 +346,14 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   private def buildSignMessage(
       dlcDb: DLCDb,
       sigDbs: Vector[DLCCETSignaturesDb],
-      offerRefundSigOpt: Option[PartialSignature],
+      offerRefundSig: PartialSignature,
       fundingInputDbs: Vector[DLCFundingInputDb]): DLCSign = {
     {
       //if we don't have an acceptOpt because we don't have CET sigs
       //how are we getting them here?
       val cetSigs: CETSignatures =
         CETSignatures(
-          sigDbs.map(dbSig => (dbSig.sigPoint, dbSig.initiatorSig.get)),
-          offerRefundSigOpt.get)
+          sigDbs.map(dbSig => (dbSig.sigPoint, dbSig.initiatorSig.get)))
 
       val contractId = dlcDb.contractIdOpt.get
       val fundingSigs =
@@ -364,7 +373,10 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             }
           }
 
-      DLCSign(cetSigs, FundingSignatures(fundingSigs), contractId)
+      DLCSign(cetSigs,
+              offerRefundSig,
+              FundingSignatures(fundingSigs),
+              contractId)
     }
   }
 }

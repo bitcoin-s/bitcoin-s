@@ -276,16 +276,19 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       } yield {
         dlcAcceptOpt match {
           case Some(dlcAccept) =>
+            require(
+              refundSigsOpt.isDefined,
+              s"Cannot have accept in the database if we do not have refund signatures, dlcId=${dlcId.hex}")
             val outcomeSigs = cetSignatures.map { dbSig =>
               dbSig.sigPoint -> dbSig.accepterSig
             }
-            val signaturesOpt = refundSigsOpt.flatMap { refundSigs =>
+            val signaturesOpt = {
               if (cetSignatures.isEmpty) {
                 //means we have pruned signatures from the database
                 //we have to return None
                 None
               } else {
-                val sigs = CETSignatures(outcomeSigs, refundSigs.accepterSig)
+                val sigs = CETSignatures(outcomeSigs)
                 Some(sigs)
               }
             }
@@ -293,10 +296,13 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
               getAcceptPrevTxs(offerDbState.dlcDb, acceptInputs, txDAO)
 
             acceptPrevTxsDbF.map { case acceptPrevTxs =>
-              offerDbState.toAcceptDb(acceptDb = dlcAccept,
-                                      acceptFundingInputsDb = acceptInputs,
-                                      acceptPrevTxsDb = acceptPrevTxs,
-                                      cetSignaturesOpt = signaturesOpt)
+              offerDbState.toAcceptDb(
+                acceptDb = dlcAccept,
+                acceptFundingInputsDb = acceptInputs,
+                acceptPrevTxsDb = acceptPrevTxs,
+                cetSignaturesOpt = signaturesOpt,
+                refundSig = refundSigsOpt.get.accepterSig
+              )
             }
           case None =>
             //just return the offerDbState if we don't have an accept
@@ -631,7 +637,10 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                   case None => throw new RuntimeException("")
                 }
               }
-          executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs), None)
+          executor.setupDLCAccept(cetSigs,
+                                  refundSig,
+                                  FundingSignatures(fundingSigs),
+                                  None)
         }
 
         val x: Try[DLCExecutorWithSetup] =

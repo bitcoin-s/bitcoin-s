@@ -17,6 +17,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   DLCFundingInput,
   DLCState
 }
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.dlc.wallet.util.DLCTxUtil
 
 /** Super trait to represent the state of a DLC in the database */
@@ -78,7 +79,8 @@ case class OfferedDbState(
       acceptDb: DLCAcceptDb,
       acceptFundingInputsDb: Vector[DLCFundingInputDb],
       acceptPrevTxsDb: Vector[TransactionDb],
-      cetSignaturesOpt: Option[CETSignatures]): AcceptDbState = {
+      cetSignaturesOpt: Option[CETSignatures],
+      refundSig: PartialSignature): AcceptDbState = {
     AcceptDbState(
       dlcDb = dlcDb,
       contractDataDb = contractDataDb,
@@ -89,7 +91,8 @@ case class OfferedDbState(
       offerPrevTxs = offerPrevTxs,
       acceptFundingInputsDb = acceptFundingInputsDb,
       acceptPrevTxs = acceptPrevTxsDb,
-      cetSignaturesOpt = cetSignaturesOpt
+      cetSignaturesOpt = cetSignaturesOpt,
+      refundSig = refundSig
     )
   }
 }
@@ -104,7 +107,8 @@ case class AcceptDbState(
     offerPrevTxs: Vector[TransactionDb],
     acceptFundingInputsDb: Vector[DLCFundingInputDb],
     acceptPrevTxs: Vector[TransactionDb],
-    cetSignaturesOpt: Option[CETSignatures])
+    cetSignaturesOpt: Option[CETSignatures],
+    refundSig: PartialSignature)
     extends DLCSetupDbState {
   //require(dlcDb.state == DLCState.Accepted,
   //        s"OfferedDbState requires state accepted, got=${dlcDb.state}")
@@ -144,7 +148,7 @@ case class AcceptDbState(
       acceptDb.toDLCAccept(dlcDb.tempContractId,
                            acceptFundingInputs,
                            outcomeSigs = cetSignatures.outcomeSigs,
-                           refundSig = cetSignatures.refundSig)
+                           refundSig = refundSig)
     }
   }
 }
