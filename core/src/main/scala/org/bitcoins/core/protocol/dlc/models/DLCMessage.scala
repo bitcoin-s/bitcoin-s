@@ -171,6 +171,35 @@ object DLCMessage {
     }
   }
 
+  /** DLC Accept message that contains refund signatures, but does not contain cet signatures */
+  case class DLCAcceptWithoutCetSigs(
+      totalCollateral: Satoshis,
+      pubKeys: DLCPublicKeys,
+      fundingInputs: Vector[DLCFundingInput],
+      changeAddress: BitcoinAddress,
+      payoutSerialId: UInt64,
+      changeSerialId: UInt64,
+      refundSig: PartialSignature,
+      negotiationFields: DLCAccept.NegotiationFields,
+      tempContractId: Sha256Digest) {
+
+    def withCetSigs(cetSigs: CETSignatures): DLCAccept = {
+      DLCAccept(
+        totalCollateral = totalCollateral,
+        pubKeys = pubKeys,
+        fundingInputs = fundingInputs,
+        changeAddress = changeAddress,
+        payoutSerialId = payoutSerialId,
+        changeSerialId = changeSerialId,
+        cetSigs = cetSigs,
+        refundSig = refundSig,
+        negotiationFields = negotiationFields,
+        tempContractId = tempContractId
+      )
+    }
+  }
+
+  /** DLC accept message that does not contain cet signatures or refund signatures */
   case class DLCAcceptWithoutSigs(
       totalCollateral: Satoshis,
       pubKeys: DLCPublicKeys,
@@ -181,7 +210,23 @@ object DLCMessage {
       negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest) {
 
-    def withSigs(cetSigs: CETSignatures): DLCAccept = {
+    def withRefundSigs(refundSig: PartialSignature): DLCAcceptWithoutCetSigs = {
+      DLCAcceptWithoutCetSigs(
+        totalCollateral = totalCollateral,
+        pubKeys = pubKeys,
+        fundingInputs = fundingInputs,
+        changeAddress = changeAddress,
+        payoutSerialId = payoutSerialId,
+        changeSerialId = changeSerialId,
+        refundSig = refundSig,
+        negotiationFields = negotiationFields,
+        tempContractId = tempContractId
+      )
+    }
+
+    def withSigs(
+        cetSigs: CETSignatures,
+        refundSig: PartialSignature): DLCAccept = {
       DLCAccept(
         totalCollateral = totalCollateral,
         pubKeys = pubKeys,
@@ -190,6 +235,7 @@ object DLCMessage {
         payoutSerialId = payoutSerialId,
         changeSerialId = changeSerialId,
         cetSigs = cetSigs,
+        refundSig = refundSig,
         negotiationFields = negotiationFields,
         tempContractId = tempContractId
       )
@@ -204,6 +250,7 @@ object DLCMessage {
       payoutSerialId: UInt64,
       changeSerialId: UInt64,
       cetSigs: CETSignatures,
+      refundSig: PartialSignature,
       negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest)
       extends DLCSetupMessage {
@@ -223,8 +270,8 @@ object DLCMessage {
         changeSPK = changeAddress.scriptPubKey,
         changeSerialId = changeSerialId,
         cetSignatures = CETSignaturesV0TLV(cetSigs.adaptorSigs),
-        refundSignature = ECDigitalSignature.fromFrontOfBytes(
-          cetSigs.refundSig.signature.bytes),
+        refundSignature =
+          ECDigitalSignature.fromFrontOfBytes(refundSig.signature.bytes),
         negotiationFields = negotiationFields.toTLV
       )
     }
@@ -241,6 +288,20 @@ object DLCMessage {
         changeAddress = changeAddress,
         payoutSerialId = payoutSerialId,
         changeSerialId = changeSerialId,
+        negotiationFields = negotiationFields,
+        tempContractId = tempContractId
+      )
+    }
+
+    def withoutCetSigs: DLCAcceptWithoutCetSigs = {
+      DLCAcceptWithoutCetSigs(
+        totalCollateral = totalCollateral,
+        pubKeys = pubKeys,
+        fundingInputs = fundingInputs,
+        changeAddress = changeAddress,
+        payoutSerialId = payoutSerialId,
+        changeSerialId = changeSerialId,
+        refundSig = refundSig,
         negotiationFields = negotiationFields,
         tempContractId = tempContractId
       )
@@ -300,6 +361,11 @@ object DLCMessage {
           adaptorPoints.zip(sigs)
       }
 
+      //add hashtype
+      val refundSigWithHashType = {
+        ECDigitalSignature.fromBytes(
+          accept.refundSignature.bytes.:+(HashType.sigHashAllByte))
+      }
       DLCAccept(
         totalCollateral = accept.totalCollateralSatoshis,
         pubKeys = DLCPublicKeys(
@@ -312,12 +378,11 @@ object DLCMessage {
           BitcoinAddress.fromScriptPubKey(accept.changeSPK, network),
         payoutSerialId = accept.payoutSerialId,
         changeSerialId = accept.changeSerialId,
-        cetSigs = CETSignatures(
-          outcomeSigs,
-          PartialSignature(
-            accept.fundingPubKey,
-            ECDigitalSignature(
-              accept.refundSignature.bytes :+ HashType.sigHashAll.byte))),
+        cetSigs = CETSignatures(outcomeSigs),
+        refundSig = PartialSignature(
+          pubKey = accept.fundingPubKey,
+          signature = refundSigWithHashType
+        ),
         negotiationFields = NegotiationFields.fromTLV(accept.negotiationFields),
         tempContractId = accept.tempContractId
       )
@@ -343,6 +408,7 @@ object DLCMessage {
 
   case class DLCSign(
       cetSigs: CETSignatures,
+      refundSig: PartialSignature,
       fundingSigs: FundingSignatures,
       contractId: ByteVector)
       extends DLCMessage {
@@ -351,8 +417,8 @@ object DLCMessage {
       DLCSignTLV(
         contractId = contractId,
         cetSignatures = CETSignaturesV0TLV(cetSigs.adaptorSigs),
-        refundSignature = ECDigitalSignature.fromFrontOfBytes(
-          cetSigs.refundSig.signature.bytes),
+        refundSignature =
+          ECDigitalSignature.fromFrontOfBytes(refundSig.signature.bytes),
         fundingSignatures = fundingSigs.toTLV
       )
     }
@@ -380,13 +446,13 @@ object DLCMessage {
 
       val fundingSigs = fundingOutPoints.zip(sigs)
 
+      val refundSig = PartialSignature(
+        fundingPubKey,
+        ECDigitalSignature(
+          sign.refundSignature.bytes :+ HashType.sigHashAll.byte))
       DLCSign(
-        cetSigs = CETSignatures(
-          outcomeSigs,
-          PartialSignature(
-            fundingPubKey,
-            ECDigitalSignature(
-              sign.refundSignature.bytes :+ HashType.sigHashAll.byte))),
+        cetSigs = CETSignatures(outcomeSigs),
+        refundSig = refundSig,
         fundingSigs = FundingSignatures(fundingSigs),
         contractId = sign.contractId
       )

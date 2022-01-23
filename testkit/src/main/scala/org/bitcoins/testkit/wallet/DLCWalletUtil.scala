@@ -110,6 +110,10 @@ object DLCWalletUtil extends Logging {
   lazy val dummyPartialSig: PartialSignature =
     PartialSignature(dummyKey, DummyECDigitalSignature)
 
+  lazy val minimalPartialSig: PartialSignature = {
+    PartialSignature(dummyKey, ECDigitalSignature.minimalEncodedZeroSig)
+  }
+
   lazy val dummyScriptWitness: P2WPKHWitnessV0 = {
     P2WPKHWitnessV0(dummyPartialSig.pubKey, dummyPartialSig.signature)
   }
@@ -174,7 +178,7 @@ object DLCWalletUtil extends Logging {
     )
 
   lazy val dummyCETSigs: CETSignatures =
-    CETSignatures(dummyOutcomeSigs, dummyPartialSig)
+    CETSignatures(dummyOutcomeSigs)
 
   lazy val sampleAcceptPayoutSerialId: UInt64 =
     DLCMessage.genSerialId(Vector(sampleOfferPayoutSerialId))
@@ -190,6 +194,7 @@ object DLCWalletUtil extends Logging {
     payoutSerialId = sampleAcceptPayoutSerialId,
     changeSerialId = sampleAcceptChangeSerialId,
     cetSigs = dummyCETSigs,
+    dummyPartialSig,
     negotiationFields = DLCAccept.NoNegotiationFields,
     tempContractId = sampleDLCOffer.tempContractId
   )
@@ -199,7 +204,10 @@ object DLCWalletUtil extends Logging {
       (TransactionOutPoint(dummyBlockHash, UInt32.zero), dummyScriptWitness)))
 
   lazy val sampleDLCSign: DLCSign =
-    DLCSign(dummyCETSigs, dummyFundingSignatures, ByteVector.empty)
+    DLCSign(dummyCETSigs,
+            dummyPartialSig,
+            dummyFundingSignatures,
+            ByteVector.empty)
 
   lazy val sampleDLCDb: DLCDb = DLCDb(
     dlcId = Sha256Digest(

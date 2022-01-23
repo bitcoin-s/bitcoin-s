@@ -130,7 +130,10 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     }
   }
 
-  /** Reads a (DER encoded) ECDigitalSignature from the front of a ByteVector */
+  /** Reads a (DER encoded) ECDigitalSignature from the front of a ByteVector
+    * This method is also useful if you want to parse a ecdsa digital signature
+    * but remove the [[HashType]] that the bitcoin protocol appends to the end of a signature
+    */
   def fromFrontOfBytes(bytes: ByteVector): ECDigitalSignature = {
     val sigWithExtra = fromBytes(bytes)
     val sig = fromRS(sigWithExtra.r, sigWithExtra.s)
@@ -196,4 +199,10 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     val bytes = CryptoBytesUtil.decodeHex(hex)
     fromRS(bytes)
   }
+
+  /** Minimally encoded zero signature
+    * This will NOT be 64 bytes in length, it will be much less
+    * due to the DER encoding
+    */
+  val minimalEncodedZeroSig: ECDigitalSignature = fromRS(0, 0)
 }

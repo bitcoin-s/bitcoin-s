@@ -13,6 +13,7 @@ import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.{NumericDLCOutcomeType, _}
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.sorted.OrderedAnnouncements
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, NumberUtil}
@@ -649,18 +650,25 @@ trait DLCTest {
       fundingTxF: Future[SetupDLC] => Future[Transaction],
       publishTransaction: Transaction => Future[_])(implicit
       ec: ExecutionContext): Future[(SetupDLC, SetupDLC)] = {
-    val offerSigReceiveP =
-      Promise[CETSignatures]()
-    val sendAcceptSigs = { sigs: CETSignatures =>
-      val _ = offerSigReceiveP.success(sigs)
-      FutureUtil.unit
+    val offerSigReceiveP = {
+      Promise[(CETSignatures, PartialSignature)]()
+    }
+    val sendAcceptSigs: (CETSignatures, PartialSignature) => Future[Unit] = {
+      case (cetSigs: CETSignatures, refundSig: PartialSignature) =>
+        val _ = offerSigReceiveP.success((cetSigs, refundSig))
+        FutureUtil.unit
     }
 
-    val acceptSigReceiveP =
-      Promise[(CETSignatures, FundingSignatures)]()
+    val acceptSigReceiveP = {
+      Promise[(CETSignatures, PartialSignature, FundingSignatures)]()
+    }
+
     val sendOfferSigs = {
-      (cetSigs: CETSignatures, fundingSigs: FundingSignatures) =>
-        val _ = acceptSigReceiveP.success((cetSigs, fundingSigs))
+      (
+          cetSigs: CETSignatures,
+          refundSig: PartialSignature,
+          fundingSigs: FundingSignatures) =>
+        val _ = acceptSigReceiveP.success((cetSigs, refundSig, fundingSigs))
         FutureUtil.unit
     }
 
@@ -1183,11 +1191,11 @@ trait DLCTest {
     val acceptAdaptorSigs = offerSetup.cets.map { case (outcome, info) =>
       (outcome, info.remoteSignature)
     }
-    val acceptCETSigs = CETSignatures(acceptAdaptorSigs, acceptRefundSig)
+    val acceptCETSigs = CETSignatures(acceptAdaptorSigs)
     val offerAdaptorSigs = acceptSetup.cets.map { case (outcome, info) =>
       (outcome, info.remoteSignature)
     }
-    val offerCETSigs = CETSignatures(offerAdaptorSigs, offerRefundSig)
+    val offerCETSigs = CETSignatures(offerAdaptorSigs)
 
     for {
       offerFundingSigs <- Future.fromTry(dlcOffer.dlcTxSigner.signFundingTx())
@@ -1201,8 +1209,9 @@ trait DLCTest {
         .xor(dlcAccept.accept.tempContractId.bytes)
 
       val offer = dlcOffer.offer
-      val accept = dlcOffer.accept.withSigs(acceptCETSigs)
-      val sign = DLCSign(offerCETSigs, offerFundingSigs, contractId)
+      val accept = dlcOffer.accept.withSigs(acceptCETSigs, acceptRefundSig)
+      val sign =
+        DLCSign(offerCETSigs, offerRefundSig, offerFundingSigs, contractId)
 
       val (offerOracleSig, offerDLCOutcome) =
         DLCStatus

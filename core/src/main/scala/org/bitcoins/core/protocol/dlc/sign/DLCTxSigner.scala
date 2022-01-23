@@ -202,9 +202,8 @@ case class DLCTxSigner(
   def createCETSigs(): CETSignatures = {
     val adaptorPoints = builder.contractInfo.adaptorPointsIndexed
     val cetSigs = signCETs(adaptorPoints)
-    val refundSig = signRefundTx
 
-    CETSignatures(cetSigs, refundSig)
+    CETSignatures(cetSigs)
   }
 
   /** Creates CET signatures async */
@@ -232,8 +231,7 @@ case class DLCTxSigner(
 
     for {
       cetSigs <- cetSigsF
-      refundSig = signRefundTx
-    } yield CETSignatures(cetSigs, refundSig)
+    } yield CETSignatures(cetSigs)
   }
 
   /** Creates all of this party's CETSignatures */
@@ -241,9 +239,8 @@ case class DLCTxSigner(
     val adaptorPoints = builder.contractInfo.adaptorPointsIndexed
     val cetsAndSigs = buildAndSignCETs(adaptorPoints)
     val (msgs, cets, sigs) = cetsAndSigs.unzip3
-    val refundSig = signRefundTx
 
-    (CETSignatures(msgs.zip(sigs), refundSig), cets)
+    (CETSignatures(msgs.zip(sigs)), cets)
   }
 
   /** The equivalent of [[createCETsAndCETSigs()]] but async */
@@ -264,22 +261,19 @@ case class DLCTxSigner(
         f = fn)
     }
 
-    val refundSig = signRefundTx
-
     for {
       cetsAndSigsNested <- cetsAndSigsF
       cetsAndSigs = cetsAndSigsNested.flatten
       (msgs, cets, sigs) = cetsAndSigs.unzip3
-    } yield (CETSignatures(msgs.zip(sigs), refundSig), cets)
+    } yield (CETSignatures(msgs.zip(sigs)), cets)
   }
 
   /** Creates this party's CETSignatures given the outcomes and their unsigned CETs */
   def createCETSigs(
       outcomesAndCETs: Vector[AdaptorPointCETPair]): CETSignatures = {
     val cetSigs = signGivenCETs(outcomesAndCETs)
-    val refundSig = signRefundTx
 
-    CETSignatures(cetSigs, refundSig)
+    CETSignatures(cetSigs)
   }
 }
 

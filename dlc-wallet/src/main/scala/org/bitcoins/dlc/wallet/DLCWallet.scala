@@ -682,7 +682,7 @@ abstract class DLCWallet
 
       _ = logger.info(s"Creating CET Sigs for ${contractId.toHex}")
       cetSigs <- signer.createCETSigsAsync()
-
+      refundSig = signer.signRefundTx
       _ = logger.debug(
         s"DLC Accept data collected, creating database entry, ${dlc.dlcId.hex}")
 
@@ -702,7 +702,7 @@ abstract class DLCWallet
       }
 
       refundSigsDb =
-        DLCRefundSigsDb(dlc.dlcId, cetSigs.refundSig, None)
+        DLCRefundSigsDb(dlc.dlcId, refundSig, None)
 
       dlcOfferDb = DLCOfferDbHelper.fromDLCOffer(dlc.dlcId, offer)
 
@@ -746,7 +746,7 @@ abstract class DLCWallet
         dlcAcceptDb.toDLCAccept(dlc.tempContractId,
                                 utxos,
                                 cetSigs.outcomeSigs,
-                                cetSigs.refundSig)
+                                refundSig)
 
       _ = require(accept.tempContractId == offer.tempContractId,
                   "Offer and Accept have differing tempContractIds!")
@@ -827,7 +827,7 @@ abstract class DLCWallet
         }
 
         lazy val refundSigsDb =
-          DLCRefundSigsDb(dlcId, accept.cetSigs.refundSig, None)
+          DLCRefundSigsDb(dlcId, accept.refundSig, None)
 
         logger.info(
           s"Verifying ${accept.cetSigs.outcomeSigs.size} CET Signatures")
@@ -839,7 +839,7 @@ abstract class DLCWallet
           isRefundSigValid <- verifyRefundSig(accept)
           _ = if (!isRefundSigValid)
             throw new IllegalArgumentException(
-              s"Refund sig provided is not valid! got ${accept.cetSigs.refundSig}")
+              s"Refund sig provided is not valid! got ${accept.refundSig}")
 
           _ = logger.debug(
             s"CET Signatures for tempContractId ${accept.tempContractId.hex} were valid, adding to database")
@@ -943,6 +943,12 @@ abstract class DLCWallet
 
       mySigs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
       refundSigsDb <- dlcRefundSigDAO.findByDLCId(dlc.dlcId).map(_.head)
+      refundSig = {
+        refundSigsDb.initiatorSig match {
+          case Some(sig) => sig
+          case None      => signer.signRefundTx
+        }
+      }
       cetSigs <-
         if (mySigs.forall(_.initiatorSig.isEmpty)) {
           logger.info(s"Creating CET Sigs for contract ${contractId.toHex}")
@@ -963,12 +969,8 @@ abstract class DLCWallet
             dbSig.sigPoint -> dbSig.initiatorSig.get
           }
 
-          val signatures = refundSigsDb.initiatorSig match {
-            case Some(sig) =>
-              CETSignatures(outcomeSigs, sig)
-            case None =>
-              CETSignatures(outcomeSigs, signer.signRefundTx)
-          }
+          val signatures = CETSignatures(outcomeSigs)
+
           Future.successful(signatures)
         }
 
@@ -982,15 +984,17 @@ abstract class DLCWallet
         (db.outPoint, sig)
       }
 
-      updatedRefundSigsDb = refundSigsDb.copy(initiatorSig =
-        Some(cetSigs.refundSig))
+      updatedRefundSigsDb = refundSigsDb.copy(initiatorSig = Some(refundSig))
       _ <- dlcRefundSigDAO.update(updatedRefundSigsDb)
 
       _ <- updateDLCState(dlc.contractIdOpt.get, DLCState.Signed)
       _ = logger.info(s"DLC ${contractId.toHex} is signed")
       status <- findDLC(dlcId)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
-    } yield DLCSign(cetSigs, FundingSignatures(sortedSigVec), contractId)
+    } yield {
+      //?? is signer.signRefundTx persisted anywhere ??
+      DLCSign(cetSigs, refundSig, FundingSignatures(sortedSigVec), contractId)
+    }
   }
 
   def verifyCETSigs(accept: DLCAccept): Future[Boolean] = {
@@ -1009,7 +1013,7 @@ abstract class DLCWallet
   def verifyRefundSig(accept: DLCAccept): Future[Boolean] = {
     val verifierF = dlcDataManagement.verifierFromAccept(accept, transactionDAO)
 
-    verifierF.map(_.verifyRefundSig(accept.cetSigs.refundSig))
+    verifierF.map(_.verifyRefundSig(accept.refundSig))
   }
 
   def verifyRefundSig(sign: DLCSign): Future[Boolean] = {
@@ -1018,7 +1022,7 @@ abstract class DLCWallet
       transactionDAO = transactionDAO,
       remoteTxDAO = remoteTxDAO)
 
-    verifierF.map(_.verifyRefundSig(sign.cetSigs.refundSig))
+    verifierF.map(_.verifyRefundSig(sign.refundSig))
   }
 
   def verifyFundingSigs(
@@ -1121,7 +1125,7 @@ abstract class DLCWallet
               isRefundSigValid <- verifyRefundSig(sign)
               _ = if (!isRefundSigValid)
                 throw new IllegalArgumentException(
-                  s"Refund sig provided is not valid! got ${sign.cetSigs.refundSig}")
+                  s"Refund sig provided is not valid! got ${sign.refundSig}")
 
               isCETSigsValid <- verifyCETSigs(sign)
               _ = if (!isCETSigsValid)
@@ -1132,7 +1136,7 @@ abstract class DLCWallet
               sigsDbs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
 
               updatedRefund = refundSigsDb.copy(initiatorSig =
-                Some(sign.cetSigs.refundSig))
+                Some(sign.refundSig))
               updatedSigsDbs = sigsDbs
                 .sortBy(_.index)
                 .zip(sign.cetSigs.outcomeSigs)

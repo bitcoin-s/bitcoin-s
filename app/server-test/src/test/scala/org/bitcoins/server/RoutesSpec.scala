@@ -1013,7 +1013,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .fromString(dummyAddress),
       payoutSerialId = UInt64.zero,
       changeSerialId = UInt64.zero,
-      cetSigs = CETSignatures(dummyOutcomeSigs, dummyPartialSig),
+      cetSigs = CETSignatures(dummyOutcomeSigs),
+      refundSig = DLCWalletUtil.minimalPartialSig,
       negotiationFields = DLCAccept.NoNegotiationFields,
       tempContractId = Sha256Digest.empty
     )
@@ -1035,7 +1036,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     val sign = DLCSign(
-      CETSignatures(dummyOutcomeSigs, dummyPartialSig),
+      CETSignatures(dummyOutcomeSigs),
+      dummyPartialSig,
       FundingSignatures(Vector((EmptyTransactionOutPoint, dummyScriptWitness))),
       paramHash.bytes
     )

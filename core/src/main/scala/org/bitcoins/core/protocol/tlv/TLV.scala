@@ -17,6 +17,7 @@ import org.bitcoins.core.protocol.tlv.TLV.{
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BigSizeUInt, BlockTimeStamp}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.sorted.{OrderedAnnouncements, OrderedNonces}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -1892,6 +1893,10 @@ case class DLCAcceptTLV(
       refundSignature.toRawRS ++
       negotiationFields.bytes
   }
+
+  val refundPartialSignature: PartialSignature = {
+    PartialSignature(fundingPubKey, refundSignature)
+  }
 }
 
 object DLCAcceptTLV extends TLVFactory[DLCAcceptTLV] {
@@ -1944,6 +1949,10 @@ case class DLCSignTLV(
       cetSignatures.bytes ++
       refundSignature.toRawRS ++
       fundingSignatures.bytes
+  }
+
+  def getPartialSignature(fundingPubKey: ECPublicKey): PartialSignature = {
+    PartialSignature(fundingPubKey, refundSignature)
   }
 }
 
