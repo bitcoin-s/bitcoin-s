@@ -274,8 +274,9 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       for {
         offerDbState <- offerDbStateOpt
       } yield {
-        dlcAcceptOpt match {
-          case Some(dlcAccept) =>
+        //if the accept message is defined we must have refund sigs
+        dlcAcceptOpt.zip(refundSigsOpt) match {
+          case Some((dlcAccept, refundSigDb)) =>
             require(
               refundSigsOpt.isDefined,
               s"Cannot have accept in the database if we do not have refund signatures, dlcId=${dlcId.hex}")
@@ -301,7 +302,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                 acceptFundingInputsDb = acceptInputs,
                 acceptPrevTxsDb = acceptPrevTxs,
                 cetSignaturesOpt = signaturesOpt,
-                refundSig = refundSigsOpt.get.accepterSig
+                refundSigDb = refundSigDb
               )
             }
           case None =>
@@ -337,24 +338,18 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   private[wallet] def getAllDLCData(
       dlcId: Sha256Digest,
       txDAO: TransactionDAO): Future[Option[DLCClosedDbState]] = {
-    val safeDatabase = dlcRefundSigDAO.safeDatabase
-    val refundSigDLCs = dlcRefundSigDAO.findByDLCIdAction(dlcId)
-    val sigDLCs = dlcSigsDAO.findByDLCIdAction(dlcId)
+    val sigDLCsF = dlcSigsDAO.findByDLCId(dlcId)
 
-    val refundAndOutcomeSigsAction =
-      refundSigDLCs.flatMap(r => sigDLCs.map(s => (r, s)))
-    val refundAndOutcomeSigsF = safeDatabase.run(refundAndOutcomeSigsAction)
     for {
       setupStateOpt <- getDLCFundingData(dlcId, txDAO)
-      (refundSigsOpt, outcomeSigs) <- refundAndOutcomeSigsF
+      sigs <- sigDLCsF
     } yield {
-      val sigsOpt = if (outcomeSigs.isEmpty) None else Some(outcomeSigs)
+      //check if we have pruned signatures
+      val sigsOpt = if (sigs.isEmpty) None else Some(sigs)
       val closedState = setupStateOpt.flatMap {
         case acceptState: AcceptDbState =>
-          //need to fix the refundSigsOpt.get ...
-          val closedState = DLCClosedDbState.fromSetupState(acceptState,
-                                                            refundSigsOpt.get,
-                                                            sigsOpt)
+          val closedState =
+            DLCClosedDbState.fromSetupState(acceptState, sigsOpt)
           Some(closedState)
         case _: OfferedDbState =>
           //cannot return a closed state because we haven't seen the accept message

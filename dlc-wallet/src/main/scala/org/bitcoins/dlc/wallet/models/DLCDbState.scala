@@ -17,7 +17,6 @@ import org.bitcoins.core.protocol.dlc.models.{
   DLCFundingInput,
   DLCState
 }
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.dlc.wallet.util.DLCTxUtil
 
 /** Super trait to represent the state of a DLC in the database */
@@ -80,7 +79,7 @@ case class OfferedDbState(
       acceptFundingInputsDb: Vector[DLCFundingInputDb],
       acceptPrevTxsDb: Vector[TransactionDb],
       cetSignaturesOpt: Option[CETSignatures],
-      refundSig: PartialSignature): AcceptDbState = {
+      refundSigDb: DLCRefundSigsDb): AcceptDbState = {
     AcceptDbState(
       dlcDb = dlcDb,
       contractDataDb = contractDataDb,
@@ -92,7 +91,7 @@ case class OfferedDbState(
       acceptFundingInputsDb = acceptFundingInputsDb,
       acceptPrevTxs = acceptPrevTxsDb,
       cetSignaturesOpt = cetSignaturesOpt,
-      refundSig = refundSig
+      refundSigDb = refundSigDb
     )
   }
 }
@@ -108,7 +107,7 @@ case class AcceptDbState(
     acceptFundingInputsDb: Vector[DLCFundingInputDb],
     acceptPrevTxs: Vector[TransactionDb],
     cetSignaturesOpt: Option[CETSignatures],
-    refundSig: PartialSignature)
+    refundSigDb: DLCRefundSigsDb)
     extends DLCSetupDbState {
   //require(dlcDb.state == DLCState.Accepted,
   //        s"OfferedDbState requires state accepted, got=${dlcDb.state}")
@@ -148,7 +147,7 @@ case class AcceptDbState(
       acceptDb.toDLCAccept(dlcDb.tempContractId,
                            acceptFundingInputs,
                            outcomeSigs = cetSignatures.outcomeSigs,
-                           refundSig = refundSig)
+                           refundSig = refundSigDb.accepterSig)
     }
   }
 }
@@ -203,7 +202,6 @@ object DLCClosedDbState {
 
   def fromSetupState(
       acceptState: AcceptDbState,
-      refundSigsDb: DLCRefundSigsDb,
       cetSigsOpt: Option[Vector[DLCCETSignaturesDb]]): DLCClosedDbState = {
     cetSigsOpt match {
       case Some(cetSigs) =>
@@ -217,7 +215,7 @@ object DLCClosedDbState {
           acceptState.offerPrevTxs,
           acceptState.acceptFundingInputsDb,
           acceptState.acceptPrevTxs,
-          refundSigsDb,
+          acceptState.refundSigDb,
           cetSigs
         )
       case None =>
@@ -231,7 +229,7 @@ object DLCClosedDbState {
           acceptState.offerPrevTxs,
           acceptState.acceptFundingInputsDb,
           acceptState.acceptPrevTxs,
-          refundSigsDb
+          acceptState.refundSigDb
         )
     }
   }
