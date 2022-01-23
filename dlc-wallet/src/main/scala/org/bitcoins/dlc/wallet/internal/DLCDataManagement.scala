@@ -667,11 +667,11 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       //sometimes we do not have cet signatures, for instance
       //if we have settled a DLC, we prune the cet signatures
       //from the database
-      val cetSigs = CETSignatures(outcomeSigs, refundSig)
+      val cetSigs = CETSignatures(outcomeSigs)
 
       val setupF = if (dlcDb.isInitiator) {
         // Note that the funding tx in this setup is not signed
-        executor.setupDLCOffer(cetSigs)
+        executor.setupDLCOffer(cetSigs, refundSig)
       } else {
         val fundingSigs =
           fundingInputs
@@ -688,7 +688,10 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
                 case None => throw new RuntimeException("")
               }
             }
-        executor.setupDLCAccept(cetSigs, FundingSignatures(fundingSigs), None)
+        executor.setupDLCAccept(cetSigs,
+                                refundSig,
+                                FundingSignatures(fundingSigs),
+                                None)
       }
 
       Future.fromTry(setupF.map(DLCExecutorWithSetup(executor, _)))

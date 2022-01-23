@@ -60,11 +60,13 @@ object BytesUtil {
     FundingSignatures(fundingSigs.tail.toVector.+:(firstOutPoint -> badWitness))
   }
 
-  def flipBit(cetSigs: CETSignatures): CETSignatures = {
+  def flipBit(
+      cetSigs: CETSignatures,
+      refundSig: PartialSignature): (CETSignatures, PartialSignature) = {
     val badOutcomeSigs = cetSigs.outcomeSigs.map { case (outcome, sig) =>
       outcome -> flipBit(sig)
     }
-    val badRefundSig = flipBit(cetSigs.refundSig)
-    CETSignatures(badOutcomeSigs, badRefundSig)
+    val badRefundSig = flipBit(refundSig)
+    (CETSignatures(badOutcomeSigs), badRefundSig)
   }
 }

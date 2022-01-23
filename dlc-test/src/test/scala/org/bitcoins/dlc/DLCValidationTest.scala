@@ -55,7 +55,9 @@ class DLCValidationTest extends BitcoinSJvmTest with DLCTest {
     val acceptVerifier = DLCSignatureVerifier(builder, isInitiator = false)
 
     val offerCETSigs = offerClient.dlcTxSigner.createCETSigs()
+    val offerRefundSig = offerClient.dlcTxSigner.signRefundTx
     val acceptCETSigs = acceptClient.dlcTxSigner.createCETSigs()
+    val acceptRefundSig = acceptClient.dlcTxSigner.signRefundTx
 
     outcomes.zipWithIndex.foreach { case (outcomeUncast, index) =>
       val outcome = EnumOracleOutcome(Vector(
@@ -70,10 +72,10 @@ class DLCValidationTest extends BitcoinSJvmTest with DLCTest {
         acceptVerifier.verifyCETSig(Indexed(outcome.sigPoint, index),
                                     offerCETSigs(outcome.sigPoint)))
     }
-    assert(offerVerifier.verifyRefundSig(acceptCETSigs.refundSig))
-    assert(offerVerifier.verifyRefundSig(offerCETSigs.refundSig))
-    assert(acceptVerifier.verifyRefundSig(offerCETSigs.refundSig))
-    assert(acceptVerifier.verifyRefundSig(acceptCETSigs.refundSig))
+    assert(offerVerifier.verifyRefundSig(acceptRefundSig))
+    assert(offerVerifier.verifyRefundSig(offerRefundSig))
+    assert(acceptVerifier.verifyRefundSig(offerRefundSig))
+    assert(acceptVerifier.verifyRefundSig(acceptRefundSig))
   }
 
   it should "fail on invalid CET signatures" in {
@@ -86,10 +88,14 @@ class DLCValidationTest extends BitcoinSJvmTest with DLCTest {
     val acceptVerifier = DLCSignatureVerifier(builder, isInitiator = false)
 
     val offerCETSigs = offerClient.dlcTxSigner.createCETSigs()
+    val offerRefundSig = offerClient.dlcTxSigner.signRefundTx
     val acceptCETSigs = acceptClient.dlcTxSigner.createCETSigs()
+    val acceptRefundSig = acceptClient.dlcTxSigner.signRefundTx
 
-    val badOfferCETSigs = BytesUtil.flipBit(offerCETSigs)
-    val badAcceptCETSigs = BytesUtil.flipBit(acceptCETSigs)
+    val (badOfferCETSigs, badOfferRefundSig) =
+      BytesUtil.flipBit(offerCETSigs, offerRefundSig)
+    val (badAcceptCETSigs, badAcceptRefundSig) =
+      BytesUtil.flipBit(acceptCETSigs, acceptRefundSig)
 
     outcomes.foreach { outcomeUncast =>
       val outcome = outcomeUncast.asInstanceOf[EnumOutcome]
@@ -115,11 +121,11 @@ class DLCValidationTest extends BitcoinSJvmTest with DLCTest {
     }
 
     assertThrows[RuntimeException] {
-      offerClient.dlcTxSigner.completeRefundTx(badAcceptCETSigs.refundSig)
+      offerClient.dlcTxSigner.completeRefundTx(badAcceptRefundSig)
     }
 
     assertThrows[RuntimeException] {
-      acceptClient.dlcTxSigner.completeRefundTx(badOfferCETSigs.refundSig)
+      acceptClient.dlcTxSigner.completeRefundTx(badOfferRefundSig)
     }
 
     outcomes.zipWithIndex.foreach { case (outcomeUncast, index) =>
@@ -142,9 +148,9 @@ class DLCValidationTest extends BitcoinSJvmTest with DLCTest {
         !acceptVerifier.verifyCETSig(Indexed(outcome.sigPoint, index),
                                      acceptCETSigs(outcome.sigPoint)))
     }
-    assert(!offerVerifier.verifyRefundSig(badAcceptCETSigs.refundSig))
-    assert(!offerVerifier.verifyRefundSig(badOfferCETSigs.refundSig))
-    assert(!acceptVerifier.verifyRefundSig(badOfferCETSigs.refundSig))
-    assert(!acceptVerifier.verifyRefundSig(badAcceptCETSigs.refundSig))
+    assert(!offerVerifier.verifyRefundSig(badAcceptRefundSig))
+    assert(!offerVerifier.verifyRefundSig(badOfferRefundSig))
+    assert(!acceptVerifier.verifyRefundSig(badOfferRefundSig))
+    assert(!acceptVerifier.verifyRefundSig(badAcceptRefundSig))
   }
 }

@@ -20,10 +20,12 @@ case class DLCExecutor(signer: DLCTxSigner) {
   /** Constructs the initiator's SetupDLC given the non-initiator's
     * CETSignatures which should arrive in a DLC accept message
     */
-  def setupDLCOffer(cetSigs: CETSignatures): Try[SetupDLC] = {
+  def setupDLCOffer(
+      cetSigs: CETSignatures,
+      refundSig: PartialSignature): Try[SetupDLC] = {
     require(isInitiator, "You should call setupDLCAccept")
 
-    setupDLC(cetSigs, None, None)
+    setupDLC(cetSigs, refundSig, None, None)
   }
 
   /** Constructs the non-initiator's SetupDLC given the initiator's
@@ -32,11 +34,12 @@ case class DLCExecutor(signer: DLCTxSigner) {
     */
   def setupDLCAccept(
       cetSigs: CETSignatures,
+      refundSig: PartialSignature,
       fundingSigs: FundingSignatures,
       cetsOpt: Option[Vector[WitnessTransaction]]): Try[SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
-    setupDLC(cetSigs, Some(fundingSigs), cetsOpt)
+    setupDLC(cetSigs, refundSig, Some(fundingSigs), cetsOpt)
   }
 
   /** Constructs a SetupDLC given the necessary signature information
@@ -44,6 +47,7 @@ case class DLCExecutor(signer: DLCTxSigner) {
     */
   def setupDLC(
       cetSigs: CETSignatures,
+      refundSig: PartialSignature,
       fundingSigsOpt: Option[FundingSignatures],
       cetsOpt: Option[Vector[WitnessTransaction]]): Try[SetupDLC] = {
     if (!isInitiator) {
@@ -51,7 +55,7 @@ case class DLCExecutor(signer: DLCTxSigner) {
               "Accepting party must provide remote funding signatures")
     }
 
-    val CETSignatures(outcomeSigs, refundSig) = cetSigs
+    val CETSignatures(outcomeSigs) = cetSigs
     val msgs = Indexed(outcomeSigs.map(_._1))
     val cets = cetsOpt match {
       case Some(cets) => cets

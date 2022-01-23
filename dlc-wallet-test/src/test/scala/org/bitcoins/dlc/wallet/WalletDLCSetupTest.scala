@@ -445,9 +445,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         walletA,
         walletB,
         (sign: DLCSign) =>
-          sign.copy(
-            cetSigs = CETSignatures(DLCWalletUtil.dummyOutcomeSigs,
-                                    sign.cetSigs.refundSig)))
+          sign.copy(cetSigs = CETSignatures(DLCWalletUtil.dummyOutcomeSigs)))
   }
 
   it must "fail to add an invalid dlc refund sig" in {
@@ -458,10 +456,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       testDLCSignVerification[IllegalArgumentException](
         walletA,
         walletB,
-        (sign: DLCSign) =>
-          sign.copy(
-            cetSigs = CETSignatures(sign.cetSigs.outcomeSigs,
-                                    DLCWalletUtil.dummyPartialSig)))
+        (sign: DLCSign) => sign.copy(refundSig = DLCWalletUtil.dummyPartialSig))
   }
 
   it must "fail to sign dlc with cet sigs that are invalid" in {
@@ -473,9 +468,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         walletA,
         walletB,
         (accept: DLCAccept) =>
-          accept.copy(
-            cetSigs = CETSignatures(DLCWalletUtil.dummyOutcomeSigs,
-                                    accept.cetSigs.refundSig)))
+          accept.copy(cetSigs = CETSignatures(DLCWalletUtil.dummyOutcomeSigs)))
   }
 
   it must "fail to sign dlc with an invalid refund sig" in {
@@ -487,9 +480,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         walletA,
         walletB,
         (accept: DLCAccept) =>
-          accept.copy(
-            cetSigs = CETSignatures(accept.cetSigs.outcomeSigs,
-                                    DLCWalletUtil.dummyPartialSig)))
+          accept.copy(refundSig = DLCWalletUtil.dummyPartialSig))
   }
 
   it must "cancel an offered DLC" in {

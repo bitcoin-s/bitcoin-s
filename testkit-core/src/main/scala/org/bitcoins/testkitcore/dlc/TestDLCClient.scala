@@ -17,6 +17,7 @@ import org.bitcoins.core.protocol.dlc.sign.DLCTxSigner
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.tlv.DLCOfferTLV
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
@@ -65,16 +66,19 @@ case class TestDLCClient(
     * and FundingSignatures from them
     */
   def setupDLCAccept(
-      sendSigs: CETSignatures => Future[Unit],
-      getSigs: Future[(CETSignatures, FundingSignatures)]): Future[SetupDLC] = {
+      sendSigs: (CETSignatures, PartialSignature) => Future[Unit],
+      getSigs: Future[
+        (CETSignatures, PartialSignature, FundingSignatures)]): Future[
+    SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
     for {
       (remoteCetSigs, cets) <- dlcTxSigner.createCETsAndCETSigsAsync()
-      _ <- sendSigs(remoteCetSigs)
-      (cetSigs, fundingSigs) <- getSigs
+      refundSig = dlcTxSigner.signRefundTx
+      _ <- sendSigs(remoteCetSigs, refundSig)
+      (cetSigs, refundSig, fundingSigs) <- getSigs
       setupDLC <- Future.fromTry {
-        dlcExecutor.setupDLCAccept(cetSigs, fundingSigs, Some(cets))
+        dlcExecutor.setupDLCAccept(cetSigs, refundSig, fundingSigs, Some(cets))
       }
     } yield {
       setupDLC
@@ -87,15 +91,18 @@ case class TestDLCClient(
     * signed funding transaction
     */
   def setupDLCOffer(
-      getSigs: Future[CETSignatures],
-      sendSigs: (CETSignatures, FundingSignatures) => Future[Unit],
+      getSigs: Future[(CETSignatures, PartialSignature)],
+      sendSigs: (
+          CETSignatures,
+          PartialSignature,
+          FundingSignatures) => Future[Unit],
       getFundingTx: Future[Transaction]): Future[SetupDLC] = {
     require(isInitiator, "You should call setupDLCAccept")
 
     for {
-      cetSigs <- getSigs
+      (cetSigs, refundSig) <- getSigs
       setupDLCWithoutFundingTxSigs <- Future.fromTry {
-        dlcExecutor.setupDLCOffer(cetSigs)
+        dlcExecutor.setupDLCOffer(cetSigs, refundSig)
       }
       cetSigs =
         dlcTxSigner.createCETSigs(setupDLCWithoutFundingTxSigs.cets.map {
@@ -104,7 +111,7 @@ case class TestDLCClient(
       localFundingSigs <- Future.fromTry {
         dlcTxSigner.signFundingTx()
       }
-      _ <- sendSigs(cetSigs, localFundingSigs)
+      _ <- sendSigs(cetSigs, dlcTxSigner.signRefundTx, localFundingSigs)
       fundingTx <- getFundingTx
     } yield {
       setupDLCWithoutFundingTxSigs.copy(fundingTx = fundingTx)

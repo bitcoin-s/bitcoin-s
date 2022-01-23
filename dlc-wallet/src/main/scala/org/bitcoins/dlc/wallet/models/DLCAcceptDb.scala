@@ -30,7 +30,7 @@ case class DLCAcceptDb(
       refundSig: PartialSignature): DLCAccept = {
     val pubKeys =
       DLCPublicKeys(fundingKey, payoutAddress)
-    val cetSigs = CETSignatures(outcomeSigs, refundSig)
+    val cetSigs = CETSignatures(outcomeSigs)
     DLCAccept(
       totalCollateral = collateral.satoshis,
       pubKeys = pubKeys,
@@ -39,6 +39,7 @@ case class DLCAcceptDb(
       payoutSerialId = payoutSerialId,
       changeSerialId = changeSerialId,
       cetSigs = cetSigs,
+      refundSig = refundSig,
       negotiationFields = negotiationFields,
       tempContractId = tempContractId
     )

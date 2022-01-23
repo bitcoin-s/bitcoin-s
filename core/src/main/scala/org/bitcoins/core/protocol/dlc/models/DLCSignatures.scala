@@ -3,7 +3,6 @@ package org.bitcoins.core.protocol.dlc.models
 import org.bitcoins.core.protocol.script.ScriptWitnessV0
 import org.bitcoins.core.protocol.tlv.FundingSignaturesV0TLV
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.{Indexed, SeqWrapper}
 import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey}
 
@@ -36,9 +35,7 @@ case class FundingSignatures(
   }
 }
 
-case class CETSignatures(
-    outcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)],
-    refundSig: PartialSignature)
+case class CETSignatures(outcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)])
     extends DLCSignatures {
 
   require(outcomeSigs.nonEmpty,

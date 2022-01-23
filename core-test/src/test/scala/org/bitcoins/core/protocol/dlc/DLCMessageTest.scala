@@ -91,8 +91,8 @@ class DLCMessageTest extends BitcoinSJvmTest {
           Vector(
             EnumOracleOutcome(
               Vector(dummyOracle),
-              EnumOutcome(dummyStr)).sigPoint -> ECAdaptorSignature.dummy),
-          dummySig),
+              EnumOutcome(dummyStr)).sigPoint -> ECAdaptorSignature.dummy)),
+        dummySig,
         DLCAccept.NoNegotiationFields,
         Sha256Digest.empty
       )

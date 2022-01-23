@@ -136,7 +136,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           val fundingInputs = fundingInputDbs.map(input =>
             input.toFundingInput(txs(input.outPoint.txIdBE).head))
 
-          val offerRefundSigOpt = refundSigsDb.map(_.initiatorSig)
+          val offerRefundSigOpt = refundSigsDb.flatMap(_.initiatorSig)
           val acceptRefundSigOpt = refundSigsDb.map(_.accepterSig)
 
           val contractInfo =
@@ -157,8 +157,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           val sign: DLCSign = {
             val cetSigs: CETSignatures =
               CETSignatures(
-                sigDbs.map(dbSig => (dbSig.sigPoint, dbSig.initiatorSig.get)),
-                offerRefundSigOpt.head.get)
+                sigDbs.map(dbSig => (dbSig.sigPoint, dbSig.initiatorSig.get)))
 
             val contractId = dlcDb.contractIdOpt.get
             val fundingSigs =
@@ -179,7 +178,10 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                   }
                 }
 
-            DLCSign(cetSigs, FundingSignatures(fundingSigs), contractId)
+            DLCSign(cetSigs,
+                    offerRefundSigOpt.get,
+                    FundingSignatures(fundingSigs),
+                    contractId)
           }
 
           DLCStatus.calculateOutcomeAndSig(isInit, offer, accept, sign, cet).get
