@@ -270,7 +270,8 @@ object DLCMessage {
         changeSPK = changeAddress.scriptPubKey,
         changeSerialId = changeSerialId,
         cetSignatures = CETSignaturesV0TLV(cetSigs.adaptorSigs),
-        refundSignature = refundSig.signature,
+        refundSignature =
+          ECDigitalSignature.fromFrontOfBytes(refundSig.signature.bytes),
         negotiationFields = negotiationFields.toTLV
       )
     }
@@ -360,6 +361,11 @@ object DLCMessage {
           adaptorPoints.zip(sigs)
       }
 
+      //add hashtype
+      val refundSigWithHashType = {
+        ECDigitalSignature.fromBytes(
+          accept.refundSignature.bytes.:+(HashType.sigHashAllByte))
+      }
       DLCAccept(
         totalCollateral = accept.totalCollateralSatoshis,
         pubKeys = DLCPublicKeys(
@@ -375,7 +381,7 @@ object DLCMessage {
         cetSigs = CETSignatures(outcomeSigs),
         refundSig = PartialSignature(
           pubKey = accept.fundingPubKey,
-          signature = accept.refundSignature
+          signature = refundSigWithHashType
         ),
         negotiationFields = NegotiationFields.fromTLV(accept.negotiationFields),
         tempContractId = accept.tempContractId
