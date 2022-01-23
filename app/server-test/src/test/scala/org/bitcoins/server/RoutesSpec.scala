@@ -1011,7 +1011,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       payoutSerialId = UInt64.zero,
       changeSerialId = UInt64.zero,
       cetSigs = CETSignatures(dummyOutcomeSigs),
-      refundSig = DLCWalletUtil.dummyPartialSig,
+      refundSig = DLCWalletUtil.minimalPartialSig,
       negotiationFields = DLCAccept.NoNegotiationFields,
       tempContractId = Sha256Digest.empty
     )

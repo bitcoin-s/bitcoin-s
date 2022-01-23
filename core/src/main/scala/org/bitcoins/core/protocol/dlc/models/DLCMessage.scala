@@ -270,8 +270,7 @@ object DLCMessage {
         changeSPK = changeAddress.scriptPubKey,
         changeSerialId = changeSerialId,
         cetSignatures = CETSignaturesV0TLV(cetSigs.adaptorSigs),
-        refundSignature =
-          ECDigitalSignature.fromFrontOfBytes(refundSig.signature.bytes),
+        refundSignature = refundSig.signature,
         negotiationFields = negotiationFields.toTLV
       )
     }
@@ -375,9 +374,9 @@ object DLCMessage {
         changeSerialId = accept.changeSerialId,
         cetSigs = CETSignatures(outcomeSigs),
         refundSig = PartialSignature(
-          accept.fundingPubKey,
-          ECDigitalSignature(
-            accept.refundSignature.bytes :+ HashType.sigHashAll.byte)),
+          pubKey = accept.fundingPubKey,
+          signature = accept.refundSignature
+        ),
         negotiationFields = NegotiationFields.fromTLV(accept.negotiationFields),
         tempContractId = accept.tempContractId
       )

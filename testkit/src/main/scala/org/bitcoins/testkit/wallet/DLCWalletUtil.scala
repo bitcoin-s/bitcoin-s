@@ -110,6 +110,10 @@ object DLCWalletUtil extends Logging {
   lazy val dummyPartialSig: PartialSignature =
     PartialSignature(dummyKey, DummyECDigitalSignature)
 
+  lazy val minimalPartialSig: PartialSignature = {
+    PartialSignature(dummyKey, ECDigitalSignature.minimalEncodedZeroSig)
+  }
+
   lazy val dummyScriptWitness: P2WPKHWitnessV0 = {
     P2WPKHWitnessV0(dummyPartialSig.pubKey, dummyPartialSig.signature)
   }

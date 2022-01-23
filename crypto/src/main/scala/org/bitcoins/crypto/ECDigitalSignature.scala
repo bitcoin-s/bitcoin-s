@@ -196,4 +196,10 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     val bytes = CryptoBytesUtil.decodeHex(hex)
     fromRS(bytes)
   }
+
+  /** Minimally encoded zero signature
+    * This will NOT be 64 bytes in length, it will be much less
+    * due to the DER encoding
+    * */
+  val minimalEncodedZeroSig: ECDigitalSignature = fromRS(0, 0)
 }
