@@ -10,20 +10,27 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object ChainUtil {
 
-  def getBlockHeaderResult(hash: DoubleSha256DigestBE, chain: ChainApi)(implicit
-      ec: ExecutionContext): Future[GetBlockHeaderResult] = {
-    val headerOptF = chain.getHeader(hash)
-    val confsOptF = chain.getNumberOfConfirmations(hash)
-    for {
-      headerOpt <- headerOptF
-      confsOpt <- confsOptF
+  def getBlockHeaderResult(
+      hashes: Vector[DoubleSha256DigestBE],
+      chain: ChainApi)(implicit
+      ec: ExecutionContext): Future[Vector[GetBlockHeaderResult]] = {
+    val headersF: Future[Vector[Option[BlockHeaderDb]]] =
+      chain.getHeaders(hashes)
+    val bestHeightF = chain.getBestBlockHeader().map(_.height)
+    val headersWithConfsF: Future[Vector[Option[(BlockHeaderDb, Int)]]] = for {
+      headers <- headersF
+      bestHeight <- bestHeightF
     } yield {
-      val zipped: Option[(BlockHeaderDb, Int)] =
-        headerOpt.zip(confsOpt).headOption
-      zipped match {
+      headers.map(hOpt => hOpt.map(h => (h, bestHeight - h.height)))
+    }
+
+    for {
+      headersWithConfs <- headersWithConfsF
+    } yield {
+      headersWithConfs.map {
         case None =>
           sys.error(
-            s"Could not find block header hash=$hash or confirmations for the header ")
+            s"Could not find block header or confirmations for the header ")
         case Some((header, confs)) =>
           val chainworkStr = {
             val bytes = ByteVector(header.chainWork.toByteArray)

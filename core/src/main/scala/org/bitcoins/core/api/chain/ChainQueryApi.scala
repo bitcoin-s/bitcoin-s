@@ -26,7 +26,7 @@ trait ChainQueryApi {
 
   /** Gets number of confirmations for the given block hash */
   def getNumberOfConfirmations(
-      blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]]
+      blockHash: DoubleSha256DigestBE): Future[Option[Int]]
 
   /** Gets the number of compact filters in the database */
   def getFilterCount(): Future[Int]

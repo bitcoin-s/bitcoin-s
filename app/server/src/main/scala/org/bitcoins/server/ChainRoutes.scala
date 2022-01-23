@@ -51,11 +51,12 @@ case class ChainRoutes(chain: ChainApi, network: BitcoinNetwork)(implicit
             chain.getHeader(hash).flatMap {
               case None => Future.successful(Server.httpSuccess(ujson.Null))
               case Some(_) =>
-                val resultF = ChainUtil.getBlockHeaderResult(hash, chain)
+                val resultsF =
+                  ChainUtil.getBlockHeaderResult(Vector(hash), chain)
                 for {
-                  result <- resultF
+                  results <- resultsF
                 } yield {
-                  val json = upickle.default.writeJs(result)(
+                  val json = upickle.default.writeJs(results.head)(
                     Picklers.getBlockHeaderResultPickler)
                   Server.httpSuccess(json)
                 }

@@ -157,6 +157,15 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
       hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] =
     getBlockHeader(hash).map(header => Some(header.blockHeaderDb))
 
+  override def getHeaders(hashes: Vector[DoubleSha256DigestBE]): Future[
+    Vector[Option[BlockHeaderDb]]] = {
+    //sends a request for every header, i'm not aware of a way to batch these
+    val resultsNested: Vector[Future[Option[BlockHeaderDb]]] =
+      hashes.map(getHeader)
+    Future
+      .sequence(resultsNested)
+  }
+
   override def getHeadersBetween(
       from: BlockHeaderDb,
       to: BlockHeaderDb): Future[Vector[BlockHeaderDb]] = {

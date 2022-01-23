@@ -52,6 +52,21 @@ case class BlockHeaderDAO()(implicit
     safeDatabase.runVec(query).map(_.headOption)
   }
 
+  /** Finds the block headers associated with the hashes. Returns None if we could not find a particular
+    * hash in the database
+    */
+  def findByHashes(hashes: Vector[DoubleSha256DigestBE]): Future[
+    Vector[Option[BlockHeaderDb]]] = {
+    val query = findByPrimaryKeys(hashes)
+    val resultsF: Future[Vector[BlockHeaderDb]] =
+      safeDatabase.runVec(query.result.transactionally)
+    for {
+      results <- resultsF
+    } yield {
+      hashes.map(h => results.find(_.blockHeader.hashBE == h))
+    }
+  }
+
   override def findByPrimaryKeys(hashes: Vector[DoubleSha256DigestBE]): Query[
     BlockHeaderTable,
     BlockHeaderDb,

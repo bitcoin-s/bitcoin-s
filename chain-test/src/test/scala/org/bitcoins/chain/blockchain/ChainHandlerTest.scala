@@ -672,10 +672,12 @@ class ChainHandlerTest extends ChainDbUnitTest {
     chainHandler: ChainHandler =>
       val resultP: Promise[Boolean] = Promise()
 
-      val callback: OnBlockHeaderConnected = (_: Int, _: BlockHeader) => {
-        Future {
-          resultP.success(true)
-          ()
+      val callback: OnBlockHeaderConnected = {
+        case _: Vector[(Int, BlockHeader)] => {
+          Future {
+            resultP.success(true)
+            ()
+          }
         }
       }
 

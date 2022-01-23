@@ -11,16 +11,13 @@ import org.bitcoins.commons.jsonmodels.ws.{
 }
 import org.bitcoins.commons.serializers.WsPicklers
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.dlc.wallet.{DLCWalletCallbacks, OnDLCStateChange}
-import org.bitcoins.wallet.{
-  OnNewAddressGenerated,
-  OnReservedUtxos,
-  OnTransactionBroadcast,
-  OnTransactionProcessed,
-  WalletCallbacks
-}
+import org.bitcoins.wallet._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -29,22 +26,33 @@ object WebsocketUtil extends Logging {
   def buildChainCallbacks(
       queue: SourceQueueWithComplete[Message],
       chainApi: ChainApi)(implicit ec: ExecutionContext): ChainCallbacks = {
-    val onBlockProcessed: OnBlockHeaderConnected = { case (_, header) =>
-      val resultF =
-        ChainUtil.getBlockHeaderResult(header.hashBE, chainApi)
-      val f = for {
-        result <- resultF
-        notification =
-          ChainNotification.BlockProcessedNotification(result)
-        notificationJson =
-          upickle.default.writeJs(notification)(
-            WsPicklers.blockProcessedPickler)
-        msg = TextMessage.Strict(notificationJson.toString())
-        _ <- queue.offer(msg)
-      } yield {
-        ()
-      }
-      f
+    val onBlockProcessed: OnBlockHeaderConnected = {
+      case headersWithHeight: Vector[(Int, BlockHeader)] =>
+        val hashes: Vector[DoubleSha256DigestBE] =
+          headersWithHeight.map(_._2.hashBE)
+        val resultsF =
+          ChainUtil.getBlockHeaderResult(hashes, chainApi)
+        val f = for {
+          results <- resultsF
+          notifications =
+            results.map(result =>
+              ChainNotification.BlockProcessedNotification(result))
+          notificationsJson = notifications.map { notification =>
+            upickle.default.writeJs(notification)(
+              WsPicklers.blockProcessedPickler)
+          }
+
+          msgs = notificationsJson.map(n => TextMessage.Strict(n.toString()))
+          _ <- FutureUtil.sequentially(msgs) { case msg =>
+            val x: Future[Unit] = queue
+              .offer(msg)
+              .map(_ => ())
+            x
+          }
+        } yield {
+          ()
+        }
+        f
     }
 
     ChainCallbacks.onBlockHeaderConnected(onBlockProcessed)
