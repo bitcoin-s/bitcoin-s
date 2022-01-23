@@ -75,13 +75,7 @@ git clone --depth 500 --recursive https://github.com/bitcoin-s/bitcoin-s.git
 To run the entire test suite, you need to download all bitcoind instances and eclair instances. This is needed for unit tests
 or binding bitcoin-s to a bitcoind instance if you do not have locally running instances.
 
-```bashrc
-sbt downloadBitcoind
-sbt downloadEclair
-```
-
-If you want to run the entire test suite you can run the following command after you download bitcoind
-and eclair.
+If you want to run the entire test suite you can run the following command.
 
 ```bashrc
 sbt test
@@ -123,9 +117,8 @@ Testnet:
 `bitcoin-s.node.peers = ["neutrino.testnet3.suredbits.com:18333"]`
 
 If you would like to use your own node you can either use the bitcoind backend option or connect to your own compatible node.
-There is no released version of bitcoind that is neutrino compatible, so you will either have to compile the latest `master` yourself, or use the experimental version provided by running `sbt downloadBitcoind`. 
 
-After building your bitcoin-s server, properly configuring it to be in `neutrino` mode you can start your server with:
+After building your bitcoin-s server and properly configuring it to be in `neutrino` mode you can start your server with:
 
 ```bashrc
 ./app/server/target/universal/stage/bin/bitcoin-s-server

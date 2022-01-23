@@ -31,5 +31,5 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: Windows Crypto, Core, and Database tests
-        run: sbt ++2.13.7 downloadBitcoind cryptoTestJVM/test coreTestJVM/test secp256k1jni/test dlcTest/test appCommonsTest/test dbCommonsTest/test asyncUtilsTestJVM/test asyncUtilsTestJS/test appServerTest/test
+        run: sbt ++2.13.8 cryptoTestJVM/test coreTestJVM/test secp256k1jni/test dlcTest/test appCommonsTest/test dbCommonsTest/test asyncUtilsTestJVM/test asyncUtilsTestJS/test appServerTest/test
         shell: bash
