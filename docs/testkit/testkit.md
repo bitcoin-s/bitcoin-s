@@ -26,8 +26,6 @@ import scala.concurrent.duration._
 
 This gives the ability to create and destroy `bitcoind` on the underlying operating system to test against.
 
-Make sure you have run `sbt downloadBitcoind` before running this example, as you need access to the bitcoind binaries.
-
 Our [BitcoindRpcClient](/api/org/bitcoins/rpc/client/common/BitcoindRpcClient) is tested with the functionality provided in the testkit.
 A quick example of a useful utility method is [BitcoindRpcTestUtil.startedBitcoindRpcClient()](/api/org/bitcoins/testkit/rpc/BitcoindRpcTestUtil).
 This spins up a bitcoind regtest instance on machine and generates 101 blocks on that node.
