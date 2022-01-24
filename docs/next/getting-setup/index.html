@@ -124,11 +124,7 @@ of RAM on the machine you are running this on.</p>
 </blockquote>
 <p>To run the entire test suite, you need to download all bitcoind instances and eclair instances. This is needed for unit tests
 or binding bitcoin-s to a bitcoind instance if you do not have locally running instances.</p>
-<pre><code class="hljs css language-bashrc"><span class="hljs-keyword">sbt </span>downloadBitcoind
-<span class="hljs-keyword">sbt </span>downloadEclair
-</code></pre>
-<p>If you want to run the entire test suite you can run the following command after you download bitcoind
-and eclair.</p>
+<p>If you want to run the entire test suite you can run the following command.</p>
 <pre><code class="hljs css language-bashrc">sbt <span class="hljs-built_in">test</span>
 </code></pre>
 <p></details></p>
@@ -150,9 +146,8 @@ To use a neutrino server you need to be paired with a bitcoin node that can serv
 <p><code>bitcoin-s.node.peers = [&quot;neutrino.suredbits.com:8333&quot;]</code></p>
 <p>Testnet:</p>
 <p><code>bitcoin-s.node.peers = [&quot;neutrino.testnet3.suredbits.com:18333&quot;]</code></p>
-<p>If you would like to use your own node you can either use the bitcoind backend option or connect to your own compatible node.
-There is no released version of bitcoind that is neutrino compatible, so you will either have to compile the latest <code>master</code> yourself, or use the experimental version provided by running <code>sbt downloadBitcoind</code>.</p>
-<p>After building your bitcoin-s server, properly configuring it to be in <code>neutrino</code> mode you can start your server with:</p>
+<p>If you would like to use your own node you can either use the bitcoind backend option or connect to your own compatible node.</p>
+<p>After building your bitcoin-s server and properly configuring it to be in <code>neutrino</code> mode you can start your server with:</p>
 <pre><code class="hljs css language-bashrc">.<span class="hljs-meta-keyword">/app/</span>server<span class="hljs-meta-keyword">/target/</span>universal<span class="hljs-meta-keyword">/stage/</span>bin/bitcoin-s-server
 </code></pre>
 <p>and once this is done, you should be able to communicate with the server using</p>
