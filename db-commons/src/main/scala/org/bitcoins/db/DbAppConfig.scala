@@ -22,13 +22,7 @@ abstract class DbAppConfig extends AppConfig {
   lazy val driver: DatabaseDriver = {
     val driverStr =
       getConfigString(s"bitcoin-s.$moduleName.db.driver").toLowerCase
-    if (driverStr.contains("sqlite")) {
-      SQLite
-    } else if (driverStr.contains("postgres")) {
-      PostgreSQL
-    } else {
-      sys.error(s"Could not find a DatabaseDriver for string=$driverStr")
-    }
+    DatabaseDriver.fromString(driverStr)
   }
 
   lazy val jdbcUrl: String = {
