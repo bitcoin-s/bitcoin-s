@@ -45,7 +45,7 @@ case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): WalletAppConfig =
-    WalletAppConfig(baseDatadir, configOverrides)
+    WalletAppConfig(baseDatadir, configs.toVector)
 
   override def appConfig: WalletAppConfig = this
 
