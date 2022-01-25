@@ -18,11 +18,9 @@ import scala.concurrent._
   * @param directory The data directory of the wallet
   * @param conf      Optional sequence of configuration overrides
   */
-case class DLCNodeAppConfig(
-    private val directory: Path,
-    private val conf: Config*)(implicit ec: ExecutionContext)
+case class DLCNodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
+    implicit ec: ExecutionContext)
     extends AppConfig {
-  override protected[bitcoins] def configOverrides: List[Config] = conf.toList
 
   override protected[bitcoins] def moduleName: String =
     DLCNodeAppConfig.moduleName
@@ -31,9 +29,7 @@ case class DLCNodeAppConfig(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): DLCNodeAppConfig =
-    DLCNodeAppConfig(directory, configs: _*)
-
-  protected[bitcoins] def baseDatadir: Path = directory
+    DLCNodeAppConfig(baseDatadir, configs.toVector)
 
   override def start(): Future[Unit] = {
     FutureUtil.unit
@@ -42,7 +38,7 @@ case class DLCNodeAppConfig(
   override def stop(): Future[Unit] = Future.unit
 
   lazy val torConf: TorAppConfig =
-    TorAppConfig(directory, Some(moduleName), conf: _*)
+    TorAppConfig(baseDatadir, Some(moduleName), configOverrides)
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] =
     torConf.socks5ProxyParams
@@ -76,5 +72,5 @@ object DLCNodeAppConfig extends AppConfigFactory[DLCNodeAppConfig] {
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       ec: ExecutionContext): DLCNodeAppConfig =
-    DLCNodeAppConfig(datadir, confs: _*)
+    DLCNodeAppConfig(datadir, confs)
 }

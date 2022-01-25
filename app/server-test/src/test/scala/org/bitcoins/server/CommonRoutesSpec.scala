@@ -19,7 +19,7 @@ class CommonRoutesSpec
 
   implicit val conf: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
-  val commonRoutes = CommonRoutes(conf.datadir)
+  val commonRoutes = CommonRoutes(conf.baseDatadir)
 
   "CommonRoutes" should {
     "getversion" in {

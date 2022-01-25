@@ -18,9 +18,11 @@ sealed trait TestDAOFixture
 
   final override type FixtureParam = TestDAO
 
-  implicit private val testConfig: TestAppConfig = TestAppConfig(
-    BitcoinSTestAppConfig.tmpDir(),
-    BitcoinSTestAppConfig.configWithEmbeddedDb(Some(ProjectType.Test), pgUrl))
+  implicit private val testConfig: TestAppConfig = {
+    val configOverrides =
+      BitcoinSTestAppConfig.configWithEmbeddedDb(Some(ProjectType.Test), pgUrl)
+    TestAppConfig(BitcoinSTestAppConfig.tmpDir(), Vector(configOverrides))
+  }
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(testConfig)

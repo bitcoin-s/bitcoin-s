@@ -83,7 +83,7 @@ object OracleServerMain extends BitcoinSAppScalaDaemon {
   System.setProperty("bitcoins.log.location", datadirParser.networkDir.toString)
 
   implicit lazy val conf: DLCOracleAppConfig =
-    DLCOracleAppConfig(datadirParser.datadir, datadirParser.baseConfig)(
+    DLCOracleAppConfig(datadirParser.datadir, Vector(datadirParser.baseConfig))(
       system.dispatcher)
 
   new OracleServerMain(serverCmdLineArgs).run()

@@ -45,7 +45,11 @@ abstract class AppConfig extends StartStopAsync[Unit] with Logging {
   /** List of user-provided configs that should
     * override defaults
     */
-  protected[bitcoins] def configOverrides: List[Config]
+  protected[bitcoins] def configOverrides: Vector[Config]
+
+  def withOverrides(configOverrides: Config): ConfigType = {
+    withOverrides(Vector(configOverrides))
+  }
 
   /** This method returns a new `AppConfig`, where every
     * key under `bitcoin-s` overrides the configuration
@@ -56,13 +60,8 @@ abstract class AppConfig extends StartStopAsync[Unit] with Logging {
     * `bitcoin-s.network`), the latter config overrides the
     * first.
     */
-  def withOverrides(config: Config, configs: Config*): ConfigType = {
-    // the two val assignments below are workarounds
-    // for awkward name resolution in the block below
-    val firstOverride = config
-
-    val numOverrides = configs.length + 1
-
+  def withOverrides(configOverrides: Vector[Config]): ConfigType = {
+    val numOverrides = configOverrides.length
     if (logger.logger.isDebugEnabled()) {
       // force lazy evaluation before we print
       // our lines
@@ -73,7 +72,6 @@ abstract class AppConfig extends StartStopAsync[Unit] with Logging {
       logger.debug(oldConfStr)
     }
 
-    val configOverrides = firstOverride +: configs
     if (logger.logger.isTraceEnabled()) {
       configOverrides.zipWithIndex.foreach { case (c, idx) =>
         logger.trace(s"Override no. $idx: ${c.asReadableJson}")
@@ -177,7 +175,7 @@ object AppConfig extends Logging {
 
   def getBaseConfig(
       baseDatadir: Path,
-      configOverrides: List[Config] = List.empty): Config = {
+      configOverrides: Vector[Config]): Config = {
     val configOptions =
       ConfigParseOptions
         .defaults()

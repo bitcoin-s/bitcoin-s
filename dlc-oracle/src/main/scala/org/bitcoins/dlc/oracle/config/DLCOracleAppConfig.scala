@@ -25,8 +25,8 @@ import java.nio.file.{Files, Path}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCOracleAppConfig(
-    private val directory: Path,
-    private val confs: Config*)(implicit val ec: ExecutionContext)
+    baseDatadir: Path,
+    configOverrides: Vector[Config])(implicit val ec: ExecutionContext)
     extends DbAppConfig
     with DbManagement
     with JdbcProfileComponent[DLCOracleAppConfig]
@@ -34,15 +34,13 @@ case class DLCOracleAppConfig(
 
   import profile.api._
 
-  override def configOverrides: List[Config] = confs.toList
-
   override def appConfig: DLCOracleAppConfig = this
 
   override type ConfigType = DLCOracleAppConfig
 
   override def newConfigOfType(
       configOverrides: Seq[Config]): DLCOracleAppConfig =
-    DLCOracleAppConfig(directory, configOverrides: _*)
+    DLCOracleAppConfig(baseDatadir, configOverrides.toVector)
 
   /** DLC oracles are not network specific, so just hard code the testnet chain params */
   final override lazy val chain: BitcoinChainParams = TestNetChainParams
@@ -52,10 +50,8 @@ case class DLCOracleAppConfig(
 
   override def moduleName: String = DLCOracleAppConfig.moduleName
 
-  override def baseDatadir: Path = directory
-
   lazy val kmConf: KeyManagerAppConfig =
-    KeyManagerAppConfig(directory, confs: _*)
+    KeyManagerAppConfig(baseDatadir, configOverrides)
 
   /** The path to our encrypted mnemonic seed */
   lazy val seedPath: Path = kmConf.seedPath
@@ -225,5 +221,5 @@ object DLCOracleAppConfig extends AppConfigFactory[DLCOracleAppConfig] {
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       ec: ExecutionContext): DLCOracleAppConfig =
-    DLCOracleAppConfig(datadir, confs: _*)
+    DLCOracleAppConfig(datadir, confs)
 }

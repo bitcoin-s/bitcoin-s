@@ -16,21 +16,17 @@ import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 case class KeyManagerAppConfig(
-    private val directory: Path,
-    private val confs: Config*)(implicit val ec: ExecutionContext)
+    baseDatadir: Path,
+    configOverrides: Vector[Config])(implicit val ec: ExecutionContext)
     extends AppConfig {
-
-  override def configOverrides: List[Config] = confs.toList
 
   override type ConfigType = KeyManagerAppConfig
 
   override def newConfigOfType(
       configOverrides: Seq[Config]): KeyManagerAppConfig =
-    KeyManagerAppConfig(directory, configOverrides: _*)
+    KeyManagerAppConfig(baseDatadir, configOverrides.toVector)
 
   override def moduleName: String = KeyManagerAppConfig.moduleName
-
-  override def baseDatadir: Path = directory
 
   lazy val networkParameters: NetworkParameters = chain.network
 
@@ -212,5 +208,5 @@ object KeyManagerAppConfig extends AppConfigFactory[KeyManagerAppConfig] {
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       ec: ExecutionContext): KeyManagerAppConfig =
-    KeyManagerAppConfig(datadir, confs: _*)
+    KeyManagerAppConfig(datadir, confs)
 }

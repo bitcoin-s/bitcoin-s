@@ -29,7 +29,8 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
 
     val dir = BitcoinSTestAppConfig.tmpDir()
 
-    val configB = BitcoinSAppConfig(dir, walletNameConfB.withFallback(dbConf))
+    val configB =
+      BitcoinSAppConfig(dir, Vector(walletNameConfB.withFallback(dbConf)))
 
     val walletA = fundedWallet.wallet
 

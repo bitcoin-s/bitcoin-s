@@ -19,20 +19,17 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param directory The data directory of the wallet
   * @param conf Optional sequence of configuration overrides
   */
-case class DLCAppConfig(private val directory: Path, private val conf: Config*)(
+case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     implicit override val ec: ExecutionContext)
     extends DbAppConfig
     with DLCDbManagement
     with JdbcProfileComponent[DLCAppConfig] {
-  override protected[bitcoins] def configOverrides: List[Config] = conf.toList
   override protected[bitcoins] def moduleName: String = "dlc"
   override protected[bitcoins] type ConfigType = DLCAppConfig
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): DLCAppConfig =
-    DLCAppConfig(directory, configs: _*)
-
-  protected[bitcoins] def baseDatadir: Path = directory
+    DLCAppConfig(baseDatadir, configs.toVector)
 
   override def appConfig: DLCAppConfig = this
 
@@ -53,7 +50,7 @@ case class DLCAppConfig(private val directory: Path, private val conf: Config*)(
   }
 
   lazy val walletConf: WalletAppConfig =
-    WalletAppConfig(directory, conf: _*)
+    WalletAppConfig(baseDatadir, configOverrides)
 
   lazy val walletNameOpt: Option[String] = walletConf.walletNameOpt
 
@@ -110,7 +107,7 @@ object DLCAppConfig extends AppConfigFactory[DLCAppConfig] with WalletLogger {
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       ec: ExecutionContext): DLCAppConfig =
-    DLCAppConfig(datadir, confs: _*)
+    DLCAppConfig(datadir, confs)
 
   /** Creates a wallet based on the given [[WalletAppConfig]] */
   def createDLCWallet(

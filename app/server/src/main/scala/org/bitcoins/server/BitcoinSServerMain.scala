@@ -386,7 +386,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val chainRoutes = ChainRoutes(chainApi, nodeConf.network)
     val coreRoutes = CoreRoutes()
     val dlcRoutes = DLCRoutes(dlcNode)
-    val commonRoutes = CommonRoutes(conf.datadir)
+    val commonRoutes = CommonRoutes(conf.baseDatadir)
 
     val handlers =
       Seq(walletRoutes,
@@ -584,9 +584,9 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
   System.setProperty("bitcoins.log.location", datadirParser.networkDir.toString)
 
   implicit lazy val conf: BitcoinSAppConfig =
-    BitcoinSAppConfig(datadirParser.datadir,
-                      datadirParser.baseConfig,
-                      serverCmdLineArgs.toConfig)(system)
+    BitcoinSAppConfig(
+      datadirParser.datadir,
+      Vector(datadirParser.baseConfig, serverCmdLineArgs.toConfig))(system)
 
   new BitcoinSServerMain(serverCmdLineArgs).run()
 }

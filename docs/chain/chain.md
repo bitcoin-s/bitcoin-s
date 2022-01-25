@@ -59,7 +59,7 @@ val config = ConfigFactory.parseString {
     |""".stripMargin
 }
 
-implicit val chainConfig = ChainAppConfig(datadir, config)
+implicit val chainConfig = ChainAppConfig(datadir, Vector(config))
 
 // Initialize the needed database tables if they don't exist:
 val chainProjectInitF = chainConfig.start()

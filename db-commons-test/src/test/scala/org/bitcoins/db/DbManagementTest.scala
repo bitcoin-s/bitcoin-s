@@ -54,7 +54,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   it must "run migrations for chain db" in {
     val chainAppConfig = ChainAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                                        dbConfig(ProjectType.Chain))
+                                        Vector(dbConfig(ProjectType.Chain)))
     val chainDbManagement = createChainDbManagement(chainAppConfig)
     val result = chainDbManagement.migrate()
     chainAppConfig.driver match {
@@ -77,7 +77,8 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   it must "run migrations for dlc db" in {
     val dlcAppConfig =
-      DLCAppConfig(BitcoinSTestAppConfig.tmpDir(), dbConfig(ProjectType.DLC))
+      DLCAppConfig(BitcoinSTestAppConfig.tmpDir(),
+                   Vector(dbConfig(ProjectType.DLC)))
     val dlcDbManagement = createDLCDbManagement(dlcAppConfig)
     val result = dlcDbManagement.migrate()
     dlcAppConfig.driver match {
@@ -100,7 +101,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   it must "run migrations for wallet db" in {
     val walletAppConfig = WalletAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                                          dbConfig(ProjectType.Wallet))
+                                          Vector(dbConfig(ProjectType.Wallet)))
     val walletDbManagement = createWalletDbManagement(walletAppConfig)
     val result = walletDbManagement.migrate()
     walletAppConfig.driver match {
@@ -124,7 +125,8 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   it must "run migrations for node db" in {
     val nodeAppConfig =
-      NodeAppConfig(BitcoinSTestAppConfig.tmpDir(), dbConfig(ProjectType.Node))
+      NodeAppConfig(BitcoinSTestAppConfig.tmpDir(),
+                    Vector(dbConfig(ProjectType.Node)))
     val nodeDbManagement = createNodeDbManagement(nodeAppConfig)
     val result = nodeDbManagement.migrate()
     nodeAppConfig.driver match {
@@ -149,7 +151,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
   it must "run migrations for oracle db" in {
     val oracleAppConfig =
       DLCOracleAppConfig(BitcoinSTestAppConfig.tmpDir(),
-                         dbConfig(ProjectType.Oracle))
+                         Vector(dbConfig(ProjectType.Oracle)))
     val result = oracleAppConfig.migrate()
     oracleAppConfig.driver match {
       case SQLite =>

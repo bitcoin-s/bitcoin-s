@@ -31,11 +31,11 @@ val defaultConfig = WalletAppConfig.fromDefaultDatadir()
 
 // reads a custom data directory
 val customDirectory = Paths.get(Properties.userHome, "custom-bitcoin-s-directory")
-val configFromCustomDatadir = WalletAppConfig(customDirectory)
+val configFromCustomDatadir = WalletAppConfig(customDirectory, Vector.empty)
 
 // reads a custom data directory and overrides the network to be testnet3
 val customOverride = ConfigFactory.parseString("bitcoin-s.network = testnet3")
-val configFromCustomDirAndOverride = WalletAppConfig(customDirectory, customOverride)
+val configFromCustomDirAndOverride = WalletAppConfig(customDirectory, Vector(customOverride))
 ```
 
 You can pass as many `com.typesafe.config.Config`s as you'd like. If any keys appear multiple times the last one

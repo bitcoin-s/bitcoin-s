@@ -20,19 +20,16 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   * @param confs Optional sequence of configuration overrides
   */
 case class TorAppConfig(
-    private val directory: Path,
+    baseDatadir: Path,
     private val subModuleNameOpt: Option[String],
-    private val confs: Config*)(implicit ec: ExecutionContext)
+    configOverrides: Vector[Config])(implicit ec: ExecutionContext)
     extends AppConfig {
-  override protected[bitcoins] def configOverrides: List[Config] = confs.toList
   override protected[bitcoins] def moduleName: String = TorAppConfig.moduleName
   override protected[bitcoins] type ConfigType = TorAppConfig
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): TorAppConfig =
-    TorAppConfig(directory, subModuleNameOpt, configs: _*)
-
-  protected[bitcoins] def baseDatadir: Path = directory
+    TorAppConfig(baseDatadir, subModuleNameOpt, configs.toVector)
 
   private val isStarted: AtomicBoolean = new AtomicBoolean(false)
 
@@ -231,7 +228,7 @@ object TorAppConfig extends AppConfigFactory[TorAppConfig] {
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       ec: ExecutionContext): TorAppConfig =
-    TorAppConfig(datadir, None, confs: _*)
+    TorAppConfig(datadir, None, confs)
 
   lazy val randomSocks5Port: Int = ports.proxyPort
 
