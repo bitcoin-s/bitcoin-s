@@ -15,6 +15,20 @@ case class Inventory(typeIdentifier: TypeIdentifier, hash: DoubleSha256Digest)
     extends NetworkElement {
 
   override def bytes: ByteVector = RawInventorySerializer.write(this)
+
+  override def toString: String = {
+    typeIdentifier match {
+      case TypeIdentifier.MsgTx | TypeIdentifier.MsgWitnessTx =>
+        //want to make a better toString here so it is easier to search txids
+        s"Inventory($typeIdentifier,txIdBE=${hash.flip.hex})"
+      case TypeIdentifier.MsgBlock | TypeIdentifier.MsgCompactBlock |
+          TypeIdentifier.MsgFilteredBlock | TypeIdentifier.MsgFilteredBlock |
+          TypeIdentifier.MsgCompactBlock |
+          TypeIdentifier.MsgFilteredWitnessBlock |
+          TypeIdentifier.MsgWitnessBlock | _: MsgUnassigned =>
+        super.toString
+    }
+  }
 }
 
 object Inventory extends Factory[Inventory] {
