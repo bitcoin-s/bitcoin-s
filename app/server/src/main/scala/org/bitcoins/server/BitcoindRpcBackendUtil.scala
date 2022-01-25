@@ -349,7 +349,7 @@ object BitcoindRpcBackendUtil extends Logging {
               Future.failed(new RuntimeException(
                 s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
             } else {
-              logger.info(s"In sync $prevCount count=$count")
+              logger.debug(s"In sync $prevCount count=$count")
               Future.unit
             }
           }
