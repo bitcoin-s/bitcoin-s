@@ -53,7 +53,7 @@ object BitcoinSTestAppConfig {
          |}
       """.stripMargin
     }
-    BitcoinSAppConfig(tmpDir(), (overrideConf +: config): _*)
+    BitcoinSAppConfig(tmpDir(), (overrideConf +: config).toVector)
   }
 
   def getSpvWithEmbeddedDbTestConfig(
@@ -77,8 +77,7 @@ object BitcoinSTestAppConfig {
 
     BitcoinSAppConfig(
       tmpDir(),
-      (overrideConf +: configWithEmbeddedDb(project = None,
-                                            pgUrl) +: config): _*)
+      (overrideConf +: configWithEmbeddedDb(project = None, pgUrl) +: config))
   }
 
   def getNeutrinoTestConfig(config: Config*)(implicit
@@ -97,7 +96,7 @@ object BitcoinSTestAppConfig {
          |}
       """.stripMargin
     }
-    BitcoinSAppConfig(tmpDir(), (overrideConf +: config): _*)
+    BitcoinSAppConfig(tmpDir(), (overrideConf +: config).toVector)
   }
 
   def getNeutrinoWithEmbeddedDbTestConfig(
@@ -122,7 +121,7 @@ object BitcoinSTestAppConfig {
     BitcoinSAppConfig(
       tmpDir(),
       (overrideConf +: configWithEmbeddedDb(project = None,
-                                            pgUrl) +: config): _*)
+                                            pgUrl) +: config).toVector)
   }
 
   def getDLCOracleAppConfig(config: Config*)(implicit
@@ -138,7 +137,7 @@ object BitcoinSTestAppConfig {
         ConfigFactory.empty()
     }
 
-    DLCOracleAppConfig(tmpDir(), overrideConf +: config: _*)
+    DLCOracleAppConfig(tmpDir(), (overrideConf +: config).toVector)
   }
 
   def getDLCOracleWithEmbeddedDbTestConfig(
@@ -157,7 +156,8 @@ object BitcoinSTestAppConfig {
 
     DLCOracleAppConfig(
       tmpDir(),
-      overrideConf +: configWithEmbeddedDb(project = None, pgUrl) +: config: _*)
+      (overrideConf +: configWithEmbeddedDb(project = None,
+                                            pgUrl) +: config).toVector)
   }
 
   sealed trait ProjectType

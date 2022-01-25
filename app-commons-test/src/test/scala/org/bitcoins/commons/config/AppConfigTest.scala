@@ -77,7 +77,7 @@ class AppConfigTest extends BitcoinSAsyncTest {
 
   it must "fill in typesafe config variables correctly" in {
     val datadir = BitcoinSTestAppConfig.tmpDir()
-    val walletAppConfig = WalletAppConfig(datadir)
+    val walletAppConfig = WalletAppConfig(datadir, Vector.empty)
     for {
       _ <- walletAppConfig.start()
     } yield {
@@ -98,7 +98,7 @@ class AppConfigTest extends BitcoinSAsyncTest {
     ConfigFactory.invalidateCaches()
 
     val walletAppConfig =
-      WalletAppConfig(datadir)
+      WalletAppConfig(datadir, Vector.empty)
     val assertF = for {
       _ <- walletAppConfig.start()
     } yield {

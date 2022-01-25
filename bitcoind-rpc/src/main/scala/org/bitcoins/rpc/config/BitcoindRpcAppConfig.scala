@@ -18,13 +18,11 @@ import scala.concurrent.Future
   * @param confs Optional sequence of configuration overrides
   */
 case class BitcoindRpcAppConfig(
-    private val directory: Path,
-    private val confs: Config*)(implicit val system: ActorSystem)
+    baseDatadir: Path,
+    configOverrides: Vector[Config])(implicit val system: ActorSystem)
     extends AppConfig {
 
   import system.dispatcher
-
-  override protected[bitcoins] def configOverrides: List[Config] = confs.toList
 
   override protected[bitcoins] def moduleName: String =
     BitcoindRpcAppConfig.moduleName
@@ -33,9 +31,7 @@ case class BitcoindRpcAppConfig(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig(directory, configs: _*)
-
-  override protected[bitcoins] def baseDatadir: Path = directory
+    BitcoindRpcAppConfig(baseDatadir, configs.toVector)
 
   override def start(): Future[Unit] = Future.unit
 
@@ -107,7 +103,7 @@ case class BitcoindRpcAppConfig(
     config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcpassword")
 
   lazy val torConf: TorAppConfig =
-    TorAppConfig(directory, Some(moduleName), confs: _*)
+    TorAppConfig(baseDatadir, Some(moduleName), configOverrides)
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] =
     torConf.socks5ProxyParams
@@ -216,6 +212,6 @@ object BitcoindRpcAppConfig
 
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       system: ActorSystem): BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig(datadir, confs: _*)
+    BitcoindRpcAppConfig(datadir, confs)
 
 }

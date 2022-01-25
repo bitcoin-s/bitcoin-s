@@ -346,7 +346,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
         BitcoinSAppConfig(
           baseConf.baseDatadir,
-          (walletNameOverride +: baseConf.configOverrides): _*).walletConf
+          (walletNameOverride +: baseConf.configOverrides)).walletConf
       case None => baseConf
     }
 
@@ -404,14 +404,14 @@ object BitcoinSWalletTest extends WalletLogger {
 
     val walletConfig = extraConfig match {
       case None    => config
-      case Some(c) => config.withOverrides(c)
+      case Some(c) => config.withOverrides(Vector(c))
     }
 
     val walletConfigWithBip39Pw = bip39PasswordOpt match {
       case Some(pw) =>
         val str = s"""bitcoin-s.keymanager.bip39password="$pw""""
         val bip39Config = ConfigFactory.parseString(str)
-        walletConfig.withOverrides(bip39Config)
+        walletConfig.withOverrides(Vector(bip39Config))
       case None => walletConfig
     }
 

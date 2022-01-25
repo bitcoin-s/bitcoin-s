@@ -35,7 +35,7 @@ case class DatadirParser(
     serverArgs.configOpt match {
       case None =>
         AppConfig
-          .getBaseConfig(datadirPath, List(networkConfig))
+          .getBaseConfig(datadirPath, Vector(networkConfig))
           .withFallback(datadirConfig)
           .resolve()
       case Some(config) =>

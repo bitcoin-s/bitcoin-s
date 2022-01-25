@@ -23,9 +23,9 @@ class DBConfigTest extends BitcoinSAsyncTest {
                   StandardOpenOption.CREATE_NEW,
                   StandardOpenOption.WRITE)
 
-      val chainConfig = ChainAppConfig(dataDir)
-      val nodeConfig = NodeAppConfig(dataDir)
-      val walletConfig = WalletAppConfig(dataDir)
+      val chainConfig = ChainAppConfig(dataDir, Vector.empty)
+      val nodeConfig = NodeAppConfig(dataDir, Vector.empty)
+      val walletConfig = WalletAppConfig(dataDir, Vector.empty)
 
       val slickChainConfig = chainConfig.slickDbConfig
       assert(slickChainConfig.profileName == "slick.jdbc.SQLiteProfile")
@@ -49,7 +49,7 @@ class DBConfigTest extends BitcoinSAsyncTest {
 
   it should "use sqlite as default database and disable connection pool for tests" in {
     withTempDir { dataDir =>
-      val chainConfig = ChainAppConfig(dataDir)
+      val chainConfig = ChainAppConfig(dataDir, Vector.empty)
       val slickChainConfig = chainConfig.slickDbConfig
       assert(slickChainConfig.profileName == "slick.jdbc.SQLiteProfile")
       assert(slickChainConfig.config.hasPath("db.numThreads"))
@@ -58,7 +58,7 @@ class DBConfigTest extends BitcoinSAsyncTest {
         slickChainConfig.config.getString("db.connectionPool") == "disabled")
       assert(slickChainConfig.config.getInt("db.queueSize") == 5000)
 
-      val nodeConfig = NodeAppConfig(dataDir)
+      val nodeConfig = NodeAppConfig(dataDir, Vector.empty)
       val slickNodeConfig = nodeConfig.slickDbConfig
       assert(slickNodeConfig.profileName == "slick.jdbc.SQLiteProfile")
       assert(slickNodeConfig.config.hasPath("db.numThreads"))
@@ -67,7 +67,7 @@ class DBConfigTest extends BitcoinSAsyncTest {
         slickNodeConfig.config.getString("db.connectionPool") == "disabled")
       assert(slickNodeConfig.config.getInt("db.queueSize") == 5000)
 
-      val walletConfig = WalletAppConfig(dataDir)
+      val walletConfig = WalletAppConfig(dataDir, Vector.empty)
       val slickWalletConfig = walletConfig.slickDbConfig
       assert(slickWalletConfig.profileName == "slick.jdbc.SQLiteProfile")
       assert(slickWalletConfig.config.hasPath("db.numThreads"))

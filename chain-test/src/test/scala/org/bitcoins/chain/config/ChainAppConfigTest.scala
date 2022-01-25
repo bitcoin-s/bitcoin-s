@@ -12,7 +12,7 @@ import scala.concurrent.Await
 
 class ChainAppConfigTest extends ChainUnitTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
-  val config = ChainAppConfig(directory = tempDir)
+  val config = ChainAppConfig(baseDatadir = tempDir, Vector.empty)
 
   //if we don't turn off logging here, isInitF a few lines down will
   //produce some nasty error logs since we are testing initialization
@@ -51,7 +51,8 @@ class ChainAppConfigTest extends ChainUnitTest {
   it must "be overridable with multiple levels" in { _ =>
     val testnet = ConfigFactory.parseString("bitcoin-s.network = testnet3")
     val mainnet = ConfigFactory.parseString("bitcoin-s.network = mainnet")
-    val overriden: ChainAppConfig = config.withOverrides(testnet, mainnet)
+    val overriden: ChainAppConfig =
+      config.withOverrides(Vector(testnet, mainnet))
     assert(overriden.network == MainNet)
 
   }
@@ -72,7 +73,7 @@ class ChainAppConfigTest extends ChainUnitTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig = ChainAppConfig(directory = tempDir)
+    val appConfig = ChainAppConfig(baseDatadir = tempDir, Vector.empty)
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)

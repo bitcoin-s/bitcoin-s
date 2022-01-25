@@ -51,7 +51,7 @@ object BitcoinSServerMainUtil {
       system: ActorSystem): BitcoinSAppConfig = {
     val conf = BitcoinSServerMainUtil.buildBitcoindConfig(bitcoind.instance)
     val datadir = FileUtil.tmpDir()
-    BitcoinSAppConfig(datadir.toPath, conf)
+    BitcoinSAppConfig(datadir.toPath, Vector(conf))
   }
 
   def destroyBitcoinSAppConfig(appConfig: BitcoinSAppConfig)(implicit

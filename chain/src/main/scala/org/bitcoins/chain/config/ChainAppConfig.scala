@@ -17,14 +17,11 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param directory The data directory of the module
   * @param confs Optional sequence of configuration overrides
   */
-case class ChainAppConfig(
-    private val directory: Path,
-    private val confs: Config*)(implicit override val ec: ExecutionContext)
+case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
+    implicit override val ec: ExecutionContext)
     extends DbAppConfig
     with ChainDbManagement
     with JdbcProfileComponent[ChainAppConfig] {
-
-  override protected[bitcoins] def configOverrides: List[Config] = confs.toList
 
   override protected[bitcoins] def moduleName: String =
     ChainAppConfig.moduleName
@@ -32,8 +29,7 @@ case class ChainAppConfig(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): ChainAppConfig =
-    ChainAppConfig(directory, configs: _*)
-  protected[bitcoins] def baseDatadir: Path = directory
+    ChainAppConfig(baseDatadir, configs.toVector)
 
   override lazy val appConfig: ChainAppConfig = this
 
@@ -136,5 +132,5 @@ object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       ec: ExecutionContext): ChainAppConfig =
-    ChainAppConfig(datadir, confs: _*)
+    ChainAppConfig(datadir, confs)
 }

@@ -82,7 +82,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val coreRoutes: CoreRoutes = CoreRoutes()
 
-  val commonRoutes: CommonRoutes = CommonRoutes(conf.datadir)
+  val commonRoutes: CommonRoutes = CommonRoutes(conf.baseDatadir)
   "The server" should {
 
     "combine PSBTs" in {

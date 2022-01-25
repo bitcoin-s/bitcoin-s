@@ -38,7 +38,7 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
                                                  |}
                                                  |""".stripMargin)
 
-    val throughConstructor = KeyManagerAppConfig(tempDir, overrider)
+    val throughConstructor = KeyManagerAppConfig(tempDir, Vector(overrider))
     val throughWithOverrides = config.withOverrides(overrider)
     assert(throughWithOverrides.network == MainNet)
     assert(throughWithOverrides.network == throughConstructor.network)
@@ -68,7 +68,8 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
   it must "be overridable with multiple levels" in {
     val testnet = ConfigFactory.parseString("bitcoin-s.network = testnet3")
     val mainnet = ConfigFactory.parseString("bitcoin-s.network = mainnet")
-    val overridden: KeyManagerAppConfig = config.withOverrides(testnet, mainnet)
+    val overridden: KeyManagerAppConfig =
+      config.withOverrides(Vector(testnet, mainnet))
     assert(overridden.network == MainNet)
   }
 
@@ -87,7 +88,7 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig = KeyManagerAppConfig(directory = tempDir)
+    val appConfig = KeyManagerAppConfig(baseDatadir = tempDir, Vector.empty)
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)
@@ -122,8 +123,8 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig1 = KeyManagerAppConfig(directory = tmpDir2)
-    val appConfig2 = KeyManagerAppConfig(directory = tmpDir2)
+    val appConfig1 = KeyManagerAppConfig(baseDatadir = tmpDir2, Vector.empty)
+    val appConfig2 = KeyManagerAppConfig(baseDatadir = tmpDir2, Vector.empty)
     val started1F = appConfig1.start()
     val started2F = appConfig2.start()
     for {
@@ -153,7 +154,7 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig1 = KeyManagerAppConfig(directory = tmpDir2)
+    val appConfig1 = KeyManagerAppConfig(baseDatadir = tmpDir2, Vector.empty)
     appConfig1
       .start()
       .map(_ => succeed)
@@ -171,7 +172,7 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig1 = KeyManagerAppConfig(directory = tmpDir2)
+    val appConfig1 = KeyManagerAppConfig(baseDatadir = tmpDir2, Vector.empty)
 
     assertThrows[RuntimeException] {
       appConfig1.start()
@@ -189,7 +190,7 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig1 = KeyManagerAppConfig(directory = tmpDir2)
+    val appConfig1 = KeyManagerAppConfig(baseDatadir = tmpDir2, Vector.empty)
 
     assertThrows[RuntimeException] {
       appConfig1.start()
@@ -207,7 +208,7 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig1 = KeyManagerAppConfig(directory = tmpDir2)
+    val appConfig1 = KeyManagerAppConfig(baseDatadir = tmpDir2, Vector.empty)
 
     assertThrows[RuntimeException] {
       appConfig1.toBip39KeyManager

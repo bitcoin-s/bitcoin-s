@@ -31,34 +31,38 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
   * @param confs A sequence of optional configuration overrides
   */
 case class BitcoinSAppConfig(
-    private val directory: Path,
-    private val confs: Config*)(implicit system: ActorSystem)
+    baseDatadir: Path,
+    configOverrides: Vector[Config])(implicit system: ActorSystem)
     extends StartStopAsync[Unit]
     with Logging {
   import system.dispatcher
-  lazy val walletConf: WalletAppConfig = WalletAppConfig(directory, confs: _*)
-  lazy val nodeConf: NodeAppConfig = NodeAppConfig(directory, confs: _*)
-  lazy val chainConf: ChainAppConfig = ChainAppConfig(directory, confs: _*)
-  lazy val dlcConf: DLCAppConfig = DLCAppConfig(directory, confs: _*)
-  lazy val torConf: TorAppConfig = TorAppConfig(directory, None, confs: _*)
+
+  lazy val walletConf: WalletAppConfig =
+    WalletAppConfig(baseDatadir, configOverrides)
+  lazy val nodeConf: NodeAppConfig = NodeAppConfig(baseDatadir, configOverrides)
+
+  lazy val chainConf: ChainAppConfig =
+    ChainAppConfig(baseDatadir, configOverrides)
+  lazy val dlcConf: DLCAppConfig = DLCAppConfig(baseDatadir, configOverrides)
+
+  lazy val torConf: TorAppConfig =
+    TorAppConfig(baseDatadir, None, configOverrides)
 
   lazy val dlcNodeConf: DLCNodeAppConfig =
-    DLCNodeAppConfig(directory, confs: _*)
+    DLCNodeAppConfig(baseDatadir, configOverrides)
 
   def copyWithConfig(newConfs: Vector[Config]): BitcoinSAppConfig = {
-    val configs = newConfs ++ confs
-    BitcoinSAppConfig(directory, configs: _*)
+    val configs = newConfs ++ configOverrides
+    BitcoinSAppConfig(baseDatadir, configs)
   }
 
   lazy val kmConf: KeyManagerAppConfig =
-    KeyManagerAppConfig(directory, confs: _*)
+    KeyManagerAppConfig(baseDatadir, configOverrides)
 
   lazy val bitcoindRpcConf: BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig(directory, confs: _*)
+    BitcoindRpcAppConfig(baseDatadir, configOverrides)
 
   lazy val network: NetworkParameters = chainConf.network
-
-  lazy val datadir: Path = directory
 
   /** Initializes the wallet, node and chain projects */
   override def start(): Future[Unit] = {
@@ -100,7 +104,7 @@ case class BitcoinSAppConfig(
   /** The underlying config the result of our fields derive from */
   lazy val config: Config = {
     val finalConfig =
-      AppConfig.getBaseConfig(baseDatadir = directory, confs.toList)
+      AppConfig.getBaseConfig(baseDatadir = baseDatadir, configOverrides)
     val resolved = finalConfig.resolve()
 
     resolved.checkValid(ConfigFactory.defaultReference(), "bitcoin-s")
@@ -148,11 +152,11 @@ case class BitcoinSAppConfig(
   def rpcPassword: String = config.getString("bitcoin-s.server.password")
 
   def exists(): Boolean = {
-    directory.resolve("bitcoin-s.conf").toFile.isFile
+    baseDatadir.resolve("bitcoin-s.conf").toFile.isFile
   }
 
-  def withOverrides(configs: Config*): BitcoinSAppConfig = {
-    BitcoinSAppConfig(directory, configs ++ confs: _*)
+  def withOverrides(configs: Vector[Config]): BitcoinSAppConfig = {
+    BitcoinSAppConfig(baseDatadir, configs ++ configOverrides)
   }
 }
 
@@ -164,7 +168,7 @@ object BitcoinSAppConfig extends Logging {
   def fromConfig(config: Config)(implicit
       system: ActorSystem): BitcoinSAppConfig = {
     val configDataDir: Path = Paths.get(config.getString("bitcoin-s.datadir"))
-    BitcoinSAppConfig(configDataDir, config)
+    BitcoinSAppConfig(configDataDir, Vector(config))
   }
 
   def fromClassPathConfig()(implicit system: ActorSystem): BitcoinSAppConfig = {
@@ -173,7 +177,7 @@ object BitcoinSAppConfig extends Logging {
 
   def fromDatadir(datadir: Path, confs: Config*)(implicit
       system: ActorSystem): BitcoinSAppConfig = {
-    BitcoinSAppConfig(datadir, confs: _*)
+    BitcoinSAppConfig(datadir, confs.toVector)
   }
 
   def fromDatadirWithServerArgs(
@@ -188,7 +192,7 @@ object BitcoinSAppConfig extends Logging {
     */
   def fromDefaultDatadir(confs: Config*)(implicit
       system: ActorSystem): BitcoinSAppConfig =
-    BitcoinSAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
+    BitcoinSAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs.toVector)
 
   def fromDefaultDatadirWithBundleConf(confs: Vector[Config] = Vector.empty)(
       implicit system: ActorSystem): BitcoinSAppConfig = {

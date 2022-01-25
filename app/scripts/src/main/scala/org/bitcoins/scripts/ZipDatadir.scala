@@ -20,7 +20,7 @@ class ZipDatadir(override val serverArgParser: ServerArgParser)(implicit
 
     //replace the line below with where you want to zip too
     val path = Paths.get("/tmp", "bitcoin-s.zip")
-    val target = DatadirUtil.zipDatadir(conf.datadir, path)
+    val target = DatadirUtil.zipDatadir(conf.baseDatadir, path)
     logger.info(s"Done zipping to $target!")
     for {
       _ <- system.terminate()
@@ -45,7 +45,8 @@ object Zip extends BitcoinSAppScalaDaemon {
   System.setProperty("bitcoins.log.location", datadirParser.networkDir.toString)
 
   implicit lazy val conf: BitcoinSAppConfig =
-    BitcoinSAppConfig(datadirParser.datadir, datadirParser.baseConfig)(system)
+    BitcoinSAppConfig(datadirParser.datadir, Vector(datadirParser.baseConfig))(
+      system)
 
   new ZipDatadir(serverCmdLineArgs).run()
 }

@@ -15,7 +15,7 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
 
   val config: WalletAppConfig =
-    WalletAppConfig(directory = tempDir)
+    WalletAppConfig(baseDatadir = tempDir, Vector.empty)
 
   it must "resolve DB connections correctly " in {
     assert(config.dbPath.startsWith(Properties.tmpDir))
@@ -40,7 +40,7 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
                                                  |}
                                                  |""".stripMargin)
 
-    val throughConstructor = WalletAppConfig(tempDir, overrider)
+    val throughConstructor = WalletAppConfig(tempDir, Vector(overrider))
     val throughWithOverrides = config.withOverrides(overrider)
     assert(throughWithOverrides.network == MainNet)
     assert(throughWithOverrides.network == throughConstructor.network)
@@ -70,7 +70,8 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
   it must "be overridable with multiple levels" in {
     val testnet = ConfigFactory.parseString("bitcoin-s.network = testnet3")
     val mainnet = ConfigFactory.parseString("bitcoin-s.network = mainnet")
-    val overriden: WalletAppConfig = config.withOverrides(testnet, mainnet)
+    val overriden: WalletAppConfig =
+      config.withOverrides(Vector(testnet, mainnet))
     assert(overriden.network == MainNet)
   }
 
@@ -91,7 +92,7 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig = WalletAppConfig(directory = tempDir)
+    val appConfig = WalletAppConfig(baseDatadir = tempDir, Vector.empty)
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)

@@ -28,23 +28,19 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param directory The data directory of the node
   * @param confs Optional sequence of configuration overrides
   */
-case class NodeAppConfig(
-    private val directory: Path,
-    private val confs: Config*)(implicit val system: ActorSystem)
+case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
+    implicit val system: ActorSystem)
     extends DbAppConfig
     with NodeDbManagement
     with JdbcProfileComponent[NodeAppConfig] {
-  override protected[bitcoins] def configOverrides: List[Config] = confs.toList
   override protected[bitcoins] def moduleName: String = NodeAppConfig.moduleName
   override protected[bitcoins] type ConfigType = NodeAppConfig
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): NodeAppConfig =
-    NodeAppConfig(directory, configs: _*)
+    NodeAppConfig(baseDatadir, configs.toVector)
 
   implicit override def ec: ExecutionContext = system.dispatcher
-
-  protected[bitcoins] def baseDatadir: Path = directory
 
   override def appConfig: NodeAppConfig = this
 
@@ -66,7 +62,7 @@ case class NodeAppConfig(
         nodeType match {
           case NodeType.BitcoindBackend =>
             val bitcoindRpcAppConfig =
-              BitcoindRpcAppConfig(directory, confs: _*)(system)
+              BitcoindRpcAppConfig(baseDatadir, configOverrides)(system)
             bitcoindRpcAppConfig.binaryOpt match {
               case Some(_) =>
                 bitcoindRpcAppConfig.clientF
@@ -112,7 +108,7 @@ case class NodeAppConfig(
   }
 
   lazy val torConf: TorAppConfig =
-    TorAppConfig(directory, Some(moduleName), confs: _*)
+    TorAppConfig(baseDatadir, Some(moduleName), configOverrides)
 
   lazy val socks5ProxyParams: Option[Socks5ProxyParams] =
     torConf.socks5ProxyParams
@@ -150,7 +146,7 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       system: ActorSystem): NodeAppConfig =
-    NodeAppConfig(datadir, confs: _*)
+    NodeAppConfig(datadir, confs)
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
   def createNode(peers: Vector[Peer])(implicit

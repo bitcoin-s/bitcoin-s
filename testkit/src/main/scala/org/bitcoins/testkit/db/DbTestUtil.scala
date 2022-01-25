@@ -41,13 +41,11 @@ trait TestDbManagement extends DbManagement {
 
 }
 
-case class TestAppConfig(
-    private val directory: Path,
-    private val conf: Config*)(implicit override val ec: ExecutionContext)
+case class TestAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
+    implicit override val ec: ExecutionContext)
     extends DbAppConfig
     with TestDbManagement
     with JdbcProfileComponent[TestAppConfig] {
-  override protected[bitcoins] def configOverrides: List[Config] = conf.toList
 
   override protected[bitcoins] def moduleName: String = "test"
 
@@ -55,9 +53,7 @@ case class TestAppConfig(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): TestAppConfig =
-    TestAppConfig(directory, configs: _*)
-
-  protected[bitcoins] def baseDatadir: Path = directory
+    TestAppConfig(baseDatadir, configOverrides)
 
   override def appConfig: TestAppConfig = this
 

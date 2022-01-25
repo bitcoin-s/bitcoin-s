@@ -31,14 +31,12 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   * @param directory The data directory of the wallet
   * @param conf Optional sequence of configuration overrides
   */
-case class WalletAppConfig(
-    private val directory: Path,
-    private val conf: Config*)(implicit override val ec: ExecutionContext)
+case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
+    implicit override val ec: ExecutionContext)
     extends DbAppConfig
     with WalletDbManagement
     with JdbcProfileComponent[WalletAppConfig]
     with DBMasterXPubApi {
-  override protected[bitcoins] def configOverrides: List[Config] = conf.toList
 
   override protected[bitcoins] def moduleName: String =
     WalletAppConfig.moduleName
@@ -47,14 +45,12 @@ case class WalletAppConfig(
 
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): WalletAppConfig =
-    WalletAppConfig(directory, configs: _*)
-
-  protected[bitcoins] def baseDatadir: Path = directory
+    WalletAppConfig(baseDatadir, configOverrides)
 
   override def appConfig: WalletAppConfig = this
 
   lazy val torConf: TorAppConfig =
-    TorAppConfig(directory, Some(moduleName), conf: _*)
+    TorAppConfig(baseDatadir, Some(moduleName), configOverrides)
 
   private[wallet] lazy val scheduler: ScheduledExecutorService = {
     Executors.newScheduledThreadPool(
@@ -80,7 +76,7 @@ case class WalletAppConfig(
   }
 
   lazy val kmConf: KeyManagerAppConfig =
-    KeyManagerAppConfig(directory, conf: _*)
+    KeyManagerAppConfig(baseDatadir, configOverrides)
 
   lazy val defaultAccountKind: HDPurpose =
     config.getString("bitcoin-s.wallet.defaultAccountType") match {
@@ -341,7 +337,7 @@ object WalletAppConfig
     */
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       ec: ExecutionContext): WalletAppConfig =
-    WalletAppConfig(datadir, confs: _*)
+    WalletAppConfig(datadir, confs)
 
   /** Creates a wallet based on the given [[WalletAppConfig]] */
   def createHDWallet(
