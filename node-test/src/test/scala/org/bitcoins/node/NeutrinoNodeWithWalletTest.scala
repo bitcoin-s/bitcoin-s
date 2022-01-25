@@ -210,4 +210,51 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- AsyncUtil.awaitConditionF(condition)
     } yield succeed
   }
+
+  it must "receive funds while the node is offline" in { param =>
+    val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+
+    val initBalanceF = wallet.getBalance()
+    val receivedAddrF = wallet.getNewAddress()
+
+    //stop the node to take us offline
+    val stopF = node.stop()
+    for {
+      initBalance <- initBalanceF
+      receiveAddr <- receivedAddrF
+      stoppedNode <- stopF
+      //send money and generate a block to confirm the funds while we are offline
+      hashes <- bitcoind.generateToAddress(1, receiveAddr)
+      _ = hashes.foreach(h => logger.info(s"new best blockHash=${h.hex}"))
+      //restart the node now that we have received funds
+      startedNode <- stoppedNode.start()
+      _ <- startedNode
+        .sync() //sync the block ??? is this actually in our startup logic ???
+      _ <- AsyncUtil.awaitConditionF(() => {
+        for {
+          bitcoindCount <- bitcoind.getBlockCount
+          bitcoindBestHash <- bitcoind.getBestBlockHash
+          bitcoindFilterCount <- bitcoind.getFilterCount()
+          bitcoidnFilterHeaderCount <- bitcoind.getFilterHeaderCount()
+          chainApi <- node.chainApiFromDb()
+          chainCount <- chainApi.getBlockCount()
+          chainBestHash <- chainApi.getBestBlockHash()
+          chainFilterHeaderCount <- chainApi.getFilterHeaderCount()
+          chainFilterCount <- chainApi.getFilterCount()
+        } yield {
+          logger.info(
+            s"bitcoindCount=$bitcoindCount, chainCount=$chainCount bitcoindBestHash=$bitcoindBestHash chainBestHash=$chainBestHash")
+          logger.info(
+            s"bitcoindFilterHeaderCount=$bitcoidnFilterHeaderCount chainFilterHeaderCount=$chainFilterHeaderCount")
+          logger.info(
+            s"bitcoindFilterCount=$bitcoindFilterCount chainFilterCount=$chainFilterCount")
+          bitcoindCount == chainCount
+        }
+      })
+      balance <- wallet.getBalance()
+    } yield {
+      assert(balance > initBalance)
+    }
+
+  }
 }

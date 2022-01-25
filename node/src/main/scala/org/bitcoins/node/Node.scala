@@ -118,16 +118,13 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     logger.info("Starting node")
     val start = System.currentTimeMillis()
 
-    val startConfsF = for {
-      _ <- chainAppConfig.start()
-      _ <- nodeAppConfig.start()
-    } yield ()
+    val chainApiF = chainApiFromDb()
 
-    val chainApiF = startConfsF.flatMap(_ => chainApiFromDb())
-
+    val oldPeers = peerManager.peers
     val startNodeF = for {
       peers <- peerManager.getPeers
       _ = peers.foreach(peerManager.addPeer)
+      _ = println(s"oldPeers=$oldPeers newPeers=${peerManager.peers}")
       _ <- Future.sequence(peers.map(initializePeer))
     } yield {
       logger.info(s"Our node has been full started. It took=${System
@@ -141,10 +138,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val filterCountF = chainApiF.flatMap(_.getFilterCount())
 
     for {
-      _ <- startConfsF
       node <- startNodeF
-
-      _ = logger.trace("Fetching node starting point")
       bestHash <- bestHashF
       bestHeight <- bestHeightF
       filterHeaderCount <- filterHeaderCountF
@@ -164,7 +158,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
     val disconnectF = for {
       disconnect <- Future.sequence(disconnectFs)
-      _ <- nodeAppConfig.stop()
     } yield disconnect
 
     def isAllDisconnectedF: Future[Boolean] = {
@@ -180,11 +173,18 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       AsyncUtil.retryUntilSatisfiedF(() => isAllDisconnectedF, 500.millis)
     }
 
-    isStoppedF.failed.foreach { e =>
+    val peers = peerManager.peers
+    val removedPeersF = for {
+      _ <- isStoppedF
+      _ <- Future.sequence(peers.map(peerManager.removePeer))
+      _ = println(s"oldPeers=$peers newPeers=${peerManager.peers}")
+    } yield ()
+
+    removedPeersF.failed.foreach { e =>
       logger.warn(s"Cannot stop node", e)
     }
 
-    isStoppedF.map { _ =>
+    removedPeersF.map { _ =>
       logger.info(
         s"Node stopped! It took=${System.currentTimeMillis() - start}ms")
       this
