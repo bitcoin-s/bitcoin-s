@@ -15,15 +15,12 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
-import org.bitcoins.node.{
-  NodeCallbacks,
-  OnBlockReceived,
-  OnCompactFiltersReceived,
-  OnMerkleBlockReceived
-}
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.{NodeCallbacks, OnMerkleBlockReceived}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.server.util.CallbackUtil
 import org.bitcoins.testkit.EmbeddedPg
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
@@ -647,8 +644,10 @@ object BitcoinSWalletTest extends WalletLogger {
         chainQueryApi = chainQueryApi,
         bip39PasswordOpt = bip39PasswordOpt)(config.walletConf, system)
       //add callbacks for wallet
-      nodeCallbacks =
-        BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(wallet)
+      nodeCallbacks <-
+        BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(wallet)(
+          config.nodeConf,
+          system.dispatcher)
       _ = config.nodeConf.addCallbacks(nodeCallbacks)
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
       funded <- FundWalletUtil.fundWalletWithBitcoind(withBitcoind)
@@ -692,22 +691,9 @@ object BitcoinSWalletTest extends WalletLogger {
 
   /** Constructs callbacks for the wallet from the node to process blocks and compact filters */
   def createNeutrinoNodeCallbacksForWallet(wallet: Wallet)(implicit
-      ec: ExecutionContext): NodeCallbacks = {
-    val onBlock: OnBlockReceived = { block =>
-      for {
-        _ <- wallet.processBlock(block)
-      } yield ()
-    }
-    val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
-      for {
-        _ <- wallet.processCompactFilters(blockFilters)
-      } yield ()
-    }
-
-    NodeCallbacks(
-      onBlockReceived = Vector(onBlock),
-      onCompactFiltersReceived = Vector(onCompactFilters)
-    )
+      nodeAppConfig: NodeAppConfig,
+      ec: ExecutionContext): Future[NodeCallbacks] = {
+    CallbackUtil.createNeutrinoNodeCallbacksForWallet(wallet)
   }
 
   /** Registers a callback to handle merkle blocks given to us by a spv node */

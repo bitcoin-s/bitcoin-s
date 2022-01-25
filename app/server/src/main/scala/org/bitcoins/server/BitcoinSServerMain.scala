@@ -21,7 +21,6 @@ import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.{
-  ExternalImplementationNodeType,
   InternalImplementationNodeType,
   NodeApi,
   NodeType
@@ -42,6 +41,7 @@ import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util.{
   BitcoinSAppScalaDaemon,
+  CallbackUtil,
   ServerBindings,
   WebsocketUtil,
   WsServerConfig
@@ -130,7 +130,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       chainApi <- chainApiF
       _ = logger.info("Initialized chain api")
       wallet <- dlcConf.createDLCWallet(node, chainApi, feeProvider)
-      nodeCallbacks <- createCallbacks(wallet)
+      nodeCallbacks <- CallbackUtil.createNeutrinoNodeCallbacksForWallet(wallet)
       _ = nodeConf.addCallbacks(nodeCallbacks)
     } yield {
       logger.info(
@@ -284,48 +284,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     } yield {
       logger.info(s"Done starting Main!")
       ()
-    }
-  }
-
-  private def createCallbacks(wallet: Wallet)(implicit
-      nodeConf: NodeAppConfig,
-      ec: ExecutionContext): Future[NodeCallbacks] = {
-    lazy val onTx: OnTxReceived = { tx =>
-      logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
-      wallet.processTransaction(tx, blockHashOpt = None).map(_ => ())
-    }
-    lazy val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
-      wallet
-        .processCompactFilters(blockFilters = blockFilters)
-        .map(_ => ())
-    }
-    lazy val onBlock: OnBlockReceived = { block =>
-      wallet.processBlock(block).map(_ => ())
-    }
-    lazy val onHeaders: OnBlockHeadersReceived = { headers =>
-      if (headers.isEmpty) {
-        Future.unit
-      } else {
-        wallet.updateUtxoPendingStates().map(_ => ())
-      }
-    }
-    nodeConf.nodeType match {
-      case NodeType.SpvNode =>
-        Future.successful(
-          NodeCallbacks(onTxReceived = Vector(onTx),
-                        onBlockHeadersReceived = Vector(onHeaders)))
-      case NodeType.NeutrinoNode =>
-        Future.successful(
-          NodeCallbacks(onTxReceived = Vector(onTx),
-                        onBlockReceived = Vector(onBlock),
-                        onCompactFiltersReceived = Vector(onCompactFilters),
-                        onBlockHeadersReceived = Vector(onHeaders)))
-      case NodeType.FullNode =>
-        Future.failed(new RuntimeException("Not yet implemented"))
-      case _: ExternalImplementationNodeType =>
-        Future.failed(
-          new RuntimeException(
-            "Cannot create callbacks for an external implementation"))
     }
   }
 
