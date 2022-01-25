@@ -170,7 +170,9 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
   }
 
   lazy val calcContractId: ByteVector = {
-    DLCUtil.computeContractId(fundingTx, accept.tempContractId)
+    DLCUtil.computeContractId(fundingTx = fundingTx,
+                              outputIdx = fundOutputIndex,
+                              tempContractId = accept.tempContractId)
   }
 
   /** Constructs the unsigned Contract Execution Transaction (CET)
