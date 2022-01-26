@@ -235,7 +235,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           bitcoindCount <- bitcoind.getBlockCount
           bitcoindBestHash <- bitcoind.getBestBlockHash
           bitcoindFilterCount <- bitcoind.getFilterCount()
-          bitcoidnFilterHeaderCount <- bitcoind.getFilterHeaderCount()
+          bitcoidFilterHeaderCount <- bitcoind.getFilterHeaderCount()
           chainApi <- node.chainApiFromDb()
           chainCount <- chainApi.getBlockCount()
           chainBestHash <- chainApi.getBestBlockHash()
@@ -245,10 +245,12 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           logger.info(
             s"bitcoindCount=$bitcoindCount, chainCount=$chainCount bitcoindBestHash=$bitcoindBestHash chainBestHash=$chainBestHash")
           logger.info(
-            s"bitcoindFilterHeaderCount=$bitcoidnFilterHeaderCount chainFilterHeaderCount=$chainFilterHeaderCount")
+            s"bitcoindFilterHeaderCount=$bitcoidFilterHeaderCount chainFilterHeaderCount=$chainFilterHeaderCount")
           logger.info(
             s"bitcoindFilterCount=$bitcoindFilterCount chainFilterCount=$chainFilterCount")
-          bitcoindCount == chainCount
+          bitcoindCount == chainCount &&
+          chainFilterHeaderCount == bitcoidFilterHeaderCount &&
+          chainFilterCount == bitcoindFilterCount
         }
       })
       balance <- wallet.getBalance()
