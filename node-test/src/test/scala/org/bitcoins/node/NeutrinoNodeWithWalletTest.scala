@@ -232,8 +232,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         _ <- bitcoind.generateToAddress(1, bitcoindAddr)
         //restart the node now that we have received funds
         startedNode <- stoppedNode.start()
-        _ <- startedNode
-          .sync() //sync the block ??? is this actually in our startup logic ???
+        _ <- startedNode.sync()
         _ <- NodeTestUtil.awaitCompactFiltersSync(node = node, rpc = bitcoind)
         _ <- AsyncUtil.retryUntilSatisfiedF(() => {
           for {
@@ -275,8 +274,6 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
       balanceAfterSpend <- wallet.getBalance()
     } yield {
-      logger.info(
-        s"balanceAfterSpend=$balanceAfterSpend initBalance=$initBalance")
       assert(balanceAfterSpend < initBalance)
     }
   }

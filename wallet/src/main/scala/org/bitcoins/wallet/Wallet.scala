@@ -173,7 +173,6 @@ abstract class Wallet
   override def processCompactFilters(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
     Wallet] = {
-    logger.info(s"Processing ${blockFilters.length} in wallet")
     val utxosF = listUtxos()
     val spksF = listScriptPubKeys()
     val blockHashOpt = blockFilters.lastOption.map(_._1.flip)
@@ -215,7 +214,6 @@ abstract class Wallet
         }
       }
     } yield {
-      logger.info(s"Done processing ${blockFilters.length} block filters")
       this
     }
   }

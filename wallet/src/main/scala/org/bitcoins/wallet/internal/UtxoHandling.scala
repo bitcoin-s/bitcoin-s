@@ -301,8 +301,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       // insert the UTXO into the DB
       val insertedUtxoEF: Either[AddUtxoError, Future[SpendingInfoDb]] = for {
         addressDb <- addressDbE
-        _ = logger.info(
-          s"Adding UTXO to wallet: ${transaction.txIdBE.hex}:${vout.toInt} amt=${output.value} account")
       } yield writeUtxo(tx = transaction,
                         state = state,
                         output = output,
