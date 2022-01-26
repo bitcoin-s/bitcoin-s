@@ -133,7 +133,7 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
     //ugh, this is kinda nasty, idk how to make better though
     val walletAppConfig =
-      WalletAppConfig(directory = directory, conf = conf: _*)
+      WalletAppConfig(baseDatadir, configOverrides)
     val txDAO: TransactionDAO =
       TransactionDAO()(ec = ec, appConfig = walletAppConfig)
     //get the offers so we can figure out what the serialization version is

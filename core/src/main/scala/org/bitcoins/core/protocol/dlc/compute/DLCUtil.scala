@@ -169,7 +169,7 @@ object DLCUtil {
       fundingSPK = fundingSPK
     )
 
-    val fundingTx = DLCTxBuilder.buildFundingTransaction(
+    val (fundingTx, fundingOutputIdx) = DLCTxBuilder.buildFundingTransaction(
       offerInput = offer.totalCollateral,
       acceptInput = acceptWithoutSigs.totalCollateral,
       offerFundingInputs = offerFundingInputs,
@@ -183,6 +183,8 @@ object DLCUtil {
       finalizer = fundingTxFinalizer
     )
 
-    computeContractId(fundingTx, offer.tempContractId)
+    computeContractId(fundingTx = fundingTx,
+                      outputIdx = fundingOutputIdx,
+                      tempContractId = offer.tempContractId)
   }
 }

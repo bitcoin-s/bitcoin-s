@@ -381,8 +381,8 @@ object DLCMessage {
         cetSigs = CETSignatures(outcomeSigs),
         refundSig = PartialSignature(
           pubKey = accept.fundingPubKey,
+          signature = refundSigWithHashType
         ),
-        refundSig = refundSigWithHashType,
         negotiationFields = NegotiationFields.fromTLV(accept.negotiationFields),
         tempContractId = accept.tempContractId
       )
