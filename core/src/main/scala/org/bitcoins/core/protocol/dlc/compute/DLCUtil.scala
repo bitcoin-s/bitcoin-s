@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.dlc.compute
 
+import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.models.{ContractInfo, OracleOutcome}
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
@@ -11,10 +12,22 @@ import scala.util.Try
 
 object DLCUtil {
 
+  /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Protocol.md#definition-of-contract_id
+    * @param fundingTx the transaction that contains the DLC funding output
+    * @param outputIdx the index of the output
+    * @param tempContractId the temporary contractId in the offer message
+    * @return
+    */
   def computeContractId(
       fundingTx: Transaction,
+      outputIdx: Int,
       tempContractId: Sha256Digest): ByteVector = {
-    fundingTx.txIdBE.bytes.xor(tempContractId.bytes)
+    val u16 = UInt16(outputIdx)
+    //we need to pad the u16 due to how xor works in scodec so we don't lose precision
+    val padded = ByteVector.fill(30)(0.toByte) ++ u16.bytes
+    fundingTx.txIdBE.bytes
+      .xor(tempContractId.bytes)
+      .xor(padded)
   }
 
   /** Extracts an adaptor secret from cetSig assuming it is the completion
