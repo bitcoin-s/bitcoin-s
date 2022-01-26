@@ -147,7 +147,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
       }
       for {
         _ <- disconnectF
-        _ <- removePeer(peer)
+        _ = _peerData.remove(peer)
       } yield ()
     } else {
       logger.debug(s"Key $peer not found in peerData")

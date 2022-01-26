@@ -210,4 +210,71 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- AsyncUtil.awaitConditionF(condition)
     } yield succeed
   }
+
+  it must "receive funds while the node is offline when we restart" in {
+    param =>
+      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+
+      val initBalanceF = wallet.getBalance()
+      val receivedAddrF = wallet.getNewAddress()
+      val bitcoindAddrF = bitcoind.getNewAddress
+      val sendAmt = Bitcoins.one
+      //stop the node to take us offline
+      val stopF = node.stop()
+      for {
+        initBalance <- initBalanceF
+        receiveAddr <- receivedAddrF
+        bitcoindAddr <- bitcoindAddrF
+        stoppedNode <- stopF
+        //send money and generate a block to confirm the funds while we are offline
+        _ <- bitcoind.sendToAddress(receiveAddr, sendAmt)
+        //generate a block to confirm the tx
+        _ <- bitcoind.generateToAddress(1, bitcoindAddr)
+        //restart the node now that we have received funds
+        startedNode <- stoppedNode.start()
+        _ <- startedNode.sync()
+        _ <- NodeTestUtil.awaitCompactFiltersSync(node = node, rpc = bitcoind)
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+          for {
+            balance <- wallet.getBalance()
+          } yield {
+            balance == initBalance + sendAmt
+          }
+        })
+        balance <- wallet.getBalance()
+      } yield {
+        assert(balance > initBalance)
+      }
+  }
+
+  it must "recognize funds were spent while we were offline" in { param =>
+    //useful test for the case where we are in a DLC
+    //and the counterparty broadcasts the funding tx or a CET
+    val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+    val initBalanceF = wallet.getBalance()
+    val bitcoindAddrF = bitcoind.getNewAddress
+    val sendAmt = Bitcoins.one
+
+    //stop the node to take us offline
+    val stopF = node.stop()
+    for {
+      initBalance <- initBalanceF
+      bitcoindAddr <- bitcoindAddrF
+      stoppedNode <- stopF
+
+      //create a transaction that spends to bitcoind with our wallet
+      tx <- wallet.sendToAddress(bitcoindAddr, sendAmt, SatoshisPerByte.one)
+      //broadcast tx
+      _ <- bitcoind.sendRawTransaction(tx)
+      _ <- bitcoind.generateToAddress(6, bitcoindAddr)
+
+      //bring node back online
+      startedNode <- stoppedNode.start()
+      _ <- startedNode.sync()
+      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+      balanceAfterSpend <- wallet.getBalance()
+    } yield {
+      assert(balanceAfterSpend < initBalance)
+    }
+  }
 }
