@@ -275,7 +275,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
         offerDbState <- offerDbStateOpt
       } yield {
         //if the accept message is defined we must have refund sigs
-        dlcAcceptOpt.zip(refundSigsOpt) match {
+        dlcAcceptOpt.zip(refundSigsOpt).headOption match {
           case Some((dlcAccept, refundSigDb)) =>
             require(
               refundSigsOpt.isDefined,
