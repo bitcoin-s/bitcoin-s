@@ -24,19 +24,20 @@ object CallbackUtil extends Logging {
       wallet.processTransaction(tx, blockHashOpt = None).map(_ => ())
     }
     lazy val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
-      logger.info(
-        s"Executing onCompactFilters callback=${blockFilters.map(_._1).take(2)}")
+      logger.debug(
+        s"Executing onCompactFilters callback with filter count=${blockFilters.length}")
       wallet
         .processCompactFilters(blockFilters = blockFilters)
         .map(_ => ())
     }
     lazy val onBlock: OnBlockReceived = { block =>
-      logger.info(s"Executing onBlock callback=${block.blockHeader.hashBE.hex}")
+      logger.debug(
+        s"Executing onBlock callback=${block.blockHeader.hashBE.hex}")
       wallet.processBlock(block).map(_ => ())
     }
     lazy val onHeaders: OnBlockHeadersReceived = { headers =>
-      logger.info(
-        s"Executing header callback=${headers.map(_.hashBE.hex).take(2)}")
+      logger.debug(
+        s"Executing block header with header count=${headers.length}")
       if (headers.isEmpty) {
         Future.unit
       } else {

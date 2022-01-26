@@ -119,12 +119,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val start = System.currentTimeMillis()
 
     val chainApiF = chainApiFromDb()
-
-    val oldPeers = peerManager.peers
     val startNodeF = for {
       peers <- peerManager.getPeers
       _ = peers.foreach(peerManager.addPeer)
-      _ = println(s"oldPeers=$oldPeers newPeers=${peerManager.peers}")
       _ <- Future.sequence(peers.map(initializePeer))
     } yield {
       logger.info(s"Our node has been full started. It took=${System
@@ -177,7 +174,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val removedPeersF = for {
       _ <- isStoppedF
       _ <- Future.sequence(peers.map(peerManager.removePeer))
-      _ = println(s"oldPeers=$peers newPeers=${peerManager.peers}")
     } yield ()
 
     removedPeersF.failed.foreach { e =>

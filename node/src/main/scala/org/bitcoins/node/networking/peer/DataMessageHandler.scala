@@ -66,7 +66,7 @@ case class DataMessageHandler(
           this.copy(chainApi = newChainApi)
         }
       case filterHeader: CompactFilterHeadersMessage =>
-        logger.info(
+        logger.debug(
           s"Got ${filterHeader.filterHashes.size} compact filter header hashes")
         val filterHeaders = filterHeader.filterHeaders
         for {
@@ -75,7 +75,7 @@ case class DataMessageHandler(
             filterHeader.stopHash.flip)
           newSyncing <-
             if (filterHeaders.size == chainConfig.filterHeaderBatchSize) {
-              logger.info(
+              logger.debug(
                 s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
               sendNextGetCompactFilterHeadersCommand(
                 peerWithCompactFilters,

@@ -211,52 +211,41 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     } yield succeed
   }
 
-  it must "receive funds while the node is offline" in { param =>
-    val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+  it must "receive funds while the node is offline when we restart" in {
+    param =>
+      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
 
-    val initBalanceF = wallet.getBalance()
-    val receivedAddrF = wallet.getNewAddress()
-
-    //stop the node to take us offline
-    val stopF = node.stop()
-    for {
-      initBalance <- initBalanceF
-      receiveAddr <- receivedAddrF
-      stoppedNode <- stopF
-      //send money and generate a block to confirm the funds while we are offline
-      hashes <- bitcoind.generateToAddress(1, receiveAddr)
-      _ = hashes.foreach(h => logger.info(s"new best blockHash=${h.hex}"))
-      //restart the node now that we have received funds
-      startedNode <- stoppedNode.start()
-      _ <- startedNode
-        .sync() //sync the block ??? is this actually in our startup logic ???
-      _ <- AsyncUtil.awaitConditionF(() => {
-        for {
-          bitcoindCount <- bitcoind.getBlockCount
-          bitcoindBestHash <- bitcoind.getBestBlockHash
-          bitcoindFilterCount <- bitcoind.getFilterCount()
-          bitcoidFilterHeaderCount <- bitcoind.getFilterHeaderCount()
-          chainApi <- node.chainApiFromDb()
-          chainCount <- chainApi.getBlockCount()
-          chainBestHash <- chainApi.getBestBlockHash()
-          chainFilterHeaderCount <- chainApi.getFilterHeaderCount()
-          chainFilterCount <- chainApi.getFilterCount()
-        } yield {
-          logger.info(
-            s"bitcoindCount=$bitcoindCount, chainCount=$chainCount bitcoindBestHash=$bitcoindBestHash chainBestHash=$chainBestHash")
-          logger.info(
-            s"bitcoindFilterHeaderCount=$bitcoidFilterHeaderCount chainFilterHeaderCount=$chainFilterHeaderCount")
-          logger.info(
-            s"bitcoindFilterCount=$bitcoindFilterCount chainFilterCount=$chainFilterCount")
-          bitcoindCount == chainCount &&
-          chainFilterHeaderCount == bitcoidFilterHeaderCount &&
-          chainFilterCount == bitcoindFilterCount
-        }
-      })
-      balance <- wallet.getBalance()
-    } yield {
-      assert(balance > initBalance)
-    }
+      val initBalanceF = wallet.getBalance()
+      val receivedAddrF = wallet.getNewAddress()
+      val bitcoindAddrF = bitcoind.getNewAddress
+      val sendAmt = Bitcoins.one
+      //stop the node to take us offline
+      val stopF = node.stop()
+      for {
+        initBalance <- initBalanceF
+        receiveAddr <- receivedAddrF
+        bitcoindAddr <- bitcoindAddrF
+        stoppedNode <- stopF
+        //send money and generate a block to confirm the funds while we are offline
+        _ <- bitcoind.sendToAddress(receiveAddr, sendAmt)
+        //generate a block to confirm the tx
+        _ <- bitcoind.generateToAddress(1, bitcoindAddr)
+        //restart the node now that we have received funds
+        startedNode <- stoppedNode.start()
+        _ <- startedNode
+          .sync() //sync the block ??? is this actually in our startup logic ???
+        _ <- NodeTestUtil.awaitCompactFiltersSync(node = node, rpc = bitcoind)
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+          for {
+            balance <- wallet.getBalance()
+          } yield {
+            balance == initBalance + sendAmt
+          }
+        })
+        balance <- wallet.getBalance()
+      } yield {
+        assert(balance > initBalance)
+      }
 
   }
 }

@@ -277,7 +277,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     } yield {
       val writtenOut = written.outPoint
       logger.info(
-        s"Successfully inserted UTXO ${writtenOut.txIdBE.hex}:${writtenOut.vout.toInt} into DB")
+        s"Successfully inserted UTXO ${writtenOut.txIdBE.hex}:${writtenOut.vout.toInt} amt=${output.value} into DB")
       logger.debug(s"UTXO details: ${written.output}")
       written
     }
@@ -302,7 +302,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       val insertedUtxoEF: Either[AddUtxoError, Future[SpendingInfoDb]] = for {
         addressDb <- addressDbE
         _ = logger.info(
-        s"Adding UTXO to wallet: ${transaction.txIdBE.hex}:${vout.toInt} amt=${output.value} account")
+          s"Adding UTXO to wallet: ${transaction.txIdBE.hex}:${vout.toInt} amt=${output.value} account")
       } yield writeUtxo(tx = transaction,
                         state = state,
                         output = output,

@@ -380,9 +380,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         if (incoming.nonEmpty || outgoing.nonEmpty)
           walletCallbacks.executeOnTransactionProcessed(logger, transaction)
         else Future.unit
-      balance <- getBalance()
     } yield {
-      logger.info(s"balance=$balance")
       ProcessTxResult(incoming, outgoing)
     }
   }
