@@ -246,6 +246,38 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       } yield {
         assert(balance > initBalance)
       }
+  }
 
+  it must "recognize funds were spent while we were offline" in { param =>
+    //useful test for the case where we are in a DLC
+    //and the counterparty broadcasts the funding tx or a CET
+    val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind, _) = param
+    val initBalanceF = wallet.getBalance()
+    val bitcoindAddrF = bitcoind.getNewAddress
+    val sendAmt = Bitcoins.one
+
+    //stop the node to take us offline
+    val stopF = node.stop()
+    for {
+      initBalance <- initBalanceF
+      bitcoindAddr <- bitcoindAddrF
+      stoppedNode <- stopF
+
+      //create a transaction that spends to bitcoind with our wallet
+      tx <- wallet.sendToAddress(bitcoindAddr, sendAmt, SatoshisPerByte.one)
+      //broadcast tx
+      _ <- bitcoind.sendRawTransaction(tx)
+      _ <- bitcoind.generateToAddress(6, bitcoindAddr)
+
+      //bring node back online
+      startedNode <- stoppedNode.start()
+      _ <- startedNode.sync()
+      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+      balanceAfterSpend <- wallet.getBalance()
+    } yield {
+      logger.info(
+        s"balanceAfterSpend=$balanceAfterSpend initBalance=$initBalance")
+      assert(balanceAfterSpend < initBalance)
+    }
   }
 }
