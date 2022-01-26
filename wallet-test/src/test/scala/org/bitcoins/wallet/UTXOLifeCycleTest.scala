@@ -539,9 +539,13 @@ class UTXOLifeCycleTest
         utxo = utxos.head
         _ = assert(utxo.txid == txId)
         _ = assert(utxo.state == TxoState.PendingConfirmationsReceived)
-
         //now mark the utxo as reserved
         _ <- wallet.markUTXOsAsReserved(Vector(utxo))
+        //confirm it is reserved
+        _ <- wallet
+          .listUtxos(TxoState.Reserved)
+          .map(utxos =>
+            assert(utxos.contains(utxo.copyWithState(TxoState.Reserved))))
 
         //now process another block
         hashes2 <- bitcoind.generateToAddress(blocks = 1, throwAwayAddr)

@@ -117,6 +117,9 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           for {
             _ <- acc
             receivedSpendingInfoDbs <- cachedReceivedF
+            _ = logger.info(s"received spendingInfoDbs")
+            _ = receivedSpendingInfoDbs.foreach(u => logger.info(s"u=$u"))
+            _ = logger.info(s"Done with spendingInfoDbs")
             spentSpendingInfo <- cachedSpentF
             processTxResult <- {
               processTransactionImpl(
@@ -323,7 +326,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       spentSpendingInfoDbsOpt: Option[Vector[SpendingInfoDb]]): Future[
     ProcessTxResult] = {
 
-    logger.debug(
+    logger.info(
       s"Processing transaction=${transaction.txIdBE.hex} with blockHash=${blockHashOpt
         .map(_.hex)}")
 
@@ -356,6 +359,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     for {
       receivedSpendingInfoDbs <- receivedSpendingInfoDbsF
       receivedStart = TimeUtil.currentEpochMs
+      _ = logger.info(s"receivedSpendingInfoDbs=$receivedSpendingInfoDbs")
       incoming <- processReceivedUtxos(transaction = transaction,
                                        blockHashOpt = blockHashOpt,
                                        spendingInfoDbs =
@@ -487,6 +491,8 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
 
           // If the utxo was marked reserved we want to update it to spent now
           // since it has been included in a block
+          logger.info(
+            s"@@@@@@@@ XXXXXXXXXXXXXXXXXXX @@@@@@@@@@@@@@@ ${foundTxo.state}")
           val unreservedTxo = foundTxo.state match {
             case TxoState.Reserved =>
               foundTxo
