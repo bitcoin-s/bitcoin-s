@@ -50,8 +50,6 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       Files.createDirectories(datadir)
     }
 
-    logger.info(s"Applying DLCAppConfig migrations")
-
     //get migrations applied the last time the wallet was started
     val initMigrations = migrationsApplied()
 
