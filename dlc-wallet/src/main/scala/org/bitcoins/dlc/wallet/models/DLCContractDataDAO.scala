@@ -49,12 +49,12 @@ case class DLCContractDataDAO()(implicit
     Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Option[DLCContractDataDb],
+  override def findByDLCIdsAction(dlcIds: Vector[Sha256Digest]): DBIOAction[
+    Vector[DLCContractDataDb],
     profile.api.NoStream,
     profile.api.Effect.Read] = {
-    val q = table.filter(_.dlcId === dlcId)
-    q.result.map(_.headOption)
+    val q = table.filter(_.dlcId.inSet(dlcIds))
+    q.result.map(_.toVector)
   }
 
   override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[

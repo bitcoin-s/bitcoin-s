@@ -140,7 +140,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
 
   /** Finds all elements in the table */
   def findAll(): Future[Vector[T]] =
-    safeDatabase.run(table.result).map(_.toVector)
+    safeDatabase.run(findAllAction())
 
   /** Returns number of rows in the table */
   def count(): Future[Int] = safeDatabase.run(table.length.result)

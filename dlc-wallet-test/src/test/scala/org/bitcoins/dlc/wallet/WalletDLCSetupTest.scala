@@ -798,7 +798,9 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
                                    asInitiator = true,
                                    func = func,
                                    expectedOutputs = 1)
-      } yield assert(result)
+      } yield {
+        assert(result)
+      }
   }
 
   it must "accept 2 offers with the same oracle info" in { wallets =>

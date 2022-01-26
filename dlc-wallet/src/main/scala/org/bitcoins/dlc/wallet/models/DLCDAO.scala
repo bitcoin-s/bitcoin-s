@@ -4,6 +4,7 @@ import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.dlc.models.DLCState
+import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
@@ -43,12 +44,12 @@ case class DLCDAO()(implicit
   override def findAll(dlcs: Vector[DLCDb]): Query[DLCTable, DLCDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.dlcId))
 
-  override def findByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
-    Option[DLCDb],
+  override def findByDLCIdsAction(dlcIds: Vector[Sha256Digest]): DBIOAction[
+    Vector[DLCDb],
     profile.api.NoStream,
     profile.api.Effect.Read] = {
-    val q = table.filter(_.dlcId === dlcId)
-    q.result.map(_.headOption)
+    val q = table.filter(_.dlcId.inSet(dlcIds))
+    q.result.map(_.toVector)
   }
 
   override def deleteByDLCIdAction(dlcId: Sha256Digest): DBIOAction[
@@ -158,6 +159,9 @@ case class DLCDAO()(implicit
     def aggregateSignatureOpt: Rep[Option[SchnorrDigitalSignature]] = column(
       "aggregate_signature")
 
+    def serializationVersion: Rep[DLCSerializationVersion] = column(
+      "serialization_version")
+
     override def * : ProvenShape[DLCDb] =
       (dlcId,
        tempContractId,
@@ -174,6 +178,7 @@ case class DLCDAO()(implicit
        fundingOutPointOpt,
        fundingTxIdOpt,
        closingTxIdOpt,
-       aggregateSignatureOpt).<>(DLCDb.tupled, DLCDb.unapply)
+       aggregateSignatureOpt,
+       serializationVersion).<>(DLCDb.tupled, DLCDb.unapply)
   }
 }

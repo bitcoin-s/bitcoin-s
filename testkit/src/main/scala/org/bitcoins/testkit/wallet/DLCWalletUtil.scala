@@ -226,7 +226,8 @@ object DLCWalletUtil extends Logging {
     fundingOutPointOpt = None,
     fundingTxIdOpt = None,
     closingTxIdOpt = None,
-    aggregateSignatureOpt = None
+    aggregateSignatureOpt = None,
+    serializationVersion = DLCSerializationVersion.current
   )
 
   lazy val sampleContractDataDb: DLCContractDataDb = DLCContractDataDb(
@@ -332,8 +333,8 @@ object DLCWalletUtil extends Logging {
         else dlcA.processTransaction(tx, None)
       }
       _ <- dlcA.broadcastTransaction(tx)
-
       dlcDb <- dlcA.dlcDAO.findByContractId(contractId)
+
       _ <- verifyProperlySetTxIds(dlcA)
       _ <- verifyProperlySetTxIds(dlcB)
     } yield {

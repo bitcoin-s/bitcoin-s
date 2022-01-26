@@ -3,12 +3,22 @@ package org.bitcoins.dlc.wallet
 import com.typesafe.config.Config
 import org.bitcoins.commons.config.{AppConfigFactory, ConfigOps}
 import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.util.{FutureUtil, Mutable}
+import org.bitcoins.core.protocol.dlc.compute.DLCUtil
+import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
+import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
+import org.bitcoins.dlc.wallet.internal.DLCDataManagement
+import org.bitcoins.dlc.wallet.models.{
+  AcceptDbState,
+  DLCSetupDbState,
+  OfferedDbState
+}
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.TransactionDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import java.nio.file._
@@ -40,13 +50,26 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       Files.createDirectories(datadir)
     }
 
+    //get migrations applied the last time the wallet was started
+    val initMigrations = migrationsApplied()
+
     val numMigrations = {
       migrate()
     }
 
+    val f = if (initMigrations != 0 && initMigrations <= 5) {
+      //means we have an old wallet that we need to migrate
+      logger.info(s"Running serialization version migration code")
+      serializationVersionMigration()
+    } else {
+      //the wallet is new enough where we cannot have any old
+      //DLCs in the database with a broken contractId
+      Future.unit
+    }
+
     logger.info(s"Applied $numMigrations to the dlc project")
 
-    FutureUtil.unit
+    f
   }
 
   lazy val walletConf: WalletAppConfig =
@@ -95,6 +118,86 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   def addCallbacks(newCallbacks: DLCWalletCallbacks): DLCWalletCallbacks = {
     callbacks.atomicUpdate(newCallbacks)(_ + _)
+  }
+
+  /** Correctly populates the serialization version for existing DLCs
+    * in our wallet database
+    */
+  private def serializationVersionMigration(): Future[Unit] = {
+    val dlcManagement = DLCDataManagement.fromDbAppConfig()(this, ec)
+    val dlcDAO = dlcManagement.dlcDAO
+    //read all existing DLCs
+    val allDlcsF = dlcDAO.findAll()
+
+    //ugh, this is kinda nasty, idk how to make better though
+    val walletAppConfig =
+      WalletAppConfig(baseDatadir, configOverrides)
+    val txDAO: TransactionDAO =
+      TransactionDAO()(ec = ec, appConfig = walletAppConfig)
+    //get the offers so we can figure out what the serialization version is
+    val dlcDbContractInfoOfferF: Future[Vector[DLCSetupDbState]] = {
+      for {
+        allDlcs <- allDlcsF
+        //only DLC with the alpha version need to be migrated
+        alphaVersionDLCs = allDlcs.filter(
+          _.serializationVersion == DLCSerializationVersion.Alpha)
+        nestedOfferAndAccept = alphaVersionDLCs.map { a =>
+          val setupDbOptF =
+            dlcManagement.getDLCFundingData(a.dlcId, txDAO = txDAO)
+
+          setupDbOptF.foreach {
+            case Some(_) => //happy path, do nothing
+            case None =>
+              logger.warn(s"Corrupted dlcId=${a.dlcId.hex} state=${a.state}, " +
+                s"this is likely because of issue 4001 https://github.com/bitcoin-s/bitcoin-s/issues/4001 . " +
+                s"This DLC will not have its contractId migrated to DLSerializationVersion.Beta")
+          }
+          setupDbOptF
+        }
+        offerAndAccepts <- Future.sequence(nestedOfferAndAccept)
+      } yield {
+        offerAndAccepts.flatten
+      }
+    }
+
+    //now we need to insert the serialization type
+    //into global_dlc_data
+    val updatedDLCDbsF = for {
+      dlcDbContractInfoOffer <- dlcDbContractInfoOfferF
+    } yield setSerializationVersions(dlcDbContractInfoOffer)
+
+    val updatedInDbF = updatedDLCDbsF.flatMap(dlcDAO.updateAll)
+
+    updatedInDbF.map(_ => ())
+  }
+
+  /** Sets serialization versions on [[DLCDb]] based on the corresponding [[ContractInfo]] */
+  private def setSerializationVersions(
+      vec: Vector[DLCSetupDbState]): Vector[DLCDb] = {
+    vec.map { case state: DLCSetupDbState =>
+      val updatedDlcDb: DLCDb = state match {
+        case acceptDbState: AcceptDbState =>
+          val offer = acceptDbState.offer
+          val acceptWithoutSigs = acceptDbState.acceptWithoutSigs
+          val dlcDb = acceptDbState.dlcDb
+          val contractId = DLCUtil.calcContractId(offer, acceptWithoutSigs)
+          logger.info(
+            s"Updating contractId for dlcId=${dlcDb.dlcId.hex} old contractId=${dlcDb.contractIdOpt
+              .map(_.toHex)} new contractId=${contractId.toHex}")
+          dlcDb.copy(tempContractId = offer.tempContractId,
+                     contractIdOpt = Some(contractId),
+                     serializationVersion = DLCSerializationVersion.Beta)
+        case offerDbState: OfferedDbState =>
+          //if we don't have an accept message, we can only calculate tempContractId
+          val dlcDb = offerDbState.dlcDb
+          val offer = offerDbState.offer
+          logger.info(
+            s"Updating tempContractId for dlcId=${dlcDb.dlcId.hex} old tempContractId=${dlcDb.tempContractId.hex} new contractId=${offer.tempContractId.hex}")
+          dlcDb.copy(tempContractId = offer.tempContractId,
+                     serializationVersion = DLCSerializationVersion.Beta)
+      }
+      updatedDlcDb
+    }
   }
 }
 

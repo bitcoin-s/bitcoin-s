@@ -4,6 +4,7 @@ import org.bitcoins.core.api.db.LastUpdatedDb
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.dlc.models.DLCState
+import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -35,7 +36,8 @@ case class DLCDb(
     fundingOutPointOpt: Option[TransactionOutPoint],
     fundingTxIdOpt: Option[DoubleSha256DigestBE],
     closingTxIdOpt: Option[DoubleSha256DigestBE],
-    aggregateSignatureOpt: Option[SchnorrDigitalSignature]
+    aggregateSignatureOpt: Option[SchnorrDigitalSignature],
+    serializationVersion: DLCSerializationVersion
 ) extends LastUpdatedDb {
 
   def updateState(newState: DLCState): DLCDb = {
