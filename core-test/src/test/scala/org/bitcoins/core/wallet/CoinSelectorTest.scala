@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee._
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPublicKey}
+import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkitcore.gen.FeeUnitGen
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
@@ -124,7 +124,7 @@ class CoinSelectorTest extends BitcoinSUnitTest {
 
   def createSpendingInfoDbs(
       amounts: Vector[CurrencyUnit]): Vector[SpendingInfoDb] = {
-    amounts.map { amt =>
+    val result = amounts.map { amt =>
       val key = ECPublicKey.freshPublicKey
       val spk = P2WPKHWitnessSPKV0(key)
       val output = TransactionOutput(amt, spk)
@@ -139,11 +139,12 @@ class CoinSelectorTest extends BitcoinSUnitTest {
         output = output,
         privKeyPath = path,
         scriptWitness = scriptWitness,
-        txid = DoubleSha256DigestBE.empty,
+        txid = EmptyTransactionOutPoint.txIdBE,
         state = TxoState.ConfirmedReceived,
         spendingTxIdOpt = None
       )
     }
+    result
   }
 
   /** The test assumes feeRate is greater than longTermFeeRate

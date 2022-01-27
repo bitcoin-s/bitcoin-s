@@ -151,6 +151,10 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   /** The TXID of the transaction this output was received in */
   def txid: DoubleSha256DigestBE
 
+  require(
+    txid == outPoint.txIdBE,
+    s"Cannot have different outpoint txId and txId outpoint=${outPoint.txIdBE.hex} txId=${txid.hex}")
+
   /** TxId of the transaction that this output was spent by */
   def spendingTxIdOpt: Option[DoubleSha256DigestBE]
 
