@@ -9,11 +9,7 @@ import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerByte}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.bitcoins.testkitcore.Implicits._
-import org.bitcoins.testkitcore.gen.{
-  CryptoGenerators,
-  TransactionGenerators,
-  WitnessGenerators
-}
+import org.bitcoins.testkitcore.gen.{TransactionGenerators, WitnessGenerators}
 import org.scalatest.FutureOutcome
 
 class CoinSelectorTest extends BitcoinSWalletTest {
@@ -33,31 +29,35 @@ class CoinSelectorTest extends BitcoinSWalletTest {
     val output = TransactionOutput(99.sats, ScriptPubKey.empty)
     val feeRate = SatoshisPerByte(CurrencyUnits.zero)
 
+    val outpoint1 = TransactionGenerators.outPoint.sampleSome
     val utxo1 = SegwitV0SpendingInfo(
-      txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
+      txid = outpoint1.txIdBE,
       state = TxoState.DoesNotExist,
       id = Some(1),
-      outPoint = TransactionGenerators.outPoint.sampleSome,
+      outPoint = outpoint1,
       output = TransactionOutput(10.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
       scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
       spendingTxIdOpt = None
     )
+    val outPoint2 = TransactionGenerators.outPoint.sampleSome
     val utxo2 = SegwitV0SpendingInfo(
-      txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
+      txid = outPoint2.txIdBE,
       state = TxoState.DoesNotExist,
       id = Some(2),
-      outPoint = TransactionGenerators.outPoint.sampleSome,
+      outPoint = outPoint2,
       output = TransactionOutput(90.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
       scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
       spendingTxIdOpt = None
     )
+
+    val outPoint3 = TransactionGenerators.outPoint.sampleSome
     val utxo3 = SegwitV0SpendingInfo(
-      txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
+      txid = outPoint3.txIdBE,
       state = TxoState.DoesNotExist,
       id = Some(3),
-      outPoint = TransactionGenerators.outPoint.sampleSome,
+      outPoint = outPoint3,
       output = TransactionOutput(20.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
       scriptWitness = WitnessGenerators.scriptWitness.sampleSome,

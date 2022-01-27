@@ -132,7 +132,7 @@ object WalletTestUtil {
 
     SegwitV0SpendingInfo(
       state = state,
-      txid = randomTXID,
+      txid = outpoint.txIdBE,
       outPoint = outpoint,
       output = output,
       privKeyPath = privkeyPath,
@@ -158,7 +158,7 @@ object WalletTestUtil {
     }
 
     LegacySpendingInfo(state = state,
-                       txid = randomTXID,
+                       txid = outpoint.txIdBE,
                        outPoint = outpoint,
                        output = output,
                        privKeyPath = privKeyPath,
@@ -185,7 +185,7 @@ object WalletTestUtil {
 
     NestedSegwitV0SpendingInfo(
       state = state,
-      txid = randomTXID,
+      txid = outpoint.txIdBE,
       outPoint = outpoint,
       output = output,
       privKeyPath = privkeyPath,
