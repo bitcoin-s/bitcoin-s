@@ -565,24 +565,42 @@ class UTXOLifeCycleTest
     param =>
       val WalletWithBitcoindRpc(wallet, bitcoind) = param
       val bitcoindAddrF = bitcoind.getNewAddress
-      val amt = Bitcoins.one
+      val amt = Satoshis(100000)
+      val utxoCountF = wallet.listUtxos()
       for {
         bitcoindAdr <- bitcoindAddrF
+        utxoCount <- utxoCountF
+        //build a spending transaction
         tx <- wallet.sendToAddress(bitcoindAdr, amt, SatoshisPerVirtualByte.one)
+        c <- wallet.listUtxos()
+        _ = assert(c.length == utxoCount.length)
         txIdBE <- bitcoind.sendRawTransaction(tx)
+
+        //find all utxos that we can use to fund a transaction
         utxos <- wallet
           .listUtxos()
           .map(_.filter(u => TxoState.receivedStates.contains(u.state)))
-        _ <- wallet.listUtxos(TxoState.Reserved)
+        broadcastReceived <- wallet.listUtxos(TxoState.BroadcastReceived)
+        _ = assert(broadcastReceived.length == 1) //change output
+
+        //mark all utxos as reserved
         _ <- wallet.markUTXOsAsReserved(utxos)
+        newReservedUtxos <- wallet.listUtxos(TxoState.Reserved)
+
+        //make sure all utxos are reserved
+        _ = assert(newReservedUtxos.length == utxoCount.length)
         blockHash <- bitcoind.generateToAddress(1, bitcoindAdr).map(_.head)
         block <- bitcoind.getBlockRaw(blockHash)
         _ <- wallet.processBlock(block)
         broadcastSpentUtxo <- wallet.listUtxos(
           TxoState.PendingConfirmationsSpent)
+        finalReservedUtxos <- wallet.listUtxos(TxoState.Reserved)
       } yield {
-        assert(broadcastSpentUtxo.length == 2)
+        assert(broadcastSpentUtxo.length == 1)
+        //make sure spendingTxId got set correctly
         assert(broadcastSpentUtxo.head.spendingTxIdOpt.get == txIdBE)
+        //make sure no utxos get unreserved when processing the block
+        assert(finalReservedUtxos.length == newReservedUtxos.length)
       }
   }
 }

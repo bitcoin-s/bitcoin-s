@@ -117,9 +117,6 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           for {
             _ <- acc
             receivedSpendingInfoDbs <- cachedReceivedF
-            //_ = logger.info(s"received spendingInfoDbs")
-            //_ = receivedSpendingInfoDbs.foreach(u => logger.info(s"u=$u"))
-            // _ = logger.info(s"Done with spendingInfoDbs")
             spentSpendingInfo <- cachedSpentF
             processTxResult <- {
               processTransactionImpl(
