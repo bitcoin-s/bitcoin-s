@@ -538,6 +538,21 @@ object Deps {
     )
   }
 
+  val esplora = Def.setting {
+    List(
+      Compile.akkaHttp,
+      Compile.akkaActor,
+      Compile.akkaStream
+    )
+  }
+
+  val esploraTest = Def.setting {
+    List(
+      Test.akkaTestkit,
+      Test.scalaTest.value
+    )
+  }
+
   val node = List(
     Compile.akkaActor,
     Compile.logback,
