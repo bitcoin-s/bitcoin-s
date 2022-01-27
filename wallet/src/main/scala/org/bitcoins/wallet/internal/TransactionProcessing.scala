@@ -326,7 +326,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       spentSpendingInfoDbsOpt: Option[Vector[SpendingInfoDb]]): Future[
     ProcessTxResult] = {
 
-    logger.info(
+    logger.debug(
       s"Processing transaction=${transaction.txIdBE.hex} with blockHash=${blockHashOpt
         .map(_.hex)}")
 
@@ -471,8 +471,6 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       foundTxo: SpendingInfoDb): Future[SpendingInfoDb] = {
-    logger.info(
-      s"processExistingReceivedTxo txId=${transaction.txIdBE.hex} foundingTxo.outPoint=${foundTxo.outPoint}")
     if (foundTxo.txid != transaction.txIdBE) {
       val errMsg =
         Seq(
@@ -487,33 +485,18 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           logger.debug(
             s"Updating block_hash of txo=${transaction.txIdBE.hex}, new block hash=${blockHash.hex}")
 
-          // If the utxo was marked reserved we want to update it to spent now
-          // since it has been included in a block
-          val unreservedTxo = foundTxo.state match {
-            case TxoState.Reserved =>
-              foundTxo
-                .copyWithSpendingTxId(transaction.txIdBE)
-                .copyWithState(TxoState.PendingConfirmationsSpent)
-            case TxoState.PendingConfirmationsReceived |
-                TxoState.ConfirmedReceived |
-                TxoState.PendingConfirmationsSpent | TxoState.ConfirmedSpent |
-                TxoState.DoesNotExist | TxoState.ImmatureCoinbase |
-                BroadcastReceived | BroadcastSpent =>
-              foundTxo
-          }
-
           val updateTxDbF = insertTransaction(transaction, blockHashOpt)
 
           // Update Txo State
           updateTxDbF.flatMap(_ =>
-            updateUtxoConfirmedState(unreservedTxo).flatMap {
+            updateUtxoConfirmedState(foundTxo).flatMap {
               case Some(txo) =>
                 logger.debug(
                   s"Updated block_hash of txo=${txo.txid.hex} new block hash=${blockHash.hex}")
                 Future.successful(txo)
               case None =>
                 // State was not updated so we need to update it so it's block hash is in the database
-                spendingInfoDAO.update(unreservedTxo)
+                spendingInfoDAO.update(foundTxo)
             })
         case None =>
           logger.debug(

@@ -573,10 +573,7 @@ class UTXOLifeCycleTest
         utxos <- wallet
           .listUtxos()
           .map(_.filter(u => TxoState.receivedStates.contains(u.state)))
-        currentReserved <- wallet.listUtxos(TxoState.Reserved)
-        _ = logger.info(s"@@@ current reserved")
-        _ = currentReserved.foreach(c => logger.info(s"c=$c"))
-        _ = logger.info(s"@@@ done current reserved")
+        _ <- wallet.listUtxos(TxoState.Reserved)
         _ <- wallet.markUTXOsAsReserved(utxos)
         blockHash <- bitcoind.generateToAddress(1, bitcoindAdr).map(_.head)
         block <- bitcoind.getBlockRaw(blockHash)
@@ -584,7 +581,7 @@ class UTXOLifeCycleTest
         broadcastSpentUtxo <- wallet.listUtxos(
           TxoState.PendingConfirmationsSpent)
       } yield {
-        assert(broadcastSpentUtxo.length == 1)
+        assert(broadcastSpentUtxo.length == 2)
         assert(broadcastSpentUtxo.head.spendingTxIdOpt.get == txIdBE)
       }
   }

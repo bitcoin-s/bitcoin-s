@@ -329,7 +329,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       tx: Transaction): Future[Vector[SpendingInfoDb]] = {
     for {
       utxos <- spendingInfoDAO.findOutputsBeingSpent(tx)
-      reserved <- markUTXOsAsReserved(utxos.toVector)
+      reserved <- markUTXOsAsReserved(utxos)
     } yield reserved
   }
 
