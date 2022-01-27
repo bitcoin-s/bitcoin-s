@@ -549,7 +549,6 @@ class UTXOLifeCycleTest
 
         //now process another block
         hashes2 <- bitcoind.generateToAddress(blocks = 1, throwAwayAddr)
-        _ = logger.info(s"hash2=${hashes2.head.hex}")
         block2 <- bitcoind.getBlockRaw(hashes2.head)
         _ <- wallet.processBlock(block2)
 
@@ -559,6 +558,32 @@ class UTXOLifeCycleTest
       } yield {
         assert(reservedUtxo.txid == txId)
         assert(reservedUtxo.state == TxoState.Reserved)
+      }
+  }
+
+  it must "transition a reserved utxo to spent when we are offline" in {
+    param =>
+      val WalletWithBitcoindRpc(wallet, bitcoind) = param
+      val bitcoindAddrF = bitcoind.getNewAddress
+      val utxosF = wallet.listUtxos()
+      val amt = Bitcoins.one
+      for {
+        bitcoindAdr <- bitcoindAddrF
+        tx <- wallet.sendToAddress(bitcoindAdr, amt, SatoshisPerVirtualByte.one)
+        txIdBE <- bitcoind.sendRawTransaction(tx)
+        utxos <- utxosF
+        currentReserved <- wallet.listUtxos(TxoState.Reserved)
+        _ = logger.info(s"@@@ current reserved")
+        _ = currentReserved.foreach(c => logger.info(s"c=$c"))
+        _ = logger.info(s"@@@ done current reserved")
+        _ <- wallet.markUTXOsAsReserved(utxos)
+        blockHash <- bitcoind.generateToAddress(1, bitcoindAdr).map(_.head)
+        block <- bitcoind.getBlockRaw(blockHash)
+        _ <- wallet.processBlock(block)
+        broadcastSpentUtxo <- wallet.listUtxos(TxoState.BroadcastSpent)
+      } yield {
+        assert(broadcastSpentUtxo.length == 1)
+        assert(broadcastSpentUtxo.head.spendingTxIdOpt.get == txIdBE)
       }
   }
 }

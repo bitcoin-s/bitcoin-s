@@ -412,7 +412,6 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           out
             .copyWithSpendingTxId(spendingTxId)
             .copyWithState(state = BroadcastSpent)
-
         Some(updated)
       case TxoState.BroadcastSpent =>
         if (!out.spendingTxIdOpt.contains(spendingTxId)) {
@@ -491,8 +490,6 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
 
           // If the utxo was marked reserved we want to update it to spent now
           // since it has been included in a block
-          logger.info(
-            s"@@@@@@@@ XXXXXXXXXXXXXXXXXXX @@@@@@@@@@@@@@@ ${foundTxo.state}")
           val unreservedTxo = foundTxo.state match {
             case TxoState.Reserved =>
               foundTxo
