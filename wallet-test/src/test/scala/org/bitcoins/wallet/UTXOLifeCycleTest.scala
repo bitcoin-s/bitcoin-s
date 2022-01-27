@@ -565,13 +565,14 @@ class UTXOLifeCycleTest
     param =>
       val WalletWithBitcoindRpc(wallet, bitcoind) = param
       val bitcoindAddrF = bitcoind.getNewAddress
-      val utxosF = wallet.listUtxos()
       val amt = Bitcoins.one
       for {
         bitcoindAdr <- bitcoindAddrF
         tx <- wallet.sendToAddress(bitcoindAdr, amt, SatoshisPerVirtualByte.one)
         txIdBE <- bitcoind.sendRawTransaction(tx)
-        utxos <- utxosF
+        utxos <- wallet
+          .listUtxos()
+          .map(_.filter(u => TxoState.receivedStates.contains(u.state)))
         currentReserved <- wallet.listUtxos(TxoState.Reserved)
         _ = logger.info(s"@@@ current reserved")
         _ = currentReserved.foreach(c => logger.info(s"c=$c"))
@@ -580,7 +581,8 @@ class UTXOLifeCycleTest
         blockHash <- bitcoind.generateToAddress(1, bitcoindAdr).map(_.head)
         block <- bitcoind.getBlockRaw(blockHash)
         _ <- wallet.processBlock(block)
-        broadcastSpentUtxo <- wallet.listUtxos(TxoState.BroadcastSpent)
+        broadcastSpentUtxo <- wallet.listUtxos(
+          TxoState.PendingConfirmationsSpent)
       } yield {
         assert(broadcastSpentUtxo.length == 1)
         assert(broadcastSpentUtxo.head.spendingTxIdOpt.get == txIdBE)
