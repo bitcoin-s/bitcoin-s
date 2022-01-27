@@ -164,7 +164,7 @@ trait DbManagement extends Logging {
         case PostgreSQL =>
           ()
       }
-      flyway.migrate()
+      flyway.migrate().migrationsExecuted
     } catch {
       case err: FlywayException =>
         logger.warn(
@@ -173,7 +173,7 @@ trait DbManagement extends Logging {
         //maybe we have an existing database, so attempt to baseline the existing
         //database and then apply migrations again
         flyway.baseline()
-        flyway.migrate()
+        flyway.migrate().migrationsExecuted
     }
   }
 
@@ -186,5 +186,6 @@ trait DbManagement extends Logging {
     */
   def clean(): Unit = {
     flyway.clean()
+    ()
   }
 }
