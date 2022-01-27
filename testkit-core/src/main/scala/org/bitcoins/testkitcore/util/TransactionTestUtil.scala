@@ -13,6 +13,7 @@ import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
+  ECPrivateKey,
   ECPublicKey,
   ECPublicKeyBytes
 }
@@ -284,7 +285,8 @@ trait TransactionTestUtil {
     scriptWitness = EmptyScriptWitness,
     txid = DoubleSha256DigestBE.empty,
     state = TxoState.PendingConfirmationsSpent,
-    spendingTxIdOpt = Some(DoubleSha256DigestBE.empty)
+    spendingTxIdOpt =
+      Some(DoubleSha256DigestBE.fromBytes(ECPrivateKey.freshPrivateKey.bytes))
   )
 }
 

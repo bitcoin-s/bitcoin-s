@@ -158,7 +158,13 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   /** TxId of the transaction that this output was spent by */
   def spendingTxIdOpt: Option[DoubleSha256DigestBE]
 
+  require(
+    spendingTxIdOpt.map(_ != txid).getOrElse(true),
+    s"txid and the spendingTxId cannot be the same, txid=${txid.hex} spendingTxId=${spendingTxIdOpt.get.hex}"
+  )
+
   /** Converts the UTXO to the canonical `txid:vout` format */
+
   def toHumanReadableString: String =
     s"${outPoint.txId.flip.hex}:${outPoint.vout.toInt}"
 
