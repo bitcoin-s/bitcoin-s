@@ -30,7 +30,8 @@ lazy val commonJsSettings = {
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.CommonJSModule)
     }
-  ) ++ CommonSettings.settings ++ Seq(scalacOptions += "-P:scalajs:nowarnGlobalExecutionContext")
+  ) ++ CommonSettings.settings ++ Seq(
+    scalacOptions += "-P:scalajs:nowarnGlobalExecutionContext")
 }
 
 lazy val crypto = crossProject(JVMPlatform, JSPlatform)
@@ -184,6 +185,8 @@ lazy val `bitcoin-s` = project
     dbCommonsTest,
     feeProvider,
     feeProviderTest,
+    esplora,
+    esploraTest,
     dlcOracle,
     dlcOracleTest,
     dlcTest,
@@ -242,6 +245,8 @@ lazy val `bitcoin-s` = project
     dbCommonsTest,
     feeProvider,
     feeProviderTest,
+    esplora,
+    esploraTest,
     dlcOracle,
     dlcOracleTest,
     dlcTest,
@@ -482,6 +487,24 @@ lazy val dbCommonsTest = project
     name := "bitcoin-s-db-commons-test"
   )
   .dependsOn(testkit)
+
+lazy val esplora = project
+  .in(file("esplora"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-esplora",
+    libraryDependencies ++= Deps.esplora.value
+  )
+  .dependsOn(coreJVM, appCommons, tor)
+
+lazy val esploraTest = project
+  .in(file("esplora-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    name := "bitcoin-s-esplora-test",
+    libraryDependencies ++= Deps.esploraTest.value
+  )
+  .dependsOn(coreJVM % testAndCompile, esplora, testkit)
 
 lazy val feeProvider = project
   .in(file("fee-provider"))
