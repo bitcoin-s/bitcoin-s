@@ -203,7 +203,8 @@ class EsploraClient(site: EsploraSite, proxyParams: Option[Socks5ProxyParams])(
         getBlock(blockHash.hash).map(_.height)
       case blockTime: BlockStamp.BlockTime =>
         Future.failed(
-          new UnsupportedOperationException(s"Not implemented: $blockTime"))
+          new UnsupportedOperationException(
+            s"Not implemented for Esplora Client: $blockTime"))
     }
   }
 
