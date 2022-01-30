@@ -108,30 +108,32 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     val spentSpendingInfoDbsF =
       spendingInfoDAO.findOutputsBeingSpent(block.transactions.toVector)
 
-    //we need to keep a cache of spentSpendingInfoDb
-    //for the case where we receive & then spend that
-    //same utxo in the same block
-    var cachedSpentOptF: Future[Option[Vector[SpendingInfoDb]]] = {
-      spentSpendingInfoDbsF
-        .map(Some(_)) //reduce allocations by creating Some here
-    }
-
+    val blockHashOpt = Some(block.blockHeader.hash.flip)
     val resultF: Future[Future[Wallet]] = for {
+      //map on these first so we don't have to call
+      //.map everytime we iterate through a tx
+      //which is costly
       receivedSpendingInfoDbsOpt <- cachedReceivedOptF
+      spentSpendingInfoDbs <- spentSpendingInfoDbsF
     } yield {
+      //we need to keep a cache of spentSpendingInfoDb
+      //for the case where we receive & then spend that
+      //same utxo in the same block
+      var cachedSpentOpt: Option[Vector[SpendingInfoDb]] = {
+        Some(spentSpendingInfoDbs)
+      }
       val wallet: Future[Wallet] = {
         block.transactions.foldLeft(Future.successful(this)) {
           (acc, transaction) =>
             for {
               _ <- acc
-              spentSpendingInfoOpt <- cachedSpentOptF
               processTxResult <- {
                 processTransactionImpl(
                   transaction = transaction,
-                  blockHashOpt = Some(block.blockHeader.hash.flip),
+                  blockHashOpt = blockHashOpt,
                   newTags = Vector.empty,
                   receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
-                  spentSpendingInfoDbsOpt = spentSpendingInfoOpt
+                  spentSpendingInfoDbsOpt = cachedSpentOpt
                 )
               }
               _ = {
@@ -146,15 +148,15 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
                 }
 
                 //add it to the cache
-                val cachedSpentOpt = {
-                  spentSpendingInfoOpt match {
+                val newCachedSpentOpt = {
+                  cachedSpentOpt match {
                     case Some(spentSpendingInfo) =>
                       Some(spentSpendingInfo ++ spentInSameBlock)
                     case None =>
                       Some(spentInSameBlock)
                   }
                 }
-                cachedSpentOptF = Future.successful(cachedSpentOpt)
+                cachedSpentOpt = newCachedSpentOpt
               }
             } yield {
               this
