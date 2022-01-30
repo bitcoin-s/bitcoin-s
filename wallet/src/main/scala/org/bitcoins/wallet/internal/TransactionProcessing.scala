@@ -52,6 +52,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     logger.info(s"Processing block=${block.blockHeader.hash.flip.hex}")
     val start = TimeUtil.currentEpochMs
     val isEmptyF = isEmpty()
+    val heightF = chainQueryApi.getBlockHeight(block.blockHeader.hashBE)
     val resF = for {
       isEmpty <- isEmptyF
       newWallet <- {
@@ -69,7 +70,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     val f = for {
       res <- resF
       hash = block.blockHeader.hashBE
-      height <- chainQueryApi.getBlockHeight(hash)
+      height <- heightF
       _ <- stateDescriptorDAO.updateSyncHeight(hash, height.get)
       _ <- walletConfig.walletCallbacks.executeOnBlockProcessed(logger, block)
     } yield {
