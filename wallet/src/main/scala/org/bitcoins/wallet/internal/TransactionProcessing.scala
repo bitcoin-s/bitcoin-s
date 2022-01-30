@@ -98,9 +98,11 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   private def processBlockCachedUtxos(block: Block): Future[Wallet] = {
     //fetch all received spending info dbs relevant to txs in this block to improve performance
     val receivedSpendingInfoDbsF =
-      spendingInfoDAO.findTxs(block.transactions.toVector)
+      spendingInfoDAO
+        .findTxs(block.transactions.toVector)
 
-    val cachedReceivedF = receivedSpendingInfoDbsF
+    val cachedReceivedOptF = receivedSpendingInfoDbsF
+      .map(Some(_)) //reduce allocations by creating Some here
 
     //fetch all spending infoDbs for this block to improve performance
     val spentSpendingInfoDbsF =
@@ -109,22 +111,25 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     //we need to keep a cache of spentSpendingInfoDb
     //for the case where we receive & then spend that
     //same utxo in the same block
-    var cachedSpentF = spentSpendingInfoDbsF
+    var cachedSpentOptF: Future[Option[Vector[SpendingInfoDb]]] = {
+      spentSpendingInfoDbsF
+        .map(Some(_)) //reduce allocations by creating Some here
+    }
 
     val wallet = {
       block.transactions.foldLeft(Future.successful(this)) {
         (acc, transaction) =>
           for {
             _ <- acc
-            receivedSpendingInfoDbs <- cachedReceivedF
-            spentSpendingInfo <- cachedSpentF
+            receivedSpendingInfoDbsOpt <- cachedReceivedOptF
+            spentSpendingInfoOpt <- cachedSpentOptF
             processTxResult <- {
               processTransactionImpl(
                 transaction = transaction,
                 blockHashOpt = Some(block.blockHeader.hash.flip),
                 newTags = Vector.empty,
-                receivedSpendingInfoDbsOpt = Some(receivedSpendingInfoDbs),
-                spentSpendingInfoDbsOpt = Some(spentSpendingInfo)
+                receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
+                spentSpendingInfoDbsOpt = spentSpendingInfoOpt
               )
             }
             _ = {
@@ -139,8 +144,15 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
               }
 
               //add it to the cache
-              cachedSpentF =
-                Future.successful(spentSpendingInfo ++ spentInSameBlock)
+              val cachedSpentOpt = {
+                spentSpendingInfoOpt match {
+                  case Some(spentSpendingInfo) =>
+                    Some(spentSpendingInfo ++ spentInSameBlock)
+                  case None =>
+                    Some(spentInSameBlock)
+                }
+              }
+              cachedSpentOptF = Future.successful(cachedSpentOpt)
             }
           } yield {
             this
