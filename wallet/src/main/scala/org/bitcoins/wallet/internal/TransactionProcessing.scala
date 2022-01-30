@@ -98,56 +98,75 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   private def processBlockCachedUtxos(block: Block): Future[Wallet] = {
     //fetch all received spending info dbs relevant to txs in this block to improve performance
     val receivedSpendingInfoDbsF =
-      spendingInfoDAO.findTxs(block.transactions.toVector)
+      spendingInfoDAO
+        .findTxs(block.transactions.toVector)
 
-    val cachedReceivedF = receivedSpendingInfoDbsF
+    val cachedReceivedOptF = receivedSpendingInfoDbsF
+      .map(Some(_)) //reduce allocations by creating Some here
 
     //fetch all spending infoDbs for this block to improve performance
     val spentSpendingInfoDbsF =
       spendingInfoDAO.findOutputsBeingSpent(block.transactions.toVector)
 
-    //we need to keep a cache of spentSpendingInfoDb
-    //for the case where we receive & then spend that
-    //same utxo in the same block
-    var cachedSpentF = spentSpendingInfoDbsF
-
-    val wallet = {
-      block.transactions.foldLeft(Future.successful(this)) {
-        (acc, transaction) =>
-          for {
-            _ <- acc
-            receivedSpendingInfoDbs <- cachedReceivedF
-            spentSpendingInfo <- cachedSpentF
-            processTxResult <- {
-              processTransactionImpl(
-                transaction = transaction,
-                blockHashOpt = Some(block.blockHeader.hash.flip),
-                newTags = Vector.empty,
-                receivedSpendingInfoDbsOpt = Some(receivedSpendingInfoDbs),
-                spentSpendingInfoDbsOpt = Some(spentSpendingInfo)
-              )
-            }
-            _ = {
-              //need to look if a received utxo is spent in the same block
-              //if so, we need to update our cachedSpentF
-              val spentInSameBlock: Vector[SpendingInfoDb] = {
-                processTxResult.updatedIncoming.filter { spendingInfoDb =>
-                  block.transactions.exists(
-                    _.inputs.exists(
-                      _.previousOutput == spendingInfoDb.outPoint))
-                }
-              }
-
-              //add it to the cache
-              cachedSpentF =
-                Future.successful(spentSpendingInfo ++ spentInSameBlock)
-            }
-          } yield {
-            this
-          }
+    val blockHashOpt = Some(block.blockHeader.hash.flip)
+    val resultF: Future[Future[Wallet]] = for {
+      //map on these first so we don't have to call
+      //.map everytime we iterate through a tx
+      //which is costly (thread overhead)
+      receivedSpendingInfoDbsOpt <- cachedReceivedOptF
+      spentSpendingInfoDbs <- spentSpendingInfoDbsF
+    } yield {
+      //we need to keep a cache of spentSpendingInfoDb
+      //for the case where we receive & then spend that
+      //same utxo in the same block
+      var cachedSpentOpt: Option[Vector[SpendingInfoDb]] = {
+        Some(spentSpendingInfoDbs)
       }
+      val blockInputs = block.transactions.flatMap(_.inputs)
+      val wallet: Future[Wallet] = {
+        block.transactions.foldLeft(Future.successful(this)) {
+          (walletF, transaction) =>
+            for {
+              wallet <- walletF
+              processTxResult <- {
+                wallet.processTransactionImpl(
+                  transaction = transaction,
+                  blockHashOpt = blockHashOpt,
+                  newTags = Vector.empty,
+                  receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
+                  spentSpendingInfoDbsOpt = cachedSpentOpt
+                )
+              }
+              _ = {
+                //need to look if a received utxo is spent in the same block
+                //if so, we need to update our cachedSpentF
+                val spentInSameBlock: Vector[SpendingInfoDb] = {
+                  processTxResult.updatedIncoming.filter { spendingInfoDb =>
+                    blockInputs.exists(
+                      _.previousOutput == spendingInfoDb.outPoint)
+                  }
+                }
+
+                //add it to the cache
+                val newCachedSpentOpt = {
+                  cachedSpentOpt match {
+                    case Some(spentSpendingInfo) =>
+                      Some(spentSpendingInfo ++ spentInSameBlock)
+                    case None =>
+                      Some(spentInSameBlock)
+                  }
+                }
+                cachedSpentOpt = newCachedSpentOpt
+              }
+            } yield {
+              this
+            }
+        }
+      }
+      wallet
     }
-    wallet
+
+    resultF.flatten
   }
 
   override def findTransaction(
@@ -315,7 +334,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     * processing method, which logs and transforms the
     * output fittingly.
     */
-  private def processTransactionImpl(
+  private[internal] def processTransactionImpl(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       newTags: Vector[AddressTag],
