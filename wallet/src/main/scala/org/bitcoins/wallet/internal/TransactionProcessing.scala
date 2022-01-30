@@ -125,11 +125,11 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       val blockInputs = block.transactions.flatMap(_.inputs)
       val wallet: Future[Wallet] = {
         block.transactions.foldLeft(Future.successful(this)) {
-          (acc, transaction) =>
+          (walletF, transaction) =>
             for {
-              _ <- acc
+              wallet <- walletF
               processTxResult <- {
-                processTransactionImpl(
+                wallet.processTransactionImpl(
                   transaction = transaction,
                   blockHashOpt = blockHashOpt,
                   newTags = Vector.empty,
