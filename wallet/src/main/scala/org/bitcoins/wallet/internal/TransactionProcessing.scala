@@ -334,7 +334,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     * processing method, which logs and transforms the
     * output fittingly.
     */
-  private def processTransactionImpl(
+  private[internal] def processTransactionImpl(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       newTags: Vector[AddressTag],
