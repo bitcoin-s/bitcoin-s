@@ -112,7 +112,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     val resultF: Future[Future[Wallet]] = for {
       //map on these first so we don't have to call
       //.map everytime we iterate through a tx
-      //which is costly
+      //which is costly (thread overhead)
       receivedSpendingInfoDbsOpt <- cachedReceivedOptF
       spentSpendingInfoDbs <- spentSpendingInfoDbsF
     } yield {
@@ -122,6 +122,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       var cachedSpentOpt: Option[Vector[SpendingInfoDb]] = {
         Some(spentSpendingInfoDbs)
       }
+      val blockInputs = block.transactions.flatMap(_.inputs)
       val wallet: Future[Wallet] = {
         block.transactions.foldLeft(Future.successful(this)) {
           (acc, transaction) =>
@@ -141,9 +142,8 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
                 //if so, we need to update our cachedSpentF
                 val spentInSameBlock: Vector[SpendingInfoDb] = {
                   processTxResult.updatedIncoming.filter { spendingInfoDb =>
-                    block.transactions.exists(
-                      _.inputs.exists(
-                        _.previousOutput == spendingInfoDb.outPoint))
+                    blockInputs.exists(
+                      _.previousOutput == spendingInfoDb.outPoint)
                   }
                 }
 
