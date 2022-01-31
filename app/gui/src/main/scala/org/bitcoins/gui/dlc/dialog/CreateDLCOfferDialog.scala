@@ -634,9 +634,9 @@ object CreateDLCOfferDialog {
                 val x = numberFormatter.parse(xTF.text.value).longValue()
                 val y = numberFormatter.parse(yTF.text.value).longValue()
                 val point = if (checkBox.selected.value) {
-                  PiecewisePolynomialMidpoint(x, y)
-                } else {
                   PiecewisePolynomialEndpoint(x, y)
+                } else {
+                  PiecewisePolynomialMidpoint(x, y)
                 }
                 Some(point)
               } else {
