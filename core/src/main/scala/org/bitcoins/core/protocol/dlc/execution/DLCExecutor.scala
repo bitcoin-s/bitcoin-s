@@ -138,6 +138,19 @@ object DLCExecutor {
   ): ExecutedDLCOutcome = {
     val sigOracles = oracleSigs.map(_.oracle)
 
+    //make sure we have the correct number of oracle signatures
+    contractInfo.contractDescriptors.foreach {
+      case numeric: NumericContractDescriptor =>
+        require(
+          numeric.numDigits == oracleSigs.length,
+          s"Cannot have different oracle signatures and numeric numDigits, " +
+            s"oracleSignatures.length=${oracleSigs.length} numDigits=${numeric.numDigits}"
+        )
+      case _: EnumContractDescriptor =>
+        require(oracleSigs.length == 1,
+                s"Can only have 1 oracle signature for enum contracts")
+    }
+
     val oracleInfoOpt = contractInfo.oracleInfos.find { oracleInfo =>
       oracleInfo.threshold <= oracleSigs.length &&
       sigOracles.forall(oracleInfo.singleOracleInfos.contains)
