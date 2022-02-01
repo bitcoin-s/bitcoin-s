@@ -141,13 +141,14 @@ object DLCExecutor {
     //make sure we have the correct number of oracle signatures
     contractInfo.contractDescriptors.foreach {
       case numeric: NumericContractDescriptor =>
+        val invariant = oracleSigs.forall(_.sigs.length == numeric.numDigits)
         require(
-          numeric.numDigits == oracleSigs.length,
+          invariant,
           s"Cannot have different oracle signatures and numeric numDigits, " +
             s"oracleSignatures.length=${oracleSigs.length} numDigits=${numeric.numDigits}"
         )
       case _: EnumContractDescriptor =>
-        require(oracleSigs.length == 1,
+        require(oracleSigs.forall(_.sigs.length == 1),
                 s"Can only have 1 oracle signature for enum contracts")
     }
 
