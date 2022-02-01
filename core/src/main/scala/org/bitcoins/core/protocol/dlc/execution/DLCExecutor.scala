@@ -139,17 +139,21 @@ object DLCExecutor {
     val sigOracles = oracleSigs.map(_.oracle)
 
     //make sure we have the correct number of oracle signatures
+    //see: https://github.com/bitcoin-s/bitcoin-s/issues/4032
     contractInfo.contractDescriptors.foreach {
       case numeric: NumericContractDescriptor =>
         val invariant = oracleSigs.forall(_.sigs.length == numeric.numDigits)
         require(
           invariant,
           s"Cannot have different oracle signatures and numeric numDigits, " +
-            s"oracleSignatures.length=${oracleSigs.length} numDigits=${numeric.numDigits}"
+            s"oracleSignatures.length=${oracleSigs.map(
+              _.sigs.length)} numDigits=${numeric.numDigits}"
         )
       case _: EnumContractDescriptor =>
-        require(oracleSigs.forall(_.sigs.length == 1),
-                s"Can only have 1 oracle signature for enum contracts")
+        require(
+          oracleSigs.forall(_.sigs.length == 1),
+          s"Can only have 1 oracle signature for enum contracts, got=${oracleSigs
+            .map(_.sigs.length)} lengths")
     }
 
     val oracleInfoOpt = contractInfo.oracleInfos.find { oracleInfo =>
