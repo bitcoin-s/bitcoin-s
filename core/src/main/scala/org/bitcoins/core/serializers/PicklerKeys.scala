@@ -94,6 +94,14 @@ object PicklerKeys {
   val beginIntervalKey = "beginInterval"
   val roundingModKey = "roundingMod"
 
+  val usePositivePiece = "usePositivePiece"
+  val translateOutcome = "translateOutcome"
+  val translatePayout = "translatePayout"
+  val a = "a"
+  val b = "b"
+  val c = "c"
+  val d = "d"
+
   val singleKey = "single"
 
   val oracleAnnouncementKey = "oracleAnnouncement"

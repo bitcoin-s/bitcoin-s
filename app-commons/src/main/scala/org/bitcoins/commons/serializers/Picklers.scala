@@ -584,14 +584,48 @@ object Picklers {
     }
   }
 
-  implicit val payoutFunctionV0TLVWriter: Writer[PayoutFunctionV0TLV] =
+  implicit val hyperbolaPayoutCurvePieceTLVWriter: Writer[
+    HyperbolaPayoutCurvePieceTLV] = {
+    writer[Obj].comap { piece =>
+      Obj(
+        PicklerKeys.usePositivePiece -> Bool(piece.usePositivePiece),
+        PicklerKeys.translateOutcome -> Num(
+          piece.translateOutcome.toBigDecimal.toDouble),
+        PicklerKeys.translatePayout -> Num(
+          piece.translatePayout.toBigDecimal.toDouble),
+        PicklerKeys.a -> Num(piece.a.toBigDecimal.toDouble),
+        PicklerKeys.b -> Num(piece.b.toBigDecimal.toDouble),
+        PicklerKeys.c -> Num(piece.c.toBigDecimal.toDouble),
+        PicklerKeys.d -> Num(piece.d.toBigDecimal.toDouble)
+      )
+    }
+
+  }
+
+  implicit val payoutFunctionV0TLVWriter: Writer[PayoutFunctionV0TLV] = {
+    def endpoint(json: Value, isEndpoint: Boolean): Value = json match {
+      case obj: Obj =>
+        Obj(obj.value.addOne(PicklerKeys.isEndpointKey -> Bool(isEndpoint)))
+      case v: Value => v
+    }
+
     writer[Obj].comap { payoutFunc =>
-      val pointsJs = payoutFunc.endpoints.map { point =>
-        writeJs(point)
+      val endPointsJs = payoutFunc.endpoints.map { point =>
+        endpoint(writeJs(point), isEndpoint = true)
       }
 
-      Obj(PicklerKeys.pointsKey -> pointsJs)
+      val midPointJs = payoutFunc.pieces.flatMap {
+        case polynomialPiece: PolynomialPayoutCurvePieceTLV =>
+          polynomialPiece.midpoints.map { point =>
+            endpoint(writeJs(point), isEndpoint = false)
+          }
+        case hyperbolaPiece: HyperbolaPayoutCurvePieceTLV =>
+          Vector(writeJs(hyperbolaPiece))
+      }
+
+      Obj(PicklerKeys.pointsKey -> (endPointsJs ++ midPointJs))
     }
+  }
 
   implicit val payoutFunctionV0TLVReader: Reader[PayoutFunctionV0TLV] = {
     reader[Obj].map { obj: Obj =>
