@@ -45,6 +45,19 @@ object DLCStatusBuilder {
           totalCollateral,
           localCollateral
         )
+      case DLCState.AcceptComputingAdaptorSigs =>
+        AcceptedComputingAdaptorSigs(
+          dlcId = dlcId,
+          isInitiator = dlcDb.isInitiator,
+          lastUpdated = dlcDb.lastUpdated,
+          tempContractId = dlcDb.tempContractId,
+          contractId = dlcDb.contractIdOpt.get,
+          contractInfo = contractInfo,
+          timeouts = contractData.dlcTimeouts,
+          feeRate = dlcDb.feeRate,
+          totalCollateral = totalCollateral,
+          localCollateral = localCollateral
+        )
       case DLCState.Accepted =>
         Accepted(
           dlcId,
@@ -57,6 +70,20 @@ object DLCStatusBuilder {
           dlcDb.feeRate,
           totalCollateral,
           localCollateral
+        )
+      case DLCState.SignComputingAdaptorSigs =>
+        SignedComputingAdaptorSigs(
+          dlcId = dlcId,
+          isInitiator = dlcDb.isInitiator,
+          lastUpdated = dlcDb.lastUpdated,
+          tempContractId = dlcDb.tempContractId,
+          contractId = dlcDb.contractIdOpt.get,
+          contractInfo = contractInfo,
+          timeouts = contractData.dlcTimeouts,
+          feeRate = dlcDb.feeRate,
+          totalCollateral = totalCollateral,
+          localCollateral = localCollateral,
+          dlcDb.fundingTxIdOpt.get
         )
       case DLCState.Signed =>
         Signed(

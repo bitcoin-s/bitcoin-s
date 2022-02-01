@@ -654,6 +654,9 @@ abstract class DLCWallet
       }
 
       _ = logger.info(s"Creating CET Sigs for ${contractId.toHex}")
+      acceptComputingAdaptorSigs = dlc.updateState(
+        DLCState.AcceptComputingAdaptorSigs)
+      _ <- dlcDAO.update(acceptComputingAdaptorSigs)
       cetSigs <- signer.createCETSigsAsync()
       refundSig = signer.signRefundTx
       _ = logger.debug(
@@ -918,6 +921,7 @@ abstract class DLCWallet
         signerOpt match {
           case Some(signer) =>
             val cetSigsF = getCetSigs(signer = signer,
+                                      dlcDb = dlc,
                                       contractId = contractId,
                                       cetSigsDbs = cetSigsDbs,
                                       mySigs = mySigs)
@@ -972,12 +976,20 @@ abstract class DLCWallet
 
   private def getCetSigs(
       signer: DLCTxSigner,
+      dlcDb: DLCDb,
       contractId: ByteVector,
       cetSigsDbs: Vector[DLCCETSignaturesDb],
       mySigs: Vector[DLCCETSignaturesDb]): Future[CETSignatures] = {
     if (mySigs.forall(_.initiatorSig.isEmpty)) {
       logger.info(s"Creating CET Sigs for contract ${contractId.toHex}")
+      val dlcDbSignComputingAdaptorSigs =
+        dlcDb.updateState(DLCState.SignComputingAdaptorSigs)
+      val updatedF = dlcDAO.update(dlcDbSignComputingAdaptorSigs)
       for {
+        _ <- updatedF
+        status <- findDLC(dlcDb.dlcId)
+        _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
+                                                               status.get)
         sigs <- signer.createCETSigsAsync()
 
         sigsDbs: Vector[DLCCETSignaturesDb] = sigs.outcomeSigs
@@ -1145,6 +1157,10 @@ abstract class DLCWallet
             Future.failed(
               new RuntimeException(
                 "Cannot add sigs to a DLC before it has been accepted"))
+          case _: AdaptorSigComputationState =>
+            val err = new RuntimeException(
+              s"Cannot add sigs to a DLC while adaptor sigs are being computed, contractId=${sign.contractId.toHex}")
+            Future.failed(err)
           case Accepted =>
             logger.info(
               s"Verifying CET Signatures for contract ${sign.contractId.toHex}")
@@ -1304,7 +1320,8 @@ abstract class DLCWallet
     dlcDb.state match {
       case DLCState.Broadcasted | DLCState.Signed => dlcDb
       case state @ (DLCState.Offered | DLCState.Confirmed | DLCState.Accepted |
-          DLCState.Claimed | DLCState.RemoteClaimed | DLCState.Refunded) =>
+          DLCState.Claimed | DLCState.RemoteClaimed | DLCState.Refunded |
+          _: DLCState.AdaptorSigComputationState) =>
         sys.error(
           s"Cannot broadcast the dlc when it is in the state=${state} contractId=${dlcDb.contractIdOpt}")
     }

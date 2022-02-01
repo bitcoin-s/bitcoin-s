@@ -114,7 +114,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                   .deleteByDLCId(updated.dlcId)
                   .map(_ => ())
               case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
-                  DLCState.Broadcasted | DLCState.Confirmed =>
+                  DLCState.Broadcasted | DLCState.Confirmed |
+                  _: DLCState.AdaptorSigComputationState =>
                 FutureUtil.unit
             }
           }
@@ -255,6 +256,10 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                 if (blockHashOpt.isDefined)
                   dlcDb.updateState(DLCState.Confirmed)
                 else dlcDb.copy(state = DLCState.Broadcasted)
+              case _: DLCState.AdaptorSigComputationState =>
+                val contractIdOpt = dlcDb.contractIdOpt.map(_.toHex)
+                throw new IllegalStateException(
+                  s"Cannot be settling a DLC when we are computing adaptor sigs! contractId=${contractIdOpt}")
               case DLCState.Confirmed | DLCState.Claimed |
                   DLCState.RemoteClaimed | DLCState.Refunded =>
                 dlcDb
