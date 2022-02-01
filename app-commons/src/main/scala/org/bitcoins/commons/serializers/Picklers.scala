@@ -605,7 +605,9 @@ object Picklers {
   implicit val payoutFunctionV0TLVWriter: Writer[PayoutFunctionV0TLV] = {
     def endpoint(json: Value, isEndpoint: Boolean): Value = json match {
       case obj: Obj =>
-        Obj(obj.value.addOne(PicklerKeys.isEndpointKey -> Bool(isEndpoint)))
+        //drop old value on the floor if there is one
+        obj.value.put(PicklerKeys.isEndpointKey, Bool(isEndpoint))
+        Obj(obj.value)
       case v: Value => v
     }
 
