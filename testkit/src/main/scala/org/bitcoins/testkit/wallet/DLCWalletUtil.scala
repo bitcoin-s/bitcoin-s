@@ -322,14 +322,12 @@ object DLCWalletUtil extends Logging {
     for {
       contractId <- getContractId(dlcA)
       fundingTx <- dlcB.broadcastDLCFundingTx(contractId)
-      _ = logger.info(s"Calling func and building executionTx")
       executionTx <-
         if (asInitiator) {
           func(dlcA)
         } else {
           func(dlcB)
         }
-      _ = logger.info(s"Done with func and building executionTx")
       _ <- {
         if (asInitiator) dlcB.processTransaction(executionTx, None)
         else dlcA.processTransaction(executionTx, None)
