@@ -113,8 +113,6 @@ class DLCMultiOracleNumericExecutionTest
       contractId <- getContractId(wallets._1.wallet)
       status <- getDLCStatus(wallets._1.wallet)
       (sigs, _) = getSigs(status.contractInfo)
-      /*      _ = require(sigs.length == numDigits,
-                  s"sigs.length=${sigs.length} numDigits=$numDigits")*/
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sigs)
 
       _ = logger.info(s"Beginning dlcExecutionTest")
