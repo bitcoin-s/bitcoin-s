@@ -322,30 +322,32 @@ object DLCWalletUtil extends Logging {
     for {
       contractId <- getContractId(dlcA)
       fundingTx <- dlcB.broadcastDLCFundingTx(contractId)
-      tx <-
+      _ = logger.info(s"Calling func and building executionTx")
+      executionTx <-
         if (asInitiator) {
           func(dlcA)
         } else {
           func(dlcB)
         }
+      _ = logger.info(s"Done with func and building executionTx")
       _ <- {
-        if (asInitiator) dlcB.processTransaction(tx, None)
-        else dlcA.processTransaction(tx, None)
+        if (asInitiator) dlcB.processTransaction(executionTx, None)
+        else dlcA.processTransaction(executionTx, None)
       }
-      _ <- dlcA.broadcastTransaction(tx)
+      _ <- dlcA.broadcastTransaction(executionTx)
       dlcDb <- dlcA.dlcDAO.findByContractId(contractId)
 
       _ <- verifyProperlySetTxIds(dlcA)
       _ <- verifyProperlySetTxIds(dlcB)
     } yield {
-      assert(tx.inputs.size == 1)
-      assert(tx.outputs.size == expectedOutputs)
-      assert(ScriptInterpreter.checkTransaction(tx))
+      assert(executionTx.inputs.size == 1)
+      assert(executionTx.outputs.size == expectedOutputs)
+      assert(ScriptInterpreter.checkTransaction(executionTx))
 
       val fundOutputIndex = dlcDb.get.fundingOutPointOpt.get.vout.toInt
       val fundingOutput = fundingTx.outputs(fundOutputIndex)
 
-      verifyInput(tx, 0, fundingOutput)
+      verifyInput(executionTx, 0, fundingOutput)
     }
   }
 

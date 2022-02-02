@@ -76,31 +76,12 @@ class DLCMultiOracleNumericExecutionTest
     val initiatorWinVec = initiatorWinOutcome.digits
 
     val initWinOutcomes: NumericOracleOutcome = genNumericOracleOutcome(
-      initChosenOracles,
-      contractInfo,
-      initiatorWinVec,
-      Some(params))
+      chosenOracles = initChosenOracles,
+      contractInfo = contractInfo,
+      digits = initiatorWinVec,
+      paramsOpt = Some(params))
 
-    val initiatorWinSigs =
-      privateKeys.zip(kValues).flatMap { case (priv, kValues) =>
-        val outcomeOpt = initWinOutcomes.oraclesAndOutcomes.find(
-          _._1.publicKey == priv.schnorrPublicKey)
-
-        outcomeOpt.map { case (oracleInfo, outcome) =>
-          val sigs = outcome.digits.zip(kValues).map { case (num, kValue) =>
-            val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
-            priv.schnorrSignWithNonce(hash, kValue)
-          }
-          val eventId = oracleInfo.announcement.eventTLV match {
-            case v0: OracleEventV0TLV => v0.eventId
-          }
-
-          OracleAttestmentV0TLV(eventId,
-                                priv.schnorrPublicKey,
-                                sigs,
-                                outcome.digits.map(_.toString))
-        }
-      }
+    val initiatorWinSigs = buildAttestments(initWinOutcomes)
 
     val recipientChosenOracles =
       Random.shuffle(oracleIndices).take(oracleInfo.threshold).sorted
@@ -121,26 +102,7 @@ class DLCMultiOracleNumericExecutionTest
       recipientWinVec,
       Some(params))
 
-    val recipientWinSigs =
-      privateKeys.zip(kValues).flatMap { case (priv, kValues) =>
-        val outcomeOpt = recipientWinOutcomes.oraclesAndOutcomes.find(
-          _._1.publicKey == priv.schnorrPublicKey)
-
-        outcomeOpt.map { case (oracleInfo, outcome) =>
-          val sigs = outcome.digits.zip(kValues).map { case (num, kValue) =>
-            val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
-            priv.schnorrSignWithNonce(hash, kValue)
-          }
-          val eventId = oracleInfo.announcement.eventTLV match {
-            case v0: OracleEventV0TLV => v0.eventId
-          }
-
-          OracleAttestmentV0TLV(eventId,
-                                priv.schnorrPublicKey,
-                                sigs,
-                                outcome.digits.map(_.toString))
-        }
-      }
+    val recipientWinSigs = buildAttestments(recipientWinOutcomes)
 
     // Shuffle to make sure ordering doesn't matter
     (Random.shuffle(initiatorWinSigs), Random.shuffle(recipientWinSigs))
@@ -151,13 +113,16 @@ class DLCMultiOracleNumericExecutionTest
       contractId <- getContractId(wallets._1.wallet)
       status <- getDLCStatus(wallets._1.wallet)
       (sigs, _) = getSigs(status.contractInfo)
+      /*      _ = require(sigs.length == numDigits,
+                  s"sigs.length=${sigs.length} numDigits=$numDigits")*/
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sigs)
 
+      _ = logger.info(s"Beginning dlcExecutionTest")
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = true,
                                  func = func,
                                  expectedOutputs = 1)
-
+      _ = logger.info(s"after dlcExecutionTest")
       _ = assert(result)
 
       dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
@@ -181,6 +146,30 @@ class DLCMultiOracleNumericExecutionTest
           assert(dlcA.state == DLCState.Claimed)
           assert(dlcB.state == DLCState.RemoteClaimed)
         case (_, _) => fail()
+      }
+    }
+  }
+
+  /** Builds oracle attestments for the given oracle outcome */
+  private def buildAttestments(
+      oracleOutcomes: NumericOracleOutcome): Vector[OracleAttestmentV0TLV] = {
+    privateKeys.zip(kValues).flatMap { case (priv, kValues) =>
+      val outcomeOpt = oracleOutcomes.oraclesAndOutcomes.find(
+        _._1.publicKey == priv.schnorrPublicKey)
+
+      outcomeOpt.map { case (oracleInfo, outcome) =>
+        val sigs = outcome.digits.zip(kValues).map { case (num, kValue) =>
+          val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
+          priv.schnorrSignWithNonce(hash, kValue)
+        }
+        val eventId = oracleInfo.announcement.eventTLV match {
+          case v0: OracleEventV0TLV => v0.eventId
+        }
+
+        OracleAttestmentV0TLV(eventId,
+                              priv.schnorrPublicKey,
+                              sigs,
+                              outcome.digits.map(_.toString))
       }
     }
   }
