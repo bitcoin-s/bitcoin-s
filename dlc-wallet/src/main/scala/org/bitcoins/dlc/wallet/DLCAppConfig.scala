@@ -38,8 +38,8 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   override protected[bitcoins] type ConfigType = DLCAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Seq[Config]): DLCAppConfig =
-    DLCAppConfig(baseDatadir, configs.toVector)
+      configs: Vector[Config]): DLCAppConfig =
+    DLCAppConfig(baseDatadir, configs)
 
   override def appConfig: DLCAppConfig = this
 

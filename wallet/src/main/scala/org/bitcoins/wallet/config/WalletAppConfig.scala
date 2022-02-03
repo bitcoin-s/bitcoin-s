@@ -8,8 +8,8 @@ import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.Mutable
-import org.bitcoins.core.wallet.keymanagement._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.keymanagement._
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
@@ -44,8 +44,8 @@ case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   override protected[bitcoins] type ConfigType = WalletAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Seq[Config]): WalletAppConfig =
-    WalletAppConfig(baseDatadir, configs.toVector)
+      configs: Vector[Config]): WalletAppConfig =
+    WalletAppConfig(baseDatadir, configs)
 
   override def appConfig: WalletAppConfig = this
 

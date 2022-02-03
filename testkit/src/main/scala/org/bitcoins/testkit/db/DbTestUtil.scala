@@ -1,6 +1,5 @@
 package org.bitcoins.testkit.db
 
-import java.nio.file.{Files, Path}
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.db._
@@ -8,6 +7,7 @@ import org.bitcoins.db.models.MasterXPubDAO
 import scodec.bits.ByteVector
 import slick.lifted.ProvenShape
 
+import java.nio.file.{Files, Path}
 import scala.concurrent.{ExecutionContext, Future}
 
 object DbTestUtil {
@@ -52,8 +52,8 @@ case class TestAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   override protected[bitcoins] type ConfigType = TestAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Seq[Config]): TestAppConfig =
-    TestAppConfig(baseDatadir, configOverrides)
+      configs: Vector[Config]): TestAppConfig =
+    TestAppConfig(baseDatadir, configs)
 
   override def appConfig: TestAppConfig = this
 

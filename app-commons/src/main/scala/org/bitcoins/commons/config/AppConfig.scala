@@ -40,7 +40,7 @@ abstract class AppConfig extends StartStopAsync[Unit] with Logging {
 
   /** Constructor to make a new instance of this config type */
   protected[bitcoins] def newConfigOfType(
-      configOverrides: Seq[Config]): ConfigType
+      configOverrides: Vector[Config]): ConfigType
 
   /** List of user-provided configs that should
     * override defaults
