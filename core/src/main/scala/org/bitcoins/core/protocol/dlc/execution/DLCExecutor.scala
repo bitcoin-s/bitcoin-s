@@ -171,6 +171,17 @@ object DLCExecutor {
     val sigsUsed =
       sigsUsedOpt.get // Safe because msgOpt is defined if no throw
 
+    // make sure we have the correct number of oracle signatures
+    // see: https://github.com/bitcoin-s/bitcoin-s/issues/4032
+    msg.oracles.foreach { oracle =>
+      require(
+        sigsUsed.forall(_.size <= oracle.nonces.size),
+        s"Cannot have different oracle signatures and number of nonces, " +
+          s"oracleSignatures.length=${oracleSigs.map(
+            _.sigs.length)} number of nonces=${oracle.nonces.size}"
+      )
+    }
+
     val (fundingMultiSig, _) = DLCTxBuilder.buildFundingSPKs(
       Vector(fundingKey.publicKey, remoteFundingPubKey))
 
