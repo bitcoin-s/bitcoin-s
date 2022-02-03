@@ -136,6 +136,8 @@ object DLCExecutor {
       fundingTx: Transaction,
       fundOutputIndex: Int
   ): ExecutedDLCOutcome = {
+    require(checkOracleSignaturesAgainstContract(contractInfo, oracleSigs),
+            s"Incorrect oracle signatures and contract combination")
     val sigOracles = oracleSigs.map(_.oracle)
 
     val oracleInfoOpt = contractInfo.oracleInfos.find { oracleInfo =>
@@ -190,5 +192,36 @@ object DLCExecutor {
                                       sigsUsed)
 
     ExecutedDLCOutcome(fundingTx, cet, msg, sigsUsed)
+  }
+
+  /** Checks that the oracles signatures given to us are correct
+    * Things we need to check
+    * 1. We have all the oracle signatures
+    * 2. The oracle signatures are for one of the contracts in the [[ContractInfo]]
+    *  @see https://github.com/bitcoin-s/bitcoin-s/issues/4032
+    */
+  def checkOracleSignaturesAgainstContract(
+      contractInfo: ContractInfo,
+      oracleSigs: Vector[OracleSignatures]): Boolean = {
+    contractInfo match {
+      case single: SingleContractInfo =>
+        checkSingleContractInfoOracleSigs(single, oracleSigs)
+      case _: DisjointUnionContractInfo =>
+        sys.error(
+          s"Checking oracle signatures against disjoint contract info not implemented")
+    }
+  }
+
+  private def checkSingleContractInfoOracleSigs(
+      contractInfo: SingleContractInfo,
+      oracleSignatures: Vector[OracleSignatures]): Boolean = {
+    contractInfo.contractDescriptor match {
+      case _: EnumContractDescriptor =>
+        val result = oracleSignatures.forall(_.sigs.length == 1)
+        result
+      case numeric: NumericContractDescriptor =>
+        val result = oracleSignatures.forall(_.sigs.length == numeric.numDigits)
+        result
+    }
   }
 }

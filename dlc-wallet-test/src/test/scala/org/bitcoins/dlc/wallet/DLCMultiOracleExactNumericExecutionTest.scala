@@ -80,7 +80,9 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
           _._1.publicKey == priv.schnorrPublicKey)
 
         outcomeOpt.map { case (oracleInfo, outcome) =>
-          val sigs = outcome.digits.zip(kValues).map { case (num, kValue) =>
+          val neededPadding = kValues.length - outcome.digits.length
+          val digitsPadded = outcome.digits ++ Vector.fill(neededPadding)(0)
+          val sigs = digitsPadded.zip(kValues).map { case (num, kValue) =>
             val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
             priv.schnorrSignWithNonce(hash, kValue)
           }
@@ -88,10 +90,13 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
             case v0: OracleEventV0TLV => v0.eventId
           }
 
+          require(
+            kValues.length == sigs.length,
+            s"kValues.length=${kValues.length} sigs.length=${sigs.length}")
           OracleAttestmentV0TLV(eventId,
                                 priv.schnorrPublicKey,
                                 sigs,
-                                outcome.digits.map(_.toString))
+                                digitsPadded.map(_.toString))
         }
       }
 
@@ -120,7 +125,9 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
           _._1.publicKey == priv.schnorrPublicKey)
 
         outcomeOpt.map { case (oracleInfo, outcome) =>
-          val sigs = outcome.digits.zip(kValues).map { case (num, kValue) =>
+          val neededPadding = kValues.length - outcome.digits.length
+          val digitsPadded = outcome.digits ++ Vector.fill(neededPadding)(0)
+          val sigs = digitsPadded.zip(kValues).map { case (num, kValue) =>
             val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
             priv.schnorrSignWithNonce(hash, kValue)
           }
@@ -128,10 +135,13 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
             case v0: OracleEventV0TLV => v0.eventId
           }
 
+          require(
+            kValues.length == sigs.length,
+            s"kValues.length=${kValues.length} sigs.length=${sigs.length}")
           OracleAttestmentV0TLV(eventId,
                                 priv.schnorrPublicKey,
                                 sigs,
-                                outcome.digits.map(_.toString))
+                                digitsPadded.map(_.toString))
         }
       }
 
