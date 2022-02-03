@@ -136,13 +136,23 @@ object DLCExecutor {
       fundingTx: Transaction,
       fundOutputIndex: Int
   ): ExecutedDLCOutcome = {
+    println(s"DLCExecutor.executeDLC()")
     val sigOracles = oracleSigs.map(_.oracle)
-
+    println(s"sigOracles")
     //make sure we have the correct number of oracle signatures
     //see: https://github.com/bitcoin-s/bitcoin-s/issues/4032
-    contractInfo.contractDescriptors.foreach {
+    val descs = contractInfo.contractDescriptors
+    println(s"descs.length=${descs.length} descs=$descs")
+
+    //when we have mixed types of contract descriptors, such as an evenum with 3 outcomes
+    //and a numeric constract with 16 digits, we may have just 1 signature for the enum
+    //event. We can't have this invariant by enforced on the numeric contract, as we
+    //only have 1 sig
+    descs.foreach {
       case numeric: NumericContractDescriptor =>
+        println(s"numeric.oracleSigs=$oracleSigs")
         val invariant = oracleSigs.forall(_.sigs.length == numeric.numDigits)
+        println(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         require(
           invariant,
           s"Cannot have different oracle signatures and numeric numDigits, " +

@@ -1116,12 +1116,15 @@ trait DLCTest {
                                          possibleOutcomesForContract,
                                          outcomeIndex,
                                          paramsOpt)
+    println(s"oracleSigs.length=${oracleSigs.map(_.sigs.length)}")
 
     for {
       offerOutcome <-
         dlcOffer.executeDLC(offerSetup, Future.successful(oracleSigs))
+      _ = println(s"Done offerOutcome")
       acceptOutcome <-
         dlcAccept.executeDLC(acceptSetup, Future.successful(oracleSigs))
+      _ = println(s"Done acceptOutcome")
     } yield {
       assert(offerOutcome.fundingTx == acceptOutcome.fundingTx)
 

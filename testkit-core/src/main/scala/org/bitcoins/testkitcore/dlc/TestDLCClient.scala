@@ -123,6 +123,7 @@ case class TestDLCClient(
       oracleSigsF: Future[Vector[OracleSignatures]]): Future[
     ExecutedDLCOutcome] = {
     oracleSigsF.map { oracleSigs =>
+      println(s"Executing DLC with sigs=${oracleSigs.map(_.sigs.length)}")
       dlcExecutor.executeDLC(dlcSetup, oracleSigs)
     }
   }
