@@ -212,7 +212,7 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
         outcome.oraclesAndOutcomes.find(_._1.publicKey == priv.schnorrPublicKey)
 
       outcomeOpt.map { case (oracleInfo, outcome) =>
-        val neededPadding = kValues.length - outcome.digits.length
+        val neededPadding = numDigits - outcome.digits.length
         val digitsPadded = outcome.digits ++ Vector.fill(neededPadding)(0)
         val sigs = digitsPadded.zip(kValues).map { case (num, kValue) =>
           val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes

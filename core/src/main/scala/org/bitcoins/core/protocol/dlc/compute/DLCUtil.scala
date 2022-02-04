@@ -206,15 +206,11 @@ object DLCUtil {
       case single: SingleContractInfo =>
         checkSingleContractInfoOracleSigs(single, oracleSigs)
       case disjoint: DisjointUnionContractInfo =>
-        val contractHasMatchingSigs: Vector[Boolean] = {
-          disjoint.contracts.map { single: SingleContractInfo =>
-            checkSingleContractInfoOracleSigs(single, oracleSigs)
-          }
-        }
-
         //at least one disjoint union contract
         //has to have matching signatures
-        contractHasMatchingSigs.exists(_ == true)
+        disjoint.contracts.exists { single: SingleContractInfo =>
+          checkSingleContractInfoOracleSigs(single, oracleSigs)
+        }
     }
   }
 
@@ -276,11 +272,12 @@ object DLCUtil {
             val oracleSig =
               OracleSignatures(SingleOracleInfo(ann), attestment.sigs)
             val isMatch = matchOracleSignaturesForAnnouncements(ann, oracleSig)
-            if (isMatch.isDefined) {
-              acc.:+(isMatch.get)
-            } else {
-              //don't add it, skip it
-              acc
+            isMatch match {
+              case Some(matchedSig) =>
+                acc.:+(matchedSig)
+              case None =>
+                //don't add it, skip it
+                acc
             }
           }.toVector
           r
