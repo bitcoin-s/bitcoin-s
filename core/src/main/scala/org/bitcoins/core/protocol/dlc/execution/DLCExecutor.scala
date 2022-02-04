@@ -206,15 +206,20 @@ object DLCExecutor {
     contractInfo match {
       case single: SingleContractInfo =>
         checkSingleContractInfoOracleSigs(single, oracleSigs)
-      case _: DisjointUnionContractInfo =>
-        sys.error(
-          s"Checking oracle signatures against disjoint contract info not implemented")
+      case disjoint: DisjointUnionContractInfo =>
+        val results = disjoint.contracts.map { single: SingleContractInfo =>
+          val matchedSigsOpt = matchOracleSignatures(single, oracleSigs)
+          checkSingleContractInfoOracleSigs(single, matchedSigsOpt.toVector)
+        }
+
+        results.forall(_ == true)
     }
   }
 
   private def checkSingleContractInfoOracleSigs(
       contractInfo: SingleContractInfo,
       oracleSignatures: Vector[OracleSignatures]): Boolean = {
+    require(oracleSignatures.nonEmpty, s"Signatures cannot be empty")
     contractInfo.contractDescriptor match {
       case _: EnumContractDescriptor =>
         val result = oracleSignatures.forall(_.sigs.length == 1)
@@ -222,6 +227,14 @@ object DLCExecutor {
       case numeric: NumericContractDescriptor =>
         val result = oracleSignatures.forall(_.sigs.length == numeric.numDigits)
         result
+    }
+  }
+
+  /** Matches a [[SingleContractInfo]] to its oracle's signatures */
+  private def matchOracleSignatures(contractInfo: SingleContractInfo,
+                                    oracleSignatures: Vector[OracleSignatures]) : Option[OracleSignatures] = {
+    contractInfo.announcements.map { announcement =>
+      announcement.eventTLV.nonces.map(_.)
     }
   }
 }
