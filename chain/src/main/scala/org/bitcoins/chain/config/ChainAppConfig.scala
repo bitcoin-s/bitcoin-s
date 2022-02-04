@@ -28,8 +28,8 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   override protected[bitcoins] type ConfigType = ChainAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Seq[Config]): ChainAppConfig =
-    ChainAppConfig(baseDatadir, configs.toVector)
+      configs: Vector[Config]): ChainAppConfig =
+    ChainAppConfig(baseDatadir, configs)
 
   override lazy val appConfig: ChainAppConfig = this
 

@@ -37,8 +37,8 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   override protected[bitcoins] type ConfigType = NodeAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Seq[Config]): NodeAppConfig =
-    NodeAppConfig(baseDatadir, configs.toVector)
+      configs: Vector[Config]): NodeAppConfig =
+    NodeAppConfig(baseDatadir, configs)
 
   implicit override def ec: ExecutionContext = system.dispatcher
 

@@ -28,8 +28,8 @@ case class TorAppConfig(
   override protected[bitcoins] type ConfigType = TorAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Seq[Config]): TorAppConfig =
-    TorAppConfig(baseDatadir, subModuleNameOpt, configs.toVector)
+      configs: Vector[Config]): TorAppConfig =
+    TorAppConfig(baseDatadir, subModuleNameOpt, configs)
 
   private val isStarted: AtomicBoolean = new AtomicBoolean(false)
 

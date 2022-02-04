@@ -22,9 +22,8 @@ case class KeyManagerAppConfig(
 
   override type ConfigType = KeyManagerAppConfig
 
-  override def newConfigOfType(
-      configOverrides: Seq[Config]): KeyManagerAppConfig =
-    KeyManagerAppConfig(baseDatadir, configOverrides.toVector)
+  override def newConfigOfType(configs: Vector[Config]): KeyManagerAppConfig =
+    KeyManagerAppConfig(baseDatadir, configs)
 
   override def moduleName: String = KeyManagerAppConfig.moduleName
 

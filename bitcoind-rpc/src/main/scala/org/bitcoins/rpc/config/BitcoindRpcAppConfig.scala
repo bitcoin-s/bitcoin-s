@@ -30,8 +30,8 @@ case class BitcoindRpcAppConfig(
   override protected[bitcoins] type ConfigType = BitcoindRpcAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Seq[Config]): BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig(baseDatadir, configs.toVector)
+      configs: Vector[Config]): BitcoindRpcAppConfig =
+    BitcoindRpcAppConfig(baseDatadir, configs)
 
   override def start(): Future[Unit] = Future.unit
 

@@ -28,8 +28,8 @@ case class DLCNodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   override protected[bitcoins] type ConfigType = DLCNodeAppConfig
 
   override protected[bitcoins] def newConfigOfType(
-      configs: Seq[Config]): DLCNodeAppConfig =
-    DLCNodeAppConfig(baseDatadir, configs.toVector)
+      configs: Vector[Config]): DLCNodeAppConfig =
+    DLCNodeAppConfig(baseDatadir, configs)
 
   override def start(): Future[Unit] = {
     FutureUtil.unit

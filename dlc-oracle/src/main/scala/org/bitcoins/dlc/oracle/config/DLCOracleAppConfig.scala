@@ -38,9 +38,8 @@ case class DLCOracleAppConfig(
 
   override type ConfigType = DLCOracleAppConfig
 
-  override def newConfigOfType(
-      configOverrides: Seq[Config]): DLCOracleAppConfig =
-    DLCOracleAppConfig(baseDatadir, configOverrides.toVector)
+  override def newConfigOfType(configs: Vector[Config]): DLCOracleAppConfig =
+    DLCOracleAppConfig(baseDatadir, configs)
 
   /** DLC oracles are not network specific, so just hard code the testnet chain params */
   final override lazy val chain: BitcoinChainParams = TestNetChainParams
