@@ -207,11 +207,15 @@ object DLCExecutor {
       case single: SingleContractInfo =>
         checkSingleContractInfoOracleSigs(single, oracleSigs)
       case disjoint: DisjointUnionContractInfo =>
-        val results = disjoint.contracts.map { single: SingleContractInfo =>
-          checkSingleContractInfoOracleSigs(single, oracleSigs)
+        val contractHasMatchingSigs: Vector[Boolean] = {
+          disjoint.contracts.map { single: SingleContractInfo =>
+            checkSingleContractInfoOracleSigs(single, oracleSigs)
+          }
         }
 
-        results.forall(_ == true)
+        //at least one disjoint union contract
+        //has to have matching signatures
+        contractHasMatchingSigs.exists(_ == true)
     }
   }
 
