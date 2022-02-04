@@ -13,7 +13,8 @@ var toRoot = '../';</script></head><body><div id="search"><span id="doc-title"><
  The maximum number of satoshis that will be paid as a fee of the payment.
  This value can be represented either as a percentage of the amount being
  sent, or as a fixed amount of the maximum fee the user is willing the pay to
- send the payment.</p></dd><dt class="param">ignoredNodes</dt><dd class="cmt"><p>
+ send the payment. If not specified, lnd will use a default value of 100%
+ fees for small amounts (&lt;=1k sat) or 5% fees for larger amounts.</p></dd><dt class="param">ignoredNodes</dt><dd class="cmt"><p>
  A list of nodes to ignore during path finding. When using REST, these fields
  must be encoded as base64.</p></dd><dt class="param">ignoredEdges</dt><dd class="cmt"><p>
  Deprecated. A list of edges to ignore during path finding.</p></dd><dt class="param">sourcePubKey</dt><dd class="cmt"><p>
@@ -53,7 +54,8 @@ var toRoot = '../';</script></head><body><div id="search"><span id="doc-title"><
  The maximum number of satoshis that will be paid as a fee of the payment.
  This value can be represented either as a percentage of the amount being
  sent, or as a fixed amount of the maximum fee the user is willing the pay to
- send the payment.</p></dd><dt class="param">ignoredNodes</dt><dd class="cmt"><p>
+ send the payment. If not specified, lnd will use a default value of 100%
+ fees for small amounts (&lt;=1k sat) or 5% fees for larger amounts.</p></dd><dt class="param">ignoredNodes</dt><dd class="cmt"><p>
  A list of nodes to ignore during path finding. When using REST, these fields
  must be encoded as base64.</p></dd><dt class="param">ignoredEdges</dt><dd class="cmt"><p>
  Deprecated. A list of edges to ignore during path finding.</p></dd><dt class="param">sourcePubKey</dt><dd class="cmt"><p>

@@ -20,7 +20,8 @@ var toRoot = '../';</script></head><body><div id="search"><span id="doc-title"><
  The maximum number of satoshis that will be paid as a fee of the payment.
  This value can be represented either as a percentage of the amount being
  sent, or as a fixed amount of the maximum fee the user is willing the pay to
- send the payment.</p></dd><dt class="param">outgoingChanId</dt><dd class="cmt"><p>
+ send the payment. If not specified, lnd will use a default value of 100%
+ fees for small amounts (&lt;=1k sat) or 5% fees for larger amounts.</p></dd><dt class="param">outgoingChanId</dt><dd class="cmt"><p>
  The channel id of the channel that must be taken to the first hop. If zero,
  any channel may be used.</p></dd><dt class="param">lastHopPubkey</dt><dd class="cmt"><p>
  The pubkey of the last hop of the route. If empty, any hop may be used.</p></dd><dt class="param">cltvLimit</dt><dd class="cmt"><p>
@@ -59,7 +60,8 @@ var toRoot = '../';</script></head><body><div id="search"><span id="doc-title"><
  The maximum number of satoshis that will be paid as a fee of the payment.
  This value can be represented either as a percentage of the amount being
  sent, or as a fixed amount of the maximum fee the user is willing the pay to
- send the payment.</p></dd><dt class="param">outgoingChanId</dt><dd class="cmt"><p>
+ send the payment. If not specified, lnd will use a default value of 100%
+ fees for small amounts (&lt;=1k sat) or 5% fees for larger amounts.</p></dd><dt class="param">outgoingChanId</dt><dd class="cmt"><p>
  The channel id of the channel that must be taken to the first hop. If zero,
  any channel may be used.</p></dd><dt class="param">lastHopPubkey</dt><dd class="cmt"><p>
  The pubkey of the last hop of the route. If empty, any hop may be used.</p></dd><dt class="param">cltvLimit</dt><dd class="cmt"><p>
