@@ -3,15 +3,15 @@ package org.bitcoins.dlc.wallet
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCOffer
-import org.bitcoins.core.protocol.dlc.models.{
-  DLCState,
-  DisjointUnionContractInfo,
-  SingleContractInfo
-}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.{
   Claimed,
   Refunded,
   RemoteClaimed
+}
+import org.bitcoins.core.protocol.dlc.models.{
+  DLCState,
+  DisjointUnionContractInfo,
+  SingleContractInfo
 }
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.script.interpreter.ScriptInterpreter

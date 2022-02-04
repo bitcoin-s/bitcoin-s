@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.dlc.sign.DLCTxSigner
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.Indexed
-import org.bitcoins.crypto.{AdaptorSign, ECPublicKey}
+import org.bitcoins.crypto.{AdaptorSign, ECPublicKey, SchnorrNonce}
 
 import scala.util.{Success, Try}
 
@@ -231,10 +231,18 @@ object DLCExecutor {
   }
 
   /** Matches a [[SingleContractInfo]] to its oracle's signatures */
-  private def matchOracleSignatures(contractInfo: SingleContractInfo,
-                                    oracleSignatures: Vector[OracleSignatures]) : Option[OracleSignatures] = {
-    contractInfo.announcements.map { announcement =>
-      announcement.eventTLV.nonces.map(_.)
+  def matchOracleSignatures(
+      contractInfo: SingleContractInfo,
+      oracleSignatures: Vector[OracleSignatures]): Option[OracleSignatures] = {
+    val announcementNonces: Vector[Vector[SchnorrNonce]] = {
+      contractInfo.announcements
+        .map(_.eventTLV.nonces)
+        .map(_.vec)
     }
+    val resultOpt = oracleSignatures.find { case oracleSignature =>
+      val oracleSigNonces: Vector[SchnorrNonce] = oracleSignature.sigs.map(_.rx)
+      announcementNonces.contains(oracleSigNonces)
+    }
+    resultOpt
   }
 }

@@ -7,7 +7,7 @@ import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 class DisjointUnionDLCTest extends BitcoinSJvmTest with DLCTest {
   behavior of "Disjoint Union DLC"
 
-  it should "be able to construct and verify with ScriptInterpreter every tx in a double enum contract" in {
+  it should "be able to construct and verify with ScriptInterpreter every tx in a double enum contract" ignore {
     val numDisjoint = 2
     val numOutcomes = 10
     val singleParams = 0.until(numDisjoint).toVector.map { _ =>
