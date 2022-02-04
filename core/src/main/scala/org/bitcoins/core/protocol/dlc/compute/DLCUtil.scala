@@ -277,7 +277,7 @@ object DLCUtil {
               OracleSignatures(SingleOracleInfo(ann), attestment.sigs)
             val isMatch = matchOracleSignaturesForAnnouncements(ann, oracleSig)
             if (isMatch.isDefined) {
-              acc.appended(isMatch.get)
+              acc.:+(isMatch.get)
             } else {
               //don't add it, skip it
               acc
