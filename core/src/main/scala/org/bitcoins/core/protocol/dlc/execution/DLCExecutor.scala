@@ -216,18 +216,14 @@ object DLCExecutor {
     }
   }
 
+  /** Check if the given [[SingleContractInfo]] has one [[OracleSignatures]]
+    * matches it inside of oracleSignatures.
+    */
   private def checkSingleContractInfoOracleSigs(
       contractInfo: SingleContractInfo,
       oracleSignatures: Vector[OracleSignatures]): Boolean = {
     require(oracleSignatures.nonEmpty, s"Signatures cannot be empty")
-    contractInfo.contractDescriptor match {
-      case _: EnumContractDescriptor =>
-        val result = oracleSignatures.forall(_.sigs.length == 1)
-        result
-      case numeric: NumericContractDescriptor =>
-        val result = oracleSignatures.forall(_.sigs.length == numeric.numDigits)
-        result
-    }
+    matchOracleSignatures(contractInfo, oracleSignatures).isDefined
   }
 
   /** Matches a [[SingleContractInfo]] to its oracle's signatures */
