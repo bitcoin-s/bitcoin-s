@@ -2,13 +2,13 @@ package org.bitcoins.core.protocol.dlc.execution
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
-import org.bitcoins.core.protocol.dlc.compute.CETCalculator
+import org.bitcoins.core.protocol.dlc.compute.{CETCalculator, DLCUtil}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.dlc.sign.DLCTxSigner
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.Indexed
-import org.bitcoins.crypto.{AdaptorSign, ECPublicKey, SchnorrNonce}
+import org.bitcoins.crypto.{AdaptorSign, ECPublicKey}
 
 import scala.util.{Success, Try}
 
@@ -136,8 +136,9 @@ object DLCExecutor {
       fundingTx: Transaction,
       fundOutputIndex: Int
   ): ExecutedDLCOutcome = {
-    require(checkOracleSignaturesAgainstContract(contractInfo, oracleSigs),
-            s"Incorrect oracle signatures and contract combination")
+    require(
+      DLCUtil.checkOracleSignaturesAgainstContract(contractInfo, oracleSigs),
+      s"Incorrect oracle signatures and contract combination")
     val sigOracles = oracleSigs.map(_.oracle)
 
     val oracleInfoOpt = contractInfo.oracleInfos.find { oracleInfo =>
@@ -192,56 +193,5 @@ object DLCExecutor {
                                       sigsUsed)
 
     ExecutedDLCOutcome(fundingTx, cet, msg, sigsUsed)
-  }
-
-  /** Checks that the oracles signatures given to us are correct
-    * Things we need to check
-    * 1. We have all the oracle signatures
-    * 2. The oracle signatures are for one of the contracts in the [[ContractInfo]]
-    *  @see https://github.com/bitcoin-s/bitcoin-s/issues/4032
-    */
-  def checkOracleSignaturesAgainstContract(
-      contractInfo: ContractInfo,
-      oracleSigs: Vector[OracleSignatures]): Boolean = {
-    contractInfo match {
-      case single: SingleContractInfo =>
-        checkSingleContractInfoOracleSigs(single, oracleSigs)
-      case disjoint: DisjointUnionContractInfo =>
-        val contractHasMatchingSigs: Vector[Boolean] = {
-          disjoint.contracts.map { single: SingleContractInfo =>
-            checkSingleContractInfoOracleSigs(single, oracleSigs)
-          }
-        }
-
-        //at least one disjoint union contract
-        //has to have matching signatures
-        contractHasMatchingSigs.exists(_ == true)
-    }
-  }
-
-  /** Check if the given [[SingleContractInfo]] has one [[OracleSignatures]]
-    * matches it inside of oracleSignatures.
-    */
-  private def checkSingleContractInfoOracleSigs(
-      contractInfo: SingleContractInfo,
-      oracleSignatures: Vector[OracleSignatures]): Boolean = {
-    require(oracleSignatures.nonEmpty, s"Signatures cannot be empty")
-    matchOracleSignatures(contractInfo, oracleSignatures).isDefined
-  }
-
-  /** Matches a [[SingleContractInfo]] to its oracle's signatures */
-  def matchOracleSignatures(
-      contractInfo: SingleContractInfo,
-      oracleSignatures: Vector[OracleSignatures]): Option[OracleSignatures] = {
-    val announcementNonces: Vector[Vector[SchnorrNonce]] = {
-      contractInfo.announcements
-        .map(_.eventTLV.nonces)
-        .map(_.vec)
-    }
-    val resultOpt = oracleSignatures.find { case oracleSignature =>
-      val oracleSigNonces: Vector[SchnorrNonce] = oracleSignature.sigs.map(_.rx)
-      announcementNonces.contains(oracleSigNonces)
-    }
-    resultOpt
   }
 }
