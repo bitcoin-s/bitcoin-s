@@ -880,8 +880,11 @@ trait DLCTest {
         .get
         ._2
 
+      val neededPadding =
+        singleOracleInfo.announcement.eventTLV.eventDescriptor.noncesNeeded - digitsToSign.digits.length
+      val paddedDigits = digitsToSign.digits ++ Vector.fill(neededPadding)(0)
       val sigs =
-        computeNumericOracleSignatures(digitsToSign.digits,
+        computeNumericOracleSignatures(paddedDigits,
                                        oraclePrivKeys(index),
                                        preCommittedKsPerOracle(index))
 
@@ -1044,7 +1047,8 @@ trait DLCTest {
       outcomeIndices: Vector[Long],
       contractParams: ContractParams)(implicit
       ec: ExecutionContext): Future[Assertion] = {
-    executeForCasesInUnion(outcomeIndices.map((0, _)), contractParams)
+    executeForCasesInUnion(outcomeIndices = outcomeIndices.map((0, _)),
+                           contractParams = contractParams)
   }
 
   def executeForCasesInUnion(
@@ -1110,12 +1114,14 @@ trait DLCTest {
         (numDigits, true, paramsOpt)
     }
 
-    val oracleSigs = genOracleSignatures(numOutcomes,
-                                         isMultiDigit,
-                                         singleContractInfo,
-                                         possibleOutcomesForContract,
-                                         outcomeIndex,
-                                         paramsOpt)
+    val oracleSigs = genOracleSignatures(
+      numOutcomesOrDigits = numOutcomes,
+      isNumeric = isMultiDigit,
+      contractInfo = singleContractInfo,
+      outcomes = possibleOutcomesForContract,
+      outcomeIndex = outcomeIndex,
+      paramsOpt = paramsOpt
+    )
 
     for {
       offerOutcome <-
