@@ -582,7 +582,7 @@ abstract class DLCWallet
     *
     * This is the first step of the recipient
     */
-    override def acceptDLCOffer(offer: DLCOffer): Future[DLCAccept] = {
+  override def acceptDLCOffer(offer: DLCOffer): Future[DLCAccept] = {
     logger.debug("Calculating relevant wallet data for DLC Accept")
 
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
