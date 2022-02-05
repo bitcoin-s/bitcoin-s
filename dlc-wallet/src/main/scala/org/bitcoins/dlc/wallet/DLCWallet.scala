@@ -454,7 +454,7 @@ abstract class DLCWallet
   /** Retrieves the [[DLCDb]] and [[AccountDb]] for the given tempContractId
     * else returns None
     */
-  private def getDlcDbAndAccountDb(tempContractId: Sha256Digest): Future[
+  private def getDlcDbOfferDbAccountDb(tempContractId: Sha256Digest): Future[
     Option[(DLCDb, DLCOfferDb, AccountDb)]] = {
     val result: Future[Option[(DLCDb, DLCOfferDb, AccountDb)]] = for {
       dlcDbOpt <- dlcDAO.findByTempContractId(tempContractId)
@@ -495,7 +495,7 @@ abstract class DLCWallet
       groupByExistingAnnouncements(announcements)
     }
 
-    getDlcDbAndAccountDb(offer.tempContractId).flatMap {
+    getDlcDbOfferDbAccountDb(offer.tempContractId).flatMap {
       case Some((dlcDb, dlcOffer, account)) =>
         Future.successful((dlcDb, dlcOffer, account))
       case None =>
