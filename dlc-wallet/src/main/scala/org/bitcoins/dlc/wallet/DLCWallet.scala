@@ -455,7 +455,7 @@ abstract class DLCWallet
     * else returns None
     */
   private def getDlcDbAndAccountDb(
-      tempContractId: Sha256Digest): Future[Option[(DLCDb, AccountDb)]] = {
+      tempContractId: Sha256Digest): Future[Option[(DLCDb, DLCOfferDb, AccountDb)]] = {
     val resultNested: Future[Option[Future[(DLCDb, AccountDb)]]] = for {
       dlcDbOpt <- dlcDAO.findByTempContractId(tempContractId)
       accountFOpt = dlcDbOpt.map { dlcDb =>
@@ -473,9 +473,12 @@ abstract class DLCWallet
     }
   }
 
-  private def initDLCForAccept(offer: DLCOffer): Future[(DLCDb, AccountDb)] = {
+  private def initDLCForAccept(
+      offer: DLCOffer): Future[(DLCDb, DLCOfferDb, AccountDb)] = {
     logger.info(
       s"Initializing DLC from received offer with tempContractId ${offer.tempContractId.hex}")
+    val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
+    val contractInfo = offer.contractInfo
     getDlcDbAndAccountDb(offer.tempContractId).flatMap {
       case Some((dlcDb, account)) =>
         Future.successful((dlcDb, account))
@@ -489,9 +492,9 @@ abstract class DLCWallet
           groupByExistingAnnouncements(announcements)
         }
 
-        val contractInfo = offer.contractInfo
 
-        val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
+
+        val dlcOfferDb = DLCOfferDbHelper.fromDLCOffer(dlcId, offer)
 
         val chainType = HDChainType.External
 
@@ -536,6 +539,7 @@ abstract class DLCWallet
           _ <- writeDLCKeysToAddressDb(account, chainType, nextIndex)
           groupedAnnouncements <- groupedAnnouncementsF
           writtenDLCAction = dlcDAO.createAction(dlc)
+          dlcOfferAction = dlcOfferDAO.createAction(dlcOfferDb)
           contractAction = contractDataDAO.createAction(contractDataDb)
           createdDbsAction = announcementDAO.createAllAction(
             groupedAnnouncements.newAnnouncements)
@@ -649,9 +653,10 @@ abstract class DLCWallet
     logger.info(
       s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
 
-    val dlcDbAccountDbF: Future[(DLCDb, AccountDb)] = initDLCForAccept(offer)
+    val dlcDbAccountDbF: Future[(DLCDb, DLCOfferDb, AccountDb)] =
+      initDLCForAccept(offer)
     for {
-      (dlc, account) <- dlcDbAccountDbF
+      (dlc, dlcOfferDb, account) <- dlcDbAccountDbF
       (txBuilder, spendingInfos) <- fundRawTransactionInternal(
         destinations = Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
         feeRate = offer.feeRate,
@@ -742,8 +747,6 @@ abstract class DLCWallet
 
       refundSigsDb =
         DLCRefundSigsDb(dlc.dlcId, refundSig, None)
-
-      dlcOfferDb = DLCOfferDbHelper.fromDLCOffer(dlc.dlcId, offer)
 
       offerInputs = offer.fundingInputs.zipWithIndex.map {
         case (funding, idx) =>
