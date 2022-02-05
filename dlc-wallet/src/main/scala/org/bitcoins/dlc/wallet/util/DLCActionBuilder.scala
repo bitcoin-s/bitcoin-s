@@ -56,7 +56,6 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
     * offer table, accept table, cet sigs table, inputs table, and refund table
     */
   def buildCreateAcceptAction(
-      dlcOfferDb: DLCOfferDb,
       dlcAcceptDb: DLCAcceptDb,
       offerInputs: Vector[DLCFundingInputDb],
       acceptInputs: Vector[DLCFundingInputDb],
@@ -66,15 +65,10 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
     NoStream,
     Effect.Write with Effect.Transactional] = {
     val inputAction = dlcInputsDAO.createAllAction(offerInputs ++ acceptInputs)
-    val offerAction = dlcOfferDAO.createAction(dlcOfferDb)
     val acceptAction = dlcAcceptDAO.createAction(dlcAcceptDb)
     val sigsAction = dlcSigsDAO.createAllAction(cetSigsDb)
     val refundSigAction = dlcRefundSigDAO.createAction(refundSigsDb)
-    val actions = Vector(inputAction,
-                         offerAction,
-                         acceptAction,
-                         sigsAction,
-                         refundSigAction)
+    val actions = Vector(inputAction, acceptAction, sigsAction, refundSigAction)
 
     val allActions = DBIO
       .sequence(actions)
