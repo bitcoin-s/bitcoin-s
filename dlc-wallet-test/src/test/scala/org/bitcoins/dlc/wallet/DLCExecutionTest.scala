@@ -3,15 +3,15 @@ package org.bitcoins.dlc.wallet
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCOffer
-import org.bitcoins.core.protocol.dlc.models.{
-  DLCState,
-  DisjointUnionContractInfo,
-  SingleContractInfo
-}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.{
   Claimed,
   Refunded,
   RemoteClaimed
+}
+import org.bitcoins.core.protocol.dlc.models.{
+  DLCState,
+  DisjointUnionContractInfo,
+  SingleContractInfo
 }
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
@@ -415,5 +415,42 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
         _ <- walletA.listDLCs()
       } yield succeed
+  }
+
+  it must "throw an exception for a enum contract when do not have all the oracle signatures/outcomes" in {
+    wallets =>
+      val walletA = wallets._1.wallet
+      val resultF = for {
+        contractId <- getContractId(walletA)
+        status <- getDLCStatus(walletA)
+        (goodAttestment, _) = {
+          status.contractInfo match {
+            case single: SingleContractInfo =>
+              DLCWalletUtil.getSigs(single)
+            case disjoint: DisjointUnionContractInfo =>
+              sys.error(
+                s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+          }
+        }
+        //purposefully drop these
+        //we cannot drop just a sig, or just an outcome because
+        //of invariants in OracleAttestmentV0TLV
+        badSigs = goodAttestment.sigs.dropRight(1)
+        badOutcomes = goodAttestment.outcomes.dropRight(1)
+        badAttestment = OracleAttestmentV0TLV(eventId = goodAttestment.eventId,
+                                              publicKey =
+                                                goodAttestment.publicKey,
+                                              sigs = badSigs,
+                                              outcomes = badOutcomes)
+        func = (wallet: DLCWallet) =>
+          wallet.executeDLC(contractId, badAttestment)
+
+        result <- dlcExecutionTest(wallets = wallets,
+                                   asInitiator = true,
+                                   func = func,
+                                   expectedOutputs = 1)
+      } yield assert(result)
+
+      recoverToSucceededIf[IllegalArgumentException](resultF)
   }
 }

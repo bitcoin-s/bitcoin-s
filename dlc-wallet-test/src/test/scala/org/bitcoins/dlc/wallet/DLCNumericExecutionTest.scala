@@ -164,6 +164,34 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
     }
   }
 
+  it must "throw an exception for a numeric contract when do not have all the oracle signatures/outcomes" in {
+    wallets =>
+      val resultF = for {
+        contractId <- getContractId(wallets._1.wallet)
+        status <- getDLCStatus(wallets._2.wallet)
+        (_, goodAttestment) = getSigs(status.contractInfo)
+        //purposefully drop these
+        //we cannot drop just a sig, or just an outcome because
+        //of invariants in OracleAttestmentV0TLV
+        badSigs = goodAttestment.sigs.dropRight(1)
+        badOutcomes = goodAttestment.outcomes.dropRight(1)
+        badAttestment = OracleAttestmentV0TLV(eventId = goodAttestment.eventId,
+                                              publicKey =
+                                                goodAttestment.publicKey,
+                                              sigs = badSigs,
+                                              outcomes = badOutcomes)
+        func = (wallet: DLCWallet) =>
+          wallet.executeDLC(contractId, badAttestment)
+
+        result <- dlcExecutionTest(wallets = wallets,
+                                   asInitiator = false,
+                                   func = func,
+                                   expectedOutputs = 1)
+      } yield assert(result)
+
+      recoverToSucceededIf[IllegalArgumentException](resultF)
+  }
+
   private def verifyingMatchingOracleSigs(
       statusA: Claimed,
       statusB: RemoteClaimed): Boolean = {

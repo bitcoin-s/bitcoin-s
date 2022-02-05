@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.dlc.execution
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
-import org.bitcoins.core.protocol.dlc.compute.CETCalculator
+import org.bitcoins.core.protocol.dlc.compute.{CETCalculator, DLCUtil}
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.dlc.sign.DLCTxSigner
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
@@ -136,6 +136,9 @@ object DLCExecutor {
       fundingTx: Transaction,
       fundOutputIndex: Int
   ): ExecutedDLCOutcome = {
+    require(
+      DLCUtil.checkOracleSignaturesAgainstContract(contractInfo, oracleSigs),
+      s"Incorrect oracle signatures and contract combination")
     val sigOracles = oracleSigs.map(_.oracle)
 
     val oracleInfoOpt = contractInfo.oracleInfos.find { oracleInfo =>

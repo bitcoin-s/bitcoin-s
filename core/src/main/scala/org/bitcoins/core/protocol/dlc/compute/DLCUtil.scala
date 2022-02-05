@@ -8,9 +8,14 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
   DLCAcceptWithoutSigs,
   DLCOffer
 }
-import org.bitcoins.core.protocol.dlc.models.{ContractInfo, OracleOutcome}
+import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script.P2WSHWitnessV0
+import org.bitcoins.core.protocol.tlv.{
+  OracleAnnouncementTLV,
+  OracleAttestmentTLV
+}
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.core.util.sorted.OrderedAnnouncements
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
@@ -186,5 +191,99 @@ object DLCUtil {
     computeContractId(fundingTx = fundingTx,
                       outputIdx = fundingOutputIdx,
                       tempContractId = offer.tempContractId)
+  }
+
+  /** Checks that the oracles signatures given to us are correct
+    * Things we need to check
+    * 1. We have all the oracle signatures
+    * 2. The oracle signatures are for one of the contracts in the [[ContractInfo]]
+    *  @see https://github.com/bitcoin-s/bitcoin-s/issues/4032
+    */
+  def checkOracleSignaturesAgainstContract(
+      contractInfo: ContractInfo,
+      oracleSigs: Vector[OracleSignatures]): Boolean = {
+    contractInfo match {
+      case single: SingleContractInfo =>
+        checkSingleContractInfoOracleSigs(single, oracleSigs)
+      case disjoint: DisjointUnionContractInfo =>
+        //at least one disjoint union contract
+        //has to have matching signatures
+        disjoint.contracts.exists { single: SingleContractInfo =>
+          checkSingleContractInfoOracleSigs(single, oracleSigs)
+        }
+    }
+  }
+
+  /** Check if the given [[SingleContractInfo]] has one [[OracleSignatures]]
+    * matches it inside of oracleSignatures.
+    */
+  private def checkSingleContractInfoOracleSigs(
+      contractInfo: SingleContractInfo,
+      oracleSignatures: Vector[OracleSignatures]): Boolean = {
+    require(oracleSignatures.nonEmpty, s"Signatures cannot be empty")
+    matchOracleSignatures(contractInfo, oracleSignatures).isDefined
+  }
+
+  /** Matches a [[SingleContractInfo]] to its oracle's signatures */
+  def matchOracleSignatures(
+      contractInfo: SingleContractInfo,
+      oracleSignatures: Vector[OracleSignatures]): Option[OracleSignatures] = {
+    matchOracleSignatures(contractInfo.announcements, oracleSignatures)
+  }
+
+  def matchOracleSignatures(
+      announcements: Vector[OracleAnnouncementTLV],
+      oracleSignatures: Vector[OracleSignatures]): Option[OracleSignatures] = {
+    val announcementNonces: Vector[Vector[SchnorrNonce]] = {
+      announcements
+        .map(_.eventTLV.nonces)
+        .map(_.vec)
+    }
+    val resultOpt = oracleSignatures.find { case oracleSignature =>
+      val oracleSigNonces: Vector[SchnorrNonce] = oracleSignature.sigs.map(_.rx)
+      announcementNonces.contains(oracleSigNonces)
+    }
+    resultOpt
+  }
+
+  /** Checks to see if the given oracle signatures and announcement have the same nonces */
+  private def matchOracleSignaturesForAnnouncements(
+      announcement: OracleAnnouncementTLV,
+      signature: OracleSignatures): Option[OracleSignatures] = {
+    matchOracleSignatures(
+      Vector(announcement),
+      Vector(signature)
+    )
+  }
+
+  /** Builds a set of oracle signatures from given announcements
+    * and attestations. This method discards attestments
+    * that do not have a matching announcement. Those attestments
+    * are not included in the returned set of [[OracleSignatures]]
+    */
+  def buildOracleSignatures(
+      announcements: OrderedAnnouncements,
+      attestments: Vector[OracleAttestmentTLV]): Vector[OracleSignatures] = {
+    val result: Vector[OracleSignatures] = {
+      val init = Vector.empty[OracleSignatures]
+      attestments
+        .foldLeft(init) { (acc, attestment) =>
+          val r: Vector[OracleSignatures] = announcements.flatMap { ann =>
+            val oracleSig =
+              OracleSignatures(SingleOracleInfo(ann), attestment.sigs)
+            val isMatch = matchOracleSignaturesForAnnouncements(ann, oracleSig)
+            isMatch match {
+              case Some(matchedSig) =>
+                acc.:+(matchedSig)
+              case None =>
+                //don't add it, skip it
+                acc
+            }
+          }.toVector
+          r
+        }
+    }
+
+    result
   }
 }

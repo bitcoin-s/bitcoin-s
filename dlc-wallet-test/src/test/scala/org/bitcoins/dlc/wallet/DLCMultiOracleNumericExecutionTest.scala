@@ -81,26 +81,7 @@ class DLCMultiOracleNumericExecutionTest
       initiatorWinVec,
       Some(params))
 
-    val initiatorWinSigs =
-      privateKeys.zip(kValues).flatMap { case (priv, kValues) =>
-        val outcomeOpt = initWinOutcomes.oraclesAndOutcomes.find(
-          _._1.publicKey == priv.schnorrPublicKey)
-
-        outcomeOpt.map { case (oracleInfo, outcome) =>
-          val sigs = outcome.digits.zip(kValues).map { case (num, kValue) =>
-            val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
-            priv.schnorrSignWithNonce(hash, kValue)
-          }
-          val eventId = oracleInfo.announcement.eventTLV match {
-            case v0: OracleEventV0TLV => v0.eventId
-          }
-
-          OracleAttestmentV0TLV(eventId,
-                                priv.schnorrPublicKey,
-                                sigs,
-                                outcome.digits.map(_.toString))
-        }
-      }
+    val initiatorWinSigs = buildAttestments(initWinOutcomes)
 
     val recipientChosenOracles =
       Random.shuffle(oracleIndices).take(oracleInfo.threshold).sorted
@@ -121,26 +102,8 @@ class DLCMultiOracleNumericExecutionTest
       recipientWinVec,
       Some(params))
 
-    val recipientWinSigs =
-      privateKeys.zip(kValues).flatMap { case (priv, kValues) =>
-        val outcomeOpt = recipientWinOutcomes.oraclesAndOutcomes.find(
-          _._1.publicKey == priv.schnorrPublicKey)
-
-        outcomeOpt.map { case (oracleInfo, outcome) =>
-          val sigs = outcome.digits.zip(kValues).map { case (num, kValue) =>
-            val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
-            priv.schnorrSignWithNonce(hash, kValue)
-          }
-          val eventId = oracleInfo.announcement.eventTLV match {
-            case v0: OracleEventV0TLV => v0.eventId
-          }
-
-          OracleAttestmentV0TLV(eventId,
-                                priv.schnorrPublicKey,
-                                sigs,
-                                outcome.digits.map(_.toString))
-        }
-      }
+    val recipientWinSigs: Vector[OracleAttestmentTLV] = buildAttestments(
+      recipientWinOutcomes)
 
     // Shuffle to make sure ordering doesn't matter
     (Random.shuffle(initiatorWinSigs), Random.shuffle(recipientWinSigs))
@@ -247,6 +210,34 @@ class DLCMultiOracleNumericExecutionTest
         val aggregateSignature =
           SchnorrDigitalSignature(aggR, aggS)
         aggregateSignature == statusB.oracleSig
+    }
+  }
+
+  /** Builds an attestment for the given numeric oracle outcome */
+  private def buildAttestments(
+      outcome: NumericOracleOutcome): Vector[OracleAttestmentTLV] = {
+    privateKeys.zip(kValues).flatMap { case (priv, kValues) =>
+      val outcomeOpt =
+        outcome.oraclesAndOutcomes.find(_._1.publicKey == priv.schnorrPublicKey)
+
+      outcomeOpt.map { case (oracleInfo, outcome) =>
+        val neededPadding = numDigits - outcome.digits.length
+        val digitsPadded = outcome.digits ++ Vector.fill(neededPadding)(0)
+        val sigs = digitsPadded.zip(kValues).map { case (num, kValue) =>
+          val hash = CryptoUtil.sha256DLCAttestation(num.toString).bytes
+          priv.schnorrSignWithNonce(hash, kValue)
+        }
+        val eventId = oracleInfo.announcement.eventTLV match {
+          case v0: OracleEventV0TLV => v0.eventId
+        }
+
+        require(kValues.length == sigs.length,
+                s"kValues.length=${kValues.length} sigs.length=${sigs.length}")
+        OracleAttestmentV0TLV(eventId,
+                              priv.schnorrPublicKey,
+                              sigs,
+                              digitsPadded.map(_.toString))
+      }
     }
   }
 }

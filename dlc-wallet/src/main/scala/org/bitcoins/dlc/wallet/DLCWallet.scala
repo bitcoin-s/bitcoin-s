@@ -1355,21 +1355,9 @@ abstract class DLCWallet
         announcementData,
         nonceDbs)
 
-      oracleSigs =
-        sigs.foldLeft(Vector.empty[OracleSignatures]) { (acc, sig) =>
-          // Nonces should be unique so searching for the first nonce should be safe
-          val firstNonce = sig.sigs.head.rx
-          announcementTLVs
-            .find(
-              _.eventTLV.nonces.headOption
-                .contains(firstNonce)) match {
-            case Some(announcement) =>
-              acc :+ OracleSignatures(SingleOracleInfo(announcement), sig.sigs)
-            case None =>
-              throw new RuntimeException(
-                s"Cannot find announcement for associated public key, ${sig.publicKey.hex}")
-          }
-        }
+      oracleSigs = DLCUtil.buildOracleSignatures(announcements =
+                                                   announcementTLVs,
+                                                 attestments = sigs.toVector)
 
       tx <- executeDLC(contractId, oracleSigs)
     } yield tx
