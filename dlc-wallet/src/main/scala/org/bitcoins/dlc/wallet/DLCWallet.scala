@@ -451,14 +451,34 @@ abstract class DLCWallet
     } yield offer
   }
 
-  private def initDLCForAccept(offer: DLCOffer): Future[(DLCDb, AccountDb)] = {
-    logger.info(
-      s"Initializing DLC from received offer with tempContractId ${offer.tempContractId.hex}")
-    dlcDAO.findByTempContractId(offer.tempContractId).flatMap {
-      case Some(dlcDb) =>
+  /** Retrieves the [[DLCDb]] and [[AccountDb]] for the given tempContractId
+    * else returns None
+    */
+  private def getDlcDbAndAccountDb(
+      tempContractId: Sha256Digest): Future[Option[(DLCDb, AccountDb)]] = {
+    val resultNested: Future[Option[Future[(DLCDb, AccountDb)]]] = for {
+      dlcDbOpt <- dlcDAO.findByTempContractId(tempContractId)
+      accountFOpt = dlcDbOpt.map { dlcDb =>
         accountDAO
           .findByAccount(dlcDb.account)
           .map(account => (dlcDb, account.get))
+      }
+    } yield {
+      accountFOpt
+    }
+
+    resultNested.flatMap {
+      case Some(f) => f.map(Some(_))
+      case None    => Future.successful(None)
+    }
+  }
+
+  private def initDLCForAccept(offer: DLCOffer): Future[(DLCDb, AccountDb)] = {
+    logger.info(
+      s"Initializing DLC from received offer with tempContractId ${offer.tempContractId.hex}")
+    getDlcDbAndAccountDb(offer.tempContractId).flatMap {
+      case Some((dlcDb, account)) =>
+        Future.successful((dlcDb, account))
       case None =>
         val announcements =
           offer.contractInfo.oracleInfos.head.singleOracleInfos
@@ -562,7 +582,7 @@ abstract class DLCWallet
     *
     * This is the first step of the recipient
     */
-  override def acceptDLCOffer(offer: DLCOffer): Future[DLCAccept] = {
+    override def acceptDLCOffer(offer: DLCOffer): Future[DLCAccept] = {
     logger.debug("Calculating relevant wallet data for DLC Accept")
 
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
@@ -571,15 +591,31 @@ abstract class DLCWallet
 
     logger.debug(s"Checking if Accept (${dlcId.hex}) has already been made")
     for {
-      (dlc, account) <- initDLCForAccept(offer)
+      dlcAcceptOpt <- findDLCAccept(dlcId, offer)
+      dlcAccept <- {
+        dlcAcceptOpt match {
+          case Some(accept) => Future.successful(accept)
+          case None         => createNewDLCAccept(collateral, offer)
+        }
+      }
+      status <- findDLC(dlcId)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
+    } yield dlcAccept
+  }
+
+  /** Checks if an accept message is in the database with the given dlcId */
+  private def findDLCAccept(
+      dlcId: Sha256Digest,
+      offer: DLCOffer): Future[Option[DLCAccept]] = {
+    val resultNestedF: Future[Option[Future[DLCAccept]]] = for {
       dlcAcceptDbs <- dlcAcceptDAO.findByDLCId(dlcId)
-      dlcAccept <- dlcAcceptDbs.headOption match {
-        case Some(dlcAcceptDb) =>
+      dlcAcceptFOpt = {
+        dlcAcceptDbs.headOption.map { case dlcAcceptDb =>
           logger.debug(
             s"DLC Accept (${dlcId.hex}) has already been made, returning accept")
           for {
             fundingInputs <-
-              dlcInputsDAO.findByDLCId(dlc.dlcId, isInitiator = false)
+              dlcInputsDAO.findByDLCId(dlcId, isInitiator = false)
             prevTxs <-
               transactionDAO.findByTxIdBEs(fundingInputs.map(_.outPoint.txIdBE))
             outcomeSigsDbs <- dlcSigsDAO.findByDLCId(dlcId)
@@ -595,22 +631,27 @@ abstract class DLCWallet
                                     },
                                     refundSigsDb.get.accepterSig)
           }
-        case None =>
-          createNewDLCAccept(dlc, account, collateral, offer)
+        }
       }
-      status <- findDLC(dlcId)
-      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
-    } yield dlcAccept
+    } yield {
+      dlcAcceptFOpt
+    }
+
+    resultNestedF.flatMap {
+      case Some(f) => f.map(Some(_))
+      case None    => Future.successful(None)
+    }
   }
 
   private def createNewDLCAccept(
-      dlc: DLCDb,
-      account: AccountDb,
       collateral: CurrencyUnit,
       offer: DLCOffer): Future[DLCAccept] = {
     logger.info(
       s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
+
+    val dlcDbAccountDbF: Future[(DLCDb, AccountDb)] = initDLCForAccept(offer)
     for {
+      (dlc, account) <- dlcDbAccountDbF
       (txBuilder, spendingInfos) <- fundRawTransactionInternal(
         destinations = Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
         feeRate = offer.feeRate,
@@ -618,7 +659,6 @@ abstract class DLCWallet
         fromTagOpt = None,
         markAsReserved = true
       )
-
       serialIds = DLCMessage.genSerialIds(
         spendingInfos.size,
         offer.fundingInputs.map(_.inputSerialId))

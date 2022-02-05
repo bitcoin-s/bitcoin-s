@@ -39,7 +39,10 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
 
   override def afterAll(): Unit = {
     super.afterAll()
-    val _ = pg.foreach(_.close())
+
+    val _ = pg.foreach { p =>
+      p.close()
+    }
     ()
   }
 
