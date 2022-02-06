@@ -271,6 +271,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   override def signEnum(
       eventName: String,
       outcome: EnumAttestation): Future[EventDb] = {
+    logger.info(s"Signing enum eventName=$eventName outcome=$outcome")
     for {
       eventDbs <- eventDAO.findByEventName(eventName)
       _ = require(eventDbs.size == 1,
@@ -283,6 +284,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   override def signEnum(
       oracleEventTLV: OracleEventTLV,
       outcome: EnumAttestation): Future[EventDb] = {
+    logger.info(s"Signing enum eventName=${oracleEventTLV.eventId} outcome=$outcome")
     for {
       eventDbs <- eventDAO.findByOracleEventTLV(oracleEventTLV)
       _ = require(eventDbs.size == 1,
@@ -360,7 +362,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   override def signDigits(
       oracleEventTLV: OracleEventTLV,
       num: Long): Future[OracleEvent] = {
-
+    logger.info(s"Signing digits for eventName=${oracleEventTLV.eventId} num=$num")
     val eventDescriptorTLV: DigitDecompositionEventDescriptorV0TLV = {
       oracleEventTLV.eventDescriptor match {
         case _: EnumEventDescriptorV0TLV =>
