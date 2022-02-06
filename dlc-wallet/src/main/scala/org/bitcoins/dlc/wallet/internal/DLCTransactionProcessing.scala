@@ -95,7 +95,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             dlc <- findDLC(dlcDb.dlcId)
             _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
                                                                   dlc.get)
-          } yield withOutcomeOpt
+          } yield {
+            withOutcomeOpt
+          }
         } else {
           //if the state is RemoteClaimed... we don't want to
           //calculate and set outcome again
@@ -139,6 +141,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     */
   private def calculateAndSetOutcome(dlcDb: DLCDb): Future[Option[DLCDb]] = {
     if (dlcDb.state == DLCState.RemoteClaimed) {
+      logger.info(
+        s"Calculating RemotedClaimed outcome for dlcId=${dlcDb.dlcId.hex} closingTx=${dlcDb.closingTxIdOpt
+          .map(_.hex)}")
       val dlcId = dlcDb.dlcId
 
       for {
