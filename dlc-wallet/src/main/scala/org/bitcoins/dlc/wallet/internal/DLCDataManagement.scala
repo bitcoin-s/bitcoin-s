@@ -124,10 +124,10 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       announcementData: Vector[OracleAnnouncementDataDb],
       nonceDbs: Vector[OracleNonceDb]): Vector[
     (OracleAnnouncementV0TLV, Long)] = {
-    val withIds = nonceDbs
-      .groupBy(_.announcementId)
-      .toVector
-      .map { case (id, nonceDbs) =>
+    val withIds: Vector[(OracleAnnouncementV0TLV, Long)] = {
+      val idNonceVec: Vector[(Long, Vector[OracleNonceDb])] =
+        nonceDbs.groupBy(_.announcementId).toVector
+      idNonceVec.map { case (id, nonceDbs) =>
         announcementData.find(_.id.contains(id)) match {
           case Some(data) =>
             val nonces = nonceDbs.sortBy(_.index).map(_.nonce)
@@ -143,6 +143,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
             throw new RuntimeException(s"Error no data for announcement id $id")
         }
       }
+    }
     announcementIds
       .sortBy(_.index)
       .flatMap(a => withIds.find(_._2 == a.announcementId))

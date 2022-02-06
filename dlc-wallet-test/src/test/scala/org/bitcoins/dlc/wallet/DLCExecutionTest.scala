@@ -125,6 +125,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: Claimed), Some(statusB: RemoteClaimed)) =>
+            assert(statusA.oracleOutcome == statusB.oracleOutcome)
             assert(statusA.oracleSigs == Vector(statusB.oracleSig))
           case (_, _) => fail()
         }
@@ -172,6 +173,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: RemoteClaimed), Some(statusB: Claimed)) =>
+            assert(statusA.oracleOutcome == statusB.oracleOutcome)
             assert(Vector(statusA.oracleSig) == statusB.oracleSigs)
           case (_, _) => fail()
         }
@@ -243,6 +245,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       _ = {
         (statusAOpt, statusBOpt) match {
           case (Some(statusA: Claimed), Some(statusB: RemoteClaimed)) =>
+            assert(statusA.oracleOutcome == statusB.oracleOutcome)
             assert(statusA.oracleSigs == Vector(statusB.oracleSig))
           case (_, _) => fail()
         }
