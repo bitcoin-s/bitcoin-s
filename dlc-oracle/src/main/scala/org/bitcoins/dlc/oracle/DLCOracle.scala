@@ -179,6 +179,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
             s"base cannot be less than 1, got ${base.toInt}")
     require(numDigits > 0, s"numDigits cannot be less than 1, got $numDigits")
 
+    logger.info(s"Create new digit decomp event with eventId=$eventName base=$base numDigits=$numDigits unit=$unit")
     val descriptorTLV = DigitDecompositionEventDescriptorV0TLV(base,
                                                                isSigned,
                                                                numDigits,
@@ -196,6 +197,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     require(outcomes.distinct.size == outcomes.size,
             s"Cannot have duplicate outcomes, got $outcomes")
 
+    logger.info(s"Creating new enum announcement eventName=$eventName outcomes=$outcomes")
     val descriptorTLV = EnumEventDescriptorV0TLV(outcomes)
 
     createNewAnnouncement(eventName, maturationTime, descriptorTLV)
