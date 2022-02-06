@@ -208,16 +208,20 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             }
           }
         }
-        updatedDlcDb = dlcDb.copy(aggregateSignatureOpt = Some(sig))
+        updatedDlcDbSig = dlcDb.copy(aggregateSignatureOpt = Some(sig))
         //updates the aggregateSignatureOpt along with the state to RemoteClaimed
-        updatedDlcDbA = dlcDAO.updateAction(updatedDlcDb)
+        updatedDlcDbA = dlcDAO.updateAction(updatedDlcDbSig)
         updateNonceA = oracleNonceDAO.updateAllAction(updatedNonces)
         updateAnnouncementA = dlcAnnouncementDAO.updateAllAction(
           updatedAnnouncements)
-        actions = DBIO
-          .seq(updatedDlcDbA, updateNonceA, updateAnnouncementA)
-          .transactionally
-        _ <- safeDatabase.run(actions)
+        actions = {
+          for {
+            updatedDlcDb <- updatedDlcDbA
+            _ <- updateNonceA
+            _ <- updateAnnouncementA
+          } yield updatedDlcDb
+        }
+        updatedDlcDb <- safeDatabase.run(actions.transactionally)
       } yield {
         Some(updatedDlcDb)
       }
