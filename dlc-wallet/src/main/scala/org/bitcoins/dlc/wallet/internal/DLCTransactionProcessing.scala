@@ -91,8 +91,6 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         if (dlcDb.state != DLCState.RemoteClaimed) {
           val withState = dlcDb.updateState(DLCState.RemoteClaimed)
           for {
-            // update so we can calculate correct DLCStatus
-            _ <- dlcDAO.update(withState)
             withOutcomeOpt <- calculateAndSetOutcome(withState)
             dlc <- findDLC(dlcDb.dlcId)
             _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
@@ -211,6 +209,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           }
         }
         updatedDlcDb = dlcDb.copy(aggregateSignatureOpt = Some(sig))
+        //updates the aggregateSignatureOpt along with the state to RemoteClaimed
         updatedDlcDbA = dlcDAO.updateAction(updatedDlcDb)
         updateNonceA = oracleNonceDAO.updateAllAction(updatedNonces)
         updateAnnouncementA = dlcAnnouncementDAO.updateAllAction(
