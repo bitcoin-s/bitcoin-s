@@ -16,6 +16,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.util.{FutureUtil, NumberUtil, TimeUtil}
 import org.bitcoins.crypto._
+import org.bitcoins.db.SafeDatabase
 import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.util.MasterXPubUtil
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
@@ -87,6 +88,9 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
   protected[bitcoins] val masterXpubDAO: MasterXPubDAO =
     MasterXPubDAO()(ec, conf)
+
+  private lazy val safeDatabase: SafeDatabase = rValueDAO.safeDatabase
+  import rValueDAO.profile.api._
 
   private lazy val nextKeyIndexF: Future[AtomicInteger] =
     rValueDAO.maxKeyIndex.map {
@@ -181,6 +185,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
     logger.info(
       s"Create new digit decomp event with eventId=$eventName base=$base numDigits=$numDigits unit=$unit")
+
     val descriptorTLV = DigitDecompositionEventDescriptorV0TLV(base,
                                                                isSigned,
                                                                numDigits,
@@ -262,9 +267,11 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                                         eventName = eventName,
                                         signingVersion = signingVersion)
 
-      _ <- rValueDAO.createAll(rValueDbs)
-      _ <- eventDAO.createAll(eventDbs)
-      _ <- eventOutcomeDAO.createAll(eventOutcomeDbs)
+      rValueA = rValueDAO.createAllAction(rValueDbs)
+      eventDbsA = eventDAO.createAllAction(eventDbs)
+      eventOutcomeDbsA = eventOutcomeDAO.createAllAction(eventOutcomeDbs)
+      actions = DBIO.seq(rValueA, eventDbsA, eventOutcomeDbsA)
+      _ <- safeDatabase.run(actions.transactionally)
     } yield {
       OracleEvent.fromEventDbs(eventDbs).announcementTLV
     }
