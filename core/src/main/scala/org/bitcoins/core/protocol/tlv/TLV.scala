@@ -679,8 +679,10 @@ case class OracleEventV0TLV(
     eventId: NormalizedString
 ) extends OracleEventTLV {
 
-  require(eventDescriptor.noncesNeeded == nonces.vec.size,
-          "Not enough nonces for this event descriptor")
+  require(
+    eventDescriptor.noncesNeeded == nonces.vec.size,
+    s"Not enough nonces for this event descriptor, noncesNeeded=${eventDescriptor.noncesNeeded} nonces=${nonces.toVector.size}"
+  )
 
   override def tpe: BigSizeUInt = OracleEventV0TLV.tpe
 
