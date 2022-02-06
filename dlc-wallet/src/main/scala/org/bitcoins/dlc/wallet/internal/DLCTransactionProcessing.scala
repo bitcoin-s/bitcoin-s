@@ -11,13 +11,14 @@ import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.AddressTag
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.{DoubleSha256DigestBE, SchnorrDigitalSignature}
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.dlc.wallet.models.{
   AcceptDbState,
   DLCCETSignaturesDb,
   DLCFundingInputDb,
+  DLCRefundSigsDb,
   OfferedDbState
 }
 import org.bitcoins.wallet.internal.TransactionProcessing
@@ -87,8 +88,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         val updatedOpt = Some(dlcDb.copy(state = DLCState.Claimed))
         Future.successful(updatedOpt)
       } else {
-        val withState = dlcDb.updateState(DLCState.RemoteClaimed)
         if (dlcDb.state != DLCState.RemoteClaimed) {
+          val withState = dlcDb.updateState(DLCState.RemoteClaimed)
           for {
             // update so we can calculate correct DLCStatus
             _ <- dlcDAO.update(withState)
@@ -97,7 +98,11 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
                                                                   dlc.get)
           } yield withOutcomeOpt
-        } else Future.successful(Some(withState))
+        } else {
+          //if the state is RemoteClaimed... we don't want to
+          //calculate and set outcome again
+          Future.successful(Some(dlcDb))
+        }
       }
     }
 
@@ -134,7 +139,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     *  based on the closing transaction. Returns None if we cannot calculate
     *  the outcome because we have pruned the cet signatures from the database
     */
-  def calculateAndSetOutcome(dlcDb: DLCDb): Future[Option[DLCDb]] = {
+  private def calculateAndSetOutcome(dlcDb: DLCDb): Future[Option[DLCDb]] = {
     if (dlcDb.state == DLCState.RemoteClaimed) {
       val dlcId = dlcDb.dlcId
 
@@ -150,43 +155,20 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                 s"Cannot calculate and set outcome of dlc that is only offered, id=${offered.dlcDb.dlcId.hex}")
           }
         }
-        offer = acceptDbState.offer
-        acceptOpt = acceptDbState.acceptOpt
-        (sigDbs, refundSigsDb) <- dlcDataManagement.getCetAndRefundSigs(dlcId)
+        (sigDbs, refundSigOpt) <- dlcDataManagement.getCetAndRefundSigs(dlcId)
         (announcements, announcementData, nonceDbs) <- dlcDataManagement
-          .getDLCAnnouncementDbs(dlcDb.dlcId)
+          .getDLCAnnouncementDbs(dlcId)
 
         cet <-
           transactionDAO
             .read(dlcDb.closingTxIdOpt.get)
             .map(_.get.transaction.asInstanceOf[WitnessTransaction])
 
-        sigAndOutcomeOpt = {
-          val isInit = dlcDb.isInitiator
-
-          val fundingInputDbs = acceptDbState.allFundingInputs
-          val offerRefundSigOpt = refundSigsDb.flatMap(_.initiatorSig)
-
-          val signOpt: Option[DLCSign] = offerRefundSigOpt.map { refundSig =>
-            buildSignMessage(
-              dlcDb = dlcDb,
-              sigDbs = sigDbs,
-              offerRefundSig = refundSig,
-              fundingInputDbs = fundingInputDbs
-            )
-          }
-          for {
-            accept <- acceptOpt
-            sign <- signOpt
-            sigsAndOutcomeOpt <- DLCStatus.calculateOutcomeAndSig(isInit,
-                                                                  offer,
-                                                                  accept,
-                                                                  sign,
-                                                                  cet)
-          } yield {
-            sigsAndOutcomeOpt
-          }
-        }
+        sigAndOutcomeOpt = recoverSigAndOutcomeForRemoteClaimed(
+          acceptDbState = acceptDbState,
+          cet = cet,
+          sigDbs = sigDbs,
+          refundSigsDbOpt = refundSigOpt)
         sigOpt = sigAndOutcomeOpt.map(_._1)
         outcomeOpt = sigAndOutcomeOpt.map(_._2)
         oracleInfosOpt = {
@@ -377,6 +359,45 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
               offerRefundSig,
               FundingSignatures(fundingSigs),
               contractId)
+    }
+  }
+
+  /** Recovers the aggregate signature and oracle outcome used
+    * to claim the DLC. Remember, this flow is for [[DLCState.RemoteClaimed]]
+    * so we do not necessarily have access to what the [[OracleAttestment]] is
+    */
+  private def recoverSigAndOutcomeForRemoteClaimed(
+      acceptDbState: AcceptDbState,
+      cet: WitnessTransaction,
+      sigDbs: Vector[DLCCETSignaturesDb],
+      refundSigsDbOpt: Option[DLCRefundSigsDb]): Option[
+    (SchnorrDigitalSignature, OracleOutcome)] = {
+    val dlcDb = acceptDbState.dlcDb
+    val isInit = dlcDb.isInitiator
+
+    val offer = acceptDbState.offer
+    val acceptOpt = acceptDbState.acceptOpt
+    val fundingInputDbs = acceptDbState.allFundingInputs
+    val offerRefundSigOpt = refundSigsDbOpt.flatMap(_.initiatorSig)
+
+    val signOpt: Option[DLCSign] = offerRefundSigOpt.map { refundSig =>
+      buildSignMessage(
+        dlcDb = dlcDb,
+        sigDbs = sigDbs,
+        offerRefundSig = refundSig,
+        fundingInputDbs = fundingInputDbs
+      )
+    }
+    for {
+      accept <- acceptOpt
+      sign <- signOpt
+      sigsAndOutcomeOpt <- DLCStatus.calculateOutcomeAndSig(isInit,
+                                                            offer,
+                                                            accept,
+                                                            sign,
+                                                            cet)
+    } yield {
+      sigsAndOutcomeOpt
     }
   }
 }
