@@ -211,14 +211,15 @@ object DLCStatusBuilder {
       nonceDbs: Vector[OracleNonceDb]): (
       OracleOutcome,
       Vector[SchnorrDigitalSignature]) = {
-    val noncesByAnnouncement =
+    val noncesByAnnouncement: Map[Long, Vector[OracleNonceDb]] =
       nonceDbs.sortBy(_.index).groupBy(_.announcementId)
     val oracleOutcome = {
       val usedOracleIds = announcementIds.filter(_.used)
       val usedOracles = usedOracleIds.sortBy(_.index).map { used =>
         announcementsWithId.find(_._2 == used.announcementId).get
       }
-      require(usedOracles.nonEmpty, "Error, no oracles used")
+      require(usedOracles.nonEmpty,
+              s"Error, no oracles used, dlcIds=${announcementIds.map(_.dlcId)}")
       announcementsWithId.head._1.eventTLV.eventDescriptor match {
         case _: EnumEventDescriptorV0TLV =>
           val oracleInfos = usedOracles.map(t => EnumSingleOracleInfo(t._1))

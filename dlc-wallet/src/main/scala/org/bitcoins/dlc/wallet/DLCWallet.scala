@@ -1614,7 +1614,7 @@ abstract class DLCWallet
         Vector[DLCAnnouncementDb],
         Vector[OracleAnnouncementDataDb],
         Vector[OracleNonceDb])] =
-      dlcDataManagement.getDLCAnnouncementDbs(dlcDb.dlcId)
+      dlcDataManagement.getDLCAnnouncementDbs(dlcId)
 
     val contractInfoAndAnnouncementsF: Future[
       (ContractInfo, Vector[(OracleAnnouncementV0TLV, Long)])] = {
