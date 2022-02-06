@@ -179,7 +179,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
             s"base cannot be less than 1, got ${base.toInt}")
     require(numDigits > 0, s"numDigits cannot be less than 1, got $numDigits")
 
-    logger.info(s"Create new digit decomp event with eventId=$eventName base=$base numDigits=$numDigits unit=$unit")
+    logger.info(
+      s"Create new digit decomp event with eventId=$eventName base=$base numDigits=$numDigits unit=$unit")
     val descriptorTLV = DigitDecompositionEventDescriptorV0TLV(base,
                                                                isSigned,
                                                                numDigits,
@@ -197,7 +198,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     require(outcomes.distinct.size == outcomes.size,
             s"Cannot have duplicate outcomes, got $outcomes")
 
-    logger.info(s"Creating new enum announcement eventName=$eventName outcomes=$outcomes")
+    logger.info(
+      s"Creating new enum announcement eventName=$eventName outcomes=$outcomes")
     val descriptorTLV = EnumEventDescriptorV0TLV(outcomes)
 
     createNewAnnouncement(eventName, maturationTime, descriptorTLV)
@@ -284,7 +286,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   override def signEnum(
       oracleEventTLV: OracleEventTLV,
       outcome: EnumAttestation): Future[EventDb] = {
-    logger.info(s"Signing enum eventName=${oracleEventTLV.eventId} outcome=$outcome")
+    logger.info(
+      s"Signing enum eventName=${oracleEventTLV.eventId} outcome=$outcome")
     for {
       eventDbs <- eventDAO.findByOracleEventTLV(oracleEventTLV)
       _ = require(eventDbs.size == 1,
@@ -362,7 +365,8 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   override def signDigits(
       oracleEventTLV: OracleEventTLV,
       num: Long): Future[OracleEvent] = {
-    logger.info(s"Signing digits for eventName=${oracleEventTLV.eventId} num=$num")
+    logger.info(
+      s"Signing digits for eventName=${oracleEventTLV.eventId} num=$num")
     val eventDescriptorTLV: DigitDecompositionEventDescriptorV0TLV = {
       oracleEventTLV.eventDescriptor match {
         case _: EnumEventDescriptorV0TLV =>
