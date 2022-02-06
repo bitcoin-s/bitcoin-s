@@ -228,6 +228,8 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         }
         updatedDlcDb <- safeDatabase.run(actions.transactionally)
       } yield {
+        logger.info(
+          s"Done calculating RemoteClaimed outcome for dlcId=${dlcId.hex}")
         Some(updatedDlcDb)
       }
     } else {
