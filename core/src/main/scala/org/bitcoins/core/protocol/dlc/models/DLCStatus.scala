@@ -254,6 +254,9 @@ object DLCStatus {
     }
   }
 
+  /** Calculates the outcome and signature for the CET
+    * that was broadcast on chain.
+    */
   def calculateOutcomeAndSig(
       isInitiator: Boolean,
       offer: DLCOffer,
@@ -267,12 +270,14 @@ object DLCStatus {
       accept.cetSigs.outcomeSigs
     }
 
-    DLCUtil.computeOutcome(isInitiator,
-                           offer.pubKeys.fundingKey,
-                           accept.pubKeys.fundingKey,
-                           offer.contractInfo,
-                           localAdaptorSigs,
-                           cet)
+    DLCUtil.computeOutcome(
+      isInitiator = isInitiator,
+      offerFundingKey = offer.pubKeys.fundingKey,
+      acceptFundingKey = accept.pubKeys.fundingKey,
+      contractInfo = offer.contractInfo,
+      localAdaptorSigs = localAdaptorSigs,
+      cet = cet
+    )
   }
 
 }

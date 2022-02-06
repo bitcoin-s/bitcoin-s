@@ -164,20 +164,14 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             .read(dlcDb.closingTxIdOpt.get)
             .map(_.get.transaction.asInstanceOf[WitnessTransaction])
 
-        sigAndOutcomeOpt = recoverSigAndOutcomeForRemoteClaimed(
+        sigAndOutcome = recoverSigAndOutcomeForRemoteClaimed(
           acceptDbState = acceptDbState,
           cet = cet,
           sigDbs = sigDbs,
           refundSigsDbOpt = refundSigOpt)
-        sigOpt = sigAndOutcomeOpt.map(_._1)
-        outcomeOpt = sigAndOutcomeOpt.map(_._2)
-        oracleInfosOpt = {
-          outcomeOpt
-            .map { case outcome =>
-              getOutcomeDbInfo(outcome)
-            }
-            .map(_._2)
-        }
+        sig = sigAndOutcome._1
+        outcome = sigAndOutcome._2
+        oracleInfos = getOutcomeDbInfo(outcome)._2
 
         noncesByAnnouncement = nonceDbs
           .groupBy(_.announcementId)
@@ -188,14 +182,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           nonceDbs)
 
         usedIds = {
-          oracleInfosOpt match {
-            case Some(oracleInfos) =>
-              announcementsWithId
-                .filter(t => oracleInfos.exists(_.announcement == t._1))
-                .map(_._2)
-            case None =>
-              Vector.empty
-          }
+          announcementsWithId
+            .filter(t => oracleInfos.exists(_.announcement == t._1))
+            .map(_._2)
         }
 
         updatedAnnouncements = announcements
@@ -203,7 +192,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           .map(_.copy(used = true))
         updatedNonces = {
           usedIds.flatMap { id =>
-            outcomeOpt.map {
+            outcome match {
               case enum: EnumOracleOutcome =>
                 val nonces = noncesByAnnouncement(id).sortBy(_.index)
                 nonces.map(_.copy(outcomeOpt = Some(enum.outcome.outcome)))
@@ -219,10 +208,10 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                   }
                 }
             }
-          }.flatten
+          }
         }
-        updatedDlcDbA = dlcDAO.updateAction(
-          dlcDb.copy(aggregateSignatureOpt = sigOpt))
+        updatedDlcDb = dlcDb.copy(aggregateSignatureOpt = Some(sig))
+        updatedDlcDbA = dlcDAO.updateAction(updatedDlcDb)
         updateNonceA = oracleNonceDAO.updateAllAction(updatedNonces)
         updateAnnouncementA = dlcAnnouncementDAO.updateAllAction(
           updatedAnnouncements)
@@ -231,9 +220,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           .transactionally
         _ <- safeDatabase.run(actions)
       } yield {
-        //err, this probably needs to be contingent on if sigOpt is defined?
-        val updatedSig = dlcDb.copy(aggregateSignatureOpt = sigOpt)
-        Some(updatedSig)
+        Some(updatedDlcDb)
       }
     } else {
       Future.successful(Some(dlcDb))
@@ -370,13 +357,21 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       acceptDbState: AcceptDbState,
       cet: WitnessTransaction,
       sigDbs: Vector[DLCCETSignaturesDb],
-      refundSigsDbOpt: Option[DLCRefundSigsDb]): Option[
-    (SchnorrDigitalSignature, OracleOutcome)] = {
+      refundSigsDbOpt: Option[DLCRefundSigsDb]): (
+      SchnorrDigitalSignature,
+      OracleOutcome) = {
     val dlcDb = acceptDbState.dlcDb
+    val dlcId = dlcDb.dlcId
     val isInit = dlcDb.isInitiator
 
     val offer = acceptDbState.offer
+
     val acceptOpt = acceptDbState.acceptOpt
+    require(
+      acceptOpt.isDefined,
+      s"Accept message must still have CET signatures to recover an outcome on chain, dlcId=${dlcId.hex}")
+    val accept = acceptOpt.get
+
     val fundingInputDbs = acceptDbState.allFundingInputs
     val offerRefundSigOpt = refundSigsDbOpt.flatMap(_.initiatorSig)
 
@@ -388,16 +383,24 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         fundingInputDbs = fundingInputDbs
       )
     }
-    for {
-      accept <- acceptOpt
-      sign <- signOpt
-      sigsAndOutcomeOpt <- DLCStatus.calculateOutcomeAndSig(isInit,
-                                                            offer,
-                                                            accept,
-                                                            sign,
-                                                            cet)
-    } yield {
-      sigsAndOutcomeOpt
-    }
+
+    require(
+      signOpt.isDefined,
+      s"Can only recompute outcome if signMsg is defined, dlcId=${dlcId.hex}")
+    val sign = signOpt.get
+
+    val sigsAndOutcomeOpt = DLCStatus.calculateOutcomeAndSig(isInitiator =
+                                                               isInit,
+                                                             offer = offer,
+                                                             accept = accept,
+                                                             sign = sign,
+                                                             cet = cet)
+
+    require(
+      sigsAndOutcomeOpt.isDefined,
+      s"We must be able to calculate an outcome from a CET broadcast on   chain, dlcId=${offer.dlcId.hex} cet.txIdBE=${cet.txIdBE.hex}"
+    )
+
+    sigsAndOutcomeOpt.get
   }
 }

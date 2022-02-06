@@ -61,15 +61,21 @@ object DLCUtil {
     }
   }
 
+  /** Given a [[ECDigitalSignature]] we found on the blockchain, and the set
+    * of possible adaptor signatures we have stored locally in our wallet
+    * we reverse engineer the actual outcome our counterparty broadcast
+    */
   def computeOutcome(
       completedSig: ECDigitalSignature,
       possibleAdaptorSigs: Vector[(ECPublicKey, ECAdaptorSignature)]): Option[
     (FieldElement, ECPublicKey)] = {
-    val sigOpt = possibleAdaptorSigs.find { case (adaptorPoint, adaptorSig) =>
-      val possibleOracleSigT =
-        sigFromOutcomeAndSigs(adaptorPoint, adaptorSig, completedSig)
+    val sigOpt: Option[(ECPublicKey, ECAdaptorSignature)] = {
+      possibleAdaptorSigs.find { case (adaptorPoint, adaptorSig) =>
+        val possibleOracleSigT =
+          sigFromOutcomeAndSigs(adaptorPoint, adaptorSig, completedSig)
 
-      possibleOracleSigT.isSuccess && possibleOracleSigT.get.getPublicKey == adaptorPoint
+        possibleOracleSigT.isSuccess && possibleOracleSigT.get.getPublicKey == adaptorPoint
+      }
     }
 
     sigOpt.map { case (adaptorPoint, adaptorSig) =>
@@ -98,20 +104,23 @@ object DLCUtil {
     val outcomeValues = cet.outputs.map(_.value).sorted
     val totalCollateral = contractInfo.totalCollateral
 
-    val possibleOutcomes = contractInfo.allOutcomesAndPayouts.zipWithIndex
-      .filter { case ((_, amt), _) =>
-        val amts = Vector(amt, totalCollateral - amt)
-          .filter(_ >= Policy.dustThreshold)
-          .sorted
+    val possibleOutcomes: Vector[ECPublicKey] = {
+      contractInfo.allOutcomesAndPayouts.zipWithIndex
+        .filter { case ((_, amt), _) =>
+          val amts = Vector(amt, totalCollateral - amt)
+            .filter(_ >= Policy.dustThreshold)
+            .sorted
 
-        // Only messages within 1 satoshi of the on-chain CET's value
-        // should be considered.
-        // Off-by-one is okay because both parties round to the nearest
-        // Satoshi for fees and if both round up they could be off-by-one.
-        Math.abs((amts.head - outcomeValues.head).satoshis.toLong) <= 1 && Math
-          .abs((amts.last - outcomeValues.last).satoshis.toLong) <= 1
-      }
-      .map { case (_, index) => allAdaptorPoints(index) }
+          // Only messages within 1 satoshi of the on-chain CET's value
+          // should be considered.
+          // Off-by-one is okay because both parties round to the nearest
+          // Satoshi for fees and if both round up they could be off-by-one.
+          Math.abs(
+            (amts.head - outcomeValues.head).satoshis.toLong) <= 1 && Math
+            .abs((amts.last - outcomeValues.last).satoshis.toLong) <= 1
+        }
+        .map { case (_, index) => allAdaptorPoints(index) }
+    }
 
     val (offerCETSig, acceptCETSig) =
       if (offerFundingKey.hex.compareTo(acceptFundingKey.hex) > 0) {
