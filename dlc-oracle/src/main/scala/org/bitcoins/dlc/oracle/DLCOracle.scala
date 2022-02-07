@@ -16,6 +16,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.util.{FutureUtil, NumberUtil, TimeUtil}
 import org.bitcoins.crypto._
+import org.bitcoins.db.SafeDatabase
 import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.util.MasterXPubUtil
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
@@ -87,6 +88,9 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
   protected[bitcoins] val masterXpubDAO: MasterXPubDAO =
     MasterXPubDAO()(ec, conf)
+
+  private lazy val safeDatabase: SafeDatabase = rValueDAO.safeDatabase
+  import rValueDAO.profile.api._
 
   private lazy val nextKeyIndexF: Future[AtomicInteger] =
     rValueDAO.maxKeyIndex.map {
@@ -181,6 +185,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
     logger.info(
       s"Create new digit decomp event with eventId=$eventName base=$base numDigits=$numDigits unit=$unit")
+
     val descriptorTLV = DigitDecompositionEventDescriptorV0TLV(base,
                                                                isSigned,
                                                                numDigits,
@@ -262,9 +267,11 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
                                         eventName = eventName,
                                         signingVersion = signingVersion)
 
-      _ <- rValueDAO.createAll(rValueDbs)
-      _ <- eventDAO.createAll(eventDbs)
-      _ <- eventOutcomeDAO.createAll(eventOutcomeDbs)
+      rValueA = rValueDAO.createAllAction(rValueDbs)
+      eventDbsA = eventDAO.createAllAction(eventDbs)
+      eventOutcomeDbsA = eventOutcomeDAO.createAllAction(eventOutcomeDbs)
+      actions = DBIO.seq(rValueA, eventDbsA, eventOutcomeDbsA)
+      _ <- safeDatabase.run(actions.transactionally)
     } yield {
       OracleEvent.fromEventDbs(eventDbs).announcementTLV
     }
@@ -297,12 +304,10 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     } yield sign
   }
 
-  /** Signs the event for the single nonce
-    * This will be called multiple times by signDigits for each nonce
-    */
-  override def createAttestation(
+  private def createAttestationActionF(
       nonce: SchnorrNonce,
-      outcome: DLCAttestationType): Future[EventDb] = {
+      outcome: DLCAttestationType): Future[
+    DBIOAction[EventDb, NoStream, Effect.Write]] = {
     for {
       rValDbOpt <- rValueDAO.read(nonce)
       rValDb <- rValDbOpt match {
@@ -349,8 +354,18 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
       updated = eventDb.copy(attestationOpt = Some(sig.sig),
                              outcomeOpt = Some(outcome.outcomeString))
-      _ <- eventDAO.update(updated)
-    } yield updated
+      eventUpdateA = eventDAO.updateAction(updated)
+    } yield eventUpdateA
+  }
+
+  /** Signs the event for the single nonce
+    * This will be called multiple times by signDigits for each nonce
+    */
+  override def createAttestation(
+      nonce: SchnorrNonce,
+      outcome: DLCAttestationType): Future[EventDb] = {
+    val actionF = createAttestationActionF(nonce, outcome)
+    actionF.flatMap(action => safeDatabase.run(action.transactionally))
   }
 
   override def signDigits(eventName: String, num: Long): Future[OracleEvent] = {
@@ -409,14 +424,22 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
         oracleEventTLV.nonces.tail
     }
 
-    val digitSigFs = nonces.zipWithIndex.map { case (nonce, index) =>
-      val digit = decomposed(index)
-      createAttestation(nonce, DigitDecompositionAttestation(digit))
+    val digitSigAVecF: Future[
+      Vector[DBIOAction[EventDb, NoStream, Effect.Write]]] = Future.sequence {
+      nonces.zipWithIndex.map { case (nonce, index) =>
+        val digit = decomposed(index)
+        createAttestationActionF(nonce, DigitDecompositionAttestation(digit))
+      }.toVector
+    }
+    val digitSigAF: Future[
+      DBIOAction[Vector[EventDb], NoStream, Effect.Write]] = {
+      digitSigAVecF.map(digitSigs => DBIO.sequence(digitSigs))
     }
 
     for {
       signSig <- signSigF
-      digitSigs <- Future.sequence(digitSigFs)
+      digitSigA <- digitSigAF
+      digitSigs <- safeDatabase.run(digitSigA.transactionally)
     } yield OracleEvent.fromEventDbs(signSig ++ digitSigs)
   }
 
