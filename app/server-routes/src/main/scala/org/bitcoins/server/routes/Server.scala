@@ -120,7 +120,7 @@ case class Server(
     val httpFut =
       Http()
         .newServerAt(rpchost, rpcport)
-        .bindFlow(route)
+        .bind(route)
     httpFut.foreach { http =>
       logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
     }
