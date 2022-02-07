@@ -48,7 +48,6 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
     val allActions = DBIO
       .sequence(actions)
       .map(_ => ())
-      .transactionally
     allActions
   }
 
@@ -79,7 +78,6 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
     val allActions = DBIO
       .sequence(actions)
       .map(_ => ())
-      .transactionally
     allActions
   }
 
@@ -111,7 +109,7 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
       _ <- deleteDlcA
     } yield ()
 
-    action.transactionally
+    action
   }
 
   /** Retrieves a DBIOAction that fetches the global dlc db,
@@ -174,6 +172,6 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
       _ <- dlcAnnouncementDAO.updateAllAction(updatedDbs)
     } yield updateNonces
 
-    updateAction.transactionally
+    updateAction
   }
 }

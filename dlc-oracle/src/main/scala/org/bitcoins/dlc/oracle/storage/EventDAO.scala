@@ -46,26 +46,26 @@ case class EventDAO()(implicit
   def getPendingEvents: Future[Vector[EventDb]] = {
     val query = table.filter(_.attestationOpt.isEmpty)
 
-    safeDatabase.runVec(query.result.transactionally)
+    safeDatabase.runVec(query.result)
   }
 
   def getCompletedEvents: Future[Vector[EventDb]] = {
     val query = table.filter(_.attestationOpt.isDefined)
 
-    safeDatabase.runVec(query.result.transactionally)
+    safeDatabase.runVec(query.result)
   }
 
   def findByEventName(name: String): Future[Vector[EventDb]] = {
     val query = table.filter(_.eventName === name)
 
-    safeDatabase.runVec(query.result.transactionally)
+    safeDatabase.runVec(query.result)
   }
 
   def findByEventDescriptor(
       descriptorTLV: EventDescriptorTLV): Future[Vector[EventDb]] = {
     val query = table.filter(_.eventDescriptorTLV === descriptorTLV)
 
-    safeDatabase.runVec(query.result.transactionally)
+    safeDatabase.runVec(query.result)
   }
 
   def findByOracleEventTLV(
@@ -75,13 +75,13 @@ case class EventDAO()(implicit
         table.filter(_.nonce.inSet(v0.nonces))
     }
 
-    safeDatabase.runVec(query.result.transactionally)
+    safeDatabase.runVec(query.result)
   }
 
   def findDifferentPublicKey(key: SchnorrPublicKey): Future[Vector[EventDb]] = {
     val query = table.filterNot(_.pubkey === key)
 
-    safeDatabase.runVec(query.result.transactionally)
+    safeDatabase.runVec(query.result)
   }
 
   class EventTable(tag: Tag) extends Table[EventDb](tag, schemaName, "events") {

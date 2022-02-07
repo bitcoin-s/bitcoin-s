@@ -78,7 +78,7 @@ case class SpendingInfoDAO()(implicit
     } yield (utxo, spk)
 
     safeDatabase
-      .run(actions.transactionally)
+      .run(actions)
       .map {
         case (utxo, Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
         case _ =>
@@ -128,7 +128,7 @@ case class SpendingInfoDAO()(implicit
           .headOption
     } yield (utxo, spk)
     safeDatabase
-      .run(actions.transactionally)
+      .run(actions)
       .map {
         case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
         case _ =>
@@ -164,7 +164,7 @@ case class SpendingInfoDAO()(implicit
           .headOption
     } yield (utxo, spk)
     safeDatabase
-      .run(actions.transactionally)
+      .run(actions)
       .map {
         case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
         case _ =>
@@ -473,9 +473,6 @@ case class SpendingInfoDAO()(implicit
           DBIO.successful(count)
         }
       }
-      //this needs to be at the end, to make sure we rollback correctly if
-      //the utxo is already reserved
-      .transactionally
 
     safeDatabase
       .run(action)

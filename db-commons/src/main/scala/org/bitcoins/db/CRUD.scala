@@ -75,12 +75,12 @@ abstract class CRUD[T, PrimaryKeyType](implicit
 
   /** Update the corresponding record in the database */
   def update(t: T): Future[T] = {
-    val action = updateAction(t).transactionally
+    val action = updateAction(t)
     safeDatabase.run(action)
   }
 
   def updateAll(ts: Vector[T]): Future[Vector[T]] = {
-    val actions = updateAllAction(ts).transactionally
+    val actions = updateAllAction(ts)
     safeDatabase.runVec(actions)
   }
 
@@ -92,18 +92,18 @@ abstract class CRUD[T, PrimaryKeyType](implicit
   def delete(t: T): Future[Int] = {
     logger.debug("Deleting record: " + t)
     val action = deleteAction(t)
-    safeDatabase.run(action.transactionally)
+    safeDatabase.run(action)
   }
 
   def deleteAll(ts: Vector[T]): Future[Int] = {
-    val action = deleteAllAction(ts).transactionally
+    val action = deleteAllAction(ts)
     safeDatabase.run(action)
   }
 
   /** delete all records from the table
     */
   def deleteAll(): Future[Int] = {
-    val action = deleteAllAction().transactionally
+    val action = deleteAllAction()
     safeDatabase.run(action)
   }
 
@@ -127,7 +127,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     def oldUpsertAll(ts: Vector[T]): Future[Vector[T]] = {
       val actions = ts.map(t => table.insertOrUpdate(t))
       for {
-        _ <- safeDatabase.run(DBIO.sequence(actions).transactionally)
+        _ <- safeDatabase.run(DBIO.sequence(actions))
         result <- safeDatabase.runVec(findAll(ts).result)
       } yield result
 

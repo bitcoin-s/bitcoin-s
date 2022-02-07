@@ -7,7 +7,6 @@ import scala.concurrent.Future
 
 /** Helper methods for querying by dlcId whne the dlcId is the primary key on the table */
 trait DLCIdDaoUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
-  import profile.api._
 
   def findByDLCIdAction(dlcId: Sha256Digest): profile.api.DBIOAction[
     Option[T],
@@ -23,7 +22,7 @@ trait DLCIdDaoUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
     profile.api.Effect.Read]
 
   def findByDLCId(dlcId: Sha256Digest): Future[Option[T]] = {
-    safeDatabase.run(findByDLCIdAction(dlcId).transactionally)
+    safeDatabase.run(findByDLCIdAction(dlcId))
   }
 
   def deleteByDLCIdAction(dlcId: Sha256Digest): profile.api.DBIOAction[
@@ -32,7 +31,7 @@ trait DLCIdDaoUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
     profile.api.Effect.Write]
 
   def deleteByDLCId(dlcId: Sha256Digest): Future[Int] = {
-    safeDatabase.run(deleteByDLCIdAction(dlcId).transactionally)
+    safeDatabase.run(deleteByDLCIdAction(dlcId))
   }
 }
 
@@ -40,7 +39,6 @@ trait DLCIdDaoUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
   * key on the table
   */
 trait DLCIdDaoUtilNoPK[T] { _: CRUD[T, _] =>
-  import profile.api._
 
   def findByDLCIdAction(dlcId: Sha256Digest): profile.api.DBIOAction[
     Vector[T],
@@ -48,7 +46,7 @@ trait DLCIdDaoUtilNoPK[T] { _: CRUD[T, _] =>
     profile.api.Effect.Read]
 
   def findByDLCId(dlcId: Sha256Digest): Future[Vector[T]] = {
-    safeDatabase.runVec(findByDLCIdAction(dlcId).transactionally)
+    safeDatabase.runVec(findByDLCIdAction(dlcId))
   }
 
   def deleteByDLCIdAction(dlcId: Sha256Digest): profile.api.DBIOAction[
@@ -57,6 +55,6 @@ trait DLCIdDaoUtilNoPK[T] { _: CRUD[T, _] =>
     profile.api.Effect.Write]
 
   def deleteByDLCId(dlcId: Sha256Digest): Future[Int] = {
-    safeDatabase.run(deleteByDLCIdAction(dlcId).transactionally)
+    safeDatabase.run(deleteByDLCIdAction(dlcId))
   }
 }

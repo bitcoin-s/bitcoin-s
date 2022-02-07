@@ -29,7 +29,7 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
 
   override def createAll(ts: Vector[T]): Future[Vector[T]] = {
     val actions = createAllAction(ts)
-    safeDatabase.runVec(actions.transactionally)
+    safeDatabase.runVec(actions)
   }
 
   override def findByPrimaryKeys(

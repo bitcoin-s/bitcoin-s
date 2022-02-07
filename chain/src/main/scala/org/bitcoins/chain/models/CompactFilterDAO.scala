@@ -144,7 +144,6 @@ case class CompactFilterDAO()(implicit
       .take(1)
       .map(_._1)
       .result
-      .transactionally
   }
 
   /** Gets the heaviest filter from the database */

@@ -38,7 +38,7 @@ case class ScriptPubKeyDAO()(implicit
       }
     } yield spk
 
-    safeDatabase.run(actions.transactionally)
+    safeDatabase.run(actions)
   }
 
   /** Finds a scriptPubKey in the database, if it exists */

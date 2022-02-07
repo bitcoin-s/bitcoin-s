@@ -64,7 +64,7 @@ case class MasterXPubDAO()(implicit
           new SQLException(s"Only 1 master xpub should be stored, got=$count"))
     }
 
-    database.run(action.transactionally).map(_ => t)
+    database.run(action).map(_ => t)
   }
 
   override def createAll(
@@ -130,7 +130,7 @@ case class MasterXPubDAO()(implicit
           new SQLException(s"Only 1 master xpub should be stored, got=$count"))
     }
 
-    database.run(action.transactionally).map(_ => ())
+    database.run(action).map(_ => ())
   }
 
   class MasterXpubTable(tag: Tag)

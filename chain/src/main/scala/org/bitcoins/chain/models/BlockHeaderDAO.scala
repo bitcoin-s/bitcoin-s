@@ -59,7 +59,7 @@ case class BlockHeaderDAO()(implicit
     Vector[Option[BlockHeaderDb]]] = {
     val query = findByPrimaryKeys(hashes)
     val resultsF: Future[Vector[BlockHeaderDb]] =
-      safeDatabase.runVec(query.result.transactionally)
+      safeDatabase.runVec(query.result)
     for {
       results <- resultsF
     } yield {

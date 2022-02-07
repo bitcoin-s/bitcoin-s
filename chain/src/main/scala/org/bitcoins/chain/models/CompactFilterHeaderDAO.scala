@@ -137,7 +137,6 @@ case class CompactFilterHeaderDAO()(implicit
       .take(1)
       .map(_._1)
       .result
-      .transactionally
   }
 
   /** Fetches the best filter header from the database _without_ context

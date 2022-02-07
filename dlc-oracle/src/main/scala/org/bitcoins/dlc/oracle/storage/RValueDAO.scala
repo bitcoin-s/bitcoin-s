@@ -40,14 +40,14 @@ case class RValueDAO()(implicit
   }
 
   def findByNonces(nonces: Vector[SchnorrNonce]): Future[Vector[RValueDb]] = {
-    val action = table.filter(_.nonce.inSet(nonces)).result.transactionally
+    val action = table.filter(_.nonce.inSet(nonces)).result
     safeDatabase.runVec(action)
   }
 
   def maxKeyIndex: Future[Option[Int]] = {
     val query = table.map(_.keyIndex).max
 
-    safeDatabase.run(query.result.transactionally)
+    safeDatabase.run(query.result)
   }
 
   class RValueTable(tag: Tag)

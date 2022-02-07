@@ -72,7 +72,7 @@ case class AddressDAO()(implicit
     } yield (addr, spk)
 
     safeDatabase
-      .run(actions.transactionally)
+      .run(actions)
       .map {
         case (Some(addr), Some(spk)) => addr.toAddressDb(spk.scriptPubKey)
         case _ =>
@@ -108,7 +108,7 @@ case class AddressDAO()(implicit
     } yield (addr, spk)
 
     safeDatabase
-      .run(actions.transactionally)
+      .run(actions)
       .map {
         case (Some(addr), Some(spk)) => addr.toAddressDb(spk.scriptPubKey)
         case _ =>
@@ -122,7 +122,7 @@ case class AddressDAO()(implicit
       spkTable.filter(_.scriptPubKey === addressDb.scriptPubKey).delete
     val addrDelete = table.filter(_.address === addressDb.address).delete
     safeDatabase
-      .run(DBIO.sequence(Seq(addrDelete, spkDelete)).transactionally)
+      .run(DBIO.sequence(Seq(addrDelete, spkDelete)))
       .map(_.sum)
   }
 
@@ -289,7 +289,7 @@ case class AddressDAO()(implicit
       .filter(_._2.scriptPubKey.inSet(spks))
 
     safeDatabase
-      .runVec(query.result.transactionally)
+      .runVec(query.result)
       .map(res =>
         res.map { case (addrRec, spkRec) =>
           addrRec.toAddressDb(spkRec.scriptPubKey)
