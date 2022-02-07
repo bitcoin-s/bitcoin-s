@@ -28,7 +28,7 @@ trait SlickUtil[T, PrimaryKeyType] extends SlickUtilAction[T, PrimaryKeyType] {
   /** Creates rows in a database that are not auto incremented */
   def createAllNoAutoInc(ts: Vector[T], database: SafeDatabase)(implicit
       ec: ExecutionContext): Future[Vector[T]] = {
-    val actions = (table ++= ts).andThen(DBIO.successful(ts)).transactionally
+    val actions = (table ++= ts).andThen(DBIO.successful(ts))
     val result = database.run(actions)
     result
   }

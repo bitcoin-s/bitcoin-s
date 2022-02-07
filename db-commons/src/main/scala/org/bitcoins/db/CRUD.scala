@@ -150,7 +150,10 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
     extends Logging {
 
   import jdbcProfile.database
-  import jdbcProfile.profile.api.actionBasedSQLInterpolation
+  import jdbcProfile.profile.api.{
+    actionBasedSQLInterpolation,
+    jdbcActionExtensionMethods
+  }
 
   /** SQLite does not enable foreign keys by default. This query is
     * used to enable it. It must be included in all connections to
@@ -173,10 +176,13 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
   /** Runs the given DB action */
   def run[R](action: DBIOAction[R, NoStream, _])(implicit
       ec: ExecutionContext): Future[R] = {
-    val result =
-      if (sqlite) database.run[R](foreignKeysPragma >> action)
-      else database.run[R](action)
-    result.recoverWith { logAndThrowError(action) }
+    val result = scala.concurrent.blocking {
+      if (sqlite) database.run[R](foreignKeysPragma >> action.transactionally)
+      else database.run[R](action.transactionally)
+    }
+    result.recoverWith {
+      logAndThrowError(action)
+    }
   }
 
   /** Runs the given DB sequence-returning DB action
@@ -185,10 +191,13 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
   def runVec[R](action: DBIOAction[Seq[R], NoStream, _])(implicit
       ec: ExecutionContext): Future[Vector[R]] = {
     val result = scala.concurrent.blocking {
-      if (sqlite) database.run[Seq[R]](foreignKeysPragma >> action)
-      else database.run[Seq[R]](action)
+      if (sqlite)
+        database.run[Seq[R]](foreignKeysPragma >> action.transactionally)
+      else database.run[Seq[R]](action.transactionally)
     }
-    result.map(_.toVector).recoverWith { logAndThrowError(action) }
+    result.map(_.toVector).recoverWith {
+      logAndThrowError(action)
+    }
   }
 }
 
