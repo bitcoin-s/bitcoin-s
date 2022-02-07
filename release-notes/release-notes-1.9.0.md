@@ -66,7 +66,45 @@ See individual module sections for updates on per module basis.
 
 ## app commons
 
+142612f034 Make newConfigOfType use Vector[Config] (#4039)
+
+2066447cdc Add isEndpoint to numeric contract descriptor serialization (#4033)
+
+e802254a20 2022 01 24 rm appconfig varargs (#4011)
+
+3162c1b2d0 Ignore .DS_Store files when making backups (#4000)
+
+a7af8cac4c Patch bug where `zipdatadir` doesn't work if the directory was not created (#3959)
+
 ## App server
+
+08941206fc Bump timeout to 60 seconds (#4021)
+
+d2f53db82e Change BTC RPC log level (#4010)
+
+f438ce2897 Refactor zipDatadir (#3999)
+
+d88e2494e0 Make RPC authentication optional for localhost (#3980)
+
+ee3ee53191 RPC password authentication (#3961)
+
+9dd126bb9f Modify estimatefee endpoint to return a number rather than a string (#3973)
+
+66e23b61a8 2021 01 11 issue 3938 (#3971)
+
+eeeecb00c5 Reduce polling log to trace when we try to poll bitcoind (#3964)
+
+5de325e7de Exclude seeds from backup (#3950)
+
+f8f8f50aae Implement ping every 5 seconds to keep websocket connection alive (#3947)
+
+7527388be5 2021 12 20 ws dlc callbacks (#3926)
+
+50bec2abc6 2021 12 14 websockets (#3906)
+
+4b07629d56 Add `getmediantimepast` RPC call (#3921)
+
+4646ef6e19 Remove BitcoinSServerMain.startedFP (#3928)
 
 3cd57d37f5 Remove backupwallet / backup oracle (#3920)
 
@@ -96,11 +134,15 @@ a40ef1ab21 Break existing api to get new address to remove the requirement for n
 
 ## bitcoind rpc
 
-c0c54acc24 Make non-final bitcoind RPC error message more descritptive (#3915)
+c0c54acc24 Make non-final bitcoind RPC error message more descriptive (#3915)
 
 a6898defe2 Support for Bitcoin Core v22 (#3834)
 
 ## Build
+
+52dcf51e82 Automatically download binaries if they are used in test suite (#4005)
+
+e24efd65ae 2022 01 12 docker ws (#3976)
 
 6e7af37ca0 2021 12 03 installer rename (#3876)
 
@@ -109,6 +151,8 @@ cd3006c020 Verify binary download hashes (#3849)
 ## Cli
 
 ## chain
+
+d06b064b6b 2021 12 28 blockprocessed callback (#3946)
 
 ## clightning rpc
 ! NEW !
@@ -123,6 +167,28 @@ cd5451adaa Add clightning listtransactions func (#3797)
 6d43d443ba Initial c-lightning rpc support (#3755)
 
 ## Core
+
+7a6f0430d6 2022 02 03 issue 4032 (#4042)
+
+71711ca582 Add invariant to make sure spendingTxId is different than the txid (#4019)
+
+b918cf78b7 Fix bugs where we were building internally inconsistent SpendingInfoDb (#4016)
+
+d983ad14f3 Fix contractid computation (#4012)
+
+21de609ed8 2022 01 22 cetsignatures refactor (#4004)
+
+214213b59d 2022 01 16 issue 3983 (#3987)
+
+93c5121632 2021 01 06 tlv invariants (#3965)
+
+8857af2b66 Address ben's code review on #3854 (#3962)
+
+b342f373ae Make ContractDescriptorTemplate an unsealed trait (#3963)
+
+8c5288d758 Implemented general payout curves (#3854)
+
+6652448f99 Added constructor for p2pkh for decompressed public keys (#3944)
 
 d66afe9e43 Add satoshisRounded to Bitcoins (#3904)
 
@@ -144,7 +210,15 @@ aa748c012f 2021 11 03 protocol version (#3793)
 
 92ab9faa45 Decide which coin selection solution to use based on waste metric (#3646)
 
+## Crypto
+
+f4a2ec8554 Make AesEncryptedData a network element / factory (#3952)
+
 ## Db commons
+
+0079489a15 Create DbMapper for DoubleSha256Digest (#3995)
+
+6c2bb0d111 Rename database username and password variables (#3930)
 
 afb51228b4 Add NodeId to DbCommonsColumnMappers (#3880)
 
@@ -162,8 +236,27 @@ f71d3567ed 2021 11 23 crud action (#3851)
 
 ## DLC Oracle
 
+49d4d7f179 2022 02 06 issue 4049 (#4056)
+
+7f344ad3ff 2022 02 06 announcement creation logging (#4055)
+
+524c5212e0 Add MasterXPubTable to list of DLCOracle tables (#3955)
+
+c3d1b2ee12 Give DLCOracle to filter events by pending/completed (#3953)
 
 ## DLC wallet
+
+5aeecdb893 Reworking/refactoring acceptDLCOffer (#4048)
+
+590cd9c72e 2022 02 06 remoteclaimed refactor (#4054)
+
+d213e9935d Add better exception messages (#4053)
+
+bd5bcfef3a 2022 01 18 issue 3969 Add `serialization_version` to `global_dlc_data` (#3992)
+
+8a881b37f4 Add DLC callback for refunded DLC (#3989)
+
+ee0d62c5b8 2022 01 14 `DLCDataManagement` refactor (#3982)
 
 4ca586ca46 2021 12 19 dlc callbacks (#3923)
 
@@ -171,15 +264,34 @@ f71d3567ed 2021 11 23 crud action (#3851)
 
 d71208cf0f Support Eclair v0.6.2 (#3765)
 
+## Esplora
+! new !
+
+03abb7537b Add basic esplora client (#4018)
+
 ## fee provider
 
+5f4053b2e4 Create FallbackFeeRateApi (#3974)
+
+bf8b165fe9 Implement recovery for when we cannot receive a fee rate from a FeeRateApi (#3975)
+
 ## gui
+
+546e030dde [GUI] Fix 'First and last points must be endpoints' exception (#4029)
+
+2aa6f168eb Implement rpc password in GUI (#3986)
+
+7f9fb87a55 Call trim on peer address in Accept dialog (#3942)
 
 856e455be3 Remove 'not set' rate of return % sign on wallet (#3828)
 
 ## keymanager
 
 ## Lnd rpc
+
+afc6a32c62 Update lnd to v0.14.2 (#4040)
+
+3ba8fb6dd4 Allow creating invoices with description hash (#3966)
 
 f54ed98c74 Add subscribe invoices function to lnd (#3860)
 
@@ -191,6 +303,14 @@ f54ed98c74 Add subscribe invoices function to lnd (#3860)
 
 
 ## node
+
+98c5d816ac 2022 01 25 issue 4014 (#4015)
+
+dbfd58da86 Add log txids inside of inventories in big endian rather than little endian (#4013)
+
+7ee1f0f406 Implement batching of database calls for our chain callback (#4003)
+
+a58ef1cd02 Storing peers in database (#3773)
 
 90e01d7fc6 Fix broadcasting witness vs legacy txs (#3841)
 
@@ -207,6 +327,18 @@ fc09f41db2 Request witness versions of transactions from nodes (#3829)
 9c9a0a618f Update secp256k1-zkp (#3856)
 
 ## wallet
+
+883b01006d Fetch blockHeight earlier in TransactionProcessing.processBlock() (#4025)
+
+8d04ca1cd3 2022 01 30 optimize processblock (#4024)
+
+cf16d93648 Fix bug where we didn't set spendingTxId when transitioning from `Reserved` -> `PendingConfirmationsSpent` (#3909)
+
+42d6955f79 Filter dust from coin selection (#3866)
+
+21c97bba12 Filter transactions for onTransactionProcessed (#3990)
+
+41b96c4c7e Add `rescan` field to `walletinfo` response (#3933)
 
 665f931721 Work around for WalletAppConfig.scheduler being blocked by AddressQueueRunnable (#3917)
 
@@ -233,6 +365,8 @@ b3d61bc793 Add deleting address tags to to clearAllUtxosAndAddresses() (#3817)
 
 ## tor
 
+2dcbe73504 Update Tor version to 0.4.6.9 (#3993)
+
 169222a306 Add default proxy params (#3863)
 
 e02c9bba12 Overridable Tor config (#3780)
@@ -241,183 +375,52 @@ e02c9bba12 Overridable Tor config (#3780)
 
 ## Dependencies
 
-5aeecdb893 Reworking/refactoring acceptDLCOffer (#4048)
-
-49d4d7f179 2022 02 06 issue 4049 (#4056)
-
-7f344ad3ff 2022 02 06 announcement creation logging (#4055)
-
-590cd9c72e 2022 02 06 remoteclaimed refactor (#4054)
-
-d213e9935d Add better exception messages (#4053)
-
-7a6f0430d6 2022 02 03 issue 4032 (#4042)
-
-142612f034 Make newConfigOfType use Vector[Config] (#4039)
-
-afc6a32c62 Update lnd to v0.14.2 (#4040)
-
-2066447cdc Add isEndpoint to numeric contract descriptor serialization (#4033)
-
-546e030dde [GUI] Fix 'First and last points must be endpoints' exception (#4029)
-
-883b01006d Fetch blockHeight earlier in TransactionProcessing.processBlock() (#4025)
-
-8d04ca1cd3 2022 01 30 optimize processblock (#4024)
-
-03abb7537b Add basic esplora client (#4018)
-
-cf16d93648 Fix bug where we didn't set spendingTxId when transitioning from `Reserved` -> `PendingConfirmationsSpent` (#3909)
-
-08941206fc Bump timeout to 60 seconds (#4021)
-
-71711ca582 Add invariant to make sure spendingTxId is different than the txid (#4019)
-
-b918cf78b7 Fix bugs where we were building internally inconsistent SpendingInfoDb (#4016)
-
-bd5bcfef3a 2022 01 18 issue 3969 Add `serialization_version` to `global_dlc_data` (#3992)
-
-98c5d816ac 2022 01 25 issue 4014 (#4015)
-
-d983ad14f3 Fix contractid computation (#4012)
-
-dbfd58da86 Add log txids inside of inventories in big endian rather than little endian (#4013)
-
-e802254a20 2022 01 24 rm appconfig varargs (#4011)
-
-d2f53db82e Change BTC RPC log level (#4010)
-
-52dcf51e82 Automatically download binaries if they are used in test suite (#4005)
-
-21de609ed8 2022 01 22 cetsignatures refactor (#4004)
-
-7ee1f0f406 Implement batching of database calls for our chain callback (#4003)
-
-42d6955f79 Filter dust from coin selection (#3866)
-
-3162c1b2d0 Ignore .DS_Store files when making backups (#4000)
-
-f438ce2897 Refactor zipDatadir (#3999)
-
-0079489a15 Create DbMapper for DoubleSha256Digest (#3995)
-
-2dcbe73504 Update Tor version to 0.4.6.9 (#3993)
-
-
-
-8a881b37f4 Add DLC callback for refunded DLC (#3989)
-
-21c97bba12 Filter transactions for onTransactionProcessed (#3990)
-
-ee0d62c5b8 2022 01 14 `DLCDataManagement` refactor (#3982)
-
-214213b59d 2022 01 16 issue 3983 (#3987)
-
-2aa6f168eb Implement rpc password in GUI (#3986)
-
-
-
-d88e2494e0 Make RPC authentication optional for localhost (#3980)
-
-
-
-ee3ee53191 RPC password authentication (#3961)
-
-5f4053b2e4 Create FallbackFeeRateApi (#3974)
-
-
-
-bf8b165fe9 Implement recovery for when we cannot receive a fee rate from a FeeRateApi (#3975)
-
-e24efd65ae 2022 01 12 docker ws (#3976)
-
-9dd126bb9f Modify estimatefee endpoint to return a number rather than a string (#3973)
-
-66e23b61a8 2021 01 11 issue 3938 (#3971)
-
-a58ef1cd02 Storing peers in database (#3773)
-
-93c5121632 2021 01 06 tlv invariants (#3965)
-
-3ba8fb6dd4 Allow creating invoices with description hash (#3966)
-
-eeeecb00c5 Reduce polling log to trace when we try to poll bitcoind (#3964)
-
-8857af2b66 Address ben's code review on #3854 (#3962)
-
-b342f373ae Make ContractDescriptorTemplate an unsealed trait (#3963)
-
-8c5288d758 Implemented general payout curves (#3854)
-
-a7af8cac4c Patch bug where `zipdatadir` doesn't work if the directory was not created (#3959)
-
-5de325e7de Exclude seeds from backup (#3950)
-
-524c5212e0 Add MasterXPubTable to list of DLCOracle tables (#3955)
-
-d06b064b6b 2021 12 28 blockprocessed callback (#3946)
-
-c3d1b2ee12 Give DLCOracle to filter events by pending/completed (#3953)
-
-f4a2ec8554 Make AesEncryptedData a network element / factory (#3952)
-
-e61ff11619 Update junit-interface to 0.13.3 (#3951)
-
-f8f8f50aae Implement ping every 5 seconds to keep websocket connection alive (#3947)
-
-
-
-7527388be5 2021 12 20 ws dlc callbacks (#3926)
-
-
-
-6652448f99 Added constructor for p2pkh for decompressed public keys (#3944)
-
-
-7f9fb87a55 Call trim on peer address in Accept dialog (#3942)
-
-50bec2abc6 2021 12 14 websockets (#3906)
-
-41b96c4c7e Add `rescan` field to `walletinfo` response (#3933)
-
-
-
-6c2bb0d111 Rename database username and password variables (#3930)
-
-4b07629d56 Add `getmediantimepast` RPC call (#3921)
-
-
-
-4646ef6e19 Remove BitcoinSServerMain.startedFP (#3928)
-
-
-
-
-
 6001da3d59 Add documetnation for setting and getting an oracle name (#3782)
+
 c5c76ea46b Add missing markdown files (#3779)
+
 6f696cab78 Update website dependencies (#3771)
 
 c0f2aa73db Fix 1.8.0 of website (#3770)
 
+e61ff11619 Update junit-interface to 0.13.3 (#3951)
+
 13f5fb8dcb Update javafx-base, javafx-controls, ... to 18-ea+10 (#3998)
+
 011fdc2cdb Update akka-grpc-runtime_2.12, ... to 2.1.3 (#3997)
+
 635bc453e4 Update javafx-base, javafx-controls, ... to 18-ea+9 (#3960)
+
 8bc419ff88 Bump shelljs from 0.8.4 to 0.8.5 in /website (#3985)
+
 e520b492bb Update slf4j-api to 1.7.33 (#3981)
+
 44a66e72e5 Upgrade to Scala 2.13.8 (#3789)
+
 2e49bedf7d upgrade to scala-js 1.8.0 (#3979)
+
 e095a1b225 Update sbt-bloop to 1.4.12 (#3977)
+
 af250fcdd3 Update sbt to 1.6.1 (#3949)
+
 bfee5f7e8d Update sbt to 1.6.0 (#3945)
+
 62852a3d19 Update sbt-scalafmt to 2.4.6 (#3940)
+
 1ec444da00 Update scalamock to 5.2.0 (#3943)
+
 0c134c7e9b Update logback-classic to 1.2.10 (#3931)
+
 0c625346e7 Update sbt to 1.5.8 (#3929)
+
 f6608f49b2 Update akka-actor, akka-discovery, ... to 2.6.18 (#3925)
+
 4015909633 Update metrics-core to 4.2.7 (#3922)
+
 b200b1cc16 Update akka-grpc-runtime_2.12, ... to 2.1.2 (#3918)
+
 fa5588d111 Update logback-classic to 1.2.9 (#3914)
+
 2dbc6aa59e Update metrics-core to 4.2.6 (#3908)
 
 0bd59ec8e1 Update sbt to 1.5.7 (#3907)
@@ -431,6 +434,7 @@ d1f191bfc6 Update logback-classic to 1.2.8 (#3902)
 b2bf190dce Update bcprov-jdk15on to 1.70 (#3861)
 
 d0db9ba633 Update scodec-bits to 1.1.30 (#3855)
+
 ea6ac56fd5 Update sbt-native-packager to 1.9.7 (#3833)
 
 65ab6206b3 Update logback-classic to 1.2.7 (#3815)
