@@ -106,7 +106,7 @@ case class AddressTagDAO()(implicit
   def findByTagType(tagType: AddressTagType): Future[Vector[AddressTagDb]] = {
     val query = table.filter(_.tagType === tagType)
 
-    safeDatabase.run(query.result.transactionally).map(_.toVector)
+    safeDatabase.run(query.result).map(_.toVector)
   }
 
   def dropByTagType(tagType: AddressTagType): Future[Int] = {

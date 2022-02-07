@@ -14,13 +14,7 @@ import org.bitcoins.core.wallet.utxo.AddressTag
 import org.bitcoins.crypto.{DoubleSha256DigestBE, SchnorrDigitalSignature}
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.DLCWallet
-import org.bitcoins.dlc.wallet.models.{
-  AcceptDbState,
-  DLCCETSignaturesDb,
-  DLCFundingInputDb,
-  DLCRefundSigsDb,
-  OfferedDbState
-}
+import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.wallet.internal.TransactionProcessing
 
 import scala.concurrent._
@@ -30,8 +24,6 @@ import scala.concurrent._
   */
 private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   self: DLCWallet =>
-
-  import dlcDAO.profile.api._
   private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
 
   private lazy val dlcDataManagement: DLCDataManagement = DLCDataManagement(
@@ -226,7 +218,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             _ <- updateAnnouncementA
           } yield updatedDlcDb
         }
-        updatedDlcDb <- safeDatabase.run(actions.transactionally)
+        updatedDlcDb <- safeDatabase.run(actions)
       } yield {
         logger.info(
           s"Done calculating RemoteClaimed outcome for dlcId=${dlcId.hex}")

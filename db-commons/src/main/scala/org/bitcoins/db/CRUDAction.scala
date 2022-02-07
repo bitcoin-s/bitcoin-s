@@ -109,7 +109,7 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
     Int,
     NoStream,
     Effect.Write with Effect.Transactional] = {
-    table.delete.transactionally
+    table.delete
   }
 
 }

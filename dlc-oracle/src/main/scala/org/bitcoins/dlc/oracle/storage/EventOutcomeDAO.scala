@@ -51,7 +51,7 @@ case class EventOutcomeDAO()(implicit
 
   def findByNonces(
       nonces: Vector[SchnorrNonce]): Future[Vector[EventOutcomeDb]] = {
-    val action = table.filter(_.nonce.inSet(nonces)).result.transactionally
+    val action = table.filter(_.nonce.inSet(nonces)).result
     safeDatabase.runVec(action)
   }
 
@@ -61,7 +61,7 @@ case class EventOutcomeDAO()(implicit
     val query =
       table.filter(item => item.nonce === nonce && item.hashedMessage === hash)
 
-    safeDatabase.run(query.result.transactionally).map(_.headOption)
+    safeDatabase.run(query.result).map(_.headOption)
   }
 
   class EventOutcomeTable(tag: Tag)

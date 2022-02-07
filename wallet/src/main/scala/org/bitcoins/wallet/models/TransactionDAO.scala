@@ -67,7 +67,7 @@ trait TxDAO[DbEntryType <: TxDB]
       txIdBEs: Vector[DoubleSha256DigestBE]): Future[Vector[DbEntryType]] = {
     val q = table.filter(_.txIdBE.inSet(txIdBEs))
 
-    safeDatabase.runVec(q.result.transactionally)
+    safeDatabase.runVec(q.result)
   }
 
   def findByTxId(txIdBE: DoubleSha256DigestBE): Future[Option[DbEntryType]] = {

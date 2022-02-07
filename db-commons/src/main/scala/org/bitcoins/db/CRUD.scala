@@ -75,12 +75,12 @@ abstract class CRUD[T, PrimaryKeyType](implicit
 
   /** Update the corresponding record in the database */
   def update(t: T): Future[T] = {
-    val action = updateAction(t).transactionally
+    val action = updateAction(t)
     safeDatabase.run(action)
   }
 
   def updateAll(ts: Vector[T]): Future[Vector[T]] = {
-    val actions = updateAllAction(ts).transactionally
+    val actions = updateAllAction(ts)
     safeDatabase.runVec(actions)
   }
 
@@ -92,18 +92,18 @@ abstract class CRUD[T, PrimaryKeyType](implicit
   def delete(t: T): Future[Int] = {
     logger.debug("Deleting record: " + t)
     val action = deleteAction(t)
-    safeDatabase.run(action.transactionally)
+    safeDatabase.run(action)
   }
 
   def deleteAll(ts: Vector[T]): Future[Int] = {
-    val action = deleteAllAction(ts).transactionally
+    val action = deleteAllAction(ts)
     safeDatabase.run(action)
   }
 
   /** delete all records from the table
     */
   def deleteAll(): Future[Int] = {
-    val action = deleteAllAction().transactionally
+    val action = deleteAllAction()
     safeDatabase.run(action)
   }
 
@@ -127,7 +127,7 @@ abstract class CRUD[T, PrimaryKeyType](implicit
     def oldUpsertAll(ts: Vector[T]): Future[Vector[T]] = {
       val actions = ts.map(t => table.insertOrUpdate(t))
       for {
-        _ <- safeDatabase.run(DBIO.sequence(actions).transactionally)
+        _ <- safeDatabase.run(DBIO.sequence(actions))
         result <- safeDatabase.runVec(findAll(ts).result)
       } yield result
 
@@ -150,7 +150,10 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
     extends Logging {
 
   import jdbcProfile.database
-  import jdbcProfile.profile.api.actionBasedSQLInterpolation
+  import jdbcProfile.profile.api.{
+    actionBasedSQLInterpolation,
+    jdbcActionExtensionMethods
+  }
 
   /** SQLite does not enable foreign keys by default. This query is
     * used to enable it. It must be included in all connections to
@@ -173,10 +176,13 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
   /** Runs the given DB action */
   def run[R](action: DBIOAction[R, NoStream, _])(implicit
       ec: ExecutionContext): Future[R] = {
-    val result =
-      if (sqlite) database.run[R](foreignKeysPragma >> action)
-      else database.run[R](action)
-    result.recoverWith { logAndThrowError(action) }
+    val result = scala.concurrent.blocking {
+      if (sqlite) database.run[R](foreignKeysPragma >> action.transactionally)
+      else database.run[R](action.transactionally)
+    }
+    result.recoverWith {
+      logAndThrowError(action)
+    }
   }
 
   /** Runs the given DB sequence-returning DB action
@@ -185,10 +191,13 @@ case class SafeDatabase(jdbcProfile: JdbcProfileComponent[DbAppConfig])
   def runVec[R](action: DBIOAction[Seq[R], NoStream, _])(implicit
       ec: ExecutionContext): Future[Vector[R]] = {
     val result = scala.concurrent.blocking {
-      if (sqlite) database.run[Seq[R]](foreignKeysPragma >> action)
-      else database.run[Seq[R]](action)
+      if (sqlite)
+        database.run[Seq[R]](foreignKeysPragma >> action.transactionally)
+      else database.run[Seq[R]](action.transactionally)
     }
-    result.map(_.toVector).recoverWith { logAndThrowError(action) }
+    result.map(_.toVector).recoverWith {
+      logAndThrowError(action)
+    }
   }
 }
 

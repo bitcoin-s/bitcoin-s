@@ -271,7 +271,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       eventDbsA = eventDAO.createAllAction(eventDbs)
       eventOutcomeDbsA = eventOutcomeDAO.createAllAction(eventOutcomeDbs)
       actions = DBIO.seq(rValueA, eventDbsA, eventOutcomeDbsA)
-      _ <- safeDatabase.run(actions.transactionally)
+      _ <- safeDatabase.run(actions)
     } yield {
       OracleEvent.fromEventDbs(eventDbs).announcementTLV
     }
@@ -365,7 +365,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
       nonce: SchnorrNonce,
       outcome: DLCAttestationType): Future[EventDb] = {
     val actionF = createAttestationActionF(nonce, outcome)
-    actionF.flatMap(action => safeDatabase.run(action.transactionally))
+    actionF.flatMap(action => safeDatabase.run(action))
   }
 
   override def signDigits(eventName: String, num: Long): Future[OracleEvent] = {
@@ -439,7 +439,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     for {
       signSig <- signSigF
       digitSigA <- digitSigAF
-      digitSigs <- safeDatabase.run(digitSigA.transactionally)
+      digitSigs <- safeDatabase.run(digitSigA)
     } yield OracleEvent.fromEventDbs(signSig ++ digitSigs)
   }
 

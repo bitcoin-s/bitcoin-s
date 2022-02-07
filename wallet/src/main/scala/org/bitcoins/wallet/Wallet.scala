@@ -31,14 +31,15 @@ import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.core.wallet.utxo.TxoState._
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
-import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.SafeDatabase
+import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models._
 import scodec.bits.ByteVector
 import slick.dbio.{DBIOAction, Effect, NoStream}
+
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Random, Success}
@@ -1076,12 +1077,11 @@ object Wallet extends WalletLogger {
       }
       accounts
     }
-    import wallet.accountDAO.profile.api._
     for {
       _ <- createMasterXpubF
       actions = createAccountActions
       accounts <- wallet.accountDAO.safeDatabase.runVec(
-        DBIOAction.sequence(actions).transactionally)
+        DBIOAction.sequence(actions))
       _ = accounts.foreach { a =>
         logger.info(s"Created account=${a} to DB")
       }
