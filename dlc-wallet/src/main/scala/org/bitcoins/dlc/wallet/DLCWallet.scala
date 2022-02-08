@@ -1421,9 +1421,9 @@ abstract class DLCWallet
         announcementData,
         nonceDbs)
 
-      oracleSigs = DLCUtil.buildOracleSignatures(announcements =
-                                                   announcementTLVs,
-                                                 attestments = sigs.toVector)
+      oracleSigs = DLCUtil.buildOracleSignaturesNaive(
+        announcements = announcementTLVs,
+        attestments = sigs.toVector)
 
       tx <- executeDLC(contractId, oracleSigs)
     } yield tx

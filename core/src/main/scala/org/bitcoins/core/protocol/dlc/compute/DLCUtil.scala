@@ -295,4 +295,24 @@ object DLCUtil {
 
     result
   }
+
+  def buildOracleSignaturesNaive(
+      announcements: OrderedAnnouncements,
+      attestments: Vector[OracleAttestmentTLV]): Vector[OracleSignatures] = {
+
+    attestments.foldLeft(Vector.empty[OracleSignatures]) { (acc, sig) =>
+      // Nonces should be unique so searching for the first nonce should be safe
+      val firstNonce = sig.sigs.head.rx
+      announcements
+        .find(
+          _.eventTLV.nonces.headOption
+            .contains(firstNonce)) match {
+        case Some(announcement) =>
+          acc :+ OracleSignatures(SingleOracleInfo(announcement), sig.sigs)
+        case None =>
+          throw new RuntimeException(
+            s"Cannot find announcement for associated public key, ${sig.publicKey.hex}")
+      }
+    }
+  }
 }
