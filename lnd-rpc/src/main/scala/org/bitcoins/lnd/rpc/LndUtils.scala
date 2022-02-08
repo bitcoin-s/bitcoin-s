@@ -3,8 +3,10 @@ package org.bitcoins.lnd.rpc
 import com.google.protobuf.ByteString
 import lnrpc.ChannelPoint
 import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
+import org.bitcoins.commons.jsonmodels.lnd.TxDetails
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.crypto._
@@ -13,7 +15,7 @@ import signrpc.TxOut
 
 import scala.language.implicitConversions
 
-object LndUtils {
+trait LndUtils {
 
   implicit def byteVecToByteString(byteVector: ByteVector): ByteString =
     ByteString.copyFrom(byteVector.toArray)
@@ -50,4 +52,29 @@ object LndUtils {
     val txId = FundingTxidBytes(outPoint.txId.bytes)
     ChannelPoint(txId, outPoint.vout.toInt)
   }
+
+  implicit def LndTransactionToTxDetails(
+      details: lnrpc.Transaction): TxDetails = {
+    val blockHashOpt = if (details.blockHash.isEmpty) {
+      None
+    } else Some(DoubleSha256DigestBE(details.blockHash))
+
+    val addrs =
+      details.destAddresses.map(BitcoinAddress.fromString).toVector
+
+    TxDetails(
+      txId = DoubleSha256DigestBE(details.txHash),
+      amount = Satoshis(details.amount),
+      numConfirmations = details.numConfirmations,
+      blockHashOpt = blockHashOpt,
+      blockHeight = details.blockHeight,
+      timeStamp = details.timeStamp,
+      totalFees = Satoshis(details.totalFees),
+      destAddresses = addrs,
+      tx = Transaction(details.rawTxHex),
+      label = details.label
+    )
+  }
 }
+
+object LndUtils extends LndUtils

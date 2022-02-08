@@ -56,6 +56,7 @@ import scala.util.{Failure, Success, Try}
 class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     implicit system: ActorSystem)
     extends NativeProcessFactory
+    with LndUtils
     with StartStopAsync[LndRpcClient]
     with Logging {
   instance match {
@@ -246,6 +247,28 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
   def subscribeInvoices(): Source[Invoice, NotUsed] = {
     lnd.subscribeInvoices(InvoiceSubscription())
+  }
+
+  def subscribeTransactions(): Source[TxDetails, NotUsed] = {
+    lnd
+      .subscribeTransactions(GetTransactionsRequest())
+      .map(LndTransactionToTxDetails)
+  }
+
+  def subscribeChannelEvents(): Source[ChannelEventUpdate, NotUsed] = {
+    lnd.subscribeChannelEvents(ChannelEventSubscription())
+  }
+
+  def subscribePeerEvents(): Source[PeerEvent, NotUsed] = {
+    lnd.subscribePeerEvents(PeerEventSubscription())
+  }
+
+  def subscribeChannelGraph(): Source[GraphTopologyUpdate, NotUsed] = {
+    lnd.subscribeChannelGraph(GraphTopologySubscription())
+  }
+
+  def subscribeChannelBackups(): Source[ChanBackupSnapshot, NotUsed] = {
+    lnd.subscribeChannelBackups(ChannelBackupSubscription())
   }
 
   def getNewAddress: Future[BitcoinAddress] = {
