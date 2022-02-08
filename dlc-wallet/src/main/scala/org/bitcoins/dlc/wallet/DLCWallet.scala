@@ -24,6 +24,10 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.{FutureUtil, TimeUtil}
+import org.bitcoins.core.wallet.builder.{
+  RawTxBuilderWithFinalizer,
+  ShufflingNonInteractiveFinalizer
+}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
@@ -454,31 +458,27 @@ abstract class DLCWallet
   /** Retrieves the [[DLCDb]] and [[AccountDb]] for the given tempContractId
     * else returns None
     */
-  private def getDlcDbOfferDbAccountDb(tempContractId: Sha256Digest): Future[
-    Option[(DLCDb, DLCOfferDb, AccountDb)]] = {
-    val result: Future[Option[(DLCDb, DLCOfferDb, AccountDb)]] = for {
+  private def getDlcDbOfferDb(
+      tempContractId: Sha256Digest): Future[Option[(DLCDb, DLCOfferDb)]] = {
+    val result: Future[Option[(DLCDb, DLCOfferDb)]] = for {
       dlcDbOpt <- dlcDAO.findByTempContractId(tempContractId)
       dlcOfferDbOpt <- dlcDbOpt match {
         case Some(dlcDb) => dlcOfferDAO.findByDLCId(dlcDb.dlcId)
-        case None        => Future.successful(None)
-      }
-      accountOpt <- dlcDbOpt match {
-        case Some(dlcDb) => accountDAO.findByAccount(dlcDb.account)
         case None        => Future.successful(None)
       }
     } yield {
       for {
         dlcDb <- dlcDbOpt
         dlcOfferDb <- dlcOfferDbOpt
-        account <- accountOpt
-      } yield (dlcDb, dlcOfferDb, account)
+      } yield (dlcDb, dlcOfferDb)
     }
 
     result
   }
 
   private def initDLCForAccept(
-      offer: DLCOffer): Future[(DLCDb, DLCOfferDb, AccountDb)] = {
+      offer: DLCOffer,
+      account: AccountDb): Future[(DLCDb, DLCOfferDb)] = {
     logger.info(
       s"Initializing DLC from received offer with tempContractId ${offer.tempContractId.hex}")
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
@@ -495,21 +495,20 @@ abstract class DLCWallet
       groupByExistingAnnouncements(announcements)
     }
 
-    getDlcDbOfferDbAccountDb(offer.tempContractId).flatMap {
-      case Some((dlcDb, dlcOffer, account)) =>
-        Future.successful((dlcDb, dlcOffer, account))
+    getDlcDbOfferDb(offer.tempContractId).flatMap {
+      case Some((dlcDb, dlcOffer)) =>
+        Future.successful((dlcDb, dlcOffer))
       case None =>
         for {
-          account <- getDefaultAccountForType(AddressType.SegWit)
           nextIndex <- getNextAvailableIndex(account, chainType)
-          dlc = buildDlcDb(offer,
-                           dlcId,
-                           account,
-                           chainType,
-                           nextIndex,
-                           contractInfo)
+          dlc = buildAcceptDlcDb(offer,
+                                 dlcId,
+                                 account,
+                                 chainType,
+                                 nextIndex,
+                                 contractInfo)
 
-          contractDataDb = buildContractDataDb(contractInfo, dlcId, offer)
+          contractDataDb = buildAcceptContractDataDb(contractInfo, dlcId, offer)
           _ <- writeDLCKeysToAddressDb(account, chainType, nextIndex)
           groupedAnnouncements <- groupedAnnouncementsF
           dlcDbAction = dlcDAO.createAction(dlc)
@@ -556,11 +555,11 @@ abstract class DLCWallet
 
           _ <- safeDatabase.run(
             DBIOAction.seq(createNonceAction, createAnnouncementAction))
-        } yield (writtenDLC, offerDb, account)
+        } yield (writtenDLC, offerDb)
     }
   }
 
-  private def buildContractDataDb(
+  private def buildAcceptContractDataDb(
       contractInfo: ContractInfo,
       dlcId: Sha256Digest,
       offer: DLCOffer): DLCContractDataDb = {
@@ -577,7 +576,7 @@ abstract class DLCWallet
     )
   }
 
-  private def buildDlcDb(
+  private def buildAcceptDlcDb(
       offer: DLCOffer,
       dlcId: Sha256Digest,
       account: AccountDb,
@@ -603,6 +602,48 @@ abstract class DLCWallet
       aggregateSignatureOpt = None,
       serializationVersion = contractInfo.serializationVersion
     )
+  }
+
+  private def buildAcceptWithoutSigs(
+      dlc: DLCDb,
+      offer: DLCOffer,
+      txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
+      spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
+      account: AccountDb,
+      fundingPrivKey: AdaptorSign,
+      collateral: CurrencyUnit): (DLCAcceptWithoutSigs, DLCPublicKeys) = {
+    val serialIds = DLCMessage.genSerialIds(
+      spendingInfos.size,
+      offer.fundingInputs.map(_.inputSerialId))
+    val utxos = spendingInfos.zip(serialIds).map { case (utxo, id) =>
+      DLCFundingInput
+        .fromInputSigningInfo(utxo, id, TransactionConstants.enableRBFSequence)
+    }
+
+    val changeSPK = txBuilder.finalizer.changeSPK
+    val changeAddr =
+      BitcoinAddress.fromScriptPubKey(changeSPK, networkParameters)
+
+    val dlcPubKeys = calcDLCPubKeys(account.xpub, dlc.changeIndex, dlc.keyIndex)
+
+    require(dlcPubKeys.fundingKey == fundingPrivKey.publicKey,
+            "Did not derive the same funding private and public key")
+
+    val payoutSerialId = DLCMessage.genSerialId(Vector(offer.payoutSerialId))
+    val changeSerialId = DLCMessage.genSerialId(
+      Vector(offer.fundOutputSerialId, offer.changeSerialId))
+    val acceptWithoutSigs = DLCAcceptWithoutSigs(
+      totalCollateral = collateral.satoshis,
+      pubKeys = dlcPubKeys,
+      fundingInputs = utxos,
+      changeAddress = changeAddr,
+      payoutSerialId = payoutSerialId,
+      changeSerialId = changeSerialId,
+      negotiationFields = DLCAccept.NoNegotiationFields,
+      tempContractId = offer.tempContractId
+    )
+
+    (acceptWithoutSigs, dlcPubKeys)
   }
 
   /** Creates a DLCAccept from the default Segwit account from a given offer, if one has already been
@@ -677,59 +718,56 @@ abstract class DLCWallet
     logger.info(
       s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
 
-    val dlcDbAccountDbF: Future[(DLCDb, DLCOfferDb, AccountDb)] =
-      initDLCForAccept(offer)
+    val accountF = getDefaultAccountForType(AddressType.SegWit)
+
+    val txBuilderAndSpendingInfosF: Future[(
+        RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
+        Vector[ScriptSignatureParams[InputInfo]])] = {
+      for {
+        account <- accountF
+        (txBuilder, spendingInfos) <- fundRawTransactionInternal(
+          destinations =
+            Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
+          feeRate = offer.feeRate,
+          fromAccount = account,
+          fromTagOpt = None,
+          markAsReserved = true
+        )
+      } yield (txBuilder, spendingInfos)
+    }
+
+    val dlcDbOfferDbF: Future[(DLCDb, DLCOfferDb)] = {
+      for {
+        accountDb <- accountF
+        (dlcDb, offerDb) <- initDLCForAccept(offer, accountDb)
+      } yield (dlcDb, offerDb)
+    }
+
+    val fundingPrivKeyF: Future[AdaptorSign] = {
+      for {
+        (dlc, _) <- dlcDbOfferDbF
+        account <- accountF
+        bip32Path = BIP32Path(
+          account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
+                                           BIP32Node(dlc.keyIndex,
+                                                     hardened = false)))
+        privKeyPath = HDPath.fromString(bip32Path.toString)
+      } yield keyManager.toSign(privKeyPath)
+    }
+
     for {
-      (dlc, _, account) <- dlcDbAccountDbF
-      (txBuilder, spendingInfos) <- fundRawTransactionInternal(
-        destinations = Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
-        feeRate = offer.feeRate,
-        fromAccount = account,
-        fromTagOpt = None,
-        markAsReserved = true
-      )
-      serialIds = DLCMessage.genSerialIds(
-        spendingInfos.size,
-        offer.fundingInputs.map(_.inputSerialId))
-      utxos = spendingInfos.zip(serialIds).map { case (utxo, id) =>
-        DLCFundingInput.fromInputSigningInfo(
-          utxo,
-          id,
-          TransactionConstants.enableRBFSequence)
-      }
-
-      changeSPK = txBuilder.finalizer.changeSPK
-      changeAddr = BitcoinAddress.fromScriptPubKey(changeSPK, networkParameters)
-
-      bip32Path = BIP32Path(
-        account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
-                                         BIP32Node(dlc.keyIndex,
-                                                   hardened = false)))
-
-      privKeyPath = HDPath.fromString(bip32Path.toString)
-      fundingPrivKey =
-        keyManager.toSign(privKeyPath)
-
-      dlcPubKeys = calcDLCPubKeys(account.xpub, dlc.changeIndex, dlc.keyIndex)
-
-      _ = require(dlcPubKeys.fundingKey == fundingPrivKey.publicKey,
-                  "Did not derive the same funding private and public key")
-
-      payoutSerialId = DLCMessage.genSerialId(Vector(offer.payoutSerialId))
-      changeSerialId = DLCMessage.genSerialId(
-        Vector(offer.fundOutputSerialId, offer.changeSerialId))
-
-      acceptWithoutSigs = DLCAcceptWithoutSigs(
-        totalCollateral = collateral.satoshis,
-        pubKeys = dlcPubKeys,
-        fundingInputs = utxos,
-        changeAddress = changeAddr,
-        payoutSerialId = payoutSerialId,
-        changeSerialId = changeSerialId,
-        negotiationFields = DLCAccept.NoNegotiationFields,
-        tempContractId = offer.tempContractId
-      )
-
+      (dlc, _) <- dlcDbOfferDbF
+      (txBuilder, spendingInfos) <- txBuilderAndSpendingInfosF
+      account <- accountF
+      fundingPrivKey <- fundingPrivKeyF
+      (acceptWithoutSigs, dlcPubKeys) = buildAcceptWithoutSigs(
+        dlc = dlc,
+        offer = offer,
+        txBuilder = txBuilder,
+        spendingInfos = spendingInfos,
+        account = account,
+        fundingPrivKey = fundingPrivKey,
+        collateral = collateral)
       builder = DLCTxBuilder(offer, acceptWithoutSigs)
 
       contractId = builder.calcContractId
@@ -758,10 +796,10 @@ abstract class DLCWallet
         dlcId = dlc.dlcId,
         fundingKey = dlcPubKeys.fundingKey,
         payoutAddress = dlcPubKeys.payoutAddress,
-        payoutSerialId = payoutSerialId,
+        payoutSerialId = acceptWithoutSigs.payoutSerialId,
         collateral = collateral,
-        changeAddress = changeAddr,
-        changeSerialId = changeSerialId,
+        changeAddress = acceptWithoutSigs.changeAddress,
+        changeSerialId = acceptWithoutSigs.changeSerialId,
         negotiationFieldsTLV = NoNegotiationFields.toTLV
       )
 
@@ -792,8 +830,10 @@ abstract class DLCWallet
         TransactionDbHelper.fromTransaction(funding.prevTx,
                                             blockHashOpt = None))
 
-      acceptInputs = spendingInfos.zip(utxos).zipWithIndex.map {
-        case ((utxo, fundingInput), idx) =>
+      acceptInputs = spendingInfos
+        .zip(acceptWithoutSigs.fundingInputs)
+        .zipWithIndex
+        .map { case ((utxo, fundingInput), idx) =>
           DLCFundingInputDb(
             dlcId = dlc.dlcId,
             isInitiator = false,
@@ -806,13 +846,13 @@ abstract class DLCWallet
             redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
             witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
           )
-      }
+        }
 
       accept =
-        dlcAcceptDb.toDLCAccept(dlc.tempContractId,
-                                utxos,
-                                cetSigs.outcomeSigs,
-                                refundSig)
+        dlcAcceptDb.toDLCAccept(tempContractId = dlc.tempContractId,
+                                fundingInputs = acceptWithoutSigs.fundingInputs,
+                                outcomeSigs = cetSigs.outcomeSigs,
+                                refundSig = refundSig)
 
       _ = require(accept.tempContractId == offer.tempContractId,
                   "Offer and Accept have differing tempContractIds!")
