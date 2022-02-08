@@ -1,5 +1,8 @@
 package org.bitcoins.core.protocol.dlc.compute
 
+import org.bitcoins.core.config.{BitcoinNetwork, NetworkParameters}
+import org.bitcoins.core.crypto.ExtPublicKey
+import org.bitcoins.core.hd.{BIP32Path, HDChainType}
 import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
@@ -313,6 +316,32 @@ object DLCUtil {
           throw new RuntimeException(
             s"Cannot find announcement for associated public key, ${sig.publicKey.hex}")
       }
+    }
+  }
+
+  /** Calculates a [[DLCPublicKeys]] from the wallet's [[BIP39KeyManager]] */
+  def calcDLCPubKeys(
+      xpub: ExtPublicKey,
+      chainType: HDChainType,
+      keyIndex: Int,
+      networkParameters: NetworkParameters): DLCPublicKeys = {
+    val chainIndex = chainType.index
+    val fundingKey =
+      xpub
+        .deriveChildPubKey(BIP32Path.fromString(s"m/$chainIndex/$keyIndex"))
+        .get
+        .key
+
+    val payoutKey =
+      xpub
+        .deriveChildPubKey(
+          BIP32Path.fromString(s"m/$chainIndex/${keyIndex + 1}"))
+        .get
+        .key
+
+    networkParameters match {
+      case bitcoinNetwork: BitcoinNetwork =>
+        DLCPublicKeys.fromPubKeys(fundingKey, payoutKey, bitcoinNetwork)
     }
   }
 }
