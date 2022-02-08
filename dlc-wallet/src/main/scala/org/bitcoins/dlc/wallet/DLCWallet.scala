@@ -500,11 +500,12 @@ abstract class DLCWallet
               dlcDb <- dlcDbAction
               ann <- createdAnnouncementsAction
               //we don't need the contract data db, so don't return it
-              _ <- contractAction
+              contractDataDb <- contractAction
               offer <- dlcOfferAction
-            } yield (dlcDb, ann, offer)
+            } yield (dlcDb, ann, offer, contractDataDb)
           }
-          (writtenDLC, createdDbs, offerDb) <- safeDatabase.run(zipped)
+          (writtenDLC, createdDbs, offerDb, contractDataDb) <- safeDatabase.run(
+            zipped)
           announcementDataDbs =
             createdDbs ++ groupedAnnouncements.existingAnnouncements
 
@@ -652,11 +653,9 @@ abstract class DLCWallet
         case Some(_) => Future.unit
         case None    => scriptPubKeyDAO.create(spkDb)
       }
-
       _ = logger.info(s"Creating CET Sigs for ${contractId.toHex}")
-      acceptComputingAdaptorSigs = dlc.updateState(
-        DLCState.AcceptComputingAdaptorSigs)
-      _ <- dlcDAO.update(acceptComputingAdaptorSigs)
+      //emit websocket event that we are now computing adaptor signatures
+      _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status)
       cetSigs <- signer.createCETSigsAsync()
       refundSig = signer.signRefundTx
       _ = logger.debug(
