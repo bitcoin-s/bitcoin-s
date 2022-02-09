@@ -174,7 +174,8 @@ object TLV extends TLVParentFactory[TLV] {
       FundingSignaturesV0TLV,
       DLCOfferTLV,
       DLCAcceptTLV,
-      DLCSignTLV
+      DLCSignTLV,
+      DLCMutualCloseTLV
     ) ++ EventDescriptorTLV.allFactories ++
       PayoutCurvePieceTLV.allFactories ++
       ContractDescriptorTLV.allFactories ++
@@ -1973,4 +1974,68 @@ object DLCSignTLV extends TLVFactory[DLCSignTLV] {
   }
 
   override val typeName: String = "DLCSignTLV"
+}
+
+case class DLCMutualCloseTLV(
+    contractId: ByteVector,
+    signature: ECDigitalSignature,
+    offerPayoutSatoshis: Satoshis,
+    acceptPayoutSatoshis: Satoshis,
+    fundingInputSerialId: UInt64,
+    extraInputs: Vector[FundingInputV0TLV],
+    inputSignatures: FundingSignaturesV0TLV,
+    closeLocktime: UInt32
+) extends DLCSetupTLV {
+
+  require(
+    extraInputs.size == inputSignatures.witnesses.size,
+    s"Must have same number of extraInputs (${extraInputs.size}) as inputSignatures (${inputSignatures.witnesses.size})"
+  )
+
+  override val tpe: BigSizeUInt = DLCMutualCloseTLV.tpe
+
+  override val value: ByteVector = {
+    contractId ++
+      signature.toRawRS ++
+      satBytes(offerPayoutSatoshis) ++
+      satBytes(acceptPayoutSatoshis) ++
+      fundingInputSerialId.bytes ++
+      u16PrefixedList(extraInputs) ++
+      inputSignatures.bytes ++
+      closeLocktime.bytes
+  }
+
+  lazy val fundingInputIndex: Int = {
+    val serialIds = fundingInputSerialId +: extraInputs.map(_.inputSerialId)
+    serialIds.sorted.indexOf(fundingInputSerialId)
+  }
+}
+
+object DLCMutualCloseTLV extends TLVFactory[DLCMutualCloseTLV] {
+  // fixme set to correct number
+  override val tpe: BigSizeUInt = BigSizeUInt(42800)
+  override val typeName: String = "DLCMutualCloseTLV"
+
+  override def fromTLVValue(value: ByteVector): DLCMutualCloseTLV = {
+    val iter = ValueIterator(value)
+
+    val contractId = iter.take(32)
+    val signature = ECDigitalSignature.fromRS(iter.take(64))
+    val offerPayout = iter.takeSats()
+    val acceptPayout = iter.takeSats()
+    val serialId = iter.takeU64()
+    val extraInputs =
+      iter.takeU16PrefixedList(() => iter.take(FundingInputV0TLV))
+    val inputSignatures = iter.take(FundingSignaturesV0TLV)
+    val locktime = iter.takeU32()
+
+    DLCMutualCloseTLV(contractId,
+                      signature,
+                      offerPayout,
+                      acceptPayout,
+                      serialId,
+                      extraInputs,
+                      inputSignatures,
+                      locktime)
+  }
 }

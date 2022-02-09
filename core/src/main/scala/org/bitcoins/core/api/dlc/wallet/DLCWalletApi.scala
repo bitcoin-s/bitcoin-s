@@ -2,7 +2,7 @@ package org.bitcoins.core.api.dlc.wallet
 
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.wallet._
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.dlc.accounting._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
@@ -86,6 +86,14 @@ trait DLCWalletApi { self: WalletApi =>
 
   /** Creates the refund transaction for the given contractId, does not broadcast it */
   def executeDLCRefund(contractId: ByteVector): Future[Transaction]
+
+  def createMutualClose(
+      contractId: ByteVector,
+      localPayout: CurrencyUnit,
+      remotePayout: CurrencyUnit,
+      closeLocktime: UInt32): Future[DLCMutualCloseTLV]
+
+  def closeDLC(closeTLV: DLCMutualCloseTLV): Future[Transaction]
 
   def listDLCs(): Future[Vector[DLCStatus]]
 

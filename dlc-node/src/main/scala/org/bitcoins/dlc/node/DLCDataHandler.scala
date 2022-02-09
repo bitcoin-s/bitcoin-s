@@ -63,6 +63,9 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
           _ <- dlcWalletApi.broadcastDLCFundingTx(dlcSign.contractId)
         } yield ()
         f
+      case close: DLCMutualCloseTLV =>
+        log.info(s"Received close message for DLC ${close.contractId.toHex}")
+        Future.unit
     }
   }
 }

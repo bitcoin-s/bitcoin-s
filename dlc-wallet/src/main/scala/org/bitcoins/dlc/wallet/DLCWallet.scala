@@ -1304,7 +1304,8 @@ abstract class DLCWallet
     dlcDb.state match {
       case DLCState.Broadcasted | DLCState.Signed => dlcDb
       case state @ (DLCState.Offered | DLCState.Confirmed | DLCState.Accepted |
-          DLCState.Claimed | DLCState.RemoteClaimed | DLCState.Refunded) =>
+          DLCState.Claimed | DLCState.RemoteClaimed | DLCState.Refunded |
+          DLCState.MutuallyClosed) =>
         sys.error(
           s"Cannot broadcast the dlc when it is in the state=${state} contractId=${dlcDb.contractIdOpt}")
     }
@@ -1499,6 +1500,90 @@ abstract class DLCWallet
                                closingTxOpt)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield refundTx
+  }
+
+  override def createMutualClose(
+      contractId: ByteVector,
+      localPayout: CurrencyUnit,
+      remotePayout: CurrencyUnit,
+      closeLocktime: UInt32): Future[DLCMutualCloseTLV] = {
+    dlcDAO.findByContractId(contractId).flatMap {
+      case None =>
+        Future.failed(
+          new RuntimeException(
+            s"Could not find a DLC with contract id ${contractId.toHex}"))
+      case Some(dlcDb) =>
+        for {
+          fundingInputs <- dlcInputsDAO.findByDLCId(dlcDb.dlcId)
+          scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
+          signer <- dlcDataManagement
+            .signerFromDb(dlcId = dlcDb.dlcId,
+                          transactionDAO = transactionDAO,
+                          fundingUtxoScriptSigParams = scriptSigParams,
+                          keyManager = keyManager)
+            .map(_.get)
+
+          (offerPayout, acceptPayout) =
+            if (dlcDb.isInitiator) (localPayout, remotePayout)
+            else (remotePayout, localPayout)
+
+          tlv = signer.createMutualClose(offerPayout,
+                                         acceptPayout,
+                                         Vector.empty,
+                                         closeLocktime)
+
+          _ <- updateDLCState(contractId, DLCState.MutuallyClosed)
+        } yield tlv
+    }
+  }
+
+  override def closeDLC(closeTLV: DLCMutualCloseTLV): Future[Transaction] = {
+    val contractId = closeTLV.contractId
+    dlcDAO.findByContractId(contractId).flatMap {
+      case None =>
+        Future.failed(
+          new RuntimeException(
+            s"Could not find a DLC for contract id ${contractId.toHex}"))
+      case Some(dlcDb) =>
+        val dlcId = dlcDb.dlcId
+
+        for {
+          fundingInputs <- dlcInputsDAO.findByDLCId(dlcId)
+          scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
+          signer <- dlcDataManagement
+            .signerFromDb(dlcId = dlcId,
+                          transactionDAO = transactionDAO,
+                          fundingUtxoScriptSigParams = scriptSigParams,
+                          keyManager = keyManager)
+            .map(_.get)
+
+          closeTx = signer.completeMutualClose(closeTLV)
+          _ = logger.info(
+            s"Created DLC close transaction ${closeTx.txIdBE.hex} for contract ${contractId.toHex}")
+
+          _ <- updateDLCState(contractId, DLCState.MutuallyClosed)
+          updatedDlcDb <- updateClosingTxId(contractId, closeTx.txIdBE)
+
+          _ <- processTransaction(closeTx, blockHashOpt = None)
+          closingTxOpt <- getClosingTxOpt(updatedDlcDb)
+          action = {
+            for {
+              contractData <- contractDataDAO.findByDLCIdAction(dlcId)
+              dlcAcceptOpt <- dlcAcceptDAO.findByDLCIdAction(updatedDlcDb.dlcId)
+              offerDbOpt <- dlcOfferDAO.findByDLCIdAction(dlcDb.dlcId)
+            } yield (contractData.get, dlcAcceptOpt, offerDbOpt)
+          }
+          (contractData, dlcAcceptOpt, offerDbOpt) <- dlcDAO.safeDatabase.run(
+            action)
+          status <- buildDLCStatus(updatedDlcDb,
+                                   contractData,
+                                   offerDbOpt.get,
+                                   dlcAcceptOpt,
+                                   closingTxOpt)
+          _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
+                                                                 status.get)
+        } yield closeTx
+    }
   }
 
   override def getWalletAccounting(): Future[DLCWalletAccounting] = {

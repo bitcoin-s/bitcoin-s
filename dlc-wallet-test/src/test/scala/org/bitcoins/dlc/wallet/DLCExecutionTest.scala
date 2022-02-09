@@ -1,10 +1,11 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCOffer
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.{
   Claimed,
+  MutuallyClosed,
   Refunded,
   RemoteClaimed
 }
@@ -331,6 +332,104 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         case (Some(dlcA), Some(dlcB)) =>
           assert(dlcA.state == DLCState.Refunded)
           assert(dlcB.state == DLCState.Refunded)
+        case (_, _) => fail()
+      }
+    }
+  }
+
+  it must "mutually close a dlc as the initiator" in { wallets =>
+    val walletA = wallets._1.wallet
+    val walletB = wallets._2.wallet
+    for {
+      contractId <- getContractId(wallets._1.wallet)
+      status <- getDLCStatus(wallets._1.wallet)
+      func = (_: DLCWallet) =>
+        for {
+          tlv <- walletB.createMutualClose(contractId = contractId,
+                                           localPayout = Bitcoins(2),
+                                           remotePayout = Bitcoins(1),
+                                           closeLocktime = UInt32.zero)
+          tx <- walletA.closeDLC(tlv)
+        } yield tx
+
+      result <- dlcExecutionTest(wallets = wallets,
+                                 asInitiator = true,
+                                 func = func,
+                                 expectedOutputs = 2)
+
+      _ = assert(result)
+
+      dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
+      dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
+
+      dlcId = status.dlcId
+
+      statusAOpt <- wallets._1.wallet.findDLC(dlcId)
+      statusBOpt <- wallets._2.wallet.findDLC(dlcId)
+
+      _ = {
+        (statusAOpt, statusBOpt) match {
+          case (Some(statusA: MutuallyClosed), Some(statusB: MutuallyClosed)) =>
+            assert(statusA.counterPartyPayout == Bitcoins(2))
+            assert(statusA.myPayout == Bitcoins(1))
+            assert(statusA.closingTxId == statusB.closingTxId)
+          case (_, _) => fail()
+        }
+      }
+    } yield {
+      (dlcDbAOpt, dlcDbBOpt) match {
+        case (Some(dlcA), Some(dlcB)) =>
+          assert(dlcA.state == DLCState.MutuallyClosed)
+          assert(dlcB.state == DLCState.MutuallyClosed)
+        case (_, _) => fail()
+      }
+    }
+  }
+
+  it must "mutually close a dlc as the recipient" in { wallets =>
+    val walletA = wallets._1.wallet
+    val walletB = wallets._2.wallet
+    for {
+      contractId <- getContractId(wallets._1.wallet)
+      status <- getDLCStatus(wallets._1.wallet)
+      func = (_: DLCWallet) =>
+        for {
+          tlv <- walletA.createMutualClose(contractId = contractId,
+                                           localPayout = Bitcoins(1),
+                                           remotePayout = Bitcoins(2),
+                                           closeLocktime = UInt32.zero)
+          tx <- walletB.closeDLC(tlv)
+        } yield tx
+
+      result <- dlcExecutionTest(wallets = wallets,
+                                 asInitiator = false,
+                                 func = func,
+                                 expectedOutputs = 2)
+
+      _ = assert(result)
+
+      dlcDbAOpt <- wallets._1.wallet.dlcDAO.findByContractId(contractId)
+      dlcDbBOpt <- wallets._2.wallet.dlcDAO.findByContractId(contractId)
+
+      dlcId = status.dlcId
+
+      statusAOpt <- wallets._1.wallet.findDLC(dlcId)
+      statusBOpt <- wallets._2.wallet.findDLC(dlcId)
+
+      _ = {
+        (statusAOpt, statusBOpt) match {
+          case (Some(statusA: MutuallyClosed), Some(statusB: MutuallyClosed)) =>
+            assert(statusA.counterPartyPayout == Bitcoins(2))
+            assert(statusA.myPayout == Bitcoins(1))
+            assert(statusA.closingTxId == statusB.closingTxId)
+          case (_, _) => fail()
+        }
+      }
+    } yield {
+      (dlcDbAOpt, dlcDbBOpt) match {
+        case (Some(dlcA), Some(dlcB)) =>
+          assert(dlcA.state == DLCState.MutuallyClosed)
+          assert(dlcB.state == DLCState.MutuallyClosed)
         case (_, _) => fail()
       }
     }

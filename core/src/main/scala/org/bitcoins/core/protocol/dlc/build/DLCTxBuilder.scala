@@ -12,6 +12,10 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
 }
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.tlv.{
+  DLCMutualCloseTLV,
+  FundingSignaturesV0TLV
+}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.util.Indexed
@@ -225,6 +229,52 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
       fundingTx,
       fundOutputIndex,
       offer.timeouts
+    )
+  }
+
+  def buildMutualCloseTx(
+      offerPayoutSatoshis: CurrencyUnit,
+      acceptPayoutSatoshis: CurrencyUnit,
+      fundingInputSerialId: UInt64,
+      extraInputs: Vector[DLCFundingInput],
+      closeLocktime: UInt32): WitnessTransaction = {
+    DLCTxBuilder.buildMutualCloseTx(
+      offerPayout = offerPayoutSatoshis,
+      offerFundingKey = offerFundingKey,
+      offerFinalSPK = offerFinalAddress.scriptPubKey,
+      offerSerialId = offerPayoutSerialId,
+      acceptPayout = acceptPayoutSatoshis,
+      acceptFundingKey = acceptFundingKey,
+      acceptFinalSPK = acceptFinalAddress.scriptPubKey,
+      acceptSerialId = acceptPayoutSerialId,
+      fundingTx = fundingTx,
+      fundOutputIndex = fundOutputIndex,
+      extraInputs = extraInputs,
+      signatures =
+        FundingSignaturesV0TLV(Vector.empty), // don't have signatures yet
+      fundingInputSerialId = fundingInputSerialId,
+      closeLocktime = closeLocktime
+    )
+  }
+
+  def buildMutualCloseTx(closeTLV: DLCMutualCloseTLV): WitnessTransaction = {
+    val extraInputs = closeTLV.extraInputs.map(i => DLCFundingInput.fromTLV(i))
+
+    DLCTxBuilder.buildMutualCloseTx(
+      closeTLV.offerPayoutSatoshis,
+      offerFundingKey,
+      offerFinalAddress.scriptPubKey,
+      offerPayoutSerialId,
+      closeTLV.acceptPayoutSatoshis,
+      acceptFundingKey,
+      acceptFinalAddress.scriptPubKey,
+      acceptPayoutSerialId,
+      fundingTx,
+      fundOutputIndex,
+      extraInputs,
+      closeTLV.inputSignatures,
+      closeTLV.fundingInputSerialId,
+      closeTLV.closeLocktime
     )
   }
 }
@@ -506,6 +556,100 @@ object DLCTxBuilder {
                   acceptSerialId,
                   fundingOutputRef,
                   timeouts)
+  }
+
+  def buildMutualCloseTx(
+      offerPayout: CurrencyUnit,
+      offerFundingKey: ECPublicKey,
+      offerFinalSPK: ScriptPubKey,
+      offerSerialId: UInt64,
+      acceptPayout: CurrencyUnit,
+      acceptFundingKey: ECPublicKey,
+      acceptFinalSPK: ScriptPubKey,
+      acceptSerialId: UInt64,
+      fundingTx: Transaction,
+      fundOutputIndex: Int,
+      extraInputs: Vector[DLCFundingInput],
+      signatures: FundingSignaturesV0TLV,
+      fundingInputSerialId: UInt64,
+      closeLocktime: UInt32): WitnessTransaction = {
+    val fundingOutPoint =
+      TransactionOutPoint(fundingTx.txId, UInt32(fundOutputIndex))
+    val fundingOutputRef =
+      OutputReference(fundingOutPoint, fundingTx.outputs(fundOutputIndex))
+
+    buildMutualCloseTx(
+      offerPayout,
+      offerFundingKey,
+      offerFinalSPK,
+      offerSerialId,
+      acceptPayout,
+      acceptFundingKey,
+      acceptFinalSPK,
+      acceptSerialId,
+      fundingOutputRef,
+      extraInputs,
+      signatures,
+      fundingInputSerialId,
+      closeLocktime
+    )
+  }
+
+  def buildMutualCloseTx(
+      offerPayout: CurrencyUnit,
+      offerFundingKey: ECPublicKey,
+      offerFinalSPK: ScriptPubKey,
+      offerSerialId: UInt64,
+      acceptPayout: CurrencyUnit,
+      acceptFundingKey: ECPublicKey,
+      acceptFinalSPK: ScriptPubKey,
+      acceptSerialId: UInt64,
+      fundingOutputRef: OutputReference,
+      extraInputs: Vector[DLCFundingInput],
+      signatures: FundingSignaturesV0TLV,
+      fundingInputSerialId: UInt64,
+      closeLocktime: UInt32): WitnessTransaction = {
+    val OutputReference(fundingOutPoint, fundingOutput) = fundingOutputRef
+    val fundingKeys = Vector(offerFundingKey, acceptFundingKey).sortBy(_.hex)
+    val fundingInfo = P2WSHV0InputInfo(
+      outPoint = fundingOutPoint,
+      amount = fundingOutput.value,
+      scriptWitness =
+        P2WSHWitnessV0(MultiSignatureScriptPubKey(2, fundingKeys)),
+      conditionalPath = ConditionalPath.NoCondition
+    )
+    val fundingWit = InputInfo.getScriptWitness(fundingInfo).get
+
+    val fundingInput = (TransactionInput(
+                          fundingOutPoint,
+                          EmptyScriptSignature,
+                          TransactionConstants.disableRBFSequence),
+                        fundingInputSerialId,
+                        fundingWit)
+
+    val extraInputsAndWit = extraInputs.zip(signatures.witnesses)
+    val extraFundingInputs = extraInputsAndWit.map { case (input, wit) =>
+      (input.input, input.inputSerialId, wit)
+    }
+    val fundingInputs = extraFundingInputs :+ fundingInput
+
+    val outputsWithSerialId =
+      Vector((TransactionOutput(offerPayout, offerFinalSPK), offerSerialId),
+             (TransactionOutput(acceptPayout, acceptFinalSPK), acceptSerialId))
+
+    val inputsAndWitnesses = fundingInputs.sortBy(_._2)
+
+    val inputs = inputsAndWitnesses.map(_._1)
+    val outputs = sortAndFilterOutputs(outputsWithSerialId)
+    val witnesses = inputsAndWitnesses.map(_._3)
+
+    WitnessTransaction(
+      TransactionConstants.validLockVersion,
+      inputs,
+      outputs,
+      closeLocktime,
+      TransactionWitness(witnesses)
+    )
   }
 
   def sortAndFilterOutputs(

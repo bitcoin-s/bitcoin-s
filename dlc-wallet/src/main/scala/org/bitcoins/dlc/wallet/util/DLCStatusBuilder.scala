@@ -133,6 +133,24 @@ object DLCStatusBuilder {
       totalCollateral - offerDb.collateral
     }
     val status = dlcDb.state.asInstanceOf[DLCState.ClosedState] match {
+      case DLCState.MutuallyClosed =>
+        // no oracle information in the mutual close case
+        MutuallyClosed(
+          dlcId,
+          dlcDb.isInitiator,
+          dlcDb.lastUpdated,
+          dlcDb.tempContractId,
+          dlcDb.contractIdOpt.get,
+          contractInfo,
+          contractData.dlcTimeouts,
+          dlcDb.feeRate,
+          totalCollateral,
+          localCollateral,
+          dlcDb.fundingTxIdOpt.get,
+          closingTx.txIdBE,
+          myPayout = accounting.myPayout,
+          counterPartyPayout = accounting.theirPayout
+        )
       case DLCState.Refunded =>
         //no oracle information in the refund case
         val refund = Refunded(
