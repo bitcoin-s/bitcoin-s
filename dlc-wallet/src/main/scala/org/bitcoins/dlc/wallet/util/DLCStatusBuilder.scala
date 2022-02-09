@@ -51,7 +51,7 @@ object DLCStatusBuilder {
           isInitiator = dlcDb.isInitiator,
           lastUpdated = dlcDb.lastUpdated,
           tempContractId = dlcDb.tempContractId,
-          contractId = None,
+          contractId = dlcDb.contractIdOpt.get,
           contractInfo = contractInfo,
           timeouts = contractData.dlcTimeouts,
           feeRate = dlcDb.feeRate,

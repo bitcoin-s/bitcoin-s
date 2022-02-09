@@ -108,7 +108,7 @@ object DLCAcceptUtil extends Logging {
       tempContractId = offer.tempContractId,
       contractIdOpt = None,
       protocolVersion = 0,
-      state = DLCState.Accepted,
+      state = DLCState.AcceptComputingAdaptorSigs,
       isInitiator = false,
       account = account.hdAccount,
       changeIndex = chainType,
