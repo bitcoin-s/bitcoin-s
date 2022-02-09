@@ -568,19 +568,16 @@ abstract class DLCWallet
     } yield dlcAccept
   }
 
-  private def createNewDLCAccept(
+  private def fundDLCAcceptMsg(
+      offer: DLCOffer,
       collateral: CurrencyUnit,
-      offer: DLCOffer): Future[DLCAccept] = {
-    logger.info(
-      s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
-
-    val accountF = getDefaultAccountForType(AddressType.SegWit)
-
+      account: AccountDb): Future[(
+      RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
+      Vector[ScriptSignatureParams[InputInfo]])] = {
     val txBuilderAndSpendingInfosF: Future[(
         RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
         Vector[ScriptSignatureParams[InputInfo]])] = {
       for {
-        account <- accountF
         (txBuilder, spendingInfos) <- fundRawTransactionInternal(
           destinations =
             Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
@@ -591,6 +588,16 @@ abstract class DLCWallet
         )
       } yield (txBuilder, spendingInfos)
     }
+    txBuilderAndSpendingInfosF
+  }
+
+  private def createNewDLCAccept(
+      collateral: CurrencyUnit,
+      offer: DLCOffer): Future[DLCAccept] = {
+    logger.info(
+      s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
+
+    val accountF = getDefaultAccountForType(AddressType.SegWit)
 
     val dlcDbOfferDbF: Future[(DLCDb, DLCOfferDb)] = {
       for {
@@ -613,8 +620,10 @@ abstract class DLCWallet
 
     for {
       (dlc, _) <- dlcDbOfferDbF
-      (txBuilder, spendingInfos) <- txBuilderAndSpendingInfosF
       account <- accountF
+      (txBuilder, spendingInfos) <- fundDLCAcceptMsg(offer = offer,
+                                                     collateral = collateral,
+                                                     account = account)
       fundingPrivKey <- fundingPrivKeyF
       (acceptWithoutSigs, dlcPubKeys) = DLCAcceptUtil.buildAcceptWithoutSigs(
         dlc = dlc,
