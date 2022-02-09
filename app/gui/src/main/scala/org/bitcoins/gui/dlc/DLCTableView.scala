@@ -218,7 +218,9 @@ class DLCTableView(model: DLCPaneModel) {
           row.item.onChange { (_, _, newContent) =>
             if (newContent != null) {
               cancelDLCItem.disable = row.item.value.state match {
-                case DLCState.Offered | DLCState.Accepted | DLCState.Signed =>
+                case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
+                    DLCState.AcceptComputingAdaptorSigs |
+                    DLCState.SignComputingAdaptorSigs =>
                   false
                 case DLCState.Confirmed | DLCState.Broadcasted |
                     DLCState.Claimed | DLCState.Refunded |
@@ -230,7 +232,9 @@ class DLCTableView(model: DLCPaneModel) {
                   false
                 case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
                     DLCState.Claimed | DLCState.Refunded |
-                    DLCState.RemoteClaimed =>
+                    DLCState.RemoteClaimed |
+                    DLCState.AcceptComputingAdaptorSigs |
+                    DLCState.SignComputingAdaptorSigs =>
                   true
               }
               refundDLCItem.disable = disableRefundExecute
