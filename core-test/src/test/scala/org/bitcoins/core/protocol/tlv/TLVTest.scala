@@ -186,6 +186,13 @@ class TLVTest extends BitcoinSUnitTest {
     }
   }
 
+  "DLCMutualCloseTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.dlcMutualCloseTLV) { close =>
+      assert(DLCMutualCloseTLV(close.bytes) == close)
+      assert(TLV(close.bytes) == close)
+    }
+  }
+
   it must "parse a contract info pre 144" in {
     //this was a contract info created before we implemented support for
     //https://github.com/discreetlogcontracts/dlcspecs/pull/144

@@ -76,6 +76,12 @@ object DLCState extends StringFactory[DLCState] {
     val order: Int = 6
   }
 
+  /** The state where the DLC has been mutually closed by both parties
+    */
+  final case object MutuallyClosed extends ClosedState {
+    val order: Int = 7
+  }
+
   val all: Vector[DLCState] = Vector(Offered,
                                      Accepted,
                                      Signed,
@@ -83,7 +89,8 @@ object DLCState extends StringFactory[DLCState] {
                                      Confirmed,
                                      Claimed,
                                      RemoteClaimed,
-                                     Refunded)
+                                     Refunded,
+                                     MutuallyClosed)
 
   def fromString(str: String): DLCState = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase) match {

@@ -1020,6 +1020,35 @@ object Picklers {
     )
   }
 
+  implicit val mutuallyClosedW: Writer[MutuallyClosed] = writer[Obj].comap {
+    closed =>
+      import closed._
+      Obj(
+        "state" -> Str(statusString),
+        "dlcId" -> Str(dlcId.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
+        "tempContractId" -> Str(tempContractId.hex),
+        "contractId" -> Str(contractId.toHex),
+        "contractInfo" -> Str(contractInfo.hex),
+        "contractMaturity" -> Num(
+          timeouts.contractMaturity.toUInt32.toLong.toDouble),
+        "contractTimeout" -> Num(
+          timeouts.contractTimeout.toUInt32.toLong.toDouble),
+        "feeRate" -> Num(feeRate.toLong.toDouble),
+        "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
+        "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
+        "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
+        "fundingTxId" -> Str(fundingTxId.hex),
+        "closingTxId" -> Str(closingTxId.hex),
+        PicklerKeys.myPayout -> Num(myPayout.satoshis.toLong.toDouble),
+        counterPartyPayoutKey -> Num(
+          counterPartyPayout.satoshis.toLong.toDouble),
+        PicklerKeys.pnl -> Num(pnl.satoshis.toLong.toDouble),
+        PicklerKeys.rateOfReturn -> Num(rateOfReturn.toDouble)
+      )
+  }
+
   implicit val dlcStatusW: Writer[DLCStatus] = writer[Value].comap {
     case o: Offered =>
       writeJs(o)(offeredW)
@@ -1037,6 +1066,8 @@ object Picklers {
       writeJs(r)(remoteClaimedW)
     case r: Refunded =>
       writeJs(r)(refundedW)
+    case r: MutuallyClosed =>
+      writeJs(r)(mutuallyClosedW)
   }
 
   implicit val dlcStatusR: Reader[DLCStatus] = reader[Obj].map { obj =>
@@ -1207,6 +1238,23 @@ object Picklers {
         )
       case DLCState.Refunded =>
         Refunded(
+          dlcId,
+          isInitiator,
+          lastUpdated,
+          tempContractId,
+          contractId,
+          ContractInfo.fromTLV(contractInfoTLV),
+          DLCTimeouts(contractMaturity, contractTimeout),
+          feeRate,
+          totalCollateral,
+          localCollateral,
+          fundingTxId,
+          closingTxId,
+          myPayout = myPayoutOpt.get,
+          counterPartyPayout = theirPayoutOpt.get
+        )
+      case DLCState.MutuallyClosed =>
+        MutuallyClosed(
           dlcId,
           isInitiator,
           lastUpdated,

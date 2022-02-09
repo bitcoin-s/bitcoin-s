@@ -528,6 +528,30 @@ trait TLVGen {
     }
   }
 
+  def dlcMutualCloseTLV: Gen[DLCMutualCloseTLV] = {
+    for {
+      contractId <- NumberGenerator.bytevector(32)
+      sig <- CryptoGenerators.digitalSignature
+      payoutOffer <- CurrencyUnitGenerator.positiveRealistic
+      acceptOffer <- CurrencyUnitGenerator.positiveRealistic
+      serialId <- NumberGenerator.uInt64
+      extraInputs <- fundingInputV0TLVs(payoutOffer + acceptOffer)
+      fundingSigs <- fundingSignaturesV0TLV(extraInputs.size)
+      locktime <- NumberGenerator.uInt32s
+    } yield {
+      DLCMutualCloseTLV(
+        contractId = contractId,
+        signature = sig,
+        offerPayoutSatoshis = payoutOffer,
+        acceptPayoutSatoshis = acceptOffer,
+        fundingInputSerialId = serialId,
+        extraInputs = extraInputs,
+        inputSignatures = fundingSigs,
+        closeLocktime = locktime
+      )
+    }
+  }
+
   def dlcSignTLV(offer: DLCOfferTLV, accept: DLCAcceptTLV): Gen[DLCSignTLV] = {
     val contractInfo = ContractInfo.fromTLV(offer.contractInfo)
 
@@ -579,7 +603,8 @@ trait TLVGen {
       fundingSignaturesV0TLV,
       dlcOfferTLV,
       dlcAcceptTLV,
-      dlcSignTLV
+      dlcSignTLV,
+      dlcMutualCloseTLV
     )
   }
 }

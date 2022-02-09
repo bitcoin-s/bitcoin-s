@@ -7,9 +7,14 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.tlv.{
+  DLCMutualCloseTLV,
+  FundingSignaturesV0TLV
+}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
@@ -275,6 +280,76 @@ case class DLCTxSigner(
 
     CETSignatures(cetSigs)
   }
+
+  def createMutualClose(
+      offerPayoutSatoshis: CurrencyUnit,
+      acceptPayoutSatoshis: CurrencyUnit,
+      extraInputInfos: Vector[ECSignatureParams[P2WPKHV0InputInfo]],
+      closeLocktime: UInt32): DLCMutualCloseTLV = {
+    require(offerPayoutSatoshis > Policy.dustThreshold)
+    require(acceptPayoutSatoshis > Policy.dustThreshold)
+
+    val fundingSerialId = DLCMessage.genSerialId()
+
+    val serialIds =
+      DLCMessage.genSerialIds(extraInputInfos.size, Vector(fundingSerialId))
+    val extraInputs =
+      extraInputInfos
+        .zip(serialIds)
+        .map { case (input, serialId) =>
+          DLCFundingInput.fromInputSigningInfo(input.toScriptSignatureParams,
+                                               serialId,
+                                               TransactionConstants.sequence)
+        }
+        .sortBy(_.inputSerialId)
+
+    val unsigned = builder.buildMutualCloseTx(offerPayoutSatoshis,
+                                              acceptPayoutSatoshis,
+                                              fundingSerialId,
+                                              extraInputs,
+                                              closeLocktime)
+
+    val sig =
+      DLCTxSigner.createMutualCloseTxSignature(cetSigningInfo, unsigned)
+
+//    val psbt = PSBT.finalizedFromUnsignedTxAndInputs(
+//      unsigned,
+//      extraInputInfos.map(_.toScriptSignatureParams))
+
+    // don't need to worry about ordering here because we call
+    // .sortBy(_.inputSerialId) on extraInputs
+//    val witnesses = psbt.inputMaps
+//      .flatMap(_.finalizedScriptWitnessOpt)
+//      .map(_.scriptWitness.asInstanceOf[ScriptWitnessV0])
+
+    DLCMutualCloseTLV(
+      builder.calcContractId,
+      sig.signature,
+      offerPayoutSatoshis.satoshis,
+      acceptPayoutSatoshis.satoshis,
+      fundingSerialId,
+      extraInputs.map(_.toTLV),
+      FundingSignaturesV0TLV(Vector.empty),
+      closeLocktime
+    )
+  }
+
+  def completeMutualClose(closeTLV: DLCMutualCloseTLV): WitnessTransaction = {
+    require(closeTLV.offerPayoutSatoshis > Policy.dustThreshold)
+    require(closeTLV.acceptPayoutSatoshis > Policy.dustThreshold)
+
+    val remoteSig = PartialSignature(remoteFundingPubKey, closeTLV.signature)
+    val unsignedTx = builder.buildMutualCloseTx(closeTLV)
+
+    DLCTxSigner.completeMutualCloseTx(
+      signingInfo = cetSigningInfo,
+      remoteSig = remoteSig,
+      fundingInputIdx = closeTLV.fundingInputIndex,
+      fundingMultiSig = builder.fundingMultiSig,
+      fundingTx = builder.buildFundingTx,
+      unsignedTx = unsignedTx
+    )
+  }
 }
 
 object DLCTxSigner {
@@ -429,6 +504,59 @@ object DLCTxSigner {
     refundTxT match {
       case Success(refundTx) => refundTx
       case Failure(err)      => throw err
+    }
+  }
+
+  def createMutualCloseTxSignature(
+      signingInfo: ECSignatureParams[P2WSHV0InputInfo],
+      unsignedTx: Transaction): PartialSignature = {
+    val fundingPubKey = signingInfo.signer.publicKey
+
+    val signLowR: ByteVector => ECDigitalSignature =
+      signingInfo.signer.signLowR(_: ByteVector)
+    val sig = TransactionSignatureCreator.createSig(unsignedTx,
+                                                    signingInfo,
+                                                    signLowR,
+                                                    HashType.sigHashAll)
+
+    PartialSignature(fundingPubKey, sig)
+  }
+
+  // TODO: Without PSBTs
+  def completeMutualCloseTx(
+      signingInfo: ECSignatureParams[P2WSHV0InputInfo],
+      remoteSig: PartialSignature,
+      fundingInputIdx: Int,
+      fundingMultiSig: MultiSignatureScriptPubKey,
+      fundingTx: Transaction,
+      unsignedTx: WitnessTransaction): WitnessTransaction = {
+    val fundingPubKey = signingInfo.signer.publicKey
+
+    val signLowR: ByteVector => ECDigitalSignature =
+      signingInfo.signer.signLowR(_: ByteVector)
+    val sig = TransactionSignatureCreator.createSig(unsignedTx,
+                                                    signingInfo,
+                                                    signLowR,
+                                                    HashType.sigHashAll)
+
+    val localSig = PartialSignature(fundingPubKey, sig)
+
+    val signedWitnessOpt = PSBT
+      .fromUnsignedTx(unsignedTx)
+      .addUTXOToInput(fundingTx, index = fundingInputIdx)
+      .addScriptWitnessToInput(P2WSHWitnessV0(fundingMultiSig),
+                               index = fundingInputIdx)
+      .addSignature(localSig, inputIndex = fundingInputIdx)
+      .addSignature(remoteSig, inputIndex = fundingInputIdx)
+      .finalizeInput(fundingInputIdx)
+      .toOption
+      .flatMap(_.inputMaps(fundingInputIdx).finalizedScriptWitnessOpt)
+      .map(_.scriptWitness)
+
+    signedWitnessOpt match {
+      case Some(witness) =>
+        unsignedTx.updateWitness(fundingInputIdx, witness)
+      case None => sys.error("Failed to sign DLC mutual close transaction")
     }
   }
 

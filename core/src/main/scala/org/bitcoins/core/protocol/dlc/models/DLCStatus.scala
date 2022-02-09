@@ -217,6 +217,25 @@ object DLCStatus {
     override val state: DLCState.Refunded.type = DLCState.Refunded
   }
 
+  case class MutuallyClosed(
+      dlcId: Sha256Digest,
+      isInitiator: Boolean,
+      lastUpdated: Instant,
+      tempContractId: Sha256Digest,
+      contractId: ByteVector,
+      contractInfo: ContractInfo,
+      timeouts: DLCTimeouts,
+      feeRate: FeeUnit,
+      totalCollateral: CurrencyUnit,
+      localCollateral: CurrencyUnit,
+      fundingTxId: DoubleSha256DigestBE,
+      closingTxId: DoubleSha256DigestBE,
+      myPayout: CurrencyUnit,
+      counterPartyPayout: CurrencyUnit)
+      extends ClosedDLCStatus {
+    override val state: DLCState.MutuallyClosed.type = DLCState.MutuallyClosed
+  }
+
   def getContractId(status: DLCStatus): Option[ByteVector] = {
     status match {
       case status: AcceptedDLCStatus =>
@@ -249,7 +268,8 @@ object DLCStatus {
     status match {
       case claimed: ClaimedDLCStatus =>
         Some(claimed.oracleSigs)
-      case _: Offered | _: Accepted | _: SignedDLCStatus | _: Refunded =>
+      case _: Offered | _: Accepted | _: SignedDLCStatus | _: Refunded |
+          _: MutuallyClosed =>
         None
     }
   }

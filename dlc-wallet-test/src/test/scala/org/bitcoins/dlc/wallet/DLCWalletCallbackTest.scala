@@ -49,7 +49,7 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
           //ignore broadcast from this wallet
           Future.unit
         case x @ (DLCState.Accepted | DLCState.RemoteClaimed |
-            DLCState.Refunded) =>
+            DLCState.Refunded | DLCState.MutuallyClosed) =>
           sys.error(s"Shouldn't receive state=$x for callback")
       }
 
@@ -65,7 +65,8 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
           Future.successful(remoteClaimedP.success(status))
         case x @ (DLCState.Offered | DLCState.Signed) =>
           sys.error(s"Shouldn't receive state=$x for callback")
-        case DLCState.Confirmed | DLCState.Claimed | DLCState.Refunded =>
+        case DLCState.Confirmed | DLCState.Claimed | DLCState.Refunded |
+            DLCState.MutuallyClosed =>
           //do nothing, we are doing assertions for these on walletACallback
           Future.unit
       }
@@ -146,7 +147,7 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
         case DLCState.Refunded =>
           Future.successful(refundedP.success(status))
         case x @ (DLCState.Claimed | DLCState.Accepted |
-            DLCState.RemoteClaimed | DLCState.Refunded) =>
+            DLCState.RemoteClaimed | DLCState.MutuallyClosed) =>
           sys.error(s"Shouldn't receive state=$x for callback")
       }
 
@@ -160,7 +161,8 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
           Future.successful(broadcastP.success(status))
         case x @ (DLCState.Refunded | DLCState.Offered | DLCState.Signed) =>
           sys.error(s"Shouldn't receive state=$x for callback")
-        case DLCState.Confirmed | DLCState.Claimed | DLCState.RemoteClaimed =>
+        case DLCState.Confirmed | DLCState.Claimed | DLCState.RemoteClaimed |
+            DLCState.MutuallyClosed =>
           //do nothing, we are doing assertions for these on walletACallback
           Future.unit
       }

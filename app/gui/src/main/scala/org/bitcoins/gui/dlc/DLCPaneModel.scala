@@ -269,7 +269,8 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
               case None | Some(_)      => false
             }
           case DLCState.Broadcasted | DLCState.Confirmed | DLCState.Claimed |
-              DLCState.RemoteClaimed | DLCState.Refunded =>
+              DLCState.RemoteClaimed | DLCState.Refunded |
+              DLCState.MutuallyClosed =>
             new Alert(AlertType.Error) {
               initOwner(owner)
               headerText = "Failed to Cancel DLC"
