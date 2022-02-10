@@ -28,12 +28,7 @@ import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
-import org.bitcoins.rpc.config.{
-  BitcoindConfig,
-  BitcoindInstance,
-  BitcoindInstanceLocal,
-  BitcoindInstanceRemote
-}
+import org.bitcoins.rpc.config._
 
 import java.io.File
 import scala.concurrent.Future
@@ -127,8 +122,41 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
       endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = ???
 
   /** Gets the block height of the closest block to the given time */
-  override def epochSecondToBlockHeight(time: Long): Future[Int] =
-    Future.successful(0)
+  override def epochSecondToBlockHeight(time: Long): Future[Int] = {
+    require(time >= 1231006505L,
+            s"Time must be after the genesis block (1231006505), got $time")
+
+    // the longest difference between successive blocks ever recorded + 10 minutes
+    val MaxDiff = 463160L + 600L
+
+    def binarySearch(l: Int, r: Int): Future[Int] = {
+      if (l > r) {
+        Future.successful(0)
+      } else {
+        val m = l + (r - l) / 2
+        (for {
+          blockHash <- getBlockHash(m)
+          blockHeader <- getBlockHeader(blockHash)
+        } yield {
+          val diff = time - blockHeader.time.toLong
+          if (diff >= 0L && diff <= MaxDiff) {
+            Future.successful(blockHeader.height)
+          } else if (diff < 0L) {
+            binarySearch(l, m - 1)
+          } else {
+            binarySearch(m + 1, r)
+          }
+        }).flatten
+      }
+    }
+
+    for {
+      bestBlock <- getBestBlockHeader()
+      blockHeight <- binarySearch(0, bestBlock.height)
+    } yield {
+      blockHeight
+    }
+  }
 
   override def getMedianTimePast(): Future[Long] = {
     for {
