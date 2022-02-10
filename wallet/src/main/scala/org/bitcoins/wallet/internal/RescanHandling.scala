@@ -54,7 +54,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
     rescanning.set(true)
 
-    logger.info(s"Starting rescanning the wallet from ${startOpt} to ${endOpt}")
+    logger.info(
+      s"Starting rescanning the wallet from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime")
 
     val start = System.currentTimeMillis()
     val res = for {
