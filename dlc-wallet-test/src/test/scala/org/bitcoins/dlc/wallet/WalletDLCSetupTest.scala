@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto._
+import org.bitcoins.dlc.wallet.DLCWallet.InvalidAnnouncementSignature
 import org.bitcoins.dlc.wallet.internal.DLCDataManagement
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
@@ -854,6 +855,52 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       res <- recoverToSucceededIf[IllegalArgumentException](
         walletB.signDLC(accept))
     } yield res
+  }
+
+  it must "fail to create an offer with an invalid announcement signature" in {
+    wallets =>
+      val walletA = wallets._1.wallet
+
+      val offerData: DLCOffer = DLCWalletUtil.invalidDLCOffer
+
+      for {
+        res <- recoverToSucceededIf[InvalidAnnouncementSignature](
+          walletA.createDLCOffer(
+            offerData.contractInfo,
+            offerData.totalCollateral,
+            Some(offerData.feeRate),
+            offerData.timeouts.contractMaturity.toUInt32,
+            UInt32.max
+          ))
+      } yield {
+        res
+      }
+  }
+
+  it must "fail to accept an offer with an invalid announcement signature" in {
+    wallets =>
+      val walletA = wallets._1.wallet
+      val walletB = wallets._2.wallet
+
+      //https://test.oracle.suredbits.com/contract/enum/75b08299654dca23b80cf359db6afb6cfd6e55bc898b5397d3c0fe796dfc13f0/12fb3e5f091086329ed0d2a12c3fcfa80111a36ef3fc1ac9c2567076a57d6a73
+      val contractInfo = ContractInfoV0TLV.fromHex(
+        "fdd82eeb00000000000186a0fda71026030359455300000000000186a0024e4f0000000000000000056f746865720000000000000000fda712b5fdd824b1596ec40d0dae3fdf54d9795ad51ec069970c6863a02d244663d39fd6bedadc0070349e1ba2e17583ee2d1cb3ae6fffaaa1c45039b61c5c4f1d0d864221c461745d1bcfab252c6dd9edd7aea4c5eeeef138f7ff7346061ea40143a9f5ae80baa9fdd8224d0001fa5b84283852400b21a840d5d5ca1cc31867c37326ad521aa50bebf3df4eea1a60b03280fdd8060f000303594553024e4f056f74686572135465746865722d52657365727665732d363342")
+      val feeRateOpt = Some(SatoshisPerVirtualByte(Satoshis.one))
+      val totalCollateral = Satoshis(5000)
+
+      for {
+        offer <- walletA.createDLCOffer(contractInfoTLV = contractInfo,
+                                        collateral = totalCollateral,
+                                        feeRateOpt = feeRateOpt,
+                                        locktime = UInt32.zero,
+                                        refundLT = UInt32.one)
+        invalidOffer = offer.copy(contractInfo = invalidContractInfo)
+        res <- recoverToSucceededIf[InvalidAnnouncementSignature](
+          walletB.acceptDLCOffer(invalidOffer))
+      } yield {
+        res
+      }
+
   }
 
 }

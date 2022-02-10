@@ -67,11 +67,27 @@ object DLCWalletUtil extends Logging {
                                       rValue,
                                       sampleOutcomes.map(_._1))
 
+  lazy val invalidOracleInfo: EnumSingleOracleInfo = {
+    val info = EnumSingleOracleInfo.dummyForKeys(oraclePrivKey,
+                                                 rValue,
+                                                 sampleOutcomes.map(_._1))
+    val announcement = info.announcement.asInstanceOf[OracleAnnouncementV0TLV]
+    val invalidAnnouncement =
+      announcement.copy(announcementSignature = SchnorrDigitalSignature.dummy)
+    info.copy(announcement = invalidAnnouncement)
+  }
+
   lazy val sampleContractOraclePair: ContractOraclePair.EnumPair =
     ContractOraclePair.EnumPair(sampleContractDescriptor, sampleOracleInfo)
 
+  lazy val invalidContractOraclePair: ContractOraclePair.EnumPair =
+    ContractOraclePair.EnumPair(sampleContractDescriptor, invalidOracleInfo)
+
   lazy val sampleContractInfo: ContractInfo =
     SingleContractInfo(half, sampleContractOraclePair)
+
+  lazy val invalidContractInfo: ContractInfo =
+    SingleContractInfo(half, invalidContractOraclePair)
 
   lazy val sampleOracleWinSig: SchnorrDigitalSignature =
     oraclePrivKey.schnorrSignWithNonce(winHash.bytes, kValue)
@@ -153,6 +169,20 @@ object DLCWalletUtil extends Logging {
   lazy val sampleDLCOffer: DLCOffer = DLCOffer(
     protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
     contractInfo = sampleContractInfo,
+    pubKeys = dummyDLCKeys,
+    totalCollateral = half,
+    fundingInputs = Vector(dummyFundingInputs.head),
+    changeAddress = dummyAddress,
+    payoutSerialId = sampleOfferPayoutSerialId,
+    changeSerialId = sampleOfferChangeSerialId,
+    fundOutputSerialId = sampleFundOutputSerialId,
+    feeRate = SatoshisPerVirtualByte(Satoshis(3)),
+    timeouts = dummyTimeouts
+  )
+
+  lazy val invalidDLCOffer: DLCOffer = DLCOffer(
+    protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+    contractInfo = invalidContractInfo,
     pubKeys = dummyDLCKeys,
     totalCollateral = half,
     fundingInputs = Vector(dummyFundingInputs.head),
