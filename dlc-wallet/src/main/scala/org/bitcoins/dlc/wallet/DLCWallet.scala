@@ -30,6 +30,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.db.SafeDatabase
+import org.bitcoins.dlc.wallet.DLCWallet.InvalidAnnouncementSignature
 import org.bitcoins.dlc.wallet.internal._
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.dlc.wallet.util.{
@@ -269,6 +270,12 @@ abstract class DLCWallet
       locktime: UInt32,
       refundLocktime: UInt32): Future[DLCOffer] = {
     logger.info("Creating DLC Offer")
+    if (!validateAnnouncementSignatures(contractInfo.oracleInfos)) {
+      return Future.failed(
+        InvalidAnnouncementSignature(
+          s"Contract info contains invalid announcement signature(s)"))
+    }
+
     val announcements =
       contractInfo.oracleInfos.head.singleOracleInfos.map(_.announcement)
 
@@ -552,6 +559,10 @@ abstract class DLCWallet
     */
   override def acceptDLCOffer(offer: DLCOffer): Future[DLCAccept] = {
     logger.debug("Calculating relevant wallet data for DLC Accept")
+    if (!validateAnnouncementSignatures(offer.oracleInfos)) {
+      return Future.failed(InvalidAnnouncementSignature(
+        s"Offer ${offer.tempContractId.hex} contains invalid announcement signature(s)"))
+    }
 
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
@@ -573,6 +584,12 @@ abstract class DLCWallet
       status <- findDLC(dlcId)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield dlcAccept
+  }
+
+  private def validateAnnouncementSignatures(
+      oracleInfos: Vector[OracleInfo]): Boolean = {
+    oracleInfos.forall(infos =>
+      infos.singleOracleInfos.forall(_.announcement.validateSignature))
   }
 
   private def fundDLCAcceptMsg(
@@ -1725,6 +1742,9 @@ abstract class DLCWallet
 }
 
 object DLCWallet extends WalletLogger {
+
+  case class InvalidAnnouncementSignature(message: String)
+      extends RuntimeException(message)
 
   private case class DLCWalletImpl(
       nodeApi: NodeApi,
