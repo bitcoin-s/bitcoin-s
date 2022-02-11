@@ -481,8 +481,8 @@ abstract class DLCWallet
     val chainType = HDChainType.External
 
     getDlcDbOfferDbContractDataDb(offer.tempContractId).flatMap {
-      case Some((dlcDb, dlcOffer, dlcOfferDb)) =>
-        Future.successful((dlcDb, dlcOffer, dlcOfferDb))
+      case Some((dlcDb, dlcOffer, contractDataDb)) =>
+        Future.successful((dlcDb, dlcOffer, contractDataDb))
       case None =>
         for {
           nextIndex <- getNextAvailableIndex(account, chainType)
@@ -618,7 +618,7 @@ abstract class DLCWallet
     logger.info(
       s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
 
-    def fundingPrivKeyF(account: AccountDb, dlc: DLCDb): AdaptorSign = {
+    def getFundingPrivKey(account: AccountDb, dlc: DLCDb): AdaptorSign = {
       val bip32Path = BIP32Path(
         account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
                                          BIP32Node(dlc.keyIndex,
@@ -633,7 +633,7 @@ abstract class DLCWallet
       (txBuilder, spendingInfos) <- fundDLCAcceptMsg(offer = offer,
                                                      collateral = collateral,
                                                      account = account)
-      fundingPrivKey = fundingPrivKeyF(account, dlc)
+      fundingPrivKey = getFundingPrivKey(account, dlc)
       (acceptWithoutSigs, dlcPubKeys) = DLCAcceptUtil.buildAcceptWithoutSigs(
         dlc = dlc,
         offer = offer,
