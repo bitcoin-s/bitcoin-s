@@ -66,7 +66,7 @@ case class Server(
                            StatusCodes.BadRequest))
       case err: Throwable =>
         logger.info(s"Unhandled error in server:", err)
-        complete(Server.httpError(s"Request failed: ${err.getMessage}"))
+        complete(Server.httpError(err.getMessage))
     }
 
     handleRejections(rejectionHandler) {
