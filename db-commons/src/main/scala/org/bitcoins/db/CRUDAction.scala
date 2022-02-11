@@ -40,8 +40,10 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
   protected def findByPrimaryKeys(
       ids: Vector[PrimaryKeyType]): Query[Table[T], T, Seq]
 
-  protected def findByPrimaryKeysAction(ids: Vector[
-    PrimaryKeyType]): DBIOAction[Vector[T], NoStream, Effect.Read] = {
+  def findByPrimaryKeysAction(ids: Vector[PrimaryKeyType]): DBIOAction[
+    Vector[T],
+    NoStream,
+    Effect.Read] = {
     if (ids.isEmpty) {
       DBIO.successful(Vector.empty)
     } else {
