@@ -255,6 +255,8 @@ abstract class Wallet
         accountUtxos <- spendingInfoDAO.findAllForAccountAction(account)
         _ <- spendingInfoDAO.deleteSpendingInfoDbAllAction(accountUtxos)
         accountAddresses <- addressDAO.findAllForAccountAction(account)
+        _ <- addressTagDAO.deleteByAddressesAction(
+          accountAddresses.map(_.address))
         _ <- addressDAO.deleteAllAction(accountAddresses)
       } yield this
     }
