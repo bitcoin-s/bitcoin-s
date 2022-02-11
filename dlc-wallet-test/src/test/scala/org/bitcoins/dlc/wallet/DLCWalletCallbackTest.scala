@@ -26,7 +26,9 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
     val walletA: DLCWallet = wallets._1.wallet
     val walletB: DLCWallet = wallets._2.wallet
     val offerP: Promise[DLCStatus] = Promise()
+    val acceptedSignComputingAdaptorSigsP: Promise[DLCStatus] = Promise()
     val acceptP: Promise[DLCStatus] = Promise()
+    val signedComputingAdaptorSigsP: Promise[DLCStatus] = Promise()
     val signedP: Promise[DLCStatus] = Promise()
     val broadcastP: Promise[DLCStatus] = Promise()
 
@@ -39,6 +41,8 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
       status.state match {
         case DLCState.Offered =>
           Future.successful(offerP.success(status))
+        case DLCState.SignComputingAdaptorSigs =>
+          Future.successful(signedComputingAdaptorSigsP.success(status))
         case DLCState.Signed =>
           Future.successful(signedP.success(status))
         case DLCState.Confirmed =>
@@ -48,8 +52,8 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
         case DLCState.Broadcasted =>
           //ignore broadcast from this wallet
           Future.unit
-        case x @ (DLCState.Accepted | DLCState.RemoteClaimed |
-            DLCState.Refunded) =>
+        case x @ (DLCState.Accepted | DLCState.AcceptComputingAdaptorSigs |
+            DLCState.RemoteClaimed | DLCState.Refunded) =>
           sys.error(s"Shouldn't receive state=$x for callback")
       }
 
@@ -57,19 +61,21 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
 
     val walletBCallback: OnDLCStateChange = { case status: DLCStatus =>
       status.state match {
+        case DLCState.AcceptComputingAdaptorSigs =>
+          Future.successful(acceptedSignComputingAdaptorSigsP.success(status))
         case DLCState.Accepted =>
           Future.successful(acceptP.success(status))
         case DLCState.Broadcasted =>
           Future.successful(broadcastP.success(status))
         case DLCState.RemoteClaimed =>
           Future.successful(remoteClaimedP.success(status))
-        case x @ (DLCState.Offered | DLCState.Signed) =>
+        case x @ (DLCState.Offered | DLCState.Signed |
+            DLCState.SignComputingAdaptorSigs) =>
           sys.error(s"Shouldn't receive state=$x for callback")
         case DLCState.Confirmed | DLCState.Claimed | DLCState.Refunded =>
           //do nothing, we are doing assertions for these on walletACallback
           Future.unit
       }
-
     }
 
     val walletACallbacks = DLCWalletCallbacks.onDLCStateChange(walletACallback)
@@ -107,7 +113,9 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
     for {
       _ <- initF
       offer <- offerP.future
+      acceptedComputingAdaptorSigs <- acceptedSignComputingAdaptorSigsP.future
       accept <- acceptP.future
+      signComputingAdaptorSigs <- signedComputingAdaptorSigsP.future
       sign <- signedP.future
       broadcast <- broadcastP.future
       _ <- executeF
@@ -116,7 +124,11 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
       remoteClaimed <- remoteClaimedP.future
     } yield {
       assert(offer.state == DLCState.Offered)
+      assert(
+        acceptedComputingAdaptorSigs.state == DLCState.AcceptComputingAdaptorSigs)
       assert(accept.state == DLCState.Accepted)
+      assert(
+        signComputingAdaptorSigs.state == DLCState.SignComputingAdaptorSigs)
       assert(sign.state == DLCState.Signed)
       assert(broadcast.state == DLCState.Broadcasted)
       assert(confirmed.state == DLCState.Confirmed)
@@ -129,7 +141,9 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
     val walletA: DLCWallet = wallets._1.wallet
     val walletB: DLCWallet = wallets._2.wallet
     val offerP: Promise[DLCStatus] = Promise()
+    val acceptedComputingAdaptorSigsP: Promise[DLCStatus] = Promise()
     val acceptP: Promise[DLCStatus] = Promise()
+    val signedComputingAdaptorSigsP: Promise[DLCStatus] = Promise()
     val signedP: Promise[DLCStatus] = Promise()
     val broadcastP: Promise[DLCStatus] = Promise()
     val refundedP: Promise[DLCStatus] = Promise()
@@ -138,6 +152,8 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
       status.state match {
         case DLCState.Offered =>
           Future.successful(offerP.success(status))
+        case DLCState.SignComputingAdaptorSigs =>
+          Future.successful(signedComputingAdaptorSigsP.success(status))
         case DLCState.Signed =>
           Future.successful(signedP.success(status))
         case DLCState.Broadcasted | DLCState.Confirmed =>
@@ -145,8 +161,8 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
           Future.unit
         case DLCState.Refunded =>
           Future.successful(refundedP.success(status))
-        case x @ (DLCState.Claimed | DLCState.Accepted |
-            DLCState.RemoteClaimed | DLCState.Refunded) =>
+        case x @ (DLCState.Claimed | DLCState.AcceptComputingAdaptorSigs |
+            DLCState.Accepted | DLCState.RemoteClaimed | DLCState.Refunded) =>
           sys.error(s"Shouldn't receive state=$x for callback")
       }
 
@@ -154,11 +170,14 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
 
     val walletBCallback: OnDLCStateChange = { case status: DLCStatus =>
       status.state match {
+        case DLCState.AcceptComputingAdaptorSigs =>
+          Future.successful(acceptedComputingAdaptorSigsP.success(status))
         case DLCState.Accepted =>
           Future.successful(acceptP.success(status))
         case DLCState.Broadcasted =>
           Future.successful(broadcastP.success(status))
-        case x @ (DLCState.Refunded | DLCState.Offered | DLCState.Signed) =>
+        case x @ (DLCState.Refunded | DLCState.Offered |
+            DLCState.SignComputingAdaptorSigs | DLCState.Signed) =>
           sys.error(s"Shouldn't receive state=$x for callback")
         case DLCState.Confirmed | DLCState.Claimed | DLCState.RemoteClaimed =>
           //do nothing, we are doing assertions for these on walletACallback

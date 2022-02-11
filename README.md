@@ -7,6 +7,7 @@ For a complete guide on how to get started with Bitcoin-S, see our website at [B
 
 ### Contents
 
+- [Running bitcoin-s](#running-bitcoin-s)
 - [What is bitcoin-s?](#what-is-bitcoin-s-)
 - [Is bitcoin-s production ready?](#is-bitcoin-s-production-ready-)
 - [Can I trust the code in bitcoin-s?](#can-i-trust-the-code-in-bitcoin-s-)
@@ -17,6 +18,16 @@ For a complete guide on how to get started with Bitcoin-S, see our website at [B
 - [Contributing](#contributing)
 - [Good first issues](#good-first-issues)
 - [License](#license)
+
+### Running bitcoin-s
+
+You have three options to run bitcoin-s. Here are the instructions.
+
+We recommend using the web frontend for beginners.
+
+1. [Web frontend](https://github.com/bitcoin-s/bitcoin-s-ts/tree/master/wallet-server-ui#walletserverui)
+2. [Desktop GUI](https://bitcoin-s.org/docs/applications/gui#running-the-gui)
+3. [Headless backend](https://bitcoin-s.org/docs/applications/server#app-server)
 
 
 ### What is bitcoin-s?

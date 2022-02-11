@@ -245,7 +245,9 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
         val eventId = status.eventIds.head
 
         val confirmed = status.state match {
-          case DLCState.Offered | DLCState.Accepted =>
+          case DLCState.Offered | DLCState.Accepted |
+              DLCState.AcceptComputingAdaptorSigs |
+              DLCState.SignComputingAdaptorSigs =>
             new Alert(AlertType.Confirmation) {
               initOwner(owner)
               headerText = "Confirm Canceling DLC"

@@ -42,8 +42,12 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
 
   protected def findByPrimaryKeysAction(ids: Vector[
     PrimaryKeyType]): DBIOAction[Vector[T], NoStream, Effect.Read] = {
-    findByPrimaryKeys(ids).result
-      .map(_.toVector)
+    if (ids.isEmpty) {
+      DBIO.successful(Vector.empty)
+    } else {
+      findByPrimaryKeys(ids).result
+        .map(_.toVector)
+    }
   }
 
   def findByPrimaryKeyAction(

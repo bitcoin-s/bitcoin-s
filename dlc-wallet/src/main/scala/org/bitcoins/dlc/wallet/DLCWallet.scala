@@ -30,6 +30,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.db.SafeDatabase
+import org.bitcoins.dlc.wallet.DLCWallet.InvalidAnnouncementSignature
 import org.bitcoins.dlc.wallet.internal._
 import org.bitcoins.dlc.wallet.models._
 import org.bitcoins.dlc.wallet.util.{
@@ -269,6 +270,12 @@ abstract class DLCWallet
       locktime: UInt32,
       refundLocktime: UInt32): Future[DLCOffer] = {
     logger.info("Creating DLC Offer")
+    if (!validateAnnouncementSignatures(contractInfo.oracleInfos)) {
+      return Future.failed(
+        InvalidAnnouncementSignature(
+          s"Contract info contains invalid announcement signature(s)"))
+    }
+
     val announcements =
       contractInfo.oracleInfos.head.singleOracleInfos.map(_.announcement)
 
@@ -435,19 +442,25 @@ abstract class DLCWallet
   /** Retrieves the [[DLCDb]] and [[AccountDb]] for the given tempContractId
     * else returns None
     */
-  private def getDlcDbOfferDb(
-      tempContractId: Sha256Digest): Future[Option[(DLCDb, DLCOfferDb)]] = {
-    val result: Future[Option[(DLCDb, DLCOfferDb)]] = for {
+  private def getDlcDbOfferDbContractDataDb(
+      tempContractId: Sha256Digest): Future[
+    Option[(DLCDb, DLCOfferDb, DLCContractDataDb)]] = {
+    val result: Future[Option[(DLCDb, DLCOfferDb, DLCContractDataDb)]] = for {
       dlcDbOpt <- dlcDAO.findByTempContractId(tempContractId)
       dlcOfferDbOpt <- dlcDbOpt match {
         case Some(dlcDb) => dlcOfferDAO.findByDLCId(dlcDb.dlcId)
+        case None        => Future.successful(None)
+      }
+      contractDataDbOpt <- dlcDbOpt match {
+        case Some(dlcDb) => contractDataDAO.findByDLCId(dlcDb.dlcId)
         case None        => Future.successful(None)
       }
     } yield {
       for {
         dlcDb <- dlcDbOpt
         dlcOfferDb <- dlcOfferDbOpt
-      } yield (dlcDb, dlcOfferDb)
+        contractDataDb <- contractDataDbOpt
+      } yield (dlcDb, dlcOfferDb, contractDataDb)
     }
 
     result
@@ -455,7 +468,7 @@ abstract class DLCWallet
 
   private def initDLCForAccept(
       offer: DLCOffer,
-      account: AccountDb): Future[(DLCDb, DLCOfferDb)] = {
+      account: AccountDb): Future[(DLCDb, DLCOfferDb, DLCContractDataDb)] = {
     logger.info(
       s"Initializing DLC from received offer with tempContractId ${offer.tempContractId.hex}")
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
@@ -467,9 +480,9 @@ abstract class DLCWallet
 
     val chainType = HDChainType.External
 
-    getDlcDbOfferDb(offer.tempContractId).flatMap {
-      case Some((dlcDb, dlcOffer)) =>
-        Future.successful((dlcDb, dlcOffer))
+    getDlcDbOfferDbContractDataDb(offer.tempContractId).flatMap {
+      case Some((dlcDb, dlcOffer, dlcOfferDb)) =>
+        Future.successful((dlcDb, dlcOffer, dlcOfferDb))
       case None =>
         for {
           nextIndex <- getNextAvailableIndex(account, chainType)
@@ -495,11 +508,12 @@ abstract class DLCWallet
               dlcDb <- dlcDbAction
               ann <- createdAnnouncementsAction
               //we don't need the contract data db, so don't return it
-              _ <- contractAction
+              contractDataDb <- contractAction
               offer <- dlcOfferAction
-            } yield (dlcDb, ann, offer)
+            } yield (dlcDb, ann, offer, contractDataDb)
           }
-          (writtenDLC, createdDbs, offerDb) <- safeDatabase.run(zipped)
+          (writtenDLC, createdDbs, offerDb, contractDataDb) <- safeDatabase.run(
+            zipped)
           announcementDataDbs =
             createdDbs ++ groupedAnnouncements.existingAnnouncements
 
@@ -529,7 +543,7 @@ abstract class DLCWallet
 
           _ <- safeDatabase.run(
             DBIOAction.seq(createNonceAction, createAnnouncementAction))
-        } yield (writtenDLC, offerDb)
+        } yield (writtenDLC, offerDb, contractDataDb)
     }
   }
 
@@ -540,6 +554,10 @@ abstract class DLCWallet
     */
   override def acceptDLCOffer(offer: DLCOffer): Future[DLCAccept] = {
     logger.debug("Calculating relevant wallet data for DLC Accept")
+    if (!validateAnnouncementSignatures(offer.oracleInfos)) {
+      return Future.failed(InvalidAnnouncementSignature(
+        s"Offer ${offer.tempContractId.hex} contains invalid announcement signature(s)"))
+    }
 
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
@@ -561,6 +579,12 @@ abstract class DLCWallet
       status <- findDLC(dlcId)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield dlcAccept
+  }
+
+  private def validateAnnouncementSignatures(
+      oracleInfos: Vector[OracleInfo]): Boolean = {
+    oracleInfos.forall(infos =>
+      infos.singleOracleInfos.forall(_.announcement.validateSignature))
   }
 
   private def fundDLCAcceptMsg(
@@ -605,7 +629,7 @@ abstract class DLCWallet
 
     val result = for {
       account <- getDefaultAccountForType(AddressType.SegWit)
-      (dlc, _) <- initDLCForAccept(offer, account)
+      (dlc, offerDb, contractDataDb) <- initDLCForAccept(offer, account)
       (txBuilder, spendingInfos) <- fundDLCAcceptMsg(offer = offer,
                                                      collateral = collateral,
                                                      account = account)
@@ -624,6 +648,8 @@ abstract class DLCWallet
 
       contractId = builder.calcContractId
 
+      dlcDbWithContractId = dlc.copy(contractIdOpt = Some(contractId))
+
       signer = DLCTxSigner(builder = builder,
                            isInitiator = false,
                            fundingKey = fundingPrivKey,
@@ -635,6 +661,13 @@ abstract class DLCWallet
       _ <- scriptPubKeyDAO.createIfNotExists(spkDb)
 
       _ = logger.info(s"Creating CET Sigs for ${contractId.toHex}")
+      //emit websocket event that we are now computing adaptor signatures
+      status = DLCStatusBuilder.buildInProgressDLCStatus(
+        dlcDb = dlcDbWithContractId,
+        contractInfo = offer.contractInfo,
+        contractData = contractDataDb,
+        offerDb = offerDb)
+      _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status)
       cetSigs <- signer.createCETSigsAsync()
       refundSig = signer.signRefundTx
       _ = logger.debug(
@@ -706,13 +739,14 @@ abstract class DLCWallet
                   "Offer and Accept have differing tempContractIds!")
 
       _ <- remoteTxDAO.upsertAll(offerPrevTxs)
-      actions = actionBuilder.buildCreateAcceptAction(dlcAcceptDb = dlcAcceptDb,
-                                                      offerInputs = offerInputs,
-                                                      acceptInputs =
-                                                        acceptInputs,
-                                                      cetSigsDb = sigsDbs,
-                                                      refundSigsDb =
-                                                        refundSigsDb)
+      actions = actionBuilder.buildCreateAcceptAction(
+        dlcDb = dlcDbWithContractId.updateState(DLCState.Accepted),
+        dlcAcceptDb = dlcAcceptDb,
+        offerInputs = offerInputs,
+        acceptInputs = acceptInputs,
+        cetSigsDb = sigsDbs,
+        refundSigsDb = refundSigsDb
+      )
       _ <- safeDatabase.run(actions)
       dlcDb <- updateDLCContractIds(offer, accept)
       _ = logger.info(
@@ -903,6 +937,7 @@ abstract class DLCWallet
         signerOpt match {
           case Some(signer) =>
             val cetSigsF = getCetSigs(signer = signer,
+                                      dlcDb = dlc,
                                       contractId = contractId,
                                       cetSigsDbs = cetSigsDbs,
                                       mySigs = mySigs)
@@ -957,12 +992,20 @@ abstract class DLCWallet
 
   private def getCetSigs(
       signer: DLCTxSigner,
+      dlcDb: DLCDb,
       contractId: ByteVector,
       cetSigsDbs: Vector[DLCCETSignaturesDb],
       mySigs: Vector[DLCCETSignaturesDb]): Future[CETSignatures] = {
     if (mySigs.forall(_.initiatorSig.isEmpty)) {
       logger.info(s"Creating CET Sigs for contract ${contractId.toHex}")
+      val dlcDbSignComputingAdaptorSigs =
+        dlcDb.updateState(DLCState.SignComputingAdaptorSigs)
+      val updatedF = dlcDAO.update(dlcDbSignComputingAdaptorSigs)
       for {
+        _ <- updatedF
+        status <- findDLC(dlcDb.dlcId)
+        _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger,
+                                                               status.get)
         sigs <- signer.createCETSigsAsync()
 
         sigsDbs: Vector[DLCCETSignaturesDb] = sigs.outcomeSigs
@@ -1130,6 +1173,10 @@ abstract class DLCWallet
             Future.failed(
               new RuntimeException(
                 "Cannot add sigs to a DLC before it has been accepted"))
+          case _: AdaptorSigComputationState =>
+            val err = new RuntimeException(
+              s"Cannot add sigs to a DLC while adaptor sigs are being computed, contractId=${sign.contractId.toHex}")
+            Future.failed(err)
           case Accepted =>
             logger.info(
               s"Verifying CET Signatures for contract ${sign.contractId.toHex}")
@@ -1289,7 +1336,8 @@ abstract class DLCWallet
     dlcDb.state match {
       case DLCState.Broadcasted | DLCState.Signed => dlcDb
       case state @ (DLCState.Offered | DLCState.Confirmed | DLCState.Accepted |
-          DLCState.Claimed | DLCState.RemoteClaimed | DLCState.Refunded) =>
+          DLCState.Claimed | DLCState.RemoteClaimed | DLCState.Refunded |
+          _: DLCState.AdaptorSigComputationState) =>
         sys.error(
           s"Cannot broadcast the dlc when it is in the state=${state} contractId=${dlcDb.contractIdOpt}")
     }
@@ -1681,6 +1729,9 @@ abstract class DLCWallet
 object DLCWallet extends WalletLogger {
 
   case class DuplicateOfferException(message: String)
+      extends RuntimeException(message)
+
+  case class InvalidAnnouncementSignature(message: String)
       extends RuntimeException(message)
 
   private case class DLCWalletImpl(

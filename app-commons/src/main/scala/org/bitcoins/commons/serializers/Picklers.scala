@@ -819,6 +819,28 @@ object Picklers {
       )
     }
 
+  implicit val acceptedComputingAdaptorSigsW: Writer[
+    AcceptedComputingAdaptorSigs] = writer[Obj].comap { accepted =>
+    import accepted._
+    Obj(
+      "state" -> Str(statusString),
+      "dlcId" -> Str(dlcId.hex),
+      "isInitiator" -> Bool(isInitiator),
+      "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
+      "tempContractId" -> Str(tempContractId.hex),
+      "contractId" -> Str(contractId.toHex),
+      "contractInfo" -> Str(contractInfo.hex),
+      "contractMaturity" -> Num(
+        timeouts.contractMaturity.toUInt32.toLong.toDouble),
+      "contractTimeout" -> Num(
+        timeouts.contractTimeout.toUInt32.toLong.toDouble),
+      "feeRate" -> Num(feeRate.toLong.toDouble),
+      "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
+      "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
+      "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble)
+    )
+  }
+
   implicit val acceptedW: Writer[Accepted] = writer[Obj].comap { accepted =>
     import accepted._
     Obj(
@@ -839,6 +861,29 @@ object Picklers {
       "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble)
     )
   }
+
+  implicit val signedComputingAdaptorSigsW: Writer[SignedComputingAdaptorSigs] =
+    writer[Obj].comap { signed =>
+      import signed._
+      Obj(
+        "state" -> Str(statusString),
+        "dlcId" -> Str(dlcId.hex),
+        "isInitiator" -> Bool(isInitiator),
+        "lastUpdated" -> Str(iso8601ToString(lastUpdated)),
+        "tempContractId" -> Str(tempContractId.hex),
+        "contractId" -> Str(contractId.toHex),
+        "contractInfo" -> Str(contractInfo.hex),
+        "contractMaturity" -> Num(
+          timeouts.contractMaturity.toUInt32.toLong.toDouble),
+        "contractTimeout" -> Num(
+          timeouts.contractTimeout.toUInt32.toLong.toDouble),
+        "feeRate" -> Num(feeRate.toLong.toDouble),
+        "totalCollateral" -> Num(totalCollateral.satoshis.toLong.toDouble),
+        "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
+        "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
+        "fundingTxId" -> Str(fundingTxId.hex)
+      )
+    }
 
   implicit val signedW: Writer[Signed] = writer[Obj].comap { signed =>
     import signed._
@@ -1023,8 +1068,12 @@ object Picklers {
   implicit val dlcStatusW: Writer[DLCStatus] = writer[Value].comap {
     case o: Offered =>
       writeJs(o)(offeredW)
+    case a: AcceptedComputingAdaptorSigs =>
+      writeJs(a)(acceptedComputingAdaptorSigsW)
     case a: Accepted =>
       writeJs(a)(acceptedW)
+    case s: SignedComputingAdaptorSigs =>
+      writeJs(s)(signedComputingAdaptorSigsW)
     case s: Signed =>
       writeJs(s)(signedW)
     case b: Broadcasted =>
@@ -1110,6 +1159,19 @@ object Picklers {
           totalCollateral,
           localCollateral
         )
+      case DLCState.AcceptComputingAdaptorSigs =>
+        AcceptedComputingAdaptorSigs(
+          dlcId,
+          isInitiator,
+          lastUpdated,
+          tempContractId,
+          contractId,
+          ContractInfo.fromTLV(contractInfoTLV),
+          DLCTimeouts(contractMaturity, contractTimeout),
+          feeRate,
+          totalCollateral,
+          localCollateral
+        )
       case DLCState.Accepted =>
         Accepted(
           dlcId,
@@ -1122,6 +1184,20 @@ object Picklers {
           feeRate,
           totalCollateral,
           localCollateral
+        )
+      case DLCState.SignComputingAdaptorSigs =>
+        SignedComputingAdaptorSigs(
+          dlcId,
+          isInitiator,
+          lastUpdated,
+          tempContractId,
+          contractId,
+          ContractInfo.fromTLV(contractInfoTLV),
+          DLCTimeouts(contractMaturity, contractTimeout),
+          feeRate,
+          totalCollateral,
+          localCollateral,
+          fundingTxId
         )
       case DLCState.Signed =>
         Signed(

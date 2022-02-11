@@ -92,6 +92,23 @@ object DLCStatus {
     override val state: DLCState.Offered.type = DLCState.Offered
   }
 
+  case class AcceptedComputingAdaptorSigs(
+      dlcId: Sha256Digest,
+      isInitiator: Boolean,
+      lastUpdated: Instant,
+      tempContractId: Sha256Digest,
+      contractId: ByteVector,
+      contractInfo: ContractInfo,
+      timeouts: DLCTimeouts,
+      feeRate: FeeUnit,
+      totalCollateral: CurrencyUnit,
+      localCollateral: CurrencyUnit)
+      extends AcceptedDLCStatus {
+
+    override val state: DLCState.AcceptComputingAdaptorSigs.type =
+      DLCState.AcceptComputingAdaptorSigs
+  }
+
   case class Accepted(
       dlcId: Sha256Digest,
       isInitiator: Boolean,
@@ -105,6 +122,24 @@ object DLCStatus {
       localCollateral: CurrencyUnit)
       extends AcceptedDLCStatus {
     override val state: DLCState.Accepted.type = DLCState.Accepted
+  }
+
+  case class SignedComputingAdaptorSigs(
+      dlcId: Sha256Digest,
+      isInitiator: Boolean,
+      lastUpdated: Instant,
+      tempContractId: Sha256Digest,
+      contractId: ByteVector,
+      contractInfo: ContractInfo,
+      timeouts: DLCTimeouts,
+      feeRate: FeeUnit,
+      totalCollateral: CurrencyUnit,
+      localCollateral: CurrencyUnit,
+      fundingTxId: DoubleSha256DigestBE)
+      extends SignedDLCStatus {
+
+    override val state: DLCState.SignComputingAdaptorSigs.type =
+      DLCState.SignComputingAdaptorSigs
   }
 
   case class Signed(
@@ -230,7 +265,8 @@ object DLCStatus {
     status match {
       case status: SignedDLCStatus =>
         Some(status.fundingTxId)
-      case _: Offered | _: Accepted | _: Signed =>
+      case _: Offered | _: Accepted | _: Signed |
+          _: AcceptedComputingAdaptorSigs =>
         None
     }
   }
@@ -249,7 +285,8 @@ object DLCStatus {
     status match {
       case claimed: ClaimedDLCStatus =>
         Some(claimed.oracleSigs)
-      case _: Offered | _: Accepted | _: SignedDLCStatus | _: Refunded =>
+      case _: Offered | _: Accepted | _: AcceptedComputingAdaptorSigs |
+          _: SignedDLCStatus | _: Refunded =>
         None
     }
   }
