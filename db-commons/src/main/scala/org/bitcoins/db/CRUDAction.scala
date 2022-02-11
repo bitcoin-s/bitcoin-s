@@ -100,6 +100,28 @@ abstract class CRUDAction[T, PrimaryKeyType](implicit
     sequencedA.map(_.flatten)
   }
 
+  def upsertAction(
+      t: T): DBIOAction[T, NoStream, Effect.Write with Effect.Read] = {
+    upsertAllAction(Vector(t)).map(_.head)
+  }
+
+  /** Upsert all of the given ts.
+    * Returns all ts that were inserted or updated
+    * @see https://scala-slick.org/doc/3.3.3/queries.html#upserting
+    */
+  def upsertAllAction(ts: Vector[T]): DBIOAction[
+    Vector[T],
+    NoStream,
+    Effect.Write with Effect.Read] = {
+    val upsertActions = {
+      ts.map { t =>
+        table.insertOrUpdate(t).flatMap(_ => find(t).result.map(_.headOption))
+      }
+    }
+
+    DBIO.sequence(upsertActions).map(_.flatten)
+  }
+
   def deleteAction(t: T): DBIOAction[Int, NoStream, Effect.Write] = {
     deleteAllAction(Vector(t))
   }
