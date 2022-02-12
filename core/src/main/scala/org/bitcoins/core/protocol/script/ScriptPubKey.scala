@@ -983,8 +983,6 @@ object P2PKWithTimeoutScriptPubKey
       }
 
       if (asm.length == requiredSize) {
-        val pubKeyTry = Try(ECPublicKey.fromBytes(asm(2).bytes))
-
         val lockTimeTry = smallCSVOpt match {
           case Some(num) => Success(ScriptNumber(num))
           case None      => Try(ScriptNumber.fromBytes(asm(5).bytes))
@@ -997,14 +995,17 @@ object P2PKWithTimeoutScriptPubKey
           }
         }
 
-        (pubKeyTry, lockTimeTry, timeoutPubKeyTry) match {
-          case (Failure(_), _, _) => false
-          case (_, Failure(_), _) => false
-          case (_, _, Failure(_)) => false
-          case (Success(pubKey), Success(lockTime), Success(timeoutPubKey)) =>
-            asm == P2PKWithTimeoutScriptPubKey(pubKey,
-                                               lockTime,
-                                               timeoutPubKey).asm
+        if (timeoutPubKeyTry.isSuccess && lockTimeTry.isSuccess) {
+          //this check is expensive, so do it only if we need it
+          val pubKeyTry = Try(ECPublicKey.fromBytes(asm(2).bytes))
+          pubKeyTry match {
+            case Success(pubKey) =>
+              asm == P2PKWithTimeoutScriptPubKey(pubKey,
+                lockTimeTry.get,
+                timeoutPubKeyTry.get).asm
+          }
+        } else {
+          false
         }
       } else {
         false
