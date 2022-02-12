@@ -132,33 +132,15 @@ should be noted if you are using a module as a library, you are responsible for 
 to ensure the entire module is initialized correctly.</p>
 <h2><a class="anchor" aria-hidden="true" id="example-configuration-file"></a><a href="#example-configuration-file" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Example Configuration File</h2>
 <pre><code class="hljs css language-$xslt">bitcoin-s {
-    <span class="hljs-attr">datadir</span> = ${HOME}/.bitcoin-s
-    <span class="hljs-attr">network</span> = regtest <span class="hljs-comment"># regtest, testnet3, mainnet, signet</span>
-    <span class="hljs-attr">dbDefault</span> = {
-      <span class="hljs-attr">dataSourceClass</span> = slick.jdbc.DatabaseUrlDataSource
-      <span class="hljs-attr">profile</span> = <span class="hljs-string">"slick.jdbc.SQLiteProfile$"</span>
-  
-      db {
-        <span class="hljs-comment"># for information on parameters available here see</span>
-        <span class="hljs-comment"># https://scala-slick.org/doc/3.3.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database</span>
-        <span class="hljs-attr">path</span> = ${bitcoin-s.datadir}/${bitcoin-s.network}/
-        <span class="hljs-attr">driver</span> = org.sqlite.JDBC
-        <span class="hljs-attr">user</span> = <span class="hljs-string">""</span>
-        <span class="hljs-attr">password</span> = <span class="hljs-string">""</span>
-        <span class="hljs-attr">host</span> = localhost
-        <span class="hljs-attr">port</span> = <span class="hljs-number">5432</span>
-  
-        <span class="hljs-comment"># this needs to be set to 1 for SQLITE as it does not support concurrent database operations</span>
-        <span class="hljs-comment"># see: https://github.com/bitcoin-s/bitcoin-s/pull/1840</span>
-        <span class="hljs-attr">numThreads</span> = <span class="hljs-number">1</span>
-        <span class="hljs-attr">queueSize=5000</span>
-        <span class="hljs-attr">connectionPool</span> = <span class="hljs-string">"HikariCP"</span>
-        <span class="hljs-attr">registerMbeans</span> = <span class="hljs-literal">true</span>
-      }
-      <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">false</span>
-      <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
-    }
+    <span class="hljs-comment"># the network your bitcoin-s node is running on</span>
+    <span class="hljs-attr">network</span> = <span class="hljs-string">"testnet3"</span> <span class="hljs-comment"># regtest, testnet3, mainnet, signet</span>
+
+    <span class="hljs-comment"># specify what backend you are using with bitcoin-s</span>
+    <span class="hljs-comment"># by default we do neutrino, but you can also connect</span>
+    <span class="hljs-comment"># bitcoind with the configuration settings in bitcoin-s.bitcoind-rpc</span>
+    node.<span class="hljs-attr">mode</span> = neutrino <span class="hljs-comment"># neutrino, bitcoind</span>
     
+    <span class="hljs-comment"># configurations for connecting to bitcoind</span>
     bitcoind-rpc {
         <span class="hljs-comment"># bitcoind rpc username</span>
         <span class="hljs-attr">rpcuser</span> = user
@@ -194,14 +176,16 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment">#If you have a bitcoind instance that is running remotely on another machine, you should set it to true</span>
         <span class="hljs-attr">isRemote</span> = <span class="hljs-literal">false</span>
     }
-
+    
+    <span class="hljs-comment"># settings if you are using a neutrino node in bitcoin-s</span>
     node {
-        <span class="hljs-attr">mode</span> = neutrino <span class="hljs-comment"># neutrino, spv, bitcoind</span>
 
-        <span class="hljs-attr">peers</span> = [] <span class="hljs-comment"># a list of peer addresses in form "hostname:portnumber"</span>
-        <span class="hljs-comment"># (e.g. "neutrino.testnet3.suredbits.com:18333")</span>
+        <span class="hljs-comment"># a list of peer addresses in form "hostname:portnumber"</span>
         <span class="hljs-comment"># Port number is optional, the default value is 8333 for mainnet,</span>
         <span class="hljs-comment"># 18333 for testnet and 18444 for regtest.</span>
+        <span class="hljs-comment"># by default we provide a testnet peer to connect to</span>
+        <span class="hljs-attr">peers</span> = [<span class="hljs-string">"neutrino.testnet3.suredbits.com:18333"</span>] 
+
         
         <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">true</span>
         <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
@@ -216,6 +200,7 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-attr">socks5</span> = <span class="hljs-string">"127.0.0.1:9050"</span>
     }
 
+    <span class="hljs-comment"># tor settings</span>
     tor {
         <span class="hljs-comment"># You can enable Tor for incoming connections</span>
         <span class="hljs-attr">enabled</span> = <span class="hljs-literal">false</span>
@@ -241,6 +226,7 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment"># privateKeyPath = /path/to/priv/key</span>
     }
     
+    <span class="hljs-comment"># settings for the chain module</span>
     chain {
         <span class="hljs-attr">force-recalc-chainwork</span> = <span class="hljs-literal">false</span>
         neutrino {
@@ -302,12 +288,12 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment"># bip39password = "changeMe"</span>
 
         <span class="hljs-comment"># Password that your seed is encrypted with</span>
-        <span class="hljs-attr">aesPassword</span> = changeMe
+        <span class="hljs-comment"># aesPassword = changeMe</span>
         
         <span class="hljs-comment"># At least 16 bytes of entropy encoded in hex</span>
         <span class="hljs-comment"># This will be used as the seed for any</span>
         <span class="hljs-comment"># project that is dependent on the keymanager</span>
-        <span class="hljs-attr">entropy</span> = <span class="hljs-string">""</span>
+        <span class="hljs-comment"># entropy = ""</span>
     }
 
     <span class="hljs-comment"># Bitcoin-S provides manny different fee providers</span>
@@ -337,7 +323,7 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment"># The address we are listening on for incoming connections for DLCs</span>
         <span class="hljs-comment"># Binding to 0.0.0.0 makes us listen to all incoming connections</span>
         <span class="hljs-comment"># Consider using 127.0.0.1 listen address if Tor is enabled.</span>
-        <span class="hljs-attr">listen</span> = <span class="hljs-string">"0.0.0.0:2862"</span>
+        <span class="hljs-comment"># listen = "0.0.0.0:2862"</span>
         
         <span class="hljs-comment"># The address our peers use to connect to our node. </span>
         <span class="hljs-comment"># By default it's the same as the listen address, </span>
@@ -380,6 +366,31 @@ to ensure the entire module is initialized correctly.</p>
         db {
           <span class="hljs-attr">path</span> = ${bitcoin-s.datadir}/oracle/
         }
+    }
+    
+    <span class="hljs-attr">dbDefault</span> = {
+      <span class="hljs-attr">dataSourceClass</span> = slick.jdbc.DatabaseUrlDataSource
+      <span class="hljs-attr">profile</span> = <span class="hljs-string">"slick.jdbc.SQLiteProfile$"</span>
+  
+      db {
+        <span class="hljs-comment"># for information on parameters available here see</span>
+        <span class="hljs-comment"># https://scala-slick.org/doc/3.3.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database</span>
+        <span class="hljs-attr">path</span> = ${bitcoin-s.datadir}/${bitcoin-s.network}/
+        <span class="hljs-attr">driver</span> = org.sqlite.JDBC
+        <span class="hljs-attr">user</span> = <span class="hljs-string">""</span>
+        <span class="hljs-attr">password</span> = <span class="hljs-string">""</span>
+        <span class="hljs-attr">host</span> = localhost
+        <span class="hljs-attr">port</span> = <span class="hljs-number">5432</span>
+  
+        <span class="hljs-comment"># this needs to be set to 1 for SQLITE as it does not support concurrent database operations</span>
+        <span class="hljs-comment"># see: https://github.com/bitcoin-s/bitcoin-s/pull/1840</span>
+        <span class="hljs-attr">numThreads</span> = <span class="hljs-number">1</span>
+        <span class="hljs-attr">queueSize=5000</span>
+        <span class="hljs-attr">connectionPool</span> = <span class="hljs-string">"HikariCP"</span>
+        <span class="hljs-attr">registerMbeans</span> = <span class="hljs-literal">true</span>
+      }
+      <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">false</span>
+      <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
     }
     
     testkit {
