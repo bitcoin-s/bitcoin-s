@@ -89,7 +89,7 @@ Now that we have the bitcoin-s repo setup, we want to create our application con
 
 First, create a `$HOME/.bitcoin-s` directory via `mkdir` or an equivalent command. 
 
-Next, create a `bitcoin-s.conf` file in `$HOME/.bitcoin-s`. [Here is an example configuration file](config/configuration.md#example-configuration-file). The only thing that you will _need_ to change is the `peers` list to which you will want to add `"localhost:18444"` if you want to run in regtest.
+Next, create a `bitcoin-s.conf` file in `$HOME/.bitcoin-s`. [Here is an example configuration file](config/configuration.md#example-configuration-file).
 
 ## Step 4: Building the Server and Setting Up the CLI
 

@@ -98,33 +98,15 @@ to ensure the entire module is initialized correctly.
 
 ```$xslt
 bitcoin-s {
-    datadir = ${HOME}/.bitcoin-s
-    network = regtest # regtest, testnet3, mainnet, signet
-    dbDefault = {
-      dataSourceClass = slick.jdbc.DatabaseUrlDataSource
-      profile = "slick.jdbc.SQLiteProfile$"
-  
-      db {
-        # for information on parameters available here see
-        # https://scala-slick.org/doc/3.3.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database
-        path = ${bitcoin-s.datadir}/${bitcoin-s.network}/
-        driver = org.sqlite.JDBC
-        user = ""
-        password = ""
-        host = localhost
-        port = 5432
-  
-        # this needs to be set to 1 for SQLITE as it does not support concurrent database operations
-        # see: https://github.com/bitcoin-s/bitcoin-s/pull/1840
-        numThreads = 1
-        queueSize=5000
-        connectionPool = "HikariCP"
-        registerMbeans = true
-      }
-      hikari-logging = false
-      hikari-logging-interval = 10 minute
-    }
+    # the network your bitcoin-s node is running on
+    network = "testnet3" # regtest, testnet3, mainnet, signet
+
+    # specify what backend you are using with bitcoin-s
+    # by default we do neutrino, but you can also connect
+    # bitcoind with the configuration settings in bitcoin-s.bitcoind-rpc
+    node.mode = neutrino # neutrino, bitcoind
     
+    # configurations for connecting to bitcoind
     bitcoind-rpc {
         # bitcoind rpc username
         rpcuser = user
@@ -160,14 +142,16 @@ bitcoin-s {
         #If you have a bitcoind instance that is running remotely on another machine, you should set it to true
         isRemote = false
     }
-
+    
+    # settings if you are using a neutrino node in bitcoin-s
     node {
-        mode = neutrino # neutrino, spv, bitcoind
 
-        peers = [] # a list of peer addresses in form "hostname:portnumber"
-        # (e.g. "neutrino.testnet3.suredbits.com:18333")
+        # a list of peer addresses in form "hostname:portnumber"
         # Port number is optional, the default value is 8333 for mainnet,
         # 18333 for testnet and 18444 for regtest.
+        # by default we provide a testnet peer to connect to
+        peers = ["neutrino.testnet3.suredbits.com:18333"] 
+
         
         hikari-logging = true
         hikari-logging-interval = 10 minute
@@ -182,6 +166,7 @@ bitcoin-s {
         socks5 = "127.0.0.1:9050"
     }
 
+    # tor settings
     tor {
         # You can enable Tor for incoming connections
         enabled = false
@@ -207,6 +192,7 @@ bitcoin-s {
         # privateKeyPath = /path/to/priv/key
     }
     
+    # settings for the chain module
     chain {
         force-recalc-chainwork = false
         neutrino {
@@ -268,12 +254,12 @@ bitcoin-s {
         # bip39password = "changeMe"
 
         # Password that your seed is encrypted with
-        aesPassword = changeMe
+        # aesPassword = changeMe
         
         # At least 16 bytes of entropy encoded in hex
         # This will be used as the seed for any
         # project that is dependent on the keymanager
-        entropy = ""
+        # entropy = ""
     }
 
     # Bitcoin-S provides manny different fee providers
@@ -303,7 +289,7 @@ bitcoin-s {
         # The address we are listening on for incoming connections for DLCs
         # Binding to 0.0.0.0 makes us listen to all incoming connections
         # Consider using 127.0.0.1 listen address if Tor is enabled.
-        listen = "0.0.0.0:2862"
+        # listen = "0.0.0.0:2862"
         
         # The address our peers use to connect to our node. 
         # By default it's the same as the listen address, 
@@ -346,6 +332,31 @@ bitcoin-s {
         db {
           path = ${bitcoin-s.datadir}/oracle/
         }
+    }
+    
+    dbDefault = {
+      dataSourceClass = slick.jdbc.DatabaseUrlDataSource
+      profile = "slick.jdbc.SQLiteProfile$"
+  
+      db {
+        # for information on parameters available here see
+        # https://scala-slick.org/doc/3.3.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database
+        path = ${bitcoin-s.datadir}/${bitcoin-s.network}/
+        driver = org.sqlite.JDBC
+        user = ""
+        password = ""
+        host = localhost
+        port = 5432
+  
+        # this needs to be set to 1 for SQLITE as it does not support concurrent database operations
+        # see: https://github.com/bitcoin-s/bitcoin-s/pull/1840
+        numThreads = 1
+        queueSize=5000
+        connectionPool = "HikariCP"
+        registerMbeans = true
+      }
+      hikari-logging = false
+      hikari-logging-interval = 10 minute
     }
     
     testkit {
