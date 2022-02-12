@@ -194,8 +194,8 @@ download [this snapshot](https://s3-us-west-2.amazonaws.com/www.suredbits.com/ch
 This will start syncing your testnet node from block header ~1,900,000 rather than starting from zero.
 
 ```bashrc
-$ unzip chaindb-testnet-2021-02-03.zip
-$ mv chaindb.sqlite ~/.bitcoin-s/testnet3/
+unzip chaindb-testnet-2021-02-03.zip
+mv chaindb.sqlite ~/.bitcoin-s/testnet3/
 ```
 
 This should take a couple minutes to execute, but once it is done, you will only have a short while left to sync once you start your server.

@@ -12,7 +12,7 @@ The [cli](/api/org/bitcoins/cli) project is meant to be a bitcoin-s command line
 
 You must first have [bitcoin-s properly installed](../getting-setup) on your machine, after which you should be able to build the cli with
 ```bashrc
-$ sbt cli/universal:stage
+sbt cli/universal:stage
 ```
 
 After running that command you should find the executable here:

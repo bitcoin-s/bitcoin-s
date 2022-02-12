@@ -18,6 +18,8 @@ bitcoin-s-cli listreservedutxos
         "vout": 1,
     },
     "value": 2000
+    
+    
   },
   {
     "outpoint": {
