@@ -6,6 +6,7 @@ import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.reserved._
 import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
+import scodec.bits.ByteVector
 
 import java.sql.SQLException
 
@@ -93,6 +94,43 @@ class ScriptPubKeyDAOTest extends WalletDAOFixture {
     } yield {
       assert(found.length == 1)
       assert(found.head.scriptPubKey == pkh)
+    }
+  }
+
+  it must "be able to store and find big spks" in { daos =>
+    val scriptPubKeyDAO = daos.scriptPubKeyDAO
+
+    val Size = 840011 // the size of the biggest script on testnet
+
+    val big1 = RawScriptPubKey.fromAsmBytes(ByteVector.fill(Size)(0x55))
+    assert(big1.bytes.size == Size + 5)
+
+    val big2 = RawScriptPubKey.fromAsmBytes(ByteVector.fill(Size * 2)(0xaa))
+    assert(big2.bytes.size == Size * 2 + 5)
+
+    val multisig = MultiSignatureScriptPubKey(
+      2,
+      Vector(ECPublicKey.freshPublicKey, ECPublicKey.freshPublicKey))
+
+    val pkh = P2PKHScriptPubKey(ECPublicKey.freshPublicKey)
+
+    val spks = Vector(
+      EmptyScriptPubKey,
+      pkh,
+      big1,
+      multisig,
+      big2
+    ).map(spk => ScriptPubKeyDb(spk))
+
+    for {
+      _ <- scriptPubKeyDAO.createAll(spks)
+      fromDb <- scriptPubKeyDAO.findAll()
+      fromDb1 <- scriptPubKeyDAO.findScriptPubKeys(fromDb.map(_.scriptPubKey))
+    } yield {
+      assert(fromDb.sortBy(_.id) == fromDb1.sortBy(_.id))
+      val actual = fromDb1.sortBy(_.id)
+      assert(actual.size == spks.size)
+      assert(actual.map(_.scriptPubKey) == spks.map(_.scriptPubKey))
     }
   }
 }

@@ -3,6 +3,7 @@ package org.bitcoins.wallet.models
 import org.bitcoins.core.api.wallet.db.ScriptPubKeyDb
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.script.ScriptType
+import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config.WalletAppConfig
 import slick.dbio.DBIOAction
@@ -50,7 +51,8 @@ case class ScriptPubKeyDAO()(implicit
   /** Searches for the given set of spks and returns the ones that exist in the db */
   def findScriptPubKeys(
       spks: Vector[ScriptPubKey]): Future[Vector[ScriptPubKeyDb]] = {
-    val query = table.filter(_.scriptPubKey.inSet(spks))
+    val hashes = spks.map(ScriptPubKeyDb.hash)
+    val query = table.filter(_.hash.inSet(hashes))
     safeDatabase.runVec(query.result)
   }
 
@@ -58,17 +60,20 @@ case class ScriptPubKeyDAO()(implicit
       extends TableAutoInc[ScriptPubKeyDb](tag, schemaName, "pub_key_scripts") {
 
     def scriptPubKey: Rep[ScriptPubKey] = column("script_pub_key")
+
     def scriptType: Rep[ScriptType] = column("script_type")
 
-    private type ScriptPubKeyTuple = (Option[Long], ScriptPubKey, ScriptType)
+    def hash: Rep[Sha256Digest] = column("hash")
+
+    private type ScriptPubKeyTuple =
+      (Option[Long], ScriptPubKey, ScriptType, Sha256Digest)
 
     private val fromTuple: ScriptPubKeyTuple => ScriptPubKeyDb = {
-      case (id, scriptPubKey, scriptType) =>
+      case (id, scriptPubKey, scriptType, hash) =>
         require(
           scriptPubKey.scriptType == scriptType,
           s"script type must match it script: `${scriptPubKey.scriptType}` != `${scriptType}` ")
-        ScriptPubKeyDb(scriptPubKey, id)
-
+        ScriptPubKeyDb(scriptPubKey, hash, id)
     }
 
     private val toTuple: ScriptPubKeyDb => Option[ScriptPubKeyTuple] = {
@@ -76,11 +81,12 @@ case class ScriptPubKeyDAO()(implicit
         Some(
           (scriptPubKeyDb.id,
            scriptPubKeyDb.scriptPubKey,
-           scriptPubKeyDb.scriptPubKey.scriptType))
+           scriptPubKeyDb.scriptPubKey.scriptType,
+           scriptPubKeyDb.hash))
     }
 
     override def * =
-      (id.?, scriptPubKey, scriptType).<>(fromTuple, toTuple)
+      (id.?, scriptPubKey, scriptType, hash).<>(fromTuple, toTuple)
   }
 
 }
