@@ -98,8 +98,13 @@ to ensure the entire module is initialized correctly.
 
 ```$xslt
 bitcoin-s {
-    datadir = ${HOME}/.bitcoin-s
+    # the network your bitcoin-s node is running on
     network = "testnet3" # regtest, testnet3, mainnet, signet
+
+    # specify what backend you are using with bitcoin-s
+    # by default we do neutrino, but you can also connect
+    # bitcoind with the configuration settings in bitcoin-s.bitcoind-rpc
+    node.mode = neutrino # neutrino, bitcoind
     
     # configurations for connecting to bitcoind
     bitcoind-rpc {
@@ -140,10 +145,6 @@ bitcoin-s {
     
     # settings if you are using a neutrino node in bitcoin-s
     node {
-        # specify what backend you are using with bitcoin-s
-        # by default we do neutrino, but you can also connect
-        # bitcoind with the configuration settings in bitcoin-s.bitcoind-rpc
-        mode = neutrino # neutrino, bitcoind
 
         # a list of peer addresses in form "hostname:portnumber"
         # Port number is optional, the default value is 8333 for mainnet,
