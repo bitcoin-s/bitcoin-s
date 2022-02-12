@@ -1001,8 +1001,9 @@ object P2PKWithTimeoutScriptPubKey
           pubKeyTry match {
             case Success(pubKey) =>
               asm == P2PKWithTimeoutScriptPubKey(pubKey,
-                lockTimeTry.get,
-                timeoutPubKeyTry.get).asm
+                                                 lockTimeTry.get,
+                                                 timeoutPubKeyTry.get).asm
+            case Failure(_) => false
           }
         } else {
           false
