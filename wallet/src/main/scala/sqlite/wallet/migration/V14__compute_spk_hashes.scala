@@ -2,8 +2,6 @@ package sqlite.wallet.migration
 
 import org.bitcoins.core.api.wallet.db.ScriptPubKeyDb
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.crypto.CryptoUtil
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
 
 class V14__compute_spk_hashes extends BaseJavaMigration {
