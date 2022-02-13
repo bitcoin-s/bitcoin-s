@@ -46,12 +46,7 @@ function Downloads(props) {
                         </tr>
                         <tr>
                             <td>
-                                <a href={`${releaseUrl}/download/${latestVersion}/bitcoin-s-server-${latestVersion}.tgz`}>bitcoin-s-server-{latestVersion}.tgz</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <a href={`${releaseUrl}/download/${latestVersion}/bitcoin-s-server-docker.zip`}>bitcoin-s-server-docker.zip</a>
+                                <a href={`${releaseUrl}/download/${latestVersion}/bitcoin-s-server-${latestVersion}.zip`}>bitcoin-s-server-{latestVersion}.tgz</a>
                             </td>
                         </tr>
                         <tr>
