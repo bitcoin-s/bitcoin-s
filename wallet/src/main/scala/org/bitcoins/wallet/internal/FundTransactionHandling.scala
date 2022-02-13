@@ -67,10 +67,6 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
           case Some(tag) =>
             listUtxos(fromAccount.hdAccount, tag)
         }
-        //real:
-        //https://github.com/bitcoin-s/bitcoin-s/releases/download/1.8.0/bitcoin-s_1.8.0-1_amd64.deb
-        //bad:
-        //https://github.com/bitcoin-s/bitcoin-s/releases/download/1.8.0/bitcoin-s-1.8.0-1_amd64.deb
         utxoWithTxs <- Future.sequence {
           utxos.map { utxo =>
             transactionDAO
