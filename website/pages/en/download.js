@@ -27,7 +27,7 @@ function Downloads(props) {
                         <tr>
                             <th>{latestVersion}</th>
                             <td>
-                                <a href={`${releaseUrl}/tag/v${latestVersion}`}>
+                                <a href={`${releaseUrl}/tag/${latestVersion}`}>
                                     Release
                                 </a>
                             </td>
@@ -41,32 +41,27 @@ function Downloads(props) {
                         <tbody>
                         <tr>
                             <td>
-                                <a href={`${releaseUrl}/download/v${latestVersion}/bitcoin-s-server-${latestVersion}.dmg`}>bitcoin-s-server-{latestVersion}.dmg</a>
+                                <a href={`${releaseUrl}/download/${latestVersion}/bitcoin-s-${latestVersion}.dmg`}>bitcoin-s-server-{latestVersion}.dmg</a>
                             </td>
                         </tr>
                         <tr>
                             <td>
-                                <a href={`${releaseUrl}/download/v${latestVersion}/bitcoin-s-server-${latestVersion}.tgz`}>bitcoin-s-server-{latestVersion}.tgz</a>
+                                <a href={`${releaseUrl}/download/${latestVersion}/bitcoin-s-server-${latestVersion}.zip`}>bitcoin-s-server-{latestVersion}.zip</a>
                             </td>
                         </tr>
                         <tr>
                             <td>
-                                <a href={`${releaseUrl}/download/v${latestVersion}/bitcoin-s-server-docker.zip`}>bitcoin-s-server-docker.zip</a>
+                                <a href={`${releaseUrl}/download/${latestVersion}/bitcoin-s_${latestVersion}-1_amd64.deb`}>bitcoin-s-server-amd64.deb</a>
                             </td>
                         </tr>
                         <tr>
                             <td>
-                                <a href={`${releaseUrl}/download/v${latestVersion}/bitcoin-s-server.deb`}>bitcoin-s-server.deb</a>
+                                <a href={`${releaseUrl}/download/${latestVersion}/bitcoin-s-bundle.msi`}>bitcoin-s-server.msi</a>
                             </td>
                         </tr>
                         <tr>
                             <td>
-                                <a href={`${releaseUrl}/download/v${latestVersion}/bitcoin-s-server.msi`}>bitcoin-s-server.msi</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <a href={`${releaseUrl}/download/v${latestVersion}/SHA256SUMS.asc`}>SHA256SUMS.asc</a>
+                                <a href={`${releaseUrl}/download/${latestVersion}/SHA256SUMS.asc`}>SHA256SUMS.asc</a>
                             </td>
                         </tr>
                         </tbody>
