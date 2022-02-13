@@ -1,7 +1,7 @@
 package sqlite.wallet.migration
 
+import org.bitcoins.core.api.wallet.db.ScriptPubKeyDb
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.crypto.CryptoUtil
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
 
 class V14__compute_spk_hashes extends BaseJavaMigration {
@@ -15,7 +15,7 @@ class V14__compute_spk_hashes extends BaseJavaMigration {
         val id = rows.getLong(1)
         val hex = rows.getString(2)
         val spk = ScriptPubKey(hex)
-        val hash = CryptoUtil.sha256(spk.bytes)
+        val hash = ScriptPubKeyDb.hash(spk)
         val updateStatement = context.getConnection.prepareStatement(
           "UPDATE pub_key_scripts SET hash=? WHERE id=?")
         updateStatement.setString(1, hash.hex)
