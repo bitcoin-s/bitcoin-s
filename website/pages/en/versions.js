@@ -56,7 +56,7 @@ function Versions(props) {
                   <a href={siteConfig.scaladocUrl}>Scaladoc</a>
                 </td>
                 <td>
-                  <a href={`${repoUrl}/releases/tag/v${latestVersion}`}>
+                  <a href={`${repoUrl}/releases/tag/${latestVersion}`}>
                     Release Notes
                   </a>
                 </td>
