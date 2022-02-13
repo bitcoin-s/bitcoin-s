@@ -190,12 +190,19 @@ case class AddressDAO()(implicit
   }
 
   def findAllForAccount(account: HDAccount): Future[Vector[AddressRecord]] = {
+    val action = findAllForAccountAction(account)
+    safeDatabase.runVec(action)
+  }
+
+  def findAllForAccountAction(account: HDAccount): DBIOAction[
+    Vector[AddressRecord],
+    NoStream,
+    Effect.Read] = {
     val query = table
       .filter(_.purpose === account.purpose)
       .filter(_.accountIndex === account.index)
       .filter(_.accountCoin === account.coin.coinType)
-
-    safeDatabase.runVec(query.result)
+    query.result.map(_.toVector)
   }
 
   /** Finds the most recent change address in the wallet, if any

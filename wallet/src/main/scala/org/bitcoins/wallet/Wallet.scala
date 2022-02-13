@@ -247,14 +247,21 @@ abstract class Wallet
     } yield addressCount == 0 && spendingInfoCount == 0
 
   override def clearUtxosAndAddresses(account: HDAccount): Future[Wallet] = {
-    for {
-      accountUtxos <- spendingInfoDAO.findAllForAccount(account)
-      deleteUtxoFs = accountUtxos.map(spendingInfoDAO.delete)
-      _ <- FutureUtil.collect(deleteUtxoFs)
-      accountAddresses <- addressDAO.findAllForAccount(account)
-      deleteAddrFs = accountAddresses.map(addressDAO.delete)
-      _ <- FutureUtil.collect(deleteAddrFs)
-    } yield this
+    val aggregatedActions: DBIOAction[
+      Wallet,
+      NoStream,
+      Effect.Read with Effect.Write] = {
+      for {
+        accountUtxos <- spendingInfoDAO.findAllForAccountAction(account)
+        _ <- spendingInfoDAO.deleteSpendingInfoDbAllAction(accountUtxos)
+        accountAddresses <- addressDAO.findAllForAccountAction(account)
+        _ <- addressTagDAO.deleteByAddressesAction(
+          accountAddresses.map(_.address))
+        _ <- addressDAO.deleteAllAction(accountAddresses)
+      } yield this
+    }
+
+    safeDatabase.run(aggregatedActions)
   }
 
   override def clearAllUtxosAndAddresses(): Future[Wallet] = {

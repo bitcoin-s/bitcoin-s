@@ -174,8 +174,30 @@ case class SpendingInfoDAO()(implicit
   }
 
   def delete(si: SpendingInfoDb): Future[Int] = {
-    val query = table.filter(t => t.id === si.id.get)
-    safeDatabase.run(query.delete)
+    val action = deleteAction(si)
+    safeDatabase.run(action)
+  }
+
+  def deleteAction(
+      si: SpendingInfoDb): DBIOAction[Int, NoStream, Effect.Write] = {
+    deleteSpendingInfoDbAllAction(Vector(si))
+  }
+
+  def deleteSpendingInfoDbAllAction(
+      sis: Vector[SpendingInfoDb]): DBIOAction[Int, NoStream, Effect.Write] = {
+    val ids = sis.map(_.id).flatten
+    val query = table.filter(t => t.id.inSet(ids))
+    query.delete
+  }
+
+  def findAllSpendingInfosAction(): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Read] = {
+    for {
+      all <- findAllAction()
+      utxos <- utxoToInfoAction(all)
+    } yield utxos
   }
 
   def findAllSpendingInfos(): Future[Vector[SpendingInfoDb]] =
@@ -320,6 +342,16 @@ case class SpendingInfoDAO()(implicit
     safeDatabase.run(query.result).map(_.toVector)
   }
 
+  def utxoToInfoAction(utxos: Vector[UTXORecord]): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Read] = {
+    for {
+      spks <- findScriptPubKeysAction(utxos)
+    } yield utxos.map(utxo =>
+      utxo.toSpendingInfoDb(spks(utxo.scriptPubKeyId).scriptPubKey))
+  }
+
   def utxoToInfo(utxos: Vector[UTXORecord]): Future[Vector[SpendingInfoDb]] =
     for {
       spks <- findScriptPubKeysByUtxos(utxos)
@@ -354,9 +386,17 @@ case class SpendingInfoDAO()(implicit
     allUtxosF.map(filterUtxosByAccount(_, hdAccount))
   }
 
+  def findAllForAccountAction(hdAccount: HDAccount): DBIOAction[
+    Vector[SpendingInfoDb],
+    NoStream,
+    Effect.Read] = {
+    findAllSpendingInfosAction().map(filterUtxosByAccount(_, hdAccount))
+  }
+
   def findAllForAccount(
       hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
-    findAllSpendingInfos().map(filterUtxosByAccount(_, hdAccount))
+    val action = findAllForAccountAction(hdAccount)
+    safeDatabase.run(action)
   }
 
   def findByTxoState(state: TxoState): Future[Vector[SpendingInfoDb]] = {
@@ -479,16 +519,36 @@ case class SpendingInfoDAO()(implicit
       .map(_ => ts.map(_.copyWithState(TxoState.Reserved)))
   }
 
+  private def findScriptPubKeysAction(ids: Seq[Long]): DBIOAction[
+    Map[Long, ScriptPubKeyDb],
+    NoStream,
+    Effect.Read] = {
+    val query = spkTable.filter(t => t.id.inSet(ids))
+    query.result.map { action =>
+      action.map { case spk =>
+        (spk.id.get, spk)
+      }.toMap
+    }
+  }
+
   private def findScriptPubKeys(
       ids: Seq[Long]): Future[Map[Long, ScriptPubKeyDb]] = {
-    val query = spkTable.filter(t => t.id.inSet(ids))
-    safeDatabase.runVec(query.result).map(_.map(spk => (spk.id.get, spk)).toMap)
+    val action = findScriptPubKeysAction(ids)
+    safeDatabase.run(action)
+  }
+
+  private def findScriptPubKeysAction(utxos: Vector[UTXORecord]): DBIOAction[
+    Map[Long, ScriptPubKeyDb],
+    NoStream,
+    Effect.Read] = {
+    val ids = utxos.map(_.scriptPubKeyId)
+    findScriptPubKeysAction(ids)
   }
 
   private def findScriptPubKeysByUtxos(
       utxos: Vector[UTXORecord]): Future[Map[Long, ScriptPubKeyDb]] = {
-    val ids = utxos.map(_.scriptPubKeyId)
-    findScriptPubKeys(ids)
+    val action = findScriptPubKeysAction(utxos)
+    safeDatabase.run(action)
   }
 
   private def findPublicKeyScriptsBySpendingInfoDb(

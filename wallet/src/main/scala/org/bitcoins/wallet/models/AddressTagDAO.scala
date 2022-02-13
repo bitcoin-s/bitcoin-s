@@ -165,6 +165,18 @@ case class AddressTagDAO()(implicit
     }
   }
 
+  def deleteByAddressesAction(addresses: Vector[BitcoinAddress]): DBIOAction[
+    Int,
+    NoStream,
+    Effect.Write] = {
+    table.filter(t => t.address.inSet(addresses)).delete
+  }
+
+  def deleteByAddresses(addresses: Vector[BitcoinAddress]): Future[Int] = {
+    val action = deleteByAddressesAction(addresses)
+    safeDatabase.run(action)
+  }
+
   class AddressTagTable(t: Tag)
       extends Table[AddressTagDb](t, schemaName, "wallet_address_tags") {
 

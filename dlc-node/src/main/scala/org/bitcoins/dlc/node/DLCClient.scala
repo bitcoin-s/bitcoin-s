@@ -10,6 +10,7 @@ import org.bitcoins.tor.{Socks5Connection, Socks5ProxyParams}
 
 import java.io.IOException
 import java.net.InetSocketAddress
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 
 class DLCClient(
@@ -36,7 +37,14 @@ class DLCClient(
             remoteAddress
         }
       context.become(connecting(peer))
-      IO(Tcp) ! Tcp.Connect(peerOrProxyAddress)
+
+      //currently our request timeout for requests sent to the backend is 60 seconds
+      //so we need the connection timeout to occur before the request times out
+      //when a user tries to submit an accept to the backend
+      //see: https://github.com/bitcoin-s/bitcoin-s/issues/4080
+      val connectionTimeout = 45.seconds
+      IO(Tcp) ! Tcp.Connect(peerOrProxyAddress,
+                            timeout = Some(connectionTimeout))
   }
 
   def connecting(peer: Peer): Receive = LoggingReceive {
@@ -44,7 +52,6 @@ class DLCClient(
       val ex = c.cause.getOrElse(new IOException("Unknown Error"))
       log.error(s"Cannot connect to ${cmd.remoteAddress} ", ex)
       throw ex
-
     case Tcp.Connected(peerOrProxyAddress, _) =>
       val connection = sender()
       peer.socks5ProxyParams match {
@@ -79,7 +86,8 @@ class DLCClient(
       remoteAddress: InetSocketAddress,
       proxyAddress: InetSocketAddress): Receive = LoggingReceive {
     case c @ Tcp.CommandFailed(_: Socks5Connect) =>
-      val ex = c.cause.getOrElse(new IOException(s"UnknownError: $c"))
+      val ex = c.cause.getOrElse(new IOException(
+        s"Cannot connect to ${remoteAddress.getHostString}:${remoteAddress.getPort} via Tor"))
       log.error(s"connection failed to $remoteAddress via SOCKS5 $proxyAddress",
                 ex)
       throw ex

@@ -89,7 +89,7 @@ Now that we have the bitcoin-s repo setup, we want to create our application con
 
 First, create a `$HOME/.bitcoin-s` directory via `mkdir` or an equivalent command. 
 
-Next, create a `bitcoin-s.conf` file in `$HOME/.bitcoin-s`. [Here is an example configuration file](config/configuration.md#example-configuration-file). The only thing that you will _need_ to change is the `peers` list to which you will want to add `"localhost:18444"` if you want to run in regtest.
+Next, create a `bitcoin-s.conf` file in `$HOME/.bitcoin-s`. [Here is an example configuration file](config/configuration.md#example-configuration-file).
 
 ## Step 4: Building the Server and Setting Up the CLI
 
@@ -194,8 +194,8 @@ download [this snapshot](https://s3-us-west-2.amazonaws.com/www.suredbits.com/ch
 This will start syncing your testnet node from block header ~1,900,000 rather than starting from zero.
 
 ```bashrc
-$ unzip chaindb-testnet-2021-02-03.zip
-$ mv chaindb.sqlite ~/.bitcoin-s/testnet3/
+unzip chaindb-testnet-2021-02-03.zip
+mv chaindb.sqlite ~/.bitcoin-s/testnet3/
 ```
 
 This should take a couple minutes to execute, but once it is done, you will only have a short while left to sync once you start your server.

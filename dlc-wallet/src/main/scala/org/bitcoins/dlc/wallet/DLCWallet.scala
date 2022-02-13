@@ -480,11 +480,6 @@ abstract class DLCWallet
 
     val chainType = HDChainType.External
 
-    //filter announcements that we already have in the db
-    val groupedAnnouncementsF: Future[AnnouncementGrouping] = {
-      groupByExistingAnnouncements(announcements)
-    }
-
     getDlcDbOfferDbContractDataDb(offer.tempContractId).flatMap {
       case Some((dlcDb, dlcOffer, contractDataDb)) =>
         Future.successful((dlcDb, dlcOffer, contractDataDb))
@@ -502,7 +497,7 @@ abstract class DLCWallet
                                                                    dlcId,
                                                                    offer)
           _ <- writeDLCKeysToAddressDb(account, chainType, nextIndex)
-          groupedAnnouncements <- groupedAnnouncementsF
+          groupedAnnouncements <- groupByExistingAnnouncements(announcements)
           dlcDbAction = dlcDAO.createAction(dlc)
           dlcOfferAction = dlcOfferDAO.createAction(dlcOfferDb)
           contractAction = contractDataDAO.createAction(contractDataDb)
@@ -617,38 +612,28 @@ abstract class DLCWallet
 
   private def createNewDLCAccept(
       collateral: CurrencyUnit,
-      offer: DLCOffer): Future[DLCAccept] = {
+      offer: DLCOffer): Future[DLCAccept] = Future {
+    DLCWallet.AcceptingOffersLatch.startAccepting(offer.tempContractId)
+
     logger.info(
       s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
 
-    val accountF = getDefaultAccountForType(AddressType.SegWit)
-
-    val dlcDbOfferDbF: Future[(DLCDb, DLCOfferDb, DLCContractDataDb)] = {
-      for {
-        accountDb <- accountF
-        (dlcDb, offerDb, contractDataDb) <- initDLCForAccept(offer, accountDb)
-      } yield (dlcDb, offerDb, contractDataDb)
+    def getFundingPrivKey(account: AccountDb, dlc: DLCDb): AdaptorSign = {
+      val bip32Path = BIP32Path(
+        account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
+                                         BIP32Node(dlc.keyIndex,
+                                                   hardened = false)))
+      val privKeyPath = HDPath.fromString(bip32Path.toString)
+      keyManager.toSign(privKeyPath)
     }
 
-    val fundingPrivKeyF: Future[AdaptorSign] = {
-      for {
-        (dlc, _, _) <- dlcDbOfferDbF
-        account <- accountF
-        bip32Path = BIP32Path(
-          account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
-                                           BIP32Node(dlc.keyIndex,
-                                                     hardened = false)))
-        privKeyPath = HDPath.fromString(bip32Path.toString)
-      } yield keyManager.toSign(privKeyPath)
-    }
-
-    for {
-      (dlc, offerDb, contractDataDb) <- dlcDbOfferDbF
-      account <- accountF
+    val result = for {
+      account <- getDefaultAccountForType(AddressType.SegWit)
+      (dlc, offerDb, contractDataDb) <- initDLCForAccept(offer, account)
       (txBuilder, spendingInfos) <- fundDLCAcceptMsg(offer = offer,
                                                      collateral = collateral,
                                                      account = account)
-      fundingPrivKey <- fundingPrivKeyF
+      fundingPrivKey = getFundingPrivKey(account, dlc)
       (acceptWithoutSigs, dlcPubKeys) = DLCAcceptUtil.buildAcceptWithoutSigs(
         dlc = dlc,
         offer = offer,
@@ -673,11 +658,8 @@ abstract class DLCWallet
 
       spkDb = ScriptPubKeyDb(builder.fundingSPK)
       // only update spk db if we don't have it
-      spkDbOpt <- scriptPubKeyDAO.findScriptPubKey(spkDb.scriptPubKey)
-      _ <- spkDbOpt match {
-        case Some(_) => Future.unit
-        case None    => scriptPubKeyDAO.create(spkDb)
-      }
+      _ <- scriptPubKeyDAO.createIfNotExists(spkDb)
+
       _ = logger.info(s"Creating CET Sigs for ${contractId.toHex}")
       //emit websocket event that we are now computing adaptor signatures
       status = DLCStatusBuilder.buildInProgressDLCStatus(
@@ -775,7 +757,10 @@ abstract class DLCWallet
                                      UInt32(builder.fundOutputIndex))
       _ <- updateFundingOutPoint(dlcDb.contractIdOpt.get, outPoint)
     } yield accept
-  }
+    result.onComplete(_ =>
+      DLCWallet.AcceptingOffersLatch.doneAccepting(offer.tempContractId))
+    result
+  }.flatten
 
   def registerDLCAccept(
       accept: DLCAccept): Future[(DLCDb, Vector[DLCCETSignaturesDb])] = {
@@ -1743,6 +1728,9 @@ abstract class DLCWallet
 
 object DLCWallet extends WalletLogger {
 
+  case class DuplicateOfferException(message: String)
+      extends RuntimeException(message)
+
   case class InvalidAnnouncementSignature(message: String)
       extends RuntimeException(message)
 
@@ -1764,5 +1752,23 @@ object DLCWallet extends WalletLogger {
       dlcConfig: DLCAppConfig,
       ec: ExecutionContext): DLCWallet = {
     DLCWalletImpl(nodeApi, chainQueryApi, feeRateApi)
+  }
+
+  private object AcceptingOffersLatch {
+
+    private val tempContractIds =
+      new java.util.concurrent.ConcurrentHashMap[Sha256Digest, Sha256Digest]()
+
+    def startAccepting(tempContractId: Sha256Digest): Unit = {
+      if (tempContractIds.putIfAbsent(tempContractId, tempContractId) != null) {
+        throw DuplicateOfferException(
+          s"Offer with temporary contract ID ${tempContractId.hex} is already being accepted")
+      }
+    }
+
+    def doneAccepting(tempContractId: Sha256Digest): Unit = {
+      val _ = tempContractIds.remove(tempContractId)
+    }
+
   }
 }
