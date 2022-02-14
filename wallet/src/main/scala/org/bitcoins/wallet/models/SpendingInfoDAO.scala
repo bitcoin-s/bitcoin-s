@@ -308,7 +308,9 @@ case class SpendingInfoDAO()(implicit
     */
   def findOutputsReceived(
       txids: Vector[DoubleSha256DigestBE]): Future[Vector[SpendingInfoDb]] = {
-    val filtered = spkJoinQuery.filter(_._1.txid.inSet(txids))
+    val filtered = spkJoinQuery
+      .filter(_._1.state.inSet(TxoState.receivedStates))
+      .filter(_._1.txid.inSet(txids))
     safeDatabase
       .runVec(filtered.result)
       .map(res =>

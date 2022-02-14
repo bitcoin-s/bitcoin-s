@@ -266,7 +266,7 @@ object WalletTestUtil {
   def insertLegacyUTXO(daos: WalletDAOs, state: TxoState)(implicit
       ec: ExecutionContext): Future[LegacySpendingInfo] = {
     for {
-      account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
+      account <- daos.accountDAO.upsert(WalletTestUtil.firstAccountDb)
       addr <- daos.addressDAO.create(getAddressDb(account))
       utxo = sampleLegacyUTXO(addr.scriptPubKey, state)
       _ <- insertDummyIncomingTransaction(daos, utxo)
