@@ -173,7 +173,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           else
             txo.copyWithState(TxoState.PendingConfirmationsReceived)
         } else txo
-      case TxoState.PendingConfirmationsReceived | BroadcastReceived =>
+      case TxoState.PendingConfirmationsReceived | BroadcastReceived | TxoState.ConfirmedReceived =>
         if (confs >= walletConfig.requiredConfirmations)
           txo.copyWithState(TxoState.ConfirmedReceived)
         else txo.copyWithState(PendingConfirmationsReceived)

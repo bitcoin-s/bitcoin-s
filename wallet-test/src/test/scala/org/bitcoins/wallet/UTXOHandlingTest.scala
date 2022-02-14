@@ -38,25 +38,31 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
       .copyWithState(ConfirmedSpent)
     val reserved = utxo.copyWithState(Reserved)
 
+    //it must stay reserved if we are receiving confirmations
     assert(wallet.updateReceivedTxoWithConfs(reserved, 1) == reserved)
     val withSpendingTxId =
       reserved.copyWithSpendingTxId(DoubleSha256DigestBE.empty)
+
+    //it must transition from reserved to spent
     assert(
       wallet
         .updateSpentTxoWithConfs(withSpendingTxId, 1)
         .state == TxoState.PendingConfirmationsSpent)
 
+    //it must stay immature coinbase if we don't have > 101 confirmations
     assert(
       wallet.updateReceivedTxoWithConfs(immatureCoinbase,
                                         10) == immatureCoinbase)
     assert(
       wallet.updateReceivedTxoWithConfs(immatureCoinbase, 101) == confReceived)
 
+    //cannot spend an immature coinbase output
     assertThrows[RuntimeException] {
       //cannot have utxo spent from coinbase before 101 blocks
       wallet.updateSpentTxoWithConfs(immatureCoinbase, 100)
     }
 
+    //we must stay pending confirmations received with only 1 confirmation
     assert(
       wallet.updateReceivedTxoWithConfs(pendingConfReceived,
                                         1) == pendingConfReceived)
@@ -70,30 +76,48 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
 
     val updated =
       wallet.updateSpentTxoWithConfs(pendingConfReceivedWithTxId, requiredConfs)
+    //it must transition from Pending Confirmation Recieved -> Pending Confirmation Spent
     assert(updated == expectedConfSpent)
 
+    //must stay at pending confirmations spent with only 1 confirmation
     assert(
       wallet.updateSpentTxoWithConfs(pendingConfSpent, 1) == pendingConfSpent)
+
+    //must transition from PendingConfirmationsSpent -> ConfirmedSpent
     assert(
       wallet.updateSpentTxoWithConfs(pendingConfSpent,
                                      requiredConfs) == confSpent)
 
-    assert(wallet.updateReceivedTxoWithConfs(dne, 1) == dne)
+    //it must transition from DoesNotExist -> PendingConfirmationsReceived
+    assert(
+      wallet.updateReceivedTxoWithConfs(dne, 1) == dne.copyWithState(
+        TxoState.PendingConfirmationsReceived))
 
     val expectedDNEWithTxId =
       dne.copyWithSpendingTxId(DoubleSha256DigestBE.empty)
-    val expectedDNE = expectedDNEWithTxId.copyWithState(TxoState.ConfirmedSpent)
+    val expectedDNEConfirmedSpent =
+      expectedDNEWithTxId.copyWithState(TxoState.ConfirmedSpent)
+    //transition from TxoState.DoesNotExist -> TxoState.ConfirmedSpent
     assert(
-      wallet.updateSpentTxoWithConfs(expectedDNEWithTxId,
-                                     requiredConfs) == expectedDNE)
+      wallet.updateSpentTxoWithConfs(
+        expectedDNEWithTxId,
+        requiredConfs) == expectedDNEConfirmedSpent)
 
+    //transition form TxoState.ConfirmedSpent -> TxoState.PendingConfirmationSpent (reorg scenario)
     assert(
       wallet.updateSpentTxoWithConfs(confSpent, 1) == confSpent.copyWithState(
         PendingConfirmationsSpent))
+
+    //stay confirmed if we are already confirmed
     assert(
       wallet.updateSpentTxoWithConfs(confSpent, requiredConfs) == confSpent)
 
-    assert(wallet.updateReceivedTxoWithConfs(confReceived, 1) == confReceived)
+    //transition from TxoState.ConfirmedReceived -> TxoState.PendingConfirmationsReceived (reorg scenario)
+    assert(
+      wallet.updateReceivedTxoWithConfs(confReceived, 1) == confReceived
+        .copyWithState(PendingConfirmationsReceived))
+
+    //it must stay TxoState.ConfirmedReceived if we keep receiving confirmations
     assert(
       wallet.updateReceivedTxoWithConfs(confReceived,
                                         requiredConfs) == confReceived)
@@ -101,10 +125,11 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
     val expectedConfReceivedWithTxid =
       confReceived.copyWithSpendingTxId(DoubleSha256DigestBE.empty)
 
-    val expectedConfReceived =
-      expectedConfReceivedWithTxid.copyWithState(TxoState.ConfirmedSpent)
+    //TxoState.ConfirmedReceived -> TxoState.ConfirmedSpent
     assert(
-      wallet.updateSpentTxoWithConfs(expectedConfReceivedWithTxid,
-                                     requiredConfs) == expectedConfReceived)
+      wallet.updateSpentTxoWithConfs(
+        expectedConfReceivedWithTxid,
+        requiredConfs) == expectedConfReceivedWithTxid.copyWithState(
+        TxoState.ConfirmedSpent))
   }
 }
