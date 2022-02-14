@@ -76,7 +76,7 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
 
     val updated =
       wallet.updateSpentTxoWithConfs(pendingConfReceivedWithTxId, requiredConfs)
-    //it must transition from Pending Confirmation Recieved -> Pending Confirmation Spent
+    //it must transition from Pending Confirmation Received -> Pending Confirmation Spent
     assert(updated == expectedConfSpent)
 
     //must stay at pending confirmations spent with only 1 confirmation
@@ -131,5 +131,18 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
         expectedConfReceivedWithTxid,
         requiredConfs) == expectedConfReceivedWithTxid.copyWithState(
         TxoState.ConfirmedSpent))
+
+    //it must stay BroadcastSpent with 0 confirmations
+    val broadcastSpent = utxo
+      .copyWithSpendingTxId(DoubleSha256DigestBE.empty)
+      .copyWithState(TxoState.BroadcastSpent)
+    assert(wallet.updateSpentTxoWithConfs(broadcastSpent, 0) == broadcastSpent)
+
+    //it must stay broadcast received with 0 confirmations
+    val broadcastReceived = utxo
+      .copyWithState(TxoState.BroadcastReceived)
+    assert(
+      wallet.updateReceivedTxoWithConfs(broadcastReceived,
+                                        0) == broadcastReceived)
   }
 }

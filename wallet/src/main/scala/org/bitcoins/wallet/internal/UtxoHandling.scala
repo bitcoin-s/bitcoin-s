@@ -153,6 +153,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           TxoState.BroadcastReceived | TxoState.ConfirmedReceived =>
         if (confs >= walletConfig.requiredConfirmations) {
           txo.copyWithState(TxoState.ConfirmedSpent)
+        } else if (confs == 0) {
+          txo.copyWithState(TxoState.BroadcastSpent)
         } else {
           txo.copyWithState(TxoState.PendingConfirmationsSpent)
         }
@@ -174,10 +176,13 @@ private[wallet] trait UtxoHandling extends WalletLogger {
             txo.copyWithState(TxoState.PendingConfirmationsReceived)
         } else txo
       case TxoState.PendingConfirmationsReceived | BroadcastReceived | TxoState.ConfirmedReceived =>
-        if (confs >= walletConfig.requiredConfirmations)
+        if (confs >= walletConfig.requiredConfirmations) {
           txo.copyWithState(TxoState.ConfirmedReceived)
-        else txo.copyWithState(PendingConfirmationsReceived)
-      case TxoState.ConfirmedReceived =>
+        } else if (confs == 0) {
+          txo.copyWithState(TxoState.BroadcastReceived)
+        } else txo.copyWithState(PendingConfirmationsReceived)
+      case TxoState.Reserved =>
+        //do nothing if we have reserved the utxo
         txo
       case state: SpentState =>
         sys.error(s"Cannot update spendingInfoDb in spent state=$state")
