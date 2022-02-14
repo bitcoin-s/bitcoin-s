@@ -192,6 +192,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
   /** Updates all the given SpendingInfoDbs to the correct state
     * based on how many confirmations they have received
+    * @param spendingInfoDbs the utxos we need to update
+    * @param fn the function used to transition the [[TxoState]] given a utxo and number of confirmations
     */
   private def updateUtxoStates(
       spendingInfoDbs: Vector[SpendingInfoDb],
