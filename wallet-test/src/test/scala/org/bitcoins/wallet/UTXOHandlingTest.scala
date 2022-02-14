@@ -3,6 +3,7 @@ package org.bitcoins.wallet
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState._
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.WalletTestUtil._
 import org.scalatest.FutureOutcome
@@ -37,26 +38,73 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
       .copyWithState(ConfirmedSpent)
     val reserved = utxo.copyWithState(Reserved)
 
-    assert(wallet.updateTxoWithConfs(reserved, 1) == reserved)
-
-    assert(wallet.updateTxoWithConfs(immatureCoinbase, 10) == immatureCoinbase)
-    assert(wallet.updateTxoWithConfs(immatureCoinbase, 101) == confReceived)
+    assert(wallet.updateReceivedTxoWithConfs(reserved, 1) == reserved)
+    val withSpendingTxId =
+      reserved.copyWithSpendingTxId(DoubleSha256DigestBE.empty)
+    assert(
+      wallet
+        .updateSpentTxoWithConfs(withSpendingTxId, 1)
+        .state == TxoState.PendingConfirmationsSpent)
 
     assert(
-      wallet.updateTxoWithConfs(pendingConfReceived, 1) == pendingConfReceived)
+      wallet.updateReceivedTxoWithConfs(immatureCoinbase,
+                                        10) == immatureCoinbase)
     assert(
-      wallet.updateTxoWithConfs(pendingConfReceived,
-                                requiredConfs) == confReceived)
+      wallet.updateReceivedTxoWithConfs(immatureCoinbase, 101) == confReceived)
 
-    assert(wallet.updateTxoWithConfs(pendingConfSpent, 1) == pendingConfSpent)
+    assertThrows[RuntimeException] {
+      //cannot have utxo spent from coinbase before 101 blocks
+      wallet.updateSpentTxoWithConfs(immatureCoinbase, 100)
+    }
+
     assert(
-      wallet.updateTxoWithConfs(pendingConfSpent, requiredConfs) == confSpent)
+      wallet.updateReceivedTxoWithConfs(pendingConfReceived,
+                                        1) == pendingConfReceived)
 
-    assert(wallet.updateTxoWithConfs(confSpent, 1) == confSpent)
-    assert(wallet.updateTxoWithConfs(confSpent, requiredConfs) == confSpent)
+    val pendingConfReceivedWithTxId = pendingConfReceived
+      .copyWithSpendingTxId(DoubleSha256DigestBE.empty)
 
-    assert(wallet.updateTxoWithConfs(confReceived, 1) == confReceived)
+    val expectedConfSpent = pendingConfReceived
+      .copyWithSpendingTxId(DoubleSha256DigestBE.empty)
+      .copyWithState(TxoState.ConfirmedSpent)
+
+    val updated =
+      wallet.updateSpentTxoWithConfs(pendingConfReceivedWithTxId, requiredConfs)
+    assert(updated == expectedConfSpent)
+
     assert(
-      wallet.updateTxoWithConfs(confReceived, requiredConfs) == confReceived)
+      wallet.updateSpentTxoWithConfs(pendingConfSpent, 1) == pendingConfSpent)
+    assert(
+      wallet.updateSpentTxoWithConfs(pendingConfSpent,
+                                     requiredConfs) == confSpent)
+
+    assert(wallet.updateReceivedTxoWithConfs(dne, 1) == dne)
+
+    val expectedDNEWithTxId =
+      dne.copyWithSpendingTxId(DoubleSha256DigestBE.empty)
+    val expectedDNE = expectedDNEWithTxId.copyWithState(TxoState.ConfirmedSpent)
+    assert(
+      wallet.updateSpentTxoWithConfs(expectedDNEWithTxId,
+                                     requiredConfs) == expectedDNE)
+
+    assert(
+      wallet.updateSpentTxoWithConfs(confSpent, 1) == confSpent.copyWithState(
+        PendingConfirmationsSpent))
+    assert(
+      wallet.updateSpentTxoWithConfs(confSpent, requiredConfs) == confSpent)
+
+    assert(wallet.updateReceivedTxoWithConfs(confReceived, 1) == confReceived)
+    assert(
+      wallet.updateReceivedTxoWithConfs(confReceived,
+                                        requiredConfs) == confReceived)
+
+    val expectedConfReceivedWithTxid =
+      confReceived.copyWithSpendingTxId(DoubleSha256DigestBE.empty)
+
+    val expectedConfReceived =
+      expectedConfReceivedWithTxid.copyWithState(TxoState.ConfirmedSpent)
+    assert(
+      wallet.updateSpentTxoWithConfs(expectedConfReceivedWithTxid,
+                                     requiredConfs) == expectedConfReceived)
   }
 }
