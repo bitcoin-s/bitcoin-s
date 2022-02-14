@@ -182,14 +182,21 @@ class SpendingInfoDAOTest extends WalletDAOFixture {
     } yield assert(unspent.isEmpty)
   }
 
-  it must "insert a TXO and read it back with through a TXID " in { daos =>
+  it must "insert a TXO that is received and find it" in { daos =>
     val spendingInfoDAO = daos.utxoDAO
 
     for {
-      utxo <- WalletTestUtil.insertLegacyUTXO(daos,
-                                              state = TxoState.DoesNotExist)
-      foundTxos <- spendingInfoDAO.findOutputsReceived(Vector(utxo.txid))
-    } yield assert(foundTxos.contains(utxo))
+      utxo <- WalletTestUtil.insertLegacyUTXO(
+        daos,
+        state = TxoState.PendingConfirmationsReceived)
+      utxo2 <- WalletTestUtil.insertLegacyUTXO(daos,
+                                               state = TxoState.BroadcastSpent)
+      foundTxos <- spendingInfoDAO.findOutputsReceived(
+        Vector(utxo.txid, utxo2.txid))
+    } yield {
+      assert(foundTxos.length == 1)
+      assert(foundTxos.contains(utxo))
+    }
 
   }
 
