@@ -1,6 +1,6 @@
 # 1.9.0
 
-This release is backwards incompatible with previous release's of bitcoin-s.
+This release is backwards incompatible with previous releases of bitcoin-s.
 You will not be able to build a DLC with prior releases of bitcoin-s. This was due to a bug
 in how we computed `contractId` in a DLC. See #4012 for more information.
 
