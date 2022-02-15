@@ -625,7 +625,8 @@ object Picklers {
           Vector(writeJs(hyperbolaPiece))
       }
 
-      val points = (endPointsJs ++ midPointJs).sortBy(_.obj(PicklerKeys.outcomeKey).num)
+      val points =
+        (endPointsJs ++ midPointJs).sortBy(_.obj(PicklerKeys.outcomeKey).num)
       Obj(PicklerKeys.pointsKey -> points)
     }
   }
