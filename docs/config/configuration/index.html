@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Application Configuration · bitcoin-s</title><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Bitcoin-S uses [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md)"/><meta name="docsearch:version" content="1.8.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Application Configuration · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="Bitcoin-S uses [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md)"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Application Configuration · bitcoin-s</title><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Bitcoin-S uses [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md)"/><meta name="docsearch:version" content="1.9.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Application Configuration · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="Bitcoin-S uses [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md)"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script>
               (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
               (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
               m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -6,7 +6,7 @@
 
               ga('create', 'UA-61958686-2', 'auto');
               ga('send', 'pageview');
-            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>1.8.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/download" target="_self">Download</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Configuration</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-started">Intro and Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/bips">Supported BIPs</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Setup</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-setup">Getting Bitcoin-S installed on your machine</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/applications/cli">CLI</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/server">Application Server</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/gui">GUI</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/server-systemd">Systemd installation</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Chain</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/chain/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/chain/filter-sync">Syncing Blockfilters</a></li><li class="navListItem"><a class="navItem" href="/docs/chain/chain-query-api">Chain Query API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Configuration</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/config/configuration">Application Configuration</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/core/core-intro">Core Module</a></li><li class="navListItem"><a class="navItem" href="/docs/core/addresses">Generating Addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/core/hd-keys">HD Key Generation</a></li><li class="navListItem"><a class="navItem" href="/docs/core/adding-spks">Adding New Script Types</a></li><li class="navListItem"><a class="navItem" href="/docs/core/spending-info">Signing Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/core/psbts">Partially Signed Bitcoin Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/core/dlc">Discreet Log Contract Data Structures</a></li><li class="navListItem"><a class="navItem" href="/docs/core/txbuilder">TxBuilder Example</a></li><li class="navListItem"><a class="navItem" href="/docs/core/lightning-network">Lightning Network Data Types</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Crypto Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/crypto/crypto-intro">Crypto Module</a></li><li class="navListItem"><a class="navItem" href="/docs/crypto/sign">Sign API</a></li><li class="navListItem"><a class="navItem" href="/docs/crypto/adaptor-signatures">Adaptor Signatures</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Fee Provider</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/fee-provider/fee-provider">Fee Provider</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key Manager</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/key-manager/server-key-manager">Server Key Manager</a></li><li class="navListItem"><a class="navItem" href="/docs/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Node</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/node/node">Light Client</a></li><li class="navListItem"><a class="navItem" href="/docs/node/node-api">Node API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Wallet</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet">Wallet</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-callbacks">Wallet Callbacks</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-get-address">Wallet Get Address APIs</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/address-tagging">Address and UTXO tagging</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/dlc">Executing A DLC with Bitcoin-S</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-rescan">Wallet Rescans</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-sync">Wallet Sync</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-rpc">Wallet RPC Examples</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/backups">Wallet Backups</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-election-example">Wallet Election Example</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-price-example">Wallet Price Example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Tor</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/tor/tor">Tor Setup</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC Clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/lnd-rpc">LND</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Secp256k1</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/secp256k1/secp256k1">Secp256k1</a></li><li class="navListItem"><a class="navItem" href="/docs/secp256k1/jni-modify">Adding to Secp256k1 JNI</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Testkit</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/testkit/testkit">Testkit</a></li><li class="navListItem"><a class="navItem" href="/docs/testkit/testkit-core">Testkit Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">DLC Oracle</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/oracle/build-oracle-server">Building the Oracle Server</a></li><li class="navListItem"><a class="navItem" href="/docs/oracle/oracle-server">Oracle Server</a></li><li class="navListItem"><a class="navItem" href="/docs/oracle/oracle-election-example">Election Example</a></li><li class="navListItem"><a class="navItem" href="/docs/oracle/oracle-price-example">Price Example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Oracle Explorer Client</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/oracle-explorer-client/oracle-explorer-client">Oracle Explorer Client</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/security">Security</a></li></ul></div></div></section></div><script>
+            </script><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>1.9.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/download" target="_self">Download</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Configuration</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-started">Intro and Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/bips">Supported BIPs</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Setup</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-setup">Getting Bitcoin-S installed on your machine</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/applications/cli">CLI</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/server">Application Server</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/gui">GUI</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/server-systemd">Systemd installation</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Chain</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/chain/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/chain/filter-sync">Syncing Blockfilters</a></li><li class="navListItem"><a class="navItem" href="/docs/chain/chain-query-api">Chain Query API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Configuration</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/config/configuration">Application Configuration</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/core/core-intro">Core Module</a></li><li class="navListItem"><a class="navItem" href="/docs/core/addresses">Generating Addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/core/hd-keys">HD Key Generation</a></li><li class="navListItem"><a class="navItem" href="/docs/core/adding-spks">Adding New Script Types</a></li><li class="navListItem"><a class="navItem" href="/docs/core/spending-info">Signing Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/core/psbts">Partially Signed Bitcoin Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/core/dlc">Discreet Log Contract Data Structures</a></li><li class="navListItem"><a class="navItem" href="/docs/core/txbuilder">TxBuilder Example</a></li><li class="navListItem"><a class="navItem" href="/docs/core/lightning-network">Lightning Network Data Types</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Crypto Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/crypto/crypto-intro">Crypto Module</a></li><li class="navListItem"><a class="navItem" href="/docs/crypto/sign">Sign API</a></li><li class="navListItem"><a class="navItem" href="/docs/crypto/adaptor-signatures">Adaptor Signatures</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Fee Provider</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/fee-provider/fee-provider">Fee Provider</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key Manager</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/key-manager/server-key-manager">Server Key Manager</a></li><li class="navListItem"><a class="navItem" href="/docs/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Node</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/node/node">Light Client</a></li><li class="navListItem"><a class="navItem" href="/docs/node/node-api">Node API</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Wallet</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet">Wallet</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-callbacks">Wallet Callbacks</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-get-address">Wallet Get Address APIs</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/address-tagging">Address and UTXO tagging</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/dlc">Executing A DLC with Bitcoin-S</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-rescan">Wallet Rescans</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-sync">Wallet Sync</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-rpc">Wallet RPC Examples</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/backups">Wallet Backups</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-election-example">Wallet Election Example</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-price-example">Wallet Price Example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Tor</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/tor/tor">Tor Setup</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC Clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/lnd-rpc">LND</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Secp256k1</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/secp256k1/secp256k1">Secp256k1</a></li><li class="navListItem"><a class="navItem" href="/docs/secp256k1/jni-modify">Adding to Secp256k1 JNI</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Testkit</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/testkit/testkit">Testkit</a></li><li class="navListItem"><a class="navItem" href="/docs/testkit/testkit-core">Testkit Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">DLC Oracle</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/oracle/build-oracle-server">Building the Oracle Server</a></li><li class="navListItem"><a class="navItem" href="/docs/oracle/oracle-server">Oracle Server</a></li><li class="navListItem"><a class="navItem" href="/docs/oracle/oracle-election-example">Election Example</a></li><li class="navListItem"><a class="navItem" href="/docs/oracle/oracle-price-example">Price Example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Oracle Explorer Client</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/oracle-explorer-client/oracle-explorer-client">Oracle Explorer Client</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/security">Security</a></li></ul></div></div></section></div><script>
             var coll = document.getElementsByClassName('collapsible');
             var checkActiveCategory = true;
             for (var i = 0; i < coll.length; i++) {
@@ -85,11 +85,11 @@ projects. Here's some examples of how to construct a wallet configuration:</p>
 
 <span class="hljs-comment">// reads a custom data directory</span>
 <span class="hljs-keyword">val</span> customDirectory = <span class="hljs-type">Paths</span>.get(<span class="hljs-type">Properties</span>.userHome, <span class="hljs-string">"custom-bitcoin-s-directory"</span>)
-<span class="hljs-keyword">val</span> configFromCustomDatadir = <span class="hljs-type">WalletAppConfig</span>(customDirectory)
+<span class="hljs-keyword">val</span> configFromCustomDatadir = <span class="hljs-type">WalletAppConfig</span>(customDirectory, <span class="hljs-type">Vector</span>.empty)
 
 <span class="hljs-comment">// reads a custom data directory and overrides the network to be testnet3</span>
 <span class="hljs-keyword">val</span> customOverride = <span class="hljs-type">ConfigFactory</span>.parseString(<span class="hljs-string">"bitcoin-s.network = testnet3"</span>)
-<span class="hljs-keyword">val</span> configFromCustomDirAndOverride = <span class="hljs-type">WalletAppConfig</span>(customDirectory, customOverride)
+<span class="hljs-keyword">val</span> configFromCustomDirAndOverride = <span class="hljs-type">WalletAppConfig</span>(customDirectory, <span class="hljs-type">Vector</span>(customOverride))
 </code></pre>
 <p>You can pass as many <code>com.typesafe.config.Config</code>s as you'd like. If any keys appear multiple times the last one
 encountered takes precedence.</p>
@@ -132,33 +132,15 @@ should be noted if you are using a module as a library, you are responsible for 
 to ensure the entire module is initialized correctly.</p>
 <h2><a class="anchor" aria-hidden="true" id="example-configuration-file"></a><a href="#example-configuration-file" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Example Configuration File</h2>
 <pre><code class="hljs css language-$xslt">bitcoin-s {
-    <span class="hljs-attr">datadir</span> = ${HOME}/.bitcoin-s
-    <span class="hljs-attr">network</span> = regtest <span class="hljs-comment"># regtest, testnet3, mainnet, signet</span>
-    <span class="hljs-attr">dbDefault</span> = {
-      <span class="hljs-attr">dataSourceClass</span> = slick.jdbc.DatabaseUrlDataSource
-      <span class="hljs-attr">profile</span> = <span class="hljs-string">"slick.jdbc.SQLiteProfile$"</span>
-  
-      db {
-        <span class="hljs-comment"># for information on parameters available here see</span>
-        <span class="hljs-comment"># https://scala-slick.org/doc/3.3.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database</span>
-        <span class="hljs-attr">path</span> = ${bitcoin-s.datadir}/${bitcoin-s.network}/
-        <span class="hljs-attr">driver</span> = org.sqlite.JDBC
-        <span class="hljs-attr">user</span> = <span class="hljs-string">""</span>
-        <span class="hljs-attr">password</span> = <span class="hljs-string">""</span>
-        <span class="hljs-attr">host</span> = localhost
-        <span class="hljs-attr">port</span> = <span class="hljs-number">5432</span>
-  
-        <span class="hljs-comment"># this needs to be set to 1 for SQLITE as it does not support concurrent database operations</span>
-        <span class="hljs-comment"># see: https://github.com/bitcoin-s/bitcoin-s/pull/1840</span>
-        <span class="hljs-attr">numThreads</span> = <span class="hljs-number">1</span>
-        <span class="hljs-attr">queueSize=5000</span>
-        <span class="hljs-attr">connectionPool</span> = <span class="hljs-string">"HikariCP"</span>
-        <span class="hljs-attr">registerMbeans</span> = <span class="hljs-literal">true</span>
-      }
-      <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">false</span>
-      <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
-    }
+    <span class="hljs-comment"># the network your bitcoin-s node is running on</span>
+    <span class="hljs-attr">network</span> = <span class="hljs-string">"testnet3"</span> <span class="hljs-comment"># regtest, testnet3, mainnet, signet</span>
+
+    <span class="hljs-comment"># specify what backend you are using with bitcoin-s</span>
+    <span class="hljs-comment"># by default we do neutrino, but you can also connect</span>
+    <span class="hljs-comment"># bitcoind with the configuration settings in bitcoin-s.bitcoind-rpc</span>
+    node.<span class="hljs-attr">mode</span> = neutrino <span class="hljs-comment"># neutrino, bitcoind</span>
     
+    <span class="hljs-comment"># configurations for connecting to bitcoind</span>
     bitcoind-rpc {
         <span class="hljs-comment"># bitcoind rpc username</span>
         <span class="hljs-attr">rpcuser</span> = user
@@ -174,12 +156,12 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-attr">binary</span> = ${HOME}/.bitcoin-s/binaries/bitcoind/bitcoin-<span class="hljs-number">0.20</span>.<span class="hljs-number">1</span>/bin/bitcoind
         <span class="hljs-comment"># bitcoind datadir</span>
         <span class="hljs-attr">datadir</span> = ${HOME}/.bitcoin
-        <span class="hljs-comment"># bitcoind network binding</span>
-        <span class="hljs-attr">bind</span> = localhost
+        <span class="hljs-comment"># bitcoind network host</span>
+        <span class="hljs-attr">connect</span> = localhost
         <span class="hljs-comment"># bitcoind p2p port</span>
         <span class="hljs-attr">port</span> = <span class="hljs-number">8333</span>
-        <span class="hljs-comment"># bitcoind rpc binding</span>
-        <span class="hljs-attr">rpcbind</span> = localhost
+        <span class="hljs-comment"># bitcoind rpc host</span>
+        <span class="hljs-attr">rpcconnect</span> = localhost
         <span class="hljs-comment"># bitcoind rpc port</span>
         <span class="hljs-attr">rpcport</span> = <span class="hljs-number">8332</span>
         <span class="hljs-comment"># bitcoind zmq raw tx</span>
@@ -194,14 +176,16 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment">#If you have a bitcoind instance that is running remotely on another machine, you should set it to true</span>
         <span class="hljs-attr">isRemote</span> = <span class="hljs-literal">false</span>
     }
-
+    
+    <span class="hljs-comment"># settings if you are using a neutrino node in bitcoin-s</span>
     node {
-        <span class="hljs-attr">mode</span> = neutrino <span class="hljs-comment"># neutrino, spv, bitcoind</span>
 
-        <span class="hljs-attr">peers</span> = [] <span class="hljs-comment"># a list of peer addresses in form "hostname:portnumber"</span>
-        <span class="hljs-comment"># (e.g. "neutrino.testnet3.suredbits.com:18333")</span>
+        <span class="hljs-comment"># a list of peer addresses in form "hostname:portnumber"</span>
         <span class="hljs-comment"># Port number is optional, the default value is 8333 for mainnet,</span>
         <span class="hljs-comment"># 18333 for testnet and 18444 for regtest.</span>
+        <span class="hljs-comment"># by default we provide a testnet peer to connect to</span>
+        <span class="hljs-attr">peers</span> = [<span class="hljs-string">"neutrino.testnet3.suredbits.com:18333"</span>] 
+
         
         <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">true</span>
         <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
@@ -216,6 +200,7 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-attr">socks5</span> = <span class="hljs-string">"127.0.0.1:9050"</span>
     }
 
+    <span class="hljs-comment"># tor settings</span>
     tor {
         <span class="hljs-comment"># You can enable Tor for incoming connections</span>
         <span class="hljs-attr">enabled</span> = <span class="hljs-literal">false</span>
@@ -241,6 +226,7 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment"># privateKeyPath = /path/to/priv/key</span>
     }
     
+    <span class="hljs-comment"># settings for the chain module</span>
     chain {
         <span class="hljs-attr">force-recalc-chainwork</span> = <span class="hljs-literal">false</span>
         neutrino {
@@ -302,12 +288,12 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment"># bip39password = "changeMe"</span>
 
         <span class="hljs-comment"># Password that your seed is encrypted with</span>
-        <span class="hljs-attr">aesPassword</span> = changeMe
+        <span class="hljs-comment"># aesPassword = changeMe</span>
         
         <span class="hljs-comment"># At least 16 bytes of entropy encoded in hex</span>
         <span class="hljs-comment"># This will be used as the seed for any</span>
         <span class="hljs-comment"># project that is dependent on the keymanager</span>
-        <span class="hljs-attr">entropy</span> = <span class="hljs-string">""</span>
+        <span class="hljs-comment"># entropy = ""</span>
     }
 
     <span class="hljs-comment"># Bitcoin-S provides manny different fee providers</span>
@@ -336,7 +322,15 @@ to ensure the entire module is initialized correctly.</p>
     dlcnode {
         <span class="hljs-comment"># The address we are listening on for incoming connections for DLCs</span>
         <span class="hljs-comment"># Binding to 0.0.0.0 makes us listen to all incoming connections</span>
-        <span class="hljs-attr">listen</span> = <span class="hljs-string">"0.0.0.0:2862"</span>
+        <span class="hljs-comment"># Consider using 127.0.0.1 listen address if Tor is enabled.</span>
+        <span class="hljs-comment"># listen = "0.0.0.0:2862"</span>
+        
+        <span class="hljs-comment"># The address our peers use to connect to our node. </span>
+        <span class="hljs-comment"># By default it's the same as the listen address, </span>
+        <span class="hljs-comment"># or if Tor is enabled, the hidden service's onion address.</span>
+        <span class="hljs-comment"># You can specify a port number like this "192.168.0.1:12345", </span>
+        <span class="hljs-comment"># The default port number is the same as in the listen adrress  </span>
+        <span class="hljs-comment"># external-ip = "192.168.0.1"  </span>
     }
 
     server {
@@ -345,6 +339,15 @@ to ensure the entire module is initialized correctly.</p>
 
         <span class="hljs-comment"># The ip address we bind our server too</span>
         <span class="hljs-attr">rpcbind</span> = <span class="hljs-string">"127.0.0.1"</span>
+        
+        <span class="hljs-comment"># The port we bind our websocket server on</span>
+        <span class="hljs-attr">wsport</span> = <span class="hljs-number">19999</span>
+        
+        <span class="hljs-comment"># The ip address we bind the websocket server too</span>
+        <span class="hljs-attr">wsbind</span> = <span class="hljs-string">"127.0.0.1"</span>
+        
+        <span class="hljs-comment"># The basic auth password. It must me must be non empty.</span>
+        <span class="hljs-attr">password</span> = topsecret
     }
 
     oracle {
@@ -354,12 +357,40 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment"># The ip address we bind our server too</span>
         <span class="hljs-attr">rpcbind</span> = <span class="hljs-string">"127.0.0.1"</span>
 
+        <span class="hljs-comment"># The basic auth password. It must me must be non empty.</span>
+        <span class="hljs-attr">password</span> = supersecret
+
         <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">true</span>
         <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
 
         db {
           <span class="hljs-attr">path</span> = ${bitcoin-s.datadir}/oracle/
         }
+    }
+    
+    <span class="hljs-attr">dbDefault</span> = {
+      <span class="hljs-attr">dataSourceClass</span> = slick.jdbc.DatabaseUrlDataSource
+      <span class="hljs-attr">profile</span> = <span class="hljs-string">"slick.jdbc.SQLiteProfile$"</span>
+  
+      db {
+        <span class="hljs-comment"># for information on parameters available here see</span>
+        <span class="hljs-comment"># https://scala-slick.org/doc/3.3.1/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig(String,Config,Driver,ClassLoader):Database</span>
+        <span class="hljs-attr">path</span> = ${bitcoin-s.datadir}/${bitcoin-s.network}/
+        <span class="hljs-attr">driver</span> = org.sqlite.JDBC
+        <span class="hljs-attr">user</span> = <span class="hljs-string">""</span>
+        <span class="hljs-attr">password</span> = <span class="hljs-string">""</span>
+        <span class="hljs-attr">host</span> = localhost
+        <span class="hljs-attr">port</span> = <span class="hljs-number">5432</span>
+  
+        <span class="hljs-comment"># this needs to be set to 1 for SQLITE as it does not support concurrent database operations</span>
+        <span class="hljs-comment"># see: https://github.com/bitcoin-s/bitcoin-s/pull/1840</span>
+        <span class="hljs-attr">numThreads</span> = <span class="hljs-number">1</span>
+        <span class="hljs-attr">queueSize=5000</span>
+        <span class="hljs-attr">connectionPool</span> = <span class="hljs-string">"HikariCP"</span>
+        <span class="hljs-attr">registerMbeans</span> = <span class="hljs-literal">true</span>
+      }
+      <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">false</span>
+      <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
     }
     
     testkit {
@@ -485,7 +516,7 @@ for <code>wallet</code> and <code>chain</code> projects:</p>
     }
 }
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 10/20/2021 by Chris Stewart</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/chain/chain-query-api"><span class="arrow-prev">← </span><span>Chain Query API</span></a><a class="docs-next button" href="/docs/core/core-intro"><span>Core Module</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#command-line-options">Command Line Options</a></li><li><a href="#internal-configuration">Internal configuration</a></li><li><a href="#database-migrations">Database Migrations</a></li><li><a href="#example-configuration-file">Example Configuration File</a></li><li><a href="#database-configuration">Database configuration</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2022 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2/12/2022 by Chris Stewart</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/chain/chain-query-api"><span class="arrow-prev">← </span><span>Chain Query API</span></a><a class="docs-next button" href="/docs/core/core-intro"><span>Core Module</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#command-line-options">Command Line Options</a></li><li><a href="#internal-configuration">Internal configuration</a></li><li><a href="#database-migrations">Database Migrations</a></li><li><a href="#example-configuration-file">Example Configuration File</a></li><li><a href="#database-configuration">Database configuration</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2022 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;
