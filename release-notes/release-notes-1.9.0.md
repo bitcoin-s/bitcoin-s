@@ -1,13 +1,19 @@
 # 1.9.0
 
+This release is backwards incompatible with previous release's of bitcoin-s.
+You will not be able to build a DLC with prior releases of bitcoin-s. This was due to a bug
+in how we computed `contractId` in a DLC. See #4012 for more information.
+
+See the individual module sections for more information on lower level updates to the codebase.
+
 ## Running Bitcoin-S
 
 If you want to run the standalone server binary, after verifying gpg signatures, you
-can `unzip bitcoin-s-server-1.8.0.zip` and then run it with `./bin/bitcoin-s-server` to start the node. You will need to
+can `unzip bitcoin-s-server-1.9.0.zip` and then run it with `./bin/bitcoin-s-server` to start the node. You will need to
 configure the node properly first, you can find example
 configurations [here](https://bitcoin-s.org/docs/config/configuration#example-configuration-file).
 
-You can then unzip the `bitcoin-s-cli-1.8.0.zip` folder and start using the `bitcoin-s-cli` like this:
+You can then unzip the `bitcoin-s-cli-1.9.0.zip` folder and start using the `bitcoin-s-cli` like this:
 
 ```bashrc
 ./bin/bitcoin-s-cli --help
@@ -35,8 +41,8 @@ Example:
 
 UPDATE ME!!!!!!!
 ```
-$ sha256sum bitcoin-s-server-1.8.0.tgz
-aa1084edb5fcd3d1dbcafe0d0fba787abf4cd455bbe38809bd9a65a49c0cd0eb bitcoin-s-server-1.8.0.tgz
+$ sha256sum bitcoin-s-server-1.9.0.zip
+aa1084edb5fcd3d1dbcafe0d0fba787abf4cd455bbe38809bd9a65a49c0cd0eb bitcoin-s-server-1.9.0.zip
 $ gpg --verify SHA256SUMS.asc
 gpg: Signature made Thu 24 Sep 2020 12:49:39 PM CDT
 gpg:                using RSA key 339A49229576050819083EB3F99724872F822910
