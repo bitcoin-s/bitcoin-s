@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macOS-latest, ubuntu-latest, windows-latest]
+        os: [macOS-latest, ubuntu-latest]
         include:
           - os: macOS-latest
             uploaded_filename: bitcoin-s-cli-x86_64-apple-darwin
@@ -27,9 +27,6 @@ jobs:
           - os: ubuntu-latest
             uploaded_filename: bitcoin-s-cli-x86_64-pc-linux
             local_path: app/cli/target/native-image/bitcoin-s-cli
-          - os: windows-latest
-            uploaded_filename: bitcoin-s-cli-x86_64-pc-win32.exe
-            local_path: app\cli\target\native-image\bitcoin-s-cli.exe
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -44,13 +41,6 @@ jobs:
         if: ${{ matrix.os != 'windows-latest' }}
       - run: echo $(pwd)
         shell: bash
-      - name: sbt cliTest/test
-        shell: cmd
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: >-
-          "C:\Program Files (x86)\Microsoft Visual
-          Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && sbt
-          cli/nativeImage
       - uses: actions/upload-artifact@master
         with:
           path: ${{ matrix.local_path }}
