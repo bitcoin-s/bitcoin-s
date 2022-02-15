@@ -64,6 +64,7 @@ were required to open a DLC with your peer.
 
 See individual module sections for updates on per module basis.
 
+
 ## app commons
 
 142612f034 Make newConfigOfType use Vector[Config] (#4039)
@@ -77,6 +78,8 @@ e802254a20 2022 01 24 rm appconfig varargs (#4011)
 a7af8cac4c Patch bug where `zipdatadir` doesn't work if the directory was not created (#3959)
 
 ## App server
+
+4e6c68155e Sort outcomes in `decodeoffer` response (#4094)
 
 08941206fc Bump timeout to 60 seconds (#4021)
 
@@ -134,6 +137,8 @@ a40ef1ab21 Break existing api to get new address to remove the requirement for n
 
 ## bitcoind rpc
 
+5366428fb2 Implement `BitcoindRpcClient.epochSecondToBlockHeight` (#4068)
+
 c0c54acc24 Make non-final bitcoind RPC error message more descriptive (#3915)
 
 a6898defe2 Support for Bitcoin Core v22 (#3834)
@@ -167,6 +172,10 @@ cd5451adaa Add clightning listtransactions func (#3797)
 6d43d443ba Initial c-lightning rpc support (#3755)
 
 ## Core
+
+13c46e0af8 Move expensive script checks to last inside of P2PKWithTimeoutScriptPubKey (#4087)
+
+e2b9c458e4 Change `DLCUtil.buildOracleSignatures` (#4061)
 
 7a6f0430d6 2022 02 03 issue 4032 (#4042)
 
@@ -216,6 +225,16 @@ f4a2ec8554 Make AesEncryptedData a network element / factory (#3952)
 
 ## Db commons
 
+4d85b7a3d7 Support for big SPKs (#4084)
+
+3d674c37f3 Create upsertAllAction (#4073)
+
+2166faf61d Make findByPrimaryKeysAction public (#4079)
+
+3991789129 Don't call findByPrimaryKeys if ids is empty (#4074)
+
+48189d5c1d Make `CRUD.run` and `CRUD.runVec` transactional (#4059)
+
 0079489a15 Create DbMapper for DoubleSha256Digest (#3995)
 
 6c2bb0d111 Rename database username and password variables (#3930)
@@ -229,6 +248,8 @@ afb51228b4 Add NodeId to DbCommonsColumnMappers (#3880)
 f71d3567ed 2021 11 23 crud action (#3851)
 
 ## DLC node
+
+55ecc1ae8f Implement connection timeout (#4081)
 
 019c9b2644 Fix log message failure in DLCDataHandler (#3845)
 
@@ -245,6 +266,14 @@ f71d3567ed 2021 11 23 crud action (#3851)
 c3d1b2ee12 Give DLCOracle to filter events by pending/completed (#3953)
 
 ## DLC wallet
+
+6cfbf67812 Prevent DB state corruption while accepting the same offer multiple times (#4067)
+
+bce58ba33d Validate announcement signatures on create/accept offer (#4071)
+
+9de4b0272a 2022 01 31 issue 4030 (#4066)
+
+f253b5055e 2022 02 08  dlc accept refactor (#4064)
 
 5aeecdb893 Reworking/refactoring acceptDLCOffer (#4048)
 
@@ -289,6 +318,8 @@ bf8b165fe9 Implement recovery for when we cannot receive a fee rate from a FeeRa
 
 ## Lnd rpc
 
+44373f8449 Add functions for LND subscription (#4062)
+
 afc6a32c62 Update lnd to v0.14.2 (#4040)
 
 3ba8fb6dd4 Allow creating invoices with description hash (#3966)
@@ -328,6 +359,10 @@ fc09f41db2 Request witness versions of transactions from nodes (#3829)
 
 ## wallet
 
+dc47c070a2 Fix SpendingInfoDAO.findOutputsReceived() bug (#4090)
+
+eeabe5cd77 2022 02 11 clearutxoandaddresses for account transactional (#4077)
+
 883b01006d Fetch blockHeight earlier in TransactionProcessing.processBlock() (#4025)
 
 8d04ca1cd3 2022 01 30 optimize processblock (#4024)
@@ -365,6 +400,8 @@ b3d61bc793 Add deleting address tags to to clearAllUtxosAndAddresses() (#3817)
 
 ## tor
 
+1708add6ec Make Tor connect error message more human readable (#4078)
+
 2dcbe73504 Update Tor version to 0.4.6.9 (#3993)
 
 169222a306 Add default proxy params (#3863)
@@ -372,6 +409,24 @@ b3d61bc793 Add deleting address tags to to clearAllUtxosAndAddresses() (#3817)
 e02c9bba12 Overridable Tor config (#3780)
 
 ## Website
+
+95d9bf44a5 Add 1.9.0 of the website (#4096)
+
+e8ee5d7339 Bump website dependencies (#4095)
+
+3931897e7f 2022 02 13 issue 3405 (#4089)
+
+07fcfd0568 2022 02 12 update mdoc fix downloadlink (#4086)
+
+e5707d5002 Fix broken website examples (#4085)
+
+526ed37a28 Cleanup docs that use $ (#4083)
+
+4ea87c741f 2022 02 12 cleanup example config (#4082)
+
+35dccd88d6 Add new section to README for running bitcoin-s, add link to the web frontend (#4069)
+
+99418c798a 2022 02 07 release note draft (#4060)
 
 ## Dependencies
 
