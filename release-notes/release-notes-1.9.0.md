@@ -67,6 +67,10 @@ See individual module sections for updates on per module basis.
 
 ## app commons
 
+Bug fixes and improve the API for `AppConfig`
+
+4e6c68155e Sort outcomes in `decodeoffer` response (#4094)
+
 142612f034 Make newConfigOfType use Vector[Config] (#4039)
 
 2066447cdc Add isEndpoint to numeric contract descriptor serialization (#4033)
@@ -79,7 +83,14 @@ a7af8cac4c Patch bug where `zipdatadir` doesn't work if the directory was not cr
 
 ## App server
 
-4e6c68155e Sort outcomes in `decodeoffer` response (#4094)
+The major features shipped this release is support for websockets.
+You can now be notified of websocket events from the wallet, dlc wallet, and chain.
+These are used on the [wallet-server-ui](https://github.com/bitcoin-s/bitcoin-s-ts/tree/master/wallet-server-ui) to notify when events happen
+
+This module will be renamed to `Wallet Server` in future releases as that
+is a more accurate name for this module.
+
+There are various PRs that broke API compatability from `1.8` -> `1.9`. See [the list](https://github.com/bitcoin-s/bitcoin-s/pulls?q=is%3Apr+label%3Aapi-breaking+is%3Aclosed+milestone%3A1.9)
 
 08941206fc Bump timeout to 60 seconds (#4021)
 
@@ -137,6 +148,8 @@ a40ef1ab21 Break existing api to get new address to remove the requirement for n
 
 ## bitcoind rpc
 
+Implements rudimentary support for bitcoin core v22. This release does not implement all RPCs on v22.
+
 5366428fb2 Implement `BitcoindRpcClient.epochSecondToBlockHeight` (#4068)
 
 c0c54acc24 Make non-final bitcoind RPC error message more descriptive (#3915)
@@ -144,6 +157,9 @@ c0c54acc24 Make non-final bitcoind RPC error message more descriptive (#3915)
 a6898defe2 Support for Bitcoin Core v22 (#3834)
 
 ## Build
+
+Ergonomic improvements for runnign test suites, make the installer names more readable
+for non technical users.
 
 52dcf51e82 Automatically download binaries if they are used in test suite (#4005)
 
@@ -157,14 +173,20 @@ cd3006c020 Verify binary download hashes (#3849)
 
 ## chain
 
+Adds a callback so that we can be notified when a header is processed by the chain module.
+
+7ee1f0f406 Implement batching of database calls for our chain callback (#4003)
+
 d06b064b6b 2021 12 28 blockprocessed callback (#3946)
 
 ## clightning rpc
-! NEW !
+
+This is a new module in the 1.9 release. It adds support for a clightning RPC.
 
 cb704da927 Add clightning sendcustommsg (#3883)
 
 7933c90741 Update c-lightning to v0.10.2 (#3857)
+
 cd5451adaa Add clightning listtransactions func (#3797)
 
 01a7c7c838 Make clightning tests execute async (#3768)
@@ -172,6 +194,14 @@ cd5451adaa Add clightning listtransactions func (#3797)
 6d43d443ba Initial c-lightning rpc support (#3755)
 
 ## Core
+
+This release merges support for general payout curves in the `core` module for the DLC specification.
+See #3854 for more information
+
+This release also merges support for disjoint union contracts in the DLC specification.
+
+This release fixes a bug in our `contractId` computation.
+This breaks backward compatibility in older releases of bitcoin-s.
 
 13c46e0af8 Move expensive script checks to last inside of P2PKWithTimeoutScriptPubKey (#4087)
 
@@ -225,6 +255,11 @@ f4a2ec8554 Make AesEncryptedData a network element / factory (#3952)
 
 ## Db commons
 
+A major theme this release is enabling our APIs to use [database actions in Slick](https://scala-slick.org/doc/3.3.3/dbio.html).
+This allows us to build database transactions to avoid corrupting data.
+
+We also fixed some bugs in our database implementations around storing very large scriptpubkeys.
+
 4d85b7a3d7 Support for big SPKs (#4084)
 
 3d674c37f3 Create upsertAllAction (#4073)
@@ -249,6 +284,9 @@ f71d3567ed 2021 11 23 crud action (#3851)
 
 ## DLC node
 
+The major change this release is implementing a connection timeout for dlc node.
+If we cannot connect to a peer within 45 seconds, we throw a timeout exception.
+
 55ecc1ae8f Implement connection timeout (#4081)
 
 019c9b2644 Fix log message failure in DLCDataHandler (#3845)
@@ -256,6 +294,8 @@ f71d3567ed 2021 11 23 crud action (#3851)
 41cb26a3bb Make DLC node's external IP configurable (#3838)
 
 ## DLC Oracle
+
+Improvements to the database handling code so that announcement/attestation creation is transactional.
 
 49d4d7f179 2022 02 06 issue 4049 (#4056)
 
@@ -266,6 +306,14 @@ f71d3567ed 2021 11 23 crud action (#3851)
 c3d1b2ee12 Give DLCOracle to filter events by pending/completed (#3953)
 
 ## DLC wallet
+
+This release of dlc wallet fixes bugs for accepting offers multiple times.
+
+We also add a new column in `global_dlc_data` for `serialization_version` for when we
+break binary level serialization in the DLC protocol spec. This will be done in the 2.0
+release of bitcoin-s.
+
+Finally there is a ton of improvements to database handling code.
 
 6cfbf67812 Prevent DB state corruption while accepting the same offer multiple times (#4067)
 
@@ -294,7 +342,8 @@ ee0d62c5b8 2022 01 14 `DLCDataManagement` refactor (#3982)
 d71208cf0f Support Eclair v0.6.2 (#3765)
 
 ## Esplora
-! new !
+
+This release adds a new module so you can use esplora on as a chain data source.
 
 03abb7537b Add basic esplora client (#4018)
 
@@ -305,6 +354,12 @@ d71208cf0f Support Eclair v0.6.2 (#3765)
 bf8b165fe9 Implement recovery for when we cannot receive a fee rate from a FeeRateApi (#3975)
 
 ## gui
+
+Small bug fixes. We are moving to having a web interface for bitcoin-s.
+
+This can be found here:
+
+https://github.com/bitcoin-s/bitcoin-s-ts/tree/master/wallet-server-ui
 
 546e030dde [GUI] Fix 'First and last points must be endpoints' exception (#4029)
 
@@ -317,6 +372,8 @@ bf8b165fe9 Implement recovery for when we cannot receive a fee rate from a FeeRa
 ## keymanager
 
 ## Lnd rpc
+
+Upgrades lnd to 0.14.2, implements more lnd rpc functionality.
 
 44373f8449 Add functions for LND subscription (#4062)
 
@@ -332,14 +389,19 @@ f54ed98c74 Add subscribe invoices function to lnd (#3860)
 
 079fa62073 Lnd v0.14.0 (#3835)
 
-
 ## node
+
+Fixes various bugs around broadcasting witness transactions. Also fixes bugs to make sure
+we fetch the entire witness transaction (witnesses included). Previously we wouldn't get the witness
+which leads to problems when calculating DLC outcome state.
+
+This release also adds the ability to store peers we see on the p2p network in teh database. Eventually
+we will be able to connect to random peers we see on the p2p network rather than just connecting
+to the node configured in `bitcoin-s.node.peers`
 
 98c5d816ac 2022 01 25 issue 4014 (#4015)
 
 dbfd58da86 Add log txids inside of inventories in big endian rather than little endian (#4013)
-
-7ee1f0f406 Implement batching of database calls for our chain callback (#4003)
 
 a58ef1cd02 Storing peers in database (#3773)
 
@@ -354,10 +416,15 @@ fc09f41db2 Request witness versions of transactions from nodes (#3829)
 ## Oracle server
 
 ## secp256k1jni
+Updates to the underlying libsecp256k1 to give better performance.
 
 9c9a0a618f Update secp256k1-zkp (#3856)
 
 ## wallet
+
+Improves database handling code in the wallet so we use database transactions more often.
+
+This release included various bug fixes and performance.
 
 dc47c070a2 Fix SpendingInfoDAO.findOutputsReceived() bug (#4090)
 
@@ -396,9 +463,12 @@ ba88fb1a03 2021 11 12 fix multiple tag issue (#3822)
 b3d61bc793 Add deleting address tags to to clearAllUtxosAndAddresses() (#3817)
 
 31e8324522 Make sure exception is caught by Future inside of UtxoHandling.unmarkUTXOsAsReserved() (#3816)
+
 ## testkit
 
 ## tor
+
+Upgrades tor to 0.4.6.9
 
 1708add6ec Make Tor connect error message more human readable (#4078)
 
