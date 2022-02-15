@@ -51,14 +51,7 @@ case class BitcoindRpcAppConfig(
     val baseUrl = {
       config.getStringOrNone("bitcoin-s.bitcoind-rpc.connect") match {
         case Some(rpcconnect) => rpcconnect
-        case None =>
-          config.getStringOrNone("bitcoin-s.bitcoind-rpc.bind") match {
-            case Some(rpcbind) =>
-              logger.warn(
-                "Config option bitcoin-s.bitcoind-rpc.bind will soon be deprecated. Use bitcoin-s.bitcoind-rpc.connect instead.")
-              rpcbind
-            case None => "localhost"
-          }
+        case None             => "localhost"
       }
     }
     if (baseUrl.startsWith("http")) baseUrl
@@ -74,14 +67,7 @@ case class BitcoindRpcAppConfig(
     val baseUrl = {
       config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcconnect") match {
         case Some(rpcconnect) => rpcconnect
-        case None =>
-          config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcbind") match {
-            case Some(rpcbind) =>
-              logger.warn(
-                "Config option bitcoin-s.bitcoind-rpc.rpcbind will soon be deprecated. Use bitcoin-s.bitcoind-rpc.rpcconnect instead.")
-              rpcbind
-            case None => "localhost"
-          }
+        case None             => "localhost"
       }
     }
     if (baseUrl.startsWith("http")) baseUrl
