@@ -133,28 +133,8 @@ object Deps {
     lazy val javaFxControls =
       "org.openjfx" % s"javafx-controls" % V.javaFxV classifier osName withSources () withJavadoc ()
 
-    lazy val javaFxFxml =
-      "org.openjfx" % s"javafx-fxml" % V.javaFxV classifier osName withSources () withJavadoc ()
-
-    lazy val javaFxGraphics =
-      "org.openjfx" % s"javafx-graphics" % V.javaFxV classifier osName withSources () withJavadoc ()
-
-    lazy val javaFxMedia =
-      "org.openjfx" % s"javafx-media" % V.javaFxV classifier osName withSources () withJavadoc ()
-
-    lazy val javaFxSwing =
-      "org.openjfx" % s"javafx-swing" % V.javaFxV classifier osName withSources () withJavadoc ()
-
-    lazy val javaFxWeb =
-      "org.openjfx" % s"javafx-web" % V.javaFxV classifier osName withSources () withJavadoc ()
-
     lazy val javaFxDeps = List(javaFxBase,
-                               javaFxControls,
-                               javaFxFxml,
-                               javaFxGraphics,
-                               javaFxMedia,
-                               javaFxSwing,
-                               javaFxWeb)
+                               javaFxControls)
 
     val breezeViz =
       ("org.scalanlp" %% "breeze-viz" % V.breezeV withSources () withJavadoc ())
