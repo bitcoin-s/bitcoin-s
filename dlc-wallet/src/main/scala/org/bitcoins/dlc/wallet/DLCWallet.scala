@@ -272,10 +272,11 @@ abstract class DLCWallet
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
     logger.info("Creating DLC Offer")
-    if (!walletConfig.allowExternalDLCAddresses && (externalPayoutAddressOpt.nonEmpty || externalChangeAddressOpt.nonEmpty)) {
+    if (
+      !walletConfig.allowExternalDLCAddresses && (externalPayoutAddressOpt.nonEmpty || externalChangeAddressOpt.nonEmpty)
+    ) {
       return Future.failed(
-        new IllegalArgumentException(
-          "External DLC addresses are not allowed"))
+        new IllegalArgumentException("External DLC addresses are not allowed"))
     }
     if (!validateAnnouncementSignatures(contractInfo.oracleInfos)) {
       return Future.failed(
@@ -563,10 +564,11 @@ abstract class DLCWallet
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] = {
     logger.debug("Calculating relevant wallet data for DLC Accept")
-    if (!walletConfig.allowExternalDLCAddresses && (externalPayoutAddressOpt.nonEmpty || externalChangeAddressOpt.nonEmpty)) {
+    if (
+      !walletConfig.allowExternalDLCAddresses && (externalPayoutAddressOpt.nonEmpty || externalChangeAddressOpt.nonEmpty)
+    ) {
       return Future.failed(
-        new IllegalArgumentException(
-          "External DLC addresses are not allowed"))
+        new IllegalArgumentException("External DLC addresses are not allowed"))
     }
     if (!validateAnnouncementSignatures(offer.oracleInfos)) {
       return Future.failed(InvalidAnnouncementSignature(
@@ -590,8 +592,8 @@ abstract class DLCWallet
           case None =>
             createNewDLCAccept(collateral,
                                offer,
-              externalPayoutAddressOpt,
-              externalChangeAddressOpt)
+                               externalPayoutAddressOpt,
+                               externalChangeAddressOpt)
         }
       }
       status <- findDLC(dlcId)

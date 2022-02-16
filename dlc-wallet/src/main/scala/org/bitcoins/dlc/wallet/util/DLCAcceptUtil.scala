@@ -31,16 +31,16 @@ object DLCAcceptUtil extends Logging {
 
   /** Builds an [[DLCAcceptWithoutSigs]] message from relevant data inside of the [[DLCWallet]] */
   def buildAcceptWithoutSigs(
-                              dlc: DLCDb,
-                              offer: DLCOffer,
-                              txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
-                              spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
-                              account: AccountDb,
-                              fundingPrivKey: AdaptorSign,
-                              collateral: CurrencyUnit,
-                              networkParameters: NetworkParameters,
-                              externalPayoutAddressOpt: Option[BitcoinAddress],
-                              externalChangeAddressOpt: Option[BitcoinAddress]): (
+      dlc: DLCDb,
+      offer: DLCOffer,
+      txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
+      spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
+      account: AccountDb,
+      fundingPrivKey: AdaptorSign,
+      collateral: CurrencyUnit,
+      networkParameters: NetworkParameters,
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]): (
       DLCAcceptWithoutSigs,
       DLCPublicKeys) = {
     val serialIds = DLCMessage.genSerialIds(
@@ -61,7 +61,8 @@ object DLCAcceptUtil extends Logging {
       chainType = dlc.changeIndex,
       keyIndex = dlc.keyIndex,
       networkParameters = networkParameters,
-      externalPayoutAddressOpt = externalPayoutAddressOpt)
+      externalPayoutAddressOpt = externalPayoutAddressOpt
+    )
 
     require(dlcPubKeys.fundingKey == fundingPrivKey.publicKey,
             "Did not derive the same funding private and public key")

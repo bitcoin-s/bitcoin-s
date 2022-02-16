@@ -322,11 +322,11 @@ object DLCUtil {
 
   /** Calculates a [[DLCPublicKeys]] from the wallet's [[BIP39KeyManager]] */
   def calcDLCPubKeys(
-                      xpub: ExtPublicKey,
-                      chainType: HDChainType,
-                      keyIndex: Int,
-                      networkParameters: NetworkParameters,
-                      externalPayoutAddressOpt: Option[BitcoinAddress]): DLCPublicKeys = {
+      xpub: ExtPublicKey,
+      chainType: HDChainType,
+      keyIndex: Int,
+      networkParameters: NetworkParameters,
+      externalPayoutAddressOpt: Option[BitcoinAddress]): DLCPublicKeys = {
     val chainIndex = chainType.index
     val fundingKey =
       xpub

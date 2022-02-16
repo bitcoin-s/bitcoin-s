@@ -19,13 +19,13 @@ import scala.concurrent._
 trait DLCWalletApi { self: WalletApi =>
 
   def createDLCOffer(
-                      contractInfoTLV: ContractInfoTLV,
-                      collateral: Satoshis,
-                      feeRateOpt: Option[SatoshisPerVirtualByte],
-                      locktime: UInt32,
-                      refundLT: UInt32,
-                      externalPayoutAddressOpt: Option[BitcoinAddress],
-                      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
+      contractInfoTLV: ContractInfoTLV,
+      collateral: Satoshis,
+      feeRateOpt: Option[SatoshisPerVirtualByte],
+      locktime: UInt32,
+      refundLT: UInt32,
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
     val contractInfo = ContractInfo.fromTLV(contractInfoTLV)
     createDLCOffer(contractInfo,
                    collateral,
@@ -62,8 +62,8 @@ trait DLCWalletApi { self: WalletApi =>
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] = {
     acceptDLCOffer(DLCOffer.fromTLV(dlcOfferTLV),
-      externalPayoutAddressOpt,
-      externalChangeAddressOpt)
+                   externalPayoutAddressOpt,
+                   externalChangeAddressOpt)
   }
 
   def acceptDLCOffer(
