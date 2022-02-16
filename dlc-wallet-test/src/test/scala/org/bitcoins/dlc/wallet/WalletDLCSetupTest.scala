@@ -853,8 +853,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         feeRateOpt = feeRateOpt,
         locktime = UInt32.zero,
         refundLT = UInt32.one,
-        customPayoutAddressOpt = None,
-        customChangeAddressOpt = None
+        externalPayoutAddressOpt = None,
+        externalChangeAddressOpt = None
       )
     }
 
@@ -901,8 +901,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         feeRateOpt = feeRateOpt,
         locktime = UInt32.zero,
         refundLT = UInt32.one,
-        customPayoutAddressOpt = None,
-        customChangeAddressOpt = None
+        externalPayoutAddressOpt = None,
+        externalChangeAddressOpt = None
       )
     }
 
@@ -932,8 +932,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         feeRateOpt = feeRateOpt,
         locktime = UInt32.zero,
         refundLT = UInt32.one,
-        customPayoutAddressOpt = None,
-        customChangeAddressOpt = None
+        externalPayoutAddressOpt = None,
+        externalChangeAddressOpt = None
       )
     }
 
@@ -1008,8 +1008,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           feeRateOpt = feeRateOpt,
           locktime = UInt32.zero,
           refundLT = UInt32.one,
-          customPayoutAddressOpt = None,
-          customChangeAddressOpt = None
+          externalPayoutAddressOpt = None,
+          externalChangeAddressOpt = None
         )
         invalidOffer = offer.copy(contractInfo = invalidContractInfo)
         res <- recoverToSucceededIf[InvalidAnnouncementSignature](
@@ -1020,7 +1020,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
   }
 
-  it must "use custom payout and change addresses when they are provided" in {
+  it must "use external payout and change addresses when they are provided" in {
     wallets =>
       val walletA = wallets._1.wallet
       val walletB = wallets._2.wallet
@@ -1052,8 +1052,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           feeRateOpt = feeRateOpt,
           locktime = UInt32.zero,
           refundLT = UInt32.one,
-          customPayoutAddressOpt = payoutAddressAOpt,
-          customChangeAddressOpt = changeAddressAOpt
+          externalPayoutAddressOpt = payoutAddressAOpt,
+          externalChangeAddressOpt = changeAddressAOpt
         )
         accept <- walletB.acceptDLCOffer(offer,
                                          payoutAddressBOpt,
@@ -1064,8 +1064,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           feeRateOpt = feeRateOpt1,
           locktime = UInt32.zero,
           refundLT = UInt32.one,
-          customPayoutAddressOpt = None,
-          customChangeAddressOpt = None
+          externalPayoutAddressOpt = None,
+          externalChangeAddressOpt = None
         )
         accept1 <- walletB.acceptDLCOffer(offer1, None, None)
       } yield {

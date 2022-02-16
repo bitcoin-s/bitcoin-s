@@ -76,8 +76,8 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
         feeRateOpt = Some(SatoshisPerVirtualByte.one),
         locktime = UInt32.zero,
         refundLocktime = UInt32.one,
-        customPayoutAddressOpt = None,
-        customChangeAddressOpt = None
+        externalPayoutAddressOpt = None,
+        externalChangeAddressOpt = None
       )
 
       //now unreserve the utxo

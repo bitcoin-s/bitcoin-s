@@ -291,8 +291,8 @@ object DLCWalletUtil extends Logging {
         feeRateOpt = Some(SatoshisPerVirtualByte.fromLong(10)),
         locktime = dummyTimeouts.contractMaturity.toUInt32,
         refundLocktime = dummyTimeouts.contractTimeout.toUInt32,
-        customPayoutAddressOpt = payoutAddressAOpt,
-        customChangeAddressOpt = changeAddressAOpt
+        externalPayoutAddressOpt = payoutAddressAOpt,
+        externalChangeAddressOpt = changeAddressAOpt
       )
       accept <- walletB.acceptDLCOffer(offer,
                                        payoutAddressBOpt,

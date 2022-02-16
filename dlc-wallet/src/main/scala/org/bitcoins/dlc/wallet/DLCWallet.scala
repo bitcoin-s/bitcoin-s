@@ -269,9 +269,14 @@ abstract class DLCWallet
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
       refundLocktime: UInt32,
-      customPayoutAddressOpt: Option[BitcoinAddress],
-      customChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
     logger.info("Creating DLC Offer")
+    if (!walletConfig.allowExternalDLCAddresses && (externalPayoutAddressOpt.nonEmpty || externalChangeAddressOpt.nonEmpty)) {
+      return Future.failed(
+        new IllegalArgumentException(
+          "External DLC addresses are not allowed"))
+    }
     if (!validateAnnouncementSignatures(contractInfo.oracleInfos)) {
       return Future.failed(
         InvalidAnnouncementSignature(
@@ -339,7 +344,7 @@ abstract class DLCWallet
                             used = false)
       }
 
-      changeAddr = customChangeAddressOpt.getOrElse {
+      changeAddr = externalChangeAddressOpt.getOrElse {
         val changeSPK = txBuilder.finalizer.changeSPK
         BitcoinAddress.fromScriptPubKey(changeSPK, networkParameters)
       }
@@ -348,8 +353,8 @@ abstract class DLCWallet
                                           chainType = chainType,
                                           keyIndex = nextIndex,
                                           networkParameters = networkParameters,
-                                          customPayoutAddressOpt =
-                                            customPayoutAddressOpt)
+                                          externalPayoutAddressOpt =
+                                            externalPayoutAddressOpt)
 
       _ = logger.debug(
         s"DLC Offer data collected, creating database entry, ${dlcId.hex}")
@@ -555,9 +560,14 @@ abstract class DLCWallet
     */
   override def acceptDLCOffer(
       offer: DLCOffer,
-      customPayoutAddressOpt: Option[BitcoinAddress],
-      customChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] = {
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] = {
     logger.debug("Calculating relevant wallet data for DLC Accept")
+    if (!walletConfig.allowExternalDLCAddresses && (externalPayoutAddressOpt.nonEmpty || externalChangeAddressOpt.nonEmpty)) {
+      return Future.failed(
+        new IllegalArgumentException(
+          "External DLC addresses are not allowed"))
+    }
     if (!validateAnnouncementSignatures(offer.oracleInfos)) {
       return Future.failed(InvalidAnnouncementSignature(
         s"Offer ${offer.tempContractId.hex} contains invalid announcement signature(s)"))
@@ -580,8 +590,8 @@ abstract class DLCWallet
           case None =>
             createNewDLCAccept(collateral,
                                offer,
-                               customPayoutAddressOpt,
-                               customChangeAddressOpt)
+              externalPayoutAddressOpt,
+              externalChangeAddressOpt)
         }
       }
       status <- findDLC(dlcId)
@@ -621,8 +631,8 @@ abstract class DLCWallet
   private def createNewDLCAccept(
       collateral: CurrencyUnit,
       offer: DLCOffer,
-      customPayoutAddressOpt: Option[BitcoinAddress],
-      customChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] =
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] =
     Future {
       DLCWallet.AcceptingOffersLatch.startAccepting(offer.tempContractId)
 
@@ -654,8 +664,8 @@ abstract class DLCWallet
           fundingPrivKey = fundingPrivKey,
           collateral = collateral,
           networkParameters = networkParameters,
-          customPayoutAddressOpt = customPayoutAddressOpt,
-          customChangeAddressOpt = customChangeAddressOpt
+          externalPayoutAddressOpt = externalPayoutAddressOpt,
+          externalChangeAddressOpt = externalChangeAddressOpt
         )
         builder = DLCTxBuilder(offer, acceptWithoutSigs)
 

@@ -368,8 +368,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         feeRateOpt = feeRateOpt,
         locktime = UInt32.zero,
         refundLT = UInt32.one,
-        customPayoutAddressOpt = None,
-        customChangeAddressOpt = None
+        externalPayoutAddressOpt = None,
+        externalChangeAddressOpt = None
       )
     }
 

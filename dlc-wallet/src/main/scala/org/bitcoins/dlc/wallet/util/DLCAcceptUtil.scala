@@ -31,16 +31,16 @@ object DLCAcceptUtil extends Logging {
 
   /** Builds an [[DLCAcceptWithoutSigs]] message from relevant data inside of the [[DLCWallet]] */
   def buildAcceptWithoutSigs(
-      dlc: DLCDb,
-      offer: DLCOffer,
-      txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
-      spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
-      account: AccountDb,
-      fundingPrivKey: AdaptorSign,
-      collateral: CurrencyUnit,
-      networkParameters: NetworkParameters,
-      customPayoutAddressOpt: Option[BitcoinAddress],
-      customChangeAddressOpt: Option[BitcoinAddress]): (
+                              dlc: DLCDb,
+                              offer: DLCOffer,
+                              txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
+                              spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
+                              account: AccountDb,
+                              fundingPrivKey: AdaptorSign,
+                              collateral: CurrencyUnit,
+                              networkParameters: NetworkParameters,
+                              externalPayoutAddressOpt: Option[BitcoinAddress],
+                              externalChangeAddressOpt: Option[BitcoinAddress]): (
       DLCAcceptWithoutSigs,
       DLCPublicKeys) = {
     val serialIds = DLCMessage.genSerialIds(
@@ -51,7 +51,7 @@ object DLCAcceptUtil extends Logging {
         .fromInputSigningInfo(utxo, id, TransactionConstants.enableRBFSequence)
     }
 
-    val changeAddr = customChangeAddressOpt.getOrElse {
+    val changeAddr = externalChangeAddressOpt.getOrElse {
       val changeSPK = txBuilder.finalizer.changeSPK
       BitcoinAddress.fromScriptPubKey(changeSPK, networkParameters)
     }
@@ -61,7 +61,7 @@ object DLCAcceptUtil extends Logging {
       chainType = dlc.changeIndex,
       keyIndex = dlc.keyIndex,
       networkParameters = networkParameters,
-      customPayoutAddressOpt = customPayoutAddressOpt)
+      externalPayoutAddressOpt = externalPayoutAddressOpt)
 
     require(dlcPubKeys.fundingKey == fundingPrivKey.publicKey,
             "Did not derive the same funding private and public key")

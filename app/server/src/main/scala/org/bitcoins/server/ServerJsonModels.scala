@@ -651,13 +651,13 @@ object GetDLC extends ServerJsonModels {
 }
 
 case class CreateDLCOffer(
-    contractInfoTLV: ContractInfoV0TLV,
-    collateral: Satoshis,
-    feeRateOpt: Option[SatoshisPerVirtualByte],
-    locktime: UInt32,
-    refundLocktime: UInt32,
-    customPayoutAddressOpt: Option[BitcoinAddress],
-    customChangeAddressOpt: Option[BitcoinAddress])
+                           contractInfoTLV: ContractInfoV0TLV,
+                           collateral: Satoshis,
+                           feeRateOpt: Option[SatoshisPerVirtualByte],
+                           locktime: UInt32,
+                           refundLocktime: UInt32,
+                           externalPayoutAddressOpt: Option[BitcoinAddress],
+                           externalChangeAddressOpt: Option[BitcoinAddress])
 
 object CreateDLCOffer extends ServerJsonModels {
 
@@ -865,9 +865,9 @@ object DecodeAttestations extends ServerJsonModels {
 }
 
 case class AcceptDLCOffer(
-    offer: LnMessage[DLCOfferTLV],
-    customPayoutAddressOpt: Option[BitcoinAddress],
-    customChangeAddressOpt: Option[BitcoinAddress])
+                           offer: LnMessage[DLCOfferTLV],
+                           externalPayoutAddressOpt: Option[BitcoinAddress],
+                           externalChangeAddressOpt: Option[BitcoinAddress])
 
 object AcceptDLCOffer extends ServerJsonModels {
 
@@ -970,10 +970,10 @@ object AddDLCSigs extends ServerJsonModels {
 }
 
 case class DLCDataFromFile(
-    path: Path,
-    destinationOpt: Option[Path],
-    customPayoutAddressOpt: Option[BitcoinAddress],
-    customChangeAddressOpt: Option[BitcoinAddress])
+                            path: Path,
+                            destinationOpt: Option[Path],
+                            externalPayoutAddressOpt: Option[BitcoinAddress],
+                            externalChangeAddressOpt: Option[BitcoinAddress])
 
 object DLCDataFromFile extends ServerJsonModels {
 
