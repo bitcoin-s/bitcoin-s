@@ -5,6 +5,7 @@ import org.bitcoins.core.api.wallet._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.dlc.accounting._
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
@@ -22,9 +23,17 @@ trait DLCWalletApi { self: WalletApi =>
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
-      refundLT: UInt32): Future[DLCOffer] = {
+      refundLT: UInt32,
+      customPayoutAddressOpt: Option[BitcoinAddress],
+      customChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
     val contractInfo = ContractInfo.fromTLV(contractInfoTLV)
-    createDLCOffer(contractInfo, collateral, feeRateOpt, locktime, refundLT)
+    createDLCOffer(contractInfo,
+                   collateral,
+                   feeRateOpt,
+                   locktime,
+                   refundLT,
+                   customPayoutAddressOpt,
+                   customChangeAddressOpt)
   }
 
   def createDLCOffer(
@@ -32,7 +41,9 @@ trait DLCWalletApi { self: WalletApi =>
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
-      refundLT: UInt32): Future[DLCOffer]
+      refundLT: UInt32,
+      customPayoutAddressOpt: Option[BitcoinAddress],
+      customChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer]
 
   def registerDLCOffer(dlcOffer: DLCOffer): Future[DLCOffer] = {
     createDLCOffer(
@@ -40,15 +51,25 @@ trait DLCWalletApi { self: WalletApi =>
       dlcOffer.totalCollateral,
       Some(dlcOffer.feeRate),
       dlcOffer.timeouts.contractMaturity.toUInt32,
-      dlcOffer.timeouts.contractTimeout.toUInt32
+      dlcOffer.timeouts.contractTimeout.toUInt32,
+      None,
+      None
     )
   }
 
-  def acceptDLCOffer(dlcOfferTLV: DLCOfferTLV): Future[DLCAccept] = {
-    acceptDLCOffer(DLCOffer.fromTLV(dlcOfferTLV))
+  def acceptDLCOffer(
+      dlcOfferTLV: DLCOfferTLV,
+      customPayoutAddressOpt: Option[BitcoinAddress],
+      customChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] = {
+    acceptDLCOffer(DLCOffer.fromTLV(dlcOfferTLV),
+                   customPayoutAddressOpt,
+                   customChangeAddressOpt)
   }
 
-  def acceptDLCOffer(dlcOffer: DLCOffer): Future[DLCAccept]
+  def acceptDLCOffer(
+      dlcOffer: DLCOffer,
+      customPayoutAddressOpt: Option[BitcoinAddress],
+      customChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept]
 
   def signDLC(acceptTLV: DLCAcceptTLV): Future[DLCSign]
 

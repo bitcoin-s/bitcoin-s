@@ -5,6 +5,7 @@ import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.hd.{BIP32Path, HDChainType}
 import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
   DLCAccept,
@@ -324,7 +325,8 @@ object DLCUtil {
       xpub: ExtPublicKey,
       chainType: HDChainType,
       keyIndex: Int,
-      networkParameters: NetworkParameters): DLCPublicKeys = {
+      networkParameters: NetworkParameters,
+      customPayoutAddressOpt: Option[BitcoinAddress]): DLCPublicKeys = {
     val chainIndex = chainType.index
     val fundingKey =
       xpub
@@ -332,16 +334,20 @@ object DLCUtil {
         .get
         .key
 
-    val payoutKey =
-      xpub
-        .deriveChildPubKey(
-          BIP32Path.fromString(s"m/$chainIndex/${keyIndex + 1}"))
-        .get
-        .key
-
     networkParameters match {
       case bitcoinNetwork: BitcoinNetwork =>
-        DLCPublicKeys.fromPubKeys(fundingKey, payoutKey, bitcoinNetwork)
+        customPayoutAddressOpt match {
+          case None =>
+            val payoutKey =
+              xpub
+                .deriveChildPubKey(
+                  BIP32Path.fromString(s"m/$chainIndex/${keyIndex + 1}"))
+                .get
+                .key
+            DLCPublicKeys.fromPubKeys(fundingKey, payoutKey, bitcoinNetwork)
+          case Some(customPayoutAddress) =>
+            DLCPublicKeys(fundingKey, customPayoutAddress)
+        }
     }
   }
 }

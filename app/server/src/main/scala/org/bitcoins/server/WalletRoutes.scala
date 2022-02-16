@@ -6,14 +6,14 @@ import akka.http.scaladsl.server._
 import akka.stream.Materializer
 import grizzled.slf4j.Logging
 import org.bitcoins.commons.serializers.Picklers._
+import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{AddressLabelTagType, TxoState}
 import org.bitcoins.crypto.NetworkElement
-import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
@@ -298,7 +298,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
                              collateral,
                              feeRateOpt,
                              locktime,
-                             refundLT)) =>
+                             refundLT,
+                             payoutAddressOpt,
+                             changeAddressOpt)) =>
           complete {
             val announcements = contractInfo.oracleInfo match {
               case OracleInfoV0TLV(announcement)        => Vector(announcement)
@@ -316,7 +318,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
                               collateral,
                               feeRateOpt,
                               locktime,
-                              refundLT)
+                              refundLT,
+                              payoutAddressOpt,
+                              changeAddressOpt)
               .map { offer =>
                 Server.httpSuccess(offer.toMessage.hex)
               }
@@ -327,10 +331,11 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       AcceptDLCOffer.fromJsArr(arr) match {
         case Failure(exception) =>
           complete(Server.httpBadRequest(exception))
-        case Success(AcceptDLCOffer(offer)) =>
+        case Success(
+              AcceptDLCOffer(offer, payoutAddressOpt, changeAddressOpt)) =>
           complete {
             wallet
-              .acceptDLCOffer(offer.tlv)
+              .acceptDLCOffer(offer.tlv, payoutAddressOpt, changeAddressOpt)
               .map { accept =>
                 Server.httpSuccess(accept.toMessage.hex)
               }
@@ -341,7 +346,11 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       DLCDataFromFile.fromJsArr(arr) match {
         case Failure(exception) =>
           complete(Server.httpBadRequest(exception))
-        case Success(DLCDataFromFile(path, destOpt)) =>
+        case Success(
+              DLCDataFromFile(path,
+                              destOpt,
+                              payoutAddressOpt,
+                              changeAddressOpt)) =>
           complete {
 
             val hex = Files.readAllLines(path).get(0)
@@ -349,7 +358,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
             val offerMessage = LnMessageFactory(DLCOfferTLV).fromHex(hex)
 
             wallet
-              .acceptDLCOffer(offerMessage.tlv)
+              .acceptDLCOffer(offerMessage.tlv,
+                              payoutAddressOpt,
+                              changeAddressOpt)
               .map { accept =>
                 val ret = handleDestinationOpt(accept.toMessage.hex, destOpt)
                 Server.httpSuccess(ret)
@@ -375,7 +386,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       DLCDataFromFile.fromJsArr(arr) match {
         case Failure(exception) =>
           complete(Server.httpBadRequest(exception))
-        case Success(DLCDataFromFile(path, destOpt)) =>
+        case Success(DLCDataFromFile(path, destOpt, _, _)) =>
           complete {
 
             val hex = Files.readAllLines(path).get(0)
@@ -408,7 +419,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       DLCDataFromFile.fromJsArr(arr) match {
         case Failure(exception) =>
           complete(Server.httpBadRequest(exception))
-        case Success(DLCDataFromFile(path, _)) =>
+        case Success(DLCDataFromFile(path, _, _, _)) =>
           complete {
 
             val hex = Files.readAllLines(path).get(0)
@@ -439,7 +450,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       DLCDataFromFile.fromJsArr(arr) match {
         case Failure(exception) =>
           complete(Server.httpBadRequest(exception))
-        case Success(DLCDataFromFile(path, _)) =>
+        case Success(DLCDataFromFile(path, _, _, _)) =>
           val hex = Files.readAllLines(path).get(0)
 
           val signMessage = LnMessageFactory(DLCSignTLV).fromHex(hex)
