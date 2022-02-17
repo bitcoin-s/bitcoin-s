@@ -39,11 +39,9 @@ class LnHumanReadablePartTest extends BitcoinSUnitTest {
   }
 
   it must "fail to create hrp from invalid amount" in {
-    val tooBig = Some(MilliBitcoins(LnPolicy.maxAmountMSat.toBigInt + 1))
     val zero = Some(LnCurrencyUnits.zero)
     val tooSmall = Some(MilliBitcoins(-1))
 
-    Try(LnHumanReadablePart(LnBitcoinMainNet, tooBig)).isFailure must be(true)
     Try(LnHumanReadablePart(LnBitcoinMainNet, zero)).isFailure must be(true)
     Try(LnHumanReadablePart(LnBitcoinMainNet, tooSmall)).isFailure must be(true)
 

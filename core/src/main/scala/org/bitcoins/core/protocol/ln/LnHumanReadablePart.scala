@@ -13,9 +13,6 @@ import scala.util.{Failure, Success, Try}
 sealed abstract class LnHumanReadablePart extends Bech32HumanReadablePart {
   require(amount.isEmpty || amount.get.toBigInt > 0,
           s"Invoice amount must be greater then 0, got $amount")
-  require(
-    amount.isEmpty || amount.get.toMSat <= LnPolicy.maxAmountMSat,
-    s"Invoice amount must not exceed ${LnPolicy.maxAmountMSat}, got ${amount.get.toMSat}")
 
   def network: LnParams
 
