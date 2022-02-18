@@ -110,8 +110,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       val blockHashMap = txDbs.map(db => db.txIdBE -> db.blockHashOpt).toMap
       val blockHashAndDb = spendingInfoDbs.map { txo =>
         val txToUse = txo.state match {
-          case _: ReceivedState | DoesNotExist | ImmatureCoinbase |
-              Reserved | BroadcastReceived =>
+          case _: ReceivedState | ImmatureCoinbase | Reserved |
+              BroadcastReceived =>
             txo.txid
           case PendingConfirmationsSpent | ConfirmedSpent | BroadcastSpent =>
             txo.spendingTxIdOpt.get
@@ -150,8 +150,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         // We should keep the utxo as reserved so it is not used in
         // a future transaction that it should not be in
         txo
-      case TxoState.DoesNotExist | TxoState.ConfirmedReceived |
-          TxoState.ConfirmedSpent =>
+      case TxoState.ConfirmedReceived | TxoState.ConfirmedSpent =>
         txo
     }
   }

@@ -305,7 +305,7 @@ abstract class Wallet
                 txo.output.value
               case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
                   TxoState.ConfirmedSpent | TxoState.BroadcastSpent |
-                  TxoState.DoesNotExist | TxoState.ImmatureCoinbase =>
+                  TxoState.ImmatureCoinbase =>
                 CurrencyUnits.zero
             }
           }
@@ -636,9 +636,8 @@ abstract class Wallet
         }
 
       oldOutputs <- spendingInfoDAO.findDbsForTx(txId)
-      // Mark old outputs as replaced
-      _ <- spendingInfoDAO.updateAll(
-        oldOutputs.map(_.copyWithState(TxoState.DoesNotExist)))
+      // delete old outputs
+      _ <- spendingInfoDAO.deleteAll(oldOutputs)
 
       sequence = tx.inputs.head.sequence + UInt32.one
       outputs = tx.outputs.filterNot(_.scriptPubKey == changeSpk)
