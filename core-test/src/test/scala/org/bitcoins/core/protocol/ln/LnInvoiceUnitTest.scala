@@ -559,4 +559,10 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
       "lntbs1ps5um52pp562zjpdyec3hjga5sdeh90v09km7ugasretujf3wwj3ueutyujz3sdqqcqzpgxqyz5vqsp5an8lqngrz6w3vd449eqqtvwu2x4v9ltdf9r6hpwxf4x404fhv6zs9qyyssqfdmmsuldkyy7v29kwuuc9egwkthtf3aaf79p3w93ddffq65fs5zs6vys9et89u0yv5kearpnuyttsvufzjnsnup2ehp4nteelz39exqpgd78w8"
     assert(LnInvoice.fromStringT(str).isSuccess)
   }
+
+  it must "create an invoice above the old limit" in {
+    val str =
+      "lntbs42949672960n1p3qavpxpp59mdvu0tw0mzf2kl96ddfcm0597nuxwp42tzsehrn66jrmlg7nu8sdqqcqzpgxqyz5vqsp5y70pg45suf546mses9cp54fk4uke2rmppk9dy4926prhe5v54g4s9qyyssqmtpasu8map7hegdxfzmgusuqnkrssy6m34wcup3lmu0mae3xtht5d49204a3wm9wpklalx49g33cer5gqfractwt79vrc8p7wlpsdlqp296km0"
+    assert(LnInvoice.fromStringT(str).isSuccess)
+  }
 }
