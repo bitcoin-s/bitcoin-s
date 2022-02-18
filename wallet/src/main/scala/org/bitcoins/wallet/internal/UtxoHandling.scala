@@ -228,7 +228,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         case (None, txos) =>
           logger.debug(
             s"Currently have ${txos.size} transactions in the mempool")
-          Vector.empty
+          txos
       }.toVector
 
       toUpdateFs

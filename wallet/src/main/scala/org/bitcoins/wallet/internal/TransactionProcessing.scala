@@ -323,8 +323,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       toBeUpdated = outputsBeingSpent
         .map(markAsSpent(_, transaction.txIdBE))
         .flatten
-      processed <- spendingInfoDAO.updateAllSpendingInfoDb(toBeUpdated)
-      _ <- updateUtxoSpentConfirmedStates(processed)
+      processed <- updateUtxoSpentConfirmedStates(toBeUpdated)
     } yield {
       processed
     }
