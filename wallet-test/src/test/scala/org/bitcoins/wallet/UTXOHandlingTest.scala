@@ -36,7 +36,6 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
       .copyWithSpendingTxId(spendingTxId)
       .copyWithState(ConfirmedSpent)
     val reserved = utxo.copyWithState(Reserved)
-    val dne = utxo.copyWithState(DoesNotExist)
 
     assert(wallet.updateTxoWithConfs(reserved, 1) == reserved)
 
@@ -52,9 +51,6 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
     assert(wallet.updateTxoWithConfs(pendingConfSpent, 1) == pendingConfSpent)
     assert(
       wallet.updateTxoWithConfs(pendingConfSpent, requiredConfs) == confSpent)
-
-    assert(wallet.updateTxoWithConfs(dne, 1) == dne)
-    assert(wallet.updateTxoWithConfs(dne, requiredConfs) == dne)
 
     assert(wallet.updateTxoWithConfs(confSpent, 1) == confSpent)
     assert(wallet.updateTxoWithConfs(confSpent, requiredConfs) == confSpent)

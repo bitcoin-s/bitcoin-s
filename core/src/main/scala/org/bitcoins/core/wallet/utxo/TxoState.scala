@@ -11,9 +11,6 @@ sealed abstract class SpentState extends TxoState
 
 object TxoState extends StringFactory[TxoState] {
 
-  /** Means that no funds have been sent to this utxo EVER */
-  final case object DoesNotExist extends TxoState
-
   /** A coinbase output that has not reached maturity and cannot be spent yet.
     * https://bitcoin.stackexchange.com/questions/1991/what-is-the-block-maturation-time
     */
@@ -66,7 +63,6 @@ object TxoState extends StringFactory[TxoState] {
   val broadcastStates: Set[TxoState] = Set(BroadcastReceived, BroadcastSpent)
 
   val all: Vector[TxoState] = Vector(
-    DoesNotExist,
     ImmatureCoinbase,
     BroadcastReceived,
     PendingConfirmationsReceived,

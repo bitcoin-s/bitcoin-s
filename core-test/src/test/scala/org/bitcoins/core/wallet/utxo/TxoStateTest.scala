@@ -7,7 +7,6 @@ class TxoStateTest extends BitcoinSUnitTest {
   behavior of "TxoState"
 
   it must "read from string" in {
-    TxoState.fromString("doesnotexist") must be(TxoState.DoesNotExist)
 
     TxoState.fromString("PendingConfirmationsReceived") must be(
       TxoState.PendingConfirmationsReceived)

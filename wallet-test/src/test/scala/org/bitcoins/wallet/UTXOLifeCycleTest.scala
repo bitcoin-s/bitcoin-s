@@ -188,30 +188,6 @@ class UTXOLifeCycleTest
     } yield res
   }
 
-  it should "handle processing a new spending tx for a DNE utxo" in { param =>
-    val WalletWithBitcoindRpc(wallet, _) = param
-
-    for {
-      tx <- wallet.sendToAddress(testAddr, Satoshis(3000), None)
-
-      coins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
-
-      dneCoins = coins.map(_.copyWithState(TxoState.DoesNotExist))
-      _ <- wallet.spendingInfoDAO.updateAllSpendingInfoDb(dneCoins.toVector)
-
-      // Create tx to spend dne utxos
-      newTx = {
-        val inputs = coins.map { db =>
-          TransactionInput(db.outPoint, EmptyScriptSignature, UInt32.zero)
-        }
-        BaseTransaction(Int32.zero, inputs, Vector.empty, UInt32.zero)
-      }
-
-      res <- recoverToSucceededIf[RuntimeException](
-        wallet.processTransaction(newTx, None))
-    } yield res
-  }
-
   it should "track a utxo state change to broadcast received" in { param =>
     val WalletWithBitcoindRpc(wallet, bitcoind) = param
 

@@ -450,9 +450,6 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           //do not want to update again
           None
         }
-      case TxoState.DoesNotExist =>
-        throw new RuntimeException(
-          s"Attempted to process a transaction for a utxo that does not exist ${out.outPoint.hex} with a new spending tx ${spendingTxId.hex}")
     }
   }
 
