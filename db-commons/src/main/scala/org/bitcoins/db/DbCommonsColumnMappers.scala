@@ -501,4 +501,9 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
       _.toString,
       DLCSerializationVersion.fromString)
   }
+
+  implicit val dlcOfferTLVMapper: BaseColumnType[DLCOfferTLV] = {
+    MappedColumnType.base[DLCOfferTLV, String](_.hex, DLCOfferTLV.fromHex)
+  }
+
 }

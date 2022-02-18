@@ -2,7 +2,7 @@ package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.dlc.wallet.DLCAppConfig
-import org.bitcoins.dlc.wallet.models._
+import org.bitcoins.dlc.wallet.models.{IncomingDLCOfferDAO, _}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.scalatest._
@@ -20,7 +20,8 @@ case class DLCDAOs(
     dlcInputsDAO: DLCFundingInputDAO,
     dlcSigsDAO: DLCCETSignaturesDAO,
     dlcRefundSigDAO: DLCRefundSigsDAO,
-    dlcRemoteTxDAO: DLCRemoteTxDAO) {
+    dlcRemoteTxDAO: DLCRemoteTxDAO,
+    incomingDLCOfferDAO: IncomingDLCOfferDAO) {
 
   val list = Vector(
     announcementDAO,
@@ -33,7 +34,8 @@ case class DLCDAOs(
     dlcInputsDAO,
     dlcSigsDAO,
     dlcRefundSigDAO,
-    dlcRemoteTxDAO
+    dlcRemoteTxDAO,
+    incomingDLCOfferDAO
   )
 }
 
@@ -51,6 +53,7 @@ trait DLCDAOFixture extends BitcoinSFixture with EmbeddedPg {
     val dlcSigsDAO = DLCCETSignaturesDAO()
     val dlcRefundSigDAO = DLCRefundSigsDAO()
     val dlcRemoteTxDAO = DLCRemoteTxDAO()
+    val incomingDLCOfferDAO = IncomingDLCOfferDAO()
     DLCDAOs(
       announcementDAO = announcementDAO,
       nonceDAO = nonceDAO,
@@ -62,7 +65,8 @@ trait DLCDAOFixture extends BitcoinSFixture with EmbeddedPg {
       dlcInputsDAO = dlcInputsDAO,
       dlcSigsDAO = dlcSigsDAO,
       dlcRefundSigDAO = dlcRefundSigDAO,
-      dlcRemoteTxDAO = dlcRemoteTxDAO
+      dlcRemoteTxDAO = dlcRemoteTxDAO,
+      incomingDLCOfferDAO = incomingDLCOfferDAO
     )
   }
 
