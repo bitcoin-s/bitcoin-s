@@ -46,7 +46,9 @@ object BitcoinSTestAppConfig {
          |  node {
          |     mode = spv
          |  }
-         |
+         |  wallet {
+         |    allowExternalDLCAddresses = true
+         |  }
          |  proxy.enabled = $torEnabled
          |  tor.enabled = $torEnabled
          |  tor.use-random-ports = false

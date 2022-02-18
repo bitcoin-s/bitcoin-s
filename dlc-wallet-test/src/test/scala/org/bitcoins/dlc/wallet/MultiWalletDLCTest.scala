@@ -51,7 +51,9 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
                                   half,
                                   Some(SatoshisPerVirtualByte.one),
                                   UInt32.zero,
-                                  UInt32.one)
+                                  UInt32.one,
+                                  None,
+                                  None)
       dlcsA <- walletA.listDLCs()
       dlcsB <- walletB.listDLCs()
 
@@ -68,12 +70,15 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
     fundedWallet: FundedDLCWallet =>
       //see: https://github.com/bitcoin-s/bitcoin-s/issues/3813#issue-1051117559
       val wallet = fundedWallet.wallet
-      val offerF = wallet.createDLCOffer(contractInfo = sampleContractInfo,
-                                         collateral = half,
-                                         feeRateOpt =
-                                           Some(SatoshisPerVirtualByte.one),
-                                         locktime = UInt32.zero,
-                                         refundLocktime = UInt32.one)
+      val offerF = wallet.createDLCOffer(
+        contractInfo = sampleContractInfo,
+        collateral = half,
+        feeRateOpt = Some(SatoshisPerVirtualByte.one),
+        locktime = UInt32.zero,
+        refundLocktime = UInt32.one,
+        externalPayoutAddressOpt = None,
+        externalChangeAddressOpt = None
+      )
 
       //now unreserve the utxo
       val reservedUtxoF = for {

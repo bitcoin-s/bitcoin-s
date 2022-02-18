@@ -2,7 +2,7 @@ package org.bitcoins.server
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.cli.ContractDescriptorParser
-import org.bitcoins.commons.serializers.{JsonReaders}
+import org.bitcoins.commons.serializers.JsonReaders
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -655,26 +655,67 @@ case class CreateDLCOffer(
     collateral: Satoshis,
     feeRateOpt: Option[SatoshisPerVirtualByte],
     locktime: UInt32,
-    refundLocktime: UInt32)
+    refundLocktime: UInt32,
+    externalPayoutAddressOpt: Option[BitcoinAddress],
+    externalChangeAddressOpt: Option[BitcoinAddress])
 
 object CreateDLCOffer extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[CreateDLCOffer] = {
 
+    def parseParameters(
+        contractInfoJs: Value,
+        collateralJs: Value,
+        feeRateOptJs: Value,
+        locktimeJs: Value,
+        refundLTJs: Value,
+        payoutAddressJs: Value,
+        changeAddressJs: Value) = Try {
+      val contractInfoTLV = jsToContractInfoTLV(contractInfoJs)
+      val collateral = jsToSatoshis(collateralJs)
+      val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
+      val locktime = jsToUInt32(locktimeJs)
+      val refundLT = jsToUInt32(refundLTJs)
+      val payoutAddressJsOpt = nullToOpt(payoutAddressJs)
+      val payoutAddressOpt =
+        payoutAddressJsOpt.map(js => jsToBitcoinAddress(js))
+      val changeAddressJsOpt = nullToOpt(changeAddressJs)
+      val changeAddressOpt =
+        changeAddressJsOpt.map(js => jsToBitcoinAddress(js))
+      CreateDLCOffer(contractInfoTLV,
+                     collateral,
+                     feeRate,
+                     locktime,
+                     refundLT,
+                     payoutAddressOpt,
+                     changeAddressOpt)
+    }
+
     jsArr.arr.toList match {
       case contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: Nil =>
-        Try {
-          val contractInfoTLV = jsToContractInfoTLV(contractInfoJs)
-          val collateral = jsToSatoshis(collateralJs)
-          val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
-          val locktime = jsToUInt32(locktimeJs)
-          val refundLT = jsToUInt32(refundLTJs)
-          CreateDLCOffer(contractInfoTLV,
-                         collateral,
-                         feeRate,
-                         locktime,
-                         refundLT)
-        }
+        parseParameters(contractInfoJs,
+                        collateralJs,
+                        feeRateOptJs,
+                        locktimeJs,
+                        refundLTJs,
+                        Null,
+                        Null)
+      case contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: payoutAddressJs :: Nil =>
+        parseParameters(contractInfoJs,
+                        collateralJs,
+                        feeRateOptJs,
+                        locktimeJs,
+                        refundLTJs,
+                        payoutAddressJs,
+                        Null)
+      case contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: payoutAddressJs :: changeAddressJs :: Nil =>
+        parseParameters(contractInfoJs,
+                        collateralJs,
+                        feeRateOptJs,
+                        locktimeJs,
+                        refundLTJs,
+                        payoutAddressJs,
+                        changeAddressJs)
       case other =>
         Failure(
           new IllegalArgumentException(
@@ -839,17 +880,35 @@ object DecodeAttestations extends ServerJsonModels {
   }
 }
 
-case class AcceptDLCOffer(offer: LnMessage[DLCOfferTLV])
+case class AcceptDLCOffer(
+    offer: LnMessage[DLCOfferTLV],
+    externalPayoutAddressOpt: Option[BitcoinAddress],
+    externalChangeAddressOpt: Option[BitcoinAddress])
 
 object AcceptDLCOffer extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLCOffer] = {
+    def parseParameters(
+        offerJs: Value,
+        payoutAddressJs: Value,
+        changeAddressJs: Value) = Try {
+      val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
+      val payoutAddressJsOpt = nullToOpt(payoutAddressJs)
+      val payoutAddressOpt =
+        payoutAddressJsOpt.map(js => jsToBitcoinAddress(js))
+      val changeAddressJsOpt = nullToOpt(changeAddressJs)
+      val changeAddressOpt =
+        changeAddressJsOpt.map(js => jsToBitcoinAddress(js))
+      AcceptDLCOffer(offer, payoutAddressOpt, changeAddressOpt)
+    }
+
     jsArr.arr.toList match {
       case offerJs :: Nil =>
-        Try {
-          val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
-          AcceptDLCOffer(offer)
-        }
+        parseParameters(offerJs, Null, Null)
+      case offerJs :: payoutAddressJs :: Nil =>
+        parseParameters(offerJs, payoutAddressJs, Null)
+      case offerJs :: payoutAddressJs :: changeAddressJs :: Nil =>
+        parseParameters(offerJs, payoutAddressJs, changeAddressJs)
       case Nil =>
         Failure(new IllegalArgumentException("Missing offer argument"))
 
@@ -930,24 +989,42 @@ object AddDLCSigs extends ServerJsonModels {
   }
 }
 
-case class DLCDataFromFile(path: Path, destinationOpt: Option[Path])
+case class DLCDataFromFile(
+    path: Path,
+    destinationOpt: Option[Path],
+    externalPayoutAddressOpt: Option[BitcoinAddress],
+    externalChangeAddressOpt: Option[BitcoinAddress])
 
 object DLCDataFromFile extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[DLCDataFromFile] = {
+    def parseParameters(
+        pathJs: Value,
+        destJs: Value,
+        payoutAddressJs: Value,
+        changeAddressJs: Value) = Try {
+      val path = new File(pathJs.str).toPath
+      val destJsOpt = nullToOpt(destJs)
+      val destOpt = destJsOpt.map(js => new File(js.str).toPath)
+      val payoutAddressJsOpt = nullToOpt(payoutAddressJs)
+      val payoutAddressOpt =
+        payoutAddressJsOpt.map(js => jsToBitcoinAddress(js))
+      val changeAddressJsOpt = nullToOpt(changeAddressJs)
+      val changeAddressOpt =
+        changeAddressJsOpt.map(js => jsToBitcoinAddress(js))
+
+      DLCDataFromFile(path, destOpt, payoutAddressOpt, changeAddressOpt)
+    }
+
     jsArr.arr.toList match {
       case pathJs :: Nil =>
-        Try {
-          val path = new File(pathJs.str).toPath
-          DLCDataFromFile(path, None)
-        }
+        parseParameters(pathJs, Null, Null, Null)
       case pathJs :: destJs :: Nil =>
-        Try {
-          val path = new File(pathJs.str).toPath
-          val destJsOpt = nullToOpt(destJs)
-          val destOpt = destJsOpt.map(js => new File(js.str).toPath)
-          DLCDataFromFile(path, destOpt)
-        }
+        parseParameters(pathJs, destJs, Null, Null)
+      case pathJs :: destJs :: payoutAddressJs :: Nil =>
+        parseParameters(pathJs, destJs, payoutAddressJs, Null)
+      case pathJs :: destJs :: payoutAddressJs :: changeAddressJs :: Nil =>
+        parseParameters(pathJs, destJs, payoutAddressJs, changeAddressJs)
       case Nil =>
         Failure(new IllegalArgumentException("Missing path argument"))
       case other =>

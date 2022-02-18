@@ -38,7 +38,9 @@ object DLCAcceptUtil extends Logging {
       account: AccountDb,
       fundingPrivKey: AdaptorSign,
       collateral: CurrencyUnit,
-      networkParameters: NetworkParameters): (
+      networkParameters: NetworkParameters,
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]): (
       DLCAcceptWithoutSigs,
       DLCPublicKeys) = {
     val serialIds = DLCMessage.genSerialIds(
@@ -49,15 +51,18 @@ object DLCAcceptUtil extends Logging {
         .fromInputSigningInfo(utxo, id, TransactionConstants.enableRBFSequence)
     }
 
-    val changeSPK = txBuilder.finalizer.changeSPK
-    val changeAddr =
+    val changeAddr = externalChangeAddressOpt.getOrElse {
+      val changeSPK = txBuilder.finalizer.changeSPK
       BitcoinAddress.fromScriptPubKey(changeSPK, networkParameters)
+    }
 
-    val dlcPubKeys = DLCUtil.calcDLCPubKeys(xpub = account.xpub,
-                                            chainType = dlc.changeIndex,
-                                            keyIndex = dlc.keyIndex,
-                                            networkParameters =
-                                              networkParameters)
+    val dlcPubKeys = DLCUtil.calcDLCPubKeys(
+      xpub = account.xpub,
+      chainType = dlc.changeIndex,
+      keyIndex = dlc.keyIndex,
+      networkParameters = networkParameters,
+      externalPayoutAddressOpt = externalPayoutAddressOpt
+    )
 
     require(dlcPubKeys.fundingKey == fundingPrivKey.publicKey,
             "Did not derive the same funding private and public key")

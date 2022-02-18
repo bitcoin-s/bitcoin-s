@@ -268,8 +268,16 @@ abstract class DLCWallet
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
-      refundLocktime: UInt32): Future[DLCOffer] = {
+      refundLocktime: UInt32,
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
     logger.info("Creating DLC Offer")
+    if (
+      !walletConfig.allowExternalDLCAddresses && (externalPayoutAddressOpt.nonEmpty || externalChangeAddressOpt.nonEmpty)
+    ) {
+      return Future.failed(
+        new IllegalArgumentException("External DLC addresses are not allowed"))
+    }
     if (!validateAnnouncementSignatures(contractInfo.oracleInfos)) {
       return Future.failed(
         InvalidAnnouncementSignature(
@@ -279,19 +287,15 @@ abstract class DLCWallet
     val announcements =
       contractInfo.oracleInfos.head.singleOracleInfos.map(_.announcement)
 
-    //hack for now to get around https://github.com/bitcoin-s/bitcoin-s/issues/3127
-    //filter announcements that we already have in the db
-    val groupedAnnouncementsF: Future[AnnouncementGrouping] = {
-      groupByExistingAnnouncements(announcements)
-    }
-
     val feeRateF = determineFeeRate(feeRateOpt).map { fee =>
       SatoshisPerVirtualByte(fee.currencyUnit)
     }
 
     for {
       feeRate <- feeRateF
-      groupedAnnouncements <- groupedAnnouncementsF
+      //hack for now to get around https://github.com/bitcoin-s/bitcoin-s/issues/3127
+      //filter announcements that we already have in the db
+      groupedAnnouncements <- groupByExistingAnnouncements(announcements)
       announcementDataDbs <- announcementDAO.createAll(
         groupedAnnouncements.newAnnouncements)
       allAnnouncementDbs =
@@ -341,14 +345,17 @@ abstract class DLCWallet
                             used = false)
       }
 
-      changeSPK =
-        txBuilder.finalizer.changeSPK
-      changeAddr = BitcoinAddress.fromScriptPubKey(changeSPK, networkParameters)
+      changeAddr = externalChangeAddressOpt.getOrElse {
+        val changeSPK = txBuilder.finalizer.changeSPK
+        BitcoinAddress.fromScriptPubKey(changeSPK, networkParameters)
+      }
 
       dlcPubKeys = DLCUtil.calcDLCPubKeys(xpub = account.xpub,
                                           chainType = chainType,
                                           keyIndex = nextIndex,
-                                          networkParameters = networkParameters)
+                                          networkParameters = networkParameters,
+                                          externalPayoutAddressOpt =
+                                            externalPayoutAddressOpt)
 
       _ = logger.debug(
         s"DLC Offer data collected, creating database entry, ${dlcId.hex}")
@@ -552,8 +559,17 @@ abstract class DLCWallet
     *
     * This is the first step of the recipient
     */
-  override def acceptDLCOffer(offer: DLCOffer): Future[DLCAccept] = {
+  override def acceptDLCOffer(
+      offer: DLCOffer,
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] = {
     logger.debug("Calculating relevant wallet data for DLC Accept")
+    if (
+      !walletConfig.allowExternalDLCAddresses && (externalPayoutAddressOpt.nonEmpty || externalChangeAddressOpt.nonEmpty)
+    ) {
+      return Future.failed(
+        new IllegalArgumentException("External DLC addresses are not allowed"))
+    }
     if (!validateAnnouncementSignatures(offer.oracleInfos)) {
       return Future.failed(InvalidAnnouncementSignature(
         s"Offer ${offer.tempContractId.hex} contains invalid announcement signature(s)"))
@@ -573,7 +589,11 @@ abstract class DLCWallet
       dlcAccept <- {
         dlcAcceptOpt match {
           case Some(accept) => Future.successful(accept)
-          case None         => createNewDLCAccept(collateral, offer)
+          case None =>
+            createNewDLCAccept(collateral,
+                               offer,
+                               externalPayoutAddressOpt,
+                               externalChangeAddressOpt)
         }
       }
       status <- findDLC(dlcId)
@@ -612,155 +632,161 @@ abstract class DLCWallet
 
   private def createNewDLCAccept(
       collateral: CurrencyUnit,
-      offer: DLCOffer): Future[DLCAccept] = Future {
-    DLCWallet.AcceptingOffersLatch.startAccepting(offer.tempContractId)
+      offer: DLCOffer,
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] =
+    Future {
+      DLCWallet.AcceptingOffersLatch.startAccepting(offer.tempContractId)
 
-    logger.info(
-      s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
+      logger.info(
+        s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
 
-    def getFundingPrivKey(account: AccountDb, dlc: DLCDb): AdaptorSign = {
-      val bip32Path = BIP32Path(
-        account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
-                                         BIP32Node(dlc.keyIndex,
-                                                   hardened = false)))
-      val privKeyPath = HDPath.fromString(bip32Path.toString)
-      keyManager.toSign(privKeyPath)
-    }
-
-    val result = for {
-      account <- getDefaultAccountForType(AddressType.SegWit)
-      (dlc, offerDb, contractDataDb) <- initDLCForAccept(offer, account)
-      (txBuilder, spendingInfos) <- fundDLCAcceptMsg(offer = offer,
-                                                     collateral = collateral,
-                                                     account = account)
-      fundingPrivKey = getFundingPrivKey(account, dlc)
-      (acceptWithoutSigs, dlcPubKeys) = DLCAcceptUtil.buildAcceptWithoutSigs(
-        dlc = dlc,
-        offer = offer,
-        txBuilder = txBuilder,
-        spendingInfos = spendingInfos,
-        account = account,
-        fundingPrivKey = fundingPrivKey,
-        collateral = collateral,
-        networkParameters = networkParameters
-      )
-      builder = DLCTxBuilder(offer, acceptWithoutSigs)
-
-      contractId = builder.calcContractId
-
-      dlcDbWithContractId = dlc.copy(contractIdOpt = Some(contractId))
-
-      signer = DLCTxSigner(builder = builder,
-                           isInitiator = false,
-                           fundingKey = fundingPrivKey,
-                           finalAddress = dlcPubKeys.payoutAddress,
-                           fundingUtxos = spendingInfos)
-
-      spkDb = ScriptPubKeyDb(builder.fundingSPK)
-      // only update spk db if we don't have it
-      _ <- scriptPubKeyDAO.createIfNotExists(spkDb)
-
-      _ = logger.info(s"Creating CET Sigs for ${contractId.toHex}")
-      //emit websocket event that we are now computing adaptor signatures
-      status = DLCStatusBuilder.buildInProgressDLCStatus(
-        dlcDb = dlcDbWithContractId,
-        contractInfo = offer.contractInfo,
-        contractData = contractDataDb,
-        offerDb = offerDb)
-      _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status)
-      cetSigs <- signer.createCETSigsAsync()
-      refundSig = signer.signRefundTx
-      _ = logger.debug(
-        s"DLC Accept data collected, creating database entry, ${dlc.dlcId.hex}")
-
-      dlcAcceptDb = DLCAcceptDb(
-        dlcId = dlc.dlcId,
-        fundingKey = dlcPubKeys.fundingKey,
-        payoutAddress = dlcPubKeys.payoutAddress,
-        payoutSerialId = acceptWithoutSigs.payoutSerialId,
-        collateral = collateral,
-        changeAddress = acceptWithoutSigs.changeAddress,
-        changeSerialId = acceptWithoutSigs.changeSerialId,
-        negotiationFieldsTLV = NoNegotiationFields.toTLV
-      )
-
-      sigsDbs = cetSigs.outcomeSigs.zipWithIndex.map { case (sig, index) =>
-        DLCCETSignaturesDb(dlc.dlcId, index = index, sig._1, sig._2, None)
+      def getFundingPrivKey(account: AccountDb, dlc: DLCDb): AdaptorSign = {
+        val bip32Path = BIP32Path(
+          account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
+                                           BIP32Node(dlc.keyIndex,
+                                                     hardened = false)))
+        val privKeyPath = HDPath.fromString(bip32Path.toString)
+        keyManager.toSign(privKeyPath)
       }
 
-      refundSigsDb =
-        DLCRefundSigsDb(dlc.dlcId, refundSig, None)
+      val result = for {
+        account <- getDefaultAccountForType(AddressType.SegWit)
+        (dlc, offerDb, contractDataDb) <- initDLCForAccept(offer, account)
+        (txBuilder, spendingInfos) <- fundDLCAcceptMsg(offer = offer,
+                                                       collateral = collateral,
+                                                       account = account)
+        fundingPrivKey = getFundingPrivKey(account, dlc)
+        (acceptWithoutSigs, dlcPubKeys) = DLCAcceptUtil.buildAcceptWithoutSigs(
+          dlc = dlc,
+          offer = offer,
+          txBuilder = txBuilder,
+          spendingInfos = spendingInfos,
+          account = account,
+          fundingPrivKey = fundingPrivKey,
+          collateral = collateral,
+          networkParameters = networkParameters,
+          externalPayoutAddressOpt = externalPayoutAddressOpt,
+          externalChangeAddressOpt = externalChangeAddressOpt
+        )
+        builder = DLCTxBuilder(offer, acceptWithoutSigs)
 
-      offerInputs = offer.fundingInputs.zipWithIndex.map {
-        case (funding, idx) =>
-          DLCFundingInputDb(
-            dlcId = dlc.dlcId,
-            isInitiator = true,
-            index = idx,
-            inputSerialId = funding.inputSerialId,
-            outPoint = funding.outPoint,
-            output = funding.output,
-            nSequence = funding.sequence,
-            maxWitnessLength = funding.maxWitnessLen.toLong,
-            redeemScriptOpt = funding.redeemScriptOpt,
-            witnessScriptOpt = None
-          )
-      }
+        contractId = builder.calcContractId
 
-      offerPrevTxs = offer.fundingInputs.map(funding =>
-        TransactionDbHelper.fromTransaction(funding.prevTx,
-                                            blockHashOpt = None))
+        dlcDbWithContractId = dlc.copy(contractIdOpt = Some(contractId))
 
-      acceptInputs = spendingInfos
-        .zip(acceptWithoutSigs.fundingInputs)
-        .zipWithIndex
-        .map { case ((utxo, fundingInput), idx) =>
-          DLCFundingInputDb(
-            dlcId = dlc.dlcId,
-            isInitiator = false,
-            index = idx,
-            inputSerialId = fundingInput.inputSerialId,
-            outPoint = utxo.outPoint,
-            output = utxo.output,
-            nSequence = fundingInput.sequence,
-            maxWitnessLength = fundingInput.maxWitnessLen.toLong,
-            redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
-            witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
-          )
+        signer = DLCTxSigner(builder = builder,
+                             isInitiator = false,
+                             fundingKey = fundingPrivKey,
+                             finalAddress = dlcPubKeys.payoutAddress,
+                             fundingUtxos = spendingInfos)
+
+        spkDb = ScriptPubKeyDb(builder.fundingSPK)
+        // only update spk db if we don't have it
+        _ <- scriptPubKeyDAO.createIfNotExists(spkDb)
+
+        _ = logger.info(s"Creating CET Sigs for ${contractId.toHex}")
+        //emit websocket event that we are now computing adaptor signatures
+        status = DLCStatusBuilder.buildInProgressDLCStatus(
+          dlcDb = dlcDbWithContractId,
+          contractInfo = offer.contractInfo,
+          contractData = contractDataDb,
+          offerDb = offerDb)
+        _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status)
+        cetSigs <- signer.createCETSigsAsync()
+        refundSig = signer.signRefundTx
+        _ = logger.debug(
+          s"DLC Accept data collected, creating database entry, ${dlc.dlcId.hex}")
+
+        dlcAcceptDb = DLCAcceptDb(
+          dlcId = dlc.dlcId,
+          fundingKey = dlcPubKeys.fundingKey,
+          payoutAddress = dlcPubKeys.payoutAddress,
+          payoutSerialId = acceptWithoutSigs.payoutSerialId,
+          collateral = collateral,
+          changeAddress = acceptWithoutSigs.changeAddress,
+          changeSerialId = acceptWithoutSigs.changeSerialId,
+          negotiationFieldsTLV = NoNegotiationFields.toTLV
+        )
+
+        sigsDbs = cetSigs.outcomeSigs.zipWithIndex.map { case (sig, index) =>
+          DLCCETSignaturesDb(dlc.dlcId, index = index, sig._1, sig._2, None)
         }
 
-      accept =
-        dlcAcceptDb.toDLCAccept(tempContractId = dlc.tempContractId,
-                                fundingInputs = acceptWithoutSigs.fundingInputs,
-                                outcomeSigs = cetSigs.outcomeSigs,
-                                refundSig = refundSig)
+        refundSigsDb =
+          DLCRefundSigsDb(dlc.dlcId, refundSig, None)
 
-      _ = require(accept.tempContractId == offer.tempContractId,
-                  "Offer and Accept have differing tempContractIds!")
+        offerInputs = offer.fundingInputs.zipWithIndex.map {
+          case (funding, idx) =>
+            DLCFundingInputDb(
+              dlcId = dlc.dlcId,
+              isInitiator = true,
+              index = idx,
+              inputSerialId = funding.inputSerialId,
+              outPoint = funding.outPoint,
+              output = funding.output,
+              nSequence = funding.sequence,
+              maxWitnessLength = funding.maxWitnessLen.toLong,
+              redeemScriptOpt = funding.redeemScriptOpt,
+              witnessScriptOpt = None
+            )
+        }
 
-      _ <- remoteTxDAO.upsertAll(offerPrevTxs)
-      actions = actionBuilder.buildCreateAcceptAction(
-        dlcDb = dlcDbWithContractId.updateState(DLCState.Accepted),
-        dlcAcceptDb = dlcAcceptDb,
-        offerInputs = offerInputs,
-        acceptInputs = acceptInputs,
-        cetSigsDb = sigsDbs,
-        refundSigsDb = refundSigsDb
-      )
-      _ <- safeDatabase.run(actions)
-      dlcDb <- updateDLCContractIds(offer, accept)
-      _ = logger.info(
-        s"Created DLCAccept for tempContractId ${offer.tempContractId.hex} with contract Id ${contractId.toHex}")
+        offerPrevTxs = offer.fundingInputs.map(funding =>
+          TransactionDbHelper.fromTransaction(funding.prevTx,
+                                              blockHashOpt = None))
 
-      fundingTx = builder.buildFundingTx
-      outPoint = TransactionOutPoint(fundingTx.txId,
-                                     UInt32(builder.fundOutputIndex))
-      _ <- updateFundingOutPoint(dlcDb.contractIdOpt.get, outPoint)
-    } yield accept
-    result.onComplete(_ =>
-      DLCWallet.AcceptingOffersLatch.doneAccepting(offer.tempContractId))
-    result
-  }.flatten
+        acceptInputs = spendingInfos
+          .zip(acceptWithoutSigs.fundingInputs)
+          .zipWithIndex
+          .map { case ((utxo, fundingInput), idx) =>
+            DLCFundingInputDb(
+              dlcId = dlc.dlcId,
+              isInitiator = false,
+              index = idx,
+              inputSerialId = fundingInput.inputSerialId,
+              outPoint = utxo.outPoint,
+              output = utxo.output,
+              nSequence = fundingInput.sequence,
+              maxWitnessLength = fundingInput.maxWitnessLen.toLong,
+              redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
+              witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
+            )
+          }
+
+        accept =
+          dlcAcceptDb.toDLCAccept(tempContractId = dlc.tempContractId,
+                                  fundingInputs =
+                                    acceptWithoutSigs.fundingInputs,
+                                  outcomeSigs = cetSigs.outcomeSigs,
+                                  refundSig = refundSig)
+
+        _ = require(accept.tempContractId == offer.tempContractId,
+                    "Offer and Accept have differing tempContractIds!")
+
+        _ <- remoteTxDAO.upsertAll(offerPrevTxs)
+        actions = actionBuilder.buildCreateAcceptAction(
+          dlcDb = dlcDbWithContractId.updateState(DLCState.Accepted),
+          dlcAcceptDb = dlcAcceptDb,
+          offerInputs = offerInputs,
+          acceptInputs = acceptInputs,
+          cetSigsDb = sigsDbs,
+          refundSigsDb = refundSigsDb
+        )
+        _ <- safeDatabase.run(actions)
+        dlcDb <- updateDLCContractIds(offer, accept)
+        _ = logger.info(
+          s"Created DLCAccept for tempContractId ${offer.tempContractId.hex} with contract Id ${contractId.toHex}")
+
+        fundingTx = builder.buildFundingTx
+        outPoint = TransactionOutPoint(fundingTx.txId,
+                                       UInt32(builder.fundOutputIndex))
+        _ <- updateFundingOutPoint(dlcDb.contractIdOpt.get, outPoint)
+      } yield accept
+      result.onComplete(_ =>
+        DLCWallet.AcceptingOffersLatch.doneAccepting(offer.tempContractId))
+      result
+    }.flatten
 
   def registerDLCAccept(
       accept: DLCAccept): Future[(DLCDb, Vector[DLCCETSignaturesDb])] = {

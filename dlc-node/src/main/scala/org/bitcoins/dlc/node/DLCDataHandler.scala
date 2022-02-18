@@ -47,7 +47,7 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
         Future.unit
       case dlcOffer: DLCOfferTLV =>
         val f = for {
-          accept <- dlcWalletApi.acceptDLCOffer(dlcOffer)
+          accept <- dlcWalletApi.acceptDLCOffer(dlcOffer, None, None)
           _ = connectionHandler ! accept.toMessage
         } yield ()
         f

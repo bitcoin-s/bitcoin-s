@@ -362,11 +362,15 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
     //helper method to make an offer
     def makeOffer(): Future[DLCOffer] = {
-      walletA.createDLCOffer(contractInfoTLV = contractInfo,
-                             collateral = totalCollateral,
-                             feeRateOpt = feeRateOpt,
-                             locktime = UInt32.zero,
-                             refundLT = UInt32.one)
+      walletA.createDLCOffer(
+        contractInfoTLV = contractInfo,
+        collateral = totalCollateral,
+        feeRateOpt = feeRateOpt,
+        locktime = UInt32.zero,
+        refundLT = UInt32.one,
+        externalPayoutAddressOpt = None,
+        externalChangeAddressOpt = None
+      )
     }
 
     //simply try to make 2 offers with the same contract info
@@ -414,7 +418,9 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                     status.localCollateral.satoshis,
                                     None,
                                     UInt32.zero,
-                                    UInt32.one)
+                                    UInt32.one,
+                                    None,
+                                    None)
 
         _ <- walletA.listDLCs()
       } yield succeed

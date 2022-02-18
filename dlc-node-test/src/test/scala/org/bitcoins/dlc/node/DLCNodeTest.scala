@@ -35,7 +35,9 @@ class DLCNodeTest extends BitcoinSDLCNodeTest {
                                       half,
                                       Some(SatoshisPerVirtualByte.one),
                                       UInt32.zero,
-                                      UInt32.one)
+                                      UInt32.one,
+                                      None,
+                                      None)
 
       _ <- nodeB.acceptDLCOffer(addrA, offer.toMessage)
 

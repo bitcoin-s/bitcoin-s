@@ -145,6 +145,9 @@ case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   lazy val feeProviderTargetOpt: Option[Int] =
     config.getIntOpt("bitcoin-s.fee-provider.target")
 
+  lazy val allowExternalDLCAddresses: Boolean =
+    config.getBoolean("bitcoin-s.wallet.allowExternalDLCAddresses")
+
   lazy val bip39PasswordOpt: Option[String] = kmConf.bip39PasswordOpt
 
   lazy val aesPasswordOpt: Option[AesPassword] = kmConf.aesPasswordOpt

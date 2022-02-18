@@ -274,7 +274,12 @@ object DLCWalletUtil extends Logging {
   def initDLC(
       fundedWalletA: FundedDLCWallet,
       fundedWalletB: FundedDLCWallet,
-      contractInfo: ContractInfo)(implicit ec: ExecutionContext): Future[
+      contractInfo: ContractInfo,
+      payoutAddressAOpt: Option[BitcoinAddress] = None,
+      changeAddressAOpt: Option[BitcoinAddress] = None,
+      payoutAddressBOpt: Option[BitcoinAddress] = None,
+      changeAddressBOpt: Option[BitcoinAddress] = None)(implicit
+      ec: ExecutionContext): Future[
     (InitializedDLCWallet, InitializedDLCWallet)] = {
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
@@ -285,9 +290,13 @@ object DLCWalletUtil extends Logging {
         collateral = half,
         feeRateOpt = Some(SatoshisPerVirtualByte.fromLong(10)),
         locktime = dummyTimeouts.contractMaturity.toUInt32,
-        refundLocktime = dummyTimeouts.contractTimeout.toUInt32
+        refundLocktime = dummyTimeouts.contractTimeout.toUInt32,
+        externalPayoutAddressOpt = payoutAddressAOpt,
+        externalChangeAddressOpt = changeAddressAOpt
       )
-      accept <- walletB.acceptDLCOffer(offer)
+      accept <- walletB.acceptDLCOffer(offer,
+                                       payoutAddressBOpt,
+                                       changeAddressBOpt)
       sigs <- walletA.signDLC(accept)
       _ <- walletB.addDLCSigs(sigs)
       tx <- walletB.broadcastDLCFundingTx(sigs.contractId)
