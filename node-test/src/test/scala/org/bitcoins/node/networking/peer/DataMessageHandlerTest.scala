@@ -36,9 +36,10 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
       val sender = spv.peerMsgSenders(0)
       for {
         chainApi <- spv.chainApiFromDb()
-        dataMessageHandler = DataMessageHandler(chainApi)(spv.executionContext,
-                                                          spv.nodeAppConfig,
-                                                          spv.chainConfig)
+        dataMessageHandler = DataMessageHandler(chainApi, None)(
+          spv.executionContext,
+          spv.nodeAppConfig,
+          spv.chainConfig)
 
         // Use signet genesis block header, this should be invalid for regtest
         invalidPayload =
@@ -81,9 +82,9 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
 
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi)(spv.executionContext,
-                                              spv.nodeAppConfig,
-                                              spv.chainConfig)
+          DataMessageHandler(genesisChainApi, None)(spv.executionContext,
+                                                    spv.nodeAppConfig,
+                                                    spv.chainConfig)
         _ <- dataMessageHandler.handleDataPayload(payload1, sender, spv)
         _ <- dataMessageHandler.handleDataPayload(payload2, sender, spv)
         result <- resultP.future
@@ -114,9 +115,9 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
 
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi)(spv.executionContext,
-                                              spv.nodeAppConfig,
-                                              spv.chainConfig)
+          DataMessageHandler(genesisChainApi, None)(spv.executionContext,
+                                                    spv.nodeAppConfig,
+                                                    spv.chainConfig)
         _ <- dataMessageHandler.handleDataPayload(payload, sender, spv)
         result <- resultP.future
       } yield assert(result == block)
@@ -148,9 +149,9 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
         _ = spv.nodeAppConfig.addCallbacks(callbacks)
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi)(spv.executionContext,
-                                              spv.nodeAppConfig,
-                                              spv.chainConfig)
+          DataMessageHandler(genesisChainApi, None)(spv.executionContext,
+                                                    spv.nodeAppConfig,
+                                                    spv.chainConfig)
 
         _ <- dataMessageHandler.handleDataPayload(payload, sender, spv)
         result <- resultP.future
@@ -181,9 +182,9 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         nodeCallbacks = NodeCallbacks.onCompactFilterReceived(callback)
         _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi)(spv.executionContext,
-                                              spv.nodeAppConfig,
-                                              spv.chainConfig)
+          DataMessageHandler(genesisChainApi, None)(spv.executionContext,
+                                                    spv.nodeAppConfig,
+                                                    spv.chainConfig)
 
         _ <- dataMessageHandler.handleDataPayload(payload, sender, spv)
         result <- resultP.future

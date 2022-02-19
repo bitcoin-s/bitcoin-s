@@ -15,6 +15,7 @@ import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
 import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.util.{DBMasterXPubApi, MasterXPubUtil}
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig.RebroadcastTransactionsRunnable
@@ -23,6 +24,7 @@ import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 
 import java.nio.file.{Files, Path, Paths}
+import java.time.Instant
 import java.util.concurrent._
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -326,6 +328,18 @@ case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
         ()
       case None => ()
     }
+  }
+
+  /** The creation time of the mnemonic seed
+    * If we cannot decrypt the seed because of invalid passwords, we return None
+    */
+  def creationTimeOpt: Option[Instant] = {
+    BIP39KeyManager
+      .fromParams(kmParams,
+                  passwordOpt = aesPasswordOpt,
+                  bip39PasswordOpt = bip39PasswordOpt)
+      .map(_.creationTime)
+      .toOption
   }
 }
 

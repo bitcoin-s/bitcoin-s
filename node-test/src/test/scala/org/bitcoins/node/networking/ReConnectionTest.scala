@@ -28,7 +28,7 @@ class ReConnectionTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
   it must "attempt to reconnect if max connections are full" in {
     val peerHandlerF: Future[PeerHandler] = for {
       _ <- cachedConfig.start()
-      peer <- bitcoindPeerF.flatMap(p => NodeUnitTest.buildPeerHandler(p))
+      peer <- bitcoindPeerF.flatMap(p => NodeUnitTest.buildPeerHandler(p, None))
     } yield peer
 
     val connectedF = for {

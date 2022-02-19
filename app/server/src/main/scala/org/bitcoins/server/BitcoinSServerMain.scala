@@ -50,6 +50,7 @@ import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.config.WalletAppConfig
 
+import java.time.Instant
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
@@ -117,8 +118,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val chainApiF = runChainWorkCalc(
       serverArgParser.forceChainWorkRecalc || chainConf.forceRecalcChainWork)
 
+    val creationTimeOpt: Option[Instant] = walletConf.creationTimeOpt
+
     //get a node that isn't started
-    val nodeF = nodeConf.createNode()(chainConf, system)
+    val nodeF = nodeConf.createNode(
+      peers = Vector.empty,
+      walletCreationTimeOpt = creationTimeOpt)(chainConf, system)
 
     val feeProvider = getFeeProviderOrElse(
       MempoolSpaceProvider(HourFeeTarget,
