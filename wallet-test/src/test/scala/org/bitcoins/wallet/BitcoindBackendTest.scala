@@ -1,5 +1,6 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
@@ -41,10 +42,13 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
       _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
 
-      balance <- wallet.getBalance()
-
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
+
+      _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+        wallet.getBalance().map(_ == amountToSend)
+      })
+      balance <- wallet.getBalance()
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
     } yield {
       assert(balance == amountToSend)
@@ -83,6 +87,11 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
       _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
 
+      _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+        wallet
+          .listUtxos(TxoState.ConfirmedReceived)
+          .map(_.length == 1)
+      })
       utxos <- wallet.listUtxos(TxoState.ConfirmedReceived)
     } yield {
       assert(utxos.size == 1)
@@ -121,6 +130,9 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       filter = filterResult.filter
       _ <- wallet.processCompactFilter(header.hash, filter)
 
+      _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+        wallet.getBalance().map(_ == amountToSend)
+      })
       balance <- wallet.getBalance()
     } yield {
       assert(balance == amountToSend)
@@ -157,6 +169,10 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
         filter = filterResult.filter
         _ <- wallet.processCompactFilter(header.hash, filter)
 
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+          wallet.getUnconfirmedBalance().map(_ == amountToSend)
+        })
+
         unconfirmedBalance <- wallet.getUnconfirmedBalance()
         confirmedBalance <- wallet.getConfirmedBalance()
         _ = assert(unconfirmedBalance == amountToSend)
@@ -169,6 +185,10 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
         // sync wallet
         _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
+
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+          wallet.getConfirmedBalance().map(_ == amountToSend)
+        })
 
         unconfirmedBalance <- wallet.getUnconfirmedBalance()
         confirmedBalance <- wallet.getConfirmedBalance()

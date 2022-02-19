@@ -215,14 +215,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
   private def downloadAndProcessBlocks(
       blocks: Vector[DoubleSha256Digest]): Future[Unit] = {
     logger.info(s"Requesting ${blocks.size} block(s)")
-    blocks.foldLeft(Future.unit) { (prevF, blockHash) =>
-      val completedF = subscribeForBlockProcessingCompletionSignal(blockHash)
-      for {
-        _ <- prevF
-        _ <- nodeApi.downloadBlocks(Vector(blockHash))
-        _ <- completedF
-      } yield ()
-    }
+
+    val downloadF = nodeApi.downloadBlocks(blocks)
+    downloadF.failed.foreach(err =>
+      logger.error(s"Failed to download block hashes=$blocks", err))
+    downloadF
   }
 
   private def matchBlocks(
@@ -311,7 +308,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         startHeight = startHeight,
         endHeight = endHeight)
       filtered <- findMatches(filtersResponse, scripts, parallelismLevel)
-      _ <- downloadAndProcessBlocks(filtered.map(_.blockHash.flip))
+      _ = downloadAndProcessBlocks(filtered.map(_.blockHash.flip))
     } yield {
       logger.info(
         s"Found ${filtered.length} matches from start=$startHeight to end=$endHeight")
