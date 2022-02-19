@@ -75,13 +75,13 @@ case class DataMessageHandler(
           newChainApi <- chainApi.processFilterHeaders(
             filterHeaders,
             filterHeader.stopHash.flip)
-          newSyncing <-
+          (newSyncing, startFilterHeightOpt) <-
             if (filterHeaders.size == chainConfig.filterHeaderBatchSize) {
               logger.debug(
                 s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
               sendNextGetCompactFilterHeadersCommand(
                 peerWithCompactFilters,
-                filterHeader.stopHash.flip).map(_ => syncing)
+                filterHeader.stopHash.flip).map(_ => (syncing, None))
             } else {
               for {
                 startHeightOpt <- getCompactFilterStartHeight(
@@ -94,7 +94,7 @@ case class DataMessageHandler(
                   if (!synced) logger.info("We are synced")
                   syncing
                 }
-              } yield syncing
+              } yield (syncing, startHeightOpt)
             }
           newFilterHeaderHeight <- filterHeaderHeightOpt match {
             case None =>
@@ -105,7 +105,8 @@ case class DataMessageHandler(
         } yield {
           this.copy(chainApi = newChainApi,
                     syncing = newSyncing,
-                    filterHeaderHeightOpt = Some(newFilterHeaderHeight))
+                    filterHeaderHeightOpt = Some(newFilterHeaderHeight),
+                    filterHeightOpt = startFilterHeightOpt)
         }
       case filter: CompactFilterMessage =>
         logger.debug(s"Received ${filter.commandName}, $filter")
@@ -113,16 +114,7 @@ case class DataMessageHandler(
           currentFilterBatch.size == chainConfig.filterBatchSize - 1
         for {
           (newFilterHeaderHeight, newFilterHeight) <-
-            (filterHeaderHeightOpt, filterHeightOpt) match {
-              case (Some(filterHeaderHeight), Some(filterHeight)) =>
-                Future.successful((filterHeaderHeight, filterHeight + 1))
-              case (_, _) => // If either are None
-                for {
-                  filterHeaderHeight <- chainApi.getFilterHeaderCount()
-                  filterHeight <- chainApi.getFilterCount()
-                } yield (filterHeaderHeight,
-                         if (filterHeight == 0) 0 else filterHeight + 1)
-            }
+            calcFilterHeaderFilterHeight()
           newSyncing =
             if (batchSizeFull) {
               syncing
@@ -442,6 +434,19 @@ case class DataMessageHandler(
         }
       case None =>
         Future.successful(None)
+    }
+  }
+
+  private def calcFilterHeaderFilterHeight(): Future[(Int, Int)] = {
+    (filterHeaderHeightOpt, filterHeightOpt) match {
+      case (Some(filterHeaderHeight), Some(filterHeight)) =>
+        Future.successful((filterHeaderHeight, filterHeight + 1))
+      case (_, _) => // If either are None
+        for {
+          filterHeaderHeight <- chainApi.getFilterHeaderCount()
+          filterHeight <- chainApi.getFilterCount()
+        } yield (filterHeaderHeight,
+                 if (filterHeight == 0) 0 else filterHeight + 1)
     }
   }
 }
