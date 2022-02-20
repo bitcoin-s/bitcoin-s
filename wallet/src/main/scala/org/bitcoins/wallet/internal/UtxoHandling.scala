@@ -149,8 +149,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           s"Cannot update txo with received state=${TxoState.ImmatureCoinbase}")
       case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
           TxoState.ConfirmedSpent | TxoState.BroadcastSpent |
-          TxoState.DoesNotExist | TxoState.PendingConfirmationsReceived |
-          TxoState.BroadcastReceived | TxoState.ConfirmedReceived =>
+          TxoState.PendingConfirmationsReceived | TxoState.BroadcastReceived |
+          TxoState.ConfirmedReceived =>
         if (confs >= walletConfig.requiredConfirmations) {
           txo.copyWithState(TxoState.ConfirmedSpent)
         } else if (confs == 0) {
@@ -175,7 +175,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           else
             txo.copyWithState(TxoState.PendingConfirmationsReceived)
         } else txo
-      case TxoState.PendingConfirmationsReceived | BroadcastReceived | TxoState.ConfirmedReceived =>
+      case TxoState.PendingConfirmationsReceived | BroadcastReceived |
+          TxoState.ConfirmedReceived =>
         if (confs >= walletConfig.requiredConfirmations) {
           txo.copyWithState(TxoState.ConfirmedReceived)
         } else if (confs == 0) {

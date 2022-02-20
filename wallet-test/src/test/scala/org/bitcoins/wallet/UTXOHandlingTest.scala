@@ -55,11 +55,6 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
           .updateReceivedTxoWithConfs(pendingConfReceived, 0)
           .state == TxoState.BroadcastReceived)
 
-      //it must transition from DoesNotExist -> PendingConfirmationsReceived
-      assert(
-        wallet.updateReceivedTxoWithConfs(dne, 1) == dne.copyWithState(
-          TxoState.PendingConfirmationsReceived))
-
       //transition from TxoState.ConfirmedReceived -> TxoState.PendingConfirmationsReceived (reorg scenario)
       assert(
         wallet.updateReceivedTxoWithConfs(confReceived, 1) == confReceived
@@ -133,16 +128,6 @@ class UTXOHandlingTest extends BitcoinSWalletTest {
       assert(
         wallet.updateSpentTxoWithConfs(pendingConfSpent,
                                        requiredConfs) == confSpent)
-
-      val expectedDNEWithTxId =
-        dne.copyWithSpendingTxId(DoubleSha256DigestBE.empty)
-      val expectedDNEConfirmedSpent =
-        expectedDNEWithTxId.copyWithState(TxoState.ConfirmedSpent)
-      //transition from TxoState.DoesNotExist -> TxoState.ConfirmedSpent
-      assert(
-        wallet.updateSpentTxoWithConfs(
-          expectedDNEWithTxId,
-          requiredConfs) == expectedDNEConfirmedSpent)
 
       //transition form TxoState.ConfirmedSpent -> TxoState.PendingConfirmationSpent (reorg scenario)
       assert(
