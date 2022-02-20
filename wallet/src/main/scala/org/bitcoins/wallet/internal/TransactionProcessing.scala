@@ -323,8 +323,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       toBeUpdated = outputsBeingSpent
         .map(markAsSpent(_, transaction.txIdBE))
         .flatten
-      processed <- spendingInfoDAO.updateAllSpendingInfoDb(toBeUpdated)
-      _ <- updateUtxoConfirmedStates(processed)
+      processed <- updateUtxoSpentConfirmedStates(toBeUpdated)
     } yield {
       processed
     }
@@ -503,7 +502,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
 
           // Update Txo State
           updateTxDbF.flatMap(_ =>
-            updateUtxoConfirmedState(foundTxo).flatMap {
+            updateUtxoReceiveConfirmedStates(foundTxo).flatMap {
               case Some(txo) =>
                 logger.debug(
                   s"Updated block_hash of txo=${txo.txid.hex} new block hash=${blockHash.hex}")
