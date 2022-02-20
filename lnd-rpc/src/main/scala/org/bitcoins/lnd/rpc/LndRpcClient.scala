@@ -725,11 +725,11 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
   def getTransaction(txId: DoubleSha256DigestBE): Future[Option[TxDetails]] = {
     // Idk why they don't have a separate function to just get one tx
-    getTransactions.map(_.find(_.txId == txId))
+    getTransactions().map(_.find(_.txId == txId))
   }
 
-  def getTransactions: Future[Vector[TxDetails]] = {
-    getTransactions(GetTransactionsRequest())
+  def getTransactions(): Future[Vector[TxDetails]] = {
+    getTransactions(startHeight = 0)
   }
 
   def getTransactions(startHeight: Int): Future[Vector[TxDetails]] = {
