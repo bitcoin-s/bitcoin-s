@@ -15,7 +15,6 @@ import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.db._
 import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.util.{DBMasterXPubApi, MasterXPubUtil}
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig.RebroadcastTransactionsRunnable
@@ -333,13 +332,8 @@ case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   /** The creation time of the mnemonic seed
     * If we cannot decrypt the seed because of invalid passwords, we return None
     */
-  def creationTimeOpt: Option[Instant] = {
-    BIP39KeyManager
-      .fromParams(kmParams,
-                  passwordOpt = aesPasswordOpt,
-                  bip39PasswordOpt = bip39PasswordOpt)
-      .map(_.creationTime)
-      .toOption
+  def creationTime: Instant = {
+    kmConf.creationTime
   }
 }
 

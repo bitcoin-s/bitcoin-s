@@ -200,6 +200,13 @@ case class KeyManagerAppConfig(
             s"Failed to initialize mnemonic seed in keymanager with err=$err"))
     }
   }
+
+  /** The creation time of the mnemonic seed
+    * If we cannot decrypt the seed because of invalid passwords, we return None
+    */
+  def creationTime: Instant = {
+    toBip39KeyManager.creationTime
+  }
 }
 
 object KeyManagerAppConfig extends AppConfigFactory[KeyManagerAppConfig] {

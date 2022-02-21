@@ -118,12 +118,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val chainApiF = runChainWorkCalc(
       serverArgParser.forceChainWorkRecalc || chainConf.forceRecalcChainWork)
 
-    val creationTimeOpt: Option[Instant] = walletConf.creationTimeOpt
+    val creationTime: Instant = walletConf.creationTime
 
     //get a node that isn't started
     val nodeF = nodeConf.createNode(
       peers = Vector.empty,
-      walletCreationTimeOpt = creationTimeOpt)(chainConf, system)
+      walletCreationTimeOpt = Some(creationTime))(chainConf, system)
 
     val feeProvider = getFeeProviderOrElse(
       MempoolSpaceProvider(HourFeeTarget,

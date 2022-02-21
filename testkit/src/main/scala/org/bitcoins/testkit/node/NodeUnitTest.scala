@@ -152,7 +152,7 @@ trait NodeUnitTest extends BaseNodeTest {
     val nodeWithBitcoindBuilder: () => Future[
       NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
-      val creationTimeOpt = appConfig.walletConf.creationTimeOpt
+      val creationTimeOpt = Some(appConfig.walletConf.creationTime)
       for {
         bitcoind <- BitcoinSFixture.createBitcoind(versionOpt)
         node <- NodeUnitTest.createNeutrinoNode(bitcoind, creationTimeOpt)(
@@ -394,7 +394,7 @@ object NodeUnitTest extends P2PLogger {
     NeutrinoNodeFundedWalletBitcoind] = {
     import system.dispatcher
     require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
-    val creationTimeOpt = appConfig.walletConf.creationTimeOpt
+    val creationTimeOpt = Some(appConfig.walletConf.creationTime)
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
       node <- createNeutrinoNode(bitcoind, creationTimeOpt)(system,
@@ -430,7 +430,7 @@ object NodeUnitTest extends P2PLogger {
     NeutrinoNodeFundedWalletBitcoind] = {
     import system.dispatcher
     require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
-    val creationTimeOpt = appConfig.walletConf.creationTimeOpt
+    val creationTimeOpt = Some(appConfig.walletConf.creationTime)
     for {
       node <- createNeutrinoNode(bitcoind, creationTimeOpt)(system,
                                                             appConfig.chainConf,
