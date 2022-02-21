@@ -430,8 +430,9 @@ object NodeUnitTest extends P2PLogger {
     NeutrinoNodeFundedWalletBitcoind] = {
     import system.dispatcher
     require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
-    val creationTimeOpt = Some(appConfig.walletConf.creationTime)
     for {
+      _ <- appConfig.walletConf.kmConf.start()
+      creationTimeOpt = Some(appConfig.walletConf.creationTime)
       node <- createNeutrinoNode(bitcoind, creationTimeOpt)(system,
                                                             appConfig.chainConf,
                                                             appConfig.nodeConf)

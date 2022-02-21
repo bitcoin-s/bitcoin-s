@@ -88,8 +88,9 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     val nodeWithBitcoindBuilder: () => Future[
       NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
-      val creationTimeOpt = Some(appConfig.walletConf.creationTime)
       for {
+        _ <- appConfig.walletConf.kmConf.start()
+        creationTimeOpt = Some(appConfig.walletConf.creationTime)
         node <- NodeUnitTest.createNeutrinoNode(bitcoind, creationTimeOpt)(
           system,
           appConfig.chainConf,
@@ -111,8 +112,9 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     val nodeWithBitcoindBuilder: () => Future[
       NeutrinoNodeConnectedWithBitcoinds] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
-      val creationTimeOpt = Some(appConfig.walletConf.creationTime)
       for {
+        _ <- appConfig.walletConf.kmConf.start()
+        creationTimeOpt = Some(appConfig.walletConf.creationTime)
         node <- NodeUnitTest.createNeutrinoNode(bitcoinds, creationTimeOpt)(
           system,
           appConfig.chainConf,
