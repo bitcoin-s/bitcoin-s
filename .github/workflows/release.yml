@@ -185,7 +185,7 @@ jobs:
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         #--win-shortcut --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}}
-        run: "jpackage --name 'BundleGUI' --type msi -i app/bundle/target/scala-2.13 --main-class org.bitcoins.bundle.gui.BundleGUI --main-jar BundleGUI.jar --verbose"
+        run: "jpackage --type msi --name 'BundleGUI' -i app/bundle/target/scala-2.13 --main-class org.bitcoins.bundle.gui.BundleGUI --main-jar BundleGUI.jar --verbose"
         shell: bash
       - name: View artifacts
         run: ls -R .
