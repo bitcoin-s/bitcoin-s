@@ -179,6 +179,7 @@ jobs:
         run: sbt "bundle/assembly"
       - name: View Artifacts
         run: ls -l
+        shell: bash
       - name: Package jar as msi
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
