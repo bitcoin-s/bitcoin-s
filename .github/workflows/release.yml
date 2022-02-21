@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, "2022-02-21-windows-jpackage"]
     tags: ["*"]
   release:
     types: [ published ]
@@ -170,15 +170,19 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: openjdk@1.17.0
-
       - name: 'Get Previous tag'
         id: previoustag
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
         with:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-      - name: Build msi
-        shell: bash
-        run: sbt bundle/windows:packageBin
+      - name: Build fat jar
+        run: sbt "bundle/assembly"
+      - name: View Artifacts
+        run: ls -l
+      - name: Package jar as msi
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        run: "jpackage --win-shortcut --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --type msi -i app\\bundle\\target\\scala-2.13/ --main-class org.bitcoins.bundle.gui.BundleGUI --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.png"
       - name: View artifacts
         run: ls -R .
       - name: Upload installer
