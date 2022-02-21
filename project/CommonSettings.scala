@@ -43,7 +43,7 @@ object CommonSettings {
         url("https://twitter.com/Chris_Stewart_5")
       )
     ),
-    Compile / scalacOptions ++= compilerOpts(scalaVersion = scalaVersion.value),
+    Compile / scalacOptions ++= compilerOpts(scalaVersion = scalaVersion.value) ++ Vector("--release", "9", "-target:9"),
     Test / scalacOptions ++= testCompilerOpts(scalaVersion =
       scalaVersion.value),
     //remove annoying import unused things in the scala console
@@ -94,7 +94,7 @@ object CommonSettings {
     ////
     Compile / compile / javacOptions ++= {
       //https://github.com/eclipse/jetty.project/issues/3244#issuecomment-495322586
-      Seq("--release", "8")
+      Seq("--release", "9")
     }
   )
 
@@ -102,7 +102,7 @@ object CommonSettings {
     List(
       //https://stackoverflow.com/a/43103038/967713
       "-release",
-      "11"
+      "9"
     )
   }
 
