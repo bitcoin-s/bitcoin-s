@@ -177,8 +177,9 @@ jobs:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
       - name: Build fat jar
         run: sbt "bundle/assembly"
+        shell: bash
       - name: View Artifacts
-        run: ls -l
+        run: ls -R .
         shell: bash
       - name: Package jar as msi
         env:
