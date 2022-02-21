@@ -1,7 +1,13 @@
 import com.typesafe.sbt.packager.windows._
 import com.typesafe.sbt.SbtNativePackager.Windows
 
-name := "bitcoin-s-bundle"
+name := {
+  if (scala.util.Properties.isWin) {
+    "BundleGUI"
+  } else {
+    "bitcoin-s-bundle"
+  }
+}
 
 enablePlugins(WindowsPlugin)
 
