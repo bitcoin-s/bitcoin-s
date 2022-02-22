@@ -71,18 +71,18 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
                   ByteVector.fromValidHex("00112233445566778899aabbccddeeff"))
         clientConnectionHandler = clientConnectionHandlerOpt.get
         _ = clientProbe.send(clientConnectionHandler, pingTLV)
-        _ = serverProbe.expectMsg(LnMessage(pingTLV))
+        _ = serverProbe.expectMsg(DLCDataHandler.Received(LnMessage(pingTLV)))
         pongTLV = PongTLV.forIgnored(
           ByteVector.fromValidHex("00112233445566778899aabbccddeeff"))
         serverConnectionHandler = serverConnectionHandlerOpt.get
         _ = serverProbe.send(serverConnectionHandler, pongTLV)
-        _ = clientProbe.expectMsg(LnMessage(pongTLV))
+        _ = clientProbe.expectMsg(DLCDataHandler.Received(LnMessage(pongTLV)))
         // 131063 - is a magic size for OS X when this test case starts failing (131073 overall TLV size)
         ignored = ByteVector.fill(65000)(0x55)
         bigTLV =
           PongTLV.forIgnored(ignored)
         _ = clientProbe.send(clientConnectionHandler, bigTLV)
-        _ = serverProbe.expectMsg(LnMessage(bigTLV))
+        _ = serverProbe.expectMsg(DLCDataHandler.Received(LnMessage(bigTLV)))
         _ = clientProbe.send(clientConnectionHandler,
                              DLCConnectionHandler.CloseConnection)
         _ = clientProbe.send(clientConnectionHandler, pingTLV)
