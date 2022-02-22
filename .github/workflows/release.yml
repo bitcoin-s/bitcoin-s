@@ -182,7 +182,8 @@ jobs:
         run: ls -R .
         shell: bash
       - name: Inspect fat jar
-        run: jar -tf app/bundle/target/scala-2.13/bitcoin-s-bundle.jar
+        run: jar -tf app/bundle/target/scala-2.13/BundleGUI.jar
+        shell:  bash
       - name: Package jar as msi
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
