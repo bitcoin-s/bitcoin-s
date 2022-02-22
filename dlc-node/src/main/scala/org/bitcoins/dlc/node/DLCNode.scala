@@ -4,6 +4,8 @@ import akka.actor.{ActorRef, ActorSystem}
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.dlc.models.DLCMessage
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.dlc.node.config._
 import org.bitcoins.dlc.node.peer.Peer
@@ -55,9 +57,13 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     }
   }
 
-  private[node] def connectAndSendToPeer(
+  def acceptDLCOffer(
       peerAddress: InetSocketAddress,
-      message: LnMessage[TLV]): Future[Unit] = {
+      dlcOffer: LnMessage[DLCOfferTLV],
+      externalPayoutAddress: Option[BitcoinAddress],
+      externalChangeAddress: Option[BitcoinAddress]): Future[
+    DLCMessage.DLCAccept] = {
+
     val peer =
       Peer(socket = peerAddress, socks5ProxyParams = config.socks5ProxyParams)
 
@@ -66,12 +72,12 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     for {
       _ <- DLCClient.connect(peer, wallet, Some(handlerP))
       handler <- handlerP.future
-    } yield handler ! message
-  }
-
-  def acceptDLCOffer(
-      peerAddress: InetSocketAddress,
-      dlcOffer: LnMessage[DLCOfferTLV]): Future[Unit] = {
-    connectAndSendToPeer(peerAddress, dlcOffer)
+      accept <- wallet.acceptDLCOffer(dlcOffer.tlv,
+                                      externalPayoutAddress,
+                                      externalChangeAddress)
+    } yield {
+      handler ! DLCDataHandler.SendLnMessage(accept.toMessage)
+      accept
+    }
   }
 }

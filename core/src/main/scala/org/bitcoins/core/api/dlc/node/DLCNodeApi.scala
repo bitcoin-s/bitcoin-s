@@ -1,6 +1,8 @@
 package org.bitcoins.core.api.dlc.node
 
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.dlc.models.DLCMessage
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.StartStopAsync
 
@@ -13,7 +15,10 @@ trait DLCNodeApi extends StartStopAsync[Unit] {
 
   def acceptDLCOffer(
       peerAddress: InetSocketAddress,
-      dlcOffer: LnMessage[DLCOfferTLV]): Future[Unit]
+      dlcOffer: LnMessage[DLCOfferTLV],
+      externalPayoutAddress: Option[BitcoinAddress],
+      externalChangeAddress: Option[BitcoinAddress]): Future[
+    DLCMessage.DLCAccept]
 
   def getHostAddress: Future[InetSocketAddress]
 }

@@ -39,7 +39,7 @@ class DLCNodeTest extends BitcoinSDLCNodeTest {
                                       None,
                                       None)
 
-      _ <- nodeB.acceptDLCOffer(addrA, offer.toMessage)
+      _ <- nodeB.acceptDLCOffer(addrA, offer.toMessage, None, None)
 
       _ <- TestAsyncUtil.awaitConditionF(
         () =>

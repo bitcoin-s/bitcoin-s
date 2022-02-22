@@ -31,11 +31,16 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
 
     case ServerCommand("acceptdlc", arr) =>
       withValidServerCommand(AcceptDLC.fromJsArr(arr)) {
-        case AcceptDLC(offer, address) =>
+        case AcceptDLC(offer, address, payoutAddressOpt, changeAddressOpt) =>
           complete {
-            dlcNode.acceptDLCOffer(address, offer).map { _ =>
-              Server.httpSuccess(ujson.Null)
-            }
+            dlcNode
+              .acceptDLCOffer(address,
+                              offer,
+                              payoutAddressOpt,
+                              changeAddressOpt)
+              .map { accept =>
+                Server.httpSuccess(accept.toMessage.hex)
+              }
           }
       }
 

@@ -920,21 +920,41 @@ object AcceptDLCOffer extends ServerJsonModels {
   }
 }
 
-case class AcceptDLC(offer: LnMessage[DLCOfferTLV], peerAddr: InetSocketAddress)
+case class AcceptDLC(
+    offer: LnMessage[DLCOfferTLV],
+    peerAddr: InetSocketAddress,
+    externalPayoutAddressOpt: Option[BitcoinAddress],
+    externalChangeAddressOpt: Option[BitcoinAddress])
 
 object AcceptDLC extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLC] = {
+    def parseParameters(
+        offerJs: Value,
+        addrJs: Value,
+        payoutAddressJs: Value,
+        changeAddressJs: Value) = Try {
+      val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
+      val uri = new URI("tcp://" + addrJs.str)
+      val peerAddr =
+        InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
+      val payoutAddressJsOpt = nullToOpt(payoutAddressJs)
+      val payoutAddressOpt =
+        payoutAddressJsOpt.map(js => jsToBitcoinAddress(js))
+      val changeAddressJsOpt = nullToOpt(changeAddressJs)
+      val changeAddressOpt =
+        changeAddressJsOpt.map(js => jsToBitcoinAddress(js))
+
+      AcceptDLC(offer, peerAddr, payoutAddressOpt, changeAddressOpt)
+    }
+
     jsArr.arr.toList match {
       case offerJs :: addrJs :: Nil =>
-        Try {
-          val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
-          val uri = new URI("tcp://" + addrJs.str)
-          val peerAddr =
-            InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
-
-          AcceptDLC(offer, peerAddr)
-        }
+        parseParameters(offerJs, addrJs, Null, Null)
+      case offerJs :: addrJs :: payoutAddressJs :: Nil =>
+        parseParameters(offerJs, addrJs, payoutAddressJs, Null)
+      case offerJs :: addrJs :: payoutAddressJs :: changeAddressJs :: Nil =>
+        parseParameters(offerJs, addrJs, payoutAddressJs, changeAddressJs)
       case Nil =>
         Failure(
           new IllegalArgumentException("Missing offer and peerAddr argument"))

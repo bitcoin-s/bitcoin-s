@@ -11,12 +11,17 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
     extends Actor
     with ActorLogging {
   implicit val ec: ExecutionContextExecutor = context.system.dispatcher
+  import DLCDataHandler.{Send, SendLnMessage}
 
   override def preStart(): Unit = {
     val _ = context.watch(connectionHandler)
   }
 
   override def receive: Receive = LoggingReceive {
+    case Send(tlv) =>
+      connectionHandler ! tlv
+    case SendLnMessage(lnMessage) =>
+      connectionHandler ! lnMessage
     case lnMessage: LnMessage[TLV] =>
       log.info(s"Received LnMessage ${lnMessage.typeName}")
       val f: Future[Unit] = handleTLVMessage(lnMessage)
@@ -74,6 +79,7 @@ object DLCDataHandler {
   sealed trait Command
   case class Received(tlv: TLV) extends Command
   case class Send(tlv: TLV) extends Command
+  case class SendLnMessage(message: LnMessage[TLV]) extends Command
 
   def defaultFactory(
       dlcWalletApi: DLCWalletApi,
