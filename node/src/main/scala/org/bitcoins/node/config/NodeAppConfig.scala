@@ -22,6 +22,7 @@ import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 
 import java.nio.file.Path
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S node
@@ -130,10 +131,14 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peers: Vector[Peer] = Vector.empty[Peer])(
+  def createNode(
+      peers: Vector[Peer] = Vector.empty[Peer],
+      walletCreationTimeOpt: Option[Instant])(
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
-    NodeAppConfig.createNode(peers)(this, chainConf, system)
+    NodeAppConfig.createNode(peers, walletCreationTimeOpt)(this,
+                                                           chainConf,
+                                                           system)
   }
 }
 
@@ -149,7 +154,8 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
     NodeAppConfig(datadir, confs)
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
-  def createNode(peers: Vector[Peer])(implicit
+  def createNode(peers: Vector[Peer], walletCreationTimeOpt: Option[Instant])(
+      implicit
       nodeConf: NodeAppConfig,
       chainConf: ChainAppConfig,
       system: ActorSystem): Future[Node] = {
@@ -161,7 +167,7 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
 
     val dmhF = ChainHandlerCached
       .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO)
-      .map(handler => DataMessageHandler(handler))
+      .map(handler => DataMessageHandler(handler, walletCreationTimeOpt))
 
     nodeConf.nodeType match {
       case NodeType.SpvNode =>

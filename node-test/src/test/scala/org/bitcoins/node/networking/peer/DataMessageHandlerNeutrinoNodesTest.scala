@@ -62,9 +62,9 @@ class DataMessageHandlerNeutrinoNodesTest
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
 
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi)(node.executionContext,
-                                              node.nodeAppConfig,
-                                              node.chainConfig)
+          DataMessageHandler(genesisChainApi, None)(node.executionContext,
+                                                    node.nodeAppConfig,
+                                                    node.chainConfig)
         _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
         result <- resultP.future
       } yield assert(result == tx)

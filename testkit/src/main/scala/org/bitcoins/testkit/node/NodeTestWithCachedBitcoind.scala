@@ -65,9 +65,9 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
         require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
         for {
           peer <- createPeer(bitcoind)
-          node <- NodeUnitTest.createSpvNode(peer)(system,
-                                                   appConfig.chainConf,
-                                                   appConfig.nodeConf)
+          node <- NodeUnitTest.createSpvNode(peer, None)(system,
+                                                         appConfig.chainConf,
+                                                         appConfig.nodeConf)
           started <- node.start()
           _ <- NodeUnitTest.syncSpvNode(started, bitcoind)
         } yield SpvNodeConnectedWithBitcoind(node, bitcoind)
@@ -89,9 +89,12 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
-        node <- NodeUnitTest.createNeutrinoNode(bitcoind)(system,
-                                                          appConfig.chainConf,
-                                                          appConfig.nodeConf)
+        _ <- appConfig.walletConf.kmConf.start()
+        creationTimeOpt = Some(appConfig.walletConf.creationTime)
+        node <- NodeUnitTest.createNeutrinoNode(bitcoind, creationTimeOpt)(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf)
       } yield NeutrinoNodeConnectedWithBitcoind(node, bitcoind)
     }
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
@@ -110,9 +113,12 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       NeutrinoNodeConnectedWithBitcoinds] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
-        node <- NodeUnitTest.createNeutrinoNode(bitcoinds)(system,
-                                                           appConfig.chainConf,
-                                                           appConfig.nodeConf)
+        _ <- appConfig.walletConf.kmConf.start()
+        creationTimeOpt = Some(appConfig.walletConf.creationTime)
+        node <- NodeUnitTest.createNeutrinoNode(bitcoinds, creationTimeOpt)(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf)
         startedNode <- node.start()
         syncedNode <- syncNeutrinoNode(startedNode, bitcoinds(0))
       } yield NeutrinoNodeConnectedWithBitcoinds(syncedNode, bitcoinds)
@@ -209,9 +215,9 @@ trait NodeTestWithCachedBitcoindV19
       require(appConfig.nodeConf.nodeType == NodeType.SpvNode)
       for {
         peer <- createPeer(bitcoind)
-        node <- NodeUnitTest.createSpvNode(peer)(system,
-                                                 appConfig.chainConf,
-                                                 appConfig.nodeConf)
+        node <- NodeUnitTest.createSpvNode(peer, None)(system,
+                                                       appConfig.chainConf,
+                                                       appConfig.nodeConf)
         started <- node.start()
         _ <- NodeUnitTest.syncSpvNode(started, bitcoind)
       } yield SpvNodeConnectedWithBitcoindV19(node, bitcoind)

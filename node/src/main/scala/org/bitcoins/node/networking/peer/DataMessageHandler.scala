@@ -11,6 +11,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
 import org.bitcoins.node.{Node, P2PLogger}
 
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -24,6 +25,7 @@ import scala.util.control.NonFatal
   */
 case class DataMessageHandler(
     chainApi: ChainApi,
+    walletCreationTimeOpt: Option[Instant],
     initialSyncDone: Option[Promise[Done]] = None,
     currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
     filterHeaderHeightOpt: Option[Int] = None,
@@ -73,21 +75,26 @@ case class DataMessageHandler(
           newChainApi <- chainApi.processFilterHeaders(
             filterHeaders,
             filterHeader.stopHash.flip)
-          newSyncing <-
+          (newSyncing, startFilterHeightOpt) <-
             if (filterHeaders.size == chainConfig.filterHeaderBatchSize) {
               logger.debug(
                 s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
               sendNextGetCompactFilterHeadersCommand(
                 peerWithCompactFilters,
-                filterHeader.stopHash.flip).map(_ => syncing)
+                filterHeader.stopHash.flip).map(_ => (syncing, None))
             } else {
-              logger.info(
-                s"Done syncing filter headers, beginning to sync filters in datamessagehandler")
-              sendFirstGetCompactFilterCommand(peerWithCompactFilters).map {
-                synced =>
+              for {
+                startHeightOpt <- getCompactFilterStartHeight(
+                  walletCreationTimeOpt)
+                _ = logger.info(
+                  s"Done syncing filter headers, beginning to sync filters from startHeightOpt=$startHeightOpt")
+                syncing <- sendFirstGetCompactFilterCommand(
+                  peerWithCompactFilters,
+                  startHeightOpt).map { synced =>
                   if (!synced) logger.info("We are synced")
                   syncing
-              }
+                }
+              } yield (syncing, startHeightOpt)
             }
           newFilterHeaderHeight <- filterHeaderHeightOpt match {
             case None =>
@@ -98,7 +105,8 @@ case class DataMessageHandler(
         } yield {
           this.copy(chainApi = newChainApi,
                     syncing = newSyncing,
-                    filterHeaderHeightOpt = Some(newFilterHeaderHeight))
+                    filterHeaderHeightOpt = Some(newFilterHeaderHeight),
+                    filterHeightOpt = startFilterHeightOpt)
         }
       case filter: CompactFilterMessage =>
         logger.debug(s"Received ${filter.commandName}, $filter")
@@ -106,16 +114,7 @@ case class DataMessageHandler(
           currentFilterBatch.size == chainConfig.filterBatchSize - 1
         for {
           (newFilterHeaderHeight, newFilterHeight) <-
-            (filterHeaderHeightOpt, filterHeightOpt) match {
-              case (Some(filterHeaderHeight), Some(filterHeight)) =>
-                Future.successful((filterHeaderHeight, filterHeight + 1))
-              case (_, _) => // If either are None
-                for {
-                  filterHeaderHeight <- chainApi.getFilterHeaderCount()
-                  filterHeight <- chainApi.getFilterCount()
-                } yield (filterHeaderHeight,
-                         if (filterHeight == 0) 0 else filterHeight + 1)
-            }
+            calcFilterHeaderFilterHeight()
           newSyncing =
             if (batchSizeFull) {
               syncing
@@ -381,11 +380,18 @@ case class DataMessageHandler(
                                                   startHeight = startHeight)
 
   private def sendFirstGetCompactFilterCommand(
-      peerMsgSender: PeerMessageSender): Future[Boolean] =
+      peerMsgSender: PeerMessageSender,
+      startHeightOpt: Option[Int]): Future[Boolean] = {
+    val startHeightF = startHeightOpt match {
+      case Some(startHeight) => Future.successful(startHeight)
+      case None              => chainApi.getFilterCount()
+    }
+
     for {
-      filterCount <- chainApi.getFilterCount()
-      res <- sendNextGetCompactFilterCommand(peerMsgSender, filterCount)
+      startHeight <- startHeightF
+      res <- sendNextGetCompactFilterCommand(peerMsgSender, startHeight)
     } yield res
+  }
 
   private def handleInventoryMsg(
       invMsg: InventoryMessage,
@@ -408,5 +414,39 @@ case class DataMessageHandler(
       case other: Inventory => Some(other)
     })
     peerMsgSender.sendMsg(getData).map(_ => this)
+  }
+
+  private def getCompactFilterStartHeight(
+      walletCreationTimeOpt: Option[Instant]): Future[Option[Int]] = {
+    walletCreationTimeOpt match {
+      case Some(instant) =>
+        val creationTimeHeightF = chainApi
+          .epochSecondToBlockHeight(instant.toEpochMilli / 1000)
+        val filterCountF = chainApi.getFilterCount()
+        for {
+          creationTimeHeight <- creationTimeHeightF
+          filterCount <- filterCountF
+        } yield {
+          //want to choose the maximum out of these too
+          //if our internal chainstate filter count is > creationTimeHeight
+          //we just want to start syncing from our last seen filter
+          Some(Math.max(creationTimeHeight, filterCount))
+        }
+      case None =>
+        Future.successful(None)
+    }
+  }
+
+  private def calcFilterHeaderFilterHeight(): Future[(Int, Int)] = {
+    (filterHeaderHeightOpt, filterHeightOpt) match {
+      case (Some(filterHeaderHeight), Some(filterHeight)) =>
+        Future.successful((filterHeaderHeight, filterHeight + 1))
+      case (_, _) => // If either are None
+        for {
+          filterHeaderHeight <- chainApi.getFilterHeaderCount()
+          filterHeight <- chainApi.getFilterCount()
+        } yield (filterHeaderHeight,
+                 if (filterHeight == 0) 0 else filterHeight + 1)
+    }
   }
 }

@@ -23,6 +23,7 @@ import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{Wallet, WalletCallbacks, WalletLogger}
 
 import java.nio.file.{Files, Path, Paths}
+import java.time.Instant
 import java.util.concurrent._
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -326,6 +327,13 @@ case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
         ()
       case None => ()
     }
+  }
+
+  /** The creation time of the mnemonic seed
+    * If we cannot decrypt the seed because of invalid passwords, we return None
+    */
+  def creationTime: Instant = {
+    kmConf.creationTime
   }
 }
 

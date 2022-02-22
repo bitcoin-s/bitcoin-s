@@ -176,7 +176,7 @@ class P2PClientTest
     val probe = TestProbe()
     val peerMessageReceiverF =
       for {
-        node <- NodeUnitTest.buildNode(peer)
+        node <- NodeUnitTest.buildNode(peer, None)
       } yield PeerMessageReceiver.preConnection(peer, node)
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =
