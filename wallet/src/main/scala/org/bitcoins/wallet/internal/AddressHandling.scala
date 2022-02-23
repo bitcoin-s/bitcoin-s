@@ -221,6 +221,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
       _ <-
         walletCallbacks.executeOnNewAddressGenerated(logger, addressDb.address)
     } yield {
+      logger.info(s"Generated new address=${addressDb.address}")
       addressDb.address
     }
   }
