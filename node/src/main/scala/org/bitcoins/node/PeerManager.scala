@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
 import akka.actor.ActorSystem
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.p2p.{AddrV2Message, ServiceIdentifier}
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.config.NodeAppConfig
@@ -11,6 +12,7 @@ import scodec.bits.ByteVector
 
 import java.net.{InetAddress, UnknownHostException}
 import scala.collection.mutable
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.Random
@@ -22,10 +24,33 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
 
-  private val _peerData: mutable.Map[Peer, PeerData] =
-    mutable.Map.empty
+  /* peers are stored across _peerData and _testPeerData.
+  _peerData has all the peers that the node is actually using in its operation.
+  _testPeerData is for temporarily keeping peer information for peer discovery (we do not store every peer rather initialize
+  and then verify that it can be reached and supports compact filters).
+   */
+  private val _peerData: mutable.Map[Peer, PeerData] = mutable.Map.empty
 
-  def peerData: Map[Peer, PeerData] = _peerData.toMap
+  private val _testPeerData: mutable.Map[Peer, PeerData] = mutable.Map.empty
+
+  private def peerData: Map[Peer, PeerData] = _peerData.toMap
+
+  def testPeerData: Map[Peer, PeerData] = _testPeerData.toMap
+
+  def connectedPeerCount: Int = peerData.size
+
+  /** moves a peer from [[_testPeerData]] to [[_peerData]]
+    * this operation makes the node permanently keep connection with the peer and
+    * use it for node operation
+    */
+  def setPeerForUse(peer: Peer): Unit = {
+    require(testPeerData.contains(peer),"Unknown peer marked as usable")
+    _peerData.addOne((peer,peerDataOf(peer)))
+    _testPeerData.remove(peer)
+    ()
+    //todo
+    //peerData(peer).peerMessageSender.sendGetAddrMessage()
+  }
 
   def peers: Vector[Peer] = peerData.keys.toVector
 
@@ -132,22 +157,22 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   }
 
   def addPeer(peer: Peer): Unit = {
-    if (!_peerData.contains(peer))
-      _peerData.put(peer, PeerData(peer, node))
+    if (!_testPeerData.contains(peer))
+      _testPeerData.put(peer, PeerData(peer, node))
     else logger.debug(s"Peer $peer already added.")
     ()
   }
 
   def removePeer(peer: Peer): Future[Unit] = {
-    if (_peerData.contains(peer)) {
-      val connF = peerData(peer).peerMessageSender.isConnected()
+    if (_testPeerData.contains(peer)) {
+      val connF = testPeerData(peer).peerMessageSender.isConnected()
       val disconnectF = connF.map { conn =>
-        if (conn) peerData(peer).peerMessageSender.disconnect()
+        if (conn) testPeerData(peer).peerMessageSender.disconnect()
         else Future.unit
       }
       for {
         _ <- disconnectF
-        _ = _peerData.remove(peer)
+        _ = _testPeerData.remove(peer)
       } yield ()
     } else {
       logger.debug(s"Key $peer not found in peerData")
@@ -195,5 +220,15 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   //makes it more readable, compare peerManager.peerData(peer) vs peerManager.peerDataOf(peer) as peer is used thrice
   //in a simple statement
   /** get [[PeerData]] for a [[Peer]] */
-  def peerDataOf(peer: Peer): PeerData = peerData(peer)
+  def peerDataOf(peer: Peer): PeerData = testPeerData(peer)
+
+  def awaitPeerWithService(f: ServiceIdentifier => Boolean): Future[Unit] = {
+    logger.info("Waiting for peer connection")
+    AsyncUtil
+      .retryUntilSatisfied(peerData.exists(x=>f(x._2.serviceIdentifier)),
+        interval = 1.seconds,
+        maxTries = 600 //times out in 10 minutes
+      )
+      .map(_ => logger.info("Connected to peer. Starting sync."))
+  }
 }

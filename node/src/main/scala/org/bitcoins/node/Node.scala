@@ -99,19 +99,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def isDisconnected(idx: Int): Future[Boolean] =
     peerMsgSenders(idx).isDisconnected()
 
-  def initializePeer(peer: Peer): Future[Unit] = {
+  def initializePeer(peer: Peer): Unit = {
     peerManager.peerDataOf(peer).peerMessageSender.connect()
-    val isInitializedF = AsyncUtil
-      .retryUntilSatisfiedF(
-        () => peerManager.peerDataOf(peer).peerMessageSender.isInitialized(),
-        maxTries = 20,
-        interval = 1.second
-      ) //20 seconds
-    isInitializedF.failed
-      .foreach { err =>
-        logger.error(s"Failed to initialize with peer=$peer with err=$err")
-      }
-    isInitializedF
   }
 
   /** Starts our node */
@@ -123,7 +112,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val startNodeF = for {
       peers <- peerManager.getPeers
       _ = peers.foreach(peerManager.addPeer)
-      _ <- Future.sequence(peers.map(initializePeer))
+      _ = peers.foreach(initializePeer)
     } yield {
       logger.info(s"Our node has been full started. It took=${System
         .currentTimeMillis() - start}ms")

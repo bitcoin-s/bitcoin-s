@@ -55,6 +55,7 @@ case class NeutrinoNode(
       node <- super.start()
       chainApi <- chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash()
+      _ <- peerManager.awaitPeerWithService(_.nodeCompactFilters)
       _ <- peerManager.randomPeerMsgSenderWithCompactFilters
         .sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
     } yield {
@@ -74,6 +75,7 @@ case class NeutrinoNode(
     * @return
     */
   override def sync(): Future[Unit] = {
+    logger.info("Sync function called")
     val blockchainsF =
       BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
     for {
