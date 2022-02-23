@@ -36,6 +36,8 @@ import org.bitcoins.lnd.rpc.LndUtils._
 import org.bitcoins.lnd.rpc.config._
 import scodec.bits._
 import signrpc._
+import walletrpc.FundPsbtRequest.Fees.SatPerVbyte
+import walletrpc.FundPsbtRequest.Template.Psbt
 import walletrpc.{
   AddressType => _,
   ListUnspentRequest => _,
@@ -560,6 +562,48 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     wallet
       .sendOutputs(request)
       .map(res => Tx(res.rawTx))
+  }
+
+  def fundPSBT(
+      psbt: PSBT,
+      feeRate: SatoshisPerVirtualByte,
+      spendUnconfirmed: Boolean): Future[PSBT] = {
+    val template = Psbt(psbt.bytes)
+    val fees = SatPerVbyte(feeRate.toLong)
+    val request = FundPsbtRequest(template = template,
+                                  fees = fees,
+                                  spendUnconfirmed = spendUnconfirmed)
+
+    fundPSBT(request)
+  }
+
+  def fundPSBT(psbt: PSBT, feeRate: SatoshisPerVirtualByte): Future[PSBT] = {
+    val template = Psbt(psbt.bytes)
+    val fees = SatPerVbyte(feeRate.toLong)
+    val request = FundPsbtRequest(template, fees)
+
+    fundPSBT(request)
+  }
+
+  def fundPSBT(request: FundPsbtRequest): Future[PSBT] = {
+    logger.trace("lnd calling fundpsbt")
+
+    wallet
+      .fundPsbt(request)
+      .map(res => PSBT(res.fundedPsbt))
+  }
+
+  def signPSBT(psbt: PSBT): Future[PSBT] = {
+    val request = SignPsbtRequest(psbt.bytes)
+    signPSBT(request)
+  }
+
+  def signPSBT(request: SignPsbtRequest): Future[PSBT] = {
+    logger.trace("lnd calling signpsbt")
+
+    wallet
+      .signPsbt(request)
+      .map(res => PSBT(res.signedPsbt))
   }
 
   def finalizePSBT(psbt: PSBT): Future[PSBT] = {
