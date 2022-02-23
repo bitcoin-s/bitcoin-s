@@ -63,7 +63,7 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
         accept <- walletA.acceptDLCOffer(offer, None, None)
 
         // Send accept message to begin p2p
-        _ = handler ! accept.toMessage
+        _ = handler ! DLCDataHandler.Received(accept.toMessage)
 
         _ <- TestAsyncUtil.awaitConditionF(
           () =>

@@ -76,7 +76,7 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
                                       externalPayoutAddress,
                                       externalChangeAddress)
     } yield {
-      handler ! DLCDataHandler.SendLnMessage(accept.toMessage)
+      handler ! DLCDataHandler.Send(accept.toMessage)
       accept
     }
   }
