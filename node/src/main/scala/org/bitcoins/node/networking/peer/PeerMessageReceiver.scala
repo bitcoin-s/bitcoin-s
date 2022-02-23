@@ -1,6 +1,6 @@
 package org.bitcoins.node.networking.peer
 
-import akka.actor.ActorRefFactory
+import akka.actor.ActorSystem
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.config.NodeAppConfig
@@ -10,6 +10,7 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.{Node, P2PLogger}
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 /** Responsible for receiving messages from a peer on the
   * p2p network. This is called by [[org.bitcoins.rpc.client.common.Client Client]] when doing the p2p
@@ -21,9 +22,9 @@ class PeerMessageReceiver(
     node: Node,
     val state: PeerMessageReceiverState,
     peer: Peer
-)(implicit ref: ActorRefFactory, nodeAppConfig: NodeAppConfig)
+)(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
-  import ref.dispatcher
+  import system.dispatcher
 
   require(nodeAppConfig.nodeType != NodeType.BitcoindBackend,
           "Bitcoind should handle the P2P interactions")
@@ -38,12 +39,16 @@ class PeerMessageReceiver(
 
     state match {
       case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
-          _: InitializedDisconnectDone | _: Disconnected) =>
+          _: InitializedDisconnectDone | _: Disconnected | _: StoppedReconnect |
+          _: Waiting) =>
         throw new RuntimeException(s"Cannot call connect when in state=${bad}")
       case Preconnection =>
-        logger.info(s"Connection established with peer=${peer}")
+        logger.debug(s"Connection established with peer=${peer}")
 
-        val newState = Preconnection.toInitializing(client)
+        val timeout =
+          system.scheduler.scheduleOnce(10.seconds)(onInitTimeout())
+
+        val newState = Preconnection.toInitializing(client, timeout)
 
         val peerMsgSender = PeerMessageSender(client)
 
@@ -60,9 +65,10 @@ class PeerMessageReceiver(
     * peer initialized a disconnection from us
     */
   private[networking] def initializeDisconnect(): PeerMessageReceiver = {
+    logger.debug(s"InitDisconnect for $peer")
     state match {
       case bad @ (_: Disconnected | _: InitializedDisconnectDone |
-          Preconnection) =>
+          Preconnection | _: StoppedReconnect) =>
         throw new RuntimeException(
           s"Cannot initialize disconnect from peer=$peer when in state=$bad")
       case _: InitializedDisconnect =>
@@ -75,6 +81,34 @@ class PeerMessageReceiver(
                                              state.versionMsgP,
                                              state.verackMsgP)
         toState(newState)
+      case state: Waiting =>
+        onResponseTimeout(state.responseFor)
+        val newState = InitializedDisconnect(state.clientConnectP,
+                                             state.clientDisconnectP,
+                                             state.versionMsgP,
+                                             state.verackMsgP)
+        toState(newState)
+    }
+  }
+
+  def stopReconnect(): PeerMessageReceiver = {
+    state match {
+      case Preconnection =>
+        //when retry, state should be back to preconnection
+        val newState = StoppedReconnect(state.clientConnectP,
+                                        state.clientDisconnectP,
+                                        state.versionMsgP,
+                                        state.verackMsgP)
+        val newRecv = toState(newState)
+        newRecv
+      case _: StoppedReconnect =>
+        logger.warn(
+          s"Already stopping reconnect from peer=$peer, this is a noop")
+        this
+      case bad @ (_: Initializing | _: Normal | _: InitializedDisconnect |
+          _: InitializedDisconnectDone | _: Disconnected | _: Waiting) =>
+        throw new RuntimeException(
+          s"Cannot stop reconnect from peer=$peer when in state=$bad")
     }
   }
 
@@ -82,7 +116,7 @@ class PeerMessageReceiver(
     logger.trace(s"Disconnecting with internalstate=${state}")
     state match {
       case bad @ (_: Disconnected | Preconnection |
-          _: InitializedDisconnectDone) =>
+          _: InitializedDisconnectDone | _: StoppedReconnect) =>
         throw new RuntimeException(
           s"Cannot disconnect from peer=${peer} when in state=${bad}")
       case good: InitializedDisconnect =>
@@ -91,10 +125,15 @@ class PeerMessageReceiver(
           clientDisconnectP = good.clientDisconnectP.success(()),
           versionMsgP = good.versionMsgP,
           verackMsgP = good.verackMsgP)
-        val newNode =
-          node.updateDataMessageHandler(node.getDataMessageHandler.reset)
-        new PeerMessageReceiver(newNode, newState, peer)
-      case good @ (_: Initializing | _: Normal) =>
+        new PeerMessageReceiver(node, newState, peer)
+      case good @ (_: Initializing | _: Normal | _: Waiting) =>
+        good match {
+          case wait: Waiting =>
+            onResponseTimeout(wait.responseFor)
+            wait.timeout.cancel()
+          case _ =>
+        }
+
         logger.debug(s"Disconnected bitcoin peer=${peer}")
         val newState = Disconnected(
           clientConnectP = good.clientConnectP,
@@ -103,9 +142,7 @@ class PeerMessageReceiver(
           verackMsgP = good.verackMsgP
         )
 
-        val newNode =
-          node.updateDataMessageHandler(node.getDataMessageHandler.reset)
-        new PeerMessageReceiver(newNode, newState, peer)
+        new PeerMessageReceiver(node, newState, peer)
     }
   }
 
@@ -132,11 +169,37 @@ class PeerMessageReceiver(
 
     logger.debug(
       s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${client.peer} state=${state} ")
+
+    val payload = networkMsgRecv.msg.payload
+
+    val curReceiver: PeerMessageReceiver = {
+      state match {
+        case state: Waiting =>
+          val responseFor = state.responseFor.asInstanceOf[ExpectsResponse]
+          if (responseFor.isPayloadExpectedResponse(payload)) {
+            val timeTaken = System.currentTimeMillis() - state.waitingSince
+            logger.debug(
+              s"Received expected response ${payload.commandName} in $timeTaken ms")
+            state.timeout.cancel()
+            val newState = Normal(state.clientConnectP,
+                                  state.clientDisconnectP,
+                                  state.versionMsgP,
+                                  state.verackMsgP)
+            toState(newState)
+          } else this
+        case _ => this
+      }
+    }
+
     networkMsgRecv.msg.payload match {
       case controlPayload: ControlPayload =>
-        handleControlPayload(payload = controlPayload, sender = peerMsgSender)
+        handleControlPayload(payload = controlPayload,
+                             sender = peerMsgSender,
+                             curReceiver)
       case dataPayload: DataPayload =>
-        handleDataPayload(payload = dataPayload, sender = peerMsgSender)
+        handleDataPayload(payload = dataPayload,
+                          sender = peerMsgSender,
+                          curReceiver)
     }
   }
 
@@ -149,13 +212,14 @@ class PeerMessageReceiver(
     */
   private def handleDataPayload(
       payload: DataPayload,
-      sender: PeerMessageSender): Future[PeerMessageReceiver] = {
+      sender: PeerMessageSender,
+      curReceiver: PeerMessageReceiver): Future[PeerMessageReceiver] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
-    node.getDataMessageHandler.handleDataPayload(payload, sender, node).map {
+    node.getDataMessageHandler.handleDataPayload(payload, sender, peer).map {
       handler =>
         val newNode = node.updateDataMessageHandler(handler)
-        new PeerMessageReceiver(newNode, state, peer)
+        new PeerMessageReceiver(newNode, curReceiver.state, peer)
     }
   }
 
@@ -167,9 +231,71 @@ class PeerMessageReceiver(
     */
   private def handleControlPayload(
       payload: ControlPayload,
-      sender: PeerMessageSender): Future[PeerMessageReceiver] = {
+      sender: PeerMessageSender,
+      curReceiver: PeerMessageReceiver): Future[PeerMessageReceiver] = {
     node.controlMessageHandler
-      .handleControlPayload(payload, sender, peer, this)
+      .handleControlPayload(payload, sender, peer, curReceiver)
+  }
+
+  def onInitTimeout(): Unit = {
+    logger.info(s"Init timeout for peer $peer")
+  }
+
+  def onResponseTimeout(networkPayload: NetworkPayload): Unit = {
+    assert(networkPayload.isInstanceOf[ExpectsResponse])
+    logger.info(s"Called on Response Timeout for ${networkPayload.commandName}")
+
+    state match {
+      case wait: Waiting => wait.timeout.cancel()
+      case _             =>
+    }
+
+    networkPayload match {
+      case payload: ExpectsResponse =>
+        logger.info(
+          s"Response for ${payload.commandName} from $peer timed out.")
+        node.peerManager.onQueryTimeout(payload, peer).foreach(_ => ())
+      case _ =>
+        logger.error(
+          s"onResponseTimeout called for ${networkPayload.commandName} which does not expect response")
+    }
+  }
+
+  def handleExpectResponse(msg: NetworkPayload): PeerMessageReceiver = {
+    state match {
+      case good: Normal =>
+        logger.debug(s"handling expected response for ${msg.commandName}")
+        val timeout =
+          system.scheduler.scheduleOnce(5.seconds)(onResponseTimeout(msg))
+        val newState = Waiting(
+          clientConnectP = good.clientConnectP,
+          clientDisconnectP = good.clientDisconnectP,
+          versionMsgP = good.versionMsgP,
+          verackMsgP = good.verackMsgP,
+          responseFor = msg,
+          waitingSince = System.currentTimeMillis(),
+          timeout = timeout
+        )
+        logger.debug(s"handleExpectResponse: Current state is now $newState")
+        toState(newState)
+      case state: Waiting =>
+        logger.warn(
+          s"Waiting for response to ${state.responseFor.commandName}. Ignoring next request for ${msg.commandName}")
+        this
+      case bad @ (_: InitializedDisconnect | _: InitializedDisconnectDone |
+          _: StoppedReconnect) =>
+        throw new RuntimeException(
+          s"Cannot expect response for ${msg.commandName} in state $bad")
+      case Preconnection | _: Initializing | _: Disconnected =>
+        //so we sent a message when things were good, but not we are back to connecting?
+        //can happen when can happen where once we intiailize the remote peer immediately disconnects us
+        //note that we do handle a disconnect when we are in state Waiting and are disconnected upon
+        //but the case where we are disconnected before we could send a message i.e. we were in Normal state
+        //so now the expect request should immediately fail
+        onResponseTimeout(msg)
+        this
+
+    }
   }
 
   /** Transitions our PeerMessageReceiver to a new state */
@@ -196,7 +322,7 @@ object PeerMessageReceiver {
       extends PeerMessageReceiverMsg
 
   def apply(state: PeerMessageReceiverState, node: Node, peer: Peer)(implicit
-      ref: ActorRefFactory,
+      system: ActorSystem,
       nodeAppConfig: NodeAppConfig
   ): PeerMessageReceiver = {
     new PeerMessageReceiver(node = node, state = state, peer = peer)
@@ -207,7 +333,7 @@ object PeerMessageReceiver {
     * to connect to a peer on the network
     */
   def preConnection(peer: Peer, node: Node)(implicit
-      ref: ActorRefFactory,
+      system: ActorSystem,
       nodeAppConfig: NodeAppConfig
   ): PeerMessageReceiver = {
     PeerMessageReceiver(node = node,
@@ -217,7 +343,7 @@ object PeerMessageReceiver {
 
   def newReceiver(node: Node, peer: Peer)(implicit
       nodeAppConfig: NodeAppConfig,
-      ref: ActorRefFactory): PeerMessageReceiver = {
+      system: ActorSystem): PeerMessageReceiver = {
     PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
                         node = node,
                         peer = peer)

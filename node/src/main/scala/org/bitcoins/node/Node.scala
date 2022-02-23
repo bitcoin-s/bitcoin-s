@@ -1,7 +1,6 @@
 package org.bitcoins.node
 
 import akka.actor.ActorSystem
-import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
@@ -23,7 +22,7 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageSender
 }
 
-import scala.concurrent.duration.DurationInt
+//import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -39,7 +38,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def executionContext: ExecutionContext = system.dispatcher
 
-  val peerManager: PeerManager
+  implicit def node: Node = this
+
+  val peerManager: PeerManager = PeerManager()
 
   /** The current data message handler.
     * It should be noted that the dataMessageHandler contains
@@ -81,37 +82,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * with P2P messages, therefore marked as
     * `private[node]`.
     */
-  def send(msg: NetworkPayload, idx: Int): Future[Unit] = {
-    peerMsgSenders(idx).sendMsg(msg)
-  }
-
-  /** Checks if we have a tcp connection with our peer */
-  def isConnected(idx: Int): Future[Boolean] = peerMsgSenders(idx).isConnected()
-
-  /** Checks if we are fully initialized with our peer and have executed the handshake
-    * This means we can now send arbitrary messages to our peer
-    *
-    * @return
-    */
-  def isInitialized(idx: Int): Future[Boolean] =
-    peerMsgSenders(idx).isInitialized()
-
-  def isDisconnected(idx: Int): Future[Boolean] =
-    peerMsgSenders(idx).isDisconnected()
-
-  def initializePeer(peer: Peer): Future[Unit] = {
-    peerManager.peerDataOf(peer).peerMessageSender.connect()
-    val isInitializedF = AsyncUtil
-      .retryUntilSatisfiedF(
-        () => peerManager.peerDataOf(peer).peerMessageSender.isInitialized(),
-        maxTries = 20,
-        interval = 1.second
-      ) //20 seconds
-    isInitializedF.failed
-      .foreach { err =>
-        logger.error(s"Failed to initialize with peer=$peer with err=$err")
-      }
-    isInitializedF
+  def send(msg: NetworkPayload, peer: Peer): Future[Unit] = {
+    peerManager.peerData(peer).peerMessageSender.sendMsg(msg)
   }
 
   /** Starts our node */
@@ -121,9 +93,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
     val chainApiF = chainApiFromDb()
     val startNodeF = for {
-      peers <- peerManager.getPeers
-      _ = peers.foreach(peerManager.addPeer)
-      _ <- Future.sequence(peers.map(initializePeer))
+      _ <- peerManager.start
     } yield {
       logger.info(s"Our node has been full started. It took=${System
         .currentTimeMillis() - start}ms")
@@ -152,36 +122,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def stop(): Future[Node] = {
     logger.info(s"Stopping node")
 
-    val disconnectFs = peerMsgSenders.map(_.disconnect())
-
-    val disconnectF = for {
-      disconnect <- Future.sequence(disconnectFs)
-    } yield disconnect
-
-    def isAllDisconnectedF: Future[Boolean] = {
-      val connF = peerMsgSenders.map(_.isDisconnected())
-      val res = Future.sequence(connF).map(_.forall(_ == true))
-      res
-    }
-
     val start = System.currentTimeMillis()
-    val isStoppedF = disconnectF.flatMap { _ =>
-      logger.info(s"Awaiting disconnect")
-      //25 seconds to disconnect
-      AsyncUtil.retryUntilSatisfiedF(() => isAllDisconnectedF, 500.millis)
-    }
 
-    val peers = peerManager.peers
-    val removedPeersF = for {
-      _ <- isStoppedF
-      _ <- Future.sequence(peers.map(peerManager.removePeer))
-    } yield ()
-
-    removedPeersF.failed.foreach { e =>
-      logger.warn(s"Cannot stop node", e)
-    }
-
-    removedPeersF.map { _ =>
+    peerManager.stop.map { _ =>
       logger.info(
         s"Node stopped! It took=${System.currentTimeMillis() - start}ms")
       this
@@ -196,8 +139,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     * @return
     */
   def sync(): Future[Unit] = {
+    logger.debug("Started Node.sync")
     val blockchainsF =
       BlockHeaderDAO()(executionContext, chainAppConfig).getBlockchains()
+    val syncPeer = peerManager.peers.head
     for {
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
@@ -205,7 +150,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      _ <- peerManager.randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
+      _ <- peerManager
+        .peerData(syncPeer)
+        .peerMessageSender
+        .sendGetHeadersMessage(cachedHeaders)
     } yield {
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE}")
@@ -231,21 +179,19 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
     for {
       _ <- addToDbF
-
-      connected <- isConnected(0)
-
-      res <- {
+      _ <- {
+        val connected = peerManager.peers.nonEmpty
         if (connected) {
           logger.info(s"Sending out tx message for tx=$txIds")
-          peerMsgSenders(0).sendInventoryMessage(transactions: _*)
+          Future.sequence(
+            peerMsgSenders.map(_.sendInventoryMessage(transactions: _*)))
         } else {
           Future.failed(
             new RuntimeException(
-              s"Error broadcasting transaction $txIds, peer is disconnected ${peerManager
-                .peers(0)}"))
+              s"Error broadcasting transaction $txIds, no peers connected"))
         }
       }
-    } yield res
+    } yield ()
   }
 
   /** Fetches the given blocks from the peers and calls the appropriate [[callbacks]] when done.
@@ -255,8 +201,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     if (blockHashes.isEmpty) {
       Future.unit
     } else {
-      peerMsgSenders(0).sendGetDataMessage(TypeIdentifier.MsgWitnessBlock,
-                                           blockHashes: _*)
+      val peerMsgSenderF = peerManager.randomPeerMsgSenderWithService(_ => true)
+      peerMsgSenderF.flatMap(
+        _.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock, blockHashes: _*))
     }
   }
 

@@ -1,6 +1,6 @@
 package org.bitcoins.node.models
 
-import org.bitcoins.core.p2p.AddrV2Message
+import org.bitcoins.core.p2p.{AddrV2Message, ServiceIdentifier}
 import org.bitcoins.testkit.fixtures.NodeDAOFixture
 import scodec.bits.ByteVector
 
@@ -13,11 +13,14 @@ class PeerDAOTest extends NodeDAOFixture {
   it must "write peer bytes and read it back" in { daos =>
     val peerDAO = daos.peerDAO
     val bytes = ByteVector(Array[Byte](127, 0, 0, 1))
-    val peer = PeerDb(address = bytes,
-                      port = 8333,
-                      lastSeen = Instant.now,
-                      firstSeen = Instant.now,
-                      networkId = AddrV2Message.IPV4_NETWORK_BYTE)
+    val peer = PeerDb(
+      address = bytes,
+      port = 8333,
+      lastSeen = Instant.now,
+      firstSeen = Instant.now,
+      networkId = AddrV2Message.IPV4_NETWORK_BYTE,
+      serviceBytes = ServiceIdentifier.NODE_COMPACT_FILTERS.bytes
+    )
 
     for {
       created <- peerDAO.create(peer)

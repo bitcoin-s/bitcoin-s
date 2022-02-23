@@ -26,7 +26,7 @@ case class NeutrinoNode(
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem,
-    configPeersOverride: Vector[Peer] = Vector.empty)
+    paramPeers: Vector[Peer] = Vector.empty)
     extends Node {
   require(
     nodeConfig.nodeType == NodeType.NeutrinoNode,
@@ -36,11 +36,9 @@ case class NeutrinoNode(
 
   implicit override def nodeAppConfig: NodeAppConfig = nodeConfig
 
-  override def chainAppConfig: ChainAppConfig = chainConfig
+  implicit override def chainAppConfig: ChainAppConfig = chainConfig
 
   val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
-
-  override val peerManager: PeerManager = PeerManager(this, configPeersOverride)
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler
 
@@ -50,13 +48,11 @@ case class NeutrinoNode(
     this
   }
 
+  override val peerManager: PeerManager = PeerManager(paramPeers)
+
   override def start(): Future[NeutrinoNode] = {
     val res = for {
       node <- super.start()
-      chainApi <- chainApiFromDb()
-      bestHash <- chainApi.getBestBlockHash()
-      _ <- peerManager.randomPeerMsgSenderWithCompactFilters
-        .sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
     } yield {
       node.asInstanceOf[NeutrinoNode]
     }
@@ -78,13 +74,25 @@ case class NeutrinoNode(
       BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
     for {
       chainApi <- chainApiFromDb()
+      _ <- chainApi.getBestBlockHash()
+
+      syncPeer <- peerManager.randomPeerWithService(_.nodeCompactFilters)
+      _ = logger.info(s"Starting sync with $syncPeer")
+      _ = updateDataMessageHandler(
+        dataMessageHandler.copy(syncPeer = Some(syncPeer)))
+      peerMsgSender = peerManager.peerData(syncPeer).peerMessageSender
+
+      bestHash <- chainApi.getBestBlockHash()
+      _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash =
+        bestHash.flip)
+      chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
       bestFilterHeaderOpt <- chainApi.getBestFilterHeader()
       bestFilterOpt <- chainApi.getBestFilter()
       blockchains <- blockchainsF
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      _ <- peerManager.randomPeerMsgSender.sendGetHeadersMessage(cachedHeaders)
+      _ <- peerMsgSender.sendGetHeadersMessage(cachedHeaders)
       _ <- syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
                        bestFilterOpt = bestFilterOpt,
                        bestBlockHeader = header,
@@ -95,7 +103,7 @@ case class NeutrinoNode(
     }
   }
 
-  private def syncFilters(
+  def syncFilters(
       bestFilterHeaderOpt: Option[CompactFilterHeaderDb],
       bestFilterOpt: Option[CompactFilterDb],
       bestBlockHeader: BlockHeaderDb,
@@ -132,12 +140,15 @@ case class NeutrinoNode(
   /** Starts sync compact filer headers.
     * Only starts syncing compact filters if our compact filter headers are in sync with block headers
     */
-  private def syncCompactFilters(
+  def syncCompactFilters(
       bestFilterHeader: CompactFilterHeaderDb,
       chainApi: ChainApi,
       bestFilterOpt: Option[CompactFilterDb]): Future[Unit] = {
+    val syncPeer = dataMessageHandler.syncPeer.getOrElse(
+      throw new RuntimeException("Sync peer not set"))
+    val syncPeerMsgSender = peerManager.peerData(syncPeer).peerMessageSender
     val sendCompactFilterHeaderMsgF = {
-      peerManager.randomPeerMsgSenderWithCompactFilters
+      syncPeerMsgSender
         .sendNextGetCompactFilterHeadersCommand(
           chainApi = chainApi,
           filterHeaderBatchSize = chainConfig.filterHeaderBatchSize,
@@ -152,8 +163,7 @@ case class NeutrinoNode(
       ) {
         //means we are not syncing filter headers, and our filters are NOT
         //in sync with our compact filter headers
-        logger.info(s"Starting sync filters in NeutrinoNode.sync()")
-        peerManager.randomPeerMsgSenderWithCompactFilters
+        syncPeerMsgSender
           .sendNextGetCompactFilterCommand(
             chainApi = chainApi,
             filterBatchSize = chainConfig.filterBatchSize,

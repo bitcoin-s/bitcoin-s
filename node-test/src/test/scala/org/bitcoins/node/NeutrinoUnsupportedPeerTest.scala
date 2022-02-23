@@ -1,5 +1,6 @@
 package org.bitcoins.node
 
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindV19
@@ -11,8 +12,14 @@ import scala.concurrent.Future
 
 class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
 
-  override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
+  override protected def getFreshConfig: BitcoinSAppConfig = {
+    val config = ConfigFactory.parseString(
+      """
+        |bitcoin-s.node.peerDiscoveryTimeout = 1s
+      """.stripMargin
+    )
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl, config)
+  }
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 
@@ -40,7 +47,6 @@ class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       val node = nodeConnectedWithBitcoind.node
       val exception = recoverToExceptionIf[RuntimeException](node.start())
-      exception.map(e =>
-        assert(e.getMessage == "No peers supporting compact filters!"))
+      exception.map(e => assert(e.getMessage == "No supported peers found!"))
   }
 }

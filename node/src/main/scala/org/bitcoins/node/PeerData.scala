@@ -10,6 +10,8 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageSender
 }
 
+import scala.concurrent.duration.DurationInt
+
 /** PeerData contains objects specific to a peer associated together
   */
 case class PeerData(
@@ -26,7 +28,9 @@ case class PeerData(
       context = system,
       peer = peer,
       peerMessageReceiver = peerMessageReceiver,
-      onReconnect = node.sync
+      onReconnect = node.peerManager.onReconnect,
+      onStop = node.peerManager.onP2PClientStopped,
+      maxReconnectionTries = 8
     )
   }
 
@@ -40,5 +44,16 @@ case class PeerData(
 
   def setServiceIdentifier(serviceIdentifier: ServiceIdentifier): Unit = {
     _serviceIdentifier = Some(serviceIdentifier)
+  }
+
+  private var lastTimedOut: Long = 0
+
+  def updateLastFailureTime(): Unit = {
+    lastTimedOut = System.currentTimeMillis()
+  }
+
+  def isDeferred: Boolean = {
+    val timePast = System.currentTimeMillis() - lastTimedOut
+    timePast > 30.minutes.toMillis
   }
 }

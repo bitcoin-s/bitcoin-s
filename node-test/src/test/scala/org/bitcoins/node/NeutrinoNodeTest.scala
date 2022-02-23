@@ -1,23 +1,24 @@
 package org.bitcoins.node
 
 import akka.actor.Cancellable
-import org.bitcoins.core.util.NetworkUtil
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.node.models.PeerDAO
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeTestWithCachedBitcoindPair}
+import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
 import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
   /** Wallet config with data directory set to user temp directory */
-  override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
+  override protected def getFreshConfig: BitcoinSAppConfig = {
+    BitcoinSTestAppConfig.getMultiPeerNeutrinoWithEmbeddedDbTestConfig(pgUrl)
+  }
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoinds
 
@@ -37,81 +38,25 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
   behavior of "NeutrinoNode"
 
-  it must "be able to connect,initialize and then disconnect from all peers" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
-      //checking all peers are connected
-      val node = nodeConnectedWithBitcoind.node
-      val connFs = node.peerManager.peers.indices.map(node.isConnected)
-      val connF = Future.sequence(connFs).map(_.forall(_ == true))
-      val connAssertion = connF.map(assert(_))
-
-      //checking all peers are initialized
-      val isInitializedFs =
-        node.peerManager.peers.indices.map(node.isInitialized)
-      val isInitializedF = for {
-        _ <- connAssertion
-        f <- Future.sequence(isInitializedFs).map(_.forall(_ == true))
-      } yield f
-
-      val initAssertion = isInitializedF.map(assert(_))
-
-      val disconnF = for {
-        _ <- initAssertion
-        _ <- node.stop()
-        f <- isAllDisconnectedF(node)
-      } yield f
-      disconnF.map(assert(_))
-  }
-
-  it must "store peer after successful initialization" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
-      val node = nodeConnectedWithBitcoind.node
-
-      val assertConnAndInit = for {
-        _ <- node.isConnected(0).map(assert(_))
-        a2 <- node.isInitialized(0).map(assert(_))
-      } yield a2
-
-      for {
-        _ <- assertConnAndInit
-        peerDbs <- PeerDAO()(executionContext, node.nodeAppConfig).findAll()
-      } yield {
-        val compares = for {
-          peer <- node.peerManager.peers
-          peerDb <- peerDbs
-        } yield {
-          val dbSocket =
-            NetworkUtil.parseInetSocketAddress(peerDb.address, peerDb.port)
-
-          val hostMatch: Boolean = {
-            if (dbSocket.getHostString == peer.socket.getHostString) true
-            else {
-              //checking if both are localhost
-              //a bit hacky way but resolution of localhost to address cannot be done so as to allow for tor
-              //addresses too
-              val localhost = Vector("localhost", "127.0.0.1")
-              localhost.contains(dbSocket.getHostString) && localhost.contains(
-                peer.socket.getHostString)
-            }
-          }
-
-          hostMatch && dbSocket.getPort == peer.socket.getPort
-        }
-
-        assert(compares.exists(p => p))
-      }
-  }
-
   it must "receive notification that a block occurred on the p2p network for neutrino" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
-
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
+      val peerManager = node.peerManager
+      def peers = peerManager.peers
 
       val assert1F = for {
-        _ <- node.isConnected(0).map(assert(_))
-        a2 <- node.isInitialized(0).map(assert(_))
-      } yield a2
+        _ <- AsyncUtil
+          .retryUntilSatisfied(peers.size == 2,
+                               interval = 1.second,
+                               maxTries = 5)
+        _ <- Future
+          .sequence(peers.map(peerManager.isConnected))
+          .flatMap(p => assert(p.forall(_ == true)))
+        res <- Future
+          .sequence(peers.map(peerManager.isConnected))
+          .flatMap(p => assert(p.forall(_ == true)))
+      } yield res
 
       val hashF: Future[DoubleSha256DigestBE] = bitcoind.getNewAddress
         .flatMap(bitcoind.generateToAddress(1, _))
@@ -175,12 +120,5 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
           assert(mtp1 == mtp2)
         }
       }
-  }
-
-  //checking all peers can be disconnected
-  private def isAllDisconnectedF(node: Node): Future[Boolean] = {
-    val disconnFs = node.peerManager.peers.indices.map(node.isDisconnected)
-    val res = Future.sequence(disconnFs).map(_.forall(_ == true))
-    res
   }
 }

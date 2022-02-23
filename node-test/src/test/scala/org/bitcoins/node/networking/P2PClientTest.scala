@@ -43,6 +43,9 @@ class P2PClientTest
   lazy val bitcoindPeer2F = bitcoindRpcF.flatMap { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
   }
+
+  lazy val probe: TestProbe = TestProbe()
+
   behavior of "parseIndividualMessages"
 
   it must "block header message that is not aligned with a tcp frame" in {
@@ -151,29 +154,44 @@ class P2PClientTest
   }
 
   it must "establish a tcp connection with a bitcoin node" in {
-    bitcoindPeerF.flatMap { remote =>
-      connectAndDisconnect(remote)
-    }
+    for {
+      peer <- bitcoindPeerF
+      client <- buildP2PClient(peer)
+      res <- connectAndDisconnect(client)
+    } yield res
   }
 
   it must "connect to two nodes" in {
-    val try1 =
-      bitcoindPeerF.flatMap(remote => connectAndDisconnect(remote))
+    val try1 = for {
+      peer <- bitcoindPeerF
+      client <- buildP2PClient(peer)
+      res <- connectAndDisconnect(client)
+    } yield res
 
-    val try2 = bitcoindPeer2F.flatMap(remote => connectAndDisconnect(remote))
+    val try2 = for {
+      peer <- bitcoindPeer2F
+      client <- buildP2PClient(peer)
+      res <- connectAndDisconnect(client)
+    } yield res
 
     try1.flatMap { _ =>
       try2
     }
   }
 
-  /** Helper method to connect to the
-    * remote node and bind our local
-    * connection to the specified port
-    */
-  def connectAndDisconnect(peer: Peer): Future[Assertion] = {
+  it must "close actor on disconnect" in {
+    for {
+      peer <- bitcoindPeerF
+      client <- buildP2PClient(peer)
+      _ = probe watch client.actor
+      _ <- connectAndDisconnect(client)
+      term = probe.expectTerminated(client.actor)
+    } yield {
+      assert(term.actor == client.actor)
+    }
+  }
 
-    val probe = TestProbe()
+  def buildP2PClient(peer: Peer): Future[P2PClient] = {
     val peerMessageReceiverF =
       for {
         node <- NodeUnitTest.buildNode(peer, None)
@@ -181,26 +199,37 @@ class P2PClientTest
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =
       peerMessageReceiverF.map { peerMsgRecv =>
-        TestActorRef(P2PClient.props(peer, peerMsgRecv, { () => Future.unit }),
+        TestActorRef(P2PClient.props(peer,
+                                     peerMsgRecv,
+                                     (_: Peer) => Future.unit,
+                                     (_: Peer) => Future.unit,
+                                     16),
                      probe.ref)
       }
     val p2pClientF: Future[P2PClient] = clientActorF.map {
       client: TestActorRef[P2PClientActor] =>
         P2PClient(client, peer)
     }
+    p2pClientF
+  }
+
+  /** Helper method to connect to the
+    * remote node and bind our local
+    * connection to the specified port
+    */
+  def connectAndDisconnect(p2pClient: P2PClient): Future[Assertion] = {
+
+    p2pClient.actor ! ConnectCommand
 
     val isConnectedF = for {
-      p2pClient <- p2pClientF
-      _ = p2pClient.actor ! ConnectCommand
       isConnected <- TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isConnected,
                                                         interval = 1.second,
                                                         maxTries = 100)
     } yield isConnected
 
     isConnectedF.flatMap { _ =>
+      p2pClient.actor ! P2PClient.CloseCommand
       val isDisconnectedF = for {
-        p2pClient <- p2pClientF
-        _ = p2pClient.actor ! P2PClient.CloseCommand
         isDisconnected <-
           TestAsyncUtil.retryUntilSatisfiedF(p2pClient.isDisconnected,
                                              interval = 1.second,

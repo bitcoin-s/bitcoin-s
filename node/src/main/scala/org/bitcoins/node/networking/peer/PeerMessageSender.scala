@@ -16,6 +16,7 @@ import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.networking.P2PClient
+import org.bitcoins.node.networking.P2PClient.ExpectResponseCommand
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -55,7 +56,6 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
         logger.warn(err)
         Future.unit
     }
-
   }
 
   /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */
@@ -94,6 +94,10 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
 
   def sendSendAddrV2Message(): Future[Unit] = {
     sendMsg(SendAddrV2Message)
+  }
+
+  def sendGetAddrMessage(): Future[Unit] = {
+    sendMsg(GetAddrMessage)
   }
 
   /** Responds to a ping message */
@@ -237,8 +241,16 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     //can be sent before we are fully initialized
     //as they are needed to complete our handshake with our peer
     logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
-    val newtworkMsg = NetworkMessage(conf.network, msg)
-    client.actor ! newtworkMsg
+    val networkMsg = NetworkMessage(conf.network, msg)
+    client.actor ! networkMsg
+
+    msg match {
+      case _: ExpectsResponse =>
+        logger.debug(s"${msg.commandName} expects response")
+        client.actor ! ExpectResponseCommand(msg)
+      case _ =>
+    }
+
     Future.unit
   }
 }

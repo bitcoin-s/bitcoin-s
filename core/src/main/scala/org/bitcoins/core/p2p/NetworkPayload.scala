@@ -3,7 +3,7 @@ package org.bitcoins.core.p2p
 import org.bitcoins.core.bloom.{BloomFilter, BloomFlag}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.gcs.{FilterHeader, FilterType, GolombFilter}
-import org.bitcoins.core.number.{Int32, Int64, UInt16, UInt32, UInt64}
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -11,7 +11,6 @@ import org.bitcoins.core.serializers.p2p.messages._
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerKiloByte}
 import org.bitcoins.crypto._
-
 import scodec.bits.ByteVector
 
 /** Trait that represents a payload for a message on the Bitcoin p2p network
@@ -58,7 +57,7 @@ object BlockMessage extends Factory[BlockMessage] {
   * it needs to request the blocks it hasn’t seen.
   * @see  [https://bitcoin.org/en/developer-reference#getblocks]]
   */
-trait GetBlocksMessage extends DataPayload {
+trait GetBlocksMessage extends DataPayload with ExpectsResponse {
 
   /** The protocol version number; the same as sent in the version message.
     */
@@ -166,13 +165,27 @@ object GetDataMessage extends Factory[GetDataMessage] {
     GetDataMessage(Seq(inventory))
 }
 
+sealed trait ExpectsResponse {
+
+  def isPayloadExpectedResponse(payload: NetworkPayload): Boolean = {
+    this match {
+      case _: GetBlocksMessage  => payload.isInstanceOf[BlockMessage]
+      case _: GetHeadersMessage => payload.isInstanceOf[HeadersMessage]
+      case _: GetCompactFiltersMessage =>
+        payload.isInstanceOf[CompactFilterMessage]
+      case _: GetCompactFilterHeadersMessage =>
+        payload.isInstanceOf[CompactFilterHeadersMessage]
+    }
+  }
+}
+
 /** The getheaders message requests a headers message that provides block headers starting
   * from a particular point in the block chain.
   * It allows a peer which has been disconnected or started for the first time to get the
   * headers it hasn’t seen yet.
   * @see [[https://bitcoin.org/en/developer-reference#getheaders]]
   */
-trait GetHeadersMessage extends DataPayload {
+trait GetHeadersMessage extends DataPayload with ExpectsResponse {
   def version: ProtocolVersion
   def hashCount: CompactSizeUInt
   def hashes: Seq[DoubleSha256Digest]
@@ -1045,7 +1058,8 @@ case class GetCompactFiltersMessage(
     filterType: FilterType,
     startHeight: UInt32,
     stopHash: DoubleSha256Digest)
-    extends DataPayload {
+    extends DataPayload
+    with ExpectsResponse {
   val commandName: String = NetworkPayload.getCompactFiltersCommandName
 
   def bytes: ByteVector = RawGetCompactFiltersMessageSerializer.write(this)
@@ -1102,7 +1116,8 @@ case class GetCompactFilterHeadersMessage(
     filterType: FilterType,
     startHeight: UInt32,
     stopHash: DoubleSha256Digest
-) extends DataPayload {
+) extends DataPayload
+    with ExpectsResponse {
   val commandName: String = NetworkPayload.getCompactFilterHeadersCommandName
 
   def bytes: ByteVector =

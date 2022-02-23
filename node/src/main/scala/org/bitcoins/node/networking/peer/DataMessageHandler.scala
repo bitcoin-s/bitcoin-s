@@ -7,9 +7,9 @@ import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
-import org.bitcoins.node.{Node, P2PLogger}
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -30,7 +30,8 @@ case class DataMessageHandler(
     currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
     filterHeaderHeightOpt: Option[Int] = None,
     filterHeightOpt: Option[Int] = None,
-    syncing: Boolean = false)(implicit
+    syncing: Boolean = false,
+    syncPeer: Option[Peer] = None)(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
     chainConfig: ChainAppConfig)
@@ -45,21 +46,23 @@ case class DataMessageHandler(
                                        currentFilterBatch = Vector.empty,
                                        filterHeaderHeightOpt = None,
                                        filterHeightOpt = None,
+                                       syncPeer = None,
                                        syncing = false)
 
   def handleDataPayload(
       payload: DataPayload,
       peerMsgSender: PeerMessageSender,
-      node: Node): Future[DataMessageHandler] = {
+      peer: Peer): Future[DataMessageHandler] = {
 
-    lazy val peerWithCompactFilters =
-      node.peerManager.randomPeerMsgSenderWithCompactFilters
-    lazy val randomPeer = node.peerManager.randomPeerMsgSender
+    if (syncPeer.isEmpty || peer != syncPeer.get) {
+      logger.debug(s"Ignoring ${payload.commandName} from $peer")
+      Future.successful(this)
+    }
 
-    val resultF = payload match {
+    lazy val resultF = payload match {
       case checkpoint: CompactFilterCheckPointMessage =>
         logger.debug(
-          s"Got ${checkpoint.filterHeaders.size} checkpoints ${checkpoint}")
+          s"Got ${checkpoint.filterHeaders.size} checkpoints ${checkpoint} from $peer")
         for {
           newChainApi <- chainApi.processCheckpoints(
             checkpoint.filterHeaders.map(_.flip),
@@ -80,7 +83,7 @@ case class DataMessageHandler(
               logger.debug(
                 s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
               sendNextGetCompactFilterHeadersCommand(
-                peerWithCompactFilters,
+                peerMsgSender,
                 filterHeader.stopHash.flip).map(_ => (syncing, None))
             } else {
               for {
@@ -89,7 +92,7 @@ case class DataMessageHandler(
                 _ = logger.info(
                   s"Done syncing filter headers, beginning to sync filters from startHeightOpt=$startHeightOpt")
                 syncing <- sendFirstGetCompactFilterCommand(
-                  peerWithCompactFilters,
+                  peerMsgSender,
                   startHeightOpt).map { synced =>
                   if (!synced) logger.info("We are synced")
                   syncing
@@ -147,8 +150,7 @@ case class DataMessageHandler(
             if (batchSizeFull) {
               logger.info(
                 s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
-              sendNextGetCompactFilterCommand(peerWithCompactFilters,
-                                              newFilterHeight)
+              sendNextGetCompactFilterCommand(peerMsgSender, newFilterHeight)
             } else Future.unit
         } yield {
           this.copy(
@@ -202,7 +204,8 @@ case class DataMessageHandler(
         }
         Future.successful(this)
       case HeadersMessage(count, headers) =>
-        logger.info(s"Received headers message with ${count.toInt} headers")
+        logger.info(
+          s"Received headers message with ${count.toInt} headers from $peer")
         logger.trace(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
         val chainApiF = chainApi.processHeaders(headers)
@@ -221,7 +224,9 @@ case class DataMessageHandler(
               if (count.toInt == HeadersMessage.MaxHeadersCount) {
                 logger.info(
                   s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
-                randomPeer
+                //the same one should sync headers
+                //expect a message with a timeout now
+                peerMsgSender
                   .sendGetHeadersMessage(lastHash)
                   .map(_ => syncing)
               } else {
@@ -241,8 +246,7 @@ case class DataMessageHandler(
                 ) {
                   logger.info(
                     s"Starting to fetch filter headers in data message handler")
-                  sendFirstGetCompactFilterHeadersCommand(
-                    peerWithCompactFilters)
+                  sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
                 } else {
                   Try(initialSyncDone.map(_.success(Done)))
                   Future.successful(syncing)
@@ -321,7 +325,7 @@ case class DataMessageHandler(
     }
 
     resultF.failed.foreach { err =>
-      logger.error(s"Failed to handle data payload=${payload}", err)
+      logger.error(s"Failed to handle data payload=${payload} from $peer", err)
     }
 
     resultF.recoverWith { case NonFatal(_) =>

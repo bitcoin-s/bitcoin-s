@@ -11,14 +11,17 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer._
 import org.bitcoins.rpc.client.common.BitcoindVersion.V22
-import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
-import org.bitcoins.testkit.node.NodeUnitTest.createPeer
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.node.NodeUnitTest.{emptyPeer, syncNeutrinoNode}
+import org.bitcoins.testkit.node.NodeUnitTest.{
+  createPeer,
+  emptyPeer,
+  syncNeutrinoNode
+}
 import org.bitcoins.testkit.node.fixture._
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.bitcoins.wallet.WalletCallbacks
@@ -152,9 +155,7 @@ object NodeUnitTest extends P2PLogger {
     for {
       node <- nodeF
       _ <- node.nodeConfig.start()
-      peers <- node.peerManager.getPeers
     } yield {
-      peers.foreach(node.peerManager.addPeer)
       node
     }
   }
@@ -170,11 +171,7 @@ object NodeUnitTest extends P2PLogger {
 
     val dmh = DataMessageHandler(chainApi, walletCreationTimeOpt)
 
-    NeutrinoNode(dmh,
-                 nodeConf,
-                 chainConf,
-                 system,
-                 configPeersOverride = Vector(peer))
+    NeutrinoNode(dmh, nodeConf, chainConf, system, paramPeers = Vector(peer))
   }
 
   def buildPeerMessageReceiver(
@@ -392,7 +389,7 @@ object NodeUnitTest extends P2PLogger {
       chainApi <- chainApiF
     } yield {
       val dmh = DataMessageHandler(chainApi, walletCreationTimeOpt)
-      NeutrinoNode(configPeersOverride = Vector(peer),
+      NeutrinoNode(paramPeers = Vector(peer),
                    dataMessageHandler = dmh,
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
@@ -424,7 +421,7 @@ object NodeUnitTest extends P2PLogger {
       chainApi <- chainApiF
     } yield {
       val dmh = DataMessageHandler(chainApi, walletCreationTimeOpt)
-      NeutrinoNode(configPeersOverride = Vector(peer),
+      NeutrinoNode(paramPeers = Vector(peer),
                    dataMessageHandler = dmh,
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
@@ -459,7 +456,7 @@ object NodeUnitTest extends P2PLogger {
       peers <- Future.sequence(peersF)
     } yield {
       val dmh = DataMessageHandler(chainApi, creationTimeOpt)
-      NeutrinoNode(configPeersOverride = peers,
+      NeutrinoNode(paramPeers = peers,
                    dataMessageHandler = dmh,
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,

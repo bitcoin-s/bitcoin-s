@@ -32,6 +32,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
   it must "catch errors and not fail when processing an invalid payload" in {
     param: NeutrinoNodeConnectedWithBitcoindV22 =>
       val NeutrinoNodeConnectedWithBitcoindV22(node, _) = param
+      val peer = node.peerManager.peers.head
 
       val sender = node.peerMsgSenders(0)
       for {
@@ -50,13 +51,14 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           chainApi.processHeaders(invalidPayload.headers))
 
         // Verify we handle the payload correctly
-        _ <- dataMessageHandler.handleDataPayload(invalidPayload, sender, node)
+        _ <- dataMessageHandler.handleDataPayload(invalidPayload, sender, peer)
       } yield succeed
   }
 
   it must "verify OnBlockReceived callbacks are executed" in {
     param: FixtureParam =>
       val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
+      val peer = node.peerManager.peers.head
 
       val resultP: Promise[Block] = Promise()
 
@@ -81,7 +83,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           DataMessageHandler(genesisChainApi, None)(node.executionContext,
                                                     node.nodeAppConfig,
                                                     node.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
       } yield assert(result == block)
   }
@@ -89,6 +91,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
   it must "verify OnBlockHeadersReceived callbacks are executed" in {
     param: FixtureParam =>
       val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
+      val peer = node.peerManager.peers.head
 
       val resultP: Promise[Vector[BlockHeader]] = Promise()
 
@@ -116,7 +119,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
                                                     node.nodeAppConfig,
                                                     node.chainConfig)
 
-        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
       } yield assert(result == Vector(header))
   }
@@ -124,6 +127,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
   it must "verify OnCompactFilterReceived callbacks are executed" in {
     param: FixtureParam =>
       val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
+      val peer = node.peerManager.peers.head
 
       val resultP: Promise[Vector[(DoubleSha256Digest, GolombFilter)]] =
         Promise()
@@ -149,7 +153,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
                                                     node.nodeAppConfig,
                                                     node.chainConfig)
 
-        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
       } yield assert(result == Vector((hash.flip, filter.filter)))
   }
@@ -157,6 +161,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
   it must "verify OnTxReceived callbacks are executed" in {
     param: FixtureParam =>
       val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
+      val peer = node.peerManager.peers.head
 
       val resultP: Promise[Transaction] = Promise()
 
@@ -182,7 +187,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           DataMessageHandler(genesisChainApi, None)(node.executionContext,
                                                     node.nodeAppConfig,
                                                     node.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
       } yield assert(result == tx)
   }

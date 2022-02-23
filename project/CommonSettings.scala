@@ -141,6 +141,7 @@ object CommonSettings {
     "-Xmax-classfile-name",
     "128",
     "-Ywarn-unused",
+    "-Ywarn-macros:after",
     "-Ywarn-unused-import"
   )
 
@@ -153,6 +154,7 @@ object CommonSettings {
       "-Ywarn-dead-code",
       "-Ywarn-value-discard",
       "-Ywarn-unused",
+      "-Ywarn-macros:after",
       "-unchecked",
       "-deprecation",
       "-feature",
