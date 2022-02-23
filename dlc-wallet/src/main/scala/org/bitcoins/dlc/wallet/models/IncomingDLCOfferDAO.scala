@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.wallet.models
 
+import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.protocol.tlv.DLCOfferTLV
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.db.{CRUD, SlickUtil}
@@ -41,6 +42,11 @@ case class IncomingDLCOfferDAO()(implicit
     IncomingDLCOfferDb,
     Seq] =
     findByPrimaryKeys(ts.map(_.hash))
+
+  def delete(pk: Sha256Digest): Future[Int] = {
+    val query = table.filter(_.hash === pk)
+    safeDatabase.run(query.delete)
+  }
 
   class IncomingDLCOfferTable(tag: Tag)
       extends Table[IncomingDLCOfferDb](tag, schemaName, "incoming_offers") {

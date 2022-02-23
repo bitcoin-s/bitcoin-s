@@ -719,6 +719,7 @@ object DLCDataManagement {
     val dlcSigsDAO: DLCCETSignaturesDAO = DLCCETSignaturesDAO()
     val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
     val dlcRemoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
+    val incomingDLCOfferDAO: IncomingDLCOfferDAO = IncomingDLCOfferDAO()
 
     val dlcWalletDAOs = DLCWalletDAOs(
       dlcDAO,
@@ -731,7 +732,8 @@ object DLCDataManagement {
       dlcRefundSigDAO,
       oracleNonceDAO,
       announcementDAO,
-      dlcRemoteTxDAO
+      dlcRemoteTxDAO,
+      incomingDLCOfferDAO
     )
 
     DLCDataManagement(dlcWalletDAOs)

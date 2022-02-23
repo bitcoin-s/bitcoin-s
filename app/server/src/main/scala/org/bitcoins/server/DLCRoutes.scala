@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
+import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.protocol.dlc.models.{
   EnumSingleOracleInfo,
   NumericSingleOracleInfo,
@@ -14,9 +15,12 @@ import org.bitcoins.core.protocol.tlv.{
   NumericEventDescriptorTLV
 }
 import org.bitcoins.server.routes._
+import ujson._
+import upickle.default._
 
 case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
     extends ServerRoute {
+
   import system.dispatcher
 
   override def handleCommand: PartialFunction[ServerCommand, Route] = {
@@ -60,6 +64,43 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
                                                   oracleInfo)
             Server.httpSuccess(contractInfo.hex)
           }
+      }
+
+    case ServerCommand("listincomingoffers", _) =>
+      complete {
+        dlcNode.wallet.listIncomingDLCOffers().map { offers =>
+          def toJson(io: IncomingDLCOfferDb): Value = {
+            Obj("hash" -> io.hash.hex,
+                "receivedAt" -> io.receivedAt.getEpochSecond,
+                "peer" -> io.peer,
+                "message" -> io.message,
+                "offerTLV" -> io.offerTLV.hex)
+          }
+
+          Server.httpSuccess(offers.map(toJson))
+        }
+      }
+
+    case ServerCommand("registerincomingoffer", arr) =>
+      withValidServerCommand(RegisterIncomingOffer.fromJsArr(arr)) { register =>
+        complete {
+          dlcNode.wallet
+            .registerIncomingDLCOffer(register.offerTLV,
+                                      register.peer,
+                                      register.message)
+            .map { hash =>
+              Server.httpSuccess(hash.hex)
+            }
+        }
+      }
+
+    case ServerCommand("rejectincomingoffer", arr) =>
+      withValidServerCommand(RejectIncomingOffer.fromJsArr(arr)) { reject =>
+        complete {
+          dlcNode.wallet.rejectIncomingDLCOffer(reject.hash).map { _ =>
+            Server.httpSuccess(reject.hash.hex)
+          }
+        }
       }
   }
 }

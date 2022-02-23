@@ -1,21 +1,10 @@
 package org.bitcoins.dlc.wallet.models
 
+import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.protocol.tlv.DLCOfferTLV
-import org.bitcoins.crypto.{CryptoUtil, Sha256Digest}
+import org.bitcoins.crypto.CryptoUtil
 
 import java.time.Instant
-
-case class IncomingDLCOfferDb(
-    hash: Sha256Digest,
-    receivedAt: Instant,
-    peer: Option[String],
-    message: Option[String],
-    offerTLV: DLCOfferTLV) {
-  require(peer.forall(_.length <= 1024),
-          "peer length must not exceed 1024 character")
-  require(message.forall(_.length <= 280),
-          "message length must not exceed 280 character")
-}
 
 object IncomingDLCOfferDbHelper {
 

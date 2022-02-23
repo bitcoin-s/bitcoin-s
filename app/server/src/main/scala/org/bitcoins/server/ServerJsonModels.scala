@@ -18,6 +18,7 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
+import org.bitcoins.server.GetDLC.nullToOpt
 import scodec.bits.ByteVector
 import ujson._
 
@@ -1353,6 +1354,49 @@ object CreateContractInfo extends ServerJsonModels {
       case other =>
         val exn = new IllegalArgumentException(
           s"Bad number or arguments to createcontractinfo, got=${other.length} expected=3")
+        Failure(exn)
+    }
+  }
+}
+
+case class RegisterIncomingOffer(
+    offerTLV: DLCOfferTLV,
+    peer: Option[String],
+    message: Option[String])
+
+object RegisterIncomingOffer {
+
+  def fromJsArr(arr: ujson.Arr): Try[RegisterIncomingOffer] = {
+    arr.arr.toList match {
+      case offerTlvJs :: peerJs :: messageJs :: Nil =>
+        Try {
+          val tlv = DLCOfferTLV.fromHex(offerTlvJs.str)
+          val peer = nullToOpt(peerJs).map(_.str)
+          val message = nullToOpt(messageJs).map(_.str)
+          RegisterIncomingOffer(tlv, peer,  message)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to registerincomingoffer, got=${other.length} expected=1")
+        Failure(exn)
+    }
+  }
+}
+
+case class RejectIncomingOffer(hash: Sha256Digest)
+
+object RejectIncomingOffer {
+
+  def fromJsArr(arr: ujson.Arr): Try[RejectIncomingOffer] = {
+    arr.arr.toList match {
+      case hashJs :: Nil =>
+        Try {
+          val hash = Sha256Digest.fromHex(hashJs.str)
+          RejectIncomingOffer(hash)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to rejectincomingoffer, got=${other.length} expected=1")
         Failure(exn)
     }
   }
