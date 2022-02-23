@@ -72,8 +72,8 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
           def toJson(io: IncomingDLCOfferDb): Value = {
             Obj("hash" -> io.hash.hex,
                 "receivedAt" -> io.receivedAt.getEpochSecond,
-                "peer" -> io.peer,
-                "message" -> io.message,
+                "peer" -> io.peer.map(Str).getOrElse(Null),
+                "message" -> io.message.map(Str).getOrElse(Null),
                 "offerTLV" -> io.offerTLV.hex)
           }
 
