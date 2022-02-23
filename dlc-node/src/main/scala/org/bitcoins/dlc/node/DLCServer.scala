@@ -3,6 +3,7 @@ package org.bitcoins.dlc.node
 import akka.actor._
 import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
+import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.tor._
 
@@ -63,7 +64,7 @@ class DLCServer(
 
 }
 
-object DLCServer {
+object DLCServer extends Logging {
 
   case object Disconnect
 
@@ -96,7 +97,10 @@ object DLCServer {
               bindAddress.getPort
             )
             .map(Some(_))
-        case None => Future.successful(None)
+        case None =>
+          logger.warn(
+            s"Tor must be enabled to negotiate a dlc, you can set this with bitcoin-s.tor.enabled=true and bitcoin-s.control.enabled=true in your bitcoin-s.conf")
+          Future.successful(None)
       }
       actorRef = system.actorOf(
         props(dlcWalletApi, bindAddress, Some(promise), dataHandlerFactory))

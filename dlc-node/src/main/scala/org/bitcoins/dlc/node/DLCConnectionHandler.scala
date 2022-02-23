@@ -82,7 +82,7 @@ class DLCConnectionHandler(
         log.debug(s"Unaligned bytes: ${newUnalignedBytes.toHex}")
       }
 
-      messages.foreach(m => handler ! m)
+      messages.foreach(m => handler ! DLCDataHandler.Received(m))
 
       connection ! Tcp.ResumeReading
       context.become(connected(newUnalignedBytes))

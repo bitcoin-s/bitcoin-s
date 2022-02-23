@@ -24,7 +24,6 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
   private[node] lazy val serverBindF: Future[(InetSocketAddress, ActorRef)] = {
     logger.info(
       s"Binding server to ${config.listenAddress}, with tor hidden service: ${config.torParams.isDefined}")
-
     DLCServer
       .bind(
         wallet,
@@ -76,7 +75,7 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
                                       externalPayoutAddress,
                                       externalChangeAddress)
     } yield {
-      handler ! DLCDataHandler.SendLnMessage(accept.toMessage)
+      handler ! DLCDataHandler.Send(accept.toMessage)
       accept
     }
   }

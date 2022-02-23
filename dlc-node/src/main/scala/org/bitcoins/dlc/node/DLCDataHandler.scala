@@ -11,18 +11,15 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
     extends Actor
     with ActorLogging {
   implicit val ec: ExecutionContextExecutor = context.system.dispatcher
-  import DLCDataHandler.{Send, SendLnMessage}
 
   override def preStart(): Unit = {
     val _ = context.watch(connectionHandler)
   }
 
   override def receive: Receive = LoggingReceive {
-    case Send(tlv) =>
-      connectionHandler ! tlv
-    case SendLnMessage(lnMessage) =>
-      connectionHandler ! lnMessage
-    case lnMessage: LnMessage[TLV] =>
+    case DLCDataHandler.Send(lnMessage) =>
+      send(lnMessage)
+    case DLCDataHandler.Received(lnMessage) =>
       log.info(s"Received LnMessage ${lnMessage.typeName}")
       val f: Future[Unit] = handleTLVMessage(lnMessage)
       f.failed.foreach(err =>
@@ -45,7 +42,7 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
         Future.unit //is this right?
       case ping: PingTLV =>
         val pong = PongTLV.forIgnored(ping.ignored)
-        connectionHandler ! LnMessage(pong)
+        send(LnMessage(pong))
         Future.unit
       case pong: PongTLV =>
         log.debug(s"Received pong message $pong")
@@ -57,8 +54,9 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
       case dlcAccept: DLCAcceptTLV =>
         val f = for {
           sign <- dlcWalletApi.signDLC(dlcAccept)
-          _ = connectionHandler ! sign.toMessage
-        } yield ()
+        } yield {
+          send(sign.toMessage)
+        }
         f
       case dlcSign: DLCSignTLV =>
         val f = for {
@@ -68,6 +66,10 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
         f
     }
   }
+
+  private def send(lnMessage: LnMessage[TLV]): Unit = {
+    connectionHandler ! lnMessage
+  }
 }
 
 object DLCDataHandler {
@@ -75,9 +77,8 @@ object DLCDataHandler {
   type Factory = (DLCWalletApi, ActorContext, ActorRef) => ActorRef
 
   sealed trait Command
-  case class Received(tlv: TLV) extends Command
-  case class Send(tlv: TLV) extends Command
-  case class SendLnMessage(message: LnMessage[TLV]) extends Command
+  case class Received(message: LnMessage[TLV]) extends Command
+  case class Send(message: LnMessage[TLV]) extends Command
 
   def defaultFactory(
       dlcWalletApi: DLCWalletApi,
