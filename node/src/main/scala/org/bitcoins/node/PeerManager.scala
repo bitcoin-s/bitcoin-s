@@ -74,6 +74,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     */
   def setPeerForUse(peer: Peer): Unit = {
     require(testPeerData.contains(peer), "Unknown peer marked as usable")
+    logger.info(s"Making peer usable $peer")
     _peerData.addOne((peer, peerDataOf(peer)))
     _testPeerData.remove(peer)
     ()
@@ -258,7 +259,11 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   def awaitPeerWithService(f: ServiceIdentifier => Boolean): Future[Unit] = {
     logger.info("Waiting for peer connection")
     AsyncUtil
-      .retryUntilSatisfied(peerData.exists(x => f(x._2.serviceIdentifier)),
+      .retryUntilSatisfied({
+        logger.info(s"Checking if peer found ${peerData.size}")
+        peerData.foreach(x=>logger.info(s"$x ${f(x._2.serviceIdentifier)}"))
+        peerData.exists(x=>f(x._2.serviceIdentifier))
+      },
                            interval = 1.seconds,
                            maxTries = 600 //times out in 10 minutes
       )

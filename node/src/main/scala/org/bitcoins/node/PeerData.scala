@@ -5,10 +5,9 @@ import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.{
-  PeerMessageReceiver,
-  PeerMessageSender
-}
+import org.bitcoins.node.networking.peer.{PeerMessageReceiver, PeerMessageSender}
+
+import scala.concurrent.Future
 
 /** PeerData contains objects specific to a peer associated together
   */
@@ -26,7 +25,7 @@ case class PeerData(
       context = system,
       peer = peer,
       peerMessageReceiver = peerMessageReceiver,
-      onReconnect = node.sync
+      onReconnect = ()=>Future.unit
     )
   }
 

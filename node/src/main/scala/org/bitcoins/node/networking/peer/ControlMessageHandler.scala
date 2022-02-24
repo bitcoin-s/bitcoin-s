@@ -91,18 +91,20 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
           case NodeType.FullNode =>
             throw new Exception("Node cannot be FullNode")
           case NodeType.NeutrinoNode =>
-            val createInDbF = node.peerManager.createInDb(peer)
-            if (
-              node.peerManager.connectedPeerCount < node.nodeAppConfig.maxConnectedPeers
-            ) {
-              node.peerManager.setPeerForUse(peer)
-              logger.info(
-                s"Connected to peer $peer with compact filters. Connected peer count ${node.peerManager.connectedPeerCount}")
-            } else {
-              logger.info(s"Removing peer $peer")
-              node.peerManager.removeTestPeer(peer)
-            }
-            createInDbF.map(_=>())
+            if(node.peerManager.peerDataOf(peer).serviceIdentifier.nodeCompactFilters) {
+              val createInDbF = node.peerManager.createInDb(peer)
+              if (
+                node.peerManager.connectedPeerCount < node.nodeAppConfig.maxConnectedPeers
+              ) {
+                node.peerManager.setPeerForUse(peer)
+                logger.info(
+                  s"Connected to peer $peer with compact filters. Connected peer count ${node.peerManager.connectedPeerCount}")
+              } else {
+                logger.info(s"Removing peer $peer")
+                node.peerManager.removeTestPeer(peer)
+              }
+              createInDbF.map(_ => ())
+            }else Future.unit
         }
       case nodeType: ExternalImplementationNodeType =>
         nodeType match {
