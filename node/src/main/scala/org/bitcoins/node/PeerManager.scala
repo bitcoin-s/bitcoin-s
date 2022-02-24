@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.p2p.{AddrV2Message, ServiceIdentifier}
 import org.bitcoins.core.util.NetworkUtil
@@ -16,6 +16,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.Random
+import scala.util.control.NonFatal
 
 case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     implicit
@@ -39,13 +40,41 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
 
   def connectedPeerCount: Int = peerData.size
 
+  //stack to store peers to connect to as part of peer discovery
+  val peerDiscoveryStack: mutable.Stack[Peer] = mutable.Stack.empty[Peer]
+
+  val maxPeerSearchCount =
+    1000 //number of peers in db at which we stop peer discovery
+
+  val peerConnectionScheduler: Cancellable =
+    system.scheduler.scheduleWithFixedDelay(initialDelay = 15.seconds,
+                                            delay = 8.seconds) {
+      new Runnable() {
+        override def run(): Unit = {
+          val peersInDbCountF = PeerDAO().count()
+          peersInDbCountF.map(cnt =>
+            if (cnt > maxPeerSearchCount) peerConnectionScheduler.cancel())
+
+          if (peerDiscoveryStack.size < 8)
+            peerDiscoveryStack.pushAll(getPeersFromDnsSeeds)
+
+          if(testPeerData.size < 16) {
+            val peers = for {_ <- 0 to 7} yield peerDiscoveryStack.pop()
+            peers.foreach(peer => {
+              addTestPeer(peer)
+            })
+          }
+        }
+      }
+    }
+
   /** moves a peer from [[_testPeerData]] to [[_peerData]]
     * this operation makes the node permanently keep connection with the peer and
     * use it for node operation
     */
   def setPeerForUse(peer: Peer): Unit = {
-    require(testPeerData.contains(peer),"Unknown peer marked as usable")
-    _peerData.addOne((peer,peerDataOf(peer)))
+    require(testPeerData.contains(peer), "Unknown peer marked as usable")
+    _peerData.addOne((peer, peerDataOf(peer)))
     _testPeerData.remove(peer)
     ()
     //todo
@@ -131,39 +160,43 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     }
   }
 
-  /** Returns peers randomly taken from config, database, hardcoded peers, dns seeds in that order */
+  /** Returns peers randomly taken from config, database */
   def getPeers: Future[Vector[Peer]] = {
-    //currently this would only give the first peer from config
     val peersFromConfig = getPeersFromConfig
     val peersFromDbF = getPeersFromDb
-    val peersFromResources = getPeersFromResources
-    val maxConnectedPeers = nodeAppConfig.maxConnectedPeers
 
     val allF = for {
       peersFromDb <- peersFromDbF
     } yield {
       val shuffledPeers = (Random.shuffle(peersFromConfig) ++ Random.shuffle(
-        peersFromDb) ++ Random.shuffle(peersFromResources)).distinct
-
-      //getting peers from dns seeds takes a noticeable 5-8 sec so treating this separately
-      if (maxConnectedPeers > shuffledPeers.size) {
-        shuffledPeers.take(maxConnectedPeers) ++ getPeersFromDnsSeeds.take(
-          maxConnectedPeers - shuffledPeers.size)
-      } else {
-        shuffledPeers.take(maxConnectedPeers)
-      }
+        peersFromDb)).distinct
+      shuffledPeers
     }
     allF
   }
 
-  def addPeer(peer: Peer): Unit = {
-    if (!_testPeerData.contains(peer))
+  /** initial setup for peer discovery. Does the following:
+    * load peers from resources into discovery stack
+    * starts connecting with config and db peers.
+    */
+  def initSetup: Future[Unit] = {
+    val peersF = getPeers
+    val peersFromResources = getPeersFromResources
+    peerDiscoveryStack.pushAll(peersFromResources)
+
+    peersF.map(_.foreach(addTestPeer))
+  }
+
+  /** creates and initialises a new test peer */
+  def addTestPeer(peer: Peer): Unit = {
+    if (!_testPeerData.contains(peer)) {
       _testPeerData.put(peer, PeerData(peer, node))
-    else logger.debug(s"Peer $peer already added.")
+      initializePeer(peer)
+    } else logger.debug(s"Peer $peer already added.")
     ()
   }
 
-  def removePeer(peer: Peer): Future[Unit] = {
+  def removeTestPeer(peer: Peer): Future[Unit] = {
     if (_testPeerData.contains(peer)) {
       val connF = testPeerData(peer).peerMessageSender.isConnected()
       val disconnectF = connF.map { conn =>
@@ -225,10 +258,27 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   def awaitPeerWithService(f: ServiceIdentifier => Boolean): Future[Unit] = {
     logger.info("Waiting for peer connection")
     AsyncUtil
-      .retryUntilSatisfied(peerData.exists(x=>f(x._2.serviceIdentifier)),
-        interval = 1.seconds,
-        maxTries = 600 //times out in 10 minutes
+      .retryUntilSatisfied(peerData.exists(x => f(x._2.serviceIdentifier)),
+                           interval = 1.seconds,
+                           maxTries = 600 //times out in 10 minutes
       )
       .map(_ => logger.info("Connected to peer. Starting sync."))
+  }
+
+  def initializePeer(peer: Peer): Future[Unit] = {
+    peerDataOf(peer).peerMessageSender.connect()
+    val isInitializedF =
+      for {
+        _ <- AsyncUtil
+          .retryUntilSatisfiedF(
+            () => peerDataOf(peer).peerMessageSender.isInitialized(),
+            maxTries = 10,
+            interval = 250.millis)
+          .recover { case NonFatal(_) =>
+            logger.info(s"Failed to initialize $peer")
+            removeTestPeer(peer);
+          }
+      } yield ()
+    isInitializedF
   }
 }

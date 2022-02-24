@@ -99,10 +99,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def isDisconnected(idx: Int): Future[Boolean] =
     peerMsgSenders(idx).isDisconnected()
 
-  def initializePeer(peer: Peer): Unit = {
-    peerManager.peerDataOf(peer).peerMessageSender.connect()
-  }
-
   /** Starts our node */
   def start(): Future[Node] = {
     logger.info("Starting node")
@@ -111,8 +107,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val chainApiF = chainApiFromDb()
     val startNodeF = for {
       peers <- peerManager.getPeers
-      _ = peers.foreach(peerManager.addPeer)
-      _ = peers.foreach(initializePeer)
+      _ = peers.foreach(peerManager.addTestPeer)
     } yield {
       logger.info(s"Our node has been full started. It took=${System
         .currentTimeMillis() - start}ms")
@@ -163,7 +158,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val peers = peerManager.peers
     val removedPeersF = for {
       _ <- isStoppedF
-      _ <- Future.sequence(peers.map(peerManager.removePeer))
+      _ <- Future.sequence(peers.map(peerManager.removeTestPeer))
     } yield ()
 
     removedPeersF.failed.foreach { e =>

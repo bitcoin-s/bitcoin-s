@@ -100,7 +100,7 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
                 s"Connected to peer $peer with compact filters. Connected peer count ${node.peerManager.connectedPeerCount}")
             } else {
               logger.info(s"Removing peer $peer")
-              node.peerManager.removePeer(peer)
+              node.peerManager.removeTestPeer(peer)
             }
             createInDbF.map(_=>())
         }
