@@ -46,8 +46,8 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   val maxPeerSearchCount =
     1000 //number of peers in db at which we stop peer discovery
 
-  val peerConnectionScheduler: Cancellable =
-    system.scheduler.scheduleWithFixedDelay(initialDelay = 15.seconds,
+  lazy val peerConnectionScheduler: Cancellable =
+    system.scheduler.scheduleWithFixedDelay(initialDelay = 0.seconds,
                                             delay = 8.seconds) {
       new Runnable() {
         override def run(): Unit = {
@@ -55,11 +55,13 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
           peersInDbCountF.map(cnt =>
             if (cnt > maxPeerSearchCount) peerConnectionScheduler.cancel())
 
-          if (peerDiscoveryStack.size < 8)
+          if (peerDiscoveryStack.size < 5) {
+            logger.info("Taking peers from dns seeds")
             peerDiscoveryStack.pushAll(getPeersFromDnsSeeds)
+          }
 
-          if(testPeerData.size < 16) {
-            val peers = for {_ <- 0 to 7} yield peerDiscoveryStack.pop()
+          if(testPeerData.size < 10) {
+            val peers = for {_ <- 0 to 5} yield peerDiscoveryStack.pop()
             peers.foreach(peer => {
               addTestPeer(peer)
             })
@@ -161,31 +163,23 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     }
   }
 
-  /** Returns peers randomly taken from config, database */
-  def getPeers: Future[Vector[Peer]] = {
-    val peersFromConfig = getPeersFromConfig
-    val peersFromDbF = getPeersFromDb
-
-    val allF = for {
-      peersFromDb <- peersFromDbF
-    } yield {
-      val shuffledPeers = (Random.shuffle(peersFromConfig) ++ Random.shuffle(
-        peersFromDb)).distinct
-      shuffledPeers
-    }
-    allF
-  }
-
   /** initial setup for peer discovery. Does the following:
     * load peers from resources into discovery stack
     * starts connecting with config and db peers.
     */
-  def initSetup: Future[Unit] = {
-    val peersF = getPeers
+  def start: Future[Unit] = {
+    val peersFromConfig = getPeersFromConfig
     val peersFromResources = getPeersFromResources
-    peerDiscoveryStack.pushAll(peersFromResources)
 
-    peersF.map(_.foreach(addTestPeer))
+    for {
+      peersFromDb <- getPeersFromDb
+    } yield {
+      peerDiscoveryStack.pushAll(Random.shuffle(peersFromResources))
+      peerDiscoveryStack.pushAll(Random.shuffle(peersFromDb))
+      peerDiscoveryStack.pushAll(Random.shuffle(peersFromConfig))
+      peerConnectionScheduler //start scheduler
+      ()
+    }
   }
 
   /** creates and initialises a new test peer */

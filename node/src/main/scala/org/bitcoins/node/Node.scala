@@ -106,8 +106,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
     val chainApiF = chainApiFromDb()
     val startNodeF = for {
-      peers <- peerManager.getPeers
-      _ = peers.foreach(peerManager.addTestPeer)
+      _ <- peerManager.start
     } yield {
       logger.info(s"Our node has been full started. It took=${System
         .currentTimeMillis() - start}ms")
