@@ -41,6 +41,9 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   def connectedPeerCount: Int = peerData.size
 
   //stack to store peers to connect to as part of peer discovery
+  //Why stack? Peers are added as per order resources, db, config at the start so in issue of order there. Only during
+  //node operation, it is intended to try peers from addr messages above all hence a stack to have them first.
+  //might want to change to priority queue to make order enforced (?)
   val peerDiscoveryStack: mutable.Stack[Peer] = mutable.Stack.empty[Peer]
 
   val maxPeerSearchCount =
