@@ -70,11 +70,13 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
       complete {
         dlcNode.wallet.listIncomingDLCOffers().map { offers =>
           def toJson(io: IncomingDLCOfferDb): Value = {
-            Obj("hash" -> io.hash.hex,
-                "receivedAt" -> io.receivedAt.getEpochSecond,
-                "peer" -> io.peer.map(Str).getOrElse(Null),
-                "message" -> io.message.map(Str).getOrElse(Null),
-                "offerTLV" -> io.offerTLV.hex)
+            Obj(
+              "hash" -> io.hash.hex,
+              "receivedAt" -> io.receivedAt.getEpochSecond,
+              "peer" -> io.peer.map(Str).getOrElse(Null),
+              "message" -> io.message.map(Str).getOrElse(Null),
+              "offerTLV" -> io.offerTLV.hex
+            )
           }
 
           Server.httpSuccess(offers.map(toJson))

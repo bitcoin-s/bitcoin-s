@@ -1368,12 +1368,13 @@ object RegisterIncomingOffer {
 
   def fromJsArr(arr: ujson.Arr): Try[RegisterIncomingOffer] = {
     arr.arr.toList match {
-      case offerTlvJs :: peerJs :: messageJs :: Nil =>
+      case offerJs :: peerJs :: messageJs :: Nil =>
         Try {
-          val tlv = DLCOfferTLV.fromHex(offerTlvJs.str)
+          val offer: LnMessage[DLCOfferTLV] =
+            LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
           val peer = nullToOpt(peerJs).map(_.str)
           val message = nullToOpt(messageJs).map(_.str)
-          RegisterIncomingOffer(tlv, peer,  message)
+          RegisterIncomingOffer(offer.tlv, peer, message)
         }
       case other =>
         val exn = new IllegalArgumentException(
