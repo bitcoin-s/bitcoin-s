@@ -36,6 +36,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.node.Node
@@ -1637,7 +1638,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                               _: Int,
                               _: Boolean)(_: ExecutionContext))
         .expects(None, None, 100, false, executor)
-        .returning(Future.unit)
+        .returning(Future.successful(RescanState.RescanDone))
 
       val route1 =
         walletRoutes.handleCommand(
@@ -1664,7 +1665,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           100,
           false,
           executor)
-        .returning(Future.unit)
+        .returning(Future.successful(RescanState.RescanDone))
 
       val route2 =
         walletRoutes.handleCommand(
@@ -1691,7 +1692,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                  100,
                  false,
                  executor)
-        .returning(Future.unit)
+        .returning(Future.successful(RescanState.RescanDone))
 
       val route3 =
         walletRoutes.handleCommand(
@@ -1718,7 +1719,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                  100,
                  false,
                  executor)
-        .returning(Future.unit)
+        .returning(Future.successful(RescanState.RescanDone))
 
       val route4 =
         walletRoutes.handleCommand(
@@ -1774,7 +1775,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                               _: Int,
                               _: Boolean)(_: ExecutionContext))
         .expects(None, None, 55, false, executor)
-        .returning(Future.unit)
+        .returning(Future.successful(RescanState.RescanDone))
 
       val route8 =
         walletRoutes.handleCommand(

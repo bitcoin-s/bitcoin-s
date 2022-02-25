@@ -5,6 +5,7 @@ import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -75,11 +76,12 @@ trait NeutrinoWalletApi { self: WalletApi =>
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
-      useCreationTime: Boolean)(implicit ec: ExecutionContext): Future[Unit]
+      useCreationTime: Boolean)(implicit
+      ec: ExecutionContext): Future[RescanState]
 
   /** Helper method to rescan the ENTIRE blockchain. */
   def fullRescanNeutrinoWallet(addressBatchSize: Int)(implicit
-      ec: ExecutionContext): Future[Unit] =
+      ec: ExecutionContext): Future[RescanState] =
     rescanNeutrinoWallet(startOpt = None,
                          endOpt = None,
                          addressBatchSize = addressBatchSize,
