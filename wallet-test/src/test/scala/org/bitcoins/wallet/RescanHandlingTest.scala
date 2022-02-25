@@ -4,8 +4,10 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.{
@@ -300,19 +302,19 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
       val WalletWithBitcoindV19(wallet, _) = fixture
       //do these in parallel on purpose to simulate multiple threads calling rescan
       val startF = wallet.rescanNeutrinoWallet(startOpt = None,
-                                               endOpt = None,
-                                               addressBatchSize =
-                                                 DEFAULT_ADDR_BATCH_SIZE,
-                                               useCreationTime = false)
+        endOpt = None,
+        addressBatchSize =
+          DEFAULT_ADDR_BATCH_SIZE,
+        useCreationTime = false)
 
       //slight delay to make sure other rescan is started
       val alreadyStartedF =
         AsyncUtil.nonBlockingSleep(500.millis).flatMap { _ =>
           wallet.rescanNeutrinoWallet(startOpt = None,
-                                      endOpt = None,
-                                      addressBatchSize =
-                                        DEFAULT_ADDR_BATCH_SIZE,
-                                      useCreationTime = false)
+            endOpt = None,
+            addressBatchSize =
+              DEFAULT_ADDR_BATCH_SIZE,
+            useCreationTime = false)
         }
       for {
         start <- startF
@@ -321,6 +323,48 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
         alreadyStarted <- alreadyStartedF
       } yield {
         assert(alreadyStarted == RescanState.RescanInProgress)
+      }
+  }
+
+  it must "still receive payments to addresses generated pre-rescan" in {
+    fixture: WalletWithBitcoind =>
+      val WalletWithBitcoindV19(wallet, bitcoind) = fixture
+      logger.info(s"Beginning test case")
+      val addressNoFundsF = wallet.getNewAddress()
+
+      //start a rescan without sending payment to that address
+      for {
+        address <- addressNoFundsF
+        _ = logger.info(s"Beginning test case address=$address")
+        _ <- wallet.rescanNeutrinoWallet(startOpt = None,
+                                         endOpt = None,
+                                         addressBatchSize = 10,
+                                         useCreationTime = false)
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+          wallet.isRescanning().map(isRescanning => !isRescanning)
+        })
+
+        usedAddresses <- wallet.listFundedAddresses()
+
+        spks <- wallet.listUtxos().map(_.map(_.output.scriptPubKey))
+        _ = assert(!usedAddresses.exists(_._1.address == address),
+                   s"Address should not be used! address=$address")
+        //now send a payment to our wallet
+        hashes <- bitcoind.generateToAddress(1, address)
+        block <- bitcoind.getBlockRaw(hashes.head)
+        _ <- wallet.processBlock(block)
+        fundedAddresses <- wallet.listFundedAddresses()
+        utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
+      } yield {
+
+        //note 25 bitcoin reward from coinbase tx here
+        //if we we move this test case in the future it may need to change
+        val expectedOutput =
+          TransactionOutput(Bitcoins(25), address.scriptPubKey)
+        assert(utxos.exists(_.output == expectedOutput),
+               s"Balance must show up on utxos")
+        val addressExists = fundedAddresses.exists(_._1.address == address)
+        assert(addressExists)
       }
   }
 
