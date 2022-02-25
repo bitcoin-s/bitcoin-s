@@ -66,7 +66,7 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
           }
       }
 
-    case ServerCommand("listincomingoffers", _) =>
+    case ServerCommand("offers-list", _) =>
       complete {
         dlcNode.wallet.listIncomingDLCOffers().map { offers =>
           def toJson(io: IncomingDLCOfferDb): Value = {
@@ -83,8 +83,8 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
         }
       }
 
-    case ServerCommand("registerincomingoffer", arr) =>
-      withValidServerCommand(RegisterIncomingOffer.fromJsArr(arr)) { register =>
+    case ServerCommand("offer-add", arr) =>
+      withValidServerCommand(OfferAdd.fromJsArr(arr)) { register =>
         complete {
           dlcNode.wallet
             .registerIncomingDLCOffer(register.offerTLV,
@@ -96,8 +96,8 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
         }
       }
 
-    case ServerCommand("rejectincomingoffer", arr) =>
-      withValidServerCommand(RejectIncomingOffer.fromJsArr(arr)) { reject =>
+    case ServerCommand("offer-remove", arr) =>
+      withValidServerCommand(OfferRemove.fromJsArr(arr)) { reject =>
         complete {
           dlcNode.wallet.rejectIncomingDLCOffer(reject.hash).map { _ =>
             Server.httpSuccess(reject.hash.hex)

@@ -1359,14 +1359,14 @@ object CreateContractInfo extends ServerJsonModels {
   }
 }
 
-case class RegisterIncomingOffer(
+case class OfferAdd(
     offerTLV: DLCOfferTLV,
     peer: Option[String],
     message: Option[String])
 
-object RegisterIncomingOffer {
+object OfferAdd {
 
-  def fromJsArr(arr: ujson.Arr): Try[RegisterIncomingOffer] = {
+  def fromJsArr(arr: ujson.Arr): Try[OfferAdd] = {
     arr.arr.toList match {
       case offerJs :: peerJs :: messageJs :: Nil =>
         Try {
@@ -1374,26 +1374,26 @@ object RegisterIncomingOffer {
             LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
           val peer = nullToOpt(peerJs).map(_.str)
           val message = nullToOpt(messageJs).map(_.str)
-          RegisterIncomingOffer(offer.tlv, peer, message)
+          OfferAdd(offer.tlv, peer, message)
         }
       case other =>
         val exn = new IllegalArgumentException(
-          s"Bad number or arguments to registerincomingoffer, got=${other.length} expected=1")
+          s"Bad number or arguments to registerincomingoffer, got=${other.length} expected=3")
         Failure(exn)
     }
   }
 }
 
-case class RejectIncomingOffer(hash: Sha256Digest)
+case class OfferRemove(hash: Sha256Digest)
 
-object RejectIncomingOffer {
+object OfferRemove {
 
-  def fromJsArr(arr: ujson.Arr): Try[RejectIncomingOffer] = {
+  def fromJsArr(arr: ujson.Arr): Try[OfferRemove] = {
     arr.arr.toList match {
       case hashJs :: Nil =>
         Try {
           val hash = Sha256Digest.fromHex(hashJs.str)
-          RejectIncomingOffer(hash)
+          OfferRemove(hash)
         }
       case other =>
         val exn = new IllegalArgumentException(
