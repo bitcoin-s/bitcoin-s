@@ -302,19 +302,19 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
       val WalletWithBitcoindV19(wallet, _) = fixture
       //do these in parallel on purpose to simulate multiple threads calling rescan
       val startF = wallet.rescanNeutrinoWallet(startOpt = None,
-        endOpt = None,
-        addressBatchSize =
-          DEFAULT_ADDR_BATCH_SIZE,
-        useCreationTime = false)
+                                               endOpt = None,
+                                               addressBatchSize =
+                                                 DEFAULT_ADDR_BATCH_SIZE,
+                                               useCreationTime = false)
 
       //slight delay to make sure other rescan is started
       val alreadyStartedF =
         AsyncUtil.nonBlockingSleep(500.millis).flatMap { _ =>
           wallet.rescanNeutrinoWallet(startOpt = None,
-            endOpt = None,
-            addressBatchSize =
-              DEFAULT_ADDR_BATCH_SIZE,
-            useCreationTime = false)
+                                      endOpt = None,
+                                      addressBatchSize =
+                                        DEFAULT_ADDR_BATCH_SIZE,
+                                      useCreationTime = false)
         }
       for {
         start <- startF
@@ -329,24 +329,18 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
   it must "still receive payments to addresses generated pre-rescan" in {
     fixture: WalletWithBitcoind =>
       val WalletWithBitcoindV19(wallet, bitcoind) = fixture
-      logger.info(s"Beginning test case")
       val addressNoFundsF = wallet.getNewAddress()
 
       //start a rescan without sending payment to that address
       for {
         address <- addressNoFundsF
-        _ = logger.info(s"Beginning test case address=$address")
         _ <- wallet.rescanNeutrinoWallet(startOpt = None,
                                          endOpt = None,
                                          addressBatchSize = 10,
                                          useCreationTime = false)
-        _ <- AsyncUtil.retryUntilSatisfiedF(() => {
-          wallet.isRescanning().map(isRescanning => !isRescanning)
-        })
 
         usedAddresses <- wallet.listFundedAddresses()
 
-        spks <- wallet.listUtxos().map(_.map(_.output.scriptPubKey))
         _ = assert(!usedAddresses.exists(_._1.address == address),
                    s"Address should not be used! address=$address")
         //now send a payment to our wallet
