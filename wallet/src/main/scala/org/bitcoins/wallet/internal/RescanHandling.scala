@@ -156,7 +156,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
         if (
           externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit
         ) {
-          pruneUnusedAddresses()
+          //done rescanning
+          Future.unit
         } else {
           logger.info(
             s"Attempting rescan again with fresh pool of addresses as we had a " +
@@ -164,22 +165,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
           doNeutrinoRescan(account, startOpt, endOpt, addressBatchSize)
         }
     } yield res
-  }
-
-  private def pruneUnusedAddresses(): Future[Unit] = {
-    for {
-      addressDbs <- addressDAO.findAll()
-      _ <- addressDbs.foldLeft(Future.unit) { (prevF, addressDb) =>
-        for {
-          _ <- prevF
-          spendingInfoDbs <-
-            spendingInfoDAO.findByScriptPubKeyId(addressDb.scriptPubKeyId)
-          _ <-
-            if (spendingInfoDbs.isEmpty) addressDAO.delete(addressDb)
-            else Future.unit
-        } yield ()
-      }
-    } yield ()
   }
 
   private def calcAddressGap(
