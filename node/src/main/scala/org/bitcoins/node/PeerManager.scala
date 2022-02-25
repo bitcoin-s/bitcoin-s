@@ -34,7 +34,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
 
   private val _testPeerData: mutable.Map[Peer, PeerData] = mutable.Map.empty
 
-  private def peerData: Map[Peer, PeerData] = _peerData.toMap
+  def peerData: Map[Peer, PeerData] = _peerData.toMap
 
   def testPeerData: Map[Peer, PeerData] = _testPeerData.toMap
 
@@ -54,6 +54,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
                                             delay = 8.seconds) {
       new Runnable() {
         override def run(): Unit = {
+          logger.info(s"${testPeerData.size} is test size")
           val peersInDbCountF = PeerDAO().count()
           peersInDbCountF.map(cnt =>
             if (cnt > maxPeerSearchCount) peerConnectionScheduler.cancel())
@@ -85,6 +86,19 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     ()
     //todo
     //peerData(peer).peerMessageSender.sendGetAddrMessage()
+  }
+
+  //for reconnect, we would only want to call node.sync if the peer reconnected is the one that was
+  //already syncing. So storing that.
+  private var _peerUsedForSync : Option[Peer] = None
+
+  def peerUsedForSync:Option[Peer]=  _peerUsedForSync
+
+  def setPeerUsedForSync(peer: Peer): Unit = {
+    _peerUsedForSync match {
+      case Some(syncPeer) => throw new RuntimeException(s"Already set sync peer as $syncPeer. Cannot set again.")
+      case None => _peerUsedForSync=Some(peer)
+    }
   }
 
   def peers: Vector[Peer] = peerData.keys.toVector
@@ -211,22 +225,15 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     }
   }
 
-  def randomPeerMsgSenderWithService(
-      f: ServiceIdentifier => Boolean): PeerMessageSender = {
+  def randomPeerWithService(
+      f: ServiceIdentifier => Boolean): Peer = {
     val filteredPeers =
-      peerData.values.filter(p => f(p.serviceIdentifier)).toVector
-    if (filteredPeers.isEmpty)
+      peerData.filter(p => f(p._2.serviceIdentifier)).toVector
+    if (filteredPeers.isEmpty) {
       throw new RuntimeException("No peers supporting compact filters!")
-    val randomPeerData = filteredPeers(Random.nextInt(filteredPeers.length))
-    randomPeerData.peerMessageSender
-  }
-
-  def randomPeerMsgSenderWithCompactFilters: PeerMessageSender = {
-    randomPeerMsgSenderWithService(_.nodeCompactFilters)
-  }
-
-  def randomPeerMsgSender: PeerMessageSender = {
-    peerMsgSenders(Random.nextInt(peerMsgSenders.length))
+    }
+    val randomPeer = filteredPeers(Random.nextInt(filteredPeers.length))
+    randomPeer._1
   }
 
   def createInDb(peer: Peer): Future[PeerDb] = {
@@ -251,7 +258,9 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   //makes it more readable, compare peerManager.peerData(peer) vs peerManager.peerDataOf(peer) as peer is used thrice
   //in a simple statement
   /** get [[PeerData]] for a [[Peer]] */
-  def peerDataOf(peer: Peer): PeerData = testPeerData(peer)
+  def peerDataOf(peer: Peer): PeerData = {
+    peerData.getOrElse(peer, testPeerData.getOrElse(peer, throw new RuntimeException(s"Key $peer not found")))
+  }
 
   def awaitPeerWithService(f: ServiceIdentifier => Boolean): Future[Unit] = {
     logger.info("Waiting for peer connection")
@@ -277,7 +286,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
             maxTries = 10,
             interval = 250.millis)
           .recover { case NonFatal(_) =>
-            logger.info(s"Failed to initialize $peer")
+            logger.info(s"Failed to initialize $peer ${testPeerData.keys}")
             removeTestPeer(peer);
           }
       } yield ()

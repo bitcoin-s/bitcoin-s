@@ -36,16 +36,20 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
           case good: Initializing =>
             val newState = good.withVersionMsg(versionMsg)
 
-            node.peerManager
-              .testPeerData(peer)
-              .setServiceIdentifier(versionMsg.services)
-
             val newRecv = peerMessageReceiver.toState(newState)
 
-            for {
-              _ <- sender.sendVerackMessage()
-              _ <- onPeerInitialization(peer)
-            } yield newRecv
+            //
+            if(node.peerManager.testPeerData.contains(peer)) {
+              node.peerManager
+                .testPeerData(peer)
+                .setServiceIdentifier(versionMsg.services)
+              for {
+                _ <- sender.sendVerackMessage()
+                _ <- onPeerInitialization(peer)
+              } yield newRecv
+            }else{
+              Future(newRecv)
+            }
         }
 
       case VerAckMessage =>

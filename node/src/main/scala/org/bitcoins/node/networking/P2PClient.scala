@@ -65,14 +65,14 @@ import scala.util._
 case class P2PClientActor(
     peer: Peer,
     initPeerMsgHandlerReceiver: PeerMessageReceiver,
-    onReconnect: () => Future[Unit]
+    onReconnect: Peer => Future[Unit]
 )(implicit config: NodeAppConfig)
     extends Actor
     with P2PLogger {
 
   private var currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
-  private var reconnectHandlerOpt: Option[() => Future[Unit]] = None
+  private var reconnectHandlerOpt: Option[Peer => Future[Unit]] = None
 
   private val maxReconnectionTries = 16
 
@@ -357,7 +357,7 @@ case class P2PClientActor(
         currentPeerMsgHandlerRecv = newMsgReceiver
         if (currentPeerMsgHandlerRecv.isInitialized) {
           reconnectionTry = 0
-          reconnectHandlerOpt.foreach(_())
+          reconnectHandlerOpt.foreach(_(peer))
           reconnectHandlerOpt = None
         }
         peerConnection ! Tcp.ResumeReading
@@ -479,7 +479,7 @@ object P2PClient extends P2PLogger {
   def props(
       peer: Peer,
       peerMsgHandlerReceiver: PeerMessageReceiver,
-      onReconnect: () => Future[Unit])(implicit
+      onReconnect: Peer => Future[Unit])(implicit
       config: NodeAppConfig
   ): Props =
     Props(classOf[P2PClientActor],
@@ -492,7 +492,7 @@ object P2PClient extends P2PLogger {
       context: ActorRefFactory,
       peer: Peer,
       peerMessageReceiver: PeerMessageReceiver,
-      onReconnect: () => Future[Unit])(implicit
+      onReconnect: Peer => Future[Unit])(implicit
       config: NodeAppConfig): P2PClient = {
     val actorRef = context.actorOf(
       props = props(peer, peerMessageReceiver, onReconnect),
