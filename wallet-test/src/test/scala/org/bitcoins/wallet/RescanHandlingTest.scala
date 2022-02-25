@@ -1,9 +1,11 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.{
@@ -13,6 +15,7 @@ import org.bitcoins.testkit.wallet.{
 }
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
@@ -290,6 +293,35 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
       }
 
       rescanF
+  }
+
+  it must "acknowledge that a rescan is already in progress" in {
+    fixture: WalletWithBitcoind =>
+      val WalletWithBitcoindV19(wallet, _) = fixture
+      //do these in parallel on purpose to simulate multiple threads calling rescan
+      val startF = wallet.rescanNeutrinoWallet(startOpt = None,
+                                               endOpt = None,
+                                               addressBatchSize =
+                                                 DEFAULT_ADDR_BATCH_SIZE,
+                                               useCreationTime = false)
+
+      //slight delay to make sure other rescan is started
+      val alreadyStartedF =
+        AsyncUtil.nonBlockingSleep(500.millis).flatMap { _ =>
+          wallet.rescanNeutrinoWallet(startOpt = None,
+                                      endOpt = None,
+                                      addressBatchSize =
+                                        DEFAULT_ADDR_BATCH_SIZE,
+                                      useCreationTime = false)
+        }
+      for {
+        start <- startF
+        _ = assert(start == RescanState.RescanDone)
+        //try another one
+        alreadyStarted <- alreadyStartedF
+      } yield {
+        assert(alreadyStarted == RescanState.RescanInProgress)
+      }
   }
 
 }
