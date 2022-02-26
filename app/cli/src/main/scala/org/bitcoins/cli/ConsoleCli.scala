@@ -1160,6 +1160,52 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("addoffer")
+        .action((_, conf) => conf.copy(command = AddDLCOffer(null, null, null)))
+        .text("Adds a DLC offer into the inbox")
+        .children(
+          arg[LnMessage[DLCOfferTLV]]("offer")
+            .text("Hex encoded dlc offer message")
+            .required()
+            .action((offer, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOffer =>
+                  accept.copy(offer = offer)
+                case other => other
+              })),
+          arg[String]("message")
+            .text("Text message or note")
+            .required()
+            .action((message, conf) =>
+              conf.copy(command = conf.command match {
+                case create: AddDLCOffer =>
+                  create.copy(message = message)
+                case other => other
+              })),
+          arg[String]("peer")
+            .text("Peer URI")
+            .required()
+            .action((peer, conf) =>
+              conf.copy(command = conf.command match {
+                case create: AddDLCOffer =>
+                  create.copy(peer = peer)
+                case other => other
+              }))
+        ),
+      cmd("removeoffer")
+        .action((_, conf) => conf.copy(command = RemoveDLCOffer(null)))
+        .text("Removes a DLC offer from the inbox")
+        .children(
+          arg[Sha256Digest]("hash")
+            .text("Hex encoded dlc offer hash")
+            .required()
+            .action((hash, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: RemoveDLCOffer =>
+                  accept.copy(offerHash = hash)
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== Network ==="),
       cmd("getpeers")
         .action((_, conf) => conf.copy(command = GetPeers))
@@ -2003,6 +2049,14 @@ object ConsoleCli {
                        up.writeJs(contractDescriptor))
         RequestParam("createcontractinfo", args)
 
+      case AddDLCOffer(offer, peer, message) =>
+        val args = Seq(up.writeJs(offer), up.writeJs(peer), up.writeJs(message))
+        RequestParam("offer-add", args)
+
+      case RemoveDLCOffer(offerHash) =>
+        val args = Seq(up.writeJs(offerHash))
+        RequestParam("offer-remove", args)
+
       case NoCommand => ???
     }
 
@@ -2232,6 +2286,14 @@ object CliCommand {
                          contractDescriptor = ujson.Null)
     }
   }
+
+  case class AddDLCOffer(
+      offer: LnMessage[DLCOfferTLV],
+      peer: String,
+      message: String)
+      extends AppServerCliCommand
+
+  case class RemoveDLCOffer(offerHash: Sha256Digest) extends AppServerCliCommand
 
   sealed trait SendCliCommand extends AppServerCliCommand {
     def destination: BitcoinAddress

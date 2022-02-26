@@ -17,11 +17,17 @@ trait IncomingDLCOffersHandling { self: DLCWallet =>
     val dbo = IncomingDLCOfferDbHelper.fromTLV(offerTLV = offerTLV,
                                                peer = peer,
                                                message = message)
-    dlcWalletDAOs.incomingDLCOfferDAO.create(dbo).map(_.hash)
+    for {
+      added <- dlcWalletDAOs.incomingDLCOfferDAO.create(dbo)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCOfferAdd(logger, added)
+    } yield dbo.hash
   }
 
   def rejectIncomingDLCOffer(offerHash: Sha256Digest): Future[Unit] = {
-    dlcWalletDAOs.incomingDLCOfferDAO.delete(offerHash).map(_ => ())
+    for {
+      _ <- dlcWalletDAOs.incomingDLCOfferDAO.delete(offerHash)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCOfferRemove(logger, offerHash)
+    } yield ()
   }
 
   def listIncomingDLCOffers(): Future[Vector[IncomingDLCOfferDb]] = {

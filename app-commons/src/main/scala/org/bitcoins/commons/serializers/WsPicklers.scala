@@ -2,6 +2,8 @@ package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.ws.ChainNotification.BlockProcessedNotification
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
+  DLCOfferAddNotification,
+  DLCOfferRemoveNotification,
   DLCStateChangeNotification,
   NewAddressNotification,
   ReservedUtxosNotification,
@@ -69,6 +71,10 @@ object WsPicklers {
         ujson.Arr.from(vec)
       case DLCStateChangeNotification(status) =>
         upickle.default.writeJs(status)(Picklers.dlcStatusW)
+      case DLCOfferAddNotification(offerDb) =>
+        upickle.default.writeJs(offerDb)(Picklers.dlcOfferAddW)
+      case DLCOfferRemoveNotification(offerHash) =>
+        upickle.default.writeJs(offerHash)(Picklers.dlcOfferRemoveW)
     }
 
     val notificationObj = ujson.Obj(
@@ -100,6 +106,13 @@ object WsPicklers {
       case WalletWsType.DLCStateChange =>
         val status = upickle.default.read(payloadObj)(Picklers.dlcStatusR)
         DLCStateChangeNotification(status)
+      case WalletWsType.DLCOfferAdd =>
+        val offerDb = upickle.default.read(payloadObj)(Picklers.dlcOfferAddR)
+        DLCOfferAddNotification(offerDb)
+      case WalletWsType.DLCOfferRemove =>
+        val offerHash =
+          upickle.default.read(payloadObj)(Picklers.dlcOfferRemoveR)
+        DLCOfferRemoveNotification(offerHash)
     }
   }
 
@@ -146,5 +159,17 @@ object WsPicklers {
     readwriter[ujson.Obj].bimap(
       writeWalletNotification(_),
       readWalletNotification(_).asInstanceOf[DLCStateChangeNotification])
+  }
+
+  implicit val dlcOfferAddPickler: ReadWriter[DLCOfferAddNotification] = {
+    readwriter[ujson.Obj].bimap(
+      writeWalletNotification(_),
+      readWalletNotification(_).asInstanceOf[DLCOfferAddNotification])
+  }
+
+  implicit val dlcOfferRemovePickler: ReadWriter[DLCOfferRemoveNotification] = {
+    readwriter[ujson.Obj].bimap(
+      writeWalletNotification(_),
+      readWalletNotification(_).asInstanceOf[DLCOfferRemoveNotification])
   }
 }

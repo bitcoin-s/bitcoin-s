@@ -3,6 +3,7 @@ package org.bitcoins.commons.serializers
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.serializers.JsonReaders.jsToSatoshis
+import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.crypto._
@@ -43,6 +44,7 @@ import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
 import java.time.Instant
 import java.util.Date
+import scala.util.Try
 
 object Picklers {
 
@@ -1067,6 +1069,21 @@ object Picklers {
     )
   }
 
+  implicit val dlcOfferAddW: Writer[IncomingDLCOfferDb] = writer[Obj].comap {
+    offerDb =>
+      Obj(
+        "hash" -> offerDb.hash.hex,
+        "receivedAt" -> Num(offerDb.receivedAt.getEpochSecond.toDouble),
+        "peer" -> offerDb.peer.map(Str).getOrElse(Null),
+        "message" -> offerDb.message.map(Str).getOrElse(Null),
+        "offerTLV" -> offerDb.offerTLV.hex
+      )
+  }
+
+  implicit val dlcOfferRemoveW: Writer[Sha256Digest] = writer[Value].comap {
+    offerHash => writeJs(offerHash.hex)
+  }
+
   implicit val dlcStatusW: Writer[DLCStatus] = writer[Value].comap {
     case o: Offered =>
       writeJs(o)(offeredW)
@@ -1089,6 +1106,23 @@ object Picklers {
     case r: Refunded =>
       writeJs(r)(refundedW)
   }
+
+  implicit val dlcOfferAddR: Reader[IncomingDLCOfferDb] = reader[Obj].map {
+    obj =>
+      val hash = Sha256Digest(obj("hash").str)
+      val peer = Try(obj("peer").str).toOption
+      val message = Try(obj("message").str).toOption
+      val receivedAt = Instant.ofEpochSecond(obj("receivedAt").num.toLong)
+      val offerTLV = DLCOfferTLV.fromHex(obj("offerTLV").str)
+      IncomingDLCOfferDb(hash = hash,
+                         peer = peer,
+                         message = message,
+                         receivedAt = receivedAt,
+                         offerTLV = offerTLV)
+  }
+
+  implicit val dlcOfferRemoveR: Reader[Sha256Digest] =
+    reader[Value].map { obj => Sha256Digest(obj.str) }
 
   implicit val dlcStatusR: Reader[DLCStatus] = reader[Obj].map { obj =>
     val dlcId = Sha256Digest(obj("dlcId").str)

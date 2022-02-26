@@ -1,11 +1,12 @@
 package org.bitcoins.commons.jsonmodels.ws
 
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
+import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.crypto.StringFactory
+import org.bitcoins.crypto.{Sha256Digest, StringFactory}
 
 /** The event type being sent over the websocket. An example is [[WalletWsType.BlockProcessed]] */
 sealed trait WsType
@@ -31,9 +32,17 @@ object WalletWsType extends StringFactory[WalletWsType] {
   case object NewAddress extends WalletWsType
 
   case object DLCStateChange extends WalletWsType
+  case object DLCOfferAdd extends WalletWsType
+  case object DLCOfferRemove extends WalletWsType
 
   private val all =
-    Vector(TxProcessed, TxBroadcast, ReservedUtxos, NewAddress)
+    Vector(TxProcessed,
+           TxBroadcast,
+           ReservedUtxos,
+           NewAddress,
+           DLCStateChange,
+           DLCOfferAdd,
+           DLCOfferRemove)
 
   override def fromStringOpt(string: String): Option[WalletWsType] = {
     all.find(_.toString.toLowerCase() == string.toLowerCase)
@@ -103,6 +112,16 @@ object WalletNotification {
   case class DLCStateChangeNotification(payload: DLCStatus)
       extends WalletNotification[DLCStatus] {
     override val `type`: WalletWsType = WalletWsType.DLCStateChange
+  }
+
+  case class DLCOfferAddNotification(payload: IncomingDLCOfferDb)
+      extends WalletNotification[IncomingDLCOfferDb] {
+    override val `type`: WalletWsType = WalletWsType.DLCOfferAdd
+  }
+
+  case class DLCOfferRemoveNotification(payload: Sha256Digest)
+      extends WalletNotification[Sha256Digest] {
+    override val `type`: WalletWsType = WalletWsType.DLCOfferRemove
   }
 }
 
