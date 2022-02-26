@@ -49,7 +49,7 @@ case class AddressDAO()(implicit
     val spkFind =
       spkTable.filter(_.scriptPubKey === addressDb.scriptPubKey).result
     val actions = for {
-      spkOpt: Option[ScriptPubKeyDb] <- spkFind.headOption
+      spkOpt <- spkFind.headOption
       _ <- spkOpt match {
         case Some(foundSpk) =>
           table += AddressRecord.fromAddressDb(addressDb, foundSpk.id.get)

@@ -8,7 +8,7 @@ import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE, ECPublicKey}
+import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkitcore.util.TransactionTestUtil._
 import org.scalatest.FutureOutcome
@@ -307,9 +307,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
       spk = addr.scriptPubKey
       _ = assert(spk == P2WPKHWitnessSPKV0(walletKey))
       dummyPrevTx = dummyTx(spk = spk)
-      _ <- wallet.processTransaction(dummyPrevTx,
-                                     blockHashOpt =
-                                       Some(DoubleSha256DigestBE.empty))
+      _ <- wallet.processTransaction(dummyPrevTx, blockHashOpt = None)
 
       dummyPrevTx1 = dummyTx(prevTxId = dummyPrevTx.txId, spk = spk)
       _ <- wallet.processTransaction(dummyPrevTx1, blockHashOpt = None)

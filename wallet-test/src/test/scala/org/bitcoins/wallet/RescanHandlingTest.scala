@@ -350,7 +350,6 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
         fundedAddresses <- wallet.listFundedAddresses()
         utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
       } yield {
-
         //note 25 bitcoin reward from coinbase tx here
         //if we we move this test case in the future it may need to change
         val expectedOutput =

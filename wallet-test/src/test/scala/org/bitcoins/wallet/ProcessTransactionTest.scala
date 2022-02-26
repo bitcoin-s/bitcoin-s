@@ -3,7 +3,11 @@ package org.bitcoins.wallet
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionConstants,
+  TransactionOutput
+}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.bitcoins.testkitcore.Implicits._
@@ -150,9 +154,11 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
       //build funding tx
       val fundingTxF: Future[(Transaction, UInt32)] = for {
         fundingAddr <- fundingAddressF
+        output = TransactionOutput(amtWithFee, fundingAddr.scriptPubKey)
         fundingTx = TransactionGenerators.buildCreditingTransaction(
-          fundingAddr.scriptPubKey,
-          amtWithFee)
+          TransactionConstants.version,
+          output,
+          TransactionGenerators.outPoint.sampleSome)
       } yield fundingTx
 
       val processedFundingTxF: Future[WalletApi] = for {

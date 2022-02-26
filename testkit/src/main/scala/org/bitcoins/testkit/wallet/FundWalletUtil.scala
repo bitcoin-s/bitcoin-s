@@ -20,6 +20,7 @@ import org.bitcoins.testkit.wallet.FundWalletUtil.{
   FundedTestWallet,
   FundedWallet
 }
+import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.bitcoins.testkitcore.util.TransactionTestUtil
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -75,7 +76,8 @@ trait FundWalletUtil extends Logging {
       addresses.zip(amts).map { case (addr, amt) =>
         val output =
           TransactionOutput(value = amt, scriptPubKey = addr.scriptPubKey)
-        TransactionTestUtil.buildTransactionTo(output)
+        val outpoint = TransactionGenerators.outPoint.sample.get
+        TransactionTestUtil.buildTransactionTo(output, outPoint = outpoint)
       }
     }
 

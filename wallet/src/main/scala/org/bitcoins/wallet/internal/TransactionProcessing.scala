@@ -1,18 +1,20 @@
 package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.api.wallet.db._
-import org.bitcoins.core.api.wallet.{AddUtxoError, AddUtxoSuccess}
-import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState._
-import org.bitcoins.core.wallet.utxo.{AddressTag, ReceivedState, TxoState}
+import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.wallet._
 
@@ -459,19 +461,18 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   private def processReceivedUtxo(
       transaction: Transaction,
       index: Int,
-      state: ReceivedState,
-      addressDbE: Either[AddUtxoError, AddressDb]): Future[SpendingInfoDb] = {
-    val addIncomingUtxoF =
-      addUtxo(transaction = transaction,
-              vout = UInt32(index),
-              state = state,
-              addressDbE = addressDbE)
-    addIncomingUtxoF.flatMap {
-      case AddUtxoSuccess(utxo) => Future.successful(utxo)
-      case err: AddUtxoError =>
-        logger.error(s"Could not add UTXO", err)
-        Future.failed(err)
-    }
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      addressDb: AddressDb): Future[SpendingInfoDb] = {
+    val output = transaction.outputs(index)
+    val outPoint = TransactionOutPoint(transaction.txId, UInt32(index))
+
+    // insert the UTXO into the DB
+    val utxoF = writeUtxo(tx = transaction,
+                          blockHashOpt = blockHashOpt,
+                          output = output,
+                          outPoint = outPoint,
+                          addressDb = addressDb)
+    utxoF
   }
 
   private case class OutputWithIndex(output: TransactionOutput, index: Int)
@@ -525,23 +526,6 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[
     Seq[SpendingInfoDb]] = {
-    val stateF: Future[ReceivedState] = blockHashOpt match {
-      case None =>
-        Future.successful(TxoState.BroadcastReceived)
-      case Some(blockHash) =>
-        chainQueryApi.getNumberOfConfirmations(blockHash).map {
-          case None =>
-            TxoState.PendingConfirmationsReceived
-          case Some(confs) =>
-            if (transaction.isCoinbase && confs <= Consensus.coinbaseMaturity) {
-              TxoState.ImmatureCoinbase
-            } else if (confs >= walletConfig.requiredConfirmations) {
-              TxoState.ConfirmedReceived
-            } else {
-              TxoState.PendingConfirmationsReceived
-            }
-        }
-    }
 
     val addressDbsF: Future[Vector[AddressDb]] = {
       getAddressDbs(outputsWithIndex.map(_.output.scriptPubKey).toVector)
@@ -552,7 +536,6 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     } yield matchAddressDbWithOutputs(addressDbs, outputsWithIndex.toVector)
 
     val nested = for {
-      state <- stateF
       addressDbWithOutput <- addressDbWithOutputF
     } yield {
       val outputsVec = addressDbWithOutput.map { case (addressDb, out) =>
@@ -560,8 +543,8 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         processReceivedUtxo(
           transaction,
           out.index,
-          state = state,
-          Right(addressDb)
+          blockHashOpt,
+          addressDb
         )
       }
       Future.sequence(outputsVec)
@@ -654,7 +637,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         } yield {
           outputsWithIndex.collect {
             case OutputWithIndex(out, idx)
-                if spksInDb.map(_.scriptPubKey).contains(out.scriptPubKey) =>
+                if spksInDb.map(_.scriptPubKey).exists(_ == out.scriptPubKey) =>
               OutputWithIndex(out, idx)
           }
         }
