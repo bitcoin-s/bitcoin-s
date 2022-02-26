@@ -404,7 +404,8 @@ object UtxoHandling {
       confs: Int,
       requireConfirmations: Int): ReceivedState = {
     if (confs < 0) {
-      sys.error(s"Cannot have negative confirmations, got=$confs")
+      sys.error(
+        s"Cannot have negative confirmations, got=$confs. Did the block get reorged or exist?")
     } else if (confs == 0) {
       TxoState.BroadcastReceived
     } else if (confs >= requireConfirmations) {

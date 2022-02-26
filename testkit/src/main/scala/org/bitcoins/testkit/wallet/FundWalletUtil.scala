@@ -104,7 +104,6 @@ trait FundWalletUtil extends Logging {
       txId <- bitcoind.sendMany(addressAmountMap)
       tx <- bitcoind.getRawTransactionRaw(txId)
       hashes <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
-
       _ <- wallet.processTransaction(tx, hashes.headOption)
     } yield (tx, hashes.head)
 
@@ -234,23 +233,22 @@ object FundWalletUtil extends FundWalletUtil {
         chainQueryApi = bitcoind,
         bip39PasswordOpt = bip39PasswordOpt,
         extraConfig = extraConfig)
-
       wallet = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
         bitcoind,
         tmp,
         None)(system)
-
       funded1 <- fundAccountForWalletWithBitcoind(
         BitcoinSWalletTest.defaultAcctAmts,
         wallet.walletConfig.defaultAccount,
         wallet,
         bitcoind)
-
       hdAccount1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
       funded <- fundAccountForWalletWithBitcoind(BitcoinSWalletTest.account1Amt,
                                                  hdAccount1,
                                                  funded1,
                                                  bitcoind)
-    } yield FundedDLCWallet(funded.asInstanceOf[DLCWallet])
+    } yield {
+      FundedDLCWallet(funded.asInstanceOf[DLCWallet])
+    }
   }
 }
