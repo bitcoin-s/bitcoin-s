@@ -15,7 +15,6 @@ import org.bitcoins.core.protocol.tlv.{
   LnMessageFactory,
   OracleAnnouncementV0TLV
 }
-import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.contract.GlobalContractData
 import org.bitcoins.gui.dlc.DLCPaneModel
 import org.bitcoins.gui.dlc.dialog.{
@@ -47,7 +46,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import scala.util.{Failure, Success}
 
-class ContractGUI(glassPane: VBox, feeRate: FeeUnit) {
+class ContractGUI(glassPane: VBox) {
 
   private[gui] lazy val model = new ContractGUIModel()
 
@@ -274,7 +273,7 @@ class ContractGUI(glassPane: VBox, feeRate: FeeUnit) {
   private def showCreateOfferPane(
       announcement: OracleAnnouncementV0TLV,
       contractInfoOpt: Option[ContractInfoV0TLV]): Unit = {
-    val offerDialog = new CreateDLCOfferDialog(feeRate)
+    val offerDialog = new CreateDLCOfferDialog(GlobalData.getFeeRate)
     val view = offerDialog.buildView(Some(announcement), contractInfoOpt)
     val container =
       new DLCDialogContainer[CreateDLCOffer]("New Offer",

@@ -45,10 +45,14 @@ abstract class WalletGUI extends Logging {
     model.updateTorAddress()
   }
 
-  private[gui] lazy val dlcPane = new DLCPane(glassPane, getFeeRate)(
-    system.dispatcher)
+  private[gui] lazy val dlcPane = {
+    new DLCPane(glassPane)(system.dispatcher)
+  }
   private[gui] lazy val model = new WalletGUIModel(dlcPane.model)
-  private[gui] lazy val contractGUI = new ContractGUI(glassPane, getFeeRate)
+
+  private[gui] lazy val contractGUI = {
+    new ContractGUI(glassPane)
+  }
 
   private lazy val getNewAddressButton = new Button {
     text = "Get New Address"
