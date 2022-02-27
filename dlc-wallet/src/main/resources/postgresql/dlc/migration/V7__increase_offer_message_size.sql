@@ -1,0 +1,1 @@
+ALTER TABLE incoming_offers ALTER COLUMN message SET DATA TYPE VARCHAR(1024);
