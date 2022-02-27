@@ -1,6 +1,7 @@
 package org.bitcoins.gui.dlc
 
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.TaskRunner
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.geometry.{Insets, Pos}
@@ -9,7 +10,8 @@ import scalafx.scene.layout._
 
 import scala.concurrent.ExecutionContext
 
-class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
+class DLCPane(glassPane: VBox, feeUnit: FeeUnit)(implicit
+    ec: ExecutionContext) {
 
   val resultTextArea: TextArea = new TextArea {
     editable = false
@@ -28,7 +30,7 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
   private val offerButton = new Button {
     text = "Offer"
-    onAction = _ => model.onOffer()
+    onAction = _ => model.onOffer(feeUnit)
     tooltip = Tooltip(
       "Initiates a DLC with the given oracle and contract parameters, generating an Offer message.")
     tooltip.value.setShowDelay(new javafx.util.Duration(100))

@@ -3,7 +3,7 @@ package org.bitcoins.gui.dialog
 import org.bitcoins.cli.CliCommand.{SendCliCommand, SendToAddress, SweepWallet}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.gui.GlobalData
 import scalafx.Includes._
 import scalafx.application.Platform
@@ -15,7 +15,9 @@ import scalafx.stage.Window
 
 object SendDialog {
 
-  def showAndWait(parentWindow: Window): Option[SendCliCommand] = {
+  def showAndWait(
+      parentWindow: Window,
+      feeRate: FeeUnit): Option[SendCliCommand] = {
     val dialog = new Dialog[Option[SendCliCommand]]() {
       initOwner(parentWindow)
       title = "Send"
@@ -42,7 +44,7 @@ object SendDialog {
     }
 
     val feeRateTF = new TextField() {
-      text = GlobalData.feeRate.toLong.toString
+      text = feeRate.toLong.toString
       promptText = "(optional)"
     }
 
