@@ -1,17 +1,11 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.core.api.wallet.AddUtxoError._
 import org.bitcoins.core.api.wallet.db._
-import org.bitcoins.core.api.wallet.{
-  AddUtxoError,
-  AddUtxoResult,
-  AddUtxoSuccess
-}
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.hd.HDAccount
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
 import org.bitcoins.core.protocol.transaction.{
+  CoinbaseInput,
   Transaction,
   TransactionOutPoint,
   TransactionOutput
@@ -89,7 +83,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
   private[wallet] def updateUtxoSpentConfirmedStates(
       txos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
-    updateUtxoStates(txos, updateSpentTxoWithConfs)
+    updateUtxoStates(txos, UtxoHandling.updateSpentTxoWithConfs)
   }
 
   private[wallet] def updateUtxoReceiveConfirmedStates(
@@ -100,7 +94,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
   private[wallet] def updateUtxoReceiveConfirmedStates(
       txos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
-    updateUtxoStates(txos, updateReceivedTxoWithConfs)
+    updateUtxoStates(txos, UtxoHandling.updateReceivedTxoWithConfs)
   }
 
   /** Returns a map of the SpendingInfoDbs with their relevant block.
@@ -140,57 +134,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     }
   }
 
-  private[wallet] def updateSpentTxoWithConfs(
-      txo: SpendingInfoDb,
-      confs: Int): SpendingInfoDb = {
-    txo.state match {
-      case TxoState.ImmatureCoinbase =>
-        sys.error(
-          s"Cannot update txo with received state=${TxoState.ImmatureCoinbase}")
-      case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
-          TxoState.ConfirmedSpent | TxoState.BroadcastSpent |
-          TxoState.PendingConfirmationsReceived | TxoState.BroadcastReceived |
-          TxoState.ConfirmedReceived =>
-        if (confs >= walletConfig.requiredConfirmations) {
-          txo.copyWithState(TxoState.ConfirmedSpent)
-        } else if (confs == 0) {
-          txo.copyWithState(TxoState.BroadcastSpent)
-        } else {
-          txo.copyWithState(TxoState.PendingConfirmationsSpent)
-        }
-    }
-  }
-
-  /** Updates the SpendingInfoDb to the correct state based
-    * on the number of confirmations it has received
-    */
-  private[wallet] def updateReceivedTxoWithConfs(
-      txo: SpendingInfoDb,
-      confs: Int): SpendingInfoDb = {
-    txo.state match {
-      case TxoState.ImmatureCoinbase =>
-        if (confs > Consensus.coinbaseMaturity) {
-          if (confs >= walletConfig.requiredConfirmations)
-            txo.copyWithState(TxoState.ConfirmedReceived)
-          else
-            txo.copyWithState(TxoState.PendingConfirmationsReceived)
-        } else txo
-      case TxoState.PendingConfirmationsReceived | BroadcastReceived |
-          TxoState.ConfirmedReceived =>
-        if (confs >= walletConfig.requiredConfirmations) {
-          txo.copyWithState(TxoState.ConfirmedReceived)
-        } else if (confs == 0) {
-          txo.copyWithState(TxoState.BroadcastReceived)
-        } else txo.copyWithState(PendingConfirmationsReceived)
-      case TxoState.Reserved =>
-        //do nothing if we have reserved the utxo
-        txo
-      case state: SpentState =>
-        sys.error(s"Cannot update spendingInfoDb in spent state=$state")
-
-    }
-  }
-
   /** Updates all the given SpendingInfoDbs to the correct state
     * based on how many confirmations they have received
     * @param spendingInfoDbs the utxos we need to update
@@ -198,7 +141,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     */
   private def updateUtxoStates(
       spendingInfoDbs: Vector[SpendingInfoDb],
-      fn: (SpendingInfoDb, Int) => SpendingInfoDb): Future[
+      fn: (SpendingInfoDb, Int, Int) => SpendingInfoDb): Future[
     Vector[SpendingInfoDb]] = {
     val relevantBlocksF: Future[
       Map[Option[DoubleSha256DigestBE], Vector[SpendingInfoDb]]] = {
@@ -224,7 +167,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
                 s"Given txos exist in block (${blockHashWithConfs.blockHash.hex}) that we do not have or that has been reorged! $txos")
               Vector.empty
             case Some(confs) =>
-              txos.map(fn(_, confs))
+              txos.map(fn(_, confs, walletConfig.requiredConfirmations))
           }
         case (None, txos) =>
           logger.debug(
@@ -271,46 +214,75 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   }
 
   /** Constructs a DB level representation of the given UTXO, and persist it to disk */
-  private def writeUtxo(
+  protected def writeUtxo(
       tx: Transaction,
-      state: ReceivedState,
+      blockHashOpt: Option[DoubleSha256DigestBE],
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
       addressDb: AddressDb): Future[SpendingInfoDb] = {
+    val confirmationsF: Future[Int] = blockHashOpt match {
+      case Some(blockHash) =>
+        chainQueryApi
+          .getNumberOfConfirmations(blockHash)
+          .map {
+            case Some(confs) =>
+              confs
+            case None =>
+              sys.error(
+                s"Could not find block with our chain data source, hash=${blockHash}")
+          }
+      case None =>
+        Future.successful(0) //no confirmations on the tx
+    }
 
-    val utxo: SpendingInfoDb = addressDb match {
-      case segwitAddr: SegWitAddressDb =>
-        SegwitV0SpendingInfo(
-          state = state,
-          txid = tx.txIdBE,
-          outPoint = outPoint,
-          output = output,
-          privKeyPath = segwitAddr.path,
-          scriptWitness = segwitAddr.witnessScript,
-          spendingTxIdOpt = None
-        )
-      case LegacyAddressDb(path, _, _, _, _) =>
-        LegacySpendingInfo(state = state,
-                           txid = tx.txIdBE,
-                           outPoint = outPoint,
-                           output = output,
-                           privKeyPath = path,
-                           spendingTxIdOpt = None)
-      case nested: NestedSegWitAddressDb =>
-        NestedSegwitV0SpendingInfo(
-          outPoint = outPoint,
-          output = output,
-          privKeyPath = nested.path,
-          redeemScript = P2WPKHWitnessSPKV0(nested.ecPublicKey),
-          scriptWitness = P2WPKHWitnessV0(nested.ecPublicKey),
-          txid = tx.txIdBE,
-          state = state,
-          spendingTxIdOpt = None,
-          id = None
-        )
+    val stateF: Future[TxoState] = confirmationsF.map { confs =>
+      if (
+        tx.inputs.head
+          .isInstanceOf[CoinbaseInput] && confs <= Consensus.coinbaseMaturity
+      ) {
+        TxoState.ImmatureCoinbase
+      } else {
+        UtxoHandling.getReceiveConfsState(confs,
+                                          walletConfig.requiredConfirmations)
+      }
+    }
+
+    val utxoF: Future[SpendingInfoDb] = stateF.map { state =>
+      addressDb match {
+        case segwitAddr: SegWitAddressDb =>
+          SegwitV0SpendingInfo(
+            state = state,
+            txid = tx.txIdBE,
+            outPoint = outPoint,
+            output = output,
+            privKeyPath = segwitAddr.path,
+            scriptWitness = segwitAddr.witnessScript,
+            spendingTxIdOpt = None
+          )
+        case LegacyAddressDb(path, _, _, _, _) =>
+          LegacySpendingInfo(state = state,
+                             txid = tx.txIdBE,
+                             outPoint = outPoint,
+                             output = output,
+                             privKeyPath = path,
+                             spendingTxIdOpt = None)
+        case nested: NestedSegWitAddressDb =>
+          NestedSegwitV0SpendingInfo(
+            outPoint = outPoint,
+            output = output,
+            privKeyPath = nested.path,
+            redeemScript = P2WPKHWitnessSPKV0(nested.ecPublicKey),
+            scriptWitness = P2WPKHWitnessV0(nested.ecPublicKey),
+            txid = tx.txIdBE,
+            state = state,
+            spendingTxIdOpt = None,
+            id = None
+          )
+      }
     }
 
     for {
+      utxo <- utxoF
       written <- spendingInfoDAO.create(utxo)
     } yield {
       val writtenOut = written.outPoint
@@ -318,36 +290,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         s"Successfully inserted UTXO ${writtenOut.txIdBE.hex}:${writtenOut.vout.toInt} amt=${output.value} into DB")
       logger.debug(s"UTXO details: ${written.output}")
       written
-    }
-  }
-
-  /** Adds the provided UTXO to the wallet
-    */
-  protected def addUtxo(
-      transaction: Transaction,
-      vout: UInt32,
-      state: ReceivedState,
-      addressDbE: Either[AddUtxoError, AddressDb]): Future[AddUtxoResult] = {
-
-    if (vout.toInt >= transaction.outputs.length) {
-      //out of bounds output
-      Future.successful(VoutIndexOutOfBounds)
-    } else {
-      val output = transaction.outputs(vout.toInt)
-      val outPoint = TransactionOutPoint(transaction.txId, vout)
-
-      // insert the UTXO into the DB
-      val insertedUtxoEF: Either[AddUtxoError, Future[SpendingInfoDb]] = for {
-        addressDb <- addressDbE
-      } yield writeUtxo(tx = transaction,
-                        state = state,
-                        output = output,
-                        outPoint = outPoint,
-                        addressDb = addressDb)
-      insertedUtxoEF match {
-        case Right(utxoF) => utxoF.map(AddUtxoSuccess)
-        case Left(e)      => Future.successful(e)
-      }
     }
   }
 
@@ -422,5 +364,76 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       updatedReceivedInfos <- updateUtxoReceiveConfirmedStates(receivedUtxos)
       updatedSpentInfos <- updateUtxoSpentConfirmedStates(spentUtxos)
     } yield (updatedReceivedInfos ++ updatedSpentInfos).toVector
+  }
+}
+
+object UtxoHandling {
+
+  /** Updates the SpendingInfoDb to the correct state based
+    * on the number of confirmations it has received
+    */
+  def updateReceivedTxoWithConfs(
+      txo: SpendingInfoDb,
+      confs: Int,
+      requiredConfirmations: Int): SpendingInfoDb = {
+    txo.state match {
+      case TxoState.ImmatureCoinbase =>
+        if (confs > Consensus.coinbaseMaturity) {
+          if (confs >= requiredConfirmations)
+            txo.copyWithState(TxoState.ConfirmedReceived)
+          else
+            txo.copyWithState(TxoState.PendingConfirmationsReceived)
+        } else txo
+      case TxoState.PendingConfirmationsReceived | BroadcastReceived |
+          TxoState.ConfirmedReceived =>
+        val state = getReceiveConfsState(confs, requiredConfirmations)
+        txo.copyWithState(state)
+      case TxoState.Reserved =>
+        //do nothing if we have reserved the utxo
+        txo
+      case state: SpentState =>
+        sys.error(s"Cannot update spendingInfoDb in spent state=$state")
+
+    }
+  }
+
+  /** Given a number of confirmations and the required confirmations for the wallet
+    * this method returns the appropriate [[ReceivedState]] for the number of confirmations
+    */
+  def getReceiveConfsState(
+      confs: Int,
+      requireConfirmations: Int): ReceivedState = {
+    if (confs < 0) {
+      sys.error(
+        s"Cannot have negative confirmations, got=$confs. Did the block get reorged or exist?")
+    } else if (confs == 0) {
+      TxoState.BroadcastReceived
+    } else if (confs >= requireConfirmations) {
+      TxoState.ConfirmedReceived
+    } else {
+      TxoState.PendingConfirmationsReceived
+    }
+  }
+
+  def updateSpentTxoWithConfs(
+      txo: SpendingInfoDb,
+      confs: Int,
+      requiredConfirmations: Int): SpendingInfoDb = {
+    txo.state match {
+      case TxoState.ImmatureCoinbase =>
+        sys.error(
+          s"Cannot update txo with received state=${TxoState.ImmatureCoinbase}")
+      case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
+          TxoState.ConfirmedSpent | TxoState.BroadcastSpent |
+          TxoState.PendingConfirmationsReceived | TxoState.BroadcastReceived |
+          TxoState.ConfirmedReceived =>
+        if (confs >= requiredConfirmations) {
+          txo.copyWithState(TxoState.ConfirmedSpent)
+        } else if (confs == 0) {
+          txo.copyWithState(TxoState.BroadcastSpent)
+        } else {
+          txo.copyWithState(TxoState.PendingConfirmationsSpent)
+        }
+    }
   }
 }

@@ -20,6 +20,7 @@ import org.bitcoins.testkit.wallet.FundWalletUtil.{
   FundedTestWallet,
   FundedWallet
 }
+import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.bitcoins.testkitcore.util.TransactionTestUtil
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -75,7 +76,8 @@ trait FundWalletUtil extends Logging {
       addresses.zip(amts).map { case (addr, amt) =>
         val output =
           TransactionOutput(value = amt, scriptPubKey = addr.scriptPubKey)
-        TransactionTestUtil.buildTransactionTo(output)
+        val outpoint = TransactionGenerators.outPoint.sample.get
+        TransactionTestUtil.buildTransactionTo(output, outPoint = outpoint)
       }
     }
 
@@ -102,7 +104,6 @@ trait FundWalletUtil extends Logging {
       txId <- bitcoind.sendMany(addressAmountMap)
       tx <- bitcoind.getRawTransactionRaw(txId)
       hashes <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
-
       _ <- wallet.processTransaction(tx, hashes.headOption)
     } yield (tx, hashes.head)
 
@@ -232,23 +233,22 @@ object FundWalletUtil extends FundWalletUtil {
         chainQueryApi = bitcoind,
         bip39PasswordOpt = bip39PasswordOpt,
         extraConfig = extraConfig)
-
       wallet = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
         bitcoind,
         tmp,
         None)(system)
-
       funded1 <- fundAccountForWalletWithBitcoind(
         BitcoinSWalletTest.defaultAcctAmts,
         wallet.walletConfig.defaultAccount,
         wallet,
         bitcoind)
-
       hdAccount1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
       funded <- fundAccountForWalletWithBitcoind(BitcoinSWalletTest.account1Amt,
                                                  hdAccount1,
                                                  funded1,
                                                  bitcoind)
-    } yield FundedDLCWallet(funded.asInstanceOf[DLCWallet])
+    } yield {
+      FundedDLCWallet(funded.asInstanceOf[DLCWallet])
+    }
   }
 }

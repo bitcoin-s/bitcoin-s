@@ -711,6 +711,20 @@ object TransactionGenerators {
       version: Int32,
       output: TransactionOutput): (Transaction, UInt32) = {
     val outpoint = EmptyTransactionOutPoint
+    buildCreditingTransaction(version, output, outpoint)
+  }
+
+  def buildCreditingTransaction(
+      version: Int32,
+      scriptPubKey: ScriptPubKey,
+      amount: CurrencyUnit): (Transaction, UInt32) = {
+    buildCreditingTransaction(version, TransactionOutput(amount, scriptPubKey))
+  }
+
+  def buildCreditingTransaction(
+      version: Int32,
+      output: TransactionOutput,
+      outpoint: TransactionOutPoint): (Transaction, UInt32) = {
     val scriptSignature = ScriptSignature("0000")
     val input =
       TransactionInput(outpoint, scriptSignature, TransactionConstants.sequence)
@@ -719,13 +733,6 @@ object TransactionGenerators {
                              Seq(output),
                              TransactionConstants.lockTime)
     (tx, UInt32.zero)
-  }
-
-  def buildCreditingTransaction(
-      version: Int32,
-      scriptPubKey: ScriptPubKey,
-      amount: CurrencyUnit): (Transaction, UInt32) = {
-    buildCreditingTransaction(version, TransactionOutput(amount, scriptPubKey))
   }
 
   private def lockTimeTxHelper(

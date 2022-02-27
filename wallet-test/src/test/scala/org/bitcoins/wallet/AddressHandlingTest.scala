@@ -288,4 +288,20 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         assert(tags.isEmpty)
       }
   }
+
+  it must "create an address and not have an associated utxo until we deposit" in {
+    fundedWallet: FundedWallet =>
+      val wallet = fundedWallet.wallet
+      val addressF = wallet.getNewAddress()
+      val spendingInfoDAO = wallet.spendingInfoDAO
+      val spkDAO = wallet.scriptPubKeyDAO
+      for {
+        address <- addressF
+        utxos <- spendingInfoDAO.findByScriptPubKey(address.scriptPubKey)
+        spkOpt <- spkDAO.findScriptPubKey(address.scriptPubKey)
+      } yield {
+        assert(utxos.isEmpty)
+        assert(spkOpt.isDefined)
+      }
+  }
 }
