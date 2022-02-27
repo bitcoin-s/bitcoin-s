@@ -19,18 +19,15 @@ import org.bitcoins.chain.models._
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
-import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.{
   InternalImplementationNodeType,
   NodeApi,
   NodeType
 }
 import org.bitcoins.core.util.TimeUtil
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet._
-import org.bitcoins.feeprovider.FeeProviderName._
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
 import org.bitcoins.node._
@@ -46,6 +43,7 @@ import org.bitcoins.server.util.{
   WebsocketUtil,
   WsServerConfig
 }
+
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -125,10 +123,16 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       peers = Vector.empty,
       walletCreationTimeOpt = Some(creationTime))(chainConf, system)
 
-    val feeProvider = getFeeProviderOrElse(
+    val defaultApi =
       MempoolSpaceProvider(HourFeeTarget,
                            walletConf.network,
-                           walletConf.torConf.socks5ProxyParams))
+                           walletConf.torConf.socks5ProxyParams)
+    val feeProvider = FeeProviderFactory.getFeeProviderOrElse(
+      defaultApi,
+      walletConf.feeProviderNameOpt,
+      walletConf.feeProviderTargetOpt,
+      walletConf.torConf.socks5ProxyParams,
+      walletConf.network)
     //get our wallet
     val configuredWalletF = for {
       node <- nodeF
@@ -233,7 +237,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     } yield client
 
     val tmpWalletF = bitcoindF.flatMap { bitcoind =>
-      val feeProvider = getFeeProviderOrElse(bitcoind)
+      val feeProvider = FeeProviderFactory.getFeeProviderOrElse(
+        bitcoind,
+        feeProviderNameStrOpt = walletConf.feeProviderNameOpt,
+        feeProviderTargetOpt = walletConf.feeProviderTargetOpt,
+        proxyParamsOpt = walletConf.torConf.socks5ProxyParams,
+        network = walletConf.network
+      )
       dlcConf.createDLCWallet(nodeApi = bitcoind,
                               chainQueryApi = bitcoind,
                               feeRateApi = feeProvider)
@@ -405,42 +415,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       serverBindingsOpt = Some(bindings)
       server
     }
-  }
-
-  /** Gets a Fee Provider from the given wallet app config
-    * Returns default if there is no config set
-    */
-  def getFeeProviderOrElse(default: => FeeRateApi)(implicit
-      system: ActorSystem,
-      walletConf: WalletAppConfig): FeeRateApi = {
-    val proxyParams = walletConf.torConf.socks5ProxyParams
-    val feeProviderNameOpt =
-      walletConf.feeProviderNameOpt.flatMap(FeeProviderName.fromStringOpt)
-    val feeProvider =
-      (feeProviderNameOpt, walletConf.feeProviderTargetOpt) match {
-        case (None, None) | (None, Some(_)) =>
-          default
-        case (Some(BitcoinerLive), None) =>
-          BitcoinerLiveFeeRateProvider.fromBlockTarget(6, proxyParams)
-        case (Some(BitcoinerLive), Some(target)) =>
-          BitcoinerLiveFeeRateProvider.fromBlockTarget(target, proxyParams)
-        case (Some(BitGo), targetOpt) =>
-          BitGoFeeRateProvider(targetOpt, proxyParams)
-        case (Some(MempoolSpace), None) =>
-          MempoolSpaceProvider(HourFeeTarget, walletConf.network, proxyParams)
-        case (Some(MempoolSpace), Some(target)) =>
-          MempoolSpaceProvider.fromBlockTarget(target,
-                                               walletConf.network,
-                                               proxyParams)
-        case (Some(Constant), Some(num)) =>
-          ConstantFeeRateProvider(SatoshisPerVirtualByte.fromLong(num))
-        case (Some(Constant), None) =>
-          throw new IllegalArgumentException(
-            "Missing a target for a ConstantFeeRateProvider")
-      }
-
-    logger.info(s"Using fee provider: $feeProvider")
-    feeProvider
   }
 
   /** Handles a bug we had in our wallet with missing the spendingTxId for transactions spent from our wallet database.

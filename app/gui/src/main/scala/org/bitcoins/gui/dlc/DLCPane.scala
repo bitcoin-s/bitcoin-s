@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc
 
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
-import org.bitcoins.gui.TaskRunner
+import org.bitcoins.gui.{GlobalData, TaskRunner}
 import org.bitcoins.gui.util.GUIUtil
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
@@ -28,7 +28,9 @@ class DLCPane(glassPane: VBox)(implicit ec: ExecutionContext) {
 
   private val offerButton = new Button {
     text = "Offer"
-    onAction = _ => model.onOffer()
+    onAction = _ => {
+      model.onOffer(GlobalData.getFeeRate)
+    }
     tooltip = Tooltip(
       "Initiates a DLC with the given oracle and contract parameters, generating an Offer message.")
     tooltip.value.setShowDelay(new javafx.util.Duration(100))

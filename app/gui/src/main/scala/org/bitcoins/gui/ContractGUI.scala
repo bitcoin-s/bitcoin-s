@@ -273,7 +273,7 @@ class ContractGUI(glassPane: VBox) {
   private def showCreateOfferPane(
       announcement: OracleAnnouncementV0TLV,
       contractInfoOpt: Option[ContractInfoV0TLV]): Unit = {
-    val offerDialog = new CreateDLCOfferDialog()
+    val offerDialog = new CreateDLCOfferDialog(GlobalData.getFeeRate)
     val view = offerDialog.buildView(Some(announcement), contractInfoOpt)
     val container =
       new DLCDialogContainer[CreateDLCOffer]("New Offer",

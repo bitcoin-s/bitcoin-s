@@ -6,7 +6,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.DLCPlotUtil
 import org.bitcoins.gui.dlc.dialog.CreateDLCOfferDialog.getNumericContractInfo
@@ -22,7 +22,7 @@ import java.time.ZoneOffset
 import scala.collection._
 import scala.util.{Failure, Success, Try}
 
-class CreateDLCOfferDialog
+class CreateDLCOfferDialog(feeRate: FeeUnit)
     extends Logging
     with CliCommandProducer[CreateDLCOffer] {
 
@@ -82,7 +82,7 @@ class CreateDLCOfferDialog
     scala.collection.mutable.Map.empty
 
   private lazy val feeRateTF = new TextField() {
-    text = GlobalData.feeRate.toLong.toString
+    text = feeRate.toLong.toString
     promptText = "(optional)"
   }
 

@@ -1,8 +1,8 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.GlobalData
-import org.bitcoins.gui.GlobalData.feeRate
 import org.bitcoins.gui.dlc.GlobalDLCData
 import scalafx.Includes._
 import scalafx.beans.property.BooleanProperty
@@ -170,16 +170,17 @@ object DLCDialog {
   /** Offer fields
     * formatted as key -> (hint, default text)
     */
-  val allOfferFields: Map[String, (String, String)] =
+  private def buidAllOfferFields(
+      feeUnit: FeeUnit): Map[String, (String, String)] =
     Map[String, (String, String)](
       (contractInfoStr, ("", "")),
       (collateralStr, ("Satoshis", "")),
-      (feeRateStr, ("sats/vbyte (optional)", feeRate.toLong.toString)),
+      (feeRateStr, ("sats/vbyte (optional)", feeUnit.toLong.toString)),
       (refundLocktimeStr, ("Block or unix time", ""))
     )
 
-  def constructOfferFields(): Vector[(String, TextField)] =
-    allOfferFields.map { case (label, (hint, defaultText)) =>
+  def constructOfferFields(feeUnit: FeeUnit): Vector[(String, TextField)] =
+    buidAllOfferFields(feeUnit).map { case (label, (hint, defaultText)) =>
       (label,
        new TextField() {
          text = defaultText
