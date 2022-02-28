@@ -50,7 +50,8 @@ import scala.concurrent.{ExecutionContext, Future}
 abstract class DLCWallet
     extends Wallet
     with AnyDLCHDWalletApi
-    with DLCTransactionProcessing {
+    with DLCTransactionProcessing
+    with IncomingDLCOffersHandling {
 
   implicit val dlcConfig: DLCAppConfig
 
@@ -71,6 +72,9 @@ abstract class DLCWallet
   private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
   private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
 
+  private[bitcoins] val incomingOfferDAO: IncomingDLCOfferDAO =
+    IncomingDLCOfferDAO()
+
   private[wallet] val dlcWalletDAOs = DLCWalletDAOs(
     dlcDAO,
     contractDataDAO,
@@ -82,7 +86,8 @@ abstract class DLCWallet
     dlcRefundSigDAO,
     oracleNonceDAO,
     announcementDAO,
-    remoteTxDAO
+    remoteTxDAO,
+    incomingOfferDAO
   )
 
   private val dlcDataManagement = DLCDataManagement(dlcWalletDAOs)

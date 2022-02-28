@@ -1,6 +1,6 @@
 package org.bitcoins.core.api.dlc.wallet
 
-import org.bitcoins.core.api.dlc.wallet.db.DLCDb
+import org.bitcoins.core.api.dlc.wallet.db.{DLCDb, IncomingDLCOfferDb}
 import org.bitcoins.core.api.wallet._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.dlc.accounting._
@@ -116,6 +116,15 @@ trait DLCWalletApi { self: WalletApi =>
 
   /** Retrieves accounting and financial metrics for the entire dlc wallet */
   def getWalletAccounting(): Future[DLCWalletAccounting]
+
+  def registerIncomingDLCOffer(
+      offerTLV: DLCOfferTLV,
+      peer: Option[String],
+      message: Option[String]): Future[Sha256Digest]
+
+  def listIncomingDLCOffers(): Future[Vector[IncomingDLCOfferDb]]
+
+  def rejectIncomingDLCOffer(offerHash: Sha256Digest): Future[Unit]
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */

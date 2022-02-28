@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
+import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.protocol.dlc.models.{
   EnumSingleOracleInfo,
   NumericSingleOracleInfo,
@@ -14,9 +15,12 @@ import org.bitcoins.core.protocol.tlv.{
   NumericEventDescriptorTLV
 }
 import org.bitcoins.server.routes._
+import ujson._
+import upickle.default._
 
 case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
     extends ServerRoute {
+
   import system.dispatcher
 
   override def handleCommand: PartialFunction[ServerCommand, Route] = {
@@ -60,6 +64,45 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
                                                   oracleInfo)
             Server.httpSuccess(contractInfo.hex)
           }
+      }
+
+    case ServerCommand("offers-list", _) =>
+      complete {
+        dlcNode.wallet.listIncomingDLCOffers().map { offers =>
+          def toJson(io: IncomingDLCOfferDb): Value = {
+            Obj(
+              "hash" -> io.hash.hex,
+              "receivedAt" -> Num(io.receivedAt.getEpochSecond.toDouble),
+              "peer" -> io.peer.map(Str).getOrElse(Null),
+              "message" -> io.message.map(Str).getOrElse(Null),
+              "offerTLV" -> io.offerTLV.hex
+            )
+          }
+
+          Server.httpSuccess(offers.map(toJson))
+        }
+      }
+
+    case ServerCommand("offer-add", arr) =>
+      withValidServerCommand(OfferAdd.fromJsArr(arr)) { register =>
+        complete {
+          dlcNode.wallet
+            .registerIncomingDLCOffer(register.offerTLV,
+                                      register.peer,
+                                      register.message)
+            .map { hash =>
+              Server.httpSuccess(hash.hex)
+            }
+        }
+      }
+
+    case ServerCommand("offer-remove", arr) =>
+      withValidServerCommand(OfferRemove.fromJsArr(arr)) { reject =>
+        complete {
+          dlcNode.wallet.rejectIncomingDLCOffer(reject.hash).map { _ =>
+            Server.httpSuccess(reject.hash.hex)
+          }
+        }
       }
   }
 }

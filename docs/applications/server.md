@@ -300,6 +300,13 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `getdlcs` - Returns all dlcs in the wallet
  - `getdlc` `dlcId` - Gets a specific dlc in the wallet
     - `dlcId` - Internal id of the DLC
+ - `offer-add` `offerTLV` `peer` `message` - Puts an incoming offer into the inbox
+    - `offerTLV` - Offer TLV
+    - `peer` - Peer URI (optional)
+    - `message` - Peer's message or note (optional)
+ - `"offer-remove` `hash` - remove an incoming offer from inbox
+    - `hash` - Hash of the offer TLV
+ - `offers-list` - List all incoming offers from the inbox
 
 ### Network
  - `getpeers` - List the connected peers

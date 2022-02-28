@@ -11,12 +11,18 @@ import org.bitcoins.commons.jsonmodels.ws.{
 }
 import org.bitcoins.commons.serializers.WsPicklers
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.dlc.wallet.{DLCWalletCallbacks, OnDLCStateChange}
+import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
+import org.bitcoins.dlc.wallet.{
+  DLCWalletCallbacks,
+  OnDLCOfferAdd,
+  OnDLCOfferRemove,
+  OnDLCStateChange
+}
 import org.bitcoins.wallet._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -113,7 +119,8 @@ object WebsocketUtil extends Logging {
         val notification = WalletNotification.TxBroadcastNotification(tx)
         upickle.default.writeJs(notification)(WsPicklers.txBroadcastPickler)
       case x @ (WalletWsType.NewAddress | WalletWsType.ReservedUtxos |
-          WalletWsType.DLCStateChange) =>
+          WalletWsType.DLCStateChange | WalletWsType.DLCOfferAdd |
+          WalletWsType.DLCOfferRemove) =>
         sys.error(s"Cannot build tx notification for $x")
     }
 
@@ -133,6 +140,28 @@ object WebsocketUtil extends Logging {
       offerF.map(_ => ())
     }
 
-    DLCWalletCallbacks.onDLCStateChange(onStateChange)
+    val onOfferAdd: OnDLCOfferAdd = { offerDb: IncomingDLCOfferDb =>
+      val notification = WalletNotification.DLCOfferAddNotification(offerDb)
+      val json =
+        upickle.default.writeJs(notification)(WsPicklers.dlcOfferAddPickler)
+      val msg = TextMessage.Strict(json.toString())
+      val offerF = walletQueue.offer(msg)
+      offerF.map(_ => ())
+    }
+
+    val onOfferRemove: OnDLCOfferRemove = { offerHash: Sha256Digest =>
+      val notification =
+        WalletNotification.DLCOfferRemoveNotification(offerHash)
+      val json =
+        upickle.default.writeJs(notification)(WsPicklers.dlcOfferRemovePickler)
+      val msg = TextMessage.Strict(json.toString())
+      val offerF = walletQueue.offer(msg)
+      offerF.map(_ => ())
+    }
+
+    import DLCWalletCallbacks._
+
+    onDLCStateChange(onStateChange) + onDLCOfferAdd(
+      onOfferAdd) + onDLCOfferRemove(onOfferRemove)
   }
 }

@@ -48,10 +48,9 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
         log.debug(s"Received pong message $pong")
         Future.unit
       case dlcOffer: DLCOfferTLV =>
-        val f = for {
-          accept <- dlcWalletApi.acceptDLCOffer(dlcOffer, None, None)
-        } yield send(accept.toMessage)
-        f
+        for {
+          _ <- dlcWalletApi.registerIncomingDLCOffer(dlcOffer, None, None)
+        } yield ()
       case dlcAccept: DLCAcceptTLV =>
         val f = for {
           sign <- dlcWalletApi.signDLC(dlcAccept)
