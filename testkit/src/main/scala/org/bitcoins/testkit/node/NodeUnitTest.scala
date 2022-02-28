@@ -359,11 +359,11 @@ object NodeUnitTest extends P2PLogger {
                                         appConfig.chainConf,
                                         appConfig.nodeConf)
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
-        bitcoind,
-        node,
-        node,
-        bip39PasswordOpt,
-        walletCallbacks)
+        bitcoindRpcClient = bitcoind,
+        nodeApi = node,
+        chainQueryApi = bitcoind,
+        bip39PasswordOpt = bip39PasswordOpt,
+        walletCallbacks = walletCallbacks)
       spvCallbacks =
         BitcoinSWalletTest.createSpvNodeCallbacksForWallet(fundedWallet.wallet)
       _ = appConfig.nodeConf.addCallbacks(spvCallbacks)
@@ -436,12 +436,14 @@ object NodeUnitTest extends P2PLogger {
       node <- createNeutrinoNode(bitcoind, creationTimeOpt)(system,
                                                             appConfig.chainConf,
                                                             appConfig.nodeConf)
+
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoindRpcClient = bitcoind,
         nodeApi = node,
-        chainQueryApi = node,
+        chainQueryApi = bitcoind,
         bip39PasswordOpt = bip39PasswordOpt,
         walletCallbacks = walletCallbacks)
+
       startedNode <- node.start()
       syncedNode <- syncNeutrinoNode(startedNode, bitcoind)
       //callbacks are executed asynchronously, which is how we fund the wallet

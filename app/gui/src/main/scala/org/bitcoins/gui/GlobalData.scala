@@ -1,7 +1,9 @@
 package org.bitcoins.gui
 
-import org.bitcoins.cli.Config
+import org.bitcoins.cli.CliCommand.EstimateFee
+import org.bitcoins.cli.{Config, ConsoleCli}
 import org.bitcoins.core.config._
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.gui.settings.Themes
 import scalafx.beans.property._
@@ -133,7 +135,16 @@ object GlobalData {
     }
   }
 
-  var feeRate: FeeUnit = SatoshisPerVirtualByte.fromLong(50)
+  def getFeeRate: FeeUnit = {
+    val feeRateT = ConsoleCli
+      .exec(EstimateFee, GlobalData.consoleCliConfig)
+      .map { feeStr =>
+        val feeUnit = SatoshisPerVirtualByte(Satoshis(feeStr.toLong))
+        feeUnit
+      }
+
+    feeRateT.get
+  }
 
   val torDLCHostAddress = StringProperty("")
 }

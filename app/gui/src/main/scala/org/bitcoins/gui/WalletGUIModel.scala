@@ -17,7 +17,7 @@ import scalafx.stage.Window
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
     extends Logging {
@@ -29,6 +29,8 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
   // constructors to signal that you want some default
   lazy val parentWindow: ObjectProperty[Window] =
     ObjectProperty[Window](null.asInstanceOf[Window])
+
+  private def getFeeRate: FeeUnit = GlobalData.getFeeRate
 
   private case object UpdateWalletInfoRunnable extends Runnable {
 
@@ -49,14 +51,6 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
   def startWalletInfoScheduler(): Cancellable = {
     system.scheduler.scheduleAtFixedRate(0.seconds, 10.seconds)(
       UpdateWalletInfoRunnable)
-  }
-
-  def updateFeeRate(): Try[FeeUnit] = {
-    ConsoleCli.exec(EstimateFee, GlobalData.consoleCliConfig).map { feeStr =>
-      val feeUnit = FeeUnit.fromString(feeStr)
-      GlobalData.feeRate = feeUnit
-      feeUnit
-    }
   }
 
   def onGetNewAddress(): Unit = {
@@ -80,7 +74,7 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
   }
 
   def onSend(): Unit = {
-    val result = SendDialog.showAndWait(parentWindow.value)
+    val result = SendDialog.showAndWait(parentWindow.value, getFeeRate)
 
     result match {
       case Some(cmd) =>

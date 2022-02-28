@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
@@ -33,15 +34,16 @@ private[wallet] trait RescanHandling extends WalletLogger {
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
-      useCreationTime: Boolean)(implicit ec: ExecutionContext): Future[Unit] = {
+      useCreationTime: Boolean)(implicit
+      ec: ExecutionContext): Future[RescanState] = {
     for {
       account <- getDefaultAccount()
-      _ <- rescanNeutrinoWallet(account.hdAccount,
-                                startOpt,
-                                endOpt,
-                                addressBatchSize,
-                                useCreationTime)
-    } yield ()
+      state <- rescanNeutrinoWallet(account.hdAccount,
+                                    startOpt,
+                                    endOpt,
+                                    addressBatchSize,
+                                    useCreationTime)
+    } yield state
   }
 
   /** @inheritdoc */
@@ -50,37 +52,42 @@ private[wallet] trait RescanHandling extends WalletLogger {
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
-      useCreationTime: Boolean = true): Future[Unit] = {
-
-    rescanning.set(true)
-
-    logger.info(
-      s"Starting rescanning the wallet from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime")
-
-    val start = System.currentTimeMillis()
-    val res = for {
-      start <- (startOpt, useCreationTime) match {
-        case (Some(_), true) =>
-          Future.failed(new IllegalArgumentException(
-            "Cannot define a starting block and use the wallet creation time"))
-        case (Some(value), false) =>
-          Future.successful(Some(value))
-        case (None, true) =>
-          walletCreationBlockHeight.map(Some(_))
-        case (None, false) =>
-          Future.successful(None)
-      }
-      _ <- clearUtxosAndAddresses(account)
-      _ <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
-    } yield ()
-
-    res.onComplete { _ =>
-      rescanning.set(false)
+      useCreationTime: Boolean = true): Future[RescanState] = {
+    if (rescanning.get()) {
+      logger.warn(
+        s"Rescan already started, ignoring request to start another one")
+      Future.successful(RescanState.RescanInProgress)
+    } else {
+      rescanning.set(true)
       logger.info(
-        s"Finished rescanning the wallet. It took ${System.currentTimeMillis() - start}ms")
-    }
+        s"Starting rescanning the wallet from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime")
+      val start = System.currentTimeMillis()
+      val res = for {
+        start <- (startOpt, useCreationTime) match {
+          case (Some(_), true) =>
+            Future.failed(new IllegalArgumentException(
+              "Cannot define a starting block and use the wallet creation time"))
+          case (Some(value), false) =>
+            Future.successful(Some(value))
+          case (None, true) =>
+            walletCreationBlockHeight.map(Some(_))
+          case (None, false) =>
+            Future.successful(None)
+        }
+        _ <- clearUtxosAndAddresses(account)
+        _ <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
+      } yield {
+        RescanState.RescanDone
+      }
 
-    res
+      res.onComplete { _ =>
+        rescanning.set(false)
+        logger.info(
+          s"Finished rescanning the wallet. It took ${System.currentTimeMillis() - start}ms")
+      }
+
+      res
+    }
   }
 
   /** @inheritdoc */
@@ -149,7 +156,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
         if (
           externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit
         ) {
-          pruneUnusedAddresses()
+          //done rescanning
+          Future.unit
         } else {
           logger.info(
             s"Attempting rescan again with fresh pool of addresses as we had a " +
@@ -157,22 +165,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
           doNeutrinoRescan(account, startOpt, endOpt, addressBatchSize)
         }
     } yield res
-  }
-
-  private def pruneUnusedAddresses(): Future[Unit] = {
-    for {
-      addressDbs <- addressDAO.findAll()
-      _ <- addressDbs.foldLeft(Future.unit) { (prevF, addressDb) =>
-        for {
-          _ <- prevF
-          spendingInfoDbs <-
-            spendingInfoDAO.findByScriptPubKeyId(addressDb.scriptPubKeyId)
-          _ <-
-            if (spendingInfoDbs.isEmpty) addressDAO.delete(addressDb)
-            else Future.unit
-        } yield ()
-      }
-    } yield ()
   }
 
   private def calcAddressGap(

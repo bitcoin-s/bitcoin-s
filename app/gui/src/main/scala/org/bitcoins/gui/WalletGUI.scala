@@ -2,9 +2,10 @@ package org.bitcoins.gui
 
 import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.dlc.DLCPane
 import org.bitcoins.gui.util.GUIUtil
-import scalafx.beans.property.{StringProperty}
+import scalafx.beans.property.StringProperty
 import scalafx.geometry._
 import scalafx.scene.control._
 import scalafx.scene.layout._
@@ -24,6 +25,8 @@ abstract class WalletGUI extends Logging {
     text <== GlobalData.networkString
   }
 
+  def getFeeRate: FeeUnit = GlobalData.getFeeRate
+
   private lazy val infoLabel = new Label {
     text <== StringProperty("Sync Height: ") + GlobalData.syncHeight
   }
@@ -38,14 +41,18 @@ abstract class WalletGUI extends Logging {
 
   def fetchStartingData(): Unit = {
     model.startWalletInfoScheduler()
-    model.updateFeeRate()
     dlcPane.model.setUp()
     model.updateTorAddress()
   }
 
-  private[gui] lazy val dlcPane = new DLCPane(glassPane)(system.dispatcher)
+  private[gui] lazy val dlcPane = {
+    new DLCPane(glassPane)(system.dispatcher)
+  }
   private[gui] lazy val model = new WalletGUIModel(dlcPane.model)
-  private[gui] lazy val contractGUI = new ContractGUI(glassPane)
+
+  private[gui] lazy val contractGUI = {
+    new ContractGUI(glassPane)
+  }
 
   private lazy val getNewAddressButton = new Button {
     text = "Get New Address"

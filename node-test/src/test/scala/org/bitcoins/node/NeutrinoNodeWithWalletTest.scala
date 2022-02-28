@@ -169,9 +169,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         !rescan &&
         balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount &&
         utxos.size == 4 &&
-        addresses.map(_.scriptPubKey.hex).sorted == utxos
-          .map(_.output.scriptPubKey.hex)
-          .sorted
+        utxos
+          .map(_.output.scriptPubKey)
+          .forall(spk => addresses.exists(_.scriptPubKey == spk))
       }
     }
 

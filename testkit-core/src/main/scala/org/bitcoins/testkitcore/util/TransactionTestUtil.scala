@@ -251,6 +251,19 @@ trait TransactionTestUtil {
                     lockTime = TransactionConstants.lockTime)
   }
 
+  def buildTransactionTo(
+      output: TransactionOutput,
+      outPoint: TransactionOutPoint): Transaction = {
+    val input = TransactionInput(outPoint,
+                                 EmptyScriptSignature,
+                                 TransactionConstants.sequence)
+    val inputs = Vector(input)
+    BaseTransaction(version = Int32.one,
+                    inputs = inputs,
+                    outputs = Vector(output),
+                    lockTime = TransactionConstants.lockTime)
+  }
+
   def dummyTx(
       prevTxId: DoubleSha256Digest = DoubleSha256Digest.empty,
       scriptSig: ScriptSignature = EmptyScriptSignature,

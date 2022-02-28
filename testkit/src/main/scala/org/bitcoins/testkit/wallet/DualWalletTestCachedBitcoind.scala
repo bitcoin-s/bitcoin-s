@@ -79,12 +79,17 @@ trait DualWalletTestCachedBitcoind
             getBIP39PasswordOpt(),
             Some(segwitWalletConf))
         }
-        val walletBF = bitcoindF.flatMap { bitcoind =>
-          FundWalletUtil.createFundedDLCWalletWithBitcoind(
+        val walletBF = for {
+          bitcoind <- bitcoindF
+
+          //its important to map on this otherwise we generate blocks in parallel
+          //causing a reorg inside of createFundedDLCWallet
+          _ <- walletAF
+          walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
             bitcoind,
             getBIP39PasswordOpt(),
             Some(segwitWalletConf))(config2, system)
-        }
+        } yield { walletB }
 
         for {
           walletA <- walletAF

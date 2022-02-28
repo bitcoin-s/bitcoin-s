@@ -7,6 +7,7 @@ import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto._
 import org.bitcoins.gui._
 import org.bitcoins.gui.dialog.{FundingTransactionDialog, TransactionSentDialog}
@@ -125,8 +126,9 @@ class DLCPaneModel(pane: DLCPane)(implicit ec: ExecutionContext)
     Await.result(promise.future, 15.seconds)
   }
 
-  def onOffer(): Unit = {
-    val result = new CreateDLCOfferDialog().showAndWait(parentWindow.value)
+  def onOffer(feeRate: FeeUnit): Unit = {
+    val result =
+      new CreateDLCOfferDialog(feeRate).showAndWait(parentWindow.value)
 
     result match {
       case Some(command) =>
