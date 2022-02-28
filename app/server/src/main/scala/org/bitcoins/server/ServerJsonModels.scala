@@ -934,8 +934,14 @@ object AcceptDLC extends ServerJsonModels {
         offerJs: Value,
         addrJs: Value,
         payoutAddressJs: Value,
-        changeAddressJs: Value) = Try {
-      val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
+        changeAddressJs: Value): Try[AcceptDLC] = Try {
+      val lnMessageOfferT = LnMessageFactory(DLCOfferTLV)
+        .fromHexT(offerJs.str)
+      val offer: LnMessage[DLCOfferTLV] = lnMessageOfferT match {
+        case Success(o) => o
+        case Failure(_) => LnMessage(DLCOfferTLV.fromHex(offerJs.str))
+      }
+
       val uri = new URI("tcp://" + addrJs.str)
       val peerAddr =
         InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
