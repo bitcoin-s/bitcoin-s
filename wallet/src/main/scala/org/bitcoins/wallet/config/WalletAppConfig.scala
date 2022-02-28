@@ -386,9 +386,8 @@ object WalletAppConfig
 
         _ = {
           if (txs.size > 1)
-            logger.info(s"Rebroadcasting ${txs.size} transactions")
-          else if (txs.size == 1)
-            logger.info(s"Rebroadcasting ${txs.size} transaction")
+            logger.info(
+              s"Rebroadcasting ${txs.size} transactions, txids=${txs.map(_.txIdBE)}")
         }
 
         _ <- wallet.nodeApi.broadcastTransactions(txs)
