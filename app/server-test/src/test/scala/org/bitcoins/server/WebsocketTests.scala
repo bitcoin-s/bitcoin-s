@@ -345,14 +345,15 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val offer: LnMessage[DLCOfferTLV] =
         LnMessageFactory(DLCOfferTLV).fromHex(str)
 
-      val _ = ConsoleCli
+      val expectedHash = CryptoUtil.sha256(offer.tlv.bytes)
+
+      ConsoleCli
         .exec(
           CliCommand.AddDLCOffer(offer = offer, message = "msg", peer = "uri"),
           cliConfig)
         .get
-      val expectedHash = CryptoUtil.sha256(offer.tlv.bytes)
 
-      val _ = ConsoleCli
+      ConsoleCli
         .exec(CliCommand.RemoveDLCOffer(offerHash = expectedHash), cliConfig)
         .get
 
