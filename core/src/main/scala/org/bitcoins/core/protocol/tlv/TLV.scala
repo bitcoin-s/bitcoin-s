@@ -1731,6 +1731,9 @@ case class DLCOfferTLV(
       contractMaturityBound.toUInt32.bytes ++
       contractTimeout.toUInt32.bytes
   }
+
+  lazy val tempContractId: Sha256Digest =
+    CryptoUtil.sha256(bytes)
 }
 
 object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {

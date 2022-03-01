@@ -47,9 +47,9 @@ object PicklerKeys {
 
   //offers
   final val protocolVersionKey: String = "protocolVersion"
+  final val tempContractIdKey: String = "temporaryContractId"
 
   //accepts
-  final val tempContractIdKey: String = "temporaryContractId"
   final val fundingPubKeyKey: String = "fundingPubkey"
   final val acceptCollateralKey: String = "acceptCollateral"
   final val payoutSpkKey: String = "payoutSpk"
@@ -130,7 +130,6 @@ object PicklerKeys {
   val contractTimeoutKey = "contractTimeout"
 
   val acceptMessageKey = "accept_message"
-  val temporaryContractIdKey = "temporaryContractId"
   val inputSerialIdKey = "inputSerialId"
   val prevTxKey = "prevTx"
   val prevTxVoutKey = "prevTxVout"
