@@ -311,7 +311,7 @@ You can decode the offer above with `decodeoffer`
   "fundingPubKey": "03a63505d00a2f927904f9c7d3cd28b59cb105b8d028fc1b715ef243351cea0f33",
   "payoutSPK": "1600148cd33b6fadc74aaca3982d3fd1891b1100a01e99",
   "payoutSerialId": 7520084828858968064,
-  "offerCollateralSatoshis": 50000,
+  "offerCollateral": 50000,
   "fundingInputs": [
     {
       "inputSerialId": 3740391543456242688,
