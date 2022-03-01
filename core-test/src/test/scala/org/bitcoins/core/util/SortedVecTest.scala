@@ -99,4 +99,8 @@ class SortedVecTest extends BitcoinSUnitTest {
     assertThrows[IllegalArgumentException](
       SortedVec(wrongOrder)(SortedVec.forOrdered(nonces)))
   }
+
+  it must "getpackage" in {
+    assert(EnvUtil.getVersion == "")
+  }
 }

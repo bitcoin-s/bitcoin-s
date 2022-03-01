@@ -1,5 +1,3 @@
-package org.bitcoins.core.util
-
 import scala.util.Properties
 
 object EnvUtil {
