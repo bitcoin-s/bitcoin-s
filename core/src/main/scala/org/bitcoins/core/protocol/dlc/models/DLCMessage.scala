@@ -107,8 +107,7 @@ object DLCMessage {
 
     lazy val dlcId: Sha256Digest = calcDLCId(fundingInputs.map(_.outPoint))
 
-    val tempContractId: Sha256Digest =
-      CryptoUtil.sha256(toMessage.bytes)
+    val tempContractId: Sha256Digest = toMessage.tlv.tempContractId
 
     def toTLV: DLCOfferTLV = {
       val chainHash =
