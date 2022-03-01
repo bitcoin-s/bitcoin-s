@@ -17,4 +17,16 @@ class EnvUtilTest extends BitcoinSUnitTest {
     val numCommitsOpt = EnvUtil.parseCommitsSinceLastTag(versionString)
     assert(numCommitsOpt.isEmpty)
   }
+
+  it must "parse the version number of a snapshot commit" in {
+    val versionString = "1.9.0-10-eddcc94b-SNAPSHOT"
+    val version = EnvUtil.parseVersion(versionString)
+    assert(version == "1.9.0")
+  }
+
+  it must "parse the version number of a release" in {
+    val versionString = "1.9.0"
+    val version = EnvUtil.parseVersion(versionString)
+    assert(version == "1.9.0")
+  }
 }

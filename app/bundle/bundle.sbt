@@ -19,11 +19,11 @@ assembly / assemblyJarName := s"${name.value}.jar"
 //need compatibility with windows versioning scheme which is
 //w.x.y.z
 Windows / version := {
-  ///*+ s".${EnvUtil.parseCommitsSinceLastTag(EnvUtil.getVersion)}"*/
   val commitNumberOpt = EnvUtil.parseCommitsSinceLastTag(version.value)
+  val versionStr = EnvUtil.parseVersion(version.value)
   commitNumberOpt match {
-    case Some(commitNumber) =>CommonSettings.previousStableVersion + s".${commitNumber}"
-    case None => CommonSettings.previousStableVersion
+    case Some(commitNumber) => versionStr + s".${commitNumber}"
+    case None => versionStr
   }
 }
 
