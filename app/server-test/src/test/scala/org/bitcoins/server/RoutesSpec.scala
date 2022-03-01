@@ -2,7 +2,6 @@ package org.bitcoins.server
 
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db._
@@ -14,12 +13,7 @@ import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.{UInt32, UInt64}
-import org.bitcoins.core.protocol.BlockStamp.{
-  BlockHash,
-  BlockHeight,
-  BlockTime,
-  InvalidBlockStamp
-}
+import org.bitcoins.core.protocol.BlockStamp.{BlockHash, BlockHeight, BlockTime}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
@@ -48,7 +42,6 @@ import org.bitcoins.wallet.MockWalletApi
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 import scodec.bits.ByteVector
-import ujson.Value.InvalidData
 import ujson._
 
 import java.time.{ZoneId, ZonedDateTime}
@@ -1279,18 +1272,20 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         ServerCommand("sendtoaddress", Arr(Null, Null, Null, Bool(false))))
 
       Post() ~> route1 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData(Null, "Expected ujson.Str")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected ujson.Str (data: null)"}""")
       }
 
       val route2 = walletRoutes.handleCommand(
         ServerCommand("sendtoaddress", Arr("Null", Null, Null, Bool(false))))
 
       Post() ~> route2 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData("Null", "Expected a valid address")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected a valid address (data: \\"Null\\")"}""")
       }
 
       val route3 = walletRoutes.handleCommand(
@@ -1298,9 +1293,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                       Arr(Str(testAddressStr), Null, Null, Bool(false))))
 
       Post() ~> route3 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData(Null, "Expected ujson.Num")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected ujson.Num (data: null)"}""")
       }
 
       val route4 = walletRoutes.handleCommand(
@@ -1308,9 +1304,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                       Arr(Str(testAddressStr), Str("abc"), Null, Bool(false))))
 
       Post() ~> route4 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData("abc", "Expected ujson.Num")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected ujson.Num (data: \\"abc\\")"}""")
       }
 
     }
@@ -1351,18 +1348,20 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         ServerCommand("sendfromoutpoints", Arr(Arr(), Null, Null, Null)))
 
       Post() ~> route1 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData(Null, "Expected ujson.Str")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected ujson.Str (data: null)"}""")
       }
 
       val route2 = walletRoutes.handleCommand(
         ServerCommand("sendfromoutpoints", Arr(Arr(), "Null", Null, Null)))
 
       Post() ~> route2 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData("Null", "Expected a valid address")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected a valid address (data: \\"Null\\")"}""")
       }
 
       val route3 = walletRoutes.handleCommand(
@@ -1370,9 +1369,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                       Arr(Arr(), Str(testAddressStr), Null, Null)))
 
       Post() ~> route3 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData(Null, "Expected ujson.Num")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected ujson.Num (data: null)"}""")
       }
 
       val route4 = walletRoutes.handleCommand(
@@ -1380,9 +1380,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                       Arr(Arr(), Str(testAddressStr), Str("abc"), Null)))
 
       Post() ~> route4 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData("abc", "Expected ujson.Num")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected ujson.Num (data: \\"abc\\")"}""")
       }
 
       val route5 = walletRoutes.handleCommand(
@@ -1390,9 +1391,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                       Arr(Null, Str(testAddressStr), Num(100), Num(4))))
 
       Post() ~> route5 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData(Null, "Expected ujson.Arr")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected ujson.Arr (data: null)"}""")
       }
     }
 
@@ -1457,18 +1459,20 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         ServerCommand("sendwithalgo", Arr(Null, Null, Null, Null)))
 
       Post() ~> route1 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData(Null, "Expected ujson.Str")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected ujson.Str (data: null)"}""")
       }
 
       val route2 = walletRoutes.handleCommand(
         ServerCommand("sendwithalgo", Arr("Null", Null, Null, Null)))
 
       Post() ~> route2 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData("Null", "Expected a valid address")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected a valid address (data: \\"Null\\")"}""")
       }
 
       val route3 = walletRoutes.handleCommand(
@@ -1476,9 +1480,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                       Arr(Str(testAddressStr), Null, Null, Null)))
 
       Post() ~> route3 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData(Null, "Expected ujson.Num")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected ujson.Num (data: null)"}""")
       }
 
       val route4 = walletRoutes.handleCommand(
@@ -1486,9 +1491,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                       Arr(Str(testAddressStr), Str("abc"), Null, Null)))
 
       Post() ~> route4 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData("abc", "Expected ujson.Num")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected ujson.Num (data: \\"abc\\")"}""")
       }
 
       val route5 = walletRoutes.handleCommand(
@@ -1496,9 +1502,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                       Arr(Str(testAddressStr), Num(100), Num(4), Null)))
 
       Post() ~> route5 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData(Null, "Expected ujson.Str")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected ujson.Str (data: null)"}""")
       }
     }
 
@@ -1740,8 +1747,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                         Arr(Null, Str("abcd"), Str("efgh"), true, true)))
 
       Post() ~> route5 ~> check {
-        rejection == ValidationRejection("failure",
-                                         Some(InvalidBlockStamp("abcd")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(responseAs[
+          String] == s"""{"result":null,"error":"Invalid blockstamp: abcd"}""")
       }
 
       val route6 =
@@ -1751,9 +1760,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
             Arr(Arr(55), Null, Str("2018-10-27T12:34:56"), true, true)))
 
       Post() ~> route6 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidBlockStamp("2018-10-27T12:34:56")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Invalid blockstamp: 2018-10-27T12:34:56"}""")
       }
 
       val route7 =
@@ -1761,9 +1771,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           ServerCommand("rescan", Arr(Null, Num(-1), Null, true, false)))
 
       Post() ~> route7 ~> check {
-        rejection == ValidationRejection(
-          "failure",
-          Some(InvalidData(Num(-1), "Expected a positive integer")))
+        assert(contentType == `application/json`)
+        assert(status == StatusCodes.BadRequest)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Expected a positive integer (data: -1)"}""")
       }
 
       (mockWalletApi.isEmpty: () => Future[Boolean])
