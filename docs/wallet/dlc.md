@@ -89,7 +89,7 @@ bitcoin-s-cli decodeoffer a71a006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c
   "fundingPubKey": "02279cf17c387d7101b08d90b2aeef46231957d9d3558f5871e62781a68e7d75c9",
   "payoutSPK": "1600148dc81a3097bf28c6020eaf89cefae69c5f31aceb",
   "payoutSerialId": 6729888050161701888,
-  "offerCollateralSatoshis": 37000,
+  "offerCollateral": 37000,
   "fundingInputs": [
     {
       "inputSerialId": 7093787203812804608,

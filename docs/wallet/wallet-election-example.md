@@ -202,7 +202,7 @@ the offer before sending it to him you can use `decodeoffer`
   "fundingPubKey": "02869f5d3931620521f3eef85c0e7adf64a4db330d2dfde3aa871172274f210fe0",
   "payoutSPK": "1600141df0a84b2d2e611dd595101bfed6320143c47ebb",
   "payoutSerialId": 1.2572776984081695E19,
-  "offerCollateralSatoshis": 60000,
+  "offerCollateral": 60000,
   "fundingInputs": [
     {
       "inputSerialId": 9.751703500876681E18,

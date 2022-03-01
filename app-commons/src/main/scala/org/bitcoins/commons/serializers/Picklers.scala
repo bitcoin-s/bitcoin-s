@@ -790,8 +790,7 @@ object Picklers {
         "fundingPubKey" -> Str(fundingPubKey.hex),
         "payoutSPK" -> Str(payoutSPK.hex),
         "payoutSerialId" -> Num(payoutSerialId.toBigInt.toDouble),
-        "offerCollateralSatoshis" -> Num(
-          totalCollateralSatoshis.toLong.toDouble),
+        "offerCollateral" -> Num(totalCollateralSatoshis.toLong.toDouble),
         "fundingInputs" -> fundingInputs.map(i => writeJs(i)),
         "changeSPK" -> Str(changeSPK.hex),
         "changeSerialId" -> Str(changeSerialId.toBigInt.toString()),
