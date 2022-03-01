@@ -34,7 +34,7 @@ packageSummary := "Bitcoin-S"
 packageDescription := "Bitcoin-S"
 
 // wix build information
-wixProductId := "74bed7cc-8d82-4078-87f0-d74da5720bad"
+wixProductId := "DC3E42C8-F6F3-4069-889E-744086E88E40"
 wixProductUpgradeId := java.util.UUID.randomUUID().toString
 
 // Adding the wanted wixFeature:
