@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, "2022-03-01-static-wix-product-id"]
     tags: ["*"]
   release:
     types: [ published ]
