@@ -11,15 +11,15 @@ import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.{
-  BitcoinSWalletTestCachedBitcoinV19,
+  BitcoinSWalletTestCachedBitcoindNewest,
   WalletWithBitcoind,
-  WalletWithBitcoindV19
+  WalletWithBitcoindRpc
 }
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
+class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
@@ -78,7 +78,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
   val DEFAULT_ADDR_BATCH_SIZE = 10
   it must "be able to discover funds that belong to the wallet using WalletApi.rescanNeutrinoWallet" in {
     fixture: WalletWithBitcoind =>
-      val WalletWithBitcoindV19(wallet, _) = fixture
+      val WalletWithBitcoindRpc(wallet, _) = fixture
 
       val initBalanceF = wallet.getBalance()
 
@@ -98,7 +98,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
   it must "be able to discover funds that occurred within a certain range" in {
     fixture: WalletWithBitcoind =>
-      val WalletWithBitcoindV19(wallet, bitcoind) = fixture
+      val WalletWithBitcoindRpc(wallet, bitcoind) = fixture
 
       val amt = Bitcoins.one
       val numBlocks = 1
@@ -152,7 +152,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
   it must "be able to discover funds using multiple batches" in {
     fixture: WalletWithBitcoind =>
-      val WalletWithBitcoindV19(wallet, bitcoind) = fixture
+      val WalletWithBitcoindRpc(wallet, bitcoind) = fixture
 
       val amt = Bitcoins.one
       val numBlocks = 1
@@ -215,7 +215,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
   it must "be able to discover funds that occurred from the wallet creation time" in {
     fixture: WalletWithBitcoind =>
-      val WalletWithBitcoindV19(wallet, bitcoind) = fixture
+      val WalletWithBitcoindRpc(wallet, bitcoind) = fixture
 
       val amt = Bitcoins.one
       val numBlocks = 1
@@ -260,7 +260,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
   it must "NOT discover funds that happened OUTSIDE of a certain range of block hashes" in {
     fixture: WalletWithBitcoind =>
-      val WalletWithBitcoindV19(wallet, _) = fixture
+      val WalletWithBitcoindRpc(wallet, _) = fixture
 
       val initBalanceF = wallet.getBalance()
 
@@ -299,13 +299,13 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
   it must "acknowledge that a rescan is already in progress" in {
     fixture: WalletWithBitcoind =>
-      val WalletWithBitcoindV19(wallet, _) = fixture
+      val WalletWithBitcoindRpc(wallet, _) = fixture
       //do these in parallel on purpose to simulate multiple threads calling rescan
       val startF = wallet.rescanNeutrinoWallet(startOpt = None,
                                                endOpt = None,
                                                addressBatchSize =
                                                  DEFAULT_ADDR_BATCH_SIZE,
-                                               useCreationTime = false)
+                                               useCreationTime = true)
 
       //slight delay to make sure other rescan is started
       val alreadyStartedF =
@@ -314,7 +314,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
                                       endOpt = None,
                                       addressBatchSize =
                                         DEFAULT_ADDR_BATCH_SIZE,
-                                      useCreationTime = false)
+                                      useCreationTime = true)
         }
       for {
         start <- startF
@@ -328,7 +328,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
   it must "still receive payments to addresses generated pre-rescan" in {
     fixture: WalletWithBitcoind =>
-      val WalletWithBitcoindV19(wallet, bitcoind) = fixture
+      val WalletWithBitcoindRpc(wallet, bitcoind) = fixture
       val addressNoFundsF = wallet.getNewAddress()
 
       //start a rescan without sending payment to that address
@@ -337,7 +337,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoinV19 {
         _ <- wallet.rescanNeutrinoWallet(startOpt = None,
                                          endOpt = None,
                                          addressBatchSize = 10,
-                                         useCreationTime = false)
+                                         useCreationTime = true)
 
         usedAddresses <- wallet.listFundedAddresses()
 
