@@ -304,9 +304,10 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `offerTLV` - Offer TLV
     - `peer` - Peer URI (optional)
     - `message` - Peer's message or note (optional)
- - `"offer-remove` `hash` - remove an incoming offer from inbox
+ - `"offer-remove` `hash` - Remove an incoming offer from inbox
     - `hash` - Hash of the offer TLV
- - `offers-list` - List all incoming offers from the inbox
+- `offer-send` `hash` `address` - Sends an offer specified by its hash to the IP/Tor address 
+- `offers-list` - List all incoming offers from the inbox
 
 ### Network
  - `getpeers` - List the connected peers
