@@ -59,17 +59,16 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
           peersInDbCountF.map(cnt =>
             if (cnt > maxPeerSearchCount) peerConnectionScheduler.cancel())
 
-          if (peerDiscoveryStack.size < 5) {
+          if (peerDiscoveryStack.size < 10) {
             logger.info("Taking peers from dns seeds")
             peerDiscoveryStack.pushAll(getPeersFromDnsSeeds)
           }
 
-          if(testPeerData.size < 6) {
-            val peers = for {_ <- 0 to 5} yield peerDiscoveryStack.pop()
+          logger.info(s"Test peer data size ${testPeerData.size}")
+            val peers = for {_ <- 0 to 10} yield peerDiscoveryStack.pop()
             peers.foreach(peer => {
               addTestPeer(peer)
             })
-          }
         }
       }
     }
@@ -78,14 +77,12 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     * this operation makes the node permanently keep connection with the peer and
     * use it for node operation
     */
-  def setPeerForUse(peer: Peer): Unit = {
+  def setPeerForUse(peer: Peer): Future[Unit] = {
     require(testPeerData.contains(peer), "Unknown peer marked as usable")
-    logger.info(s"Making peer usable $peer")
+    logger.info(s"Connected to peer $peer. Connected peer count $connectedPeerCount")
     _peerData.addOne((peer, peerDataOf(peer)))
     _testPeerData.remove(peer)
-    ()
-    //todo
-    //peerData(peer).peerMessageSender.sendGetAddrMessage()
+    peerData(peer).peerMessageSender.sendGetAddrMessage()
   }
 
   //for reconnect, we would only want to call node.sync if the peer reconnected is the one that was

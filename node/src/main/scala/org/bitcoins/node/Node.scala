@@ -137,7 +137,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def reconnectSync(peer: Peer): Future[Unit] ={
     peerManager.peerUsedForSync match {
       case Some(value) => if(peer==value) sync() else Future.unit
-      case None => sync()
+      case None => Future.unit
     }
   }
 
