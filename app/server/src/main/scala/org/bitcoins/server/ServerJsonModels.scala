@@ -1419,7 +1419,7 @@ object OfferSend {
 
   def fromJsArr(arr: ujson.Arr): Try[OfferSend] = {
     arr.arr.toList match {
-      case peerJs :: messageJs :: offerJs :: Nil =>
+      case offerJs :: peerJs :: messageJs :: Nil =>
         Try {
           val peer = NetworkUtil.parseInetSocketAddress(peerJs.str, 2862)
           val message = messageJs.str
@@ -1431,7 +1431,7 @@ object OfferSend {
         }
       case other =>
         val exn = new IllegalArgumentException(
-          s"Bad number or arguments to offer-send, got=${other.length} expected=1")
+          s"Bad number or arguments to offer-send, got=${other.length} expected=3")
         Failure(exn)
     }
   }
