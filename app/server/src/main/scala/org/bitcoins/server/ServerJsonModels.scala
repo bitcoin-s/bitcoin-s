@@ -1412,7 +1412,6 @@ object OfferRemove {
 
 case class OfferSend(
     remoteAddress: InetSocketAddress,
-    localAddress: InetSocketAddress,
     message: String,
     offerTLV: DLCOfferTLV)
 
@@ -1420,18 +1419,16 @@ object OfferSend {
 
   def fromJsArr(arr: ujson.Arr): Try[OfferSend] = {
     arr.arr.toList match {
-      case offerJs :: localAddressJs :: messageJs :: remoteAddressJs :: Nil =>
+      case offerJs :: peerAddressJs :: messageJs :: Nil =>
         Try {
-          val localAddress =
-            NetworkUtil.parseInetSocketAddress(localAddressJs.str, 2862)
-          val remoteAddress =
-            NetworkUtil.parseInetSocketAddress(remoteAddressJs.str, 2862)
+          val peerAddress =
+            NetworkUtil.parseInetSocketAddress(peerAddressJs.str, 2862)
           val message = messageJs.str
           val offerTLV =
             Try(LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str).tlv)
               .orElse(Try(DLCOfferTLV.fromHex(offerJs.str)))
               .get
-          OfferSend(remoteAddress, localAddress, message, offerTLV)
+          OfferSend(peerAddress, message, offerTLV)
         }
       case other =>
         val exn = new IllegalArgumentException(

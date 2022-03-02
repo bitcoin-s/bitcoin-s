@@ -75,11 +75,11 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
 
   override def sendDLCOffer(
       peerAddress: InetSocketAddress,
-      localAddress: InetSocketAddress,
       message: String,
       offerTLV: DLCOfferTLV): Future[Unit] = {
     for {
       handler <- connectToPeer(peerAddress)
+      localAddress <- getHostAddress
     } yield {
       val peer = NormalizedString(
         localAddress.getHostString + ":" + peerAddress.getPort)

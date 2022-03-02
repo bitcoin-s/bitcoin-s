@@ -22,7 +22,6 @@ trait DLCNodeApi extends StartStopAsync[Unit] {
 
   def sendDLCOffer(
       peerAddress: InetSocketAddress,
-      localAddress: InetSocketAddress,
       message: String,
       offerTLV: DLCOfferTLV): Future[Unit]
 
