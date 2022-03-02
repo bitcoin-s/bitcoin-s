@@ -1733,7 +1733,7 @@ case class DLCOfferTLV(
   }
 
   lazy val tempContractId: Sha256Digest =
-    CryptoUtil.sha256(bytes)
+    CryptoUtil.sha256(LnMessage(this).bytes)
 }
 
 object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
