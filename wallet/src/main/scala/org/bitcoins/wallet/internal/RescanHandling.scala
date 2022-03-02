@@ -250,14 +250,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
           }
       spksDb <- scriptPubKeyDAO.findAll()
     } yield {
-      val addrSpks = {
+      val addrSpks =
         addresses.map(_.scriptPubKey) ++ changeAddresses.map(_.scriptPubKey)
-      }
-
-      require(addrSpks.length == count * 2)
       val otherSpks = spksDb.map(_.scriptPubKey)
-      require(
-        addrSpks.forall(addrSpk => spksDb.exists(_.scriptPubKey == addrSpk)))
+
       (addrSpks ++ otherSpks).distinct
     }
   }
