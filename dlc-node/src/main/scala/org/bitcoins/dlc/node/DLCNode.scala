@@ -7,7 +7,6 @@ import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.node.config._
 import org.bitcoins.dlc.node.peer.Peer
 
@@ -76,16 +75,17 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
 
   override def sendDLCOffer(
       peerAddress: InetSocketAddress,
-      incomingOfferHash: Sha256Digest): Future[Unit] = {
+      message: String,
+      offerTLV: DLCOfferTLV): Future[Unit] = {
     for {
-      offer <- wallet.findIncomingDLCOffer(incomingOfferHash)
-      lnMessage = offer
-        .map(_.toMessage)
-        .getOrElse(
-          throw new IllegalArgumentException(
-            s"Offer not found ${incomingOfferHash}"))
       handler <- connectToPeer(peerAddress)
     } yield {
+      val peer = NormalizedString(
+        peerAddress.getHostString + ":" + peerAddress.getPort)
+      val msg = NormalizedString(message)
+      val lnMessage = LnMessage(
+        DLCOfferMessageTLV(peer = peer, message = msg, offer = offerTLV))
+
       handler ! DLCDataHandler.Send(lnMessage)
     }
   }

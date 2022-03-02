@@ -107,11 +107,11 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
 
     case ServerCommand("offer-send", arr) =>
       withValidServerCommand(OfferSend.fromJsArr(arr)) {
-        case OfferSend(offerHash, address) =>
+        case OfferSend(address, message, offerTLV) =>
           complete {
             dlcNode
-              .sendDLCOffer(address, offerHash)
-              .map { _ => Server.httpSuccess(offerHash.hex) }
+              .sendDLCOffer(address, message, offerTLV)
+              .map { _ => Server.httpSuccess(offerTLV.hex) }
           }
       }
   }

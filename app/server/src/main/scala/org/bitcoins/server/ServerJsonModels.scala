@@ -1410,17 +1410,24 @@ object OfferRemove {
   }
 }
 
-case class OfferSend(hash: Sha256Digest, address: InetSocketAddress)
+case class OfferSend(
+    address: InetSocketAddress,
+    message: String,
+    offerTLV: DLCOfferTLV)
 
 object OfferSend {
 
   def fromJsArr(arr: ujson.Arr): Try[OfferSend] = {
     arr.arr.toList match {
-      case hashJs :: peerJs :: Nil =>
+      case peerJs :: messageJs :: offerJs :: Nil =>
         Try {
-          val hash = Sha256Digest.fromHex(hashJs.str)
           val peer = NetworkUtil.parseInetSocketAddress(peerJs.str, 2862)
-          OfferSend(hash, peer)
+          val message = messageJs.str
+          val offerTLV =
+            Try(LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str).tlv)
+              .orElse(Try(DLCOfferTLV.fromHex(offerJs.str)))
+              .get
+          OfferSend(peer, message, offerTLV)
         }
       case other =>
         val exn = new IllegalArgumentException(

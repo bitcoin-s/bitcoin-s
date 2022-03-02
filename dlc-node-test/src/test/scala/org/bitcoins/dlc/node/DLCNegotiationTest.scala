@@ -34,17 +34,13 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
       val connectAddress =
         InetSocketAddress.createUnresolved("127.0.0.1", port)
 
-      val serverF = DLCServer.bind(walletA, bindAddress, None)
-
       val handlerP = Promise[ActorRef]()
-      val clientF =
-        DLCClient.connect(Peer(connectAddress, socks5ProxyParams = None),
-                          walletB,
-                          Some(handlerP))
 
       for {
-        _ <- serverF
-        _ <- clientF
+        _ <- DLCServer.bind(walletA, bindAddress, None)
+        _ <- DLCClient.connect(Peer(connectAddress, socks5ProxyParams = None),
+                               walletB,
+                               Some(handlerP))
 
         handler <- handlerP.future
 
@@ -91,22 +87,20 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
       val connectAddress =
         InetSocketAddress.createUnresolved("127.0.0.1", port)
 
-      val serverF = DLCServer.bind(walletA, bindAddress, None)
-
       val handlerP = Promise[ActorRef]()
-      val clientF =
-        DLCClient.connect(Peer(connectAddress, socks5ProxyParams = None),
-                          walletB,
-                          Some(handlerP))
 
       for {
-        _ <- serverF
-        _ <- clientF
+        _ <- DLCServer.bind(walletA, bindAddress, None)
+        _ <- DLCClient.connect(Peer(connectAddress, socks5ProxyParams = None),
+                               walletB,
+                               Some(handlerP))
 
         handler <- handlerP.future
 
-        pre <- walletA.listIncomingDLCOffers()
-        _ = assert(pre.isEmpty)
+        preA <- walletA.listIncomingDLCOffers()
+        preB <- walletA.listIncomingDLCOffers()
+        _ = assert(preA.isEmpty)
+        _ = assert(preB.isEmpty)
 
         offer <- walletB.createDLCOffer(sampleContractInfo,
                                         half,
@@ -124,12 +118,15 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
         _ <- TestAsyncUtil.awaitConditionF { () =>
           walletA.listIncomingDLCOffers().map(_.nonEmpty)
         }
-        post <- walletA.listIncomingDLCOffers()
+        postA <- walletA.listIncomingDLCOffers()
+        postB <- walletB.listIncomingDLCOffers()
+
       } yield {
-        assert(post.nonEmpty)
-        assert(post.head.peer.get == "peer")
-        assert(post.head.message.get == "msg")
-        assert(post.head.offerTLV == offer.toTLV)
+        assert(postA.nonEmpty)
+        assert(postB.isEmpty)
+        assert(postA.head.peer.get == "peer")
+        assert(postA.head.message.get == "msg")
+        assert(postA.head.offerTLV == offer.toTLV)
       }
   }
 }

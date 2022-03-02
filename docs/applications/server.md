@@ -306,7 +306,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `message` - Peer's message or note (optional)
  - `"offer-remove` `hash` - Remove an incoming offer from inbox
     - `hash` - Hash of the offer TLV
-- `offer-send` `hash` `address` - Sends an offer specified by its hash to the IP/Tor address 
+- `offer-send` `peerAddress` `message` `offerTLV` - Sends an offer to a peer 
 - `offers-list` - List all incoming offers from the inbox
 
 ### Network
