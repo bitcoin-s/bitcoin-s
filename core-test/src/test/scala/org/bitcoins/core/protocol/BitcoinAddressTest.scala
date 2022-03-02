@@ -123,4 +123,11 @@ class BitcoinAddressTest extends BitcoinSUnitTest {
     val scriptPubKey = P2SHScriptPubKey(EmptyScriptPubKey)
     assert(Address.fromScriptPubKeyT(scriptPubKey, RegTest).isSuccess)
   }
+
+  it must "parse the spk" in {
+    val str = "bc1qfjex5a4m5w0atqrpwad3zj4vkfkuhun46tge9c"
+    val addr = BitcoinAddress.fromString(str)
+    println(
+      s"addr.spk=${addr.scriptPubKey.hex} asmHex=${addr.scriptPubKey.asmHex}")
+  }
 }

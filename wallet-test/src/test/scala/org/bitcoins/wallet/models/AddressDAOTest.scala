@@ -123,4 +123,37 @@ class AddressDAOTest extends WalletDAOFixture {
         assert(foundOpt.get.address == address)
       }
   }
+
+  it must "upsert an address into the database whose script is already being watched" in {
+    daos =>
+      val spkDAO = daos.scriptPubKeyDAO
+      val addressDAO = daos.addressDAO
+      val addrStr = "bc1qfjex5a4m5w0atqrpwad3zj4vkfkuhun46tge9c"
+      val address = Bech32Address.fromString(addrStr)
+      val spk = address.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0]
+      //insert the script first
+      val spkDb = ScriptPubKeyDb(address.scriptPubKey)
+      val createdSpkF = spkDAO.create(spkDb)
+
+      //now try to insert the address in the database
+      val segwitHdPath: SegWitHDPath =
+        SegWitHDPath.fromString("m/84'/0'/0'/0/0")
+      val pubKey: ECPublicKey = ECPublicKey.freshPublicKey
+      val addressDb = SegWitAddressDb.apply(segwitHdPath,
+                                            pubKey,
+                                            spk.pubKeyHash,
+                                            address,
+                                            EmptyScriptWitness,
+                                            spk)
+      for {
+        createdSpk <- createdSpkF
+        _ <- addressDAO.upsert(addressDb)
+        //make sure we can find it now
+        foundOpt <- addressDAO.read(address)
+      } yield {
+        assert(foundOpt.isDefined)
+        assert(foundOpt.get.scriptPubKeyId == createdSpk.id.get)
+        assert(foundOpt.get.address == address)
+      }
+  }
 }
