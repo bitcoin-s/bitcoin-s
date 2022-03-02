@@ -104,5 +104,15 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
           }
         }
       }
+
+    case ServerCommand("offer-send", arr) =>
+      withValidServerCommand(OfferSend.fromJsArr(arr)) {
+        case OfferSend(offerHash, address) =>
+          complete {
+            dlcNode
+              .sendDLCOffer(address, offerHash)
+              .map { _ => Server.httpSuccess(offerHash.hex) }
+          }
+      }
   }
 }

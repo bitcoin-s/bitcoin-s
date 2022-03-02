@@ -48,6 +48,11 @@ case class IncomingDLCOfferDAO()(implicit
     safeDatabase.run(query.delete)
   }
 
+  def find(pk: Sha256Digest): Future[Option[IncomingDLCOfferDb]] = {
+    val query = table.filter(_.hash === pk)
+    safeDatabase.run(query.result).map(_.headOption)
+  }
+
   class IncomingDLCOfferTable(tag: Tag)
       extends Table[IncomingDLCOfferDb](tag, schemaName, "incoming_offers") {
 

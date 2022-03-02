@@ -174,7 +174,8 @@ object TLV extends TLVParentFactory[TLV] {
       FundingSignaturesV0TLV,
       DLCOfferTLV,
       DLCAcceptTLV,
-      DLCSignTLV
+      DLCSignTLV,
+      DLCOfferMessageTLV
     ) ++ EventDescriptorTLV.allFactories ++
       PayoutCurvePieceTLV.allFactories ++
       ContractDescriptorTLV.allFactories ++
@@ -1686,6 +1687,38 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
 }
 
 sealed trait DLCSetupTLV extends TLV
+
+case class DLCOfferMessageTLV(
+    peer: NormalizedString,
+    message: NormalizedString,
+    offer: DLCOfferTLV)
+    extends DLCSetupTLV {
+
+  require(peer.length <= 1024, "peer length must not exceed 1024 characters")
+  require(message.length <= 1024,
+          "message length must not exceed 1024 characters")
+
+  override val tpe: BigSizeUInt = DLCOfferMessageTLV.tpe
+
+  override val value: ByteVector = {
+    strBytes(peer) ++ strBytes(message) ++ offer.bytes
+  }
+}
+
+object DLCOfferMessageTLV extends TLVFactory[DLCOfferMessageTLV] {
+
+  override val tpe: BigSizeUInt = BigSizeUInt(65534)
+
+  override val typeName: String = "DLCOfferMessageTLV"
+
+  override def fromTLVValue(value: ByteVector): DLCOfferMessageTLV = {
+    val iter = ValueIterator(value)
+    val peer = iter.takeString()
+    val message = iter.takeString()
+    val offer = iter.take(DLCOfferTLV)
+    DLCOfferMessageTLV(peer, message, offer)
+  }
+}
 
 case class DLCOfferTLV(
     protocolVersionOpt: Option[Int],

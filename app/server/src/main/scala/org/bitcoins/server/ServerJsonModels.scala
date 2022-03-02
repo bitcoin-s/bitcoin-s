@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
@@ -1384,7 +1385,7 @@ object OfferAdd {
         }
       case other =>
         val exn = new IllegalArgumentException(
-          s"Bad number or arguments to registerincomingoffer, got=${other.length} expected=3")
+          s"Bad number or arguments to offer-add, got=${other.length} expected=3")
         Failure(exn)
     }
   }
@@ -1403,7 +1404,27 @@ object OfferRemove {
         }
       case other =>
         val exn = new IllegalArgumentException(
-          s"Bad number or arguments to rejectincomingoffer, got=${other.length} expected=1")
+          s"Bad number or arguments to offer-remove, got=${other.length} expected=1")
+        Failure(exn)
+    }
+  }
+}
+
+case class OfferSend(hash: Sha256Digest, address: InetSocketAddress)
+
+object OfferSend {
+
+  def fromJsArr(arr: ujson.Arr): Try[OfferSend] = {
+    arr.arr.toList match {
+      case hashJs :: peerJs :: Nil =>
+        Try {
+          val hash = Sha256Digest.fromHex(hashJs.str)
+          val peer = NetworkUtil.parseInetSocketAddress(peerJs.str, 2862)
+          OfferSend(hash, peer)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to offer-send, got=${other.length} expected=1")
         Failure(exn)
     }
   }

@@ -3,6 +3,7 @@ package org.bitcoins.dlc.node
 import akka.actor.ActorRef
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models.DLCState
+import org.bitcoins.core.protocol.tlv.{DLCOfferMessageTLV, LnMessage}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.rpc.util.RpcUtil
@@ -78,5 +79,57 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
           maxTries = 15
         )
       } yield succeed
+  }
+
+  it must "receive an offer over" in {
+    fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = fundedDLCWallets._1.wallet
+      val walletB = fundedDLCWallets._2.wallet
+      val port = RpcUtil.randomPort
+      val bindAddress =
+        new InetSocketAddress("0.0.0.0", port)
+      val connectAddress =
+        InetSocketAddress.createUnresolved("127.0.0.1", port)
+
+      val serverF = DLCServer.bind(walletA, bindAddress, None)
+
+      val handlerP = Promise[ActorRef]()
+      val clientF =
+        DLCClient.connect(Peer(connectAddress, socks5ProxyParams = None),
+                          walletB,
+                          Some(handlerP))
+
+      for {
+        _ <- serverF
+        _ <- clientF
+
+        handler <- handlerP.future
+
+        pre <- walletA.listIncomingDLCOffers()
+        _ = assert(pre.isEmpty)
+
+        offer <- walletB.createDLCOffer(sampleContractInfo,
+                                        half,
+                                        Some(SatoshisPerVirtualByte.one),
+                                        UInt32.zero,
+                                        UInt32.one,
+                                        None,
+                                        None)
+        tlv = DLCOfferMessageTLV(peer = "peer",
+                                 message = "msg",
+                                 offer = offer.toTLV)
+
+        _ = handler ! DLCDataHandler.Send(LnMessage(tlv))
+
+        _ <- TestAsyncUtil.awaitConditionF { () =>
+          walletA.listIncomingDLCOffers().map(_.nonEmpty)
+        }
+        post <- walletA.listIncomingDLCOffers()
+      } yield {
+        assert(post.nonEmpty)
+        assert(post.head.peer.get == "peer")
+        assert(post.head.message.get == "msg")
+        assert(post.head.offerTLV == offer.toTLV)
+      }
   }
 }

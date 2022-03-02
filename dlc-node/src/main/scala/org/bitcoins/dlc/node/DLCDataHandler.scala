@@ -51,6 +51,13 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
         for {
           _ <- dlcWalletApi.registerIncomingDLCOffer(dlcOffer, None, None)
         } yield ()
+      case dlcOfferMessage: DLCOfferMessageTLV =>
+        for {
+          _ <- dlcWalletApi.registerIncomingDLCOffer(
+            offerTLV = dlcOfferMessage.offer,
+            peer = Some(dlcOfferMessage.peer),
+            message = Some(dlcOfferMessage.message))
+        } yield ()
       case dlcAccept: DLCAcceptTLV =>
         val f = for {
           sign <- dlcWalletApi.signDLC(dlcAccept)

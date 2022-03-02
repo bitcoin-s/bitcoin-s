@@ -125,6 +125,9 @@ trait DLCWalletApi { self: WalletApi =>
   def listIncomingDLCOffers(): Future[Vector[IncomingDLCOfferDb]]
 
   def rejectIncomingDLCOffer(offerHash: Sha256Digest): Future[Unit]
+
+  def findIncomingDLCOffer(
+      offerHash: Sha256Digest): Future[Option[IncomingDLCOfferDb]]
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */
