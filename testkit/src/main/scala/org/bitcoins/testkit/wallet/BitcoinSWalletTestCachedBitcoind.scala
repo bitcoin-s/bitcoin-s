@@ -137,6 +137,18 @@ trait BitcoinSWalletTestCachedBitcoindNewest
     extends BitcoinSWalletTestCachedBitcoind
     with CachedBitcoindNewest {
 
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val f: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      futOutcome = withFundedWalletAndBitcoindCached(
+        test,
+        getBIP39PasswordOpt(),
+        bitcoind)(getFreshWalletAppConfig)
+      fut <- futOutcome.toFuture
+    } yield fut
+    new FutureOutcome(f)
+  }
+
   override def afterAll(): Unit = {
     super[CachedBitcoindNewest].afterAll()
     super[BitcoinSWalletTestCachedBitcoind].afterAll()
