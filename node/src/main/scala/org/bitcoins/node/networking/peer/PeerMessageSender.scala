@@ -55,8 +55,10 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
         logger.warn(err)
         Future.unit
     }
-
   }
+
+//  /** disconnect and stop client */
+//  def disconnectForce()
 
   /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */
   def sendVersionMessage(): Future[Unit] = {

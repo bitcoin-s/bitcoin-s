@@ -108,7 +108,12 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
                 node.peerManager.removeTestPeer(peer)
               }
               createInDbF.map(_ => ())
-            }else Future.unit
+            }else{
+              logger.info(s"Removing peer $peer")
+              node.peerManager.removeTestPeer(peer)
+            }
+          case NodeType.SpvNode =>
+            node.peerManager.createInDb(peer).map(_ => ())
         }
       case nodeType: ExternalImplementationNodeType =>
         nodeType match {

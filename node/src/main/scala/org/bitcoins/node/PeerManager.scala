@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import akka.actor.{ActorSystem, Cancellable}
+import akka.actor.{ActorSystem, Cancellable, PoisonPill}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.p2p.{AddrV2Message, ServiceIdentifier}
 import org.bitcoins.core.util.NetworkUtil
@@ -54,7 +54,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
                                             delay = 8.seconds) {
       new Runnable() {
         override def run(): Unit = {
-          logger.info(s"${testPeerData.size} is test size")
+          logger.info(s"${testPeerData.size} is test size ${testPeerData.keys}")
           val peersInDbCountF = PeerDAO().count()
           peersInDbCountF.map(cnt =>
             if (cnt > maxPeerSearchCount) peerConnectionScheduler.cancel())
@@ -64,7 +64,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
             peerDiscoveryStack.pushAll(getPeersFromDnsSeeds)
           }
 
-          if(testPeerData.size < 10) {
+          if(testPeerData.size < 6) {
             val peers = for {_ <- 0 to 5} yield peerDiscoveryStack.pop()
             peers.foreach(peer => {
               addTestPeer(peer)
@@ -209,16 +209,11 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   }
 
   def removeTestPeer(peer: Peer): Future[Unit] = {
+    //todo: when can this happen?
     if (_testPeerData.contains(peer)) {
-      val connF = testPeerData(peer).peerMessageSender.isConnected()
-      val disconnectF = connF.map { conn =>
-        if (conn) testPeerData(peer).peerMessageSender.disconnect()
-        else Future.unit
-      }
-      for {
-        _ <- disconnectF
-        _ = _testPeerData.remove(peer)
-      } yield ()
+      testPeerData(peer).peerMessageSender.client.actor.!(PoisonPill)
+      _testPeerData.remove(peer)
+      Future.unit
     } else {
       logger.debug(s"Key $peer not found in peerData")
       Future.unit
