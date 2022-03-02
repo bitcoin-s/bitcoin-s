@@ -1,5 +1,3 @@
-package org.bitcoins.core.util
-
 import scala.util.Properties
 
 object EnvUtil {
@@ -37,12 +35,12 @@ object EnvUtil {
       Some(split(1).toInt)
     }
   }
-
-  /** Parses the version number from a string of format
+  /**
+    * Parses the version number from a string of format
     * 1.9.0-9-eddcc94b-SNAPSHOT
     *
     * This method will return "1.9.0"
-    */
+    * */
   def parseVersion(version: String): String = {
     val split = version.split("-")
     split.head

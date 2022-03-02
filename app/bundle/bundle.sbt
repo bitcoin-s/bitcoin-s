@@ -18,7 +18,14 @@ assembly / assemblyJarName := s"${name.value}.jar"
 
 //need compatibility with windows versioning scheme which is
 //w.x.y.z
-Windows / version := CommonSettings.previousStableVersion
+Windows / version := {
+  val commitNumberOpt = EnvUtil.parseCommitsSinceLastTag(version.value)
+  val versionStr = EnvUtil.parseVersion(version.value)
+  commitNumberOpt match {
+    case Some(commitNumber) => versionStr + s".${commitNumber}"
+    case None => versionStr
+  }
+}
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", _ @_*)       => MergeStrategy.discard
@@ -35,7 +42,7 @@ packageDescription := "Bitcoin-S"
 
 // wix build information
 wixProductId := java.util.UUID.randomUUID().toString
-wixProductUpgradeId := java.util.UUID.randomUUID().toString
+wixProductUpgradeId := "40055D9F-9172-4ED0-AF51-E4869D0AD689"
 
 // Adding the wanted wixFeature:
 wixFeatures += WindowsFeature(
