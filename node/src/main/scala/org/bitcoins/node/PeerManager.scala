@@ -79,9 +79,9 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     */
   def setPeerForUse(peer: Peer): Future[Unit] = {
     require(testPeerData.contains(peer), "Unknown peer marked as usable")
+    _peerData.addOne((peer, peerDataOf(peer)))
     logger.info(
       s"Connected to peer $peer. Connected peer count $connectedPeerCount")
-    _peerData.addOne((peer, peerDataOf(peer)))
     _testPeerData.remove(peer)
     peerData(peer).peerMessageSender.sendGetAddrMessage()
   }
