@@ -41,7 +41,7 @@ class PeerMessageReceiver(
           _: InitializedDisconnectDone | _: Disconnected) =>
         throw new RuntimeException(s"Cannot call connect when in state=${bad}")
       case Preconnection =>
-        logger.info(s"Connection established with peer=${peer}")
+        logger.debug(s"Connection established with peer=${peer}")
 
         val newState = Preconnection.toInitializing(client)
 

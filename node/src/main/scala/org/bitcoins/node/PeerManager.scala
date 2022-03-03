@@ -50,21 +50,18 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     1000 //number of peers in db at which we stop peer discovery
 
   lazy val peerConnectionScheduler: Cancellable =
-    system.scheduler.scheduleWithFixedDelay(initialDelay = 8.seconds,
+    system.scheduler.scheduleWithFixedDelay(initialDelay = 4.seconds,
                                             delay = 8.seconds) {
       new Runnable() {
         override def run(): Unit = {
-          logger.info(s"${testPeerData.size} is test size ${testPeerData.keys}")
           val peersInDbCountF = PeerDAO().count()
           peersInDbCountF.map(cnt =>
             if (cnt > maxPeerSearchCount) peerConnectionScheduler.cancel())
 
           if (peerDiscoveryStack.size < 16) {
-            logger.info("Taking peers from dns seeds")
             peerDiscoveryStack.pushAll(getPeersFromDnsSeeds)
           }
 
-          logger.info(s"Test peer data size ${testPeerData.size}")
           val peers = for { _ <- 1 to 16 } yield peerDiscoveryStack.pop()
           peers.foreach(peer => {
             addTestPeer(peer)
@@ -263,11 +260,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     logger.info("Waiting for peer connection")
     AsyncUtil
       .retryUntilSatisfied(
-        {
-          logger.info(s"Checking if peer found ${peerData.size}")
-          peerData.foreach(x => logger.info(s"$x ${f(x._2.serviceIdentifier)}"))
-          peerData.exists(x => f(x._2.serviceIdentifier))
-        },
+        peerData.exists(x => f(x._2.serviceIdentifier)),
         interval = 1.seconds,
         maxTries = 600 //times out in 10 minutes
       )
@@ -284,7 +277,6 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
             maxTries = 30,
             interval = 250.millis)
           .recover { case NonFatal(_) =>
-            logger.info(s"Failed to initialize $peer ${testPeerData.keys}")
             removeTestPeer(peer);
           }
       } yield ()

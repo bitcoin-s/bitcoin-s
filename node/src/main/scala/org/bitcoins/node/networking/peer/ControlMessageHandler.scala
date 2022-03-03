@@ -134,7 +134,6 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
   }
 
   def onPeerInitialization(peer: Peer): Future[Unit] = {
-    logger.info(s"Initialized peer $peer")
     node.nodeAppConfig.nodeType match {
       case nodeType: InternalImplementationNodeType =>
         nodeType match {
@@ -147,7 +146,6 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
                 .serviceIdentifier
                 .nodeCompactFilters
             ) {
-              logger.info(s"is init and cf $peer")
               val createInDbF = node.peerManager.createInDb(peer)
               val managePeerF =
                 if (
@@ -155,7 +153,6 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
                 ) {
                   node.peerManager.setPeerForUse(peer)
                 } else {
-                  logger.info(s"Removing peer $peer")
                   node.peerManager.removeTestPeer(peer)
                 }
               for {
@@ -163,7 +160,6 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
                 _ <- managePeerF
               } yield ()
             } else {
-              logger.info(s"Removing peer $peer")
               node.peerManager.removeTestPeer(peer)
             }
           case NodeType.SpvNode =>

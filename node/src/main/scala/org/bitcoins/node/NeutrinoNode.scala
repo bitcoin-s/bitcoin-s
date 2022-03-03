@@ -79,7 +79,6 @@ case class NeutrinoNode(
     * @return
     */
   override def sync(): Future[Unit] = {
-    logger.info("Sync function called")
     val blockchainsF =
       BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
     val syncPeer = peerManager.peerUsedForSync.getOrElse(
