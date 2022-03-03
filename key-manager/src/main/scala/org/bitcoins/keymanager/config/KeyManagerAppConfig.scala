@@ -115,12 +115,12 @@ case class KeyManagerAppConfig(
         kmEntropy.getRootXPub == kmRootXpub,
         s"Xpubs were different, generated from entropy=${kmEntropy.getRootXPub} keymanager xpub on disk=$kmRootXpub")
       logger.info(
-        s"Starting key manager with seedPath=${seedPath.toAbsolutePath}")
+        s"Starting key manager with seedPath=${seedPath.toAbsolutePath}, rootXpub=${kmRootXpub}")
       Future.unit
     } else {
-
+      val kmRootXpub = toBip39KeyManager.getRootXPub
       logger.info(
-        s"Starting keymanager with seedPath=${seedPath.toAbsolutePath}")
+        s"Starting keymanager with seedPath=${seedPath.toAbsolutePath}, rootXpub=${kmRootXpub}")
       Future.unit
     }
   }
