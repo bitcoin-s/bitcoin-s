@@ -3,7 +3,7 @@ package org.bitcoins.dlc.node
 import akka.actor.ActorRef
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models.DLCState
-import org.bitcoins.core.protocol.tlv.{DLCOfferMessageTLV, LnMessage}
+import org.bitcoins.core.protocol.tlv.{LnMessage, SendOfferTLV}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.rpc.util.RpcUtil
@@ -109,9 +109,7 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
                                         UInt32.one,
                                         None,
                                         None)
-        tlv = DLCOfferMessageTLV(peer = "peer",
-                                 message = "msg",
-                                 offer = offer.toTLV)
+        tlv = SendOfferTLV(peer = "peer", message = "msg", offer = offer.toTLV)
 
         _ = handler ! DLCDataHandler.Send(LnMessage(tlv))
 

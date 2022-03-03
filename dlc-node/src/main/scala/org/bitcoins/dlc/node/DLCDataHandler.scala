@@ -51,7 +51,7 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
         for {
           _ <- dlcWalletApi.registerIncomingDLCOffer(dlcOffer, None, None)
         } yield ()
-      case dlcOfferMessage: DLCOfferMessageTLV =>
+      case dlcOfferMessage: SendOfferTLV =>
         for {
           _ <- dlcWalletApi.registerIncomingDLCOffer(
             offerTLV = dlcOfferMessage.offer,

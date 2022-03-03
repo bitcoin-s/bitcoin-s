@@ -86,7 +86,7 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
         localAddress.getHostString + ":" + peerAddress.getPort)
       val msg = NormalizedString(message)
       val lnMessage = LnMessage(
-        DLCOfferMessageTLV(peer = peer, message = msg, offer = offerTLV))
+        SendOfferTLV(peer = peer, message = msg, offer = offerTLV))
       handler ! DLCDataHandler.Send(lnMessage)
       offerTLV.tempContractId
     }

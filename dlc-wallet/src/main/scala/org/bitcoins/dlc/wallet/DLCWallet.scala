@@ -1598,7 +1598,8 @@ abstract class DLCWallet
     }
   }
 
-  override def getDLCOffer(dlcId:Sha256Digest): Future[Option[DLCOffer]] = dlcDataManagement.getOffer(dlcId, transactionDAO)
+  override def getDLCOffer(dlcId: Sha256Digest): Future[Option[DLCOffer]] =
+    dlcDataManagement.getOffer(dlcId, transactionDAO)
 
   override def findDLCByTemporaryContractId(
       tempContractId: Sha256Digest): Future[Option[DLCStatus]] = {
