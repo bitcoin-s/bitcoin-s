@@ -58,7 +58,9 @@ case class NeutrinoNode(
       _ <- peerManager.awaitPeerWithService(_.nodeCompactFilters)
       syncPeer = peerManager.randomPeerWithService(_.nodeCompactFilters)
       _ = peerManager.setPeerUsedForSync(syncPeer)
-        _ <- peerManager.peerDataOf(syncPeer).peerMessageSender
+      _ <- peerManager
+        .peerDataOf(syncPeer)
+        .peerMessageSender
         .sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
     } yield {
       node.asInstanceOf[NeutrinoNode]
@@ -80,7 +82,8 @@ case class NeutrinoNode(
     logger.info("Sync function called")
     val blockchainsF =
       BlockHeaderDAO()(executionContext, chainConfig).getBlockchains()
-    val syncPeer = peerManager.peerUsedForSync.getOrElse(throw new RuntimeException("Sync peer not set"))
+    val syncPeer = peerManager.peerUsedForSync.getOrElse(
+      throw new RuntimeException("Sync peer not set"))
     for {
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
@@ -89,7 +92,10 @@ case class NeutrinoNode(
       blockchains <- blockchainsF
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      _ <- peerManager.peerDataOf(syncPeer).peerMessageSender.sendGetHeadersMessage(cachedHeaders)
+      _ <- peerManager
+        .peerDataOf(syncPeer)
+        .peerMessageSender
+        .sendGetHeadersMessage(cachedHeaders)
       _ <- syncFilters(bestFilterHeaderOpt = bestFilterHeaderOpt,
                        bestFilterOpt = bestFilterOpt,
                        bestBlockHeader = header,
@@ -141,8 +147,9 @@ case class NeutrinoNode(
       bestFilterHeader: CompactFilterHeaderDb,
       chainApi: ChainApi,
       bestFilterOpt: Option[CompactFilterDb]): Future[Unit] = {
-    val syncPeer = peerManager.peerUsedForSync.getOrElse(throw new RuntimeException("Sync peer not set"))
-    val syncPeerMsgSender=peerManager.peerDataOf(syncPeer).peerMessageSender
+    val syncPeer = peerManager.peerUsedForSync.getOrElse(
+      throw new RuntimeException("Sync peer not set"))
+    val syncPeerMsgSender = peerManager.peerDataOf(syncPeer).peerMessageSender
     val sendCompactFilterHeaderMsgF = {
       syncPeerMsgSender
         .sendNextGetCompactFilterHeadersCommand(

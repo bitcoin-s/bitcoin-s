@@ -134,10 +134,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   /** starting sync after reconnecting
     * currently, if the peer reconnected is the one that was syncing earlier, only then call sync
     */
-  def reconnectSync(peer: Peer): Future[Unit] ={
+  def reconnectSync(peer: Peer): Future[Unit] = {
     peerManager.peerUsedForSync match {
-      case Some(value) => if(peer==value) sync() else Future.unit
-      case None => Future.unit
+      case Some(value) => if (peer == value) sync() else Future.unit
+      case None        => Future.unit
     }
   }
 
@@ -192,7 +192,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val blockchainsF =
       BlockHeaderDAO()(executionContext, chainAppConfig).getBlockchains()
     //for non neutrino nodes, sync peer may not have been set earlier (?)
-    val syncPeer = peerManager.peerUsedForSync.getOrElse(throw new RuntimeException("Sync peer not set"))
+    val syncPeer = peerManager.peerUsedForSync.getOrElse(
+      throw new RuntimeException("Sync peer not set"))
     for {
       chainApi <- chainApiFromDb()
       header <- chainApi.getBestBlockHeader()
@@ -200,7 +201,10 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
       // Get all of our cached headers in case of a reorg
       cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      _ <- peerManager.peerDataOf(syncPeer).peerMessageSender.sendGetHeadersMessage(cachedHeaders)
+      _ <- peerManager
+        .peerDataOf(syncPeer)
+        .peerMessageSender
+        .sendGetHeadersMessage(cachedHeaders)
     } yield {
       logger.info(
         s"Starting sync node, height=${header.height} hash=${header.hashBE}")

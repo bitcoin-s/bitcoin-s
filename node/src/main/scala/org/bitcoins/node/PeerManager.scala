@@ -59,16 +59,16 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
           peersInDbCountF.map(cnt =>
             if (cnt > maxPeerSearchCount) peerConnectionScheduler.cancel())
 
-          if (peerDiscoveryStack.size < 10) {
+          if (peerDiscoveryStack.size < 16) {
             logger.info("Taking peers from dns seeds")
             peerDiscoveryStack.pushAll(getPeersFromDnsSeeds)
           }
 
           logger.info(s"Test peer data size ${testPeerData.size}")
-            val peers = for {_ <- 0 to 10} yield peerDiscoveryStack.pop()
-            peers.foreach(peer => {
-              addTestPeer(peer)
-            })
+          val peers = for { _ <- 1 to 16 } yield peerDiscoveryStack.pop()
+          peers.foreach(peer => {
+            addTestPeer(peer)
+          })
         }
       }
     }
@@ -79,7 +79,8 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     */
   def setPeerForUse(peer: Peer): Future[Unit] = {
     require(testPeerData.contains(peer), "Unknown peer marked as usable")
-    logger.info(s"Connected to peer $peer. Connected peer count $connectedPeerCount")
+    logger.info(
+      s"Connected to peer $peer. Connected peer count $connectedPeerCount")
     _peerData.addOne((peer, peerDataOf(peer)))
     _testPeerData.remove(peer)
     peerData(peer).peerMessageSender.sendGetAddrMessage()
@@ -87,14 +88,16 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
 
   //for reconnect, we would only want to call node.sync if the peer reconnected is the one that was
   //already syncing. So storing that.
-  private var _peerUsedForSync : Option[Peer] = None
+  private var _peerUsedForSync: Option[Peer] = None
 
-  def peerUsedForSync:Option[Peer]=  _peerUsedForSync
+  def peerUsedForSync: Option[Peer] = _peerUsedForSync
 
   def setPeerUsedForSync(peer: Peer): Unit = {
     _peerUsedForSync match {
-      case Some(syncPeer) => throw new RuntimeException(s"Already set sync peer as $syncPeer. Cannot set again.")
-      case None => _peerUsedForSync=Some(peer)
+      case Some(syncPeer) =>
+        throw new RuntimeException(
+          s"Already set sync peer as $syncPeer. Cannot set again.")
+      case None => _peerUsedForSync = Some(peer)
     }
   }
 
@@ -217,8 +220,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     }
   }
 
-  def randomPeerWithService(
-      f: ServiceIdentifier => Boolean): Peer = {
+  def randomPeerWithService(f: ServiceIdentifier => Boolean): Peer = {
     val filteredPeers =
       peerData.filter(p => f(p._2.serviceIdentifier)).toVector
     if (filteredPeers.isEmpty) {
@@ -251,19 +253,23 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   //in a simple statement
   /** get [[PeerData]] for a [[Peer]] */
   def peerDataOf(peer: Peer): PeerData = {
-    peerData.getOrElse(peer, testPeerData.getOrElse(peer, throw new RuntimeException(s"Key $peer not found")))
+    peerData.getOrElse(peer,
+                       testPeerData.getOrElse(
+                         peer,
+                         throw new RuntimeException(s"Key $peer not found")))
   }
 
   def awaitPeerWithService(f: ServiceIdentifier => Boolean): Future[Unit] = {
     logger.info("Waiting for peer connection")
     AsyncUtil
-      .retryUntilSatisfied({
-        logger.info(s"Checking if peer found ${peerData.size}")
-        peerData.foreach(x=>logger.info(s"$x ${f(x._2.serviceIdentifier)}"))
-        peerData.exists(x=>f(x._2.serviceIdentifier))
-      },
-                           interval = 1.seconds,
-                           maxTries = 600 //times out in 10 minutes
+      .retryUntilSatisfied(
+        {
+          logger.info(s"Checking if peer found ${peerData.size}")
+          peerData.foreach(x => logger.info(s"$x ${f(x._2.serviceIdentifier)}"))
+          peerData.exists(x => f(x._2.serviceIdentifier))
+        },
+        interval = 1.seconds,
+        maxTries = 600 //times out in 10 minutes
       )
       .map(_ => logger.info("Connected to peer. Starting sync."))
   }
@@ -275,7 +281,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
         _ <- AsyncUtil
           .retryUntilSatisfiedF(
             () => peerDataOf(peer).peerMessageSender.isInitialized(),
-            maxTries = 10,
+            maxTries = 30,
             interval = 250.millis)
           .recover { case NonFatal(_) =>
             logger.info(s"Failed to initialize $peer ${testPeerData.keys}")

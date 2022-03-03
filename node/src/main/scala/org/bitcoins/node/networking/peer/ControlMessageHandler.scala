@@ -1,6 +1,10 @@
 package org.bitcoins.node.networking.peer
 
-import org.bitcoins.core.api.node.{ExternalImplementationNodeType, InternalImplementationNodeType, NodeType}
+import org.bitcoins.core.api.node.{
+  ExternalImplementationNodeType,
+  InternalImplementationNodeType,
+  NodeType
+}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.models.Peer
@@ -37,7 +41,7 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
             val newRecv = peerMessageReceiver.toState(newState)
 
             //
-            if(node.peerManager.testPeerData.contains(peer)) {
+            if (node.peerManager.testPeerData.contains(peer)) {
               node.peerManager
                 .testPeerData(peer)
                 .setServiceIdentifier(versionMsg.services)
@@ -45,7 +49,7 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
                 _ <- sender.sendVerackMessage()
                 _ <- onPeerInitialization(peer)
               } yield newRecv
-            }else{
+            } else {
               Future(newRecv)
             }
         }
@@ -98,12 +102,11 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
               case Success(ipv4Bytes) =>
                 ipv4Bytes
             }
-            logger.info(s"Peer from addr: $bytes")
             val inetAddress =
               NetworkUtil.parseInetSocketAddress(bytes, networkAddress.port)
             val peer = Peer.fromSocket(socket = inetAddress,
-              socks5ProxyParams =
-                node.nodeAppConfig.socks5ProxyParams)
+                                       socks5ProxyParams =
+                                         node.nodeAppConfig.socks5ProxyParams)
             node.peerManager.peerDiscoveryStack.push(peer)
           }
         }
@@ -114,8 +117,8 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
         val inetAddress =
           NetworkUtil.parseInetSocketAddress(bytes, port)
         val peer = Peer.fromSocket(socket = inetAddress,
-          socks5ProxyParams =
-            node.nodeAppConfig.socks5ProxyParams)
+                                   socks5ProxyParams =
+                                     node.nodeAppConfig.socks5ProxyParams)
         addr match {
           case IPv4AddrV2Message(_, _, _, _) | IPv6AddrV2Message(_, _, _, _) =>
             if (services.nodeCompactFilters)
@@ -131,27 +134,35 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
   }
 
   def onPeerInitialization(peer: Peer): Future[Unit] = {
+    logger.info(s"Initialized peer $peer")
     node.nodeAppConfig.nodeType match {
       case nodeType: InternalImplementationNodeType =>
         nodeType match {
           case NodeType.FullNode =>
             throw new Exception("Node cannot be FullNode")
           case NodeType.NeutrinoNode =>
-            if(node.peerManager.peerDataOf(peer).serviceIdentifier.nodeCompactFilters) {
+            if (
+              node.peerManager
+                .peerDataOf(peer)
+                .serviceIdentifier
+                .nodeCompactFilters
+            ) {
+              logger.info(s"is init and cf $peer")
               val createInDbF = node.peerManager.createInDb(peer)
-              val managePeerF=if (
-                node.peerManager.connectedPeerCount < node.nodeAppConfig.maxConnectedPeers
-              ) {
-                node.peerManager.setPeerForUse(peer)
-              } else {
-                logger.info(s"Removing peer $peer")
-                node.peerManager.removeTestPeer(peer)
-              }
-              for{
+              val managePeerF =
+                if (
+                  node.peerManager.connectedPeerCount < node.nodeAppConfig.maxConnectedPeers
+                ) {
+                  node.peerManager.setPeerForUse(peer)
+                } else {
+                  logger.info(s"Removing peer $peer")
+                  node.peerManager.removeTestPeer(peer)
+                }
+              for {
                 _ <- createInDbF
                 _ <- managePeerF
               } yield ()
-            }else{
+            } else {
               logger.info(s"Removing peer $peer")
               node.peerManager.removeTestPeer(peer)
             }
