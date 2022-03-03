@@ -527,13 +527,21 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[
     Seq[SpendingInfoDb]] = {
 
+    val spks = outputsWithIndex.map(_.output.scriptPubKey).toVector
+
     val addressDbsF: Future[Vector[AddressDb]] = {
-      getAddressDbs(outputsWithIndex.map(_.output.scriptPubKey).toVector)
+      getAddressDbs(spks)
     }
 
     val addressDbWithOutputF = for {
       addressDbs <- addressDbsF
-    } yield matchAddressDbWithOutputs(addressDbs, outputsWithIndex.toVector)
+    } yield {
+      if (addressDbs.isEmpty) {
+        logger.warn(
+          s"Found zero addresses in the database to match an output we have a script for, txid=${transaction.txIdBE.hex} outputs=${outputsWithIndex}")
+      }
+      matchAddressDbWithOutputs(addressDbs, outputsWithIndex.toVector)
+    }
 
     val nested = for {
       addressDbWithOutput <- addressDbWithOutputF
