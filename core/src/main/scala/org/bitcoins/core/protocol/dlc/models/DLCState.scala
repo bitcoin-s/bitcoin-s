@@ -101,6 +101,15 @@ object DLCState extends StringFactory[DLCState] {
                                      RemoteClaimed,
                                      Refunded)
 
+  /** The states where you can cancel a DLC in your wallet */
+  val cancellableState = Vector(
+    Offered,
+    AcceptComputingAdaptorSigs,
+    Accepted,
+    SignComputingAdaptorSigs,
+    Signed
+  )
+
   override def fromString(str: String): DLCState = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase) match {
       case Some(state) => state

@@ -246,8 +246,8 @@ abstract class DLCWallet
       dlcDb = dlcOpt match {
         case Some(db) =>
           require(
-            db.state == DLCState.Offered || db.state == DLCState.Accepted || db.state == DLCState.Signed,
-            "Cannot cancel a DLC after it has been signed")
+            DLCState.cancellableState.exists(_ == db.state),
+            s"Cannot cancel a DLC after it has been signed, state=${db.state}")
           db
         case None =>
           throw new IllegalArgumentException(
