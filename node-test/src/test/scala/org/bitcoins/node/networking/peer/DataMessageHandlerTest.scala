@@ -50,11 +50,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           chainApi.processHeaders(invalidPayload.headers))
 
         // Verify we handle the payload correctly
-<<<<<<< HEAD
-        _ <- dataMessageHandler.handleDataPayload(invalidPayload, sender, node)
-=======
         _ <- dataMessageHandler.handleDataPayload(invalidPayload, sender)
->>>>>>> f54be1796 (fix tests, formatting)
       } yield succeed
   }
 
@@ -120,11 +116,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
                                                     node.nodeAppConfig,
                                                     node.chainConfig)
 
-<<<<<<< HEAD
-        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
-=======
         _ <- dataMessageHandler.handleDataPayload(payload, sender)
->>>>>>> f54be1796 (fix tests, formatting)
         result <- resultP.future
       } yield assert(result == Vector(header))
   }
