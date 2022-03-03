@@ -48,6 +48,13 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
   }
   private val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
 
+  private[wallet] def getOffer(
+      dlcId: Sha256Digest,
+      txDAO: TransactionDAO): Future[Option[DLCOffer]] = {
+    val dataF = getDLCFundingData(dlcId, txDAO)
+    dataF.map(data => data.map(_.offer))
+  }
+
   private[wallet] def getDLCAnnouncementDbs(dlcId: Sha256Digest): Future[(
       Vector[DLCAnnouncementDb],
       Vector[OracleAnnouncementDataDb],
@@ -203,7 +210,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     }
   }
 
-  private def getDLCOfferData(
+  private[wallet] def getDLCOfferData(
       dlcId: Sha256Digest,
       transactionDAO: TransactionDAO): Future[Option[OfferedDbState]] = {
 

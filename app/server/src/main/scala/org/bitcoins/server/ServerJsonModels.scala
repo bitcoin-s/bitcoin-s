@@ -1413,7 +1413,7 @@ object OfferRemove {
 case class OfferSend(
     remoteAddress: InetSocketAddress,
     message: String,
-    offerTLV: DLCOfferTLV)
+    offerE: Either[DLCOfferTLV, Sha256Digest])
 
 object OfferSend {
 
@@ -1424,11 +1424,13 @@ object OfferSend {
           val peerAddress =
             NetworkUtil.parseInetSocketAddress(peerAddressJs.str, 2862)
           val message = messageJs.str
-          val offerTLV =
+          val offerE =
             Try(LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str).tlv)
-              .orElse(Try(DLCOfferTLV.fromHex(offerJs.str)))
-              .get
-          OfferSend(peerAddress, message, offerTLV)
+              .orElse(Try(DLCOfferTLV.fromHex(offerJs.str))) match {
+              case Success(o) => Left(o)
+              case Failure(_) => Right(Sha256Digest.fromHex(offerJs.str))
+            }
+          OfferSend(peerAddress, message, offerE)
         }
       case other =>
         val exn = new IllegalArgumentException(
