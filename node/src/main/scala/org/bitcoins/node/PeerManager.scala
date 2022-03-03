@@ -50,7 +50,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     1000 //number of peers in db at which we stop peer discovery
 
   lazy val peerConnectionScheduler: Cancellable =
-    system.scheduler.scheduleWithFixedDelay(initialDelay = 0.seconds,
+    system.scheduler.scheduleWithFixedDelay(initialDelay = 8.seconds,
                                             delay = 8.seconds) {
       new Runnable() {
         override def run(): Unit = {
@@ -191,9 +191,9 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     for {
       peersFromDb <- getPeersFromDb
     } yield {
+      peersFromConfig.foreach(addTestPeer)
       peerDiscoveryStack.pushAll(Random.shuffle(peersFromResources))
       peerDiscoveryStack.pushAll(Random.shuffle(peersFromDb))
-      peerDiscoveryStack.pushAll(Random.shuffle(peersFromConfig))
       peerConnectionScheduler //start scheduler
       ()
     }
