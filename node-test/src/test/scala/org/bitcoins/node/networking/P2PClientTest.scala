@@ -181,8 +181,9 @@ class P2PClientTest
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =
       peerMessageReceiverF.map { peerMsgRecv =>
-        TestActorRef(P2PClient.props(peer, peerMsgRecv, { () => Future.unit }),
-                     probe.ref)
+        TestActorRef(
+          P2PClient.props(peer, peerMsgRecv, { (_: Peer) => Future.unit }),
+          probe.ref)
       }
     val p2pClientF: Future[P2PClient] = clientActorF.map {
       client: TestActorRef[P2PClientActor] =>

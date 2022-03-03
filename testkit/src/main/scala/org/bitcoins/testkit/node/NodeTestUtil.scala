@@ -21,7 +21,7 @@ abstract class NodeTestUtil extends P2PLogger {
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(implicit
       ref: ActorRefFactory,
       conf: NodeAppConfig): P2PClient = {
-    P2PClient.apply(ref, peer, peerMsgReceiver, { () => Future.unit })
+    P2PClient.apply(ref, peer, peerMsgReceiver, { (_: Peer) => Future.unit })
   }
 
   /** Helper method to get the [[java.net.InetSocketAddress]]

@@ -79,7 +79,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     */
   def setPeerForUse(peer: Peer): Future[Unit] = {
     require(testPeerData.contains(peer), "Unknown peer marked as usable")
-    _peerData.addOne((peer, peerDataOf(peer)))
+    _peerData(peer) = peerDataOf(peer)
     logger.info(
       s"Connected to peer $peer. Connected peer count $connectedPeerCount")
     _testPeerData.remove(peer)
@@ -166,7 +166,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   /** Returns peers from bitcoin-s.config file unless peers are supplied as an argument to [[PeerManager]] in which
     * case it returns those.
     */
-  private def getPeersFromConfig: Vector[Peer] = {
+  def getPeersFromConfig: Vector[Peer] = {
     if (configPeers.nonEmpty) {
       configPeers
     } else {

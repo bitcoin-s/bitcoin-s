@@ -152,9 +152,9 @@ object NodeUnitTest extends P2PLogger {
     for {
       node <- nodeF
       _ <- node.nodeConfig.start()
-      peers <- node.peerManager.getPeers
     } yield {
-      peers.foreach(node.peerManager.addPeer)
+      val peers = node.peerManager.getPeersFromConfig
+      peers.foreach(node.peerManager.addTestPeer)
       node
     }
   }
