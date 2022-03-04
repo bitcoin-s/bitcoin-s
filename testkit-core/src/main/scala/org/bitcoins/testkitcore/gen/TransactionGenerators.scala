@@ -190,7 +190,7 @@ object TransactionGenerators {
               realisiticWitnessTransactionWitnessOut)
 
   /** Generates a transaction where at least one output pays to the given SPK */
-  def transactionTo(spk: ScriptPubKey) =
+  def transactionTo(spk: ScriptPubKey): Gen[Transaction] =
     Gen.oneOf(baseTransactionTo(spk), witnessTransactionTo(spk))
 
   /** Generates a transaction with at least one output */

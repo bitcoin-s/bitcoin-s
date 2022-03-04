@@ -12,6 +12,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.TransactionGenerators
+import org.bitcoins.testkitcore.util.TransactionTestUtil
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 
@@ -56,10 +57,10 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
     wallet =>
       for {
         address <- wallet.getNewAddress()
+        output = TransactionOutput(Bitcoins.one, address.scriptPubKey)
+        outPoint = TransactionGenerators.outPoint.sampleSome
         tx =
-          TransactionGenerators
-            .transactionTo(address.scriptPubKey)
-            .sampleSome
+          TransactionTestUtil.buildTransactionTo(output, outPoint)
 
         _ <- wallet.processTransaction(tx, None)
         oldConfirmed <- wallet.getConfirmedBalance()
