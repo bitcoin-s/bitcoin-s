@@ -112,7 +112,12 @@ trait DLCWalletApi { self: WalletApi =>
 
   def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]]
 
+  def findDLCByTemporaryContractId(
+      tempContractId: Sha256Digest): Future[Option[DLCStatus]]
+
   def cancelDLC(dlcId: Sha256Digest): Future[Unit]
+
+  def getDLCOffer(dlcId: Sha256Digest): Future[Option[DLCOffer]]
 
   /** Retrieves accounting and financial metrics for the entire dlc wallet */
   def getWalletAccounting(): Future[DLCWalletAccounting]
@@ -125,6 +130,9 @@ trait DLCWalletApi { self: WalletApi =>
   def listIncomingDLCOffers(): Future[Vector[IncomingDLCOfferDb]]
 
   def rejectIncomingDLCOffer(offerHash: Sha256Digest): Future[Unit]
+
+  def findIncomingDLCOffer(
+      offerHash: Sha256Digest): Future[Option[IncomingDLCOfferDb]]
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */

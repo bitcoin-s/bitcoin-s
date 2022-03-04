@@ -33,4 +33,9 @@ trait IncomingDLCOffersHandling { self: DLCWallet =>
   def listIncomingDLCOffers(): Future[Vector[IncomingDLCOfferDb]] = {
     dlcWalletDAOs.incomingDLCOfferDAO.findAll()
   }
+
+  def findIncomingDLCOffer(
+      offerHash: Sha256Digest): Future[Option[IncomingDLCOfferDb]] = {
+    dlcWalletDAOs.incomingDLCOfferDAO.find(offerHash)
+  }
 }

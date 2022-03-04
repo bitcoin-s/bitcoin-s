@@ -104,5 +104,26 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
           }
         }
       }
+
+    case ServerCommand("offer-send", arr) =>
+      withValidServerCommand(OfferSend.fromJsArr(arr)) {
+        case OfferSend(remoteAddress, message, offerE) =>
+          complete {
+            offerE match {
+              case Left(offerTLV) =>
+                dlcNode
+                  .sendDLCOffer(remoteAddress, message, offerTLV)
+                  .map { tempContractId =>
+                    Server.httpSuccess(tempContractId.hex)
+                  }
+              case Right(tempContractId) =>
+                dlcNode
+                  .sendDLCOffer(remoteAddress, message, tempContractId)
+                  .map { tempContractId =>
+                    Server.httpSuccess(tempContractId.hex)
+                  }
+            }
+          }
+      }
   }
 }

@@ -1598,44 +1598,69 @@ abstract class DLCWallet
     }
   }
 
+  override def getDLCOffer(dlcId: Sha256Digest): Future[Option[DLCOffer]] =
+    dlcDataManagement.getOffer(dlcId, transactionDAO)
+
+  override def findDLCByTemporaryContractId(
+      tempContractId: Sha256Digest): Future[Option[DLCStatus]] = {
+    val start = System.currentTimeMillis()
+
+    val dlcOptF = for {
+      dlcDbOpt <- dlcDAO.findByTempContractId(tempContractId)
+      dlcStatusOpt <- dlcDbOpt match {
+        case None        => Future.successful(None)
+        case Some(dlcDb) => findDLCStatus(dlcDb)
+      }
+    } yield dlcStatusOpt
+
+    dlcOptF.foreach(_ =>
+      logger.debug(
+        s"Done finding tempContractId=$tempContractId, it took=${System
+          .currentTimeMillis() - start}ms"))
+    dlcOptF
+  }
+
   override def findDLC(dlcId: Sha256Digest): Future[Option[DLCStatus]] = {
     val start = System.currentTimeMillis()
-    val dlcDbOptF = dlcDAO.read(dlcId)
+
+    val dlcOptF = for {
+      dlcDbOpt <- dlcDAO.read(dlcId)
+      dlcStatusOpt <- dlcDbOpt match {
+        case None        => Future.successful(None)
+        case Some(dlcDb) => findDLCStatus(dlcDb)
+      }
+    } yield dlcStatusOpt
+
+    dlcOptF.foreach(_ =>
+      logger.debug(
+        s"Done finding dlc=$dlcId, it took=${System.currentTimeMillis() - start}ms"))
+    dlcOptF
+  }
+
+  private def findDLCStatus(dlcDb: DLCDb) = {
+    val dlcId = dlcDb.dlcId
     val contractDataOptF = contractDataDAO.read(dlcId)
     val offerDbOptF = dlcOfferDAO.read(dlcId)
     val acceptDbOptF = dlcAcceptDAO.read(dlcId)
-    val closingTxOptF: Future[Option[TransactionDb]] = for {
-      dlcDbOpt <- dlcDbOptF
-      closingTxFOpt <- {
-        dlcDbOpt.map(dlcDb => getClosingTxOpt(dlcDb)) match {
-          case None                 => Future.successful(None)
-          case Some(closingTxIdOpt) => closingTxIdOpt
-        }
-      }
-    } yield closingTxFOpt
+    val closingTxOptF: Future[Option[TransactionDb]] = getClosingTxOpt(dlcDb)
 
     val dlcOptF: Future[Option[DLCStatus]] = for {
-      dlcDbOpt <- dlcDbOptF
       contractDataOpt <- contractDataOptF
       offerDbOpt <- offerDbOptF
       acceptDbOpt <- acceptDbOptF
       closingTxOpt <- closingTxOptF
       result <- {
-        (dlcDbOpt, contractDataOpt, offerDbOpt) match {
-          case (Some(dlcDb), Some(contractData), Some(offerDb)) =>
+        (contractDataOpt, offerDbOpt) match {
+          case (Some(contractData), Some(offerDb)) =>
             buildDLCStatus(dlcDb,
                            contractData,
                            offerDb,
                            acceptDbOpt,
                            closingTxOpt)
-          case (_, _, _) => Future.successful(None)
+          case (_, _) => Future.successful(None)
         }
       }
     } yield result
-
-    dlcOptF.foreach(_ =>
-      logger.debug(
-        s"Done finding dlc=$dlcId, it took=${System.currentTimeMillis() - start}ms"))
     dlcOptF
   }
 

@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
@@ -1384,7 +1385,7 @@ object OfferAdd {
         }
       case other =>
         val exn = new IllegalArgumentException(
-          s"Bad number or arguments to registerincomingoffer, got=${other.length} expected=3")
+          s"Bad number or arguments to offer-add, got=${other.length} expected=3")
         Failure(exn)
     }
   }
@@ -1403,7 +1404,37 @@ object OfferRemove {
         }
       case other =>
         val exn = new IllegalArgumentException(
-          s"Bad number or arguments to rejectincomingoffer, got=${other.length} expected=1")
+          s"Bad number or arguments to offer-remove, got=${other.length} expected=1")
+        Failure(exn)
+    }
+  }
+}
+
+case class OfferSend(
+    remoteAddress: InetSocketAddress,
+    message: String,
+    offerE: Either[DLCOfferTLV, Sha256Digest])
+
+object OfferSend {
+
+  def fromJsArr(arr: ujson.Arr): Try[OfferSend] = {
+    arr.arr.toList match {
+      case offerJs :: peerAddressJs :: messageJs :: Nil =>
+        Try {
+          val peerAddress =
+            NetworkUtil.parseInetSocketAddress(peerAddressJs.str, 2862)
+          val message = messageJs.str
+          val offerE =
+            Try(LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str).tlv)
+              .orElse(Try(DLCOfferTLV.fromHex(offerJs.str))) match {
+              case Success(o) => Left(o)
+              case Failure(_) => Right(Sha256Digest.fromHex(offerJs.str))
+            }
+          OfferSend(peerAddress, message, offerE)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to offer-send, got=${other.length} expected=3")
         Failure(exn)
     }
   }
