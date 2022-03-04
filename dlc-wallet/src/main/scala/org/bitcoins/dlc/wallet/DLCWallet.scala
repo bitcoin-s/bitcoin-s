@@ -13,7 +13,6 @@ import org.bitcoins.core.number._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.compute.DLCUtil
-import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCAccept._
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models.DLCState._
 import org.bitcoins.core.protocol.dlc.models._
@@ -451,36 +450,15 @@ abstract class DLCWallet
     } yield offer
   }
 
-  /** Retrieves the [[DLCDb]] and [[AccountDb]] for the given tempContractId
-    * else returns None
-    */
-  private def getDlcDbOfferDbContractDataDb(
-      tempContractId: Sha256Digest): Future[
-    Option[(DLCDb, DLCOfferDb, DLCContractDataDb)]] = {
-    val result: Future[Option[(DLCDb, DLCOfferDb, DLCContractDataDb)]] = for {
-      dlcDbOpt <- dlcDAO.findByTempContractId(tempContractId)
-      dlcOfferDbOpt <- dlcDbOpt match {
-        case Some(dlcDb) => dlcOfferDAO.findByDLCId(dlcDb.dlcId)
-        case None        => Future.successful(None)
-      }
-      contractDataDbOpt <- dlcDbOpt match {
-        case Some(dlcDb) => contractDataDAO.findByDLCId(dlcDb.dlcId)
-        case None        => Future.successful(None)
-      }
-    } yield {
-      for {
-        dlcDb <- dlcDbOpt
-        dlcOfferDb <- dlcOfferDbOpt
-        contractDataDb <- contractDataDbOpt
-      } yield (dlcDb, dlcOfferDb, contractDataDb)
-    }
-
-    result
-  }
-
   private def initDLCForAccept(
       offer: DLCOffer,
-      account: AccountDb): Future[(DLCDb, DLCOfferDb, DLCContractDataDb)] = {
+      account: AccountDb,
+      txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
+      spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
+      collateral: CurrencyUnit,
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]
+  ): Future[InitializedAccept] = {
     logger.info(
       s"Initializing DLC from received offer with tempContractId ${offer.tempContractId.hex}")
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
@@ -492,19 +470,86 @@ abstract class DLCWallet
 
     val chainType = HDChainType.External
 
-    getDlcDbOfferDbContractDataDb(offer.tempContractId).flatMap {
-      case Some((dlcDb, dlcOffer, contractDataDb)) =>
-        Future.successful((dlcDb, dlcOffer, contractDataDb))
+    dlcDataManagement.getDLCFundingData(dlcId, txDAO = transactionDAO).flatMap {
+      case Some(dlcDbSetupState) =>
+        dlcDbSetupState match {
+          case _: OfferedDbState =>
+            Future.failed(
+              new RuntimeException(
+                s"We cannot accept a DLC we offered, dlcId=${dlcId.hex}"))
+          case a: AcceptDbState =>
+            val dlcPubKeys = DLCUtil.calcDLCPubKeys(
+              xpub = account.xpub,
+              chainType = chainType,
+              keyIndex = a.dlcDb.keyIndex,
+              networkParameters = networkParameters,
+              externalPayoutAddressOpt = externalPayoutAddressOpt
+            )
+            val initAccept = InitializedAccept(
+              dlc = a.dlcDb,
+              offerDb = a.offerDb,
+              acceptDb = a.acceptDb,
+              fundingInputsDb = a.acceptFundingInputsDb,
+              pubKeys = dlcPubKeys,
+              contractDataDb = a.contractDataDb,
+              acceptWithoutSigs = a.acceptWithoutSigs
+            )
+
+            Future.successful(initAccept)
+        }
       case None =>
+        val nextIndexF = getNextAvailableIndex(account, chainType)
+        val acceptWithoutSigsWithKeysF: Future[(
+            DLCAcceptWithoutSigs,
+            DLCPublicKeys)] = nextIndexF.map { nextIndex =>
+          DLCAcceptUtil.buildAcceptWithoutSigs(
+            keyIndex = nextIndex,
+            changeIndex = chainType,
+            offer = offer,
+            txBuilder = txBuilder,
+            spendingInfos = spendingInfos,
+            account = account,
+            fundingPrivKey = getFundingPrivKey(account, nextIndex),
+            collateral = collateral,
+            networkParameters = networkParameters,
+            externalPayoutAddressOpt = externalPayoutAddressOpt,
+            externalChangeAddressOpt = externalChangeAddressOpt
+          )
+        }
+
         for {
-          nextIndex <- getNextAvailableIndex(account, chainType)
+          (dlcAcceptWithoutSigs, dlcPubKeys) <- acceptWithoutSigsWithKeysF
+          nextIndex <- nextIndexF
+          contractId = DLCUtil.calcContractId(offer, dlcAcceptWithoutSigs)
           dlc = DLCAcceptUtil.buildAcceptDlcDb(offer,
                                                dlcId,
+                                               Some(contractId),
                                                account,
                                                chainType,
                                                nextIndex,
                                                contractInfo)
-
+          acceptDb = DLCAcceptUtil.buildAcceptDb(dlc = dlc,
+                                                 acceptWithoutSigs =
+                                                   dlcAcceptWithoutSigs,
+                                                 dlcPubKeys = dlcPubKeys,
+                                                 collateral = collateral)
+          acceptInputs = spendingInfos
+            .zip(dlcAcceptWithoutSigs.fundingInputs)
+            .zipWithIndex
+            .map { case ((utxo, fundingInput), idx) =>
+              DLCFundingInputDb(
+                dlcId = dlc.dlcId,
+                isInitiator = false,
+                index = idx,
+                inputSerialId = fundingInput.inputSerialId,
+                outPoint = utxo.outPoint,
+                output = utxo.output,
+                nSequence = fundingInput.sequence,
+                maxWitnessLength = fundingInput.maxWitnessLen.toLong,
+                redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
+                witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
+              )
+            }
           contractDataDb = DLCAcceptUtil.buildAcceptContractDataDb(contractInfo,
                                                                    dlcId,
                                                                    offer)
@@ -512,6 +557,8 @@ abstract class DLCWallet
           groupedAnnouncements <- groupByExistingAnnouncements(announcements)
           dlcDbAction = dlcDAO.createAction(dlc)
           dlcOfferAction = dlcOfferDAO.createAction(dlcOfferDb)
+          acceptAction = dlcAcceptDAO.createAction(acceptDb)
+          inputsAction = dlcInputsDAO.createAllAction(acceptInputs)
           contractAction = contractDataDAO.createAction(contractDataDb)
           createdAnnouncementsAction = announcementDAO.createAllAction(
             groupedAnnouncements.newAnnouncements)
@@ -522,10 +569,17 @@ abstract class DLCWallet
               //we don't need the contract data db, so don't return it
               contractDataDb <- contractAction
               offer <- dlcOfferAction
-            } yield (dlcDb, ann, offer, contractDataDb)
+              accept <- acceptAction
+              inputs <- inputsAction
+            } yield (dlcDb, ann, offer, accept, inputs, contractDataDb)
           }
-          (writtenDLC, createdDbs, offerDb, contractDataDb) <- safeDatabase.run(
-            zipped)
+          (writtenDLC,
+           createdDbs,
+           offerDb,
+           acceptDb,
+           inputsDb,
+           contractDataDb) <-
+            safeDatabase.run(zipped)
           announcementDataDbs =
             createdDbs ++ groupedAnnouncements.existingAnnouncements
 
@@ -555,7 +609,17 @@ abstract class DLCWallet
 
           _ <- safeDatabase.run(
             DBIOAction.seq(createNonceAction, createAnnouncementAction))
-        } yield (writtenDLC, offerDb, contractDataDb)
+        } yield {
+          InitializedAccept(
+            dlc = writtenDLC,
+            offerDb = offerDb,
+            acceptDb = acceptDb,
+            fundingInputsDb = inputsDb,
+            pubKeys = dlcPubKeys,
+            contractDataDb = contractDataDb,
+            acceptWithoutSigs = dlcAcceptWithoutSigs
+          )
+        }
     }
   }
 
@@ -635,6 +699,16 @@ abstract class DLCWallet
     txBuilderAndSpendingInfosF
   }
 
+  private def getFundingPrivKey(
+      account: AccountDb,
+      keyIndex: Int): AdaptorSign = {
+    val bip32Path = BIP32Path(
+      account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
+                                       BIP32Node(keyIndex, hardened = false)))
+    val privKeyPath = HDPath.fromString(bip32Path.toString)
+    keyManager.toSign(privKeyPath)
+  }
+
   private def createNewDLCAccept(
       collateral: CurrencyUnit,
       offer: DLCOffer,
@@ -645,45 +719,40 @@ abstract class DLCWallet
 
       logger.info(
         s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
-
-      def getFundingPrivKey(account: AccountDb, dlc: DLCDb): AdaptorSign = {
-        val bip32Path = BIP32Path(
-          account.hdAccount.path ++ Vector(BIP32Node(0, hardened = false),
-                                           BIP32Node(dlc.keyIndex,
-                                                     hardened = false)))
-        val privKeyPath = HDPath.fromString(bip32Path.toString)
-        keyManager.toSign(privKeyPath)
-      }
-
       val result = for {
         account <- getDefaultAccountForType(AddressType.SegWit)
-        (dlc, offerDb, contractDataDb) <- initDLCForAccept(offer, account)
         (txBuilder, spendingInfos) <- fundDLCAcceptMsg(offer = offer,
                                                        collateral = collateral,
                                                        account = account)
-        fundingPrivKey = getFundingPrivKey(account, dlc)
-        (acceptWithoutSigs, dlcPubKeys) = DLCAcceptUtil.buildAcceptWithoutSigs(
-          dlc = dlc,
-          offer = offer,
-          txBuilder = txBuilder,
-          spendingInfos = spendingInfos,
-          account = account,
-          fundingPrivKey = fundingPrivKey,
-          collateral = collateral,
-          networkParameters = networkParameters,
-          externalPayoutAddressOpt = externalPayoutAddressOpt,
-          externalChangeAddressOpt = externalChangeAddressOpt
-        )
-        builder = DLCTxBuilder(offer, acceptWithoutSigs)
+
+        initializedAccept <-
+          initDLCForAccept(
+            offer = offer,
+            account = account,
+            txBuilder = txBuilder,
+            spendingInfos = spendingInfos,
+            collateral = collateral,
+            externalPayoutAddressOpt = externalPayoutAddressOpt,
+            externalChangeAddressOpt = externalChangeAddressOpt
+          )
+
+        offerPrevTxs = offer.fundingInputs.map(funding =>
+          TransactionDbHelper.fromTransaction(funding.prevTx,
+                                              blockHashOpt = None))
+        _ <- remoteTxDAO.upsertAll(offerPrevTxs)
+
+        fundingPrivKey = getFundingPrivKey(account,
+                                           initializedAccept.dlc.keyIndex)
+
+        builder = DLCTxBuilder(offer, initializedAccept.acceptWithoutSigs)
 
         contractId = builder.calcContractId
-
-        dlcDbWithContractId = dlc.copy(contractIdOpt = Some(contractId))
 
         signer = DLCTxSigner(builder = builder,
                              isInitiator = false,
                              fundingKey = fundingPrivKey,
-                             finalAddress = dlcPubKeys.payoutAddress,
+                             finalAddress =
+                               initializedAccept.pubKeys.payoutAddress,
                              fundingUtxos = spendingInfos)
 
         spkDb = ScriptPubKeyDb(builder.fundingSPK)
@@ -693,26 +762,16 @@ abstract class DLCWallet
         _ = logger.info(s"Creating CET Sigs for ${contractId.toHex}")
         //emit websocket event that we are now computing adaptor signatures
         status = DLCStatusBuilder.buildInProgressDLCStatus(
-          dlcDb = dlcDbWithContractId,
+          dlcDb = initializedAccept.dlc,
           contractInfo = offer.contractInfo,
-          contractData = contractDataDb,
-          offerDb = offerDb)
+          contractData = initializedAccept.contractDataDb,
+          offerDb = initializedAccept.offerDb)
         _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status)
         cetSigs <- signer.createCETSigsAsync()
         refundSig = signer.signRefundTx
+        dlc = initializedAccept.dlc
         _ = logger.debug(
           s"DLC Accept data collected, creating database entry, ${dlc.dlcId.hex}")
-
-        dlcAcceptDb = DLCAcceptDb(
-          dlcId = dlc.dlcId,
-          fundingKey = dlcPubKeys.fundingKey,
-          payoutAddress = dlcPubKeys.payoutAddress,
-          payoutSerialId = acceptWithoutSigs.payoutSerialId,
-          collateral = collateral,
-          changeAddress = acceptWithoutSigs.changeAddress,
-          changeSerialId = acceptWithoutSigs.changeSerialId,
-          negotiationFieldsTLV = NoNegotiationFields.toTLV
-        )
 
         sigsDbs = cetSigs.outcomeSigs.zipWithIndex.map { case (sig, index) =>
           DLCCETSignaturesDb(dlc.dlcId, index = index, sig._1, sig._2, None)
@@ -737,44 +796,19 @@ abstract class DLCWallet
             )
         }
 
-        offerPrevTxs = offer.fundingInputs.map(funding =>
-          TransactionDbHelper.fromTransaction(funding.prevTx,
-                                              blockHashOpt = None))
-
-        acceptInputs = spendingInfos
-          .zip(acceptWithoutSigs.fundingInputs)
-          .zipWithIndex
-          .map { case ((utxo, fundingInput), idx) =>
-            DLCFundingInputDb(
-              dlcId = dlc.dlcId,
-              isInitiator = false,
-              index = idx,
-              inputSerialId = fundingInput.inputSerialId,
-              outPoint = utxo.outPoint,
-              output = utxo.output,
-              nSequence = fundingInput.sequence,
-              maxWitnessLength = fundingInput.maxWitnessLen.toLong,
-              redeemScriptOpt = InputInfo.getRedeemScript(utxo.inputInfo),
-              witnessScriptOpt = InputInfo.getScriptWitness(utxo.inputInfo)
-            )
-          }
-
         accept =
-          dlcAcceptDb.toDLCAccept(tempContractId = dlc.tempContractId,
-                                  fundingInputs =
-                                    acceptWithoutSigs.fundingInputs,
-                                  outcomeSigs = cetSigs.outcomeSigs,
-                                  refundSig = refundSig)
+          initializedAccept.acceptDb.toDLCAccept(
+            tempContractId = dlc.tempContractId,
+            fundingInputs = initializedAccept.acceptWithoutSigs.fundingInputs,
+            outcomeSigs = cetSigs.outcomeSigs,
+            refundSig = refundSig)
 
         _ = require(accept.tempContractId == offer.tempContractId,
                     "Offer and Accept have differing tempContractIds!")
 
-        _ <- remoteTxDAO.upsertAll(offerPrevTxs)
         actions = actionBuilder.buildCreateAcceptAction(
-          dlcDb = dlcDbWithContractId.updateState(DLCState.Accepted),
-          dlcAcceptDb = dlcAcceptDb,
+          dlcDb = dlc.updateState(DLCState.Accepted),
           offerInputs = offerInputs,
-          acceptInputs = acceptInputs,
           cetSigsDb = sigsDbs,
           refundSigsDb = refundSigsDb
         )
