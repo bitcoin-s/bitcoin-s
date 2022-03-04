@@ -57,11 +57,21 @@ trait HDPath extends BIP32Path {
 object HDPath extends StringFactory[HDPath] {
 
   /** Attempts to parse a string into a valid HD path */
-  override def fromStringT(string: String): Try[HDPath] =
-    LegacyHDPath
-      .fromStringT(string)
-      .orElse(SegWitHDPath.fromStringT(string))
-      .orElse(NestedSegWitHDPath.fromStringT(string))
+  override def fromStringT(string: String): Try[HDPath] = {
+    val path: BIP32Path = BIP32Path.fromString(string)
+
+    val purpose = path.path.head.index
+    if (purpose == LegacyHDPath.PURPOSE) {
+      LegacyHDPath
+        .fromStringT(string)
+    } else if (purpose == SegWitHDPath.PURPOSE) {
+      SegWitHDPath.fromStringT(string)
+    } else if (purpose == NestedSegWitHDPath.PURPOSE) {
+      NestedSegWitHDPath.fromStringT(string)
+    } else {
+      sys.error(s"Unknown purpose=$purpose")
+    }
+  }
 
   override def fromString(string: String): HDPath = {
     fromStringT(string) match {
