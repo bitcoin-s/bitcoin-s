@@ -102,7 +102,7 @@ case class MasterXPubDAO()(implicit
               s"Only 1 master xpub should be stored, got=${xpubs.length}")
       if (xpub != xpubs.head.toExtPublicKey) {
         sys.error(
-          s"Keymanager xpub and stored xpub are different, stored=${xpubs.head}, keymanager=${xpub}")
+          s"Keymanager xpub and stored xpub are different, stored=${xpubs.head.toExtPublicKey}, keymanager=${xpub}")
       }
     }
   }
