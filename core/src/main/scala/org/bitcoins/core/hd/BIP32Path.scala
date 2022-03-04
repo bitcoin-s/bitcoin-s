@@ -83,7 +83,8 @@ abstract class BIP32Path extends SeqWrapper[BIP32Node] {
   override def toString: String =
     path
       .map { case BIP32Node(index, hardened) =>
-        index.toString + (if (hardened) "'" else "")
+        val isHardened = if (hardened) "'" else ""
+        index.toString + isHardened
       }
       .fold("m")((accum, curr) => accum + "/" + curr)
 
