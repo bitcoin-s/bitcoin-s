@@ -113,22 +113,6 @@ class HDPathTest extends BitcoinSUnitTest {
     }
   }
 
-  it must "fail to generate a HD path with an invalid purpose field" in {
-    val badPaths = HDGenerators.bip32Path.suchThat { bip32 =>
-      bip32.path.nonEmpty &&
-      !HDPurposes.all.exists(_.constant == bip32.path.head.index)
-    }
-
-    forAll(badPaths) { badPath =>
-      val attempt = HDPath.fromStringOpt(badPath.toString)
-      attempt match {
-        case None =>
-          succeed
-        case Some(_) => fail()
-      }
-    }
-  }
-
   it must "fail to generate HD paths with an invalid length" in {
     forAll(HDGenerators.hdPathWithConstructor) { case (hd, hdApply) =>
       val tooShortPath = hd.path.dropRight(1)
