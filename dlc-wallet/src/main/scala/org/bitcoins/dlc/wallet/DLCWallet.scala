@@ -504,7 +504,7 @@ abstract class DLCWallet
             DLCPublicKeys)] = nextIndexF.map { nextIndex =>
           DLCAcceptUtil.buildAcceptWithoutSigs(
             keyIndex = nextIndex,
-            changeIndex = chainType,
+            chainType = chainType,
             offer = offer,
             txBuilder = txBuilder,
             spendingInfos = spendingInfos,
