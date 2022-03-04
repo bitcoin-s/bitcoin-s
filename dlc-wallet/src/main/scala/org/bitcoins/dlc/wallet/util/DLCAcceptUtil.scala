@@ -38,7 +38,7 @@ object DLCAcceptUtil extends Logging {
   /** Builds an [[DLCAcceptWithoutSigs]] message from relevant data inside of the [[DLCWallet]] */
   def buildAcceptWithoutSigs(
       keyIndex: Int,
-      changeIndex: HDChainType,
+      chainType: HDChainType,
       offer: DLCOffer,
       txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
       spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
@@ -65,7 +65,7 @@ object DLCAcceptUtil extends Logging {
 
     val dlcPubKeys = DLCUtil.calcDLCPubKeys(
       xpub = account.xpub,
-      chainType = changeIndex,
+      chainType = chainType,
       keyIndex = keyIndex,
       networkParameters = networkParameters,
       externalPayoutAddressOpt = externalPayoutAddressOpt
