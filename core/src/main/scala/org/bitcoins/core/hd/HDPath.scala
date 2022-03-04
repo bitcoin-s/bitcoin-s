@@ -59,17 +59,22 @@ object HDPath extends StringFactory[HDPath] {
   /** Attempts to parse a string into a valid HD path */
   override def fromStringT(string: String): Try[HDPath] = {
     val path: BIP32Path = BIP32Path.fromString(string)
-
-    val purpose = path.path.head.index
-    if (purpose == LegacyHDPath.PURPOSE) {
-      LegacyHDPath
-        .fromStringT(string)
-    } else if (purpose == SegWitHDPath.PURPOSE) {
-      SegWitHDPath.fromStringT(string)
-    } else if (purpose == NestedSegWitHDPath.PURPOSE) {
-      NestedSegWitHDPath.fromStringT(string)
+    if (path.path.isEmpty) {
+      Failure(
+        new IllegalArgumentException(
+          s"Cannot parse an empty HDPath, got str=$string"))
     } else {
-      sys.error(s"Unknown purpose=$purpose")
+      val purpose = path.path.head.index
+      if (purpose == LegacyHDPath.PURPOSE) {
+        LegacyHDPath
+          .fromStringT(string)
+      } else if (purpose == SegWitHDPath.PURPOSE) {
+        SegWitHDPath.fromStringT(string)
+      } else if (purpose == NestedSegWitHDPath.PURPOSE) {
+        NestedSegWitHDPath.fromStringT(string)
+      } else {
+        Failure(new IllegalArgumentException(s"Unknown purpose=$purpose"))
+      }
     }
   }
 

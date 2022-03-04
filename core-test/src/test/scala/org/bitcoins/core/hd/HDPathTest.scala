@@ -698,13 +698,4 @@ class HDPathTest extends BitcoinSUnitTest {
     }
   }
 
-//  it must "parse this path" in {
-//
-//    val string = "m/84'/0'/0'/0'/0'"
-//    val _ = HDPath.fromString(string)
-//    val path = SegWitHDPath.fromString(string)
-//    println(s"path=$path")
-//    succeed
-//  }
-
 }
