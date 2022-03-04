@@ -8,6 +8,7 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.compute.DLCUtil
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCAccept.NoNegotiationFields
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
   DLCAccept,
   DLCAcceptWithoutSigs,
@@ -22,8 +23,13 @@ import org.bitcoins.core.wallet.builder.{
 }
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto.{AdaptorSign, Sha256Digest}
-import org.bitcoins.dlc.wallet.models.{DLCContractDataDb, DLCWalletDAOs}
+import org.bitcoins.dlc.wallet.models.{
+  DLCAcceptDb,
+  DLCContractDataDb,
+  DLCWalletDAOs
+}
 import org.bitcoins.wallet.models.TransactionDAO
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -31,7 +37,8 @@ object DLCAcceptUtil extends Logging {
 
   /** Builds an [[DLCAcceptWithoutSigs]] message from relevant data inside of the [[DLCWallet]] */
   def buildAcceptWithoutSigs(
-      dlc: DLCDb,
+      keyIndex: Int,
+      chainType: HDChainType,
       offer: DLCOffer,
       txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
       spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
@@ -58,8 +65,8 @@ object DLCAcceptUtil extends Logging {
 
     val dlcPubKeys = DLCUtil.calcDLCPubKeys(
       xpub = account.xpub,
-      chainType = dlc.changeIndex,
-      keyIndex = dlc.keyIndex,
+      chainType = chainType,
+      keyIndex = keyIndex,
       networkParameters = networkParameters,
       externalPayoutAddressOpt = externalPayoutAddressOpt
     )
@@ -104,6 +111,7 @@ object DLCAcceptUtil extends Logging {
   def buildAcceptDlcDb(
       offer: DLCOffer,
       dlcId: Sha256Digest,
+      contractIdOpt: Option[ByteVector],
       account: AccountDb,
       chainType: HDChainType,
       nextIndex: Int,
@@ -111,7 +119,7 @@ object DLCAcceptUtil extends Logging {
     DLCDb(
       dlcId = dlcId,
       tempContractId = offer.tempContractId,
-      contractIdOpt = None,
+      contractIdOpt = contractIdOpt,
       protocolVersion = 0,
       state = DLCState.AcceptComputingAdaptorSigs,
       isInitiator = false,
@@ -126,6 +134,23 @@ object DLCAcceptUtil extends Logging {
       closingTxIdOpt = None,
       aggregateSignatureOpt = None,
       serializationVersion = contractInfo.serializationVersion
+    )
+  }
+
+  def buildAcceptDb(
+      dlc: DLCDb,
+      acceptWithoutSigs: DLCAcceptWithoutSigs,
+      dlcPubKeys: DLCPublicKeys,
+      collateral: CurrencyUnit): DLCAcceptDb = {
+    DLCAcceptDb(
+      dlcId = dlc.dlcId,
+      fundingKey = dlcPubKeys.fundingKey,
+      payoutAddress = dlcPubKeys.payoutAddress,
+      payoutSerialId = acceptWithoutSigs.payoutSerialId,
+      collateral = collateral,
+      changeAddress = acceptWithoutSigs.changeAddress,
+      changeSerialId = acceptWithoutSigs.changeSerialId,
+      negotiationFieldsTLV = NoNegotiationFields.toTLV
     )
   }
 
