@@ -273,8 +273,10 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
                   s"Cannot find an offer with for DLC ID ${dlc.dlcId}"))
             } yield {
               val tlv = offer.toTLV
+              val lnMessage = LnMessage(tlv)
               val json = writeJs(tlv)
-              Server.httpSuccess(Obj(json.obj.addOne("hex" -> Str(tlv.hex))))
+              json.obj.update("hex", Str(lnMessage.hex))
+              Server.httpSuccess(json)
             }
           }
       }
