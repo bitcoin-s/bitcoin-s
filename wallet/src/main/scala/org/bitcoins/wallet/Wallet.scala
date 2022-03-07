@@ -207,9 +207,18 @@ abstract class Wallet
       _ <- {
         heightOpt match {
           case Some(height) =>
-            stateDescriptorDAO
-              .updateSyncHeight(hash, height)
-              .map(_ => ())
+            if (blockHashToDownload.isEmpty) {
+              //if we don't have any block hashes
+              //we need to update the wallet's sync height
+              stateDescriptorDAO
+                .updateSyncHeight(hash, height)
+                .map(_ => ())
+            } else {
+              //if we do have a block hash that we matched
+              //we need to let wallet.processBlock()
+              //update the wallet's sync height
+              Future.unit
+            }
           case None =>
             Future.unit
         }
