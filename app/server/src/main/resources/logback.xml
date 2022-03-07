@@ -110,4 +110,7 @@
     <!-- get rid of "Running CoordinatedShutdown Phase" messages -->
     <logger name="akka.actor.slf4j.CoordinatedShutdown" level="OFF"/>
 
+    <!-- get rid of akka dead letter messages -->
+    <logger name="akka.actor.RepointableActorRef" level="OFF"/>
+
 </configuration>
