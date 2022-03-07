@@ -44,8 +44,11 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
                                        receivedSpendingInfoDbsOpt = None,
                                        spentSpendingInfoDbsOpt = None)
     } yield {
-      logger.debug(
-        s"Finished processing of transaction=${transaction.txIdBE.hex}. Relevant incomingTXOs=${result.updatedIncoming.length}, outgoingTXOs=${result.updatedOutgoing.length}")
+      if (result.updatedIncoming.nonEmpty || result.updatedOutgoing.nonEmpty) {
+        logger.info(
+          s"Finished processing of transaction=${transaction.txIdBE.hex}. Relevant incomingTXOs=${result.updatedIncoming.length}, outgoingTXOs=${result.updatedOutgoing.length}")
+
+      }
       this
     }
   }
