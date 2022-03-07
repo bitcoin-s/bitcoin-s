@@ -18,7 +18,8 @@ object AppMenuBar {
   def menuBar(model: WalletGUIModel, dlcPane: DLCPane): MenuBar = {
     val menuBar = new MenuBar {
       menus = List(new FileMenu().fileMenu,
-                   new ViewMenu(model, dlcPane).viewMenu,
+                   new ViewMenu().viewMenu,
+                   new AdvancedMenu(model, dlcPane).advancedMenu,
                    new HelpMenu(model).helpMenu)
     }
     // Use MacOS native menuing
@@ -65,7 +66,7 @@ private class FileMenu() {
     }
 }
 
-private class ViewMenu(model: WalletGUIModel, dlcPane: DLCPane) {
+private class ViewMenu() {
 
   private val themeToggle: ToggleGroup = new ToggleGroup()
 
@@ -107,11 +108,14 @@ private class ViewMenu(model: WalletGUIModel, dlcPane: DLCPane) {
     }
   }
 
-  private val dlcWindow = new MenuItem("DLC Operations") {
-    accelerator =
-      new KeyCodeCombination(KeyCode.Digit1, KeyCombination.ShortcutDown)
-    onAction = _ => dlcPane.showWindow()
+  val viewMenu: Menu = new Menu("_View") {
+    mnemonicParsing = true
+    items = List(themes, new SeparatorMenuItem())
   }
+
+}
+
+private class AdvancedMenu(model: WalletGUIModel, dlcPane: DLCPane) {
 
   private val debugWindow = new MenuItem("Debug Operations") {
     accelerator =
@@ -119,9 +123,15 @@ private class ViewMenu(model: WalletGUIModel, dlcPane: DLCPane) {
     onAction = _ => model.onDebug()
   }
 
-  val viewMenu: Menu = new Menu("_View") {
+  private val dlcWindow = new MenuItem("DLC Operations") {
+    accelerator =
+      new KeyCodeCombination(KeyCode.Digit1, KeyCombination.ShortcutDown)
+    onAction = _ => dlcPane.showWindow()
+  }
+
+  val advancedMenu: Menu = new Menu("_Advanced") {
     mnemonicParsing = true
-    items = List(themes, new SeparatorMenuItem(), dlcWindow, debugWindow)
+    items = Vector(dlcWindow, debugWindow)
   }
 }
 

@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dialog
 
 import grizzled.slf4j.Logging
-import org.bitcoins.cli.CliCommand.LockUnspent
+import org.bitcoins.cli.CliCommand.{LockUnspent, Rescan}
 import org.bitcoins.cli.ConsoleCli
 import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.Includes._
@@ -29,46 +29,17 @@ object DebugDialog extends Logging {
     dialog.dialogPane().buttonTypes = Seq(ButtonType.Close)
     dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
 
-    val openLogButton = new Button("Open Bitcoin-S Log") {
-      onAction = _ => {
-        // Get root active network directory
-        val location = System.getProperty("bitcoins.log.location")
-        val path = Paths.get(location, LOGFILE_NAME)
-        if (Files.exists(path)) {
-          // Ubuntu seems to support Desktop and Desktop.open(), but hangs on opening file
-          // This is an issue in JavaFX and the common workaround is to call on another thread
-          // I was not having any luck with Platform.runLater wrapping call to Desktop.open getting around the bug
-          if (Properties.isLinux) {
-            // Work around native file-open alternative that works on Ubuntu
-            val _ = Runtime
-              .getRuntime()
-              .exec(s"/usr/bin/xdg-open ${path.toString}")
-          } else if (Desktop.isDesktopSupported) {
-            val d = Desktop.getDesktop
-            if (d.isSupported(Desktop.Action.OPEN)) {
-              // Open file in default log reader per OS
-              d.open(new File(path.toString))
-            } else {
-              logger.error("Desktop.Action.OPEN on log file not supported")
-            }
-          } else {
-            logger.error(
-              "This platform is non-Linux or does not support Desktop")
-          }
-        } else {
-          logger.error(
-            s"Expected log file location does not exist ${path.toString}")
-        }
-      }
-    }
+    val openLogButton = buildLogButton
 
     val unreserveAllUTXOsButton = new Button("Unreserve All UTXOs")
+
+    val rescanButton = new Button("Rescan Wallet")
 
     val content = new VBox {
       minWidth = 300
       minHeight = 300
       spacing = 10
-      children = Seq(openLogButton, unreserveAllUTXOsButton)
+      children = Seq(openLogButton, unreserveAllUTXOsButton, rescanButton)
     }
 
     val glassPane = new VBox {
@@ -95,8 +66,63 @@ object DebugDialog extends Logging {
       )
     }
 
+    setRescanAction(taskRunner, rescanButton)
+
     dialog.dialogPane().content = content
 
     val _ = dialog.show()
+  }
+
+  private def buildLogButton: Button = new Button("Open Bitcoin-S Log") {
+    onAction = _ => {
+      // Get root active network directory
+      val location = System.getProperty("bitcoins.log.location")
+      val path = Paths.get(location, LOGFILE_NAME)
+      if (Files.exists(path)) {
+        // Ubuntu seems to support Desktop and Desktop.open(), but hangs on opening file
+        // This is an issue in JavaFX and the common workaround is to call on another thread
+        // I was not having any luck with Platform.runLater wrapping call to Desktop.open getting around the bug
+        if (Properties.isLinux) {
+          // Work around native file-open alternative that works on Ubuntu
+          val _ = Runtime
+            .getRuntime()
+            .exec(s"/usr/bin/xdg-open ${path.toString}")
+        } else if (Desktop.isDesktopSupported) {
+          val d = Desktop.getDesktop
+          if (d.isSupported(Desktop.Action.OPEN)) {
+            // Open file in default log reader per OS
+            d.open(new File(path.toString))
+          } else {
+            logger.error("Desktop.Action.OPEN on log file not supported")
+          }
+        } else {
+          logger.error("This platform is non-Linux or does not support Desktop")
+        }
+      } else {
+        logger.error(
+          s"Expected log file location does not exist ${path.toString}")
+      }
+    }
+  }
+
+  private def setRescanAction(taskRunner: TaskRunner, button: Button): Unit = {
+    val rescanCmd = {
+      Rescan(addressBatchSize = Some(200),
+             startBlock = None,
+             endBlock = None,
+             force = true,
+             ignoreCreationTime = false)
+    }
+    button.onAction = _ => {
+      taskRunner.run(
+        "Rescan Wallet", {
+          ConsoleCli.exec(rescanCmd, GlobalData.consoleCliConfig) match {
+            case Success(_) => ()
+            case Failure(err) =>
+              throw err
+          }
+        }
+      )
+    }
   }
 }
