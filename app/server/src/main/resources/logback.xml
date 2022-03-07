@@ -112,5 +112,6 @@
 
     <!-- get rid of akka dead letter messages -->
     <logger name="akka.actor.RepointableActorRef" level="OFF"/>
+    <logger name="akka.actor.LocalActorRef" level="OFF"/>
 
 </configuration>

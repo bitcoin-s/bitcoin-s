@@ -83,19 +83,46 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     peerData(peer).peerMessageSender.sendGetAddrMessage()
   }
 
+  /** disconnects the currently used peer for sync and uses a new one */
+  def useNewPeer(): Future[Unit] = {
+    val oldPeer: Peer = peerUsedForSync.getOrElse(
+      throw new RuntimeException("No old peer set for sync yet."))
+
+    peerData(oldPeer).peerMessageSender.client.actor ! PoisonPill
+    _peerData.remove(oldPeer)
+
+    val setNewPeerF = AsyncUtil
+      .retryUntilSatisfied(connectedPeerCount > 0,
+                           interval = 1.seconds,
+                           maxTries = 600)
+      .map { _ =>
+        val peer = randomPeerWithService(_.nodeCompactFilters)
+        _reconnectSyncCount = 0
+        setPeerUsedForSync(peer)
+      }
+    for {
+      _ <- setNewPeerF
+      _ <- node.sync()
+    } yield {
+      logger.info(s"Using new peer ${peerUsedForSync.get} for sync")
+    }
+  }
+
   //for reconnect, we would only want to call node.sync if the peer reconnected is the one that was
   //already syncing. So storing that.
   private var _peerUsedForSync: Option[Peer] = None
+  //some peers can be connected and initialized but then they disconnect us immediately.
+  //such a peer cannot be used for node operation as we get stuck in an infinite reconnect disconnect loop.
+  private var _reconnectSyncCount: Int = 0
+
+  def incrementReconnectCount(): Unit = _reconnectSyncCount += 1
+
+  def reconnectCount: Int = _reconnectSyncCount
 
   def peerUsedForSync: Option[Peer] = _peerUsedForSync
 
   def setPeerUsedForSync(peer: Peer): Unit = {
-    _peerUsedForSync match {
-      case Some(syncPeer) =>
-        throw new RuntimeException(
-          s"Already set sync peer as $syncPeer. Cannot set again.")
-      case None => _peerUsedForSync = Some(peer)
-    }
+    _peerUsedForSync = Some(peer)
   }
 
   def peers: Vector[Peer] = peerData.keys.toVector
@@ -206,7 +233,6 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   }
 
   def removeTestPeer(peer: Peer): Future[Unit] = {
-    //todo: when can this happen?
     if (_testPeerData.contains(peer)) {
       testPeerData(peer).peerMessageSender.client.actor.!(PoisonPill)
       _testPeerData.remove(peer)

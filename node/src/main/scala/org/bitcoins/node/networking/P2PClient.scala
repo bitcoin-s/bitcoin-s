@@ -200,7 +200,7 @@ case class P2PClientActor(
       logger.debug(
         s"Cannot send a message to our peer when we are not connected! payload=${payload} peer=${peer}")
     case _ =>
-      logger.warn(s"unhandled message=$message")
+      logger.debug(s"unhandled message=$message")
   }
 
   private def connect(): Unit = {
