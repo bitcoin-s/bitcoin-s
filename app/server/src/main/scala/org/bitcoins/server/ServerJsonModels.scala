@@ -1440,6 +1440,26 @@ object OfferSend {
   }
 }
 
+case class GetDLCOffer(tempContractId: Sha256Digest)
+
+object GetDLCOffer {
+
+  def fromJsArr(arr: ujson.Arr): Try[GetDLCOffer] = {
+    arr.arr.toList match {
+      case tempContractIdJs :: Nil =>
+        Try {
+          val tempContractId = Sha256Digest.fromHex(tempContractIdJs.str)
+
+          GetDLCOffer(tempContractId)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to offer-send, got=${other.length} expected=1")
+        Failure(exn)
+    }
+  }
+}
+
 trait ServerJsonModels {
 
   def jsToOracleAnnouncementTLV(js: Value): OracleAnnouncementTLV =

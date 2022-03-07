@@ -256,6 +256,27 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("getdlcoffer", arr) =>
+      GetDLCOffer.fromJsArr(arr) match {
+        case Failure(exception) =>
+          complete(Server.httpBadRequest(exception))
+        case Success(GetDLCOffer(tempContractId)) =>
+          complete {
+            for {
+              dlcOpt <- wallet.findDLCByTemporaryContractId(tempContractId)
+              dlc = dlcOpt.getOrElse(
+                throw new IllegalArgumentException(
+                  s"Cannot find a DLC with temp contact ID $tempContractId"))
+              offerOpt <- wallet.getDLCOffer(dlc.dlcId)
+              offer = offerOpt.getOrElse(
+                throw new IllegalArgumentException(
+                  s"Cannot find an offer with for DLC ID ${dlc.dlcId}"))
+            } yield {
+              Server.httpSuccess(offer.toMessage.hex)
+            }
+          }
+      }
+
     case ServerCommand("getdlcs", _) =>
       complete {
         wallet.listDLCs().map { dlcs =>
