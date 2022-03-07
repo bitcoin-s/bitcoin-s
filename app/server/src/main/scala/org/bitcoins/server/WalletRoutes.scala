@@ -272,11 +272,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
                 throw new IllegalArgumentException(
                   s"Cannot find an offer with for DLC ID ${dlc.dlcId}"))
             } yield {
-              val tlv = offer.toTLV
-              val lnMessage = LnMessage(tlv)
-              val json = writeJs(tlv)
-              json.obj.update("hex", Str(lnMessage.hex))
-              Server.httpSuccess(json)
+              Server.httpSuccess(offer.toMessage.hex)
             }
           }
       }
