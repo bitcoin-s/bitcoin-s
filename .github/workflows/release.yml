@@ -217,8 +217,8 @@ jobs:
         run: pwd
       - name: chmod startup script
         run: |
-        chmod +x app/server/target/universal/stage/bin/bitcoin-s-server
-        chmod +x app/server/target/universal/stage/bin/bitcoin-s-server.bat
+          chmod +x app/server/target/universal/stage/bin/bitcoin-s-server
+          chmod +x app/server/target/universal/stage/bin/bitcoin-s-server.bat
       - name: Upload zip
         uses: actions/upload-artifact@v3
         env:
