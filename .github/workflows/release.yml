@@ -213,13 +213,15 @@ jobs:
         run: sbt "universal:packageBin"
       - name: View Artifacts
         run: ls -l app/server/target/universal
+      - name: pwd
+        run: pwd
       - name: Upload zip
         uses: actions/upload-artifact@v1
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
-          name: "bitcoin-s-server-${{steps.previoustag.outputs.tag}}"
-          path: "**/*.zip"
+          name: "bitcoin-s-server"
+          path: app/server/target/universal/bitcoin-s-server*
       - name: Upload if release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
