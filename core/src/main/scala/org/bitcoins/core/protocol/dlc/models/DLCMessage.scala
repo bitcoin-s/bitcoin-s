@@ -87,7 +87,8 @@ object DLCMessage {
       changeSerialId: UInt64,
       fundOutputSerialId: UInt64,
       feeRate: SatoshisPerVirtualByte,
-      timeouts: DLCTimeouts)
+      timeouts: DLCTimeouts,
+      isExternalAddress: Boolean = false)
       extends DLCSetupMessage {
 
     require(fundingInputs.nonEmpty, s"DLCOffer fundingINnputs cannot be empty")
@@ -251,7 +252,8 @@ object DLCMessage {
       cetSigs: CETSignatures,
       refundSig: PartialSignature,
       negotiationFields: DLCAccept.NegotiationFields,
-      tempContractId: Sha256Digest)
+      tempContractId: Sha256Digest,
+      isExternalAddress: Boolean = false)
       extends DLCSetupMessage {
 
     require(

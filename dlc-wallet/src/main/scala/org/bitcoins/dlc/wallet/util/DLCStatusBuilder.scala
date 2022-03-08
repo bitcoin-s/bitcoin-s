@@ -17,7 +17,8 @@ object DLCStatusBuilder {
       dlcDb: DLCDb,
       contractInfo: ContractInfo,
       contractData: DLCContractDataDb,
-      offerDb: DLCOfferDb): DLCStatus = {
+      offerDb: DLCOfferDb,
+      payoutAddress: Option[PayoutAddress]): DLCStatus = {
     require(
       dlcDb.state.isInstanceOf[DLCState.InProgressState],
       s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
@@ -43,7 +44,8 @@ object DLCStatusBuilder {
           contractData.dlcTimeouts,
           dlcDb.feeRate,
           totalCollateral,
-          localCollateral
+          localCollateral,
+          payoutAddress
         )
       case DLCState.AcceptComputingAdaptorSigs =>
         AcceptedComputingAdaptorSigs(
@@ -56,7 +58,8 @@ object DLCStatusBuilder {
           timeouts = contractData.dlcTimeouts,
           feeRate = dlcDb.feeRate,
           totalCollateral = totalCollateral,
-          localCollateral = localCollateral
+          localCollateral = localCollateral,
+          payoutAddress
         )
       case DLCState.Accepted =>
         Accepted(
@@ -69,7 +72,8 @@ object DLCStatusBuilder {
           contractData.dlcTimeouts,
           dlcDb.feeRate,
           totalCollateral,
-          localCollateral
+          localCollateral,
+          payoutAddress
         )
       case DLCState.SignComputingAdaptorSigs =>
         SignedComputingAdaptorSigs(
@@ -83,7 +87,8 @@ object DLCStatusBuilder {
           feeRate = dlcDb.feeRate,
           totalCollateral = totalCollateral,
           localCollateral = localCollateral,
-          dlcDb.fundingTxIdOpt.get
+          dlcDb.fundingTxIdOpt.get,
+          payoutAddress
         )
       case DLCState.Signed =>
         Signed(
@@ -97,7 +102,8 @@ object DLCStatusBuilder {
           dlcDb.feeRate,
           totalCollateral,
           localCollateral,
-          dlcDb.fundingTxIdOpt.get
+          dlcDb.fundingTxIdOpt.get,
+          payoutAddress
         )
       case DLCState.Broadcasted =>
         Broadcasted(
@@ -111,7 +117,8 @@ object DLCStatusBuilder {
           dlcDb.feeRate,
           totalCollateral,
           localCollateral,
-          dlcDb.fundingTxIdOpt.get
+          dlcDb.fundingTxIdOpt.get,
+          payoutAddress
         )
       case DLCState.Confirmed =>
         Confirmed(
@@ -125,7 +132,8 @@ object DLCStatusBuilder {
           dlcDb.feeRate,
           totalCollateral,
           localCollateral,
-          dlcDb.fundingTxIdOpt.get
+          dlcDb.fundingTxIdOpt.get,
+          payoutAddress
         )
     }
 
@@ -141,7 +149,8 @@ object DLCStatusBuilder {
       announcementIds: Vector[DLCAnnouncementDb],
       offerDb: DLCOfferDb,
       acceptDb: DLCAcceptDb,
-      closingTx: Transaction): ClosedDLCStatus = {
+      closingTx: Transaction,
+      payoutAddress: Option[PayoutAddress]): ClosedDLCStatus = {
     require(
       dlcDb.state.isInstanceOf[DLCState.ClosedState],
       s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
@@ -176,7 +185,8 @@ object DLCStatusBuilder {
           dlcDb.fundingTxIdOpt.get,
           closingTx.txIdBE,
           myPayout = accounting.myPayout,
-          counterPartyPayout = accounting.theirPayout
+          counterPartyPayout = accounting.theirPayout,
+          payoutAddress = payoutAddress
         )
         refund
       case oracleOutcomeState: DLCState.ClosedViaOracleOutcomeState =>
@@ -203,7 +213,8 @@ object DLCStatusBuilder {
               sigs,
               oracleOutcome,
               myPayout = accounting.myPayout,
-              counterPartyPayout = accounting.theirPayout
+              counterPartyPayout = accounting.theirPayout,
+              payoutAddress = payoutAddress
             )
           case DLCState.RemoteClaimed =>
             RemoteClaimed(
@@ -222,7 +233,8 @@ object DLCStatusBuilder {
               dlcDb.aggregateSignatureOpt.get,
               oracleOutcome,
               myPayout = accounting.myPayout,
-              counterPartyPayout = accounting.theirPayout
+              counterPartyPayout = accounting.theirPayout,
+              payoutAddress = payoutAddress
             )
         }
     }

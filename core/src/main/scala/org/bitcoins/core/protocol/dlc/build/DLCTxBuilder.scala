@@ -39,7 +39,8 @@ case class DLCTxBuilder(offer: DLCOffer, accept: DLCAcceptWithoutSigs) {
                fundOutputSerialId: UInt64,
                feeRate: SatoshisPerVirtualByte,
                DLCTimeouts(contractMaturity: BlockTimeStamp,
-                           contractTimeout: BlockTimeStamp)) = offer
+                           contractTimeout: BlockTimeStamp),
+               _) = offer
 
   val network: BitcoinNetwork = offerFinalAddress.networkParameters match {
     case network: BitcoinNetwork => network
