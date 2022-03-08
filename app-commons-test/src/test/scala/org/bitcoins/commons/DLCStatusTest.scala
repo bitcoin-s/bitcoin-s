@@ -3,6 +3,7 @@ package org.bitcoins.commons
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models.{
   DLCState,
@@ -58,7 +59,12 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val totalCollateral = offer.contractInfo.max
 
-        val payoutAddress = Option.empty[PayoutAddress]
+        // random testnet address
+        val payoutAddress =
+          Some(
+            PayoutAddress(BitcoinAddress.fromString(
+                            "tb1q4ps6c9ewa7uca5v39fakykq9q6hpgjkxje8gve"),
+                          true))
 
         val status =
           DLCStatus.Accepted(

@@ -802,7 +802,7 @@ object Picklers {
       )
     }
 
-  implicit val payoutAddressW: Writer[PayoutAddress] = writer[Obj].comapNulls {
+  implicit val payoutAddressW: Writer[PayoutAddress] = writer[Obj].comap {
     payoutAddress =>
       import payoutAddress._
       Obj(
@@ -810,6 +810,13 @@ object Picklers {
         "isExternal" -> Bool(isExternal)
       )
   }
+
+  implicit val optionPayoutAddressW: Writer[Option[PayoutAddress]] =
+    writer[Value].comap { payoutAddressOpt =>
+      payoutAddressOpt
+        .map(pa => writeJs(pa))
+        .getOrElse(Null)
+    }
 
   implicit val offeredW: Writer[Offered] =
     writer[Obj].comap { offered =>
@@ -1166,9 +1173,16 @@ object Picklers {
         .toVector
 
     val payoutAddressJs = obj("payoutAddress")
-    lazy val payoutAddress: Option[PayoutAddress] =
-      payoutAddressJs("address").strOpt.map(a =>
-        PayoutAddress(BitcoinAddress.fromString(a), false))
+    lazy val payoutAddress: Option[PayoutAddress] = payoutAddressJs match {
+      case json: Obj =>
+        json("address").strOpt.map(a =>
+          PayoutAddress(BitcoinAddress.fromString(a),
+                        json("isExternal").boolOpt.getOrElse(false)))
+      case Null => None
+      case v: Value =>
+        throw new IllegalArgumentException(s"Unexpected payout address $v")
+
+    }
 
     lazy val outcomesJs = obj("outcomes")
     lazy val outcomes = outcomesJs.strOpt match {
