@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main, "2022-03-08-zip-release"]
+    branches: [master, main]
     tags: ["*"]
   release:
     types: [ published ]
