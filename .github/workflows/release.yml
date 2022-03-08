@@ -219,7 +219,7 @@ jobs:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: "bitcoin-s-server-${{steps.previoustag.outputs.tag}}"
-          path: **/*.zip
+          path: "**/*.zip"
       - name: Upload if release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
