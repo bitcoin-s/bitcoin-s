@@ -134,17 +134,36 @@ object GetAddressLabel extends ServerJsonModels {
   }
 }
 
-case class DropAddressLabel(address: BitcoinAddress)
+case class DropAddressLabel(address: BitcoinAddress, label: String)
 
 object DropAddressLabel extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[DropAddressLabel] = {
+  def fromJsArr(jsonArr: ujson.Arr): Try[DropAddressLabel] = {
+    jsonArr.arr.toList match {
+      case address :: label :: Nil =>
+        Try {
+          val addr = jsToBitcoinAddress(address)
+          DropAddressLabel(addr, label.str)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class DropAddressLabels(address: BitcoinAddress)
+
+object DropAddressLabels extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DropAddressLabels] = {
     jsArr.arr.toList match {
       case addrJs :: Nil =>
         Try {
           val addr = jsToBitcoinAddress(addrJs)
 
-          DropAddressLabel(addr)
+          DropAddressLabels(addr)
         }
       case other =>
         Failure(

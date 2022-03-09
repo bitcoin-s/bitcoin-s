@@ -125,6 +125,16 @@ case class AddressTagDAO()(implicit
     safeDatabase.run(query.delete)
   }
 
+  def dropByAddressAndName(
+      address: BitcoinAddress,
+      tagName: AddressTagName): Future[Int] = {
+    val query = table
+      .filter(_.address === address)
+      .filter(_.tagName === tagName)
+
+    safeDatabase.run(query.delete)
+  }
+
   def findTx(
       tx: Transaction,
       network: NetworkParameters): Future[Vector[AddressTagDb]] = {

@@ -1,6 +1,7 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.Materializer
@@ -12,7 +13,11 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.{AddressLabelTagType, TxoState}
+import org.bitcoins.core.wallet.utxo.{
+  AddressLabelTagName,
+  AddressLabelTagType,
+  TxoState
+}
 import org.bitcoins.crypto.NetworkElement
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
@@ -255,20 +260,22 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           Server.httpSuccess(ujson.Arr.from(json))
         }
       }
-    case ServerCommand("dropaddresslabels", arr) =>
+    case ServerCommand("dropaddresslabel", arr) =>
       withValidServerCommand(DropAddressLabel.fromJsArr(arr)) {
-        case DropAddressLabel(address) =>
+        case DropAddressLabel(address, label) =>
           complete {
-            wallet.dropAddressTagType(address, AddressLabelTagType).map {
-              numDropped =>
-                if (numDropped <= 0) {
-                  Server.httpSuccess(s"Address had no labels")
-                } else if (numDropped == 1) {
-                  Server.httpSuccess(s"$numDropped label dropped")
-                } else {
-                  Server.httpSuccess(s"$numDropped labels dropped")
-                }
-            }
+            val tagName = AddressLabelTagName(label)
+            val droppedF = wallet.dropAddressTagName(address, tagName)
+            droppedF.map(handleTagResponse)
+          }
+      }
+    case ServerCommand("dropaddresslabels", arr) =>
+      withValidServerCommand(DropAddressLabels.fromJsArr(arr)) {
+        case DropAddressLabels(address) =>
+          complete {
+            val droppedF =
+              wallet.dropAddressTagType(address, AddressLabelTagType)
+            droppedF.map(handleTagResponse)
           }
       }
 
@@ -912,6 +919,16 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       currencyUnit.satoshis.toBigDecimal.toDouble
     } else {
       Bitcoins(currencyUnit.satoshis).toBigDecimal.toDouble
+    }
+  }
+
+  private def handleTagResponse(numDropped: Int): HttpEntity.Strict = {
+    if (numDropped <= 0) {
+      Server.httpSuccess(s"Address had no labels")
+    } else if (numDropped == 1) {
+      Server.httpSuccess(s"$numDropped label dropped")
+    } else {
+      Server.httpSuccess(s"$numDropped labels dropped")
     }
   }
 }

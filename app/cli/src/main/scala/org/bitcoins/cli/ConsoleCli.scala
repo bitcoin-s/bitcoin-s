@@ -339,7 +339,7 @@ object ConsoleCli {
         .text("Returns all labels in wallet"),
       cmd("dropaddresslabels")
         .action((_, conf) => conf.copy(command = DropAddressLabels(null)))
-        .text("Drop all the labels associated with this address")
+        .text("Drop the label associated with the address")
         .children(
           arg[BitcoinAddress]("address")
             .text("The address to drop the associated labels of")
@@ -348,6 +348,29 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case dropAddressLabels: DropAddressLabels =>
                   dropAddressLabels.copy(address = addr)
+                case other => other
+              }))
+        ),
+      cmd("dropaddresslabel")
+        .action((_, conf) => conf.copy(command = DropAddressLabel(null, null)))
+        .text("Drop all the labels associated with this address")
+        .children(
+          arg[BitcoinAddress]("address")
+            .text("The address to drop the associated labels of")
+            .required()
+            .action((addr, conf) =>
+              conf.copy(command = conf.command match {
+                case dropAddressLabel: DropAddressLabel =>
+                  dropAddressLabel.copy(address = addr)
+                case other => other
+              })),
+          arg[String]("label")
+            .text("The label to drop")
+            .required()
+            .action((label, conf) =>
+              conf.copy(command = conf.command match {
+                case dropAddressLabel: DropAddressLabel =>
+                  dropAddressLabel.copy(label = label)
                 case other => other
               }))
         ),
@@ -1859,6 +1882,9 @@ object ConsoleCli {
         RequestParam("getaddresslabel", Seq(up.writeJs(address)))
       case GetAddressLabels =>
         RequestParam("getaddresslabels")
+      case DropAddressLabel(address, label) =>
+        RequestParam("dropaddresslabel",
+                     Seq(up.writeJs(address), ujson.Str(label)))
       case DropAddressLabels(address) =>
         RequestParam("dropaddresslabels", Seq(up.writeJs(address)))
       case Rescan(addressBatchSize,
@@ -2364,6 +2390,9 @@ object CliCommand {
       extends AppServerCliCommand
 
   case object GetAddressLabels extends AppServerCliCommand
+
+  case class DropAddressLabel(address: BitcoinAddress, label: String)
+      extends AppServerCliCommand
 
   case class DropAddressLabels(address: BitcoinAddress)
       extends AppServerCliCommand
