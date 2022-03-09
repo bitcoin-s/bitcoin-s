@@ -194,3 +194,44 @@ jobs:
           files: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  zip:
+    runs-on: [ ubuntu-latest ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: openjdk@1.17.0
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+      - name: Build zip
+        run: sbt "universal:stage"
+      - name: View Artifacts
+        run: ls -l app/server/target/universal/stage
+      - name: pwd
+        run: pwd
+      - name: chmod startup script
+        run: |
+          chmod +x app/server/target/universal/stage/bin/bitcoin-s-server
+          chmod +x app/server/target/universal/stage/bin/bitcoin-s-server.bat
+      - name: Upload zip
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "bitcoin-s-server"
+          path: app/server/target/universal/stage/
+      - name: Upload if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "bitcoin-s-server-${{steps.previoustag.outputs.tag}}"
+          files: app/server/target/universal/stage
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
