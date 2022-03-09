@@ -134,17 +134,17 @@ object GetAddressLabels extends ServerJsonModels {
   }
 }
 
-case class DropAddressLabels(address: BitcoinAddress)
+case class DropAddressLabel(address: BitcoinAddress)
 
-object DropAddressLabels extends ServerJsonModels {
+object DropAddressLabel extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[DropAddressLabels] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[DropAddressLabel] = {
     jsArr.arr.toList match {
       case addrJs :: Nil =>
         Try {
           val addr = jsToBitcoinAddress(addrJs)
 
-          DropAddressLabels(addr)
+          DropAddressLabel(addr)
         }
       case other =>
         Failure(

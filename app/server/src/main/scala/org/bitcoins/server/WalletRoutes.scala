@@ -228,7 +228,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
-    case ServerCommand("getaddresslabels", arr) =>
+    case ServerCommand("getaddresslabel", arr) =>
       withValidServerCommand(GetAddressLabels.fromJsArr(arr)) {
         case GetAddressLabels(address) =>
           complete {
@@ -240,8 +240,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       }
 
     case ServerCommand("dropaddresslabels", arr) =>
-      withValidServerCommand(DropAddressLabels.fromJsArr(arr)) {
-        case DropAddressLabels(address) =>
+      withValidServerCommand(DropAddressLabel.fromJsArr(arr)) {
+        case DropAddressLabel(address) =>
           complete {
             wallet.dropAddressTagType(address, AddressLabelTagType).map {
               numDropped =>
