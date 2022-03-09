@@ -6,6 +6,8 @@ import org.bitcoins.core.serializers.RawSatoshisSerializer
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
+import scala.math.BigDecimal.RoundingMode
+import scala.math.BigDecimal.RoundingMode.RoundingMode
 import scala.math.Numeric
 import scala.util.{Failure, Success, Try}
 
@@ -170,7 +172,14 @@ object Bitcoins extends BaseNumbers[Bitcoins] with Bounded[Bitcoins] {
     Bitcoins(b)
   }
 
-  def apply(underlying: BigDecimal): Bitcoins = BitcoinsImpl(underlying)
+  def apply(
+      underlying: BigDecimal,
+      roundingMode: RoundingMode = RoundingMode.DOWN): Bitcoins = {
+    // Bitcoin can't represent amounts lower than a satoshi
+    // so we need to round to the nearest satoshi
+    val rounded = underlying.setScale(8, roundingMode)
+    BitcoinsImpl(rounded)
+  }
 
   private case class BitcoinsImpl(underlying: BigDecimal) extends Bitcoins
 }
