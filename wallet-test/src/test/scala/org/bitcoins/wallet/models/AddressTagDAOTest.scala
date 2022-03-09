@@ -83,4 +83,29 @@ class AddressTagDAOTest extends WalletDAOFixture {
     daos =>
       testInsertion(daos, HotStorage)
   }
+
+  it must "delete a tag by name" in { daos =>
+    val accountDAO = daos.accountDAO
+    val addressDAO = daos.addressDAO
+    val addressTagDAO = daos.addressTagDAO
+    for {
+      createdAccount <- {
+        val account = WalletTestUtil.firstAccountDb
+        accountDAO.create(account)
+      }
+      createdAddress <- {
+        val addressDb = WalletTestUtil.getAddressDb(createdAccount)
+        addressDAO.create(addressDb)
+      }
+      createdAddressTag <- {
+        val tagDb =
+          AddressTagDb(createdAddress.address, exampleTag)
+        addressTagDAO.create(tagDb)
+      }
+      dropped <- addressTagDAO.dropByAddressAndName(createdAddress.address,
+                                                    createdAddressTag.tagName)
+    } yield {
+      assert(dropped == 1)
+    }
+  }
 }

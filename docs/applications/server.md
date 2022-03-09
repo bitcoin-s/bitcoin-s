@@ -306,9 +306,13 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `message` - Peer's message or note (optional)
  - `"offer-remove` `hash` - Remove an incoming offer from inbox
     - `hash` - Hash of the offer TLV
-- `offer-send` `offerOrTempContractId` `peerAddress` `message` - Sends an offer to a peer. `offerOrTempContractId` is either an offer TLV or a temporary contract ID.
-- `offers-list` - List all incoming offers from the inbox
-- `getdlcoffer` `tempContractId` - Gets a DLC offer by temporary contract ID.
+ - `offer-send` `offerOrTempContractId` `peerAddress` `message` - Sends an offer to a peer. `offerOrTempContractId` is either an offer TLV or a temporary contract ID.
+ - `offers-list` - List all incoming offers from the inbox
+ - `getdlcoffer` `tempContractId` - Gets a DLC offer by temporary contract ID.
+ - `getaddresslabel` `address` - gets all labels for an address
+ - `getaddresslabels` - returns all addresses with labels in the wallet
+ - `dropaddresslabel` `address` `label` - drops the label for a given address
+ - `dropaddresslabels` `address` - drops all labels for the given address
 
 ### Network
  - `getpeers` - List the connected peers

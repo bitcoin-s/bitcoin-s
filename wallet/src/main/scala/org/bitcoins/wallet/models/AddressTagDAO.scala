@@ -125,6 +125,16 @@ case class AddressTagDAO()(implicit
     safeDatabase.run(query.delete)
   }
 
+  def dropByAddressAndName(
+      address: BitcoinAddress,
+      tagName: AddressTagName): Future[Int] = {
+    val query = table
+      .filter(_.address === address)
+      .filter(_.tagName === tagName)
+
+    safeDatabase.run(query.delete)
+  }
+
   def findTx(
       tx: Transaction,
       network: NetworkParameters): Future[Vector[AddressTagDb]] = {
@@ -201,7 +211,7 @@ case class AddressTagDAO()(implicit
       (address, tagName, tagType).<>(fromTuple, toTuple)
 
     def primaryKey: PrimaryKey =
-      primaryKey("pk_address_tags", sourceColumns = (address, tagType))
+      primaryKey("pk_address_tags", sourceColumns = (address, tagName))
 
     /** All tags must have an associated address */
     def fk_address = {

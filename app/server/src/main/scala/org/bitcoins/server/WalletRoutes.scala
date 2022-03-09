@@ -1,6 +1,7 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.Materializer
@@ -12,7 +13,11 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.{AddressLabelTagType, TxoState}
+import org.bitcoins.core.wallet.utxo.{
+  AddressLabelTagName,
+  AddressLabelTagType,
+  TxoState
+}
 import org.bitcoins.crypto.NetworkElement
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
@@ -228,9 +233,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
-    case ServerCommand("getaddresslabels", arr) =>
-      withValidServerCommand(GetAddressLabels.fromJsArr(arr)) {
-        case GetAddressLabels(address) =>
+    case ServerCommand("getaddresslabel", arr) =>
+      withValidServerCommand(GetAddressLabel.fromJsArr(arr)) {
+        case GetAddressLabel(address) =>
           complete {
             wallet.getAddressTags(address, AddressLabelTagType).map { tagDbs =>
               val retStr = tagDbs.map(_.tagName.name)
@@ -239,20 +244,38 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("getaddresslabels", _) =>
+      complete {
+        val allTagsF = wallet.getAddressTags()
+        for {
+          allTags <- allTagsF
+          grouped = allTags.groupBy(_.address)
+        } yield {
+          val json: Vector[ujson.Obj] = grouped.map { case (address, labels) =>
+            val tagNames: Vector[ujson.Str] =
+              labels.map(l => ujson.Str(l.tagName.name))
+            ujson.Obj(("address", address.toString),
+                      ("labels", ujson.Arr.from(tagNames)))
+          }.toVector
+          Server.httpSuccess(ujson.Arr.from(json))
+        }
+      }
+    case ServerCommand("dropaddresslabel", arr) =>
+      withValidServerCommand(DropAddressLabel.fromJsArr(arr)) {
+        case DropAddressLabel(address, label) =>
+          complete {
+            val tagName = AddressLabelTagName(label)
+            val droppedF = wallet.dropAddressTagName(address, tagName)
+            droppedF.map(handleTagResponse)
+          }
+      }
     case ServerCommand("dropaddresslabels", arr) =>
       withValidServerCommand(DropAddressLabels.fromJsArr(arr)) {
         case DropAddressLabels(address) =>
           complete {
-            wallet.dropAddressTagType(address, AddressLabelTagType).map {
-              numDropped =>
-                if (numDropped <= 0) {
-                  Server.httpSuccess(s"Address had no labels")
-                } else if (numDropped == 1) {
-                  Server.httpSuccess(s"$numDropped label dropped")
-                } else {
-                  Server.httpSuccess(s"$numDropped labels dropped")
-                }
-            }
+            val droppedF =
+              wallet.dropAddressTagType(address, AddressLabelTagType)
+            droppedF.map(handleTagResponse)
           }
       }
 
@@ -896,6 +919,16 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       currencyUnit.satoshis.toBigDecimal.toDouble
     } else {
       Bitcoins(currencyUnit.satoshis).toBigDecimal.toDouble
+    }
+  }
+
+  private def handleTagResponse(numDropped: Int): HttpEntity.Strict = {
+    if (numDropped <= 0) {
+      Server.httpSuccess(s"Address had no labels")
+    } else if (numDropped == 1) {
+      Server.httpSuccess(s"$numDropped label dropped")
+    } else {
+      Server.httpSuccess(s"$numDropped labels dropped")
     }
   }
 }

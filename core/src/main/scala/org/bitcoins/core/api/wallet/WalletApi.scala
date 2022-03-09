@@ -17,7 +17,12 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.util.{FutureUtil, StartStopAsync}
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType, TxoState}
+import org.bitcoins.core.wallet.utxo.{
+  AddressTag,
+  AddressTagName,
+  AddressTagType,
+  TxoState
+}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import java.time.Instant
@@ -218,7 +223,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       address: BitcoinAddress,
       tagType: AddressTagType): Future[Vector[AddressTagDb]]
 
-  def getAddressTags: Future[Vector[AddressTagDb]]
+  def getAddressTags(): Future[Vector[AddressTagDb]]
 
   def getAddressTags(tagType: AddressTagType): Future[Vector[AddressTagDb]]
 
@@ -229,6 +234,10 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def dropAddressTagType(
       address: BitcoinAddress,
       addressTagType: AddressTagType): Future[Int]
+
+  def dropAddressTagName(
+      address: BitcoinAddress,
+      tagName: AddressTagName): Future[Int]
 
   /** Generates a new change address */
   protected[wallet] def getNewChangeAddress()(implicit

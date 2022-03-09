@@ -13,7 +13,11 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.wallet.utxo.{AddressTag, AddressTagType}
+import org.bitcoins.core.wallet.utxo.{
+  AddressTag,
+  AddressTagName,
+  AddressTagType
+}
 import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.wallet._
 
@@ -414,7 +418,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
       address: BitcoinAddress,
       tag: AddressTag): Future[AddressTagDb] = {
     val addressTagDb = AddressTagDb(address, tag)
-    val f = addressTagDAO.upsert(addressTagDb)
+    val f = addressTagDAO.create(addressTagDb)
     f
   }
 
@@ -428,7 +432,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
     addressTagDAO.findByAddressAndTag(address, tagType)
   }
 
-  def getAddressTags: Future[Vector[AddressTagDb]] = {
+  def getAddressTags(): Future[Vector[AddressTagDb]] = {
     addressTagDAO.findAll()
   }
 
@@ -449,6 +453,12 @@ private[wallet] trait AddressHandling extends WalletLogger {
       address: BitcoinAddress,
       addressTagType: AddressTagType): Future[Int] = {
     addressTagDAO.dropByAddressAndTag(address, addressTagType)
+  }
+
+  override def dropAddressTagName(
+      address: BitcoinAddress,
+      addressTagName: AddressTagName): Future[Int] = {
+    addressTagDAO.dropByAddressAndName(address, addressTagName)
   }
 
   private lazy val addressRequestQueue = {
