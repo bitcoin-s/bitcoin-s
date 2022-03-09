@@ -229,8 +229,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       }
 
     case ServerCommand("getaddresslabel", arr) =>
-      withValidServerCommand(GetAddressLabels.fromJsArr(arr)) {
-        case GetAddressLabels(address) =>
+      withValidServerCommand(GetAddressLabel.fromJsArr(arr)) {
+        case GetAddressLabel(address) =>
           complete {
             wallet.getAddressTags(address, AddressLabelTagType).map { tagDbs =>
               val retStr = tagDbs.map(_.tagName.name)

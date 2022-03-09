@@ -114,17 +114,17 @@ object GetAddressTags extends ServerJsonModels {
   }
 }
 
-case class GetAddressLabels(address: BitcoinAddress)
+case class GetAddressLabel(address: BitcoinAddress)
 
-object GetAddressLabels extends ServerJsonModels {
+object GetAddressLabel extends ServerJsonModels {
 
-  def fromJsArr(jsArr: ujson.Arr): Try[GetAddressLabels] = {
+  def fromJsArr(jsArr: ujson.Arr): Try[GetAddressLabel] = {
     jsArr.arr.toList match {
       case addrJs :: Nil =>
         Try {
           val addr = jsToBitcoinAddress(addrJs)
 
-          GetAddressLabels(addr)
+          GetAddressLabel(addr)
         }
       case other =>
         Failure(
