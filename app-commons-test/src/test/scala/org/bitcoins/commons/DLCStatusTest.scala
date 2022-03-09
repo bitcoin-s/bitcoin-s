@@ -3,8 +3,13 @@ package org.bitcoins.commons
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
-import org.bitcoins.core.protocol.dlc.models.{DLCState, DLCStatus}
+import org.bitcoins.core.protocol.dlc.models.{
+  DLCState,
+  DLCStatus,
+  PayoutAddress
+}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator, TLVGen}
@@ -22,16 +27,21 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val totalCollateral = offer.contractInfo.max
 
+        val payoutAddress = Option.empty[PayoutAddress]
+
         val status =
-          DLCStatus.Offered(Sha256Digest.empty,
-                            isInit,
-                            TimeUtil.now,
-                            offer.tempContractId,
-                            offer.contractInfo,
-                            offer.timeouts,
-                            offer.feeRate,
-                            totalCollateral,
-                            offer.totalCollateral)
+          DLCStatus.Offered(
+            Sha256Digest.empty,
+            isInit,
+            TimeUtil.now,
+            offer.tempContractId,
+            offer.contractInfo,
+            offer.timeouts,
+            offer.feeRate,
+            totalCollateral,
+            offer.totalCollateral,
+            payoutAddress
+          )
 
         assert(status.state == DLCState.Offered)
         assert(read[DLCStatus](write(status)) == status)
@@ -49,6 +59,13 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val totalCollateral = offer.contractInfo.max
 
+        // random testnet address
+        val payoutAddress =
+          Some(
+            PayoutAddress(BitcoinAddress.fromString(
+                            "tb1q4ps6c9ewa7uca5v39fakykq9q6hpgjkxje8gve"),
+                          true))
+
         val status =
           DLCStatus.Accepted(
             Sha256Digest.empty,
@@ -60,7 +77,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.timeouts,
             offer.feeRate,
             totalCollateral,
-            offer.totalCollateral
+            offer.totalCollateral,
+            payoutAddress
           )
 
         assert(status.state == DLCState.Accepted)
@@ -80,6 +98,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val totalCollateral = offer.contractInfo.max
 
+        val payoutAddress = Option.empty[PayoutAddress]
+
         val status =
           DLCStatus.Signed(
             Sha256Digest.empty,
@@ -92,7 +112,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.feeRate,
             totalCollateral,
             offer.totalCollateral,
-            txId
+            txId,
+            payoutAddress
           )
 
         assert(status.state == DLCState.Signed)
@@ -112,6 +133,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val totalCollateral = offer.contractInfo.max
 
+        val payoutAddress = Option.empty[PayoutAddress]
+
         val status =
           DLCStatus.Broadcasted(
             Sha256Digest.empty,
@@ -124,7 +147,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.feeRate,
             totalCollateral,
             offer.totalCollateral,
-            fundingTxId
+            fundingTxId,
+            payoutAddress
           )
 
         assert(status.state == DLCState.Broadcasted)
@@ -144,6 +168,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val totalCollateral = offer.contractInfo.max
 
+        val payoutAddress = Option.empty[PayoutAddress]
+
         val status =
           DLCStatus.Confirmed(
             Sha256Digest.empty,
@@ -156,7 +182,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.feeRate,
             totalCollateral,
             offer.totalCollateral,
-            fundingTxId
+            fundingTxId,
+            payoutAddress
           )
 
         assert(status.state == DLCState.Confirmed)
@@ -187,6 +214,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
         scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
       val outcome = offer.contractInfo.allOutcomes(rand)
 
+      val payoutAddress = Option.empty[PayoutAddress]
+
       val status =
         DLCStatus.Claimed(
           Sha256Digest.empty,
@@ -204,7 +233,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
           sigs.toVector,
           outcome,
           myPayout = myPayout,
-          counterPartyPayout = theirPayout
+          counterPartyPayout = theirPayout,
+          payoutAddress = payoutAddress
         )
 
       assert(status.state == DLCState.Claimed)
@@ -238,6 +268,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
         scala.util.Random.nextInt(offer.contractInfo.allOutcomes.size)
       val outcome = offer.contractInfo.allOutcomes(rand)
 
+      val payoutAddress = Option.empty[PayoutAddress]
+
       val status =
         DLCStatus.RemoteClaimed(
           Sha256Digest.empty,
@@ -255,7 +287,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
           sig,
           outcome,
           myPayout = myPayout,
-          counterPartyPayout = theirPayout
+          counterPartyPayout = theirPayout,
+          payoutAddress = payoutAddress
         )
 
       assert(status.state == DLCState.RemoteClaimed)
@@ -285,6 +318,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
       val theirPayout: CurrencyUnit = totalCollateral - myPayout
 
+      val payoutAddress = Option.empty[PayoutAddress]
+
       val status =
         DLCStatus.Refunded(
           Sha256Digest.empty,
@@ -300,7 +335,8 @@ class DLCStatusTest extends BitcoinSJvmTest {
           fundingTxId,
           closingTxId,
           myPayout = myPayout,
-          counterPartyPayout = theirPayout
+          counterPartyPayout = theirPayout,
+          payoutAddress = payoutAddress
         )
 
       assert(status.state == DLCState.Refunded)

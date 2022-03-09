@@ -371,6 +371,10 @@ abstract class DLCWallet
       timeouts = DLCTimeouts(BlockTimeStamp(locktime),
                              BlockTimeStamp(refundLocktime))
 
+      isExternalAddress <- addressDAO
+        .findAddress(dlcPubKeys.payoutAddress)
+        .map(_.isEmpty)
+
       offer = DLCOffer(
         protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
         contractInfo = contractInfo,
@@ -382,7 +386,8 @@ abstract class DLCWallet
         changeSerialId = changeSerialId,
         fundOutputSerialId = fundOutputSerialId,
         feeRate = feeRate,
-        timeouts = timeouts
+        timeouts = timeouts,
+        isExternalAddress = isExternalAddress
       )
 
       oracleParamsOpt = OracleInfo.getOracleParamsOpt(
@@ -761,11 +766,18 @@ abstract class DLCWallet
 
         _ = logger.info(s"Creating CET Sigs for ${contractId.toHex}")
         //emit websocket event that we are now computing adaptor signatures
+        isExternalAddress <- addressDAO
+          .findAddress(initializedAccept.pubKeys.payoutAddress)
+          .map(_.isEmpty)
         status = DLCStatusBuilder.buildInProgressDLCStatus(
           dlcDb = initializedAccept.dlc,
           contractInfo = offer.contractInfo,
           contractData = initializedAccept.contractDataDb,
-          offerDb = initializedAccept.offerDb)
+          offerDb = initializedAccept.offerDb,
+          payoutAddress = Some(
+            PayoutAddress(initializedAccept.pubKeys.payoutAddress,
+                          isExternalAddress))
+        )
         _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status)
         cetSigs <- signer.createCETSigsAsync()
         refundSig = signer.signRefundTx
@@ -797,11 +809,13 @@ abstract class DLCWallet
         }
 
         accept =
-          initializedAccept.acceptDb.toDLCAccept(
-            tempContractId = dlc.tempContractId,
-            fundingInputs = initializedAccept.acceptWithoutSigs.fundingInputs,
-            outcomeSigs = cetSigs.outcomeSigs,
-            refundSig = refundSig)
+          initializedAccept.acceptDb
+            .toDLCAccept(tempContractId = dlc.tempContractId,
+                         fundingInputs =
+                           initializedAccept.acceptWithoutSigs.fundingInputs,
+                         outcomeSigs = cetSigs.outcomeSigs,
+                         refundSig = refundSig)
+            .copy(isExternalAddress = status.payoutAddress.forall(_.isExternal))
 
         _ = require(accept.tempContractId == offer.tempContractId,
                     "Offer and Accept have differing tempContractIds!")
@@ -1730,6 +1744,7 @@ abstract class DLCWallet
     val statusF: Future[DLCStatus] = for {
       (contractInfo, announcementsWithId) <- contractInfoAndAnnouncementsF
       (announcementIds, _, nonceDbs) <- aggregatedF
+      payoutAddress <- getPayoutAddress(dlcDb, offerDb, acceptDbOpt)
       status <- {
         dlcDb.state match {
           case _: DLCState.InProgressState =>
@@ -1737,7 +1752,8 @@ abstract class DLCWallet
               dlcDb = dlcDb,
               contractInfo = contractInfo,
               contractData = contractData,
-              offerDb = offerDb)
+              offerDb = offerDb,
+              payoutAddress = payoutAddress)
             Future.successful(inProgress)
           case _: DLCState.ClosedState =>
             (acceptDbOpt, closingTxOpt) match {
@@ -1751,7 +1767,8 @@ abstract class DLCWallet
                   nonceDbs = nonceDbs,
                   offerDb = offerDb,
                   acceptDb = acceptDb,
-                  closingTx = closingTx.transaction
+                  closingTx = closingTx.transaction,
+                  payoutAddress = payoutAddress
                 )
                 Future.successful(status)
               case (None, None) =>
@@ -1769,6 +1786,24 @@ abstract class DLCWallet
     } yield status
 
     statusF.map(Some(_))
+  }
+
+  private def getPayoutAddress(
+      dlcDb: DLCDb,
+      offerDb: DLCOfferDb,
+      acceptDbOpt: Option[DLCAcceptDb]): Future[Option[PayoutAddress]] = {
+    val addressOpt = if (dlcDb.isInitiator) {
+      Some(offerDb.payoutAddress)
+    } else {
+      acceptDbOpt.map(_.payoutAddress)
+    }
+    addressOpt match {
+      case None => Future.successful(None)
+      case Some(address) =>
+        for {
+          isExternal <- addressDAO.findAddress(address).map(_.isEmpty)
+        } yield Some(PayoutAddress(address, isExternal))
+    }
   }
 
   /** @param newAnnouncements announcements we do not have in our db
