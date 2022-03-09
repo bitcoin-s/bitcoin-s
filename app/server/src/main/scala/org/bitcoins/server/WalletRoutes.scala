@@ -239,6 +239,22 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("getaddresslabels", _) =>
+      complete {
+        val allTagsF = wallet.getAddressTags
+        for {
+          allTags <- allTagsF
+          grouped = allTags.groupBy(_.address)
+        } yield {
+          val json: Vector[ujson.Obj] = grouped.map { case (address, labels) =>
+            val tagNames: Vector[ujson.Str] =
+              labels.map(l => ujson.Str(l.tagName.name))
+            ujson.Obj(("address", address.toString),
+                      ("labels", ujson.Arr.from(tagNames)))
+          }.toVector
+          Server.httpSuccess(ujson.Arr.from(json))
+        }
+      }
     case ServerCommand("dropaddresslabels", arr) =>
       withValidServerCommand(DropAddressLabel.fromJsArr(arr)) {
         case DropAddressLabel(address) =>

@@ -334,6 +334,9 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("getaddresslabels")
+        .action((_, conf) => conf.copy(command = GetAddressLabels))
+        .text("Returns all labels in wallet"),
       cmd("dropaddresslabels")
         .action((_, conf) => conf.copy(command = DropAddressLabels(null)))
         .text("Drop all the labels associated with this address")
@@ -1854,6 +1857,8 @@ object ConsoleCli {
         RequestParam("getaddresstags", Seq(up.writeJs(address)))
       case GetAddressLabel(address) =>
         RequestParam("getaddresslabel", Seq(up.writeJs(address)))
+      case GetAddressLabels =>
+        RequestParam("getaddresslabels")
       case DropAddressLabels(address) =>
         RequestParam("dropaddresslabels", Seq(up.writeJs(address)))
       case Rescan(addressBatchSize,
@@ -2357,6 +2362,8 @@ object CliCommand {
 
   case class GetAddressLabel(address: BitcoinAddress)
       extends AppServerCliCommand
+
+  case object GetAddressLabels extends AppServerCliCommand
 
   case class DropAddressLabels(address: BitcoinAddress)
       extends AppServerCliCommand

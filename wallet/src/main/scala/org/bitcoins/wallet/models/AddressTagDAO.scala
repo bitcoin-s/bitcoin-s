@@ -201,7 +201,7 @@ case class AddressTagDAO()(implicit
       (address, tagName, tagType).<>(fromTuple, toTuple)
 
     def primaryKey: PrimaryKey =
-      primaryKey("pk_address_tags", sourceColumns = (address, tagType))
+      primaryKey("pk_address_tags", sourceColumns = (address, tagName))
 
     /** All tags must have an associated address */
     def fk_address = {
