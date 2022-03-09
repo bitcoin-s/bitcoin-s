@@ -744,7 +744,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
-    "get address labels" in {
+    "get address label" in {
       (mockWalletApi
         .getAddressTags(_: BitcoinAddress, _: AddressTagType))
         .expects(testAddress, AddressLabelTagType)
@@ -753,12 +753,47 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val route =
         walletRoutes.handleCommand(
-          ServerCommand("getaddresslabels", Arr(Str(testAddressStr))))
+          ServerCommand("getaddresslabel", Arr(Str(testAddressStr))))
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
         assert(
           responseAs[String] == """{"result":["""" + testLabel.name + """"],"error":null}""")
+      }
+    }
+
+    "get address labels" in {
+      (mockWalletApi.getAddressTags: () => Future[Vector[AddressTagDb]])
+        .expects()
+        .returning(
+          Future.successful(Vector(AddressTagDb(testAddress, testLabel))))
+
+      val route =
+        walletRoutes.handleCommand(ServerCommand("getaddresslabels", Arr()))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":[{"address":"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa","labels":["test"]}],"error":null}""")
+      }
+    }
+
+    "drop address label" in {
+      val labelName = "label"
+      (mockWalletApi
+        .dropAddressTagName(_: BitcoinAddress, _: AddressTagName))
+        .expects(testAddress, AddressLabelTagName(labelName))
+        .returning(Future.successful(1))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("dropaddresslabel",
+                        Arr(Str(testAddressStr), Str(labelName))))
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == """{"result":"""" + "1 label dropped" + """","error":null}""")
       }
     }
 

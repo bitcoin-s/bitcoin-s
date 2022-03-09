@@ -246,7 +246,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
     case ServerCommand("getaddresslabels", _) =>
       complete {
-        val allTagsF = wallet.getAddressTags
+        val allTagsF = wallet.getAddressTags()
         for {
           allTags <- allTagsF
           grouped = allTags.groupBy(_.address)

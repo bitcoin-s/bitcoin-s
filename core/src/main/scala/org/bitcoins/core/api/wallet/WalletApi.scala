@@ -223,7 +223,7 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       address: BitcoinAddress,
       tagType: AddressTagType): Future[Vector[AddressTagDb]]
 
-  def getAddressTags: Future[Vector[AddressTagDb]]
+  def getAddressTags(): Future[Vector[AddressTagDb]]
 
   def getAddressTags(tagType: AddressTagType): Future[Vector[AddressTagDb]]
 

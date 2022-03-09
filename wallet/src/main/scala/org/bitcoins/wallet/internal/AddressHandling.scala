@@ -432,7 +432,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
     addressTagDAO.findByAddressAndTag(address, tagType)
   }
 
-  def getAddressTags: Future[Vector[AddressTagDb]] = {
+  def getAddressTags(): Future[Vector[AddressTagDb]] = {
     addressTagDAO.findAll()
   }
 
