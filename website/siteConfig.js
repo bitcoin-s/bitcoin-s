@@ -66,6 +66,13 @@ const users = [
       "Read more at [their blog](https://medium.com/gemini/gemini-upgrades-wallet-with-full-support-of-segwit-5bb8e4bc851b)"
     ].join(" "),
     pinned: true
+  },
+  {
+    caption: "The Bitcoin Company",
+    image: `${baseUrl}img/tbc-logo.png`,
+    infoLink: "https://thebitcoincompany.com",
+    description: "The Bitcoin Company uses Bitcoin-S to help power their lightning integrations",
+    pinned: true
   }
 ];
 
