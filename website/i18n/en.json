@@ -143,6 +143,9 @@
       "tor/tor": {
         "title": "Tor Setup"
       },
+      "ui-setup": {
+        "title": "Installing the DLC Wallet UI"
+      },
       "wallet/address-tagging": {
         "title": "Address and UTXO tagging"
       },
