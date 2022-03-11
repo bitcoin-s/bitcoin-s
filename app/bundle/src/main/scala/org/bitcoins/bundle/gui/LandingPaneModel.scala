@@ -101,11 +101,12 @@ class LandingPaneModel(serverArgParser: ServerArgParser)(implicit
           }
         }
 
-        startedF.failed.foreach { case err =>
-          throw err
-        }
+        val allF = for {
+          _ <- startedF
+          _ <- promise.future
+        } yield ()
 
-        Await.result(promise.future, 120.seconds)
+        Await.result(allF, 120.seconds)
       }
     )
   }
