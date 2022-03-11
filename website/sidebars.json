@@ -5,7 +5,8 @@
       "bips"
     ],
     "Getting Setup": [
-      "getting-setup"
+      "getting-setup",
+      "ui-setup"
     ],
     "Applications": [
       "applications/cli",
