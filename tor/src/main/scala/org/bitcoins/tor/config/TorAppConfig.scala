@@ -165,7 +165,12 @@ case class TorAppConfig(
   private def isBinaryFullyStarted(): Future[Unit] = {
     //tor can take at least 25 seconds to start at times
     //see: https://github.com/bitcoin-s/bitcoin-s/pull/3558#issuecomment-899819698
-    AsyncUtil.retryUntilSatisfied(checkIfLogExists, 1.second, 60)
+    AsyncUtil
+      .retryUntilSatisfied(checkIfLogExists, 1.second, 60)
+      .recover { case _: AsyncUtil.RpcRetryException =>
+        throw new RuntimeException(
+          s"Could not start tor, please try again in a few minutes")
+      }
   }
 
   /** Checks it the [[isBootstrappedLogLine]] exists in the tor log file */

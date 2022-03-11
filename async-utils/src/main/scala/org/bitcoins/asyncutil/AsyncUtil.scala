@@ -51,30 +51,6 @@ abstract class AsyncUtil extends AsyncUtilApi {
                                    stackTrace = stackTrace)
   }
 
-  case class RpcRetryException(
-      message: String,
-      caller: Array[StackTraceElement])
-      extends Exception(message) {
-
-    /*
-    Someone who calls a method in this class will be interested
-     * in where the call was made (and the stack trace from there
-     * backwards) and what happens between their call and the failure,
-     * i.e. the internal calls of this class, are not of interest.
-     *
-     * This trims the top of the stack trace to exclude these internal calls.
-     */
-    val internalFiles: Vector[String] = Vector("AsyncUtil.scala",
-                                               "RpcUtil.scala",
-                                               "TestAsyncUtil.scala",
-                                               "TestRpcUtil.scala")
-
-    private val relevantStackTrace =
-      caller.tail.dropWhile(elem => internalFiles.contains(elem.getFileName))
-
-    this.setStackTrace(relevantStackTrace)
-  }
-
   // Has a different name so that default values are permitted
   protected def retryUntilSatisfiedWithCounter(
       conditionF: () => Future[Boolean],
@@ -87,7 +63,7 @@ abstract class AsyncUtil extends AsyncUtilApi {
       if (condition) {
         Future.unit
       } else if (counter == maxTries) {
-        Future.failed(RpcRetryException(
+        Future.failed(AsyncUtil.RpcRetryException(
           s"Condition timed out after $maxTries attempts with interval=$interval waiting periods",
           stackTrace))
       } else {
@@ -155,6 +131,30 @@ abstract class AsyncUtil extends AsyncUtilApi {
 }
 
 object AsyncUtil extends AsyncUtil {
+
+  case class RpcRetryException(
+      message: String,
+      caller: Array[StackTraceElement])
+      extends Exception(message) {
+
+    /*
+    Someone who calls a method in this class will be interested
+     * in where the call was made (and the stack trace from there
+     * backwards) and what happens between their call and the failure,
+     * i.e. the internal calls of this class, are not of interest.
+     *
+     * This trims the top of the stack trace to exclude these internal calls.
+     */
+    val internalFiles: Vector[String] = Vector("AsyncUtil.scala",
+                                               "RpcUtil.scala",
+                                               "TestAsyncUtil.scala",
+                                               "TestRpcUtil.scala")
+
+    private val relevantStackTrace =
+      caller.tail.dropWhile(elem => internalFiles.contains(elem.getFileName))
+
+    this.setStackTrace(relevantStackTrace)
+  }
 
   private[bitcoins] val scheduler = monix.execution.Scheduler.global
 
