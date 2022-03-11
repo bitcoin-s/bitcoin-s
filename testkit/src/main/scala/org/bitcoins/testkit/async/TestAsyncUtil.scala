@@ -37,8 +37,8 @@ object TestAsyncUtil extends TestAsyncUtil {
   def transformRetryToTestFailure[T](fut: Future[T])(implicit
       ec: ExecutionContext): Future[T] = {
     def transformRetry(err: Throwable): Throwable = {
-      if (err.isInstanceOf[RpcRetryException]) {
-        val retryErr = err.asInstanceOf[RpcRetryException]
+      if (err.isInstanceOf[AsyncUtil.RpcRetryException]) {
+        val retryErr = err.asInstanceOf[AsyncUtil.RpcRetryException]
         val relevantStackTrace = retryErr.caller.tail
           .dropWhile(elem => retryErr.internalFiles.contains(elem.getFileName))
           .takeWhile(!_.getFileName.contains("TestSuite"))
