@@ -1436,10 +1436,7 @@ abstract class DLCWallet
             SignComputingAdaptorSigs | Signed) =>
           sys.error(
             s"Cannot execute DLC before the DLC is broadcast to the blockchain, state=$state")
-        case c: ClosedState =>
-          sys.error(
-            s"Cannot execute a DLC that has already been executed, state=$c")
-        case Broadcasted | Confirmed =>
+        case Broadcasted | Confirmed | _: ClosedState =>
         //can continue executing, do nothing
       }
       (announcements, announcementData, nonceDbs) <- dlcDataManagement
