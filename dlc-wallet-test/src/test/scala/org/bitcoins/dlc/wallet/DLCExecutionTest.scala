@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.DLCOffer
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.{
@@ -461,5 +461,32 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       } yield assert(result)
 
       recoverToSucceededIf[IllegalArgumentException](resultF)
+  }
+
+  it must "throw an exception when you try to execute a DLC in the SIGNED state" in {
+    wallets =>
+      val walletA = wallets._1.wallet
+      val walletB = wallets._2.wallet
+      val contractOraclePair = DLCWalletUtil.sampleContractOraclePair
+      val amt = Bitcoins.one
+      val contractInfo = SingleContractInfo(amt.satoshis, contractOraclePair)
+      val resultF = for {
+        offer <- walletA.createDLCOffer(
+          contractInfo = contractInfo,
+          collateral = half,
+          feeRateOpt = Some(SatoshisPerVirtualByte.fromLong(10)),
+          locktime = dummyTimeouts.contractMaturity.toUInt32,
+          refundLocktime = dummyTimeouts.contractTimeout.toUInt32,
+          externalPayoutAddressOpt = None,
+          externalChangeAddressOpt = None
+        )
+        accept <- walletB.acceptDLCOffer(offer, None, None)
+        sign <- walletA.signDLC(accept)
+        contractId = sign.contractId
+        (_, sig) = DLCWalletUtil.getSigs(contractInfo)
+        _ <- walletA.executeDLC(contractId, sig)
+      } yield succeed
+
+      recoverToSucceededIf[RuntimeException](resultF)
   }
 }
