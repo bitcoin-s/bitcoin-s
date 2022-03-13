@@ -33,12 +33,12 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
       dlcOfferDb: DLCOfferDb)(implicit ec: ExecutionContext): DBIOAction[
     Unit,
     NoStream,
-    Effect.Write with Effect.Transactional] = {
+    Effect.Read with Effect.Write with Effect.Transactional] = {
     val globalAction = dlcDAO.createAction(dlcDb)
     val contractAction = contractDataDAO.createAction(contractDataDb)
     val announcementAction =
       dlcAnnouncementDAO.createAllAction(dlcAnnouncementDbs)
-    val inputsAction = dlcInputsDAO.createAllAction(dlcInputs)
+    val inputsAction = dlcInputsDAO.upsertAllAction(dlcInputs)
     val offerAction = dlcOfferDAO.createAction(dlcOfferDb)
     val actions = Vector(globalAction,
                          contractAction,
