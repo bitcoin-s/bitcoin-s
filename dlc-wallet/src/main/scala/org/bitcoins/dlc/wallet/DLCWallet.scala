@@ -563,7 +563,7 @@ abstract class DLCWallet
           dlcDbAction = dlcDAO.createAction(dlc)
           dlcOfferAction = dlcOfferDAO.createAction(dlcOfferDb)
           acceptAction = dlcAcceptDAO.createAction(acceptDb)
-          inputsAction = dlcInputsDAO.createAllAction(acceptInputs)
+          inputsAction = dlcInputsDAO.upsertAllAction(acceptInputs)
           contractAction = contractDataDAO.createAction(contractDataDb)
           createdAnnouncementsAction = announcementDAO.createAllAction(
             groupedAnnouncements.newAnnouncements)
