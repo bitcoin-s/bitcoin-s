@@ -228,7 +228,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
         walletCallbacks.executeOnNewAddressGenerated(logger, addressDb.address)
     } yield {
       logger.info(
-        s"Generated new address=${addressDb.address} isChange=${addressDb.isChange}")
+        s"Generated new address=${addressDb.address} isChange=${addressDb.isChange} account=$account")
       addressDb.address
     }
   }
