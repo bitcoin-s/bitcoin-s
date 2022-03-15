@@ -265,25 +265,19 @@ abstract class Wallet
       for {
         accountUtxos <- spendingInfoDAO.findAllForAccountAction(account)
         _ <- spendingInfoDAO.deleteSpendingInfoDbAllAction(accountUtxos)
-        accountAddresses <- addressDAO.findAllForAccountAction(account)
-        _ <- addressTagDAO.deleteByAddressesAction(
-          accountAddresses.map(_.address))
-        _ <- addressDAO.deleteAllAction(accountAddresses)
       } yield this
     }
 
     safeDatabase.run(aggregatedActions)
   }
 
-  override def clearAllUtxosAndAddresses(): Future[Wallet] = {
+  override def clearAllUtxos(): Future[Wallet] = {
     val aggregatedActions: DBIOAction[
       Unit,
       NoStream,
       Effect.Write with Effect.Transactional] = for {
-      _ <- addressTagDAO.deleteAllAction()
+
       _ <- spendingInfoDAO.deleteAllAction()
-      _ <- addressDAO.deleteAllAction()
-      _ <- scriptPubKeyDAO.deleteAllAction()
     } yield {
       ()
     }

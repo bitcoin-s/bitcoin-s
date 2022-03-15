@@ -196,7 +196,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
-      _ <- wallet.clearAllUtxosAndAddresses()
+      _ <- wallet.clearAllUtxos()
 
       addresses <- wallet.listAddresses()
       utxos <- wallet.listDefaultAccountUtxos()

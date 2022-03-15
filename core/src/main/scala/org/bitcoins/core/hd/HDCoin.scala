@@ -1,5 +1,9 @@
 package org.bitcoins.core.hd
 
+/** Contains the path
+  * m / purpose' / coin_type' /
+  * @see https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#path-levels
+  */
 case class HDCoin(purpose: HDPurpose, coinType: HDCoinType) extends BIP32Path {
 
   override def path: Vector[BIP32Node] =
