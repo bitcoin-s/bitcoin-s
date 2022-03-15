@@ -164,14 +164,14 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         rescan <- wallet.isRescanning()
         balance <- wallet.getBalance()
         addresses <- wallet.listAddresses()
-        utxos <- wallet.listUtxos()
+        utxos <- wallet.listDefaultAccountUtxos()
+        spks = utxos
+          .map(_.output.scriptPubKey)
       } yield {
         !rescan &&
         balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount &&
         utxos.size == 4 &&
-        utxos
-          .map(_.output.scriptPubKey)
-          .forall(spk => addresses.exists(_.scriptPubKey == spk))
+        spks.forall(spk => addresses.exists(_.scriptPubKey == spk))
       }
     }
 
@@ -197,10 +197,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
       _ <- wallet.clearAllUtxos()
-
       addresses <- wallet.listAddresses()
       utxos <- wallet.listDefaultAccountUtxos()
-      _ = assert(addresses.isEmpty)
+      _ = assert(addresses.nonEmpty)
       _ = assert(utxos.isEmpty)
 
       rescan <- wallet.isRescanning()
