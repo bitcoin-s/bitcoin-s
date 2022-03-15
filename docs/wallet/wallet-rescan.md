@@ -1,3 +1,4 @@
+
 ---
 title: Wallet Rescans
 id: wallet-rescan
@@ -84,7 +85,7 @@ val initBalanceF = for {
 val clearedWalletF = for {
   w <- walletF
   _ <- initBalanceF
-  clearedWallet <- w.clearAllUtxosAndAddresses()
+  clearedWallet <- w.clearAllUtxos()
   zeroBalance <- clearedWallet.getBalance()
 } yield {
   println(s"Balance after clearing utxos: ${zeroBalance}")
