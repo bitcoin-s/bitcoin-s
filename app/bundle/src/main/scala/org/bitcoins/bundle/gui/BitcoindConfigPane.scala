@@ -105,6 +105,7 @@ class BitcoindConfigPane(
       if (hostTF.text.value.contains(".onion") || torCheckBox.selected.value) {
         s"""
            |bitcoin-s.proxy.enabled = true
+           |bitcoin-s.tor.enabled = true
            |""".stripMargin
       } else ""
 

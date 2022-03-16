@@ -113,6 +113,7 @@ class NeutrinoConfigPane(
       torCheckBox.selected.value || peerAddressTF.text.value.contains(".onion")
     val configStr = s"""
                        |bitcoin-s.proxy.enabled = ${proxyEnabled}
+                       |bitcoin-s.tor.enabled = ${proxyEnabled}
                        |bitcoin-s.network = ${DatadirUtil.networkStrToDirName(
       networkComboBox.value.value.toString)}
                        |bitcoin-s.node.mode = neutrino
