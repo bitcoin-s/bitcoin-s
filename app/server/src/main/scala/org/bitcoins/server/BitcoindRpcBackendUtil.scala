@@ -4,14 +4,14 @@ import akka.Done
 import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import grizzled.slf4j.Logging
-import org.bitcoins.chain.{ChainCallbacks}
-
+import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
@@ -359,5 +359,43 @@ object BitcoindRpcBackendUtil extends Logging {
     }
 
     resultF
+  }
+
+  def startBitcoindMempoolPolling(
+      bitcoind: BitcoindRpcClient,
+      interval: FiniteDuration = 10.seconds)(
+      processTx: Transaction => Future[Unit])(implicit
+      system: ActorSystem,
+      ec: ExecutionContext): Cancellable = {
+    @volatile var prevMempool: Set[DoubleSha256DigestBE] =
+      Set.empty[DoubleSha256DigestBE]
+
+    def getDiffAndReplace(
+        newMempool: Set[DoubleSha256DigestBE]): Set[DoubleSha256DigestBE] = {
+      val txids =
+        if (prevMempool.isEmpty) Set.empty[DoubleSha256DigestBE]
+        else
+          newMempool.diff(prevMempool)
+      prevMempool = newMempool
+      txids
+    }
+
+    system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
+      {
+        logger.trace("Polling bitcoind for mempool")
+
+        for {
+          mempool <- bitcoind.getRawMemPool
+          newTxIds = getDiffAndReplace(mempool.toSet)
+          _ = logger.trace(s"Found ${newTxIds} new mempool transactions")
+          newTxs <- FutureUtil.sequentially(newTxIds)(
+            bitcoind.getRawTransactionRaw(_))
+          _ <- FutureUtil.sequentially(newTxs)(processTx)
+        } yield {
+          ()
+        }
+        ()
+      }
+    }
   }
 }
