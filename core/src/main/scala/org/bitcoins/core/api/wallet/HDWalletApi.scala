@@ -453,7 +453,7 @@ trait HDWalletApi extends WalletApi {
 
   def listUnusedAddresses(account: HDAccount): Future[Vector[AddressDb]]
 
-  override def clearAllUtxosAndAddresses(): Future[HDWalletApi]
+  override def clearAllUtxos(): Future[HDWalletApi]
 
   def clearUtxosAndAddresses(account: HDAccount): Future[HDWalletApi]
 

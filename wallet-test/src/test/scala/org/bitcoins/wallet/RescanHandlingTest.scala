@@ -29,7 +29,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
   behavior of "Wallet rescans"
 
-  it must "properly clear utxos and address for an account" in {
+  it must "properly clear utxos but not addresses for an account" in {
     fixture: WalletWithBitcoind =>
       val wallet = fixture.wallet
 
@@ -48,7 +48,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         clearedAddresses <- wallet.addressDAO.findAllForAccount(account)
       } yield {
         assert(clearedUtxos.isEmpty)
-        assert(clearedAddresses.isEmpty)
+        assert(clearedAddresses.nonEmpty)
       }
   }
 
@@ -65,13 +65,13 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         addresses <- wallet.addressDAO.findAll()
         _ = assert(addresses.nonEmpty)
 
-        _ <- wallet.clearAllUtxosAndAddresses()
+        _ <- wallet.clearAllUtxos()
 
         clearedUtxos <- wallet.spendingInfoDAO.findAll()
         clearedAddresses <- wallet.addressDAO.findAll()
       } yield {
         assert(clearedUtxos.isEmpty)
-        assert(clearedAddresses.isEmpty)
+        assert(clearedAddresses.nonEmpty)
       }
   }
 
@@ -134,7 +134,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         initBlockHeight <- initBlockHeightF
         txInBlockHeight = initBlockHeight + numBlocks
         txInBlockHeightOpt = Some(BlockStamp.BlockHeight(txInBlockHeight))
-        _ <- newTxWallet.clearAllUtxosAndAddresses()
+        _ <- newTxWallet.clearAllUtxos()
         zeroBalance <- newTxWallet.getBalance()
         _ = assert(zeroBalance == Satoshis.zero)
         _ <- newTxWallet.rescanNeutrinoWallet(startOpt = txInBlockHeightOpt,
@@ -192,7 +192,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           .findByTxIdBEs(txIds)
           .map(_.flatMap(_.blockHashOpt))
 
-        _ <- newTxWallet.clearAllUtxosAndAddresses()
+        _ <- newTxWallet.clearAllUtxos()
+        _ <- newTxWallet.addressDAO.deleteAll()
         scriptPubKeys <-
           1.to(10).foldLeft(Future.successful(Vector.empty[ScriptPubKey])) {
             (prevFuture, _) =>
@@ -358,6 +359,30 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
                s"Balance must show up on utxos")
         val addressExists = fundedAddresses.exists(_._1.address == address)
         assert(addressExists)
+      }
+  }
+
+  it must "discover funds after rescanning twice" in {
+    fixture: WalletWithBitcoind =>
+      val WalletWithBitcoindRpc(wallet, bitcoind) = fixture
+      val amt = Bitcoins.one
+      for {
+        _ <- wallet.rescanNeutrinoWallet(startOpt = None,
+                                         endOpt = None,
+                                         addressBatchSize = 10,
+                                         useCreationTime = true)
+        addressNoFunds <- wallet.getNewChangeAddress()
+        //rescan again
+        _ <- wallet.rescanNeutrinoWallet(startOpt = None,
+                                         endOpt = None,
+                                         addressBatchSize = 10,
+                                         useCreationTime = true)
+        txid <- bitcoind.sendToAddress(addressNoFunds, amt)
+        tx <- bitcoind.getRawTransactionRaw(txid)
+        _ <- wallet.processTransaction(tx, None)
+        unconfirmedBalance <- wallet.getUnconfirmedBalance()
+      } yield {
+        assert(unconfirmedBalance == amt)
       }
   }
 
