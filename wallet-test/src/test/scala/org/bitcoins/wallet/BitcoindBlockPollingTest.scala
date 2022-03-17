@@ -2,13 +2,8 @@ package org.bitcoins.wallet
 
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutput,
-  TxUtil
-}
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.server.BitcoindRpcBackendUtil
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
@@ -76,7 +71,6 @@ class BitcoindBlockPollingTest
       val mempoolTxs = ArrayBuffer.empty[Transaction]
 
       for {
-        _ <- bitcoind.generateToAddress(101, bech32Address)
         // Setup wallet
         tmpWallet <-
           BitcoinSWalletTest.createDefaultWallet(bitcoind, bitcoind, None)
@@ -85,27 +79,9 @@ class BitcoindBlockPollingTest
                                                                    tmpWallet,
                                                                    None)
 
-        // Send to wallet
+        // populate initial mempool
         addr <- wallet.getNewAddress()
         _ <- bitcoind.sendToAddress(addr, amountToSend)
-
-        // assert wallet hasn't seen it yet
-        firstBalance <- wallet.getBalance()
-        _ = assert(firstBalance == Satoshis.zero)
-
-        // Setup block polling
-        _ <- BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
-                                                              bitcoind,
-                                                              1.second)
-        _ <- bitcoind.generateToAddress(6, bech32Address)
-
-        // Wait for it to process
-        _ <- AsyncUtil.awaitConditionF(
-          () => wallet.getBalance().map(_ > Satoshis.zero),
-          1.second)
-
-        balance <- wallet.getConfirmedBalance()
-        _ = assert(balance == amountToSend)
 
         // Setup block polling
         _ = BitcoindRpcBackendUtil.startBitcoindMempoolPolling(bitcoind,
@@ -114,22 +90,12 @@ class BitcoindBlockPollingTest
           FutureUtil.unit
         }
 
+        // Send to wallet
         addr <- wallet.getNewAddress()
-        utxo <- wallet.listUtxos(TxoState.ConfirmedReceived).map(_.head)
-        destination = TransactionOutput(Satoshis(1_000_000), addr.scriptPubKey)
-        prevTx <- wallet.findTransaction(utxo.txid).map(_.get.transaction)
-        tx = TxUtil.buildDummyTx(
-          Vector(
-            utxo
-              .toUTXOInfo(wallet.walletConfig.kmConf.toBip39KeyManager, prevTx)
-              .inputInfo),
-          Vector(destination))
-
-        _ <- wallet.broadcastTransaction(tx)
+        _ <- bitcoind.sendToAddress(addr, amountToSend)
 
         // Wait for it to process
         _ <- AsyncUtil.awaitCondition(() => {
-                                        println(mempoolTxs.size)
                                         mempoolTxs.length == 1
                                       },
                                       1.second)
