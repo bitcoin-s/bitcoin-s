@@ -155,11 +155,11 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
 
-  /** Removes all utxos and addresses from the wallet.
+  /** Removes all utxos from the wallet.
     * Don't call this unless you are sure you can recover
     * your wallet
     */
-  def clearAllUtxosAndAddresses(): Future[WalletApi]
+  def clearAllUtxos(): Future[WalletApi]
 
   /** Gets a new external address with the specified
     * type.

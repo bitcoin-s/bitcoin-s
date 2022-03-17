@@ -429,7 +429,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       err)
 
     //clear the entire wallet, then rescan to make sure we get out of a corrupted state
-    val clearedF = wallet.clearAllUtxosAndAddresses()
+    val clearedF = wallet.clearAllUtxos()
     val walletF = for {
       clearedWallet <- clearedF
       _ <- clearedWallet.rescanNeutrinoWallet(startOpt = None,
