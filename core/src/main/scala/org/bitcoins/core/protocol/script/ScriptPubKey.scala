@@ -1172,8 +1172,8 @@ object WitnessScriptPubKey extends ScriptFactory[WitnessScriptPubKey] {
         P2WPKHWitnessSPKV0.fromAsm(asm)
       case _ if P2WSHWitnessSPKV0.isValidAsm(asm) =>
         P2WSHWitnessSPKV0.fromAsm(asm)
-      case _ if WitnessScriptPubKeyV1.isValidAsm(asm) =>
-        WitnessScriptPubKeyV1.fromAsm(asm)
+      case _ if TaprootScriptPubKey.isValidAsm(asm) =>
+        TaprootScriptPubKey.fromAsm(asm)
       case _ if WitnessScriptPubKey.isValidAsm(asm) =>
         UnassignedWitnessScriptPubKey(asm)
       case _ =>
@@ -1342,7 +1342,7 @@ object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
   }
 }
 
-case class WitnessScriptPubKeyV1(override val asm: Vector[ScriptToken])
+case class TaprootScriptPubKey(override val asm: Vector[ScriptToken])
     extends WitnessScriptPubKey {
   override def witnessProgram: Seq[ScriptToken] = asm.tail.tail
   override val scriptType: ScriptType = ScriptType.WITNESS_V1_TAPROOT
@@ -1350,19 +1350,19 @@ case class WitnessScriptPubKeyV1(override val asm: Vector[ScriptToken])
   val pubKey: SchnorrPublicKey = SchnorrPublicKey.fromBytes(asm(2).bytes)
 }
 
-object WitnessScriptPubKeyV1 extends ScriptFactory[WitnessScriptPubKeyV1] {
+object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
 
-  override def fromAsm(asm: Seq[ScriptToken]): WitnessScriptPubKeyV1 = {
+  override def fromAsm(asm: Seq[ScriptToken]): TaprootScriptPubKey = {
     buildScript(asm.toVector,
-                WitnessScriptPubKeyV1.apply,
+                TaprootScriptPubKey.apply,
                 s"Given asm was not a P2WSHWitnessSPKV0, got $asm")
   }
 
-  def apply(schnorrPubKey: SchnorrPublicKey): WitnessScriptPubKeyV1 = {
+  def apply(schnorrPubKey: SchnorrPublicKey): TaprootScriptPubKey = {
     fromPubKey(schnorrPubKey)
   }
 
-  def fromPubKey(schnorrPubKey: SchnorrPublicKey): WitnessScriptPubKeyV1 = {
+  def fromPubKey(schnorrPubKey: SchnorrPublicKey): TaprootScriptPubKey = {
     val pushOp = BitcoinScriptUtil.calculatePushOp(schnorrPubKey.bytes)
     val asm = OP_1 +: (pushOp ++ Vector(ScriptConstant(schnorrPubKey.bytes)))
     fromAsm(asm)

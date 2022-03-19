@@ -205,7 +205,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
   private def missingSigsFromScript(
       spk: ScriptPubKey): Vector[Sha256Hash160Digest] = {
     spk match {
-      case spk: WitnessScriptPubKeyV1 =>
+      case spk: TaprootScriptPubKey =>
         throw new IllegalArgumentException(s"Taproot not yet supported: $spk")
       case EmptyScriptPubKey | _: WitnessCommitment |
           _: NonStandardScriptPubKey | _: UnassignedWitnessScriptPubKey =>
@@ -608,7 +608,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
         val scriptSig = TrivialTrueScriptSignature
         Success(wipeAndAdd(scriptSig))
       case _: NonStandardScriptPubKey | _: UnassignedWitnessScriptPubKey |
-          _: WitnessCommitment | _: WitnessScriptPubKeyV1 =>
+          _: WitnessCommitment | _: TaprootScriptPubKey =>
         Failure(
           new UnsupportedOperationException(
             s"$spkToSatisfy is not yet supported"))

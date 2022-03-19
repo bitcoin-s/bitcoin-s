@@ -611,7 +611,7 @@ trait BitcoinScriptUtil {
       case _: P2PKHScriptPubKey | _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
           _: P2WSHWitnessSPKV0 | _: UnassignedWitnessScriptPubKey |
           _: NonStandardScriptPubKey | _: WitnessCommitment |
-          _: WitnessScriptPubKeyV1 | EmptyScriptPubKey =>
+          _: TaprootScriptPubKey | EmptyScriptPubKey =>
         true
 
     }
@@ -653,7 +653,7 @@ trait BitcoinScriptUtil {
                                      UInt32(idx),
                                      o,
                                      Policy.standardFlags)
-          case _: UnassignedWitnessScriptPubKey | _: WitnessScriptPubKeyV1 =>
+          case _: UnassignedWitnessScriptPubKey | _: TaprootScriptPubKey =>
             ???
           case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
               _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |

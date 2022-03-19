@@ -109,7 +109,7 @@ class ScanBitcoind()(implicit
     val countTaprootOutputs: Block => Int = { block =>
       val outputs = block.transactions
         .flatMap(_.outputs)
-        .filter(_.scriptPubKey.isInstanceOf[WitnessScriptPubKeyV1])
+        .filter(_.scriptPubKey.isInstanceOf[TaprootScriptPubKey])
       outputs.length
     }
 
@@ -130,8 +130,7 @@ class ScanBitcoind()(implicit
   def countWitV1MempoolTxs(bitcoind: BitcoindRpcClient): Future[Int] = {
     val memPoolSourceF = getMemPoolSource(bitcoind)
     val countF = memPoolSourceF.flatMap(_.runFold(0) { case (count, tx) =>
-      count + tx.outputs.count(
-        _.scriptPubKey.isInstanceOf[WitnessScriptPubKeyV1])
+      count + tx.outputs.count(_.scriptPubKey.isInstanceOf[TaprootScriptPubKey])
     })
     countF.foreach(c =>
       logger.info(

@@ -357,12 +357,12 @@ sealed abstract class ScriptGenerators {
   def witnessScriptPubKeyV0: Gen[(WitnessScriptPubKeyV0, Seq[ECPrivateKey])] =
     Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0.map(truncate))
 
-  def witnessScriptPubKeyV1: Gen[(WitnessScriptPubKeyV1, Seq[ECPrivateKey])] = {
+  def witnessScriptPubKeyV1: Gen[(TaprootScriptPubKey, Seq[ECPrivateKey])] = {
     for {
       priv <- CryptoGenerators.privateKey
       pubKey = priv.schnorrPublicKey
     } yield {
-      (WitnessScriptPubKeyV1.fromPubKey(pubKey), Vector(priv))
+      (TaprootScriptPubKey.fromPubKey(pubKey), Vector(priv))
     }
   }
 
@@ -560,7 +560,7 @@ sealed abstract class ScriptGenerators {
       case EmptyScriptPubKey   => emptyScriptSignature
       case _: CLTVScriptPubKey => cltvScriptSignature
       case _: CSVScriptPubKey  => csvScriptSignature
-      case _: WitnessScriptPubKeyV0 | _: WitnessScriptPubKeyV1 |
+      case _: WitnessScriptPubKeyV0 | _: TaprootScriptPubKey |
           _: UnassignedWitnessScriptPubKey =>
         emptyScriptSignature
       case x @ (_: P2SHScriptPubKey | _: NonStandardScriptPubKey |

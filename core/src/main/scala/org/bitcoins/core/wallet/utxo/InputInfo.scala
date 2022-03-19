@@ -299,7 +299,7 @@ object InputInfo {
                                        hashPreImages)
               case _: P2SHScriptPubKey =>
                 throw new IllegalArgumentException("Cannot have nested P2SH")
-              case _: WitnessScriptPubKeyV1 =>
+              case _: TaprootScriptPubKey =>
                 throw new UnsupportedOperationException(
                   s"Unsupported Taproot ScriptPubKey ${output.scriptPubKey}")
               case _: UnassignedWitnessScriptPubKey =>
@@ -322,8 +322,7 @@ object InputInfo {
                                 witness,
                                 conditionalPath,
                                 hashPreImages)
-      case wspk @ (_: UnassignedWitnessScriptPubKey |
-          _: WitnessScriptPubKeyV1) =>
+      case wspk @ (_: UnassignedWitnessScriptPubKey | _: TaprootScriptPubKey) =>
         UnassignedSegwitNativeInputInfo(
           outPoint,
           output.value,

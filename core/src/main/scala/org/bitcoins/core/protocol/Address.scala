@@ -534,7 +534,7 @@ object BitcoinAddress extends AddressFactory[BitcoinAddress] {
       case p2pkh: P2PKHScriptPubKey      => Success(P2PKHAddress(p2pkh, np))
       case p2sh: P2SHScriptPubKey        => Success(P2SHAddress(p2sh, np))
       case witSPK: WitnessScriptPubKeyV0 => Success(Bech32Address(witSPK, np))
-      case taprootSPK: WitnessScriptPubKeyV1 =>
+      case taprootSPK: TaprootScriptPubKey =>
         Success(Bech32mAddress(taprootSPK, np))
       case unassigned: UnassignedWitnessScriptPubKey =>
         Success(Bech32mAddress(unassigned, np))
