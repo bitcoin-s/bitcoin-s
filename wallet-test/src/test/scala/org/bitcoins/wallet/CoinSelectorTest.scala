@@ -31,7 +31,6 @@ class CoinSelectorTest extends BitcoinSWalletTest {
 
     val outpoint1 = TransactionGenerators.outPoint.sampleSome
     val utxo1 = SegwitV0SpendingInfo(
-      txid = outpoint1.txIdBE,
       state = TxoState.PendingConfirmationsReceived,
       id = Some(1),
       outPoint = outpoint1,
@@ -42,7 +41,6 @@ class CoinSelectorTest extends BitcoinSWalletTest {
     )
     val outPoint2 = TransactionGenerators.outPoint.sampleSome
     val utxo2 = SegwitV0SpendingInfo(
-      txid = outPoint2.txIdBE,
       state = TxoState.ConfirmedReceived,
       id = Some(2),
       outPoint = outPoint2,
@@ -54,7 +52,6 @@ class CoinSelectorTest extends BitcoinSWalletTest {
 
     val outPoint3 = TransactionGenerators.outPoint.sampleSome
     val utxo3 = SegwitV0SpendingInfo(
-      txid = outPoint3.txIdBE,
       state = TxoState.ConfirmedReceived,
       id = Some(3),
       outPoint = outPoint3,

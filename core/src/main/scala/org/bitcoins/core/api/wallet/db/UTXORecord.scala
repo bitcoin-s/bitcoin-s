@@ -22,7 +22,6 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 
 case class UTXORecord(
     outpoint: TransactionOutPoint,
-    txid: DoubleSha256DigestBE, // TXID
     state: TxoState, // state
     scriptPubKeyId: Long, // output SPK
     value: CurrencyUnit, // output value
@@ -46,7 +45,6 @@ case class UTXORecord(
           scriptWitness = scriptWitness,
           id = id,
           state = state,
-          txid = txid,
           spendingTxIdOpt = spendingTxIdOpt
         )
 
@@ -56,8 +54,7 @@ case class UTXORecord(
                            privKeyPath = path,
                            id = id,
                            state = state,
-                           spendingTxIdOpt = spendingTxIdOpt,
-                           txid = txid)
+                           spendingTxIdOpt = spendingTxIdOpt)
 
       case (path: NestedSegWitHDPath, Some(redeemScript), Some(scriptWitness))
           if WitnessScriptPubKey.isValidAsm(redeemScript.asm) =>
@@ -67,7 +64,6 @@ case class UTXORecord(
           privKeyPath = path,
           redeemScript = redeemScript,
           scriptWitness = scriptWitness,
-          txid = txid,
           state = state,
           spendingTxIdOpt = spendingTxIdOpt,
           id = id
@@ -86,7 +82,6 @@ object UTXORecord {
       scriptPubKeyId: Long): UTXORecord =
     UTXORecord(
       spendingInfoDb.outPoint,
-      spendingInfoDb.txid, // TXID
       spendingInfoDb.state, // state
       scriptPubKeyId, // output SPK
       spendingInfoDb.output.value, // output value

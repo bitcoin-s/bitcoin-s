@@ -609,7 +609,65 @@ case class SpendingInfoDAO()(implicit
                  targetTableQuery = txTable)(_.txIdBE)
     }
 
-    def * =
+    private val fromTuple: (
+        (
+            TransactionOutPoint,
+            DoubleSha256DigestBE,
+            TxoState,
+            Long,
+            CurrencyUnit,
+            HDPath,
+            Option[ScriptPubKey],
+            Option[ScriptWitness],
+            Option[DoubleSha256DigestBE],
+            Option[Long])) => UTXORecord = {
+      case (outpoint,
+            _,
+            state,
+            scriptPubKeyId,
+            value,
+            path,
+            redeemScriptOpt,
+            scriptWitOpt,
+            spendingTxIdOpt,
+            idOpt) =>
+        UTXORecord(outpoint,
+                   state,
+                   scriptPubKeyId,
+                   value,
+                   path,
+                   redeemScriptOpt,
+                   scriptWitOpt,
+                   spendingTxIdOpt,
+                   idOpt)
+    }
+
+    private val toTuple: UTXORecord => Option[
+      (
+          TransactionOutPoint,
+          DoubleSha256DigestBE,
+          TxoState,
+          Long,
+          CurrencyUnit,
+          HDPath,
+          Option[ScriptPubKey],
+          Option[ScriptWitness],
+          Option[DoubleSha256DigestBE],
+          Option[Long])] = { case utxo: UTXORecord =>
+      Some(
+        (utxo.outpoint,
+         utxo.outpoint.txIdBE,
+         utxo.state,
+         utxo.scriptPubKeyId,
+         utxo.value,
+         utxo.path,
+         utxo.redeemScript,
+         utxo.scriptWitness,
+         utxo.spendingTxIdOpt,
+         utxo.id))
+    }
+
+    override def * = {
       (outPoint,
        txid,
        state,
@@ -619,6 +677,7 @@ case class SpendingInfoDAO()(implicit
        redeemScriptOpt,
        scriptWitnessOpt,
        spendingTxIdOpt,
-       id.?).<>((UTXORecord.apply _).tupled, UTXORecord.unapply)
+       id.?).<>(fromTuple, toTuple)
+    }
   }
 }

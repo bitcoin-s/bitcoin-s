@@ -252,7 +252,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         case segwitAddr: SegWitAddressDb =>
           SegwitV0SpendingInfo(
             state = state,
-            txid = tx.txIdBE,
             outPoint = outPoint,
             output = output,
             privKeyPath = segwitAddr.path,
@@ -261,7 +260,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           )
         case LegacyAddressDb(path, _, _, _, _) =>
           LegacySpendingInfo(state = state,
-                             txid = tx.txIdBE,
                              outPoint = outPoint,
                              output = output,
                              privKeyPath = path,
@@ -273,7 +271,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
             privKeyPath = nested.path,
             redeemScript = P2WPKHWitnessSPKV0(nested.ecPublicKey),
             scriptWitness = P2WPKHWitnessV0(nested.ecPublicKey),
-            txid = tx.txIdBE,
             state = state,
             spendingTxIdOpt = None,
             id = None
