@@ -224,8 +224,15 @@ bitcoin-s {
 
         bloomFalsePositiveRate = 0.0001 # percentage
 
-        addressGapLimit = 20
-
+        # the number of consecutive addresses that we do not
+        # discover funds in before we mark as rescan as exhausted
+        # this is needed because we can never truely tell how many addresses
+        # the wallet has used when executing a rescan from a seed
+        addressGapLimit = 100
+        
+        # the number of addresses that get generated everytime
+        # we need to rescan. If a match occurs within the addressGapLimit
+        # we generate another discoveryBatchSize addresses and then rescan again
         discoveryBatchSize = 100
 
         requiredConfirmations = 6

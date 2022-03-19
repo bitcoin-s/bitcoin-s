@@ -156,7 +156,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
         if (
           externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit
         ) {
-          //done rescanning
+          logger.info(
+            s"Did not find any funds within the last ${walletConfig.addressGapLimit} addresses. Stopping our rescan.")
           Future.unit
         } else {
           logger.info(
