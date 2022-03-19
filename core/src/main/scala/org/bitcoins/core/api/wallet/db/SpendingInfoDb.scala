@@ -32,7 +32,6 @@ case class SegwitV0SpendingInfo(
     output: TransactionOutput,
     privKeyPath: SegWitHDPath,
     scriptWitness: ScriptWitness,
-    txid: DoubleSha256DigestBE,
     state: TxoState,
     spendingTxIdOpt: Option[DoubleSha256DigestBE],
     id: Option[Long] = None
@@ -61,7 +60,6 @@ case class LegacySpendingInfo(
     output: TransactionOutput,
     privKeyPath: LegacyHDPath,
     state: TxoState,
-    txid: DoubleSha256DigestBE,
     spendingTxIdOpt: Option[DoubleSha256DigestBE],
     id: Option[Long] = None
 ) extends SpendingInfoDb {
@@ -92,7 +90,6 @@ case class NestedSegwitV0SpendingInfo(
     privKeyPath: NestedSegWitHDPath,
     redeemScript: ScriptPubKey,
     scriptWitness: ScriptWitness,
-    txid: DoubleSha256DigestBE,
     state: TxoState,
     spendingTxIdOpt: Option[DoubleSha256DigestBE],
     id: Option[Long] = None
@@ -149,11 +146,7 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   def state: TxoState
 
   /** The TXID of the transaction this output was received in */
-  def txid: DoubleSha256DigestBE
-
-  require(
-    txid == outPoint.txIdBE,
-    s"Cannot have different outpoint txId and txId outpoint=${outPoint.txIdBE.hex} txId=${txid.hex}")
+  def txid: DoubleSha256DigestBE = outPoint.txIdBE
 
   /** TxId of the transaction that this output was spent by */
   def spendingTxIdOpt: Option[DoubleSha256DigestBE]
@@ -232,7 +225,6 @@ object SpendingInfoDb {
                                      hdPath.asInstanceOf[NestedSegWitHDPath],
                                      redeemScriptOpt.get,
                                      scriptWitnessOpt.get,
-                                     txId,
                                      state,
                                      spendingTxIdOpt,
                                      id)
@@ -244,7 +236,6 @@ object SpendingInfoDb {
                              output = output,
                              privKeyPath = hdPath.asInstanceOf[LegacyHDPath],
                              state = state,
-                             txid = txId,
                              spendingTxIdOpt = spendingTxIdOpt,
                              id = id)
         }
@@ -259,7 +250,6 @@ object SpendingInfoDb {
           output = output,
           privKeyPath = hdPath.asInstanceOf[SegWitHDPath],
           scriptWitness = scriptWitnessOpt.get,
-          txid = txId,
           state = state,
           spendingTxIdOpt = spendingTxIdOpt,
           id = id
@@ -272,7 +262,6 @@ object SpendingInfoDb {
                            output = output,
                            privKeyPath = hdPath.asInstanceOf[LegacyHDPath],
                            state = state,
-                           txid = txId,
                            spendingTxIdOpt = spendingTxIdOpt,
                            id = id)
     }

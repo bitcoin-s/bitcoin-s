@@ -139,7 +139,6 @@ class CoinSelectorTest extends BitcoinSUnitTest {
         output = output,
         privKeyPath = path,
         scriptWitness = scriptWitness,
-        txid = EmptyTransactionOutPoint.txIdBE,
         state = TxoState.ConfirmedReceived,
         spendingTxIdOpt = None
       )

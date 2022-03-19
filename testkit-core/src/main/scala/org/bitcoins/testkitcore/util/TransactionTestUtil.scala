@@ -296,7 +296,6 @@ trait TransactionTestUtil {
     output = output,
     privKeyPath = SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
     scriptWitness = EmptyScriptWitness,
-    txid = DoubleSha256DigestBE.empty,
     state = TxoState.PendingConfirmationsSpent,
     spendingTxIdOpt =
       Some(DoubleSha256DigestBE.fromBytes(ECPrivateKey.freshPrivateKey.bytes))
