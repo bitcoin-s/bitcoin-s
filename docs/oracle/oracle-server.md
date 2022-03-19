@@ -10,6 +10,10 @@ The following a guide is for interacting with the oracle
 If you are looking for the documentation on how to build the oracle server,
 checkout [this page](build-oracle-server.md).
 
+Note: It is safe to back up the `oracle.sqlite` file to a public place. The seed file contains
+the cryptographic seed information. You need both the database and the seed file to restore the oracle.
+Make sure you don't back the seed file to a place that is not safe.
+
 ## Server Endpoints
 
 - `getpublickey` - Get oracle's public key
