@@ -415,7 +415,12 @@ trait Client
   protected def getPayload(response: HttpResponse): Future[JsValue] = {
     try {
       Unmarshal(response).to[String].map { data =>
-        Json.parse(data)
+        if (data.isEmpty) {
+          throw new IllegalArgumentException(
+            s"Bad authentication credentials supplied, cannot connect to bitcoind rpc")
+        } else {
+          Json.parse(data)
+        }
       }
     } catch {
       case NonFatal(exn) =>
