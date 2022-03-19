@@ -346,12 +346,7 @@ abstract class Wallet
   }
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
-    filterThenSum(utxo =>
-      utxo.state == PendingConfirmationsReceived || utxo.state == BroadcastReceived)
-      .map { balance =>
-        logger.trace(s"Unconfirmed balance=${balance.satoshis}")
-        balance
-      }
+    filterThenSum(utxo => TxoState.pendingReceivedStates.contains(utxo.state))
   }
 
   override def getUnconfirmedBalance(
@@ -361,7 +356,7 @@ abstract class Wallet
     } yield {
       val unconfirmed = allUnspent.filter { utxo =>
         HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
-        (utxo.state == PendingConfirmationsReceived || utxo.state == BroadcastReceived)
+        TxoState.pendingReceivedStates.contains(utxo.state)
       }
       unconfirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
     }
@@ -370,7 +365,7 @@ abstract class Wallet
   override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
     spendingInfoDAO.findAllUnspentForTag(tag).map { allUnspent =>
       val confirmed = allUnspent.filter(utxo =>
-        utxo.state == PendingConfirmationsReceived || utxo.state == BroadcastReceived)
+        TxoState.pendingReceivedStates.contains(utxo.state))
       confirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
     }
   }

@@ -41,12 +41,16 @@ object TxoState extends StringFactory[TxoState] {
   /** Means we have spent this utxo, and it is fully confirmed */
   final case object ConfirmedSpent extends SpentState
 
+  val pendingReceivedStates: Set[TxoState] = {
+    Set(PendingConfirmationsReceived, BroadcastReceived, ImmatureCoinbase)
+  }
+
+  val pendingSpentStates = {
+    Set(BroadcastSpent, PendingConfirmationsSpent)
+  }
+
   val pendingConfStates: Set[TxoState] =
-    Set(BroadcastSpent,
-        BroadcastReceived,
-        ImmatureCoinbase,
-        PendingConfirmationsReceived,
-        PendingConfirmationsSpent)
+    pendingReceivedStates ++ pendingSpentStates
 
   val confirmedStates: Set[TxoState] =
     Set(TxoState.ConfirmedReceived, TxoState.ConfirmedSpent)
