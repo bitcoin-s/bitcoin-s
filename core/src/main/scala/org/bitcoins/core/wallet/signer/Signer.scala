@@ -532,7 +532,7 @@ sealed abstract class P2WPKHSigner extends Signer[P2WPKHV0InputInfo] {
 
           val witSPK = output.scriptPubKey match {
             case p2wpkh: P2WPKHWitnessSPKV0 => p2wpkh
-            case spk: WitnessScriptPubKeyV1 =>
+            case spk: TaprootScriptPubKey =>
               throw new IllegalArgumentException(
                 s"Taproot not yet supported: $spk")
             case _: UnassignedWitnessScriptPubKey | _: P2WSHWitnessSPKV0 =>

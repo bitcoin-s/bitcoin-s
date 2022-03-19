@@ -305,7 +305,7 @@ sealed abstract class ScriptInterpreter {
               //treat the segwit scriptpubkey as any other redeem script
               run(scriptPubKeyExecutedProgram, p2wsh)
             }
-          case spk: WitnessScriptPubKeyV1 =>
+          case spk: TaprootScriptPubKey =>
             throw new IllegalArgumentException(
               s"Taproot not yet supported: $spk")
           case s @ (_: P2SHScriptPubKey | _: P2PKHScriptPubKey |

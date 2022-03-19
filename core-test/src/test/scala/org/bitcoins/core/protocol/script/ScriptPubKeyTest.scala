@@ -42,7 +42,7 @@ class ScriptPubKeyTest extends BitcoinSUnitTest {
 
   it must "construct valid witness spk v1 for taproot" in {
     val pubKey = CryptoGenerators.schnorrPublicKey.sample.get
-    val witSPKV1 = WitnessScriptPubKeyV1.fromPubKey(pubKey)
+    val witSPKV1 = TaprootScriptPubKey.fromPubKey(pubKey)
     assert(witSPKV1.pubKey == pubKey)
   }
 
@@ -54,7 +54,7 @@ class ScriptPubKeyTest extends BitcoinSUnitTest {
       ScriptConstant(pubKey)))
 
     assertThrows[IllegalArgumentException] {
-      WitnessScriptPubKeyV1.fromAsm(asm)
+      TaprootScriptPubKey.fromAsm(asm)
     }
   }
 
