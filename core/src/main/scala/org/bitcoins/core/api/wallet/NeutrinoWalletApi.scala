@@ -87,7 +87,7 @@ trait NeutrinoWalletApi { self: WalletApi =>
                          addressBatchSize = addressBatchSize,
                          useCreationTime = false)
 
-  def discoveryBatchSize(): Int = 25
+  def discoveryBatchSize(): Int
 
 }
 
