@@ -258,8 +258,15 @@ to ensure the entire module is initialized correctly.</p>
 
         <span class="hljs-attr">bloomFalsePositiveRate</span> = <span class="hljs-number">0.0001</span> <span class="hljs-comment"># percentage</span>
 
-        <span class="hljs-attr">addressGapLimit</span> = <span class="hljs-number">20</span>
-
+        <span class="hljs-comment"># the number of consecutive addresses that we do not</span>
+        <span class="hljs-comment"># discover funds in before we mark as rescan as exhausted</span>
+        <span class="hljs-comment"># this is needed because we can never truely tell how many addresses</span>
+        <span class="hljs-comment"># the wallet has used when executing a rescan from a seed</span>
+        <span class="hljs-attr">addressGapLimit</span> = <span class="hljs-number">100</span>
+        
+        <span class="hljs-comment"># the number of addresses that get generated everytime</span>
+        <span class="hljs-comment"># we need to rescan. If a match occurs within the addressGapLimit</span>
+        <span class="hljs-comment"># we generate another discoveryBatchSize addresses and then rescan again</span>
         <span class="hljs-attr">discoveryBatchSize</span> = <span class="hljs-number">100</span>
 
         <span class="hljs-attr">requiredConfirmations</span> = <span class="hljs-number">6</span>
