@@ -5,25 +5,25 @@ object Deps {
 
   object V {
     val bouncyCastle = "1.70"
-    val dropwizardMetricsV = "4.2.7" //https://github.com/dropwizard/metrics
-    val logback = "1.2.10"
+    val dropwizardMetricsV = "4.2.8" //https://github.com/dropwizard/metrics
+    val logback = "1.2.11"
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.4"
     val scalaTest = "3.2.10"
 
     val scalaTestPlus =
       "3.2.2.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
-    val slf4j = "1.7.33"
+    val slf4j = "1.7.36"
     val spray = "1.3.6"
     val zeromq = "0.5.2"
-    val akkav = "10.2.7"
+    val akkav = "10.2.9"
     val playv = "2.9.2"
     val akkaStreamv = "2.6.18"
     val jUnixSocketV = "2.4.0"
     val scodecV = "1.1.30"
     val junitV = "0.13.3"
     val nativeLoaderV = "2.4.0"
-    val typesafeConfigV = "1.4.1"
+    val typesafeConfigV = "1.4.2"
 
     val scalaFxV = "17.0.1-R26"
     val javaFxV = "18-ea+10"
@@ -31,7 +31,7 @@ object Deps {
     val asyncNewScalaV = "1.0.1"
 
     val flywayV = "6.4.2"
-    val postgresV = "42.3.1"
+    val postgresV = "42.3.3"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.3"
     val sqliteV = "3.36.0.3"
@@ -39,7 +39,7 @@ object Deps {
     val scalameterV = "0.17"
     val scalamockV = "5.2.0"
     val scalaCollectionCompatV = "2.6.0"
-    val pgEmbeddedV = "0.13.4"
+    val pgEmbeddedV = "1.0.0"
 
     val breezeV = "1.3"
 
@@ -55,7 +55,7 @@ object Deps {
     // obviously has to be changed before this is
     // merged.
 
-    val sourcecodeV = "0.2.7"
+    val sourcecodeV = "0.2.8"
 
     val scalaJsStubsV = "1.1.0"
     // CLI deps
@@ -133,13 +133,14 @@ object Deps {
     lazy val javaFxControls =
       "org.openjfx" % s"javafx-controls" % V.javaFxV classifier osName withSources () withJavadoc ()
 
-    lazy val javaFxGraphics = "org.openjfx" % s"javafx-graphics" % V.javaFxV classifier osName withSources () withJavadoc ()
+    lazy val javaFxGraphics =
+      "org.openjfx" % s"javafx-graphics" % V.javaFxV classifier osName withSources () withJavadoc ()
 
-    lazy val javaFxMedia = "org.openjfx" % s"javafx-media" % V.javaFxV classifier osName withSources () withJavadoc ()
-    lazy val javaFxDeps = List(javaFxBase,
-                               javaFxControls,
-      javaFxGraphics,
-      javaFxMedia)
+    lazy val javaFxMedia =
+      "org.openjfx" % s"javafx-media" % V.javaFxV classifier osName withSources () withJavadoc ()
+
+    lazy val javaFxDeps =
+      List(javaFxBase, javaFxControls, javaFxGraphics, javaFxMedia)
 
     val breezeViz =
       ("org.scalanlp" %% "breeze-viz" % V.breezeV withSources () withJavadoc ())
