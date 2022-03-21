@@ -168,7 +168,7 @@
         "title": "Wallet Price Example"
       },
       "wallet/wallet-rescan": {
-        "title": "Wallet Rescans"
+        "title": "wallet/wallet-rescan"
       },
       "wallet/wallet-rpc": {
         "title": "Wallet RPC Examples"
