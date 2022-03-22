@@ -455,7 +455,7 @@ trait HDWalletApi extends WalletApi {
 
   override def clearAllUtxos(): Future[HDWalletApi]
 
-  def clearUtxosAndAddresses(account: HDAccount): Future[HDWalletApi]
+  def clearUtxos(account: HDAccount): Future[HDWalletApi]
 
   /** Gets the address associated with the pubkey at
     * the resulting `BIP32Path` determined by the

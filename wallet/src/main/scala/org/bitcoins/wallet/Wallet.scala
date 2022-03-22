@@ -257,7 +257,7 @@ abstract class Wallet
       spendingInfoCount <- spendingInfoDAO.count()
     } yield addressCount == 0 && spendingInfoCount == 0
 
-  override def clearUtxosAndAddresses(account: HDAccount): Future[Wallet] = {
+  override def clearUtxos(account: HDAccount): Future[Wallet] = {
     val aggregatedActions: DBIOAction[
       Wallet,
       NoStream,
