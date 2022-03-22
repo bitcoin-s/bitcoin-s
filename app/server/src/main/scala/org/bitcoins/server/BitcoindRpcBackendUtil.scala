@@ -19,7 +19,7 @@ import org.bitcoins.rpc.config.ZmqConfig
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.zmq.ZMQSubscriber
 
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
@@ -308,52 +308,55 @@ object BitcoindRpcBackendUtil extends Logging {
       val numParallelism = Runtime.getRuntime.availableProcessors()
       val atomicPrevCount: AtomicInteger = new AtomicInteger(
         walletSyncState.height)
+      val processing = new AtomicBoolean(false)
       system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
         {
-          logger.trace("Polling bitcoind for block count")
-          bitcoind.getBlockCount.flatMap { count =>
-            val prevCount = atomicPrevCount.get()
-            if (prevCount < count) {
-              logger.info(
-                s"Bitcoind has new block(s), requesting... ${count - prevCount} blocks")
+          if (processing.compareAndSet(false, true)) {
+            logger.trace("Polling bitcoind for block count")
+            val res = bitcoind.getBlockCount.flatMap { count =>
+              val prevCount = atomicPrevCount.get()
+              if (prevCount < count) {
+                logger.info(
+                  s"Bitcoind has new block(s), requesting... ${count - prevCount} blocks")
 
-              // use .tail so we don't process the previous block that we already did
-              val range = prevCount.to(count).tail
-              val hashFs: Future[Seq[DoubleSha256Digest]] = Source(range)
-                .mapAsync(parallelism = numParallelism) { height =>
-                  bitcoind.getBlockHash(height).map(_.flip)
+                // use .tail so we don't process the previous block that we already did
+                val range = prevCount.to(count).tail
+                val hashFs: Future[Seq[DoubleSha256Digest]] = Source(range)
+                  .mapAsync(parallelism = numParallelism) { height =>
+                    bitcoind.getBlockHash(height).map(_.flip)
+                  }
+                  .map { hash =>
+                    val _ = atomicPrevCount.incrementAndGet()
+                    hash
+                  }
+                  .toMat(Sink.seq)(Keep.right)
+                  .run()
+
+                val requestsBlocksF = for {
+                  hashes <- hashFs
+                  _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
+                } yield logger.debug(
+                  "Successfully polled bitcoind for new blocks")
+
+                requestsBlocksF.failed.foreach { case err =>
+                  val failedCount = atomicPrevCount.get
+                  atomicPrevCount.set(prevCount)
+                  logger.error(
+                    s"Requesting blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
+                    err)
                 }
-                .map { hash =>
-                  val _ = atomicPrevCount.incrementAndGet()
-                  hash
-                }
-                .toMat(Sink.seq)(Keep.right)
-                .run()
 
-              val requestsBlocksF = for {
-                hashes <- hashFs
-                _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
-              } yield logger.debug(
-                "Successfully polled bitcoind for new blocks")
-
-              requestsBlocksF.failed.foreach { case err =>
-                val failedCount = atomicPrevCount.get
-                atomicPrevCount.set(prevCount)
-                logger.error(
-                  s"Requesting blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
-                  err)
+                requestsBlocksF
+              } else if (prevCount > count) {
+                Future.failed(new RuntimeException(
+                  s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
+              } else {
+                logger.debug(s"In sync $prevCount count=$count")
+                Future.unit
               }
-
-              requestsBlocksF
-            } else if (prevCount > count) {
-              Future.failed(new RuntimeException(
-                s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
-            } else {
-              logger.debug(s"In sync $prevCount count=$count")
-              Future.unit
             }
+            res.onComplete(_ => processing.set(false))
           }
-          ()
         }
       }
     }
@@ -372,29 +375,37 @@ object BitcoindRpcBackendUtil extends Logging {
 
     def getDiffAndReplace(
         newMempool: Set[DoubleSha256DigestBE]): Set[DoubleSha256DigestBE] = {
-      val txids =
-        if (prevMempool.isEmpty) Set.empty[DoubleSha256DigestBE]
-        else
-          newMempool.diff(prevMempool)
+      val txids = newMempool.diff(prevMempool)
       prevMempool = newMempool
       txids
     }
 
+    val processing = new AtomicBoolean(false)
+
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
-        logger.trace("Polling bitcoind for mempool")
+        if (processing.compareAndSet(false, true)) {
+          logger.info("Polling bitcoind for mempool")
 
-        for {
-          mempool <- bitcoind.getRawMemPool
-          newTxIds = getDiffAndReplace(mempool.toSet)
-          _ = logger.trace(s"Found ${newTxIds} new mempool transactions")
-          newTxs <- FutureUtil.sequentially(newTxIds)(
-            bitcoind.getRawTransactionRaw(_))
-          _ <- FutureUtil.sequentially(newTxs)(processTx)
-        } yield {
-          ()
+          val res = for {
+            mempool <- bitcoind.getRawMemPool
+            newTxIds = getDiffAndReplace(mempool.toSet)
+            _ = logger.info(s"Found ${newTxIds.size} new mempool transactions")
+            newTxsOpt <- FutureUtil.sequentially(newTxIds)(
+              bitcoind.getRawTransactionRaw(_).map(Option(_)).recover { _ =>
+                None
+              })
+            newTxs = newTxsOpt.collect { case Some(tx) =>
+              tx
+            }
+            _ <- FutureUtil.sequentially(newTxs)(processTx)
+          } yield {
+            logger.info(
+              s"Done processing ${newTxIds.size} new mempool transactions")
+            ()
+          }
+          res.onComplete(_ => processing.set(false))
         }
-        ()
       }
     }
   }

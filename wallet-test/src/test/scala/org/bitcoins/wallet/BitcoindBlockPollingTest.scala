@@ -81,7 +81,7 @@ class BitcoindBlockPollingTest
 
         // populate initial mempool
         addr <- wallet.getNewAddress()
-        _ <- bitcoind.sendToAddress(addr, amountToSend)
+        txid1 <- bitcoind.sendToAddress(addr, amountToSend)
 
         // Setup block polling
         _ = BitcoindRpcBackendUtil.startBitcoindMempoolPolling(bitcoind,
@@ -92,13 +92,15 @@ class BitcoindBlockPollingTest
 
         // Send to wallet
         addr <- wallet.getNewAddress()
-        _ <- bitcoind.sendToAddress(addr, amountToSend)
+        txid2 <- bitcoind.sendToAddress(addr, amountToSend)
 
         // Wait for it to process
-        _ <- AsyncUtil.awaitCondition(() => {
-                                        mempoolTxs.length == 1
-                                      },
-                                      1.second)
+        _ <- AsyncUtil.awaitCondition(
+          () => {
+            mempoolTxs.exists(_.txIdBE == txid1) && mempoolTxs.exists(
+              _.txIdBE == txid2)
+          },
+          1.second)
 
         //clean up
         _ <- wallet.walletConfig.stop()
