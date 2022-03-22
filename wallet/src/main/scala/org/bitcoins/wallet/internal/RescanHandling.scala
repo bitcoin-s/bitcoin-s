@@ -74,7 +74,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
           case (None, false) =>
             Future.successful(None)
         }
-        _ <- clearUtxosAndAddresses(account)
+        _ <- clearUtxos(account)
         _ <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
       } yield {
         RescanState.RescanDone

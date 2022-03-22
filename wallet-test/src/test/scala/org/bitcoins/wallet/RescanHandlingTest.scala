@@ -42,7 +42,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         addresses <- wallet.addressDAO.findAllForAccount(account)
         _ = assert(addresses.nonEmpty)
 
-        _ <- wallet.clearUtxosAndAddresses(account)
+        _ <- wallet.clearUtxos(account)
 
         clearedUtxos <- wallet.spendingInfoDAO.findAllForAccount(account)
         clearedAddresses <- wallet.addressDAO.findAllForAccount(account)
