@@ -147,13 +147,19 @@ private[wallet] trait RescanHandling extends WalletLogger {
       addressBatchSize: Int): Future[Unit] = {
     for {
       scriptPubKeys <- generateScriptPubKeys(account, addressBatchSize)
+      addressCount <- addressDAO.count()
       _ <- matchBlocks(scriptPubKeys = scriptPubKeys,
                        endOpt = endOpt,
                        startOpt = startOpt)
       externalGap <- calcAddressGap(HDChainType.External, account)
       changeGap <- calcAddressGap(HDChainType.Change, account)
-      res <-
-        if (
+      res <- {
+        logger.info(s"addressCount=$addressCount externalGap=$externalGap")
+        if (addressCount != 0) {
+          logger.info(
+            s"We have a small number of addresses preloaded into the wallet")
+          Future.unit
+        } else if (
           externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit
         ) {
           logger.info(
@@ -165,6 +171,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
               s"match within our address gap limit of ${walletConfig.addressGapLimit}")
           doNeutrinoRescan(account, startOpt, endOpt, addressBatchSize)
         }
+      }
     } yield res
   }
 
@@ -225,34 +232,58 @@ private[wallet] trait RescanHandling extends WalletLogger {
     blocksF
   }
 
+  /** Use to generate a list of addresses to search when restoring our wallet
+    *  from our mneomnic seed
+    */
+  private def generateAddressesForRescan(
+      account: HDAccount,
+      count: Int): Future[Vector[BitcoinAddress]] = {
+    val receiveAddressesF = 1
+      .to(count)
+      .foldLeft(Future.successful(Vector.empty[BitcoinAddress])) {
+        (prevFuture, _) =>
+          for {
+            prev <- prevFuture
+            address <- getNewAddress(account)
+          } yield prev :+ address
+      }
+
+    val changeAddressesF = 1
+      .to(count)
+      .foldLeft(Future.successful(Vector.empty[BitcoinAddress])) {
+        (prevFuture, _) =>
+          for {
+            prev <- prevFuture
+            address <- getNewChangeAddress(account)
+          } yield prev :+ address
+      }
+    for {
+      receiveAddresses <- receiveAddressesF
+      changeAddresses <- changeAddressesF
+    } yield receiveAddresses ++ changeAddresses
+
+  }
+
   private def generateScriptPubKeys(
       account: HDAccount,
       count: Int): Future[Vector[ScriptPubKey]] = {
+    val addressCountF = addressDAO.count()
     for {
-      addresses <-
-        1
-          .to(count)
-          .foldLeft(Future.successful(Vector.empty[BitcoinAddress])) {
-            (prevFuture, _) =>
-              for {
-                prev <- prevFuture
-                address <- getNewAddress(account)
-              } yield prev :+ address
-          }
-      changeAddresses <-
-        1
-          .to(count)
-          .foldLeft(Future.successful(Vector.empty[BitcoinAddress])) {
-            (prevFuture, _) =>
-              for {
-                prev <- prevFuture
-                address <- getNewChangeAddress(account)
-              } yield prev :+ address
-          }
+      addressCount <- addressCountF
+      addresses <- {
+        if (addressCount == 0) {
+          generateAddressesForRescan(account, count)
+        } else {
+          //we don't want to continously generate addresses
+          //if our wallet already has them, so just use what is in the
+          //database already
+          addressDAO.findAllAddresses().map(_.map(_.address))
+        }
+      }
       spksDb <- scriptPubKeyDAO.findAll()
     } yield {
       val addrSpks =
-        addresses.map(_.scriptPubKey) ++ changeAddresses.map(_.scriptPubKey)
+        addresses.map(_.scriptPubKey)
       val otherSpks = spksDb.map(_.scriptPubKey)
 
       (addrSpks ++ otherSpks).distinct
