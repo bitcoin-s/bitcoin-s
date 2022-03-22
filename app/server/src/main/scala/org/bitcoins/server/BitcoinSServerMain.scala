@@ -43,7 +43,6 @@ import org.bitcoins.server.util.{
   WebsocketUtil,
   WsServerConfig
 }
-
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -461,7 +460,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
           BitcoindRpcBackendUtil
             .startBitcoindBlockPolling(wallet, bitcoind)
-            .map(_ => ())
+            .map { _ =>
+              BitcoindRpcBackendUtil
+                .startBitcoindMempoolPolling(bitcoind) { tx =>
+                  nodeConf.nodeCallbacks
+                    .executeOnTxReceivedCallbacks(logger, tx)
+                }
+              ()
+            }
         } else {
           Future {
             BitcoindRpcBackendUtil.startZMQWalletCallbacks(
