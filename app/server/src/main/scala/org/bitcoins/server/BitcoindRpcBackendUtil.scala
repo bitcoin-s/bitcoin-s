@@ -374,33 +374,34 @@ object BitcoindRpcBackendUtil extends Logging {
       Set.empty[DoubleSha256DigestBE]
 
     def getDiffAndReplace(
-        newMempool: Set[DoubleSha256DigestBE]): Set[DoubleSha256DigestBE] = {
-      val txids = newMempool.diff(prevMempool)
-      prevMempool = newMempool
-      txids
-    }
+        newMempool: Set[DoubleSha256DigestBE]): Set[DoubleSha256DigestBE] =
+      synchronized {
+        val txids = newMempool.diff(prevMempool)
+        prevMempool = newMempool
+        txids
+      }
 
     val processing = new AtomicBoolean(false)
 
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
         if (processing.compareAndSet(false, true)) {
-          logger.info("Polling bitcoind for mempool")
+          logger.debug("Polling bitcoind for mempool")
 
           val res = for {
             mempool <- bitcoind.getRawMemPool
             newTxIds = getDiffAndReplace(mempool.toSet)
-            _ = logger.info(s"Found ${newTxIds.size} new mempool transactions")
+            _ = logger.debug(s"Found ${newTxIds.size} new mempool transactions")
             newTxsOpt <- FutureUtil.sequentially(newTxIds)(
-              bitcoind.getRawTransactionRaw(_).map(Option(_)).recover { _ =>
-                None
+              bitcoind.getRawTransactionRaw(_).map(Option(_)).recover {
+                case _: Throwable => None
               })
             newTxs = newTxsOpt.collect { case Some(tx) =>
               tx
             }
             _ <- FutureUtil.sequentially(newTxs)(processTx)
           } yield {
-            logger.info(
+            logger.debug(
               s"Done processing ${newTxIds.size} new mempool transactions")
             ()
           }
