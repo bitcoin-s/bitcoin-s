@@ -308,7 +308,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         startHeight = startHeight,
         endHeight = endHeight)
       filtered <- findMatches(filtersResponse, scripts, parallelismLevel)
-      _ = downloadAndProcessBlocks(filtered.map(_.blockHash.flip))
+      _ <- downloadAndProcessBlocks(filtered.map(_.blockHash.flip))
     } yield {
       logger.info(
         s"Found ${filtered.length} matches from start=$startHeight to end=$endHeight")
