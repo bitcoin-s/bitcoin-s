@@ -356,6 +356,9 @@ object BitcoindRpcBackendUtil extends Logging {
               }
             }
             res.onComplete(_ => processing.set(false))
+          } else {
+            logger.info(
+              s"Skipping scanning the blockchain since a previously scheduled task is still running")
           }
         }
       }
@@ -406,6 +409,9 @@ object BitcoindRpcBackendUtil extends Logging {
             ()
           }
           res.onComplete(_ => processing.set(false))
+        } else {
+          logger.info(
+            s"Skipping scanning the mempool since a previously scheduled task is still running")
         }
       }
     }
