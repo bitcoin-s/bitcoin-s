@@ -27,3 +27,5 @@ object TransactionOutput extends Factory[TransactionOutput] {
     RawTransactionOutputParser.read(bytes)
 
 }
+
+case class OutputWithIndex(output: TransactionOutput, index: Int)

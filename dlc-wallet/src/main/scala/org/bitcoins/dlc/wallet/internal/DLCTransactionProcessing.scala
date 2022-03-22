@@ -7,7 +7,11 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
+import org.bitcoins.core.protocol.transaction.{
+  OutputWithIndex,
+  Transaction,
+  WitnessTransaction
+}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.AddressTag
@@ -236,9 +240,15 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       tx: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       spendingInfoDbs: Vector[SpendingInfoDb],
-      newTags: Vector[AddressTag]): Future[Vector[SpendingInfoDb]] = {
+      newTags: Vector[AddressTag],
+      relevantReceivedOutputs: Vector[OutputWithIndex]): Future[
+    Vector[SpendingInfoDb]] = {
     super
-      .processReceivedUtxos(tx, blockHashOpt, spendingInfoDbs, newTags)
+      .processReceivedUtxos(tx,
+                            blockHashOpt,
+                            spendingInfoDbs,
+                            newTags,
+                            relevantReceivedOutputs)
       .flatMap { res =>
         for {
           dlcDbs <- dlcDAO.findByFundingTxId(tx.txIdBE)

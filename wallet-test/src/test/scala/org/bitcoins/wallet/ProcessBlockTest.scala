@@ -51,7 +51,6 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoinV19 {
 
       _ <- wallet.processBlock(block)
       utxos <- wallet.listUtxos()
-
       height <- bitcoind.getBlockCount
       bestHash <- bitcoind.getBestBlockHash
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
