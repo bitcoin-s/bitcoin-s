@@ -31,9 +31,21 @@ title: Getting Bitcoin-S installed on your machine
 ## Step 1: Developer Runtimes
 
 ### Scala/Java
-To get started you will need Java, Scala, and some other nice tools installed, luckily the Scala team has an easy setup process!
 
-Simply follow the instructions in [this short blog](https://www.scala-lang.org/2020/06/29/one-click-install.html) to get started.
+You can choose to install the Scala toolchain with sdkmon or coursier.
+
+#### Sdkman
+
+You can install sdkman [here](https://sdkman.io/install)
+
+Next you can install `java` and `sbt` with 
+
+```
+sdk install java
+sdk install sbt
+```
+
+#### Coursier
 
 If you don't like `curl`, you can use OS specific package managers to install coursier [here](https://get-coursier.io/docs/2.0.0-RC2/cli-overview.html#installation)
 
