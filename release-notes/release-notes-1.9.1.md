@@ -71,12 +71,12 @@ See individual module sections for updates on per module basis.
 
 ## app commons
 
-
 6e87eb1480 Offer.offerCollateralSatoshis to offerCollateral (#4148)
 1bab51c1c6 Adjust appconfig logging to INFO (#4139)
 
 ## App server
 
+0770fe0550 Mempool support for the bitcoind RPC client (#4196)
 73fe4099f9 Renable tor configuration by default (#4179)
 668ab21ca1 2022 03 09 label refactor (#4175)
 aeb3169884 `getdlcoffer` RPC (#4166)
@@ -85,6 +85,10 @@ aeb3169884 `getdlcoffer` RPC (#4166)
 c315dce05b Add jdk version to log (#4142)
 b86d4e492c Allow both lnmessage and raw tlv to be sent over rpc for acceptdlc (#4140)
 44b2ca3c3d Improve validation error messages (#4141)
+
+## bitcoind rpc
+
+3c2ecd555f Make better error message when you cannot connect to bitcoind (#4200)
 
 ## bundle
 
@@ -110,6 +114,8 @@ eddcc94b03 Upgrade CI jdks to openjdk@1.17.0 (#4114)
 
 ## Core
 
+d5807daeab Remove SpendingInfoDb.txid parameter (#4199)
+8d2a749df6 Rename WitnessScriptPubKeyV1 -> TaprootScriptPubKey (#4198)
 c379cf4a73 Round Bitcoins to nearest Satoshi (#4154)
 5e9be9d69e Fix hardened serialization (#4160)
 c3300aec52 2022 03 03 hdpath fromstring factory exn (#4159)
@@ -174,6 +180,9 @@ b46574c0c4 2022 02 18 sync since creationtime pt2 (#4109)
 
 ## wallet
 
+413dbcacbb Rename clearUtxosAndAddreses(account) -> clearUtxos(account) (#4206)
+5475a994cf Bump default address gap limit to 100, add log indicating we didn't find funds in the last addressBatchSize addresses (#4201)
+a3dba47970 Refactor pending receives/spent states into one spot (#4026)
 46229d712c Rename `clearAllUtxosAndAddresses()` -> `clearAllUtxos()` (#4193)
 ef41cce32d Log entire address path when the address is generated (#4191)
 8214c0b931 Add the account to the address generation log (#4190)
@@ -195,28 +204,20 @@ c11d9ef1fe Fix unit test where coinbase input was sometimes selected (#4165)
 
 ## tor
 
+3136b228fd Log hidden service address (#4212)
 fe86233489 Add better tor message to UI (#4181)
 
 ## Website
 
+702b7cae15 Add instructions for how to use sdkman in getting-setup.md (#4208)
+f16167642b Upgrade website dependencies with yarn upgrade (#4204)
+049411ccd6 Add note about backing up oracle db (#4197)
+b0d7bee008 First draft of 1.9.1 release notes (#4195)
 7ddeae66d2 Add web UI build tutorial (#4183)
 90ff59c6fe Add The Bitcoin Company to users list (#4177)
 
 ## Dependencies
 
+d7f12be1d4 Update scalafx to 17.0.1-R26 (#3874)
 666885bc11 Re-add javafx media,graphics dependnecies to fix GUI (#4107)
 5b1b1ee149 Remove uneeded javafx deps (#4103)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
