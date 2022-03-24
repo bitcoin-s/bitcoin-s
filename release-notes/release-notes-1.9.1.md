@@ -62,12 +62,10 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 # Executive Summary
 
-This release contains numerous bug fixes. 
-
-- Implementing `sendoffer` so you now can send a DLC offer to a peer
-- Implementing the DLC mailbox to allow aggregation of messages such as `sendoffer` from your peer
+- Implements `sendoffer` so you now can send a DLC offer to a peer
+- Implements the DLC mailbox to allow aggregation of messages such as `sendoffer` from your peer
 - Allow DLC payouts to an external address not in the bitcoin-s wallet
-- Only sync compact filters since wallet's creation time. This reduces IBD sigficantly and saves 13GB in disk space.
+- Only sync compact filters since wallet's creation time. This reduces IBD significantly and saves 13GB in disk space.
 - Improving the windows installation experience
 
 ## app commons
