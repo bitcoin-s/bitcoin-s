@@ -62,21 +62,27 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 # Executive Summary
 
-This release integrates Tor network support for opening a DLC with your counterparty.
-This is a huge UX improvement over the previous flow where 2 _manual_ round trips
-were required to open a DLC with your peer.
-
-See individual module sections for updates on per module basis.
-
+- Implements `sendoffer` so you now can send a DLC offer to a peer
+- Implements the DLC mailbox to allow aggregation of messages such as `sendoffer` from your peer
+- Allow DLC payouts to an external address not in the bitcoin-s wallet
+- Only sync compact filters since wallet's creation time. This reduces IBD significantly and saves 13GB in disk space.
+- Improving the windows installation experience
 
 ## app commons
-
 
 6e87eb1480 Offer.offerCollateralSatoshis to offerCollateral (#4148)
 1bab51c1c6 Adjust appconfig logging to INFO (#4139)
 
 ## App server
 
+The major feature this release is adding mempool support when bitcoind is as a backend. Now our wallet
+will be informed of transactions relevant to the wallet that are in the mempool.
+
+This release also reworks the label APIs in the wallet to make them easier to use.
+
+Finally we expose the `offer-send` RPC so you can progmatically send an offer to another DLC wallet.
+
+0770fe0550 Mempool support for the bitcoind RPC client (#4196)
 73fe4099f9 Renable tor configuration by default (#4179)
 668ab21ca1 2022 03 09 label refactor (#4175)
 aeb3169884 `getdlcoffer` RPC (#4166)
@@ -85,6 +91,10 @@ aeb3169884 `getdlcoffer` RPC (#4166)
 c315dce05b Add jdk version to log (#4142)
 b86d4e492c Allow both lnmessage and raw tlv to be sent over rpc for acceptdlc (#4140)
 44b2ca3c3d Improve validation error messages (#4141)
+
+## bitcoind rpc
+
+3c2ecd555f Make better error message when you cannot connect to bitcoind (#4200)
 
 ## bundle
 
@@ -110,6 +120,10 @@ eddcc94b03 Upgrade CI jdks to openjdk@1.17.0 (#4114)
 
 ## Core
 
+Small bug fixes and renames this release for `core`.
+
+d5807daeab Remove SpendingInfoDb.txid parameter (#4199)
+8d2a749df6 Rename WitnessScriptPubKeyV1 -> TaprootScriptPubKey (#4198)
 c379cf4a73 Round Bitcoins to nearest Satoshi (#4154)
 5e9be9d69e Fix hardened serialization (#4160)
 c3300aec52 2022 03 03 hdpath fromstring factory exn (#4159)
@@ -123,6 +137,10 @@ f657510d80 Remove invoice max amount limit (#4104)
 
 ## DLC node
 
+The major feature this release is the offer inbox. This allows a counterparty to send you
+and offer for a DLC. Next time you open up your wallet, you can see offers that were sent to you
+and decide to accept them or put them in the trash.
+
 c1dccd7831 Offer inbox RPC (#4129)
 5aa46be423 Add a warn log if tor is not enabled and we are booting up DLCServer (#4126)
 f3c443804b Make DLCDataHandler more type safe (#4123)
@@ -131,6 +149,15 @@ f3c443804b Make DLCDataHandler more type safe (#4123)
 ## DLC Oracle
 
 ## DLC wallet
+
+The theme for this release was making database operations transactional to avoid corrupt wallet states.
+
+We also included a new state for computing adaptor signatures. This can take signficant time on low resource
+devices such as a raspberry pi. The new state `AdaptorSigComputationState` can now be used by UI developers
+to signal to the user their DLC is in progress, specifically computing signatures. 
+
+The last feature is adding the ability to specify external payout addresses for a wallet to receive DLC payouts.
+We plan on using this at Bitcoin 2022 in Miami to allow for users to receive payouts from a esports gaming DLC.
 
 faac871db6 Make buildCreateOfferAction upsert funding inputs rather than insert (#4186)
 3f18f7b04c Only allow executing a DLC if it is in the Broadcast or Confirmed state (#4185)
@@ -164,6 +191,13 @@ cff0e84440 Fix get txs for lnd (#4111)
 
 ## node
 
+Only sync compact filters since wallet's creation time. This reduces IBD sigficantly and saves 13GB in disk space.
+As a datapoint, for a wallet created in May of 2019 it takes ~50 minutes to do IBD. For a new wallet it takes 30 minutes.
+
+This increases the IBD for a new wallet by 90% giving a much better UX. If you want to sync all compact filters from genesis,
+the only way to currently do this is adjusting `creationTime` to be an older timestamp inside of the seed file found at
+`$HOME/.bitcoin-s/seeds/encrypted-bitcoin-s-seed.json` by default.
+
 b46574c0c4 2022 02 18 sync since creationtime pt2 (#4109)
 
 ## Oracle explorer client
@@ -174,6 +208,9 @@ b46574c0c4 2022 02 18 sync since creationtime pt2 (#4109)
 
 ## wallet
 
+413dbcacbb Rename clearUtxosAndAddreses(account) -> clearUtxos(account) (#4206)
+5475a994cf Bump default address gap limit to 100, add log indicating we didn't find funds in the last addressBatchSize addresses (#4201)
+a3dba47970 Refactor pending receives/spent states into one spot (#4026)
 46229d712c Rename `clearAllUtxosAndAddresses()` -> `clearAllUtxos()` (#4193)
 ef41cce32d Log entire address path when the address is generated (#4191)
 8214c0b931 Add the account to the address generation log (#4190)
@@ -195,28 +232,22 @@ c11d9ef1fe Fix unit test where coinbase input was sometimes selected (#4165)
 
 ## tor
 
+This release improves logging for our tor module.
+
+3136b228fd Log hidden service address (#4212)
 fe86233489 Add better tor message to UI (#4181)
 
 ## Website
 
+702b7cae15 Add instructions for how to use sdkman in getting-setup.md (#4208)
+f16167642b Upgrade website dependencies with yarn upgrade (#4204)
+049411ccd6 Add note about backing up oracle db (#4197)
+b0d7bee008 First draft of 1.9.1 release notes (#4195)
 7ddeae66d2 Add web UI build tutorial (#4183)
 90ff59c6fe Add The Bitcoin Company to users list (#4177)
 
 ## Dependencies
 
+d7f12be1d4 Update scalafx to 17.0.1-R26 (#3874)
 666885bc11 Re-add javafx media,graphics dependnecies to fix GUI (#4107)
 5b1b1ee149 Remove uneeded javafx deps (#4103)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
