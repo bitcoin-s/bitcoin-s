@@ -207,11 +207,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       wsQueue: SourceQueueWithComplete[Message],
       chainApi: ChainApi): Unit = {
     val chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, chainApi)
-    val _ = chainConf.addCallbacks(chainCallbacks)
+    chainConf.addCallbacks(chainCallbacks)
     val walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue)
-    val _ = walletConf.addCallbacks(walletCallbacks)
+    walletConf.addCallbacks(walletCallbacks)
     val dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
-    val _ = dlcConf.addCallbacks(dlcWalletCallbacks)
+    dlcConf.addCallbacks(dlcWalletCallbacks)
 
     ()
   }
