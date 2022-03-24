@@ -11,6 +11,7 @@ import akka.actor.{
 }
 import akka.io.{IO, Tcp}
 import akka.util.ByteString
+import grizzled.slf4j.Logging
 import org.bitcoins.tor.TorProtocolHandler.Authentication
 
 import java.net.InetSocketAddress
@@ -73,7 +74,7 @@ class TorController(address: InetSocketAddress, protocolHandlerProps: Props)
 
 }
 
-object TorController {
+object TorController extends Logging {
 
   def props(address: InetSocketAddress, protocolHandlerProps: Props) =
     Props(new TorController(address, protocolHandlerProps))
@@ -96,9 +97,9 @@ object TorController {
       authentication: Authentication,
       privateKeyPath: Path,
       virtualPort: Int,
-      targets: Seq[String] = Seq())(implicit
+      targets: Seq[String] = Seq.empty)(implicit
       system: ActorSystem): Future[InetSocketAddress] = {
-
+    import system.dispatcher
     val promiseTorAddress = Promise[InetSocketAddress]()
 
     val protocolHandlerProps = TorProtocolHandler.props(
@@ -116,7 +117,12 @@ object TorController {
       s"tor-${System.currentTimeMillis()}"
     )
 
-    promiseTorAddress.future
+    val addressF = promiseTorAddress.future
+
+    addressF.foreach(address =>
+      logger.info(s"Created hidden service with address=$address"))
+
+    addressF
   }
 
 }
