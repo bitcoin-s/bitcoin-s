@@ -1,17 +1,38 @@
-version: "3"
+version: "3.7"
 
 services:
-  docusaurus:
-    build: .
-    ports:
-      - 3000:3000
-      - 35729:35729
+  web:
+    image: bitcoinscala/wallet-server-ui:1.9.0-9ca96ac1-SNAPSHOT
+    user: "1000:1000"
+    restart: on-failure
+    stop_grace_period: 1m
     volumes:
-      - ./docs:/app/docs
-      - ./website/core:/app/website/core
-      - ./website/i18n:/app/website/i18n
-      - ./website/pages:/app/website/pages
-      - ./website/static:/app/website/static
-      - ./website/sidebars.json:/app/website/sidebars.json
-      - ./website/siteConfig.js:/app/website/siteConfig.js
-    working_dir: /app/website
+      - ./data/wallet:/home/bitcoin-s/.bitcoin-s
+      - ./data/log:/log
+    environment:
+      LOG_PATH: "/log/"
+      BITCOIN_S_HOME: "/home/bitcoin-s/.bitcoin-s/"
+      MEMPOOL_API_URL: "http://mempool.space/api"
+      WALLET_SERVER_API_URL: "http://walletserver:9999/"
+      WALLET_SERVER_WS: "ws://walletserver:19999/events"
+      DEFAULT_UI_PASSWORD: $APP_PASSWORD
+      BITCOIN_S_SERVER_RPC_PASSWORD: $APP_PASSWORD
+    ports:
+      - "3002:3002"
+    depends_on:
+      - walletserver
+  walletserver:
+    image: bitcoinscala/bitcoin-s-server:1.9.0-59-faac871d-SNAPSHOT
+    user: "1000:1000"
+    restart: on-failure
+    volumes:
+      - ./data/wallet:/home/bitcoin-s/.bitcoin-s
+    environment:
+      BITCOIN_S_NODE_MODE: neutrino
+      BITCOIN_S_PROXY_ENABLED: "false"
+      BITCOIN_S_TOR_ENABLED: "false"
+      BITCOIN_S_DLCNODE_PROXY_ENABLED: "true"
+      BITCOIN_S_DLCNODE_PROXY_SOCKS5: "127.0.0.1:9005"
+      BITCOIN_S_SERVER_RPC_PASSWORD: $APP_PASSWORD
+    ports:
+      - "9999:9999"
