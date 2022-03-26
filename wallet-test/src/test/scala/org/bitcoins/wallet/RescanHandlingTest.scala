@@ -310,7 +310,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       //slight delay to make sure other rescan is started
       val alreadyStartedF =
-        AsyncUtil.nonBlockingSleep(500.millis).flatMap { _ =>
+        AsyncUtil.nonBlockingSleep(100.millis).flatMap { _ =>
           wallet.rescanNeutrinoWallet(startOpt = None,
                                       endOpt = None,
                                       addressBatchSize =
