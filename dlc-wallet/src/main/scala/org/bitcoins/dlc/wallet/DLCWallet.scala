@@ -1692,7 +1692,7 @@ abstract class DLCWallet
     dlcOptF
   }
 
-  private def findDLCStatus(dlcDb: DLCDb) = {
+  private def findDLCStatus(dlcDb: DLCDb): Future[Option[DLCStatus]] = {
     val dlcId = dlcDb.dlcId
     val contractDataOptF = contractDataDAO.read(dlcId)
     val offerDbOptF = dlcOfferDAO.read(dlcId)
