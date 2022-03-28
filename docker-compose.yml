@@ -2,8 +2,8 @@ version: "3.7"
 
 services:
   web:
-    image: bitcoinscala/wallet-server-ui:1.9.0-9ca96ac1-SNAPSHOT
-    user: "1000:1000"
+    image: bitcoinscala/wallet-server-ui:latest
+    user: "0:1000"
     restart: on-failure
     stop_grace_period: 1m
     volumes:
@@ -22,17 +22,27 @@ services:
     depends_on:
       - walletserver
   walletserver:
-    image: bitcoinscala/bitcoin-s-server:1.9.0-59-faac871d-SNAPSHOT
-    user: "1000:1000"
+    image: bitcoinscala/bitcoin-s-server:latest
+    user: "0:1000"
     restart: on-failure
     volumes:
       - ./data/wallet:/home/bitcoin-s/.bitcoin-s
     environment:
-      BITCOIN_S_NODE_MODE: neutrino
+      BITCOIN_S_NODE_MODE: "neutrino"
+      BITCOIN_S_TOR_PROVIDED: "true"
       BITCOIN_S_PROXY_ENABLED: "false"
       BITCOIN_S_TOR_ENABLED: "false"
       BITCOIN_S_DLCNODE_PROXY_ENABLED: "true"
-      BITCOIN_S_DLCNODE_PROXY_SOCKS5: "127.0.0.1:9005"
+      BITCOIN_S_DLCNODE_TOR_ENABLED: "true"
+      BITCOIN_S_DLCNODE_PROXY_SOCKS5: "tor:9050"
+      BITCOIN_S_DLCNODE_TOR_CONTROL: "tor:9051"
+      BITCOIN_S_DLCNODE_TOR_PASSWORD: "topsecret"
       BITCOIN_S_SERVER_RPC_PASSWORD: $APP_PASSWORD
     ports:
       - "9999:9999"
+    depends_on:
+      - tor
+  tor:
+    image:  bitcoinscala/tor:latest
+    entrypoint: ["/tor", "--ExitRelay", "0", "--BridgeRelay",  "0", "--SOCKSPort", "0.0.0.0:9050", "--ControlPort", "0.0.0.0:9051", "--HashedControlPassword", "16:EF3A794FD6F30EF76049147EF252111809E7D51C049FEB353B547C1553"]
+    restart: on-failure
