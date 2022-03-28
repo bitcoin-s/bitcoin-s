@@ -52,7 +52,7 @@ This will build a `Dockerfile` that is located in `app/server/target/docker/stag
 You can now build the docker image with
 
 ```
-docker build app/server/target/docker/stage/ -t bitcoin-s-server:latest
+docker build app/server/target/docker/stage/ -t bitcoinscala/bitcoin-s-server:latest
 ```
 
 Finally, let's run the image! It's important that you correctly configure port forwarding with the docker container so
