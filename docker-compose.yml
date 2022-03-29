@@ -29,6 +29,7 @@ services:
       - ./data/wallet:/home/bitcoin-s/.bitcoin-s
     environment:
       BITCOIN_S_NODE_MODE: "neutrino"
+      BITCOIN_S_NODE_PEERS: "neutrino.suredbits.com:8333"
       BITCOIN_S_TOR_PROVIDED: "true"
       BITCOIN_S_PROXY_ENABLED: "false"
       BITCOIN_S_TOR_ENABLED: "false"

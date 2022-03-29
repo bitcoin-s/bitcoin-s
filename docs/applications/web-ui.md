@@ -17,4 +17,5 @@ The application server requires a password to be set in order to start. You can 
 $ APP_PASSWORD=<your password> docker-compose up
 ```
 
-The server is configured to work as a neutrino wallet, and it uses `neutrino.suredbits.com` as a peer.
+The server is configured to work as a neutrino wallet, and it uses `neutrino.suredbits.com` as a peer. 
+If you want to connect to another peer change the `BITCOIN_S_NODE_PEERS` variable in the `docker-conpose.yml` file. 
