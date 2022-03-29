@@ -11,7 +11,11 @@ import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.AddressTag
-import org.bitcoins.crypto.{DoubleSha256DigestBE, SchnorrDigitalSignature}
+import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
+  SchnorrDigitalSignature,
+  Sha256Digest
+}
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.dlc.wallet.models._
@@ -268,15 +272,34 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
 
           _ <- dlcDAO.updateAll(updated)
           dlcIds = updated.map(_.dlcId).distinct
-          updatedDlcDbs <- Future.sequence(dlcIds.map(findDLC))
-          _ <- Future.sequence {
-            updatedDlcDbs.map(u =>
-              dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, u.get))
-          }
+          isRescanning <- isRescanning()
+          _ <- sendWsDLCStateChange(dlcIds, isRescanning)
         } yield {
           res
         }
       }
+  }
+
+  /** Sends out a websocket event for the given dlcIds since their [[DLCState]] changed
+    * @param dlcIds the dlcIds that had their status change
+    * @param isRescanning if the wallet is rescanning or not, we don't want to send out events if the wallet is rescanning
+    */
+  private def sendWsDLCStateChange(
+      dlcIds: Vector[Sha256Digest],
+      isRescanning: Boolean): Future[Unit] = {
+    if (isRescanning) {
+      //don't send ws events if we are rescanning the wallet
+      Future.unit
+    } else {
+      val updatedDlcDbsF = Future.sequence(dlcIds.map(findDLC))
+      val sendF = updatedDlcDbsF.flatMap { updatedDlcDbs =>
+        Future.sequence {
+          updatedDlcDbs.map(u =>
+            dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, u.get))
+        }
+      }
+      sendF.map(_ => ())
+    }
   }
 
   override protected def processSpentUtxos(
