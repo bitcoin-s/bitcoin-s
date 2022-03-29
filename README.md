@@ -29,6 +29,16 @@ We recommend using the web frontend for beginners.
 2. [Desktop GUI](https://bitcoin-s.org/docs/applications/gui#running-the-gui)
 3. [Headless backend](https://bitcoin-s.org/docs/applications/server#app-server)
 
+#### Docker
+
+In this repo, you can just run
+
+```
+APP_PASSWORD=topsecret docker-compose up
+```
+
+which will spin up a docker environment that starts syncing the backend and will allow you to visit
+the web frontend of the wallet at `localhost:30002`
 
 ### What is bitcoin-s?
 
