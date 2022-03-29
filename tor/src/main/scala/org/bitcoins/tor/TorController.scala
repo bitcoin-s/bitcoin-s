@@ -1,5 +1,6 @@
 package org.bitcoins.tor
 
+import akka.Done
 import akka.actor.{
   Actor,
   ActorLogging,
@@ -14,6 +15,7 @@ import akka.util.ByteString
 import grizzled.slf4j.Logging
 import org.bitcoins.tor.TorProtocolHandler.Authentication
 
+import java.io.IOException
 import java.net.InetSocketAddress
 import java.nio.file.Path
 import scala.concurrent.{Future, Promise}
@@ -24,7 +26,10 @@ import scala.concurrent.{Future, Promise}
   * @param protocolHandlerProps Tor protocol handler props
   * @param ec                   execution context
   */
-class TorController(address: InetSocketAddress, protocolHandlerProps: Props)
+class TorController(
+    address: InetSocketAddress,
+    protocolHandlerProps: Props,
+    connectedPromiseOpt: Option[Promise[Done]])
     extends Actor
     with ActorLogging {
 
@@ -36,9 +41,14 @@ class TorController(address: InetSocketAddress, protocolHandlerProps: Props)
 
   override def receive: Receive = {
     case e @ CommandFailed(_: Connect) =>
+      val errMessage = s"Cannot connect to Tor control address $address"
       e.cause match {
-        case Some(ex) => log.error(ex, "Cannot connect")
-        case _        => log.error("Cannot connect")
+        case Some(ex) =>
+          log.error(ex, errMessage)
+          connectedPromiseOpt.foreach(_.failure(ex))
+        case _ =>
+          log.error(errMessage)
+          connectedPromiseOpt.foreach(_.failure(new IOException(errMessage)))
       }
       context.stop(self)
     case c: Connected =>
@@ -48,6 +58,7 @@ class TorController(address: InetSocketAddress, protocolHandlerProps: Props)
       connection ! Register(self)
       context.watch(connection)
       context.watch(protocolHandler)
+      connectedPromiseOpt.foreach(_.success(Done))
       context.become {
         case data: ByteString =>
           connection ! Write(data)
@@ -76,8 +87,11 @@ class TorController(address: InetSocketAddress, protocolHandlerProps: Props)
 
 object TorController extends Logging {
 
-  def props(address: InetSocketAddress, protocolHandlerProps: Props) =
-    Props(new TorController(address, protocolHandlerProps))
+  def props(
+      address: InetSocketAddress,
+      protocolHandlerProps: Props,
+      connectedPromiseOpt: Option[Promise[Done]]) =
+    Props(new TorController(address, protocolHandlerProps, connectedPromiseOpt))
 
   case object SendFailed
 
@@ -101,6 +115,7 @@ object TorController extends Logging {
       system: ActorSystem): Future[InetSocketAddress] = {
     import system.dispatcher
     val promiseTorAddress = Promise[InetSocketAddress]()
+    val promiseConnected = Promise[Done]()
 
     val protocolHandlerProps = TorProtocolHandler.props(
       version = TorProtocolHandler.V3,
@@ -113,16 +128,18 @@ object TorController extends Logging {
 
     val _ = system.actorOf(
       TorController.props(address = controlAddress,
-                          protocolHandlerProps = protocolHandlerProps),
+                          protocolHandlerProps = protocolHandlerProps,
+                          connectedPromiseOpt = Some(promiseConnected)),
       s"tor-${System.currentTimeMillis()}"
     )
 
-    val addressF = promiseTorAddress.future
-
-    addressF.foreach(address =>
-      logger.info(s"Created hidden service with address=$address"))
-
-    addressF
+    for {
+      _ <- promiseConnected.future
+      torAddress <- promiseTorAddress.future
+    } yield {
+      logger.info(s"Created hidden service with address=$torAddress")
+      torAddress
+    }
   }
 
 }

@@ -87,3 +87,6 @@ website/static/api
 
 #OSX
 .DS_Store
+
+#Docker
+data/

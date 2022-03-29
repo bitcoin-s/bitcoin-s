@@ -5,6 +5,7 @@ import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.number.UInt16
 import org.bitcoins.core.protocol.tlv.{LnMessage, PingTLV, PongTLV}
+import org.bitcoins.dlc.node.DLCDataHandler.Received
 import org.bitcoins.dlc.node.peer.Peer
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
@@ -106,17 +107,17 @@ class DLCServerTorTest
                 ByteVector.fromValidHex("00112233445566778899aabbccddeeff"))
             clientConnectionHandler = clientConnectionHandlerOpt.get
             _ = clientProbe.send(clientConnectionHandler, pingTLV)
-            _ = serverProbe.expectMsg(timeout, LnMessage(pingTLV))
+            _ = serverProbe.expectMsg(timeout, Received(LnMessage(pingTLV)))
             pongTLV = PongTLV.forIgnored(
               ByteVector.fromValidHex("00112233445566778899aabbccddeeff"))
             serverConnectionHandler = serverConnectionHandlerOpt.get
             _ = serverProbe.send(serverConnectionHandler, pongTLV)
-            _ = clientProbe.expectMsg(timeout, LnMessage(pongTLV))
+            _ = clientProbe.expectMsg(timeout, Received(LnMessage(pongTLV)))
             // 131063 - is a magic size for OS X when this test case starts failing (131073 overall TLV size)
             ignored = ByteVector.fill(65000)(0x55)
             bigTLV = PongTLV.forIgnored(ignored)
             _ = clientProbe.send(clientConnectionHandler, bigTLV)
-            _ = serverProbe.expectMsg(timeout, LnMessage(bigTLV))
+            _ = serverProbe.expectMsg(timeout, Received(LnMessage(bigTLV)))
             _ = clientProbe.send(clientConnectionHandler,
                                  DLCConnectionHandler.CloseConnection)
             _ = clientProbe.send(clientConnectionHandler, pingTLV)
