@@ -90,7 +90,7 @@ The native packager offers <a href="https://github.com/sbt/sbt-native-packager#e
 </code></pre>
 <p>This will build a <code>Dockerfile</code> that is located in <code>app/server/target/docker/stage</code></p>
 <p>You can now build the docker image with</p>
-<pre><code class="hljs">docker build app<span class="hljs-regexp">/server/</span>target<span class="hljs-regexp">/docker/</span>stage/ -t bitcoin-s-<span class="hljs-string">server:</span>latest
+<pre><code class="hljs">docker build app<span class="hljs-regexp">/server/</span>target<span class="hljs-regexp">/docker/</span>stage<span class="hljs-regexp">/ -t bitcoinscala/</span>bitcoin-s-<span class="hljs-string">server:</span>latest
 </code></pre>
 <p>Finally, let's run the image! It's important that you correctly configure port forwarding with the docker container so
 you can interact with the running container with <code>bitcoin-s-cli</code> or <code>curl</code>. By default, our oracle
