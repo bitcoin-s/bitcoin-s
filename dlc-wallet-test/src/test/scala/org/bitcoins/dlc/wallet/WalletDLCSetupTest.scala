@@ -1080,4 +1080,40 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       }
   }
 
+  it must "setup a DLC and allow re-use of inputs on the accept side" in {
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
+      val offerData: DLCOffer =
+        DLCWalletUtil.sampleDLCOffer.copy(contractInfo =
+                                            DLCWalletUtil.sampleContractInfo2,
+                                          totalCollateral = DLCWalletUtil.amt2)
+      val offerData2 = DLCWalletUtil.sampleDLCOffer
+
+      for {
+        offer1 <- walletA.createDLCOffer(
+          offerData.contractInfo,
+          offerData.totalCollateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          offerData.timeouts.contractTimeout.toUInt32,
+          None,
+          None
+        )
+        //accept it for the first time using the inputs
+        _ <- walletB.acceptDLCOffer(offer1.toTLV, None, None)
+        //cancel the offer
+        _ <- walletA.cancelDLC(dlcId = offer1.dlcId)
+        offer2 <- walletA.createDLCOffer(
+          offerData2.contractInfo,
+          offerData2.totalCollateral,
+          Some(offerData2.feeRate),
+          offerData2.timeouts.contractMaturity.toUInt32,
+          offerData2.timeouts.contractTimeout.toUInt32,
+          None,
+          None
+        )
+        _ <- walletB.acceptDLCOffer(offer2.toTLV, None, None)
+      } yield succeed
+  }
 }

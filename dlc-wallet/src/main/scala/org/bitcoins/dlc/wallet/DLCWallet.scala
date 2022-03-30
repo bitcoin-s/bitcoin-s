@@ -649,6 +649,7 @@ abstract class DLCWallet
         s"Offer ${offer.tempContractId.hex} contains invalid announcement signature(s)"))
     }
 
+    logger.info(s"outpoints=${offer.fundingInputs.map(_.outPoint)}")
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
     val collateral = offer.contractInfo.max - offer.totalCollateral
@@ -740,7 +741,10 @@ abstract class DLCWallet
             externalPayoutAddressOpt = externalPayoutAddressOpt,
             externalChangeAddressOpt = externalChangeAddressOpt
           )
-
+        _ = require(
+          initializedAccept.acceptWithoutSigs.tempContractId == offer.tempContractId,
+          s"Offer and Accept have differing tempContractIds! offer=${offer.tempContractId} accept=${initializedAccept.acceptWithoutSigs.tempContractId}"
+        )
         offerPrevTxs = offer.fundingInputs.map(funding =>
           TransactionDbHelper.fromTransaction(funding.prevTx,
                                               blockHashOpt = None))
@@ -816,9 +820,6 @@ abstract class DLCWallet
                          outcomeSigs = cetSigs.outcomeSigs,
                          refundSig = refundSig)
             .copy(isExternalAddress = status.payoutAddress.forall(_.isExternal))
-
-        _ = require(accept.tempContractId == offer.tempContractId,
-                    "Offer and Accept have differing tempContractIds!")
 
         actions = actionBuilder.buildCreateAcceptAction(
           dlcDb = dlc.updateState(DLCState.Accepted),

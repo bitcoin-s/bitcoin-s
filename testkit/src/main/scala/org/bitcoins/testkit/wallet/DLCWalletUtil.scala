@@ -86,6 +86,11 @@ object DLCWalletUtil extends Logging {
   lazy val sampleContractInfo: ContractInfo =
     SingleContractInfo(half, sampleContractOraclePair)
 
+  val amt2: Satoshis = Satoshis(100000)
+
+  lazy val sampleContractInfo2: ContractInfo =
+    SingleContractInfo(amt2, sampleContractOraclePair)
+
   lazy val invalidContractInfo: ContractInfo =
     SingleContractInfo(half, invalidContractOraclePair)
 
@@ -171,6 +176,20 @@ object DLCWalletUtil extends Logging {
     contractInfo = sampleContractInfo,
     pubKeys = dummyDLCKeys,
     totalCollateral = half,
+    fundingInputs = Vector(dummyFundingInputs.head),
+    changeAddress = dummyAddress,
+    payoutSerialId = sampleOfferPayoutSerialId,
+    changeSerialId = sampleOfferChangeSerialId,
+    fundOutputSerialId = sampleFundOutputSerialId,
+    feeRate = SatoshisPerVirtualByte(Satoshis(3)),
+    timeouts = dummyTimeouts
+  )
+
+  lazy val sampleDLCOffer2 = DLCOffer(
+    protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
+    contractInfo = sampleContractInfo2,
+    pubKeys = dummyDLCKeys,
+    totalCollateral = sampleContractInfo2.totalCollateral,
     fundingInputs = Vector(dummyFundingInputs.head),
     changeAddress = dummyAddress,
     payoutSerialId = sampleOfferPayoutSerialId,
