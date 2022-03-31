@@ -189,7 +189,7 @@ object DLCWalletUtil extends Logging {
     protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
     contractInfo = sampleContractInfo2,
     pubKeys = dummyDLCKeys,
-    totalCollateral = sampleContractInfo2.totalCollateral,
+    collateral = sampleContractInfo2.totalCollateral,
     fundingInputs = Vector(dummyFundingInputs.head),
     changeAddress = dummyAddress,
     payoutSerialId = sampleOfferPayoutSerialId,

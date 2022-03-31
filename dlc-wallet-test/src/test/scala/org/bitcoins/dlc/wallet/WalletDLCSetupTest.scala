@@ -1084,13 +1084,13 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val offerData: DLCOffer =
         DLCWalletUtil.sampleDLCOffer.copy(contractInfo =
                                             DLCWalletUtil.sampleContractInfo2,
-                                          totalCollateral = DLCWalletUtil.amt2)
+                                          collateral = DLCWalletUtil.amt2)
       val offerData2 = DLCWalletUtil.sampleDLCOffer
 
       for {
         offer1 <- walletA.createDLCOffer(
           offerData.contractInfo,
-          offerData.totalCollateral,
+          offerData.collateral,
           Some(offerData.feeRate),
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32,
