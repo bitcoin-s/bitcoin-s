@@ -648,8 +648,7 @@ abstract class DLCWallet
       return Future.failed(InvalidAnnouncementSignature(
         s"Offer ${offer.tempContractId.hex} contains invalid announcement signature(s)"))
     }
-
-    logger.info(s"outpoints=${offer.fundingInputs.map(_.outPoint)}")
+    
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
     val collateral = offer.contractInfo.max - offer.totalCollateral
