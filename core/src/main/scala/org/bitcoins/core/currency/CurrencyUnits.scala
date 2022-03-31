@@ -128,6 +128,7 @@ object Satoshis
   val max = Satoshis(Int64.max)
   val zero = Satoshis(Int64.zero)
   val one = Satoshis(Int64.one)
+  val two = Satoshis(2)
 
   override def fromBytes(bytes: ByteVector): Satoshis =
     RawSatoshisSerializer.read(bytes)

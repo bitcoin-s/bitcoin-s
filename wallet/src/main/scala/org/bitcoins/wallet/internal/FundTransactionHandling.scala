@@ -57,7 +57,11 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       markAsReserved: Boolean): Future[(
       RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
       Vector[ScriptSignatureParams[InputInfo]])] = {
-    val amt = destinations.map(_.value).sum
+    val amts = destinations.map(_.value)
+    //need to allow 0 for OP_RETURN outputs
+    require(amts.forall(_.satoshis.toBigInt >= 0),
+            s"Cannot fund a transaction for a negative amount, got=$amts")
+    val amt = amts.sum
     logger.info(s"Attempting to fund a tx for amt=${amt} with feeRate=$feeRate")
     val utxosF: Future[Vector[(SpendingInfoDb, Transaction)]] =
       for {

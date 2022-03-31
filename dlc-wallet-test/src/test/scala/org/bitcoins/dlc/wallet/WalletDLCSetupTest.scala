@@ -153,7 +153,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
       // construct a contract info that uses many inputs
       val totalCol = Bitcoins(11).satoshis
-      val col = totalCol / Satoshis(2)
+      val col = totalCol / Satoshis.two
 
       val outcomes: Vector[(EnumOutcome, Satoshis)] =
         Vector(EnumOutcome(winStr) -> totalCol,
@@ -897,7 +897,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     def makeOffer(contractInfo: ContractInfoV0TLV): Future[DLCOffer] = {
       walletA.createDLCOffer(
         contractInfoTLV = contractInfo,
-        collateral = totalCollateral,
+        collateral = (totalCollateral / Satoshis.two).satoshis,
         feeRateOpt = feeRateOpt,
         locktime = UInt32.zero,
         refundLT = UInt32.one,
@@ -928,7 +928,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     def makeOffer(contractInfo: ContractInfoV0TLV): Future[DLCOffer] = {
       walletA.createDLCOffer(
         contractInfoTLV = contractInfo,
-        collateral = totalCollateral,
+        collateral = (totalCollateral / Satoshis.two).satoshis,
         feeRateOpt = feeRateOpt,
         locktime = UInt32.zero,
         refundLT = UInt32.one,
@@ -1032,7 +1032,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       val feeRateOpt = Some(SatoshisPerVirtualByte(Satoshis.one))
       val totalCollateral = Satoshis(5000)
-      val feeRateOpt1 = Some(SatoshisPerVirtualByte(Satoshis(2)))
+      val feeRateOpt1 = Some(SatoshisPerVirtualByte(Satoshis.two))
       val totalCollateral1 = Satoshis(10000)
 
       // random testnet addresses
@@ -1080,4 +1080,41 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       }
   }
 
+  it must "setup a DLC and allow re-use of inputs on the accept side" in {
+    FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
+      val walletA = FundedDLCWallets._1.wallet
+      val walletB = FundedDLCWallets._2.wallet
+      val offerData: DLCOffer =
+        DLCWalletUtil.sampleDLCOffer.copy(contractInfo =
+                                            DLCWalletUtil.sampleContractInfo2,
+                                          totalCollateral = DLCWalletUtil.amt2)
+      val offerData2 = DLCWalletUtil.sampleDLCOffer
+
+      for {
+        offer1 <- walletA.createDLCOffer(
+          offerData.contractInfo,
+          offerData.totalCollateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          offerData.timeouts.contractTimeout.toUInt32,
+          None,
+          None
+        )
+        //accept it for the first time using the inputs
+        _ <- walletB.acceptDLCOffer(offer1.toTLV, None, None)
+        //cancel the offer
+        _ <- walletA.cancelDLC(dlcId = offer1.dlcId)
+        amt = DLCWalletUtil.half
+        offer2 <- walletA.createDLCOffer(
+          offerData2.contractInfo,
+          amt,
+          Some(offerData2.feeRate),
+          offerData2.timeouts.contractMaturity.toUInt32,
+          offerData2.timeouts.contractTimeout.toUInt32,
+          None,
+          None
+        )
+        _ <- walletB.acceptDLCOffer(offer2.toTLV, None, None)
+      } yield succeed
+  }
 }

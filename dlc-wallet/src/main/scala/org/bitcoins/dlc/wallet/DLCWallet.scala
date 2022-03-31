@@ -652,7 +652,6 @@ abstract class DLCWallet
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
     val collateral = offer.contractInfo.max - offer.totalCollateral
-
     logger.debug(s"Checking if Accept (${dlcId.hex}) has already been made")
     for {
       dlcAcceptOpt <- DLCAcceptUtil.findDLCAccept(dlcId = dlcId,
@@ -721,7 +720,6 @@ abstract class DLCWallet
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] =
     Future {
       DLCWallet.AcceptingOffersLatch.startAccepting(offer.tempContractId)
-
       logger.info(
         s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
       val result = for {
@@ -740,7 +738,10 @@ abstract class DLCWallet
             externalPayoutAddressOpt = externalPayoutAddressOpt,
             externalChangeAddressOpt = externalChangeAddressOpt
           )
-
+        _ = require(
+          initializedAccept.acceptWithoutSigs.tempContractId == offer.tempContractId,
+          s"Offer and Accept have differing tempContractIds! offer=${offer.tempContractId} accept=${initializedAccept.acceptWithoutSigs.tempContractId}"
+        )
         offerPrevTxs = offer.fundingInputs.map(funding =>
           TransactionDbHelper.fromTransaction(funding.prevTx,
                                               blockHashOpt = None))
@@ -816,9 +817,6 @@ abstract class DLCWallet
                          outcomeSigs = cetSigs.outcomeSigs,
                          refundSig = refundSig)
             .copy(isExternalAddress = status.payoutAddress.forall(_.isExternal))
-
-        _ = require(accept.tempContractId == offer.tempContractId,
-                    "Offer and Accept have differing tempContractIds!")
 
         actions = actionBuilder.buildCreateAcceptAction(
           dlcDb = dlc.updateState(DLCState.Accepted),
