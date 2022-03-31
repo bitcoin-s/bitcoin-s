@@ -153,7 +153,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     fundedDLCWallets: (FundedDLCWallet, FundedDLCWallet) =>
       // construct a contract info that uses many inputs
       val totalCol = Bitcoins(11).satoshis
-      val col = totalCol / Satoshis(2)
+      val col = totalCol / Satoshis.two
 
       val outcomes: Vector[(EnumOutcome, Satoshis)] =
         Vector(EnumOutcome(winStr) -> totalCol,
@@ -897,7 +897,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     def makeOffer(contractInfo: ContractInfoV0TLV): Future[DLCOffer] = {
       walletA.createDLCOffer(
         contractInfoTLV = contractInfo,
-        collateral = totalCollateral,
+        collateral = (totalCollateral / Satoshis.two).satoshis,
         feeRateOpt = feeRateOpt,
         locktime = UInt32.zero,
         refundLT = UInt32.one,
@@ -928,7 +928,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
     def makeOffer(contractInfo: ContractInfoV0TLV): Future[DLCOffer] = {
       walletA.createDLCOffer(
         contractInfoTLV = contractInfo,
-        collateral = totalCollateral,
+        collateral = (totalCollateral / Satoshis.two).satoshis,
         feeRateOpt = feeRateOpt,
         locktime = UInt32.zero,
         refundLT = UInt32.one,
@@ -1032,7 +1032,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       val feeRateOpt = Some(SatoshisPerVirtualByte(Satoshis.one))
       val totalCollateral = Satoshis(5000)
-      val feeRateOpt1 = Some(SatoshisPerVirtualByte(Satoshis(2)))
+      val feeRateOpt1 = Some(SatoshisPerVirtualByte(Satoshis.two))
       val totalCollateral1 = Satoshis(10000)
 
       // random testnet addresses
@@ -1104,9 +1104,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ <- walletB.acceptDLCOffer(offer1.toTLV, None, None)
         //cancel the offer
         _ <- walletA.cancelDLC(dlcId = offer1.dlcId)
+        amt = DLCWalletUtil.half
         offer2 <- walletA.createDLCOffer(
           offerData2.contractInfo,
-          offerData2.totalCollateral,
+          amt,
           Some(offerData2.feeRate),
           offerData2.timeouts.contractMaturity.toUInt32,
           offerData2.timeouts.contractTimeout.toUInt32,

@@ -101,9 +101,6 @@ object DLCMessage {
       changeSerialId != fundOutputSerialId,
       s"changeSerialId ($changeSerialId) cannot be equal to fundOutputSerialId ($fundOutputSerialId)")
 
-    require(
-      totalCollateral == contractInfo.totalCollateral,
-      s"total collaterals must be equal, $totalCollateral ${contractInfo.totalCollateral}")
     val oracleInfos: Vector[OracleInfo] = contractInfo.oracleInfos
 
     val contractDescriptors: Vector[ContractDescriptor] =

@@ -648,11 +648,10 @@ abstract class DLCWallet
       return Future.failed(InvalidAnnouncementSignature(
         s"Offer ${offer.tempContractId.hex} contains invalid announcement signature(s)"))
     }
-    
+
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
     val collateral = offer.contractInfo.max - offer.totalCollateral
-
     logger.debug(s"Checking if Accept (${dlcId.hex}) has already been made")
     for {
       dlcAcceptOpt <- DLCAcceptUtil.findDLCAccept(dlcId = dlcId,
@@ -721,7 +720,6 @@ abstract class DLCWallet
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] =
     Future {
       DLCWallet.AcceptingOffersLatch.startAccepting(offer.tempContractId)
-
       logger.info(
         s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}")
       val result = for {
