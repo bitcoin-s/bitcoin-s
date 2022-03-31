@@ -387,6 +387,7 @@ trait TLVGen {
       payoutAddress <- AddressGenerator.bitcoinAddress
       payoutSerialId <- NumberGenerator.uInt64
       totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
+        .suchThat(_ <= contractInfo.totalCollateral)
       fundingInputs <- fundingInputV0TLVs(totalCollateralSatoshis)
       changeAddress <- AddressGenerator.bitcoinAddress
       changeSerialId <- NumberGenerator.uInt64
@@ -410,7 +411,7 @@ trait TLVGen {
         fundingPubKey = fundingPubKey,
         payoutSPK = payoutAddress.scriptPubKey,
         payoutSerialId = payoutSerialId,
-        totalCollateralSatoshis = totalCollateralSatoshis,
+        offererCollateralSatoshis = totalCollateralSatoshis,
         fundingInputs = fundingInputs,
         changeSPK = changeAddress.scriptPubKey,
         changeSerialId = changeSerialId,
@@ -473,12 +474,10 @@ trait TLVGen {
       payoutAddress <- AddressGenerator.bitcoinAddress
       payoutSerialId <- NumberGenerator.uInt64.suchThat(
         _ != offer.payoutSerialId)
-      totalCollateralSatoshis <- CurrencyUnitGenerator.positiveRealistic
-      totalCollateral = scala.math.max(
-        (contractInfo.max - offer.totalCollateralSatoshis).satoshis.toLong,
-        totalCollateralSatoshis.toLong)
+      acceptCollateral =
+        (contractInfo.totalCollateral - offer.offererCollateralSatoshis).satoshis.toLong
       fundingInputs <- fundingInputV0TLVs(
-        Satoshis(totalCollateral),
+        Satoshis(acceptCollateral),
         offer.fundingInputs.map(_.inputSerialId))
       changeAddress <- AddressGenerator.bitcoinAddress
       changeSerialId <- NumberGenerator.uInt64.suchThat(num =>
@@ -487,17 +486,17 @@ trait TLVGen {
       refundSig <- CryptoGenerators.digitalSignature
     } yield {
       DLCAcceptTLV(
-        DLCOffer.fromTLV(offer).tempContractId,
-        Satoshis(totalCollateral),
-        fundingPubKey,
-        payoutAddress.scriptPubKey,
-        payoutSerialId,
-        fundingInputs,
-        changeAddress.scriptPubKey,
-        changeSerialId,
-        cetSigs,
-        refundSig,
-        NoNegotiationFieldsTLV
+        tempContractId = DLCOffer.fromTLV(offer).tempContractId,
+        acceptCollateralSatoshis = Satoshis(acceptCollateral),
+        fundingPubKey = fundingPubKey,
+        payoutSPK = payoutAddress.scriptPubKey,
+        payoutSerialId = payoutSerialId,
+        fundingInputs = fundingInputs,
+        changeSPK = changeAddress.scriptPubKey,
+        changeSerialId = changeSerialId,
+        cetSignatures = cetSigs,
+        refundSignature = refundSig,
+        negotiationFields = NoNegotiationFieldsTLV
       )
     }
   }

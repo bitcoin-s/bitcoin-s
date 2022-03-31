@@ -229,7 +229,7 @@ object TestDLCClient {
       protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       contractInfo = offerOutcomes,
       pubKeys = offerPubKeys,
-      totalCollateral = offerInput.satoshis,
+      collateral = offerInput.satoshis,
       fundingInputs = offerFundingInputs,
       changeAddress = offerChangeAddress,
       payoutSerialId = offerPayoutSerialId,

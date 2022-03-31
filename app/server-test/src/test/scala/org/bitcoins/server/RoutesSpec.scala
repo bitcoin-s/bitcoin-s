@@ -968,7 +968,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       contractInfo = contractInfo,
       pubKeys = dummyDLCKeys,
-      totalCollateral = Satoshis(2500),
+      collateral = Satoshis(3),
       fundingInputs =
         Vector(fundingInput, fundingInput.copy(inputSerialId = UInt64.max)),
       changeAddress = Bech32Address.fromString(dummyAddress),
@@ -1043,7 +1043,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     val accept = DLCAccept(
-      totalCollateral = Satoshis(1000),
+      collateral = Satoshis(1000),
       pubKeys = dummyDLCKeys,
       fundingInputs = Vector(fundingInput),
       changeAddress = Bech32Address

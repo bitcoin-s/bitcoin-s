@@ -175,7 +175,7 @@ object DLCWalletUtil extends Logging {
     protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
     contractInfo = sampleContractInfo,
     pubKeys = dummyDLCKeys,
-    totalCollateral = half,
+    collateral = half,
     fundingInputs = Vector(dummyFundingInputs.head),
     changeAddress = dummyAddress,
     payoutSerialId = sampleOfferPayoutSerialId,
@@ -189,7 +189,7 @@ object DLCWalletUtil extends Logging {
     protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
     contractInfo = sampleContractInfo2,
     pubKeys = dummyDLCKeys,
-    totalCollateral = sampleContractInfo2.totalCollateral,
+    collateral = sampleContractInfo2.totalCollateral,
     fundingInputs = Vector(dummyFundingInputs.head),
     changeAddress = dummyAddress,
     payoutSerialId = sampleOfferPayoutSerialId,
@@ -203,7 +203,7 @@ object DLCWalletUtil extends Logging {
     protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
     contractInfo = invalidContractInfo,
     pubKeys = dummyDLCKeys,
-    totalCollateral = half,
+    collateral = half,
     fundingInputs = Vector(dummyFundingInputs.head),
     changeAddress = dummyAddress,
     payoutSerialId = sampleOfferPayoutSerialId,
@@ -236,7 +236,7 @@ object DLCWalletUtil extends Logging {
     Vector(sampleOfferChangeSerialId, sampleFundOutputSerialId))
 
   lazy val sampleDLCAccept: DLCAccept = DLCAccept(
-    totalCollateral = half,
+    collateral = half,
     pubKeys = dummyDLCKeys,
     fundingInputs = Vector(dummyFundingInputs.last),
     changeAddress = dummyAddress,
