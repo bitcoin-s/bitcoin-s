@@ -968,7 +968,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       contractInfo = contractInfo,
       pubKeys = dummyDLCKeys,
-      collateral = Satoshis(2500),
+      collateral = Satoshis(3),
       fundingInputs =
         Vector(fundingInput, fundingInput.copy(inputSerialId = UInt64.max)),
       changeAddress = Bech32Address.fromString(dummyAddress),
