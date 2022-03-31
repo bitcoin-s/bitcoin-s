@@ -58,7 +58,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
       Vector[ScriptSignatureParams[InputInfo]])] = {
     val amts = destinations.map(_.value)
-    require(amts.forall(_.satoshis.toBigInt > 0),
+    //need to allow 0 for OP_RETURN outputs
+    require(amts.forall(_.satoshis.toBigInt >= 0),
             s"Cannot fund a transaction for a negative amount, got=$amts")
     val amt = amts.sum
     logger.info(s"Attempting to fund a tx for amt=${amt} with feeRate=$feeRate")
