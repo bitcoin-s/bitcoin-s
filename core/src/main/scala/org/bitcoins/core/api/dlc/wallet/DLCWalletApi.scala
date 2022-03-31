@@ -48,7 +48,7 @@ trait DLCWalletApi { self: WalletApi =>
   def registerDLCOffer(dlcOffer: DLCOffer): Future[DLCOffer] = {
     createDLCOffer(
       dlcOffer.contractInfo,
-      dlcOffer.totalCollateral,
+      dlcOffer.collateral,
       Some(dlcOffer.feeRate),
       dlcOffer.timeouts.contractMaturity.toUInt32,
       dlcOffer.timeouts.contractTimeout.toUInt32,

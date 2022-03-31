@@ -43,7 +43,7 @@ case class DLCOfferDb(
       protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
       contractInfo = contractInfo,
       pubKeys = dlcPubKeys,
-      totalCollateral = collateral.satoshis,
+      collateral = collateral.satoshis,
       fundingInputs = fundingInputs,
       changeAddress = changeAddress,
       payoutSerialId = payoutSerialId,
@@ -63,7 +63,7 @@ object DLCOfferDbHelper {
       offer.pubKeys.fundingKey,
       offer.pubKeys.payoutAddress,
       offer.payoutSerialId,
-      offer.totalCollateral,
+      offer.collateral,
       offer.changeAddress,
       offer.changeSerialId
     )

@@ -39,7 +39,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.timeouts,
             offer.feeRate,
             totalCollateral,
-            offer.totalCollateral,
+            offer.collateral,
             payoutAddress
           )
 
@@ -77,7 +77,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.timeouts,
             offer.feeRate,
             totalCollateral,
-            offer.totalCollateral,
+            offer.collateral,
             payoutAddress
           )
 
@@ -111,7 +111,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.timeouts,
             offer.feeRate,
             totalCollateral,
-            offer.totalCollateral,
+            offer.collateral,
             txId,
             payoutAddress
           )
@@ -146,7 +146,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.timeouts,
             offer.feeRate,
             totalCollateral,
-            offer.totalCollateral,
+            offer.collateral,
             fundingTxId,
             payoutAddress
           )
@@ -181,7 +181,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.timeouts,
             offer.feeRate,
             totalCollateral,
-            offer.totalCollateral,
+            offer.collateral,
             fundingTxId,
             payoutAddress
           )
@@ -227,7 +227,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           offer.timeouts,
           offer.feeRate,
           totalCollateral,
-          offer.totalCollateral,
+          offer.collateral,
           fundingTxId,
           closingTxId,
           sigs.toVector,
@@ -281,7 +281,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           offer.timeouts,
           offer.feeRate,
           totalCollateral,
-          offer.totalCollateral,
+          offer.collateral,
           fundingTxId,
           closingTxId,
           sig,
@@ -331,7 +331,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           offer.timeouts,
           offer.feeRate,
           totalCollateral,
-          offer.totalCollateral,
+          offer.collateral,
           fundingTxId,
           closingTxId,
           myPayout = myPayout,

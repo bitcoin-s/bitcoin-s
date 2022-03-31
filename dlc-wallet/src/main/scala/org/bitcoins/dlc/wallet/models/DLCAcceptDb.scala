@@ -32,7 +32,7 @@ case class DLCAcceptDb(
       DLCPublicKeys(fundingKey, payoutAddress)
     val cetSigs = CETSignatures(outcomeSigs)
     DLCAccept(
-      totalCollateral = collateral.satoshis,
+      collateral = collateral.satoshis,
       pubKeys = pubKeys,
       fundingInputs = fundingInputs,
       changeAddress = changeAddress,
@@ -72,7 +72,7 @@ object DLCAcceptDbHelper {
       accept.pubKeys.fundingKey,
       accept.pubKeys.payoutAddress,
       accept.payoutSerialId,
-      accept.totalCollateral,
+      accept.collateral,
       accept.changeAddress,
       accept.changeSerialId,
       accept.negotiationFields.toTLV

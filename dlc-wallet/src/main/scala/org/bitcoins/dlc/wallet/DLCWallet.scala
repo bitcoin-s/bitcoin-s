@@ -379,7 +379,7 @@ abstract class DLCWallet
         protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
         contractInfo = contractInfo,
         pubKeys = dlcPubKeys,
-        totalCollateral = collateral.satoshis,
+        collateral = collateral.satoshis,
         fundingInputs = utxos,
         changeAddress = changeAddr,
         payoutSerialId = payoutSerialId,
@@ -651,7 +651,8 @@ abstract class DLCWallet
 
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
-    val collateral = offer.contractInfo.max - offer.totalCollateral
+    val collateral = offer.contractInfo.max - offer.collateral
+
     logger.debug(s"Checking if Accept (${dlcId.hex}) has already been made")
     for {
       dlcAcceptOpt <- DLCAcceptUtil.findDLCAccept(dlcId = dlcId,

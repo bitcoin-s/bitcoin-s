@@ -188,7 +188,7 @@ object DLCUtil {
     )
 
     val (fundingTx, fundingOutputIdx) = DLCTxBuilder.buildFundingTransaction(
-      offerInput = offer.totalCollateral,
+      offerInput = offer.collateral,
       acceptInput = acceptWithoutSigs.totalCollateral,
       offerFundingInputs = offerFundingInputs,
       acceptFundingInputs = acceptFundingInputs,

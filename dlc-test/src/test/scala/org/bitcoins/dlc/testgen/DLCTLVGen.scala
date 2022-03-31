@@ -405,7 +405,7 @@ object DLCTLVGen {
       changeAddress: BitcoinAddress = address(),
       changeSerialId: UInt64 = DLCMessage.genSerialId()): DLCAccept = {
     val totalCollateral =
-      offer.contractInfo.max - offer.totalCollateral + overCollateral
+      offer.contractInfo.max - offer.collateral + overCollateral
 
     val cetSignatures =
       cetSigs(

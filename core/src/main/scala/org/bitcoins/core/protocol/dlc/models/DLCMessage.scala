@@ -53,15 +53,16 @@ object DLCMessage {
   sealed trait DLCSetupMessage extends DLCMessage {
     def pubKeys: DLCPublicKeys
 
-    def totalCollateral: Satoshis
+    /** The collateral that the offerer/acceptor is putting up on their side of the DLC */
+    def collateral: Satoshis
 
     def fundingInputs: Vector[DLCFundingInput]
 
     def changeAddress: BitcoinAddress
 
     require(
-      totalCollateral >= Satoshis.zero,
-      s"Cannot have a negative totalCollateral, got: ${totalCollateral.toLong}")
+      collateral >= Satoshis.zero,
+      s"Cannot have a negative totalCollateral, got: ${collateral.toLong}")
   }
 
   /** The initiating party starts the protocol by sending an offer message to the other party.
@@ -70,7 +71,7 @@ object DLCMessage {
     *                   well as meta information to identify the oracle to be used in the contract,
     *                   and a map to be used to create CETs.
     * @param pubKeys The relevant public keys that the initiator will be using
-    * @param totalCollateral How much the initiator inputs into the contract.
+    * @param collateral How much the initiator inputs into the contract.
     * @param fundingInputs   The set of UTXOs to be used as input to the fund transaction.
     * @param changeAddress   The address to use to send the change for the initiator.
     * @param feeRate         The fee rate to be used when computing fees for the different transactions.
@@ -80,7 +81,7 @@ object DLCMessage {
       protocolVersionOpt: Option[Int],
       contractInfo: ContractInfo,
       pubKeys: DLCPublicKeys,
-      totalCollateral: Satoshis,
+      collateral: Satoshis,
       fundingInputs: Vector[DLCFundingInput],
       changeAddress: BitcoinAddress,
       payoutSerialId: UInt64,
@@ -101,6 +102,10 @@ object DLCMessage {
       changeSerialId != fundOutputSerialId,
       s"changeSerialId ($changeSerialId) cannot be equal to fundOutputSerialId ($fundOutputSerialId)")
 
+    require(
+      collateral <= contractInfo.totalCollateral,
+      s"Cannot have more collateral in the DLC than total collateral, collateral=${collateral} totalCollateral=${contractInfo.totalCollateral}"
+    )
     val oracleInfos: Vector[OracleInfo] = contractInfo.oracleInfos
 
     val contractDescriptors: Vector[ContractDescriptor] =
@@ -122,7 +127,7 @@ object DLCMessage {
         fundingPubKey = pubKeys.fundingKey,
         payoutSPK = pubKeys.payoutAddress.scriptPubKey,
         payoutSerialId = payoutSerialId,
-        totalCollateralSatoshis = totalCollateral,
+        totalCollateralSatoshis = collateral,
         fundingInputs = fundingInputs.map(_.toTLV),
         changeSPK = changeAddress.scriptPubKey,
         changeSerialId = changeSerialId,
@@ -151,7 +156,7 @@ object DLCMessage {
         pubKeys = DLCPublicKeys(
           offer.fundingPubKey,
           BitcoinAddress.fromScriptPubKey(offer.payoutSPK, network)),
-        totalCollateral = offer.totalCollateralSatoshis,
+        collateral = offer.totalCollateralSatoshis,
         fundingInputs = offer.fundingInputs.map {
           case input: FundingInputV0TLV => DLCFundingInput.fromTLV(input)
         },
@@ -185,7 +190,7 @@ object DLCMessage {
 
     def withCetSigs(cetSigs: CETSignatures): DLCAccept = {
       DLCAccept(
-        totalCollateral = totalCollateral,
+        collateral = totalCollateral,
         pubKeys = pubKeys,
         fundingInputs = fundingInputs,
         changeAddress = changeAddress,
@@ -228,7 +233,7 @@ object DLCMessage {
         cetSigs: CETSignatures,
         refundSig: PartialSignature): DLCAccept = {
       DLCAccept(
-        totalCollateral = totalCollateral,
+        collateral = totalCollateral,
         pubKeys = pubKeys,
         fundingInputs = fundingInputs,
         changeAddress = changeAddress,
@@ -243,7 +248,7 @@ object DLCMessage {
   }
 
   case class DLCAccept(
-      totalCollateral: Satoshis,
+      collateral: Satoshis,
       pubKeys: DLCPublicKeys,
       fundingInputs: Vector[DLCFundingInput],
       changeAddress: BitcoinAddress,
@@ -263,7 +268,7 @@ object DLCMessage {
     def toTLV: DLCAcceptTLV = {
       DLCAcceptTLV(
         tempContractId = tempContractId,
-        totalCollateralSatoshis = totalCollateral,
+        totalCollateralSatoshis = collateral,
         fundingPubKey = pubKeys.fundingKey,
         payoutSPK = pubKeys.payoutAddress.scriptPubKey,
         payoutSerialId = payoutSerialId,
@@ -283,7 +288,7 @@ object DLCMessage {
 
     def withoutSigs: DLCAcceptWithoutSigs = {
       DLCAcceptWithoutSigs(
-        totalCollateral = totalCollateral,
+        totalCollateral = collateral,
         pubKeys = pubKeys,
         fundingInputs = fundingInputs,
         changeAddress = changeAddress,
@@ -296,7 +301,7 @@ object DLCMessage {
 
     def withoutCetSigs: DLCAcceptWithoutCetSigs = {
       DLCAcceptWithoutCetSigs(
-        totalCollateral = totalCollateral,
+        totalCollateral = collateral,
         pubKeys = pubKeys,
         fundingInputs = fundingInputs,
         changeAddress = changeAddress,
@@ -368,7 +373,7 @@ object DLCMessage {
           accept.refundSignature.bytes.:+(HashType.sigHashAllByte))
       }
       DLCAccept(
-        totalCollateral = accept.totalCollateralSatoshis,
+        collateral = accept.totalCollateralSatoshis,
         pubKeys = DLCPublicKeys(
           accept.fundingPubKey,
           BitcoinAddress.fromScriptPubKey(accept.payoutSPK, network)),
