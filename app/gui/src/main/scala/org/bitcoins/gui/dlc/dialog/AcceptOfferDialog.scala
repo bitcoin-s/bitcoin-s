@@ -139,7 +139,7 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
       nextRow += 1
 
       val yourCol =
-        offer.contractInfo.totalCollateral - offer.totalCollateralSatoshis
+        offer.contractInfo.totalCollateral - offer.offererCollateralSatoshis
 
       gridPane.add(
         new Label("Your Collateral") {
@@ -160,7 +160,7 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
 
       gridPane.add(new Label("Counterparty Collateral"), 0, nextRow)
       gridPane.add(new TextField() {
-                     text = offer.totalCollateralSatoshis.toString
+                     text = offer.offererCollateralSatoshis.toString
                      editable = false
                    },
                    1,

@@ -411,7 +411,7 @@ trait TLVGen {
         fundingPubKey = fundingPubKey,
         payoutSPK = payoutAddress.scriptPubKey,
         payoutSerialId = payoutSerialId,
-        totalCollateralSatoshis = totalCollateralSatoshis,
+        offererCollateralSatoshis = totalCollateralSatoshis,
         fundingInputs = fundingInputs,
         changeSPK = changeAddress.scriptPubKey,
         changeSerialId = changeSerialId,
@@ -475,7 +475,7 @@ trait TLVGen {
       payoutSerialId <- NumberGenerator.uInt64.suchThat(
         _ != offer.payoutSerialId)
       acceptCollateral =
-        (contractInfo.totalCollateral - offer.totalCollateralSatoshis).satoshis.toLong
+        (contractInfo.totalCollateral - offer.offererCollateralSatoshis).satoshis.toLong
       fundingInputs <- fundingInputV0TLVs(
         Satoshis(acceptCollateral),
         offer.fundingInputs.map(_.inputSerialId))
@@ -487,7 +487,7 @@ trait TLVGen {
     } yield {
       DLCAcceptTLV(
         tempContractId = DLCOffer.fromTLV(offer).tempContractId,
-        totalCollateralSatoshis = Satoshis(acceptCollateral),
+        acceptCollateralSatoshis = Satoshis(acceptCollateral),
         fundingPubKey = fundingPubKey,
         payoutSPK = payoutAddress.scriptPubKey,
         payoutSerialId = payoutSerialId,

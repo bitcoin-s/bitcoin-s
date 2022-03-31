@@ -127,7 +127,7 @@ object DLCMessage {
         fundingPubKey = pubKeys.fundingKey,
         payoutSPK = pubKeys.payoutAddress.scriptPubKey,
         payoutSerialId = payoutSerialId,
-        totalCollateralSatoshis = collateral,
+        offererCollateralSatoshis = collateral,
         fundingInputs = fundingInputs.map(_.toTLV),
         changeSPK = changeAddress.scriptPubKey,
         changeSerialId = changeSerialId,
@@ -156,7 +156,7 @@ object DLCMessage {
         pubKeys = DLCPublicKeys(
           offer.fundingPubKey,
           BitcoinAddress.fromScriptPubKey(offer.payoutSPK, network)),
-        collateral = offer.totalCollateralSatoshis,
+        collateral = offer.offererCollateralSatoshis,
         fundingInputs = offer.fundingInputs.map {
           case input: FundingInputV0TLV => DLCFundingInput.fromTLV(input)
         },
@@ -268,7 +268,7 @@ object DLCMessage {
     def toTLV: DLCAcceptTLV = {
       DLCAcceptTLV(
         tempContractId = tempContractId,
-        totalCollateralSatoshis = collateral,
+        acceptCollateralSatoshis = collateral,
         fundingPubKey = pubKeys.fundingKey,
         payoutSPK = pubKeys.payoutAddress.scriptPubKey,
         payoutSerialId = payoutSerialId,
@@ -373,7 +373,7 @@ object DLCMessage {
           accept.refundSignature.bytes.:+(HashType.sigHashAllByte))
       }
       DLCAccept(
-        collateral = accept.totalCollateralSatoshis,
+        collateral = accept.acceptCollateralSatoshis,
         pubKeys = DLCPublicKeys(
           accept.fundingPubKey,
           BitcoinAddress.fromScriptPubKey(accept.payoutSPK, network)),

@@ -1728,7 +1728,7 @@ case class DLCOfferTLV(
     fundingPubKey: ECPublicKey,
     payoutSPK: ScriptPubKey,
     payoutSerialId: UInt64,
-    totalCollateralSatoshis: Satoshis,
+    offererCollateralSatoshis: Satoshis,
     fundingInputs: Vector[FundingInputTLV],
     changeSPK: ScriptPubKey,
     changeSerialId: UInt64,
@@ -1755,7 +1755,7 @@ case class DLCOfferTLV(
       fundingPubKey.bytes ++
       TLV.encodeScript(payoutSPK) ++
       payoutSerialId.bytes ++
-      satBytes(totalCollateralSatoshis) ++
+      satBytes(offererCollateralSatoshis) ++
       u16PrefixedList(fundingInputs) ++
       TLV.encodeScript(changeSPK) ++
       changeSerialId.bytes ++
@@ -1806,7 +1806,7 @@ object DLCOfferTLV extends TLVFactory[DLCOfferTLV] {
       fundingPubKey = fundingPubKey,
       payoutSPK = payoutSPK,
       payoutSerialId = payoutSerialId,
-      totalCollateralSatoshis = totalCollateralSatoshis,
+      offererCollateralSatoshis = totalCollateralSatoshis,
       fundingInputs = fundingInputs,
       changeSPK = changeSPK,
       changeSerialId = changeSerialId,
@@ -1905,7 +1905,7 @@ object NegotiationFieldsV2TLV extends TLVFactory[NegotiationFieldsV2TLV] {
 
 case class DLCAcceptTLV(
     tempContractId: Sha256Digest,
-    totalCollateralSatoshis: Satoshis,
+    acceptCollateralSatoshis: Satoshis,
     fundingPubKey: ECPublicKey,
     payoutSPK: ScriptPubKey,
     payoutSerialId: UInt64,
@@ -1920,7 +1920,7 @@ case class DLCAcceptTLV(
 
   override val value: ByteVector = {
     tempContractId.bytes ++
-      satBytes(totalCollateralSatoshis) ++
+      satBytes(acceptCollateralSatoshis) ++
       fundingPubKey.bytes ++
       TLV.encodeScript(payoutSPK) ++
       payoutSerialId.bytes ++

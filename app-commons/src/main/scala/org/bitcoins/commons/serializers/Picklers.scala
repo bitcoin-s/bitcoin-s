@@ -341,7 +341,7 @@ object Picklers {
 
     val acceptTLV = DLCAcceptTLV(
       tempContractId = tempContractId,
-      totalCollateralSatoshis = acceptCollateral,
+      acceptCollateralSatoshis = acceptCollateral,
       fundingPubKey = fundingPubKey,
       payoutSPK = payoutSpk,
       payoutSerialId = payoutSerialId,
@@ -360,7 +360,7 @@ object Picklers {
     Obj(
       PicklerKeys.tempContractIdKey -> Str(accept.tempContractId.hex),
       PicklerKeys.acceptCollateralKey -> Num(
-        accept.totalCollateralSatoshis.toLong.toDouble),
+        accept.acceptCollateralSatoshis.toLong.toDouble),
       PicklerKeys.fundingPubKeyKey -> Str(accept.fundingPubKey.hex),
       PicklerKeys.payoutSpkKey -> Str(accept.payoutSPK.asmHex),
       PicklerKeys.payoutSerialIdKey -> Str(
@@ -790,7 +790,7 @@ object Picklers {
         "fundingPubKey" -> Str(fundingPubKey.hex),
         "payoutSPK" -> Str(payoutSPK.hex),
         "payoutSerialId" -> Num(payoutSerialId.toBigInt.toDouble),
-        "offerCollateral" -> Num(totalCollateralSatoshis.toLong.toDouble),
+        "offerCollateral" -> Num(offererCollateralSatoshis.toLong.toDouble),
         "fundingInputs" -> fundingInputs.map(i => writeJs(i)),
         "changeSPK" -> Str(changeSPK.hex),
         "changeSerialId" -> Str(changeSerialId.toBigInt.toString()),
