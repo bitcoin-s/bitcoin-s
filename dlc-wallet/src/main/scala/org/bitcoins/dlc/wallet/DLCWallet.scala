@@ -74,6 +74,9 @@ abstract class DLCWallet
   private[bitcoins] val incomingOfferDAO: IncomingDLCOfferDAO =
     IncomingDLCOfferDAO()
 
+  private[bitcoins] val contactDAO: DLCContactDAO =
+    DLCContactDAO()
+
   private[wallet] val dlcWalletDAOs = DLCWalletDAOs(
     dlcDAO,
     contractDataDAO,
@@ -86,7 +89,8 @@ abstract class DLCWallet
     oracleNonceDAO,
     announcementDAO,
     remoteTxDAO,
-    incomingOfferDAO
+    incomingOfferDAO,
+    contactDAO
   )
 
   private[wallet] val dlcDataManagement = DLCDataManagement(dlcWalletDAOs)

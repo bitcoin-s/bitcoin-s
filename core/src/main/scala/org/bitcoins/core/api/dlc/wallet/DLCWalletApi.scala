@@ -1,6 +1,10 @@
 package org.bitcoins.core.api.dlc.wallet
 
-import org.bitcoins.core.api.dlc.wallet.db.{DLCDb, IncomingDLCOfferDb}
+import org.bitcoins.core.api.dlc.wallet.db.{
+  DLCContactDb,
+  DLCDb,
+  IncomingDLCOfferDb
+}
 import org.bitcoins.core.api.wallet._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.dlc.accounting._
@@ -14,6 +18,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.Sha256Digest
 import scodec.bits.ByteVector
 
+import java.net.InetSocketAddress
 import scala.concurrent._
 
 trait DLCWalletApi { self: WalletApi =>
@@ -133,6 +138,14 @@ trait DLCWalletApi { self: WalletApi =>
 
   def findIncomingDLCOffer(
       offerHash: Sha256Digest): Future[Option[IncomingDLCOfferDb]]
+
+  def listDLCContacts(): Future[Vector[DLCContactDb]]
+
+  def addDLCContact(contact: DLCContactDb): Future[Unit]
+
+  def removeDLCContact(address: InetSocketAddress): Future[Unit]
+
+  def findDLCContacts(alias: String): Future[Vector[DLCContactDb]]
 }
 
 /** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */

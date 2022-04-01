@@ -12,4 +12,5 @@ case class DLCWalletDAOs(
     oracleNonceDAO: OracleNonceDAO,
     oracleAnnouncementDAO: OracleAnnouncementDataDAO,
     dlcRemoteTxDAO: DLCRemoteTxDAO,
-    incomingDLCOfferDAO: IncomingDLCOfferDAO)
+    incomingDLCOfferDAO: IncomingDLCOfferDAO,
+    contactDAO: DLCContactDAO)

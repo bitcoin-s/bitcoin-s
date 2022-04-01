@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
-import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
+import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, IncomingDLCOfferDb}
 import org.bitcoins.core.protocol.dlc.models.{
   EnumSingleOracleInfo,
   NumericSingleOracleInfo,
@@ -125,5 +125,42 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
             }
           }
       }
+
+    case ServerCommand("contacts-list", _) =>
+      complete {
+        dlcNode.wallet.listDLCContacts().map { contacts =>
+          def toJson(c: DLCContactDb): Value = {
+            Obj(
+              "alias" -> c.alias,
+              "address" -> s"${c.address.getHostName}:${c.address.getPort}",
+              "memo" -> c.memo
+            )
+          }
+          Server.httpSuccess(contacts.map(toJson))
+        }
+      }
+
+    case ServerCommand("contact-add", arr) =>
+      withValidServerCommand(ContactAdd.fromJsArr(arr)) { contactAdd =>
+        complete {
+          dlcNode.wallet
+            .addDLCContact(contactAdd.toDLCContactDb)
+            .map { _ =>
+              Server.httpSuccess("ok")
+            }
+        }
+      }
+
+    case ServerCommand("contact-remove", arr) =>
+      withValidServerCommand(ContactRemove.fromJsArr(arr)) { contactAdd =>
+        complete {
+          dlcNode.wallet
+            .removeDLCContact(contactAdd.address)
+            .map { _ =>
+              Server.httpSuccess("ok")
+            }
+        }
+      }
+
   }
 }

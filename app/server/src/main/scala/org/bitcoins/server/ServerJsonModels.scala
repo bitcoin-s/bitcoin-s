@@ -3,6 +3,7 @@ package org.bitcoins.server
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.cli.ContractDescriptorParser
 import org.bitcoins.commons.serializers.JsonReaders
+import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -1454,6 +1455,52 @@ object OfferSend {
       case other =>
         val exn = new IllegalArgumentException(
           s"Bad number or arguments to offer-send, got=${other.length} expected=3")
+        Failure(exn)
+    }
+  }
+}
+
+case class ContactAdd(alias: String, address: InetSocketAddress, memo: String) {
+  def toDLCContactDb: DLCContactDb = DLCContactDb(alias, address, memo)
+}
+
+object ContactAdd {
+
+  def fromJsArr(arr: ujson.Arr): Try[ContactAdd] = {
+    arr.arr.toList match {
+      case aliasJs :: addressJs :: memoJs :: Nil =>
+        Try {
+          val address = {
+            val uri = new URI(s"tcp://${addressJs.str}")
+            InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
+          }
+          ContactAdd(aliasJs.str, address, memoJs.str)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to contact-add, got=${other.length} expected=3")
+        Failure(exn)
+    }
+  }
+}
+
+case class ContactRemove(address: InetSocketAddress)
+
+object ContactRemove {
+
+  def fromJsArr(arr: ujson.Arr): Try[ContactRemove] = {
+    arr.arr.toList match {
+      case addressJs :: Nil =>
+        Try {
+          val address = {
+            val uri = new URI(s"tcp://${addressJs.str}")
+            InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
+          }
+          ContactRemove(address)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to contact-remove, got=${other.length} expected=1")
         Failure(exn)
     }
   }
