@@ -534,7 +534,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     for {
       offerOpt <- offerOptF
       acceptOpt <- acceptOptF
-    } yield offerOpt.zip(acceptOpt)
+    } yield offerOpt.zip(acceptOpt).headOption
   }
 
   private[wallet] def builderFromDbData(

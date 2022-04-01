@@ -129,7 +129,6 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
         }
       }
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
-      balance <- wallet.getBalance()
       result <- dlcExecutionTest(wallets = (walletA, walletB),
                                  asInitiator = true,
                                  func = func,
