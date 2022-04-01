@@ -50,6 +50,7 @@ abstract class DLCWallet
     extends Wallet
     with AnyDLCHDWalletApi
     with DLCTransactionProcessing
+    with DLCRescanHandling
     with IncomingDLCOffersHandling {
 
   implicit val dlcConfig: DLCAppConfig
@@ -967,7 +968,6 @@ abstract class DLCWallet
             case Some(_) => Future.unit
             case None    => scriptPubKeyDAO.create(spkDb)
           }
-
           updatedDLCDb <- dlcDAO.update(
             dlcDb
               .updateState(DLCState.Accepted)

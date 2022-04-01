@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.wallet
 
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.protocol.BlockStamp.BlockHash
 import org.bitcoins.core.protocol.dlc.models.{
   DLCState,
@@ -112,8 +113,9 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
     val walletB = params._2
     val wallet = walletB.wallet
     val bitcoind = params._3
-    val walletConfig = walletB.wallet.walletConfig
-    val walletDb = walletConfig.datadir.resolve("walletdb.sqlite")
+    val walletConfig = wallet.walletConfig
+    val walletDb = walletConfig.datadir
+      .resolve("walletdb.sqlite")
     for {
       contractId <- getContractId(wallet)
       status <- getDLCStatus(wallet)
@@ -127,12 +129,16 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
         }
       }
       func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
-
+      balance <- wallet.getBalance()
       result <- dlcExecutionTest(wallets = (walletA, walletB),
                                  asInitiator = true,
                                  func = func,
                                  expectedOutputs = 1)
       _ = assert(result)
+      addr <- bitcoind.getNewAddress
+
+      //confirm the closing tx in a block
+      _ <- bitcoind.generateToAddress(1, addr)
 
       dlcsBeforeRescan <- wallet.listDLCs()
       _ = assert(dlcsBeforeRescan.exists(_.state == DLCState.RemoteClaimed))
@@ -141,7 +147,6 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
       _ = assert(Files.exists(walletDb))
       _ = Files.delete(walletDb)
       _ = assert(!Files.exists(walletDb))
-      _ = println(s"Done deleting")
       wAppConfig = WalletAppConfig(baseDatadir = walletConfig.baseDatadir,
                                    Vector.empty)(system.dispatcher)
       _ <- wAppConfig.start()
@@ -152,21 +157,19 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
           wallet.chainQueryApi,
           feeRateApi = wallet.feeRateApi)(wAppConfig, system.dispatcher)
       w = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
-        bitcoind,
-        wBadNodeApi,
-        None)
+        bitcoind = bitcoind,
+        wallet = wBadNodeApi,
+        chainCallbacksOpt = None)
       txCount <- w.transactionDAO.count()
       _ = assert(txCount == 0) //make sure we have txs in db
-      _ = println(s"Done counting")
       //need to do a rescan from walletB
-      _ <- w.rescanNeutrinoWallet(None, None, 100, false)
-      _ = println(s"Done rescanning")
+      _ <- w.rescanNeutrinoWallet(None, None, 5, false)
+      balanceAfterRescan <- w.getBalance()
+      _ = assert(balanceAfterRescan != CurrencyUnits.zero)
       dlcsAfterRescan <- w.listDLCs()
-      _ = assert(dlcsAfterRescan.exists(_.state == DLCState.RemoteClaimed))
       _ <- wAppConfig.stop()
     } yield {
-      println(s"done")
-      fail()
+      assert(dlcsAfterRescan.exists(_.state == DLCState.RemoteClaimed))
     }
   }
 }

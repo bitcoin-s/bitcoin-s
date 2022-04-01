@@ -482,6 +482,61 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     }
   }
 
+  /** Retrieves all offer and accept messages in the database */
+  private def getAllOfferAcceptDb(): Future[
+    Vector[(DLCOfferDb, DLCAcceptDb)]] = {
+    val allDLCIdsF = dlcDAO.getAllDLCIds()
+
+    val resultsNestedF: Future[
+      Vector[Future[Option[(DLCOfferDb, DLCAcceptDb)]]]] = {
+      allDLCIdsF.map(_.map(getOfferAndAcceptDb))
+    }
+
+    val offerAndAcceptDbsF: Future[Vector[(DLCOfferDb, DLCAcceptDb)]] =
+      resultsNestedF
+        .flatMap(vec => Future.sequence(vec))
+        .map(_.flatten)
+    offerAndAcceptDbsF
+  }
+
+  /** Gets all scriptpubkeys in the database that fund a DLC */
+  def getAllFundingSPKs(): Future[Vector[ScriptPubKey]] = {
+    val offerAndAcceptDbsF: Future[Vector[(DLCOfferDb, DLCAcceptDb)]] =
+      getAllOfferAcceptDb()
+
+    for {
+      offerAndAcceptDbs <- offerAndAcceptDbsF
+      fundingSPKs = offerAndAcceptDbs.map { case (offerDb, acceptDb) =>
+        val (_, spk) = DLCTxBuilder.buildFundingSPKs(
+          Vector(offerDb.fundingKey, acceptDb.fundingKey))
+        spk
+      }
+    } yield fundingSPKs
+  }
+
+  /** Gets all scriptPubKeys in the database that could receive a payout from a DLC */
+  def getAllPayoutSPKs(): Future[Vector[ScriptPubKey]] = {
+    val offerAndAcceptDbsF: Future[Vector[(DLCOfferDb, DLCAcceptDb)]] =
+      getAllOfferAcceptDb()
+    for {
+      offerAndAcceptDbs <- offerAndAcceptDbsF
+      payoutSPKs = offerAndAcceptDbs.map { case (offerDb, acceptDb) =>
+        Vector(offerDb.payoutAddress.scriptPubKey,
+               acceptDb.payoutAddress.scriptPubKey)
+      }
+    } yield payoutSPKs.flatten
+  }
+
+  def getOfferAndAcceptDb(
+      dlcId: Sha256Digest): Future[Option[(DLCOfferDb, DLCAcceptDb)]] = {
+    val offerOptF = dlcWalletDAOs.dlcOfferDAO.findByDLCId(dlcId)
+    val acceptOptF = dlcWalletDAOs.dlcAcceptDAO.findByDLCId(dlcId)
+    for {
+      offerOpt <- offerOptF
+      acceptOpt <- acceptOptF
+    } yield offerOpt.zip(acceptOpt)
+  }
+
   private[wallet] def builderFromDbData(
       dlcDb: DLCDb,
       transactionDAO: TransactionDAO): Future[Option[DLCTxBuilder]] = {
