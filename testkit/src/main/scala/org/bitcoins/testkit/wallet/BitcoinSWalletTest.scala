@@ -676,13 +676,11 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   def destroyDLCWallet(wallet: DLCWallet): Future[Unit] = {
-    val _ = wallet
-    //import wallet.ec
-    /*    for {
+    import wallet.ec
+    for {
       _ <- destroyWallet(wallet)
       _ <- wallet.dlcConfig.stop()
-    } yield ()*/
-    Future.unit
+    } yield ()
   }
 
   def destroyWalletAppConfig(walletAppConfig: WalletAppConfig)(implicit

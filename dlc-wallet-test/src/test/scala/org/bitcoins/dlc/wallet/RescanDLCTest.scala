@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.wallet
 
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.protocol.BlockStamp.BlockHash
 import org.bitcoins.core.protocol.dlc.models.{
@@ -141,13 +142,16 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
 
       dlcsBeforeRescan <- wallet.listDLCs()
       _ = assert(dlcsBeforeRescan.exists(_.state == DLCState.RemoteClaimed))
-      //destroy the wallet
-      _ <- walletConfig.stop()
       _ = assert(Files.exists(walletDb))
       _ = Files.delete(walletDb)
       _ = assert(!Files.exists(walletDb))
+      extraConfig = walletConfig.bip39PasswordOpt match {
+        case Some(pw) =>
+          ConfigFactory.parseString(s"bitcoin-s.keymanager.bip39password=$pw")
+        case None => ConfigFactory.empty
+      }
       wAppConfig = WalletAppConfig(baseDatadir = walletConfig.baseDatadir,
-                                   Vector.empty)(system.dispatcher)
+                                   Vector(extraConfig))(system.dispatcher)
       _ <- wAppConfig.start()
       //start it again with a fresh database
       wBadNodeApi <- DLCAppConfig(walletConfig.baseDatadir, Vector.empty)

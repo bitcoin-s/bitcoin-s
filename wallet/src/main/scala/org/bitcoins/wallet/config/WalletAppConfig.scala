@@ -188,7 +188,6 @@ case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     for {
       _ <- super.start()
       _ <- kmConf.start()
-      _ = slickDbConfig.db
       masterXpub = kmConf.toBip39KeyManager.getRootXPub
       numMigrations = migrate()
       isExists <- seedExists()

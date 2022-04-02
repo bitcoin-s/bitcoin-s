@@ -76,7 +76,7 @@ trait DualWalletTestCachedBitcoind
         val walletAF = bitcoindF.flatMap { bitcoind =>
           FundWalletUtil.createFundedDLCWalletWithBitcoind(
             bitcoind,
-            None, //come back and figure out how to renable
+            getBIP39PasswordOpt(),
             Some(segwitWalletConf))
         }
         val walletBF = for {
@@ -87,7 +87,7 @@ trait DualWalletTestCachedBitcoind
           _ <- walletAF
           walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
             bitcoind,
-            None, //come back and figure out how to renable
+            getBIP39PasswordOpt(),
             Some(segwitWalletConf))(config2, system)
         } yield { walletB }
 
