@@ -1085,7 +1085,12 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         DLCWalletUtil.sampleDLCOffer.copy(contractInfo =
                                             DLCWalletUtil.sampleContractInfo2,
                                           collateral = DLCWalletUtil.amt2)
+      val amt2: Satoshis = Bitcoins(3).satoshis
+      val offerCollateral2 = amt2
+      lazy val sampleContractInfo2: ContractInfo =
+        SingleContractInfo(amt2, sampleContractOraclePair)
       val offerData2 = DLCWalletUtil.sampleDLCOffer
+        .copy(contractInfo = sampleContractInfo2, collateral = offerCollateral2)
 
       for {
         offer1 <- walletA.createDLCOffer(
@@ -1101,17 +1106,16 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ <- walletB.acceptDLCOffer(offer1.toTLV, None, None)
         //cancel the offer
         _ <- walletA.cancelDLC(dlcId = offer1.dlcId)
-        amt = offerData2.contractInfo.totalCollateral
+
         offer2 <- walletA.createDLCOffer(
           offerData2.contractInfo,
-          amt,
+          offerCollateral2,
           Some(offerData2.feeRate),
           offerData2.timeouts.contractMaturity.toUInt32,
           offerData2.timeouts.contractTimeout.toUInt32,
           None,
           None
         )
-        _ = println(s"accept")
         _ <- walletB.acceptDLCOffer(offer2.toTLV, None, None)
       } yield succeed
   }

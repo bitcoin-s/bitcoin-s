@@ -63,7 +63,7 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
     NoStream,
     Effect.Write with Effect.Read with Effect.Transactional] = {
     val dlcDbAction = dlcDAO.updateAction(dlcDb)
-    val inputAction = dlcInputsDAO.createAllAction(offerInputs)
+    val inputAction = dlcInputsDAO.upsertAllAction(offerInputs)
     val sigsAction = dlcSigsDAO.createAllAction(cetSigsDb)
     val refundSigAction = dlcRefundSigDAO.createAction(refundSigsDb)
     val actions = Vector(dlcDbAction, inputAction, sigsAction, refundSigAction)
