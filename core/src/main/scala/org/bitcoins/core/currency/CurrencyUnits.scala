@@ -167,6 +167,7 @@ object Bitcoins extends BaseNumbers[Bitcoins] with Bounded[Bitcoins] {
   val max = Bitcoins(Consensus.maxMoney.satoshis)
   val zero = Bitcoins(Satoshis.zero)
   val one = Bitcoins(1)
+  val two = Bitcoins(2)
 
   def apply(satoshis: Satoshis): Bitcoins = {
     val b: BigDecimal = satoshis.toLong * CurrencyUnits.satoshisToBTCScalar
