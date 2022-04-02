@@ -133,6 +133,30 @@ case class DLCActionBuilder(dlcWalletDAOs: DLCWalletDAOs) {
     combined
   }
 
+  def getAllOfferAcceptDbAction()(implicit ec: ExecutionContext): DBIOAction[
+    Vector[(DLCOfferDb, DLCAcceptDb)],
+    NoStream,
+    Effect.Read] = {
+    val allDLCIdsAction = dlcDAO.getAllDLCIdsAction()
+    val nested = allDLCIdsAction.map(_.map(getOfferAndAcceptDbAction))
+    nested
+      .flatMap(n => slick.dbio.DBIOAction.sequence(n))
+      .map(_.flatten)
+  }
+
+  def getOfferAndAcceptDbAction(dlcId: Sha256Digest)(implicit
+      ec: ExecutionContext): DBIOAction[
+    Option[(DLCOfferDb, DLCAcceptDb)],
+    NoStream,
+    Effect.Read] = {
+    val offerOptA = dlcWalletDAOs.dlcOfferDAO.findByDLCIdAction(dlcId)
+    val acceptOptA = dlcWalletDAOs.dlcAcceptDAO.findByDLCIdAction(dlcId)
+    for {
+      offerOpt <- offerOptA
+      acceptOpt <- acceptOptA
+    } yield offerOpt.zip(acceptOpt).headOption
+  }
+
   /** Updates various tables in our database with oracle attestations
     * that are published by the oracle
     */
