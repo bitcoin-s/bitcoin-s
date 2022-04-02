@@ -1101,7 +1101,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ <- walletB.acceptDLCOffer(offer1.toTLV, None, None)
         //cancel the offer
         _ <- walletA.cancelDLC(dlcId = offer1.dlcId)
-        amt = (DLCWalletUtil.half + Bitcoins.one).satoshis
+        amt = offerData2.contractInfo.totalCollateral
         offer2 <- walletA.createDLCOffer(
           offerData2.contractInfo,
           amt,
@@ -1111,6 +1111,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           None,
           None
         )
+        _ = println(s"accept")
         _ <- walletB.acceptDLCOffer(offer2.toTLV, None, None)
       } yield succeed
   }

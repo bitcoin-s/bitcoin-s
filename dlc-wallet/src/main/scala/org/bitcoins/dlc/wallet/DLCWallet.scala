@@ -652,7 +652,8 @@ abstract class DLCWallet
     val dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
     val collateral = offer.contractInfo.max - offer.collateral
-
+    println(
+      s"offer.contractInfo.max=${offer.contractInfo.max} totalCollateral=${offer.contractInfo.totalCollateral} collateral=$collateral")
     logger.debug(s"Checking if Accept (${dlcId.hex}) has already been made")
     for {
       dlcAcceptOpt <- DLCAcceptUtil.findDLCAccept(dlcId = dlcId,
