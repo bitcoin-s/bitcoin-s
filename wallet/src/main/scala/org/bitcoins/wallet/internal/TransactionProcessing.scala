@@ -673,7 +673,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
               .fromScriptPubKey(out.output.scriptPubKey, networkParameters)
             tagsToUse.map(tag => AddressTagDb(address, tag))
           }
-          created <- addressTagDAO.createAll(newTagDbs)
+          created <- addressTagDAO.upsertAll(newTagDbs)
         } yield created
 
         for {

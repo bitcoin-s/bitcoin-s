@@ -167,7 +167,7 @@ trait BitcoinSWalletTest
       walletAppConfig: WalletAppConfig): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
       builder = { () =>
-        BitcoinSFixture.createBitcoindWithFunds()
+        BitcoinSFixture.createBitcoindWithFunds(Some(BitcoindVersion.newest))
       },
       dependentBuilder = { (bitcoind: BitcoindRpcClient) =>
         createWalletWithBitcoind(bitcoind)

@@ -4,7 +4,10 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.builder.RawTxSigner
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{InternalAddressTag, StorageLocationTag}
+import org.bitcoins.server.BitcoindRpcBackendUtil
+import org.bitcoins.testkit.util.AkkaUtil
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
   WalletTestUtil,
@@ -12,6 +15,8 @@ import org.bitcoins.testkit.wallet.{
   WalletWithBitcoindRpc
 }
 import org.scalatest.FutureOutcome
+
+import scala.concurrent.duration.DurationInt
 
 class AddressTagIntegrationTest extends BitcoinSWalletTest {
 
@@ -112,5 +117,32 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
                                      valueFromBitcoind - valueToBitcoind,
                                      delta = feePaid))
     }
+  }
+
+  it must "process a tagged tx correctly when we broadcast it and receive it in a block" in {
+    walletWithBitcoind =>
+      //see: https://github.com/bitcoin-s/bitcoin-s/issues/4238
+      val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+
+      val bitcoindAddrF = bitcoind.getNewAddress
+      val walletAddr1F = wallet.getNewAddress()
+      val taggedAddrF = wallet.getNewAddress(Vector(exampleTag))
+      for {
+        walletAddr1 <- walletAddr1F
+        txid <- bitcoind.sendToAddress(walletAddr1, Bitcoins.two)
+        tx <- bitcoind.getRawTransaction(txid)
+        _ <- wallet.processTransaction(tx.hex, None)
+        taggedAddress <- taggedAddrF
+        tx <- wallet.sendToAddress(taggedAddress,
+                                   Satoshis(100000),
+                                   SatoshisPerVirtualByte.one,
+                                   Vector(exampleTag))
+        _ <- wallet.processTransaction(tx, None)
+        _ <- bitcoind.sendRawTransaction(tx)
+        bitcoindAddr <- bitcoindAddrF
+        _ <- AkkaUtil.nonBlockingSleep(1.second)
+        _ <- bitcoind.generateToAddress(1, bitcoindAddr)
+        _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
+      } yield succeed
   }
 }
