@@ -391,11 +391,15 @@ object BitcoindRpcBackendUtil extends Logging {
           logger.debug("Polling bitcoind for mempool")
           val numParallelism = Runtime.getRuntime.availableProcessors()
 
+          //don't want to execute these in parallel
+          val processTxFlow = Sink.foreachAsync[Transaction](1)(processTx)
+
           val res = for {
             mempool <- bitcoind.getRawMemPool
             newTxIds = getDiffAndReplace(mempool.toSet)
             _ = logger.debug(s"Found ${newTxIds.size} new mempool transactions")
-            newTxs <- Source(newTxIds)
+
+            _ <- Source(newTxIds)
               .mapAsync(parallelism = numParallelism) { txid =>
                 bitcoind
                   .getRawTransactionRaw(txid)
@@ -407,11 +411,7 @@ object BitcoindRpcBackendUtil extends Logging {
                     tx
                   }
               }
-              .toMat(Sink.seq)(Keep.right)
-              .run()
-            _ <- Source(newTxs)
-              .mapAsync(parallelism = numParallelism)(tx => processTx(tx))
-              .toMat(Sink.seq)(Keep.right)
+              .toMat(processTxFlow)(Keep.right)
               .run()
           } yield {
             logger.debug(
