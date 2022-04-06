@@ -1540,10 +1540,6 @@ abstract class DLCWallet
                   Some(closingTxOpt.get.transaction)
                 }
             }
-//          case c: ClosedDbStateNoCETSigs =>
-//            logger.info(
-//              s"Cannot create execution tx for dlc that is settled with no cet sigs, state=${c.state}")
-//            Future.successful(None)
         }
     }
   }

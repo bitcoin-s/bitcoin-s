@@ -234,70 +234,36 @@ case class ClosedDbStateNoCETSigs(
 
 object DLCClosedDbState {
 
-  def fromAcceptSetupState(
-      acceptState: AcceptDbState,
+  def fromCompleteSetupState(
+      completeState: CompleteSetupDLCDbState,
       cetSigsOpt: Option[Vector[DLCCETSignaturesDb]]): DLCClosedDbState = {
     cetSigsOpt match {
       case Some(cetSigs) =>
         ClosedDbStateWithCETSigs(
-          acceptState.dlcDb,
-          acceptState.contractDataDb,
-          acceptState.contractInfo,
-          acceptState.offerDb,
-          acceptState.acceptDb,
-          acceptState.offerFundingInputsDb,
-          acceptState.offerPrevTxs,
-          acceptState.acceptFundingInputsDb,
-          acceptState.acceptPrevTxs,
-          acceptState.refundSigDb,
+          completeState.dlcDb,
+          completeState.contractDataDb,
+          completeState.contractInfo,
+          completeState.offerDb,
+          completeState.acceptDb,
+          completeState.offerFundingInputsDb,
+          completeState.offerPrevTxs,
+          completeState.acceptFundingInputsDb,
+          completeState.acceptPrevTxs,
+          completeState.refundSigDb,
           cetSigs
         )
       case None =>
         ClosedDbStateNoCETSigs(
-          acceptState.dlcDb,
-          acceptState.contractDataDb,
-          acceptState.contractInfo,
-          acceptState.offerDb,
-          acceptState.acceptDb,
-          acceptState.offerFundingInputsDb,
-          acceptState.offerPrevTxs,
-          acceptState.acceptFundingInputsDb,
-          acceptState.acceptPrevTxs,
-          acceptState.refundSigDb
-        )
-    }
-  }
-
-  def fromSignSetupState(
-      signDbState: SignDbState,
-      cetSigsOpt: Option[Vector[DLCCETSignaturesDb]]): DLCClosedDbState = {
-    cetSigsOpt match {
-      case Some(cetSigs) =>
-        ClosedDbStateWithCETSigs(
-          signDbState.dlcDb,
-          signDbState.contractDataDb,
-          signDbState.contractInfo,
-          signDbState.offerDb,
-          signDbState.acceptDb,
-          signDbState.offerFundingInputsDb,
-          signDbState.offerPrevTxs,
-          signDbState.acceptFundingInputsDb,
-          signDbState.acceptPrevTxs,
-          signDbState.refundSigDb,
-          cetSigs
-        )
-      case None =>
-        ClosedDbStateNoCETSigs(
-          signDbState.dlcDb,
-          signDbState.contractDataDb,
-          signDbState.contractInfo,
-          signDbState.offerDb,
-          signDbState.acceptDb,
-          signDbState.offerFundingInputsDb,
-          signDbState.offerPrevTxs,
-          signDbState.acceptFundingInputsDb,
-          signDbState.acceptPrevTxs,
-          signDbState.refundSigDb
+          completeState.dlcDb,
+          completeState.contractDataDb,
+          completeState.contractInfo,
+          completeState.offerDb,
+          completeState.acceptDb,
+          completeState.offerFundingInputsDb,
+          completeState.offerPrevTxs,
+          completeState.acceptFundingInputsDb,
+          completeState.acceptPrevTxs,
+          completeState.refundSigDb
         )
     }
   }

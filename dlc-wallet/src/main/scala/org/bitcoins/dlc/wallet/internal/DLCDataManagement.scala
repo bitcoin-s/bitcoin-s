@@ -355,7 +355,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
           acceptState.state match {
             case _: DLCState.ClosedState =>
               val closedState =
-                DLCClosedDbState.fromAcceptSetupState(acceptState, sigsOpt)
+                DLCClosedDbState.fromCompleteSetupState(acceptState, sigsOpt)
               Some(closedState)
             case _: DLCState.InProgressState =>
               Some(acceptState)
@@ -365,14 +365,13 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
           signState.state match {
             case _: DLCState.ClosedState =>
               val closedState =
-                DLCClosedDbState.fromSignSetupState(signState, sigsOpt)
+                DLCClosedDbState.fromCompleteSetupState(signState, sigsOpt)
               Some(closedState)
             case _: DLCState.InProgressState =>
               Some(signState)
           }
 
         case o: OfferedDbState =>
-          //cannot return a closed state because we haven't seen the accept message
           Some(o)
       }
       closedState
