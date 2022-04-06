@@ -86,24 +86,24 @@ trait DLCWalletApi { self: WalletApi =>
   /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
   def executeDLC(
       contractId: ByteVector,
-      oracleSig: OracleAttestmentTLV): Future[Transaction] =
+      oracleSig: OracleAttestmentTLV): Future[Option[Transaction]] =
     executeDLC(contractId, Vector(oracleSig))
 
   /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
   def executeDLC(
       contractId: ByteVector,
-      oracleSigs: Seq[OracleAttestmentTLV]): Future[Transaction]
+      oracleSigs: Seq[OracleAttestmentTLV]): Future[Option[Transaction]]
 
   /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
   def executeDLC(
       contractId: ByteVector,
-      oracleSig: OracleSignatures): Future[Transaction] =
+      oracleSig: OracleSignatures): Future[Option[Transaction]] =
     executeDLC(contractId, Vector(oracleSig))
 
   /** Creates the CET for the given contractId and oracle signature, does not broadcast it */
   def executeDLC(
       contractId: ByteVector,
-      oracleSigs: Vector[OracleSignatures]): Future[Transaction]
+      oracleSigs: Vector[OracleSignatures]): Future[Option[Transaction]]
 
   /** Creates the refund transaction for the given contractId, does not broadcast it */
   def executeDLCRefund(contractId: ByteVector): Future[Transaction]

@@ -1175,7 +1175,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       (mockWalletApi
         .executeDLC(_: ByteVector, _: Seq[OracleAttestmentTLV]))
         .expects(contractId, Vector(dummyOracleAttestment))
-        .returning(Future.successful(EmptyTransaction))
+        .returning(Future.successful(Some(EmptyTransaction)))
 
       val route = walletRoutes.handleCommand(
         ServerCommand("executedlc",
@@ -1196,7 +1196,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .executeDLC(_: ByteVector, _: Seq[OracleAttestmentTLV]))
         .expects(contractId,
                  Vector(dummyOracleAttestment, dummyOracleAttestment))
-        .returning(Future.successful(EmptyTransaction))
+        .returning(Future.successful(Some(EmptyTransaction)))
 
       val route = walletRoutes.handleCommand(
         ServerCommand("executedlc",
@@ -1217,7 +1217,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       (mockWalletApi
         .executeDLC(_: ByteVector, _: Seq[OracleAttestmentTLV]))
         .expects(contractId, Vector(dummyOracleAttestment))
-        .returning(Future.successful(EmptyTransaction))
+        .returning(Future.successful(Some(EmptyTransaction)))
 
       (mockWalletApi.broadcastTransaction _)
         .expects(EmptyTransaction)

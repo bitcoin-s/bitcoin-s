@@ -7,10 +7,6 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
   DLCAcceptWithoutSigs,
   DLCOffer
 }
-import org.bitcoins.core.protocol.dlc.models.DLCState.{
-  ClosedState,
-  InProgressState
-}
 import org.bitcoins.core.protocol.dlc.models.{
   CETSignatures,
   ContractInfo,
@@ -39,19 +35,17 @@ sealed trait DLCDbState {
                        contractDataDb = contractDataDb)
   }
 
-  def state: DLCState
+  final def state: DLCState = dlcDb.state
 }
 
 /** Represents a DLC in the database that
   * has not had its funding transaction published.
   * This means we are still setting up the DLC
   */
-sealed trait DLCSetupDbState extends DLCDbState {
-  override def state: InProgressState
-}
+sealed trait DLCSetupDbState extends DLCDbState
 
 /** Represents a DLC in the database that has
-  * been fully setup and is in progress
+  * been fully setup and settled
   */
 sealed trait DLCClosedDbState extends DLCDbState
 
@@ -63,10 +57,6 @@ case class OfferedDbState(
     offerFundingInputsDb: Vector[DLCFundingInputDb],
     offerPrevTxs: Vector[TransactionDb])
     extends DLCSetupDbState {
-  //require(dlcDb.state == DLCState.Offered,
-  //        s"OfferedDbState requires state offered, got=${dlcDb.state}")
-
-  override val state: DLCState.Offered.type = DLCState.Offered
 
   /** Converts a [[OfferedDbState]] to an [[AcceptDbState]]
     * @param acceptDb
@@ -78,7 +68,7 @@ case class OfferedDbState(
       acceptDb: DLCAcceptDb,
       acceptFundingInputsDb: Vector[DLCFundingInputDb],
       acceptPrevTxsDb: Vector[TransactionDb],
-      cetSignaturesOpt: Option[CETSignatures],
+      cetSigsOpt: Option[Vector[DLCCETSignaturesDb]],
       refundSigDb: DLCRefundSigsDb): AcceptDbState = {
     AcceptDbState(
       dlcDb = dlcDb,
@@ -90,9 +80,75 @@ case class OfferedDbState(
       offerPrevTxs = offerPrevTxs,
       acceptFundingInputsDb = acceptFundingInputsDb,
       acceptPrevTxs = acceptPrevTxsDb,
-      cetSignaturesOpt = cetSignaturesOpt,
+      cetSigsOpt = cetSigsOpt,
       refundSigDb = refundSigDb
     )
+  }
+}
+
+/** Shared data structured when we have all information to build a funding
+  * transaction for a discreet log contract
+  */
+sealed trait CompleteSetupDLCDbState extends DLCSetupDbState {
+  def dlcDb: DLCDb
+  def contractDataDb: DLCContractDataDb
+  def contractInfo: ContractInfo
+  def offerDb: DLCOfferDb
+  def acceptDb: DLCAcceptDb
+  def offerFundingInputsDb: Vector[DLCFundingInputDb]
+  def offerPrevTxs: Vector[TransactionDb]
+  def acceptFundingInputsDb: Vector[DLCFundingInputDb]
+  def acceptPrevTxs: Vector[TransactionDb]
+  def refundSigDb: DLCRefundSigsDb
+  def cetSigsOpt: Option[Vector[DLCCETSignaturesDb]]
+
+  def allFundingInputs: Vector[DLCFundingInputDb]
+
+  def acceptFundingInputs: Vector[DLCFundingInput] = {
+    DLCTxUtil.matchPrevTxsWithInputs(acceptFundingInputsDb, acceptPrevTxs)
+  }
+
+  def acceptWithoutSigs: DLCAcceptWithoutSigs = {
+    acceptDb.toDLCAcceptWithoutSigs(
+      tempContractId = dlcDb.tempContractId,
+      fundingInputs = acceptFundingInputs
+    )
+  }
+
+  def cetSignaturesOpt: Option[CETSignatures] = {
+    cetSigsOpt.map { cetSigs =>
+      this match {
+        case _: AcceptDbState =>
+          acceptCETSigsOpt.get
+        case _: SignDbState =>
+          CETSignatures(cetSigs.map(c => (c.sigPoint, c.initiatorSig.get)))
+      }
+    }
+  }
+
+  def acceptCETSigsOpt: Option[CETSignatures] = {
+    cetSigsOpt.map { cetSigs =>
+      CETSignatures(cetSigs.map(c => (c.sigPoint, c.accepterSig)))
+    }
+  }
+
+  def offererCETSigsOpt: Option[CETSignatures] = {
+    cetSigsOpt.map { cetSigs =>
+      CETSignatures(cetSigs.map(c => (c.sigPoint, c.initiatorSig.get)))
+    }
+  }
+
+  /** Reconstructs the [[DLCAccept]] message if we have [[CETSignatures]]
+    * in the database. If we don't have the signatures because we have pruned
+    * them we return None as we can't reconstruct the message
+    */
+  def acceptOpt: Option[DLCAccept] = {
+    acceptCETSigsOpt.map { cetSignatures =>
+      acceptDb.toDLCAccept(dlcDb.tempContractId,
+                           acceptFundingInputs,
+                           outcomeSigs = cetSignatures.outcomeSigs,
+                           refundSig = refundSigDb.accepterSig)
+    }
   }
 }
 
@@ -106,26 +162,11 @@ case class AcceptDbState(
     offerPrevTxs: Vector[TransactionDb],
     acceptFundingInputsDb: Vector[DLCFundingInputDb],
     acceptPrevTxs: Vector[TransactionDb],
-    cetSignaturesOpt: Option[CETSignatures],
+    cetSigsOpt: Option[Vector[DLCCETSignaturesDb]],
     refundSigDb: DLCRefundSigsDb)
-    extends DLCSetupDbState {
-  //require(dlcDb.state == DLCState.Accepted,
-  //        s"OfferedDbState requires state accepted, got=${dlcDb.state}")
+    extends CompleteSetupDLCDbState {
 
-  override val state: DLCState.Accepted.type = DLCState.Accepted
-
-  val acceptFundingInputs: Vector[DLCFundingInput] = {
-    DLCTxUtil.matchPrevTxsWithInputs(acceptFundingInputsDb, acceptPrevTxs)
-  }
-
-  val acceptWithoutSigs: DLCAcceptWithoutSigs = {
-    acceptDb.toDLCAcceptWithoutSigs(
-      tempContractId = dlcDb.tempContractId,
-      fundingInputs = acceptFundingInputs
-    )
-  }
-
-  val allFundingInputs: Vector[DLCFundingInputDb] =
+  override val allFundingInputs: Vector[DLCFundingInputDb] =
     offerFundingInputsDb ++ acceptFundingInputsDb
 
   val remotePrevTxs: Vector[TransactionDb] = {
@@ -137,19 +178,24 @@ case class AcceptDbState(
     if (dlcDb.isInitiator) offerPrevTxs
     else acceptPrevTxs
   }
+}
 
-  /** Reconstructs the [[DLCAccept]] message if we have [[CETSignatures]]
-    * in the database. If we don't have the signatures because we have pruned
-    * them we return None as we can't reconstruct the message
-    */
-  def acceptOpt: Option[DLCAccept] = {
-    cetSignaturesOpt.map { cetSignatures =>
-      acceptDb.toDLCAccept(dlcDb.tempContractId,
-                           acceptFundingInputs,
-                           outcomeSigs = cetSignatures.outcomeSigs,
-                           refundSig = refundSigDb.accepterSig)
-    }
-  }
+case class SignDbState(
+    dlcDb: DLCDb,
+    contractDataDb: DLCContractDataDb,
+    contractInfo: ContractInfo,
+    offerDb: DLCOfferDb,
+    acceptDb: DLCAcceptDb,
+    offerFundingInputsDb: Vector[DLCFundingInputDb],
+    offerPrevTxs: Vector[TransactionDb],
+    acceptFundingInputsDb: Vector[DLCFundingInputDb],
+    acceptPrevTxs: Vector[TransactionDb],
+    refundSigDb: DLCRefundSigsDb,
+    cetSigsOpt: Option[Vector[DLCCETSignaturesDb]]
+) extends CompleteSetupDLCDbState {
+
+  override val allFundingInputs: Vector[DLCFundingInputDb] =
+    offerFundingInputsDb ++ acceptFundingInputsDb
 }
 
 case class ClosedDbStateWithCETSigs(
@@ -165,11 +211,6 @@ case class ClosedDbStateWithCETSigs(
     refundSigsDb: DLCRefundSigsDb,
     cetSigs: Vector[DLCCETSignaturesDb]
 ) extends DLCClosedDbState {
-  //require(
-  //  dlcDb.state.isInstanceOf[DLCState.ClosedState],
-  //  s"ClosedDbStateWithCETSigs dlc state must be closed, got=${dlcDb.state}")
-
-  override val state: DLCState = dlcDb.state
 
   val allFundingInputs: Vector[DLCFundingInputDb] =
     offerFundingInputsDb ++ acceptFundingInputsDb
@@ -189,18 +230,11 @@ case class ClosedDbStateNoCETSigs(
     acceptFundingInputsDb: Vector[DLCFundingInputDb],
     acceptPrevTxs: Vector[TransactionDb],
     refundSigsDb: DLCRefundSigsDb)
-    extends DLCClosedDbState {
-  //require(
-  //  dlcDb.state.isInstanceOf[DLCState.ClosedState],
-  //  s"ClosedDbStateWithCETSigs dlc state must be closed, got=${dlcDb.state}")
-
-  override val state: ClosedState =
-    dlcDb.state.asInstanceOf[DLCState.ClosedState]
-}
+    extends DLCClosedDbState
 
 object DLCClosedDbState {
 
-  def fromSetupState(
+  def fromAcceptSetupState(
       acceptState: AcceptDbState,
       cetSigsOpt: Option[Vector[DLCCETSignaturesDb]]): DLCClosedDbState = {
     cetSigsOpt match {
@@ -230,6 +264,40 @@ object DLCClosedDbState {
           acceptState.acceptFundingInputsDb,
           acceptState.acceptPrevTxs,
           acceptState.refundSigDb
+        )
+    }
+  }
+
+  def fromSignSetupState(
+      signDbState: SignDbState,
+      cetSigsOpt: Option[Vector[DLCCETSignaturesDb]]): DLCClosedDbState = {
+    cetSigsOpt match {
+      case Some(cetSigs) =>
+        ClosedDbStateWithCETSigs(
+          signDbState.dlcDb,
+          signDbState.contractDataDb,
+          signDbState.contractInfo,
+          signDbState.offerDb,
+          signDbState.acceptDb,
+          signDbState.offerFundingInputsDb,
+          signDbState.offerPrevTxs,
+          signDbState.acceptFundingInputsDb,
+          signDbState.acceptPrevTxs,
+          signDbState.refundSigDb,
+          cetSigs
+        )
+      case None =>
+        ClosedDbStateNoCETSigs(
+          signDbState.dlcDb,
+          signDbState.contractDataDb,
+          signDbState.contractInfo,
+          signDbState.offerDb,
+          signDbState.acceptDb,
+          signDbState.offerFundingInputsDb,
+          signDbState.offerPrevTxs,
+          signDbState.acceptFundingInputsDb,
+          signDbState.acceptPrevTxs,
+          signDbState.refundSigDb
         )
     }
   }

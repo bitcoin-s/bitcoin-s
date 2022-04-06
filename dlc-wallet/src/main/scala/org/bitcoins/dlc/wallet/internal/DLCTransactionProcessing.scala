@@ -147,9 +147,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
         setupStateOpt <- dlcDataManagement.getDLCFundingData(dlcId,
                                                              txDAO =
                                                                transactionDAO)
-        acceptDbState = {
+        completeDbState = {
           setupStateOpt.get match {
-            case accept: AcceptDbState => accept
+            case c: CompleteSetupDLCDbState => c
             case offered: OfferedDbState =>
               sys.error(
                 s"Cannot calculate and set outcome of dlc that is only offered, id=${offered.dlcDb.dlcId.hex}")
@@ -165,7 +165,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
             .map(_.get.transaction.asInstanceOf[WitnessTransaction])
 
         sigAndOutcome = recoverSigAndOutcomeForRemoteClaimed(
-          acceptDbState = acceptDbState,
+          completeDbState = completeDbState,
           cet = cet,
           sigDbs = sigDbs,
           refundSigsDbOpt = refundSigOpt)
@@ -384,25 +384,25 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     * so we do not necessarily have access to what the [[OracleAttestment]] is
     */
   private def recoverSigAndOutcomeForRemoteClaimed(
-      acceptDbState: AcceptDbState,
+      completeDbState: CompleteSetupDLCDbState,
       cet: WitnessTransaction,
       sigDbs: Vector[DLCCETSignaturesDb],
       refundSigsDbOpt: Option[DLCRefundSigsDb]): (
       SchnorrDigitalSignature,
       OracleOutcome) = {
-    val dlcDb = acceptDbState.dlcDb
+    val dlcDb = completeDbState.dlcDb
     val dlcId = dlcDb.dlcId
     val isInit = dlcDb.isInitiator
 
-    val offer = acceptDbState.offer
+    val offer = completeDbState.offer
 
-    val acceptOpt = acceptDbState.acceptOpt
+    val acceptOpt = completeDbState.acceptOpt
     require(
       acceptOpt.isDefined,
       s"Accept message must still have CET signatures to recover an outcome on chain, dlcId=${dlcId.hex}")
     val accept = acceptOpt.get
 
-    val fundingInputDbs = acceptDbState.allFundingInputs
+    val fundingInputDbs = completeDbState.allFundingInputs
     val offerRefundSigOpt = refundSigsDbOpt.flatMap(_.initiatorSig)
 
     val signOpt: Option[DLCSign] = offerRefundSigOpt.map { refundSig =>

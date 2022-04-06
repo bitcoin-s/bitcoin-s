@@ -482,6 +482,9 @@ abstract class DLCWallet
             Future.failed(
               new RuntimeException(
                 s"We cannot accept a DLC we offered, dlcId=${dlcId.hex}"))
+          case _: SignDbState =>
+            Future.failed(new RuntimeException(
+              s"We cannot accept a DLC we have already signed, dlcId=${dlcId.hex}"))
           case a: AcceptDbState =>
             val dlcPubKeys = DLCUtil.calcDLCPubKeys(
               xpub = account.xpub,
@@ -1327,17 +1330,17 @@ abstract class DLCWallet
       setupStateOpt <- dlcDataManagement.getDLCFundingData(contractId,
                                                            txDAO =
                                                              transactionDAO)
-      acceptState = {
+      complete = {
         setupStateOpt.map {
           case _: OfferedDbState =>
             sys.error(
               s"Cannot retrieve funding transaction when DLC is in offered state")
-          case accept: AcceptDbState => accept
+          case complete: CompleteSetupDLCDbState => complete
         }.get //bad but going to have to save this refactor for future
       }
-      dlcDb = acceptState.dlcDb
+      dlcDb = complete.dlcDb
       //is this right? We don't have counterpart scriptSigParams
-      fundingInputs = acceptState.allFundingInputs
+      fundingInputs = complete.allFundingInputs
       scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
       signerOpt <- dlcDataManagement.signerFromDb(
         dlcDb = dlcDb,
@@ -1423,7 +1426,7 @@ abstract class DLCWallet
 
   override def executeDLC(
       contractId: ByteVector,
-      sigs: Seq[OracleAttestmentTLV]): Future[Transaction] = {
+      sigs: Seq[OracleAttestmentTLV]): Future[Option[Transaction]] = {
     logger.info(
       s"Executing dlc with contractId=${contractId.toHex} sigs=${sigs.map(_.hex)}")
     require(sigs.nonEmpty, "Must provide at least one oracle signature")
@@ -1456,7 +1459,7 @@ abstract class DLCWallet
 
   override def executeDLC(
       contractId: ByteVector,
-      oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
+      oracleSigs: Vector[OracleSignatures]): Future[Option[Transaction]] = {
     require(oracleSigs.nonEmpty, "Must provide at least one oracle signature")
     dlcDAO.findByContractId(contractId).flatMap {
       case None =>
@@ -1467,7 +1470,7 @@ abstract class DLCWallet
         db.closingTxIdOpt match {
           case Some(txId) =>
             transactionDAO.findByTxId(txId).flatMap {
-              case Some(tx) => Future.successful(tx.transaction)
+              case Some(tx) => Future.successful(Some(tx.transaction))
               case None     => createDLCExecutionTx(contractId, oracleSigs)
             }
           case None =>
@@ -1476,60 +1479,73 @@ abstract class DLCWallet
     }
   }
 
+  /** Returns a execution transaction if we can build one. Returns None
+    * if the dlc db state is incorrect, or we have pruned CET signatures
+    * from the database
+    */
   private def createDLCExecutionTx(
       contractId: ByteVector,
-      oracleSigs: Vector[OracleSignatures]): Future[Transaction] = {
+      oracleSigs: Vector[OracleSignatures]): Future[Option[Transaction]] = {
     require(oracleSigs.nonEmpty, "Must provide at least one oracle signature")
-    for {
-      setupStateOpt <-
-        dlcDataManagement.getDLCFundingData(contractId, txDAO = transactionDAO)
-      _ = require(setupStateOpt.isDefined,
-                  s"Must have setup state defined to create execution tx")
-      _ = require(
-        setupStateOpt.get.isInstanceOf[AcceptDbState],
-        s"Setup state must be accept to create dlc execution tx, got=${setupStateOpt.get.state}")
-      setupState = setupStateOpt.get.asInstanceOf[AcceptDbState]
-      dlcDb = setupState.dlcDb
-      fundingInputs = setupState.allFundingInputs
-      scriptSigParams <- getScriptSigParams(dlcDb, fundingInputs)
-      executorWithSetupOpt <- dlcDataManagement.executorAndSetupFromDb(
-        contractId = contractId,
-        txDAO = transactionDAO,
-        fundingUtxoScriptSigParams = scriptSigParams,
-        keyManager = keyManager)
-      tx <- {
-        executorWithSetupOpt match {
-          case Some(executorWithSetup) =>
-            buildExecutionTxWithExecutor(executorWithSetup,
-                                         oracleSigs,
-                                         contractId)
-          case None =>
-            //means we don't have cet sigs in the db anymore
-            //can we retrieve the CET some other way?
-
-            //lets try to retrieve it from our transactionDAO
-            val dlcDbOptF = dlcDAO.findByContractId(contractId)
-
-            for {
-              dlcDbOpt <- dlcDbOptF
-              _ = require(
-                dlcDbOpt.isDefined,
-                s"Could not find dlc associated with this contractId=${contractId.toHex}")
-              dlcDb = dlcDbOpt.get
-              _ = require(
-                dlcDb.closingTxIdOpt.isDefined,
-                s"If we don't have CET signatures, the closing tx must be defined, contractId=${contractId.toHex}")
-              closingTxId = dlcDb.closingTxIdOpt.get
-              closingTxOpt <- transactionDAO.findByTxId(closingTxId)
-            } yield {
-              require(
-                closingTxOpt.isDefined,
-                s"Could not find closing tx for DLC in db, contactId=${contractId.toHex} closingTxId=${closingTxId.hex}")
-              closingTxOpt.get.transaction
+    val setupStateOptF =
+      dlcDataManagement.getDLCFundingData(contractId, txDAO = transactionDAO)
+    setupStateOptF.flatMap {
+      case None => Future.successful(None)
+      case Some(setupDbState) =>
+        setupDbState match {
+          case o: OfferedDbState =>
+            logger.info(
+              s"Cannot create execution tx for dlc in state=${o.state}")
+            Future.successful(None)
+          case c: CompleteSetupDLCDbState =>
+            val dlcDb = c.dlcDb
+            val fundingInputs = c.allFundingInputs
+            val scriptSigParamsF = getScriptSigParams(dlcDb, fundingInputs)
+            val executorWithSetupOptF = scriptSigParamsF.flatMap {
+              scriptSigParams =>
+                dlcDataManagement.executorAndSetupFromDb(
+                  contractId = contractId,
+                  txDAO = transactionDAO,
+                  fundingUtxoScriptSigParams = scriptSigParams,
+                  keyManager = keyManager)
             }
+            executorWithSetupOptF.flatMap {
+              case Some(executorWithSetup) =>
+                buildExecutionTxWithExecutor(executorWithSetup,
+                                             oracleSigs,
+                                             contractId).map(Some(_))
+              case None =>
+                //means we don't have cet sigs in the db anymore
+                //can we retrieve the CET some other way?
+
+                //lets try to retrieve it from our transactionDAO
+                val dlcDbOptF = dlcDAO.findByContractId(contractId)
+
+                for {
+                  dlcDbOpt <- dlcDbOptF
+                  _ = require(
+                    dlcDbOpt.isDefined,
+                    s"Could not find dlc associated with this contractId=${contractId.toHex}")
+                  dlcDb = dlcDbOpt.get
+                  _ = require(
+                    dlcDb.closingTxIdOpt.isDefined,
+                    s"If we don't have CET signatures, the closing tx must be defined, contractId=${contractId.toHex}, state=${dlcDb.state}"
+                  )
+                  closingTxId = dlcDb.closingTxIdOpt.get
+                  closingTxOpt <- transactionDAO.findByTxId(closingTxId)
+                } yield {
+                  require(
+                    closingTxOpt.isDefined,
+                    s"Could not find closing tx for DLC in db, contactId=${contractId.toHex} closingTxId=${closingTxId.hex}")
+                  Some(closingTxOpt.get.transaction)
+                }
+            }
+//          case c: ClosedDbStateNoCETSigs =>
+//            logger.info(
+//              s"Cannot create execution tx for dlc that is settled with no cet sigs, state=${c.state}")
+//            Future.successful(None)
         }
-      }
-    } yield tx
+    }
   }
 
   private def buildExecutionTxWithExecutor(

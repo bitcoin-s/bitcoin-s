@@ -13,7 +13,7 @@ import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
 import org.bitcoins.dlc.wallet.internal.DLCDataManagement
 import org.bitcoins.dlc.wallet.models.{
-  AcceptDbState,
+  CompleteSetupDLCDbState,
   DLCSetupDbState,
   OfferedDbState
 }
@@ -176,7 +176,7 @@ case class DLCAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       vec: Vector[DLCSetupDbState]): Vector[DLCDb] = {
     vec.map { case state: DLCSetupDbState =>
       val updatedDlcDb: DLCDb = state match {
-        case acceptDbState: AcceptDbState =>
+        case acceptDbState: CompleteSetupDLCDbState =>
           val offer = acceptDbState.offer
           val acceptWithoutSigs = acceptDbState.acceptWithoutSigs
           val dlcDb = acceptDbState.dlcDb

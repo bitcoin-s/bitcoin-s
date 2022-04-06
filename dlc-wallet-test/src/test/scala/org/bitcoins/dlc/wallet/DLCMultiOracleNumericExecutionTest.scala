@@ -114,7 +114,8 @@ class DLCMultiOracleNumericExecutionTest
       contractId <- getContractId(wallets._1.wallet)
       status <- getDLCStatus(wallets._1.wallet)
       (sigs, _) = getSigs(status.contractInfo)
-      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sigs)
+      func = (wallet: DLCWallet) =>
+        wallet.executeDLC(contractId, sigs).map(_.get)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = true,
@@ -153,7 +154,8 @@ class DLCMultiOracleNumericExecutionTest
       contractId <- getContractId(wallets._1.wallet)
       status <- getDLCStatus(wallets._2.wallet)
       (_, sigs) = getSigs(status.contractInfo)
-      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sigs)
+      func = (wallet: DLCWallet) =>
+        wallet.executeDLC(contractId, sigs).map(_.get)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = false,

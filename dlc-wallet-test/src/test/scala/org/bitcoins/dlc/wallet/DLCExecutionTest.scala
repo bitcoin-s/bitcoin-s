@@ -108,7 +108,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
               s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
         }
       }
-      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
+      func = (wallet: DLCWallet) =>
+        wallet.executeDLC(contractId, sig).map(_.get)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = true,
@@ -153,7 +154,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
               s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
         }
       }
-      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
+      func = (wallet: DLCWallet) =>
+        wallet.executeDLC(contractId, sig).map(_.get)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = false,
@@ -225,7 +227,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         }
       }
 
-      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
+      func = (wallet: DLCWallet) =>
+        wallet.executeDLC(contractId, sig).map(_.get)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = true,
@@ -406,7 +409,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                 s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
           }
         }
-        func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
+        func = (wallet: DLCWallet) =>
+          wallet.executeDLC(contractId, sig).map(_.get)
 
         result <- dlcExecutionTest(wallets = wallets,
                                    asInitiator = true,
@@ -452,7 +456,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                               sigs = badSigs,
                                               outcomes = badOutcomes)
         func = (wallet: DLCWallet) =>
-          wallet.executeDLC(contractId, badAttestment)
+          wallet.executeDLC(contractId, badAttestment).map(_.get)
 
         result <- dlcExecutionTest(wallets = wallets,
                                    asInitiator = true,

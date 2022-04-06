@@ -816,7 +816,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         tx <- walletB.broadcastDLCFundingTx(sign.contractId)
         _ <- walletA.processTransaction(tx, None)
 
-        func = (wallet: DLCWallet) => wallet.executeDLC(sign.contractId, sig)
+        func = (wallet: DLCWallet) =>
+          wallet.executeDLC(sign.contractId, sig).map(_.get)
         result <- dlcExecutionTest(dlcA = walletA,
                                    dlcB = walletB,
                                    asInitiator = true,
