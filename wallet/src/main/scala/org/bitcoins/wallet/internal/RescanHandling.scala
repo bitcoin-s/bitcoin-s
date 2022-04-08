@@ -17,6 +17,7 @@ import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 private[wallet] trait RescanHandling extends WalletLogger {
   self: Wallet =>
@@ -80,10 +81,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
         RescanState.RescanDone
       }
 
-      res.onComplete { _ =>
-        rescanning.set(false)
-        logger.info(
-          s"Finished rescanning the wallet. It took ${System.currentTimeMillis() - start}ms")
+      res.onComplete {
+        case Success(_) =>
+          rescanning.set(false)
+          logger.info(
+            s"Finished rescanning the wallet. It took ${System.currentTimeMillis() - start}ms")
+        case Failure(err) =>
+          logger.error(s"Failed to rescan wallet", err)
+
       }
 
       res
