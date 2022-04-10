@@ -87,10 +87,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
           logger.info(
             s"Finished rescanning the wallet. It took ${System.currentTimeMillis() - start}ms")
         case Failure(err) =>
+          rescanning.set(false)
           logger.error(s"Failed to rescan wallet", err)
-
       }
-
       res
     }
   }
