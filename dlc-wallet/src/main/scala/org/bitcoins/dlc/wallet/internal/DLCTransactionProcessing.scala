@@ -30,9 +30,6 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
   self: DLCWallet =>
   private lazy val safeDatabase: SafeDatabase = dlcDAO.safeDatabase
 
-  private lazy val dlcDataManagement: DLCDataManagement = DLCDataManagement(
-    dlcWalletDAOs)
-
   /** Calculates the new state of the DLCDb based on the closing transaction,
     * will delete old CET sigs that are no longer needed after execution
     * @return a DLCDb if we can calculate the state, else None if we cannot calculate the state

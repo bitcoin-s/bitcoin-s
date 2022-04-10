@@ -89,7 +89,7 @@ abstract class DLCWallet
     incomingOfferDAO
   )
 
-  private val dlcDataManagement = DLCDataManagement(dlcWalletDAOs)
+  private[wallet] val dlcDataManagement = DLCDataManagement(dlcWalletDAOs)
 
   protected lazy val actionBuilder: DLCActionBuilder = {
     DLCActionBuilder(dlcWalletDAOs)
