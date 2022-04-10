@@ -1430,17 +1430,33 @@ abstract class DLCWallet
     logger.info(
       s"Executing dlc with contractId=${contractId.toHex} sigs=${sigs.map(_.hex)}")
     require(sigs.nonEmpty, "Must provide at least one oracle signature")
-
+    val dlcDbOpt = dlcDAO.findByContractId(contractId)
     for {
-      dlcDb <- dlcDAO.findByContractId(contractId).map(_.get)
-      _ = dlcDb.state match {
-        case state @ (Offered | AcceptComputingAdaptorSigs | Accepted |
-            SignComputingAdaptorSigs | Signed) =>
-          sys.error(
-            s"Cannot execute DLC before the DLC is broadcast to the blockchain, state=$state")
-        case Broadcasted | Confirmed | _: ClosedState =>
-        //can continue executing, do nothing
+      dlcDbOpt <- dlcDbOpt
+      txOpt <- {
+        dlcDbOpt match {
+          case Some(dlcDb) =>
+            executeDLC(dlcDb, sigs)
+          case None =>
+            Future.successful(None)
+        }
+
       }
+    } yield txOpt
+  }
+
+  def executeDLC(
+      dlcDb: DLCDb,
+      sigs: Seq[OracleAttestmentTLV]): Future[Option[Transaction]] = {
+    val _ = dlcDb.state match {
+      case state @ (Offered | AcceptComputingAdaptorSigs | Accepted |
+          SignComputingAdaptorSigs | Signed) =>
+        sys.error(
+          s"Cannot execute DLC before the DLC is broadcast to the blockchain, state=$state")
+      case Broadcasted | Confirmed | _: ClosedState =>
+      //can continue executing, do nothing
+    }
+    for {
       (announcements, announcementData, nonceDbs) <- dlcDataManagement
         .getDLCAnnouncementDbs(dlcDb.dlcId)
 
@@ -1453,7 +1469,7 @@ abstract class DLCWallet
         announcements = announcementTLVs,
         attestments = sigs.toVector)
 
-      tx <- executeDLC(contractId, oracleSigs)
+      tx <- executeDLC(dlcDb.contractIdOpt.get, oracleSigs)
     } yield tx
   }
 
