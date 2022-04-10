@@ -538,18 +538,24 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           complete {
             for {
               txOpt <- wallet.executeDLC(contractId, sigs)
-              ret <- {
+              retOpt <- {
                 txOpt match {
                   case Some(tx) =>
                     handleBroadcastable(tx, noBroadcast)
                       .map(_.hex)
+                      .map(Some(_))
                   case None =>
-                    Future.successful(
-                      s"Cannot execute DLC with contractId=$contractId")
+                    Future.successful(None)
                 }
               }
             } yield {
-              Server.httpSuccess(ret)
+              retOpt match {
+                case Some(ret) =>
+                  Server.httpSuccess(ret)
+                case None =>
+                  Server.httpError(
+                    s"Cannot execute DLC with contractId=${contractId.toHex}")
+              }
             }
           }
       }
