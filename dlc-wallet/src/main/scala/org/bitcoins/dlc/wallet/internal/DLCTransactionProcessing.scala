@@ -146,7 +146,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                                                                transactionDAO)
         completeDbState = {
           setupStateOpt.get match {
-            case c: CompleteSetupDLCDbState => c
+            case c: SetupCompleteDLCDbState => c
             case offered: OfferedDbState =>
               sys.error(
                 s"Cannot calculate and set outcome of dlc that is only offered, id=${offered.dlcDb.dlcId.hex}")
@@ -381,7 +381,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     * so we do not necessarily have access to what the [[OracleAttestment]] is
     */
   private def recoverSigAndOutcomeForRemoteClaimed(
-      completeDbState: CompleteSetupDLCDbState,
+      completeDbState: SetupCompleteDLCDbState,
       cet: WitnessTransaction,
       sigDbs: Vector[DLCCETSignaturesDb],
       refundSigsDbOpt: Option[DLCRefundSigsDb]): (

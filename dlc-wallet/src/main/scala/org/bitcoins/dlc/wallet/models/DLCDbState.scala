@@ -89,7 +89,7 @@ case class OfferedDbState(
 /** Shared data structured when we have all information to build a funding
   * transaction for a discreet log contract
   */
-sealed trait CompleteSetupDLCDbState extends DLCSetupDbState {
+sealed trait SetupCompleteDLCDbState extends DLCSetupDbState {
   def dlcDb: DLCDb
   def contractDataDb: DLCContractDataDb
   def contractInfo: ContractInfo
@@ -164,7 +164,7 @@ case class AcceptDbState(
     acceptPrevTxs: Vector[TransactionDb],
     cetSigsOpt: Option[Vector[DLCCETSignaturesDb]],
     refundSigDb: DLCRefundSigsDb)
-    extends CompleteSetupDLCDbState {
+    extends SetupCompleteDLCDbState {
 
   override val allFundingInputs: Vector[DLCFundingInputDb] =
     offerFundingInputsDb ++ acceptFundingInputsDb
@@ -177,6 +177,38 @@ case class AcceptDbState(
   val localPrevTxs: Vector[TransactionDb] = {
     if (dlcDb.isInitiator) offerPrevTxs
     else acceptPrevTxs
+  }
+
+  /** Converts the AcceptDbState -> SignDbState if we have
+    * all parties CET signatures and refund signatures
+    */
+  def toSignDbOpt: Option[SignDbState] = {
+
+    //if we haven't pruned CET signatures from the db
+    //they must have the offerer's CET signatures defined
+    cetSigsOpt.map { cetSigs =>
+      require(cetSigs.forall(_.initiatorSig.isDefined),
+              s"CET signatures must be defined for the offerer")
+    }
+
+    //if we don't have a refund signature from the offerer
+    //yet we haven't completed the sign message
+    refundSigDb.initiatorSig.map { _ =>
+      val sign = SignDbState(
+        dlcDb,
+        contractDataDb,
+        contractInfo,
+        offerDb,
+        acceptDb = acceptDb,
+        offerFundingInputsDb = offerFundingInputsDb,
+        offerPrevTxs = offerPrevTxs,
+        acceptFundingInputsDb = acceptFundingInputsDb,
+        acceptPrevTxs = acceptPrevTxs,
+        refundSigDb = refundSigDb,
+        cetSigsOpt = cetSigsOpt
+      )
+      sign
+    }
   }
 }
 
@@ -192,7 +224,14 @@ case class SignDbState(
     acceptPrevTxs: Vector[TransactionDb],
     refundSigDb: DLCRefundSigsDb,
     cetSigsOpt: Option[Vector[DLCCETSignaturesDb]]
-) extends CompleteSetupDLCDbState {
+) extends SetupCompleteDLCDbState {
+  require(refundSigDb.initiatorSig.isDefined,
+          s"Refund signature for offerer must be defined")
+
+  //If we have not prune CET signatures, the offerer CET signatures must be defined
+  cetSigsOpt.map(cetSigs =>
+    require(cetSigs.forall(_.initiatorSig.isDefined),
+            s"Offerer CET signatures must be defined when in SignDbState"))
 
   override val allFundingInputs: Vector[DLCFundingInputDb] =
     offerFundingInputsDb ++ acceptFundingInputsDb
@@ -235,7 +274,7 @@ case class ClosedDbStateNoCETSigs(
 object DLCClosedDbState {
 
   def fromCompleteSetupState(
-      completeState: CompleteSetupDLCDbState,
+      completeState: SetupCompleteDLCDbState,
       cetSigsOpt: Option[Vector[DLCCETSignaturesDb]]): DLCClosedDbState = {
     cetSigsOpt match {
       case Some(cetSigs) =>

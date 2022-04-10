@@ -1335,7 +1335,7 @@ abstract class DLCWallet
           case _: OfferedDbState =>
             sys.error(
               s"Cannot retrieve funding transaction when DLC is in offered state")
-          case complete: CompleteSetupDLCDbState => complete
+          case complete: SetupCompleteDLCDbState => complete
         }.get //bad but going to have to save this refactor for future
       }
       dlcDb = complete.dlcDb
@@ -1497,7 +1497,7 @@ abstract class DLCWallet
             logger.info(
               s"Cannot create execution tx for dlc in state=${o.state}")
             Future.successful(None)
-          case c: CompleteSetupDLCDbState =>
+          case c: SetupCompleteDLCDbState =>
             val dlcDb = c.dlcDb
             val fundingInputs = c.allFundingInputs
             val scriptSigParamsF = getScriptSigParams(dlcDb, fundingInputs)
