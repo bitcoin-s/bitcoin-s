@@ -211,12 +211,7 @@ object Server {
     )
   }
 
-  def httpBadRequest(ex: Throwable): HttpResponse = {
-    httpBadRequest(ex.getMessage)
-  }
-
-  def httpBadRequest(msg: String): HttpResponse = {
-
+  def httpError(msg: String): HttpEntity.Strict = {
     val entity = {
       val response = Response(error = Some(msg))
       HttpEntity(
@@ -224,6 +219,15 @@ object Server {
         up.write(response.toJsonMap)
       )
     }
+    entity
+  }
+
+  def httpBadRequest(ex: Throwable): HttpResponse = {
+    httpBadRequest(ex.getMessage)
+  }
+
+  def httpBadRequest(msg: String): HttpResponse = {
+    val entity = httpError(msg)
     HttpResponse(status = StatusCodes.BadRequest, entity = entity)
   }
 

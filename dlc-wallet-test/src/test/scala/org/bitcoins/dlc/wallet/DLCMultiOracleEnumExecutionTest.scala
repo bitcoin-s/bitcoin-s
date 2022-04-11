@@ -112,7 +112,8 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       contractId <- getContractId(wallets._1.wallet)
       (sig, _) = getSigs
       status <- getDLCStatus(wallets._2.wallet)
-      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
+      func = (wallet: DLCWallet) =>
+        wallet.executeDLC(contractId, sig).map(_.get)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = true,
@@ -151,7 +152,8 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       contractId <- getContractId(wallets._1.wallet)
       (_, sig) = getSigs
       status <- getDLCStatus(wallets._2.wallet)
-      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
+      func = (wallet: DLCWallet) =>
+        wallet.executeDLC(contractId, sig).map(_.get)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = false,

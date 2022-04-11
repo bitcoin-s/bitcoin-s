@@ -269,6 +269,37 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     }
   }
 
+  private def buildAcceptDbState(
+      offerDbState: OfferedDbState,
+      dlcAccept: DLCAcceptDb,
+      acceptInputs: Vector[DLCFundingInputDb],
+      cetSignatures: Vector[DLCCETSignaturesDb],
+      refundSigDb: DLCRefundSigsDb,
+      txDAO: TransactionDAO): Future[AcceptDbState] = {
+
+    val signaturesOpt = {
+      if (cetSignatures.isEmpty) {
+        //means we have pruned signatures from the database
+        //we have to return None
+        None
+      } else {
+        Some(cetSignatures)
+      }
+    }
+    val acceptPrevTxsDbF =
+      getAcceptPrevTxs(offerDbState.dlcDb, acceptInputs, txDAO)
+
+    acceptPrevTxsDbF.map { case acceptPrevTxs =>
+      offerDbState.toAcceptDb(
+        acceptDb = dlcAccept,
+        acceptFundingInputsDb = acceptInputs,
+        acceptPrevTxsDb = acceptPrevTxs,
+        cetSigsOpt = signaturesOpt,
+        refundSigDb = refundSigDb
+      )
+    }
+  }
+
   private[wallet] def getDLCFundingData(
       dlcId: Sha256Digest,
       txDAO: TransactionDAO): Future[Option[DLCSetupDbState]] = {
@@ -282,40 +313,54 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       for {
         offerDbState <- offerDbStateOpt
       } yield {
-        //if the accept message is defined we must have refund sigs
-        dlcAcceptOpt.zip(refundSigsOpt).headOption match {
-          case Some((dlcAccept, refundSigDb)) =>
-            require(
-              refundSigsOpt.isDefined,
-              s"Cannot have accept in the database if we do not have refund signatures, dlcId=${dlcId.hex}")
-            val outcomeSigs = cetSignatures.map { dbSig =>
-              dbSig.sigPoint -> dbSig.accepterSig
-            }
-            val signaturesOpt = {
-              if (cetSignatures.isEmpty) {
-                //means we have pruned signatures from the database
-                //we have to return None
-                None
-              } else {
-                val sigs = CETSignatures(outcomeSigs)
-                Some(sigs)
-              }
-            }
-            val acceptPrevTxsDbF =
-              getAcceptPrevTxs(offerDbState.dlcDb, acceptInputs, txDAO)
-
-            acceptPrevTxsDbF.map { case acceptPrevTxs =>
-              offerDbState.toAcceptDb(
-                acceptDb = dlcAccept,
-                acceptFundingInputsDb = acceptInputs,
-                acceptPrevTxsDb = acceptPrevTxs,
-                cetSignaturesOpt = signaturesOpt,
-                refundSigDb = refundSigDb
-              )
-            }
-          case None =>
-            //just return the offerDbState if we don't have an accept
+        offerDbState.dlcDb.state match {
+          case DLCState.Offered | DLCState.AcceptComputingAdaptorSigs =>
             Future.successful(offerDbState)
+          case DLCState.Accepted | DLCState.SignComputingAdaptorSigs =>
+            //if the accept message is defined we must have refund sigs
+            dlcAcceptOpt.zip(refundSigsOpt).headOption match {
+              case Some((dlcAccept, refundSigDb)) =>
+                require(
+                  refundSigsOpt.isDefined,
+                  s"Cannot have accept in the database if we do not have refund signatures, dlcId=${dlcId.hex}")
+
+                buildAcceptDbState(offerDbState = offerDbState,
+                                   dlcAccept = dlcAccept,
+                                   acceptInputs = acceptInputs,
+                                   cetSignatures = cetSignatures,
+                                   refundSigDb = refundSigDb,
+                                   txDAO = txDAO)
+              case None =>
+                //just return the offerDbState if we don't have an accept
+                Future.successful(offerDbState)
+            }
+
+          case DLCState.Signed | DLCState.Confirmed | DLCState.Broadcasted |
+              _: DLCState.ClosedState =>
+            //if the accept message is defined we must have refund sigs
+            dlcAcceptOpt.zip(refundSigsOpt).headOption match {
+              case Some((dlcAccept, refundSigDb)) =>
+                require(
+                  refundSigsOpt.isDefined,
+                  s"Cannot have accept in the database if we do not have refund signatures, dlcId=${dlcId.hex}")
+
+                val acceptDbStateF = buildAcceptDbState(
+                  offerDbState = offerDbState,
+                  dlcAccept = dlcAccept,
+                  acceptInputs = acceptInputs,
+                  cetSignatures = cetSignatures,
+                  refundSigDb = refundSigDb,
+                  txDAO = txDAO)
+                val signDbF = for {
+                  acceptDbState <- acceptDbStateF
+                } yield {
+                  acceptDbState.toSignDbOpt.get
+                }
+                signDbF
+              case None =>
+                //just return the offerDbState if we don't have an accept
+                Future.successful(offerDbState)
+            }
         }
       }
     }
@@ -330,7 +375,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def getAllDLCData(
       contractId: ByteVector,
-      txDAO: TransactionDAO): Future[Option[DLCClosedDbState]] = {
+      txDAO: TransactionDAO): Future[Option[DLCDbState]] = {
     val resultF = for {
       dlcDbOpt <- dlcDAO.findByContractId(contractId)
       closedDbStateOptNested = dlcDbOpt.map(d => getAllDLCData(d.dlcId, txDAO))
@@ -345,7 +390,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   private[wallet] def getAllDLCData(
       dlcId: Sha256Digest,
-      txDAO: TransactionDAO): Future[Option[DLCClosedDbState]] = {
+      txDAO: TransactionDAO): Future[Option[DLCDbState]] = {
     val sigDLCsF = dlcSigsDAO.findByDLCId(dlcId)
 
     for {
@@ -356,12 +401,27 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
       val sigsOpt = if (sigs.isEmpty) None else Some(sigs)
       val closedState = setupStateOpt.flatMap {
         case acceptState: AcceptDbState =>
-          val closedState =
-            DLCClosedDbState.fromSetupState(acceptState, sigsOpt)
-          Some(closedState)
-        case _: OfferedDbState =>
-          //cannot return a closed state because we haven't seen the accept message
-          None
+          acceptState.state match {
+            case _: DLCState.ClosedState =>
+              val closedState =
+                DLCClosedDbState.fromCompleteSetupState(acceptState, sigsOpt)
+              Some(closedState)
+            case _: DLCState.InProgressState =>
+              Some(acceptState)
+          }
+
+        case signState: SignDbState =>
+          signState.state match {
+            case _: DLCState.ClosedState =>
+              val closedState =
+                DLCClosedDbState.fromCompleteSetupState(signState, sigsOpt)
+              Some(closedState)
+            case _: DLCState.InProgressState =>
+              Some(signState)
+          }
+
+        case o: OfferedDbState =>
+          Some(o)
       }
       closedState
     }
@@ -409,12 +469,13 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
 
   def getOfferAndAcceptWithoutSigs(
       dlcId: Sha256Digest,
-      txDAO: TransactionDAO): Future[Option[AcceptDbState]] = {
+      txDAO: TransactionDAO): Future[Option[SetupCompleteDLCDbState]] = {
     val dataF: Future[Option[DLCSetupDbState]] = getDLCFundingData(dlcId, txDAO)
     dataF.map {
       case Some(setupDbState) =>
         setupDbState match {
           case a: AcceptDbState  => Some(a)
+          case s: SignDbState    => Some(s)
           case _: OfferedDbState => None
         }
       case None => None
@@ -427,9 +488,10 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     for {
       setupStateOpt <- getOfferAndAcceptWithoutSigs(dlcDb.dlcId, transactionDAO)
     } yield {
-      setupStateOpt.map { acceptDbState =>
-        val txBuilder = DLCTxBuilder(offer = acceptDbState.offer,
-                                     accept = acceptDbState.acceptWithoutSigs)
+      setupStateOpt.map { completeSetupDLCDbState =>
+        val txBuilder =
+          DLCTxBuilder(offer = completeSetupDLCDbState.offer,
+                       accept = completeSetupDLCDbState.acceptWithoutSigs)
         txBuilder
       }
     }
@@ -573,9 +635,31 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
               fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
               keyManager = keyManager
             )
+          case c: SetupCompleteDLCDbState =>
+            c.cetSigsOpt match {
+              case Some(cetSigs) =>
+                executorAndSetupFromDb(
+                  dlcDb = c.dlcDb,
+                  refundSigsDb = c.refundSigDb,
+                  fundingInputs = c.allFundingInputs,
+                  outcomeSigsDbs = cetSigs,
+                  transactionDAO = txDAO,
+                  fundingUtxoScriptSigParams = fundingUtxoScriptSigParams,
+                  keyManager = keyManager
+                )
+              case None =>
+                //we don't have cet signatures for the
+                //sign message any more
+                Future.successful(None)
+            }
+
           case _: ClosedDbStateNoCETSigs =>
             //means we cannot re-create messages because
             //we don't have the cets in the database anymore
+            Future.successful(None)
+          case _: OfferedDbState =>
+            //means we cannot recreate messages because
+            //we don't have an accept or sign message in the database
             Future.successful(None)
         }
       case None => Future.successful(None)

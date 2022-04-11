@@ -91,7 +91,8 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
       contractId <- getContractId(wallets._1.wallet)
       status <- getDLCStatus(wallets._1.wallet)
       (sigs, _) = getSigs(status.contractInfo)
-      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sigs)
+      func = (wallet: DLCWallet) =>
+        wallet.executeDLC(contractId, sigs).map(_.get)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = true,
@@ -130,7 +131,8 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
       contractId <- getContractId(wallets._1.wallet)
       status <- getDLCStatus(wallets._2.wallet)
       (_, sigs) = getSigs(status.contractInfo)
-      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sigs)
+      func = (wallet: DLCWallet) =>
+        wallet.executeDLC(contractId, sigs).map(_.get)
 
       result <- dlcExecutionTest(wallets = wallets,
                                  asInitiator = false,
@@ -181,7 +183,7 @@ class DLCNumericExecutionTest extends BitcoinSDualWalletTest {
                                               sigs = badSigs,
                                               outcomes = badOutcomes)
         func = (wallet: DLCWallet) =>
-          wallet.executeDLC(contractId, badAttestment)
+          wallet.executeDLC(contractId, badAttestment).map(_.get)
 
         result <- dlcExecutionTest(wallets = wallets,
                                    asInitiator = false,
