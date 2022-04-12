@@ -269,6 +269,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         bitcoind,
         tmpWallet,
         Some(chainCallbacks))
+      nodeCallbacks <- CallbackUtil.createBitcoindNodeCallbacksForWallet(wallet)
+      _ = nodeConf.addCallbacks(nodeCallbacks)
       _ = logger.info("Starting wallet")
       _ <- wallet.start().recoverWith {
         //https://github.com/bitcoin-s/bitcoin-s/issues/2917

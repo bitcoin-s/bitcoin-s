@@ -10,7 +10,6 @@ import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -390,19 +389,30 @@ object BitcoindRpcBackendUtil extends Logging {
       {
         if (processing.compareAndSet(false, true)) {
           logger.debug("Polling bitcoind for mempool")
+          val numParallelism = Runtime.getRuntime.availableProcessors() * 2
+
+          //don't want to execute these in parallel
+          val processTxFlow = Sink.foreachAsync[Transaction](1)(processTx)
 
           val res = for {
             mempool <- bitcoind.getRawMemPool
             newTxIds = getDiffAndReplace(mempool.toSet)
             _ = logger.debug(s"Found ${newTxIds.size} new mempool transactions")
-            newTxsOpt <- FutureUtil.sequentially(newTxIds)(
-              bitcoind.getRawTransactionRaw(_).map(Option(_)).recover {
-                case _: Throwable => None
-              })
-            newTxs = newTxsOpt.collect { case Some(tx) =>
-              tx
-            }
-            _ <- FutureUtil.sequentially(newTxs)(processTx)
+
+            _ <- Source(newTxIds)
+              .mapAsync(parallelism = numParallelism) { txid =>
+                bitcoind
+                  .getRawTransactionRaw(txid)
+                  .map(Option(_))
+                  .recover { case _: Throwable =>
+                    None
+                  }
+                  .collect { case Some(tx) =>
+                    tx
+                  }
+              }
+              .toMat(processTxFlow)(Keep.right)
+              .run()
           } yield {
             logger.debug(
               s"Done processing ${newTxIds.size} new mempool transactions")

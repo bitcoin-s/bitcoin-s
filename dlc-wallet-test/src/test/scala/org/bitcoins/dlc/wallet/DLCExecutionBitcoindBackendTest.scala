@@ -74,7 +74,7 @@ class DLCExecutionBitcoindBackendTest
                 s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
           }
         }
-        closingTx <- dlcB.executeDLC(contractId, oracleSigs)
+        closingTx <- dlcB.executeDLC(contractId, oracleSigs).map(_.get)
         //broadcast the closing tx
         _ <- dlcB.broadcastTransaction(closingTx)
         dlcs <- dlcB

@@ -816,7 +816,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         tx <- walletB.broadcastDLCFundingTx(sign.contractId)
         _ <- walletA.processTransaction(tx, None)
 
-        func = (wallet: DLCWallet) => wallet.executeDLC(sign.contractId, sig)
+        func = (wallet: DLCWallet) =>
+          wallet.executeDLC(sign.contractId, sig).map(_.get)
         result <- dlcExecutionTest(dlcA = walletA,
                                    dlcB = walletB,
                                    asInitiator = true,
@@ -1085,7 +1086,12 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         DLCWalletUtil.sampleDLCOffer.copy(contractInfo =
                                             DLCWalletUtil.sampleContractInfo2,
                                           collateral = DLCWalletUtil.amt2)
+      val amt2: Satoshis = Bitcoins(3).satoshis
+      val offerCollateral2 = amt2
+      lazy val sampleContractInfo2: ContractInfo =
+        SingleContractInfo(amt2, sampleContractOraclePair)
       val offerData2 = DLCWalletUtil.sampleDLCOffer
+        .copy(contractInfo = sampleContractInfo2, collateral = offerCollateral2)
 
       for {
         offer1 <- walletA.createDLCOffer(
@@ -1101,10 +1107,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ <- walletB.acceptDLCOffer(offer1.toTLV, None, None)
         //cancel the offer
         _ <- walletA.cancelDLC(dlcId = offer1.dlcId)
-        amt = (DLCWalletUtil.half + Bitcoins.one).satoshis
+
         offer2 <- walletA.createDLCOffer(
           offerData2.contractInfo,
-          amt,
+          offerCollateral2,
           Some(offerData2.feeRate),
           offerData2.timeouts.contractMaturity.toUInt32,
           offerData2.timeouts.contractTimeout.toUInt32,

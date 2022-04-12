@@ -63,4 +63,13 @@ object CallbackUtil extends Logging {
             "Cannot create callbacks for an external implementation"))
     }
   }
+
+  def createBitcoindNodeCallbacksForWallet(wallet: Wallet)(implicit
+      ec: ExecutionContext): Future[NodeCallbacks] = {
+    val onTx: OnTxReceived = { tx =>
+      logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
+      wallet.processTransaction(tx, blockHashOpt = None).map(_ => ())
+    }
+    Future.successful(NodeCallbacks(onTxReceived = Vector(onTx)))
+  }
 }

@@ -54,10 +54,13 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   }
 
   override def processBlock(block: Block): Future[Wallet] = {
-    logger.info(s"Processing block=${block.blockHeader.hash.flip.hex}")
     val start = TimeUtil.currentEpochMs
     val isEmptyF = isEmpty()
     val heightF = chainQueryApi.getBlockHeight(block.blockHeader.hashBE)
+    heightF.foreach { heightOpt =>
+      logger.info(
+        s"Processing block=${block.blockHeader.hash.flip.hex} heightOpt=$heightOpt")
+    }
     val resF = for {
       isEmpty <- isEmptyF
       newWallet <- {
@@ -673,7 +676,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
               .fromScriptPubKey(out.output.scriptPubKey, networkParameters)
             tagsToUse.map(tag => AddressTagDb(address, tag))
           }
-          created <- addressTagDAO.createAll(newTagDbs)
+          created <- addressTagDAO.upsertAll(newTagDbs)
         } yield created
 
         for {

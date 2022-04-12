@@ -1175,7 +1175,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       (mockWalletApi
         .executeDLC(_: ByteVector, _: Seq[OracleAttestmentTLV]))
         .expects(contractId, Vector(dummyOracleAttestment))
-        .returning(Future.successful(EmptyTransaction))
+        .returning(Future.successful(Some(EmptyTransaction)))
 
       val route = walletRoutes.handleCommand(
         ServerCommand("executedlc",
@@ -1191,12 +1191,31 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    "execute a dlc that is not in the wallet and handle gracefully" in {
+      (mockWalletApi
+        .executeDLC(_: ByteVector, _: Seq[OracleAttestmentTLV]))
+        .expects(contractId, Vector(dummyOracleAttestment))
+        .returning(Future.successful(None))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("executedlc",
+                      Arr(Str(contractId.toHex),
+                          Arr(Str(dummyOracleAttestment.hex)),
+                          Bool(true))))
+
+      Post() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[String] == s"""{"result":null,"error":"Cannot execute DLC with contractId=${contractId.toHex}"}""")
+      }
+    }
+
     "execute a dlc with multiple sigs" in {
       (mockWalletApi
         .executeDLC(_: ByteVector, _: Seq[OracleAttestmentTLV]))
         .expects(contractId,
                  Vector(dummyOracleAttestment, dummyOracleAttestment))
-        .returning(Future.successful(EmptyTransaction))
+        .returning(Future.successful(Some(EmptyTransaction)))
 
       val route = walletRoutes.handleCommand(
         ServerCommand("executedlc",
@@ -1217,7 +1236,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       (mockWalletApi
         .executeDLC(_: ByteVector, _: Seq[OracleAttestmentTLV]))
         .expects(contractId, Vector(dummyOracleAttestment))
-        .returning(Future.successful(EmptyTransaction))
+        .returning(Future.successful(Some(EmptyTransaction)))
 
       (mockWalletApi.broadcastTransaction _)
         .expects(EmptyTransaction)

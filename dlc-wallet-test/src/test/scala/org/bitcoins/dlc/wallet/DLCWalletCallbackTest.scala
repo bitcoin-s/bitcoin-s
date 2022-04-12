@@ -106,7 +106,7 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
               s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
         }
       }
-      transaction <- walletA.executeDLC(contractId, sigs._1)
+      transaction <- walletA.executeDLC(contractId, sigs._1).map(_.get)
       _ <- walletB.processTransaction(transaction, None)
     } yield ()
 
