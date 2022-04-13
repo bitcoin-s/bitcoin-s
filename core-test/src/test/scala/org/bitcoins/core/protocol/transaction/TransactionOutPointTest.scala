@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkitcore.util.TestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
@@ -17,5 +18,14 @@ class TransactionOutPointTest extends BitcoinSUnitTest {
 
     val outPoint = TestUtil.simpleTransaction.inputs.head.previousOutput
     TransactionOutPoint(outPoint.hex).hex must be(outPoint.hex)
+  }
+
+  it must "read a transaction outpoint from string" in {
+    val txIdBE = DoubleSha256DigestBE(
+      "1d8a6f050746882216518afac933f5c0139e288fbdc3fea8de627b886b0d68cf")
+    val string = s"${txIdBE.hex}:1"
+    val expected = TransactionOutPoint(txIdBE, UInt32.one)
+
+    assert(TransactionOutPoint.fromString(string) == expected)
   }
 }

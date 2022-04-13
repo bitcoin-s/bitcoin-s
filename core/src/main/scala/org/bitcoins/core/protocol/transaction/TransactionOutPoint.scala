@@ -2,12 +2,7 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.serializers.transaction.RawTransactionOutPointParser
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  Factory,
-  NetworkElement
-}
+import org.bitcoins.crypto._
 import scodec.bits._
 
 /** @param txId The transaction id for the crediting transaction for this input
@@ -21,7 +16,9 @@ case class TransactionOutPoint(txId: DoubleSha256Digest, vout: UInt32)
   override def bytes = RawTransactionOutPointParser.write(this)
 
   override def toString: String =
-    s"TransactionOutPoint(${txIdBE.hex}:${vout.toBigInt})"
+    s"TransactionOutPoint($toHumanReadableString)"
+
+  lazy val toHumanReadableString: String = s"${txIdBE.hex}:${vout.toBigInt}"
 
   def ==(outPoint: TransactionOutPoint): Boolean =
     txId == outPoint.txId && vout == outPoint.vout
@@ -48,7 +45,9 @@ final object EmptyTransactionOutPoint
   override def toString(): String = "EmptyTransactionOutPoint"
 }
 
-object TransactionOutPoint extends Factory[TransactionOutPoint] {
+object TransactionOutPoint
+    extends Factory[TransactionOutPoint]
+    with StringFactory[TransactionOutPoint] {
 
   def fromBytes(bytes: ByteVector): TransactionOutPoint =
     RawTransactionOutPointParser.read(bytes)
@@ -58,5 +57,12 @@ object TransactionOutPoint extends Factory[TransactionOutPoint] {
     */
   def apply(txId: DoubleSha256DigestBE, vout: UInt32): TransactionOutPoint = {
     TransactionOutPoint(txId.flip, vout)
+  }
+
+  override def fromString(string: String): TransactionOutPoint = {
+    val idx = string.indexOf(":")
+    val (txId, vout) = string.splitAt(idx)
+    val uint = UInt32(vout.tail.toLong)
+    TransactionOutPoint(DoubleSha256DigestBE(txId), uint)
   }
 }
