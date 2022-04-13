@@ -389,7 +389,13 @@ object BitcoindRpcBackendUtil extends Logging {
       {
         if (processing.compareAndSet(false, true)) {
           logger.debug("Polling bitcoind for mempool")
-          val numParallelism = Runtime.getRuntime.availableProcessors()
+          val numParallelism = {
+            val processors = Runtime.getRuntime.availableProcessors()
+            //max open requests is 32 in akka, so 1/8 of possible requests
+            //can be used to query the mempool, else just limit it be number of processors
+            //see: https://github.com/bitcoin-s/bitcoin-s/issues/4252
+            Math.min(4, processors)
+          }
 
           //don't want to execute these in parallel
           val processTxFlow = Sink.foreachAsync[Transaction](1)(processTx)
