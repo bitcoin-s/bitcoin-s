@@ -389,7 +389,7 @@ object BitcoindRpcBackendUtil extends Logging {
       {
         if (processing.compareAndSet(false, true)) {
           logger.debug("Polling bitcoind for mempool")
-          val numParallelism = Runtime.getRuntime.availableProcessors() * 2
+          val numParallelism = Runtime.getRuntime.availableProcessors()
 
           //don't want to execute these in parallel
           val processTxFlow = Sink.foreachAsync[Transaction](1)(processTx)
