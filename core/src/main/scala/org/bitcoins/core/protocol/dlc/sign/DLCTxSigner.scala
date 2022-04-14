@@ -44,9 +44,14 @@ case class DLCTxSigner(
   }
 
   if (isInitiator) {
-    require(fundingKey.publicKey == offer.pubKeys.fundingKey,
-            s"Given keys do not match public key and address in offer, funding.publicKey=${fundingKey.publicKey} offer.pubKeys.fundingKey=${offer.pubKeys.fundingKey}")
-    require(finalAddress == offer.pubKeys.payoutAddress, s"Final address and offerer payout address must be identical finalAddress=$finalAddress offer.pubKeys.payoutAddress=${offer.pubKeys.payoutAddress}")
+    require(
+      fundingKey.publicKey == offer.pubKeys.fundingKey,
+      s"Given keys do not match public key and address in offer, funding.publicKey=${fundingKey.publicKey} offer.pubKeys.fundingKey=${offer.pubKeys.fundingKey}"
+    )
+    require(
+      finalAddress == offer.pubKeys.payoutAddress,
+      s"Final address and offerer payout address must be identical finalAddress=$finalAddress offer.pubKeys.payoutAddress=${offer.pubKeys.payoutAddress}"
+    )
     val fundingUtxosAsInputs =
       fundingUtxos
         .sortBy(_.outPoint.bytes)
@@ -59,15 +64,19 @@ case class DLCTxSigner(
         .sortBy(_.inputSerialId)
     val sortedOfferInputs = offer.fundingInputs.sortBy(_.inputSerialId)
 
-    require(fundingUtxosAsInputs == sortedOfferInputs,
-            s"Funding ScriptSignatureParams did not match offer funding inputs, fundingUtxosAsInputs=${fundingUtxosAsInputs} sortedOffererInputs=$sortedOfferInputs")
+    require(
+      fundingUtxosAsInputs == sortedOfferInputs,
+      s"Funding ScriptSignatureParams did not match offer funding inputs, fundingUtxosAsInputs=${fundingUtxosAsInputs} sortedOffererInputs=$sortedOfferInputs"
+    )
   } else {
     require(
       fundingKey.publicKey == accept.pubKeys.fundingKey,
       "Given keys do not match public key and address in accept"
     )
-    require(finalAddress == accept.pubKeys.payoutAddress,
-      s"Final address and acceptor payout address don't match, finalAddress=$finalAddress accept.pubKeys.payoutAddress=${accept.pubKeys.payoutAddress}")
+    require(
+      finalAddress == accept.pubKeys.payoutAddress,
+      s"Final address and acceptor payout address don't match, finalAddress=$finalAddress accept.pubKeys.payoutAddress=${accept.pubKeys.payoutAddress}"
+    )
     val fundingUtxosAsInputs =
       fundingUtxos
         .sortBy(_.outPoint.bytes)
@@ -79,8 +88,10 @@ case class DLCTxSigner(
         }
         .sortBy(_.inputSerialId)
     val sortedAcceptInputs = accept.fundingInputs.sortBy(_.inputSerialId)
-    require(fundingUtxosAsInputs == sortedAcceptInputs,
-      s"Funding ScriptSignatureParams did not match offer funding inputs, fundingUtxosAsInputs=${fundingUtxosAsInputs} sortedAcceptInputs=$sortedAcceptInputs")
+    require(
+      fundingUtxosAsInputs == sortedAcceptInputs,
+      s"Funding ScriptSignatureParams did not match offer funding inputs, fundingUtxosAsInputs=${fundingUtxosAsInputs} sortedAcceptInputs=$sortedAcceptInputs"
+    )
   }
 
   /** Return's this party's payout for a given oracle signature */
