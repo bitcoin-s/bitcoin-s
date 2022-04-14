@@ -119,6 +119,18 @@ lazy val testkitCoreJVM = testkitCore.jvm
 
 lazy val testkitCoreJS = testkitCore.js
 
+lazy val jni = (project in file("jni")).aggregate(jniCore, jniNative)
+
+lazy val jniCore = project
+  .in(file("jni/jni-core"))
+  .settings(
+    javah / target := (jniNative / nativeCompile / sourceDirectory).value / "include")
+  .dependsOn(jniNative % Runtime)
+
+lazy val jniNative = project
+  .in(file("jni/jni-native"))
+  .enablePlugins(JniNative)
+
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
   .settings(CommonSettings.prodSettings: _*)
@@ -167,6 +179,7 @@ lazy val jsProjects: Vector[ProjectReference] =
 lazy val `bitcoin-s` = project
   .in(file("."))
   .aggregate(
+    jni,
     asyncUtilsJVM,
     secp256k1jni,
     chain,
@@ -228,6 +241,7 @@ lazy val `bitcoin-s` = project
     clightningRpcTest
   )
   .dependsOn(
+    jni,
     secp256k1jni,
     chain,
     chainTest,

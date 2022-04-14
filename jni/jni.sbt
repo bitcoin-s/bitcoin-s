@@ -1,0 +1,1 @@
+ivyLoggingLevel := UpdateLogging.Quiet
