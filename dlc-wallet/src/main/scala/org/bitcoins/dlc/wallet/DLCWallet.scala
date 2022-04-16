@@ -916,12 +916,19 @@ abstract class DLCWallet
           _ = logger.debug(
             s"CET Signatures for tempContractId ${accept.tempContractId.hex} were valid, adding to database")
 
-          _ <- remoteTxDAO.upsertAll(acceptPrevTxs)
+          remoteTxUpsertAction = remoteTxDAO.upsertAllAction(acceptPrevTxs)
           inputAction = dlcInputsDAO.upsertAllAction(acceptInputs)
           sigsAction = dlcSigsDAO.upsertAllAction(sigsDbs)
-          _ <- safeDatabase.run(DBIO.sequence(Vector(inputAction, sigsAction)))
-          _ <- dlcRefundSigDAO.upsert(refundSigsDb)
-          _ <- dlcAcceptDAO.upsert(dlcAcceptDb)
+          refundSigAction = dlcRefundSigDAO.upsertAction(refundSigsDb)
+          acceptDbAction = dlcAcceptDAO.upsertAction(dlcAcceptDb)
+
+          actions = DBIO.sequence(
+            Vector(remoteTxUpsertAction,
+                   inputAction,
+                   sigsAction,
+                   refundSigAction,
+                   acceptDbAction))
+          _ <- safeDatabase.run(actions)
 
           // .get is safe here because we must have an offer if we have a dlcDAO
           offerDb <- dlcOfferDAO.findByDLCId(dlc.dlcId).map(_.head)
