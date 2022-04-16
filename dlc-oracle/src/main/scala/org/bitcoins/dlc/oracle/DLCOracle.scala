@@ -4,14 +4,11 @@ import com.typesafe.config.Config
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db._
-import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitTestNet3Priv
 import org.bitcoins.core.crypto.{ExtPrivateKeyHardened, ExtPublicKey}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number._
-import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
-import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.util.{FutureUtil, NumberUtil, TimeUtil}
@@ -78,9 +75,6 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   }
 
   override val publicKey: SchnorrPublicKey = signingKey.schnorrPublicKey
-
-  override def stakingAddress(network: BitcoinNetwork): Bech32Address =
-    Bech32Address(P2WPKHWitnessSPKV0(publicKey.publicKey), network)
 
   protected[bitcoins] val rValueDAO: RValueDAO = RValueDAO()
   protected[bitcoins] val eventDAO: EventDAO = EventDAO()

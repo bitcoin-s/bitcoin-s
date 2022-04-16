@@ -1,13 +1,12 @@
 package org.bitcoins.core.api.dlcoracle
 
 import org.bitcoins.core.api.dlcoracle.db.EventDb
-import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.number._
-import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
+
 import java.time.Instant
 import scala.concurrent.Future
 
@@ -17,8 +16,6 @@ trait DLCOracleApi {
   def oracleName(): Future[Option[String]]
 
   def setOracleName(name: String): Future[Unit]
-
-  def stakingAddress(network: BitcoinNetwork): Bech32Address
 
   def listEventDbs(): Future[Vector[EventDb]]
 

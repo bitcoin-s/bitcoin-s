@@ -5,16 +5,14 @@ import org.bitcoins.core.api.dlcoracle._
 import org.bitcoins.core.api.dlcoracle.db._
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.core.number._
-import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.dlc.compute.SigningVersion
-import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.fixtures.DLCOracleFixture
 import org.bitcoins.testkitcore.Implicits._
-import org.bitcoins.testkitcore.gen.{ChainParamsGenerator, TLVGen}
+import org.bitcoins.testkitcore.gen.TLVGen
 
 import java.time.Instant
 
@@ -49,15 +47,6 @@ class DLCOracleTest extends DLCOracleFixture {
     val dummyEvent = TLVGen.oracleEventV0TLV.sampleSome
     dlcOracle.findEvent(dummyEvent).map { eventOpt =>
       assert(eventOpt.isEmpty)
-    }
-  }
-
-  it must "calculate the correct staking address" in { dlcOracle: DLCOracle =>
-    forAllAsync(ChainParamsGenerator.bitcoinNetworkParams) { network =>
-      val expected =
-        Bech32Address(P2WPKHWitnessSPKV0(dlcOracle.publicKey.publicKey),
-                      network)
-      assert(dlcOracle.stakingAddress(network) == expected)
     }
   }
 
