@@ -81,9 +81,6 @@ class BitcoindZMQBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
         }
 
       balance <- wallet.getConfirmedBalance()
-
-      // clean up
-      _ <- wallet.walletConfig.stop()
     } yield {
       // use >= because of multiple attempts
       assert(balance >= amountToSend)

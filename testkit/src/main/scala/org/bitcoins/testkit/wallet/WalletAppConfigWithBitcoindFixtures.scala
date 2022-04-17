@@ -49,8 +49,10 @@ trait WalletAppConfigWithBitcoindNewestFixtures
       () => {
         val walletConfig =
           BaseWalletTest.getFreshWalletAppConfig(pgUrl, Vector.empty)
-        val model = WalletAppConfigWithBitcoindRpc(walletConfig, bitcoind)
-        Future.successful(model)
+        for {
+          _ <- walletConfig.start()
+          model = WalletAppConfigWithBitcoindRpc(walletConfig, bitcoind)
+        } yield model
       },
       { case walletAppConfigWithBitcoindRpc =>
         BitcoinSWalletTest.destroyWalletAppConfig(
@@ -59,5 +61,3 @@ trait WalletAppConfigWithBitcoindNewestFixtures
     )(test)
   }
 }
-
-object WalletAppConfigWithBitcoindFixtures {}
