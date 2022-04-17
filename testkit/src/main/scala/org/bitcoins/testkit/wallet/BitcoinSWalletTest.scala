@@ -239,8 +239,9 @@ trait BitcoinSWalletTest
       createWalletAppConfigNotStarted(pgUrl, Vector.empty)
     }
 
-    val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
-      destroyWalletAppConfig(walletAppConfig)
+    val destroy: WalletAppConfig => Future[Unit] = _ => {
+      //it might not be started, so don't stop it
+      Future.unit
     }
     makeDependentFixture(builder, destroy = destroy)(test)
   }
@@ -669,8 +670,6 @@ object BitcoinSWalletTest extends WalletLogger {
   def destroyWallet(wallet: Wallet): Future[Unit] = {
     import wallet.ec
     for {
-      _ <- wallet.walletConfig.dropTable("flyway_schema_history")
-      _ <- wallet.walletConfig.dropAll()
       _ <- wallet.stop()
       _ <- destroyWalletAppConfig(wallet.walletConfig)
     } yield ()
@@ -684,9 +683,13 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield ()
   }
 
-  def destroyWalletAppConfig(walletAppConfig: WalletAppConfig): Future[Unit] = {
-    val stoppedF = walletAppConfig.stop()
-    stoppedF
+  def destroyWalletAppConfig(walletAppConfig: WalletAppConfig)(implicit
+      ec: ExecutionContext): Future[Unit] = {
+    for {
+      _ <- walletAppConfig.dropTable("flyway_schema_history")
+      _ <- walletAppConfig.dropAll()
+      _ <- walletAppConfig.stop()
+    } yield ()
   }
 
   /** Constructs callbacks for the wallet from the node to process blocks and compact filters */

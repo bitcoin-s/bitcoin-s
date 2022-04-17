@@ -56,8 +56,6 @@ class BitcoindBlockPollingTest
           1.second)
 
         balance <- wallet.getConfirmedBalance()
-        //clean up
-        _ <- wallet.walletConfig.stop()
       } yield assert(balance == amountToSend)
   }
 
@@ -101,9 +99,6 @@ class BitcoindBlockPollingTest
               _.txIdBE == txid2)
           },
           1.second)
-
-        //clean up
-        _ <- wallet.walletConfig.stop()
       } yield succeed
   }
 }
