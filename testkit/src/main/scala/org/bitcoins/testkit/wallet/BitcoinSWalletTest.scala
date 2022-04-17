@@ -239,8 +239,9 @@ trait BitcoinSWalletTest
       createWalletAppConfigNotStarted(pgUrl, Vector.empty)
     }
 
-    val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
-      destroyWalletAppConfig(walletAppConfig)
+    val destroy: WalletAppConfig => Future[Unit] = _ => {
+      //it might not be started, so don't stop it
+      Future.unit
     }
     makeDependentFixture(builder, destroy = destroy)(test)
   }
