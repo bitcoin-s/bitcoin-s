@@ -1,0 +1,99 @@
+{
+  "version-1.9.1-docs": {
+    "Getting Started": [
+      "version-1.9.1-getting-started",
+      "version-1.9.1-bips"
+    ],
+    "Getting Setup": [
+      "version-1.9.1-getting-setup",
+      "version-1.9.1-ui-setup"
+    ],
+    "Applications": [
+      "version-1.9.1-applications/cli",
+      "version-1.9.1-applications/server",
+      "version-1.9.1-applications/gui",
+      "version-1.9.1-applications/server-systemd"
+    ],
+    "Chain": [
+      "version-1.9.1-chain/chain",
+      "version-1.9.1-chain/filter-sync",
+      "version-1.9.1-chain/chain-query-api"
+    ],
+    "Configuration": [
+      "version-1.9.1-config/configuration"
+    ],
+    "Core Module": [
+      "version-1.9.1-core/core-intro",
+      "version-1.9.1-core/addresses",
+      "version-1.9.1-core/hd-keys",
+      "version-1.9.1-core/adding-spks",
+      "version-1.9.1-core/spending-info",
+      "version-1.9.1-core/psbts",
+      "version-1.9.1-core/dlc",
+      "version-1.9.1-core/txbuilder",
+      "version-1.9.1-core/lightning-network"
+    ],
+    "Crypto Module": [
+      "version-1.9.1-crypto/crypto-intro",
+      "version-1.9.1-crypto/sign",
+      "version-1.9.1-crypto/adaptor-signatures"
+    ],
+    "Fee Provider": [
+      "version-1.9.1-fee-provider/fee-provider"
+    ],
+    "Key Manager": [
+      "version-1.9.1-key-manager/server-key-manager",
+      "version-1.9.1-key-manager/key-manager"
+    ],
+    "Node": [
+      "version-1.9.1-node/node",
+      "version-1.9.1-node/node-api"
+    ],
+    "Wallet": [
+      "version-1.9.1-wallet/wallet",
+      "version-1.9.1-wallet/wallet-callbacks",
+      "version-1.9.1-wallet/wallet-get-address",
+      "version-1.9.1-wallet/address-tagging",
+      "version-1.9.1-wallet/dlc",
+      "version-1.9.1-wallet/wallet-rescan",
+      "version-1.9.1-wallet/wallet-sync",
+      "version-1.9.1-wallet/wallet-rpc",
+      "version-1.9.1-wallet/backups",
+      "version-1.9.1-wallet/wallet-election-example",
+      "version-1.9.1-wallet/wallet-price-example"
+    ],
+    "Tor": [
+      "version-1.9.1-tor/tor"
+    ],
+    "RPC Clients": [
+      "version-1.9.1-rpc/rpc-clients-intro",
+      "version-1.9.1-rpc/rpc-eclair",
+      "version-1.9.1-rpc/rpc-bitcoind",
+      "version-1.9.1-rpc/lnd-rpc"
+    ],
+    "Secp256k1": [
+      "version-1.9.1-secp256k1/secp256k1",
+      "version-1.9.1-secp256k1/jni-modify"
+    ],
+    "Testkit": [
+      "version-1.9.1-testkit/testkit",
+      "version-1.9.1-testkit/testkit-core"
+    ],
+    "DLC Oracle": [
+      "version-1.9.1-oracle/build-oracle-server",
+      "version-1.9.1-oracle/oracle-server",
+      "version-1.9.1-oracle/oracle-election-example",
+      "version-1.9.1-oracle/oracle-price-example"
+    ],
+    "Oracle Explorer Client": [
+      "version-1.9.1-oracle-explorer-client/oracle-explorer-client"
+    ],
+    "Contributing": [
+      "version-1.9.1-contributing",
+      "version-1.9.1-contributing-website"
+    ],
+    "Security": [
+      "version-1.9.1-security"
+    ]
+  }
+}
