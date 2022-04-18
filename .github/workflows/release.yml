@@ -210,7 +210,7 @@ jobs:
         with:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
       - name: Build zip
-        run: sbt "universal:stage"
+        run: sbt "universal:stage;universal:packageBin"
       - name: View Artifacts
         run: ls -l app/server/target/universal/stage
       - name: pwd
@@ -231,7 +231,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           name: "bitcoin-s-server-${{steps.previoustag.outputs.tag}}"
-          files: app/server/target/universal/stage
+          files: app/server/target/universal/*.zip
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
