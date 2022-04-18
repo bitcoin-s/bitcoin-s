@@ -82,6 +82,10 @@ This release also reworks the label APIs in the wallet to make them easier to us
 
 Finally we expose the `offer-send` RPC so you can progmatically send an offer to another DLC wallet.
 
+ff8f44282b Reduce parallelism to 4 (#4259)
+10157d108f Reduce parallelism when fetches txs in mempool for bitcoind backend (#4257)
+1bc3962cfb Async mempool processing (#4245)
+4b96407408 Add a Tx callback for Bitcoin Core backend (#4243)
 00bce5adae Fix peer configuration for docker-compose (#4225)
 0770fe0550 Mempool support for the bitcoind RPC client (#4196)
 73fe4099f9 Renable tor configuration by default (#4179)
@@ -119,6 +123,9 @@ eddcc94b03 Upgrade CI jdks to openjdk@1.17.0 (#4114)
 
 Small bug fixes and renames this release for `core`.
 
+07209ce670 2022 04 14 dlctxsigner err msg (#4262)
+0a092e4e03 Add fromString for TransactionOutPoint (#4261)
+f2fa56221d 2022 03 31 collateral invariant (#4232)
 d5807daeab Remove SpendingInfoDb.txid parameter (#4199)
 8d2a749df6 Rename WitnessScriptPubKeyV1 -> TaprootScriptPubKey (#4198)
 c379cf4a73 Round Bitcoins to nearest Satoshi (#4154)
@@ -150,6 +157,13 @@ to signal to the user their DLC is in progress, specifically computing signature
 The last feature is adding the ability to specify external payout addresses for a wallet to receive DLC payouts.
 We plan on using this at Bitcoin 2022 in Miami to allow for users to receive payouts from a esports gaming DLC.
 
+717533baec Make first set of database writes in signDLC be transactional (#4264)
+37da24b94b Add SignDbState to fix rescan exception (#4246)
+a2587677c3 Use upsert rather than create in dlcsign in case we have seen the inputs before (#4248)
+30a061e549 Use upsert rather than create as offers can use the same outpoints if negotiation fails for some reason (#4247)
+ddabc91294 2022 04 02 fix walletdlcsetup test (#4237)
+b5bfcbc009 Increase amount so test fails more consistently (#4233)
+8081772b57 Allow acceptor to upsert same outpoint multiple times for different offers (#4230)
 5eabe7640f Don't send websocket events for DLCs while rescanning the wallet (#4222)
 faac871db6 Make buildCreateOfferAction upsert funding inputs rather than insert (#4186)
 3f18f7b04c Only allow executing a DLC if it is in the Broadcast or Confirmed state (#4185)
@@ -189,6 +203,10 @@ b46574c0c4 2022 02 18 sync since creationtime pt2 (#4109)
 
 ## wallet
 
+
+27cb4a3c20 Add height to log message when processing block (#4251)
+7c1c572081 Rescan failure logging (#4250)
+24125eaca3 Fix case where we broadcast tx with a tag, and then also add the tag when we receive the tx in a block (#4239)
 33171fd069 Use the set of addresses in the wallet when rescanning rather than generating more (#4211)
 413dbcacbb Rename clearUtxosAndAddreses(account) -> clearUtxos(account) (#4206)
 5475a994cf Bump default address gap limit to 100, add log indicating we didn't find funds in the last addressBatchSize addresses (#4201)
@@ -212,6 +230,10 @@ e6bf7bd67e Segregate updating received utxos and spent utxos (#4093)
 
 c11d9ef1fe Fix unit test where coinbase input was sometimes selected (#4165)
 
+## testkit 
+
+5ad5993f1a Refactor WalletAppConfig test fixture destructions to stop the config… (#4266)
+
 ## tor
 
 This release improves logging for our tor module.
@@ -221,6 +243,7 @@ fe86233489 Add better tor message to UI (#4181)
 
 ## Website
 
+3d86276902 Bump minimist from 1.2.5 to 1.2.6 in /website (#4249)
 3a5ae90cc2 Add a section to README.md about running docker-compose up (#4224)
 c51db2c57a 2022 03 24 update 1.9.1 release notes (#4213)
 702b7cae15 Add instructions for how to use sdkman in getting-setup.md (#4208)
@@ -235,6 +258,3 @@ b0d7bee008 First draft of 1.9.1 release notes (#4195)
 d7f12be1d4 Update scalafx to 17.0.1-R26 (#3874)
 666885bc11 Re-add javafx media,graphics dependnecies to fix GUI (#4107)
 5b1b1ee149 Remove uneeded javafx deps (#4103)
-
-
-
