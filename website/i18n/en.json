@@ -17,6 +17,9 @@
       "applications/server": {
         "title": "Application Server"
       },
+      "applications/web-ui": {
+        "title": "Application server and Web UI"
+      },
       "bips": {
         "title": "Supported BIPs"
       },
@@ -958,6 +961,66 @@
       },
       "version-1.9.0/wallet/version-1.9.0-wallet": {
         "title": "Wallet"
+      },
+      "version-1.9.1/applications/version-1.9.1-cli": {
+        "title": "CLI"
+      },
+      "version-1.9.1/applications/version-1.9.1-server": {
+        "title": "Application Server"
+      },
+      "version-1.9.1/applications/version-1.9.1-web-ui": {
+        "title": "Application server and Web UI"
+      },
+      "version-1.9.1/config/version-1.9.1-configuration": {
+        "title": "Application Configuration"
+      },
+      "version-1.9.1/core/version-1.9.1-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-1.9.1/core/version-1.9.1-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-1.9.1/core/version-1.9.1-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-1.9.1/core/version-1.9.1-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-1.9.1/crypto/version-1.9.1-sign": {
+        "title": "Sign API"
+      },
+      "version-1.9.1/version-1.9.1-getting-setup": {
+        "title": "Getting Bitcoin-S installed on your machine"
+      },
+      "version-1.9.1/version-1.9.1-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-1.9.1/key-manager/version-1.9.1-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-1.9.1/node/version-1.9.1-node": {
+        "title": "Light Client"
+      },
+      "version-1.9.1/oracle/version-1.9.1-oracle-server": {
+        "title": "Oracle Server"
+      },
+      "version-1.9.1/secp256k1/version-1.9.1-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-1.9.1/version-1.9.1-ui-setup": {
+        "title": "Installing the DLC Wallet UI"
+      },
+      "version-1.9.1/wallet/version-1.9.1-dlc": {
+        "title": "Executing A DLC with Bitcoin-S"
+      },
+      "version-1.9.1/wallet/version-1.9.1-wallet-election-example": {
+        "title": "Wallet Election Example"
+      },
+      "version-1.9.1/wallet/version-1.9.1-wallet-price-example": {
+        "title": "Wallet Price Example"
+      },
+      "version-1.9.1/wallet/version-1.9.1-wallet-rpc": {
+        "title": "Wallet RPC Examples"
       }
     },
     "links": {
