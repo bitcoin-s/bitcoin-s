@@ -90,14 +90,24 @@ trait CryptoUtil extends CryptoRuntime {
 
   override def sign(
       privateKey: ECPrivateKey,
-      dataToSign: ByteVector): ECDigitalSignature =
-    cryptoRuntime.sign(privateKey, dataToSign)
+      dataToSign: ByteVector): ECDigitalSignature = {
+    val sig = cryptoRuntime.sign(privateKey, dataToSign)
+    assert(
+      verify(privateKey.publicKey, dataToSign, sig),
+      "Something has gone wrong, a generated signature may have been corrupted")
+    sig
+  }
 
   override def signWithEntropy(
       privateKey: ECPrivateKey,
       bytes: ByteVector,
-      entropy: ByteVector): ECDigitalSignature =
-    cryptoRuntime.signWithEntropy(privateKey, bytes, entropy)
+      entropy: ByteVector): ECDigitalSignature = {
+    val sig = cryptoRuntime.signWithEntropy(privateKey, bytes, entropy)
+    assert(
+      verify(privateKey.publicKey, bytes, sig),
+      "Something has gone wrong, a generated signature may have been corrupted")
+    sig
+  }
 
   override def secKeyVerify(privateKeybytes: ByteVector): Boolean =
     cryptoRuntime.secKeyVerify(privateKeybytes)
@@ -145,14 +155,25 @@ trait CryptoUtil extends CryptoRuntime {
   override def schnorrSign(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
-      auxRand: ByteVector): SchnorrDigitalSignature =
-    cryptoRuntime.schnorrSign(dataToSign, privateKey, auxRand)
+      auxRand: ByteVector): SchnorrDigitalSignature = {
+    val sig = cryptoRuntime.schnorrSign(dataToSign, privateKey, auxRand)
+    assert(
+      schnorrVerify(dataToSign, privateKey.schnorrPublicKey, sig),
+      "Something has gone wrong, a generated signature may have been corrupted")
+    sig
+  }
 
   override def schnorrSignWithNonce(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
-      nonceKey: ECPrivateKey): SchnorrDigitalSignature =
-    cryptoRuntime.schnorrSignWithNonce(dataToSign, privateKey, nonceKey)
+      nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
+    val sig =
+      cryptoRuntime.schnorrSignWithNonce(dataToSign, privateKey, nonceKey)
+    assert(
+      schnorrVerify(dataToSign, privateKey.schnorrPublicKey, sig),
+      "Something has gone wrong, a generated signature may have been corrupted")
+    sig
+  }
 
   override def schnorrVerify(
       data: ByteVector,
