@@ -10,9 +10,6 @@ import scala.concurrent.{ExecutionContext, Future}
 private[bitcoins] trait DLCRescanHandling extends RescanHandling {
   _: DLCWallet =>
 
-  private lazy val dlcDataManagement: DLCDataManagement = DLCDataManagement(
-    dlcWalletDAOs)
-
   override def rescanNeutrinoWallet(
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],

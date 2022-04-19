@@ -129,7 +129,8 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
               s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
         }
       }
-      func = (wallet: DLCWallet) => wallet.executeDLC(contractId, sig)
+      func = (wallet: DLCWallet) =>
+        wallet.executeDLC(contractId, sig).map(_.get)
       result <- dlcExecutionTest(wallets = (walletA, walletB),
                                  asInitiator = true,
                                  func = func,
