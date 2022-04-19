@@ -3,7 +3,7 @@ package org.bitcoins.commons.serializers
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.serializers.JsonReaders.jsToSatoshis
-import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
+import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, IncomingDLCOfferDb}
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.crypto._
@@ -30,7 +30,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.serializers.PicklerKeys
-import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
 import org.bitcoins.core.util.TimeUtil._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{AddressLabelTag, TxoState}
@@ -1510,5 +1510,29 @@ object Picklers {
   implicit val getBlockHeaderResultPickler: ReadWriter[GetBlockHeaderResult] = {
     readwriter[ujson.Obj]
       .bimap(writeBlockHeaderResult(_), readBlockHeaderResult(_))
+  }
+
+  private def writeContactDb(contact: DLCContactDb): ujson.Obj = {
+    Obj(
+      PicklerKeys.aliasKey -> contact.alias,
+      PicklerKeys.addressKey -> s"${contact.address.getHostName}:${contact.address.getPort}",
+      PicklerKeys.memoKey -> contact.memo
+    )
+  }
+
+  private def readContactDb(obj: ujson.Obj): DLCContactDb = {
+    val addressStr = obj(PicklerKeys.addressKey).str
+    val address: InetSocketAddress =
+      NetworkUtil.parseInetSocketAddress(addressStr, 2862)
+    DLCContactDb(
+      alias = obj(PicklerKeys.aliasKey).str,
+      address = address,
+      memo = obj(PicklerKeys.memoKey).str
+    )
+  }
+
+  implicit val contactDbPickler: ReadWriter[DLCContactDb] = {
+    readwriter[ujson.Obj]
+      .bimap(writeContactDb(_), readContactDb(_))
   }
 }
