@@ -242,6 +242,7 @@ abstract class DLCWallet
   override def cancelDLC(dlcId: Sha256Digest): Future[Unit] = {
     for {
       dlcOpt <- dlcDAO.read(dlcId)
+
       dlcDb = dlcOpt match {
         case Some(db) =>
           require(
@@ -252,7 +253,8 @@ abstract class DLCWallet
           throw new IllegalArgumentException(
             s"No DLC Found with dlc id ${dlcId.hex}")
       }
-
+      _ = logger.info(
+        s"Canceling DLC with tempContractId=${dlcDb.tempContractId.hex} dlcId=${dlcId.hex} contractId=${dlcDb.contractIdOpt}")
       inputs <- dlcInputsDAO.findByDLCId(dlcId, dlcDb.isInitiator)
       dbs <- spendingInfoDAO.findByOutPoints(inputs.map(_.outPoint))
       // allow this to fail in the case they have already been unreserved
