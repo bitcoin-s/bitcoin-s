@@ -166,47 +166,54 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     val wsQueue: SourceQueueWithComplete[Message] = tuple._1
     val wsSource: Source[Message, NotUsed] = tuple._2
+    val callbacksF =
+      chainApiF.map(chainApi => buildNeutrinoCallbacks(wsQueue, chainApi))
+
+    val startedNodeF = configuredNodeF.flatMap(_.start())
+    val startedWalletF = configuredWalletF.flatMap(_.start())
+    val startedDLCNodeF = dlcNodeF
+      .flatMap(_.start())
+      .flatMap(_ => dlcNodeF)
     //start our http server now that we are synced
     for {
-      node <- configuredNodeF
       wallet <- configuredWalletF
-      _ <- node.start()
-      _ <- wallet.start().recoverWith {
-        //https://github.com/bitcoin-s/bitcoin-s/issues/2917
-        //https://github.com/bitcoin-s/bitcoin-s/pull/2918
-        case err: IllegalArgumentException
-            if err.getMessage.contains("If we have spent a spendinginfodb") =>
-          handleMissingSpendingInfoDb(err, wallet)
-      }
+      node <- startedNodeF
+      _ <- startedWalletF
       cachedChainApi <- node.chainApiFromDb()
       chainApi = ChainHandler.fromChainHandlerCached(cachedChainApi)
-
-      dlcNode <- dlcNodeF
-      _ <- dlcNode.start()
-
+      dlcNode <- startedDLCNodeF
       _ <- startHttpServer(nodeApi = node,
                            chainApi = chainApi,
                            wallet = wallet,
                            dlcNode = dlcNode,
                            serverCmdLineArgs = serverArgParser,
                            wsSource = wsSource)
-      chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, chainApi)
-      _ = chainConf.addCallbacks(chainCallbacks)
-      walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue)
-      _ = walletConf.addCallbacks(walletCallbacks)
-      dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
-      _ = dlcConf.addCallbacks(dlcWalletCallbacks)
       _ = {
         logger.info(
           s"Starting ${nodeConf.nodeType.shortName} node sync, it took=${System
             .currentTimeMillis() - start}ms")
       }
+      //make sure callbacks are registered before we start sync
+      _ <- callbacksF
       _ <- node.sync()
     } yield {
       logger.info(
         s"Done starting Main! It took ${System.currentTimeMillis() - start}ms")
       ()
     }
+  }
+
+  private def buildNeutrinoCallbacks(
+      wsQueue: SourceQueueWithComplete[Message],
+      chainApi: ChainApi): Unit = {
+    val chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, chainApi)
+    chainConf.addCallbacks(chainCallbacks)
+    val walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue)
+    walletConf.addCallbacks(walletCallbacks)
+    val dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
+    dlcConf.addCallbacks(dlcWalletCallbacks)
+
+    ()
   }
 
   /** Returns blockchain info, in case of  [[InWarmUp]] exception it retries.
