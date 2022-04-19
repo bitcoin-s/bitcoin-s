@@ -5,15 +5,19 @@ import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency.{currencyUnitNumeric, Bitcoins, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.BigSizeUInt
-import org.bitcoins.core.protocol.script.EmptyScriptSignature
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptSignature,
+  P2WPKHWitnessSPKV0
+}
 import org.bitcoins.core.protocol.tlv.UnknownTLV
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.wallet.fee.SatoshisPerKW
+import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.fixtures.DualLndFixture
 import scodec.bits.HexStringSyntax
 
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
@@ -151,6 +155,26 @@ class LndRpcClientPairTest extends DualLndFixture {
       assert(details.destAddresses.contains(addr))
       assert(details.amount == sendAmt)
     }
+  }
+
+  it must "fund from an no input psbt" in { params =>
+    val (_, lnd, _) = params
+
+    val spk = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
+    val output = TransactionOutput(Satoshis(10000), spk)
+    val unsignedTx = BaseTransaction(version = Int32.one,
+                                     inputs = Vector.empty,
+                                     outputs = Vector(output),
+                                     lockTime = UInt32.zero)
+
+    for {
+      unsignedPsbt <- lnd.fundPSBT(PSBT.fromUnsignedTx(unsignedTx),
+                                   SatoshisPerVirtualByte.one,
+                                   spendUnconfirmed = true)
+      signed <- lnd.finalizePSBT(unsignedPsbt)
+      transaction <- Future.fromTry(signed.extractTransactionAndValidate)
+      errorOpt <- lnd.publishTransaction(transaction)
+    } yield assert(errorOpt.isEmpty)
   }
 
   it must "send and receive a custom message" in { params =>

@@ -565,6 +565,59 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   def fundPSBT(
+      inputs: Vector[TransactionOutPoint],
+      outputs: Map[BitcoinAddress, CurrencyUnit],
+      feeRate: SatoshisPerVirtualByte,
+      spendUnconfirmed: Boolean): Future[PSBT] = {
+    val outputMap = outputs.map { case (addr, amt) =>
+      addr.toString -> amt.satoshis.toLong
+    }
+    val template = TxTemplate(inputs, outputMap)
+    val rawTemplate = FundPsbtRequest.Template.Raw(template)
+    val fees = SatPerVbyte(feeRate.toLong)
+    val request = FundPsbtRequest(template = rawTemplate,
+                                  fees = fees,
+                                  spendUnconfirmed = spendUnconfirmed)
+
+    fundPSBT(request)
+  }
+
+  def fundPSBT(
+      inputs: Vector[TransactionOutPoint],
+      outputs: Map[BitcoinAddress, CurrencyUnit],
+      feeRate: SatoshisPerVirtualByte,
+      account: String,
+      spendUnconfirmed: Boolean): Future[PSBT] = {
+    val outputMap = outputs.map { case (addr, amt) =>
+      addr.toString -> amt.satoshis.toLong
+    }
+    val template = TxTemplate(inputs, outputMap)
+    val rawTemplate = FundPsbtRequest.Template.Raw(template)
+    val fees = SatPerVbyte(feeRate.toLong)
+    val request = FundPsbtRequest(template = rawTemplate,
+                                  fees = fees,
+                                  account = account,
+                                  spendUnconfirmed = spendUnconfirmed)
+
+    fundPSBT(request)
+  }
+
+  def fundPSBT(
+      psbt: PSBT,
+      feeRate: SatoshisPerVirtualByte,
+      account: String,
+      spendUnconfirmed: Boolean): Future[PSBT] = {
+    val template = Psbt(psbt.bytes)
+    val fees = SatPerVbyte(feeRate.toLong)
+    val request = FundPsbtRequest(template = template,
+                                  fees = fees,
+                                  account = account,
+                                  spendUnconfirmed = spendUnconfirmed)
+
+    fundPSBT(request)
+  }
+
+  def fundPSBT(
       psbt: PSBT,
       feeRate: SatoshisPerVirtualByte,
       spendUnconfirmed: Boolean): Future[PSBT] = {
