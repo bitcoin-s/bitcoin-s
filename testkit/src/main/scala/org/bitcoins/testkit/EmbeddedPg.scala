@@ -35,7 +35,7 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
   }
 
   def pgUrl(): Option[String] =
-    pg.map(_.getJdbcUrl("postgres"))
+    pg.map(_.getJdbcUrl(userName = "postgres", dbName = "postgres"))
 
   override def afterAll(): Unit = {
     super.afterAll()
