@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0
       - uses: olafurpg/setup-scala@v13
         with:
-          java-version: openjdk@1.17.0
+          java-version: openjdk@1.18.0
       - uses: olafurpg/setup-gpg@v3
       - run: sbt -J-Xmx2g ci-release docs/publishWebsite
         env:
@@ -40,7 +40,7 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v13
         with:
-          java-version: openjdk@1.17.0
+          java-version: openjdk@1.18.0
       - name: 'Get Previous tag'
         id: previoustag
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
@@ -127,7 +127,7 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v13
         with:
-          java-version: openjdk@1.17.0
+          java-version: openjdk@1.18.0
       - name: 'Get Previous tag'
         id: previoustag
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
@@ -169,7 +169,7 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v13
         with:
-          java-version: openjdk@1.17.0
+          java-version: openjdk@1.18.0
 
       - name: 'Get Previous tag'
         id: previoustag
@@ -203,7 +203,7 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v13
         with:
-          java-version: openjdk@1.17.0
+          java-version: openjdk@1.18.0
       - name: 'Get Previous tag'
         id: previoustag
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
