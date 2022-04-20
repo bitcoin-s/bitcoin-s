@@ -230,9 +230,8 @@ sealed trait TLVFactory[+T <: TLV] extends Factory[T] {
   override def fromBytes(bytes: ByteVector): T = {
     val DecodeTLVResult(tpe, _, value) = TLV.decodeTLV(bytes)
 
-    require(
-      tpe == this.tpe,
-      s"Invalid type $tpe (${TLV.getTypeName(tpe)}) when expecting ${this.tpe}")
+    require(tpe == this.tpe,
+            s"Got ${TLV.getTypeName(tpe)} type when expecting ${typeName}")
 
     fromTLVValue(value)
   }
