@@ -40,6 +40,7 @@ import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import slick.jdbc.{GetResult, JdbcProfile}
 
+import java.net.{InetSocketAddress, URI}
 import scala.util.Try
 
 class DbCommonsColumnMappers(val profile: JdbcProfile) {
@@ -504,6 +505,18 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
 
   implicit val dlcOfferTLVMapper: BaseColumnType[DLCOfferTLV] = {
     MappedColumnType.base[DLCOfferTLV, String](_.hex, DLCOfferTLV.fromHex)
+  }
+
+  implicit val inetSocketAddressMapper: BaseColumnType[InetSocketAddress] = {
+    def toString(address: InetSocketAddress): String =
+      s"${address.getHostName}:${address.getPort}"
+
+    def fromString(str: String): InetSocketAddress = {
+      val uri = new URI(s"tcp://$str")
+      InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
+    }
+
+    MappedColumnType.base[InetSocketAddress, String](toString, fromString)
   }
 
 }

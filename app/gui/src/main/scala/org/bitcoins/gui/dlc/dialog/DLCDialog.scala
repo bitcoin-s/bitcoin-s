@@ -1,6 +1,6 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.cli.CliCommand
+import org.bitcoins.commons.rpc.CliCommand
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.gui.GlobalData
 import org.bitcoins.gui.dlc.GlobalDLCData

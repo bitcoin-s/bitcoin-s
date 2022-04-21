@@ -12,6 +12,10 @@ object PicklerKeys {
   final val stateKey: String = "state"
   final val spendingTxIdKey: String = "spendingTxId"
 
+  final val aliasKey = "alias"
+  final val addressKey = "address"
+  final val memoKey = "memo"
+
   //chain
   final val rawKey: String = "raw"
   final val hashKey: String = "hash"

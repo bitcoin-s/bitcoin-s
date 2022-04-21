@@ -1,6 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.cli.{CliCommand, ConsoleCli}
+import org.bitcoins.cli.ConsoleCli
+import org.bitcoins.commons.rpc.CliCommand
 import org.bitcoins.gui.util.GUIUtil
 import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.beans.property.StringProperty

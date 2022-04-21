@@ -2,7 +2,8 @@ package org.bitcoins.gui.dlc
 
 import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
-import org.bitcoins.cli.{CliCommand, ConsoleCli}
+import org.bitcoins.cli.ConsoleCli
+import org.bitcoins.commons.rpc.CliCommand
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.transaction.Transaction

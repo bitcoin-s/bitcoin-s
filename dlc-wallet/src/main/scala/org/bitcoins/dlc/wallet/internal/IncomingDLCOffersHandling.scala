@@ -1,11 +1,12 @@
 package org.bitcoins.dlc.wallet.internal
 
-import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
+import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, IncomingDLCOfferDb}
 import org.bitcoins.core.protocol.tlv.DLCOfferTLV
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.dlc.wallet.models.IncomingDLCOfferDbHelper
 
+import java.net.InetSocketAddress
 import scala.concurrent.Future
 
 trait IncomingDLCOffersHandling { self: DLCWallet =>
@@ -38,4 +39,23 @@ trait IncomingDLCOffersHandling { self: DLCWallet =>
       offerHash: Sha256Digest): Future[Option[IncomingDLCOfferDb]] = {
     dlcWalletDAOs.incomingDLCOfferDAO.find(offerHash)
   }
+
+  override def listDLCContacts(): Future[Vector[DLCContactDb]] =
+    contactDAO.findAll()
+
+  override def addDLCContact(contact: DLCContactDb): Future[Unit] = {
+    for {
+      _ <- contactDAO.create(contact)
+    } yield ()
+  }
+
+  override def removeDLCContact(address: InetSocketAddress): Future[Unit] = {
+    for {
+      _ <- contactDAO.delete(address)
+    } yield ()
+  }
+
+  override def findDLCContacts(alias: String): Future[Vector[DLCContactDb]] =
+    contactDAO.findByAlias(alias)
+
 }
