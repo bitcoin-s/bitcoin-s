@@ -1,6 +1,6 @@
 package org.bitcoins.gui.dlc.dialog
 
-import org.bitcoins.cli.CliCommand
+import org.bitcoins.commons.rpc.CliCommand
 
 trait CliCommandProducer[T <: CliCommand] {
   def getCliCommand(): T

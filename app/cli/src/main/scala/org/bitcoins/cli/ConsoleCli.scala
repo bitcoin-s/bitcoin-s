@@ -3,6 +3,12 @@ package org.bitcoins.cli
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
+import org.bitcoins.commons.rpc.{
+  AppServerCliCommand,
+  ContactAdd,
+  OracleServerCliCommand,
+  ServerlessCliCommand
+}
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
@@ -1154,6 +1160,38 @@ object ConsoleCli {
                 case _: GetDLC => GetDLC(dlcId)
                 case other     => other
               }))),
+      cmd("contact-add")
+        .action((_, conf) => conf.copy(command = ContactAdd.empty))
+        .text("Add a contact to your DLC wallet")
+        .children(
+          arg[String]("alias")
+            .text("Alias for the contact")
+            .required()
+            .action((alias, conf) =>
+              conf.copy(command = conf.command match {
+                case contactAdd: ContactAdd =>
+                  contactAdd.copy(alias = alias)
+                case other => other
+              })),
+          arg[InetSocketAddress]("address")
+            .text("Peer's network address")
+            .required()
+            .action((peer, conf) =>
+              conf.copy(command = conf.command match {
+                case contactAdd: ContactAdd =>
+                  contactAdd.copy(address = peer)
+                case other => other
+              })),
+          arg[String]("memo")
+            .text("A memo")
+            .required()
+            .action((memo, conf) =>
+              conf.copy(command = conf.command match {
+                case contactAdd: ContactAdd =>
+                  contactAdd.copy(memo = memo)
+                case other => other
+              }))
+        ),
       cmd("createcontractinfo")
         .action((_, conf) => conf.copy(command = CreateContractInfo.empty))
         .text("Create a contract info from an announcement, total collateral, and contract descriptor")
@@ -1736,7 +1774,11 @@ object ConsoleCli {
                 case other => other
               }))),
       checkConfig {
-        case Config(NoCommand, _, _, _, _) =>
+        case Config(org.bitcoins.commons.rpc.CliCommand.NoCommand,
+                    _,
+                    _,
+                    _,
+                    _) =>
           failure("You need to provide a command!")
         case _ => success
       }
@@ -1752,7 +1794,9 @@ object ConsoleCli {
     exec(config.command, config)
   }
 
-  def exec(command: CliCommand, config: Config): Try[String] = {
+  def exec(
+      command: org.bitcoins.commons.rpc.CliCommand,
+      config: Config): Try[String] = {
     import System.err.{println => printerr}
 
     /** Prints the given message to stderr if debug is set */
@@ -2088,7 +2132,10 @@ object ConsoleCli {
         val args = Seq(up.writeJs(offerHash))
         RequestParam("offer-remove", args)
 
-      case NoCommand => ???
+      case cmd @ (_: ServerlessCliCommand | _: AppServerCliCommand |
+          _: OracleServerCliCommand) =>
+        sys.error(s"Command $cmd unsupported")
+      case org.bitcoins.commons.rpc.CliCommand.NoCommand => ???
     }
 
     Try {
@@ -2178,7 +2225,8 @@ object ConsoleCli {
 }
 
 case class Config(
-    command: CliCommand = CliCommand.NoCommand,
+    command: org.bitcoins.commons.rpc.CliCommand =
+      org.bitcoins.commons.rpc.CliCommand.NoCommand,
     network: Option[NetworkParameters] = None,
     debug: Boolean = false,
     rpcPortOpt: Option[Int] = None,
@@ -2194,30 +2242,10 @@ object Config {
   val empty: Config = Config()
 }
 
-sealed abstract class CliCommand {
-  def defaultPort: Int
-}
-
 object CliCommand {
-
-  case object NoCommand extends CliCommand {
-    override def defaultPort: Int = 9999
-  }
 
   trait Broadcastable {
     def noBroadcast: Boolean
-  }
-
-  sealed trait ServerlessCliCommand extends CliCommand {
-    override def defaultPort: Int = 9999
-  }
-
-  sealed trait AppServerCliCommand extends CliCommand {
-    override def defaultPort: Int = 9999
-  }
-
-  sealed trait OracleServerCliCommand extends CliCommand {
-    override def defaultPort: Int = 9998
   }
 
   case object GetVersion extends ServerlessCliCommand
