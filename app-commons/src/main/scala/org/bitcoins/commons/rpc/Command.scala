@@ -59,9 +59,11 @@ object ContactAdd {
   }
 }
 
-case object ContactList extends CommandRpc
+case object ContactsList extends CommandRpc with AppServerCliCommand
 
-case class ContactRemove(address: InetSocketAddress) extends CommandRpc
+case class ContactRemove(address: InetSocketAddress)
+    extends CommandRpc
+    with AppServerCliCommand
 
 object ContactRemove {
 

@@ -6,6 +6,8 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParamet
 import org.bitcoins.commons.rpc.{
   AppServerCliCommand,
   ContactAdd,
+  ContactRemove,
+  ContactsList,
   OracleServerCliCommand,
   ServerlessCliCommand
 }
@@ -1192,6 +1194,24 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("contacts-list")
+        .action((_, conf) => conf.copy(command = ContactsList))
+        .text("Returns all contacts in the wallet"),
+      cmd("contact-remove")
+        .action((_, conf) => conf.copy(command = ContactRemove(null)))
+        .text("Remove a contact from the wallet")
+        .children(
+          arg[InetSocketAddress]("address")
+            .text(
+              "The address of the contact we want to remove from the wallet")
+            .required()
+            .action((address, conf) =>
+              conf.copy(command = conf.command match {
+                case remove: ContactRemove =>
+                  remove.copy(address = address)
+                case other => other
+              }))
+        ),
       cmd("createcontractinfo")
         .action((_, conf) => conf.copy(command = CreateContractInfo.empty))
         .text("Create a contract info from an announcement, total collateral, and contract descriptor")
@@ -1837,6 +1857,14 @@ object ConsoleCli {
       case WalletInfo =>
         RequestParam("walletinfo")
       // DLCs
+      case ContactAdd(alias, address, memo) =>
+        RequestParam(
+          "contact-add",
+          Seq(up.writeJs(alias), up.writeJs(address), up.writeJs(memo)))
+      case ContactsList =>
+        RequestParam("contacts-list", Seq.empty)
+      case ContactRemove(address) =>
+        RequestParam("contact-remove", Seq(up.writeJs(address)))
       case GetDLCHostAddress => RequestParam("getdlchostaddress")
 
       case DecodeContractInfo(contractInfo) =>
