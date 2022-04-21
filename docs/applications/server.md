@@ -63,13 +63,13 @@ This means we need to forward requests on the host machine to the docker contain
 
 This can be done with the following command
 ```
-docker run -d -p 9999:9999 -p 19999:19999 bitcoin-s-server:latest
+docker run -d -p 9999:9999 -p 19999:19999 -e BITCOIN_S_SERVER_RPC_PASSWORD='topsecret' bitcoinscala/bitcoin-s-server:latest
 ```
 
 Now you can send requests with `bitcoin-s-cli` or `curl`.
 Here is an example with `bitcoin-s-cli`
 ```
-./bitcoin-s-cli getblockcount
+./bitcoin-s-cli getblockcount --password topsecret
 10000
 ```
 
