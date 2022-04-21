@@ -271,6 +271,13 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `acceptdlcofferfromfile` `path` `[destination]` - Accepts a DLC offer given from another party
     - `path` - Path to dlc offer file
     - `destination` - Path to write dlc accept message
+ - `contact-add` `alias` `address` `memo`
+   - `alias` - alias for the address like a name
+   - `address` - the tor address for the peer
+   - `memo` - a memo for this contact
+ - `contacts-list` - lists all contacts in the wallet
+ - `contact-remove` `address`
+   - `address` - the tor address for the peer to remove
  - `signdlc` `accept` - Signs a DLC
     - `accept` - Hex encoded dlc accept message
  - `signdlcfromfile` `path` `[destination]` - Signs a DLC
