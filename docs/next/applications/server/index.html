@@ -346,6 +346,17 @@ the <code>-p 9999:9999</code> port mapping on the docker container to adjust for
 <li><code>path</code> - Path to dlc offer file</li>
 <li><code>destination</code> - Path to write dlc accept message</li>
 </ul></li>
+<li><code>contact-add</code> <code>alias</code> <code>address</code> <code>memo</code>
+<ul>
+<li><code>alias</code> - alias for the address like a name</li>
+<li><code>address</code> - the tor address for the peer</li>
+<li><code>memo</code> - a memo for this contact</li>
+</ul></li>
+<li><code>contacts-list</code> - lists all contacts in the wallet</li>
+<li><code>contact-remove</code> <code>address</code>
+<ul>
+<li><code>address</code> - the tor address for the peer to remove</li>
+</ul></li>
 <li><code>signdlc</code> <code>accept</code> - Signs a DLC
 <ul>
 <li><code>accept</code> - Hex encoded dlc accept message</li>
