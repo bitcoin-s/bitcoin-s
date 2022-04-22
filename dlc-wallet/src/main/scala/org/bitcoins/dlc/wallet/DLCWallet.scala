@@ -268,6 +268,24 @@ abstract class DLCWallet
     } yield ()
   }
 
+  override def createDLCOffer(
+      contractInfo: ContractInfo,
+      collateral: Satoshis,
+      feeRateOpt: Option[SatoshisPerVirtualByte],
+      refundLT: UInt32,
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
+    chainQueryApi.getBestHashBlockHeight().flatMap { height =>
+      createDLCOffer(contractInfo,
+                     collateral,
+                     feeRateOpt,
+                     locktime = UInt32(height),
+                     refundLT,
+                     externalPayoutAddressOpt,
+                     externalChangeAddressOpt)
+    }
+  }
+
   /** Creates a DLCOffer, if one has already been created
     * with the given parameters then that one will be returned instead.
     *

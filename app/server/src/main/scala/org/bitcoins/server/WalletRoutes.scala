@@ -341,7 +341,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
               CreateDLCOffer(contractInfo,
                              collateral,
                              feeRateOpt,
-                             locktime,
+                             locktimeOpt,
                              refundLT,
                              payoutAddressOpt,
                              changeAddressOpt)) =>
@@ -357,17 +357,29 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
                   .map(_.hex)}")
             }
 
-            wallet
-              .createDLCOffer(contractInfo,
-                              collateral,
-                              feeRateOpt,
-                              locktime,
-                              refundLT,
-                              payoutAddressOpt,
-                              changeAddressOpt)
-              .map { offer =>
-                Server.httpSuccess(offer.toMessage.hex)
-              }
+            val offerF = locktimeOpt match {
+              case Some(locktime) =>
+                wallet
+                  .createDLCOffer(contractInfo,
+                                  collateral,
+                                  feeRateOpt,
+                                  locktime,
+                                  refundLT,
+                                  payoutAddressOpt,
+                                  changeAddressOpt)
+              case None =>
+                wallet
+                  .createDLCOffer(contractInfo,
+                                  collateral,
+                                  feeRateOpt,
+                                  refundLT,
+                                  payoutAddressOpt,
+                                  changeAddressOpt)
+            }
+
+            offerF.map { offer =>
+              Server.httpSuccess(offer.toMessage.hex)
+            }
           }
       }
 

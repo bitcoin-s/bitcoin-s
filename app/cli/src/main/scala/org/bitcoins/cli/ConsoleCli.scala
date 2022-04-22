@@ -835,7 +835,7 @@ object ConsoleCli {
             command = CreateDLCOffer(ContractInfoV0TLV.dummy,
                                      Satoshis.zero,
                                      None,
-                                     UInt32.zero,
+                                     None,
                                      UInt32.zero)))
         .text("Creates a DLC offer that another party can accept")
         .children(
@@ -868,11 +868,11 @@ object ConsoleCli {
               })),
           arg[UInt32]("locktime")
             .text("Locktime of the contract execution transactions")
-            .required()
+            .optional()
             .action((locktime, conf) =>
               conf.copy(command = conf.command match {
                 case offer: CreateDLCOffer =>
-                  offer.copy(locktime = locktime)
+                  offer.copy(locktimeOpt = Some(locktime))
                 case other => other
               })),
           arg[UInt32]("refundlocktime")
@@ -1884,7 +1884,7 @@ object ConsoleCli {
       case CreateDLCOffer(contractInfo,
                           collateral,
                           feeRateOpt,
-                          locktime,
+                          locktimeOpt,
                           refundLT) =>
         RequestParam(
           "createdlcoffer",
@@ -1892,7 +1892,7 @@ object ConsoleCli {
             up.writeJs(contractInfo),
             up.writeJs(collateral),
             up.writeJs(feeRateOpt),
-            up.writeJs(locktime),
+            up.writeJs(locktimeOpt),
             up.writeJs(refundLT)
           )
         )
@@ -2299,7 +2299,7 @@ object CliCommand {
       contractInfo: ContractInfoV0TLV,
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
-      locktime: UInt32,
+      locktimeOpt: Option[UInt32],
       refundLT: UInt32)
       extends AppServerCliCommand
 

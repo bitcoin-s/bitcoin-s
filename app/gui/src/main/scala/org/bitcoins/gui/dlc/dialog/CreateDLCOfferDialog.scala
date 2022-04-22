@@ -609,7 +609,7 @@ class CreateDLCOfferDialog(feeRate: FeeUnit)
       contractInfo = contractInfo,
       collateral = collateral,
       feeRateOpt = feeRateOpt,
-      locktime = UInt32.zero,
+      locktimeOpt = None,
       refundLT = refundLocktime
     )
   }
