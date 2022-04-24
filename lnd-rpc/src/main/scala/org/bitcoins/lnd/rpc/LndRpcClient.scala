@@ -34,6 +34,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.LndUtils._
 import org.bitcoins.lnd.rpc.config._
+import org.bitcoins.lnd.rpc.internal._
 import routerrpc._
 import scodec.bits._
 import signrpc._
@@ -60,6 +61,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     implicit val system: ActorSystem)
     extends NativeProcessFactory
     with LndUtils
+    with LndRouterClient
     with StartStopAsync[LndRpcClient]
     with Logging {
   instance match {

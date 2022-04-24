@@ -197,4 +197,30 @@ class LndRpcClientPairTest extends DualLndFixture {
       assert(tlv == customMessage)
     }
   }
+
+  it must "probe an amount" in { params =>
+    val (_, lndA, lndB) = params
+
+    for {
+      nodeIdA <- lndA.nodeId
+      routes <- lndB.probe(Satoshis(1000), nodeIdA)
+    } yield {
+      assert(routes.nonEmpty)
+    }
+  }
+
+  it must "probe and pay" in { params =>
+    val (_, lndA, lndB) = params
+
+    for {
+      inv <- lndA.addInvoice("test", Satoshis(1000), 3600)
+      paymentOpt <- lndB.probeAndPay(inv.invoice)
+    } yield {
+      paymentOpt match {
+        case Some(payment) =>
+          assert(payment.status.isSucceeded)
+        case None => fail()
+      }
+    }
+  }
 }
