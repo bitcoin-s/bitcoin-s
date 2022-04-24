@@ -34,6 +34,7 @@ import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.LndUtils._
 import org.bitcoins.lnd.rpc.config._
+import routerrpc._
 import scodec.bits._
 import signrpc._
 import walletrpc.FundPsbtRequest.Fees.SatPerVbyte
@@ -56,7 +57,7 @@ import scala.util.{Failure, Success, Try}
 /** @param binaryOpt Path to lnd executable
   */
 class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
-    implicit system: ActorSystem)
+    implicit val system: ActorSystem)
     extends NativeProcessFactory
     with LndUtils
     with StartStopAsync[LndRpcClient]
@@ -134,6 +135,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   lazy val wallet: WalletKitClient = WalletKitClient(clientSettings)
   lazy val unlocker: WalletUnlockerClient = WalletUnlockerClient(clientSettings)
   lazy val signer: SignerClient = SignerClient(clientSettings)
+  lazy val router: RouterClient = RouterClient(clientSettings)
 
   def genSeed(): Future[GenSeedResponse] = {
     logger.trace("lnd calling genseed")
@@ -516,26 +518,50 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       }
   }
 
-  def sendPayment(invoice: LnInvoice): Future[SendResponse] = {
-    val request: SendRequest = SendRequest(paymentRequest = invoice.toString)
+  def sendPayment(
+      invoice: LnInvoice,
+      timeout: FiniteDuration): Future[Payment] = {
+    val request: SendPaymentRequest =
+      SendPaymentRequest(paymentRequest = invoice.toString,
+                         timeoutSeconds = timeout.toSeconds.toInt,
+                         noInflightUpdates = true)
+
+    sendPayment(request)
+  }
+
+  def sendPayment(
+      invoice: LnInvoice,
+      feeLimit: Satoshis,
+      timeout: FiniteDuration): Future[Payment] = {
+    val request: SendPaymentRequest =
+      SendPaymentRequest(paymentRequest = invoice.toString,
+                         timeoutSeconds = timeout.toSeconds.toInt,
+                         feeLimitSat = feeLimit.toLong,
+                         noInflightUpdates = true)
 
     sendPayment(request)
   }
 
   def sendPayment(
       nodeId: NodeId,
-      amount: CurrencyUnit): Future[SendResponse] = {
-    val request: SendRequest =
-      SendRequest(dest = nodeId.bytes, amt = amount.satoshis.toLong)
+      amount: CurrencyUnit,
+      timeout: FiniteDuration): Future[Payment] = {
+    val request: SendPaymentRequest =
+      SendPaymentRequest(dest = nodeId.bytes,
+                         amt = amount.satoshis.toLong,
+                         timeoutSeconds = timeout.toSeconds.toInt,
+                         noInflightUpdates = true)
 
     sendPayment(request)
   }
 
-  def sendPayment(request: SendRequest): Future[SendResponse] = {
-    logger.trace("lnd calling sendpayment")
+  def sendPayment(request: SendPaymentRequest): Future[Payment] = {
+    logger.trace("lnd calling sendpaymentV2")
 
-    lnd
-      .sendPaymentSync(request)
+    router
+      .sendPaymentV2(request)
+      .filter(!_.status.isInFlight)
+      .runWith(Sink.head[Payment])
   }
 
   def sendOutputs(
