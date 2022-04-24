@@ -12,7 +12,7 @@ enablePlugins(AkkaGrpcPlugin)
 
 // Disable deprecation warning otherwise protobuf deprecation warnings will cause errors
 Compile / scalacOptions += {
-  "-Wconf:cat=deprecation:site=lnrpc\\..*:silent,cat=deprecation:site=signrpc\\..*:silent,cat=deprecation:site=walletrpc\\..*:silent"
+  "-Wconf:cat=deprecation:site=lnrpc\\..*:silent,cat=deprecation:site=signrpc\\..*:silent,cat=deprecation:site=walletrpc\\..*:silent,cat=deprecation:site=routerrpc\\..*:silent"
 }
 
 TaskKeys.downloadLnd := {

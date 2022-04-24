@@ -89,28 +89,30 @@ class LndRpcClientPairTest extends DualLndFixture {
     }
   }
 
-  it must "pay a invoice" in { param =>
+  it must "pay an invoice" in { param =>
     val (_, lndA, lndB) = param
 
     for {
       invoice <- lndA.addInvoice("test", Satoshis(100), 0)
-      payment <- lndB.sendPayment(invoice.invoice)
+      payment <- lndB.sendPayment(invoice.invoice, 60)
 
       // Assert payment was successful
-      _ = assert(payment.paymentError.isEmpty, payment.paymentError)
+      _ = assert(payment.status.isSucceeded)
+      _ = assert(payment.failureReason.isFailureReasonNone)
+      _ = assert(payment.htlcs.nonEmpty)
 
       _ <- AsyncUtil.awaitConditionF(() =>
         lndA.lookupInvoice(invoice.rHash).map(_.state.isSettled))
     } yield succeed
   }
 
-  it must "monitor a invoice" in { param =>
+  it must "monitor an invoice" in { param =>
     val (_, lndA, lndB) = param
 
     for {
       invoice <- lndA.addInvoice("test", Satoshis(100), 0)
       _ = system.scheduler.scheduleOnce(1.second) {
-        lndB.sendPayment(invoice.invoice)
+        lndB.sendPayment(invoice.invoice, 60)
         ()
       }
 
