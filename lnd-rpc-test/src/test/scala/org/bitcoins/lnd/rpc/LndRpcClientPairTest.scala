@@ -94,7 +94,7 @@ class LndRpcClientPairTest extends DualLndFixture {
 
     for {
       invoice <- lndA.addInvoice("test", Satoshis(100), 0)
-      payment <- lndB.sendPayment(invoice.invoice, 60)
+      payment <- lndB.sendPayment(invoice.invoice, 1.minute)
 
       // Assert payment was successful
       _ = assert(payment.status.isSucceeded)
@@ -112,7 +112,7 @@ class LndRpcClientPairTest extends DualLndFixture {
     for {
       invoice <- lndA.addInvoice("test", Satoshis(100), 0)
       _ = system.scheduler.scheduleOnce(1.second) {
-        lndB.sendPayment(invoice.invoice, 60)
+        lndB.sendPayment(invoice.invoice, 1.minute)
         ()
       }
 

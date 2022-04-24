@@ -518,10 +518,12 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       }
   }
 
-  def sendPayment(invoice: LnInvoice, timeout: Int): Future[Payment] = {
+  def sendPayment(
+      invoice: LnInvoice,
+      timeout: FiniteDuration): Future[Payment] = {
     val request: SendPaymentRequest =
       SendPaymentRequest(paymentRequest = invoice.toString,
-                         timeoutSeconds = timeout,
+                         timeoutSeconds = timeout.toSeconds.toInt,
                          noInflightUpdates = true)
 
     sendPayment(request)
@@ -530,10 +532,10 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def sendPayment(
       invoice: LnInvoice,
       feeLimit: Satoshis,
-      timeout: Int): Future[Payment] = {
+      timeout: FiniteDuration): Future[Payment] = {
     val request: SendPaymentRequest =
       SendPaymentRequest(paymentRequest = invoice.toString,
-                         timeoutSeconds = timeout,
+                         timeoutSeconds = timeout.toSeconds.toInt,
                          feeLimitSat = feeLimit.toLong,
                          noInflightUpdates = true)
 
@@ -543,11 +545,11 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def sendPayment(
       nodeId: NodeId,
       amount: CurrencyUnit,
-      timeout: Int): Future[Payment] = {
+      timeout: FiniteDuration): Future[Payment] = {
     val request: SendPaymentRequest =
       SendPaymentRequest(dest = nodeId.bytes,
                          amt = amount.satoshis.toLong,
-                         timeoutSeconds = timeout,
+                         timeoutSeconds = timeout.toSeconds.toInt,
                          noInflightUpdates = true)
 
     sendPayment(request)
