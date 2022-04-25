@@ -257,12 +257,12 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `decodeattestments` `attestments` - Decodes an oracle attestments message into json
     - `attestments` - Hex encoded oracle attestments message
  - `getdlchostaddress` - Returns the public listening address of the DLC Node
- - `createdlcoffer` `contractInfo` `collateral` `[feerate]` `locktime` `refundlocktime` - Creates a DLC offer that another party can accept
+ - `createdlcoffer` `contractInfo` `collateral` `[feerate]` `refundlocktime` `[options]` - Creates a DLC offer that another party can accept
     - `contractInfo` - Hex encoded contractInfo message
     - `collateral` - Satoshis to fund your side of the DLC
     - `feerate` - Fee rate for both funding and closing transactions, in sats/vbytes
-    - `locktime` - Locktime of the contract execution transactions
     - `refundlocktime` - Locktime of the refund transaction
+    - `--cetlocktime <value>` - Should not be set unless you know what you are doing. Locktime of the contract execution transactions (defaults to current height)
  - `acceptdlc` `offer` `peer` - Accepts a DLC offer given from another party
     - `offer` - Hex encoded dlc offer message
     - `peer` - Peer's network address
