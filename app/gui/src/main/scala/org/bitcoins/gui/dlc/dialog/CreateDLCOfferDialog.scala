@@ -609,8 +609,8 @@ class CreateDLCOfferDialog(feeRate: FeeUnit)
       contractInfo = contractInfo,
       collateral = collateral,
       feeRateOpt = feeRateOpt,
-      locktimeOpt = None,
-      refundLT = refundLocktime
+      refundLT = refundLocktime,
+      cetLocktimeOpt = None
     )
   }
 }
