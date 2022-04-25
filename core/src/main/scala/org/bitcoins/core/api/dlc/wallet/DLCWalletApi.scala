@@ -27,6 +27,22 @@ trait DLCWalletApi { self: WalletApi =>
       contractInfoTLV: ContractInfoTLV,
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
+      refundLT: UInt32,
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
+    val contractInfo = ContractInfo.fromTLV(contractInfoTLV)
+    createDLCOffer(contractInfo,
+                   collateral,
+                   feeRateOpt,
+                   refundLT,
+                   externalPayoutAddressOpt,
+                   externalChangeAddressOpt)
+  }
+
+  def createDLCOffer(
+      contractInfoTLV: ContractInfoTLV,
+      collateral: Satoshis,
+      feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
       refundLT: UInt32,
       externalPayoutAddressOpt: Option[BitcoinAddress],
@@ -40,6 +56,14 @@ trait DLCWalletApi { self: WalletApi =>
                    externalPayoutAddressOpt,
                    externalChangeAddressOpt)
   }
+
+  def createDLCOffer(
+      contractInfo: ContractInfo,
+      collateral: Satoshis,
+      feeRateOpt: Option[SatoshisPerVirtualByte],
+      refundLT: UInt32,
+      externalPayoutAddressOpt: Option[BitcoinAddress],
+      externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer]
 
   def createDLCOffer(
       contractInfo: ContractInfo,

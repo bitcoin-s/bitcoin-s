@@ -836,7 +836,7 @@ object ConsoleCli {
                                      Satoshis.zero,
                                      None,
                                      UInt32.zero,
-                                     UInt32.zero)))
+                                     None)))
         .text("Creates a DLC offer that another party can accept")
         .children(
           arg[ContractInfoV0TLV]("contractInfo")
@@ -866,15 +866,6 @@ object ConsoleCli {
                   offer.copy(feeRateOpt = Some(feeRate))
                 case other => other
               })),
-          arg[UInt32]("locktime")
-            .text("Locktime of the contract execution transactions")
-            .required()
-            .action((locktime, conf) =>
-              conf.copy(command = conf.command match {
-                case offer: CreateDLCOffer =>
-                  offer.copy(locktime = locktime)
-                case other => other
-              })),
           arg[UInt32]("refundlocktime")
             .text("Locktime of the refund transaction")
             .required()
@@ -882,6 +873,15 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case offer: CreateDLCOffer =>
                   offer.copy(refundLT = refundLT)
+                case other => other
+              })),
+          opt[UInt32]("cetlocktime")
+            .text("Locktime of the contract execution transactions")
+            .optional()
+            .action((locktime, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(cetLocktimeOpt = Some(locktime))
                 case other => other
               }))
         ),
@@ -1884,15 +1884,15 @@ object ConsoleCli {
       case CreateDLCOffer(contractInfo,
                           collateral,
                           feeRateOpt,
-                          locktime,
-                          refundLT) =>
+                          refundLT,
+                          cetLocktimeOpt) =>
         RequestParam(
           "createdlcoffer",
           Seq(
             up.writeJs(contractInfo),
             up.writeJs(collateral),
             up.writeJs(feeRateOpt),
-            up.writeJs(locktime),
+            up.writeJs(cetLocktimeOpt),
             up.writeJs(refundLT)
           )
         )
@@ -2299,8 +2299,8 @@ object CliCommand {
       contractInfo: ContractInfoV0TLV,
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
-      locktime: UInt32,
-      refundLT: UInt32)
+      refundLT: UInt32,
+      cetLocktimeOpt: Option[UInt32])
       extends AppServerCliCommand
 
   sealed trait AcceptDLCCliCommand extends AppServerCliCommand

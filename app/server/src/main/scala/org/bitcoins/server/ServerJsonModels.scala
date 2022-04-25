@@ -675,7 +675,7 @@ case class CreateDLCOffer(
     contractInfoTLV: ContractInfoV0TLV,
     collateral: Satoshis,
     feeRateOpt: Option[SatoshisPerVirtualByte],
-    locktime: UInt32,
+    locktimeOpt: Option[UInt32],
     refundLocktime: UInt32,
     externalPayoutAddressOpt: Option[BitcoinAddress],
     externalChangeAddressOpt: Option[BitcoinAddress])
@@ -695,7 +695,8 @@ object CreateDLCOffer extends ServerJsonModels {
       val contractInfoTLV = jsToContractInfoTLV(contractInfoJs)
       val collateral = jsToSatoshis(collateralJs)
       val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
-      val locktime = jsToUInt32(locktimeJs)
+      val locktimeJsOpt = nullToOpt(locktimeJs)
+      val locktimeOpt = locktimeJsOpt.map(js => jsToUInt32(js))
       val refundLT = jsToUInt32(refundLTJs)
       val payoutAddressJsOpt = nullToOpt(payoutAddressJs)
       val payoutAddressOpt =
@@ -706,7 +707,7 @@ object CreateDLCOffer extends ServerJsonModels {
       CreateDLCOffer(contractInfoTLV,
                      collateral,
                      feeRate,
-                     locktime,
+                     locktimeOpt,
                      refundLT,
                      payoutAddressOpt,
                      changeAddressOpt)
