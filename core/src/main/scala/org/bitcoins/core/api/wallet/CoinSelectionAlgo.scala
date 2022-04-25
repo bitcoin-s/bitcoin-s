@@ -1,6 +1,6 @@
 package org.bitcoins.core.api.wallet
 
-import org.bitcoins.crypto.StringFactory
+import org.bitcoins.crypto.{DoubleSha256Digest, StringFactory}
 
 /** Represents the various ways the wallet can do coin selection */
 sealed abstract class CoinSelectionAlgo
@@ -29,6 +29,9 @@ object CoinSelectionAlgo extends StringFactory[CoinSelectionAlgo] {
 
   /** Tries all coin selection algos and uses the one with the least waste */
   case object LeastWaste extends CoinSelectionAlgo
+
+  case class SelectedUtxos(outPoints: Set[(DoubleSha256Digest, Int)])
+      extends CoinSelectionAlgo
 
   /** Coin selection algos that don't call other ones */
   val independentAlgos: Vector[CoinSelectionAlgo] =

@@ -47,10 +47,63 @@ case class SpendingInfoDAO()(implicit
   }
 
   def create(si: SpendingInfoDb): Future[SpendingInfoDb] = {
+    val actions = for {
+      utxo: UTXORecord <- insertAction(si)
+      spk <-
+        spkTable
+          .filter(_.id === utxo.scriptPubKeyId)
+          .result
+          .headOption
+    } yield (utxo, spk)
+
+    safeDatabase
+      .run(actions)
+      .map {
+        case (utxo, Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
+        case _ =>
+          throw new SQLException(
+            s"Unexpected result: Cannot create either a UTXO or a SPK record for $si")
+      }
+  }
+
+  def createUnless(si: SpendingInfoDb)(
+      condition: (UTXORecord, UTXORecord) => Boolean): Future[
+    SpendingInfoDb] = {
+    val actions = for {
+      foundOpt <- table.filter(_.outPoint === si.outPoint).result.headOption
+      cond <- foundOpt match {
+        case Some(foundUtxo) =>
+          val utxoToCreate =
+            UTXORecord.fromSpendingInfoDb(si, foundUtxo.scriptPubKeyId)
+          DBIO.successful(condition(foundUtxo, utxoToCreate))
+        case None => DBIO.successful(false)
+      }
+      utxo <-
+        if (cond) DBIO.successful(foundOpt.get) else insertAction(si)
+      spk <-
+        spkTable
+          .filter(_.id === utxo.scriptPubKeyId)
+          .result
+          .headOption
+    } yield (utxo, spk)
+
+    safeDatabase
+      .run(actions)
+      .map {
+        case (utxo, Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
+        case _ =>
+          throw new SQLException(
+            s"Unexpected result: Cannot create either a UTXO or a SPK record for $si")
+      }
+  }
+
+  private def insertAction(si: SpendingInfoDb): DBIOAction[
+    UTXORecord,
+    NoStream,
+    Effect.Read with Effect.Write] = {
     val query =
       table.returning(table.map(_.id)).into((t, id) => t.copyWithId(id = id))
-
-    val actions = for {
+    for {
       spkOpt <-
         spkTable
           .filter(_.scriptPubKey === si.output.scriptPubKey)
@@ -70,21 +123,7 @@ case class SpendingInfoDAO()(implicit
             query += utxo
           }).flatten
       }
-      spk <-
-        spkTable
-          .filter(_.id === utxo.scriptPubKeyId)
-          .result
-          .headOption
-    } yield (utxo, spk)
-
-    safeDatabase
-      .run(actions)
-      .map {
-        case (utxo, Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
-        case _ =>
-          throw new SQLException(
-            s"Unexpected result: Cannot create either a UTXO or a SPK record for $si")
-      }
+    } yield utxo
   }
 
   def upsertAllSpendingInfoDb(
@@ -453,6 +492,11 @@ case class SpendingInfoDAO()(implicit
   def findAllOutpoints(): Future[Vector[TransactionOutPoint]] = {
     val query = table.map(_.outPoint)
     safeDatabase.runVec(query.result).map(_.toVector)
+  }
+
+  def findByOutPoint(
+      outPoint: TransactionOutPoint): Future[Option[SpendingInfoDb]] = {
+    findByOutPoints(Vector(outPoint)).map(_.headOption)
   }
 
   /** Enumerates all TX outpoints in the wallet */

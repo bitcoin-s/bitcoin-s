@@ -1,6 +1,7 @@
 package org.bitcoins.wallet
 
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number._
@@ -570,13 +571,136 @@ class UTXOLifeCycleTest
         _ <- wallet.processBlock(block)
         broadcastSpentUtxo <- wallet.listUtxos(
           TxoState.PendingConfirmationsSpent)
+        pendingConfirmationsReceivedUtxos <- wallet.listUtxos(
+          TxoState.PendingConfirmationsReceived)
         finalReservedUtxos <- wallet.listUtxos(TxoState.Reserved)
       } yield {
+        assert(newReservedUtxos == finalReservedUtxos)
+        assert(pendingConfirmationsReceivedUtxos.isEmpty)
         assert(broadcastSpentUtxo.length == 1)
         //make sure spendingTxId got set correctly
         assert(broadcastSpentUtxo.head.spendingTxIdOpt.get == txIdBE)
         //make sure no utxos get unreserved when processing the block
         assert(finalReservedUtxos.length == newReservedUtxos.length)
+      }
+  }
+
+  it should "track a utxo state change to broadcast spent and then to pending confirmations received (the spend transaction gets confirmed together with the receive transaction))" in {
+    param =>
+      val WalletWithBitcoindRpc(wallet, bitcoind) = param
+
+      val receiveValue = Bitcoins(8)
+      val sendValue = Bitcoins(4)
+
+      for {
+        // receive a UTXO from an external wallet
+        walletAddress <- wallet.getNewAddress()
+        txId <- bitcoind.sendToAddress(walletAddress, receiveValue)
+        receiveTx <- bitcoind.getRawTransactionRaw(txId)
+        _ <- wallet.processTransaction(receiveTx, None)
+        receiveOutPointPair = receiveTx.outputs.zipWithIndex
+          .find(_._1.value == receiveValue)
+          .map(out => (receiveTx.txId, out._2))
+          .get
+
+        receiveOutPoint = TransactionOutPoint(receiveOutPointPair._1,
+                                              UInt32(receiveOutPointPair._2))
+
+        receivedUtxo <- wallet.spendingInfoDAO.findByOutPoints(
+          Vector(receiveOutPoint))
+        _ = assert(receivedUtxo.size == 1)
+        _ = assert(receivedUtxo.head.state == BroadcastReceived)
+
+        // spend and broadcast unconfirmed
+        feeRate <- wallet.feeRateApi.getFeeRate()
+        sendTx <- wallet.sendWithAlgo(
+          testAddr,
+          sendValue,
+          feeRate,
+          CoinSelectionAlgo.SelectedUtxos(Set(receiveOutPointPair)))
+        _ <- wallet.broadcastTransaction(sendTx)
+
+        receivedUtxo <- wallet.spendingInfoDAO.findByOutPoints(
+          Vector(receiveOutPoint))
+        _ = assert(receivedUtxo.size == 1)
+        _ = assert(receivedUtxo.head.state == BroadcastSpent)
+
+        // confirm receive and spend
+        blockHashes <- bitcoind.getNewAddress.flatMap(
+          bitcoind.generateToAddress(1, _))
+        block <- bitcoind.getBlockRaw(blockHashes.head)
+        _ <- wallet.processBlock(block)
+
+        receivedUtxo <- wallet.spendingInfoDAO.findByOutPoints(
+          Vector(receiveOutPoint))
+      } yield {
+        assert(receivedUtxo.size == 1)
+        assert(receivedUtxo.head.state == PendingConfirmationsSpent)
+      }
+  }
+
+  it should "track a utxo state change to broadcast spent and then to pending confirmations received (the spend transaction gets confirmed after the receive transaction))" in {
+    param =>
+      val WalletWithBitcoindRpc(wallet, bitcoind) = param
+
+      val receiveValue = Bitcoins(8)
+      val sendValue = Bitcoins(4)
+
+      for {
+        // receive a UTXO from an external wallet
+        walletAddress <- wallet.getNewAddress()
+        txId <- bitcoind.sendToAddress(walletAddress, receiveValue)
+        receiveTx <- bitcoind.getRawTransactionRaw(txId)
+        _ <- wallet.processTransaction(receiveTx, None)
+        receiveOutPointPair = receiveTx.outputs.zipWithIndex
+          .find(_._1.value == receiveValue)
+          .map(out => (receiveTx.txId, out._2))
+          .get
+
+        receiveOutPoint = TransactionOutPoint(receiveOutPointPair._1,
+                                              UInt32(receiveOutPointPair._2))
+
+        receivedUtxo <- wallet.spendingInfoDAO.findByOutPoints(
+          Vector(receiveOutPoint))
+        _ = assert(receivedUtxo.size == 1)
+        _ = assert(receivedUtxo.head.state == BroadcastReceived)
+
+        // spend unconfirmed
+        feeRate <- wallet.feeRateApi.getFeeRate()
+        sendTx <- wallet.sendWithAlgo(
+          testAddr,
+          sendValue,
+          feeRate,
+          CoinSelectionAlgo.SelectedUtxos(Set(receiveOutPointPair)))
+
+        receivedUtxo <- wallet.spendingInfoDAO.findByOutPoints(
+          Vector(receiveOutPoint))
+        _ = assert(receivedUtxo.size == 1)
+        _ = assert(receivedUtxo.head.state == BroadcastSpent)
+
+        // confirm receive
+        blockHashes <- bitcoind.getNewAddress.flatMap(
+          bitcoind.generateToAddress(1, _))
+        block <- bitcoind.getBlockRaw(blockHashes.head)
+        _ <- wallet.processBlock(block)
+
+        receivedUtxo <- wallet.spendingInfoDAO.findByOutPoints(
+          Vector(receiveOutPoint))
+        _ = assert(receivedUtxo.size == 1)
+        _ = assert(receivedUtxo.head.state == BroadcastSpent)
+
+        // broadcast and confirm spend
+        _ <- wallet.broadcastTransaction(sendTx)
+        blockHashes <- bitcoind.getNewAddress.flatMap(
+          bitcoind.generateToAddress(1, _))
+        block <- bitcoind.getBlockRaw(blockHashes.head)
+        _ <- wallet.processBlock(block)
+
+        receivedUtxo <- wallet.spendingInfoDAO.findByOutPoints(
+          Vector(receiveOutPoint))
+      } yield {
+        assert(receivedUtxo.size == 1)
+        assert(receivedUtxo.head.state == PendingConfirmationsSpent)
       }
   }
 }
