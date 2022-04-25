@@ -280,7 +280,10 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
     for {
       utxo <- utxoF
-      written <- spendingInfoDAO.create(utxo)
+      written <- spendingInfoDAO.createUnless(utxo) {
+        (foundUtxo, utxoToCreate) =>
+          (foundUtxo.state == BroadcastSpent || foundUtxo.state == Reserved) && (utxoToCreate.state == PendingConfirmationsReceived || utxoToCreate.state == ConfirmedReceived)
+      }
     } yield {
       val writtenOut = written.outPoint
       logger.info(

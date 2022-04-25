@@ -146,6 +146,25 @@ object CoinSelector extends CoinSelector {
             throw new IllegalArgumentException(
               "longTermFeeRateOpt must be defined for LeastWaste")
         }
+      case SelectedUtxos(outPoints) =>
+        val result = walletUtxos.foldLeft(Vector.empty[SpendingInfoDb]) {
+          (acc, utxo) =>
+            val outPoint = (utxo.outPoint.txId, utxo.outPoint.vout.toInt)
+            if (outPoints(outPoint)) acc :+ utxo else acc
+        }
+        if (result.toSet.size < outPoints.size) {
+          outPoints.foreach { outPoint =>
+            if (
+              !result.exists(utxo =>
+                utxo.outPoint.txId == outPoint._1 && utxo.outPoint.vout.toInt == outPoint._2)
+            )
+              throw new IllegalArgumentException(
+                s"Unknown UTXO: ${outPoint._1}:${outPoint._2}")
+          }
+        } else if (result.size > outPoints.size) {
+          throw new IllegalArgumentException(s"Found too many UTXOs")
+        }
+        result
     }
 
   private case class CoinSelectionResults(
