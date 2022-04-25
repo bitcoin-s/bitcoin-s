@@ -61,6 +61,16 @@ class LndRpcClientTest extends LndFixture {
     }
   }
 
+  it must "create an invoice and cancel it" in { lnd =>
+    val memo = "this is my memo"
+    val amount = Satoshis(1000)
+
+    for {
+      invoiceResult <- lnd.addInvoice(memo, amount, 1000)
+      _ <- lnd.cancelInvoice(invoiceResult.invoice)
+    } yield succeed
+  }
+
   it must "get an on-chain address" in { lnd =>
     for {
       addr <- lnd.getNewAddress

@@ -6,6 +6,8 @@ import akka.grpc.{GrpcClientSettings, SSLContextUtils}
 import akka.stream.scaladsl.{Sink, Source}
 import com.google.protobuf.ByteString
 import grizzled.slf4j.Logging
+import invoicesrpc.LookupInvoiceMsg.InvoiceRef
+import invoicesrpc._
 import io.grpc.{CallCredentials, Metadata}
 import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
 import lnrpc.CloseStatusUpdate.Update.ClosePending
@@ -136,6 +138,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   lazy val unlocker: WalletUnlockerClient = WalletUnlockerClient(clientSettings)
   lazy val signer: SignerClient = SignerClient(clientSettings)
   lazy val router: RouterClient = RouterClient(clientSettings)
+  lazy val invoices: InvoicesClient = InvoicesClient(clientSettings)
 
   def genSeed(): Future[GenSeedResponse] = {
     logger.trace("lnd calling genseed")
@@ -183,11 +186,26 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   def lookupInvoice(rHash: PaymentHashTag): Future[Invoice] = {
-    logger.trace("lnd calling lookupinvoice")
+    val hash = InvoiceRef.PaymentHash(rHash.bytes)
+    val req = LookupInvoiceMsg(hash)
 
-    val req: PaymentHash = PaymentHash(rHash = rHash.bytes)
+    lookupInvoice(req)
+  }
 
-    lnd.lookupInvoice(req)
+  def lookupInvoice(req: LookupInvoiceMsg): Future[Invoice] = {
+    logger.trace("lnd calling lookupinvoiceV2")
+
+    invoices.lookupInvoiceV2(req)
+  }
+
+  def cancelInvoice(invoice: LnInvoice): Future[Unit] = {
+    cancelInvoice(invoice.lnTags.paymentHash.hash)
+  }
+
+  def cancelInvoice(hash: Sha256Digest): Future[Unit] = {
+    logger.trace("lnd calling cancelinvoice")
+
+    invoices.cancelInvoice(CancelInvoiceMsg(hash.bytes)).map(_ => ())
   }
 
   def addInvoice(
