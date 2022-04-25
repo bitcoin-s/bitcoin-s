@@ -77,7 +77,7 @@ case class SpendingInfoDAO()(implicit
 
     val actions = for {
       foundOpt <- table.filter(_.outPoint === si.outPoint).result.headOption
-      res <- foundOpt match {
+      cond <- foundOpt match {
         case Some(foundUtxo) =>
           val utxoToCreate =
             UTXORecord.fromSpendingInfoDb(si, foundUtxo.scriptPubKeyId)
@@ -85,7 +85,7 @@ case class SpendingInfoDAO()(implicit
         case None => DBIO.successful(false)
       }
       utxo <-
-        if (res) DBIO.successful(foundOpt.get) else insertAction(si, query)
+        if (cond) DBIO.successful(foundOpt.get) else insertAction(si, query)
       spk <-
         spkTable
           .filter(_.id === utxo.scriptPubKeyId)
@@ -105,7 +105,12 @@ case class SpendingInfoDAO()(implicit
 
   private def insertAction(
       si: SpendingInfoDb,
-      query: profile.IntoInsertActionComposer[UTXORecord, UTXORecord]) = {
+      query: profile.IntoInsertActionComposer[
+        UTXORecord,
+        UTXORecord]): DBIOAction[
+    UTXORecord,
+    NoStream,
+    Effect.Read with Effect.Write] = {
     for {
       spkOpt <-
         spkTable
