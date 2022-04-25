@@ -47,11 +47,8 @@ case class SpendingInfoDAO()(implicit
   }
 
   def create(si: SpendingInfoDb): Future[SpendingInfoDb] = {
-    val query =
-      table.returning(table.map(_.id)).into((t, id) => t.copyWithId(id = id))
-
     val actions = for {
-      utxo: UTXORecord <- insertAction(si, query)
+      utxo: UTXORecord <- insertAction(si)
       spk <-
         spkTable
           .filter(_.id === utxo.scriptPubKeyId)
@@ -72,9 +69,6 @@ case class SpendingInfoDAO()(implicit
   def createUnless(si: SpendingInfoDb)(
       condition: (UTXORecord, UTXORecord) => Boolean): Future[
     SpendingInfoDb] = {
-    val query =
-      table.returning(table.map(_.id)).into((t, id) => t.copyWithId(id = id))
-
     val actions = for {
       foundOpt <- table.filter(_.outPoint === si.outPoint).result.headOption
       cond <- foundOpt match {
@@ -85,7 +79,7 @@ case class SpendingInfoDAO()(implicit
         case None => DBIO.successful(false)
       }
       utxo <-
-        if (cond) DBIO.successful(foundOpt.get) else insertAction(si, query)
+        if (cond) DBIO.successful(foundOpt.get) else insertAction(si)
       spk <-
         spkTable
           .filter(_.id === utxo.scriptPubKeyId)
@@ -103,14 +97,12 @@ case class SpendingInfoDAO()(implicit
       }
   }
 
-  private def insertAction(
-      si: SpendingInfoDb,
-      query: profile.IntoInsertActionComposer[
-        UTXORecord,
-        UTXORecord]): DBIOAction[
+  private def insertAction(si: SpendingInfoDb): DBIOAction[
     UTXORecord,
     NoStream,
     Effect.Read with Effect.Write] = {
+    val query =
+      table.returning(table.map(_.id)).into((t, id) => t.copyWithId(id = id))
     for {
       spkOpt <-
         spkTable
