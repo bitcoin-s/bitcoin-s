@@ -6,7 +6,7 @@
     <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>
 
 
-    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/application.log</file>
         <encoder>
             <!-- UTC ISO8601 date format -->
