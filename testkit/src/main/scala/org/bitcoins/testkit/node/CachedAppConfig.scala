@@ -39,6 +39,7 @@ trait CachedBitcoinSAppConfig { _: BitcoinSAkkaAsyncTest =>
 
   override def afterAll(): Unit = {
     Await.result(cachedConfig.stop(), duration)
+    ()
   }
 }
 

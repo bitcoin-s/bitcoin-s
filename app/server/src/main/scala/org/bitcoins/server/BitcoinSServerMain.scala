@@ -77,12 +77,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
 
     for {
+      startedConfig <- startedConfigF
       start <- {
         nodeConf.nodeType match {
           case _: InternalImplementationNodeType =>
-            startBitcoinSBackend(startedConfigF)
+            startBitcoinSBackend(startedConfig.torStartedF)
           case NodeType.BitcoindBackend =>
-            startBitcoindBackend(startedConfigF)
+            startBitcoindBackend(startedConfig.torStartedF)
         }
       }
     } yield {
@@ -106,7 +107,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
   }
 
-  def startBitcoinSBackend(startedConfigF: Future[Unit]): Future[Unit] = {
+  /** Start the bitcoin-s wallet server with a neutrino backend
+    * @param startedTorConfigF a future that is completed when tor is fully started
+    * @return
+    */
+  def startBitcoinSBackend(startedTorConfigF: Future[Unit]): Future[Unit] = {
     logger.info(s"startBitcoinSBackend()")
     val start = System.currentTimeMillis()
 
@@ -192,7 +197,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       //make sure callbacks are registered before we start sync
       _ <- callbacksF
       node <- startedNodeF
-      _ <- startedConfigF
+      _ <- startedTorConfigF
       _ <- node.sync()
     } yield {
       logger.info(
@@ -233,7 +238,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     } yield info
   }
 
-  def startBitcoindBackend(startedConfigF: Future[Unit]): Future[Unit] = {
+  /** Start the bitcoin-s wallet server with a bitcoind backend
+    * @param startedTorConfigF a future that is completed when tor is fully started
+    * @return
+    */
+  def startBitcoindBackend(startedTorConfigF: Future[Unit]): Future[Unit] = {
     logger.info(s"startBitcoindBackend()")
     val bitcoindF = for {
       client <- bitcoindRpcConf.clientF
@@ -310,7 +319,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ = syncWalletWithBitcoindAndStartPolling(bitcoind, wallet)
       dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
       _ = dlcConf.addCallbacks(dlcWalletCallbacks)
-      _ <- startedConfigF
+      _ <- startedTorConfigF
     } yield {
       logger.info(s"Done starting Main!")
       ()
