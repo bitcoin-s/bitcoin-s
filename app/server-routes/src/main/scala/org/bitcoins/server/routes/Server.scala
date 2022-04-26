@@ -86,41 +86,60 @@ case class Server(
     }
   }
 
-  val route: Route = {
+  val routeF: Future[Route] = {
 
-    val commonRoute = withErrorHandling {
-      pathSingleSlash {
-        post {
-          entity(as[ServerCommand]) { cmd =>
-            val init = PartialFunction.empty[ServerCommand, Route]
-            val handler = handlers.foldLeft(init) { case (accum, curr) =>
-              accum.orElse(curr.handleCommand)
+    val commonRouteF: Future[Route] = Future {
+      withErrorHandling {
+        pathSingleSlash {
+          post {
+            entity(as[ServerCommand]) { cmd =>
+              val init = PartialFunction.empty[ServerCommand, Route]
+              val handler = handlers.foldLeft(init) { case (accum, curr) =>
+                accum.orElse(curr.handleCommand)
+              }
+              val i = handler.orElse(catchAllHandler).apply(cmd)
+              i
             }
-            handler.orElse(catchAllHandler).apply(cmd)
           }
         }
       }
     }
 
-    val authenticatedRoute = if (rpcPassword.isEmpty) {
-      commonRoute
-    } else {
-      authenticateBasic("auth", authenticator) { _ =>
-        commonRoute
+    val authDirectiveOpt: Option[Directive1[Done]] = {
+      if (rpcPassword.isEmpty) {
+        None
+      } else {
+        Some(authenticateBasic("auth", authenticator))
       }
     }
+    val authenticatedRouteF: Future[Route] = authDirectiveOpt match {
+      case Some(authDirective) =>
+        commonRouteF.map { r =>
+          authDirective { case _ =>
+            r
+          }
+        }
+      case None => commonRouteF
+    }
 
-    DebuggingDirectives.logRequestResult(
-      ("http-rpc-server", Logging.DebugLevel)) {
-      authenticatedRoute
+    for {
+      authenticatedRoute <- authenticatedRouteF
+    } yield {
+      DebuggingDirectives.logRequestResult(
+        ("http-rpc-server", Logging.DebugLevel)) {
+        authenticatedRoute
+      }
     }
   }
 
   def start(): Future[ServerBindings] = {
-    val httpFut =
-      Http()
+    val httpFut = for {
+      route <- routeF
+      http <- Http()
         .newServerAt(rpchost, rpcport)
         .bindFlow(route)
+    } yield http
+
     httpFut.foreach { http =>
       logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
     }
