@@ -52,8 +52,13 @@ case class ScriptPubKeyDAO()(implicit
   def findScriptPubKeys(
       spks: Vector[ScriptPubKey]): Future[Vector[ScriptPubKeyDb]] = {
     val hashes = spks.map(ScriptPubKeyDb.hash)
-    val query = table.filter(_.hash.inSet(hashes))
-    safeDatabase.runVec(query.result)
+    //group hashes to avoid https://github.com/bitcoin-s/bitcoin-s/issues/4220
+    val groupedHashes: Vector[Vector[Sha256Digest]] =
+      hashes.grouped(1000).toVector
+    val actions =
+      groupedHashes.map(hashes => table.filter(_.hash.inSet(hashes)).result)
+    val sequenced = DBIOAction.sequence(actions).map(_.flatten)
+    safeDatabase.runVec(sequenced)
   }
 
   case class ScriptPubKeyTable(tag: Tag)
