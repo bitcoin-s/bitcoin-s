@@ -13,8 +13,10 @@ import org.bitcoins.server.util.ChainUtil
 
 import scala.concurrent.Future
 
-case class ChainRoutes(chain: ChainApi, network: BitcoinNetwork)(implicit
-    system: ActorSystem)
+case class ChainRoutes(
+    chain: ChainApi,
+    network: BitcoinNetwork,
+    startedTorConfigF: Future[Unit])(implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
 
@@ -67,7 +69,11 @@ case class ChainRoutes(chain: ChainApi, network: BitcoinNetwork)(implicit
     case ServerCommand("getinfo", _) =>
       complete {
         chain.getBestBlockHeader().map { header =>
-          val info = BitcoinSServerInfo(network, header.height, header.hashBE)
+          val info = BitcoinSServerInfo(network = network,
+                                        blockHeight = header.height,
+                                        blockHash = header.hashBE,
+                                        torStarted =
+                                          startedTorConfigF.isCompleted)
 
           Server.httpSuccess(info.toJson)
         }

@@ -182,12 +182,15 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val chainApi = ChainHandler.fromDatabase()
     //start our http server now that we are synced
     for {
-      _ <- startHttpServer(nodeApiF = startedNodeF,
-                           chainApi = chainApi,
-                           walletF = configuredWalletF,
-                           dlcNodeF = startedDLCNodeF,
-                           serverCmdLineArgs = serverArgParser,
-                           wsSource = wsSource)
+      _ <- startHttpServer(
+        nodeApiF = startedNodeF,
+        chainApi = chainApi,
+        walletF = configuredWalletF,
+        dlcNodeF = startedDLCNodeF,
+        torConfStarted = startedTorConfigF,
+        serverCmdLineArgs = serverArgParser,
+        wsSource = wsSource
+      )
       _ = {
         logger.info(
           s"Starting ${nodeConf.nodeType.shortName} node sync, it took=${System
@@ -303,12 +306,15 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ = require(
         bitcoindNetwork == walletConf.network,
         s"bitcoind ($bitcoindNetwork) on different network than wallet (${walletConf.network})")
-      _ <- startHttpServer(nodeApiF = Future.successful(bitcoind),
-                           chainApi = bitcoind,
-                           walletF = walletF,
-                           dlcNodeF = dlcNodeF,
-                           serverCmdLineArgs = serverArgParser,
-                           wsSource = wsSource)
+      _ <- startHttpServer(
+        nodeApiF = Future.successful(bitcoind),
+        chainApi = bitcoind,
+        walletF = walletF,
+        dlcNodeF = dlcNodeF,
+        torConfStarted = startedTorConfigF,
+        serverCmdLineArgs = serverArgParser,
+        wsSource = wsSource
+      )
       walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue)
       _ = walletConf.addCallbacks(walletCallbacks)
 
@@ -371,6 +377,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       chainApi: ChainApi,
       walletF: Future[DLCWallet],
       dlcNodeF: Future[DLCNode],
+      torConfStarted: Future[Unit],
       serverCmdLineArgs: ServerArgParser,
       wsSource: Source[Message, NotUsed])(implicit
       system: ActorSystem,
@@ -380,7 +387,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     val walletRoutesF = walletF.map(WalletRoutes(_))
     val nodeRoutesF = nodeApiF.map(NodeRoutes(_))
-    val chainRoutes = ChainRoutes(chainApi, nodeConf.network)
+    val chainRoutes =
+      ChainRoutes(chainApi, nodeConf.network, torConfStarted)
     val coreRoutes = CoreRoutes()
     val dlcRoutesF = dlcNodeF.map(DLCRoutes(_))
     val commonRoutes = CommonRoutes(conf.baseDatadir)

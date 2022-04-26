@@ -32,6 +32,8 @@ object PicklerKeys {
   final val chainworkKey: String = "chainwork"
   final val previousblockhashKey: String = "previousblockhash"
   final val nextblockhashKey: String = "nextblockhash"
+  final val blockHashKey: String = "blockHash"
+  final val blockHeightKey: String = "blockHeight"
   final val myCollateral: String = "myCollateral"
   final val theirCollateral: String = "theirCollateral"
   final val myPayout: String = "myPayout"
@@ -39,9 +41,13 @@ object PicklerKeys {
   final val pnl: String = "pnl"
   final val rateOfReturn: String = "rateOfReturn"
 
+  final val networkKey: String = "network"
+
   final val outcomeKey: String = "outcome"
   final val localPayoutKey: String = "localPayout"
   final val outcomesKey: String = "outcomes"
+
+  final val torStartedKey: String = "torStarted"
 
   //tlv points
   final val pointsKey = "points"
