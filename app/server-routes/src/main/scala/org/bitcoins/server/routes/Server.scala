@@ -8,7 +8,14 @@ import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.Credentials.Missing
-import akka.http.scaladsl.server.directives.{Credentials, DebuggingDirectives}
+import akka.http.scaladsl.server.directives.{
+  Credentials,
+  DebuggingDirectives,
+  MarshallingDirectives,
+  MethodDirectives,
+  PathDirectives
+}
+import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.{Done, NotUsed}
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
@@ -20,7 +27,7 @@ import scala.concurrent.Future
 
 case class Server(
     conf: AppConfig,
-    handlers: Seq[ServerRoute],
+    handlersF: Seq[Future[ServerRoute]],
     rpcbindOpt: Option[String],
     rpcport: Int,
     rpcPassword: String,
@@ -86,20 +93,45 @@ case class Server(
     }
   }
 
-  val routeF: Future[Route] = {
+  private val serverCmdDirective: FromRequestUnmarshaller[ServerCommand] =
+    MarshallingDirectives.as[ServerCommand]
 
-    val commonRouteF: Future[Route] = Future {
+  private val initF =
+    Future.successful(PartialFunction.empty[ServerCommand, Route])
+
+  private def handlerF: Future[PartialFunction[ServerCommand, Route]] = {
+    handlersF.foldLeft(initF) { case (accumF, currF) =>
+      for {
+        accum <- accumF
+        newAccum <-
+          if (currF.isCompleted) {
+            currF.map(curr => accum.orElse(curr.handleCommand))
+          } else {
+            Future.successful(accum)
+          }
+      } yield {
+        newAccum
+      }
+    }
+  }
+
+  val route: Route = {
+
+    val commonRoute: Route = {
       withErrorHandling {
-        pathSingleSlash {
-          post {
-            entity(as[ServerCommand]) { cmd =>
-              val init = PartialFunction.empty[ServerCommand, Route]
-              val handler = handlers.foldLeft(init) { case (accum, curr) =>
-                accum.orElse(curr.handleCommand)
+        PathDirectives.pathSingleSlash {
+          MethodDirectives.post { ctx =>
+            val route: Future[Route] = {
+              for {
+                handler <- handlerF
+              } yield {
+                MarshallingDirectives.entity(serverCmdDirective) { cmd =>
+                  val i = handler.orElse(catchAllHandler).apply(cmd)
+                  i
+                }
               }
-              val i = handler.orElse(catchAllHandler).apply(cmd)
-              i
             }
+            route.flatMap(_.apply(ctx))
           }
         }
       }
@@ -112,29 +144,22 @@ case class Server(
         Some(authenticateBasic("auth", authenticator))
       }
     }
-    val authenticatedRouteF: Future[Route] = authDirectiveOpt match {
+    val authenticatedRoute: Route = authDirectiveOpt match {
       case Some(authDirective) =>
-        commonRouteF.map { r =>
-          authDirective { case _ =>
-            r
-          }
+        authDirective { case _ =>
+          commonRoute
         }
-      case None => commonRouteF
+      case None => commonRoute
     }
 
-    for {
-      authenticatedRoute <- authenticatedRouteF
-    } yield {
-      DebuggingDirectives.logRequestResult(
-        ("http-rpc-server", Logging.DebugLevel)) {
-        authenticatedRoute
-      }
+    DebuggingDirectives.logRequestResult(
+      ("http-rpc-server", Logging.DebugLevel)) {
+      authenticatedRoute
     }
   }
 
   def start(): Future[ServerBindings] = {
     val httpFut = for {
-      route <- routeF
       http <- Http()
         .newServerAt(rpchost, rpcport)
         .bindFlow(route)
