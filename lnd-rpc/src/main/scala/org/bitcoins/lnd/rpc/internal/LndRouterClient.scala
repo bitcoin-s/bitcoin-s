@@ -73,15 +73,20 @@ trait LndRouterClient { self: LndRpcClient =>
   }
 
   def sendToRoute(invoice: LnInvoice, route: Route): Future[HTLCAttempt] = {
-    val milliSatoshis =
-      invoice.amount.map(MilliSatoshis(_)).getOrElse(MilliSatoshis.zero)
-    val last = route.hops.last
-    val secret = invoice.lnTags.secret.get.secret.bytes
-    val mpp =
-      MPPRecord(paymentAddr = secret, totalAmtMsat = milliSatoshis.toLong)
-    val update = last.copy(mppRecord = Some(mpp), tlvPayload = true)
-    val updatedHops = route.hops.init :+ update
-    val updatedRoute = route.copy(hops = updatedHops)
+    val updatedRoute = invoice.lnTags.secret match {
+      case Some(secretTag) =>
+        val milliSatoshis =
+          invoice.amount.map(MilliSatoshis(_)).getOrElse(MilliSatoshis.zero)
+        val last = route.hops.last
+        val secret = secretTag.secret.bytes
+        val mpp =
+          MPPRecord(paymentAddr = secret, totalAmtMsat = milliSatoshis.toLong)
+        val update = last.copy(mppRecord = Some(mpp), tlvPayload = true)
+        val updatedHops = route.hops.init :+ update
+
+        route.copy(hops = updatedHops)
+      case None => route
+    }
 
     val request =
       SendToRouteRequest(paymentHash = invoice.lnTags.paymentHash.bytes,
