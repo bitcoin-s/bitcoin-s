@@ -565,6 +565,19 @@ case class SpendingInfoDAO()(implicit
       .map(_ => ts.map(_.copyWithState(TxoState.Reserved)))
   }
 
+  def createOutPointsIndexIfNeeded(): Future[Unit] = {
+    val query =
+      sqlu"CREATE UNIQUE INDEX IF NOT EXISTS utxo_outpoints ON txo_spending_info (tx_outpoint)"
+    safeDatabase.run(query).map(_ => ())
+  }
+
+  def hasDuplicates(): Future[Boolean] = {
+    val query =
+      sql"SELECT EXISTS (SELECT tx_outpoint, COUNT(*) FROM txo_spending_info GROUP BY tx_outpoint HAVING COUNT(*) > 1)"
+        .as[Boolean]
+    safeDatabase.run(query).map(_.headOption.getOrElse(false))
+  }
+
   private def findScriptPubKeysAction(ids: Seq[Long]): DBIOAction[
     Map[Long, ScriptPubKeyDb],
     NoStream,
