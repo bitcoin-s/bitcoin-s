@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core._
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.util.Bech32
@@ -23,6 +23,21 @@ sealed abstract class LnCurrencyUnit
 
   def ==(ln: LnCurrencyUnit): Boolean =
     toPicoBitcoinValue == ln.toPicoBitcoinValue
+
+  override def equals(obj: Any): Boolean = {
+    //needed for cases like
+    //1BTC == 100,000,000 satoshis should be true
+    //weirdly enough, this worked in scala version < 2.13.4
+    //but seems to be broken in 2.13.4 :/
+    //try removing this and running code, you should see
+    //failures in the 'lnurl' module
+    obj match {
+      case ln: LnCurrencyUnit => toPicoBitcoinValue == ln.toPicoBitcoinValue
+      case ms: MilliSatoshis  => toMSat == ms
+      case cu: CurrencyUnit   => toSatoshis == cu.satoshis
+      case _                  => false
+    }
+  }
 
   override def +(ln: LnCurrencyUnit): LnCurrencyUnit = {
     PicoBitcoins(toPicoBitcoinValue + ln.toPicoBitcoinValue)

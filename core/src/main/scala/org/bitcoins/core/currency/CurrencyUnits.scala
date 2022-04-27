@@ -2,6 +2,7 @@ package org.bitcoins.core.currency
 
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.number._
+import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
 import org.bitcoins.core.serializers.RawSatoshisSerializer
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
@@ -85,8 +86,10 @@ sealed abstract class CurrencyUnit
     //try removing this and running code, you should see
     //failures in the 'walletTest' module
     obj match {
-      case cu: CurrencyUnit => cu.satoshis == satoshis
-      case _                => false
+      case cu: CurrencyUnit   => cu.satoshis == satoshis
+      case ln: LnCurrencyUnit => satoshis == ln.toSatoshis
+      case ms: MilliSatoshis  => satoshis == ms.toSatoshis
+      case _                  => false
     }
   }
 }
