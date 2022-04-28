@@ -41,6 +41,7 @@ After making the file executable, you can start the server with
 
 ```
 unzip bitcoin-s-server.zip
+cd bitcoin-s-server
 chmod +x ./bin/bitcoin-s-server
 ./bin/bitcoin-s-server
 ```
@@ -53,7 +54,7 @@ This starts the backend and will begin synchronizing with the bitcoin network.
 Here are the instructions to build, you can paste this into your terminal
 
 ```
-git clone git@github.com:bitcoin-s/bitcoin-s-ts.git
+git clone https://github.com/bitcoin-s/bitcoin-s-ts.git
 cd bitcoin-s-ts
 cd wallet-server-ui && npm i && npm run build
 cd ../wallet-server-ui-proxy && npm i && npm run startlocal
