@@ -1031,7 +1031,8 @@ abstract class DLCWallet
     * This is the second step of the initiator
     */
   override def signDLC(accept: DLCAccept): Future[DLCSign] = {
-    logger.info(s"Received accept message, tempContractId=${accept.tempContractId.hex}")
+    logger.info(
+      s"Received accept message, tempContractId=${accept.tempContractId.hex}")
     for {
       (dlc, cetSigsDbs) <- registerDLCAccept(accept)
       // .get should be safe now
@@ -1096,7 +1097,8 @@ abstract class DLCWallet
       status <- findDLC(dlcId)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield {
-      logger.info(s"Done creating sign message with contractId=${contractId.toHex} tempContractId=${dlc.tempContractId.hex}")
+      logger.info(
+        s"Done creating sign message with contractId=${contractId.toHex} tempContractId=${dlc.tempContractId.hex}")
       //?? is signer.signRefundTx persisted anywhere ??
       DLCSign(cetSigs,
               signerOpt.map(_.signRefundTx).get,

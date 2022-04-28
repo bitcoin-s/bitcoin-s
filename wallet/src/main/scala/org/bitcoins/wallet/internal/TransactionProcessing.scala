@@ -407,7 +407,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       }
     }
 
-    for {
+    val processTxF = for {
       receivedSpendingInfoDbs <- receivedSpendingInfoDbsF
       receivedStart = TimeUtil.currentEpochMs
       incoming <- processReceivedUtxos(
@@ -439,6 +439,13 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     } yield {
       ProcessTxResult(incoming, outgoing)
     }
+
+    processTxF.failed.foreach { case err =>
+      logger.error(
+        s"Failed to process transaction=${transaction.txIdBE.hex} blockHash=${blockHashOpt}",
+        err)
+    }
+    processTxF
   }
 
   /** If the given UTXO is marked as unspent and returns it so it can be updated
