@@ -13,6 +13,11 @@ import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.rpc.config.BitcoindRpcAppConfig
+import org.bitcoins.server.util.{
+  AppConfigMarker,
+  StartedBitcoinSAppConfig,
+  StoppedBitcoinSAppConfig
+}
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -33,7 +38,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 case class BitcoinSAppConfig(
     baseDatadir: Path,
     configOverrides: Vector[Config])(implicit system: ActorSystem)
-    extends StartStopAsync[Unit]
+    extends StartStopAsync[AppConfigMarker]
     with Logging {
   import system.dispatcher
 
@@ -65,7 +70,7 @@ case class BitcoinSAppConfig(
   lazy val network: NetworkParameters = chainConf.network
 
   /** Initializes the wallet, node and chain projects */
-  override def start(): Future[Unit] = {
+  override def start(): Future[StartedBitcoinSAppConfig] = {
     val start = TimeUtil.currentEpochMs
     //configurations that don't depend on tor startup
     //start these in parallel as an optimization
@@ -83,22 +88,23 @@ case class BitcoinSAppConfig(
 
     for {
       _ <- startedNonTorConfigs
-      _ <- startedTorDependentConfigsF
     } yield {
       logger.info(
         s"Done starting BitcoinSAppConfig, it took=${TimeUtil.currentEpochMs - start}ms")
-      ()
+      StartedBitcoinSAppConfig(startedTorDependentConfigsF.map(_ => ()))
     }
   }
 
-  override def stop(): Future[Unit] = {
+  override def stop(): Future[StoppedBitcoinSAppConfig.type] = {
     for {
       _ <- nodeConf.stop()
       _ <- walletConf.stop()
       _ <- chainConf.stop()
       _ <- bitcoindRpcConf.stop()
       _ <- torConf.stop()
-    } yield ()
+    } yield {
+      StoppedBitcoinSAppConfig
+    }
   }
 
   /** The underlying config the result of our fields derive from */

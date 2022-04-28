@@ -27,11 +27,11 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
     for {
       _ <- conf.start()
       oracle = new DLCOracle()
-      routes = Seq(OracleRoutes(oracle), commonRoutes)
+      routes = Seq(OracleRoutes(oracle), commonRoutes).map(Future.successful)
       server = serverArgParser.rpcPortOpt match {
         case Some(rpcport) =>
           Server(conf = conf,
-                 handlers = routes,
+                 handlersF = routes,
                  rpcbindOpt = bindConfOpt,
                  rpcport = rpcport,
                  rpcPassword = conf.rpcPassword,
@@ -39,7 +39,7 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
                  Source.empty)
         case None =>
           Server(conf = conf,
-                 handlers = routes,
+                 handlersF = routes,
                  rpcbindOpt = bindConfOpt,
                  rpcport = conf.rpcPort,
                  rpcPassword = conf.rpcPassword,
