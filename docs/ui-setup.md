@@ -41,6 +41,7 @@ After making the file executable, you can start the server with
 
 ```
 unzip bitcoin-s-server.zip
+cd bitcoin-s-server
 chmod +x ./bin/bitcoin-s-server
 ./bin/bitcoin-s-server
 ```
