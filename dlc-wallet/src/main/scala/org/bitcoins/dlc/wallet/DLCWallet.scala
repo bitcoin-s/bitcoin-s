@@ -869,7 +869,7 @@ abstract class DLCWallet
 
   def registerDLCAccept(
       accept: DLCAccept): Future[(DLCDb, Vector[DLCCETSignaturesDb])] = {
-    logger.debug(
+    logger.info(
       s"Checking if DLC Accept with tempContractId ${accept.tempContractId.hex} has already been registered")
     val dbsF = for {
       dlcDbOpt <- dlcDAO.findByTempContractId(accept.tempContractId)
@@ -892,7 +892,8 @@ abstract class DLCWallet
           dlc.isInitiator,
           s"We cannot register a DLCAccept if we are not the initiator, got $dlc")
 
-        logger.debug(s"DLC Offer (${dlc.dlcId.hex}) found, adding accept data")
+        logger.info(
+          s"DLC Offer contractId=${dlc.contractIdOpt.map(_.toHex)} dlcId=(${dlc.dlcId.hex}) found, adding accept data")
 
         val dlcId = dlc.dlcId
         lazy val dlcAcceptDb = DLCAcceptDbHelper.fromDLCAccept(dlcId, accept)
@@ -998,8 +999,8 @@ abstract class DLCWallet
               .updateFundingOutPoint(outPoint))
         } yield (updatedDLCDb, sigsDbs)
       case (dlc, Some(_)) =>
-        logger.debug(
-          s"DLC Accept (${dlc.contractIdOpt.get.toHex}) has already been registered")
+        logger.info(
+          s"DLC Accept contractId=(${dlc.contractIdOpt.get.toHex}) dlcId=${dlc.dlcId.hex} has already been registered")
         dlcSigsDAO
           .findByDLCId(dlc.dlcId)
           .map(sigOpt => (dlc, sigOpt))
@@ -1030,6 +1031,8 @@ abstract class DLCWallet
     * This is the second step of the initiator
     */
   override def signDLC(accept: DLCAccept): Future[DLCSign] = {
+    logger.info(
+      s"Received accept message, tempContractId=${accept.tempContractId.hex}")
     for {
       (dlc, cetSigsDbs) <- registerDLCAccept(accept)
       // .get should be safe now
@@ -1094,6 +1097,8 @@ abstract class DLCWallet
       status <- findDLC(dlcId)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield {
+      logger.info(
+        s"Done creating sign message with contractId=${contractId.toHex} tempContractId=${dlc.tempContractId.hex}")
       //?? is signer.signRefundTx persisted anywhere ??
       DLCSign(cetSigs,
               signerOpt.map(_.signRefundTx).get,
