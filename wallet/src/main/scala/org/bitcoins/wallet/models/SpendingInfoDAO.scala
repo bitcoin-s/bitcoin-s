@@ -256,17 +256,19 @@ case class SpendingInfoDAO()(implicit
     findOutputsReceived(txs.map(_.txIdBE))
   }
 
-  private def _findOutputsBeingSpentQuery(
-      txs: Vector[Transaction]): Query[SpendingInfoTable, UTXORecord, Seq] = {
-    val outPoints = txs
+  private def _findOutputsBeingSpentQuery(txs: Vector[Transaction]): Vector[
+    Query[SpendingInfoTable, UTXORecord, Seq]] = {
+    val outPoints: Vector[TransactionOutPoint] = txs
       .flatMap(_.inputs)
       .map(_.previousOutput)
 
-    val filtered = table
-      .filter { case txo =>
+    val outpointsGrouped = outPoints.grouped(1000)
+    val queries = outpointsGrouped.map { outPoints =>
+      table.filter { case txo =>
         txo.outPoint.inSet(outPoints)
       }
-    filtered
+    }
+    queries.toVector
   }
 
   /** Finds all the outputs being spent in the given
@@ -276,22 +278,29 @@ case class SpendingInfoDAO()(implicit
     findOutputsBeingSpent(Vector(tx))
   }
 
-  private def findOutputsBeingSpentQuery(txs: Vector[Transaction]): Query[
+  private def findOutputsBeingSpentQuery(
+      txs: Vector[Transaction]): Vector[Query[
     (SpendingInfoTable, ScriptPubKeyDAO#ScriptPubKeyTable),
     (UTXORecord, ScriptPubKeyDAO#ScriptPubKeyTable#TableElementType),
-    Seq] = {
-    _findOutputsBeingSpentQuery(txs)
-      .join(spkTable)
-      .on(_.scriptPubKeyId === _.id)
+    Seq]] = {
+    _findOutputsBeingSpentQuery(txs).map { query =>
+      query.join(spkTable).on(_.scriptPubKeyId === _.id)
+    }
   }
 
   def findOutputsBeingSpent(
       txs: Vector[Transaction]): Future[Vector[SpendingInfoDb]] = {
+    val queries = findOutputsBeingSpentQuery(txs)
+    val actions: Vector[DBIOAction[
+      Vector[(UTXORecord, ScriptPubKeyDb)],
+      NoStream,
+      Effect.Read]] = {
+      queries.map(_.result.map(_.toVector))
+    }
     val action: DBIOAction[
       Vector[(UTXORecord, ScriptPubKeyDb)],
       NoStream,
-      Effect.Read] = findOutputsBeingSpentQuery(txs).result
-      .map(_.toVector)
+      Effect.Read] = DBIO.sequence(actions).map(_.flatten)
 
     val resultsF = safeDatabase.runVec(action)
 
