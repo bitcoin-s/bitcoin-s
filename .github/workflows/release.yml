@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main, "2022-04-29-issue-4302"]
+    branches: [master, main]
     tags: ["*"]
   release:
     types: [ published ]
