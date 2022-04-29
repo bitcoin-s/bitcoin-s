@@ -555,7 +555,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                                   addressBatchSize = wallet.discoveryBatchSize,
                                   useCreationTime = true)
             .recover { case scala.util.control.NonFatal(exn) =>
-              logger.error(s"Failed to handleDuplicateSpendingInfoDb rescan", exn)
+              logger.error(s"Failed to handleDuplicateSpendingInfoDb rescan",
+                           exn)
               RescanState.RescanDone
             }
         } else {
