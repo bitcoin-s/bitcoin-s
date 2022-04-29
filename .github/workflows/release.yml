@@ -259,9 +259,11 @@ jobs:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload bitcoin-s-cli if release
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           name: "bitcoin-s-cli-${{steps.previoustag.outputs.tag}}"
-          path: app/cli/target/universal/*.zip
+          files: app/cli/target/universal/*.zip
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
