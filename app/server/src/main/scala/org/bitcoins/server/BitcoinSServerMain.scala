@@ -1,6 +1,5 @@
 package org.bitcoins.server
 
-import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
 import akka.http.scaladsl.model.ws.Message
@@ -12,6 +11,7 @@ import akka.stream.scaladsl.{
   Source,
   SourceQueueWithComplete
 }
+import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -25,6 +25,7 @@ import org.bitcoins.core.api.node.{
   NodeType
 }
 import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet._
@@ -36,16 +37,11 @@ import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
-import org.bitcoins.server.util.{
-  BitcoinSAppScalaDaemon,
-  CallbackUtil,
-  ServerBindings,
-  WebsocketUtil,
-  WsServerConfig
-}
+import org.bitcoins.server.util._
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.SpendingInfoDAO
 
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
@@ -201,6 +197,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- callbacksF
       node <- startedNodeF
       _ <- startedTorConfigF
+      wallet <- configuredWalletF
+      _ <- handleDuplicateSpendingInfoDb(wallet)
       _ <- node.sync()
     } yield {
       logger.info(
@@ -326,6 +324,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
       _ = dlcConf.addCallbacks(dlcWalletCallbacks)
       _ <- startedTorConfigF
+      _ <- handleDuplicateSpendingInfoDb(wallet)
     } yield {
       logger.info(s"Done starting Main!")
       ()
@@ -541,6 +540,30 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val _: Future[Done] = tuple._2.runWith(Sink.ignore)
 
     tuple
+  }
+
+  private def handleDuplicateSpendingInfoDb(wallet: Wallet): Future[Unit] = {
+    val spendingInfoDAO = SpendingInfoDAO()
+    for {
+      rescanNeeded <- spendingInfoDAO.hasDuplicates()
+      _ <-
+        if (rescanNeeded) {
+          logger.warn("Found duplicate UTXOs. Rescanning...")
+          wallet
+            .rescanNeutrinoWallet(startOpt = None,
+                                  endOpt = None,
+                                  addressBatchSize = wallet.discoveryBatchSize,
+                                  useCreationTime = true)
+            .recover { case scala.util.control.NonFatal(exn) =>
+              logger.error(s"Failed to handleDuplicateSpendingInfoDb rescan",
+                           exn)
+              RescanState.RescanDone
+            }
+        } else {
+          Future.successful(RescanState.RescanDone)
+        }
+      _ <- spendingInfoDAO.createOutPointsIndexIfNeeded()
+    } yield ()
   }
 }
 
