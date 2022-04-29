@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, "2022-04-29-issue-4302"]
     tags: ["*"]
   release:
     types: [ published ]
@@ -219,19 +219,35 @@ jobs:
         run: |
           chmod +x app/server/target/universal/stage/bin/bitcoin-s-server
           chmod +x app/server/target/universal/stage/bin/bitcoin-s-server.bat
-      - name: Upload zip
+      - name: Upload bitcoin-s-server zip
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: "bitcoin-s-server"
           path: app/server/target/universal/stage/
-      - name: Upload if release
+      - name: Upload bitcoin-s-oracle-server zip
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "bitcoin-s-oracle-server"
+          path: app/oracle-server/target/universal/stage/
+      - name: Upload bitcoin-s-server if release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           name: "bitcoin-s-server-${{steps.previoustag.outputs.tag}}"
           files: app/server/target/universal/*.zip
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload bitcoin-s-oracle-server if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "bitcoin-s-server-${{steps.previoustag.outputs.tag}}"
+          files: app/oracle-server/target/universal/*.zip
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
