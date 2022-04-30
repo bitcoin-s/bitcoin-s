@@ -291,14 +291,9 @@ case class BlockHeaderDAO()(implicit
     * This should only be used if the chain work has not been calculated
     */
   def chainTipsByHeight: Future[Vector[BlockHeaderDb]] = {
-    logger.debug(s"Getting chain tips from database")
     val aggregate = {
       maxHeightQuery.flatMap { height =>
-        logger.debug(s"Max block height: $height")
         val atHeight = getAtHeightQuery(height)
-        atHeight.map { headers =>
-          logger.debug(s"Headers at $height: $headers")
-        }
         atHeight
       }
     }
@@ -332,11 +327,7 @@ case class BlockHeaderDAO()(implicit
   def getBestChainTips: Future[Vector[BlockHeaderDb]] = {
     val aggregate = {
       maxWorkQuery.flatMap { work =>
-        logger.debug(s"Max block work: $work")
         val atChainWork = getAtChainWorkQuery(work)
-        atChainWork.map { headers =>
-          logger.debug(s"Headers at $work: $headers")
-        }
         atChainWork
       }
     }
