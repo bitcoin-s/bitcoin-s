@@ -65,7 +65,7 @@ case class WalletAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   /** Threads for rescanning the wallet */
   private[wallet] lazy val rescanThreadPool: ExecutorService =
-    Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors() * 2,
+    Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors(),
                                  rescanThreadFactory)
 
   private val callbacks = new Mutable(WalletCallbacks.empty)
