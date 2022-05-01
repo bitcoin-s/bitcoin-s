@@ -290,6 +290,11 @@ case class P2PClientActor(
         context.become(awaitNetworkRequest(peerConnection, unalignedBytes))
         unalignedBytes
 
+      case Tcp.ErrorClosed(cause) =>
+        logger.error(
+          s"An error occurred in our connection with $peer, cause=$cause state=${currentPeerMsgHandlerRecv.state}")
+        currentPeerMsgHandlerRecv = currentPeerMsgHandlerRecv.disconnect()
+        unalignedBytes
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed | Tcp.ErrorClosed(_)) =>
         logger.info(
