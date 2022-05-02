@@ -285,8 +285,11 @@ case class PaymentRequest(
     serialized: String,
     description: String,
     paymentHash: Sha256Digest,
+    paymentMetadata: String,
     expiry: FiniteDuration, //seconds
-    amount: Option[MilliSatoshis])
+    minFinalCltvExpiry: Int,
+    amount: Option[MilliSatoshis],
+    features: Features)
 
 sealed trait PaymentType
 
@@ -295,13 +298,15 @@ object PaymentType extends StringFactory[PaymentType] {
   case object Standard extends PaymentType
   case object SwapIn extends PaymentType
   case object SwapOut extends PaymentType
+  case object Placeholder extends PaymentType
 
   override def fromString(str: String): PaymentType =
     str match {
-      case "Standard" => Standard
-      case "SwapIn"   => SwapIn
-      case "SwapOut"  => SwapOut
-      case _          => throw new RuntimeException(s"Unknown payment type `$str`")
+      case "Standard"    => Standard
+      case "SwapIn"      => SwapIn
+      case "SwapOut"     => SwapOut
+      case "placeholder" => Placeholder
+      case _             => throw new RuntimeException(s"Unknown payment type `$str`")
     }
 
 }
@@ -322,6 +327,7 @@ case class OutgoingPayment(
 case class IncomingPayment(
     paymentRequest: PaymentRequest,
     paymentPreimage: PaymentPreimage,
+    paymentType: PaymentType,
     createdAt: Instant, //milliseconds
     status: IncomingPaymentStatus)
 

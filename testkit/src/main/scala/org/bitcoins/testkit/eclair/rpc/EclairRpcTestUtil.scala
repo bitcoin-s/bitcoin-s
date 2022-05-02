@@ -110,16 +110,16 @@ trait EclairRpcTestUtil extends Logging {
         "eclair.api.binding-ip" -> "127.0.0.1",
         "eclair.api.password" -> "abc123",
         "eclair.api.port" -> apiPort,
-        "eclair.mindepth-blocks" -> 2,
-        "eclair.max-htlc-value-in-flight-msat" -> 100000000000L,
+        "eclair.channel.mindepth-blocks" -> 2,
+        "eclair.channel.max-htlc-value-in-flight-msat" -> 100000000000L,
         "eclair.router.broadcast-interval" -> "2 second",
         "eclair.auto-reconnect" -> false,
-        "eclair.to-remote-delay-blocks" -> 144,
+        "eclair.channel.to-remote-delay-blocks" -> 144,
         "eclair.db.regtest.url" -> "jdbc:sqlite:regtest/",
         "eclair.max-payment-fee" -> 10, // avoid complaints about too high fees
         "eclair.alias" -> "suredbits",
-        "eclair.fulfill-safety-before-timeout-blocks" -> 1,
-        "eclair.min-final-expiry-delta-blocks" -> 2,
+        "eclair.channel.fulfill-safety-before-timeout-blocks" -> 1,
+        "eclair.channel.min-final-expiry-delta-blocks" -> 2,
         "eclair.features.keysend" -> "optional"
       )
     }

@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.ln.channel.{
 }
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.{NodeId, NodeUri}
-import org.bitcoins.core.protocol.ln.routing.{NodeRoute, Route}
+import org.bitcoins.core.protocol.ln.routing.Route
 import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
@@ -72,13 +72,15 @@ trait EclairApi {
 
   def close(id: ChannelId, spk: ScriptPubKey): Future[ChannelCommandResult]
 
-  def findRoute(nodeId: NodeId, amountMsat: MilliSatoshis): Future[NodeRoute]
+  def findRoute(
+      nodeId: NodeId,
+      amountMsat: MilliSatoshis): Future[Vector[Route]]
 
-  def findRoute(invoice: LnInvoice): Future[NodeRoute]
+  def findRoute(invoice: LnInvoice): Future[Vector[Route]]
 
   def findRoute(
       invoice: LnInvoice,
-      amountMsat: MilliSatoshis): Future[NodeRoute]
+      amountMsat: MilliSatoshis): Future[Vector[Route]]
 
   def forceClose(channelId: ChannelId): Future[ChannelCommandResult]
 
