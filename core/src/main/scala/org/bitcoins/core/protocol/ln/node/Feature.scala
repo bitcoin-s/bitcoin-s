@@ -116,7 +116,7 @@ object Features {
     Features[T](Map.empty[T, FeatureSupport])
 
   def apply[T <: Feature](features: (T, FeatureSupport)*): Features[T] =
-  Features[T](features.toMap)
+    Features[T](features.toMap)
 
   def apply(bytes: ByteVector): Features[Feature] = apply(bytes.bits)
 
