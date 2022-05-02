@@ -14,6 +14,7 @@ import org.bitcoins.core.protocol.ln.channel.{
 }
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.core.protocol.ln.routing.NodeRoute
 import org.bitcoins.core.protocol.ln.{
   LnHumanReadablePart,
   LnInvoice,
@@ -168,9 +169,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           info.publicAddresses
             .map(_.getHostString)
             .exists(_.endsWith(".onion")))
-        route <- client1.findRoute(invoice, None)
+        routes <- client1.findRoute(invoice, None)
       } yield {
-        route.ids.size == 4
+        routes.head.asInstanceOf[NodeRoute].nodeIds.size == 4
       }).recover {
         case err: RuntimeException
             if err.getMessage.contains("route not found") =>
@@ -189,7 +190,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         .flatMap(_.getInfo)
         .flatMap(info =>
           firstClientF.flatMap(_.findRoute(info.nodeId, MilliSatoshis(100))))
-        .map(route => route.ids.length == 4)
+        .map(route => route.head.asInstanceOf[NodeRoute].nodeIds.length == 4)
         .recover {
           case err: RuntimeException
               if err.getMessage.contains("route not found") =>
@@ -416,6 +417,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                                            maxTries = 60)
     } yield succeed
   }
+
   it should "be able to open and close a channel" in {
 
     val changeAddrF = bitcoindRpcClientF.flatMap(_.getNewAddress)
@@ -567,7 +569,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             invoice <- otherClient.createInvoice("foo", amt, preimage)
             route <- client.findRoute(otherClientNodeId, amt)
             result <- client.sendToRoute(invoice,
-                                         route,
+                                         route.head,
                                          amt,
                                          invoice.lnTags.paymentHash.hash,
                                          finalCltvExpiry = 144,
@@ -582,7 +584,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                   invoice.lnTags.paymentHash.hash)
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client,
                                                               result.parentId)
-            succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
+            succeeded <- client.getSentInfo(result.parentId)
           } yield {
             assert(otherClientNodeId == invoice.nodeId)
             assert(succeeded.nonEmpty)

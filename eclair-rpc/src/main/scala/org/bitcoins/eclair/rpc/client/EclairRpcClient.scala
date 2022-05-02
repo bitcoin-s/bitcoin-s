@@ -143,30 +143,29 @@ class EclairRpcClient(
 
   override def findRoute(
       nodeId: NodeId,
-      amountMsat: MilliSatoshis): Future[NodeRoute] = {
-    eclairCall[Vector[NodeId]](
-      "findroutetonode",
-      "nodeId" -> nodeId.toString,
-      "amountMsat" -> amountMsat.toBigDecimal.toString).map(NodeRoute.apply)
+      amountMsat: MilliSatoshis): Future[Vector[Route]] = {
+    eclairCall[Vector[Route]]("findroutetonode",
+                              "nodeId" -> nodeId.toString,
+                              "amountMsat" -> amountMsat.toBigDecimal.toString)
   }
 
-  override def findRoute(invoice: LnInvoice): Future[NodeRoute] = {
+  override def findRoute(invoice: LnInvoice): Future[Vector[Route]] = {
     findRoute(invoice, None)
   }
 
   override def findRoute(
       invoice: LnInvoice,
-      amount: MilliSatoshis): Future[NodeRoute] = {
+      amount: MilliSatoshis): Future[Vector[Route]] = {
     findRoute(invoice, Some(amount))
   }
 
   def findRoute(
       invoice: LnInvoice,
-      amountMsat: Option[MilliSatoshis]): Future[NodeRoute] = {
+      amountMsat: Option[MilliSatoshis]): Future[Vector[Route]] = {
     val params = Seq(
       Some("invoice" -> invoice.toString),
       amountMsat.map(x => "amountMsat" -> x.toBigDecimal.toString)).flatten
-    eclairCall[Vector[NodeId]]("findroute", params: _*).map(NodeRoute.apply)
+    eclairCall[Vector[Route]]("findroute", params: _*)
   }
 
   override def forceClose(
@@ -377,8 +376,8 @@ class EclairRpcClient(
         //register callback that publishes a payment to our actor system's
         //event stream,
         receivedInfoF.foreach {
-          case None |
-              Some(IncomingPayment(_, _, _, IncomingPaymentStatus.Pending)) =>
+          case None | Some(
+                IncomingPayment(_, _, _, _, IncomingPaymentStatus.Pending)) =>
             if (attempts.incrementAndGet() >= maxAttempts) {
               // too many tries to get info about a payment
               // either Eclair is down or the payment is still in PENDING state for some reason
@@ -513,8 +512,8 @@ class EclairRpcClient(
       parentId: Option[PaymentId],
       externalId: Option[String]): Future[SendToRouteResult] = {
     val ids = route match {
-      case NodeRoute(ids)    => "nodeIds" -> ids.mkString(",")
-      case ChannelRoute(ids) => "shortChannelIds" -> ids.mkString(",")
+      case NodeRoute(_, ids)    => "nodeIds" -> ids.mkString(",")
+      case ChannelRoute(_, ids) => "shortChannelIds" -> ids.mkString(",")
     }
     val params = Seq(
       "invoice" -> invoice.toString,
@@ -954,10 +953,10 @@ object EclairRpcClient {
       implicit system: ActorSystem) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
-  private[bitcoins] val commit = "6817d6f"
+  private[bitcoins] val commit = "a804905"
 
   /** The current version we support of Eclair */
-  private[bitcoins] val version = "0.6.2"
+  private[bitcoins] val version = "0.7.0"
 
   /** The bitcoind version that eclair is officially tested & supported with by ACINQ
     * @see https://github.com/ACINQ/eclair/releases/tag/v0.6.2
