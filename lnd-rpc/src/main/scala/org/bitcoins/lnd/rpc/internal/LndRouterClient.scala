@@ -3,15 +3,18 @@ package org.bitcoins.lnd.rpc.internal
 import lnrpc.Failure.FailureCode.INCORRECT_OR_UNKNOWN_PAYMENT_DETAILS
 import lnrpc.{
   HTLCAttempt,
+  HopHint,
   MPPRecord,
   QueryRoutesRequest,
   QueryRoutesResponse,
-  Route
+  Route,
+  RouteHint
 }
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto._
 import org.bitcoins.lnd.rpc.LndRpcClient
@@ -23,12 +26,21 @@ trait LndRouterClient { self: LndRpcClient =>
 
   def queryRoutes(
       amount: Satoshis,
-      node: NodeId): Future[QueryRoutesResponse] = {
+      node: NodeId,
+      routeHints: Vector[LnRoute]): Future[QueryRoutesResponse] = {
+    val hopHints = routeHints.map { hint =>
+      HopHint(hint.pubkey.hex,
+              hint.shortChannelID.u64.toLong,
+              hint.feeBaseMsat.msat.toLong.toInt,
+              hint.feePropMilli.u32.toInt,
+              hint.cltvExpiryDelta)
+    }
     val request =
       QueryRoutesRequest(pubKey = node.pubKey.hex,
                          amt = amount.toLong,
                          finalCltvDelta = 40,
-                         useMissionControl = true)
+                         useMissionControl = true,
+                         routeHints = Vector(RouteHint(hopHints)))
 
     queryRoutes(request)
   }
@@ -41,7 +53,8 @@ trait LndRouterClient { self: LndRpcClient =>
 
   def probe(invoice: LnInvoice): Future[Vector[Route]] = {
     val amount = invoice.amount.map(_.toSatoshis).getOrElse(Satoshis.zero)
-    probe(amount, invoice.nodeId)
+    val hints = invoice.lnTags.routingInfo.map(_.routes).getOrElse(Vector.empty)
+    probe(amount, invoice.nodeId, hints)
   }
 
   def sendToRoute(hash: Sha256Digest, route: Route): Future[HTLCAttempt] = {
@@ -56,8 +69,11 @@ trait LndRouterClient { self: LndRpcClient =>
     router.sendToRouteV2(request)
   }
 
-  def probe(amount: Satoshis, node: NodeId): Future[Vector[Route]] = {
-    queryRoutes(amount, node).map(_.routes).flatMap { routes =>
+  def probe(
+      amount: Satoshis,
+      node: NodeId,
+      routeHints: Vector[LnRoute]): Future[Vector[Route]] = {
+    queryRoutes(amount, node, routeHints).map(_.routes).flatMap { routes =>
       val fs = routes.toVector.map { route =>
         val fakeHash = CryptoUtil.sha256(ECPrivateKey.freshPrivateKey.bytes)
         sendToRoute(fakeHash, route).map(t => (route, t))

@@ -203,7 +203,7 @@ class LndRpcClientPairTest extends DualLndFixture {
 
     for {
       nodeIdA <- lndA.nodeId
-      routes <- lndB.probe(Satoshis(1000), nodeIdA)
+      routes <- lndB.probe(Satoshis(1000), nodeIdA, Vector.empty)
     } yield {
       assert(routes.nonEmpty)
     }
