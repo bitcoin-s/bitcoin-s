@@ -165,7 +165,6 @@ trait DbManagement extends Logging {
         case PostgreSQL =>
           ()
       }
-      //probably want to consider just returning the migration
       flyway.migrate()
     } catch {
       case err: FlywayException =>
