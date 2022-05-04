@@ -6,7 +6,12 @@ object Deps {
   object V {
     val bouncyCastle = "1.70"
     val dropwizardMetricsV = "4.2.9" //https://github.com/dropwizard/metrics
+
     val logback = "1.2.11"
+    val log4jV = "1.2.17"
+    val logkitV = "1.0.1"
+    val avalonLoggingV = "4.1.5"
+
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.4"
     val scalaTest = "3.2.10"
@@ -31,7 +36,7 @@ object Deps {
     val asyncNewScalaV = "1.0.1"
 
     val flywayV = "8.5.9"
-    val postgresV = "42.3.3"
+    val postgresV = "42.3.4"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.3"
     val sqliteV = "3.36.0.3"
@@ -46,6 +51,10 @@ object Deps {
     val newMicroPickleV = "1.3.8"
     val newMicroJsonV = newMicroPickleV
 
+    val osgiFrameworkV = "1.10.0"
+    val osgiJdbcV = "1.0.1"
+    val osgiCoreV = "8.0.0"
+
     // akka-http-upickle is not yet published
     // to Maven central. There's a PR for adding
     // suport, https://github.com/hseeberger/akka-http-json/pull/314.
@@ -59,11 +68,19 @@ object Deps {
     // CLI deps
     val scoptV = "4.0.1"
     val sttpV = "1.7.2"
-    val codehausV = "3.1.6"
+    val codehausV = "3.1.7"
     val scalaJsTimeV = "2.3.0"
     val zxingV = "3.4.1"
 
     val monixV = "3.4.0"
+
+    val javaxServletV = "4.0.1"
+    val javaxJmsV = "2.0.1"
+    val javaxMailV = "1.4.7"
+
+    val gsonV = "2.9.0"
+    val jnaV = "5.11.0"
+    val waffleJnaV = "1.9.1"
   }
 
   object Compile {
@@ -101,6 +118,8 @@ object Deps {
 
     val akkaTestkit =
       "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
+
+    val gson = "com.google.code.gson" % "gson" % V.gsonV //https://github.com/google/gson
 
     val jUnixSocket =
       "com.kohlschutter.junixsocket" % "junixsocket-core" % V.jUnixSocketV
@@ -140,6 +159,14 @@ object Deps {
     lazy val javaFxDeps =
       List(javaFxBase, javaFxControls, javaFxGraphics, javaFxMedia)
 
+    val javaxServlet = "javax.servlet" % "javax.servlet-api" % V.javaxServletV // https://mvnrepository.com/artifact/javax.servlet/javax.servlet-api
+    val javaxJms = "javax.jms" % "javax.jms-api" % V.javaxJmsV // https://mvnrepository.com/artifact/javax.jms/javax.jms-api
+    val javaxMail = "javax.mail" % "mail" % V.javaxMailV // https://mvnrepository.com/artifact/javax.mail/mail
+
+
+    val jna = "net.java.dev.jna" % "jna" % V.jnaV
+    val waffleJna = "com.github.waffle" % "waffle-jna" % V.waffleJnaV
+
     val breezeViz =
       ("org.scalanlp" %% "breeze-viz" % V.breezeV withSources () withJavadoc ())
         .exclude("bouncycastle", "bcprov-jdk14")
@@ -152,6 +179,10 @@ object Deps {
 
     val logback =
       "ch.qos.logback" % "logback-classic" % V.logback withSources () withJavadoc ()
+
+    val log4j = "log4j" % "log4j" % V.log4jV //https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L486
+    val logkit = "logkit" % "logkit" % V.logkitV //https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L492
+    val avalonLogging = "avalon-framework" % "avalon-framework" % V.avalonLoggingV //https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L498
 
     val grizzledSlf4j =
       "org.clapper" %% "grizzled-slf4j" % V.grizzledSlf4j withSources () withJavadoc ()
@@ -174,6 +205,10 @@ object Deps {
 
     val newMicroPickle =
       Def.setting("com.lihaoyi" %%% "upickle" % V.newMicroPickleV)
+
+    val osgiFramework = "org.osgi" % "org.osgi.framework" % V.osgiFrameworkV // https://mvnrepository.com/artifact/org.osgi/org.osgi.framework,
+    val osgiJdbc = "org.osgi" % "org.osgi.service.jdbc" % V.osgiJdbcV // https://mvnrepository.com/artifact/org.osgi/org.osgi.service.jdbc
+    val osgiCore = "org.osgi" % "osgi.core" % V.osgiCoreV // https://mvnrepository.com/artifact/org.osgi/osgi.core,
 
     // parsing of CLI opts and args
     val scopt = "com.github.scopt" %% "scopt" % V.scoptV
@@ -205,8 +240,11 @@ object Deps {
     val pgEmbedded =
       "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV withSources () withJavadoc ()
 
-    val dropwizardMetrics =
+    val dropwizardMetricsCore =
       "io.dropwizard.metrics" % "metrics-core" % V.dropwizardMetricsV withSources () withJavadoc ()
+
+    val dropwizardMetricsHealthChecks = "io.dropwizard.metrics" % "metrics-healthchecks" % V.dropwizardMetricsV
+    val dropwizardMetricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % V.dropwizardMetricsV // https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-jvm
 
     val zxingCore =
       "com.google.zxing" % "core" % V.zxingV withSources () withJavadoc ()
@@ -399,7 +437,7 @@ object Deps {
 
   def dbCommons = Def.setting {
     List(
-      Compile.dropwizardMetrics,
+      Compile.dropwizardMetricsCore,
       Compile.flyway,
       Compile.slick,
       Compile.logback,
@@ -442,14 +480,41 @@ object Deps {
     )
   }
 
+  /** Transitive dependencies needed for the oracleServer to build properly with jlink */
+  private val oracleServerTransitiveDeps = Vector(
+    //transitive deps needed for jlink
+    Compile.codehaus,
+    Compile.gson,
+
+    Compile.dropwizardMetricsHealthChecks,
+    Compile.dropwizardMetricsJvm,
+
+    //postgres transitive deps
+    Compile.jna,
+    Compile.waffleJna,
+    Compile.osgiCore,
+    Compile.osgiJdbc,
+    Compile.osgiFramework,
+
+    //logging transitive deps
+    Compile.log4j,
+    Compile.avalonLogging,
+    Compile.logkit,
+
+    //transitive javax deps
+    Compile.javaxServlet,
+    Compile.javaxMail,
+    Compile.javaxJms
+  )
+
   val oracleServer = Def.setting {
-    List(
+    Vector(
       Compile.newMicroPickle.value,
       Compile.logback,
       Compile.akkaActor,
       Compile.akkaHttp,
-      Compile.akkaSlf4j
-    )
+      Compile.akkaSlf4j,
+    ) ++ oracleServerTransitiveDeps
   }
 
   val eclairRpc = List(

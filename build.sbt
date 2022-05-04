@@ -370,11 +370,14 @@ lazy val oracleServer = project
   .settings(CommonSettings.appSettings: _*)
   .settings(CommonSettings.dockerSettings: _*)
   .settings(CommonSettings.dockerBuildxSettings: _*)
+  .settings(jlinkModules ++= CommonSettings.jlinkModules)
+  .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
+  .settings(jlinkIgnoreMissingDependency := CommonSettings.oracleServerJlinkIgnore)
   .dependsOn(
     dlcOracle,
     serverRoutes
   )
-  .enablePlugins(JavaAppPackaging, DockerPlugin)
+  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin)
 
 lazy val oracleServerTest = project
   .in(file("app/oracle-server-test"))
