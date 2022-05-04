@@ -55,8 +55,6 @@ object Deps {
     // obviously has to be changed before this is
     // merged.
 
-    val sourcecodeV = "0.2.8"
-
     val scalaJsStubsV = "1.1.0"
     // CLI deps
     val scoptV = "4.0.1"
@@ -176,9 +174,6 @@ object Deps {
 
     val newMicroPickle =
       Def.setting("com.lihaoyi" %%% "upickle" % V.newMicroPickleV)
-
-    // get access to reflection data at compile-time
-    val sourcecode = "com.lihaoyi" %% "sourcecode" % V.sourcecodeV
 
     // parsing of CLI opts and args
     val scopt = "com.github.scopt" %% "scopt" % V.scoptV
@@ -407,7 +402,6 @@ object Deps {
       Compile.dropwizardMetrics,
       Compile.flyway,
       Compile.slick,
-      Compile.sourcecode,
       Compile.logback,
       Compile.sqlite,
       Compile.postgres,
