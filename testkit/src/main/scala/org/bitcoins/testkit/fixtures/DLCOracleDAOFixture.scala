@@ -3,6 +3,7 @@ package org.bitcoins.testkit.fixtures
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.flywaydb.core.api.output.CleanResult
 import org.scalatest._
 
 import scala.concurrent.Future
@@ -35,7 +36,7 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
     )(test)
   }
 
-  private def dropAll(): Future[Unit] = {
+  private def dropAll(): Future[CleanResult] = {
     Future {
       config.clean()
     }

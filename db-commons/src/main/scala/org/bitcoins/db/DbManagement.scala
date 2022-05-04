@@ -4,6 +4,7 @@ import grizzled.slf4j.Logging
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.DatabaseDriver._
 import org.flywaydb.core.Flyway
+import org.flywaydb.core.api.output.{CleanResult, MigrateResult}
 import org.flywaydb.core.api.{FlywayException, MigrationInfoService}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -154,7 +155,7 @@ trait DbManagement extends Logging {
     *
     * @see [[https://flywaydb.org/documentation/api/#programmatic-configuration-java]]
     */
-  def migrate(): Int = {
+  def migrate(): MigrateResult = {
     try {
       appConfig.driver match {
         case SQLite =>
@@ -184,7 +185,7 @@ trait DbManagement extends Logging {
     *
     * @see https://flywaydb.org/documentation/command/clean
     */
-  def clean(): Unit = {
+  def clean(): CleanResult = {
     flyway.clean()
   }
 }

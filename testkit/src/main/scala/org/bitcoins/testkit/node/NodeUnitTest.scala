@@ -634,5 +634,6 @@ object NodeUnitTest extends P2PLogger {
     appConfig.nodeConf.clean()
     //appConfig.walletConf.clean()
     appConfig.chainConf.clean()
+    ()
   }
 }
