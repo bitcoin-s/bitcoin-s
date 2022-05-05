@@ -50,7 +50,7 @@ addSbtPlugin("com.lightbend.akka.grpc" % "sbt-akka-grpc" % "2.1.4")
 
 // Scala.js
 //https://www.scala-js.org/doc/project/
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.10.0")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.8.0")
 
 
 //https://github.com/scalacenter/scalajs-bundler
