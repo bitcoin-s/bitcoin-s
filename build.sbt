@@ -371,6 +371,7 @@ lazy val oracleServer = project
   .settings(CommonSettings.dockerSettings: _*)
   .settings(CommonSettings.dockerBuildxSettings: _*)
   .settings(jlinkModules ++= CommonSettings.jlinkModules)
+  .settings(jlinkModules --= CommonSettings.rmJlinkModules)
   .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
   .settings(jlinkIgnoreMissingDependency := CommonSettings.oracleServerJlinkIgnore)
   .dependsOn(

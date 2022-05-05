@@ -96,6 +96,17 @@ object CommonSettings {
     "jdk.unsupported"
   )
 
+  //these are java modules we do not need
+  //our artifacts do not use java.desktop
+  //there may be others we don't need
+  //but this is the most obvious and reduces
+  //artifact size by 15MB
+  //do 'show jlinkModules' in the module
+  //to see what ones are used
+  lazy val rmJlinkModules = Seq(
+    "java.desktop"
+  )
+
   lazy val jlinkOptions = Seq(
     "--no-header-files",
     "--no-man-pages",
