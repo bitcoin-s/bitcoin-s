@@ -3,15 +3,8 @@ import com.typesafe.sbt.SbtNativePackager.Docker
 import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 
 import java.nio.file.Paths
-import com.typesafe.sbt.packager.Keys.{
-  daemonUser,
-  daemonUserUid,
-  dockerAlias,
-  dockerAliases,
-  dockerRepository,
-  dockerUpdateLatest,
-  maintainer
-}
+import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerRepository, dockerUpdateLatest, maintainer}
+import com.typesafe.sbt.packager.archetypes.jlink.JlinkPlugin.autoImport.JlinkIgnore
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.dockerBaseImage
 import sbt._
 import sbt.Keys._
@@ -96,6 +89,28 @@ object CommonSettings {
       //https://github.com/eclipse/jetty.project/issues/3244#issuecomment-495322586
       Seq("--release", "8")
     }
+  )
+
+  lazy val jlinkModules = Seq(
+    "jdk.crypto.ec",
+    "jdk.unsupported"
+  )
+
+  //these are java modules we do not need
+  //our artifacts do not use java.desktop
+  //there may be others we don't need
+  //but this is the most obvious and reduces
+  //artifact size by 15MB
+  //do 'show jlinkModules' in the module
+  //to see what ones are used
+  lazy val rmJlinkModules = Seq(
+    "java.desktop"
+  )
+
+  lazy val jlinkOptions = Seq(
+    "--no-header-files",
+    "--no-man-pages",
+    "--compress=2"
   )
 
   private val commonCompilerOpts = {
@@ -237,4 +252,60 @@ object CommonSettings {
 
   lazy val binariesPath =
     Paths.get(Properties.userHome, ".bitcoin-s", "binaries")
+
+  lazy val oracleServerJlinkIgnore = {
+    JlinkIgnore.byPackagePrefix(
+      "java.xml" -> "java.activation",
+      "ch.qos.logback.core.net" -> "javax.mail",
+      "ch.qos.logback.core.net" -> "javax.mail.internet",
+      "org.flywaydb.core.api.android" -> "android.content",
+      "org.flywaydb.core.internal.logging.android" -> "android.util",
+
+      //we don't use android
+      "org.flywaydb.core.internal.resource.android" -> "android.content.res",
+      "org.flywaydb.core.internal.scanner.android" -> "android.content",
+      "org.flywaydb.core.internal.scanner.android" -> "android.content.pm",
+      "org.flywaydb.core.internal.scanner.android" -> "android.content.res",
+      "org.flywaydb.core.internal.scanner.android" -> "dalvik.system",
+
+      //we don't use hibernate
+      "com.zaxxer.hikari.hibernate" -> "org.hibernate",
+
+      //we don't ship with support for any aws products
+      "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.awscore.exception",
+      "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.core",
+      "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.services.s3",
+      "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.services.s3.model",
+      "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.core.exception",
+      "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3",
+      "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3.model",
+      "org.flywaydb.core.api.configuration" -> "software.amazon.awssdk.services.s3",
+
+      //we don't use oracle database products
+      "org.flywaydb.core.internal.database.oracle" -> "oracle.jdbc",
+
+      //we don't use jboss
+      "org.flywaydb.core.internal.scanner.classpath.jboss" -> "org.jboss.vfs",
+
+      "org.flywaydb.core.internal.logging.log4j2" -> "org.apache.logging.log4j",
+
+      "slick.jdbc" -> "javax.xml.bind",
+
+      "com.github.benmanes.caffeine" -> "javax.annotation",
+      "com.github.benmanes.caffeine.cache" -> "javax.annotation",
+      "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation",
+
+      "com.zaxxer.hikari.metrics.micrometer" -> "io.micrometer.core.instrument",
+      "com.zaxxer.hikari.pool" -> "io.micrometer.core.instrument",
+
+      "waffle.jaas" -> "java.security.acl",
+
+      "org.apache.log4j.jmx" -> "com.sun.jdmk.comm",
+      //optional
+      "org.codehaus.janino" -> "org.apache.tools.ant",
+      "com.zaxxer.hikari.metrics.prometheus" -> "io.prometheus.client",
+      "com.zaxxer.hikari.util" -> "javassist",
+      "com.zaxxer.hikari.util" -> "javassist.bytecode"
+    )
+  }
 }
