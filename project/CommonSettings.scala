@@ -92,8 +92,7 @@ object CommonSettings {
   )
 
   lazy val jlinkModules = Seq(
-    "jdk.crypto.ec",
-    "jdk.unsupported"
+    "jdk.crypto.ec"
   )
 
   //these are java modules we do not need
