@@ -40,8 +40,13 @@ case class SbExplorerClient(
   import system.dispatcher
   private val httpClient: HttpExt = Http(system)
 
+  private val baseUri: String = proxyParams match {
+    case Some(_) => env.torBaseUri
+    case None    => env.baseUri
+  }
+
   private val httpConnectionPoolSettings =
-    Socks5ClientTransport.createConnectionPoolSettings(new URI(env.baseUri),
+    Socks5ClientTransport.createConnectionPoolSettings(new URI(baseUri),
                                                        proxyParams)
 
   /** Lists all events on oracle explorer
@@ -49,8 +54,7 @@ case class SbExplorerClient(
     * @return
     */
   def listAnnouncements(): Future[Vector[SbAnnouncementEvent]] = {
-    val base = env.baseUri
-    val uri = Uri(base + "announcements")
+    val uri = Uri(baseUri + "announcements")
     val httpReq = HttpRequest(uri = uri)
     val responseF = sendRequest(httpReq)
     responseF.flatMap { response =>
@@ -79,8 +83,7 @@ case class SbExplorerClient(
     */
   def getAnnouncement(
       announcementHash: Sha256Digest): Future[SbAnnouncementEvent] = {
-    val base = env.baseUri
-    val uri = Uri(base + s"announcements/${announcementHash.hex}")
+    val uri = Uri(baseUri + s"announcements/${announcementHash.hex}")
     val httpReq = HttpRequest(uri = uri)
     val responseF = sendRequest(httpReq)
     responseF.flatMap { response =>
@@ -101,8 +104,7 @@ case class SbExplorerClient(
     */
   def createAnnouncement(
       oracleEventExplorer: CreateAnnouncementExplorer): Future[Unit] = {
-    val base = env.baseUri
-    val uri = Uri(base + s"announcements")
+    val uri = Uri(baseUri + s"announcements")
     val string = oracleEventExplorer.toString
     val httpReq =
       HttpRequest(
@@ -118,9 +120,8 @@ case class SbExplorerClient(
     * @see https://gist.github.com/Christewart/a9e55d9ba582ac9a5ceffa96db9d7e1f#create-an-events-attestation
     */
   def createAttestations(attestations: CreateAttestations): Future[Unit] = {
-    val base = env.baseUri
     val uri = Uri(
-      base + s"announcements/${attestations.announcementHash.hex}/attestations")
+      baseUri + s"announcements/${attestations.announcementHash.hex}/attestations")
     val string = attestations.toString
     val httpReq =
       HttpRequest(
@@ -133,8 +134,7 @@ case class SbExplorerClient(
   }
 
   def getOracleName(pubkey: SchnorrPublicKey): Future[Option[String]] = {
-    val base = env.baseUri
-    val uri = Uri(base + s"oracle/${pubkey.hex}")
+    val uri = Uri(baseUri + s"oracle/${pubkey.hex}")
     val httpReq = HttpRequest(uri = uri)
     val responseF = sendRequest(httpReq)
     responseF.flatMap { response =>
