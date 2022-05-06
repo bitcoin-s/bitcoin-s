@@ -215,20 +215,20 @@ jobs:
         run: ls -l app/server/target/universal/stage
       - name: pwd
         run: pwd
-      - name: Upload bitcoin-s-server-windows zip
+      - name: Upload bitcoin-s-server-mac zip
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: "bitcoin-s-server-mac"
-          path: app/server/target/universal/stage/
+          path: app/server/target/universal/
       - name: Upload bitcoin-s-oracle-server zip
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: "bitcoin-s-oracle-server-mac"
-          path: app/oracle-server/target/universal/stage/
+          path: app/oracle-server/target/universal/
       - name: Upload bitcoin-s-cli zip
         uses: actions/upload-artifact@v3
         env:
