@@ -9,9 +9,9 @@ import scodec.bits.ByteVector
 class HashTypeTest extends BitcoinSUnitTest {
 
   "HashType" must "combine hash types with SIGHASH_ANYONECANPAY" in {
-    HashType.sigHashAllAnyoneCanPay.num must be(Int32(0x81))
-    HashType.sigHashNoneAnyoneCanPay.num must be(Int32(0x82))
-    HashType.sigHashSingleAnyoneCanPay.num must be(Int32(0x83))
+    HashType.sigHashAllAnyoneCanPay.num must be(0x81)
+    HashType.sigHashNoneAnyoneCanPay.num must be(0x82)
+    HashType.sigHashSingleAnyoneCanPay.num must be(0x83)
   }
 
   it must "find a hash type by its hex value" in {
@@ -22,8 +22,8 @@ class HashTypeTest extends BitcoinSUnitTest {
   }
 
   it must "find a hash type by its byte value" in {
-    HashType(0.toByte) must be(SIGHASH_ALL(Int32.zero))
-    HashType(1.toByte) must be(SIGHASH_ALL(Int32.one))
+    HashType(0.toByte) must be(SIGHASH_ALL(0))
+    HashType(1.toByte) must be(SIGHASH_ALL(1))
     HashType(2.toByte) must be(HashType.sigHashNone)
     HashType(3.toByte) must be(HashType.sigHashSingle)
     HashType(0x80) must be(HashType.sigHashAnyoneCanPay)
@@ -31,20 +31,20 @@ class HashTypeTest extends BitcoinSUnitTest {
   }
 
   it must "default to SIGHASH_ALL if the given string/byte is not known" in {
-    HashType(ByteVector(0x124.toByte)) must be(SIGHASH_ALL(Int32(36)))
+    HashType(ByteVector(0x124.toByte)) must be(SIGHASH_ALL(36))
   }
 
   it must "find hashType for number 1190874345" in {
     //1190874345 & 0x80 = 0x80
     val num = Int32(1190874345)
-    HashType(num).isInstanceOf[SIGHASH_ANYONECANPAY] must be(true)
+    HashType(num.toInt).isInstanceOf[SIGHASH_ANYONECANPAY] must be(true)
     HashType(num.bytes).isInstanceOf[SIGHASH_ANYONECANPAY] must be(true)
   }
 
   it must "determine if a given number is of hashType SIGHASH_ALL" in {
-    HashType.isSigHashAll(Int32.zero) must be(true)
-    HashType.isSigHashAll(Int32.one) must be(true)
-    HashType.isSigHashAll(Int32(5)) must be(true)
+    HashType.isSigHashAll(0) must be(true)
+    HashType.isSigHashAll(1) must be(true)
+    HashType.isSigHashAll(5) must be(true)
 
     HashType.isSigHashAll(HashType.sigHashNone.num) must be(false)
     HashType.isSigHashAll(HashType.sigHashSingle.num) must be(false)
@@ -62,22 +62,22 @@ class HashTypeTest extends BitcoinSUnitTest {
 
   it must "intercept require statements for each hashType with illegal inputs" in {
     intercept[IllegalArgumentException] {
-      SIGHASH_ALL(Int32(2))
+      SIGHASH_ALL(2)
     }
   }
 
   it must "find each specific hashType from byte sequence of default value" in {
     //tests each hashtypes overriding fromBytes function
-    HashType(HashType.sigHashAll.num.bytes) must be(HashType.sigHashAll)
-    HashType(HashType.sigHashNone.num.bytes) must be(HashType.sigHashNone)
-    HashType(HashType.sigHashSingle.num.bytes) must be(HashType.sigHashSingle)
-    HashType(HashType.sigHashAnyoneCanPay.num.bytes) must be(
+    HashType(HashType.sigHashAll.num) must be(HashType.sigHashAll)
+    HashType(HashType.sigHashNone.num) must be(HashType.sigHashNone)
+    HashType(HashType.sigHashSingle.num) must be(HashType.sigHashSingle)
+    HashType(HashType.sigHashAnyoneCanPay.num) must be(
       HashType.sigHashAnyoneCanPay)
-    HashType(HashType.sigHashAllAnyoneCanPay.num.bytes) must be(
+    HashType(HashType.sigHashAllAnyoneCanPay.num) must be(
       HashType.sigHashAllAnyoneCanPay)
-    HashType(HashType.sigHashNoneAnyoneCanPay.num.bytes) must be(
+    HashType(HashType.sigHashNoneAnyoneCanPay.num) must be(
       HashType.sigHashNoneAnyoneCanPay)
-    HashType(HashType.sigHashSingleAnyoneCanPay.num.bytes) must be(
+    HashType(HashType.sigHashSingleAnyoneCanPay.num) must be(
       HashType.sigHashSingleAnyoneCanPay)
   }
 

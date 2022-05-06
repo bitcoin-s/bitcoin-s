@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
-import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -396,7 +396,7 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
   }
 
   it must "fail to create a SIGHASH from an invalid number" in {
-    val z = Int32.zero
+    val z = 0
     Try(SIGHASH_NONE(z)).isFailure must be(true)
     Try(SIGHASH_SINGLE(z)).isFailure must be(true)
     Try(SIGHASH_ANYONECANPAY(z)).isFailure must be(true)

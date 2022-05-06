@@ -9,7 +9,7 @@ class HashTypeSpec extends Properties("HashTypeSpec") {
     Prop.forAll(NumberGenerator.int32s) { i32 =>
       val hashType = HashType.fromBytes(i32.bytes)
 
-      hashType.num == i32 &&
+      hashType.num == i32.toInt &&
       i32.bytes.last == hashType.byte &&
       //this check cannot check the other 3 bytes in
       //hash type as they are discarded from inclusion

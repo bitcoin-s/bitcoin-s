@@ -68,6 +68,9 @@ sealed abstract class DERSignatureUtil {
   /** This functions implements the strict der encoding rules that were created in BIP66
     * [[https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki]]
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L98]]
+    *
+    * IMPORTANT: This function assumes signature has a SigHash byte and will fail if not!
+    *
     * @param signature the signature to check if they are strictly der encoded
     * @return boolean indicating whether the signature was der encoded or not
     */
@@ -82,6 +85,9 @@ sealed abstract class DERSignatureUtil {
   /** This functions implements the strict der encoding rules that were created in BIP66
     * https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L98]]
+    *
+    * IMPORTANT: This function assumes bytes has a SigHash byte and will fail if not!
+    *
     * @param bytes the bytes to check if they are strictly der encoded
     * @return boolean indicating whether the bytes were der encoded or not
     */

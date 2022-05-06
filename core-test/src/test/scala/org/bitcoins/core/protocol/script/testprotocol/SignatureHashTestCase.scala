@@ -34,7 +34,7 @@ object SignatureHashTestCase {
       val script: ScriptPubKey = ScriptPubKey(asm)
       val inputIndex: UInt32 = UInt32(elements(2).num.toInt)
       val hashTypeNum: Int32 = Int32(elements(3).num.toInt)
-      val hashType: HashType = HashType(hashTypeNum)
+      val hashType: HashType = HashType(hashTypeNum.toInt)
       val hash: DoubleSha256Digest =
         DoubleSha256Digest(elements.last.str)
       SignatureHashTestCase(transaction,

@@ -2,7 +2,7 @@ package org.bitcoins.core.psbt
 
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
@@ -218,7 +218,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
   case class SigHashType(hashType: HashType) extends InputPSBTRecord {
     override type KeyId = SigHashTypeKeyId.type
     override val key: ByteVector = ByteVector(SigHashTypeKeyId.byte)
-    override val value: ByteVector = hashType.num.bytesLE
+    override val value: ByteVector = Int32(hashType.num).bytesLE
   }
 
   case class RedeemScript(redeemScript: ScriptPubKey) extends InputPSBTRecord {
