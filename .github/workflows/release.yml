@@ -194,7 +194,7 @@ jobs:
           files: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  osx-zips:
+  mac-zips:
     runs-on: [ macos-latest ]
     steps:
       - uses: actions/checkout@v2
@@ -351,14 +351,11 @@ jobs:
         shell: bash
         run: sbt "universal:stage;universal:packageBin"
       - name: View Artifacts
-        shell: bash
         run: ls -l app/server/target/universal/stage
       - name: pwd
-        shell: bash
         run: pwd
       - name: Upload bitcoin-s-server-windows zip
         uses: actions/upload-artifact@v3
-        shell: bash
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
@@ -366,7 +363,6 @@ jobs:
           path: app/server/target/universal/stage/
       - name: Upload bitcoin-s-oracle-server zip
         uses: actions/upload-artifact@v3
-        shell: bash
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
@@ -374,7 +370,6 @@ jobs:
           path: app/oracle-server/target/universal/stage/
       - name: Upload bitcoin-s-cli zip
         uses: actions/upload-artifact@v3
-        shell: bash
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
@@ -382,7 +377,6 @@ jobs:
           path: app/cli/target/universal/stage/
       - name: Upload bitcoin-s-server if release
         uses: softprops/action-gh-release@v1
-        shell: bash
         if: startsWith(github.ref, 'refs/tags/')
         with:
           name: "bitcoin-s-server-windows-${{steps.previoustag.outputs.tag}}"
@@ -392,7 +386,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload bitcoin-s-oracle-server if release
         uses: softprops/action-gh-release@v1
-        shell: bash
         if: startsWith(github.ref, 'refs/tags/')
         with:
           name: "bitcoin-s-oracle-server-windows-${{steps.previoustag.outputs.tag}}"
@@ -402,7 +395,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload bitcoin-s-cli if release
         uses: softprops/action-gh-release@v1
-        shell: bash
         if: startsWith(github.ref, 'refs/tags/')
         with:
           name: "bitcoin-s-cli-windows-${{steps.previoustag.outputs.tag}}"
