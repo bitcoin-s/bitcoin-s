@@ -374,7 +374,7 @@ lazy val oracleServer = project
   .settings(jlinkModules --= CommonSettings.rmJlinkModules)
   .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
   .settings(jlinkIgnoreMissingDependency := CommonSettings.oracleServerJlinkIgnore)
-  .settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "mac-jlink-xattr-jre-bin-java.sh"))
+  .settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "oracle-server-extra-startup-script.sh"))
   .dependsOn(
     dlcOracle,
     serverRoutes

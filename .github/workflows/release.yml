@@ -221,14 +221,14 @@ jobs:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: "bitcoin-s-server-mac"
-          path: app/server/target/universal/
+          path: app/server/target/universal/stage
       - name: Upload bitcoin-s-oracle-server zip
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: "bitcoin-s-oracle-server-mac"
-          path: app/oracle-server/target/universal/
+          path: app/oracle-server/target/universal/stage
       - name: Upload bitcoin-s-cli zip
         uses: actions/upload-artifact@v3
         env:
