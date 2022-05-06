@@ -470,18 +470,18 @@ object Deps {
                  Compile.zxingJ2SE) ++ Compile.javaFxDeps
 
   val server = Def.setting {
-    List(
+    Vector(
       Compile.newMicroPickle.value,
       Compile.logback,
       Compile.akkaActor,
       Compile.akkaHttp,
       Compile.akkaStream,
       Compile.akkaSlf4j
-    )
+    ) ++ appServerTransitiveDeps
   }
 
   /** Transitive dependencies needed for the oracleServer to build properly with jlink */
-  private val oracleServerTransitiveDeps = Vector(
+  private val serverTransitiveDeps = Vector(
     //transitive deps needed for jlink
     Compile.codehaus,
     Compile.gson,
@@ -506,6 +506,10 @@ object Deps {
     Compile.javaxMail,
     Compile.javaxJms
   )
+
+
+  private val appServerTransitiveDeps = serverTransitiveDeps
+  private val oracleServerTransitiveDeps = serverTransitiveDeps
 
   val oracleServer = Def.setting {
     Vector(

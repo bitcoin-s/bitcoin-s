@@ -305,13 +305,27 @@ object CommonSettings {
   }
 
   lazy val oracleServerJlinkIgnore = {
-    val oracleServer = Vector(
+    val oracleServerIgnore = Vector(
       "java.xml" -> "java.activation",
       "com.github.benmanes.caffeine" -> "javax.annotation",
       "com.github.benmanes.caffeine.cache" -> "javax.annotation",
       "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation",
       //optional
       "org.codehaus.janino" -> "org.apache.tools.ant").++(loggingJlinkIgnore).++(dbCommonsJlinkIgnore)
-    JlinkIgnore.byPackagePrefix(oracleServer:_*)
+    JlinkIgnore.byPackagePrefix(oracleServerIgnore:_*)
+  }
+
+  lazy val appServerJlinkIgnore = {
+
+    val appServerIgnore = loggingJlinkIgnore.++(dbCommonsJlinkIgnore).++(Vector(
+      //https://github.com/janino-compiler/janino/blob/f6bb39d3137ad2e99b41ecc48aaaf8ab2644bd1c/janino/pom.xml#L37
+      "org.codehaus.janino" -> "org.apache.tools.ant",
+      "com.github.benmanes.caffeine" -> "javax.annotation",
+      "com.github.benmanes.caffeine.cache" -> "javax.annotation",
+      "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation",
+
+      "monix.execution.misc" -> "scala.tools.nsc"
+    ))
+    JlinkIgnore.byPackagePrefix(appServerIgnore:_*)
   }
 }

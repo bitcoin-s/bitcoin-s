@@ -402,6 +402,10 @@ lazy val appServer = project
   .settings(CommonSettings.appSettings: _*)
   .settings(CommonSettings.dockerSettings: _*)
   .settings(CommonSettings.dockerBuildxSettings: _*)
+  .settings(jlinkModules ++= CommonSettings.jlinkModules)
+  .settings(jlinkModules --= CommonSettings.rmJlinkModules)
+  .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
+  .settings(jlinkIgnoreMissingDependency := CommonSettings.appServerJlinkIgnore)
   .settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "wallet-server-extra-startup-script.sh"))
   .dependsOn(
     serverRoutes,
@@ -415,7 +419,7 @@ lazy val appServer = project
     feeProvider,
     zmq
   )
-  .enablePlugins(JavaAppPackaging, DockerPlugin)
+  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin)
 
 lazy val appServerTest = project
   .in(file("app/server-test"))
