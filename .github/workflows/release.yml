@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, "2022-05-05-build-only-oracle-server"]
     tags: ["*"]
   release:
     types: [ published ]
@@ -194,7 +194,76 @@ jobs:
           files: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  zip:
+  mac-zips:
+    runs-on: [ macos-latest ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: openjdk@1.17.0
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+      - name: Build zip
+        run: sbt "universal:stage;universal:packageBin"
+      - name: View Artifacts
+        run: ls -l app/server/target/universal/stage
+      - name: pwd
+        run: pwd
+      - name: Upload bitcoin-s-server-windows zip
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "bitcoin-s-server-mac"
+          path: app/server/target/universal/stage/
+      - name: Upload bitcoin-s-oracle-server zip
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "bitcoin-s-oracle-server-mac"
+          path: app/oracle-server/target/universal/stage/
+      - name: Upload bitcoin-s-cli zip
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "bitcoin-s-cli-mac"
+          path: app/cli/target/universal/stage/
+      - name: Upload bitcoin-s-server if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "bitcoin-s-server-mac-${{steps.previoustag.outputs.tag}}"
+          files: app/server/target/universal/*.zip
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload bitcoin-s-oracle-server if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "bitcoin-s-oracle-server-mac-${{steps.previoustag.outputs.tag}}"
+          files: app/oracle-server/target/universal/*.zip
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload bitcoin-s-cli if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "bitcoin-s-cli-mac-${{steps.previoustag.outputs.tag}}"
+          files: app/cli/target/universal/*.zip
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  linux-zips:
     runs-on: [ ubuntu-latest ]
     steps:
       - uses: actions/checkout@v2
@@ -215,36 +284,32 @@ jobs:
         run: ls -l app/server/target/universal/stage
       - name: pwd
         run: pwd
-      - name: chmod startup script
-        run: |
-          chmod +x app/server/target/universal/stage/bin/bitcoin-s-server
-          chmod +x app/server/target/universal/stage/bin/bitcoin-s-server.bat
-      - name: Upload bitcoin-s-server zip
+      - name: Upload bitcoin-s-server-linux zip
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
-          name: "bitcoin-s-server"
+          name: "bitcoin-s-server-linux"
           path: app/server/target/universal/stage/
-      - name: Upload bitcoin-s-oracle-server zip
+      - name: Upload bitcoin-s-oracle-server-linux zip
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
-          name: "bitcoin-s-oracle-server"
+          name: "bitcoin-s-oracle-server-linux"
           path: app/oracle-server/target/universal/stage/
-      - name: Upload bitcoin-s-cli zip
+      - name: Upload bitcoin-s-cli-linux zip
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
-          name: "bitcoin-s-cli"
+          name: "bitcoin-s-cli-linux"
           path: app/cli/target/universal/stage/
       - name: Upload bitcoin-s-server if release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: "bitcoin-s-server-${{steps.previoustag.outputs.tag}}"
+          name: "bitcoin-s-server-linux-${{steps.previoustag.outputs.tag}}"
           files: app/server/target/universal/*.zip
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
@@ -253,7 +318,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: "bitcoin-s-oracle-server-${{steps.previoustag.outputs.tag}}"
+          name: "bitcoin-s-oracle-server-linux-${{steps.previoustag.outputs.tag}}"
           files: app/oracle-server/target/universal/*.zip
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
@@ -262,7 +327,76 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: "bitcoin-s-cli-${{steps.previoustag.outputs.tag}}"
+          name: "bitcoin-s-cli-linux-${{steps.previoustag.outputs.tag}}"
+          files: app/cli/target/universal/*.zip
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  windows-zips:
+    runs-on: [windows-latest]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: openjdk@1.17.0
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+      - name: Build zip
+        run: sbt "universal:stage;universal:packageBin"
+      - name: View Artifacts
+        run: ls -l app/server/target/universal/stage
+      - name: pwd
+        run: pwd
+      - name: Upload bitcoin-s-server-windows zip
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "bitcoin-s-server-windows"
+          path: app/server/target/universal/stage/
+      - name: Upload bitcoin-s-oracle-server zip
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "bitcoin-s-oracle-server-windows"
+          path: app/oracle-server/target/universal/stage/
+      - name: Upload bitcoin-s-cli zip
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "bitcoin-s-cli-windows"
+          path: app/cli/target/universal/stage/
+      - name: Upload bitcoin-s-server if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "bitcoin-s-server-windows-${{steps.previoustag.outputs.tag}}"
+          files: app/server/target/universal/*.zip
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload bitcoin-s-oracle-server if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "bitcoin-s-oracle-server-windows-${{steps.previoustag.outputs.tag}}"
+          files: app/oracle-server/target/universal/*.zip
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload bitcoin-s-cli if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "bitcoin-s-cli-windows-${{steps.previoustag.outputs.tag}}"
           files: app/cli/target/universal/*.zip
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
