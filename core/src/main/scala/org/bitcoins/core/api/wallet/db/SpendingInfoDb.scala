@@ -15,14 +15,13 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
   InputInfo,
   ScriptSignatureParams,
   TxoState
 }
-import org.bitcoins.crypto.{DoubleSha256DigestBE, Sign}
+import org.bitcoins.crypto.{DoubleSha256DigestBE, HashType, Sign}
 
 /** DB representation of a native V0
   * SegWit UTXO

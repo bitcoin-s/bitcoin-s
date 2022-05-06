@@ -10,8 +10,7 @@ import org.bitcoins.core.protocol.script.{
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.psbt.GlobalPSBTRecord.XPubKey
 import org.bitcoins.core.psbt.InputPSBTRecord.ProofOfReservesCommitment
-import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.crypto.ECPublicKey
+import org.bitcoins.crypto.{ECPublicKey, HashType}
 import org.bitcoins.testkitcore.gen.PSBTGenerators
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits._

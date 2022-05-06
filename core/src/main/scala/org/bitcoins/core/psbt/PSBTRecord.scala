@@ -11,10 +11,9 @@ import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutput
 }
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.{HashType, _}
 import scodec.bits.ByteVector
 
 sealed trait PSBTRecord extends NetworkElement {

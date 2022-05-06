@@ -1,12 +1,10 @@
-package org.bitcoins.core.script.crypto
+package org.bitcoins.crypto
 
-import org.bitcoins.core.number.Int32
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /** Created by chris on 2/27/16.
   */
-class HashTypeTest extends BitcoinSUnitTest {
+class HashTypeTest extends BitcoinSCryptoTest {
 
   "HashType" must "combine hash types with SIGHASH_ANYONECANPAY" in {
     HashType.sigHashAllAnyoneCanPay.num must be(0x81)
@@ -36,9 +34,10 @@ class HashTypeTest extends BitcoinSUnitTest {
 
   it must "find hashType for number 1190874345" in {
     //1190874345 & 0x80 = 0x80
-    val num = Int32(1190874345)
-    HashType(num.toInt).isInstanceOf[SIGHASH_ANYONECANPAY] must be(true)
-    HashType(num.bytes).isInstanceOf[SIGHASH_ANYONECANPAY] must be(true)
+    val num = 1190874345
+    HashType(num).isInstanceOf[SIGHASH_ANYONECANPAY] must be(true)
+    HashType(ByteVector.fromInt(num))
+      .isInstanceOf[SIGHASH_ANYONECANPAY] must be(true)
   }
 
   it must "determine if a given number is of hashType SIGHASH_ALL" in {
@@ -85,4 +84,18 @@ class HashTypeTest extends BitcoinSUnitTest {
     HashType(105512910).isInstanceOf[SIGHASH_ANYONECANPAY] must be(true)
   }
 
+  it must "have serialization symmetry" in {
+    forAll(NumberGenerator.ints.map(ByteVector.fromInt(_))) { i32 =>
+      val hashType = HashType.fromBytes(i32)
+
+      hashType.num == i32.toInt() &&
+      i32.last == hashType.byte &&
+      //this check cannot check the other 3 bytes in
+      //hash type as they are discarded from inclusion
+      //on a bitcoin digital signature. Not sure why satoshi
+      //would have just used a uint8_t to represent a hash type
+      //instead of a uint32_t.
+      HashType.fromByte(hashType.byte).byte == hashType.byte
+    }
+  }
 }

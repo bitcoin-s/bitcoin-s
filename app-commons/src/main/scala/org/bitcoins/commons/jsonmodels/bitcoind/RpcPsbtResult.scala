@@ -6,8 +6,12 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey, ECPublicKeyBytes}
+import org.bitcoins.crypto.{
+  ECDigitalSignature,
+  ECPublicKey,
+  ECPublicKeyBytes,
+  HashType
+}
 
 sealed abstract class RpcPsbtResult
 

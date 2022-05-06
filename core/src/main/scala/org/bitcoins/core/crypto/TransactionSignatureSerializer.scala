@@ -10,7 +10,18 @@ import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
-import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  DoubleSha256Digest,
+  HashType,
+  SIGHASH_ALL,
+  SIGHASH_ALL_ANYONECANPAY,
+  SIGHASH_ANYONECANPAY,
+  SIGHASH_NONE,
+  SIGHASH_NONE_ANYONECANPAY,
+  SIGHASH_SINGLE,
+  SIGHASH_SINGLE_ANYONECANPAY
+}
 import scodec.bits.ByteVector
 
 /** Created by chris on 2/16/16.
@@ -319,7 +330,7 @@ sealed abstract class TransactionSignatureSerializer {
                          UInt32.zero)
     }
 
-  /** Executes the [[org.bitcoins.core.script.crypto.SIGHASH_NONE SIGHASH_NONE]]
+  /** Executes the [[SIGHASH_NONE SIGHASH_NONE]]
     * procedure on a spending transaction for the input specified by inputIndex.
     */
   private def sigHashNone(
@@ -339,7 +350,7 @@ sealed abstract class TransactionSignatureSerializer {
     sigHashNoneTx
   }
 
-  /** Executes the [[org.bitcoins.core.script.crypto.SIGHASH_SINGLE SIGHASH_SINGLE]] procedure on a spending
+  /** Executes the [[SIGHASH_SINGLE SIGHASH_SINGLE]] procedure on a spending
     * transaction for the input specified by inputIndex
     */
   private def sigHashSingle(
@@ -370,14 +381,14 @@ sealed abstract class TransactionSignatureSerializer {
     sigHashSingleTx
   }
 
-  /** Executes the [[org.bitcoins.core.script.crypto.SIGHASH_ALL SIGHASH_ALL]] procedure on a spending
+  /** Executes the [[SIGHASH_ALL SIGHASH_ALL]] procedure on a spending
     * transaction at inputIndex.
     */
   private def sigHashAll(spendingTransaction: Transaction): Transaction = {
     spendingTransaction
   }
 
-  /** Executes the [[org.bitcoins.core.script.crypto.SIGHASH_ANYONECANPAY SIGHASH_ANYONECANPAY]] procedure
+  /** Executes the [[SIGHASH_ANYONECANPAY SIGHASH_ANYONECANPAY]] procedure
     * on a spending transaction at inputIndex.
     */
   private def sigHashAnyoneCanPay(

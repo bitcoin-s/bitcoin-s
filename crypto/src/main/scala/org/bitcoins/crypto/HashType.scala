@@ -1,7 +1,5 @@
-package org.bitcoins.core.script.crypto
+package org.bitcoins.crypto
 
-//import org.bitcoins.core.number.Int32
-import org.bitcoins.crypto.{ECDigitalSignature, Factory}
 import scodec.bits.{ByteOrdering, ByteVector}
 
 /** Created by chris on 1/18/16.

@@ -10,10 +10,9 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput,
   WitnessTransaction
 }
-import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.crypto.{DoubleSha256Digest, ECDigitalSignature}
+import org.bitcoins.crypto._
 import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TestUtil}
 import scodec.bits.ByteVector
 import upickle.default._

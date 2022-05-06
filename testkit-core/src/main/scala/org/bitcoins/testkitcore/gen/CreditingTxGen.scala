@@ -4,7 +4,6 @@ import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
@@ -12,7 +11,7 @@ import org.bitcoins.core.wallet.utxo.{
   P2SHNestedSegwitV0InputInfo,
   ScriptSignatureParams
 }
-import org.bitcoins.crypto.Sign
+import org.bitcoins.crypto.{HashType, Sign}
 import org.scalacheck.Gen
 
 sealed abstract class CreditingTxGen {

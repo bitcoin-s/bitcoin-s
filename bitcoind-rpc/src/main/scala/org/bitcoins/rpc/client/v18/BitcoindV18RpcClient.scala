@@ -10,8 +10,7 @@ import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey}
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, HashType}
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
   BitcoindVersion,

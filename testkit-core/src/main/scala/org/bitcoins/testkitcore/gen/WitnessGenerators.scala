@@ -6,8 +6,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.crypto.{ECPrivateKey, HashType}
 import org.scalacheck.Gen
 
 /** Created by chris on 11/28/16.

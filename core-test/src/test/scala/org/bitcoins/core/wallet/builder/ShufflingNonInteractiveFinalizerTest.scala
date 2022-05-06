@@ -4,7 +4,6 @@ import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
@@ -12,7 +11,12 @@ import org.bitcoins.core.wallet.utxo.{
   ScriptSignatureParams,
   UnassignedSegwitNativeInputInfo
 }
-import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
+import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
+  ECPrivateKey,
+  ECPublicKey,
+  HashType
+}
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.{
   CreditingTxGen,

@@ -5,7 +5,6 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.constant.ScriptToken
-import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
 import org.bitcoins.core.util.BitcoinScriptUtil
@@ -13,7 +12,8 @@ import org.bitcoins.crypto.{
   DERSignatureUtil,
   ECDigitalSignature,
   ECPublicKey,
-  ECPublicKeyBytes
+  ECPublicKeyBytes,
+  HashType
 }
 import scodec.bits.ByteVector
 

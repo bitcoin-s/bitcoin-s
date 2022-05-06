@@ -15,9 +15,8 @@ import org.bitcoins.core.protocol.dlc.models.{
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{FutureUtil, Indexed}
-import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey}
+import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey, HashType}
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}

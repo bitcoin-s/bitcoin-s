@@ -7,8 +7,7 @@ import org.bitcoins.core.protocol.script.{
   SignatureVersion
 }
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.crypto.Sign
+import org.bitcoins.crypto.{HashType, Sign}
 
 /** Stores the information required to generate a signature (ECSignatureParams)
   * or to generate a script signature (ScriptSignatureParams) for a given satisfaction

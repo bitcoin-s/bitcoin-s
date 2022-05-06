@@ -7,9 +7,8 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.{HashType, _}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec

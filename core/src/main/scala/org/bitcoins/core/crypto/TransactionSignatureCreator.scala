@@ -1,13 +1,13 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 import org.bitcoins.crypto.{
   DERSignatureUtil,
   ECAdaptorSignature,
   ECDigitalSignature,
-  ECPrivateKey
+  ECPrivateKey,
+  HashType
 }
 import scodec.bits.ByteVector
 

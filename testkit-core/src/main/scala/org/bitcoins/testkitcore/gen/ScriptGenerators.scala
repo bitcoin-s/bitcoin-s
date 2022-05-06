@@ -10,7 +10,6 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.control.{ConditionalOperation, OP_IF, OP_NOTIF}
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.wallet.signer.{
   MultiSigSigner,
@@ -23,7 +22,8 @@ import org.bitcoins.crypto.{
   ECDigitalSignature,
   ECPrivateKey,
   ECPublicKey,
-  EmptyDigitalSignature
+  EmptyDigitalSignature,
+  HashType
 }
 import org.scalacheck.Gen
 import scodec.bits.ByteVector

@@ -5,7 +5,6 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{
@@ -17,6 +16,7 @@ import org.bitcoins.core.wallet.utxo.{
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECPrivateKey,
+  HashType,
   LowRDummyECDigitalSignature,
   Sign
 }
