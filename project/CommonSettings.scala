@@ -253,59 +253,65 @@ object CommonSettings {
   lazy val binariesPath =
     Paths.get(Properties.userHome, ".bitcoin-s", "binaries")
 
-  lazy val oracleServerJlinkIgnore = {
-    JlinkIgnore.byPackagePrefix(
-      "java.xml" -> "java.activation",
+  lazy val dbCommonsJlinkIgnore = {
+    //we don't use android
+   Vector("org.flywaydb.core.api.android" -> "android.content",
+    "org.flywaydb.core.internal.logging.android" -> "android.util",
+    "org.flywaydb.core.internal.resource.android" -> "android.content.res",
+    "org.flywaydb.core.internal.scanner.android" -> "android.content",
+    "org.flywaydb.core.internal.scanner.android" -> "android.content.pm",
+    "org.flywaydb.core.internal.scanner.android" -> "android.content.res",
+    "org.flywaydb.core.internal.scanner.android" -> "dalvik.system",
+    //we don't use hibernate
+    "com.zaxxer.hikari.hibernate" -> "org.hibernate",
+
+    //we don't ship with support for any aws products
+    "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.awscore.exception",
+    "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.core",
+    "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.services.s3",
+    "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.services.s3.model",
+    "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.core.exception",
+    "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3",
+    "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3.model",
+    "org.flywaydb.core.api.configuration" -> "software.amazon.awssdk.services.s3",
+
+    //we don't use oracle database products
+    "org.flywaydb.core.internal.database.oracle" -> "oracle.jdbc",
+
+    //we don't use jboss
+    "org.flywaydb.core.internal.scanner.classpath.jboss" -> "org.jboss.vfs",
+
+    "org.flywaydb.core.internal.logging.log4j2" -> "org.apache.logging.log4j",
+
+    "com.zaxxer.hikari.metrics.micrometer" -> "io.micrometer.core.instrument",
+    "com.zaxxer.hikari.pool" -> "io.micrometer.core.instrument",
+
+    "slick.jdbc" -> "javax.xml.bind",
+    "com.zaxxer.hikari.metrics.prometheus" -> "io.prometheus.client",
+    "com.zaxxer.hikari.util" -> "javassist",
+    "com.zaxxer.hikari.util" -> "javassist.bytecode",
+
+      //postgres requires this weird waffle dep
+    "waffle.jaas" -> "java.security.acl"
+    )
+  }
+
+  lazy val loggingJlinkIgnore = {
+    Vector(
       "ch.qos.logback.core.net" -> "javax.mail",
       "ch.qos.logback.core.net" -> "javax.mail.internet",
-      "org.flywaydb.core.api.android" -> "android.content",
-      "org.flywaydb.core.internal.logging.android" -> "android.util",
+      "org.apache.log4j.jmx" -> "com.sun.jdmk.comm",
+    )
+  }
 
-      //we don't use android
-      "org.flywaydb.core.internal.resource.android" -> "android.content.res",
-      "org.flywaydb.core.internal.scanner.android" -> "android.content",
-      "org.flywaydb.core.internal.scanner.android" -> "android.content.pm",
-      "org.flywaydb.core.internal.scanner.android" -> "android.content.res",
-      "org.flywaydb.core.internal.scanner.android" -> "dalvik.system",
-
-      //we don't use hibernate
-      "com.zaxxer.hikari.hibernate" -> "org.hibernate",
-
-      //we don't ship with support for any aws products
-      "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.awscore.exception",
-      "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.core",
-      "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.services.s3",
-      "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.services.s3.model",
-      "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.core.exception",
-      "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3",
-      "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3.model",
-      "org.flywaydb.core.api.configuration" -> "software.amazon.awssdk.services.s3",
-
-      //we don't use oracle database products
-      "org.flywaydb.core.internal.database.oracle" -> "oracle.jdbc",
-
-      //we don't use jboss
-      "org.flywaydb.core.internal.scanner.classpath.jboss" -> "org.jboss.vfs",
-
-      "org.flywaydb.core.internal.logging.log4j2" -> "org.apache.logging.log4j",
-
-      "slick.jdbc" -> "javax.xml.bind",
-
+  lazy val oracleServerJlinkIgnore = {
+    val oracleServer = Vector(
+      "java.xml" -> "java.activation",
       "com.github.benmanes.caffeine" -> "javax.annotation",
       "com.github.benmanes.caffeine.cache" -> "javax.annotation",
       "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation",
-
-      "com.zaxxer.hikari.metrics.micrometer" -> "io.micrometer.core.instrument",
-      "com.zaxxer.hikari.pool" -> "io.micrometer.core.instrument",
-
-      "waffle.jaas" -> "java.security.acl",
-
-      "org.apache.log4j.jmx" -> "com.sun.jdmk.comm",
       //optional
-      "org.codehaus.janino" -> "org.apache.tools.ant",
-      "com.zaxxer.hikari.metrics.prometheus" -> "io.prometheus.client",
-      "com.zaxxer.hikari.util" -> "javassist",
-      "com.zaxxer.hikari.util" -> "javassist.bytecode"
-    )
+      "org.codehaus.janino" -> "org.apache.tools.ant").++(loggingJlinkIgnore).++(dbCommonsJlinkIgnore)
+    JlinkIgnore.byPackagePrefix(oracleServer:_*)
   }
 }
