@@ -438,9 +438,13 @@ lazy val cli = project
   .settings(
     name := "bitcoin-s-cli"
   )
+  .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
+  .settings(jlinkModules --= CommonSettings.rmCliJlinkModules)
+  .settings(jlinkIgnoreMissingDependency := CommonSettings.cliJlinkIgnore)
+  .settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "cli-extra-startup-script.sh"))
   .dependsOn(
     appCommons
-  )
+  ).enablePlugins(JavaAppPackaging, NativeImagePlugin, JlinkPlugin)
 
 lazy val cliTest = project
   .in(file("app/cli-test"))

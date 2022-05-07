@@ -455,11 +455,7 @@ object Deps {
     List(
       Compile.sttp,
       Compile.newMicroPickle.value,
-      Compile.scopt,
-      //we can remove this dependency when this is fixed
-      //https://github.com/oracle/graal/issues/1943
-      //see https://github.com/bitcoin-s/bitcoin-s/issues/1100
-      Compile.codehaus
+      Compile.scopt
     )
   }
 

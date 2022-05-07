@@ -107,6 +107,16 @@ object CommonSettings {
     "java.desktop"
   )
 
+  lazy val rmCliJlinkModules = {
+    rmJlinkModules ++ Vector(
+      "java.logging",
+      "java.naming",
+      "java.sql",
+      "java.xml",
+      "jdk.unsupported"
+    )
+  }
+
   lazy val jlinkOptions = Seq(
     "--no-header-files",
     "--no-man-pages",
@@ -327,5 +337,14 @@ object CommonSettings {
       "monix.execution.misc" -> "scala.tools.nsc"
     ))
     JlinkIgnore.byPackagePrefix(appServerIgnore:_*)
+  }
+
+  lazy val cliJlinkIgnore = {
+    val cliIgnore = Vector(
+      "scala.meta.internal.svm_subs" -> "com.oracle.svm.core.annotate",
+      "org.slf4j" -> "org.slf4j.impl"
+    )
+
+    JlinkIgnore.byPackagePrefix(cliIgnore:_*)
   }
 }
