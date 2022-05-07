@@ -374,6 +374,7 @@ lazy val oracleServer = project
   .settings(jlinkModules --= CommonSettings.rmJlinkModules)
   .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
   .settings(jlinkIgnoreMissingDependency := CommonSettings.oracleServerJlinkIgnore)
+  .settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "oracle-server-extra-startup-script.sh"))
   .dependsOn(
     dlcOracle,
     serverRoutes
@@ -401,6 +402,11 @@ lazy val appServer = project
   .settings(CommonSettings.appSettings: _*)
   .settings(CommonSettings.dockerSettings: _*)
   .settings(CommonSettings.dockerBuildxSettings: _*)
+  .settings(jlinkModules ++= CommonSettings.jlinkModules)
+  .settings(jlinkModules --= CommonSettings.rmJlinkModules)
+  .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
+  .settings(jlinkIgnoreMissingDependency := CommonSettings.appServerJlinkIgnore)
+  .settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "wallet-server-extra-startup-script.sh"))
   .dependsOn(
     serverRoutes,
     appCommons,
@@ -413,7 +419,7 @@ lazy val appServer = project
     feeProvider,
     zmq
   )
-  .enablePlugins(JavaAppPackaging, DockerPlugin)
+  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin)
 
 lazy val appServerTest = project
   .in(file("app/server-test"))
@@ -432,9 +438,13 @@ lazy val cli = project
   .settings(
     name := "bitcoin-s-cli"
   )
+  .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
+  .settings(jlinkModules --= CommonSettings.rmCliJlinkModules)
+  .settings(jlinkIgnoreMissingDependency := CommonSettings.cliJlinkIgnore)
+  .settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "cli-extra-startup-script.sh"))
   .dependsOn(
     appCommons
-  )
+  ).enablePlugins(JavaAppPackaging, NativeImagePlugin, JlinkPlugin)
 
 lazy val cliTest = project
   .in(file("app/cli-test"))

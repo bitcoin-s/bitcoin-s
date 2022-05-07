@@ -9,5 +9,3 @@ nativeImageOptions ++= Seq(
   "--enable-http",
   "--enable-https"
 )
-
-enablePlugins(JavaAppPackaging, NativeImagePlugin)
