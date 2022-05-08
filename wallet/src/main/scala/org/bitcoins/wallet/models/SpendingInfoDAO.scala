@@ -10,8 +10,9 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config._
+import slick.ast.{TableExpansion, TableNode}
 
-import java.sql.SQLException
+import java.sql.{PreparedStatement, SQLException}
 import scala.concurrent.{ExecutionContext, Future}
 
 case class SpendingInfoDAO()(implicit
@@ -574,17 +575,48 @@ case class SpendingInfoDAO()(implicit
       .map(_ => ts.map(_.copyWithState(TxoState.Reserved)))
   }
 
-  def createOutPointsIndexIfNeeded(): Future[Unit] = {
-    val query =
-      sqlu"CREATE UNIQUE INDEX IF NOT EXISTS utxo_outpoints ON txo_spending_info (tx_outpoint)"
-    safeDatabase.run(query).map(_ => ())
+  def createOutPointsIndexIfNeeded(): Future[Unit] = Future {
+    withStatement(
+      s"CREATE UNIQUE INDEX IF NOT EXISTS utxo_outpoints ON $fullTableName (tx_outpoint)") {
+      st =>
+        st.executeUpdate()
+        ()
+    }
   }
 
-  def hasDuplicates(): Future[Boolean] = {
-    val query =
-      sql"SELECT EXISTS (SELECT tx_outpoint, COUNT(*) FROM txo_spending_info GROUP BY tx_outpoint HAVING COUNT(*) > 1)"
-        .as[Boolean]
-    safeDatabase.run(query).map(_.headOption.getOrElse(false))
+  def hasDuplicates(): Future[Boolean] = Future {
+    withStatement(
+      s"SELECT EXISTS (SELECT tx_outpoint, COUNT(*) FROM $fullTableName GROUP BY tx_outpoint HAVING COUNT(*) > 1)") {
+      st =>
+        val rs = st.executeQuery()
+        try {
+          if (rs.next()) {
+            rs.getBoolean(1)
+          } else false
+        } finally rs.close()
+    }
+  }
+
+  private def fullTableName: String = {
+    val tableNode = table.toNode
+      .asInstanceOf[TableExpansion]
+      .table
+      .asInstanceOf[TableNode]
+    tableNode.schemaName.map(_ + ".").getOrElse("") + tableNode.tableName
+  }
+
+  private def withStatement[T](sql: String)(f: PreparedStatement => T): T = {
+    val conn = database.source.createConnection()
+    val autoCommit = conn.getAutoCommit
+    conn.setAutoCommit(true)
+    try {
+      val st = conn.prepareStatement(sql)
+      try f(st)
+      finally st.close()
+    } finally {
+      conn.setAutoCommit(autoCommit)
+      conn.close()
+    }
   }
 
   private def findScriptPubKeysAction(ids: Seq[Long]): DBIOAction[
