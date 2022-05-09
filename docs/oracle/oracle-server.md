@@ -96,7 +96,7 @@ fdd8687004746573745f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e521
 
 CURL:
 ```bash
-curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "createenumannouncement", "params": ["testEvent", ""2030-01-03T00:30:00.000Z"", ["outcome1", "outcome2", "outcome3"]]}' -H "Content-Type: application/json" http://127.0.0.1:9998/
+curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "createenumannouncement", "params": ["testEvent", "2030-01-03T00:30:00.000Z", ["outcome1", "outcome2", "outcome3"]]}' -H "Content-Type: application/json" http://127.0.0.1:9998/
 {"result":"fdd824b0ba0f08e9becbf77019e246ca8a80c027585634dc1aed4b7f67442ada394b40dcb242d8a8c84893a752b93f30ff07525b0604382255ec7392fcc6f230140feb905f6f49e116de8cb57856bacdd9997d8dfb73877f64a4ec8d45fc0e73a0e52115fdd8224c000180e550759cb6275f6db3fad2b616ed51bdcccc204d0d978cd921cafae9fc1d6f657131d1fdd8061d0003086f7574636f6d6531086f7574636f6d6532086f7574636f6d65330474657374","error":null}
 
 curl --data-binary '{"jsonrpc": "1.0", "id": "curltest", "method": "getannouncement", "params": ["testEvent"]}' -H "Content-Type: application/json" http://127.0.0.1:9998/
