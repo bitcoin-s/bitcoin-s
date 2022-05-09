@@ -83,7 +83,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
             RescanState.RescanDone
           }
 
-          res.recoverWith { err =>
+          res.recoverWith { case err: Throwable =>
             logger.error(s"Failed to rescan wallet", err)
             walletStateDAO
               .setRescanning(false)

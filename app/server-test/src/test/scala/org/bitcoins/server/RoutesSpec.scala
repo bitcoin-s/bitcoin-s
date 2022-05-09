@@ -1697,8 +1697,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
                               _: Int,
+                              _: Boolean,
                               _: Boolean)(_: ExecutionContext))
-        .expects(None, None, 100, false, executor)
+        .expects(None, None, 100, false, false, executor)
         .returning(Future.successful(RescanState.RescanDone))
 
       val route1 =
@@ -1718,12 +1719,14 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
                               _: Int,
+                              _: Boolean,
                               _: Boolean)(_: ExecutionContext))
         .expects(
           Some(BlockTime(
             ZonedDateTime.of(2018, 10, 27, 12, 34, 56, 0, ZoneId.of("UTC")))),
           None,
           100,
+          false,
           false,
           executor)
         .returning(Future.successful(RescanState.RescanDone))
@@ -1747,10 +1750,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
                               _: Int,
+                              _: Boolean,
                               _: Boolean)(_: ExecutionContext))
         .expects(None,
                  Some(BlockHash(DoubleSha256DigestBE.empty)),
                  100,
+                 false,
                  false,
                  executor)
         .returning(Future.successful(RescanState.RescanDone))
@@ -1774,10 +1779,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
                               _: Int,
+                              _: Boolean,
                               _: Boolean)(_: ExecutionContext))
         .expects(Some(BlockHeight(12345)),
                  Some(BlockHeight(67890)),
                  100,
+                 false,
                  false,
                  executor)
         .returning(Future.successful(RescanState.RescanDone))
@@ -1838,8 +1845,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
                               _: Int,
+                              _: Boolean,
                               _: Boolean)(_: ExecutionContext))
-        .expects(None, None, 55, false, executor)
+        .expects(None, None, 55, false, false, executor)
         .returning(Future.successful(RescanState.RescanDone))
 
       val route8 =
