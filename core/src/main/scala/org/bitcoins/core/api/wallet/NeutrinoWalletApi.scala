@@ -76,16 +76,17 @@ trait NeutrinoWalletApi { self: WalletApi =>
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
-      useCreationTime: Boolean)(implicit
-      ec: ExecutionContext): Future[RescanState]
+      useCreationTime: Boolean,
+      force: Boolean)(implicit ec: ExecutionContext): Future[RescanState]
 
   /** Helper method to rescan the ENTIRE blockchain. */
-  def fullRescanNeutrinoWallet(addressBatchSize: Int)(implicit
-      ec: ExecutionContext): Future[RescanState] =
+  def fullRescanNeutrinoWallet(addressBatchSize: Int, force: Boolean = false)(
+      implicit ec: ExecutionContext): Future[RescanState] =
     rescanNeutrinoWallet(startOpt = None,
                          endOpt = None,
                          addressBatchSize = addressBatchSize,
-                         useCreationTime = false)
+                         useCreationTime = false,
+                         force = force)
 
   def discoveryBatchSize(): Int
 

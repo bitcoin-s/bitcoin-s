@@ -86,6 +86,9 @@ abstract class Wallet
   private[bitcoins] val stateDescriptorDAO: WalletStateDescriptorDAO =
     WalletStateDescriptorDAO()
 
+  private[bitcoins] val walletStateDAO: WalletStateDAO =
+    WalletStateDAO()
+
   private val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
