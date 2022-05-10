@@ -55,7 +55,7 @@ class TorClient()(implicit
   private lazy val executable = TorClient.torBinaryFromResource(conf.torDir)
 
   /** The command to start the daemon on the underlying OS */
-  lazy val cmd: String = {
+  override lazy val cmd: String = {
 
     val args = Vector(
       "--ExitRelay 0", // ensure we aren't an exit relay
