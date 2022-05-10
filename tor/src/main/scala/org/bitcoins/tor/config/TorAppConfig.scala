@@ -106,6 +106,7 @@ case class TorAppConfig(
     */
   override def start(): Future[Unit] = {
     if (torProvided) {
+      logger.info(s"Tor provided to us, skipping start")
       Future.unit
     } else {
       lazy val torRunning = checkIfTorAlreadyRunning

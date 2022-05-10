@@ -104,9 +104,6 @@ object TorClient extends Logging {
 
     val executableFileName = datadir.resolve(torBundle.primaryExecutable).toFile
 
-    logger.info(
-      s"Using prepackaged Tor from bitcoin-s resources, $executableFileName")
-
     if (existsAndIsExecutable(datadir, torBundle)) {
       logger.info(
         s"Using tor daemon already written to datadir=${datadir.toAbsolutePath}")
