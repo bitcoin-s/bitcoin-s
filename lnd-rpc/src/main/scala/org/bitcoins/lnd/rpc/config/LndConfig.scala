@@ -70,10 +70,14 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
 
   /** The blockchain network associated with this `lnd` config */
   lazy val network: BitcoinNetwork = {
-    val isMainnet = getValue("bitcoin.mainnet").exists(_.toLowerCase == "true")
-    val isTestnet = getValue("bitcoin.testnet").exists(_.toLowerCase == "true")
-    val isSignet = getValue("bitcoin.signet").exists(_.toLowerCase == "true")
-    val isRegtest = getValue("bitcoin.regtest").exists(_.toLowerCase == "true")
+    val isMainnet = getValue("bitcoin.mainnet").exists(v =>
+      v.toLowerCase == "true" || v.toInt == 1)
+    val isTestnet = getValue("bitcoin.testnet").exists(v =>
+      v.toLowerCase == "true" || v.toInt == 1)
+    val isSignet = getValue("bitcoin.signet").exists(v =>
+      v.toLowerCase == "true" || v.toInt == 1)
+    val isRegtest = getValue("bitcoin.regtest").exists(v =>
+      v.toLowerCase == "true" || v.toInt == 1)
 
     if (isMainnet && !(isRegtest || isSignet || isTestnet)) MainNet
     else if (isTestnet && !(isRegtest || isSignet || isMainnet)) TestNet3
