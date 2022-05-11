@@ -29,9 +29,9 @@ trait NativeProcessFactory extends Logging {
   /** Starts the binary by spinning up a new process */
   def startBinary(): Future[Unit] = Future {
     processOpt match {
-      case Some(_) =>
+      case Some(p) =>
         //don't do anything as it is already started
-        logger.debug(s"Binary was already started!")
+        logger.info(s"Binary was already started! process=$p")
         ()
       case None =>
         if (cmd.nonEmpty) {
