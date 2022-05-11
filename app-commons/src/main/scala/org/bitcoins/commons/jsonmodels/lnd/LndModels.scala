@@ -1,6 +1,7 @@
 package org.bitcoins.commons.jsonmodels.lnd
 
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.LnTag.PaymentHashTag
@@ -14,7 +15,7 @@ sealed abstract class LndModel
 case class AddInvoiceResult(
     rHash: PaymentHashTag,
     invoice: LnInvoice,
-    addIndex: Long,
+    addIndex: UInt64,
     paymentAddr: ByteVector)
     extends LndModel
 

@@ -6,6 +6,21 @@ package invoicesrpc;
 
 option go_package = "github.com/lightningnetwork/lnd/lnrpc/invoicesrpc";
 
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  import: "org.bitcoins.lnd.rpc.LndUtils._"
+  scope: PACKAGE
+  field_transformations : [
+    {
+      when : {
+        type: TYPE_UINT64
+      }
+      set : {[scalapb.field] {type : 'org.bitcoins.core.number.UInt64' }}
+    }
+  ]
+};
+
 // Invoices is a service that can be used to create, accept, settle and cancel
 // invoices.
 service Invoices {

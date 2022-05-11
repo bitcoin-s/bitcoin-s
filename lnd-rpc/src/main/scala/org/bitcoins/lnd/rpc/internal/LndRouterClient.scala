@@ -30,7 +30,7 @@ trait LndRouterClient { self: LndRpcClient =>
       routeHints: Vector[LnRoute]): Future[QueryRoutesResponse] = {
     val hopHints = routeHints.map { hint =>
       HopHint(hint.pubkey.hex,
-              hint.shortChannelID.u64.toLong,
+              hint.shortChannelID.u64,
               hint.feeBaseMsat.msat.toLong.toInt,
               hint.feePropMilli.u32.toInt,
               hint.cltvExpiryDelta)

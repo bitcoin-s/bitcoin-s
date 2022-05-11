@@ -4,6 +4,21 @@ package signrpc;
 
 option go_package = "github.com/lightningnetwork/lnd/lnrpc/signrpc";
 
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  import: "org.bitcoins.lnd.rpc.LndUtils._"
+  scope: PACKAGE
+  field_transformations : [
+    {
+      when : {
+        type: TYPE_UINT64
+      }
+      set : {[scalapb.field] {type : 'org.bitcoins.core.number.UInt64' }}
+    }
+  ]
+};
+
 // Signer is a service that gives access to the signing functionality of the
 // daemon's wallet.
 service Signer {

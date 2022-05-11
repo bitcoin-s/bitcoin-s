@@ -5,11 +5,12 @@ import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
 import lnrpc.{ChannelPoint, OutPoint}
 import org.bitcoins.commons.jsonmodels.lnd.TxDetails
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.crypto._
+import scalapb.TypeMapper
 import scodec.bits._
 import signrpc.TxOut
 
@@ -90,6 +91,9 @@ trait LndUtils {
       label = details.label
     )
   }
+
+  implicit val uint64Mapper: TypeMapper[Long, UInt64] =
+    TypeMapper[Long, UInt64](UInt64.apply)(_.toBigInt.longValue)
 }
 
 object LndUtils extends LndUtils

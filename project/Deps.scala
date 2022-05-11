@@ -21,6 +21,7 @@ object Deps {
     val slf4j = "1.7.36"
     val spray = "1.3.6"
     val zeromq = "0.5.2"
+    val scalapb = "0.11.10"
     val akkav = "10.2.9"
     val playv = "2.9.2"
     val akkaStreamv = "2.6.19"
@@ -97,6 +98,9 @@ object Deps {
 
     val zeromq =
       "org.zeromq" % "jeromq" % V.zeromq withSources () withJavadoc ()
+
+    val scalapb =
+      "com.thesamet.scalapb" %% "scalapb-runtime" % V.scalapb % "protobuf"
 
     val akkaHttp =
       "com.typesafe.akka" %% "akka-http" % V.akkav withSources () withJavadoc ()
@@ -549,6 +553,7 @@ object Deps {
   }
 
   val lndRpc = List(
+    Compile.scalapb,
     Compile.akkaHttp,
     Compile.akkaHttp2,
     Compile.akkaStream,
