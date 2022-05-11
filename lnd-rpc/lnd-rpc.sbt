@@ -10,10 +10,19 @@ CommonSettings.prodSettings
 
 enablePlugins(AkkaGrpcPlugin)
 
-// Disable deprecation warning otherwise protobuf deprecation warnings will cause errors
-Compile / scalacOptions += {
-  "-Wconf:cat=deprecation:site=lnrpc\\..*:silent,cat=deprecation:site=signrpc\\..*:silent,cat=deprecation:site=walletrpc\\..*:silent,cat=deprecation:site=routerrpc\\..*:silent,cat=deprecation:site=invoicesrpc\\..*:silent"
-}
+// Disable deprecation and unused imports warning otherwise generated files will cause errors
+Compile / scalacOptions ++= Seq(
+  "-Wconf:cat=deprecation:site=lnrpc\\..*:silent",
+  "-Wconf:cat=deprecation:site=signrpc\\..*:silent",
+  "-Wconf:cat=deprecation:site=walletrpc\\..*:silent",
+  "-Wconf:cat=deprecation:site=routerrpc\\..*:silent",
+  "-Wconf:cat=deprecation:site=invoicesrpc\\..*:silent",
+  "-Wconf:cat=unused-imports:site=lnrpc:silent",
+  "-Wconf:cat=unused-imports:site=signrpc:silent",
+  "-Wconf:cat=unused-imports:site=walletrpc:silent",
+  "-Wconf:cat=unused-imports:site=routerrpc:silent",
+  "-Wconf:cat=unused-imports:site=invoicesrpc:silent"
+)
 
 TaskKeys.downloadLnd := {
   val logger = streams.value.log

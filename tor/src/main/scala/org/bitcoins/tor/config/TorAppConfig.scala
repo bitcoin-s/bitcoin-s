@@ -105,7 +105,8 @@ case class TorAppConfig(
     * place for our node.
     */
   override def start(): Future[Unit] = {
-    if (torProvided) {
+    val f = if (torProvided) {
+      logger.info(s"Tor provided to us, skipping start")
       Future.unit
     } else {
       lazy val torRunning = checkIfTorAlreadyRunning
@@ -120,6 +121,7 @@ case class TorAppConfig(
           torLogFile.toFile.delete()
         }
         val client = createClient
+
         for {
           _ <- client.startBinary()
           _ = Runtime.getRuntime.addShutdownHook(new Thread() {
@@ -146,6 +148,8 @@ case class TorAppConfig(
         Future.unit
       }
     }
+    f.failed.foreach(err => logger.error("Error starting TorAppConfig", err))
+    f
   }
 
   override def stop(): Future[Unit] = {

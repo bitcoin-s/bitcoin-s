@@ -4,7 +4,7 @@ import grizzled.slf4j.Logging
 
 import java.io.File
 import scala.concurrent.{ExecutionContext, Future}
-import scala.sys.process.{Process, ProcessBuilder}
+import scala.sys.process.{Process, ProcessBuilder, ProcessLogger}
 
 /** A trait that helps start bitcoind/eclair when it is started via bitcoin-s */
 trait NativeProcessFactory extends Logging {
@@ -29,13 +29,13 @@ trait NativeProcessFactory extends Logging {
   /** Starts the binary by spinning up a new process */
   def startBinary(): Future[Unit] = Future {
     processOpt match {
-      case Some(_) =>
+      case Some(p) =>
         //don't do anything as it is already started
-        logger.debug(s"Binary was already started!")
+        logger.info(s"Binary was already started! process=$p")
         ()
       case None =>
         if (cmd.nonEmpty) {
-          val started = process.run()
+          val started = process.run(NativeProcessFactory.processLogger)
           processOpt = Some(started)
         } else {
           logger.warn("cmd not set, no binary started")
@@ -65,7 +65,10 @@ trait NativeProcessFactory extends Logging {
 
 }
 
-object NativeProcessFactory {
+object NativeProcessFactory extends Logging {
+
+  val processLogger: ProcessLogger =
+    ProcessLogger(logger.info(_), logger.error(_))
 
   def findExecutableOnPath(name: String): Option[File] =
     sys.env

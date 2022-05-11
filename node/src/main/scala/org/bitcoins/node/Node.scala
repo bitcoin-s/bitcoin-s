@@ -104,8 +104,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val isInitializedF = AsyncUtil
       .retryUntilSatisfiedF(
         () => peerManager.peerDataOf(peer).peerMessageSender.isInitialized(),
-        maxTries = 50,
-        interval = 250.millis)
+        maxTries = 20,
+        interval = 1.second
+      ) //20 seconds
     isInitializedF.failed
       .foreach { err =>
         logger.error(s"Failed to initialize with peer=$peer with err=$err")

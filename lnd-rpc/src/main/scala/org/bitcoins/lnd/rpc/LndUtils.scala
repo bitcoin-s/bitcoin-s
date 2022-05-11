@@ -5,11 +5,12 @@ import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
 import lnrpc.{ChannelPoint, OutPoint}
 import org.bitcoins.commons.jsonmodels.lnd.TxDetails
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.crypto._
+import scalapb.TypeMapper
 import scodec.bits._
 import signrpc.TxOut
 
@@ -31,11 +32,10 @@ trait LndUtils {
                       ScriptPubKey.fromAsmBytes(txOut.pkScript))
 
   implicit def outpointToTxOutPoint(op: OutPoint): TransactionOutPoint =
-    TransactionOutPoint(DoubleSha256DigestBE(op.txidStr),
-                        UInt32(op.outputIndex))
+    TransactionOutPoint(DoubleSha256DigestBE(op.txidStr), op.outputIndex)
 
   implicit def txOutpointToOutpoint(outpoint: TransactionOutPoint): OutPoint =
-    OutPoint(outpoint.txId.bytes, outpoint.txIdBE.hex, outpoint.vout.toInt)
+    OutPoint(outpoint.txId.bytes, outpoint.txIdBE.hex, outpoint.vout)
 
   // If other kinds of Iterables are needed, there's a fancy thing to do
   // that is done all over the Seq code using params and an implicit CanBuildFrom
@@ -58,14 +58,13 @@ trait LndUtils {
   implicit def channelPointToOutpoint(
       channelPoint: ChannelPoint): TransactionOutPoint = {
     val txIdBytes = channelPoint.fundingTxid.fundingTxidBytes.get
-    TransactionOutPoint(DoubleSha256Digest(txIdBytes),
-                        UInt32(channelPoint.outputIndex))
+    TransactionOutPoint(DoubleSha256Digest(txIdBytes), channelPoint.outputIndex)
   }
 
   implicit def outPointToChannelPoint(
       outPoint: TransactionOutPoint): ChannelPoint = {
     val txId = FundingTxidBytes(outPoint.txId.bytes)
-    ChannelPoint(txId, outPoint.vout.toInt)
+    ChannelPoint(txId, outPoint.vout)
   }
 
   implicit def LndTransactionToTxDetails(
@@ -90,6 +89,12 @@ trait LndUtils {
       label = details.label
     )
   }
+
+  implicit val uint64Mapper: TypeMapper[Long, UInt64] =
+    TypeMapper[Long, UInt64](UInt64.apply)(_.toBigInt.longValue)
+
+  implicit val uint32Mapper: TypeMapper[Int, UInt32] =
+    TypeMapper[Int, UInt32](UInt32.apply)(_.toBigInt.intValue)
 }
 
 object LndUtils extends LndUtils

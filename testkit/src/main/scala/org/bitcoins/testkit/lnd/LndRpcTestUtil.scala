@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import grizzled.slf4j.Logging
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -139,7 +140,7 @@ trait LndRpcTestUtil extends Logging {
     for {
       blockCount <- bitcoind.getBlockCount
       info <- client.getInfo
-    } yield info.blockHeight == blockCount
+    } yield info.blockHeight == UInt32(blockCount)
 
   /** Shuts down an lnd daemon and the bitcoind daemon it is associated with
     */

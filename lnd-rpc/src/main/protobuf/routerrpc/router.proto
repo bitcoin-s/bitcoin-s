@@ -6,6 +6,27 @@ package routerrpc;
 
 option go_package = "github.com/lightningnetwork/lnd/lnrpc/routerrpc";
 
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  import: "org.bitcoins.lnd.rpc.LndUtils._"
+  scope: PACKAGE
+  field_transformations : [
+    {
+      when : {
+        type: TYPE_UINT64
+      }
+      set : {[scalapb.field] {type : 'org.bitcoins.core.number.UInt64' }}
+    },
+    {
+      when : {
+        type: TYPE_UINT32
+      }
+      set : {[scalapb.field] {type : 'org.bitcoins.core.number.UInt32' }}
+    }
+  ]
+};
+
 // Router is a service that offers advanced interaction with the router
 // subsystem of the daemon.
 service Router {

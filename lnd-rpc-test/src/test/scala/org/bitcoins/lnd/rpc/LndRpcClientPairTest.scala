@@ -31,8 +31,8 @@ class LndRpcClientPairTest extends DualLndFixture {
       infoB <- lndB.getInfo
     } yield {
       assert(infoA.identityPubkey != infoB.identityPubkey)
-      assert(infoA.blockHeight >= 0)
-      assert(infoB.blockHeight >= 0)
+      assert(infoA.blockHeight >= UInt32.zero)
+      assert(infoB.blockHeight >= UInt32.zero)
     }
   }
 

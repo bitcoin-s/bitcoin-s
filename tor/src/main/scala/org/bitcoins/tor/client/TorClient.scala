@@ -55,7 +55,7 @@ class TorClient()(implicit
   private lazy val executable = TorClient.torBinaryFromResource(conf.torDir)
 
   /** The command to start the daemon on the underlying OS */
-  lazy val cmd: String = {
+  override lazy val cmd: String = {
 
     val args = Vector(
       "--ExitRelay 0", // ensure we aren't an exit relay
@@ -104,9 +104,6 @@ object TorClient extends Logging {
 
     val executableFileName = datadir.resolve(torBundle.primaryExecutable).toFile
 
-    logger.info(
-      s"Using prepackaged Tor from bitcoin-s resources, $executableFileName")
-
     if (existsAndIsExecutable(datadir, torBundle)) {
       logger.info(
         s"Using tor daemon already written to datadir=${datadir.toAbsolutePath}")
@@ -130,7 +127,11 @@ object TorClient extends Logging {
       //set files as executable
       torBundle.executables.foreach { f =>
         val executable = datadir.resolve(f)
-        executable.toFile.setExecutable(true)
+        val isExecutable = executable.toFile.setExecutable(true)
+        if (!isExecutable) {
+          sys.error(
+            s"Could not make file=${executable.toAbsolutePath} executable")
+        }
       }
 
       // write geoip files
@@ -142,7 +143,6 @@ object TorClient extends Logging {
 
       logger.info(
         s"Using prepackaged Tor from bitcoin-s resources, $executableFileName")
-
       executableFileName
     }
   }
