@@ -127,7 +127,6 @@ object TorClient extends Logging {
       //set files as executable
       torBundle.executables.foreach { f =>
         val executable = datadir.resolve(f)
-        logger.info(s"executable=${executable.toAbsolutePath}")
         val isExecutable = executable.toFile.setExecutable(true)
         if (!isExecutable) {
           sys.error(
