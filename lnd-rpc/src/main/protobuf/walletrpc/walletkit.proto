@@ -7,6 +7,21 @@ package walletrpc;
 
 option go_package = "github.com/lightningnetwork/lnd/lnrpc/walletrpc";
 
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  import: "org.bitcoins.lnd.rpc.LndUtils._"
+  scope: PACKAGE
+  field_transformations : [
+    {
+      when : {
+        type: TYPE_UINT64
+      }
+      set : {[scalapb.field] {type : 'org.bitcoins.core.number.UInt64' }}
+    }
+  ]
+};
+
 // WalletKit is a service that gives access to the core functionalities of the
 // daemon's wallet.
 service WalletKit {
