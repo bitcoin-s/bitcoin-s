@@ -121,7 +121,7 @@ case class TorAppConfig(
           torLogFile.toFile.delete()
         }
         val client = createClient
-        Thread.sleep(10000)
+
         for {
           _ <- client.startBinary()
           _ = Runtime.getRuntime.addShutdownHook(new Thread() {

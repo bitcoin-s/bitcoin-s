@@ -169,7 +169,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val callbacksF =
       chainApiF.map(chainApi => buildNeutrinoCallbacks(wsQueue, chainApi))
 
-    val startedNodeF = configuredNodeF.flatMap(_.start())
+    val startedNodeF = {
+      //can't start connecting to peers until tor is done starting
+      for {
+        _ <- startedTorConfigF
+        started <- configuredNodeF.flatMap(_.start())
+      } yield started
+    }
+
     val startedWalletF = configuredWalletF.flatMap(_.start())
     val startedDLCNodeF = dlcNodeF
       .flatMap(_.start())
