@@ -127,7 +127,12 @@ object TorClient extends Logging {
       //set files as executable
       torBundle.executables.foreach { f =>
         val executable = datadir.resolve(f)
-        executable.toFile.setExecutable(true)
+        logger.info(s"executable=${executable.toAbsolutePath}")
+        val isExecutable = executable.toFile.setExecutable(true)
+        if (!isExecutable) {
+          sys.error(
+            s"Could not make file=${executable.toAbsolutePath} executable")
+        }
       }
 
       // write geoip files
@@ -139,7 +144,6 @@ object TorClient extends Logging {
 
       logger.info(
         s"Using prepackaged Tor from bitcoin-s resources, $executableFileName")
-
       executableFileName
     }
   }
