@@ -32,11 +32,10 @@ trait LndUtils {
                       ScriptPubKey.fromAsmBytes(txOut.pkScript))
 
   implicit def outpointToTxOutPoint(op: OutPoint): TransactionOutPoint =
-    TransactionOutPoint(DoubleSha256DigestBE(op.txidStr),
-                        UInt32(op.outputIndex))
+    TransactionOutPoint(DoubleSha256DigestBE(op.txidStr), op.outputIndex)
 
   implicit def txOutpointToOutpoint(outpoint: TransactionOutPoint): OutPoint =
-    OutPoint(outpoint.txId.bytes, outpoint.txIdBE.hex, outpoint.vout.toInt)
+    OutPoint(outpoint.txId.bytes, outpoint.txIdBE.hex, outpoint.vout)
 
   // If other kinds of Iterables are needed, there's a fancy thing to do
   // that is done all over the Seq code using params and an implicit CanBuildFrom
@@ -59,14 +58,13 @@ trait LndUtils {
   implicit def channelPointToOutpoint(
       channelPoint: ChannelPoint): TransactionOutPoint = {
     val txIdBytes = channelPoint.fundingTxid.fundingTxidBytes.get
-    TransactionOutPoint(DoubleSha256Digest(txIdBytes),
-                        UInt32(channelPoint.outputIndex))
+    TransactionOutPoint(DoubleSha256Digest(txIdBytes), channelPoint.outputIndex)
   }
 
   implicit def outPointToChannelPoint(
       outPoint: TransactionOutPoint): ChannelPoint = {
     val txId = FundingTxidBytes(outPoint.txId.bytes)
-    ChannelPoint(txId, outPoint.vout.toInt)
+    ChannelPoint(txId, outPoint.vout)
   }
 
   implicit def LndTransactionToTxDetails(
@@ -94,6 +92,9 @@ trait LndUtils {
 
   implicit val uint64Mapper: TypeMapper[Long, UInt64] =
     TypeMapper[Long, UInt64](UInt64.apply)(_.toBigInt.longValue)
+
+  implicit val uint32Mapper: TypeMapper[Int, UInt32] =
+    TypeMapper[Int, UInt32](UInt32.apply)(_.toBigInt.intValue)
 }
 
 object LndUtils extends LndUtils

@@ -11,6 +11,7 @@ import lnrpc.{
   RouteHint
 }
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -31,9 +32,9 @@ trait LndRouterClient { self: LndRpcClient =>
     val hopHints = routeHints.map { hint =>
       HopHint(hint.pubkey.hex,
               hint.shortChannelID.u64,
-              hint.feeBaseMsat.msat.toLong.toInt,
-              hint.feePropMilli.u32.toInt,
-              hint.cltvExpiryDelta)
+              UInt32(hint.feeBaseMsat.msat.toLong),
+              hint.feePropMilli.u32,
+              UInt32(hint.cltvExpiryDelta))
     }
     val request =
       QueryRoutesRequest(pubKey = node.pubKey.hex,

@@ -320,8 +320,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       .map(_.utxos.toVector.map { utxo =>
         val outPointOpt = utxo.outpoint.map { out =>
           val txId = DoubleSha256DigestBE(out.txidStr)
-          val vout = UInt32(out.outputIndex)
-          TransactionOutPoint(txId, vout)
+          TransactionOutPoint(txId, out.outputIndex)
         }
 
         val spkBytes = ByteVector.fromValidHex(utxo.pkScript)
@@ -423,7 +422,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
         point.fundingTxid.fundingTxidBytes match {
           case Some(bytes) =>
             val txId = DoubleSha256DigestBE(bytes)
-            Some(TransactionOutPoint(txId, UInt32(point.outputIndex)))
+            Some(TransactionOutPoint(txId, point.outputIndex))
           case None => None
         }
       }
@@ -434,7 +433,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       force: Boolean,
       feeRate: SatoshisPerVirtualByte): Future[TransactionOutPoint] = {
     val channelPoint =
-      ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout.toInt)
+      ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout)
 
     closeChannel(
       CloseChannelRequest(channelPoint = Some(channelPoint),
@@ -445,7 +444,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def closeChannel(
       outPoint: TransactionOutPoint): Future[TransactionOutPoint] = {
     val channelPoint =
-      ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout.toInt)
+      ChannelPoint(FundingTxidBytes(outPoint.txId.bytes), outPoint.vout)
     closeChannel(CloseChannelRequest(Some(channelPoint)))
   }
 
@@ -460,8 +459,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       .runWith(Sink.head)
       .collect { case ClosePending(closeUpdate) =>
         val txId = DoubleSha256Digest(closeUpdate.txid)
-        val vout = UInt32(closeUpdate.outputIndex)
-        TransactionOutPoint(txId, vout)
+        TransactionOutPoint(txId, closeUpdate.outputIndex)
       }
   }
 
@@ -728,7 +726,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       output: TransactionOutput): Future[(ScriptSignature, ScriptWitness)] = {
     val signDescriptor =
       SignDescriptor(output = Some(output),
-                     sighash = HashType.sigHashAll.num.toInt,
+                     sighash = UInt32(HashType.sigHashAll.num.toBigInt),
                      inputIndex = inputIdx)
 
     computeInputScript(tx, Vector(signDescriptor)).map(_.head)
@@ -769,7 +767,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       .listLeases(request)
       .map(_.lockedUtxos.toVector.map { lease =>
         val txId = DoubleSha256DigestBE(lease.outpoint.get.txidBytes)
-        val vout = UInt32(lease.outpoint.get.outputIndex)
+        val vout = lease.outpoint.get.outputIndex
         val outPoint = TransactionOutPoint(txId, vout)
         UTXOLease(lease.id, outPoint, lease.expiration.toLong)
       })
@@ -779,7 +777,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       outpoint: TransactionOutPoint,
       leaseSeconds: Long): Future[UInt64] = {
     val outPoint =
-      OutPoint(outpoint.txId.bytes, outputIndex = outpoint.vout.toInt)
+      OutPoint(outpoint.txId.bytes, outputIndex = outpoint.vout)
 
     val request = LeaseOutputRequest(id = LndRpcClient.leaseId,
                                      outpoint = Some(outPoint),
@@ -802,7 +800,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
 
   def releaseOutput(outpoint: TransactionOutPoint): Future[Unit] = {
     val outPoint =
-      OutPoint(outpoint.txId.bytes, outputIndex = outpoint.vout.toInt)
+      OutPoint(outpoint.txId.bytes, outputIndex = outpoint.vout)
 
     val request =
       ReleaseOutputRequest(id = LndRpcClient.leaseId, outpoint = Some(outPoint))
@@ -830,9 +828,10 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       peer: NodeId,
       tpe: BigSizeUInt,
       data: ByteVector): Future[Unit] = {
-    val request = SendCustomMessageRequest(peer = peer.bytes,
-                                           `type` = tpe.toInt,
-                                           data = data)
+    val request =
+      SendCustomMessageRequest(peer = peer.bytes,
+                               `type` = UInt32(tpe.toBigInt),
+                               data = data)
     sendCustomMessage(request)
   }
 
@@ -846,7 +845,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     lnd.subscribeCustomMessages(SubscribeCustomMessagesRequest()).map {
       response =>
         val nodeId = NodeId(response.peer)
-        val tpe = BigSizeUInt(response.`type`)
+        val tpe = BigSizeUInt(response.`type`.toBigInt)
         val tlv = TLV.fromTypeAndValue(tpe, response.data)
 
         (nodeId, tlv)

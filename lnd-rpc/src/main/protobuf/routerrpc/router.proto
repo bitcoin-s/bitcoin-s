@@ -17,6 +17,12 @@ option (scalapb.options) = {
         type: TYPE_UINT64
       }
       set : {[scalapb.field] {type : 'org.bitcoins.core.number.UInt64' }}
+    },
+    {
+      when : {
+        type: TYPE_UINT32
+      }
+      set : {[scalapb.field] {type : 'org.bitcoins.core.number.UInt32' }}
     }
   ]
 };

@@ -393,6 +393,10 @@ object UInt32
     UInt32(bytes.toLong(signed = false, ordering = ByteOrdering.BigEndian))
   }
 
+  def apply(int: Int): UInt32 = {
+    apply(int.toLong)
+  }
+
   def apply(long: Long): UInt32 = {
     checkCached(long)
   }
