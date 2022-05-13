@@ -178,9 +178,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
 
     val startedWalletF = configuredWalletF.flatMap(_.start())
-    val startedDLCNodeF = dlcNodeF
-      .flatMap(_.start())
-      .flatMap(_ => dlcNodeF)
+
+    val startedDLCNodeF = {
+      for {
+        dlcNode <- dlcNodeF
+        _ <- startedTorConfigF
+        _ <- dlcNode.start()
+      } yield dlcNode
+    }
 
     val chainApi = ChainHandler.fromDatabase()
     //start our http server now that we are synced
