@@ -5,6 +5,7 @@ import org.bitcoins.core.api.commons.ConfigFactory
 import org.bitcoins.core.config._
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import org.bitcoins.rpc.config.ZmqConfig
+import scodec.bits.ByteVector
 
 import java.io.File
 import java.net.{InetSocketAddress, URI}
@@ -168,6 +169,23 @@ case class LndConfig(private[bitcoins] val lines: Seq[String], datadir: File)
     ZmqConfig(rawBlock = zmqpubrawblock, rawTx = zmqpubrawtx),
     debuglevel
   )
+
+  lazy val lndInstanceRemote: LndInstanceRemote = {
+    val macaroon = {
+      val path = datadir.toPath
+        .resolve("data")
+        .resolve("chain")
+        .resolve("bitcoin")
+        .resolve(LndInstanceLocal.getNetworkDirName(network))
+        .resolve("admin.macaroon")
+      val bytes = Files.readAllBytes(path)
+      ByteVector(bytes).toHex
+    }
+
+    val cert = datadir.toPath.resolve("tls.cert").toFile
+
+    LndInstanceRemote(rpcBinding, macaroon, cert)
+  }
 }
 
 object LndConfig extends ConfigFactory[LndConfig] with Logging {
