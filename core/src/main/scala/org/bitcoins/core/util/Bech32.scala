@@ -240,7 +240,7 @@ sealed abstract class Bech32 {
     val length = bech32.length
     val maxLength =
       // is this a LN invoice or not?
-      if (bech32.startsWith("ln"))
+      if (bech32.toLowerCase.startsWith("ln"))
         // BOLT 11 is not fully bech32 compatible
         // https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#requirements
         Integer.MAX_VALUE

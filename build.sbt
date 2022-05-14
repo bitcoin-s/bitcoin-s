@@ -143,6 +143,16 @@ lazy val clightningRpc = project
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
+lazy val lnurl = project
+  .in(file("lnurl"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(appCommons, asyncUtilsJVM, tor)
+
+lazy val lnurlTest = project
+  .in(file("lnurl-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .dependsOn(lnurl, testkit)
+
 lazy val tor = project
   .in(file("tor"))
   .settings(CommonSettings.prodSettings: _*)
@@ -221,6 +231,8 @@ lazy val `bitcoin-s` = project
     serverRoutes,
     lndRpc,
     lndRpcTest,
+    lnurl,
+    lnurlTest,
     tor,
     torTest,
     scripts,
@@ -279,6 +291,8 @@ lazy val `bitcoin-s` = project
     serverRoutes,
     lndRpc,
     lndRpcTest,
+    lnurl,
+    lnurlTest,
     tor,
     torTest,
     scripts,
@@ -763,7 +777,11 @@ lazy val dlcWalletTest = project
     name := "bitcoin-s-dlc-wallet-test",
     libraryDependencies ++= Deps.dlcWalletTest
   )
-  .dependsOn(coreJVM % testAndCompile, dlcWallet, testkit, testkitCoreJVM, dlcTest)
+  .dependsOn(coreJVM % testAndCompile,
+             dlcWallet,
+             testkit,
+             testkitCoreJVM,
+             dlcTest)
 
 lazy val dlcNode = project
   .in(file("dlc-node"))
