@@ -30,7 +30,10 @@ case class KeyManagerAppConfig(
   lazy val networkParameters: NetworkParameters = chain.network
 
   lazy val walletNameOpt: Option[String] = {
-    config.getStringOrNone(s"bitcoin-s.wallet.walletName")
+    val nameOpt = config.getStringOrNone(s"bitcoin-s.wallet.walletName")
+    require(nameOpt.map(KeyManagerAppConfig.validateWalletName).getOrElse(true),
+            s"Invalid wallet name, only alphanumeric with _, got=$nameOpt")
+    nameOpt
   }
 
   lazy val seedFolder: Path = baseDatadir
@@ -215,4 +218,10 @@ object KeyManagerAppConfig extends AppConfigFactory[KeyManagerAppConfig] {
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       ec: ExecutionContext): KeyManagerAppConfig =
     KeyManagerAppConfig(datadir, confs)
+
+  def validateWalletName(walletName: String): Boolean = {
+    walletName.forall { char =>
+      char.isLetterOrDigit || char == '-' || char == '_'
+    }
+  }
 }
