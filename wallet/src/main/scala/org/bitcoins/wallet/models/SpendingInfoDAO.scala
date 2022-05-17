@@ -602,7 +602,9 @@ case class SpendingInfoDAO()(implicit
       .asInstanceOf[TableExpansion]
       .table
       .asInstanceOf[TableNode]
-    tableNode.schemaName.map(_ + ".").getOrElse("") + tableNode.tableName
+    tableNode.schemaName
+      .map(schema => "\"" + schema + "\".")
+      .getOrElse("") + tableNode.tableName
   }
 
   private def withStatement[T](sql: String)(f: PreparedStatement => T): T = {
