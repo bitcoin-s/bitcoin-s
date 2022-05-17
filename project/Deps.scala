@@ -49,7 +49,7 @@ object Deps {
 
     val breezeV = "1.3"
 
-    val newMicroPickleV = "1.3.8"
+    val newMicroPickleV = "1.6.0"
     val newMicroJsonV = newMicroPickleV
 
     val osgiFrameworkV = "1.10.0"
