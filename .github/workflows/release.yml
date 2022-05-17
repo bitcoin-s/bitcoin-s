@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, "2022-05-17-launcher-jar-plugin"]
     tags: ["*"]
   release:
     types: [ published ]

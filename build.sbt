@@ -393,7 +393,9 @@ lazy val oracleServer = project
     dlcOracle,
     serverRoutes
   )
-  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin)
+  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin, 
+    //needed for windows, else we have the 'The input line is too long` on windows OS
+    LauncherJarPlugin)
 
 lazy val oracleServerTest = project
   .in(file("app/oracle-server-test"))
@@ -433,7 +435,9 @@ lazy val appServer = project
     feeProvider,
     zmq
   )
-  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin)
+  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin,
+    //needed for windows, else we have the 'The input line is too long` on windows OS
+    LauncherJarPlugin)
 
 lazy val appServerTest = project
   .in(file("app/server-test"))
