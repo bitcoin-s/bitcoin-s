@@ -39,7 +39,7 @@ object Deps {
     val flywayV = "8.5.9"
     val postgresV = "42.3.4"
     val akkaActorV = akkaStreamv
-    val slickV = "3.3.3"
+    val slickV = "3.4.0-M1"
     val sqliteV = "3.36.0.3"
 
     val scalameterV = "0.17"
