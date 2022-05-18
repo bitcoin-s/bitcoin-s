@@ -278,9 +278,9 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `contacts-list` - lists all contacts in the wallet
  - `contact-remove` `address`
    - `address` - the tor address for the peer to remove
-- `dlc-contact-add` `dlcid` `address` - Associated a DLC with a peer
-- `dlc-contact-remove` `dlcid` - Removes a DLC-peer association
-   - `address` - the tor address for the peer to remove
+ - `dlc-contact-add` `dlcid` `address` - Associated a DLC with a peer
+ - `dlc-contact-remove` `dlcid` - Removes a DLC-peer association
+    - `address` - the tor address for the peer to remove
  - `signdlc` `accept` - Signs a DLC
     - `accept` - Hex encoded dlc accept message
  - `signdlcfromfile` `path` `[destination]` - Signs a DLC
@@ -308,6 +308,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `canceldlc` `dlcId` - Cancels a DLC and unreserves used utxos
     - `dlcId` - Internal id of the DLC
  - `getdlcs` - Returns all dlcs in the wallet
+    - `address` - optional contact address, if specified the RPC returns only DLCs associated with the given address
  - `getdlc` `dlcId` - Gets a specific dlc in the wallet
     - `dlcId` - Internal id of the DLC
  - `offer-add` `offerTLV` `peerAddress` `message` - Puts an incoming offer into the inbox
