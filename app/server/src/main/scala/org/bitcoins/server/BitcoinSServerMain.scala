@@ -45,7 +45,7 @@ import org.bitcoins.wallet.models.SpendingInfoDAO
 
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
@@ -599,5 +599,13 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
       datadirParser.datadir,
       Vector(datadirParser.baseConfig, serverCmdLineArgs.toConfig))(system)
 
-  new BitcoinSServerMain(serverCmdLineArgs).run()
+  val m = new BitcoinSServerMain(serverCmdLineArgs)
+
+  m.run()
+
+  sys.addShutdownHook {
+    println(s"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ SHUTTING DOWN BITCOINSSERVERMAIN @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    Await.result(m.stop(), 10.seconds)
+    sys.exit(0)
+  }
 }

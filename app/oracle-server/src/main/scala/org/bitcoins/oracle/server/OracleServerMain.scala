@@ -8,7 +8,8 @@ import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util.BitcoinSAppScalaDaemon
 
-import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 
 class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
@@ -86,5 +87,13 @@ object OracleServerMain extends BitcoinSAppScalaDaemon {
     DLCOracleAppConfig(datadirParser.datadir, Vector(datadirParser.baseConfig))(
       system.dispatcher)
 
-  new OracleServerMain(serverCmdLineArgs).run()
+  val m = new OracleServerMain(serverCmdLineArgs)
+  m.run()
+
+  sys.addShutdownHook {
+    println(
+      s"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ SHUTTING DOWN OracleServerMain @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    Await.result(m.stop(), 10.seconds)
+    sys.exit(0)
+  }
 }
