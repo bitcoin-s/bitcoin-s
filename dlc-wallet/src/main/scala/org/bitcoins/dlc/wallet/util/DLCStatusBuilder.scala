@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.wallet.util
 
-import org.bitcoins.core.api.dlc.wallet.db.DLCDb
+import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, DLCDb}
 import org.bitcoins.core.dlc.accounting.DLCAccounting
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
@@ -18,7 +18,8 @@ object DLCStatusBuilder {
       contractInfo: ContractInfo,
       contractData: DLCContractDataDb,
       offerDb: DLCOfferDb,
-      payoutAddress: Option[PayoutAddress]): DLCStatus = {
+      payoutAddress: Option[PayoutAddress],
+      contactOpt: Option[DLCContactDb]): DLCStatus = {
     require(
       dlcDb.state.isInstanceOf[DLCState.InProgressState],
       s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
@@ -45,7 +46,8 @@ object DLCStatusBuilder {
           dlcDb.feeRate,
           totalCollateral,
           localCollateral,
-          payoutAddress
+          payoutAddress,
+          contactOpt
         )
       case DLCState.AcceptComputingAdaptorSigs =>
         AcceptedComputingAdaptorSigs(
@@ -59,7 +61,8 @@ object DLCStatusBuilder {
           feeRate = dlcDb.feeRate,
           totalCollateral = totalCollateral,
           localCollateral = localCollateral,
-          payoutAddress
+          payoutAddress,
+          contactOpt
         )
       case DLCState.Accepted =>
         Accepted(
@@ -73,7 +76,8 @@ object DLCStatusBuilder {
           dlcDb.feeRate,
           totalCollateral,
           localCollateral,
-          payoutAddress
+          payoutAddress,
+          contactOpt
         )
       case DLCState.SignComputingAdaptorSigs =>
         SignedComputingAdaptorSigs(
@@ -88,7 +92,8 @@ object DLCStatusBuilder {
           totalCollateral = totalCollateral,
           localCollateral = localCollateral,
           dlcDb.fundingTxIdOpt.get,
-          payoutAddress
+          payoutAddress,
+          contactOpt
         )
       case DLCState.Signed =>
         Signed(
@@ -103,7 +108,8 @@ object DLCStatusBuilder {
           totalCollateral,
           localCollateral,
           dlcDb.fundingTxIdOpt.get,
-          payoutAddress
+          payoutAddress,
+          contactOpt
         )
       case DLCState.Broadcasted =>
         Broadcasted(
@@ -118,7 +124,8 @@ object DLCStatusBuilder {
           totalCollateral,
           localCollateral,
           dlcDb.fundingTxIdOpt.get,
-          payoutAddress
+          payoutAddress,
+          contactOpt
         )
       case DLCState.Confirmed =>
         Confirmed(
@@ -133,7 +140,8 @@ object DLCStatusBuilder {
           totalCollateral,
           localCollateral,
           dlcDb.fundingTxIdOpt.get,
-          payoutAddress
+          payoutAddress,
+          contactOpt
         )
     }
 
@@ -150,7 +158,8 @@ object DLCStatusBuilder {
       offerDb: DLCOfferDb,
       acceptDb: DLCAcceptDb,
       closingTx: Transaction,
-      payoutAddress: Option[PayoutAddress]): ClosedDLCStatus = {
+      payoutAddress: Option[PayoutAddress],
+      contactOpt: Option[DLCContactDb]): ClosedDLCStatus = {
     require(
       dlcDb.state.isInstanceOf[DLCState.ClosedState],
       s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
@@ -186,7 +195,8 @@ object DLCStatusBuilder {
           closingTx.txIdBE,
           myPayout = accounting.myPayout,
           counterPartyPayout = accounting.theirPayout,
-          payoutAddress = payoutAddress
+          payoutAddress = payoutAddress,
+          contact = contactOpt
         )
         refund
       case oracleOutcomeState: DLCState.ClosedViaOracleOutcomeState =>
@@ -214,7 +224,8 @@ object DLCStatusBuilder {
               oracleOutcome,
               myPayout = accounting.myPayout,
               counterPartyPayout = accounting.theirPayout,
-              payoutAddress = payoutAddress
+              payoutAddress = payoutAddress,
+              contact = contactOpt
             )
           case DLCState.RemoteClaimed =>
             RemoteClaimed(
@@ -234,7 +245,8 @@ object DLCStatusBuilder {
               oracleOutcome,
               myPayout = accounting.myPayout,
               counterPartyPayout = accounting.theirPayout,
-              payoutAddress = payoutAddress
+              payoutAddress = payoutAddress,
+              contact = contactOpt
             )
         }
     }

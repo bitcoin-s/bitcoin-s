@@ -300,11 +300,22 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
-    case ServerCommand("getdlcs", _) =>
-      complete {
-        wallet.listDLCs().map { dlcs =>
-          Server.httpSuccess(dlcs.map(writeJs(_)))
-        }
+    case ServerCommand("getdlcs", arr) =>
+      GetDLCs.fromJsArr(arr) match {
+        case Success(GetDLCs(Some(contactId))) =>
+          complete {
+            wallet.listDLCsByContact(contactId).map { dlcs =>
+              Server.httpSuccess(dlcs.map(writeJs(_)))
+            }
+          }
+        case Success(GetDLCs(None)) =>
+          complete {
+            wallet.listDLCs().map { dlcs =>
+              Server.httpSuccess(dlcs.map(writeJs(_)))
+            }
+          }
+        case Failure(exception) =>
+          complete(Server.httpBadRequest(exception))
       }
 
     case ServerCommand("getdlc", arr) =>

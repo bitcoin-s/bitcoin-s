@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.dlc.models
 
+import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.dlc.accounting.{DLCAccounting, RateOfReturnUtil}
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -35,6 +36,7 @@ sealed trait DLCStatus {
   def localCollateral: CurrencyUnit
   def remoteCollateral: CurrencyUnit = totalCollateral - localCollateral
   def payoutAddress: Option[PayoutAddress]
+  def contact: Option[DLCContactDb]
 
   lazy val announcements: Vector[OracleAnnouncementTLV] = {
     oracleInfos.flatMap(_.singleOracleInfos.map(_.announcement))
@@ -92,7 +94,8 @@ object DLCStatus {
       feeRate: FeeUnit,
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
-      payoutAddress: Option[PayoutAddress]
+      payoutAddress: Option[PayoutAddress],
+      contact: Option[DLCContactDb]
   ) extends DLCStatus {
     override val state: DLCState.Offered.type = DLCState.Offered
   }
@@ -108,7 +111,8 @@ object DLCStatus {
       feeRate: FeeUnit,
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
-      payoutAddress: Option[PayoutAddress])
+      payoutAddress: Option[PayoutAddress],
+      contact: Option[DLCContactDb])
       extends AcceptedDLCStatus {
 
     override val state: DLCState.AcceptComputingAdaptorSigs.type =
@@ -126,7 +130,8 @@ object DLCStatus {
       feeRate: FeeUnit,
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
-      payoutAddress: Option[PayoutAddress])
+      payoutAddress: Option[PayoutAddress],
+      contact: Option[DLCContactDb])
       extends AcceptedDLCStatus {
     override val state: DLCState.Accepted.type = DLCState.Accepted
   }
@@ -143,7 +148,8 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE,
-      payoutAddress: Option[PayoutAddress])
+      payoutAddress: Option[PayoutAddress],
+      contact: Option[DLCContactDb])
       extends SignedDLCStatus {
 
     override val state: DLCState.SignComputingAdaptorSigs.type =
@@ -162,7 +168,8 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE,
-      payoutAddress: Option[PayoutAddress])
+      payoutAddress: Option[PayoutAddress],
+      contact: Option[DLCContactDb])
       extends SignedDLCStatus {
     override val state: DLCState.Signed.type = DLCState.Signed
   }
@@ -179,7 +186,8 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE,
-      payoutAddress: Option[PayoutAddress])
+      payoutAddress: Option[PayoutAddress],
+      contact: Option[DLCContactDb])
       extends SignedDLCStatus {
     override val state: DLCState.Broadcasted.type = DLCState.Broadcasted
   }
@@ -196,7 +204,8 @@ object DLCStatus {
       totalCollateral: CurrencyUnit,
       localCollateral: CurrencyUnit,
       fundingTxId: DoubleSha256DigestBE,
-      payoutAddress: Option[PayoutAddress])
+      payoutAddress: Option[PayoutAddress],
+      contact: Option[DLCContactDb])
       extends SignedDLCStatus {
     override val state: DLCState.Confirmed.type = DLCState.Confirmed
   }
@@ -218,7 +227,8 @@ object DLCStatus {
       oracleOutcome: OracleOutcome,
       myPayout: CurrencyUnit,
       counterPartyPayout: CurrencyUnit,
-      payoutAddress: Option[PayoutAddress])
+      payoutAddress: Option[PayoutAddress],
+      contact: Option[DLCContactDb])
       extends ClaimedDLCStatus {
     override val state: DLCState.Claimed.type = DLCState.Claimed
   }
@@ -240,7 +250,8 @@ object DLCStatus {
       oracleOutcome: OracleOutcome,
       myPayout: CurrencyUnit,
       counterPartyPayout: CurrencyUnit,
-      payoutAddress: Option[PayoutAddress])
+      payoutAddress: Option[PayoutAddress],
+      contact: Option[DLCContactDb])
       extends ClaimedDLCStatus {
     override val state: DLCState.RemoteClaimed.type = DLCState.RemoteClaimed
     override val oracleSigs: Vector[SchnorrDigitalSignature] = Vector(oracleSig)
@@ -261,7 +272,8 @@ object DLCStatus {
       closingTxId: DoubleSha256DigestBE,
       myPayout: CurrencyUnit,
       counterPartyPayout: CurrencyUnit,
-      payoutAddress: Option[PayoutAddress])
+      payoutAddress: Option[PayoutAddress],
+      contact: Option[DLCContactDb])
       extends ClosedDLCStatus {
     override val state: DLCState.Refunded.type = DLCState.Refunded
   }

@@ -58,4 +58,15 @@ trait IncomingDLCOffersHandling { self: DLCWallet =>
   override def findDLCContacts(alias: String): Future[Vector[DLCContactDb]] =
     contactDAO.findByAlias(alias)
 
+  override def addDLCContactMapping(
+      dlcId: Sha256Digest,
+      contcatId: InetSocketAddress): Future[Unit] = {
+    dlcContactMappingDAO
+      .create(dlcId, contcatId)
+      .map(_ => ())
+  }
+
+  override def removeDLCContactMapping(dlcId: Sha256Digest): Future[Unit] = {
+    dlcContactMappingDAO.delete(dlcId)
+  }
 }

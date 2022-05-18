@@ -650,6 +650,30 @@ object SendToAddress extends ServerJsonModels {
 
 }
 
+case class GetDLCs(contactId: Option[InetSocketAddress])
+
+object GetDLCs extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetDLCs] = {
+    jsArr.arr.toList match {
+      case addressJs :: Nil =>
+        Try {
+          val address = {
+            val uri = new URI(s"tcp://${addressJs.str}")
+            InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
+          }
+          GetDLCs(Some(address))
+        }
+      case Nil =>
+        Try(GetDLCs(None))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
 case class GetDLC(dlcId: Sha256Digest)
 
 object GetDLC extends ServerJsonModels {
