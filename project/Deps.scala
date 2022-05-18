@@ -68,7 +68,7 @@ object Deps {
     val scalaJsStubsV = "1.1.0"
     // CLI deps
     val scoptV = "4.0.1"
-    val sttpV = "1.7.2"
+    val sttpV = "3.6.1"
     val codehausV = "3.1.7"
     val scalaJsTimeV = "2.3.0"
     val zxingV = "3.4.1"
@@ -218,7 +218,7 @@ object Deps {
     val scopt = "com.github.scopt" %% "scopt" % V.scoptV
 
     // HTTP client lib
-    val sttp = "com.softwaremill.sttp" %% "core" % V.sttpV
+    val sttp = "com.softwaremill.sttp.client3" %% "core" % V.sttpV
 
     val scalaCollectionCompat =
       "org.scala-lang.modules" %% "scala-collection-compat" % V.scalaCollectionCompatV

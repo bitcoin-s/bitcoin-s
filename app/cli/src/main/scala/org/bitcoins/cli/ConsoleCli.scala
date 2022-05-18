@@ -2167,11 +2167,11 @@ object ConsoleCli {
     }
 
     Try {
-      import com.softwaremill.sttp._
-      implicit val backend: SttpBackend[Id, Nothing] =
+      import sttp.client3._
+      implicit val backend: SttpBackend[Identity, Any] =
         HttpURLConnectionBackend()
       val request =
-        sttp
+        basicRequest
           .post(uri"http://$host:${config.rpcPort}/")
           .contentType("application/json")
           .auth
@@ -2184,7 +2184,7 @@ object ConsoleCli {
             up.write(paramsWithID)
           }
       debug(s"HTTP request: $request")
-      val response = request.send()
+      val response = request.send(backend)
 
       debug(s"HTTP response:")
       debug(response)
