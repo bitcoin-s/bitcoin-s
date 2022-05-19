@@ -214,4 +214,18 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
       appConfig1.toBip39KeyManager
     }
   }
+
+  it must "validate a wallet name" in {
+    assert(KeyManagerAppConfig.validateWalletName(""))
+    assert(KeyManagerAppConfig.validateWalletName("old-wallet"))
+
+    //weird whitespace
+    assert(!KeyManagerAppConfig.validateWalletName("       "))
+    assert(!KeyManagerAppConfig.validateWalletName(" old-wallet"))
+
+    //no non alpha-numeric
+    assert(!KeyManagerAppConfig.validateWalletName("@@@"))
+    assert(!KeyManagerAppConfig.validateWalletName("old-wallet."))
+
+  }
 }

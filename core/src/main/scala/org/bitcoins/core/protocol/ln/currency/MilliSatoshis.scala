@@ -51,6 +51,21 @@ sealed abstract class MilliSatoshis
     toLnCurrencyUnit != lnCurrencyUnit
   }
 
+  override def equals(obj: Any): Boolean = {
+    //needed for cases like
+    //1BTC == 100,000,000 satoshis should be true
+    //weirdly enough, this worked in scala version < 2.13.4
+    //but seems to be broken in 2.13.4 :/
+    //try removing this and running code, you should see
+    //failures in the 'lnurl' module
+    obj match {
+      case ln: LnCurrencyUnit => toLnCurrencyUnit == ln
+      case ms: MilliSatoshis  => this.toBigInt == ms.toBigInt
+      case cu: CurrencyUnit   => toSatoshis == cu.satoshis
+      case _                  => false
+    }
+  }
+
   def >=(ln: LnCurrencyUnit): Boolean = {
     toLnCurrencyUnit >= ln
   }

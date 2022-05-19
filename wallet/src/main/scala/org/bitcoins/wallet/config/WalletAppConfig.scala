@@ -404,5 +404,4 @@ object WalletAppConfig
       ()
     }
   }
-
 }

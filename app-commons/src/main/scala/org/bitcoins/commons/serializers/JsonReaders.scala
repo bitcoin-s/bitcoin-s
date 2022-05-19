@@ -44,7 +44,7 @@ import ujson.{Num, Str, Value}
 import scodec.bits.ByteVector
 
 import java.io.File
-import java.net.{InetAddress, InetSocketAddress, URI}
+import java.net._
 import java.nio.file.Path
 import java.time._
 import java.util.UUID
@@ -81,6 +81,12 @@ object JsonReaders {
         }.toMap)
       }
     }
+  }
+
+  implicit object URLReads extends Reads[URL] {
+
+    override def reads(json: JsValue): JsResult[URL] =
+      SerializerUtil.processJsString[URL](str => new URL(str))(json)
   }
 
   implicit object ZonedDateTimeReads extends Reads[ZonedDateTime] {

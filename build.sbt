@@ -143,6 +143,16 @@ lazy val clightningRpc = project
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
+lazy val lnurl = project
+  .in(file("lnurl"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(appCommons, asyncUtilsJVM, tor)
+
+lazy val lnurlTest = project
+  .in(file("lnurl-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .dependsOn(lnurl, testkit)
+
 lazy val tor = project
   .in(file("tor"))
   .settings(CommonSettings.prodSettings: _*)
@@ -221,6 +231,8 @@ lazy val `bitcoin-s` = project
     serverRoutes,
     lndRpc,
     lndRpcTest,
+    lnurl,
+    lnurlTest,
     tor,
     torTest,
     scripts,
@@ -279,6 +291,8 @@ lazy val `bitcoin-s` = project
     serverRoutes,
     lndRpc,
     lndRpcTest,
+    lnurl,
+    lnurlTest,
     tor,
     torTest,
     scripts,
@@ -379,7 +393,9 @@ lazy val oracleServer = project
     dlcOracle,
     serverRoutes
   )
-  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin)
+  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin, 
+    //needed for windows, else we have the 'The input line is too long` on windows OS
+    LauncherJarPlugin)
 
 lazy val oracleServerTest = project
   .in(file("app/oracle-server-test"))
@@ -419,7 +435,9 @@ lazy val appServer = project
     feeProvider,
     zmq
   )
-  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin)
+  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin,
+    //needed for windows, else we have the 'The input line is too long` on windows OS
+    LauncherJarPlugin)
 
 lazy val appServerTest = project
   .in(file("app/server-test"))
@@ -763,7 +781,11 @@ lazy val dlcWalletTest = project
     name := "bitcoin-s-dlc-wallet-test",
     libraryDependencies ++= Deps.dlcWalletTest
   )
-  .dependsOn(coreJVM % testAndCompile, dlcWallet, testkit, testkitCoreJVM, dlcTest)
+  .dependsOn(coreJVM % testAndCompile,
+             dlcWallet,
+             testkit,
+             testkitCoreJVM,
+             dlcTest)
 
 lazy val dlcNode = project
   .in(file("dlc-node"))
