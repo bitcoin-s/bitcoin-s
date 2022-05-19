@@ -86,9 +86,6 @@ abstract class Wallet
   private[bitcoins] val stateDescriptorDAO: WalletStateDescriptorDAO =
     WalletStateDescriptorDAO()
 
-  private[bitcoins] val walletStateDAO: WalletStateDAO =
-    WalletStateDAO()
-
   private val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
@@ -162,7 +159,7 @@ abstract class Wallet
   override def stop(): Future[Wallet] = Future.successful(this)
 
   def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
-    stateDescriptorDAO.getSyncDescriptorOpt()
+    stateDescriptorDAO.getSyncHeight()
   }
 
   override def getSyncState(): Future[BlockSyncState] = {

@@ -106,13 +106,13 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
     val result = walletDbManagement.migrate()
     walletAppConfig.driver match {
       case SQLite =>
-        val expected = 16
+        val expected = 15
         assert(result.migrationsExecuted == expected)
         val flywayInfo = walletDbManagement.info()
         assert(flywayInfo.applied().length == expected)
         assert(flywayInfo.pending().length == 0)
       case PostgreSQL =>
-        val expected = 14
+        val expected = 13
         assert(result.migrationsExecuted == expected)
         val flywayInfo = walletDbManagement.info()
 

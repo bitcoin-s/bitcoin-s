@@ -1,1 +1,0 @@
-CREATE TABLE wallet_state (id INT NOT NULL PRIMARY KEY DEFAULT(1), is_rescanning BOOL NOT NULL);

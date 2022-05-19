@@ -23,7 +23,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
   /////////////////////
   // Public facing API
 
-  override def isRescanning(): Future[Boolean] = walletStateDAO.isRescanning
+  override def isRescanning(): Future[Boolean] = stateDescriptorDAO.isRescanning
 
   /** @inheritdoc */
   override def rescanNeutrinoWallet(
@@ -53,10 +53,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
       force: Boolean = false): Future[RescanState] = {
     for {
       doRescan <-
-        if (force) walletStateDAO.setRescanning(true)
+        if (force) stateDescriptorDAO.updateRescanning(true).map(_.rescanning)
         else
-          walletStateDAO.compareAndSetRescanning(expectedValue = false,
-                                                 newValue = true)
+          stateDescriptorDAO.compareAndSetRescanning(expectedValue = false,
+                                                     newValue = true)
       rescanState <-
         if (doRescan) {
           logger.info(
@@ -76,7 +76,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
             }
             _ <- clearUtxos(account)
             _ <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
-            _ <- walletStateDAO.setRescanning(false)
+            _ <- stateDescriptorDAO.updateRescanning(false)
           } yield {
             logger.info(s"Finished rescanning the wallet. It took ${System
               .currentTimeMillis() - startTime}ms")
@@ -85,8 +85,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
           res.recoverWith { case err: Throwable =>
             logger.error(s"Failed to rescan wallet", err)
-            walletStateDAO
-              .setRescanning(false)
+            stateDescriptorDAO
+              .updateRescanning(false)
               .flatMap(_ => Future.failed(err))
           }
 
