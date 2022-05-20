@@ -482,6 +482,49 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     }
   }
 
+  /** Retrieves all offer and accept messages in the database */
+  def getAllOfferAcceptDb(): Future[Vector[(DLCOfferDb, DLCAcceptDb)]] = {
+    val action = actionBuilder.getAllOfferAcceptDbAction()
+    safeDatabase.run(action)
+  }
+
+  /** Gets all scriptpubkeys in the database that fund a DLC */
+  def getAllFundingSPKs(): Future[Vector[ScriptPubKey]] = {
+    val offerAndAcceptDbsA =
+      actionBuilder.getAllOfferAcceptDbAction()
+
+    val action = for {
+      offerAndAcceptDbs <- offerAndAcceptDbsA
+      fundingSPKs = offerAndAcceptDbs.map { case (offerDb, acceptDb) =>
+        val (_, spk) = DLCTxBuilder.buildFundingSPKs(
+          Vector(offerDb.fundingKey, acceptDb.fundingKey))
+        spk
+      }
+    } yield fundingSPKs
+
+    safeDatabase.run(action)
+  }
+
+  /** Gets all scriptPubKeys in the database that could receive a payout from a DLC */
+  def getAllPayoutSPKs(): Future[Vector[ScriptPubKey]] = {
+    val offerAndAcceptDbsA =
+      actionBuilder.getAllOfferAcceptDbAction()
+    val action = for {
+      offerAndAcceptDbs <- offerAndAcceptDbsA
+      payoutSPKs = offerAndAcceptDbs.map { case (offerDb, acceptDb) =>
+        Vector(offerDb.payoutAddress.scriptPubKey,
+               acceptDb.payoutAddress.scriptPubKey)
+      }
+    } yield payoutSPKs.flatten
+    safeDatabase.run(action)
+  }
+
+  def getOfferAndAcceptDb(
+      dlcId: Sha256Digest): Future[Option[(DLCOfferDb, DLCAcceptDb)]] = {
+    val action = actionBuilder.getOfferAndAcceptDbAction(dlcId)
+    safeDatabase.run(action)
+  }
+
   private[wallet] def builderFromDbData(
       dlcDb: DLCDb,
       transactionDAO: TransactionDAO): Future[Option[DLCTxBuilder]] = {

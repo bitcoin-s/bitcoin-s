@@ -1,5 +1,7 @@
 package org.bitcoins.dlc.wallet
 
+import com.typesafe.config.ConfigFactory
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.protocol.BlockStamp.BlockHash
 import org.bitcoins.core.protocol.dlc.models.{
   DLCState,
@@ -7,9 +9,13 @@ import org.bitcoins.core.protocol.dlc.models.{
   SingleContractInfo
 }
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.server.BitcoindRpcBackendUtil
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{DLCWalletUtil, DualWalletTestCachedBitcoind}
+import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.FutureOutcome
+
+import java.nio.file.Files
 
 class RescanDLCTest extends DualWalletTestCachedBitcoind {
 
@@ -100,5 +106,74 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
 
       postStatus <- getDLCStatus(wallet)
     } yield assert(postStatus.state == DLCState.RemoteClaimed)
+  }
+
+  it must "properly rescan when a dlc is remotely claimed" in { params =>
+    //see: https://github.com/bitcoin-s/bitcoin-s/issues/4227
+    val walletA = params._1
+    val walletB = params._2
+    val wallet = walletB.wallet
+    val bitcoind = params._3
+    val walletConfig = wallet.walletConfig
+    val walletDb = walletConfig.datadir
+      .resolve("walletdb.sqlite")
+    for {
+      contractId <- getContractId(wallet)
+      status <- getDLCStatus(wallet)
+      (sig, _) = {
+        status.contractInfo match {
+          case single: SingleContractInfo =>
+            DLCWalletUtil.getSigs(single)
+          case disjoint: DisjointUnionContractInfo =>
+            sys.error(
+              s"Cannot retrieve sigs for disjoint union contract, got=$disjoint")
+        }
+      }
+      func = (wallet: DLCWallet) =>
+        wallet.executeDLC(contractId, sig).map(_.get)
+      result <- dlcExecutionTest(wallets = (walletA, walletB),
+                                 asInitiator = true,
+                                 func = func,
+                                 expectedOutputs = 1)
+      _ = assert(result)
+      addr <- bitcoind.getNewAddress
+
+      //confirm the closing tx in a block
+      _ <- bitcoind.generateToAddress(1, addr)
+
+      dlcsBeforeRescan <- wallet.listDLCs()
+      _ = assert(dlcsBeforeRescan.exists(_.state == DLCState.RemoteClaimed))
+      _ = assert(Files.exists(walletDb))
+      _ = Files.delete(walletDb)
+      _ = assert(!Files.exists(walletDb))
+      extraConfig = walletConfig.bip39PasswordOpt match {
+        case Some(pw) =>
+          ConfigFactory.parseString(s"bitcoin-s.keymanager.bip39password=$pw")
+        case None => ConfigFactory.empty
+      }
+      wAppConfig = WalletAppConfig(baseDatadir = walletConfig.baseDatadir,
+                                   Vector(extraConfig))(system.dispatcher)
+      _ <- wAppConfig.start()
+      //start it again with a fresh database
+      wBadNodeApi <- DLCAppConfig(walletConfig.baseDatadir, Vector.empty)
+        .createDLCWallet(
+          wallet.nodeApi,
+          wallet.chainQueryApi,
+          feeRateApi = wallet.feeRateApi)(wAppConfig, system.dispatcher)
+      w = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
+        bitcoind = bitcoind,
+        wallet = wBadNodeApi,
+        chainCallbacksOpt = None)
+      txCount <- w.transactionDAO.count()
+      _ = assert(txCount == 0) //make sure we have txs in db
+      //need to do a rescan from walletB
+      _ <- w.rescanNeutrinoWallet(None, None, 5, false)
+      balanceAfterRescan <- w.getBalance()
+      _ = assert(balanceAfterRescan != CurrencyUnits.zero)
+      dlcsAfterRescan <- w.listDLCs()
+      _ <- wAppConfig.stop()
+    } yield {
+      assert(dlcsAfterRescan.exists(_.state == DLCState.RemoteClaimed))
+    }
   }
 }

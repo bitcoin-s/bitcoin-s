@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-private[wallet] trait RescanHandling extends WalletLogger {
+private[bitcoins] trait RescanHandling extends WalletLogger {
   self: Wallet =>
 
   private val rescanning = new AtomicBoolean(false)
@@ -39,11 +39,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
       ec: ExecutionContext): Future[RescanState] = {
     for {
       account <- getDefaultAccount()
-      state <- rescanNeutrinoWallet(account.hdAccount,
-                                    startOpt,
-                                    endOpt,
-                                    addressBatchSize,
-                                    useCreationTime)
+      state <- rescanNeutrinoWallet(
+        account = account.hdAccount,
+        startOpt = startOpt,
+        endOpt = endOpt,
+        addressBatchSize = addressBatchSize,
+        externalScriptPubKeys = Vector.empty,
+        useCreationTime = useCreationTime
+      )
     } yield state
   }
 
@@ -53,6 +56,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
+      externalScriptPubKeys: Vector[ScriptPubKey],
       useCreationTime: Boolean = true): Future[RescanState] = {
     if (rescanning.get()) {
       logger.warn(
@@ -61,7 +65,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     } else {
       rescanning.set(true)
       logger.info(
-        s"Starting rescanning the wallet from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime")
+        s"Starting rescanning the wallet from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime with ${externalScriptPubKeys.length} externalSPKs")
       val start = System.currentTimeMillis()
       val res = for {
         start <- (startOpt, useCreationTime) match {
@@ -76,7 +80,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
             Future.successful(None)
         }
         _ <- clearUtxos(account)
-        _ <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
+        _ <- doNeutrinoRescan(account = account,
+                              startOpt = start,
+                              endOpt = endOpt,
+                              addressBatchSize = addressBatchSize,
+                              externalSPKs = externalScriptPubKeys)
       } yield {
         RescanState.RescanDone
       }
@@ -148,9 +156,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
       account: HDAccount,
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
-      addressBatchSize: Int): Future[Unit] = {
+      addressBatchSize: Int,
+      externalSPKs: Vector[ScriptPubKey]): Future[Unit] = {
     for {
-      scriptPubKeys <- generateScriptPubKeys(account, addressBatchSize)
+      generatedSPKs <- generateScriptPubKeys(account, addressBatchSize)
+      scriptPubKeys = externalSPKs ++ generatedSPKs
       addressCount <- addressDAO.count()
       _ <- matchBlocks(scriptPubKeys = scriptPubKeys,
                        endOpt = endOpt,
@@ -173,7 +183,13 @@ private[wallet] trait RescanHandling extends WalletLogger {
           logger.info(
             s"Attempting rescan again with fresh pool of addresses as we had a " +
               s"match within our address gap limit of ${walletConfig.addressGapLimit}")
-          doNeutrinoRescan(account, startOpt, endOpt, addressBatchSize)
+          //do we need to pass in external scripts again recursively here?
+          //I don't think so as they should get matched the first time
+          doNeutrinoRescan(account = account,
+                           startOpt = startOpt,
+                           endOpt = endOpt,
+                           addressBatchSize = addressBatchSize,
+                           externalSPKs = Vector.empty)
         }
       }
     } yield res

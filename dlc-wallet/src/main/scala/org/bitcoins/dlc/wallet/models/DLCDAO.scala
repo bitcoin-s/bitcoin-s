@@ -118,6 +118,17 @@ case class DLCDAO()(implicit
     safeDatabase.runVec(q.result)
   }
 
+  def getAllDLCIdsAction(): DBIOAction[
+    Vector[Sha256Digest],
+    NoStream,
+    Effect.Read] = {
+    table.map(_.dlcId).result.map(_.toVector)
+  }
+
+  def getAllDLCIds(): Future[Vector[Sha256Digest]] = {
+    safeDatabase.runVec(getAllDLCIdsAction())
+  }
+
   class DLCTable(tag: Tag)
       extends Table[DLCDb](tag, schemaName, "global_dlc_data") {
 
