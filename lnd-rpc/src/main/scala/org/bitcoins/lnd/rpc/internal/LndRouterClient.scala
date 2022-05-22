@@ -10,7 +10,7 @@ import lnrpc.{
   Route,
   RouteHint
 }
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency._
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.ln.{LnInvoice, PaymentSecret}
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -25,7 +25,7 @@ import scala.concurrent.Future
 trait LndRouterClient { self: LndRpcClient =>
 
   def queryRoutes(
-      amount: Satoshis,
+      amount: CurrencyUnit,
       node: NodeId,
       routeHints: Vector[LnRoute]): Future[QueryRoutesResponse] = {
     val hopHints = routeHints.map { hint =>
@@ -37,7 +37,7 @@ trait LndRouterClient { self: LndRpcClient =>
     }
     val request =
       QueryRoutesRequest(pubKey = node.pubKey.hex,
-                         amt = amount.toLong,
+                         amt = amount.satoshis.toLong,
                          finalCltvDelta = 40,
                          useMissionControl = true,
                          routeHints = Vector(RouteHint(hopHints)))
