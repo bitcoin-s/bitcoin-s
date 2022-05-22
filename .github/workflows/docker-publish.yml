@@ -2,7 +2,7 @@
 name: CI to Docker Hub
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, "2022-05-22-alpine-base-image"]
     tags: ["*"]
 jobs:
   build:
@@ -19,4 +19,4 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       - name: Build and push
-        run: sbt ++2.13.7 "oracleServer/docker:publish;appServer/docker:publish"
+        run: sbt ++2.13.8 "oracleServer/docker:publish;appServer/docker:publish"
