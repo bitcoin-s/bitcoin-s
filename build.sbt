@@ -395,7 +395,9 @@ lazy val oracleServer = project
   )
   .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin, 
     //needed for windows, else we have the 'The input line is too long` on windows OS
-    LauncherJarPlugin)
+    LauncherJarPlugin,
+    AshScriptPlugin
+  )
 
 lazy val oracleServerTest = project
   .in(file("app/oracle-server-test"))
@@ -437,7 +439,8 @@ lazy val appServer = project
   )
   .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin,
     //needed for windows, else we have the 'The input line is too long` on windows OS
-    LauncherJarPlugin)
+    LauncherJarPlugin,
+    AshScriptPlugin)
 
 lazy val appServerTest = project
   .in(file("app/server-test"))
