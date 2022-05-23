@@ -307,10 +307,10 @@ object BitcoindRpcBackendUtil extends Logging {
       val numParallelism = Runtime.getRuntime.availableProcessors()
       val atomicPrevCount: AtomicInteger = new AtomicInteger(
         walletSyncState.height)
-      val processing = new AtomicBoolean(false)
+      val processingBitcoindBlocks = new AtomicBoolean(false)
 
       def pollBitcoind(): Future[Unit] = {
-        if (processing.compareAndSet(false, true)) {
+        if (processingBitcoindBlocks.compareAndSet(false, true)) {
           logger.trace("Polling bitcoind for block count")
           val res: Future[Unit] = bitcoind.getBlockCount.flatMap { count =>
             val prevCount = atomicPrevCount.get()
@@ -354,7 +354,7 @@ object BitcoindRpcBackendUtil extends Logging {
               Future.unit
             }
           }
-          res.onComplete(_ => processing.set(false))
+          res.onComplete(_ => processingBitcoindBlocks.set(false))
           res
         } else {
           logger.info(
@@ -365,7 +365,7 @@ object BitcoindRpcBackendUtil extends Logging {
 
       system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
         {
-          val _ = for {
+          val f = for {
             rescanning <- wallet.isRescanning()
             res <-
               if (!rescanning) {
@@ -376,6 +376,8 @@ object BitcoindRpcBackendUtil extends Logging {
                 Future.unit
               }
           } yield res
+
+          f.failed.foreach(err => logger.error(s"Failed to poll bitcoind", err))
         }
       }
     }
@@ -399,10 +401,10 @@ object BitcoindRpcBackendUtil extends Logging {
         txids
       }
 
-    val processing = new AtomicBoolean(false)
+    val processingMempool = new AtomicBoolean(false)
 
-    def pollMempool() = {
-      if (processing.compareAndSet(false, true)) {
+    def pollMempool(): Future[Unit] = {
+      if (processingMempool.compareAndSet(false, true)) {
         logger.debug("Polling bitcoind for mempool")
         val numParallelism = {
           val processors = Runtime.getRuntime.availableProcessors()
@@ -439,7 +441,7 @@ object BitcoindRpcBackendUtil extends Logging {
             s"Done processing ${newTxIds.size} new mempool transactions")
           ()
         }
-        res.onComplete(_ => processing.set(false))
+        res.onComplete(_ => processingMempool.set(false))
         res
       } else {
         logger.info(
@@ -450,7 +452,7 @@ object BitcoindRpcBackendUtil extends Logging {
 
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
-        val _ = for {
+        val f = for {
           rescanning <- wallet.isRescanning()
           res <-
             if (!rescanning) {
@@ -461,6 +463,8 @@ object BitcoindRpcBackendUtil extends Logging {
             }
         } yield res
 
+        f.failed.foreach(err => logger.error(s"Failed to poll mempool", err))
+        ()
       }
     }
   }
