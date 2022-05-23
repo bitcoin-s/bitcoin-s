@@ -513,6 +513,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                   nodeConf.nodeCallbacks
                     .executeOnTxReceivedCallbacks(logger, tx)
                 }
+              ()
             }
         } else {
           Future {

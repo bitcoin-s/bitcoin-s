@@ -1,7 +1,7 @@
 package org.bitcoins.server
 
 import akka.Done
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.ChainCallbacks
@@ -299,7 +299,7 @@ object BitcoindRpcBackendUtil extends Logging {
       bitcoind: BitcoindRpcClient,
       interval: FiniteDuration = 10.seconds)(implicit
       system: ActorSystem,
-      ec: ExecutionContext): Future[Unit] = {
+      ec: ExecutionContext): Future[Cancellable] = {
 
     for {
       walletSyncState <- wallet.getSyncState()
@@ -363,21 +363,20 @@ object BitcoindRpcBackendUtil extends Logging {
         }
       }
 
-      val _ = system.scheduler.scheduleWithFixedDelay(0.seconds, interval) {
-        () =>
-          {
-            val _ = for {
-              rescanning <- wallet.isRescanning()
-              res <-
-                if (!rescanning) {
-                  pollBitcoind()
-                } else {
-                  logger.info(
-                    s"Skipping scanning the blockchain during wallet rescan")
-                  Future.unit
-                }
-            } yield res
-          }
+      system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
+        {
+          val _ = for {
+            rescanning <- wallet.isRescanning()
+            res <-
+              if (!rescanning) {
+                pollBitcoind()
+              } else {
+                logger.info(
+                  s"Skipping scanning the blockchain during wallet rescan")
+                Future.unit
+              }
+          } yield res
+        }
       }
     }
   }
@@ -388,7 +387,7 @@ object BitcoindRpcBackendUtil extends Logging {
       interval: FiniteDuration = 10.seconds)(
       processTx: Transaction => Future[Unit])(implicit
       system: ActorSystem,
-      ec: ExecutionContext): Unit = {
+      ec: ExecutionContext): Cancellable = {
     @volatile var prevMempool: Set[DoubleSha256DigestBE] =
       Set.empty[DoubleSha256DigestBE]
 
@@ -449,7 +448,7 @@ object BitcoindRpcBackendUtil extends Logging {
       }
     }
 
-    val _ = system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
+    system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
         val _ = for {
           rescanning <- wallet.isRescanning()
