@@ -6,7 +6,7 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.{BlockSyncState, WalletApi}
+import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
