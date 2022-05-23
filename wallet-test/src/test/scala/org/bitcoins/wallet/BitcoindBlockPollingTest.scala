@@ -82,12 +82,11 @@ class BitcoindBlockPollingTest
         txid1 <- bitcoind.sendToAddress(addr, amountToSend)
 
         // Setup block polling
-        _ <- BitcoindRpcBackendUtil.startBitcoindMempoolPolling(wallet,
-                                                                bitcoind,
-                                                                1.second) {
-          tx =>
-            mempoolTxs += tx
-            FutureUtil.unit
+        _ = BitcoindRpcBackendUtil.startBitcoindMempoolPolling(wallet,
+                                                               bitcoind,
+                                                               1.second) { tx =>
+          mempoolTxs += tx
+          FutureUtil.unit
         }
 
         // Send to wallet

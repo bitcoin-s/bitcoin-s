@@ -507,7 +507,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
           BitcoindRpcBackendUtil
             .startBitcoindBlockPolling(wallet, bitcoind)
-            .flatMap { _ =>
+            .map { _ =>
               BitcoindRpcBackendUtil
                 .startBitcoindMempoolPolling(wallet, bitcoind) { tx =>
                   nodeConf.nodeCallbacks
