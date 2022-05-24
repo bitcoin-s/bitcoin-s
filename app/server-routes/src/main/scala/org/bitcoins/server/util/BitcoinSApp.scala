@@ -1,6 +1,7 @@
 package org.bitcoins.server.util
 
 import akka.actor.ActorSystem
+import grizzled.slf4j.Logging
 
 trait BitcoinSApp {
   def actorSystemName: String
@@ -14,6 +15,6 @@ trait BitcoinSApp {
 }
 
 /** Trait for using BitcoinS app with a daemon backend */
-trait BitcoinSAppScalaDaemon extends App with BitcoinSApp {
+trait BitcoinSAppScalaDaemon extends App with BitcoinSApp with Logging {
   final override def commandLineArgs: Array[String] = args
 }

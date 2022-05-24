@@ -6,9 +6,10 @@ import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.dlc.oracle.DLCOracle
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
-import org.bitcoins.server.util.BitcoinSAppScalaDaemon
+import org.bitcoins.server.util.{BitcoinSAppScalaDaemon, ServerBindings}
 
-import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 
 class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
@@ -47,21 +48,24 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
                  Source.empty)
       }
 
-      _ <- server.start()
+      bindings <- server.start()
     } yield {
+      serverBindingsOpt = Some(bindings)
       logger.info(s"Done starting oracle!")
       ()
     }
   }
+  private var serverBindingsOpt: Option[ServerBindings] = None
 
   override def stop(): Future[Unit] = {
-    logger.error(s"Exiting process")
     for {
       _ <- conf.stop()
-      _ = logger.info(s"Stopped DLC Oracle")
-      _ <- system.terminate()
+      _ <- serverBindingsOpt match {
+        case Some(bindings) => bindings.stop()
+        case None           => Future.unit
+      }
     } yield {
-      logger.info(s"Actor system terminated")
+      logger.info(s"Stopped DLC Oracle")
       ()
     }
   }
@@ -86,5 +90,12 @@ object OracleServerMain extends BitcoinSAppScalaDaemon {
     DLCOracleAppConfig(datadirParser.datadir, Vector(datadirParser.baseConfig))(
       system.dispatcher)
 
-  new OracleServerMain(serverCmdLineArgs).run()
+  val m = new OracleServerMain(serverCmdLineArgs)
+  m.run()
+
+  sys.addShutdownHook {
+    logger.info(
+      s"@@@@@@@@@@@@@@@@@@@@@ Shutting down ${getClass.getSimpleName} @@@@@@@@@@@@@@@@@@@@@")
+    Await.result(m.stop(), 10.seconds)
+  }
 }
