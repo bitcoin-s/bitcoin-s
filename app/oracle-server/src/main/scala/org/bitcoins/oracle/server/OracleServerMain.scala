@@ -56,6 +56,7 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
   }
   private var serverBindingsOpt: Option[ServerBindings] = None
+
   override def stop(): Future[Unit] = {
     for {
       _ <- conf.stop()
@@ -93,6 +94,8 @@ object OracleServerMain extends BitcoinSAppScalaDaemon {
   m.run()
 
   sys.addShutdownHook {
+    logger.info(
+      s"@@@@@@@@@@@@@@@@@@@@@ Shutting down ${getClass.getSimpleName} @@@@@@@@@@@@@@@@@@@@@")
     Await.result(m.stop(), 10.seconds)
   }
 }

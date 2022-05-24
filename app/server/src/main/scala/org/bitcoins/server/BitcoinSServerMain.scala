@@ -604,6 +604,8 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
   m.run()
 
   sys.addShutdownHook {
+    logger.info(
+      s"@@@@@@@@@@@@@@@@@@@@@ Shutting down ${getClass.getSimpleName} @@@@@@@@@@@@@@@@@@@@@")
     Await.result(m.stop(), 10.seconds)
   }
 }
