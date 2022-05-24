@@ -291,8 +291,8 @@ object BitcoindRpcBackendUtil extends Logging {
     * if it has changed, it will then request those blocks to process them
     *
     * @param startCount The starting block height of the wallet
-    * @param interval The amount of time between polls, this should not be too aggressive
-    *                 as the wallet will need to process the new blocks
+    * @param interval   The amount of time between polls, this should not be too aggressive
+    *                   as the wallet will need to process the new blocks
     */
   def startBitcoindBlockPolling(
       wallet: WalletApi,
@@ -300,73 +300,91 @@ object BitcoindRpcBackendUtil extends Logging {
       interval: FiniteDuration = 10.seconds)(implicit
       system: ActorSystem,
       ec: ExecutionContext): Future[Cancellable] = {
-    val walletSyncStateF = wallet.getSyncState()
-    val resultF: Future[Cancellable] = for {
-      walletSyncState <- walletSyncStateF
+
+    for {
+      walletSyncState <- wallet.getSyncState()
     } yield {
       val numParallelism = Runtime.getRuntime.availableProcessors()
       val atomicPrevCount: AtomicInteger = new AtomicInteger(
         walletSyncState.height)
-      val processing = new AtomicBoolean(false)
+      val processingBitcoindBlocks = new AtomicBoolean(false)
+
+      def pollBitcoind(): Future[Unit] = {
+        if (processingBitcoindBlocks.compareAndSet(false, true)) {
+          logger.trace("Polling bitcoind for block count")
+          val res: Future[Unit] = bitcoind.getBlockCount.flatMap { count =>
+            val prevCount = atomicPrevCount.get()
+            if (prevCount < count) {
+              logger.info(
+                s"Bitcoind has new block(s), requesting... ${count - prevCount} blocks")
+
+              // use .tail so we don't process the previous block that we already did
+              val range = prevCount.to(count).tail
+              val hashFs: Future[Seq[DoubleSha256Digest]] = Source(range)
+                .mapAsync(parallelism = numParallelism) { height =>
+                  bitcoind.getBlockHash(height).map(_.flip)
+                }
+                .map { hash =>
+                  val _ = atomicPrevCount.incrementAndGet()
+                  hash
+                }
+                .toMat(Sink.seq)(Keep.right)
+                .run()
+
+              val requestsBlocksF = for {
+                hashes <- hashFs
+                _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
+              } yield logger.debug(
+                "Successfully polled bitcoind for new blocks")
+
+              requestsBlocksF.failed.foreach { case err =>
+                val failedCount = atomicPrevCount.get
+                atomicPrevCount.set(prevCount)
+                logger.error(
+                  s"Requesting blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
+                  err)
+              }
+
+              requestsBlocksF
+            } else if (prevCount > count) {
+              Future.failed(new RuntimeException(
+                s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
+            } else {
+              logger.debug(s"In sync $prevCount count=$count")
+              Future.unit
+            }
+          }
+          res.onComplete(_ => processingBitcoindBlocks.set(false))
+          res
+        } else {
+          logger.info(
+            s"Skipping scanning the blockchain since a previously scheduled task is still running")
+          Future.unit
+        }
+      }
+
       system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
         {
-          if (processing.compareAndSet(false, true)) {
-            logger.trace("Polling bitcoind for block count")
-            val res = bitcoind.getBlockCount.flatMap { count =>
-              val prevCount = atomicPrevCount.get()
-              if (prevCount < count) {
-                logger.info(
-                  s"Bitcoind has new block(s), requesting... ${count - prevCount} blocks")
-
-                // use .tail so we don't process the previous block that we already did
-                val range = prevCount.to(count).tail
-                val hashFs: Future[Seq[DoubleSha256Digest]] = Source(range)
-                  .mapAsync(parallelism = numParallelism) { height =>
-                    bitcoind.getBlockHash(height).map(_.flip)
-                  }
-                  .map { hash =>
-                    val _ = atomicPrevCount.incrementAndGet()
-                    hash
-                  }
-                  .toMat(Sink.seq)(Keep.right)
-                  .run()
-
-                val requestsBlocksF = for {
-                  hashes <- hashFs
-                  _ <- wallet.nodeApi.downloadBlocks(hashes.toVector)
-                } yield logger.debug(
-                  "Successfully polled bitcoind for new blocks")
-
-                requestsBlocksF.failed.foreach { case err =>
-                  val failedCount = atomicPrevCount.get
-                  atomicPrevCount.set(prevCount)
-                  logger.error(
-                    s"Requesting blocks from bitcoind polling failed, range=[$prevCount, $failedCount]",
-                    err)
-                }
-
-                requestsBlocksF
-              } else if (prevCount > count) {
-                Future.failed(new RuntimeException(
-                  s"Bitcoind is at a block height ($count) before the wallet's ($prevCount)"))
+          val f = for {
+            rescanning <- wallet.isRescanning()
+            res <-
+              if (!rescanning) {
+                pollBitcoind()
               } else {
-                logger.debug(s"In sync $prevCount count=$count")
+                logger.info(
+                  s"Skipping scanning the blockchain during wallet rescan")
                 Future.unit
               }
-            }
-            res.onComplete(_ => processing.set(false))
-          } else {
-            logger.info(
-              s"Skipping scanning the blockchain since a previously scheduled task is still running")
-          }
+          } yield res
+
+          f.failed.foreach(err => logger.error(s"Failed to poll bitcoind", err))
         }
       }
     }
-
-    resultF
   }
 
   def startBitcoindMempoolPolling(
+      wallet: WalletApi,
       bitcoind: BitcoindRpcClient,
       interval: FiniteDuration = 10.seconds)(
       processTx: Transaction => Future[Unit])(implicit
@@ -383,52 +401,70 @@ object BitcoindRpcBackendUtil extends Logging {
         txids
       }
 
-    val processing = new AtomicBoolean(false)
+    val processingMempool = new AtomicBoolean(false)
+
+    def pollMempool(): Future[Unit] = {
+      if (processingMempool.compareAndSet(false, true)) {
+        logger.debug("Polling bitcoind for mempool")
+        val numParallelism = {
+          val processors = Runtime.getRuntime.availableProcessors()
+          //max open requests is 32 in akka, so 1/8 of possible requests
+          //can be used to query the mempool, else just limit it be number of processors
+          //see: https://github.com/bitcoin-s/bitcoin-s/issues/4252
+          Math.min(4, processors)
+        }
+
+        //don't want to execute these in parallel
+        val processTxFlow = Sink.foreachAsync[Transaction](1)(processTx)
+
+        val res = for {
+          mempool <- bitcoind.getRawMemPool
+          newTxIds = getDiffAndReplace(mempool.toSet)
+          _ = logger.debug(s"Found ${newTxIds.size} new mempool transactions")
+
+          _ <- Source(newTxIds)
+            .mapAsync(parallelism = numParallelism) { txid =>
+              bitcoind
+                .getRawTransactionRaw(txid)
+                .map(Option(_))
+                .recover { case _: Throwable =>
+                  None
+                }
+                .collect { case Some(tx) =>
+                  tx
+                }
+            }
+            .toMat(processTxFlow)(Keep.right)
+            .run()
+        } yield {
+          logger.debug(
+            s"Done processing ${newTxIds.size} new mempool transactions")
+          ()
+        }
+        res.onComplete(_ => processingMempool.set(false))
+        res
+      } else {
+        logger.info(
+          s"Skipping scanning the mempool since a previously scheduled task is still running")
+        Future.unit
+      }
+    }
 
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
-        if (processing.compareAndSet(false, true)) {
-          logger.debug("Polling bitcoind for mempool")
-          val numParallelism = {
-            val processors = Runtime.getRuntime.availableProcessors()
-            //max open requests is 32 in akka, so 1/8 of possible requests
-            //can be used to query the mempool, else just limit it be number of processors
-            //see: https://github.com/bitcoin-s/bitcoin-s/issues/4252
-            Math.min(4, processors)
-          }
+        val f = for {
+          rescanning <- wallet.isRescanning()
+          res <-
+            if (!rescanning) {
+              pollMempool()
+            } else {
+              logger.info(s"Skipping scanning the mempool during wallet rescan")
+              Future.unit
+            }
+        } yield res
 
-          //don't want to execute these in parallel
-          val processTxFlow = Sink.foreachAsync[Transaction](1)(processTx)
-
-          val res = for {
-            mempool <- bitcoind.getRawMemPool
-            newTxIds = getDiffAndReplace(mempool.toSet)
-            _ = logger.debug(s"Found ${newTxIds.size} new mempool transactions")
-
-            _ <- Source(newTxIds)
-              .mapAsync(parallelism = numParallelism) { txid =>
-                bitcoind
-                  .getRawTransactionRaw(txid)
-                  .map(Option(_))
-                  .recover { case _: Throwable =>
-                    None
-                  }
-                  .collect { case Some(tx) =>
-                    tx
-                  }
-              }
-              .toMat(processTxFlow)(Keep.right)
-              .run()
-          } yield {
-            logger.debug(
-              s"Done processing ${newTxIds.size} new mempool transactions")
-            ()
-          }
-          res.onComplete(_ => processing.set(false))
-        } else {
-          logger.info(
-            s"Skipping scanning the mempool since a previously scheduled task is still running")
-        }
+        f.failed.foreach(err => logger.error(s"Failed to poll mempool", err))
+        ()
       }
     }
   }

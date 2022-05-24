@@ -711,7 +711,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
                       endOpt = endBlock,
                       addressBatchSize =
                         batchSize.getOrElse(wallet.discoveryBatchSize()),
-                      useCreationTime = !ignoreCreationTime)
+                      useCreationTime = !ignoreCreationTime,
+                      force = false)
                   Future.successful("Rescan started.")
                 } else {
                   Future.successful(

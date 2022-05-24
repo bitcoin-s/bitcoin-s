@@ -2,6 +2,7 @@ package org.bitcoins.wallet.models
 
 import org.bitcoins.commons.jsonmodels.wallet.WalletStateDescriptorType._
 import org.bitcoins.commons.jsonmodels.wallet.{
+  RescanDescriptor,
   SyncHeightDescriptor,
   WalletStateDescriptor,
   WalletStateDescriptorType
@@ -55,7 +56,7 @@ case class WalletStateDescriptorDAO()(implicit
     Seq] =
     findByPrimaryKeys(ts.map(_.tpe))
 
-  def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
+  def getSyncHeight(): Future[Option[SyncHeightDescriptor]] = {
     read(SyncHeight).map {
       case Some(db) =>
         val desc = SyncHeightDescriptor.fromString(db.descriptor.toString)
@@ -67,20 +68,71 @@ case class WalletStateDescriptorDAO()(implicit
   def updateSyncHeight(
       hash: DoubleSha256DigestBE,
       height: Int): Future[WalletStateDescriptorDb] = {
-    getSyncDescriptorOpt().flatMap {
-      case Some(old) =>
-        if (old.height > height) {
-          Future.successful(WalletStateDescriptorDb(SyncHeight, old))
-        } else {
+    val tpe: WalletStateDescriptorType = SyncHeight
+    val query = table.filter(_.tpe === tpe)
+    val action = for {
+      oldOpt <- query.result.headOption
+      res: WalletStateDescriptorDb <- oldOpt match {
+        case Some(oldDb) =>
+          val old = SyncHeightDescriptor.fromString(oldDb.descriptor.toString)
+          if (old.height > height) {
+            DBIO.successful(WalletStateDescriptorDb(tpe, old))
+          } else {
+            val descriptor = SyncHeightDescriptor(hash, height)
+            val newDb = WalletStateDescriptorDb(tpe, descriptor)
+            query.update(newDb).map(_ => newDb)
+          }
+        case None =>
           val descriptor = SyncHeightDescriptor(hash, height)
-          val newDb = WalletStateDescriptorDb(SyncHeight, descriptor)
-          update(newDb)
-        }
-      case None =>
-        val descriptor = SyncHeightDescriptor(hash, height)
-        val db = WalletStateDescriptorDb(SyncHeight, descriptor)
-        create(db)
+          val db = WalletStateDescriptorDb(tpe, descriptor)
+          (table += db).map(_ => db)
+      }
+    } yield res
+    safeDatabase.run(action)
+  }
+
+  def getRescan(): Future[Option[RescanDescriptor]] = {
+    read(Rescan).map {
+      case Some(db) =>
+        val desc = RescanDescriptor.fromString(db.descriptor.toString)
+        Some(desc)
+      case None => None
     }
+  }
+
+  def isRescanning: Future[Boolean] = getRescan().map(_.exists(_.rescanning))
+
+  def updateRescanning(rescanning: Boolean): Future[RescanDescriptor] = {
+    val desc = RescanDescriptor(rescanning)
+    upsert(WalletStateDescriptorDb(desc.descriptorType, desc)).map(_ => desc)
+  }
+
+  def compareAndSetRescanning(
+      expectedValue: Boolean,
+      newValue: Boolean): Future[Boolean] = {
+    val tpe: WalletStateDescriptorType = Rescan
+    val query = table.filter(_.tpe === tpe)
+
+    val actions = for {
+      dbs <- query.result
+      res <- dbs.headOption match {
+        case None =>
+          val desc = RescanDescriptor(newValue)
+          val db = WalletStateDescriptorDb(tpe, desc)
+          (table += db).map(_ => true)
+        case Some(db) =>
+          val oldDesc = RescanDescriptor.fromString(db.descriptor.toString)
+          if (oldDesc.rescanning == expectedValue) {
+            val newDesc = RescanDescriptor(true)
+            val newDb = WalletStateDescriptorDb(tpe, newDesc)
+            query.update(newDb).map(_ => true)
+          } else {
+            DBIO.successful(false)
+          }
+      }
+    } yield res
+
+    safeDatabase.run(actions)
   }
 
   class WalletStateDescriptorTable(t: Tag)

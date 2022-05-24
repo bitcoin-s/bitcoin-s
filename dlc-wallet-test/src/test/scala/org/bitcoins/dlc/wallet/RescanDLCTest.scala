@@ -56,7 +56,8 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
       _ <- wallet.rescanNeutrinoWallet(startOpt = None,
                                        endOpt = Some(BlockHash(hash)),
                                        addressBatchSize = 20,
-                                       useCreationTime = false)
+                                       useCreationTime = false,
+                                       force = false)
 
       postStatus <- getDLCStatus(wallet)
     } yield assert(postStatus.state == DLCState.Claimed)
@@ -96,7 +97,8 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
       _ <- wallet.rescanNeutrinoWallet(startOpt = None,
                                        endOpt = Some(BlockHash(hash)),
                                        addressBatchSize = 20,
-                                       useCreationTime = false)
+                                       useCreationTime = false,
+                                       force = false)
 
       postStatus <- getDLCStatus(wallet)
     } yield assert(postStatus.state == DLCState.RemoteClaimed)

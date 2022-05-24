@@ -211,6 +211,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- startedTorConfigF
       wallet <- configuredWalletF
       _ <- handleDuplicateSpendingInfoDb(wallet)
+      _ <- restartRescanIfNeeded(wallet)
       _ <- node.sync()
     } yield {
       logger.info(
@@ -337,6 +338,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ = dlcConf.addCallbacks(dlcWalletCallbacks)
       _ <- startedTorConfigF
       _ <- handleDuplicateSpendingInfoDb(wallet)
+      _ <- restartRescanIfNeeded(wallet)
     } yield {
       logger.info(s"Done starting Main!")
       ()
@@ -480,7 +482,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                                               endOpt = None,
                                               addressBatchSize =
                                                 walletConf.discoveryBatchSize,
-                                              useCreationTime = true)
+                                              useCreationTime = true,
+                                              force = true)
     } yield clearedWallet
     walletF.map(_ => ())
   }
@@ -506,7 +509,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             .startBitcoindBlockPolling(wallet, bitcoind)
             .map { _ =>
               BitcoindRpcBackendUtil
-                .startBitcoindMempoolPolling(bitcoind) { tx =>
+                .startBitcoindMempoolPolling(wallet, bitcoind) { tx =>
                   nodeConf.nodeCallbacks
                     .executeOnTxReceivedCallbacks(logger, tx)
                 }
@@ -565,7 +568,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             .rescanNeutrinoWallet(startOpt = None,
                                   endOpt = None,
                                   addressBatchSize = wallet.discoveryBatchSize,
-                                  useCreationTime = true)
+                                  useCreationTime = true,
+                                  force = true)
             .recover { case scala.util.control.NonFatal(exn) =>
               logger.error(s"Failed to handleDuplicateSpendingInfoDb rescan",
                            exn)
@@ -576,6 +580,21 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         }
       _ <- spendingInfoDAO.createOutPointsIndexIfNeeded()
     } yield ()
+  }
+
+  private def restartRescanIfNeeded(wallet: Wallet): Future[RescanState] = {
+    for {
+      isRescanning <- wallet.isRescanning()
+      res <-
+        if (isRescanning)
+          wallet.rescanNeutrinoWallet(startOpt = None,
+                                      endOpt = None,
+                                      addressBatchSize =
+                                        wallet.discoveryBatchSize,
+                                      useCreationTime = true,
+                                      force = true)
+        else Future.successful(RescanState.RescanDone)
+    } yield res
   }
 }
 

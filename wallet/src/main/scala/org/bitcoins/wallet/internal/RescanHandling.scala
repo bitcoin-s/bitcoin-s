@@ -15,35 +15,31 @@ import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
-import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 private[wallet] trait RescanHandling extends WalletLogger {
   self: Wallet =>
 
-  private val rescanning = new AtomicBoolean(false)
-
   /////////////////////
   // Public facing API
 
-  override def isRescanning(): Future[Boolean] =
-    Future.successful(rescanning.get())
+  override def isRescanning(): Future[Boolean] = stateDescriptorDAO.isRescanning
 
   /** @inheritdoc */
   override def rescanNeutrinoWallet(
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
-      useCreationTime: Boolean)(implicit
-      ec: ExecutionContext): Future[RescanState] = {
+      useCreationTime: Boolean,
+      force: Boolean)(implicit ec: ExecutionContext): Future[RescanState] = {
     for {
       account <- getDefaultAccount()
       state <- rescanNeutrinoWallet(account.hdAccount,
                                     startOpt,
                                     endOpt,
                                     addressBatchSize,
-                                    useCreationTime)
+                                    useCreationTime,
+                                    force)
     } yield state
   }
 
@@ -53,45 +49,55 @@ private[wallet] trait RescanHandling extends WalletLogger {
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int,
-      useCreationTime: Boolean = true): Future[RescanState] = {
-    if (rescanning.get()) {
-      logger.warn(
-        s"Rescan already started, ignoring request to start another one")
-      Future.successful(RescanState.RescanInProgress)
-    } else {
-      rescanning.set(true)
-      logger.info(
-        s"Starting rescanning the wallet from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime")
-      val start = System.currentTimeMillis()
-      val res = for {
-        start <- (startOpt, useCreationTime) match {
-          case (Some(_), true) =>
-            Future.failed(new IllegalArgumentException(
-              "Cannot define a starting block and use the wallet creation time"))
-          case (Some(value), false) =>
-            Future.successful(Some(value))
-          case (None, true) =>
-            walletCreationBlockHeight.map(Some(_))
-          case (None, false) =>
-            Future.successful(None)
-        }
-        _ <- clearUtxos(account)
-        _ <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
-      } yield {
-        RescanState.RescanDone
-      }
-
-      res.onComplete {
-        case Success(_) =>
-          rescanning.set(false)
+      useCreationTime: Boolean = true,
+      force: Boolean = false): Future[RescanState] = {
+    for {
+      doRescan <-
+        if (force) stateDescriptorDAO.updateRescanning(true).map(_.rescanning)
+        else
+          stateDescriptorDAO.compareAndSetRescanning(expectedValue = false,
+                                                     newValue = true)
+      rescanState <-
+        if (doRescan) {
           logger.info(
-            s"Finished rescanning the wallet. It took ${System.currentTimeMillis() - start}ms")
-        case Failure(err) =>
-          rescanning.set(false)
-          logger.error(s"Failed to rescan wallet", err)
-      }
-      res
-    }
+            s"Starting rescanning the wallet from ${startOpt} to ${endOpt} useCreationTime=$useCreationTime")
+          val startTime = System.currentTimeMillis()
+          val res = for {
+            start <- (startOpt, useCreationTime) match {
+              case (Some(_), true) =>
+                Future.failed(new IllegalArgumentException(
+                  "Cannot define a starting block and use the wallet creation time"))
+              case (Some(value), false) =>
+                Future.successful(Some(value))
+              case (None, true) =>
+                walletCreationBlockHeight.map(Some(_))
+              case (None, false) =>
+                Future.successful(None)
+            }
+            _ <- clearUtxos(account)
+            _ <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
+            _ <- stateDescriptorDAO.updateRescanning(false)
+          } yield {
+            logger.info(s"Finished rescanning the wallet. It took ${System
+              .currentTimeMillis() - startTime}ms")
+            RescanState.RescanDone
+          }
+
+          res.recoverWith { case err: Throwable =>
+            logger.error(s"Failed to rescan wallet", err)
+            stateDescriptorDAO
+              .updateRescanning(false)
+              .flatMap(_ => Future.failed(err))
+          }
+
+          res
+        } else {
+          logger.warn(
+            s"Rescan already started, ignoring request to start another one")
+          Future.successful(RescanState.RescanInProgress)
+        }
+
+    } yield rescanState
   }
 
   /** @inheritdoc */
