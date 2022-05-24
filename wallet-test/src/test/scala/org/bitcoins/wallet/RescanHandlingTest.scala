@@ -141,7 +141,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
                                               endOpt = None,
                                               addressBatchSize =
                                                 DEFAULT_ADDR_BATCH_SIZE,
-                                              useCreationTime = false)
+                                              useCreationTime = false,
+                                              force = false)
         balance <- newTxWallet.getBalance()
         unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
       } yield {
@@ -250,7 +251,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
                                               endOpt = None,
                                               addressBatchSize =
                                                 DEFAULT_ADDR_BATCH_SIZE,
-                                              useCreationTime = true)
+                                              useCreationTime = true,
+                                              force = false)
         balance <- newTxWallet.getBalance()
         unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
       } yield {
@@ -289,7 +291,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
                                          endOpt = end,
                                          addressBatchSize =
                                            DEFAULT_ADDR_BATCH_SIZE,
-                                         useCreationTime = false)
+                                         useCreationTime = false,
+                                         force = false)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterRescan == CurrencyUnits.zero)
@@ -306,7 +309,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
                                                endOpt = None,
                                                addressBatchSize =
                                                  DEFAULT_ADDR_BATCH_SIZE,
-                                               useCreationTime = true)
+                                               useCreationTime = true,
+                                               force = false)
 
       //slight delay to make sure other rescan is started
       val alreadyStartedF =
@@ -315,7 +319,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
                                       endOpt = None,
                                       addressBatchSize =
                                         DEFAULT_ADDR_BATCH_SIZE,
-                                      useCreationTime = true)
+                                      useCreationTime = true,
+                                      force = false)
         }
       for {
         start <- startF
@@ -338,7 +343,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- wallet.rescanNeutrinoWallet(startOpt = None,
                                          endOpt = None,
                                          addressBatchSize = 10,
-                                         useCreationTime = true)
+                                         useCreationTime = true,
+                                         force = false)
 
         usedAddresses <- wallet.listFundedAddresses()
 
@@ -370,13 +376,15 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- wallet.rescanNeutrinoWallet(startOpt = None,
                                          endOpt = None,
                                          addressBatchSize = 10,
-                                         useCreationTime = true)
+                                         useCreationTime = true,
+                                         force = false)
         addressNoFunds <- wallet.getNewChangeAddress()
         //rescan again
         _ <- wallet.rescanNeutrinoWallet(startOpt = None,
                                          endOpt = None,
                                          addressBatchSize = 10,
-                                         useCreationTime = true)
+                                         useCreationTime = true,
+                                         force = false)
         txid <- bitcoind.sendToAddress(addressNoFunds, amt)
         tx <- bitcoind.getRawTransactionRaw(txid)
         _ <- wallet.processTransaction(tx, None)

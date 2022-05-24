@@ -9,7 +9,9 @@ object WalletStateDescriptorType
 
   final case object SyncHeight extends WalletStateDescriptorType
 
-  val all: Vector[WalletStateDescriptorType] = Vector(SyncHeight)
+  final case object Rescan extends WalletStateDescriptorType
+
+  val all: Vector[WalletStateDescriptorType] = Vector(SyncHeight, Rescan)
 
   override def fromStringOpt(str: String): Option[WalletStateDescriptorType] = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase)
@@ -36,8 +38,8 @@ sealed trait WalletStateDescriptorFactory[T <: WalletStateDescriptor]
 
 object WalletStateDescriptor extends StringFactory[WalletStateDescriptor] {
 
-  val all: Vector[StringFactory[WalletStateDescriptor]] = Vector(
-    SyncHeightDescriptor)
+  val all: Vector[StringFactory[WalletStateDescriptor]] =
+    Vector(SyncHeightDescriptor, RescanDescriptor)
 
   override def fromString(string: String): WalletStateDescriptor = {
     all.find(f => f.fromStringT(string).isSuccess) match {
@@ -69,5 +71,24 @@ object SyncHeightDescriptor
     val height = arr.last.toInt
 
     SyncHeightDescriptor(hash, height)
+  }
+}
+
+case class RescanDescriptor(rescanning: Boolean) extends WalletStateDescriptor {
+
+  override val descriptorType: WalletStateDescriptorType =
+    WalletStateDescriptorType.Rescan
+
+  override val toString: String = rescanning.toString
+}
+
+object RescanDescriptor extends WalletStateDescriptorFactory[RescanDescriptor] {
+
+  override val tpe: WalletStateDescriptorType =
+    WalletStateDescriptorType.Rescan
+
+  override def fromString(string: String): RescanDescriptor = {
+    val rescanning = java.lang.Boolean.parseBoolean(string)
+    RescanDescriptor(rescanning)
   }
 }

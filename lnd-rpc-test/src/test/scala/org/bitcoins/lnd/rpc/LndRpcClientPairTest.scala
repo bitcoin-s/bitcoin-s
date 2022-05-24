@@ -1,6 +1,7 @@
 package org.bitcoins.lnd.rpc
 
 import akka.stream.scaladsl.Sink
+import lnrpc.Invoice
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency.{currencyUnitNumeric, Bitcoins, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32}
@@ -215,6 +216,25 @@ class LndRpcClientPairTest extends DualLndFixture {
     for {
       inv <- lndA.addInvoice("test", Satoshis(1000), 3600)
       paymentOpt <- lndB.probeAndPay(inv.invoice)
+    } yield {
+      paymentOpt match {
+        case Some(payment) =>
+          assert(payment.status.isSucceeded)
+        case None => fail()
+      }
+    }
+  }
+
+  it must "send to route with a 0 amount invoice" in { params =>
+    val (_, lndA, lndB) = params
+
+    val request = Invoice(memo = "0 amount", expiry = 3600)
+    val amount = Satoshis(1000)
+
+    for {
+      inv <- lndA.addInvoice(request)
+      routes <- lndB.probe(amount, inv.invoice.nodeId, Vector.empty)
+      paymentOpt <- lndB.attemptToPayRoutes(inv.invoice, routes)
     } yield {
       paymentOpt match {
         case Some(payment) =>

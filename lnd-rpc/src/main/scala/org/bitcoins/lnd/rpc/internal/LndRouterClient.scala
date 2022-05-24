@@ -10,10 +10,9 @@ import lnrpc.{
   Route,
   RouteHint
 }
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency._
 import org.bitcoins.core.number._
-import org.bitcoins.core.protocol.ln.LnInvoice
-import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+import org.bitcoins.core.protocol.ln.{LnInvoice, PaymentSecret}
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.util.FutureUtil
@@ -26,7 +25,7 @@ import scala.concurrent.Future
 trait LndRouterClient { self: LndRpcClient =>
 
   def queryRoutes(
-      amount: Satoshis,
+      amount: CurrencyUnit,
       node: NodeId,
       routeHints: Vector[LnRoute]): Future[QueryRoutesResponse] = {
     val hopHints = routeHints.map { hint =>
@@ -38,7 +37,7 @@ trait LndRouterClient { self: LndRpcClient =>
     }
     val request =
       QueryRoutesRequest(pubKey = node.pubKey.hex,
-                         amt = amount.toLong,
+                         amt = amount.satoshis.toLong,
                          finalCltvDelta = 40,
                          useMissionControl = true,
                          routeHints = Vector(RouteHint(hopHints)))
@@ -90,14 +89,20 @@ trait LndRouterClient { self: LndRpcClient =>
   }
 
   def sendToRoute(invoice: LnInvoice, route: Route): Future[HTLCAttempt] = {
-    val updatedRoute = invoice.lnTags.secret match {
-      case Some(secretTag) =>
-        val milliSatoshis =
-          invoice.amount.map(MilliSatoshis(_)).getOrElse(MilliSatoshis.zero)
+    sendToRoute(invoice.lnTags.paymentHash.hash,
+                route,
+                invoice.lnTags.secret.map(_.secret))
+  }
+
+  def sendToRoute(
+      paymentHash: Sha256Digest,
+      route: Route,
+      secretOpt: Option[PaymentSecret]): Future[HTLCAttempt] = {
+    val updatedRoute = secretOpt match {
+      case Some(secret) =>
         val last = route.hops.last
-        val secret = secretTag.secret.bytes
-        val mpp =
-          MPPRecord(paymentAddr = secret, totalAmtMsat = milliSatoshis.toLong)
+        val mpp = MPPRecord(paymentAddr = secret.bytes,
+                            totalAmtMsat = route.totalAmtMsat)
         val update = last.copy(mppRecord = Some(mpp), tlvPayload = true)
         val updatedHops = route.hops.init :+ update
 
@@ -106,7 +111,7 @@ trait LndRouterClient { self: LndRpcClient =>
     }
 
     val request =
-      SendToRouteRequest(paymentHash = invoice.lnTags.paymentHash.bytes,
+      SendToRouteRequest(paymentHash = paymentHash.bytes,
                          route = Some(updatedRoute))
 
     sendToRoute(request)
