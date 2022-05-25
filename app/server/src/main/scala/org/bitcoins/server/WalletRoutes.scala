@@ -355,7 +355,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
                              locktimeOpt,
                              refundLT,
                              payoutAddressOpt,
-                             changeAddressOpt)) =>
+                             changeAddressOpt,
+                             peerAddressOpt)) =>
           complete {
             val announcements = contractInfo.oracleInfo match {
               case OracleInfoV0TLV(announcement)        => Vector(announcement)
@@ -376,6 +377,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
                                   feeRateOpt,
                                   locktime,
                                   refundLT,
+                                  peerAddressOpt,
                                   payoutAddressOpt,
                                   changeAddressOpt)
               case None =>
@@ -384,6 +386,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
                                   collateral,
                                   feeRateOpt,
                                   refundLT,
+                                  peerAddressOpt,
                                   payoutAddressOpt,
                                   changeAddressOpt)
             }
@@ -399,10 +402,16 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
         case Failure(exception) =>
           complete(Server.httpBadRequest(exception))
         case Success(
-              AcceptDLCOffer(offer, payoutAddressOpt, changeAddressOpt)) =>
+              AcceptDLCOffer(offer,
+                             payoutAddressOpt,
+                             changeAddressOpt,
+                             peerAddressOpt)) =>
           complete {
             wallet
-              .acceptDLCOffer(offer.tlv, payoutAddressOpt, changeAddressOpt)
+              .acceptDLCOffer(offer.tlv,
+                              peerAddressOpt,
+                              payoutAddressOpt,
+                              changeAddressOpt)
               .map { accept =>
                 Server.httpSuccess(accept.toMessage.hex)
               }
@@ -426,6 +435,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
             wallet
               .acceptDLCOffer(offerMessage.tlv,
+                              None,
                               payoutAddressOpt,
                               changeAddressOpt)
               .map { accept =>

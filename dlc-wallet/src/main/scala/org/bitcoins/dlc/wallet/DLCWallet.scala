@@ -277,6 +277,7 @@ abstract class DLCWallet
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       refundLT: UInt32,
+      peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
     chainQueryApi.getBestHashBlockHeight().flatMap { height =>
@@ -285,6 +286,7 @@ abstract class DLCWallet
                      feeRateOpt,
                      locktime = UInt32(height),
                      refundLT,
+                     peerAddressOpt,
                      externalPayoutAddressOpt,
                      externalChangeAddressOpt)
     }
@@ -301,6 +303,7 @@ abstract class DLCWallet
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
       refundLocktime: UInt32,
+      peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
     logger.info("Creating DLC Offer")
@@ -478,6 +481,11 @@ abstract class DLCWallet
         dlcOfferDb = dlcOfferDb)
 
       _ <- safeDatabase.run(offerActions)
+      _ <- peerAddressOpt match {
+        case Some(a) =>
+          dlcContactMappingDAO.createIfContactExists(dlcDb.dlcId, a)
+        case None => Future.successful(None)
+      }
       status <- findDLC(dlcId)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield offer
@@ -666,6 +674,7 @@ abstract class DLCWallet
     */
   override def acceptDLCOffer(
       offer: DLCOffer,
+      peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] = {
     logger.debug("Calculating relevant wallet data for DLC Accept")
@@ -697,6 +706,7 @@ abstract class DLCWallet
           case None =>
             createNewDLCAccept(collateral,
                                offer,
+                               peerAddressOpt,
                                externalPayoutAddressOpt,
                                externalChangeAddressOpt)
         }
@@ -748,6 +758,7 @@ abstract class DLCWallet
   private def createNewDLCAccept(
       collateral: CurrencyUnit,
       offer: DLCOffer,
+      peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] =
     Future {
@@ -802,6 +813,11 @@ abstract class DLCWallet
         isExternalAddress <- addressDAO
           .findAddress(initializedAccept.pubKeys.payoutAddress)
           .map(_.isEmpty)
+        contactOpt <- peerAddressOpt match {
+          case Some(a) =>
+            dlcContactMappingDAO.createIfContactExists(offer.dlcId, a)
+          case None => Future.successful(None)
+        }
         status = DLCStatusBuilder.buildInProgressDLCStatus(
           dlcDb = initializedAccept.dlc,
           contractInfo = offer.contractInfo,
@@ -810,7 +826,7 @@ abstract class DLCWallet
           payoutAddress = Some(
             PayoutAddress(initializedAccept.pubKeys.payoutAddress,
                           isExternalAddress)),
-          contactOpt = None
+          contactOpt = contactOpt
         )
         _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status)
         cetSigs <- signer.createCETSigsAsync()

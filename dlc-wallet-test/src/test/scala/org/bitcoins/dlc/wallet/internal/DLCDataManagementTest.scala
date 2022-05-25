@@ -33,9 +33,10 @@ class DLCDataManagementTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32,
           None,
+          None,
           None
         )
-        accept <- walletB.acceptDLCOffer(offer1, None, None)
+        accept <- walletB.acceptDLCOffer(offer1, None, None, None)
         contractId = DLCUtil.calcContractId(offer1, accept)
         acceptDbStateOpt <- walletB.dlcDataManagement.getDLCFundingData(
           contractId,
@@ -62,9 +63,10 @@ class DLCDataManagementTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32,
           None,
+          None,
           None
         )
-        accept <- walletB.acceptDLCOffer(offer1, None, None)
+        accept <- walletB.acceptDLCOffer(offer1, None, None, None)
 
         sign <- walletA.signDLC(accept)
         signDbStateOpt <- walletA.dlcDataManagement.getDLCFundingData(

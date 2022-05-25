@@ -262,15 +262,17 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `collateral` - Satoshis to fund your side of the DLC
     - `feerate` - Fee rate for both funding and closing transactions, in sats/vbytes
     - `refundlocktime` - Locktime of the refund transaction
-    - `--cetlocktime <value>` - Should not be set unless you know what you are doing. Locktime of the contract execution transactions (defaults to current height)
+    - `cetlocktime <value>` - Should not be set unless you know what you are doing. Locktime of the contract execution transactions (defaults to current height)
+    - `peer` - Peer's network address
  - `acceptdlc` `offer` `peer` - Accepts a DLC offer given from another party
     - `offer` - Hex encoded dlc offer message
     - `peer` - Peer's network address
  - `acceptdlcoffer` `offer` - Accepts a DLC offer given from another party
     - `offer` - Hex encoded offer message
+ - `peer` - Peer's network address
  - `acceptdlcofferfromfile` `path` `[destination]` - Accepts a DLC offer given from another party
-    - `path` - Path to dlc offer file
-    - `destination` - Path to write dlc accept message
+   - `path` - Path to dlc offer file
+   - `destination` - Path to write dlc accept message
  - `contact-add` `alias` `address` `memo`
    - `alias` - alias for the address like a name
    - `address` - the tor address for the peer

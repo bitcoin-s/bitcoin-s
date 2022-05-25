@@ -61,6 +61,32 @@ case class DLCContactMappingDAO()(implicit
     create(DLCContactMappingDb(dlcId, contactId))
   }
 
+  def createIfContactExists(
+      dlcId: Sha256Digest,
+      contactId: InetSocketAddress): Future[Option[DLCContactDb]] = {
+    val action = for {
+      contactOpt <- contactTable
+        .filter(_.address === contactId)
+        .result
+        .headOption
+      res <-
+        if (contactOpt.nonEmpty) {
+          val db = DLCContactMappingDb(dlcId, contactId)
+          (table += db).map(_ => contactOpt)
+        } else {
+          DBIO.successful(None)
+        }
+    } yield res
+
+    safeDatabase.run(action)
+  }
+
+  def upsert(
+      dlcId: Sha256Digest,
+      contactId: InetSocketAddress): Future[DLCContactMappingDb] = {
+    upsert(DLCContactMappingDb(dlcId, contactId))
+  }
+
   def delete(dlcId: Sha256Digest): Future[Unit] = {
     safeDatabase.run(table.filter(_.dlcId === dlcId).delete).map(_ => ())
   }
