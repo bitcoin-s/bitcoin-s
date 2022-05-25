@@ -1112,7 +1112,6 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         assert(dlcContactB.get.contactId == contactB.address)
         assert(dlcContactB1.isEmpty)
 
-        assert(offer)
         assert(offer.pubKeys.payoutAddress == payoutAddressAOpt.get)
         assert(offer.changeAddress == changeAddressAOpt.get)
         assert(accept.pubKeys.payoutAddress == payoutAddressBOpt.get)
