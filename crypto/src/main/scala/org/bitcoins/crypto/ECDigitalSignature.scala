@@ -77,7 +77,7 @@ sealed abstract class ECDigitalSignature extends NetworkElement {
     rBytes ++ sBytes
   }
 
-  def hashType: Option[HashType] = {
+  def hashTypeOpt: Option[HashType] = {
     val trailingBytes = bytes.drop(ECDigitalSignature.fromRS(r, s).bytes.length)
 
     if (trailingBytes.nonEmpty && trailingBytes.length <= 4) {
@@ -88,7 +88,7 @@ sealed abstract class ECDigitalSignature extends NetworkElement {
   }
 
   def appendHashType(hashType: HashType): ECDigitalSignature = {
-    require(this.hashType.isEmpty,
+    require(this.hashTypeOpt.isEmpty,
             "Cannot append HashType to signature which already has HashType")
 
     val bytesWithHashType = bytes.:+(hashType.byte)

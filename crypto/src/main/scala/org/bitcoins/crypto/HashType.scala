@@ -13,7 +13,7 @@ object HashType extends Factory[HashType] {
 
   private def intFromBytes(bytes: ByteVector): Int = {
     require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
-    bytes.toInt(signed = true, ordering = ByteOrdering.BigEndian)
+    bytes.toInt(signed = false, ordering = ByteOrdering.BigEndian)
   }
 
   def fromBytes(bytes: ByteVector): HashType = {

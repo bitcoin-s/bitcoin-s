@@ -97,5 +97,9 @@ class HashTypeTest extends BitcoinSCryptoTest {
       //instead of a uint32_t.
       HashType.fromByte(hashType.byte).byte == hashType.byte
     }
+
+    forAll(CryptoGenerators.hashType) { hashType =>
+      assert(HashType.fromByte(hashType.byte) == hashType)
+    }
   }
 }
