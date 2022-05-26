@@ -566,9 +566,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[
     Seq[SpendingInfoDb]] = {
-    require(
-      outputsWithIndex.nonEmpty,
-      s"Cannot add utxos to wallet if we have none! got=${outputsWithIndex}")
+
     val spks = outputsWithIndex.map(_.output.scriptPubKey).toVector
 
     val addressDbsF: Future[Vector[AddressDb]] = {
