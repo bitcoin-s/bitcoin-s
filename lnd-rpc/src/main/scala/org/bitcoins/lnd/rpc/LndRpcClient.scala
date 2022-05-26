@@ -725,7 +725,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       output: TransactionOutput): Future[(ScriptSignature, ScriptWitness)] = {
     val signDescriptor =
       SignDescriptor(output = Some(output),
-                     sighash = UInt32(HashType.sigHashAll.num.toBigInt),
+                     sighash = UInt32(HashType.sigHashAll.num),
                      inputIndex = inputIdx)
 
     computeInputScript(tx, Vector(signDescriptor)).map(_.head)
