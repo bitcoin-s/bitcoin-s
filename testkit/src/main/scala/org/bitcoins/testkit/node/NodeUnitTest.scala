@@ -18,10 +18,7 @@ import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.node.NodeUnitTest.{
-  emptyPeer,
-  syncNeutrinoNode
-}
+import org.bitcoins.testkit.node.NodeUnitTest.{emptyPeer, syncNeutrinoNode}
 import org.bitcoins.testkit.node.fixture._
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.bitcoins.wallet.WalletCallbacks
@@ -75,10 +72,9 @@ trait NodeUnitTest extends BaseNodeTest {
             .createBitcoindWithFunds(Some(V22))
             .map(_.asInstanceOf[BitcoindV22RpcClient])
         peer <- createPeer(bitcoind)
-        node <- NodeUnitTest.createNeutrinoNode(peer, None)(
-          system,
-          appConfig.chainConf,
-          appConfig.nodeConf)
+        node <- NodeUnitTest.createNeutrinoNode(peer, None)(system,
+                                                            appConfig.chainConf,
+                                                            appConfig.nodeConf)
         started <- node.start()
         _ <- NodeUnitTest.syncNeutrinoNode(started, bitcoind)
       } yield NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind)
@@ -409,9 +405,8 @@ object NodeUnitTest extends P2PLogger {
   /** Creates a Neutrino node peered with the given peer, this does NOT
     * start the neutrino node
     */
-  def createNeutrinoNode(
-      peer: Peer,
-      walletCreationTimeOpt: Option[Instant])(implicit
+  def createNeutrinoNode(peer: Peer, walletCreationTimeOpt: Option[Instant])(
+      implicit
       system: ActorSystem,
       chainAppConfig: ChainAppConfig,
       nodeAppConfig: NodeAppConfig): Future[NeutrinoNode] = {

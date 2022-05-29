@@ -41,10 +41,9 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         peer <- createPeer(bitcoind)
-        node <- NodeUnitTest.createNeutrinoNode(peer, None)(
-          system,
-          appConfig.chainConf,
-          appConfig.nodeConf)
+        node <- NodeUnitTest.createNeutrinoNode(peer, None)(system,
+                                                            appConfig.chainConf,
+                                                            appConfig.nodeConf)
         started <- node.start()
         _ <- NodeUnitTest.syncNeutrinoNode(started, bitcoind)
       } yield NeutrinoNodeConnectedWithBitcoind(node, bitcoind)
@@ -174,6 +173,16 @@ trait NodeTestWithCachedBitcoindPair
 
   override def afterAll(): Unit = {
     super[CachedBitcoindPairV22].afterAll()
+    super[NodeTestWithCachedBitcoind].afterAll()
+  }
+}
+
+trait NodeTestWithCachedBitcoindV19
+    extends NodeTestWithCachedBitcoind
+    with CachedBitcoindV19 {
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindV19].afterAll()
     super[NodeTestWithCachedBitcoind].afterAll()
   }
 }
