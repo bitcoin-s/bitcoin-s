@@ -68,13 +68,14 @@ trait NodeUnitTest extends BaseNodeTest {
 //  }
 
   def withDisconnectedNeutrinoNode(test: OneArgAsyncTest)(implicit
-                                                     system: ActorSystem,
-                                                     appConfig: BitcoinSAppConfig): FutureOutcome = {
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
 
     val nodeBuilder: () => Future[NeutrinoNode] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
-        node <- NodeUnitTest.createNeutrinoNodeUnstarted(emptyPeer, None)(system,
+        node <- NodeUnitTest.createNeutrinoNodeUnstarted(emptyPeer, None)(
+          system,
           appConfig.chainConf,
           appConfig.nodeConf)
         //we aren't calling node.start(), but we need to call appConfig.start()
@@ -89,7 +90,7 @@ trait NodeUnitTest extends BaseNodeTest {
       destroy = (_: Node) => {
         for {
           _ <- ChainUnitTest.destroyAllTables()(appConfig.chainConf,
-            system.dispatcher)
+                                                system.dispatcher)
           _ <- appConfig.stop()
         } yield ()
       }
@@ -161,9 +162,10 @@ trait NodeUnitTest extends BaseNodeTest {
             .createBitcoindWithFunds(Some(V22))
             .map(_.asInstanceOf[BitcoindV22RpcClient])
         peer <- createPeer(bitcoind)
-        node <- NodeUnitTest.createNeutrinoNodeUnstarted(peer, None)(system,
-                                                       appConfig.chainConf,
-                                                       appConfig.nodeConf)
+        node <- NodeUnitTest.createNeutrinoNodeUnstarted(peer, None)(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf)
         started <- node.start()
         _ <- NodeUnitTest.syncNeutrinoNode(started, bitcoind)
       } yield NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind)
@@ -605,11 +607,11 @@ object NodeUnitTest extends P2PLogger {
     * start the neutrino node
     */
   def createNeutrinoNodeUnstarted(
-                          peer: Peer,
-                          walletCreationTimeOpt: Option[Instant])(implicit
-                                                                  system: ActorSystem,
-                                                                  chainAppConfig: ChainAppConfig,
-                                                                  nodeAppConfig: NodeAppConfig): Future[NeutrinoNode] = {
+      peer: Peer,
+      walletCreationTimeOpt: Option[Instant])(implicit
+      system: ActorSystem,
+      chainAppConfig: ChainAppConfig,
+      nodeAppConfig: NodeAppConfig): Future[NeutrinoNode] = {
     import system.dispatcher
 
     val checkConfigF = Future {
@@ -625,10 +627,10 @@ object NodeUnitTest extends P2PLogger {
     } yield {
       val dmh = DataMessageHandler(chainApi, walletCreationTimeOpt)
       NeutrinoNode(configPeersOverride = Vector(peer),
-        dataMessageHandler = dmh,
-        nodeConfig = nodeAppConfig,
-        chainConfig = chainAppConfig,
-        actorSystem = system)
+                   dataMessageHandler = dmh,
+                   nodeConfig = nodeAppConfig,
+                   chainConfig = chainAppConfig,
+                   actorSystem = system)
     }
 
     nodeF

@@ -193,7 +193,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
   it must "verify OnTxReceived callbacks are executed" in {
     param: FixtureParam =>
-      val NeutrinoNodeConnectedWithBitcoindV22(node,bitcoind) = param
+      val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
 
       val resultP: Promise[Transaction] = Promise()
 
@@ -217,8 +217,8 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
         dataMessageHandler =
           DataMessageHandler(genesisChainApi, None)(node.executionContext,
-            node.nodeAppConfig,
-            node.chainConfig)
+                                                    node.nodeAppConfig,
+                                                    node.chainConfig)
         _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
         result <- resultP.future
       } yield assert(result == tx)
