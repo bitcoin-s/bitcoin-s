@@ -207,12 +207,6 @@ case class DataMessageHandler(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
         val chainApiF = chainApi.processHeaders(headers)
 
-//        if (appConfig.nodeType == NodeType.SpvNode) {
-//          logger.trace(s"Requesting data for headers=${headers.length}")
-//          peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgFilteredBlock,
-//                                           headers.map(_.hash): _*)
-//        }
-
         val getHeadersF = chainApiF
           .flatMap { newApi =>
             if (headers.nonEmpty) {
@@ -399,10 +393,7 @@ case class DataMessageHandler(
     logger.debug(s"Received inv=${invMsg}")
     val getData = GetDataMessage(invMsg.inventories.flatMap {
       case Inventory(TypeIdentifier.MsgBlock, hash) =>
-        // only request the merkle block if we are spv enabled
         appConfig.nodeType match {
-//          case NodeType.SpvNode =>
-//            Some(Inventory(TypeIdentifier.MsgFilteredBlock, hash))
           case NodeType.NeutrinoNode | NodeType.FullNode =>
             if (syncing) None
             else Some(Inventory(TypeIdentifier.MsgWitnessBlock, hash))

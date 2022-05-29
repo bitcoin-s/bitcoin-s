@@ -344,23 +344,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
   }
 
-//  private def setBloomFilter(node: Node, wallet: Wallet)(implicit
-//      ec: ExecutionContext): Future[Node] = {
-//    for {
-//      nodeWithBloomFilter <- node match {
-//        case spvNode: SpvNode =>
-//          for {
-//            bloom <- wallet.getBloomFilter()
-//            _ = logger.info(
-//              s"Got bloom filter with ${bloom.filterSize.toInt} elements")
-//          } yield spvNode.setBloomFilter(bloom)
-//        case _: Node => Future.successful(node)
-//      }
-//    } yield {
-//      nodeWithBloomFilter
-//    }
-//  }
-
   /** This is needed for migrations V2/V3 on the chain project to re-calculate the total work for the chain */
   private def runChainWorkCalc(force: Boolean)(implicit
       system: ActorSystem): Future[ChainApi] = {

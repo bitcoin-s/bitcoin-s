@@ -92,8 +92,6 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
             throw new Exception("Node cannot be FullNode")
           case NodeType.NeutrinoNode =>
             node.peerManager.createInDb(peer).map(_ => ())
-//          case NodeType.SpvNode =>
-//            node.peerManager.createInDb(peer).map(_ => ())
         }
       case nodeType: ExternalImplementationNodeType =>
         nodeType match {

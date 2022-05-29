@@ -12,7 +12,7 @@ import org.bitcoins.wallet.Wallet
   * 1. a funded bitcoind wallet
   * 2. a funded bitcoin-s wallet
   * 3. a chain handler with the appropriate tables created
-  * 4. a spv node that is connected to the bitcoin instance -- but not started!
+  * 4. a neutrino node that is connected to the bitcoin instance -- but not started!
   */
 trait NodeFundedWalletBitcoind {
   def node: Node
@@ -23,18 +23,6 @@ trait NodeFundedWalletBitcoind {
   /** Helper method to convert from this to a [[NodeConnectedWithBitcoind]] */
   def toNodeConnectedWithBitcoind: NodeConnectedWithBitcoind
 }
-
-//case class SpvNodeFundedWalletBitcoind(
-//    node: SpvNode,
-//    wallet: Wallet,
-//    bitcoindRpc: BitcoindRpcClient,
-//    bip39PasswordOpt: Option[String])
-//    extends NodeFundedWalletBitcoind {
-//
-//  override def toNodeConnectedWithBitcoind: SpvNodeConnectedWithBitcoind = {
-//    SpvNodeConnectedWithBitcoind(node, bitcoindRpc)
-//  }
-//}
 
 case class NeutrinoNodeFundedWalletBitcoind(
     node: NeutrinoNode,
