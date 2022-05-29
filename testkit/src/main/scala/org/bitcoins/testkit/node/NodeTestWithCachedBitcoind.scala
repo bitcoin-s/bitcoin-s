@@ -80,6 +80,31 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       })(test)
   }
 
+  def withNeutrinoNodeConnectedToBitcoindCached(
+                                            test: OneArgAsyncTest,
+                                            bitcoind: BitcoindRpcClient)(implicit
+                                                                         system: ActorSystem,
+                                                                         appConfig: BitcoinSAppConfig): FutureOutcome = {
+    val nodeWithBitcoindBuilder: () => Future[NeutrinoNodeConnectedWithBitcoind] = {
+      () =>
+        require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
+        for {
+          peer <- createPeer(bitcoind)
+          node <- NodeUnitTest.createNeutrinoNodeUnstarted(peer, None)(system,
+            appConfig.chainConf,
+            appConfig.nodeConf)
+          started <- node.start()
+          _ <- NodeUnitTest.syncNeutrinoNode(started, bitcoind)
+        } yield NeutrinoNodeConnectedWithBitcoind(node, bitcoind)
+    }
+
+    makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
+      build = nodeWithBitcoindBuilder,
+      { x: NeutrinoNodeConnectedWithBitcoind =>
+        NodeUnitTest.destroyNode(x.node)
+      })(test)
+  }
+
   def withNeutrinoNodeUnstarted(
       test: OneArgAsyncTest,
       bitcoind: BitcoindRpcClient)(implicit
