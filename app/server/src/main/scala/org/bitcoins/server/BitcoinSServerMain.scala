@@ -149,7 +149,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val configuredNodeF = for {
       node <- nodeF
       _ <- configuredWalletF
-//      initNode <- setBloomFilter(node, wallet)
     } yield {
       logger.info(
         s"Done configuring node, it took=${System.currentTimeMillis() - start}ms")

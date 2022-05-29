@@ -170,13 +170,6 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
       .map(handler => DataMessageHandler(handler, walletCreationTimeOpt))
 
     nodeConf.nodeType match {
-//      case NodeType.SpvNode =>
-//        dmhF.map(dmh =>
-//          SpvNode(dmh,
-//                  nodeConf,
-//                  chainConf,
-//                  system,
-//                  configPeersOverride = peers))
       case NodeType.NeutrinoNode =>
         dmhF.map(dmh =>
           NeutrinoNode(dmh,
