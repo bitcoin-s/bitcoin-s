@@ -5,7 +5,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.node._
@@ -52,43 +52,6 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         // Verify we handle the payload correctly
         _ <- dataMessageHandler.handleDataPayload(invalidPayload, sender, node)
       } yield succeed
-  }
-
-  it must "verify OnMerkleBlock callbacks are executed" in {
-    param: FixtureParam =>
-      val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
-
-      val resultP: Promise[(MerkleBlock, Vector[Transaction])] = Promise()
-
-      val callback: OnMerkleBlockReceived = {
-        (merkle: MerkleBlock, txs: Vector[Transaction]) =>
-          Future {
-            resultP.success((merkle, txs))
-            ()
-          }
-      }
-
-      val sender = node.peerMsgSenders(0)
-      for {
-        txId <- bitcoind.sendToAddress(junkAddress, 1.bitcoin)
-        tx <- bitcoind.getRawTransactionRaw(txId)
-        _ <- bitcoind.generateToAddress(blocks = 1, junkAddress)
-        merkleBlock <- bitcoind.getTxOutProof(Vector(txId))
-
-        payload1 = MerkleBlockMessage(merkleBlock)
-        payload2 = TransactionMessage(tx)
-
-        nodeCallbacks = NodeCallbacks(onMerkleBlockReceived = Vector(callback))
-        _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
-
-        dataMessageHandler =
-          DataMessageHandler(genesisChainApi, None)(node.executionContext,
-                                                    node.nodeAppConfig,
-                                                    node.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload1, sender, node)
-        _ <- dataMessageHandler.handleDataPayload(payload2, sender, node)
-        result <- resultP.future
-      } yield assert(result == ((merkleBlock, Vector(tx))))
   }
 
   it must "verify OnBlockReceived callbacks are executed" in {
