@@ -72,7 +72,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
               case None =>
                 Future.unit
             }
-          case NodeType.SpvNode | NodeType.NeutrinoNode | NodeType.FullNode =>
+          case NodeType.NeutrinoNode | NodeType.FullNode =>
             Future.unit
         }
       }
@@ -170,13 +170,13 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
       .map(handler => DataMessageHandler(handler, walletCreationTimeOpt))
 
     nodeConf.nodeType match {
-      case NodeType.SpvNode =>
-        dmhF.map(dmh =>
-          SpvNode(dmh,
-                  nodeConf,
-                  chainConf,
-                  system,
-                  configPeersOverride = peers))
+//      case NodeType.SpvNode =>
+//        dmhF.map(dmh =>
+//          SpvNode(dmh,
+//                  nodeConf,
+//                  chainConf,
+//                  system,
+//                  configPeersOverride = peers))
       case NodeType.NeutrinoNode =>
         dmhF.map(dmh =>
           NeutrinoNode(dmh,

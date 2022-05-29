@@ -8,7 +8,7 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindNewest
-import org.bitcoins.testkit.node.fixture.{NeutrinoNodeConnectedWithBitcoind, SpvNodeConnectedWithBitcoind}
+import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
 import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{FutureOutcome, Outcome}
 

@@ -31,7 +31,6 @@ import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet._
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
-import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -45,7 +44,7 @@ import org.bitcoins.wallet.models.SpendingInfoDAO
 
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.{Await, Future, Promise}
 
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
@@ -149,12 +148,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     //add callbacks to our uninitialized node
     val configuredNodeF = for {
       node <- nodeF
-      wallet <- configuredWalletF
-      initNode <- setBloomFilter(node, wallet)
+      _ <- configuredWalletF
+//      initNode <- setBloomFilter(node, wallet)
     } yield {
       logger.info(
         s"Done configuring node, it took=${System.currentTimeMillis() - start}ms")
-      initNode
+      node
     }
 
     val dlcNodeF = for {
@@ -345,22 +344,22 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
   }
 
-  private def setBloomFilter(node: Node, wallet: Wallet)(implicit
-      ec: ExecutionContext): Future[Node] = {
-    for {
-      nodeWithBloomFilter <- node match {
-        case spvNode: SpvNode =>
-          for {
-            bloom <- wallet.getBloomFilter()
-            _ = logger.info(
-              s"Got bloom filter with ${bloom.filterSize.toInt} elements")
-          } yield spvNode.setBloomFilter(bloom)
-        case _: Node => Future.successful(node)
-      }
-    } yield {
-      nodeWithBloomFilter
-    }
-  }
+//  private def setBloomFilter(node: Node, wallet: Wallet)(implicit
+//      ec: ExecutionContext): Future[Node] = {
+//    for {
+//      nodeWithBloomFilter <- node match {
+//        case spvNode: SpvNode =>
+//          for {
+//            bloom <- wallet.getBloomFilter()
+//            _ = logger.info(
+//              s"Got bloom filter with ${bloom.filterSize.toInt} elements")
+//          } yield spvNode.setBloomFilter(bloom)
+//        case _: Node => Future.successful(node)
+//      }
+//    } yield {
+//      nodeWithBloomFilter
+//    }
+//  }
 
   /** This is needed for migrations V2/V3 on the chain project to re-calculate the total work for the chain */
   private def runChainWorkCalc(force: Boolean)(implicit
