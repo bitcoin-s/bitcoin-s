@@ -699,19 +699,6 @@ object BitcoinSWalletTest extends WalletLogger {
     CallbackUtil.createNeutrinoNodeCallbacksForWallet(wallet)
   }
 
-  /** Registers a callback to handle merkle blocks given to us by a spv node */
-  def createSpvNodeCallbacksForWallet(wallet: Wallet)(implicit
-      ec: ExecutionContext): NodeCallbacks = {
-    val onMerkleBlockReceived: OnMerkleBlockReceived = {
-      case (merkleBlock, txs) =>
-        for {
-          _ <- wallet.processTransactions(txs,
-                                          Some(merkleBlock.blockHeader.hashBE))
-        } yield ()
-    }
-    NodeCallbacks(onMerkleBlockReceived = Vector(onMerkleBlockReceived))
-  }
-
   /** Makes sure our wallet is fully funded with the default amounts specified in
     * [[BitcoinSWalletTest]]. This will future won't be completed until balances satisfy [[isSameWalletBalances()]]
     */
