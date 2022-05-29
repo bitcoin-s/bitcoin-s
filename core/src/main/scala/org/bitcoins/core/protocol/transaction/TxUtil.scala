@@ -5,7 +5,6 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.builder.{
   AddWitnessDataFinalizer,
   RawTxBuilder,
@@ -15,7 +14,7 @@ import org.bitcoins.core.wallet.builder.{
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{DummyECDigitalSignature, Sign}
+import org.bitcoins.crypto.{DummyECDigitalSignature, HashType, Sign}
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}

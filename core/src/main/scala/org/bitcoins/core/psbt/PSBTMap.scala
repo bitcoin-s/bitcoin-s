@@ -4,11 +4,10 @@ import org.bitcoins.core.byteVectorOrdering
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.{HashType, _}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec

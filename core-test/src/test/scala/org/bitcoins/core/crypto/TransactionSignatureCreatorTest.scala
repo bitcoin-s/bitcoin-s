@@ -6,7 +6,6 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.PreExecutionScriptProgram
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.wallet.builder.StandardNonInteractiveFinalizer
@@ -15,7 +14,8 @@ import org.bitcoins.core.wallet.utxo.{ECSignatureParams, P2PKHInputInfo}
 import org.bitcoins.crypto.{
   ECDigitalSignature,
   ECPrivateKey,
-  EmptyDigitalSignature
+  EmptyDigitalSignature,
+  HashType
 }
 import org.bitcoins.testkitcore.util.TransactionTestUtil
 import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}

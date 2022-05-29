@@ -14,12 +14,12 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
   ECPrivateKeyBytes,
-  ECPublicKey
+  ECPublicKey,
+  HashType
 }
 import org.bitcoins.rpc.client.common.BitcoindVersion._
 import play.api.libs.json._

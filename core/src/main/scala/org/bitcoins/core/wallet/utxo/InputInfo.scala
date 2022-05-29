@@ -6,11 +6,11 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptConstant
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.{
   ECPublicKey,
   ECPublicKeyBytes,
+  HashType,
   LowRDummyECDigitalSignature,
   NetworkElement,
   Sign

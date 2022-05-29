@@ -92,4 +92,34 @@ class ECDigitalSignatureTest extends BitcoinSCryptoTest {
     }
   }
 
+  it must "not view an incorrectly encoded sig_hash byte as strictly encoded" in {
+    forAll(CryptoGenerators.digitalSignature, CryptoGenerators.hashType) {
+      case (sig, hashType) =>
+        val bigSigHash = ByteVector.fromInt(i = hashType.num, size = 4)
+        assert(sig.hashTypeOpt.isEmpty)
+
+        val sigWithBigSigHash = ECDigitalSignature(sig.bytes.++(bigSigHash))
+        assert(sigWithBigSigHash.hashTypeOpt.contains(hashType))
+        assert(!sigWithBigSigHash.isStrictEncoded)
+    }
+  }
+
+  it must "correctly append and find HashTypes" in {
+    forAll(CryptoGenerators.digitalSignature, CryptoGenerators.hashType) {
+      case (sig, hashType) =>
+        assert(sig.hashTypeOpt.isEmpty)
+        val sigWithHashType = sig.appendHashType(hashType)
+        assert(sigWithHashType.hashTypeOpt.contains(hashType))
+    }
+  }
+
+  it must "not append a HashType if one is already there" in {
+    forAll(CryptoGenerators.digitalSignature,
+           CryptoGenerators.hashType,
+           CryptoGenerators.hashType) { case (sig, hashType, hashType2) =>
+      val sigWithHashType = sig.appendHashType(hashType)
+      assertThrows[IllegalArgumentException](
+        sigWithHashType.appendHashType(hashType2))
+    }
+  }
 }

@@ -30,10 +30,9 @@ import org.bitcoins.core.protocol.transaction.{
   Transaction => Tx
 }
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.{HashType, _}
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.LndUtils._
 import org.bitcoins.lnd.rpc.config._
@@ -726,7 +725,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       output: TransactionOutput): Future[(ScriptSignature, ScriptWitness)] = {
     val signDescriptor =
       SignDescriptor(output = Some(output),
-                     sighash = UInt32(HashType.sigHashAll.num.toBigInt),
+                     sighash = UInt32(HashType.sigHashAll.num),
                      inputIndex = inputIdx)
 
     computeInputScript(tx, Vector(signDescriptor)).map(_.head)

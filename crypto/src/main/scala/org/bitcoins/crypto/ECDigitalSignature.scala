@@ -77,6 +77,23 @@ sealed abstract class ECDigitalSignature extends NetworkElement {
     rBytes ++ sBytes
   }
 
+  def hashTypeOpt: Option[HashType] = {
+    val trailingBytes = bytes.drop(ECDigitalSignature.fromRS(r, s).bytes.length)
+
+    if (trailingBytes.nonEmpty && trailingBytes.length <= 4) {
+      Some(HashType.fromBytes(trailingBytes))
+    } else {
+      None
+    }
+  }
+
+  def appendHashType(hashType: HashType): ECDigitalSignature = {
+    require(this.hashTypeOpt.isEmpty,
+            "Cannot append HashType to signature which already has HashType")
+
+    val bytesWithHashType = bytes.:+(hashType.byte)
+    ECDigitalSignature.fromBytes(bytesWithHashType)
+  }
 }
 
 case object EmptyDigitalSignature extends ECDigitalSignature {
@@ -153,6 +170,9 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
 
   def apply(r: BigInt, s: BigInt): ECDigitalSignature = fromRS(r, s)
 
+  def apply(r: BigInt, s: BigInt, hashType: HashType): ECDigitalSignature =
+    fromRS(r, s, hashType)
+
   /** Takes in the r and s component of a digital signature and gives back a ECDigitalSignature object
     * The ECDigitalSignature object complies with strict der encoding as per BIP62
     * note: That the hash type for the signature CANNOT be added to the digital signature
@@ -178,6 +198,20 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     fromBytes(bytes)
   }
 
+  /** Takes in the r and s component of a digital signature along with a HashType and gives
+    * back a ECDigitalSignature object
+    * The ECDigitalSignature object complies with strict der encoding as per BIP62
+    * note: That the hash type for the signature CANNOT be added to the digital signature
+    *
+    * @param r the r component of the digital signature
+    * @param s the s component of the digital signature
+    * @param hashType The HashType byte to append
+    * @return
+    */
+  def fromRS(r: BigInt, s: BigInt, hashType: HashType): ECDigitalSignature = {
+    fromRS(r, s).appendHashType(hashType)
+  }
+
   /** Reads a 64 byte bytevector and assumes
     * the first 32 bytes in the R value,
     * the second 32 is the value
@@ -195,9 +229,25 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     * the first 32 bytes in the R value,
     * the second 32 is the value
     */
+  def fromRS(byteVector: ByteVector, hashType: HashType): ECDigitalSignature = {
+    fromRS(byteVector).appendHashType(hashType)
+  }
+
+  /** Reads a 64 byte bytevector and assumes
+    * the first 32 bytes in the R value,
+    * the second 32 is the value
+    */
   def fromRS(hex: String): ECDigitalSignature = {
     val bytes = CryptoBytesUtil.decodeHex(hex)
     fromRS(bytes)
+  }
+
+  /** Reads a 64 byte bytevector and assumes
+    * the first 32 bytes in the R value,
+    * the second 32 is the value
+    */
+  def fromRS(hex: String, hashType: HashType): ECDigitalSignature = {
+    fromRS(hex).appendHashType(hashType)
   }
 
   /** Minimally encoded zero signature

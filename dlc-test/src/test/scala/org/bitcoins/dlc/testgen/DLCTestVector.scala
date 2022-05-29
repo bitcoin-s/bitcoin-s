@@ -21,7 +21,6 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.Indexed
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
@@ -29,7 +28,7 @@ import org.bitcoins.core.wallet.utxo.{
   InputInfo,
   ScriptSignatureParams
 }
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.{HashType, _}
 import play.api.libs.json._
 import scodec.bits.ByteVector
 

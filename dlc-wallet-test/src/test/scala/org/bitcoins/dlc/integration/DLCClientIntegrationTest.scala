@@ -18,10 +18,9 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionConstants,
   TransactionOutPoint
 }
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.{HashType, _}
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest

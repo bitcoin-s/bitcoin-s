@@ -14,12 +14,11 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.{NumericDLCOutcomeType, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.sorted.OrderedAnnouncements
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, NumberUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.{HashType, _}
 import org.scalatest.Assertions.{assert, fail, succeed}
 import org.scalatest.{Assertion, Assertions}
 import scodec.bits.BitVector

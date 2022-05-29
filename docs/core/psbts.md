@@ -22,7 +22,7 @@ import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.crypto.HashType
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import scodec.bits._

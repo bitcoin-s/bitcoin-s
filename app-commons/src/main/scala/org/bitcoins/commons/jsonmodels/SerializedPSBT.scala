@@ -7,7 +7,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt._
 import org.bitcoins.core.script.constant.ScriptToken
-import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.crypto.HashType
 import play.api.libs.json._
 import scodec.bits.ByteVector
 
