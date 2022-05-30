@@ -100,7 +100,7 @@ want.</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system: <span class="hljs-type">ActorSystem</span> = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">s"node-api-example"</span>)
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContextExecutor</span> = system.dispatcher
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> walletConf: <span class="hljs-type">WalletAppConfig</span> =
-    <span class="hljs-type">BitcoinSTestAppConfig</span>.getSpvTestConfig().walletConf
+    <span class="hljs-type">BitcoinSTestAppConfig</span>.getNeutrinoTestConfig().walletConf
 
 <span class="hljs-comment">// let's use a helper method to get a v19 bitcoind</span>
 <span class="hljs-comment">// and a ChainApi</span>
