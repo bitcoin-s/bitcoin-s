@@ -100,10 +100,6 @@ private[wallet] trait RescanHandling extends WalletLogger {
     } yield rescanState
   }
 
-  /** @inheritdoc */
-  override def rescanSPVWallet(): Future[Unit] =
-    Future.failed(new RuntimeException("Rescan not implemented for SPV wallet"))
-
   lazy val walletCreationBlockHeight: Future[BlockHeight] =
     chainQueryApi
       .epochSecondToBlockHeight(creationTime.getEpochSecond)

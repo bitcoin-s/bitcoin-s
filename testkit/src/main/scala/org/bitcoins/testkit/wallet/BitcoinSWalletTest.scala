@@ -16,7 +16,7 @@ import org.bitcoins.core.wallet.fee._
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.{NodeCallbacks, OnMerkleBlockReceived}
+import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
@@ -697,19 +697,6 @@ object BitcoinSWalletTest extends WalletLogger {
       nodeAppConfig: NodeAppConfig,
       ec: ExecutionContext): Future[NodeCallbacks] = {
     CallbackUtil.createNeutrinoNodeCallbacksForWallet(wallet)
-  }
-
-  /** Registers a callback to handle merkle blocks given to us by a spv node */
-  def createSpvNodeCallbacksForWallet(wallet: Wallet)(implicit
-      ec: ExecutionContext): NodeCallbacks = {
-    val onMerkleBlockReceived: OnMerkleBlockReceived = {
-      case (merkleBlock, txs) =>
-        for {
-          _ <- wallet.processTransactions(txs,
-                                          Some(merkleBlock.blockHeader.hashBE))
-        } yield ()
-    }
-    NodeCallbacks(onMerkleBlockReceived = Vector(onMerkleBlockReceived))
   }
 
   /** Makes sure our wallet is fully funded with the default amounts specified in

@@ -418,11 +418,5 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 /** An HDWallet that uses Neutrino to sync */
 trait NeutrinoHDWalletApi extends HDWalletApi with NeutrinoWalletApi
 
-/** An HDWallet that uses SPV to sync */
-trait SpvHDWalletApi extends HDWalletApi with SpvWalletApi
-
-/** An HDWallet that supports both Neutrino and SPV methods of syncing */
-trait AnyHDWalletApi
-    extends HDWalletApi
-    with NeutrinoWalletApi
-    with SpvWalletApi
+/** An HDWallet that supports Neutrino method of syncing */
+trait AnyHDWalletApi extends HDWalletApi with NeutrinoWalletApi

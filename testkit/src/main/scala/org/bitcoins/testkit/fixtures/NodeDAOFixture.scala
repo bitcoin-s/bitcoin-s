@@ -17,7 +17,7 @@ trait NodeDAOFixture extends NodeUnitTest with CachedBitcoinSAppConfig {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, Vector.empty)
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
   private lazy val daos = {
     val tx = BroadcastAbleTransactionDAO()

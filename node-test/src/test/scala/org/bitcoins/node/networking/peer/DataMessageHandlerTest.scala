@@ -5,14 +5,14 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.node._
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest
-import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoindV22
+import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoindV22
 import org.bitcoins.testkit.tor.CachedTor
 import org.scalatest.FutureOutcome
 
@@ -22,24 +22,24 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, Vector.empty)
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
-  override type FixtureParam = SpvNodeConnectedWithBitcoindV22
+  override type FixtureParam = NeutrinoNodeConnectedWithBitcoindV22
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeConnectedToBitcoindV22(test)(system, getFreshConfig)
+    withNeutrinoNodeConnectedToBitcoindV22(test)(system, getFreshConfig)
 
   it must "catch errors and not fail when processing an invalid payload" in {
-    param: SpvNodeConnectedWithBitcoindV22 =>
-      val SpvNodeConnectedWithBitcoindV22(spv, _) = param
+    param: NeutrinoNodeConnectedWithBitcoindV22 =>
+      val NeutrinoNodeConnectedWithBitcoindV22(node, _) = param
 
-      val sender = spv.peerMsgSenders(0)
+      val sender = node.peerMsgSenders(0)
       for {
-        chainApi <- spv.chainApiFromDb()
+        chainApi <- node.chainApiFromDb()
         dataMessageHandler = DataMessageHandler(chainApi, None)(
-          spv.executionContext,
-          spv.nodeAppConfig,
-          spv.chainConfig)
+          node.executionContext,
+          node.nodeAppConfig,
+          node.chainConfig)
 
         // Use signet genesis block header, this should be invalid for regtest
         invalidPayload =
@@ -50,50 +50,13 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           chainApi.processHeaders(invalidPayload.headers))
 
         // Verify we handle the payload correctly
-        _ <- dataMessageHandler.handleDataPayload(invalidPayload, sender, spv)
+        _ <- dataMessageHandler.handleDataPayload(invalidPayload, sender, node)
       } yield succeed
-  }
-
-  it must "verify OnMerkleBlock callbacks are executed" in {
-    param: FixtureParam =>
-      val SpvNodeConnectedWithBitcoindV22(spv, bitcoind) = param
-
-      val resultP: Promise[(MerkleBlock, Vector[Transaction])] = Promise()
-
-      val callback: OnMerkleBlockReceived = {
-        (merkle: MerkleBlock, txs: Vector[Transaction]) =>
-          Future {
-            resultP.success((merkle, txs))
-            ()
-          }
-      }
-
-      val sender = spv.peerMsgSenders(0)
-      for {
-        txId <- bitcoind.sendToAddress(junkAddress, 1.bitcoin)
-        tx <- bitcoind.getRawTransactionRaw(txId)
-        _ <- bitcoind.generateToAddress(blocks = 1, junkAddress)
-        merkleBlock <- bitcoind.getTxOutProof(Vector(txId))
-
-        payload1 = MerkleBlockMessage(merkleBlock)
-        payload2 = TransactionMessage(tx)
-
-        nodeCallbacks = NodeCallbacks(onMerkleBlockReceived = Vector(callback))
-        _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
-
-        dataMessageHandler =
-          DataMessageHandler(genesisChainApi, None)(spv.executionContext,
-                                                    spv.nodeAppConfig,
-                                                    spv.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload1, sender, spv)
-        _ <- dataMessageHandler.handleDataPayload(payload2, sender, spv)
-        result <- resultP.future
-      } yield assert(result == ((merkleBlock, Vector(tx))))
   }
 
   it must "verify OnBlockReceived callbacks are executed" in {
     param: FixtureParam =>
-      val SpvNodeConnectedWithBitcoindV22(spv, bitcoind) = param
+      val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
 
       val resultP: Promise[Block] = Promise()
 
@@ -103,7 +66,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           ()
         }
       }
-      val sender = spv.peerMsgSenders(0)
+      val sender = node.peerMsgSenders(0)
 
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
@@ -112,20 +75,20 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         payload = BlockMessage(block)
 
         nodeCallbacks = NodeCallbacks.onBlockReceived(callback)
-        _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
+        _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
 
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi, None)(spv.executionContext,
-                                                    spv.nodeAppConfig,
-                                                    spv.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload, sender, spv)
+          DataMessageHandler(genesisChainApi, None)(node.executionContext,
+                                                    node.nodeAppConfig,
+                                                    node.chainConfig)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
         result <- resultP.future
       } yield assert(result == block)
   }
 
   it must "verify OnBlockHeadersReceived callbacks are executed" in {
     param: FixtureParam =>
-      val SpvNodeConnectedWithBitcoindV22(spv, bitcoind) = param
+      val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
 
       val resultP: Promise[Vector[BlockHeader]] = Promise()
 
@@ -138,7 +101,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         }
       }
 
-      val sender = spv.peerMsgSenders(0)
+      val sender = node.peerMsgSenders(0)
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         header <- bitcoind.getBlockHeaderRaw(hash)
@@ -147,20 +110,20 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
         callbacks = NodeCallbacks.onBlockHeadersReceived(callback)
 
-        _ = spv.nodeAppConfig.addCallbacks(callbacks)
+        _ = node.nodeAppConfig.addCallbacks(callbacks)
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi, None)(spv.executionContext,
-                                                    spv.nodeAppConfig,
-                                                    spv.chainConfig)
+          DataMessageHandler(genesisChainApi, None)(node.executionContext,
+                                                    node.nodeAppConfig,
+                                                    node.chainConfig)
 
-        _ <- dataMessageHandler.handleDataPayload(payload, sender, spv)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
         result <- resultP.future
       } yield assert(result == Vector(header))
   }
 
   it must "verify OnCompactFilterReceived callbacks are executed" in {
     param: FixtureParam =>
-      val SpvNodeConnectedWithBitcoindV22(spv, bitcoind) = param
+      val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
 
       val resultP: Promise[Vector[(DoubleSha256Digest, GolombFilter)]] =
         Promise()
@@ -171,7 +134,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
             ()
           }
       }
-      val sender = spv.peerMsgSenders(0)
+      val sender = node.peerMsgSenders(0)
       for {
         hash <- bitcoind.generateToAddress(blocks = 1, junkAddress).map(_.head)
         filter <- bitcoind.getBlockFilter(hash, FilterType.Basic)
@@ -180,14 +143,47 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           CompactFilterMessage(FilterType.Basic, hash.flip, filter.filter.bytes)
 
         nodeCallbacks = NodeCallbacks.onCompactFilterReceived(callback)
-        _ = spv.nodeAppConfig.addCallbacks(nodeCallbacks)
+        _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi, None)(spv.executionContext,
-                                                    spv.nodeAppConfig,
-                                                    spv.chainConfig)
+          DataMessageHandler(genesisChainApi, None)(node.executionContext,
+                                                    node.nodeAppConfig,
+                                                    node.chainConfig)
 
-        _ <- dataMessageHandler.handleDataPayload(payload, sender, spv)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
         result <- resultP.future
       } yield assert(result == Vector((hash.flip, filter.filter)))
+  }
+
+  it must "verify OnTxReceived callbacks are executed" in {
+    param: FixtureParam =>
+      val NeutrinoNodeConnectedWithBitcoindV22(node, bitcoind) = param
+
+      val resultP: Promise[Transaction] = Promise()
+
+      val callback: OnTxReceived = (tx: Transaction) => {
+        Future {
+          resultP.success(tx)
+          ()
+        }
+      }
+      val sender = node.peerMsgSenders(0)
+
+      for {
+
+        txId <- bitcoind.sendToAddress(junkAddress, 1.bitcoin)
+        tx <- bitcoind.getRawTransactionRaw(txId)
+
+        payload = TransactionMessage(tx)
+
+        nodeCallbacks = NodeCallbacks.onTxReceived(callback)
+        _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
+
+        dataMessageHandler =
+          DataMessageHandler(genesisChainApi, None)(node.executionContext,
+                                                    node.nodeAppConfig,
+                                                    node.chainConfig)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
+        result <- resultP.future
+      } yield assert(result == tx)
   }
 }

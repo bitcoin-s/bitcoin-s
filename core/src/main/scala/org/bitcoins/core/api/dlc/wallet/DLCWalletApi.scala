@@ -172,9 +172,8 @@ trait DLCWalletApi { self: WalletApi =>
   def findDLCContacts(alias: String): Future[Vector[DLCContactDb]]
 }
 
-/** An HDWallet that supports DLCs and both Neutrino and SPV methods of syncing */
+/** An HDWallet that supports DLCs and Neutrino method of syncing */
 trait AnyDLCHDWalletApi
     extends HDWalletApi
     with DLCWalletApi
     with NeutrinoWalletApi
-    with SpvWalletApi
