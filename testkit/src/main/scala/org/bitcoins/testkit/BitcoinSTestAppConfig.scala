@@ -42,7 +42,9 @@ object BitcoinSTestAppConfig {
          |     mode = neutrino
          |     relay = true
          |  }
-         |
+         |  wallet {
+         |    allowExternalDLCAddresses = true
+         |  }
          |  proxy.enabled = $torEnabled
          |  tor.enabled = $torEnabled
          |  tor.use-random-ports = false
