@@ -21,7 +21,7 @@ class WalletRoutesSpec
     with MockFactory {
 
   implicit val conf: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getNeutrinoTestConfig()
   val mockWalletApi = mock[MockWalletApi]
 
   val walletRoutes: WalletRoutes =

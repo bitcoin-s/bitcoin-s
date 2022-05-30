@@ -23,7 +23,7 @@ class DLCRoutesSpec
     with MockFactory {
 
   implicit val conf: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getNeutrinoTestConfig()
 
   val mockWallet = mock[MockWalletApi]
 

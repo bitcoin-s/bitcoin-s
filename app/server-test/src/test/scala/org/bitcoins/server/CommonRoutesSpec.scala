@@ -18,7 +18,7 @@ class CommonRoutesSpec
     with MockFactory {
 
   implicit val conf: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getNeutrinoTestConfig()
   val commonRoutes = CommonRoutes(conf.baseDatadir)
 
   "CommonRoutes" should {
