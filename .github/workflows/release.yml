@@ -332,7 +332,7 @@ jobs:
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # New monorepo electron build
+      # Build bitcoin-s-ts electron packages
       - name: Checkout bitcoin-s-ts repo
         uses: actions/checkout@v3
         with:
@@ -347,6 +347,7 @@ jobs:
         run: |
           npm ci
           npm run build
+      # Build Krystal Bull
       - name: Copy oracle-server zip
         run: cp app/oracle-server/target/universal/*.zip ./bitcoin-s-ts/oracle-electron-ts
       - name: Build Oracle Electron
@@ -360,9 +361,43 @@ jobs:
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
-          name: "krystalbull-linux-${{steps.previoustag.outputs.tag}}"
+          name: "krystalbull-linux"
           path: bitcoin-s-ts/oracle-electron-ts/out/make/deb/x64/*.deb
-      # End New monorepo electron build
+      - name: Upload krystallbull-linux if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "krystalbull-linux-${{steps.previoustag.outputs.tag}}"
+          files: bitcoin-s-ts/oracle-electron-ts/out/make/deb/x64/*.deb
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Build Suredbits Wallet
+      - name: Copy app-server zip
+        run: cp app/server/target/universal/*.zip ./bitcoin-s-ts/wallet-electron-ts
+      - name: Build Wallet Electron
+        working-directory: ./bitcoin-s-ts/wallet-electron-ts
+        run: |
+          npm ci
+          npm run build
+          npm run make
+      - name: Upload suredbits-wallet-linux deb
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "suredbits-wallet-linux"
+          path: bitcoin-s-ts/wallet-electron-ts/out/make/deb/x64/*.deb
+      - name: Upload bitcoin-s-wallet-electron-linux if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "suredbits-wallet-linux-${{steps.previoustag.outputs.tag}}"
+          files: bitcoin-s-ts/wallet-electron-ts/out/make/deb/x64/*.deb
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # End Build bitcoin-s-ts electron packages
   windows-zips:
     runs-on: [windows-latest]
     steps:
