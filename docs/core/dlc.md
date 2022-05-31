@@ -143,12 +143,11 @@ val announcements = 0.until(5).toVector.map { _ =>
     val nonces = 0.until(15).toVector.map(_ => ECPrivateKey.freshPrivateKey.schnorrNonce)
   	OracleAnnouncementV0TLV.dummyForKeys(oraclePrivKey, nonces)
 }
+val params = OracleParamsV0TLV(maxErrorExp = 5,minFailExp = 3, maximizeCoverage =false)
 val oracleInfo = NumericMultiOracleInfo(
     threshold = 3,
     announcements = OrderedAnnouncements(announcements),
-    maxErrorExp = 5,
-    minFailExp = 3,
-    maximizeCoverage = false
+    Some(params)
 )
 
 val contractInfo = SingleContractInfo(totalCollateral, ContractOraclePair.NumericPair(descriptor, oracleInfo))
@@ -174,10 +173,11 @@ Currently, only the most basic Lightning messages are defined (`Ping`, `Pong`, `
 
 ```scala mdoc:to-string
 val offerTLV = DLCOfferTLV(
-    protocolVersionOpt = None,
+    protocolVersionOpt = DLCOfferTLV.currentVersionOpt,
     contractFlags = 0.toByte,
     chainHash = DoubleSha256Digest.empty,
-    contractInfo = contractInfo.toTLV,
+    tempContractIdOpt = Some(Sha256Digest.empty),
+    contractInfo = contractInfo.toSubType,
     fundingPubKey = ECPublicKey.freshPublicKey,
     payoutSPK = EmptyScriptPubKey,
     payoutSerialId = UInt64(1),
