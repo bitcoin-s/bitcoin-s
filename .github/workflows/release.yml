@@ -263,6 +263,47 @@ jobs:
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Build bitcoin-s-ts electron packages
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+      - name: Checkout bitcoin-s-ts repo
+        uses: actions/checkout@v3
+        with:
+          repository: bitcoin-s/bitcoin-s-ts
+          path: bitcoin-s-ts
+      - name: Install bitcoin-s-ts
+        working-directory: ./bitcoin-s-ts
+        run: |
+          npm ci
+          npm run build
+      # Build Krystal Bull
+      - name: Copy oracle-server zip
+        run: cp app/oracle-server/target/universal/*.zip ./bitcoin-s-ts/oracle-electron-ts
+      - name: Build Oracle Electron
+        working-directory: ./bitcoin-s-ts/oracle-electron-ts
+        run: |
+          npm ci
+          npm run build
+          npm run make
+      - name: Upload krystalbull-mac dmg
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "krystalbull-mac"
+          path: bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg
+      - name: Upload krystallbull-mac if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "krystalbull-mac-${{steps.previoustag.outputs.tag}}"
+          files: bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # End Build bitcoin-s-ts electron packages
   linux-zips:
     runs-on: [ ubuntu-latest ]
     steps:
@@ -333,16 +374,16 @@ jobs:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Build bitcoin-s-ts electron packages
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
       - name: Checkout bitcoin-s-ts repo
         uses: actions/checkout@v3
         with:
           repository: bitcoin-s/bitcoin-s-ts
           path: bitcoin-s-ts
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16.x'
-      - name: Install monorepo
+      - name: Install bitcoin-s-ts
         working-directory: ./bitcoin-s-ts
         run: |
           npm ci
@@ -468,6 +509,22 @@ jobs:
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Build bitcoin-s-ts electron packages
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+      - name: Checkout bitcoin-s-ts repo
+        uses: actions/checkout@v3
+        with:
+          repository: bitcoin-s/bitcoin-s-ts
+          path: bitcoin-s-ts
+      - name: Install bitcoin-s-ts
+        working-directory: ./bitcoin-s-ts
+        run: |
+          npm ci
+          npm run build
+      # End Build bitcoin-s-ts electron packages
   # linux-electron:
   #   needs: linux-zips
   #   runs-on: [ ubuntu-latest ]
@@ -496,7 +553,7 @@ jobs:
       #   with:
       #     node-version: '16.x'
       #   working-directory: ./bitcoin-s-ts
-      # - name: Install monorepo
+      # - name: Install bitcoin-s-ts
       #   run: |
       #     npm ci
       #     npm run build
