@@ -342,7 +342,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '16.x'
-        working-directory: ./bitcoin-s-ts
       - name: Install monorepo
         working-directory: ./bitcoin-s-ts
         run: |
