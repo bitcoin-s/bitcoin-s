@@ -162,8 +162,6 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
             } else {
               node.peerManager.removeTestPeer(peer)
             }
-          case NodeType.SpvNode =>
-            node.peerManager.createInDb(peer).map(_ => ())
         }
       case nodeType: ExternalImplementationNodeType =>
         nodeType match {

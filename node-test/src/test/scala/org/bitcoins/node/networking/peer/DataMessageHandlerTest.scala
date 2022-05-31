@@ -81,7 +81,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           DataMessageHandler(genesisChainApi, None)(node.executionContext,
                                                     node.nodeAppConfig,
                                                     node.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == block)
   }
@@ -182,7 +182,7 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
           DataMessageHandler(genesisChainApi, None)(node.executionContext,
                                                     node.nodeAppConfig,
                                                     node.chainConfig)
-        _ <- dataMessageHandler.handleDataPayload(payload, sender, node)
+        _ <- dataMessageHandler.handleDataPayload(payload, sender)
         result <- resultP.future
       } yield assert(result == tx)
   }
