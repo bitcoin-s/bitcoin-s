@@ -218,7 +218,9 @@ object DLCWalletUtil extends Logging {
   )
 
   lazy val sampleMultiNonceDLCOffer: DLCOffer =
-    sampleDLCOffer.copy(contractInfo = multiNonceContractInfo)
+    sampleDLCOffer.copy(contractInfo = multiNonceContractInfo,
+                        tempContractId =
+                          Sha256Digest(ECPrivateKey.freshPrivateKey.bytes))
 
   lazy val dummyOutcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)] =
     Vector(
