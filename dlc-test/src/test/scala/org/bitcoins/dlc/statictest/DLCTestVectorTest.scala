@@ -38,8 +38,15 @@ class DLCTestVectorTest extends BitcoinSJvmTest {
             .successTestVector(testVec.testInputs)
 
           resultT match {
-            case Success(regenerated) => assert(regenerated == testVec)
-            case Failure(err)         => fail(err)
+            case Success(regenerated) =>
+              assert(regenerated.testInputs == testVec.testInputs)
+              assert(
+                regenerated.offer.tlv.protocolVersionOpt == testVec.offer.tlv.protocolVersionOpt)
+              assert(regenerated.offer == testVec.offer)
+              assert(regenerated.accept == testVec.accept)
+              assert(regenerated.sign == testVec.sign)
+              assert(regenerated == testVec)
+            case Failure(err) => fail(err)
           }
       }
     }

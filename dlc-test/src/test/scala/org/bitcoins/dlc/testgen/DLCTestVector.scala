@@ -225,6 +225,8 @@ case class SuccessTestVector(
     unsignedTxs: DLCTransactions,
     signedTxs: DLCTransactions)
     extends DLCTestVector {
+  require(offer.tlv.protocolVersionOpt.isDefined,
+          s"Protocol version not defined")
 
   override def toJson: JsValue = {
     Json.toJson(this)(SuccessTestVector.successTestVectorFormat)
@@ -314,8 +316,9 @@ object SuccessTestVector extends TestVectorParser[SuccessTestVector] {
   implicit val DLCPartyParamsFormat: Format[DLCPartyParams] =
     Json.format[DLCPartyParams]
 
-  implicit val offerMsgFormat: Format[LnMessage[DLCOfferTLV]] = hexFormat(
-    LnMessageFactory(DLCOfferTLV))
+  implicit val offerMsgFormat: Format[LnMessage[DLCOfferTLV]] = {
+    hexFormat(LnMessageFactory(DLCOfferTLV))
+  }
 
   implicit val acceptMsgFormat: Format[LnMessage[DLCAcceptTLV]] = hexFormat(
     LnMessageFactory(DLCAcceptTLV))
