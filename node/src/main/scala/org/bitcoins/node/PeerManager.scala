@@ -226,12 +226,18 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   def stop: Future[Unit] = {
     peerConnectionScheduler.cancel()
     peerDiscoveryStack.clear()
-    def removeTestPeersF() =
+    val removeTestPeersF =
       Future.sequence(testPeerData.keys.map(removeTestPeer))
-    def removePeersF() = Future.sequence(peerData.keys.map(removePeer))
     for {
-      _ <- removeTestPeersF()
-      _ <- removePeersF()
+      _ <- removeTestPeersF
+      _ <- Future.sequence(peerMsgSenders.map(_.disconnect()))
+      _ <- AsyncUtil.retryUntilSatisfiedF(
+        () =>
+          Future
+            .sequence(peerMsgSenders.map(_.isDisconnected()))
+            .map(_.forall(_ == true)),
+        500.millis)
+      _ <- Future.sequence(peers.map(removePeer))
     } yield ()
   }
 

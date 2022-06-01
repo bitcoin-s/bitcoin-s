@@ -1,10 +1,7 @@
 package org.bitcoins.node
 
 import akka.actor.ActorSystem
-import org.bitcoins.asyncutil.AsyncUtil
 
-import scala.concurrent.duration.DurationInt
-//import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
@@ -156,37 +153,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def stop(): Future[Node] = {
     logger.info(s"Stopping node")
 
-    val disconnectFs = peerMsgSenders.map(_.disconnect())
-
-    val disconnectF = for {
-      disconnect <- Future.sequence(disconnectFs)
-    } yield disconnect
-
-    def isAllDisconnectedF: Future[Boolean] = {
-      val connF = peerMsgSenders.map(_.isDisconnected())
-      val res = Future.sequence(connF).map(_.forall(_ == true))
-      res
-    }
-
     val start = System.currentTimeMillis()
-    val isStoppedF = disconnectF.flatMap { _ =>
-      logger.info(s"Awaiting disconnect")
-      //25 seconds to disconnect
-      AsyncUtil.retryUntilSatisfiedF(() => isAllDisconnectedF, 500.millis)
-    }
 
-    val peers = peerManager.peers
-    val removedPeersF = for {
-      _ <- isStoppedF
-      _ <- Future.sequence(peers.map(peerManager.removeTestPeer))
-      _ <- peerManager.stop
-    } yield ()
-
-    removedPeersF.failed.foreach { e =>
-      logger.warn(s"Cannot stop node", e)
-    }
-
-    removedPeersF.map { _ =>
+    peerManager.stop.map { _ =>
       logger.info(
         s"Node stopped! It took=${System.currentTimeMillis() - start}ms")
       this
