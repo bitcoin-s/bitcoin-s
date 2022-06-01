@@ -2,6 +2,7 @@ package org.bitcoins.core.api.dlc.wallet
 
 import org.bitcoins.core.api.dlc.wallet.db.{
   DLCContactDb,
+  DLCContactMappingDb,
   DLCDb,
   IncomingDLCOfferDb
 }
@@ -170,7 +171,7 @@ trait DLCWalletApi { self: WalletApi =>
 
   def addDLCContactMapping(
       dlcId: Sha256Digest,
-      contactId: InetSocketAddress): Future[Unit]
+      contactId: InetSocketAddress): Future[DLCContactMappingDb]
 
   def removeDLCContactMapping(dlcId: Sha256Digest): Future[Unit]
 

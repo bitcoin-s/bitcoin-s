@@ -1,6 +1,10 @@
 package org.bitcoins.dlc.wallet.internal
 
-import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, IncomingDLCOfferDb}
+import org.bitcoins.core.api.dlc.wallet.db.{
+  DLCContactDb,
+  DLCContactMappingDb,
+  IncomingDLCOfferDb
+}
 import org.bitcoins.core.protocol.tlv.DLCOfferTLV
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.wallet.DLCWallet
@@ -60,10 +64,9 @@ trait IncomingDLCOffersHandling { self: DLCWallet =>
 
   override def addDLCContactMapping(
       dlcId: Sha256Digest,
-      contcatId: InetSocketAddress): Future[Unit] = {
+      contcatId: InetSocketAddress): Future[DLCContactMappingDb] = {
     dlcContactMappingDAO
       .create(dlcId, contcatId)
-      .map(_ => ())
   }
 
   override def removeDLCContactMapping(dlcId: Sha256Digest): Future[Unit] = {

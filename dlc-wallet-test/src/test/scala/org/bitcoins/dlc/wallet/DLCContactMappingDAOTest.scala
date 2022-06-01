@@ -1,8 +1,12 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, DLCDb}
+import org.bitcoins.core.api.dlc.wallet.db.{
+  DLCContactDb,
+  DLCContactMapping,
+  DLCContactMappingDb,
+  DLCDb
+}
 import org.bitcoins.crypto.Sha256Digest
-import org.bitcoins.dlc.wallet.models.{DLCContactMapping, DLCContactMappingDb}
 import org.bitcoins.testkit.fixtures.DLCDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, DLCWalletUtil}
 

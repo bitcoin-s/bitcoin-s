@@ -169,8 +169,12 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
         complete {
           dlcNode.wallet
             .addDLCContactMapping(dlcContactAdd.dlcId, dlcContactAdd.address)
-            .map { _ =>
-              Server.httpSuccess("ok")
+            .map { mapping =>
+              val dlcId = mapping.dlcId.hex
+              val contactId =
+                mapping.contactId.getHostName + ":" + mapping.contactId.getPort
+              Server.httpSuccess(
+                ujson.Obj("dlcId" -> dlcId, "contactId" -> contactId))
             }
         }
       }
