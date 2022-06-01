@@ -844,8 +844,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       withValidServerCommand(ImportSeed.fromJsArr(arr)) {
         case ImportSeed(walletName, mnemonic, passwordOpt) =>
           complete {
-            val seedPath = kmConf.seedFolder.resolve(
-              s"$walletName-${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
+            val seedPath = getSeedPath(Some(walletName))
 
             val creationTime = Instant.ofEpochSecond(WalletStorage.GENESIS_TIME)
 
@@ -867,10 +866,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       withValidServerCommand(ExportSeed.fromJsArr(arr)) {
         case ExportSeed(walletNameOpt, passwordOpt) =>
           complete {
-            val seedPath = kmConf.seedFolder.resolve(
-              walletNameOpt
-                .map(_ + "-")
-                .getOrElse("") + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+            val seedPath = getSeedPath(walletNameOpt)
 
             Server.httpSuccess(
               WalletStorage
@@ -883,13 +879,10 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       withValidServerCommand(MarkSeedAsBackedUp.fromJsArr(arr)) {
         case MarkSeedAsBackedUp(walletNameOpt, passwordOpt) =>
           complete {
-            val seedPath = kmConf.seedFolder.resolve(
-              walletNameOpt
-                .map(_ + "-")
-                .getOrElse("") + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+            val seedPath = getSeedPath(walletNameOpt)
 
             WalletStorage.markSeedAsBackedUp(seedPath, passwordOpt).get
-            Server.httpSuccess(ujson.Null)
+            Server.httpSuccess("ok")
           }
       }
 
@@ -897,10 +890,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       withValidServerCommand(GetSeedBackupTime.fromJsArr(arr)) {
         case GetSeedBackupTime(walletNameOpt, passwordOpt) =>
           complete {
-            val seedPath = kmConf.seedFolder.resolve(
-              walletNameOpt
-                .map(_ + "-")
-                .getOrElse("") + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+            val seedPath = getSeedPath(walletNameOpt)
 
             val backupTimeOpt = WalletStorage
               .getSeedBackupTime(seedPath, passwordOpt)
@@ -919,8 +909,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
       withValidServerCommand(ImportXprv.fromJsArr(arr)) {
         case ImportXprv(walletName, xprv, passwordOpt) =>
           complete {
-            val seedPath = kmConf.seedFolder.resolve(
-              s"$walletName-${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
+            val seedPath = getSeedPath(Some(walletName))
 
             val creationTime = Instant.ofEpochSecond(WalletStorage.GENESIS_TIME)
 
@@ -968,6 +957,13 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           Server.httpSuccess(writeJs(accounting))
         }
       }
+  }
+
+  private def getSeedPath(walletNameOpt: Option[String]): Path = {
+    kmConf.seedFolder.resolve(
+      walletNameOpt
+        .map(_ + "-")
+        .getOrElse("") + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
   }
 
   /** Returns information about the state of our wallet */

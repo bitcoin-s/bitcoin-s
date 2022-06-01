@@ -161,7 +161,7 @@ object WalletStorage extends KeyManagerLogger {
       case Success(js) =>
         js match {
           case ujson.Null         => None
-          case value: ujson.Value => Some(Try(value.num.toLong).get)
+          case value: ujson.Value => Try(value.num.toLong).toOption
         }
       case Failure(_: NoSuchElementException) =>
         None
@@ -442,7 +442,9 @@ object WalletStorage extends KeyManagerLogger {
                       decrypted
                   }).withBackupTime(Instant.now())
                   val _ = writeSeedState(seedPath, toWrite)
-                case Some(_) => () // ignore
+                case Some(_) =>
+                  logger.warn(
+                    s"Seed has already been backed up, ignoring new request to mark it as backed up")
               }
           }
         }
