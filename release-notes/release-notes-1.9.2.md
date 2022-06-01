@@ -1,0 +1,208 @@
+# 1.9.2
+Sort commits up to d8fc8e588ff04575b23dfc236418c71b11d566b1
+
+This release is backwards compatible with the 1.9.2 release of bitcoin-s
+
+See the individual module sections for more information on lower level updates to the codebase.
+
+A major developer UX improvement we had since this release is the ability for a developer to spin up a docker environment for the DLC wallet easily. [See instructions here](https://github.com/bitcoin-s/bitcoin-s/#docker)
+
+If you are a typescript developer, [you can access the backend via our typescript library](https://github.com/bitcoin-s/bitcoin-s-ts)
+
+## Running bitcoin-s
+
+If you want to run the standalone server binary, after verifying gpg signatures, you
+can `unzip bitcoin-s-server-1.9.2.zip` and then run it with `chmod +x ./bin/bitcoin-s-server && ./bin/bitcoin-s-server` to start the node. You will need to
+configure the node properly first, you can find example
+configurations [here](https://bitcoin-s.org/docs/config/configuration#example-configuration-file).
+
+You can then unzip the `bitcoin-s-cli-1.9.2.zip` folder and start using the `bitcoin-s-cli` like this:
+
+```bashrc
+./bin/bitcoin-s-cli --help
+Usage: bitcoin-s-cli [options] [<cmd>]
+
+  -n, --network <value>    Select the active network.
+  --debug                  Print debugging information
+  --rpcport <value>        The port to send our rpc request to on the server
+  -h, --help               Display this help message and exit
+```
+
+For more information on what commands `bitcoin-s-cli` supports check the documentation, here is where to
+start: https://bitcoin-s.org/docs/next/applications/server#server-endpoints
+
+## Verifying signatures
+
+This release is signed with [Chris's signing key](https://bitcoin-s.org/docs/next/security#disclosure) with
+fingerprint `9234F4D6AF47C71B741A390F8976CA0AF71A7A2A`
+
+To do the verification, first hash the executable using `sha256sum`. You should check that the result is listed in
+the `SHA256SUMS.asc` file next to its file name. After doing that you can use `gpg --verify` to authenticate the
+signature.
+
+Example:
+
+```
+$ gpg -d SHA256SUMS.asc > SHA256SUMS.stripped
+gpg: Signature made Mon 18 Apr 2022 02:19:54 PM CDT
+gpg:                using RSA key 9234F4D6AF47C71B741A390F8976CA0AF71A7A2A
+gpg: Good signature from "Chris Stewart <stewart.chris1234@gmail.com>" [ultimate]
+
+$ sha256sum -c SHA256SUMS.stripped                                                                                            
+bitcoin-s_1.9.1-1_amd64.deb: OK
+bitcoin-s-1.9.1.dmg: OK
+bitcoin-s-bundle.msi: OK
+bitcoin-s-cli-x86_64-apple-darwin: OK
+bitcoin-s-cli-x86_64-pc-linux: OK
+bitcoin-s-server-1.9.1.zip: OK
+
+```
+
+### Website
+
+https://bitcoin-s.org/
+
+### Releases
+
+https://repo1.maven.org/maven2/org/bitcoin-s/
+
+### Snapshot releases
+
+https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
+
+# Executive Summary
+
+## app commons
+
+488716d10a Add ProcessLogger to ProcessBuilder so that we capture logs from binaries like tor (#4327)
+
+## App server
+
+8a01432db4 Try to debug why shutdown isn't working on windows (#4349)
+d335cd1933 Enable LauncherJarPlugin on oracleServer/appServer (#4338)
+5036b37729 2022 05 11 tor race condition (#4333)
+d46b4a6c91 Make logging to file async, remove neverBlock configuration so that we are guaranteed to capture logs (#4305)
+be34593e80 2022 04 29 issue 4302 (#4304)
+f4d864fab8 2022 04 26 Startup time of `appServer` (#4294)
+17944c4aad Update rolling policies for log files (#4291)
+bac3cb4190 Fix rolling log file (#4288)
+16c5d835de 2022 04 20 issue 4280 (#4282)
+e3e59923c4 Parallelize some startup on startBitcoinSBackend() to increase performance (#4217)
+
+## bitcoind rpc
+
+## bundle
+
+## Build
+
+e4d38ba53a 2022 05 05 OS specific jlink builds (#4322)
+dd9a9dcea6 Remove explicit inclusion of jdk.unsupported as its not included by default (#4319)
+087b9f90b5 2022 05 03 oracle server jlink build (#4316)
+cbfe684352 Reduce what gets tested on tor CI (#4274)
+
+## Core
+
+676c0b4261 Add isStandard to Address (#4353)
+90970058f9 Improve TLV error message (#4283)
+
+## Crypto
+
+b80bf4649e Add HashType to ECDigitalSignature API (#4320)
+f42d7ae8e7 Added validation to signature methods to avoid corruption edge cases (#4214)
+
+## DLC node
+
+272f31aeaa Fix race condition on DLC node startup wrt to tor (#4335)
+
+## DLC wallet
+
+79b4f096ec Improve logging around signDLC (#4299)
+525fb2ac0d Default createDLCOffer to current block height (#4285)
+f5940c93d4 Contact list (#4234)
+d29bad3437 Add better logs for a DLCWallet.cancelDLC() (#4278)
+
+## gui
+
+## keymanager
+
+## Lnd rpc
+
+527e3ae862 Fix lnd sendToRoute for 0 amount invoices (#4348)
+e9582d2145 Update lnd to v0.14.3-beta (#4347)
+63e8d76dfc Add ability to get LndInstanceRemote from config (#4334)
+6845caf778 Make all uint64 types from lnd a UInt64 (#4332)
+18c5ded5d3 Check if lnd network config is equal to 1 (#4330)
+8ff4ee13e5 Use route hints with probing (#4312)
+16c13568a9 Lnd probing: only update route with mpp record if we can (#4293)
+b8a984a986 Implement probing in lnd (#4202)
+95bbb06789 Add lnd invoice client (#4289)
+587bca87c4 Add router rpc to lnd, use for paying invoices (#4286)
+5856745398 Add raw funding of psbt to LndRpc (#4235)
+
+## Lnurl
+
+d60d984a6b LnURL Module (#4295)
+
+## node
+
+d8fc8e588f Remove Spv code (#4356)
+b980c432fd Bump node initialization timeout to 20 seconds (#4328)
+ce00d3ac36 Segregate handling of Tcp.ErrorClosed command from the rest of Tcp.ConnectionClosed (#4307)
+
+## Oracle Explorer Client
+
+c9502babba Tor endpoints for the oracle explorer client (#4314)
+
+## wallet
+
+bf88d0d93f Remove exception when we have zero relevant outputs (#4352)
+f680ab8691 Persist whether wallet is rescanning in the database (#4326)
+059f2f5fac Fix `ERROR: relation "txo_spending_info" does not exist` (#4323)
+341c712563 Validate bitcoin-s.wallet.walletName config option (#4336)
+fac0713405 Reduce rescan threadpool size to just be number of available processors (#4306)
+0c6c9180ed Handle duplicate UTXOs (#4296)
+486fa36d2c Make _findOutputsBeingSpentQuery take at most 1,000 outpoints (#4300)
+6db1f26625 2022 03 22 getrelevantoutputs upfront (#4219)
+3831b35817 Prevent the wallet from creating duplicate UTXOs (#4290)
+
+## testkit-core
+
+## testkit
+
+## tor
+
+9d90b2279a Tor v0.4.6.10 (#4331)
+6356a50a89 Add log for tor being provided (#4329)
+
+## Website
+
+c911808996 Fix example (#4324)
+67f8ac8294 Add cd bitcoin-s-server (#4298)
+a739a2dd2b Bump README versions (#4284)
+b0e849c233 Update pgp key as previous key expired (#4273)
+8cda343fd3 Add version 1.9.1 to the website (#4269)
+
+## Dependencies
+
+2af7923f3b Downgrade slick to fix jlink build (#4345)
+107f95cd5a Upgrade sttp to 3.6.1 (#4341)
+63df47e002 Upgrade to slick to 3.4.0-M1 (#4342)
+4b2ca33495 upgrade micropickle to 1.6.0 (#4340)
+a3faa0c56f Upgrade plugin dependencies (#4318)
+678dc6f676 Upgrade sbt native packager to 1.9.9 (#4317)
+e05cf21827 Upgrade dropWizards to 4.2.9 (#4313)
+2f4bbf7014 Upgrade flyway to 8.5.9 (#4311)
+56138cea92 Remove source code dependency, its not used anywhere (#4310)
+3dc709386a Upgrade Eclair to v0.7.0 (#4308)
+7566a96b31 Update akka to 2.6.19 (#4287)
+813b58e977 Update deps (#4279)
+ca5bde46d4 Bump prismjs from 1.26.0 to 1.27.0 in /website (#4133)
+47b65cae65 Bump async from 2.6.3 to 2.6.4 in /website (#4271)
+
+
+
+
+
+
+
+
