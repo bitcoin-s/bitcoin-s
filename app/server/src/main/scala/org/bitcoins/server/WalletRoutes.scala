@@ -851,14 +851,67 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
             val mnemonicState = passwordOpt match {
               case Some(pass) =>
-                DecryptedMnemonic(mnemonic, creationTime).encrypt(pass)
+                DecryptedMnemonic(mnemonic, creationTime, backupTimeOpt = None)
+                  .encrypt(pass)
               case None =>
-                DecryptedMnemonic(mnemonic, creationTime)
+                DecryptedMnemonic(mnemonic, creationTime, backupTimeOpt = None)
             }
 
             WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
 
             Server.httpSuccess(ujson.Null)
+          }
+      }
+
+    case ServerCommand("exportseed", arr) =>
+      withValidServerCommand(ExportSeed.fromJsArr(arr)) {
+        case ExportSeed(walletNameOpt, passwordOpt) =>
+          complete {
+            val seedPath = kmConf.seedFolder.resolve(
+              walletNameOpt
+                .map(_ + "-")
+                .getOrElse("") + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+
+            Server.httpSuccess(
+              WalletStorage
+                .readDecryptedSeedPhraseForBackup(seedPath, passwordOpt)
+                .get)
+          }
+      }
+
+    case ServerCommand("markseedasbackedup", arr) =>
+      withValidServerCommand(MarkSeedAsBackedUp.fromJsArr(arr)) {
+        case MarkSeedAsBackedUp(walletNameOpt, passwordOpt) =>
+          complete {
+            val seedPath = kmConf.seedFolder.resolve(
+              walletNameOpt
+                .map(_ + "-")
+                .getOrElse("") + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+
+            WalletStorage.markSeedAsBackedUp(seedPath, passwordOpt).get
+            Server.httpSuccess(ujson.Null)
+          }
+      }
+
+    case ServerCommand("getseedbackuptime", arr) =>
+      withValidServerCommand(GetSeedBackupTime.fromJsArr(arr)) {
+        case GetSeedBackupTime(walletNameOpt, passwordOpt) =>
+          complete {
+            val seedPath = kmConf.seedFolder.resolve(
+              walletNameOpt
+                .map(_ + "-")
+                .getOrElse("") + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+
+            val backupTimeOpt = WalletStorage
+              .getSeedBackupTime(seedPath, passwordOpt)
+              .get
+
+            val backupTimeJs: ujson.Value = backupTimeOpt match {
+              case Some(value) => ujson.Num(value.getEpochSecond.toDouble)
+              case None        => ujson.Null
+            }
+
+            Server.httpSuccess(backupTimeJs)
           }
       }
 
@@ -873,9 +926,10 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
             val mnemonicState = passwordOpt match {
               case Some(pass) =>
-                DecryptedExtPrivKey(xprv, creationTime).encrypt(pass)
+                DecryptedExtPrivKey(xprv, creationTime, backupTimeOpt = None)
+                  .encrypt(pass)
               case None =>
-                DecryptedExtPrivKey(xprv, creationTime)
+                DecryptedExtPrivKey(xprv, creationTime, backupTimeOpt = None)
             }
 
             WalletStorage.writeSeedToDisk(seedPath, mnemonicState)

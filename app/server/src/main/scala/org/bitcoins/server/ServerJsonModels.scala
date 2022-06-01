@@ -284,6 +284,42 @@ object KeyManagerPassphraseSet extends ServerJsonModels {
   }
 }
 
+case class ExportSeed(
+    walletName: Option[String],
+    passwordOpt: Option[AesPassword])
+
+object ExportSeed extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExportSeed] = Try {
+    val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(jsArr)
+    ExportSeed(walletNameOpt, passwordOpt)
+  }
+}
+
+case class MarkSeedAsBackedUp(
+    walletName: Option[String],
+    passwordOpt: Option[AesPassword])
+
+object MarkSeedAsBackedUp extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[MarkSeedAsBackedUp] = Try {
+    val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(jsArr)
+    MarkSeedAsBackedUp(walletNameOpt, passwordOpt)
+  }
+}
+
+case class GetSeedBackupTime(
+    walletName: Option[String],
+    passwordOpt: Option[AesPassword])
+
+object GetSeedBackupTime extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetSeedBackupTime] = Try {
+    val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(jsArr)
+    GetSeedBackupTime(walletNameOpt, passwordOpt)
+  }
+}
+
 case class ImportSeed(
     walletName: String,
     mnemonic: MnemonicCode,
@@ -306,15 +342,7 @@ object ImportSeed extends ServerJsonModels {
           }
           val mnemonic = MnemonicCode.fromWords(mnemonicWords)
 
-          val pass = passJs match {
-            case Str(str) =>
-              Some(AesPassword.fromString(str))
-            case Null =>
-              None
-            case Arr(_) | False | True | Num(_) | Obj(_) =>
-              throw new IllegalArgumentException(
-                "password must be a string or null")
-          }
+          val pass = jsToAESPassword(passJs)
 
           ImportSeed(walletName, mnemonic, pass)
         }
@@ -345,15 +373,7 @@ object ImportXprv extends ServerJsonModels {
 
           val xprv = ExtPrivateKey.fromString(xprvJs.str)
 
-          val pass = passJs match {
-            case Str(str) =>
-              Some(AesPassword.fromString(str))
-            case Null =>
-              None
-            case Arr(_) | False | True | Bool(_) | Num(_) | Obj(_) =>
-              throw new IllegalArgumentException(
-                "password must be a string or null")
-          }
+          val pass = jsToAESPassword(passJs)
 
           ImportXprv(walletName, xprv, pass)
         }
@@ -1597,5 +1617,48 @@ trait ServerJsonModels {
   def jsToOracleAttestmentTLVVec(js: Value): Vector[OracleAttestmentTLV] = {
     js.arr.foldLeft(Vector.empty[OracleAttestmentTLV])((vec, tlv) =>
       vec :+ jsToOracleAttestmentTLV(tlv))
+  }
+
+  def jsToAESPassword(js: Value): Option[AesPassword] = {
+    js match {
+      case Str(str) =>
+        Some(AesPassword.fromString(str))
+      case Null =>
+        None
+      case Arr(_) | False | True | Num(_) | Obj(_) =>
+        throw new IllegalArgumentException("password must be a string or null")
+    }
+  }
+
+  def jsToStringOpt(js: Value): Option[String] = {
+    js match {
+      case Str(str) =>
+        Some(str)
+      case Null =>
+        None
+      case Arr(_) | False | True | Num(_) | Obj(_) =>
+        throw new IllegalArgumentException("password must be a string or null")
+    }
+  }
+
+  def jsToWalletNameAndPassword(
+      js: Value): (Option[String], Option[AesPassword]) = {
+    js match {
+      case Arr(arr) =>
+        arr.toList match {
+          case walletNameJs :: passJs :: Nil =>
+            (jsToStringOpt(walletNameJs), jsToAESPassword(passJs))
+          case walletNameJs :: Nil =>
+            (jsToStringOpt(walletNameJs), None)
+          case Nil =>
+            (None, None)
+          case other =>
+            throw new IllegalArgumentException(
+              s"Bad number of arguments: ${other.length}. Expected: 2")
+        }
+      case _: Value =>
+        throw new IllegalArgumentException(s"Expected json.Arr")
+    }
+
   }
 }
