@@ -50,7 +50,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             totalCollateral,
             offer.collateral,
             payoutAddress,
-            contact
+            contact.map(_.address)
           )
 
         assert(status.state == DLCState.Offered)
@@ -91,7 +91,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             totalCollateral,
             offer.collateral,
             payoutAddress,
-            contact
+            contact.map(_.address)
           )
 
         assert(status.state == DLCState.Accepted)
@@ -129,7 +129,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.collateral,
             txId,
             payoutAddress,
-            contact
+            contact.map(_.address)
           )
 
         assert(status.state == DLCState.Signed)
@@ -167,7 +167,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.collateral,
             fundingTxId,
             payoutAddress,
-            contact
+            contact.map(_.address)
           )
 
         assert(status.state == DLCState.Broadcasted)
@@ -205,7 +205,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.collateral,
             fundingTxId,
             payoutAddress,
-            contact = contact
+            contact.map(_.address)
           )
 
         assert(status.state == DLCState.Confirmed)
@@ -259,7 +259,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           myPayout = myPayout,
           counterPartyPayout = theirPayout,
           payoutAddress = payoutAddress,
-          contact = contact
+          contact.map(_.address)
         )
 
       assert(status.state == DLCState.Claimed)
@@ -316,7 +316,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           myPayout = myPayout,
           counterPartyPayout = theirPayout,
           payoutAddress = payoutAddress,
-          contact = contact
+          contact.map(_.address)
         )
 
       assert(status.state == DLCState.RemoteClaimed)
@@ -367,7 +367,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           myPayout = myPayout,
           counterPartyPayout = theirPayout,
           payoutAddress = payoutAddress,
-          contact = contact
+          contact.map(_.address)
         )
 
       assert(status.state == DLCState.Refunded)

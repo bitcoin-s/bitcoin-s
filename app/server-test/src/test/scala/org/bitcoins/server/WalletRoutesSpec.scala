@@ -76,7 +76,7 @@ class WalletRoutesSpec
         totalCollateral = null,
         localCollateral = null,
         payoutAddress = None,
-        contact = None
+        peer = None
       )
 
       (mockWalletApi.findDLCByTemporaryContractId: Sha256Digest => Future[

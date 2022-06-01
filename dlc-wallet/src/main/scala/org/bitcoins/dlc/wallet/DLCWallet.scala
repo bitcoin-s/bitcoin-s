@@ -2,7 +2,7 @@ package org.bitcoins.dlc.wallet
 
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
-import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, DLCDb}
+import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.db._
@@ -813,11 +813,6 @@ abstract class DLCWallet
         isExternalAddress <- addressDAO
           .findAddress(initializedAccept.pubKeys.payoutAddress)
           .map(_.isEmpty)
-        contactOpt <- peerAddressOpt match {
-          case Some(a) =>
-            dlcContactMappingDAO.createIfContactExists(offer.dlcId, a)
-          case None => Future.successful(None)
-        }
         status = DLCStatusBuilder.buildInProgressDLCStatus(
           dlcDb = initializedAccept.dlc,
           contractInfo = offer.contractInfo,
@@ -826,7 +821,7 @@ abstract class DLCWallet
           payoutAddress = Some(
             PayoutAddress(initializedAccept.pubKeys.payoutAddress,
                           isExternalAddress)),
-          contactOpt = contactOpt
+          peerOpt = peerAddressOpt
         )
         _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status)
         cetSigs <- signer.createCETSigsAsync()
@@ -1701,7 +1696,7 @@ abstract class DLCWallet
                                offerDbOpt.get,
                                dlcAcceptOpt,
                                closingTxOpt,
-                               contactOpt)
+                               contactOpt.map(_.address))
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield refundTx
   }
@@ -1815,7 +1810,7 @@ abstract class DLCWallet
                            offerDb,
                            acceptDbOpt,
                            closingTxOpt,
-                           contactDbOpt)
+                           contactDbOpt.map(_.address))
           case (_, _) => Future.successful(None)
         }
       }
@@ -1830,7 +1825,7 @@ abstract class DLCWallet
       offerDb: DLCOfferDb,
       acceptDbOpt: Option[DLCAcceptDb],
       closingTxOpt: Option[TransactionDb],
-      contactOpt: Option[DLCContactDb]): Future[Option[DLCStatus]] = {
+      peerOpt: Option[InetSocketAddress]): Future[Option[DLCStatus]] = {
     val dlcId = dlcDb.dlcId
     val aggregatedF: Future[(
         Vector[DLCAnnouncementDb],
@@ -1866,7 +1861,7 @@ abstract class DLCWallet
               contractData = contractData,
               offerDb = offerDb,
               payoutAddress = payoutAddress,
-              contactOpt = contactOpt)
+              peerOpt = peerOpt)
             Future.successful(inProgress)
           case _: DLCState.ClosedState =>
             (acceptDbOpt, closingTxOpt) match {
@@ -1882,7 +1877,7 @@ abstract class DLCWallet
                   acceptDb = acceptDb,
                   closingTx = closingTx.transaction,
                   payoutAddress = payoutAddress,
-                  contactOpt = contactOpt
+                  peerOpt = peerOpt
                 )
                 Future.successful(status)
               case (None, None) =>

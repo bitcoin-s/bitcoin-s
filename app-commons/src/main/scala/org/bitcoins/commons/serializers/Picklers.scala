@@ -843,7 +843,7 @@ object Picklers {
         "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
         "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
         "payoutAddress" -> writeJs(payoutAddress),
-        "contact" -> writeJs(contact)
+        "peer" -> peer.map(p => writeJs(p)).getOrElse(Null)
       )
     }
 
@@ -867,7 +867,7 @@ object Picklers {
       "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
       "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
       "payoutAddress" -> writeJs(payoutAddress),
-      "contact" -> writeJs(contact)
+      "peer" -> peer.map(p => writeJs(p)).getOrElse(Null)
     )
   }
 
@@ -890,7 +890,7 @@ object Picklers {
       "localCollateral" -> Num(localCollateral.satoshis.toLong.toDouble),
       "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
       "payoutAddress" -> writeJs(payoutAddress),
-      "contact" -> writeJs(contact)
+      "peer" -> peer.map(p => writeJs(p)).getOrElse(Null)
     )
   }
 
@@ -915,7 +915,7 @@ object Picklers {
         "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
         "fundingTxId" -> Str(fundingTxId.hex),
         "payoutAddress" -> writeJs(payoutAddress),
-        "contact" -> writeJs(contact)
+        "peer" -> peer.map(p => writeJs(p)).getOrElse(Null)
       )
     }
 
@@ -939,7 +939,7 @@ object Picklers {
       "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
       "fundingTxId" -> Str(fundingTxId.hex),
       "payoutAddress" -> writeJs(payoutAddress),
-      "contact" -> writeJs(contact)
+      "peer" -> peer.map(p => writeJs(p)).getOrElse(Null)
     )
   }
 
@@ -964,7 +964,7 @@ object Picklers {
         "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
         "fundingTxId" -> Str(fundingTxId.hex),
         "payoutAddress" -> writeJs(payoutAddress),
-        "contact" -> writeJs(contact)
+        "peer" -> peer.map(p => writeJs(p)).getOrElse(Null)
       )
     }
 
@@ -989,7 +989,7 @@ object Picklers {
         "remoteCollateral" -> Num(remoteCollateral.satoshis.toLong.toDouble),
         "fundingTxId" -> Str(fundingTxId.hex),
         "payoutAddress" -> writeJs(payoutAddress),
-        "contact" -> writeJs(contact)
+        "peer" -> peer.map(p => writeJs(p)).getOrElse(Null)
       )
     }
 
@@ -1033,7 +1033,7 @@ object Picklers {
       PicklerKeys.pnl -> Num(claimed.pnl.satoshis.toLong.toDouble),
       PicklerKeys.rateOfReturn -> Num(claimed.rateOfReturn.toDouble),
       "payoutAddress" -> writeJs(payoutAddress),
-      "contact" -> writeJs(contact)
+      "peer" -> peer.map(p => writeJs(p)).getOrElse(Null)
     )
   }
 
@@ -1077,7 +1077,7 @@ object Picklers {
         PicklerKeys.pnl -> Num(remoteClaimed.pnl.satoshis.toLong.toDouble),
         PicklerKeys.rateOfReturn -> Num(remoteClaimed.rateOfReturn.toDouble),
         "payoutAddress" -> writeJs(payoutAddress),
-        "contact" -> writeJs(contact)
+        "peer" -> peer.map(p => writeJs(p)).getOrElse(Null)
       )
     }
 
@@ -1107,7 +1107,7 @@ object Picklers {
       PicklerKeys.pnl -> Num(refunded.pnl.satoshis.toLong.toDouble),
       PicklerKeys.rateOfReturn -> Num(refunded.rateOfReturn.toDouble),
       "payoutAddress" -> writeJs(payoutAddress),
-      "contact" -> writeJs(contact)
+      "peer" -> peer.map(p => writeJs(p)).getOrElse(Null)
     )
   }
 
@@ -1179,9 +1179,9 @@ object Picklers {
     val feeRate = SatoshisPerVirtualByte.fromLong(obj("feeRate").num.toLong)
     val totalCollateral = Satoshis(obj("totalCollateral").num.toLong)
     val localCollateral = Satoshis(obj("localCollateral").num.toLong)
-    val contactOpt =
-      if (obj("contact").isNull) None
-      else Some(readContactDb(obj("contact").obj))
+    val peerOpt =
+      if (obj("peer").isNull || !obj.value.contains("peer")) None
+      else Some(NetworkUtil.parseInetSocketAddress(obj("peer").str, -1))
 
     lazy val contractId = ByteVector.fromValidHex(obj("contractId").str)
     lazy val fundingTxId = DoubleSha256DigestBE(obj("fundingTxId").str)
@@ -1252,7 +1252,7 @@ object Picklers {
           totalCollateral,
           localCollateral,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.AcceptComputingAdaptorSigs =>
         AcceptedComputingAdaptorSigs(
@@ -1267,7 +1267,7 @@ object Picklers {
           totalCollateral,
           localCollateral,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.Accepted =>
         Accepted(
@@ -1282,7 +1282,7 @@ object Picklers {
           totalCollateral,
           localCollateral,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.SignComputingAdaptorSigs =>
         SignedComputingAdaptorSigs(
@@ -1298,7 +1298,7 @@ object Picklers {
           localCollateral,
           fundingTxId,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.Signed =>
         Signed(
@@ -1314,7 +1314,7 @@ object Picklers {
           localCollateral,
           fundingTxId,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.Broadcasted =>
         Broadcasted(
@@ -1330,7 +1330,7 @@ object Picklers {
           localCollateral,
           fundingTxId,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.Confirmed =>
         Confirmed(
@@ -1346,7 +1346,7 @@ object Picklers {
           localCollateral,
           fundingTxId,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.Claimed =>
         Claimed(
@@ -1367,7 +1367,7 @@ object Picklers {
           myPayout = myPayoutOpt.get,
           counterPartyPayout = theirPayoutOpt.get,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.RemoteClaimed =>
         require(oracleSigs.size == 1,
@@ -1390,7 +1390,7 @@ object Picklers {
           myPayout = myPayoutOpt.get,
           counterPartyPayout = theirPayoutOpt.get,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.Refunded =>
         Refunded(
@@ -1409,7 +1409,7 @@ object Picklers {
           myPayout = myPayoutOpt.get,
           counterPartyPayout = theirPayoutOpt.get,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
     }
   }

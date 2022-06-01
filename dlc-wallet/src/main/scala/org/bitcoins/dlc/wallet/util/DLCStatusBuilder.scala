@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.wallet.util
 
-import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, DLCDb}
+import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.dlc.accounting.DLCAccounting
 import org.bitcoins.core.protocol.dlc.models.DLCStatus._
 import org.bitcoins.core.protocol.dlc.models._
@@ -9,6 +9,8 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.SchnorrDigitalSignature
 import org.bitcoins.dlc.wallet.accounting.{AccountingUtil, DLCAccountingDbs}
 import org.bitcoins.dlc.wallet.models._
+
+import java.net.InetSocketAddress
 
 object DLCStatusBuilder {
 
@@ -19,7 +21,7 @@ object DLCStatusBuilder {
       contractData: DLCContractDataDb,
       offerDb: DLCOfferDb,
       payoutAddress: Option[PayoutAddress],
-      contactOpt: Option[DLCContactDb]): DLCStatus = {
+      peerOpt: Option[InetSocketAddress]): DLCStatus = {
     require(
       dlcDb.state.isInstanceOf[DLCState.InProgressState],
       s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
@@ -47,7 +49,7 @@ object DLCStatusBuilder {
           totalCollateral,
           localCollateral,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.AcceptComputingAdaptorSigs =>
         AcceptedComputingAdaptorSigs(
@@ -62,7 +64,7 @@ object DLCStatusBuilder {
           totalCollateral = totalCollateral,
           localCollateral = localCollateral,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.Accepted =>
         Accepted(
@@ -77,7 +79,7 @@ object DLCStatusBuilder {
           totalCollateral,
           localCollateral,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.SignComputingAdaptorSigs =>
         SignedComputingAdaptorSigs(
@@ -93,7 +95,7 @@ object DLCStatusBuilder {
           localCollateral = localCollateral,
           dlcDb.fundingTxIdOpt.get,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.Signed =>
         Signed(
@@ -109,7 +111,7 @@ object DLCStatusBuilder {
           localCollateral,
           dlcDb.fundingTxIdOpt.get,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.Broadcasted =>
         Broadcasted(
@@ -125,7 +127,7 @@ object DLCStatusBuilder {
           localCollateral,
           dlcDb.fundingTxIdOpt.get,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
       case DLCState.Confirmed =>
         Confirmed(
@@ -141,7 +143,7 @@ object DLCStatusBuilder {
           localCollateral,
           dlcDb.fundingTxIdOpt.get,
           payoutAddress,
-          contactOpt
+          peerOpt
         )
     }
 
@@ -159,7 +161,7 @@ object DLCStatusBuilder {
       acceptDb: DLCAcceptDb,
       closingTx: Transaction,
       payoutAddress: Option[PayoutAddress],
-      contactOpt: Option[DLCContactDb]): ClosedDLCStatus = {
+      peerOpt: Option[InetSocketAddress]): ClosedDLCStatus = {
     require(
       dlcDb.state.isInstanceOf[DLCState.ClosedState],
       s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
@@ -196,7 +198,7 @@ object DLCStatusBuilder {
           myPayout = accounting.myPayout,
           counterPartyPayout = accounting.theirPayout,
           payoutAddress = payoutAddress,
-          contact = contactOpt
+          peer = peerOpt
         )
         refund
       case oracleOutcomeState: DLCState.ClosedViaOracleOutcomeState =>
@@ -225,7 +227,7 @@ object DLCStatusBuilder {
               myPayout = accounting.myPayout,
               counterPartyPayout = accounting.theirPayout,
               payoutAddress = payoutAddress,
-              contact = contactOpt
+              peer = peerOpt
             )
           case DLCState.RemoteClaimed =>
             RemoteClaimed(
@@ -246,7 +248,7 @@ object DLCStatusBuilder {
               myPayout = accounting.myPayout,
               counterPartyPayout = accounting.theirPayout,
               payoutAddress = payoutAddress,
-              contact = contactOpt
+              peer = peerOpt
             )
         }
     }
