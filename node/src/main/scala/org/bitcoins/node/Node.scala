@@ -2,6 +2,9 @@ package org.bitcoins.node
 
 import akka.actor.ActorSystem
 import org.bitcoins.asyncutil.AsyncUtil
+
+import scala.concurrent.duration.DurationInt
+//import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
@@ -23,7 +26,7 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageSender
 }
 
-import scala.concurrent.duration.DurationInt
+//import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -176,6 +179,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     val removedPeersF = for {
       _ <- isStoppedF
       _ <- Future.sequence(peers.map(peerManager.removeTestPeer))
+      _ <- peerManager.stop
     } yield ()
 
     removedPeersF.failed.foreach { e =>

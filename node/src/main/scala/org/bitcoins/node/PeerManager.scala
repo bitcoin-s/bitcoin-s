@@ -223,6 +223,18 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     }
   }
 
+  def stop: Future[Unit] = {
+    peerConnectionScheduler.cancel()
+    peerDiscoveryStack.clear()
+    def removeTestPeersF() =
+      Future.sequence(testPeerData.keys.map(removeTestPeer))
+    def removePeersF() = Future.sequence(peerData.keys.map(removePeer))
+    for {
+      _ <- removeTestPeersF()
+      _ <- removePeersF()
+    } yield ()
+  }
+
   /** creates and initialises a new test peer */
   def addTestPeer(peer: Peer): Unit = {
     if (!_testPeerData.contains(peer)) {
@@ -236,6 +248,17 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     if (_testPeerData.contains(peer)) {
       testPeerData(peer).peerMessageSender.client.actor.!(PoisonPill)
       _testPeerData.remove(peer)
+      Future.unit
+    } else {
+      logger.debug(s"Key $peer not found in peerData")
+      Future.unit
+    }
+  }
+
+  def removePeer(peer: Peer): Future[Unit] = {
+    if (_peerData.contains(peer)) {
+      _peerData(peer).peerMessageSender.client.actor.!(PoisonPill)
+      _peerData.remove(peer)
       Future.unit
     } else {
       logger.debug(s"Key $peer not found in peerData")
@@ -285,10 +308,11 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   def awaitPeerWithService(f: ServiceIdentifier => Boolean): Future[Unit] = {
     logger.info("Waiting for peer connection")
     AsyncUtil
-      .retryUntilSatisfied(
-        peerData.exists(x => f(x._2.serviceIdentifier)),
-        interval = 1.seconds,
-        maxTries = 600 //times out in 10 minutes
+      .retryUntilSatisfied({
+                             peerData.exists(x => f(x._2.serviceIdentifier))
+                           },
+                           interval = 1.seconds,
+                           maxTries = 600 //times out in 10 minutes
       )
       .map(_ => logger.info("Connected to peer. Starting sync."))
   }
@@ -300,8 +324,8 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
         _ <- AsyncUtil
           .retryUntilSatisfiedF(
             () => peerDataOf(peer).peerMessageSender.isInitialized(),
-            maxTries = 30,
-            interval = 250.millis)
+            maxTries = 10,
+            interval = 1.seconds)
           .recover { case NonFatal(_) =>
             removeTestPeer(peer);
           }

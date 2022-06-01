@@ -59,6 +59,15 @@
     <!-- Inspect handling of headers and inventory messages  -->
     <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="WARN"/>
 
+    <!-- Inspect handling of headers and inventory messages  -->
+    <logger name="org.bitcoins.node.PeerManager" level="INFO"/>
+
+    <!-- Inspect handling of headers and inventory messages  -->
+    <logger name="org.bitcoins.node.networking.peer.ControlMessageHandler" level="INFO"/>
+
+    <!-- inspect TCP details -->
+    <logger name="org.bitcoins.node.NeutrinoNodeTest" level="INFO"/>
+
     <!-- inspect TCP details -->
     <logger name="org.bitcoins.node.networking.P2PClientActor" level="WARN"/>
 
