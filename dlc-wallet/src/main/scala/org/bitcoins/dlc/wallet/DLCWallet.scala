@@ -813,6 +813,11 @@ abstract class DLCWallet
         isExternalAddress <- addressDAO
           .findAddress(initializedAccept.pubKeys.payoutAddress)
           .map(_.isEmpty)
+        _ <- peerAddressOpt match {
+          case Some(a) =>
+            dlcContactMappingDAO.createIfContactExists(offer.dlcId, a)
+          case None => Future.successful(None)
+        }
         status = DLCStatusBuilder.buildInProgressDLCStatus(
           dlcDb = initializedAccept.dlc,
           contractInfo = offer.contractInfo,
