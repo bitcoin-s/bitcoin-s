@@ -79,7 +79,7 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
 
   class PeerTable(tag: Tag) extends Table[PeerDb](tag, schemaName, "peers") {
 
-    def address: Rep[ByteVector] = column("address", O.PrimaryKey)
+    def address: Rep[ByteVector] = column("address")
 
     def port: Rep[Int] = column("port")
 
@@ -88,6 +88,8 @@ case class PeerDAO()(implicit ec: ExecutionContext, appConfig: NodeAppConfig)
     def firstSeen: Rep[Instant] = column("first_seen")
 
     def networkId: Rep[Byte] = column("network_id")
+
+    def pkPeers = primaryKey("pk_peers", (address, port))
 
     def * : ProvenShape[PeerDb] =
       (address, port, lastSeen, firstSeen, networkId).<>(PeerDb.tupled,
