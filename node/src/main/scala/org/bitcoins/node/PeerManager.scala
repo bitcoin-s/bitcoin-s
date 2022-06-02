@@ -50,7 +50,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     1000 //number of peers in db at which we stop peer discovery
 
   lazy val peerConnectionScheduler: Cancellable =
-    system.scheduler.scheduleWithFixedDelay(initialDelay = 5.seconds,
+    system.scheduler.scheduleWithFixedDelay(initialDelay = 10.seconds,
                                             delay = 10.seconds) {
       new Runnable() {
         override def run(): Unit = {
@@ -215,7 +215,8 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     for {
       peersFromDb <- getPeersFromDb
     } yield {
-      peersFromConfig.foreach(addTestPeer)
+      peersFromConfig.take(1).foreach(addTestPeer)
+      peerDiscoveryStack.pushAll(peersFromConfig.drop(1))
       peerDiscoveryStack.pushAll(Random.shuffle(peersFromResources))
       peerDiscoveryStack.pushAll(Random.shuffle(peersFromDb))
       peerConnectionScheduler //start scheduler
@@ -273,12 +274,18 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   }
 
   def randomPeerWithService(f: ServiceIdentifier => Boolean): Peer = {
+
+    //TODO:
+    // this should ultimately be random but in the context of this pr, which does not have the full functionality
+    // is not done yet, in a lot of places the first peer is taken to match the behaviour of when there is just one peer
+
     val filteredPeers =
       peerData.filter(p => f(p._2.serviceIdentifier)).toVector
     if (filteredPeers.isEmpty) {
       throw new RuntimeException("No peers supporting compact filters!")
     }
-    val randomPeer = filteredPeers(Random.nextInt(filteredPeers.length))
+//    val randomPeer = filteredPeers(Random.nextInt(filteredPeers.length))
+    val randomPeer = filteredPeers(0)
     randomPeer._1
   }
 
