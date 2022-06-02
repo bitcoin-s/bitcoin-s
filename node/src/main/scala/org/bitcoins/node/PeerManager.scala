@@ -50,8 +50,8 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
     1000 //number of peers in db at which we stop peer discovery
 
   lazy val peerConnectionScheduler: Cancellable =
-    system.scheduler.scheduleWithFixedDelay(initialDelay = 4.seconds,
-                                            delay = 8.seconds) {
+    system.scheduler.scheduleWithFixedDelay(initialDelay = 5.seconds,
+                                            delay = 10.seconds) {
       new Runnable() {
         override def run(): Unit = {
           val peersInDbCountF = PeerDAO().count()
@@ -144,7 +144,7 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
             .getAllByName(seed)
         } catch {
           case _: UnknownHostException =>
-            logger.debug(s"DNS seed $seed is unavailable")
+            logger.debug(s"DNS seed $seed is unavailable.")
             Vector()
         }
       })
