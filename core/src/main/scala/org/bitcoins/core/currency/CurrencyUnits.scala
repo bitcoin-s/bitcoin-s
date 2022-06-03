@@ -125,13 +125,14 @@ sealed abstract class Satoshis extends CurrencyUnit {
 object Satoshis
     extends Factory[Satoshis]
     with BaseNumbers[Satoshis]
-    with Bounded[Satoshis] {
+    with Bounded[Satoshis]
+    with Numeric[Satoshis] {
 
-  val min = Satoshis(Int64.min)
-  val max = Satoshis(Int64.max)
-  val zero = Satoshis(Int64.zero)
-  val one = Satoshis(Int64.one)
-  val two = Satoshis(2)
+  val min: Satoshis = Satoshis(Int64.min)
+  val max: Satoshis = Satoshis(Int64.max)
+  override val zero: Satoshis = Satoshis(Int64.zero)
+  override val one: Satoshis = Satoshis(Int64.one)
+  val two: Satoshis = Satoshis(2)
 
   override def fromBytes(bytes: ByteVector): Satoshis =
     RawSatoshisSerializer.read(bytes)
@@ -141,6 +142,44 @@ object Satoshis
   def apply(satoshis: BigInt): Satoshis = SatoshisImpl(Int64(satoshis))
 
   private case class SatoshisImpl(underlying: Int64) extends Satoshis
+
+  override def plus(x: Satoshis, y: Satoshis): Satoshis = (x + y).satoshis
+
+  override def minus(x: Satoshis, y: Satoshis): Satoshis = (x - y).satoshis
+
+  override def times(x: Satoshis, y: Satoshis): Satoshis = (x * y).satoshis
+
+  override def negate(x: Satoshis): Satoshis = (-x.satoshis).satoshis
+
+  override def fromInt(x: Int): Satoshis = Satoshis(x.toLong)
+
+  def fromLong(x: Long): Satoshis = Satoshis(x)
+
+  // Must go through toLong to avoid infinite recursion
+  override def toInt(x: Satoshis): Int = x.toLong.toInt
+
+  override def toLong(x: Satoshis): Long = x.toLong
+
+  override def toFloat(x: Satoshis): Float =
+    x.toBigInt.toFloat
+
+  override def toDouble(x: Satoshis): Double =
+    x.toBigInt.toDouble
+
+  override def compare(x: Satoshis, y: Satoshis): Int =
+    x.toBigInt compare y.toBigInt
+
+  // Cannot use the override modifier because this method was added in scala version 2.13
+  def parseString(str: String): Option[Satoshis] = {
+    if (str.isEmpty) {
+      None
+    } else {
+      Try(str.toLong) match {
+        case Success(num) => Some(Satoshis(num))
+        case Failure(_)   => None
+      }
+    }
+  }
 }
 
 sealed abstract class Bitcoins extends CurrencyUnit {
