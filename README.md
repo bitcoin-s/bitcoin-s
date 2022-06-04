@@ -38,7 +38,7 @@ APP_PASSWORD=topsecret docker-compose up
 ```
 
 which will spin up a docker environment that starts syncing the backend and will allow you to visit
-the web frontend of the wallet at `localhost:30002`
+the web frontend of the wallet at `localhost:3002`
 
 ### What is bitcoin-s?
 
