@@ -201,7 +201,7 @@ object CommonSettings {
   lazy val dockerSettings: Seq[Setting[_]] = {
     Vector(
       //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
-      dockerBaseImage := "openjdk:17-slim",
+      dockerBaseImage := "ubuntu",
       dockerRepository := Some("bitcoinscala"),
       //set the user to be 'bitcoin-s' rather than
       //the default provided by sbt native packager
