@@ -28,6 +28,7 @@ import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.client.v20.BitcoindV20RpcClient
 import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
+import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
 import org.bitcoins.rpc.config._
 
 import java.io.File
@@ -328,6 +329,7 @@ object BitcoindRpcClient {
       case BitcoindVersion.V20 => BitcoindV20RpcClient.withActorSystem(instance)
       case BitcoindVersion.V21 => BitcoindV21RpcClient.withActorSystem(instance)
       case BitcoindVersion.V22 => BitcoindV22RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V23 => BitcoindV23RpcClient.withActorSystem(instance)
       case BitcoindVersion.Experimental =>
         BitcoindV18RpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
@@ -350,10 +352,10 @@ sealed trait BitcoindVersion
 object BitcoindVersion extends StringFactory[BitcoindVersion] {
 
   /** The newest version of `bitcoind` we support */
-  val newest: BitcoindVersion = V22
+  val newest: BitcoindVersion = V23
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V16, V17, V18, V19, V20, V21, V22)
+    Vector(V16, V17, V18, V19, V20, V21, V22, V23)
 
   val known: Vector[BitcoindVersion] = standard :+ Experimental
 
@@ -383,6 +385,10 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] {
 
   case object V22 extends BitcoindVersion {
     override def toString: String = "v22"
+  }
+
+  case object V23 extends BitcoindVersion {
+    override def toString: String = "v23"
   }
 
   case object Experimental extends BitcoindVersion {
@@ -418,6 +424,7 @@ object BitcoindVersion extends StringFactory[BitcoindVersion] {
       case "20" => V20
       case "21" => V21
       case "22" => V22
+      case "23" => V23
       case _    => Unknown
     }
   }
