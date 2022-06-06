@@ -353,18 +353,21 @@ jobs:
   #         files: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
   #       env:
   #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  zips:
+  package-zips:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest] # , ubuntu-latest, windows-latest
+        os: [macos-latest, ubuntu-latest, windows-latest] # , ubuntu-latest, windows-latest
+        # If os values you don't include the matrix os list above are set here, they will be included
+        # If you want multiple variables per os see https://github.community/t/create-matrix-with-multiple-os-and-env-for-each-one/16895
+        # This is here to get friendly labels for output filenames
         include:
         - os: macos-latest
           TARGET: mac
-        # - os: ubuntu-latest
-        #   TARGET: linux
-        # - os: windows-latest
-        #   TARGET: windows
+        - os: ubuntu-latest
+          TARGET: linux
+        - os: windows-latest
+          TARGET: windows
     steps:
       - uses: actions/checkout@v3
         with:
@@ -380,6 +383,7 @@ jobs:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
       - name: Build zips
         run: sbt "universal:stage;universal:packageBin"
+        # run: sbt "oracleServer / Universal / stage; oracleServer / Universal / packageBin"
       - name: View Artifacts
         run: ls -l app/server/target/universal/stage
       - name: Upload bitcoin-s-server
@@ -430,6 +434,95 @@ jobs:
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  electron:
+    needs: package-zips
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [] # [macos-latest, ubuntu-latest, windows-latest]
+        # If os values you don't include the matrix os list above are set here, they will be included
+        # This is here to get friendly labels for output filenames
+        include:
+        - os: macos-latest
+          TARGET: mac
+          FORMAT: dmg
+        - os: ubuntu-latest
+          TARGET: linux
+          FORMAT: deb
+        # - os: windows-latest
+        #   TARGET: windows
+        #   FORMAT: msi # ???
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+      - name: Checkout bitcoin-s-ts repo
+        uses: actions/checkout@v3
+        with:
+          repository: bitcoin-s/bitcoin-s-ts
+          path: bitcoin-s-ts
+      - name: bitcoin-s-ts install and build
+        working-directory: ./bitcoin-s-ts
+        run: |
+          npm ci
+          npm run build
+      - name: Download bitcoin-s-oracle-server
+        uses: actions/download-artifact@v3
+        with:
+          name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
+          path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
+      - name: Build oracle-electron-ts
+        working-directory: ./bitcoin-s-ts/oracle-electron-ts
+        run: |
+          npm ci
+          npm run build
+          npm run make
+      - name: Upload krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}"
+          path: bitcoin-s-ts/oracle-electron-ts/out/make/*.${{ matrix.FORMAT }}
+      - name: Upload krystallbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }} if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}-${{steps.previoustag.outputs.tag}}"
+          files: bitcoin-s-ts/oracle-electron-ts/out/make/*.${{ matrix.FORMAT }}
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Build Suredbits Wallet
+      - name: Download bitcoin-s-server
+        uses: actions/download-artifact@v3
+        with:
+          name: bitcoin-s-server-${{ matrix.TARGET }}
+          path: bitcoin-s-ts/wallet-electron-ts/bitcoin-s-server
+      - name: Build Wallet Electron
+        working-directory: ./bitcoin-s-ts/wallet-electron-ts
+        run: |
+          npm ci
+          npm run build
+          npm run make
+      - name: Upload suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: "suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}"
+          path: bitcoin-s-ts/wallet-electron-ts/out/make/*.${{ matrix.FORMAT }}
+      - name: Upload suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }} if release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}-${{steps.previoustag.outputs.tag}}"
+          files: bitcoin-s-ts/wallet-electron-ts/out/make/*.${{ matrix.FORMAT }}
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # End Build bitcoin-s-ts electron packages
   # mac-zips:
   #   runs-on: [ macos-latest ]
   #   steps:
@@ -499,91 +592,92 @@ jobs:
   #       env:
   #         pkg-version: ${{steps.previoustag.outputs.tag}}
   #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  mac-electron:
-    #needs: mac-zips
-    needs: zips
-    runs-on: [ macos-latest ]
-    steps:
-      # Build bitcoin-s-ts electron packages
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16.x'
-      - name: Checkout bitcoin-s-ts repo
-        uses: actions/checkout@v3
-        with:
-          repository: bitcoin-s/bitcoin-s-ts
-          path: bitcoin-s-ts
-      - name: Install bitcoin-s-ts
-        working-directory: ./bitcoin-s-ts
-        run: |
-          npm ci
-          npm run build
-      # Build Krystal Bull
-      # - name: Copy oracle-server zip
-      #   run: cp app/oracle-server/target/universal/*.zip ./bitcoin-s-ts/oracle-electron-ts
-      - name: Download Krystal Bull
-        uses: actions/download-artifact@v3
-        with:
-          name: bitcoin-s-oracle-server-mac
-          path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
-      - name: View Zip Artifact
-        run: ls -l bitcoin-s-ts/oracle-electron-ts
-      - name: Build Oracle Electron
-        working-directory: ./bitcoin-s-ts/oracle-electron-ts
-        run: |
-          npm ci
-          npm run build
-          npm run make
-      - name: Upload krystalbull-mac dmg
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: "krystalbull-mac"
-          path: bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg
-      - name: Upload krystallbull-mac dmg if release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: "krystalbull-mac-${{steps.previoustag.outputs.tag}}"
-          files: bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # Build Suredbits Wallet
-      - name: Download Suredbits Wallet
-        uses: actions/download-artifact@v3
-        with:
-          name: bitcoin-s-server-mac
-          path: bitcoin-s-ts/wallet-electron-ts/bitcoin-s-server
-      - name: View Zip Artifact
-        run: ls -l bitcoin-s-ts/wallet-electron-ts
-      # - name: Copy app-server zip
-      #   run: cp app/server/target/universal/*.zip ./bitcoin-s-ts/wallet-electron-ts
-      - name: Build Wallet Electron
-        working-directory: ./bitcoin-s-ts/wallet-electron-ts
-        run: |
-          npm ci
-          npm run build
-          npm run make
-      - name: Upload suredbits-wallet-mac dmg
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: "suredbits-wallet-mac"
-          path: bitcoin-s-ts/wallet-electron-ts/out/make/*.dmg
-      - name: Upload suredbits-wallet-mac dmg if release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: "suredbits-wallet-mac-${{steps.previoustag.outputs.tag}}"
-          files: bitcoin-s-ts/wallet-electron-ts/out/make/*.dmg
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # End Build bitcoin-s-ts electron packages
+  # Works, but not matrixed
+  # mac-electron:
+  #   #needs: mac-zips
+  #   needs: package-zips
+  #   runs-on: [ macos-latest ]
+  #   steps:
+  #     # Build bitcoin-s-ts electron packages
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '16.x'
+  #     - name: Checkout bitcoin-s-ts repo
+  #       uses: actions/checkout@v3
+  #       with:
+  #         repository: bitcoin-s/bitcoin-s-ts
+  #         path: bitcoin-s-ts
+  #     - name: Install bitcoin-s-ts
+  #       working-directory: ./bitcoin-s-ts
+  #       run: |
+  #         npm ci
+  #         npm run build
+  #     # Build Krystal Bull
+  #     # - name: Copy oracle-server zip
+  #     #   run: cp app/oracle-server/target/universal/*.zip ./bitcoin-s-ts/oracle-electron-ts
+  #     - name: Download Krystal Bull
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: bitcoin-s-oracle-server-mac
+  #         path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
+  #     - name: View Zip Artifact
+  #       run: ls -l bitcoin-s-ts/oracle-electron-ts
+  #     - name: Build Oracle Electron
+  #       working-directory: ./bitcoin-s-ts/oracle-electron-ts
+  #       run: |
+  #         npm ci
+  #         npm run build
+  #         npm run make
+  #     - name: Upload krystalbull-mac dmg
+  #       uses: actions/upload-artifact@v3
+  #       env:
+  #         pkg-version: ${{steps.previoustag.outputs.tag}}
+  #       with:
+  #         name: "krystalbull-mac"
+  #         path: bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg
+  #     - name: Upload krystallbull-mac dmg if release
+  #       uses: softprops/action-gh-release@v1
+  #       if: startsWith(github.ref, 'refs/tags/')
+  #       with:
+  #         name: "krystalbull-mac-${{steps.previoustag.outputs.tag}}"
+  #         files: bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg
+  #       env:
+  #         pkg-version: ${{steps.previoustag.outputs.tag}}
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     # Build Suredbits Wallet
+  #     - name: Download Suredbits Wallet
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: bitcoin-s-server-mac
+  #         path: bitcoin-s-ts/wallet-electron-ts/bitcoin-s-server
+  #     - name: View Zip Artifact
+  #       run: ls -l bitcoin-s-ts/wallet-electron-ts
+  #     # - name: Copy app-server zip
+  #     #   run: cp app/server/target/universal/*.zip ./bitcoin-s-ts/wallet-electron-ts
+  #     - name: Build Wallet Electron
+  #       working-directory: ./bitcoin-s-ts/wallet-electron-ts
+  #       run: |
+  #         npm ci
+  #         npm run build
+  #         npm run make
+  #     - name: Upload suredbits-wallet-mac dmg
+  #       uses: actions/upload-artifact@v3
+  #       env:
+  #         pkg-version: ${{steps.previoustag.outputs.tag}}
+  #       with:
+  #         name: "suredbits-wallet-mac"
+  #         path: bitcoin-s-ts/wallet-electron-ts/out/make/*.dmg
+  #     - name: Upload suredbits-wallet-mac dmg if release
+  #       uses: softprops/action-gh-release@v1
+  #       if: startsWith(github.ref, 'refs/tags/')
+  #       with:
+  #         name: "suredbits-wallet-mac-${{steps.previoustag.outputs.tag}}"
+  #         files: bitcoin-s-ts/wallet-electron-ts/out/make/*.dmg
+  #       env:
+  #         pkg-version: ${{steps.previoustag.outputs.tag}}
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     # End Build bitcoin-s-ts electron packages
   # linux-zips:
   #   runs-on: [ ubuntu-latest ]
   #   steps:
