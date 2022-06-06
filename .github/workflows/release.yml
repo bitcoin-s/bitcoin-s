@@ -439,7 +439,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [] # [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest] # [macos-latest, ubuntu-latest, windows-latest]
         # If os values you don't include the matrix os list above are set here, they will be included
         # This is here to get friendly labels for output filenames
         include:
