@@ -383,10 +383,10 @@ jobs:
         with:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
       - name: Build zips
+        shell: bash
         run: sbt "universal:stage;universal:packageBin"
         # run: sbt "oracleServer / Universal / stage; oracleServer / Universal / packageBin"
       - name: View Artifacts
-        shell: bash
         run: ls -l app/server/target/universal/stage
       - name: Upload bitcoin-s-server
         uses: actions/upload-artifact@v3
