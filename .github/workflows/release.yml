@@ -361,10 +361,10 @@ jobs:
         include:
         - os: macos-latest
           TARGET: mac
-        - os: ubuntu-latest
-          TARGET: linux
-        - os: windows-latest
-          TARGET: windows
+        # - os: ubuntu-latest
+        #   TARGET: linux
+        # - os: windows-latest
+        #   TARGET: windows
     steps:
       - uses: actions/checkout@v3
         with:
