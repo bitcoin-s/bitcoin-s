@@ -119,7 +119,7 @@ jobs:
           echo "===========jpackage app image begin================"
           #
           echo "===========jpackage dmg begin================"
-          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image ${{ APP_PATH }} --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
+          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image $APP_PATH --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
           echo "Signing dmg with code sign"
           codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep ${{ DMG_NAME }}.dmg
           echo "Running xcrun alttool --notarize app"
@@ -134,7 +134,7 @@ jobs:
           done
           xcrun stapler staple ${{ DMG_NAME }}.dmg
           echo "Done stapling"
-          spctl -vvv --assess --type exec ${{ APP_PATH }}
+          spctl -vvv --assess --type exec $APP_PATH
           echo "Done inspecting app with spctl"
           codesign -vvv --deep --strict ${{ DMG_NAME }}.dmg
           echo "Done verifying code signing deep"
