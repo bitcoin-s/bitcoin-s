@@ -54,7 +54,8 @@ jobs:
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           keychain-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
       - name: Build zip
-        run: sbt "universal:stage;universal:packageBin"
+        run: sbt "oracleServer / Universal / stage; oracleServer / Universal / packageBin"
+        # run: sbt "universal:stage;universal:packageBin"
       - name: View Artifacts
         run: ls -l app/server/target/universal/stage
       - name: pwd
@@ -83,21 +84,17 @@ jobs:
           npm ci
           npm run build
           npm run make
-      # - name: Upload krystalbull-mac dmg
-      #   uses: actions/upload-artifact@v3
-      #   env:
-      #     pkg-version: ${{steps.previoustag.outputs.tag}}
-      #   with:
-      #     name: "krystalbull-mac"
-      #     path: bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg
       # TODO : Sign
       - name: Add cert to keychain and unlock keychain & build and sign dmg
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           MAC_NOTARIZATION_PW: ${{secrets.MAC_NOTARIZATION_PW}}
+          EMAIL: "stewart.chris1234@gmail.com"
+          TEAM_ID: "9ZG3GPKHX8"
           DMG_NAME: ${{ env.pkg-name }}-${{ steps.previoustag.outputs.tag }}
           APP_PATH: "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64/Krystal Bull.app"
+          DMG_PATH: "bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg"
         # Steps to build a fully signed and notarized bitcoin-s dmg
         # 1. Unlock the OS x keychain so we don't have to input passwords via GUI prompts
         # 2. Build bitcoin-s.app that is recursively signed with jpackage --mac-sign
@@ -109,35 +106,67 @@ jobs:
         # 8. Check all signatures on bitcoin-s.app (see: https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues#3087735)
         # 9. Check all dmg signatures
         # 10. Display information about signed dmg
+        # run: |
+        #   java -version
+        #   jpackage --version
+        #   ls -l
+        #   security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
+        #   security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
+        #   echo "===========jpackage dmg begin================"
+        #   jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image "$APP_PATH" --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
+          # # where does this output go? root?
+          # ls -l
+          # echo "Signing dmg with code sign"
+          # codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep "$DMG_NAME".dmg
+          # echo "Running xcrun alttool --notarize app"
+        #   REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u $EMAIL --team-id $TEAM_ID --password "$MAC_NOTARIZATION_PW" --file "$DMG_NAME".dmg | grep RequestUUID | awk '{print $3}')
+        #   echo "Waiting for notarization from Apple for $REQUEST_UUID"
+        #   sleep 5
+        #   xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW"
+        #   echo "Start while loop"
+        #   while xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW" | grep "Status: in progress" > /dev/null; do
+        #     echo "Verification in progress..."
+        #     sleep 30
+        #   done
+        #   xcrun stapler staple "$DMG_NAME".dmg
+        #   echo "Done stapling"
+        #   spctl -vvv --assess --type exec "$APP_PATH"
+        #   echo "Done inspecting app with spctl"
+        #   codesign -vvv --deep --strict "$DMG_NAME".dmg
+        #   echo "Done verifying code signing deep"
+        #   codesign -dvv "$DMG_NAME".dmg
+        #   echo "Done verifying artifacts"
+        #   ls -l
         run: |
           java -version
           jpackage --version
           ls -l
           security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
-          echo "===========jpackage app image begin================"
-          #
-          echo "===========jpackage dmg begin================"
-          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image "$APP_PATH" --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
+        # echo "===========jpackage dmg begin================"
+        # jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image "$APP_PATH" --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
+        # where does this output go? root?
+        #  ls -l
+          echo "=========== signing oracle-electron dmg directly ================"
           echo "Signing dmg with code sign"
-          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep "$DMG_NAME".dmg
+          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep "$DMG_PATH"
           echo "Running xcrun alttool --notarize app"
-          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u "stewart.chris1234@gmail.com" --team-id "9ZG3GPKHX8" --password "$MAC_NOTARIZATION_PW" --file $DMG_NAME.dmg | grep RequestUUID | awk '{print $3}')
+          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u $EMAIL --team-id $TEAM_ID --password "$MAC_NOTARIZATION_PW" --file "$DMG_PATH" | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
           sleep 5
-          xcrun altool --notarization-info "$REQUEST_UUID" -u "stewart.chris1234@gmail.com" --team-id "9ZG3GPKHX8" -p "$MAC_NOTARIZATION_PW"
+          xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW"
           echo "Start while loop"
-          while xcrun altool --notarization-info "$REQUEST_UUID" -u "stewart.chris1234@gmail.com" --team-id "9ZG3GPKHX8" -p "$MAC_NOTARIZATION_PW" | grep "Status: in progress" > /dev/null; do
+          while xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW" | grep "Status: in progress" > /dev/null; do
             echo "Verification in progress..."
             sleep 30
           done
-          xcrun stapler staple "$DMG_NAME".dmg
+          xcrun stapler staple "$DMG_PATH"
           echo "Done stapling"
           spctl -vvv --assess --type exec "$APP_PATH"
           echo "Done inspecting app with spctl"
-          codesign -vvv --deep --strict "$DMG_NAME".dmg
+          codesign -vvv --deep --strict "$DMG_PATH"
           echo "Done verifying code signing deep"
-          codesign -dvv "$DMG_NAME".dmg
+          codesign -dvv "$DMG_PATH"
           echo "Done verifying artifacts"
           ls -l
       # EO Sign
