@@ -56,10 +56,10 @@ jobs:
       - name: Build zip
         run: sbt "oracleServer / Universal / stage; oracleServer / Universal / packageBin"
         # run: sbt "universal:stage;universal:packageBin"
-      - name: View Artifacts
-        run: ls -l app/server/target/universal/stage
-      - name: pwd
-        run: pwd
+      # - name: View Artifacts
+      #   run: ls -l app/server/target/universal/stage
+      # - name: pwd
+      #   run: pwd
       # Build bitcoin-s-ts electron packages
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -84,6 +84,8 @@ jobs:
           npm ci
           npm run build
           npm run make
+      - name: View Artifacts
+        run: ls -l bitcoin-s-ts/oracle-electron-ts/make
       # TODO : Sign
       - name: Add cert to keychain and unlock keychain & build and sign dmg
         env:
