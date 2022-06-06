@@ -387,27 +387,27 @@ jobs:
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
-          name: "bitcoin-s-server-${{ os.TARGET }}"
+          name: "bitcoin-s-server-${{ matrix.TARGET }}"
           path: app/server/target/universal/stage
       - name: Upload bitcoin-s-oracle-server
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
-          name: "bitcoin-s-oracle-server-${{ os.TARGET }}"
+          name: "bitcoin-s-oracle-server-${{ matrix.TARGET }}"
           path: app/oracle-server/target/universal/stage
       - name: Upload bitcoin-s-cli
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
-          name: "bitcoin-s-cli-${{ os.TARGET }}"
+          name: "bitcoin-s-cli-${{ matrix.TARGET }}"
           path: app/cli/target/universal/stage/
       - name: Upload bitcoin-s-server if release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: "bitcoin-s-server-${{ os.TARGET }}-${{steps.previoustag.outputs.tag}}"
+          name: "bitcoin-s-server-${{ matrix.TARGET }}-${{steps.previoustag.outputs.tag}}"
           files: app/server/target/universal/*.zip
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
@@ -416,7 +416,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: "bitcoin-s-oracle-server-${{ os.TARGET }}-${{steps.previoustag.outputs.tag}}"
+          name: "bitcoin-s-oracle-server-${{ matrix.TARGET }}-${{steps.previoustag.outputs.tag}}"
           files: app/oracle-server/target/universal/*.zip
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
@@ -425,7 +425,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: "bitcoin-s-cli-${{ os.TARGET }}-${{steps.previoustag.outputs.tag}}"
+          name: "bitcoin-s-cli-${{ matrix.TARGET }}-${{steps.previoustag.outputs.tag}}"
           files: app/cli/target/universal/*.zip
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
