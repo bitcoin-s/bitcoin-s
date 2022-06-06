@@ -15,7 +15,7 @@ jobs:
   #   runs-on: ubuntu-latest
   #   timeout-minutes: 60
   #   steps:
-  #     - uses: actions/checkout@v2.3.4
+  #     - uses: actions/checkout@v3
   #       with:
   #         fetch-depth: 0
   #     - uses: olafurpg/setup-scala@v13
@@ -34,7 +34,7 @@ jobs:
   #   runs-on: [ macos-latest ]
   #   steps:
   #     - name: Checkout repo
-  #       uses: actions/checkout@v2
+  #       uses: actions/checkout@v3
   #       with:
   #         fetch-depth: 0
   #     - name: Setup Scala
@@ -96,7 +96,8 @@ jobs:
   #         TEAM_ID: "9ZG3GPKHX8"
   #         DMG_NAME: ${{ env.pkg-name }}-${{ steps.previoustag.outputs.tag }}
   #         APP_PATH: "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64/Krystal Bull.app"
-  #         DMG_PATH: "bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg"
+  #       # DMG_PATH: "bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg"
+  #         DMG_PATH: "bitcoin-s-ts/oracle-electron-ts/out/make/Krystal Bull-0.0.1-x64.dmg"
   #       # Steps to build a fully signed and notarized bitcoin-s dmg
   #       # 1. Unlock the OS x keychain so we don't have to input passwords via GUI prompts
   #       # 2. Build bitcoin-s.app that is recursively signed with jpackage --mac-sign
@@ -192,7 +193,7 @@ jobs:
   #   runs-on: [ macos-latest ]
   #   steps:
   #     - name: Checkout repo
-  #       uses: actions/checkout@v2
+  #       uses: actions/checkout@v3
   #       with:
   #         fetch-depth: 0
   #     - name: Setup Scala
@@ -279,7 +280,7 @@ jobs:
   # linux:
   #   runs-on: [ ubuntu-latest ]
   #   steps:
-  #     - uses: actions/checkout@v2
+  #     - uses: actions/checkout@v3
   #       with:
   #         fetch-depth: 0
   #     - name: Setup Scala
@@ -321,7 +322,7 @@ jobs:
   #   runs-on: [windows-latest]
   #   steps:
   #     - name: Checkout repo
-  #       uses: actions/checkout@v2
+  #       uses: actions/checkout@v3
   #       with:
   #         fetch-depth: 0
   #     - name: Setup Scala
@@ -355,7 +356,7 @@ jobs:
   mac-zips:
     runs-on: [ macos-latest ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Setup Scala
@@ -448,6 +449,8 @@ jobs:
         with:
           name: bitcoin-s-oracle-server-mac
           path: bitcoin-s-ts/oracle-electron-ts
+      - name: View Zip Artifact
+        run: ls -l bitcoin-s-ts/oracle-electron-ts
       - name: Build Oracle Electron
         working-directory: ./bitcoin-s-ts/oracle-electron-ts
         run: |
@@ -504,7 +507,7 @@ jobs:
   # linux-zips:
   #   runs-on: [ ubuntu-latest ]
   #   steps:
-  #     - uses: actions/checkout@v2
+  #     - uses: actions/checkout@v3
   #       with:
   #         fetch-depth: 0
   #     - name: Setup Scala
@@ -639,7 +642,7 @@ jobs:
   # windows-zips:
   #   runs-on: [windows-latest]
   #   steps:
-  #     - uses: actions/checkout@v2
+  #     - uses: actions/checkout@v3
   #       with:
   #         fetch-depth: 0
   #     - name: Setup Scala
