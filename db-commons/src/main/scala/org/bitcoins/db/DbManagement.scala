@@ -15,7 +15,7 @@ trait DbManagement extends Logging {
 
   import scala.language.implicitConversions
 
-  private lazy val flyway: Flyway = {
+  protected lazy val flyway: Flyway = {
     val module = appConfig.moduleName
 
     val driverName = appConfig.driver match {
