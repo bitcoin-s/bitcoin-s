@@ -97,7 +97,7 @@ jobs:
           MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           MAC_NOTARIZATION_PW: ${{secrets.MAC_NOTARIZATION_PW}}
           DMG_NAME: ${{ env.pkg-name }}-${{ steps.previoustag.outputs.tag }}
-          APP_PATH: "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull*/Krystal Bull.app"
+          APP_PATH: "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64/Krystal Bull.app"
         # Steps to build a fully signed and notarized bitcoin-s dmg
         # 1. Unlock the OS x keychain so we don't have to input passwords via GUI prompts
         # 2. Build bitcoin-s.app that is recursively signed with jpackage --mac-sign
