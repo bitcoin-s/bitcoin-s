@@ -4,6 +4,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParamet
 import org.bitcoins.commons.jsonmodels.cli.ContractDescriptorParser
 import org.bitcoins.commons.serializers.JsonReaders
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
+import org.bitcoins.core.config.DLC
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.AddressType
@@ -1485,7 +1486,8 @@ object OfferSend extends ServerJsonModels {
     arr.arr.toList match {
       case offerJs :: peerAddressJs :: messageJs :: Nil =>
         Try {
-          val peerAddress = jsToInetSocketAddress(peerAddressJs, 2862)
+          val peerAddress =
+            jsToInetSocketAddress(peerAddressJs, DLC.DefaultPort)
           val message = messageJs.str
           val offerE =
             Try(LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str).tlv)

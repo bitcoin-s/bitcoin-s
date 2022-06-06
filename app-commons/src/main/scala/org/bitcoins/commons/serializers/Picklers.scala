@@ -6,6 +6,7 @@ import org.bitcoins.commons.serializers.JsonReaders.jsToSatoshis
 import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, IncomingDLCOfferDb}
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
+import org.bitcoins.core.config.DLC
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
@@ -1181,7 +1182,9 @@ object Picklers {
     val localCollateral = Satoshis(obj("localCollateral").num.toLong)
     val peerOpt =
       if (obj("peer").isNull || !obj.value.contains("peer")) None
-      else Some(NetworkUtil.parseInetSocketAddress(obj("peer").str, -1))
+      else
+        Some(
+          NetworkUtil.parseInetSocketAddress(obj("peer").str, DLC.DefaultPort))
 
     lazy val contractId = ByteVector.fromValidHex(obj("contractId").str)
     lazy val fundingTxId = DoubleSha256DigestBE(obj("fundingTxId").str)
@@ -1552,7 +1555,7 @@ object Picklers {
   private def readContactDb(obj: ujson.Obj): DLCContactDb = {
     val addressStr = obj(PicklerKeys.addressKey).str
     val address: InetSocketAddress =
-      NetworkUtil.parseInetSocketAddress(addressStr, 2862)
+      NetworkUtil.parseInetSocketAddress(addressStr, DLC.DefaultPort)
     DLCContactDb(
       alias = obj(PicklerKeys.aliasKey).str,
       address = address,
