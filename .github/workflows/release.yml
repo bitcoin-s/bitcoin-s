@@ -448,7 +448,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: bitcoin-s-oracle-server-mac
-          path: bitcoin-s-ts/oracle-electron-ts
+          path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server-mac.zip
       - name: View Zip Artifact
         run: ls -l bitcoin-s-ts/oracle-electron-ts
       - name: Build Oracle Electron
