@@ -83,13 +83,13 @@ jobs:
           npm ci
           npm run build
           npm run make
-      - name: Upload krystalbull-mac dmg
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: "krystalbull-mac"
-          path: bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg
+      # - name: Upload krystalbull-mac dmg
+      #   uses: actions/upload-artifact@v3
+      #   env:
+      #     pkg-version: ${{steps.previoustag.outputs.tag}}
+      #   with:
+      #     name: "krystalbull-mac"
+      #     path: bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg
       # TODO : Sign
       - name: Add cert to keychain and unlock keychain & build and sign dmg
         env:
@@ -110,7 +110,6 @@ jobs:
         # 9. Check all dmg signatures
         # 10. Display information about signed dmg
         run: |
-          echo "Hello world"
           java -version
           jpackage --version
           ls -l
@@ -121,7 +120,7 @@ jobs:
           echo "===========jpackage dmg begin================"
           jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image $APP_PATH --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
           echo "Signing dmg with code sign"
-          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep $DMG_NAME.dmg
+          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep "$DMG_NAME".dmg
           echo "Running xcrun alttool --notarize app"
           REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u "stewart.chris1234@gmail.com" --team-id "9ZG3GPKHX8" --password "$MAC_NOTARIZATION_PW" --file $DMG_NAME.dmg | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
@@ -132,11 +131,11 @@ jobs:
             echo "Verification in progress..."
             sleep 30
           done
-          xcrun stapler staple $DMG_NAME.dmg
+          xcrun stapler staple "$DMG_NAME".dmg
           echo "Done stapling"
           spctl -vvv --assess --type exec $APP_PATH
           echo "Done inspecting app with spctl"
-          codesign -vvv --deep --strict $DMG_NAME.dmg
+          codesign -vvv --deep --strict "$DMG_NAME".dmg
           echo "Done verifying code signing deep"
           codesign -dvv $DMG_NAME.dmg
           echo "Done verifying artifacts"
