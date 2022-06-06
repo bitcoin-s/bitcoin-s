@@ -448,7 +448,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: bitcoin-s-oracle-server-mac
-          path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server-mac.zip
+          path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
       - name: View Zip Artifact
         run: ls -l bitcoin-s-ts/oracle-electron-ts
       - name: Build Oracle Electron
@@ -478,7 +478,9 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: bitcoin-s-server-mac
-          path: bitcoin-s-ts/wallet-electron-ts
+          path: bitcoin-s-ts/wallet-electron-ts/bitcoin-s-server
+      - name: View Zip Artifact
+        run: ls -l bitcoin-s-ts/wallet-electron-ts
       # - name: Copy app-server zip
       #   run: cp app/server/target/universal/*.zip ./bitcoin-s-ts/wallet-electron-ts
       - name: Build Wallet Electron
