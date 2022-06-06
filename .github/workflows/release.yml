@@ -85,7 +85,7 @@ jobs:
           npm run build
           npm run make
       - name: View Artifacts
-        run: ls -l bitcoin-s-ts/oracle-electron-ts/make
+        run: ls -l bitcoin-s-ts/oracle-electron-ts/out/make
       # TODO : Sign
       - name: Add cert to keychain and unlock keychain & build and sign dmg
         env:
@@ -264,7 +264,7 @@ jobs:
   #     - name: 'Echo download path'
   #       run: echo ${{steps.download.outputs.download-path}}
   #     - name: Upload dmg
-  #       uses: actions/upload-artifact@v1
+  #       uses: actions/upload-artifact@v3
   #       with:
   #         name: "mac"
   #         path: ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
@@ -302,7 +302,7 @@ jobs:
   #     - name: Print working dir
   #       run: pwd
   #     - name: Upload deb
-  #       uses: actions/upload-artifact@v1
+  #       uses: actions/upload-artifact@v3
   #       env:
   #         pkg-version: ${{steps.previoustag.outputs.tag}}
   #       with:
@@ -340,7 +340,7 @@ jobs:
   #     - name: View artifacts
   #       run: ls -R .
   #     - name: Upload installer
-  #       uses: actions/upload-artifact@v1
+  #       uses: actions/upload-artifact@v3
   #       with:
   #         name: windows
   #         path: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
