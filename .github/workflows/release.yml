@@ -121,9 +121,9 @@ jobs:
           echo "===========jpackage dmg begin================"
           jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image $APP_PATH --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
           echo "Signing dmg with code sign"
-          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep ${{ DMG_NAME }}.dmg
+          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep $DMG_NAME.dmg
           echo "Running xcrun alttool --notarize app"
-          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u "stewart.chris1234@gmail.com" --team-id "9ZG3GPKHX8" --password "$MAC_NOTARIZATION_PW" --file ${{ DMG_NAME }}.dmg | grep RequestUUID | awk '{print $3}')
+          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u "stewart.chris1234@gmail.com" --team-id "9ZG3GPKHX8" --password "$MAC_NOTARIZATION_PW" --file $DMG_NAME.dmg | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
           sleep 5
           xcrun altool --notarization-info "$REQUEST_UUID" -u "stewart.chris1234@gmail.com" --team-id "9ZG3GPKHX8" -p "$MAC_NOTARIZATION_PW"
@@ -132,13 +132,13 @@ jobs:
             echo "Verification in progress..."
             sleep 30
           done
-          xcrun stapler staple ${{ DMG_NAME }}.dmg
+          xcrun stapler staple $DMG_NAME.dmg
           echo "Done stapling"
           spctl -vvv --assess --type exec $APP_PATH
           echo "Done inspecting app with spctl"
           codesign -vvv --deep --strict ${{ DMG_NAME }}.dmg
           echo "Done verifying code signing deep"
-          codesign -dvv ${{ DMG_NAME }}.dmg
+          codesign -dvv $DMG_NAME.dmg
           echo "Done verifying artifacts"
           ls -l
       # EO Sign
