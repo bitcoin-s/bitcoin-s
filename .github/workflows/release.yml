@@ -11,25 +11,25 @@ env:
   pkg-name: 'bitcoin-s'
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v2.3.4
-        with:
-          fetch-depth: 0
-      - uses: olafurpg/setup-scala@v13
-        with:
-          java-version: openjdk@1.17.0
-      - uses: olafurpg/setup-gpg@v3
-      - run: sbt -J-Xmx2g ci-release docs/publishWebsite
-        env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          GITHUB_DEPLOY_KEY: ${{ secrets.GITHUB_TOKEN }}
-          GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
+  # publish:
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 60
+  #   steps:
+  #     - uses: actions/checkout@v2.3.4
+  #       with:
+  #         fetch-depth: 0
+  #     - uses: olafurpg/setup-scala@v13
+  #       with:
+  #         java-version: openjdk@1.17.0
+  #     - uses: olafurpg/setup-gpg@v3
+  #     - run: sbt -J-Xmx2g ci-release docs/publishWebsite
+  #       env:
+  #         PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+  #         PGP_SECRET: ${{ secrets.PGP_SECRET }}
+  #         SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+  #         SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+  #         GITHUB_DEPLOY_KEY: ${{ secrets.GITHUB_TOKEN }}
+  #         GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
   macos:
     runs-on: [ macos-latest ]
     steps:
@@ -118,7 +118,7 @@ jobs:
           echo "===========jpackage app image begin================"
           #
           echo "===========jpackage dmg begin================"
-          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image $APP_PATH --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
+          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image "$APP_PATH" --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
           echo "Signing dmg with code sign"
           codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep "$DMG_NAME".dmg
           echo "Running xcrun alttool --notarize app"
@@ -133,11 +133,11 @@ jobs:
           done
           xcrun stapler staple "$DMG_NAME".dmg
           echo "Done stapling"
-          spctl -vvv --assess --type exec $APP_PATH
+          spctl -vvv --assess --type exec "$APP_PATH"
           echo "Done inspecting app with spctl"
           codesign -vvv --deep --strict "$DMG_NAME".dmg
           echo "Done verifying code signing deep"
-          codesign -dvv $DMG_NAME.dmg
+          codesign -dvv "$DMG_NAME".dmg
           echo "Done verifying artifacts"
           ls -l
       # EO Sign
