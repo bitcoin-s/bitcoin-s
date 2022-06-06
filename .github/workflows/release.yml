@@ -360,6 +360,7 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest] # , ubuntu-latest, windows-latest
         # If os values you don't include the matrix os list above are set here, they will be included
         # If you want multiple variables per os see https://github.community/t/create-matrix-with-multiple-os-and-env-for-each-one/16895
+        # Can run conditional steps below with https://github.community/t/what-is-the-correct-if-condition-syntax-for-checking-matrix-os-version/16221
         # This is here to get friendly labels for output filenames
         include:
         - os: macos-latest
@@ -385,6 +386,7 @@ jobs:
         run: sbt "universal:stage;universal:packageBin"
         # run: sbt "oracleServer / Universal / stage; oracleServer / Universal / packageBin"
       - name: View Artifacts
+        shell: bash
         run: ls -l app/server/target/universal/stage
       - name: Upload bitcoin-s-server
         uses: actions/upload-artifact@v3
