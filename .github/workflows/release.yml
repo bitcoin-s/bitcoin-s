@@ -136,7 +136,7 @@ jobs:
           echo "Done stapling"
           spctl -vvv --assess --type exec $APP_PATH
           echo "Done inspecting app with spctl"
-          codesign -vvv --deep --strict ${{ DMG_NAME }}.dmg
+          codesign -vvv --deep --strict $DMG_NAME.dmg
           echo "Done verifying code signing deep"
           codesign -dvv $DMG_NAME.dmg
           echo "Done verifying artifacts"
