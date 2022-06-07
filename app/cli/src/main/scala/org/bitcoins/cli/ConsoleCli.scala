@@ -674,19 +674,19 @@ object ConsoleCli {
               }))
         ),
       cmd("importseed")
-        .action((_, conf) => conf.copy(command = ImportSeed("", null, None)))
+        .action((_, conf) => conf.copy(command = ImportSeed(None, null, None)))
         .text("Imports a mnemonic seed as a new seed file")
         .children(
-          arg[String]("walletname")
+          opt[String]("walletname")
             .text("Name to associate with this seed")
-            .required()
+            .optional()
             .action((walletName, conf) =>
               conf.copy(command = conf.command match {
                 case is: ImportSeed =>
-                  is.copy(walletName = walletName)
+                  is.copy(walletNameOpt = Some(walletName))
                 case other => other
               })),
-          arg[MnemonicCode]("words")
+          opt[MnemonicCode]("words")
             .text("Mnemonic seed words, space separated")
             .required()
             .action((mnemonic, conf) =>
@@ -695,8 +695,9 @@ object ConsoleCli {
                   is.copy(mnemonic = mnemonic)
                 case other => other
               })),
-          arg[AesPassword]("passphrase")
+          opt[AesPassword]("passphrase")
             .text("Passphrase to encrypt the seed with")
+            .optional()
             .action((password, conf) =>
               conf.copy(command = conf.command match {
                 case is: ImportSeed =>
@@ -708,7 +709,7 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = ExportSeed(None, None)))
         .text("Exports the wallet's mnemonic seed")
         .children(
-          arg[String]("walletname")
+          opt[String]("walletname")
             .text("Name to associate with this seed (optional)")
             .optional()
             .action((walletName, conf) =>
@@ -717,7 +718,7 @@ object ConsoleCli {
                   es.copy(walletNameOpt = Some(walletName))
                 case other => other
               })),
-          arg[AesPassword]("passphrase")
+          opt[AesPassword]("passphrase")
             .text("Passphrase to encrypt the seed with")
             .optional()
             .action((password, conf) =>
@@ -732,7 +733,7 @@ object ConsoleCli {
           conf.copy(command = MarkSeedAsBackedUp(None, None)))
         .text("Marks the seed as backed up")
         .children(
-          arg[String]("walletname")
+          opt[String]("walletname")
             .text("Name to associate with this seed (optional)")
             .optional()
             .action((walletName, conf) =>
@@ -741,7 +742,7 @@ object ConsoleCli {
                   ms.copy(walletNameOpt = Some(walletName))
                 case other => other
               })),
-          arg[AesPassword]("passphrase")
+          opt[AesPassword]("passphrase")
             .text("Passphrase to encrypt the seed with")
             .optional()
             .action((password, conf) =>
@@ -755,7 +756,7 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetSeedBackupTime(None, None)))
         .text("Returns the wallet's mnemonic seed backup time")
         .children(
-          arg[String]("walletname")
+          opt[String]("walletname")
             .text("Name to associate with this seed (optional)")
             .optional()
             .action((walletName, conf) =>
@@ -764,7 +765,7 @@ object ConsoleCli {
                   gs.copy(walletNameOpt = Some(walletName))
                 case other => other
               })),
-          arg[AesPassword]("passphrase")
+          opt[AesPassword]("passphrase")
             .text("Passphrase to encrypt the seed with")
             .optional()
             .action((password, conf) =>
@@ -775,19 +776,19 @@ object ConsoleCli {
               }))
         ),
       cmd("importxprv")
-        .action((_, conf) => conf.copy(command = ImportXprv("", null, None)))
+        .action((_, conf) => conf.copy(command = ImportXprv(None, null, None)))
         .text("Imports a xprv as a new seed file")
         .children(
-          arg[String]("walletname")
+          opt[String]("walletname")
             .text("What name to associate with this seed")
-            .required()
+            .optional()
             .action((walletName, conf) =>
               conf.copy(command = conf.command match {
                 case ix: ImportXprv =>
-                  ix.copy(walletName = walletName)
+                  ix.copy(walletNameOpt = Some(walletName))
                 case other => other
               })),
-          arg[ExtPrivateKey]("xprv")
+          opt[ExtPrivateKey]("xprv")
             .text("base58 encoded extended private key")
             .required()
             .action((xprv, conf) =>
@@ -796,8 +797,9 @@ object ConsoleCli {
                   ix.copy(xprv = xprv)
                 case other => other
               })),
-          arg[AesPassword]("passphrase")
+          opt[AesPassword]("passphrase")
             .text("Passphrase to encrypt this seed with")
+            .optional()
             .action((password, conf) =>
               conf.copy(command = conf.command match {
                 case ix: ImportXprv =>
@@ -2087,11 +2089,11 @@ object ConsoleCli {
       case KeyManagerPassphraseSet(password) =>
         RequestParam("keymanagerpassphraseset", Seq(up.writeJs(password)))
 
-      case ImportSeed(walletName, mnemonic, passwordOpt) =>
+      case ImportSeed(walletNameOpt, mnemonic, passwordOpt) =>
         RequestParam("importseed",
-                     Seq(up.writeJs(walletName),
+                     Seq(walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
                          up.writeJs(mnemonic),
-                         up.writeJs(passwordOpt)))
+                         passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)))
 
       case ExportSeed(walletNameOpt, passwordOpt) =>
         RequestParam("exportseed",
@@ -2108,11 +2110,11 @@ object ConsoleCli {
                      Seq(walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
                          passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)))
 
-      case ImportXprv(walletName, xprv, passwordOpt) =>
+      case ImportXprv(walletNameOpt, xprv, passwordOpt) =>
         RequestParam("importxprv",
-                     Seq(up.writeJs(walletName),
+                     Seq(walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
                          up.writeJs(xprv),
-                         up.writeJs(passwordOpt)))
+                         passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)))
 
       case GetBlockHeader(hash) =>
         RequestParam("getblockheader", Seq(up.writeJs(hash)))
@@ -2569,7 +2571,7 @@ object CliCommand {
       extends AppServerCliCommand
 
   case class ImportSeed(
-      walletName: String,
+      walletNameOpt: Option[String],
       mnemonic: MnemonicCode,
       passwordOpt: Option[AesPassword])
       extends AppServerCliCommand
@@ -2590,7 +2592,7 @@ object CliCommand {
       extends AppServerCliCommand
 
   case class ImportXprv(
-      walletName: String,
+      walletNameOpt: Option[String],
       xprv: ExtPrivateKey,
       passwordOpt: Option[AesPassword])
       extends AppServerCliCommand

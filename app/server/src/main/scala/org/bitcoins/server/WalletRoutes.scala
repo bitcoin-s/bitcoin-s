@@ -842,9 +842,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
     case ServerCommand("importseed", arr) =>
       withValidServerCommand(ImportSeed.fromJsArr(arr)) {
-        case ImportSeed(walletName, mnemonic, passwordOpt) =>
+        case ImportSeed(walletNameOpt, mnemonic, passwordOpt) =>
           complete {
-            val seedPath = getSeedPath(Some(walletName))
+            val seedPath = getSeedPath(walletNameOpt)
 
             val creationTime = Instant.ofEpochSecond(WalletStorage.GENESIS_TIME)
 
@@ -907,9 +907,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
     case ServerCommand("importxprv", arr) =>
       withValidServerCommand(ImportXprv.fromJsArr(arr)) {
-        case ImportXprv(walletName, xprv, passwordOpt) =>
+        case ImportXprv(walletNameOpt, xprv, passwordOpt) =>
           complete {
-            val seedPath = getSeedPath(Some(walletName))
+            val seedPath = getSeedPath(walletNameOpt)
 
             val creationTime = Instant.ofEpochSecond(WalletStorage.GENESIS_TIME)
 
