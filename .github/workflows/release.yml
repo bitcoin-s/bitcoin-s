@@ -189,7 +189,7 @@ jobs:
   #       env:
   #         pkg-version: ${{steps.previoustag.outputs.tag}}
   #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  # osx:
+  # macos-desktop:
   #   runs-on: [ macos-latest ]
   #   steps:
   #     - name: Checkout repo
@@ -277,7 +277,7 @@ jobs:
   #         files: ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
   #       env:
   #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  # linux:
+  # linux-desktop:
   #   runs-on: [ ubuntu-latest ]
   #   steps:
   #     - uses: actions/checkout@v3
@@ -287,9 +287,9 @@ jobs:
   #       uses: olafurpg/setup-scala@v13
   #       with:
   #         java-version: openjdk@1.17.0
-  #     - name: 'Get Previous tag'
+  #     - name: Get Previous tag
   #       id: previoustag
-  #       uses: "WyriHaximus/github-action-get-previous-tag@v1"
+  #       uses: WyriHaximus/github-action-get-previous-tag@v1
   #       with:
   #         fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
   #     - name: Build fat jar
@@ -318,7 +318,7 @@ jobs:
   #       env:
   #         pkg-version: ${{steps.previoustag.outputs.tag}}
   #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  # windows:
+  # windows-desktop:
   #   runs-on: [windows-latest]
   #   steps:
   #     - name: Checkout repo
@@ -330,9 +330,9 @@ jobs:
   #       with:
   #         java-version: openjdk@1.17.0
 
-  #     - name: 'Get Previous tag'
+  #     - name: Get Previous tag
   #       id: previoustag
-  #       uses: "WyriHaximus/github-action-get-previous-tag@v1"
+  #       uses: WyriHaximus/github-action-get-previous-tag@v1
   #       with:
   #         fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
   #     - name: Build msi
@@ -480,6 +480,12 @@ jobs:
           npm ci
           npm run build
           npm run make
+      - name: View Artifacts
+        run: ls -l bitcoin-s-ts/oracle-electron-ts/out/make
+      - name: Sign Mac app and dmg
+        if: startsWith(matrix.os,'macos')
+        run: |
+          echo "TODO : Sign app and dmg here"
       - name: Upload krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         uses: actions/upload-artifact@v3
         env:
@@ -508,6 +514,8 @@ jobs:
           npm ci
           npm run build
           npm run make
+      - name: View Artifacts
+        run: ls -l bitcoin-s-ts/wallet-electron-ts/out/make
       - name: Upload suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         uses: actions/upload-artifact@v3
         env:
@@ -525,6 +533,37 @@ jobs:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # End Build bitcoin-s-ts electron packages
+  sign-electron-macos:
+    needs: electron
+    runs-on: [ macos-latest ]
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: openjdk@1.17.0
+      - name: Get Previous tag
+        id: previoustag
+        uses: WyriHaximus/github-action-get-previous-tag@v1
+        with:
+          fallback: 0.0.0 # Optional fallback tag to use when no tag can be found
+      - name: Import developer cert to keychain
+        uses: apple-actions/import-codesign-certs@v1
+        with:
+          create-keychain: true
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+          keychain-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+      - name: Download krystalbull-mac-dmg
+        uses: actions/download-artifact@v3
+        with:
+          name: krystalbull-mac-dmg
+          path: bitcoin-s-ts/wallet-electron-ts/bitcoin-s-server
+      - name: TODO
+        run: echo "TODO : Sign app and dmg"
   # mac-zips:
   #   runs-on: [ macos-latest ]
   #   steps:
