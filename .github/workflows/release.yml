@@ -610,12 +610,12 @@ jobs:
           codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep "$WALLET_DMG_PATH"
           echo "Running xcrun alttool --notarize app"
           # REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u $EMAIL --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW" -f "$WALLET_DMG_PATH" | grep RequestUUID | awk '{print $3}')
-          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u $EMAIL --team-id $TEAM_ID -p @keychain:9ZG3GPKHX8 -f "$WALLET_DMG_PATH" --keychain /Users/runner/Library/Keychains/signing_temp.keychain-db | grep RequestUUID | awk '{print $3}')
+          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u $EMAIL --team-id $TEAM_ID -p @keychain:$EMAIL -f "$WALLET_DMG_PATH" --keychain /Users/runner/Library/Keychains/signing_temp.keychain-db | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
           sleep 5
-          xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p @keychain:"Chris Stewart (9ZG3GPKHX8)" --keychain /Users/runner/Library/Keychains/signing_temp.keychain-db
+          xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p @keychain:$EMAIL --keychain /Users/runner/Library/Keychains/signing_temp.keychain-db
           echo "Start while loop"
-          while xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p @keychain:"Chris Stewart (9ZG3GPKHX8)" --keychain /Users/runner/Library/Keychains/signing_temp.keychain-db | grep "Status: in progress" > /dev/null; do
+          while xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p @keychain:$EMAIL --keychain /Users/runner/Library/Keychains/signing_temp.keychain-db | grep "Status: in progress" > /dev/null; do
             echo "Verification in progress..."
             sleep 30
           done
