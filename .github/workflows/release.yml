@@ -563,7 +563,7 @@ jobs:
           name: krystalbull-mac-dmg
           path: bitcoin-s-ts/wallet-electron-ts/bitcoin-s-server
       - name: TODO
-        run: echo "TODO : Sign app and dmg"
+        run: echo "TODO Sign app and dmg"
   # mac-zips:
   #   runs-on: [ macos-latest ]
   #   steps:
