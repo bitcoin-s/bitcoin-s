@@ -23,10 +23,8 @@ RUN apt-get update
 
 RUN apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin runit-systemd
 
-RUN service docker start
-
 RUN git clone --depth 1 https://github.com/bitcoin-s/bitcoin-s.git
 
 WORKDIR "/build/bitcoin-s"
 
-RUN sbt "appServer/docker:publish"
+ENTRYPOINT ["sbt", "appServer/docker:publish"]
