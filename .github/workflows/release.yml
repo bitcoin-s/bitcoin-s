@@ -325,8 +325,8 @@ jobs:
           name: bitcoin-s-server-${{ matrix.TARGET }}
           path: app/server/target/universal/stage
       - name: (release) Upload bitcoin-s-server
-        uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
         with:
           name: bitcoin-s-server-${{ matrix.TARGET }}-${{steps.previoustag.outputs.tag}}
           files: app/server/target/universal/*.zip
@@ -344,8 +344,8 @@ jobs:
           name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
           path: app/oracle-server/target/universal/stage
       - name: (release) Upload bitcoin-s-oracle-server
-        uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
         with:
           name: bitcoin-s-oracle-server-${{ matrix.TARGET }}-${{steps.previoustag.outputs.tag}}
           files: app/oracle-server/target/universal/*.zip
@@ -363,8 +363,8 @@ jobs:
           name: bitcoin-s-cli-${{ matrix.TARGET }}
           path: app/cli/target/universal/stage/
       - name: (release) Upload bitcoin-s-cli
-        uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
         with:
           name: bitcoin-s-cli-${{ matrix.TARGET }}-${{steps.previoustag.outputs.tag}}
           files: app/cli/target/universal/*.zip
@@ -471,8 +471,8 @@ jobs:
           name: suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
           path: bitcoin-s-ts/wallet-electron-ts/out/make/*.${{ matrix.FORMAT }}
       - name: (release) Upload suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
-        uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
         with:
           name: suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}-${{steps.previoustag.outputs.tag}}
           files: bitcoin-s-ts/wallet-electron-ts/out/make/*.${{ matrix.FORMAT }}
@@ -526,10 +526,10 @@ jobs:
           EMAIL: "stewart.chris1234@gmail.com"
           TEAM_ID: 9ZG3GPKHX8
           DMG_NAME: ${{ env.pkg-name }}-${{ steps.previoustag.outputs.tag }}
-        #  APP_PATH: "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64/Krystal Bull.app"
+        # APP_PATH: "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64/Krystal Bull.app"
         # DMG_PATH: "bitcoin-s-ts/oracle-electron-ts/out/make/*.dmg"
-          KRYSTALBULL_DMG_PATH: "bitcoin-s-ts/Krystal*.dmg" # "bitcoin-s-ts/oracle-electron-ts/out/make/Krystal Bull-0.0.1-x64.dmg"
-          WALLET_DMG_PATH: "bitcoin-s-ts/Suredbits*.dmg"
+          KRYSTALBULL_DMG_PATH: bitcoin-s-ts/Krystal*.dmg # "bitcoin-s-ts/oracle-electron-ts/out/make/Krystal Bull-0.0.1-x64.dmg"
+          WALLET_DMG_PATH: bitcoin-s-ts/Suredbits*.dmg
         # Steps to build a fully signed and notarized bitcoin-s dmg
         # 1. Unlock the OS x keychain so we don't have to input passwords via GUI prompts
         # 2. Build bitcoin-s.app that is recursively signed with jpackage --mac-sign
@@ -573,10 +573,10 @@ jobs:
         #   echo "Done verifying artifacts"
         #   ls -l
         run: |
-          krystalbull=$(eval find "$KRYSTALBULL_DMG_PATH")
-          echo $krystalbull
-          wallet=$(eval find "$WALLET_DMG_PATH")
-          echo $wallet
+          # krystalbull=$(eval find "$KRYSTALBULL_DMG_PATH")
+          # echo $krystalbull
+          # wallet=$(eval find "$WALLET_DMG_PATH")
+          # echo $wallet
           java -version
           jpackage --version
           ls -l
@@ -588,9 +588,9 @@ jobs:
           #  ls -l
           echo "=========== signing oracle-electron dmg directly ================"
           echo "Signing dmg with code sign"
-          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep "$wallet"
+          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep "$WALLET_DMG_PATH"
           echo "Running xcrun alttool --notarize app"
-          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u $EMAIL --team-id $TEAM_ID --password "$MAC_NOTARIZATION_PW" --file $wallet | grep RequestUUID | awk '{print $3}')
+          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u $EMAIL --team-id $TEAM_ID --password "$MAC_NOTARIZATION_PW" --file $WALLET_DMG_PATH | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
           sleep 5
           xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW"
@@ -599,13 +599,13 @@ jobs:
             echo "Verification in progress..."
             sleep 30
           done
-          xcrun stapler staple "$wallet"
+          xcrun stapler staple "$WALLET_DMG_PATH"
           echo "Done stapling"
           # spctl -vvv --assess --type exec "$APP_PATH"
           # echo "Done inspecting app with spctl"
-          codesign -vvv --deep --strict "$wallet"
+          codesign -vvv --deep --strict "$WALLET_DMG_PATH"
           echo "Done verifying code signing deep"
-          codesign -dvv "$wallet"
+          codesign -dvv "$WALLET_DMG_PATH"
           echo "Done verifying artifacts"
           ls -l
       # EO Sign
