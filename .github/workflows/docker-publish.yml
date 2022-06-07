@@ -19,6 +19,4 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       - name: Build
-        run: "cd app/server && docker build . -t build-s-build"
-      - name: push to dockerhub
-        run:  docker run -v /var/run/docker.sock:/var/run/docker.sock bitcoin-s-build:latest
+        run: "cd app/server && docker build . -t build-s-build && docker run -v /var/run/docker.sock:/var/run/docker.sock bitcoin-s-build:latest"
