@@ -590,7 +590,7 @@ jobs:
           echo "Signing dmg with code sign"
           codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep "$WALLET_DMG_PATH"
           echo "Running xcrun alttool --notarize app"
-          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u $EMAIL --team-id $TEAM_ID --password "$MAC_NOTARIZATION_PW" --file $WALLET_DMG_PATH | grep RequestUUID | awk '{print $3}')
+          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u $EMAIL --team-id $TEAM_ID --password "$MAC_NOTARIZATION_PW" --file "$WALLET_DMG_PATH" | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
           sleep 5
           xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW"
