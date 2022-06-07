@@ -573,9 +573,9 @@ jobs:
         #   echo "Done verifying artifacts"
         #   ls -l
         run: |
-          krystalbull=$(eval find $KRYSTALBULL_DMG_PATH)
+          krystalbull=$(eval find "$KRYSTALBULL_DMG_PATH")
           echo $krystalbull
-          wallet=$(eval find $WALLET_DMG_PATH)
+          wallet=$(eval find "$WALLET_DMG_PATH")
           echo $wallet
           java -version
           jpackage --version
