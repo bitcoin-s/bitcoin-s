@@ -575,8 +575,9 @@ jobs:
         run: |
           # krystalbull=$(eval find "$KRYSTALBULL_DMG_PATH")
           # echo $krystalbull
-          # wallet=$(eval find "$WALLET_DMG_PATH")
-          # echo $wallet
+          wallet=$(eval find "$WALLET_DMG_PATH")
+          echo $wallet
+          WALLET_DMG_PATH=$wallet
           java -version
           jpackage --version
           ls -l
