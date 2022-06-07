@@ -310,13 +310,13 @@ jobs:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: linux-javafx
-          path: "${{ env.pkg-name }}_${{ steps.previoustag.outputs.tag }}-1_amd64.deb"
+          path: ${{ env.pkg-name }}_${{ steps.previoustag.outputs.tag }}-1_amd64.deb
       - name: Upload if release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           name: linux-javafx
-          files: "${{ env.pkg-name }}_${{ steps.previoustag.outputs.tag }}-1_amd64.deb"
+          files: ${{ env.pkg-name }}_${{ steps.previoustag.outputs.tag }}-1_amd64.deb
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -384,12 +384,16 @@ jobs:
         uses: WyriHaximus/github-action-get-previous-tag@v1
         with:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-      - name: Build zips
-        shell: bash
-        run: sbt "universal:stage;universal:packageBin"
+      # Might save time not to build the whole thing...
+      # - name: Build zips
+      #   shell: bash
+      #   run: sbt "universal:stage;universal:packageBin"
         # run: sbt "oracleServer / Universal / stage; oracleServer / Universal / packageBin"
-      - name: View Artifacts
-        run: ls -l app/server/target/universal/stage
+      # - name: View Artifacts
+      #   run: ls -l app/server/target/universal/stage
+      - name: Build appServer
+        shell: bash
+        run: sbt "appServer / Universal / stage; appServer / Universal / packageBin"
       - name: Upload bitcoin-s-server
         uses: actions/upload-artifact@v3
         env:
@@ -397,20 +401,6 @@ jobs:
         with:
           name: bitcoin-s-server-${{ matrix.TARGET }}
           path: app/server/target/universal/stage
-      - name: Upload bitcoin-s-oracle-server
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
-          path: app/oracle-server/target/universal/stage
-      - name: Upload bitcoin-s-cli
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: bitcoin-s-cli-${{ matrix.TARGET }}
-          path: app/cli/target/universal/stage/
       - name: Upload bitcoin-s-server if release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
@@ -420,6 +410,16 @@ jobs:
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build oracleServer
+        shell: bash
+        run: sbt "oracleServer / Universal / stage; oracleServer / Universal / packageBin"
+      - name: Upload bitcoin-s-oracle-server
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
+          path: app/oracle-server/target/universal/stage
       - name: Upload bitcoin-s-oracle-server if release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
@@ -429,6 +429,16 @@ jobs:
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build cli
+        shell: bash
+        run: sbt "cli / Universal / stage; cli / Universal / packageBin"
+      - name: Upload bitcoin-s-cli
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: bitcoin-s-cli-${{ matrix.TARGET }}
+          path: app/cli/target/universal/stage/
       - name: Upload bitcoin-s-cli if release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
