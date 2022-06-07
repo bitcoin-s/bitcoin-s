@@ -463,6 +463,15 @@ jobs:
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
         run: mv bitcoin-s-ts/wallet-electron-ts/out/make/deb/x64/*.deb bitcoin-s-ts/wallet-electron-ts/out/make
+      # Stash zip to sign later
+      - name: Upload suredbits-wallet-${{ matrix.TARGET }}-zip
+        if: startsWith(matrix.os,'macos')
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: suredbits-wallet-mac-zip
+          path: bitcoin-s-ts/wallet-electron-ts/out/make/zip/darwin/x64/*.zip
       - name: Upload suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         uses: actions/upload-artifact@v3
         env:
@@ -514,6 +523,15 @@ jobs:
         with:
           name: suredbits-wallet-mac-dmg
           path: bitcoin-s-ts
+      - name: Download suredbits-wallet-mac-zip
+        uses: actions/download-artifact@v3
+        with:
+          name: suredbits-wallet-mac-zip
+          path: bitcoin-s-ts
+      - name: View Artifacts
+        run: ls -l bitcoin-s-ts
+      - name: Unzip wallet
+        run: unzip bitcoin-s-ts/Suredbits*.zip
       - name: View Artifacts
         run: ls -l bitcoin-s-ts
       # Sign
@@ -591,12 +609,13 @@ jobs:
           echo "Signing dmg with code sign"
           codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep "$WALLET_DMG_PATH"
           echo "Running xcrun alttool --notarize app"
-          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u $EMAIL --team-id $TEAM_ID --password "$MAC_NOTARIZATION_PW" --file "$WALLET_DMG_PATH" | grep RequestUUID | awk '{print $3}')
+          # REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u $EMAIL --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW" -f "$WALLET_DMG_PATH" | grep RequestUUID | awk '{print $3}')
+          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u $EMAIL --team-id $TEAM_ID -p @keychain:"Chris Stewart (9ZG3GPKHX8)" -f "$WALLET_DMG_PATH" --keychain /Users/runner/Library/Keychains/signing_temp.keychain-db | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
           sleep 5
-          xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW"
+          xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p @keychain:"Chris Stewart (9ZG3GPKHX8)" --keychain /Users/runner/Library/Keychains/signing_temp.keychain-db
           echo "Start while loop"
-          while xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW" | grep "Status: in progress" > /dev/null; do
+          while xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p @keychain:"Chris Stewart (9ZG3GPKHX8)" --keychain /Users/runner/Library/Keychains/signing_temp.keychain-db | grep "Status: in progress" > /dev/null; do
             echo "Verification in progress..."
             sleep 30
           done
