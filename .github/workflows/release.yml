@@ -385,15 +385,15 @@ jobs:
         with:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
       # Might save time not to build the whole thing...
-      # - name: Build zips
-      #   shell: bash
-      #   run: sbt "universal:stage;universal:packageBin"
+      - name: Build all zips
+        shell: bash
+        run: sbt "universal:stage;universal:packageBin"
         # run: sbt "oracleServer / Universal / stage; oracleServer / Universal / packageBin"
       # - name: View Artifacts
       #   run: ls -l app/server/target/universal/stage
-      - name: Build appServer
-        shell: bash
-        run: sbt "appServer / Universal / stage; appServer / Universal / packageBin"
+      # - name: Build appServer
+      #   shell: bash
+      #   run: sbt "appServer / Universal / stage; appServer / Universal / packageBin"
       - name: Upload bitcoin-s-server
         uses: actions/upload-artifact@v3
         env:
@@ -410,9 +410,9 @@ jobs:
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build oracleServer
-        shell: bash
-        run: sbt "oracleServer / Universal / stage; oracleServer / Universal / packageBin"
+      # - name: Build oracleServer
+      #   shell: bash
+      #   run: sbt "oracleServer / Universal / stage; oracleServer / Universal / packageBin"
       - name: Upload bitcoin-s-oracle-server
         uses: actions/upload-artifact@v3
         env:
@@ -429,9 +429,9 @@ jobs:
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build cli
-        shell: bash
-        run: sbt "cli / Universal / stage; cli / Universal / packageBin"
+      # - name: Build cli
+      #   shell: bash
+      #   run: sbt "cli / Universal / stage; cli / Universal / packageBin"
       - name: Upload bitcoin-s-cli
         uses: actions/upload-artifact@v3
         env:
