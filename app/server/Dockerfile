@@ -1,3 +1,5 @@
+# We need to containerize the build process for our dockerfile to make sure jlink 
+# is consistent with the OS we are running jlink on inside of the container
 FROM hseeberger/scala-sbt:17.0.2_1.6.2_2.13.8
 
 WORKDIR /build
@@ -21,10 +23,12 @@ RUN cat /etc/apt/sources.list.d/docker.list
 
 RUN apt-get update
 
-RUN apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin runit-systemd
+RUN apt-get install -y docker-ce-cli
 
-RUN git clone --depth 1 https://github.com/bitcoin-s/bitcoin-s.git
+RUN git clone https://github.com/bitcoin-s/bitcoin-s.git
 
 WORKDIR "/build/bitcoin-s"
 
 ENTRYPOINT ["sbt", "appServer/docker:publish"]
+
+ENTRYPOINT ["/bin/sh", "-c" , "docker login --username $DOCKER_HUB_USERNAME --password $DOCKER_HUB_ACCESS_TOKEN && sbt appServer/docker:publish"]
