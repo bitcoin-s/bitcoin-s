@@ -6,7 +6,9 @@ title: CLI
 
 ## Bitcoin-s command line interface
 
-The [cli](/api/org/bitcoins/cli) project is meant to be a bitcoin-s command line interface (cli).
+The [cli](/api/org/bitcoins/cli) project is meant to be a bitcoin-s command line interface (cli). 
+
+You only need to do one of the two sections below (Building the command line interface) or (Native binaries), and we recommend doing the first option because it is simpler.
 
 ### Building the command line interface
 
