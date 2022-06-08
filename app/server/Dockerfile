@@ -29,6 +29,4 @@ RUN git clone https://github.com/bitcoin-s/bitcoin-s.git
 
 WORKDIR "/build/bitcoin-s"
 
-ENTRYPOINT ["sbt", "appServer/docker:publish"]
-
-ENTRYPOINT ["/bin/sh", "-c" , "docker login --username $DOCKER_HUB_USERNAME --password $DOCKER_HUB_ACCESS_TOKEN && sbt appServer/docker:publish"]
+ENTRYPOINT ["/bin/sh", "-c" , "docker login --username $DOCKER_HUB_USERNAME --password $DOCKER_HUB_ACCESS_TOKEN && git fetch origin && git checkout origin/2022-06-07-issue-4369 && sbt appServer/docker:publish"]
