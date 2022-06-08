@@ -1182,9 +1182,7 @@ object Picklers {
     val localCollateral = Satoshis(obj("localCollateral").num.toLong)
     val peerOpt =
       if (obj("peer").isNull || !obj.value.contains("peer")) None
-      else
-        Some(
-          NetworkUtil.parseInetSocketAddress(obj("peer").str, DLC.DefaultPort))
+      else Some(obj("peer").str)
 
     lazy val contractId = ByteVector.fromValidHex(obj("contractId").str)
     lazy val fundingTxId = DoubleSha256DigestBE(obj("fundingTxId").str)

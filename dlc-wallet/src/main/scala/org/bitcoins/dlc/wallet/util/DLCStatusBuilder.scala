@@ -10,8 +10,6 @@ import org.bitcoins.crypto.SchnorrDigitalSignature
 import org.bitcoins.dlc.wallet.accounting.{AccountingUtil, DLCAccountingDbs}
 import org.bitcoins.dlc.wallet.models._
 
-import java.net.InetSocketAddress
-
 object DLCStatusBuilder {
 
   /** Helper method to convert a bunch of indepdendent datastructures into a in progress dlc status */
@@ -20,8 +18,7 @@ object DLCStatusBuilder {
       contractInfo: ContractInfo,
       contractData: DLCContractDataDb,
       offerDb: DLCOfferDb,
-      payoutAddress: Option[PayoutAddress],
-      peerOpt: Option[InetSocketAddress]): DLCStatus = {
+      payoutAddress: Option[PayoutAddress]): DLCStatus = {
     require(
       dlcDb.state.isInstanceOf[DLCState.InProgressState],
       s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
@@ -49,7 +46,7 @@ object DLCStatusBuilder {
           totalCollateral,
           localCollateral,
           payoutAddress,
-          peerOpt
+          dlcDb.peerOpt
         )
       case DLCState.AcceptComputingAdaptorSigs =>
         AcceptedComputingAdaptorSigs(
@@ -64,7 +61,7 @@ object DLCStatusBuilder {
           totalCollateral = totalCollateral,
           localCollateral = localCollateral,
           payoutAddress,
-          peerOpt
+          dlcDb.peerOpt
         )
       case DLCState.Accepted =>
         Accepted(
@@ -79,7 +76,7 @@ object DLCStatusBuilder {
           totalCollateral,
           localCollateral,
           payoutAddress,
-          peerOpt
+          dlcDb.peerOpt
         )
       case DLCState.SignComputingAdaptorSigs =>
         SignedComputingAdaptorSigs(
@@ -95,7 +92,7 @@ object DLCStatusBuilder {
           localCollateral = localCollateral,
           dlcDb.fundingTxIdOpt.get,
           payoutAddress,
-          peerOpt
+          dlcDb.peerOpt
         )
       case DLCState.Signed =>
         Signed(
@@ -111,7 +108,7 @@ object DLCStatusBuilder {
           localCollateral,
           dlcDb.fundingTxIdOpt.get,
           payoutAddress,
-          peerOpt
+          dlcDb.peerOpt
         )
       case DLCState.Broadcasted =>
         Broadcasted(
@@ -127,7 +124,7 @@ object DLCStatusBuilder {
           localCollateral,
           dlcDb.fundingTxIdOpt.get,
           payoutAddress,
-          peerOpt
+          dlcDb.peerOpt
         )
       case DLCState.Confirmed =>
         Confirmed(
@@ -143,7 +140,7 @@ object DLCStatusBuilder {
           localCollateral,
           dlcDb.fundingTxIdOpt.get,
           payoutAddress,
-          peerOpt
+          dlcDb.peerOpt
         )
     }
 
@@ -160,8 +157,7 @@ object DLCStatusBuilder {
       offerDb: DLCOfferDb,
       acceptDb: DLCAcceptDb,
       closingTx: Transaction,
-      payoutAddress: Option[PayoutAddress],
-      peerOpt: Option[InetSocketAddress]): ClosedDLCStatus = {
+      payoutAddress: Option[PayoutAddress]): ClosedDLCStatus = {
     require(
       dlcDb.state.isInstanceOf[DLCState.ClosedState],
       s"Cannot have divergent states beteween dlcDb and the parameter state, got= dlcDb.state=${dlcDb.state} state=${dlcDb.state}"
@@ -198,7 +194,7 @@ object DLCStatusBuilder {
           myPayout = accounting.myPayout,
           counterPartyPayout = accounting.theirPayout,
           payoutAddress = payoutAddress,
-          peer = peerOpt
+          peer = dlcDb.peerOpt
         )
         refund
       case oracleOutcomeState: DLCState.ClosedViaOracleOutcomeState =>
@@ -227,7 +223,7 @@ object DLCStatusBuilder {
               myPayout = accounting.myPayout,
               counterPartyPayout = accounting.theirPayout,
               payoutAddress = payoutAddress,
-              peer = peerOpt
+              peer = dlcDb.peerOpt
             )
           case DLCState.RemoteClaimed =>
             RemoteClaimed(
@@ -248,7 +244,7 @@ object DLCStatusBuilder {
               myPayout = accounting.myPayout,
               counterPartyPayout = accounting.theirPayout,
               payoutAddress = payoutAddress,
-              peer = peerOpt
+              peer = dlcDb.peerOpt
             )
         }
     }

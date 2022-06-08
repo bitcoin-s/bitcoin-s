@@ -78,9 +78,6 @@ abstract class DLCWallet
   private[bitcoins] val contactDAO: DLCContactDAO =
     DLCContactDAO()
 
-  private[bitcoins] val dlcContactMappingDAO: DLCContactMappingDAO =
-    DLCContactMappingDAO()
-
   private[wallet] val dlcWalletDAOs = DLCWalletDAOs(
     dlcDAO,
     contractDataDAO,
@@ -441,7 +438,8 @@ abstract class DLCWallet
         fundingTxIdOpt = None,
         closingTxIdOpt = None,
         aggregateSignatureOpt = None,
-        serializationVersion = contractInfo.serializationVersion
+        serializationVersion = contractInfo.serializationVersion,
+        peerOpt = peerAddressOpt.map(a => a.getHostString + ":" + a.getPort)
       )
 
       contractDataDb = DLCContractDataDb(
@@ -481,11 +479,6 @@ abstract class DLCWallet
         dlcOfferDb = dlcOfferDb)
 
       _ <- safeDatabase.run(offerActions)
-      _ <- peerAddressOpt match {
-        case Some(a) =>
-          dlcContactMappingDAO.createIfContactExists(dlcDb.dlcId, a)
-        case None => Future.successful(None)
-      }
       status <- findDLC(dlcId)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield offer
@@ -497,6 +490,7 @@ abstract class DLCWallet
       txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
       spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
       collateral: CurrencyUnit,
+      peerAddressOpt: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]
   ): Future[InitializedAccept] = {
@@ -565,13 +559,16 @@ abstract class DLCWallet
           (dlcAcceptWithoutSigs, dlcPubKeys) <- acceptWithoutSigsWithKeysF
           nextIndex <- nextIndexF
           contractId = DLCUtil.calcContractId(offer, dlcAcceptWithoutSigs)
-          dlc = DLCAcceptUtil.buildAcceptDlcDb(offer,
-                                               dlcId,
-                                               Some(contractId),
-                                               account,
-                                               chainType,
-                                               nextIndex,
-                                               contractInfo)
+          dlc = DLCAcceptUtil.buildAcceptDlcDb(
+            offer,
+            dlcId,
+            Some(contractId),
+            account,
+            chainType,
+            nextIndex,
+            contractInfo,
+            peerOpt =
+              peerAddressOpt.map(a => a.getHostString + ":" + a.getPort))
           acceptDb = DLCAcceptUtil.buildAcceptDb(dlc = dlc,
                                                  acceptWithoutSigs =
                                                    dlcAcceptWithoutSigs,
@@ -779,7 +776,8 @@ abstract class DLCWallet
             spendingInfos = spendingInfos,
             collateral = collateral,
             externalPayoutAddressOpt = externalPayoutAddressOpt,
-            externalChangeAddressOpt = externalChangeAddressOpt
+            externalChangeAddressOpt = externalChangeAddressOpt,
+            peerAddressOpt = peerAddressOpt
           )
         _ = require(
           initializedAccept.acceptWithoutSigs.tempContractId == offer.tempContractId,
@@ -813,11 +811,6 @@ abstract class DLCWallet
         isExternalAddress <- addressDAO
           .findAddress(initializedAccept.pubKeys.payoutAddress)
           .map(_.isEmpty)
-        _ <- peerAddressOpt match {
-          case Some(a) =>
-            dlcContactMappingDAO.createIfContactExists(offer.dlcId, a)
-          case None => Future.successful(None)
-        }
         status = DLCStatusBuilder.buildInProgressDLCStatus(
           dlcDb = initializedAccept.dlc,
           contractInfo = offer.contractInfo,
@@ -825,8 +818,7 @@ abstract class DLCWallet
           offerDb = initializedAccept.offerDb,
           payoutAddress = Some(
             PayoutAddress(initializedAccept.pubKeys.payoutAddress,
-                          isExternalAddress)),
-          peerOpt = peerAddressOpt
+                          isExternalAddress))
         )
         _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status)
         cetSigs <- signer.createCETSigsAsync()
@@ -1651,7 +1643,6 @@ abstract class DLCWallet
     for {
       dlcDbOpt <- dlcDAO.findByContractId(contractId)
       dlcDb = dlcDbOpt.get
-      contactOpt <- dlcContactMappingDAO.findContactByDLCId(dlcDb.dlcId)
       offerDbOpt <- dlcOfferDAO.findByDLCId(dlcDb.dlcId)
       _ = require(offerDbOpt.nonEmpty,
                   s"Invalid DLC $dlcDb.dlcId: no offer data")
@@ -1700,8 +1691,7 @@ abstract class DLCWallet
                                contractData,
                                offerDbOpt.get,
                                dlcAcceptOpt,
-                               closingTxOpt,
-                               contactOpt.map(_.address))
+                               closingTxOpt)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(logger, status.get)
     } yield refundTx
   }
@@ -1732,7 +1722,8 @@ abstract class DLCWallet
     for {
       dlcs <- contactIdOpt match {
         case Some(contactId) =>
-          dlcContactMappingDAO.findDLCsByContactId(contactId)
+          dlcDAO.findByContactId(
+            contactId.getHostString + ":" + contactId.getPort)
         case None => dlcDAO.findAll()
       }
       ids = dlcs.map(_.dlcId)
@@ -1798,7 +1789,6 @@ abstract class DLCWallet
     val contractDataOptF = contractDataDAO.read(dlcId)
     val offerDbOptF = dlcOfferDAO.read(dlcId)
     val acceptDbOptF = dlcAcceptDAO.read(dlcId)
-    val contactDbOptF = dlcContactMappingDAO.findContactByDLCId(dlcId)
     val closingTxOptF: Future[Option[TransactionDb]] = getClosingTxOpt(dlcDb)
 
     val dlcOptF: Future[Option[DLCStatus]] = for {
@@ -1806,7 +1796,6 @@ abstract class DLCWallet
       offerDbOpt <- offerDbOptF
       acceptDbOpt <- acceptDbOptF
       closingTxOpt <- closingTxOptF
-      contactDbOpt <- contactDbOptF
       result <- {
         (contractDataOpt, offerDbOpt) match {
           case (Some(contractData), Some(offerDb)) =>
@@ -1814,8 +1803,7 @@ abstract class DLCWallet
                            contractData,
                            offerDb,
                            acceptDbOpt,
-                           closingTxOpt,
-                           contactDbOpt.map(_.address))
+                           closingTxOpt)
           case (_, _) => Future.successful(None)
         }
       }
@@ -1829,8 +1817,7 @@ abstract class DLCWallet
       contractData: DLCContractDataDb,
       offerDb: DLCOfferDb,
       acceptDbOpt: Option[DLCAcceptDb],
-      closingTxOpt: Option[TransactionDb],
-      peerOpt: Option[InetSocketAddress]): Future[Option[DLCStatus]] = {
+      closingTxOpt: Option[TransactionDb]): Future[Option[DLCStatus]] = {
     val dlcId = dlcDb.dlcId
     val aggregatedF: Future[(
         Vector[DLCAnnouncementDb],
@@ -1865,8 +1852,7 @@ abstract class DLCWallet
               contractInfo = contractInfo,
               contractData = contractData,
               offerDb = offerDb,
-              payoutAddress = payoutAddress,
-              peerOpt = peerOpt)
+              payoutAddress = payoutAddress)
             Future.successful(inProgress)
           case _: DLCState.ClosedState =>
             (acceptDbOpt, closingTxOpt) match {
@@ -1881,8 +1867,7 @@ abstract class DLCWallet
                   offerDb = offerDb,
                   acceptDb = acceptDb,
                   closingTx = closingTx.transaction,
-                  payoutAddress = payoutAddress,
-                  peerOpt = peerOpt
+                  payoutAddress = payoutAddress
                 )
                 Future.successful(status)
               case (None, None) =>

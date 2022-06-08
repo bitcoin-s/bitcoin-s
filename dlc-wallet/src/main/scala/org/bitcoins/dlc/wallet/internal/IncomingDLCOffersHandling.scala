@@ -3,7 +3,6 @@ package org.bitcoins.dlc.wallet.internal
 import org.bitcoins.core.api.dlc.wallet.db.{
   DLCContactDb,
   DLCContactDbHelper,
-  DLCContactMappingDb,
   IncomingDLCOfferDb
 }
 import org.bitcoins.core.protocol.tlv.DLCOfferTLV
@@ -68,15 +67,4 @@ trait IncomingDLCOffersHandling { self: DLCWallet =>
 
   override def findDLCContacts(alias: String): Future[Vector[DLCContactDb]] =
     contactDAO.findByAlias(alias)
-
-  override def addDLCContactMapping(
-      dlcId: Sha256Digest,
-      contcatId: InetSocketAddress): Future[DLCContactMappingDb] = {
-    dlcContactMappingDAO
-      .create(dlcId, contcatId)
-  }
-
-  override def removeDLCContactMapping(dlcId: Sha256Digest): Future[Unit] = {
-    dlcContactMappingDAO.delete(dlcId)
-  }
 }

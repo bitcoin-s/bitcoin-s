@@ -22,8 +22,7 @@ case class DLCDAOs(
     dlcRefundSigDAO: DLCRefundSigsDAO,
     dlcRemoteTxDAO: DLCRemoteTxDAO,
     incomingDLCOfferDAO: IncomingDLCOfferDAO,
-    contactDAO: DLCContactDAO,
-    dlcContactMappingDAO: DLCContactMappingDAO) {
+    contactDAO: DLCContactDAO) {
 
   val list = Vector(
     announcementDAO,
@@ -38,8 +37,7 @@ case class DLCDAOs(
     dlcRefundSigDAO,
     dlcRemoteTxDAO,
     incomingDLCOfferDAO,
-    contactDAO: DLCContactDAO,
-    dlcContactMappingDAO: DLCContactMappingDAO
+    contactDAO: DLCContactDAO
   )
 }
 
@@ -59,7 +57,6 @@ trait DLCDAOFixture extends BitcoinSFixture with EmbeddedPg {
     val dlcRemoteTxDAO = DLCRemoteTxDAO()
     val incomingDLCOfferDAO = IncomingDLCOfferDAO()
     val contactDAO = DLCContactDAO()
-    val dlcContactMappingDAO = DLCContactMappingDAO()
     DLCDAOs(
       announcementDAO = announcementDAO,
       nonceDAO = nonceDAO,
@@ -73,8 +70,7 @@ trait DLCDAOFixture extends BitcoinSFixture with EmbeddedPg {
       dlcRefundSigDAO = dlcRefundSigDAO,
       dlcRemoteTxDAO = dlcRemoteTxDAO,
       incomingDLCOfferDAO = incomingDLCOfferDAO,
-      contactDAO = contactDAO,
-      dlcContactMappingDAO = dlcContactMappingDAO
+      contactDAO = contactDAO
     )
   }
 

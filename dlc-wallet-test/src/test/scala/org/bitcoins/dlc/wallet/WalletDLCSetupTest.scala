@@ -1,6 +1,5 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -1068,12 +1067,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val peerAddressOpt3 =
         Some(InetSocketAddress.createUnresolved("127.0.0.1", 3))
 
-      val contactA = DLCContactDb("A", peerAddressOpt1.get, "memo")
-      val contactB = DLCContactDb("B", peerAddressOpt2.get, "memo")
-
       for {
-        _ <- walletA.contactDAO.create(contactA)
-        _ <- walletB.contactDAO.create(contactB)
         offer <- walletA.createDLCOffer(
           contractInfoTLV = contractInfo,
           collateral = totalCollateral,
@@ -1084,12 +1078,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           externalPayoutAddressOpt = payoutAddressAOpt,
           externalChangeAddressOpt = changeAddressAOpt
         )
-        dlcContactA <- walletA.dlcContactMappingDAO.read(offer.dlcId)
         accept <- walletB.acceptDLCOffer(offer,
                                          peerAddressOpt2,
                                          payoutAddressBOpt,
                                          changeAddressBOpt)
-        dlcContactB <- walletB.dlcContactMappingDAO.read(offer.dlcId)
         offer1 <- walletA.createDLCOffer(
           contractInfoTLV = contractInfo1,
           collateral = totalCollateral1,
@@ -1100,18 +1092,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           externalPayoutAddressOpt = None,
           externalChangeAddressOpt = None
         )
-        dlcContactA1 <- walletA.dlcContactMappingDAO.read(offer1.dlcId)
         accept1 <- walletB.acceptDLCOffer(offer1, peerAddressOpt3, None, None)
-        dlcContactB1 <- walletB.dlcContactMappingDAO.read(offer1.dlcId)
       } yield {
-        assert(dlcContactA.nonEmpty)
-        assert(dlcContactA.get.contactId == contactA.address)
-        assert(dlcContactA1.isEmpty)
-
-        assert(dlcContactB.nonEmpty)
-        assert(dlcContactB.get.contactId == contactB.address)
-        assert(dlcContactB1.isEmpty)
-
         assert(offer.pubKeys.payoutAddress == payoutAddressAOpt.get)
         assert(offer.changeAddress == changeAddressAOpt.get)
         assert(accept.pubKeys.payoutAddress == payoutAddressBOpt.get)

@@ -118,6 +118,12 @@ case class DLCDAO()(implicit
     safeDatabase.runVec(q.result)
   }
 
+  def findByContactId(contactId: String): Future[Vector[DLCDb]] = {
+    val peer: Option[String] = Some(contactId)
+    val action = table.filter(_.peerOpt === peer).result
+    safeDatabase.runVec(action)
+  }
+
   class DLCTable(tag: Tag)
       extends Table[DLCDb](tag, schemaName, "global_dlc_data") {
 
@@ -162,6 +168,8 @@ case class DLCDAO()(implicit
     def serializationVersion: Rep[DLCSerializationVersion] = column(
       "serialization_version")
 
+    def peerOpt: Rep[Option[String]] = column("peer")
+
     override def * : ProvenShape[DLCDb] =
       (dlcId,
        tempContractId,
@@ -179,6 +187,7 @@ case class DLCDAO()(implicit
        fundingTxIdOpt,
        closingTxIdOpt,
        aggregateSignatureOpt,
-       serializationVersion).<>(DLCDb.tupled, DLCDb.unapply)
+       serializationVersion,
+       peerOpt).<>(DLCDb.tupled, DLCDb.unapply)
   }
 }
