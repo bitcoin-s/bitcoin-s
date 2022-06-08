@@ -2,7 +2,7 @@
 name: CI to Docker Hub
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, "2022-06-08-darwin-platform"]
     tags: ["*"]
 jobs:
   build:

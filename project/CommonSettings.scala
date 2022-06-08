@@ -242,7 +242,7 @@ object CommonSettings {
           //if you want to reproduce the docker file, run docker:stage
           //in your sbt terminal and you should find it in target/docker/stage/
           val cmd =
-            "docker buildx build --platform=linux/amd64,linux/arm64 --push -t " +
+            "docker buildx build --platform=linux/amd64,linux/arm64,darwin/amd64 --push -t " +
               alias + " ."
           val dockerFileDir =
             baseDirectory.value / "target" / "docker" / "stage"
