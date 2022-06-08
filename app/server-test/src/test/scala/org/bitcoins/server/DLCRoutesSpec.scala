@@ -2,12 +2,11 @@ package org.bitcoins.server
 
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, DLCContactMappingDb}
+import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.dlc.models.ContractInfo
 import org.bitcoins.core.protocol.tlv.OracleAnnouncementTLV
 import org.bitcoins.core.serializers.PicklerKeys
-import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -200,47 +199,6 @@ class DLCRoutesSpec
       val args = ujson.Arr(ujson.Str(address))
 
       val route = dlcRoutes.handleCommand(ServerCommand("contact-remove", args))
-
-      Post() ~> route ~> check {
-        assert(contentType == ContentTypes.`application/json`)
-        assert(responseAs[String] == s"""{"result":"ok","error":null}""")
-      }
-    }
-
-    "dlc-contact-add a peer" in {
-      (mockWallet
-        .addDLCContactMapping(_: Sha256Digest, _: InetSocketAddress))
-        .expects(Sha256Digest.empty, expected.address)
-        .returning(
-          Future.successful(
-            DLCContactMappingDb(Sha256Digest.empty,
-                                InetSocketAddress.createUnresolved("127.0.0.1",
-                                                                   1))))
-
-      val args =
-        ujson.Arr(ujson.Str(Sha256Digest.empty.hex), ujson.Str(address))
-
-      val route =
-        dlcRoutes.handleCommand(ServerCommand("dlc-contact-add", args))
-
-      Post() ~> route ~> check {
-        assert(contentType == ContentTypes.`application/json`)
-        assert(
-          responseAs[String] == s"""{"result":{"dlcId":"0000000000000000000000000000000000000000000000000000000000000000","contactId":"127.0.0.1:1"},"error":null}""")
-      }
-    }
-
-    "dlc-contact-remove a peer" in {
-
-      (mockWallet
-        .removeDLCContactMapping(_: Sha256Digest))
-        .expects(Sha256Digest.empty)
-        .returning(Future.unit)
-
-      val args = ujson.Arr(ujson.Str(Sha256Digest.empty.hex))
-
-      val route =
-        dlcRoutes.handleCommand(ServerCommand("dlc-contact-remove", args))
 
       Post() ~> route ~> check {
         assert(contentType == ContentTypes.`application/json`)

@@ -2,7 +2,6 @@ package org.bitcoins.commons
 
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.commons.serializers.Picklers._
-import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage._
@@ -18,8 +17,6 @@ import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalacheck.Gen
 import upickle.default._
 
-import java.net.InetSocketAddress
-
 class DLCStatusTest extends BitcoinSJvmTest {
   behavior of "DLCStatus"
 
@@ -32,11 +29,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val payoutAddress = Option.empty[PayoutAddress]
 
-        val contact = Some(
-          DLCContactDb(address =
-                         InetSocketAddress.createUnresolved("127.0.0.1", 0),
-                       alias = "alias",
-                       memo = "memo"))
+        val contact = Some("127.0.0.1:0")
 
         val status =
           DLCStatus.Offered(
@@ -50,7 +43,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             totalCollateral,
             offer.collateral,
             payoutAddress,
-            contact.map(_.address)
+            contact
           )
 
         assert(status.state == DLCState.Offered)
@@ -76,7 +69,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
                             "tb1q4ps6c9ewa7uca5v39fakykq9q6hpgjkxje8gve"),
                           true))
 
-        val contact = Option.empty[DLCContactDb]
+        val contact = Option.empty[String]
 
         val status =
           DLCStatus.Accepted(
@@ -91,7 +84,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             totalCollateral,
             offer.collateral,
             payoutAddress,
-            contact.map(_.address)
+            contact
           )
 
         assert(status.state == DLCState.Accepted)
@@ -113,7 +106,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val payoutAddress = Option.empty[PayoutAddress]
 
-        val contact = Option.empty[DLCContactDb]
+        val contact = Option.empty[String]
 
         val status =
           DLCStatus.Signed(
@@ -129,7 +122,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.collateral,
             txId,
             payoutAddress,
-            contact.map(_.address)
+            contact
           )
 
         assert(status.state == DLCState.Signed)
@@ -151,7 +144,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val payoutAddress = Option.empty[PayoutAddress]
 
-        val contact = Option.empty[DLCContactDb]
+        val contact = Option.empty[String]
 
         val status =
           DLCStatus.Broadcasted(
@@ -167,7 +160,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.collateral,
             fundingTxId,
             payoutAddress,
-            contact.map(_.address)
+            contact
           )
 
         assert(status.state == DLCState.Broadcasted)
@@ -189,7 +182,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
         val payoutAddress = Option.empty[PayoutAddress]
 
-        val contact = Option.empty[DLCContactDb]
+        val contact = Option.empty[String]
 
         val status =
           DLCStatus.Confirmed(
@@ -205,7 +198,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
             offer.collateral,
             fundingTxId,
             payoutAddress,
-            contact.map(_.address)
+            contact
           )
 
         assert(status.state == DLCState.Confirmed)
@@ -238,7 +231,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
       val payoutAddress = Option.empty[PayoutAddress]
 
-      val contact = Option.empty[DLCContactDb]
+      val contact = Option.empty[String]
 
       val status =
         DLCStatus.Claimed(
@@ -259,7 +252,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           myPayout = myPayout,
           counterPartyPayout = theirPayout,
           payoutAddress = payoutAddress,
-          contact.map(_.address)
+          contact
         )
 
       assert(status.state == DLCState.Claimed)
@@ -295,7 +288,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
       val payoutAddress = Option.empty[PayoutAddress]
 
-      val contact = Option.empty[DLCContactDb]
+      val contact = Option.empty[String]
 
       val status =
         DLCStatus.RemoteClaimed(
@@ -316,7 +309,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           myPayout = myPayout,
           counterPartyPayout = theirPayout,
           payoutAddress = payoutAddress,
-          contact.map(_.address)
+          contact
         )
 
       assert(status.state == DLCState.RemoteClaimed)
@@ -348,7 +341,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
 
       val payoutAddress = Option.empty[PayoutAddress]
 
-      val contact = Option.empty[DLCContactDb]
+      val contact = Option.empty[String]
 
       val status =
         DLCStatus.Refunded(
@@ -367,7 +360,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
           myPayout = myPayout,
           counterPartyPayout = theirPayout,
           payoutAddress = payoutAddress,
-          contact.map(_.address)
+          contact
         )
 
       assert(status.state == DLCState.Refunded)
