@@ -235,7 +235,7 @@ jobs:
         run: |
           echo "Hello world"
           # Test and see if password can get pulled from 
-          MAC_NOTARIZATION_PW="@keychain:Chris Stewart (9ZG3GPKHX8)" # signing_temp.keychain-db # "Chris Stewart (9ZG3GPKHX8)"
+          AC_NOTARIZATION_PW=@keychain:9ZG3GPKHX8 # signing_temp.keychain-db # "Chris Stewart (9ZG3GPKHX8)"
           java -version
           jpackage --version
           ls -l
@@ -599,7 +599,7 @@ jobs:
           echo $wallet
           WALLET_DMG_PATH=$wallet
           # Test and see if password can get pulled from 
-          MAC_NOTARIZATION_PW="@keychain:Chris Stewart (9ZG3GPKHX8)" # signing_temp.keychain-db # "Chris Stewart (9ZG3GPKHX8)"
+          MAC_NOTARIZATION_PW=@keychain:9ZG3GPKHX8 # signing_temp.keychain-db # "Chris Stewart (9ZG3GPKHX8)"
           java -version
           jpackage --version
           ls -l
