@@ -280,9 +280,6 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `contacts-list` - lists all contacts in the wallet
  - `contact-remove` `address`
    - `address` - the tor address for the peer to remove
- - `dlc-contact-add` `dlcid` `address` - Associated a DLC with a peer
- - `dlc-contact-remove` `dlcid` - Removes a DLC-peer association
-    - `address` - the tor address for the peer to remove
  - `signdlc` `accept` - Signs a DLC
     - `accept` - Hex encoded dlc accept message
  - `signdlcfromfile` `path` `[destination]` - Signs a DLC
