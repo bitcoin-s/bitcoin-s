@@ -63,7 +63,7 @@ trait LndUtils {
 
   implicit def outPointToChannelPoint(
       outPoint: TransactionOutPoint): ChannelPoint = {
-    val txId = FundingTxidBytes(outPoint.txId.bytes)
+    val txId = FundingTxidBytes(outPoint.txIdBE.bytes)
     ChannelPoint(txId, outPoint.vout)
   }
 
