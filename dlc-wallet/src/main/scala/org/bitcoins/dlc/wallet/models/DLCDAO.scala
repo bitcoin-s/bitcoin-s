@@ -13,6 +13,8 @@ import org.bitcoins.dlc.wallet.DLCAppConfig
 import scodec.bits.ByteVector
 import slick.lifted._
 
+import java.net.InetSocketAddress
+import java.sql.SQLException
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -27,6 +29,9 @@ case class DLCDAO()(implicit
   import profile.api._
 
   override val table: TableQuery[DLCTable] = TableQuery[DLCTable]
+
+  private lazy val contactTable: slick.lifted.TableQuery[
+    DLCContactDAO#DLCContactTable] = DLCContactDAO().table
 
   override def createAll(ts: Vector[DLCDb]): Future[Vector[DLCDb]] =
     createAllNoAutoInc(ts, safeDatabase)
@@ -122,6 +127,43 @@ case class DLCDAO()(implicit
     val peer: Option[String] = Some(contactId)
     val action = table.filter(_.peerOpt === peer).result
     safeDatabase.runVec(action)
+  }
+
+  def updateDLCContactMapping(
+      dlcId: Sha256Digest,
+      contcatId: InetSocketAddress): Future[Unit] = {
+    val contactQuery = contactTable.filter(_.address === contcatId)
+
+    val action = for {
+      contactExists <- contactQuery.exists.result
+      _ <-
+        if (contactExists) DBIO.successful(())
+        else DBIO.failed(new SQLException(s"Unknown contact: $contcatId"))
+      res <- updatePeerAction(
+        dlcId,
+        Some(contcatId.getHostName + ":" + contcatId.getPort))
+    } yield res
+
+    safeDatabase.run(action).map(_ => ())
+  }
+
+  def deleteDLCContactMapping(dlcId: Sha256Digest): Future[Unit] = {
+    val action = updatePeerAction(dlcId, None)
+
+    safeDatabase.run(action).map(_ => ())
+  }
+
+  private def updatePeerAction(dlcId: Sha256Digest, peerOpt: Option[String]) = {
+    val dlcQuery = table.filter(_.dlcId === dlcId)
+
+    for {
+      dlcOpt <- dlcQuery.result.headOption
+      res <- dlcOpt match {
+        case None => DBIO.failed(new SQLException(s"Unknown DLC: $dlcId"))
+        case Some(dlc) =>
+          dlcQuery.update(dlc.copy(peerOpt = peerOpt))
+      }
+    } yield res
   }
 
   class DLCTable(tag: Tag)

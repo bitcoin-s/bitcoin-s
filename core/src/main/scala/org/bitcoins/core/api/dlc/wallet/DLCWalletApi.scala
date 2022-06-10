@@ -168,6 +168,12 @@ trait DLCWalletApi { self: WalletApi =>
 
   def findDLCContacts(alias: String): Future[Vector[DLCContactDb]]
 
+  def addDLCContactMapping(
+      dlcId: Sha256Digest,
+      contactId: InetSocketAddress): Future[Unit]
+
+  def removeDLCContactMapping(dlcId: Sha256Digest): Future[Unit]
+
   def listDLCsByContact(address: InetSocketAddress): Future[Vector[DLCStatus]]
 }
 
