@@ -470,8 +470,8 @@ jobs:
           name: krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
           path: bitcoin-s-ts/oracle-electron-ts/out/make/*.${{ matrix.FORMAT }}
       - name: (release) Upload krystallbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
-        uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
         with:
           name: krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}-${{steps.previoustag.outputs.tag}}
           files: bitcoin-s-ts/oracle-electron-ts/out/make/*.${{ matrix.FORMAT }}
