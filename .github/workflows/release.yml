@@ -415,6 +415,15 @@ jobs:
           name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
           path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
       # Test injecting values into Electron build
+      # May only want to do this for release
+      - name: (macos) Import developer cert to keychain
+        if: startsWith(matrix.os,'macos')
+        uses: apple-actions/import-codesign-certs@v1
+        with:
+          create-keychain: true
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+          keychain-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
       - name: (macos) Add cert to keychain and unlock keychain
         if: startsWith(matrix.os,'macos')
         env:
@@ -426,6 +435,8 @@ jobs:
           ls -l
           security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
+        # Look for valid signing identity
+          security find-identity -p codesigning -v
       # Does any keychain stuff need unlocked before this?
       - name: Build oracle-electron-ts
         working-directory: bitcoin-s-ts/oracle-electron-ts
