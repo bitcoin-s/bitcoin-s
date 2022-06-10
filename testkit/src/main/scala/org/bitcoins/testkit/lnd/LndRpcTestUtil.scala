@@ -74,6 +74,8 @@ trait LndRpcTestUtil extends Logging {
        |bitcoin.node = bitcoind
        |norest=true
        |debuglevel=critical
+       |historicalsyncinterval=1s
+       |trickledelay=1000
        |listen=127.0.0.1:$port
        |rpclisten=127.0.0.1:$rpcPort
        |externalip=127.0.0.1
