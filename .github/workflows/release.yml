@@ -414,9 +414,7 @@ jobs:
         with:
           name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
           path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
-      # Test injecting values into Electron build
-      # May only want to do this for release
-      - name: Import developer cert to keychain
+      - name: (macos) Import developer cert to keychain
         if: startsWith(matrix.os,'macos')
         uses: apple-actions/import-codesign-certs@v1
         with:
@@ -424,20 +422,18 @@ jobs:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           keychain-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-      # Some comment
-      - name: (macos) Add cert to keychain and unlock keychain
+      - name: (macos) Unlock keychain, find-identity
         if: startsWith(matrix.os,'macos')
         env:
           MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
         # 1. Unlock the OS x keychain so we don't have to input passwords via GUI prompts
+        # 2. Validate there is an identity present for code signing purposes
         run: |
           java -version
           jpackage --version
-          ls -l
           security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security find-identity -p codesigning -v
-      # Does any keychain stuff need unlocked before this?
       - name: Build oracle-electron-ts
         working-directory: bitcoin-s-ts/oracle-electron-ts
         env:
@@ -451,13 +447,6 @@ jobs:
           npm run make
       - name: View Artifacts
         run: ls -l bitcoin-s-ts/oracle-electron-ts/out/make
-      - name: (macos) Sign app and dmg
-        if: startsWith(matrix.os,'macos')
-        run: |
-          echo "TODO : Sign app and dmg here"
-
-
-
       # Platform specific values here for folder depth
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
