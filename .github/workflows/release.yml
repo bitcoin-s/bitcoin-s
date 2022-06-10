@@ -417,7 +417,7 @@ jobs:
       # Test injecting values into Electron build
       # May only want to do this for release
       - name: Import developer cert to keychain
-      # if: startsWith(matrix.os,'macos')
+        if: startsWith(matrix.os,'macos')
         uses: apple-actions/import-codesign-certs@v1
         with:
           create-keychain: true
@@ -425,19 +425,19 @@ jobs:
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           keychain-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
       # Some comment
-      - name: (macos) Add cert to keychain and unlock keychain
-        if: startsWith(matrix.os,'macos')
-        env:
-          MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-        # 1. Unlock the OS x keychain so we don't have to input passwords via GUI prompts
-        run: |
-          java -version
-          jpackage --version
-          ls -l
-          security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
-        # Look for valid signing identity
-          security find-identity -p codesigning -v
+      # - name: (macos) Add cert to keychain and unlock keychain
+      #   if: startsWith(matrix.os,'macos')
+      #   env:
+      #     MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+      #   # 1. Unlock the OS x keychain so we don't have to input passwords via GUI prompts
+      #   run: |
+      #     java -version
+      #     jpackage --version
+      #     ls -l
+      #     security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
+      #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
+      #   # Look for valid signing identity
+      #     security find-identity -p codesigning -v
       # Does any keychain stuff need unlocked before this?
       - name: Build oracle-electron-ts
         working-directory: bitcoin-s-ts/oracle-electron-ts
