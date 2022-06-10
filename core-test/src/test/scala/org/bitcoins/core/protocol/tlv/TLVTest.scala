@@ -47,6 +47,34 @@ class TLVTest extends BitcoinSUnitTest {
     }
   }
 
+  "AmtToForwardTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.amtToForwardTLV) { tlv =>
+      assert(AmtToForwardTLV(tlv.bytes) == tlv)
+      assert(TLV(tlv.bytes) == tlv)
+    }
+  }
+
+  "OutgoingCLTVValueTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.outgoingCLTVValueTLV) { tlv =>
+      assert(OutgoingCLTVValueTLV(tlv.bytes) == tlv)
+      assert(TLV(tlv.bytes) == tlv)
+    }
+  }
+
+  "ShortChannelIdTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.shortChannelIdTLV) { tlv =>
+      assert(ShortChannelIdTLV(tlv.bytes) == tlv)
+      assert(TLV(tlv.bytes) == tlv)
+    }
+  }
+
+  "PaymentDataTLV" must "have serialization symmetry" in {
+    forAll(TLVGen.paymentDataTLV) { tlv =>
+      assert(PaymentDataTLV(tlv.bytes) == tlv)
+      assert(TLV(tlv.bytes) == tlv)
+    }
+  }
+
   "PingTLV" must "have serialization symmetry" in {
     forAll(TLVGen.pingTLV) { ping =>
       assert(PingTLV(ping.bytes) == ping)

@@ -32,7 +32,9 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
 
   private def handleTLVMessage(lnMessage: LnMessage[TLV]): Future[Unit] = {
     lnMessage.tlv match {
-      case msg @ (_: UnknownTLV | _: DLCOracleTLV | _: DLCSetupPieceTLV) =>
+      case msg @ (_: UnknownTLV | _: DLCOracleTLV | _: DLCSetupPieceTLV |
+          _: ShortChannelIdTLV | _: OutgoingCLTVValueTLV | _: AmtToForwardTLV |
+          _: PaymentDataTLV) =>
         log.error(s"Received unhandled message $msg")
         Future.unit
       case _: InitTLV =>
