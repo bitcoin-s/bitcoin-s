@@ -415,6 +415,17 @@ jobs:
           name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
           path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
       # Test injecting values into Electron build
+      - name: (macos) Add cert to keychain and unlock keychain
+        if: startsWith(matrix.os,'macos')
+        env:
+          MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+        # 1. Unlock the OS x keychain so we don't have to input passwords via GUI prompts
+        run: |
+          java -version
+          jpackage --version
+          ls -l
+          security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
       # Does any keychain stuff need unlocked before this?
       - name: Build oracle-electron-ts
         working-directory: bitcoin-s-ts/oracle-electron-ts
@@ -422,7 +433,7 @@ jobs:
           APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
           NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
           NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
-          # TEAM_ID: 9ZG3GPKHX8
+          NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
         run: |
           npm ci
           npm run build
