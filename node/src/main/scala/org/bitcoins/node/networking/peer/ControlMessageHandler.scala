@@ -1,9 +1,8 @@
 package org.bitcoins.node.networking.peer
 
-import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.NetworkUtil
-import org.bitcoins.node.models.{Peer, PeerDb}
+import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.{Node, P2PLogger}
 
@@ -42,7 +41,7 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
                 .setServiceIdentifier(versionMsg.services)
               for {
                 _ <- sender.sendVerackMessage()
-                _ <- onPeerInitialization(peer)
+                _ <- node.peerManager.onPeerInitialization(peer)
               } yield newRecv
             } else {
               Future(newRecv)
@@ -125,38 +124,6 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
               node.peerManager.peerDiscoveryStack.push(peer)
           case _ => logger.debug(s"Unsupported network. Skipping.")
         }
-    }
-  }
-
-  def onPeerInitialization(peer: Peer): Future[Unit] = {
-    node.nodeAppConfig.nodeType match {
-      case NodeType.NeutrinoNode =>
-        if (
-          node.peerManager
-            .peerDataOf(peer)
-            .serviceIdentifier
-            .nodeCompactFilters
-        ) {
-          def createInDbF: Future[PeerDb] = node.peerManager.createInDb(peer)
-          def managePeerF: Future[Unit] = {
-            if (
-              node.peerManager.connectedPeerCount < node.nodeAppConfig.maxConnectedPeers
-            ) {
-              node.peerManager.setPeerForUse(peer)
-            } else {
-              node.peerManager.removeTestPeer(peer)
-            }
-          }
-
-          for {
-            _ <- createInDbF
-            _ <- managePeerF
-          } yield ()
-        } else {
-          node.peerManager.removeTestPeer(peer)
-        }
-      case nodeType =>
-        throw new Exception(s"Node cannot be ${nodeType.shortName}")
     }
   }
 }

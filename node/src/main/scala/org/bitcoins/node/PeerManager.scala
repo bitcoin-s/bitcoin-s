@@ -2,6 +2,7 @@ package org.bitcoins.node
 
 import akka.actor.{ActorSystem, Cancellable, PoisonPill}
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.p2p.{AddrV2Message, ServiceIdentifier}
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.config.NodeAppConfig
@@ -13,7 +14,7 @@ import scodec.bits.ByteVector
 import java.net.{InetAddress, UnknownHostException}
 import java.time.Duration
 import scala.collection.mutable
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.Random
@@ -50,8 +51,13 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
   val maxPeerSearchCount =
     1000 //number of peers in db at which we stop peer discovery
 
+  private def getInitialDelay: FiniteDuration = {
+    //if we have some peers in config then they must be tried first before any other
+    if (getPeersFromConfig.isEmpty) 0.seconds else 10.seconds
+  }
+
   lazy val peerConnectionScheduler: Cancellable =
-    system.scheduler.scheduleWithFixedDelay(initialDelay = 10.seconds,
+    system.scheduler.scheduleWithFixedDelay(initialDelay = getInitialDelay,
                                             delay = 10.seconds) {
       new Runnable() {
         override def run(): Unit = {
@@ -353,5 +359,44 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
           }
       } yield ()
     isInitializedF
+  }
+
+  def maxCfPeersCount: Int = (nodeAppConfig.maxConnectedPeers + 1) / 2
+  def maxOtherPeersCount: Int = nodeAppConfig.maxConnectedPeers - cfPeersCount
+
+  def cfPeersCount: Int =
+    peerData.count(_._2.serviceIdentifier.nodeCompactFilters)
+  def otherPeersCount: Int = connectedPeerCount - cfPeersCount
+
+  def onPeerInitialization(peer: Peer): Future[Unit] = {
+    nodeAppConfig.nodeType match {
+      /* half of the peers are to support compact filters while remaining
+      don't
+      division is arbitrarily chosen atm and fixed at the moment, but should
+      finally be dynamic based on what stage of IBD we are at
+       */
+
+      case NodeType.NeutrinoNode =>
+        val hasCf = peerDataOf(peer).serviceIdentifier.nodeCompactFilters
+
+        def createInDbF: Future[PeerDb] = createInDb(peer)
+        def managePeerF: Future[Unit] = {
+          if (
+            hasCf && cfPeersCount < maxCfPeersCount
+            || !hasCf && otherPeersCount < maxOtherPeersCount
+          ) {
+            setPeerForUse(peer)
+          } else {
+            removeTestPeer(peer)
+          }
+        }
+
+        for {
+          _ <- createInDbF
+          _ <- managePeerF
+        } yield ()
+      case nodeType =>
+        throw new Exception(s"Node cannot be ${nodeType.shortName}")
+    }
   }
 }

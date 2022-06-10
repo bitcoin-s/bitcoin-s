@@ -1,5 +1,6 @@
 package org.bitcoins.node
 
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindV19
@@ -11,8 +12,14 @@ import scala.concurrent.Future
 
 class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
 
-  override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
+  override protected def getFreshConfig: BitcoinSAppConfig = {
+    val config = ConfigFactory.parseString(
+      s"""
+         | bitcoin-s.node.peerDiscoveryTimeout = 0s
+       """.stripMargin
+    )
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl, config)
+  }
 
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 
