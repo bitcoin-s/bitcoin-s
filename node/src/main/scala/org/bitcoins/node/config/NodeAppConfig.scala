@@ -22,7 +22,7 @@ import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 
 import java.nio.file.Path
-import java.time.Instant
+import java.time.{Duration, Instant}
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S node
@@ -128,6 +128,13 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     if (config.hasPath("bitcoin-s.node.maxConnectedPeers"))
       config.getInt("bitcoin-s.node.maxConnectedPeers")
     else 1
+  }
+
+  // https://github.com/lightbend/config/blob/master/HOCON.md#duration-format
+  lazy val peerDiscoveryTimeout: Duration = {
+    if (config.hasPath("bitcoin-s.node.peerDiscoveryTimeout"))
+      config.getDuration("bitcoin-s.node.peerDiscoveryTimeout")
+    else Duration.ofMinutes(10)
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */

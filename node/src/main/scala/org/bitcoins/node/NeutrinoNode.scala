@@ -55,7 +55,8 @@ case class NeutrinoNode(
       node <- super.start()
       chainApi <- chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash()
-      _ <- peerManager.awaitPeerWithService(_.nodeCompactFilters)
+      _ <- peerManager.awaitPeerWithService(_.nodeCompactFilters,
+                                            nodeAppConfig.peerDiscoveryTimeout)
       syncPeer = peerManager.randomPeerWithService(_.nodeCompactFilters)
       _ = peerManager.setPeerUsedForSync(syncPeer)
       _ <- peerManager

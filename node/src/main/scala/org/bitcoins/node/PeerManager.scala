@@ -11,6 +11,7 @@ import org.bitcoins.node.networking.peer.PeerMessageSender
 import scodec.bits.ByteVector
 
 import java.net.{InetAddress, UnknownHostException}
+import java.time.Duration
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -318,16 +319,24 @@ case class PeerManager(node: Node, configPeers: Vector[Peer] = Vector.empty)(
                          throw new RuntimeException(s"Key $peer not found")))
   }
 
-  def awaitPeerWithService(f: ServiceIdentifier => Boolean): Future[Unit] = {
+  def awaitPeerWithService(
+      f: ServiceIdentifier => Boolean,
+      timeout: Duration): Future[Unit] = {
     logger.info("Waiting for peer connection")
-    AsyncUtil
+    val ret = AsyncUtil
       .retryUntilSatisfied({
                              peerData.exists(x => f(x._2.serviceIdentifier))
                            },
                            interval = 1.seconds,
-                           maxTries = 600 //times out in 10 minutes
-      )
+                           maxTries = timeout.getSeconds.toInt)
+      .recover {
+        case _: AsyncUtil.RpcRetryException =>
+          throw new RuntimeException("No supported peers found!")
+        case unknown: Throwable => throw unknown
+      }
       .map(_ => logger.info("Connected to peer. Starting sync."))
+
+    ret
   }
 
   def initializePeer(peer: Peer): Future[Unit] = {
