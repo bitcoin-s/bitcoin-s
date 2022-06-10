@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.ln.LnParams.{
   LnBitcoinMainNet,
   LnBitcoinTestNet
 }
+import org.bitcoins.core.protocol.ln.LnTag.{DescriptionTag, PaymentHashTag}
 import org.bitcoins.core.protocol.ln.channel.ShortChannelId
 import org.bitcoins.core.protocol.ln.currency.{
   MicroBitcoins,
@@ -22,7 +23,7 @@ import org.bitcoins.core.util.Bech32
 import org.bitcoins.crypto._
 import org.bitcoins.testkitcore.gen.ln.LnInvoiceGen
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
-import scodec.bits.ByteVector
+import scodec.bits._
 
 class LnInvoiceUnitTest extends BitcoinSUnitTest {
   behavior of "LnInvoice"
@@ -564,5 +565,16 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     val str =
       "lntbs42949672960n1p3qavpxpp59mdvu0tw0mzf2kl96ddfcm0597nuxwp42tzsehrn66jrmlg7nu8sdqqcqzpgxqyz5vqsp5y70pg45suf546mses9cp54fk4uke2rmppk9dy4926prhe5v54g4s9qyyssqmtpasu8map7hegdxfzmgusuqnkrssy6m34wcup3lmu0mae3xtht5d49204a3wm9wpklalx49g33cer5gqfractwt79vrc8p7wlpsdlqp296km0"
     assert(LnInvoice.fromStringT(str).isSuccess)
+  }
+
+  it must "build an invoice with a recoverable pub key" in {
+    val priv = ECPrivateKey.fromBytes(
+      hex"deeb3f23a850090b9033e3400584923a281d3c7d914a6d1587369abe2071d8c5")
+    val hrp = LnHumanReadablePart.fromLnParams(LnParams.LnBitcoinRegTest)
+    val tags = LnTaggedFields(
+      Vector(PaymentHashTag(Sha256Digest.empty), DescriptionTag("test")))
+    val invoice = LnInvoice.build(hrp, tags, priv)
+
+    assert(invoice.nodeId == NodeId(priv.publicKey))
   }
 }
