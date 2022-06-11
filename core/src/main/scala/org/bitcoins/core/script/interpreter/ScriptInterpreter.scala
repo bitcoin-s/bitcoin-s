@@ -415,9 +415,10 @@ sealed abstract class ScriptInterpreter {
           if (witness.stack.size != 2) {
             Left(ScriptErrorWitnessProgramMisMatch)
           } else {
-            Right(
-              (witness.stack.map(ScriptConstant(_)),
-               WitnessVersion0.rebuild(witness, program).get))
+            for {
+              rebuilt <- WitnessVersion0.rebuild(witness, program)
+              r <- Right((witness.stack.map(ScriptConstant(_)), rebuilt))
+            } yield r
           }
         case 32 =>
           //p2wsh
@@ -425,10 +426,9 @@ sealed abstract class ScriptInterpreter {
             Left(ScriptErrorWitnessProgramWitnessEmpty)
           else {
             WitnessVersion0.rebuild(witness, program) match {
-              case Success(rebuilt) =>
+              case Right(rebuilt) =>
                 Right((witness.stack.tail.map(ScriptConstant(_)), rebuilt))
-              case Failure(_) =>
-                Left(ScriptErrorWitnessProgramMisMatch)
+              case Left(err) => Left(err)
             }
           }
         case _ =>

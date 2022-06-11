@@ -2,10 +2,9 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{CryptoUtil, Sha256Digest, Sha256Hash160Digest}
-
-import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 11/10/16.
   * The version of the [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]],
@@ -16,11 +15,12 @@ sealed trait WitnessVersion {
 
   /** Rebuilds the full script from the given witness and [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
     * Either returns the [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
-    * it needs to be executed against or the failure that was encountered while rebuilding the witness
+    * it needs to be executed against or the [[ScriptError]] that was encountered when
+    * building the rebuild the scriptpubkey from the witness
     */
   def rebuild(
       scriptWitness: ScriptWitness,
-      witnessProgram: Seq[ScriptToken]): Try[ScriptPubKey]
+      witnessProgram: Seq[ScriptToken]): Either[ScriptError, ScriptPubKey]
 
   def version: ScriptNumberOperation
 }
@@ -30,38 +30,34 @@ case object WitnessVersion0 extends WitnessVersion {
   /** Rebuilds a witness version 0 SPK program, see BIP141 */
   override def rebuild(
       scriptWitness: ScriptWitness,
-      witnessProgram: Seq[ScriptToken]): Try[ScriptPubKey] = {
+      witnessProgram: Seq[ScriptToken]): Either[ScriptError, ScriptPubKey] = {
     val programBytes = BytesUtil.toByteVector(witnessProgram)
     programBytes.size match {
       case 20 =>
         //p2wpkh
         val hash = Sha256Hash160Digest(programBytes)
-        Success(P2PKHScriptPubKey(hash))
+        Right(P2PKHScriptPubKey(hash))
       case 32 =>
         //p2wsh
-        if (scriptWitness.stack.isEmpty)
-          Failure(
-            new IllegalArgumentException(
-              "P2WSH cannot be rebuilt without redeem script"))
-        else {
+        if (scriptWitness.stack.isEmpty) {
+          Left(ScriptErrorWitnessProgramWitnessEmpty)
+        } else {
           //need to check if the hashes match
           val stackTop = scriptWitness.stack.head
           val stackHash = CryptoUtil.sha256(stackTop)
           val witnessHash = Sha256Digest(witnessProgram.head.bytes)
           if (stackHash != witnessHash) {
-            Failure(new IllegalArgumentException(
-              s"Witness hash $witnessHash did not match stack hash $stackHash"))
+            Left(ScriptErrorWitnessProgramMisMatch)
           } else {
             val compactSizeUInt =
               CompactSizeUInt.calculateCompactSizeUInt(stackTop)
             val scriptPubKey = ScriptPubKey(compactSizeUInt.bytes ++ stackTop)
-            Success(scriptPubKey)
+            Right(scriptPubKey)
           }
         }
       case _ =>
         //witness version 0 programs need to be 20 bytes or 32 bytes in size
-        Failure(new IllegalArgumentException(
-          s"Witness program had invalid length (${programBytes.length}) for version 0, must be 20 or 30: $witnessProgram"))
+        Left(ScriptErrorWitnessProgramWrongLength)
     }
   }
 
@@ -72,7 +68,7 @@ case object WitnessVersion1 extends WitnessVersion {
 
   override def rebuild(
       scriptWitness: ScriptWitness,
-      witnessProgram: Seq[ScriptToken]): Try[ScriptPubKey] = {
+      witnessProgram: Seq[ScriptToken]): Either[ScriptError, ScriptPubKey] = {
     throw new UnsupportedOperationException("Taproot is not yet supported")
   }
 
@@ -89,10 +85,8 @@ case class UnassignedWitness(version: ScriptNumberOperation)
 
   override def rebuild(
       scriptWitness: ScriptWitness,
-      witnessProgram: Seq[ScriptToken]): Try[ScriptPubKey] =
-    Failure(
-      new UnsupportedOperationException(
-        s"Rebuilding is not defined for version $version yet."))
+      witnessProgram: Seq[ScriptToken]): Either[ScriptError, ScriptPubKey] =
+    Left(ScriptErrorDiscourageUpgradeableWitnessProgram)
 }
 
 object WitnessVersion {
