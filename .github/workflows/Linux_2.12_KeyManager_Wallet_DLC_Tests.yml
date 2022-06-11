@@ -28,4 +28,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: run tests
-        run: sbt ++2.12.15 keyManagerTest/test feeProviderTest/test walletTest/test dlcWalletTest/test dlcOracleTest/test asyncUtilsTestJVM/test asyncUtilsTestJS/test oracleExplorerClient/test
+        run: sbt ++2.12.16 keyManagerTest/test feeProviderTest/test walletTest/test dlcWalletTest/test dlcOracleTest/test asyncUtilsTestJVM/test asyncUtilsTestJS/test oracleExplorerClient/test
