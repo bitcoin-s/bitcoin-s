@@ -275,7 +275,10 @@ object LnInvoice extends StringFactory[LnInvoice] {
     val sigHash = buildSigHashData(hrp, timestamp, lnTags)
     val sig = privateKey.sign(sigHash)
 
-    LnInvoiceSignature(recoverId = UInt8.zero, signature = sig)
+    val (pub1, _) = CryptoUtil.recoverPublicKey(sig, sigHash.bytes)
+    val recoveryId = if (privateKey.publicKey == pub1) UInt8.zero else UInt8.one
+
+    LnInvoiceSignature(recoverId = recoveryId, signature = sig)
   }
 
   /** The easiest way to create a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
