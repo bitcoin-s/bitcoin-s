@@ -1358,14 +1358,18 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
                 s"Given asm was not a P2WSHWitnessSPKV0, got $asm")
   }
 
-  def apply(schnorrPubKey: XOnlyPubKey): TaprootScriptPubKey = {
-    fromPubKey(schnorrPubKey)
+  def apply(xOnlyPubKey: XOnlyPubKey): TaprootScriptPubKey = {
+    fromPubKey(xOnlyPubKey)
   }
 
   def fromPubKey(xOnlyPubKey: XOnlyPubKey): TaprootScriptPubKey = {
     val pushOp = BitcoinScriptUtil.calculatePushOp(xOnlyPubKey.bytes)
     val asm = OP_1 +: (pushOp ++ Vector(ScriptConstant(xOnlyPubKey.bytes)))
     fromAsm(asm)
+  }
+
+  def fromPubKey(schnorrPublicKey: SchnorrPublicKey): TaprootScriptPubKey = {
+    fromPubKey(schnorrPublicKey.toXOnly)
   }
 
   def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
