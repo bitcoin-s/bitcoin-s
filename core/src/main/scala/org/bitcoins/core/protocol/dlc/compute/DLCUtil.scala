@@ -28,6 +28,24 @@ import scala.util.Try
 object DLCUtil {
 
   /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Protocol.md#definition-of-contract_id
+    * @param fundingTxId the id of the transaction that contains the DLC funding output
+    * @param outputIdx the index of the output
+    * @param tempContractId the temporary contractId in the offer message
+    * @return
+    */
+  def computeContractId(
+      fundingTxId: DoubleSha256DigestBE,
+      outputIdx: Int,
+      tempContractId: Sha256Digest): ByteVector = {
+    val u16 = UInt16(outputIdx)
+    //we need to pad the u16 due to how xor works in scodec so we don't lose precision
+    val padded = ByteVector.fill(30)(0.toByte) ++ u16.bytes
+    fundingTxId.bytes
+      .xor(tempContractId.bytes)
+      .xor(padded)
+  }
+
+  /** @see https://github.com/discreetlogcontracts/dlcspecs/blob/master/Protocol.md#definition-of-contract_id
     * @param fundingTx the transaction that contains the DLC funding output
     * @param outputIdx the index of the output
     * @param tempContractId the temporary contractId in the offer message
@@ -37,12 +55,7 @@ object DLCUtil {
       fundingTx: Transaction,
       outputIdx: Int,
       tempContractId: Sha256Digest): ByteVector = {
-    val u16 = UInt16(outputIdx)
-    //we need to pad the u16 due to how xor works in scodec so we don't lose precision
-    val padded = ByteVector.fill(30)(0.toByte) ++ u16.bytes
-    fundingTx.txIdBE.bytes
-      .xor(tempContractId.bytes)
-      .xor(padded)
+    computeContractId(fundingTx.txIdBE, outputIdx, tempContractId)
   }
 
   /** Extracts an adaptor secret from cetSig assuming it is the completion
