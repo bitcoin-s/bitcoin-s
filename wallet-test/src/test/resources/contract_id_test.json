@@ -1,0 +1,26 @@
+[
+  {
+    "fundTxId": "22141d1118d666016f384cff3bf7fa124fe9ff0dcc206de88226219be5c6ee04",
+    "fundOutputIndex": 2,
+    "temporaryContractId": "925b5cbfdd7742d9e9ae0a6c869ce58ec56843ab539dd125a34a19661f3dabe9",
+    "contractId": "b04f41aec5a124d886964693bd6b1f9c8a81bca69fbdbccd216c38fdfafb45ef"
+  },
+  {
+    "fundTxId": "67f25e18f0aca45196836508f5b3149fc900bd1709b32cf8f4d9f390744ba0b2",
+    "fundOutputIndex": 0,
+    "temporaryContractId": "83b848da05afbb4aa984731742ace0217cbc1a2bed72abfcdbd3059e171e78b4",
+    "contractId": "e44a16c2f5031f1b3f07161fb71ff4beb5bca73ce4c187042f0af60e6355d806"
+  },
+  {
+    "fundTxId": "f10dc6857bb7562ef1920a5401c8332ac22adf12df695739b6afd5ed0ae2ee9b",
+    "fundOutputIndex": 2,
+    "temporaryContractId": "942bcce00a0a6ca1b41381e290fdcd68474ba6527131b81eeb2a143414fa4f4c",
+    "contractId": "65260a6571bd3a8f45818bb69135fe4285617940ae58ef275d85c1d91e18a1d5"
+  },
+  {
+    "fundTxId": "75511322ccf0422f723ebc359bdde79f46134b046544bbfdd945dc1848cbc5c4",
+    "fundOutputIndex": 1,
+    "temporaryContractId": "c690e64ac286fc379c4b1f6fb69fb17626e589f50b6d6c2efc93ce8f299142b9",
+    "contractId": "b3c1f5680e76be18ee75a35a2d4256e960f6c2f16e29d7d325d61297615a877c"
+  }
+]

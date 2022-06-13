@@ -44,6 +44,8 @@ object JsonSerializers {
   implicit val doubleSha256DigestBEReads: Reads[DoubleSha256DigestBE] =
     DoubleSha256DigestBEReads
 
+  implicit val sha256DigestReads: Reads[Sha256Digest] = Sha256DigestReads
+
   implicit val ripeMd160DigestReads: Reads[RipeMd160Digest] =
     RipeMd160DigestReads
 
