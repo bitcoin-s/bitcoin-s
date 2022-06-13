@@ -39,7 +39,7 @@ class LnMessageTest extends BitcoinSUnitTest {
       Try(LnMessageFactory(InitTLV)(hex"00100000000001012a030104")).isSuccess)
 
     assert(Try(LnMessageFactory(InitTLV)(hex"00100000000001")).isFailure)
-    assert(Try(LnMessageFactory(InitTLV)(hex"00100000000002012a")).isFailure)
+    assert(Try(LnMessageFactory(InitTLV)(hex"001000000000ca012a")).isFailure)
     assert(
       Try(LnMessageFactory(InitTLV)(hex"001000000000010101010102")).isFailure)
   }

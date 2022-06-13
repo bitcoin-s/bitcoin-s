@@ -551,7 +551,8 @@ object DLCParsingTestVector extends TestVectorParser[DLCParsingTestVector] {
 
         DLCMessageTestVector(LnMessage(tlv), "oracle_attestment_v0", fields)
       case _: UnknownTLV | _: ErrorTLV | _: PingTLV | _: PongTLV | _: InitTLV |
-          _: SendOfferTLV =>
+          _: SendOfferTLV | _: AmtToForwardTLV | _: OutgoingCLTVValueTLV |
+          _: PaymentDataTLV | _: ShortChannelIdTLV =>
         throw new IllegalArgumentException(
           s"DLCParsingTestVector is only defined for DLC messages and TLVs, got $tlv")
     }
