@@ -392,6 +392,10 @@ case class ECPublicKey(private val _bytes: ByteVector)
   def tweakMultiply(tweak: FieldElement): ECPublicKey = {
     CryptoUtil.tweakMultiply(this, tweak)
   }
+
+  def toXOnly: XOnlyPubKey = XOnlyPubKey(bytes.drop(1))
+
+  def parity: KeyParity = KeyParity.fromByte(bytes.head)
 }
 
 object ECPublicKey extends Factory[ECPublicKey] {
