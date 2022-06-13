@@ -40,6 +40,8 @@ sealed abstract class CryptoGenerators {
   def schnorrPublicKey: Gen[SchnorrPublicKey] =
     publicKey.map(_.schnorrPublicKey)
 
+  def xOnlyPubKey: Gen[XOnlyPubKey] = publicKey.map(_.toXOnly)
+
   /** Generate a sequence of private keys
     * @param num maximum number of keys to generate
     * @return
