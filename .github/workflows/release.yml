@@ -451,7 +451,7 @@ jobs:
         env:
           MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
-          KRYSTALBULL_PATH: "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64/*.app"
+          KRYSTALBULL_PATH: "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64/Krystal Bull.app"
           PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
         run: |
           java -version
@@ -459,8 +459,6 @@ jobs:
           security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security find-identity -p codesigning -v
-          krystalbull=$(eval find "$KRYSTALBULL_PATH")
-          echo $krystalbull
           echo "===Sign App==="
           codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$krystalbull"
           echo "===Verify app signature==="
