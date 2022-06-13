@@ -1,5 +1,7 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.commons.serializers.JsonReaders.byteVectorReads
+import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.dlc.compute.DLCUtil
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.testkit.fixtures.EmptyFixture
