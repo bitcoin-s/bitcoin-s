@@ -360,7 +360,7 @@ sealed abstract class ScriptGenerators {
   def witnessScriptPubKeyV1: Gen[(TaprootScriptPubKey, Seq[ECPrivateKey])] = {
     for {
       priv <- CryptoGenerators.privateKey
-      pubKey = priv.schnorrPublicKey
+      pubKey = priv.toXOnly
     } yield {
       (TaprootScriptPubKey.fromPubKey(pubKey), Vector(priv))
     }

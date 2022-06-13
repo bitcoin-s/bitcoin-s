@@ -238,6 +238,8 @@ case class ECPrivateKey(bytes: ByteVector)
     SchnorrPublicKey(publicKey.bytes)
   }
 
+  def toXOnly: XOnlyPubKey = schnorrPublicKey.toXOnly
+
   def schnorrNonce: SchnorrNonce = {
     SchnorrNonce(publicKey.bytes)
   }
