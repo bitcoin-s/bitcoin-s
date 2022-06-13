@@ -459,6 +459,9 @@ jobs:
           security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security find-identity -p codesigning -v
+          echo "Directory contents"
+          ls -l "bitcoin-s-ts/oracle-electron-ts/out"
+          ls -l "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64/"
           echo "===Sign App==="
           codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$krystalbull"
           echo "===Verify app signature==="
