@@ -42,7 +42,7 @@ object DLCAdaptorPointComputer {
           .bytes)
       .bytes
 
-    nonce.add(pubKey.publicKey.tweakMultiply(FieldElement(hash)))
+    nonce.add(pubKey.publicKey.multiply(FieldElement(hash)))
   }
 
   /** This trie is used for computing adaptor points for a single oracle corresponding
