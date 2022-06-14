@@ -4,6 +4,7 @@ import akka.actor.{ActorSystem, Cancellable}
 import grizzled.slf4j.Logging
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.ConsoleCli
+import org.bitcoins.core.config.DLC
 import org.bitcoins.core.dlc.accounting.RateOfReturnUtil
 import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -175,7 +176,7 @@ class WalletGUIModel(dlcModel: DLCPaneModel)(implicit system: ActorSystem)
   }
 
   // Address returned from GetDLCHostAddress when Tor is disabled
-  private val DEFAULT_TOR_ADDRESS = "0:0:0:0:0:0:0:0:2862"
+  private val DEFAULT_TOR_ADDRESS = "0:0:0:0:0:0:0:0:" + DLC.DefaultPort
 
   /** Retrieves the tor endpoint address
     */

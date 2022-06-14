@@ -1347,7 +1347,7 @@ case class TaprootScriptPubKey(override val asm: Vector[ScriptToken])
   override def witnessProgram: Seq[ScriptToken] = asm.tail.tail
   override val scriptType: ScriptType = ScriptType.WITNESS_V1_TAPROOT
 
-  val pubKey: SchnorrPublicKey = SchnorrPublicKey.fromBytes(asm(2).bytes)
+  val pubKey: XOnlyPubKey = XOnlyPubKey.fromBytes(asm(2).bytes)
 }
 
 object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
@@ -1358,14 +1358,18 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
                 s"Given asm was not a P2WSHWitnessSPKV0, got $asm")
   }
 
-  def apply(schnorrPubKey: SchnorrPublicKey): TaprootScriptPubKey = {
-    fromPubKey(schnorrPubKey)
+  def apply(xOnlyPubKey: XOnlyPubKey): TaprootScriptPubKey = {
+    fromPubKey(xOnlyPubKey)
   }
 
-  def fromPubKey(schnorrPubKey: SchnorrPublicKey): TaprootScriptPubKey = {
-    val pushOp = BitcoinScriptUtil.calculatePushOp(schnorrPubKey.bytes)
-    val asm = OP_1 +: (pushOp ++ Vector(ScriptConstant(schnorrPubKey.bytes)))
+  def fromPubKey(xOnlyPubKey: XOnlyPubKey): TaprootScriptPubKey = {
+    val pushOp = BitcoinScriptUtil.calculatePushOp(xOnlyPubKey.bytes)
+    val asm = OP_1 +: (pushOp ++ Vector(ScriptConstant(xOnlyPubKey.bytes)))
     fromAsm(asm)
+  }
+
+  def fromPubKey(schnorrPublicKey: SchnorrPublicKey): TaprootScriptPubKey = {
+    fromPubKey(schnorrPublicKey.toXOnly)
   }
 
   def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
@@ -1375,7 +1379,7 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
     WitnessScriptPubKey.isValidAsm(asm) &&
     asmBytes.size == 34 &&
     //have to make sure we have a valid xonly pubkey, not just 32 bytes
-    SchnorrPublicKey.fromBytesT(asm(2).bytes).isSuccess
+    XOnlyPubKey.fromBytesT(asm(2).bytes).isSuccess
   }
 }
 

@@ -440,9 +440,9 @@ trait BitcoinScriptUtil {
       case w: WitnessScriptPubKey =>
         txSignatureComponent match {
           case wtxSigComponent: WitnessTxSigComponent =>
-            val scriptT = w.witnessVersion.rebuild(wtxSigComponent.witness,
+            val scriptE = w.witnessVersion.rebuild(wtxSigComponent.witness,
                                                    w.witnessProgram)
-            parseScriptTry(scriptT)
+            parseScriptEither(scriptE)
           case rWTxSigComponent: WitnessTxSigComponentRebuilt =>
             rWTxSigComponent.scriptPubKey.asm
           case _: BaseTxSigComponent =>
@@ -493,7 +493,7 @@ trait BitcoinScriptUtil {
         val wtx = spendingTransaction.asInstanceOf[WitnessTransaction]
         val scriptT =
           w.witnessVersion.rebuild(wtx.witness.witnesses(idx), w.witnessProgram)
-        parseScriptTry(scriptT)
+        parseScriptEither(scriptT)
 
       case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
           _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
@@ -553,10 +553,13 @@ trait BitcoinScriptUtil {
     } else program.originalScript
   }
 
-  private def parseScriptTry(scriptT: Try[ScriptPubKey]): Seq[ScriptToken] =
+  private def parseScriptEither(
+      scriptT: Either[ScriptError, ScriptPubKey]): Seq[ScriptToken] =
     scriptT match {
-      case Success(scriptPubKey) => scriptPubKey.asm
-      case Failure(err)          => throw err
+      case Right(scriptPubKey) => scriptPubKey.asm
+      case Left(err) =>
+        throw new IllegalArgumentException(
+          s"Could not parse witness script, got err=$err")
     }
 
   /** Casts the given script token to a boolean value

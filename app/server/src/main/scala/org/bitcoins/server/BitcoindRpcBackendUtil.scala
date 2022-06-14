@@ -415,7 +415,10 @@ object BitcoindRpcBackendUtil extends Logging {
         }
 
         //don't want to execute these in parallel
-        val processTxFlow = Sink.foreachAsync[Transaction](1)(processTx)
+        val processTxFlow = Sink.foreachAsync[Option[Transaction]](1) {
+          case Some(tx) => processTx(tx)
+          case None     => Future.unit
+        }
 
         val res = for {
           mempool <- bitcoind.getRawMemPool
@@ -429,9 +432,6 @@ object BitcoindRpcBackendUtil extends Logging {
                 .map(Option(_))
                 .recover { case _: Throwable =>
                   None
-                }
-                .collect { case Some(tx) =>
-                  tx
                 }
             }
             .toMat(processTxFlow)(Keep.right)

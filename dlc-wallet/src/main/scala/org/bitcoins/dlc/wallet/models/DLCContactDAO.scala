@@ -24,6 +24,23 @@ case class DLCContactDAO()(implicit
       ts: Vector[DLCContactDb]): Future[Vector[DLCContactDb]] =
     createAllNoAutoInc(ts, safeDatabase)
 
+  def createIfDoesNotExist(contact: DLCContactDb): Future[DLCContactDb] = {
+    val action = for {
+      foundOpt <- table
+        .filter(_.address === contact.address)
+        .result
+        .headOption
+      result <-
+        foundOpt match {
+          case Some(found) => DBIO.successful(found)
+          case None =>
+            (table += contact).map(_ => contact)
+        }
+    } yield result
+
+    safeDatabase.run(action)
+  }
+
   override protected def findByPrimaryKeys(ids: Vector[
     InetSocketAddress]): Query[DLCContactTable, DLCContactDb, Seq] =
     table.filter(_.address.inSet(ids)).sortBy(_.alias)

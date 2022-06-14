@@ -21,7 +21,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
   import BitcoinSWalletTest._
 
   implicit protected def config2: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getNeutrinoTestConfig()
 
   implicit protected def wallet2AppConfig: WalletAppConfig = {
     config2.walletConf

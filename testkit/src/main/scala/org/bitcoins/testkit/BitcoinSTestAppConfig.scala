@@ -33,55 +33,6 @@ object BitcoinSTestAppConfig {
     }
   }
 
-  /** App configuration suitable for test purposes:
-    *
-    * 1) Data directory is set to user temp directory
-    * 2) Logging is turned down to WARN
-    */
-  def getSpvTestConfig(config: Config*)(implicit
-      system: ActorSystem): BitcoinSAppConfig = {
-    val overrideConf = ConfigFactory.parseString {
-      s"""
-         |bitcoin-s {
-         |  node {
-         |     mode = spv
-         |  }
-         |  wallet {
-         |    allowExternalDLCAddresses = true
-         |  }
-         |  proxy.enabled = $torEnabled
-         |  tor.enabled = $torEnabled
-         |  tor.use-random-ports = false
-         |}
-      """.stripMargin
-    }
-    BitcoinSAppConfig(tmpDir(), (overrideConf +: config).toVector)
-  }
-
-  def getSpvWithEmbeddedDbTestConfig(
-      pgUrl: () => Option[String],
-      config: Vector[Config])(implicit
-      system: ActorSystem): BitcoinSAppConfig = {
-    val overrideConf = ConfigFactory
-      .parseString {
-        s"""
-           |bitcoin-s {
-           |  node {
-           |     mode = spv
-           |  }
-           |  proxy.enabled = $torEnabled
-           |  tor.enabled = $torEnabled
-           |  tor.use-random-ports = false
-           |}
-      """.stripMargin
-      }
-      .withFallback(genWalletNameConf)
-
-    BitcoinSAppConfig(
-      tmpDir(),
-      (overrideConf +: configWithEmbeddedDb(project = None, pgUrl) +: config))
-  }
-
   def getNeutrinoTestConfig(config: Config*)(implicit
       system: ActorSystem): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
@@ -91,7 +42,9 @@ object BitcoinSTestAppConfig {
          |     mode = neutrino
          |     relay = true
          |  }
-         |
+         |  wallet {
+         |    allowExternalDLCAddresses = true
+         |  }
          |  proxy.enabled = $torEnabled
          |  tor.enabled = $torEnabled
          |  tor.use-random-ports = false

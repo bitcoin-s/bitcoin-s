@@ -21,7 +21,7 @@ class WalletRoutesSpec
     with MockFactory {
 
   implicit val conf: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getNeutrinoTestConfig()
   val mockWalletApi = mock[MockWalletApi]
 
   val walletRoutes: WalletRoutes =
@@ -75,7 +75,8 @@ class WalletRoutesSpec
         feeRate = null,
         totalCollateral = null,
         localCollateral = null,
-        payoutAddress = None
+        payoutAddress = None,
+        peer = None
       )
 
       (mockWalletApi.findDLCByTemporaryContractId: Sha256Digest => Future[

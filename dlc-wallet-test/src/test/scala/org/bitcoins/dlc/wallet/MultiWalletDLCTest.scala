@@ -53,6 +53,7 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
                                   UInt32.zero,
                                   UInt32.one,
                                   None,
+                                  None,
                                   None)
       dlcsA <- walletA.listDLCs()
       dlcsB <- walletB.listDLCs()
@@ -76,6 +77,7 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
         feeRateOpt = Some(SatoshisPerVirtualByte.one),
         locktime = UInt32.zero,
         refundLocktime = UInt32.one,
+        peerAddressOpt = None,
         externalPayoutAddressOpt = None,
         externalChangeAddressOpt = None
       )

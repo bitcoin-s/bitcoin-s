@@ -13,9 +13,8 @@ import org.bitcoins.core.psbt.InputPSBTRecord.{
 }
 import org.bitcoins.core.psbt.PSBTGlobalKeyId.XPubKeyKeyId
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{ConditionalPath, InputInfo}
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.{HashType, _}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.bitcoins.testkitcore.util.TransactionTestUtil._
 import scodec.bits._

@@ -30,6 +30,10 @@ abstract class AsyncUtil extends AsyncUtilApi {
     retryUntilSatisfiedF(f, interval, maxTries)
   }
 
+  sealed trait RetryMode
+  case object Linear extends RetryMode
+  case object Exponential extends RetryMode
+
   /** The returned Future completes when condition becomes true
     * @param conditionF The condition being waited on
     * @param duration The interval between calls to check condition
@@ -40,15 +44,23 @@ abstract class AsyncUtil extends AsyncUtilApi {
   def retryUntilSatisfiedF(
       conditionF: () => Future[Boolean],
       interval: FiniteDuration = AsyncUtil.DEFAULT_INTERVAL,
-      maxTries: Int = DEFAULT_MAX_TRIES)(implicit
-      ec: ExecutionContext): Future[Unit] = {
+      maxTries: Int = DEFAULT_MAX_TRIES,
+      mode: RetryMode = Linear)(implicit ec: ExecutionContext): Future[Unit] = {
+    if (mode == Exponential) {
+      val millis = interval.toMillis
+      if (millis > 0) {
+        require((millis << maxTries) > 0,
+                s"Too many tries for retryUntilSatisfied(): $maxTries")
+      }
+    }
     val stackTrace: Array[StackTraceElement] =
       Thread.currentThread().getStackTrace
 
     retryUntilSatisfiedWithCounter(conditionF = conditionF,
                                    interval = interval,
                                    maxTries = maxTries,
-                                   stackTrace = stackTrace)
+                                   stackTrace = stackTrace,
+                                   mode = mode)
   }
 
   // Has a different name so that default values are permitted
@@ -57,8 +69,8 @@ abstract class AsyncUtil extends AsyncUtilApi {
       interval: FiniteDuration,
       counter: Int = 0,
       maxTries: Int,
-      stackTrace: Array[StackTraceElement])(implicit
-      ec: ExecutionContext): Future[Unit] = {
+      stackTrace: Array[StackTraceElement],
+      mode: RetryMode)(implicit ec: ExecutionContext): Future[Unit] = {
     conditionF().flatMap { condition =>
       if (condition) {
         Future.unit
@@ -70,9 +82,12 @@ abstract class AsyncUtil extends AsyncUtilApi {
         val p = Promise[Boolean]()
         val runnable = retryRunnable(condition, p)
 
-        AsyncUtil.scheduler.scheduleOnce(interval.toMillis,
-                                         TimeUnit.MILLISECONDS,
-                                         runnable)
+        val delay: Long = mode match {
+          case Linear      => interval.toMillis
+          case Exponential => interval.toMillis << counter
+        }
+
+        AsyncUtil.scheduler.scheduleOnce(delay, TimeUnit.MILLISECONDS, runnable)
 
         p.future.flatMap {
           case true => Future.unit
@@ -81,7 +96,8 @@ abstract class AsyncUtil extends AsyncUtilApi {
                                            interval = interval,
                                            counter = counter + 1,
                                            maxTries = maxTries,
-                                           stackTrace = stackTrace)
+                                           stackTrace = stackTrace,
+                                           mode = mode)
         }
       }
     }

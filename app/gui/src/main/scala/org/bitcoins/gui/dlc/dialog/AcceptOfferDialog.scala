@@ -1,6 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand._
+import org.bitcoins.core.config.DLC
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.util.NetworkUtil
@@ -23,7 +24,7 @@ class AcceptOfferDialog extends CliCommandProducer[AcceptDLCCliCommand] {
     val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerHex)
     val text = peerAddressTF.text.value.trim
     if (text.nonEmpty) {
-      val peer = NetworkUtil.parseInetSocketAddress(text, 2862)
+      val peer = NetworkUtil.parseInetSocketAddress(text, DLC.DefaultPort)
 
       AcceptDLC(offer, peer)
     } else {

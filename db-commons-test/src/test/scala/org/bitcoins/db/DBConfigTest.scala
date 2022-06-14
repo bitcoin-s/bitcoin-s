@@ -84,7 +84,7 @@ class DBConfigTest extends BitcoinSAsyncTest {
                                                  () => None)
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     val chainConfig: ChainAppConfig = {
-      BitcoinSTestAppConfig.getSpvTestConfig(mainnetConf).chainConf
+      BitcoinSTestAppConfig.getNeutrinoTestConfig(mainnetConf).chainConf
     }
 
     assert(chainConfig.network == MainNet)

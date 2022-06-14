@@ -9,7 +9,6 @@ import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.psbt._
-import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto._
 import play.api.libs.json._

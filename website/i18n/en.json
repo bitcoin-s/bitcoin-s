@@ -1021,6 +1021,57 @@
       },
       "version-1.9.1/wallet/version-1.9.1-wallet-rpc": {
         "title": "Wallet RPC Examples"
+      },
+      "version-1.9.2/applications/version-1.9.2-cli": {
+        "title": "CLI"
+      },
+      "version-1.9.2/applications/version-1.9.2-server": {
+        "title": "Application Server"
+      },
+      "version-1.9.2/chain/version-1.9.2-chain-query-api": {
+        "title": "Chain Query API"
+      },
+      "version-1.9.2/core/version-1.9.2-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-1.9.2/core/version-1.9.2-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-1.9.2/core/version-1.9.2-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-1.9.2/core/version-1.9.2-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-1.9.2/crypto/version-1.9.2-sign": {
+        "title": "Sign API"
+      },
+      "version-1.9.2/version-1.9.2-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-1.9.2/key-manager/version-1.9.2-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-1.9.2/node/version-1.9.2-node-api title: Node API": {
+        "title": "node-api title: Node API"
+      },
+      "version-1.9.2/oracle/version-1.9.2-oracle-server": {
+        "title": "Oracle Server"
+      },
+      "version-1.9.2/secp256k1/version-1.9.2-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-1.9.2/version-1.9.2-security": {
+        "title": "Security"
+      },
+      "version-1.9.2/version-1.9.2-ui-setup": {
+        "title": "Installing the DLC Wallet UI"
+      },
+      "version-1.9.2/wallet/version-1.9.2-wallet-election-example": {
+        "title": "Wallet Election Example"
+      },
+      "version-1.9.2/wallet/version-1.9.2-wallet-price-example": {
+        "title": "Wallet Price Example"
       }
     },
     "links": {

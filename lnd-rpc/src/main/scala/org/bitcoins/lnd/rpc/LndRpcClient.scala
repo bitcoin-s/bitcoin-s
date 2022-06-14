@@ -30,10 +30,9 @@ import org.bitcoins.core.protocol.transaction.{
   Transaction => Tx
 }
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.{SatoshisPerKW, SatoshisPerVirtualByte}
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.{HashType, _}
 import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.LndUtils._
 import org.bitcoins.lnd.rpc.config._
@@ -107,11 +106,15 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
         applier: CallCredentials.MetadataApplier
     ): Unit = {
       appExecutor.execute(() => {
-        val metadata = new Metadata()
-        val key =
-          Metadata.Key.of(macaroonKey, Metadata.ASCII_STRING_MARSHALLER)
-        metadata.put(key, instance.macaroon)
-        applier(metadata)
+        // Wrap in a try, in case the macaroon hasn't been created yet.
+        Try {
+          val metadata = new Metadata()
+          val key =
+            Metadata.Key.of(macaroonKey, Metadata.ASCII_STRING_MARSHALLER)
+          metadata.put(key, instance.macaroon)
+          applier(metadata)
+        }
+        ()
       })
     }
 
@@ -142,6 +145,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   lazy val signer: SignerClient = SignerClient(clientSettings)
   lazy val router: RouterClient = RouterClient(clientSettings)
   lazy val invoices: InvoicesClient = InvoicesClient(clientSettings)
+  lazy val stateClient: StateClient = StateClient(clientSettings)
 
   def genSeed(): Future[GenSeedResponse] = {
     logger.trace("lnd calling genseed")
@@ -726,7 +730,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       output: TransactionOutput): Future[(ScriptSignature, ScriptWitness)] = {
     val signDescriptor =
       SignDescriptor(output = Some(output),
-                     sighash = UInt32(HashType.sigHashAll.num.toBigInt),
+                     sighash = UInt32(HashType.sigHashAll.num),
                      inputIndex = inputIdx)
 
     computeInputScript(tx, Vector(signDescriptor)).map(_.head)
@@ -974,9 +978,16 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   def isStarted: Future[Boolean] = {
     val p = Promise[Boolean]()
 
-    Try(getInfo.onComplete {
-      case Success(_) =>
-        p.success(true)
+    Try(stateClient.getState(GetStateRequest()).onComplete {
+      case Success(state) =>
+        state.state match {
+          case WalletState.RPC_ACTIVE | WalletState.SERVER_ACTIVE =>
+            p.success(true)
+          case _: WalletState.Unrecognized |
+              WalletState.WAITING_TO_START | WalletState.UNLOCKED |
+              WalletState.LOCKED | WalletState.NON_EXISTING =>
+            p.success(false)
+        }
       case Failure(_) =>
         p.success(false)
     })

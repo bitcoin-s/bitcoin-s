@@ -14,11 +14,15 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress}
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{ECSignatureParams, P2WPKHV0InputInfo}
-import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
+import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
+  ECPrivateKey,
+  ECPublicKey,
+  HashType
+}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.rpc.util.RpcUtil

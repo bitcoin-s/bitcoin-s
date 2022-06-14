@@ -1,10 +1,11 @@
 package org.bitcoins.lnd.rpc
 
-import akka.stream.scaladsl.Sink
-import lnrpc.Invoice
+import akka.stream._
+import akka.stream.scaladsl._
+import lnrpc._
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.currency.{currencyUnitNumeric, Bitcoins, Satoshis}
-import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
@@ -35,6 +36,47 @@ class LndRpcClientPairTest extends DualLndFixture {
       assert(infoA.blockHeight >= UInt32.zero)
       assert(infoB.blockHeight >= UInt32.zero)
     }
+  }
+
+  it must "use the channel acceptor" in { param =>
+    val (_, lndA, lndB) = param
+
+    val (queue, source) =
+      Source
+        .queue[ChannelAcceptResponse](200, OverflowStrategy.dropHead)
+        .toMat(BroadcastHub.sink)(Keep.both)
+        .run()
+
+    // for the test we'll only allow channels with a push amt
+    lndA.lnd
+      .channelAcceptor(source)
+      .mapAsyncUnordered(1) { req =>
+        if (req.pushAmt == UInt64.zero) {
+          queue.offer(ChannelAcceptResponse(error = "give me money",
+                                            pendingChanId = req.pendingChanId))
+        } else {
+          queue.offer(ChannelAcceptResponse(accept = true,
+                                            pendingChanId = req.pendingChanId))
+        }
+      }
+      .runWith(Sink.ignore)
+
+    for {
+      nodeId <- lndA.nodeId
+      // reject channel with no push amount
+      _ <- recoverToSucceededIf[Exception](
+        lndB.openChannel(nodeId = nodeId,
+                         fundingAmount = Satoshis(50000),
+                         satPerVByte = SatoshisPerVirtualByte.one,
+                         privateChannel = false))
+
+      // accept channel with push amount
+      outpointOpt <- lndB.openChannel(nodeId = nodeId,
+                                      fundingAmount = Satoshis(50000),
+                                      pushAmt = Satoshis(10),
+                                      satPerVByte = SatoshisPerVirtualByte.one,
+                                      privateChannel = false)
+    } yield assert(outpointOpt.isDefined)
   }
 
   it must "close a channel" in { param =>

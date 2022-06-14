@@ -36,6 +36,13 @@ sealed abstract class Address {
   override def toString: String = value
 
   def descriptor: String = s"addr($value)"
+
+  /** Checks if the address currently follows the standardness rules of bitcoin
+    * and will be relayed by network.
+    *
+    * Currently this just means verifying the address is not of a [[UnassignedWitnessScriptPubKey]]
+    */
+  def isStandard: Boolean
 }
 
 sealed abstract class BitcoinAddress extends Address
@@ -54,6 +61,7 @@ sealed abstract class P2PKHAddress extends BitcoinAddress {
 
   override def scriptPubKey: P2PKHScriptPubKey = P2PKHScriptPubKey(hash)
 
+  override def isStandard: Boolean = true
 }
 
 sealed abstract class P2SHAddress extends BitcoinAddress {
@@ -69,6 +77,8 @@ sealed abstract class P2SHAddress extends BitcoinAddress {
   override def scriptPubKey: P2SHScriptPubKey = P2SHScriptPubKey(hash)
 
   override def hash: Sha256Hash160Digest
+
+  override def isStandard: Boolean = true
 }
 
 /** https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
@@ -109,6 +119,8 @@ sealed abstract class Bech32Address extends BitcoinAddress {
   def verifyChecksum: Boolean = {
     Bech32.verifyChecksum(hrp.expand, data ++ checksum, Bech32Encoding.Bech32)
   }
+
+  override def isStandard: Boolean = true
 }
 
 object Bech32Address extends AddressFactory[Bech32Address] {
@@ -245,6 +257,14 @@ sealed abstract class Bech32mAddress extends BitcoinAddress {
 
   def verifyChecksum: Boolean = {
     Bech32.verifyChecksum(hrp.expand, data ++ checksum, Bech32Encoding.Bech32m)
+  }
+
+  override def isStandard: Boolean = {
+    scriptPubKey match {
+      case _: WitnessScriptPubKeyV0         => false // shouldn't be possible
+      case _: TaprootScriptPubKey           => true
+      case _: UnassignedWitnessScriptPubKey => false
+    }
   }
 }
 

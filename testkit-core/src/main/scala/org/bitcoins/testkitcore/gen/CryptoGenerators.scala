@@ -2,7 +2,6 @@ package org.bitcoins.testkitcore.gen
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.{UInt64, UInt8}
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.{core, crypto}
 import org.bitcoins.crypto.{
   AesEncryptedData,
@@ -17,13 +16,15 @@ import org.bitcoins.crypto.{
   ECPrivateKey,
   ECPublicKey,
   FieldElement,
+  HashType,
   SchnorrDigitalSignature,
   SchnorrNonce,
   SchnorrPublicKey,
   Sha256Digest,
   Sha256DigestBE,
   Sha256Hash160Digest,
-  SipHashKey
+  SipHashKey,
+  XOnlyPubKey
 }
 import org.scalacheck.Gen
 import scodec.bits.{BitVector, ByteVector}
@@ -158,6 +159,8 @@ sealed abstract class CryptoGenerators {
   def schnorrPublicKey: Gen[SchnorrPublicKey] =
     publicKey.map(_.schnorrPublicKey)
 
+  def xOnlyPubKey: Gen[XOnlyPubKey] = publicKey.map(_.toXOnly)
+
   /** Generate a sequence of private keys
     * @param num maximum number of keys to generate
     * @return
@@ -274,7 +277,7 @@ sealed abstract class CryptoGenerators {
       hash = CryptoUtil.sha256Hash160(pubKey.bytes)
     } yield hash
 
-  /** Generates a random [[org.bitcoins.core.script.crypto.HashType HashType]] */
+  /** Generates a random [[HashType HashType]] */
   def hashType: Gen[HashType] =
     Gen.oneOf(
       HashType.sigHashAll,

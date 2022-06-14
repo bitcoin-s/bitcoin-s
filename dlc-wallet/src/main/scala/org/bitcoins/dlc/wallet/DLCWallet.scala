@@ -43,6 +43,7 @@ import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
 import slick.dbio.{DBIO, DBIOAction}
 
+import java.net.InetSocketAddress
 import scala.concurrent.{ExecutionContext, Future}
 
 /** A [[Wallet]] with full DLC Functionality */
@@ -273,6 +274,7 @@ abstract class DLCWallet
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       refundLT: UInt32,
+      peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
     chainQueryApi.getBestHashBlockHeight().flatMap { height =>
@@ -281,6 +283,7 @@ abstract class DLCWallet
                      feeRateOpt,
                      locktime = UInt32(height),
                      refundLT,
+                     peerAddressOpt,
                      externalPayoutAddressOpt,
                      externalChangeAddressOpt)
     }
@@ -297,6 +300,7 @@ abstract class DLCWallet
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
       refundLocktime: UInt32,
+      peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
     logger.info("Creating DLC Offer")
@@ -434,7 +438,8 @@ abstract class DLCWallet
         fundingTxIdOpt = None,
         closingTxIdOpt = None,
         aggregateSignatureOpt = None,
-        serializationVersion = contractInfo.serializationVersion
+        serializationVersion = contractInfo.serializationVersion,
+        peerOpt = peerAddressOpt.map(a => a.getHostString + ":" + a.getPort)
       )
 
       contractDataDb = DLCContractDataDb(
@@ -485,6 +490,7 @@ abstract class DLCWallet
       txBuilder: RawTxBuilderWithFinalizer[ShufflingNonInteractiveFinalizer],
       spendingInfos: Vector[ScriptSignatureParams[InputInfo]],
       collateral: CurrencyUnit,
+      peerAddressOpt: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]
   ): Future[InitializedAccept] = {
@@ -553,13 +559,16 @@ abstract class DLCWallet
           (dlcAcceptWithoutSigs, dlcPubKeys) <- acceptWithoutSigsWithKeysF
           nextIndex <- nextIndexF
           contractId = DLCUtil.calcContractId(offer, dlcAcceptWithoutSigs)
-          dlc = DLCAcceptUtil.buildAcceptDlcDb(offer,
-                                               dlcId,
-                                               Some(contractId),
-                                               account,
-                                               chainType,
-                                               nextIndex,
-                                               contractInfo)
+          dlc = DLCAcceptUtil.buildAcceptDlcDb(
+            offer,
+            dlcId,
+            Some(contractId),
+            account,
+            chainType,
+            nextIndex,
+            contractInfo,
+            peerOpt =
+              peerAddressOpt.map(a => a.getHostString + ":" + a.getPort))
           acceptDb = DLCAcceptUtil.buildAcceptDb(dlc = dlc,
                                                  acceptWithoutSigs =
                                                    dlcAcceptWithoutSigs,
@@ -662,6 +671,7 @@ abstract class DLCWallet
     */
   override def acceptDLCOffer(
       offer: DLCOffer,
+      peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] = {
     logger.debug("Calculating relevant wallet data for DLC Accept")
@@ -693,6 +703,7 @@ abstract class DLCWallet
           case None =>
             createNewDLCAccept(collateral,
                                offer,
+                               peerAddressOpt,
                                externalPayoutAddressOpt,
                                externalChangeAddressOpt)
         }
@@ -744,6 +755,7 @@ abstract class DLCWallet
   private def createNewDLCAccept(
       collateral: CurrencyUnit,
       offer: DLCOffer,
+      peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] =
     Future {
@@ -764,7 +776,8 @@ abstract class DLCWallet
             spendingInfos = spendingInfos,
             collateral = collateral,
             externalPayoutAddressOpt = externalPayoutAddressOpt,
-            externalChangeAddressOpt = externalChangeAddressOpt
+            externalChangeAddressOpt = externalChangeAddressOpt,
+            peerAddressOpt = peerAddressOpt
           )
         _ = require(
           initializedAccept.acceptWithoutSigs.tempContractId == offer.tempContractId,
@@ -1696,8 +1709,24 @@ abstract class DLCWallet
   }
 
   override def listDLCs(): Future[Vector[DLCStatus]] = {
+    listDLCs(None)
+  }
+
+  override def listDLCsByContact(
+      contactId: InetSocketAddress): Future[Vector[DLCStatus]] = {
+    listDLCs(Some(contactId))
+  }
+
+  private def listDLCs(
+      contactIdOpt: Option[InetSocketAddress]): Future[Vector[DLCStatus]] = {
     for {
-      ids <- dlcDAO.findAll().map(_.map(_.dlcId))
+      dlcs <- contactIdOpt match {
+        case Some(contactId) =>
+          dlcDAO.findByContactId(
+            contactId.getHostString + ":" + contactId.getPort)
+        case None => dlcDAO.findAll()
+      }
+      ids = dlcs.map(_.dlcId)
       dlcFs = ids.map(findDLC)
       dlcs <- Future.sequence(dlcFs)
     } yield {

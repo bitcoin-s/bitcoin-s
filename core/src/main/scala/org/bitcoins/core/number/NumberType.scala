@@ -66,6 +66,7 @@ sealed abstract class Number[T <: Number[T]]
   def &(num: T): T = apply(underlying & num.underlying)
   def unary_- : T = apply(-underlying)
 
+  def truncatedBytes: ByteVector = bytes.dropWhile(_ == 0x00)
 }
 
 /** Represents a signed number in our number system
@@ -349,6 +350,10 @@ object UInt16
     UInt16(bytes.toLong(signed = false, ordering = ByteOrdering.BigEndian))
   }
 
+  def fromTruncatedBytes(bytes: ByteVector): UInt16 = {
+    fromBytes(bytes.padLeft(2))
+  }
+
   def apply(long: Long): UInt16 = {
     checkCached(long)
   }
@@ -391,6 +396,10 @@ object UInt32
       bytes.size <= 4,
       "UInt32 byte array was too large, got: " + BytesUtil.encodeHex(bytes))
     UInt32(bytes.toLong(signed = false, ordering = ByteOrdering.BigEndian))
+  }
+
+  def fromTruncatedBytes(bytes: ByteVector): UInt32 = {
+    fromBytes(bytes.padLeft(4))
   }
 
   def apply(int: Int): UInt32 = {
@@ -438,6 +447,10 @@ object UInt64
   override def fromBytes(bytes: ByteVector): UInt64 = {
     require(bytes.size <= 8)
     UInt64(NumberUtil.toUnsignedInt(bytes))
+  }
+
+  def fromTruncatedBytes(bytes: ByteVector): UInt64 = {
+    fromBytes(bytes.padLeft(8))
   }
 
   def apply(long: Long): UInt64 = {

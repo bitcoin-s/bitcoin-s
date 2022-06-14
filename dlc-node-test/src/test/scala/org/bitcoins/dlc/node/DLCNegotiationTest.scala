@@ -56,8 +56,9 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
                                         UInt32.zero,
                                         UInt32.one,
                                         None,
+                                        None,
                                         None)
-        accept <- walletA.acceptDLCOffer(offer, None, None)
+        accept <- walletA.acceptDLCOffer(offer, None, None, None)
 
         // Send accept message to begin p2p
         _ = handler ! DLCDataHandler.Received(accept.toMessage)
@@ -107,6 +108,7 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
                                         Some(SatoshisPerVirtualByte.one),
                                         UInt32.zero,
                                         UInt32.one,
+                                        None,
                                         None,
                                         None)
         tlv = SendOfferTLV(peer = "peer", message = "msg", offer = offer.toTLV)

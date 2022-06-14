@@ -1,6 +1,7 @@
 package org.bitcoins.commons.rpc
 
 import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
+import org.bitcoins.crypto.Sha256Digest
 
 import java.net.{InetSocketAddress, URI}
 import scala.util.{Failure, Try}
@@ -76,6 +77,56 @@ object ContactRemove {
             InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
           }
           ContactRemove(address)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to contact-remove, got=${other.length} expected=1")
+        Failure(exn)
+    }
+  }
+}
+
+case class DLCContactAdd(dlcId: Sha256Digest, address: InetSocketAddress)
+    extends CommandRpc
+    with AppServerCliCommand
+
+object DLCContactAdd {
+
+  val empty: DLCContactAdd =
+    DLCContactAdd(Sha256Digest.empty,
+                  InetSocketAddress.createUnresolved("127.0.0.1", 9999))
+
+  def fromJsArr(arr: ujson.Arr): Try[DLCContactAdd] = {
+    arr.arr.toList match {
+      case dlcIdJs :: addressJs :: Nil =>
+        Try {
+          val dlcId = Sha256Digest.fromHex(dlcIdJs.str)
+          val address = {
+            val uri = new URI(s"tcp://${addressJs.str}")
+            InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
+          }
+          DLCContactAdd(dlcId, address)
+        }
+      case other =>
+        val exn = new IllegalArgumentException(
+          s"Bad number or arguments to dlc-contact-add, got=${other.length} expected=2")
+        Failure(exn)
+    }
+  }
+}
+
+case class DLCContactRemove(dlcId: Sha256Digest)
+    extends CommandRpc
+    with AppServerCliCommand
+
+object DLCContactRemove {
+
+  def fromJsArr(arr: ujson.Arr): Try[DLCContactRemove] = {
+    arr.arr.toList match {
+      case dlcIdJs :: Nil =>
+        Try {
+          val dlcId = Sha256Digest.fromHex(dlcIdJs.str)
+          DLCContactRemove(dlcId)
         }
       case other =>
         val exn = new IllegalArgumentException(

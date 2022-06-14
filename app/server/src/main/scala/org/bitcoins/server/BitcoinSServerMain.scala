@@ -13,6 +13,7 @@ import akka.stream.scaladsl.{
 }
 import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.asyncutil.AsyncUtil.Exponential
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
@@ -31,7 +32,6 @@ import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet._
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider._
-import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -45,7 +45,7 @@ import org.bitcoins.wallet.models.SpendingInfoDAO
 
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.{Await, Future, Promise}
 
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
@@ -149,12 +149,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     //add callbacks to our uninitialized node
     val configuredNodeF = for {
       node <- nodeF
-      wallet <- configuredWalletF
-      initNode <- setBloomFilter(node, wallet)
+      _ <- configuredWalletF
     } yield {
       logger.info(
         s"Done configuring node, it took=${System.currentTimeMillis() - start}ms")
-      initNode
+      node
     }
 
     val dlcNodeF = for {
@@ -245,8 +244,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           val res = infoF.map(promise.success).map(_ => true)
           res.recover { case _: InWarmUp => false }
         },
+        // retry for approximately 2 hours
+        mode = Exponential,
         interval = 1.second,
-        maxTries = 100
+        maxTries = 12
       )
       info <- promise.future
     } yield info
@@ -342,23 +343,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     } yield {
       logger.info(s"Done starting Main!")
       ()
-    }
-  }
-
-  private def setBloomFilter(node: Node, wallet: Wallet)(implicit
-      ec: ExecutionContext): Future[Node] = {
-    for {
-      nodeWithBloomFilter <- node match {
-        case spvNode: SpvNode =>
-          for {
-            bloom <- wallet.getBloomFilter()
-            _ = logger.info(
-              s"Got bloom filter with ${bloom.filterSize.toInt} elements")
-          } yield spvNode.setBloomFilter(bloom)
-        case _: Node => Future.successful(node)
-      }
-    } yield {
-      nodeWithBloomFilter
     }
   }
 
@@ -500,10 +484,22 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   private def syncWalletWithBitcoindAndStartPolling(
       bitcoind: BitcoindRpcClient,
       wallet: Wallet): Future[Unit] = {
-    val f = BitcoindRpcBackendUtil
-      .syncWalletToBitcoind(bitcoind, wallet)
-      .flatMap(_ => wallet.updateUtxoPendingStates())
-      .flatMap { _ =>
+    val f = for {
+      _ <- AsyncUtil.retryUntilSatisfiedF(
+        conditionF = { () =>
+          for {
+            bitcoindHeight <- bitcoind.getBlockCount
+            walletStateOpt <- wallet.getSyncDescriptorOpt()
+          } yield walletStateOpt.forall(bitcoindHeight >= _.height)
+        },
+        // retry for approximately 2 hours
+        mode = Exponential,
+        interval = 1.second,
+        maxTries = 12
+      )
+      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
+      _ <- wallet.updateUtxoPendingStates()
+      _ <-
         if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
           BitcoindRpcBackendUtil
             .startBitcoindBlockPolling(wallet, bitcoind)
@@ -522,7 +518,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
               bitcoindRpcConf.zmqConfig)
           }
         }
-      }
+    } yield ()
 
     f.failed.foreach(err =>
       logger.error(s"Error syncing bitcoin-s wallet with bitcoind", err))

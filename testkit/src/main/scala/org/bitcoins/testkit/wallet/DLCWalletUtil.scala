@@ -276,7 +276,8 @@ object DLCWalletUtil extends Logging {
     fundingTxIdOpt = None,
     closingTxIdOpt = None,
     aggregateSignatureOpt = None,
-    serializationVersion = DLCSerializationVersion.current
+    serializationVersion = DLCSerializationVersion.current,
+    peerOpt = None
   )
 
   lazy val sampleContractDataDb: DLCContractDataDb = DLCContractDataDb(
@@ -310,10 +311,12 @@ object DLCWalletUtil extends Logging {
         feeRateOpt = Some(SatoshisPerVirtualByte.fromLong(10)),
         locktime = dummyTimeouts.contractMaturity.toUInt32,
         refundLocktime = dummyTimeouts.contractTimeout.toUInt32,
+        peerAddressOpt = None,
         externalPayoutAddressOpt = payoutAddressAOpt,
         externalChangeAddressOpt = changeAddressAOpt
       )
       accept <- walletB.acceptDLCOffer(offer,
+                                       None,
                                        payoutAddressBOpt,
                                        changeAddressBOpt)
       sigs <- walletA.signDLC(accept)

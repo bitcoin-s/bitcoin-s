@@ -19,16 +19,12 @@ object NodeType extends StringFactory[NodeType] {
     override def shortName: String = "neutrino"
   }
 
-  final case object SpvNode extends InternalImplementationNodeType {
-    override def shortName: String = "spv"
-  }
-
   final case object BitcoindBackend extends ExternalImplementationNodeType {
     override def shortName: String = "bitcoind"
   }
 
   val all: Vector[NodeType] =
-    Vector(FullNode, NeutrinoNode, SpvNode, BitcoindBackend)
+    Vector(FullNode, NeutrinoNode, BitcoindBackend)
 
   override def fromStringOpt(str: String): Option[NodeType] = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase) match {

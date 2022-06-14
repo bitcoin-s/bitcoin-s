@@ -4,6 +4,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParamet
 import org.bitcoins.commons.jsonmodels.cli.ContractDescriptorParser
 import org.bitcoins.commons.serializers.JsonReaders
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
+import org.bitcoins.core.config.DLC
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.AddressType
@@ -15,11 +16,9 @@ import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
 import org.bitcoins.crypto._
-import org.bitcoins.server.GetDLC.nullToOpt
 import scodec.bits.ByteVector
 import ujson._
 
@@ -673,6 +672,27 @@ object SendToAddress extends ServerJsonModels {
 
 }
 
+case class GetDLCs(contactId: Option[InetSocketAddress])
+
+object GetDLCs extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetDLCs] = {
+    jsArr.arr.toList match {
+      case addressJs :: Nil =>
+        Try {
+          val address = jsToInetSocketAddress(addressJs)
+          GetDLCs(Some(address))
+        }
+      case Nil =>
+        Try(GetDLCs(None))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
 case class GetDLC(dlcId: Sha256Digest)
 
 object GetDLC extends ServerJsonModels {
@@ -701,7 +721,8 @@ case class CreateDLCOffer(
     locktimeOpt: Option[UInt32],
     refundLocktime: UInt32,
     externalPayoutAddressOpt: Option[BitcoinAddress],
-    externalChangeAddressOpt: Option[BitcoinAddress])
+    externalChangeAddressOpt: Option[BitcoinAddress],
+    peerAddressOpt: Option[InetSocketAddress])
 
 object CreateDLCOffer extends ServerJsonModels {
 
@@ -714,7 +735,8 @@ object CreateDLCOffer extends ServerJsonModels {
         locktimeJs: Value,
         refundLTJs: Value,
         payoutAddressJs: Value,
-        changeAddressJs: Value) = Try {
+        changeAddressJs: Value,
+        peerAddressJs: Value) = Try {
       val contractInfoTLV = jsToContractInfoTLV(contractInfoJs)
       val collateral = jsToSatoshis(collateralJs)
       val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
@@ -727,13 +749,17 @@ object CreateDLCOffer extends ServerJsonModels {
       val changeAddressJsOpt = nullToOpt(changeAddressJs)
       val changeAddressOpt =
         changeAddressJsOpt.map(js => jsToBitcoinAddress(js))
+      val peerAddressJsOpt = nullToOpt(peerAddressJs)
+      val peerAddressOpt = peerAddressJsOpt.map(js => jsToInetSocketAddress(js))
+
       CreateDLCOffer(contractInfoTLV,
                      collateral,
                      feeRate,
                      locktimeOpt,
                      refundLT,
                      payoutAddressOpt,
-                     changeAddressOpt)
+                     changeAddressOpt,
+                     peerAddressOpt)
     }
 
     jsArr.arr.toList match {
@@ -744,6 +770,7 @@ object CreateDLCOffer extends ServerJsonModels {
                         locktimeJs,
                         refundLTJs,
                         Null,
+                        Null,
                         Null)
       case contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: payoutAddressJs :: Nil =>
         parseParameters(contractInfoJs,
@@ -752,6 +779,7 @@ object CreateDLCOffer extends ServerJsonModels {
                         locktimeJs,
                         refundLTJs,
                         payoutAddressJs,
+                        Null,
                         Null)
       case contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: payoutAddressJs :: changeAddressJs :: Nil =>
         parseParameters(contractInfoJs,
@@ -760,7 +788,17 @@ object CreateDLCOffer extends ServerJsonModels {
                         locktimeJs,
                         refundLTJs,
                         payoutAddressJs,
-                        changeAddressJs)
+                        changeAddressJs,
+                        Null)
+      case contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: payoutAddressJs :: changeAddressJs :: peerAddressJs :: Nil =>
+        parseParameters(contractInfoJs,
+                        collateralJs,
+                        feeRateOptJs,
+                        locktimeJs,
+                        refundLTJs,
+                        payoutAddressJs,
+                        changeAddressJs,
+                        peerAddressJs)
       case other =>
         Failure(
           new IllegalArgumentException(
@@ -928,7 +966,8 @@ object DecodeAttestations extends ServerJsonModels {
 case class AcceptDLCOffer(
     offer: LnMessage[DLCOfferTLV],
     externalPayoutAddressOpt: Option[BitcoinAddress],
-    externalChangeAddressOpt: Option[BitcoinAddress])
+    externalChangeAddressOpt: Option[BitcoinAddress],
+    peerAddress: Option[InetSocketAddress])
 
 object AcceptDLCOffer extends ServerJsonModels {
 
@@ -936,7 +975,8 @@ object AcceptDLCOffer extends ServerJsonModels {
     def parseParameters(
         offerJs: Value,
         payoutAddressJs: Value,
-        changeAddressJs: Value) = Try {
+        changeAddressJs: Value,
+        peerAddressJs: Value) = Try {
       val offer = LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str)
       val payoutAddressJsOpt = nullToOpt(payoutAddressJs)
       val payoutAddressOpt =
@@ -944,16 +984,23 @@ object AcceptDLCOffer extends ServerJsonModels {
       val changeAddressJsOpt = nullToOpt(changeAddressJs)
       val changeAddressOpt =
         changeAddressJsOpt.map(js => jsToBitcoinAddress(js))
-      AcceptDLCOffer(offer, payoutAddressOpt, changeAddressOpt)
+      val peerAddressJsOpt = nullToOpt(peerAddressJs)
+      val peerAddress = peerAddressJsOpt.map(js => jsToInetSocketAddress(js))
+      AcceptDLCOffer(offer, payoutAddressOpt, changeAddressOpt, peerAddress)
     }
 
     jsArr.arr.toList match {
       case offerJs :: Nil =>
-        parseParameters(offerJs, Null, Null)
+        parseParameters(offerJs, Null, Null, Null)
       case offerJs :: payoutAddressJs :: Nil =>
-        parseParameters(offerJs, payoutAddressJs, Null)
+        parseParameters(offerJs, payoutAddressJs, Null, Null)
       case offerJs :: payoutAddressJs :: changeAddressJs :: Nil =>
-        parseParameters(offerJs, payoutAddressJs, changeAddressJs)
+        parseParameters(offerJs, payoutAddressJs, changeAddressJs, Null)
+      case offerJs :: payoutAddressJs :: changeAddressJs :: peerAddressJs :: Nil =>
+        parseParameters(offerJs,
+                        payoutAddressJs,
+                        changeAddressJs,
+                        peerAddressJs)
       case Nil =>
         Failure(new IllegalArgumentException("Missing offer argument"))
 
@@ -986,9 +1033,7 @@ object AcceptDLC extends ServerJsonModels {
         case Failure(_) => LnMessage(DLCOfferTLV.fromHex(offerJs.str))
       }
 
-      val uri = new URI("tcp://" + addrJs.str)
-      val peerAddr =
-        InetSocketAddress.createUnresolved(uri.getHost, uri.getPort)
+      val peerAddr = jsToInetSocketAddress(addrJs)
       val payoutAddressJsOpt = nullToOpt(payoutAddressJs)
       val payoutAddressOpt =
         payoutAddressJsOpt.map(js => jsToBitcoinAddress(js))
@@ -1414,7 +1459,7 @@ case class OfferAdd(
     peer: Option[String],
     message: Option[String])
 
-object OfferAdd {
+object OfferAdd extends ServerJsonModels {
 
   def fromJsArr(arr: ujson.Arr): Try[OfferAdd] = {
     arr.arr.toList match {
@@ -1458,14 +1503,14 @@ case class OfferSend(
     message: String,
     offerE: Either[DLCOfferTLV, Sha256Digest])
 
-object OfferSend {
+object OfferSend extends ServerJsonModels {
 
   def fromJsArr(arr: ujson.Arr): Try[OfferSend] = {
     arr.arr.toList match {
       case offerJs :: peerAddressJs :: messageJs :: Nil =>
         Try {
           val peerAddress =
-            NetworkUtil.parseInetSocketAddress(peerAddressJs.str, 2862)
+            jsToInetSocketAddress(peerAddressJs, DLC.DefaultPort)
           val message = messageJs.str
           val offerE =
             Try(LnMessageFactory(DLCOfferTLV).fromHex(offerJs.str).tlv)
@@ -1673,5 +1718,18 @@ trait ServerJsonModels {
           "mnemonic must be a string or array of strings")
     }
     MnemonicCode.fromWords(mnemonicWords)
+  }
+
+  def jsToInetSocketAddress(
+      js: Value,
+      defaultPort: Int = -1): InetSocketAddress = {
+    js match {
+      case str: Str =>
+        val uri = new URI("tcp://" + str.str)
+        val port = if (uri.getPort >= 0) uri.getPort else defaultPort
+        InetSocketAddress.createUnresolved(uri.getHost, port)
+      case _: Value =>
+        throw Value.InvalidData(js, "Expected a host address")
+    }
   }
 }

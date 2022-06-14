@@ -10,12 +10,12 @@ import org.scalatest.FutureOutcome
 class DisconnectedPeerTest extends NodeUnitTest {
 
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvWithEmbeddedDbTestConfig(pgUrl, Vector.empty)
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
-  override type FixtureParam = SpvNode
+  override type FixtureParam = NeutrinoNode
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withDisconnectedSpvNode(test)(system, getFreshConfig)
+    withDisconnectedNeutrinoNode(test)(system, getFreshConfig)
 
   it must "fail to broadcast a transaction when disconnected" in { node =>
     val tx = TransactionGenerators.transaction.sampleSome

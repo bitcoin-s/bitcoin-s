@@ -9,6 +9,9 @@ import org.bitcoins.core.protocol.dlc.models.{
   OutcomePayoutPoint,
   PiecewisePolynomialEndpoint
 }
+import org.bitcoins.core.protocol.ln.PaymentSecret
+import org.bitcoins.core.protocol.ln.channel.ShortChannelId
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.tlv.TLV.{
   DecodeTLVResult,
@@ -163,6 +166,10 @@ object TLV extends TLVParentFactory[TLV] {
     Vector(
       InitTLV,
       ErrorTLV,
+      AmtToForwardTLV,
+      OutgoingCLTVValueTLV,
+      ShortChannelIdTLV,
+      PaymentDataTLV,
       PingTLV,
       PongTLV,
       OracleEventV0TLV,
@@ -295,6 +302,94 @@ object UnknownTLV extends Factory[UnknownTLV] {
 
     UnknownTLV(tpe, value)
   }
+}
+
+case class AmtToForwardTLV(amt: MilliSatoshis) extends TLV {
+  override val tpe: BigSizeUInt = AmtToForwardTLV.tpe
+
+  override val value: ByteVector = {
+    amt.toUInt64.truncatedBytes
+  }
+}
+
+object AmtToForwardTLV extends TLVFactory[AmtToForwardTLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(2)
+
+  override def fromTLVValue(value: ByteVector): AmtToForwardTLV = {
+    val uint64 = UInt64.fromTruncatedBytes(value)
+    val msat = MilliSatoshis(uint64.toBigInt)
+
+    AmtToForwardTLV(msat)
+  }
+
+  override val typeName: String = "AmtToForwardTLV"
+}
+
+case class OutgoingCLTVValueTLV(cltv: UInt32) extends TLV {
+  override val tpe: BigSizeUInt = OutgoingCLTVValueTLV.tpe
+
+  override val value: ByteVector = {
+    cltv.truncatedBytes
+  }
+}
+
+object OutgoingCLTVValueTLV extends TLVFactory[OutgoingCLTVValueTLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(4)
+
+  override def fromTLVValue(value: ByteVector): OutgoingCLTVValueTLV = {
+    val iter = ValueIterator(value)
+
+    val cltv = UInt32.fromTruncatedBytes(iter.current)
+
+    OutgoingCLTVValueTLV(cltv)
+  }
+
+  override val typeName: String = "OutgoingCLTVValueTLV"
+}
+
+case class ShortChannelIdTLV(scid: ShortChannelId) extends TLV {
+  override val tpe: BigSizeUInt = ShortChannelIdTLV.tpe
+
+  override val value: ByteVector = scid.bytes
+}
+
+object ShortChannelIdTLV extends TLVFactory[ShortChannelIdTLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(6)
+
+  override def fromTLVValue(value: ByteVector): ShortChannelIdTLV = {
+    val iter = ValueIterator(value)
+
+    val scid = iter.take(ShortChannelId, 8)
+
+    ShortChannelIdTLV(scid)
+  }
+
+  override val typeName: String = "ShortChannelIdTLV"
+}
+
+case class PaymentDataTLV(paymentSecret: PaymentSecret, msats: MilliSatoshis)
+    extends TLV {
+  override val tpe: BigSizeUInt = PaymentDataTLV.tpe
+
+  override val value: ByteVector = {
+    paymentSecret.bytes ++ msats.toUInt64.truncatedBytes
+  }
+}
+
+object PaymentDataTLV extends TLVFactory[PaymentDataTLV] {
+  override val tpe: BigSizeUInt = BigSizeUInt(8)
+
+  override def fromTLVValue(value: ByteVector): PaymentDataTLV = {
+    val iter = ValueIterator(value)
+
+    val secret = iter.take(PaymentSecret, 32)
+    val uint64 = UInt64.fromTruncatedBytes(iter.current)
+    val msat = MilliSatoshis(uint64.toBigInt)
+
+    PaymentDataTLV(secret, msat)
+  }
+
+  override val typeName: String = "PaymentDataTLV"
 }
 
 /** @see https://github.com/lightningnetwork/lightning-rfc/blob/master/01-messaging.md#the-init-message */

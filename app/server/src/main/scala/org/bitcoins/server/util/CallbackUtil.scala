@@ -45,10 +45,6 @@ object CallbackUtil extends Logging {
       }
     }
     nodeConf.nodeType match {
-      case NodeType.SpvNode =>
-        Future.successful(
-          NodeCallbacks(onTxReceived = Vector(onTx),
-                        onBlockHeadersReceived = Vector(onHeaders)))
       case NodeType.NeutrinoNode =>
         Future.successful(
           NodeCallbacks(onTxReceived = Vector(onTx),

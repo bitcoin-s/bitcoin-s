@@ -3,7 +3,7 @@ package org.bitcoins.server
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import org.bitcoins.commons.rpc.{ContactAdd, ContactRemove}
+import org.bitcoins.commons.rpc._
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
@@ -157,6 +157,33 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
               Server.httpSuccess("ok")
             }
         }
+      }
+
+    case ServerCommand("dlc-contact-add", arr) =>
+      withValidServerCommand(DLCContactAdd.fromJsArr(arr)) { dlcContactAdd =>
+        complete {
+          dlcNode.wallet
+            .addDLCContactMapping(dlcContactAdd.dlcId, dlcContactAdd.address)
+            .map { _ =>
+              val dlcId = dlcContactAdd.dlcId.hex
+              val contactId =
+                dlcContactAdd.address.getHostName + ":" + dlcContactAdd.address.getPort
+              Server.httpSuccess(
+                ujson.Obj("dlcId" -> dlcId, "contactId" -> contactId))
+            }
+        }
+      }
+
+    case ServerCommand("dlc-contact-remove", arr) =>
+      withValidServerCommand(DLCContactRemove.fromJsArr(arr)) {
+        dlcContactRemove =>
+          complete {
+            dlcNode.wallet
+              .removeDLCContactMapping(dlcContactRemove.dlcId)
+              .map { _ =>
+                Server.httpSuccess("ok")
+              }
+          }
       }
 
   }

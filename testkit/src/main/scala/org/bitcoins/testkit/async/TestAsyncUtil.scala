@@ -13,14 +13,15 @@ abstract class TestAsyncUtil extends AsyncUtil with Serializable {
       duration: FiniteDuration,
       counter: Int,
       maxTries: Int,
-      stackTrace: Array[StackTraceElement])(implicit
-      ec: ExecutionContext): Future[Unit] = {
+      stackTrace: Array[StackTraceElement],
+      mode: RetryMode)(implicit ec: ExecutionContext): Future[Unit] = {
     val retryF = super
       .retryUntilSatisfiedWithCounter(conditionF,
                                       duration,
                                       counter,
                                       maxTries,
-                                      stackTrace)
+                                      stackTrace,
+                                      mode)
 
     TestAsyncUtil.transformRetryToTestFailure(retryF)
   }

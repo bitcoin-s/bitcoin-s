@@ -10,7 +10,6 @@ import org.bitcoins.core.api.wallet.{
   BlockSyncState,
   CoinSelectionAlgo
 }
-import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
@@ -373,45 +372,6 @@ abstract class Wallet
   /** Enumerates all the TX outpoints in the wallet */
   protected[wallet] def listOutpoints(): Future[Vector[TransactionOutPoint]] =
     spendingInfoDAO.findAllOutpoints()
-
-  /** Gets the size of the bloom filter for this wallet */
-  private def getBloomFilterSize(
-      pubkeys: Seq[ECPublicKey],
-      outpoints: Seq[TransactionOutPoint]): Int = {
-    // when a public key is inserted into a filter
-    // both the pubkey and the hash of the pubkey
-    // gets inserted
-    pubkeys.length * 2
-  } + outpoints.length
-
-  // todo: insert TXIDs? need to track which txids we should
-  // ask for, somehow
-  // We add all outpoints to the bloom filter as a way
-  // of working around the fact that bloom filters
-  // was never updated to incorporate SegWit changes.
-  // see this mailing list thread for context:
-  //   https://www.mail-archive.com/bitcoin-dev@lists.linuxfoundation.org/msg06950.html
-  // especially this email from Jim Posen:
-  //   https://www.mail-archive.com/bitcoin-dev@lists.linuxfoundation.org/msg06952.html
-  override def getBloomFilter(): Future[BloomFilter] = {
-    for {
-      pubkeys <- listPubkeys()
-      outpoints <- listOutpoints()
-    } yield {
-      val filterSize = getBloomFilterSize(pubkeys, outpoints)
-
-      // todo: Is this the best flag to use?
-      val bloomFlag = BloomUpdateAll
-
-      val baseBloom =
-        BloomFilter(numElements = filterSize,
-                    falsePositiveRate = walletConfig.bloomFalsePositiveRate,
-                    flags = bloomFlag)
-
-      val withPubs = pubkeys.foldLeft(baseBloom) { _.insert(_) }
-      outpoints.foldLeft(withPubs) { _.insert(_) }
-    }
-  }
 
   /** Takes a [[RawTxBuilderWithFinalizer]] for a transaction to be sent, and completes it by:
     * finalizing and signing the transaction, then correctly processing and logging it

@@ -1,6 +1,6 @@
 package org.bitcoins.dlc.wallet
 
-import org.bitcoins.core.api.dlc.wallet.db.DLCDb
+import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, DLCDb}
 import org.bitcoins.core.api.wallet.db.TransactionDbHelper
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{UInt32, UInt64}
@@ -17,6 +17,8 @@ import org.bitcoins.testkit.fixtures.DLCDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, DLCWalletUtil}
 import org.scalatest.Assertion
 
+import java.net.InetSocketAddress
+import java.sql.SQLException
 import scala.concurrent.Future
 
 class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
@@ -218,5 +220,40 @@ class DLCDAOTest extends BitcoinSWalletTest with DLCDAOFixture {
       TransactionDbHelper.fromTransaction(DLCWalletUtil.dummyPrevTx, None)
 
     verifyDatabaseInsertion(tx, tx.txIdBE, remoteTxDAO, daos.dlcDAO)
+  }
+
+  it should "update peer" in { daos =>
+    val contact = DLCContactDb(
+      address = InetSocketAddress.createUnresolved("127.0.0.1", 1),
+      alias = "alias",
+      memo = "memo"
+    )
+    for {
+      // no contact
+      _ <- recoverToSucceededIf[SQLException](
+        daos.dlcDAO.updateDLCContactMapping(dlcId, contact.address))
+
+      _ <- daos.contactDAO.create(contact)
+
+      // no dlc
+      _ <- recoverToSucceededIf[SQLException](
+        daos.dlcDAO.updateDLCContactMapping(dlcId, contact.address))
+      _ <- recoverToSucceededIf[SQLException](
+        daos.dlcDAO.deleteDLCContactMapping(dlcId))
+
+      created <- daos.dlcDAO.create(dlcDb)
+
+      _ <- daos.dlcDAO.updateDLCContactMapping(dlcId, contact.address)
+
+      updated <- daos.dlcDAO.read(dlcId)
+
+      _ <- daos.dlcDAO.deleteDLCContactMapping(dlcId)
+
+      deleted <- daos.dlcDAO.read(dlcId)
+    } yield {
+      assert(created.peerOpt.isEmpty)
+      assert(updated.get.peerOpt == Some("127.0.0.1:1"))
+      assert(deleted.get.peerOpt.isEmpty)
+    }
   }
 }

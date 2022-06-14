@@ -3,9 +3,8 @@ package org.bitcoins.core.protocol.script.testprotocol
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.crypto.{DoubleSha256Digest, HashType}
 import ujson._
 import upickle.default._
 
@@ -34,7 +33,7 @@ object SignatureHashTestCase {
       val script: ScriptPubKey = ScriptPubKey(asm)
       val inputIndex: UInt32 = UInt32(elements(2).num.toInt)
       val hashTypeNum: Int32 = Int32(elements(3).num.toInt)
-      val hashType: HashType = HashType(hashTypeNum)
+      val hashType: HashType = HashType(hashTypeNum.toInt)
       val hash: DoubleSha256Digest =
         DoubleSha256Digest(elements.last.str)
       SignatureHashTestCase(transaction,

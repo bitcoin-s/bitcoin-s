@@ -210,6 +210,21 @@ class Bech32mTest extends BitcoinSUnitTest {
     }
   }
 
+  it must "validate addresses as non standard" in {
+    // Taproot address with invalid x-only pubkey
+    assert(
+      !Bech32mAddress
+        .fromString(
+          "bc1pvkpqgqe7g6sl4rxwhpqp8nlz6dmv5uk47k2nr9yhh9ds32ny49cqdcghmx")
+        .isStandard)
+
+    // segwit v2 address
+    assert(
+      !Bech32mAddress
+        .fromString("bc1zw508d6qejxtdg4y5r3zarvaryvaxxpcs")
+        .isStandard)
+  }
+
   @tailrec
   private def pickReplacementChar(oldChar: Char): Char = {
     val rand = Math.abs(Random.nextInt())

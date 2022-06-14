@@ -40,6 +40,8 @@ sealed abstract class CryptoGenerators {
   def schnorrPublicKey: Gen[SchnorrPublicKey] =
     publicKey.map(_.schnorrPublicKey)
 
+  def xOnlyPubKey: Gen[XOnlyPubKey] = publicKey.map(_.toXOnly)
+
   /** Generate a sequence of private keys
     * @param num maximum number of keys to generate
     * @return
@@ -92,6 +94,10 @@ sealed abstract class CryptoGenerators {
       privKey <- privateKey
       hash <- CryptoGenerators.doubleSha256Digest
     } yield privKey.sign(hash)
+
+  def hashType: Gen[HashType] = {
+    Gen.oneOf(HashType.hashTypes)
+  }
 
   def schnorrDigitalSignature: Gen[SchnorrDigitalSignature] = {
     for {

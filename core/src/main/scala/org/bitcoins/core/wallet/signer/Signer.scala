@@ -7,11 +7,10 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.wallet.builder.TxBuilderError
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.{HashType, _}
 import scodec.bits.ByteVector
 
 sealed abstract class SignerUtils {

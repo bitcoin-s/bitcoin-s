@@ -2,7 +2,6 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnits
-import org.bitcoins.core.number.Int32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCase
 import org.bitcoins.core.protocol.transaction.{
@@ -11,10 +10,9 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput,
   WitnessTransaction
 }
-import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.crypto.{DoubleSha256Digest, ECDigitalSignature}
+import org.bitcoins.crypto._
 import org.bitcoins.testkitcore.util.{BitcoinSJvmTest, TestUtil}
 import scodec.bits.ByteVector
 import upickle.default._
@@ -90,8 +88,7 @@ class ScriptSignatureTest extends BitcoinSJvmTest {
     val hex =
       "8c493046022100d23459d03ed7e9511a47d13292d3430a04627de6235b6e51a40f9cd386f2abe3022100e7d25b080f0bb8d8d5f878bba7d54ad2fda650ea8d158a33ee3cbd11768191fd004104b0e2c879e4daf7b9ab68350228c159766676a14f5815084ba166432aab46198d4cca98fa3e9981d0a90b2effc514b76279476550ba3663fdcaff94c38420e9d5"
     val scriptSig: ScriptSignature = RawScriptSignatureParser.read(hex)
-    HashType(scriptSig.signatures.head.bytes.last) must be(
-      SIGHASH_ALL(Int32.zero))
+    HashType(scriptSig.signatures.head.bytes.last) must be(SIGHASH_ALL(0))
   }
 
   it must "have an empty script signature" in {

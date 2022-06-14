@@ -37,7 +37,8 @@ case class DLCDb(
     fundingTxIdOpt: Option[DoubleSha256DigestBE],
     closingTxIdOpt: Option[DoubleSha256DigestBE],
     aggregateSignatureOpt: Option[SchnorrDigitalSignature],
-    serializationVersion: DLCSerializationVersion
+    serializationVersion: DLCSerializationVersion,
+    peerOpt: Option[String]
 ) extends LastUpdatedDb {
 
   def updateState(newState: DLCState): DLCDb = {
@@ -60,5 +61,9 @@ case class DLCDb(
 
   def updateAggregateSignature(sig: SchnorrDigitalSignature): DLCDb = {
     copy(aggregateSignatureOpt = Some(sig), lastUpdated = TimeUtil.now)
+  }
+
+  def updatePeer(peer: String): DLCDb = {
+    copy(peerOpt = Some(peer))
   }
 }

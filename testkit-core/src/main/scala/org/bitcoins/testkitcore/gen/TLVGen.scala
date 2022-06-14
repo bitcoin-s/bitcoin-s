@@ -13,6 +13,7 @@ import org.bitcoins.core.util.sorted._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkitcore.dlc.DLCTestUtil
+import org.bitcoins.testkitcore.gen.ln._
 import org.scalacheck.Gen
 
 trait TLVGen {
@@ -50,6 +51,39 @@ trait TLVGen {
       data <- NumberGenerator.bytevector
     } yield {
       ErrorTLV(id, data)
+    }
+  }
+
+  def amtToForwardTLV: Gen[AmtToForwardTLV] = {
+    for {
+      msat <- LnCurrencyUnitGen.milliSatoshis
+    } yield {
+      AmtToForwardTLV(msat)
+    }
+  }
+
+  def outgoingCLTVValueTLV: Gen[OutgoingCLTVValueTLV] = {
+    for {
+      uint32 <- NumberGenerator.uInt32s
+    } yield {
+      OutgoingCLTVValueTLV(uint32)
+    }
+  }
+
+  def shortChannelIdTLV: Gen[ShortChannelIdTLV] = {
+    for {
+      scid <- LnRouteGen.shortChannelId
+    } yield {
+      ShortChannelIdTLV(scid)
+    }
+  }
+
+  def paymentDataTLV: Gen[PaymentDataTLV] = {
+    for {
+      secretTag <- LnInvoiceGen.secret
+      msat <- LnCurrencyUnitGen.milliSatoshis
+    } yield {
+      PaymentDataTLV(secretTag.secret, msat)
     }
   }
 
@@ -568,6 +602,10 @@ trait TLVGen {
       errorTLV,
       pingTLV,
       pongTLV,
+      amtToForwardTLV,
+      outgoingCLTVValueTLV,
+      shortChannelIdTLV,
+      paymentDataTLV,
       oracleEventV0TLV,
       eventDescriptorTLV,
       oracleAnnouncementV0TLV,

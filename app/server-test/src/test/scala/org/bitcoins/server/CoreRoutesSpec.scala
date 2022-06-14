@@ -14,7 +14,7 @@ class CoreRoutesSpec
     with MockFactory {
 
   implicit val conf: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getNeutrinoTestConfig()
   val coreRoutes = CoreRoutes()
 
   "Core routes" should {
