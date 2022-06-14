@@ -1,11 +1,10 @@
 # 1.9.2
-Sort commits up to d8fc8e588ff04575b23dfc236418c71b11d566b1
 
 This release is backwards compatible with the 1.9.2 release of bitcoin-s
 
 See the individual module sections for more information on lower level updates to the codebase.
 
-A major developer UX improvement we had since this release is the ability for a developer to spin up a docker environment for the DLC wallet easily. [See instructions here](https://github.com/bitcoin-s/bitcoin-s/#docker)
+Want to get started quickly? See our `docker-compose.yml` file. [See instructions here](https://github.com/bitcoin-s/bitcoin-s/#docker)
 
 If you are a typescript developer, [you can access the backend via our typescript library](https://github.com/bitcoin-s/bitcoin-s-ts)
 
@@ -74,9 +73,19 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## app commons
 
+Adds the ability to stream logs from a process (such as tor) to our `bitcoin-s.log` file.
+
 488716d10a Add ProcessLogger to ProcessBuilder so that we capture logs from binaries like tor (#4327)
 
 ## App server
+
+Improves logging capability, we will now cap log files at 100MB and roll over to a new one.
+The old file will be archived and compressed. The total archive size for log files is capped at 5GB.
+
+This release also improves startup time of the backend by decoupling binding of the http server & tor startup.\
+
+Finally, in some cases on raspberry pi's bitcoind can drop blocks and need to re-sync.
+This release implements logic to retry connecting to bitcoind with an exponential backoff.
 
 1ad540703c Improve bitcoind connection retry logic (#4386)
 8a01432db4 Try to debug why shutdown isn't working on windows (#4349)
@@ -94,7 +103,15 @@ e3e59923c4 Parallelize some startup on startBitcoinSBackend() to increase perfor
 
 ## bundle
 
+The bundle will be removed in future releases. 
+We are implementing a new electron GUI, it can be found here: https://github.com/bitcoin-s/bitcoin-s-ts
+
 ## Build
+
+The major improvement this release is integrating [jlink](https://docs.oracle.com/en/java/javase/11/tools/jlink.html)
+`jlink` allows you to ship with a custom JRE in the application you ship so the user doesn't need to download Java.
+
+There is some caveats to using `jlink` on arm64 machines, see #4383.
 
 cbeae5cdbc Remove carve out for protoc on aarch64 now that the akka grpc plugin has been updated (#4384)
 171001273c Implement a workaround for 4369 on docker images and m1 macs IF the user has another java installed on their machine (#4377)
@@ -105,6 +122,12 @@ dd9a9dcea6 Remove explicit inclusion of jdk.unsupported as its not included by d
 cbfe684352 Reduce what gets tested on tor CI (#4274)
 
 ## Core
+
+Begins laying the ground work for Taproot by including the `XOnlyPubKey` data structure.
+
+Adds various TLVs defined in BOLT14.
+
+Finally fixes various bugs and improves ergonomics of the core library.
 
 ddbdde495d 2022 06 13 taprootspk xonlypubkey (#4388)
 7e2ecd9d6a Added data structure for x-only public keys with undetermined parity (#4387)
@@ -118,10 +141,16 @@ efc1f9fb77 Have Satoshis extend Numeric (#4364)
 
 ## Crypto
 
+Rework how `HashType` is handled in the `ECDigitalSignature` API.
+Previously it was extremely confusing whether an `ECDigitalSiganture` had a `HashType` or not.
+Now you can call `ECDigitalSignature.hashTypeOpt` to determine if the signature has a `HashType`.
+
 b80bf4649e Add HashType to ECDigitalSignature API (#4320)
 f42d7ae8e7 Added validation to signature methods to avoid corruption edge cases (#4214)
 
 ## db commons
+
+Allow other library users to access the internal flyway configuration.
 
 441937238f Make flyway protected so other apps can access it (#4372)
 
@@ -130,6 +159,13 @@ f42d7ae8e7 Added validation to signature methods to avoid corruption edge cases 
 272f31aeaa Fix race condition on DLC node startup wrt to tor (#4335)
 
 ## DLC wallet
+
+This release of the DLC wallet introduces the concept of `Contacts`. 
+These are people you are frequently doing DLCs so we should save their information to make it easier to enter
+into a new DLC with that same contact.
+
+This PR also adds a mapping between DLCs in the wallet and the contact you are doing the DLC with.
+Now the contact information will be shown by the DLC so you can remember who you did the DLC with.
 
 fdf281b469 DLC <-> contact mapping (#4346)
 79b4f096ec Improve logging around signDLC (#4299)
@@ -142,6 +178,8 @@ d29bad3437 Add better logs for a DLCWallet.cancelDLC() (#4278)
 ## keymanager
 
 ## Lnd rpc
+
+Update lnd to 0.14.3, implement probing with lnd, and various bug fixes.
 
 762202a54d Add test/example on how to use the channel acceptor (#4375)
 c2d8735dd7 LND: Add configs for gossip in test env (#4378)
@@ -161,9 +199,13 @@ b8a984a986 Implement probing in lnd (#4202)
 
 ## Lnurl
 
+Adds an initial implementation of the [LnURL specification](https://lnurl.com/). 
+
 d60d984a6b LnURL Module (#4295)
 
 ## node
+
+Removes old SPV code as that was not used and is being slowly deprecated on the bitcoin network.
 
 d8fc8e588f Remove Spv code (#4356)
 b980c432fd Bump node initialization timeout to 20 seconds (#4328)
@@ -171,9 +213,17 @@ ce00d3ac36 Segregate handling of Tcp.ErrorClosed command from the rest of Tcp.Co
 
 ## Oracle Explorer Client
 
+Adds tor endpoints for the Suredbits Oracle Explorer so you can send announcements/attestations directly to the hidden service.
+
 c9502babba Tor endpoints for the oracle explorer client (#4314)
 
 ## wallet
+
+This release fixes a bug where we could create a duplicate UTXO in the wallet.
+If this bug is detected in the wallet, this will trigger a rescan on wallet startup to correct wallet state.
+
+This also fixes a bug in our sql queries where we fetch too many outpoints at one time for a block.
+This resulted in a SQL exception. Now we break the query up into smaller queries.
 
 bf88d0d93f Remove exception when we have zero relevant outputs (#4352)
 f680ab8691 Persist whether wallet is rescanning in the database (#4326)
