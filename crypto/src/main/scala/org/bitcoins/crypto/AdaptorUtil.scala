@@ -85,7 +85,7 @@ object AdaptorUtil {
     }
 
     val untweakedNonce = k.getPublicKey // k*G
-    val tweakedNonce = adaptorPoint.tweakMultiply(k) // k*Y
+    val tweakedNonce = adaptorPoint.multiply(k) // k*Y
 
     // DLEQ_prove((G,R'),(Y, R))
     val (proofE, proofS) = DLEQUtil.dleqProve(k, adaptorPoint, auxRand)
@@ -104,7 +104,7 @@ object AdaptorUtil {
       msg: ByteVector): FieldElement = {
     val m = FieldElement(msg)
     val untweakedPoint =
-      m.getPublicKey.add(pubKey.tweakMultiply(rx)).tweakMultiply(s.inverse)
+      m.getPublicKey.add(pubKey.multiply(rx)).multiply(s.inverse)
 
     FieldElement(untweakedPoint.bytes.tail)
   }

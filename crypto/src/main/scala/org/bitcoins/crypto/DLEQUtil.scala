@@ -30,7 +30,7 @@ object DLEQUtil {
       fe: FieldElement,
       adaptorPoint: ECPublicKey): (ECPublicKey, ECPublicKey) = {
     val point = fe.getPublicKey
-    val tweakedPoint = adaptorPoint.tweakMultiply(fe)
+    val tweakedPoint = adaptorPoint.multiply(fe)
 
     (point, tweakedPoint)
   }
@@ -121,8 +121,8 @@ object DLEQUtil {
       p1: ECPublicKey,
       adaptor: ECPublicKey,
       p2: ECPublicKey): Boolean = {
-    val r1 = p1.tweakMultiply(e.negate).add(s.getPublicKey)
-    val r2 = p2.tweakMultiply(e.negate).add(adaptor.tweakMultiply(s))
+    val r1 = p1.multiply(e.negate).add(s.getPublicKey)
+    val r2 = p2.multiply(e.negate).add(adaptor.multiply(s))
     val challengeHash = dleqChallengeHash(adaptor, r1, r2, p1, p2)
 
     challengeHash == e.bytes

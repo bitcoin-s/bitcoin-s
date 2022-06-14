@@ -158,4 +158,11 @@ class ECPublicKeyTest extends BitcoinSCryptoTest {
     succeed
   }
 
+  it must "compute public keys from private keys by multiplying by G" in {
+    val G = CryptoParams.getG
+    forAll(CryptoGenerators.privateKey) { privKey =>
+      assert(privKey.publicKey == G.multiply(privKey.fieldElement))
+    }
+  }
+
 }

@@ -308,7 +308,7 @@ trait CryptoRuntime {
         val negE = e.negate
 
         val sigPoint = s.publicKey
-        val challengePoint = schnorrPubKey.publicKey.tweakMultiply(negE)
+        val challengePoint = schnorrPubKey.publicKey.multiply(negE)
         val computedR = challengePoint.toPoint.add(sigPoint.toPoint)
         computedR match {
           case SecpPointInfinity => false
@@ -331,7 +331,7 @@ trait CryptoRuntime {
     val e = FieldElement(eBytes)
 
     val compressedSigPoint =
-      nonce.publicKey.add(pubKey.publicKey.tweakMultiply(e))
+      nonce.publicKey.add(pubKey.publicKey.multiply(e))
 
     if (compressed) {
       compressedSigPoint

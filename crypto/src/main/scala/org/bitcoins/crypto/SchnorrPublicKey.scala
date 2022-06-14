@@ -46,7 +46,7 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
           (aggHash.add(hash), aggPoint.add(nonce))
       }
 
-    this.publicKey.tweakMultiply(aggHashes.fieldElement).add(aggNonces)
+    this.publicKey.multiply(aggHashes.fieldElement).add(aggNonces)
   }
 
   def computeSigPoint(

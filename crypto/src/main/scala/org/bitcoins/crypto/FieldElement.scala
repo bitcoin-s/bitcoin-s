@@ -36,9 +36,6 @@ object FieldElement
     new FieldElement(bytes)
   }
 
-  // CryptoParams.curve.getG
-  private val G: ECPublicKey = ECPublicKey(
-    "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
-
-  def computePoint(fe: FieldElement): ECPublicKey = G.tweakMultiply(fe)
+  def computePoint(fe: FieldElement): ECPublicKey =
+    CryptoParams.getG.multiply(fe)
 }

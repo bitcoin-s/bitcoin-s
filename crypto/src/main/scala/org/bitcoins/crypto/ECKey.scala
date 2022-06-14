@@ -391,7 +391,7 @@ case class ECPublicKey(private val _bytes: ByteVector)
   def add(otherKey: ECPublicKey): ECPublicKey =
     CryptoUtil.add(this, otherKey)
 
-  def tweakMultiply(tweak: FieldElement): ECPublicKey = {
+  def multiply(tweak: FieldElement): ECPublicKey = {
     CryptoUtil.tweakMultiply(this, tweak)
   }
 
