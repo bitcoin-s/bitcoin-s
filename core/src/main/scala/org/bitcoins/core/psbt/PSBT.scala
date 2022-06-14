@@ -418,6 +418,9 @@ case class PSBT(
       case p2wsh: P2WSHWitnessV0 =>
         val newElement = InputPSBTRecord.WitnessScript(p2wsh.redeemScript)
         InputPSBTMap(previousElements :+ newElement)
+      case taprootWitness: TaprootWitness =>
+        throw new UnsupportedOperationException(
+          s"Taproot not supported, got=$taprootWitness")
       case EmptyScriptWitness =>
         throw new IllegalArgumentException(
           s"Invalid scriptWitness given, got: $scriptWitness")
@@ -523,6 +526,9 @@ case class PSBT(
         OutputPSBTMap(
           outputMap.filterRecords(PSBTOutputKeyId.WitnessScriptKeyId) :+
             OutputPSBTRecord.WitnessScript(p2wsh.redeemScript))
+      case taprootWitness: TaprootWitness =>
+        throw new UnsupportedOperationException(
+          s"Taproot not supported, got=$taprootWitness")
       case EmptyScriptWitness =>
         throw new IllegalArgumentException(
           s"Invalid scriptWitness given, got: $scriptWitness")

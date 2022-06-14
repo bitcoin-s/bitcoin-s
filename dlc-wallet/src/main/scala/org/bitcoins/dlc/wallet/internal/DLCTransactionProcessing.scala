@@ -371,6 +371,9 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
                 witnessScript match {
                   case EmptyScriptWitness =>
                     throw new RuntimeException("Script witness cannot be empty")
+                  case taprootWitness: TaprootWitness =>
+                    throw new UnsupportedOperationException(
+                      s"Taproot not supported, got=$taprootWitness")
                   case witness: ScriptWitnessV0 =>
                     (input.outPoint, witness)
                 }

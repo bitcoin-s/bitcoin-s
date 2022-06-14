@@ -164,6 +164,9 @@ object InputInfo {
             getPreImagesAndCondPath(p2wsh.scriptSignature)
           case EmptyScriptWitness =>
             getPreImagesAndCondPath(txIn.scriptSignature)
+          case taprootWitness: TaprootWitness =>
+            throw new UnsupportedOperationException(
+              s"Taproot not supported, got=$taprootWitness")
         }
     }
 

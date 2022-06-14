@@ -1771,6 +1771,9 @@ object FundingSignaturesV0TLV extends TLVFactory[FundingSignaturesV0TLV] {
         case EmptyScriptWitness =>
           throw new IllegalArgumentException(s"Invalid witness: $stack")
         case witness: ScriptWitnessV0 => witness
+        case taprootWitness: TaprootWitness =>
+          throw new IllegalArgumentException(
+            s"Invalid witness, taproot not supported in DLC spec, got=$taprootWitness")
       }
     }
 

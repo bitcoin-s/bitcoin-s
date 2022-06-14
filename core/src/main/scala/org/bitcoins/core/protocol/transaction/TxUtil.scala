@@ -194,6 +194,9 @@ object TxUtil {
             wtx.witness.witnesses(index) match {
               case EmptyScriptWitness   => None
               case wit: ScriptWitnessV0 => Some(wit)
+              case taprootWitness: TaprootWitness =>
+                throw new UnsupportedOperationException(
+                  s"Taproot not supported, got=$taprootWitness")
             }
         }
 

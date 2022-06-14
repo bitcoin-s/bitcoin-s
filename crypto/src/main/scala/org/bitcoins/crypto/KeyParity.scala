@@ -2,7 +2,10 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-sealed trait KeyParity extends NetworkElement
+sealed trait KeyParity extends NetworkElement {
+  def isOdd: Boolean = this == OddParity
+  def isEven: Boolean = this == EvenParity
+}
 
 object KeyParity extends Factory[KeyParity] {
 

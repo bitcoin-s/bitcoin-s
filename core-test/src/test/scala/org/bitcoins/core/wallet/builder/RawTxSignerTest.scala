@@ -344,6 +344,10 @@ class RawTxSignerTest extends BitcoinSUnitTest {
                   p2wpkh.signature == LowRDummyECDigitalSignature
                 case EmptyScriptWitness =>
                   true
+
+                case taprootWitness: TaprootWitness =>
+                  throw new UnsupportedOperationException(
+                    s"Taproot not supported, got=$taprootWitness")
               }
             )
         }

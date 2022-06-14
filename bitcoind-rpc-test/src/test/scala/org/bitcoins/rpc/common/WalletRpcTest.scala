@@ -10,7 +10,8 @@ import org.bitcoins.core.protocol.script.{
   EmptyScriptWitness,
   P2WPKHWitnessV0,
   P2WSHWitnessV0,
-  ScriptSignature
+  ScriptSignature,
+  TaprootWitness
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress}
@@ -643,7 +644,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
               case p2wpkh: P2WPKHWitnessV0 =>
                 assert(p2wpkh.pubKey == partialSig.pubKey)
                 assert(p2wpkh.signature == partialSig.signature)
-              case _: P2WSHWitnessV0 | EmptyScriptWitness =>
+              case _: P2WSHWitnessV0 | EmptyScriptWitness | _: TaprootWitness =>
                 fail("Expected P2WPKH")
             }
         }
