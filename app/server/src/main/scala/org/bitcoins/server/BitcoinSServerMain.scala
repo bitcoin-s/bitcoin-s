@@ -13,6 +13,7 @@ import akka.stream.scaladsl.{
 }
 import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.asyncutil.AsyncUtil.Exponential
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
@@ -243,8 +244,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           val res = infoF.map(promise.success).map(_ => true)
           res.recover { case _: InWarmUp => false }
         },
+        // retry for approximately 2 hours
+        mode = Exponential,
         interval = 1.second,
-        maxTries = 100
+        maxTries = 12
       )
       info <- promise.future
     } yield info
@@ -481,10 +484,22 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   private def syncWalletWithBitcoindAndStartPolling(
       bitcoind: BitcoindRpcClient,
       wallet: Wallet): Future[Unit] = {
-    val f = BitcoindRpcBackendUtil
-      .syncWalletToBitcoind(bitcoind, wallet)
-      .flatMap(_ => wallet.updateUtxoPendingStates())
-      .flatMap { _ =>
+    val f = for {
+      _ <- AsyncUtil.retryUntilSatisfiedF(
+        conditionF = { () =>
+          for {
+            bitcoindHeight <- bitcoind.getBlockCount
+            walletStateOpt <- wallet.getSyncDescriptorOpt()
+          } yield walletStateOpt.forall(bitcoindHeight >= _.height)
+        },
+        // retry for approximately 2 hours
+        mode = Exponential,
+        interval = 1.second,
+        maxTries = 12
+      )
+      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
+      _ <- wallet.updateUtxoPendingStates()
+      _ <-
         if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
           BitcoindRpcBackendUtil
             .startBitcoindBlockPolling(wallet, bitcoind)
@@ -503,7 +518,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
               bitcoindRpcConf.zmqConfig)
           }
         }
-      }
+    } yield ()
 
     f.failed.foreach(err =>
       logger.error(s"Error syncing bitcoin-s wallet with bitcoind", err))
