@@ -20,6 +20,7 @@ import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.scalatest.{Assertion, FutureOutcome}
 
+import java.net.InetSocketAddress
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
@@ -47,6 +48,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         offerData.timeouts.contractMaturity.toUInt32,
         offerData.timeouts.contractTimeout.toUInt32,
         None,
+        None,
         None
       )
       dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
@@ -64,7 +66,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         assert(offer.changeAddress.value.nonEmpty)
       }
 
-      accept <- walletB.acceptDLCOffer(offer, None, None)
+      accept <- walletB.acceptDLCOffer(offer, None, None, None)
       dlcB1Opt <- walletB.dlcDAO.read(dlcId)
       _ = {
         assert(dlcB1Opt.isDefined)
@@ -189,11 +191,12 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32,
           None,
+          None,
           None
         )
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
-        accept <- walletB.acceptDLCOffer(offer, None, None)
+        accept <- walletB.acceptDLCOffer(offer, None, None, None)
 
         // reorder dlc inputs in wallets
         _ <- reorderInputDbs(walletA, dlcId)
@@ -248,11 +251,12 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32,
           None,
+          None,
           None
         )
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
-        accept <- walletB.acceptDLCOffer(offer.toTLV, None, None)
+        accept <- walletB.acceptDLCOffer(offer.toTLV, None, None, None)
 
         // reorder dlc inputs in wallets
         _ <- reorderInputDbs(walletA, dlcId)
@@ -279,6 +283,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32,
           None,
+          None,
           None
         )
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
@@ -295,7 +300,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           assert(offer.changeAddress.value.nonEmpty)
         }
 
-        accept <- walletB.acceptDLCOffer(offer.toTLV, None, None)
+        accept <- walletB.acceptDLCOffer(offer.toTLV, None, None, None)
         dlcB1Opt <- walletB.dlcDAO.read(dlcId)
         _ = {
           assert(dlcB1Opt.isDefined)
@@ -374,10 +379,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         offerData.timeouts.contractMaturity.toUInt32,
         offerData.timeouts.contractTimeout.toUInt32,
         None,
+        None,
         None
       )
 
-      accept <- walletB.acceptDLCOffer(offer, None, None)
+      accept <- walletB.acceptDLCOffer(offer, None, None, None)
     } yield accept
   }
 
@@ -520,6 +526,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32,
           None,
+          None,
           None
         )
 
@@ -565,9 +572,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32,
           None,
+          None,
           None
         )
-        _ <- walletB.acceptDLCOffer(offer, None, None)
+        _ <- walletB.acceptDLCOffer(offer, None, None, None)
 
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
@@ -608,9 +616,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32,
           None,
+          None,
           None
         )
-        accept <- walletB.acceptDLCOffer(offer, None, None)
+        accept <- walletB.acceptDLCOffer(offer, None, None, None)
         sign <- walletA.signDLC(accept)
         _ <- walletB.addDLCSigs(sign)
 
@@ -652,9 +661,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32,
           None,
+          None,
           None
         )
-        accept <- walletB.acceptDLCOffer(offer, None, None)
+        accept <- walletB.acceptDLCOffer(offer, None, None, None)
         sign <- walletA.signDLC(accept)
         _ <- walletB.addDLCSigs(sign)
 
@@ -687,9 +697,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           UInt32.max,
           None,
+          None,
           None
         )
-        accept <- walletB.acceptDLCOffer(offer, None, None)
+        accept <- walletB.acceptDLCOffer(offer, None, None, None)
         sign <- walletA.signDLC(accept)
         _ <- walletB.addDLCSigs(sign)
 
@@ -754,6 +765,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32,
           None,
+          None,
           None
         )
         _ = {
@@ -768,7 +780,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
-        accept <- walletB.acceptDLCOffer(offer, None, None)
+        accept <- walletB.acceptDLCOffer(offer, None, None, None)
         _ = {
           assert(accept.fundingInputs.nonEmpty)
           assert(accept.collateral == offer.contractInfo.max - offer.collateral)
@@ -851,6 +863,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         feeRateOpt = feeRateOpt,
         locktime = UInt32.zero,
         refundLT = UInt32.one,
+        peerAddressOpt = None,
         externalPayoutAddressOpt = None,
         externalChangeAddressOpt = None
       )
@@ -860,8 +873,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       offerA <- makeOffer(contractInfoA)
       offerB <- makeOffer(contractInfoB)
 
-      _ <- walletB.acceptDLCOffer(offerA, None, None)
-      _ <- walletB.acceptDLCOffer(offerB, None, None)
+      _ <- walletB.acceptDLCOffer(offerA, None, None, None)
+      _ <- walletB.acceptDLCOffer(offerB, None, None, None)
     } yield succeed
   }
 
@@ -899,6 +912,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         feeRateOpt = feeRateOpt,
         locktime = UInt32.zero,
         refundLT = UInt32.one,
+        peerAddressOpt = None,
         externalPayoutAddressOpt = None,
         externalChangeAddressOpt = None
       )
@@ -906,8 +920,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
     for {
       offer <- makeOffer(contractInfoA)
-      accept1F = walletB.acceptDLCOffer(offer, None, None)
-      accept2F = walletB.acceptDLCOffer(offer, None, None)
+      accept1F = walletB.acceptDLCOffer(offer, None, None, None)
+      accept2F = walletB.acceptDLCOffer(offer, None, None, None)
       _ <- recoverToSucceededIf[DuplicateOfferException](
         Future.sequence(Seq(accept1F, accept2F)))
     } yield {
@@ -930,6 +944,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         feeRateOpt = feeRateOpt,
         locktime = UInt32.zero,
         refundLT = UInt32.one,
+        peerAddressOpt = None,
         externalPayoutAddressOpt = None,
         externalChangeAddressOpt = None
       )
@@ -937,8 +952,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
     for {
       offer <- makeOffer(contractInfoA)
-      accept1 <- walletB.acceptDLCOffer(offer, None, None)
-      accept2 <- walletB.acceptDLCOffer(offer, None, None)
+      accept1 <- walletB.acceptDLCOffer(offer, None, None, None)
+      accept2 <- walletB.acceptDLCOffer(offer, None, None, None)
     } yield {
       assert(accept1 == accept2)
     }
@@ -958,9 +973,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         offerData.timeouts.contractMaturity.toUInt32,
         UInt32.max,
         None,
+        None,
         None
       )
-      accept <- walletB.acceptDLCOffer(offer, None, None)
+      accept <- walletB.acceptDLCOffer(offer, None, None, None)
       res <- recoverToSucceededIf[IllegalArgumentException](
         walletB.signDLC(accept))
     } yield res
@@ -980,6 +996,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
             Some(offerData.feeRate),
             offerData.timeouts.contractMaturity.toUInt32,
             UInt32.max,
+            None,
             None,
             None
           ))
@@ -1006,12 +1023,13 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           feeRateOpt = feeRateOpt,
           locktime = UInt32.zero,
           refundLT = UInt32.one,
+          peerAddressOpt = None,
           externalPayoutAddressOpt = None,
           externalChangeAddressOpt = None
         )
         invalidOffer = offer.copy(contractInfo = invalidContractInfo)
         res <- recoverToSucceededIf[InvalidAnnouncementSignature](
-          walletB.acceptDLCOffer(invalidOffer, None, None))
+          walletB.acceptDLCOffer(invalidOffer, None, None, None))
       } yield {
         res
       }
@@ -1042,6 +1060,12 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         Some(BitcoinAddress.fromString("2MsM67NLa71fHvTUBqNENW15P68nHB2vVXb"))
       val changeAddressBOpt =
         Some(BitcoinAddress.fromString("2N4YXTxKEso3yeYXNn5h42Vqu3FzTTQ8Lq5"))
+      val peerAddressOpt1 =
+        Some(InetSocketAddress.createUnresolved("127.0.0.1", 1))
+      val peerAddressOpt2 =
+        Some(InetSocketAddress.createUnresolved("127.0.0.1", 2))
+      val peerAddressOpt3 =
+        Some(InetSocketAddress.createUnresolved("127.0.0.1", 3))
 
       for {
         offer <- walletA.createDLCOffer(
@@ -1050,10 +1074,12 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           feeRateOpt = feeRateOpt,
           locktime = UInt32.zero,
           refundLT = UInt32.one,
+          peerAddressOpt = peerAddressOpt1,
           externalPayoutAddressOpt = payoutAddressAOpt,
           externalChangeAddressOpt = changeAddressAOpt
         )
         accept <- walletB.acceptDLCOffer(offer,
+                                         peerAddressOpt2,
                                          payoutAddressBOpt,
                                          changeAddressBOpt)
         offer1 <- walletA.createDLCOffer(
@@ -1062,10 +1088,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           feeRateOpt = feeRateOpt1,
           locktime = UInt32.zero,
           refundLT = UInt32.one,
+          peerAddressOpt = peerAddressOpt3,
           externalPayoutAddressOpt = None,
           externalChangeAddressOpt = None
         )
-        accept1 <- walletB.acceptDLCOffer(offer1, None, None)
+        accept1 <- walletB.acceptDLCOffer(offer1, peerAddressOpt3, None, None)
       } yield {
         assert(offer.pubKeys.payoutAddress == payoutAddressAOpt.get)
         assert(offer.changeAddress == changeAddressAOpt.get)
@@ -1101,10 +1128,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData.timeouts.contractMaturity.toUInt32,
           offerData.timeouts.contractTimeout.toUInt32,
           None,
+          None,
           None
         )
         //accept it for the first time using the inputs
-        _ <- walletB.acceptDLCOffer(offer1.toTLV, None, None)
+        _ <- walletB.acceptDLCOffer(offer1.toTLV, None, None, None)
         //cancel the offer
         _ <- walletA.cancelDLC(dlcId = offer1.dlcId)
 
@@ -1115,9 +1143,10 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           offerData2.timeouts.contractMaturity.toUInt32,
           offerData2.timeouts.contractTimeout.toUInt32,
           None,
+          None,
           None
         )
-        _ <- walletB.acceptDLCOffer(offer2.toTLV, None, None)
+        _ <- walletB.acceptDLCOffer(offer2.toTLV, None, None, None)
       } yield succeed
   }
 }

@@ -262,15 +262,17 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
     - `collateral` - Satoshis to fund your side of the DLC
     - `feerate` - Fee rate for both funding and closing transactions, in sats/vbytes
     - `refundlocktime` - Locktime of the refund transaction
-    - `--cetlocktime <value>` - Should not be set unless you know what you are doing. Locktime of the contract execution transactions (defaults to current height)
+    - `cetlocktime <value>` - Should not be set unless you know what you are doing. Locktime of the contract execution transactions (defaults to current height)
+    - `peer` - Peer's network address
  - `acceptdlc` `offer` `peer` - Accepts a DLC offer given from another party
     - `offer` - Hex encoded dlc offer message
     - `peer` - Peer's network address
  - `acceptdlcoffer` `offer` - Accepts a DLC offer given from another party
     - `offer` - Hex encoded offer message
+ - `peer` - Peer's network address
  - `acceptdlcofferfromfile` `path` `[destination]` - Accepts a DLC offer given from another party
-    - `path` - Path to dlc offer file
-    - `destination` - Path to write dlc accept message
+   - `path` - Path to dlc offer file
+   - `destination` - Path to write dlc accept message
  - `contact-add` `alias` `address` `memo`
    - `alias` - alias for the address like a name
    - `address` - the tor address for the peer
@@ -278,6 +280,9 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `contacts-list` - lists all contacts in the wallet
  - `contact-remove` `address`
    - `address` - the tor address for the peer to remove
+ - `dlc-contact-add` `dlcid` `address` - Associated a DLC with a peer
+ - `dlc-contact-remove` `dlcid` - Removes a DLC-peer association
+    - `address` - the tor address for the peer to remove
  - `signdlc` `accept` - Signs a DLC
     - `accept` - Hex encoded dlc accept message
  - `signdlcfromfile` `path` `[destination]` - Signs a DLC
@@ -305,6 +310,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `canceldlc` `dlcId` - Cancels a DLC and unreserves used utxos
     - `dlcId` - Internal id of the DLC
  - `getdlcs` - Returns all dlcs in the wallet
+    - `address` - optional contact address, if specified the RPC returns only DLCs associated with the given address
  - `getdlc` `dlcId` - Gets a specific dlc in the wallet
     - `dlcId` - Internal id of the DLC
  - `offer-add` `offerTLV` `peerAddress` `message` - Puts an incoming offer into the inbox

@@ -45,7 +45,8 @@ object DLCStatusBuilder {
           dlcDb.feeRate,
           totalCollateral,
           localCollateral,
-          payoutAddress
+          payoutAddress,
+          dlcDb.peerOpt
         )
       case DLCState.AcceptComputingAdaptorSigs =>
         AcceptedComputingAdaptorSigs(
@@ -59,7 +60,8 @@ object DLCStatusBuilder {
           feeRate = dlcDb.feeRate,
           totalCollateral = totalCollateral,
           localCollateral = localCollateral,
-          payoutAddress
+          payoutAddress,
+          dlcDb.peerOpt
         )
       case DLCState.Accepted =>
         Accepted(
@@ -73,7 +75,8 @@ object DLCStatusBuilder {
           dlcDb.feeRate,
           totalCollateral,
           localCollateral,
-          payoutAddress
+          payoutAddress,
+          dlcDb.peerOpt
         )
       case DLCState.SignComputingAdaptorSigs =>
         SignedComputingAdaptorSigs(
@@ -88,7 +91,8 @@ object DLCStatusBuilder {
           totalCollateral = totalCollateral,
           localCollateral = localCollateral,
           dlcDb.fundingTxIdOpt.get,
-          payoutAddress
+          payoutAddress,
+          dlcDb.peerOpt
         )
       case DLCState.Signed =>
         Signed(
@@ -103,7 +107,8 @@ object DLCStatusBuilder {
           totalCollateral,
           localCollateral,
           dlcDb.fundingTxIdOpt.get,
-          payoutAddress
+          payoutAddress,
+          dlcDb.peerOpt
         )
       case DLCState.Broadcasted =>
         Broadcasted(
@@ -118,7 +123,8 @@ object DLCStatusBuilder {
           totalCollateral,
           localCollateral,
           dlcDb.fundingTxIdOpt.get,
-          payoutAddress
+          payoutAddress,
+          dlcDb.peerOpt
         )
       case DLCState.Confirmed =>
         Confirmed(
@@ -133,7 +139,8 @@ object DLCStatusBuilder {
           totalCollateral,
           localCollateral,
           dlcDb.fundingTxIdOpt.get,
-          payoutAddress
+          payoutAddress,
+          dlcDb.peerOpt
         )
     }
 
@@ -186,7 +193,8 @@ object DLCStatusBuilder {
           closingTx.txIdBE,
           myPayout = accounting.myPayout,
           counterPartyPayout = accounting.theirPayout,
-          payoutAddress = payoutAddress
+          payoutAddress = payoutAddress,
+          peer = dlcDb.peerOpt
         )
         refund
       case oracleOutcomeState: DLCState.ClosedViaOracleOutcomeState =>
@@ -214,7 +222,8 @@ object DLCStatusBuilder {
               oracleOutcome,
               myPayout = accounting.myPayout,
               counterPartyPayout = accounting.theirPayout,
-              payoutAddress = payoutAddress
+              payoutAddress = payoutAddress,
+              peer = dlcDb.peerOpt
             )
           case DLCState.RemoteClaimed =>
             RemoteClaimed(
@@ -234,7 +243,8 @@ object DLCStatusBuilder {
               oracleOutcome,
               myPayout = accounting.myPayout,
               counterPartyPayout = accounting.theirPayout,
-              payoutAddress = payoutAddress
+              payoutAddress = payoutAddress,
+              peer = dlcDb.peerOpt
             )
         }
     }

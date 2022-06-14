@@ -28,6 +28,7 @@ trait DLCWalletApi { self: WalletApi =>
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       refundLT: UInt32,
+      peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
     val contractInfo = ContractInfo.fromTLV(contractInfoTLV)
@@ -35,6 +36,7 @@ trait DLCWalletApi { self: WalletApi =>
                    collateral,
                    feeRateOpt,
                    refundLT,
+                   peerAddressOpt,
                    externalPayoutAddressOpt,
                    externalChangeAddressOpt)
   }
@@ -45,6 +47,7 @@ trait DLCWalletApi { self: WalletApi =>
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
       refundLT: UInt32,
+      peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer] = {
     val contractInfo = ContractInfo.fromTLV(contractInfoTLV)
@@ -53,6 +56,7 @@ trait DLCWalletApi { self: WalletApi =>
                    feeRateOpt,
                    locktime,
                    refundLT,
+                   peerAddressOpt,
                    externalPayoutAddressOpt,
                    externalChangeAddressOpt)
   }
@@ -62,6 +66,7 @@ trait DLCWalletApi { self: WalletApi =>
       collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       refundLT: UInt32,
+      peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer]
 
@@ -71,32 +76,24 @@ trait DLCWalletApi { self: WalletApi =>
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
       refundLT: UInt32,
+      peerAddressOpt: Option[java.net.InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCOffer]
 
-  def registerDLCOffer(dlcOffer: DLCOffer): Future[DLCOffer] = {
-    createDLCOffer(
-      dlcOffer.contractInfo,
-      dlcOffer.collateral,
-      Some(dlcOffer.feeRate),
-      dlcOffer.timeouts.contractMaturity.toUInt32,
-      dlcOffer.timeouts.contractTimeout.toUInt32,
-      None,
-      None
-    )
-  }
-
   def acceptDLCOffer(
       dlcOfferTLV: DLCOfferTLV,
+      peerAddress: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept] = {
     acceptDLCOffer(DLCOffer.fromTLV(dlcOfferTLV),
+                   peerAddress,
                    externalPayoutAddressOpt,
                    externalChangeAddressOpt)
   }
 
   def acceptDLCOffer(
       dlcOffer: DLCOffer,
+      peerAddress: Option[InetSocketAddress],
       externalPayoutAddressOpt: Option[BitcoinAddress],
       externalChangeAddressOpt: Option[BitcoinAddress]): Future[DLCAccept]
 
@@ -170,6 +167,14 @@ trait DLCWalletApi { self: WalletApi =>
   def removeDLCContact(address: InetSocketAddress): Future[Unit]
 
   def findDLCContacts(alias: String): Future[Vector[DLCContactDb]]
+
+  def addDLCContactMapping(
+      dlcId: Sha256Digest,
+      contactId: InetSocketAddress): Future[Unit]
+
+  def removeDLCContactMapping(dlcId: Sha256Digest): Future[Unit]
+
+  def listDLCsByContact(address: InetSocketAddress): Future[Vector[DLCStatus]]
 }
 
 /** An HDWallet that supports DLCs and Neutrino method of syncing */

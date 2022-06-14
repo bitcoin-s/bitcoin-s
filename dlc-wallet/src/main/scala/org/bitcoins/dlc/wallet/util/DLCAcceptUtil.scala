@@ -115,7 +115,8 @@ object DLCAcceptUtil extends Logging {
       account: AccountDb,
       chainType: HDChainType,
       nextIndex: Int,
-      contractInfo: ContractInfo): DLCDb = {
+      contractInfo: ContractInfo,
+      peerOpt: Option[String]): DLCDb = {
     DLCDb(
       dlcId = dlcId,
       tempContractId = offer.tempContractId,
@@ -133,7 +134,8 @@ object DLCAcceptUtil extends Logging {
       fundingTxIdOpt = None,
       closingTxIdOpt = None,
       aggregateSignatureOpt = None,
-      serializationVersion = contractInfo.serializationVersion
+      serializationVersion = contractInfo.serializationVersion,
+      peerOpt = peerOpt
     )
   }
 

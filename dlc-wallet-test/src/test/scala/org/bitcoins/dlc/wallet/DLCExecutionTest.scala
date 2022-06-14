@@ -371,6 +371,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         feeRateOpt = feeRateOpt,
         locktime = UInt32.zero,
         refundLT = UInt32.one,
+        peerAddressOpt = None,
         externalPayoutAddressOpt = None,
         externalChangeAddressOpt = None
       )
@@ -423,6 +424,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                     None,
                                     UInt32.zero,
                                     UInt32.one,
+                                    None,
                                     None,
                                     None)
 
@@ -481,10 +483,11 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
           feeRateOpt = Some(SatoshisPerVirtualByte.fromLong(10)),
           locktime = dummyTimeouts.contractMaturity.toUInt32,
           refundLocktime = dummyTimeouts.contractTimeout.toUInt32,
+          peerAddressOpt = None,
           externalPayoutAddressOpt = None,
           externalChangeAddressOpt = None
         )
-        accept <- walletB.acceptDLCOffer(offer, None, None)
+        accept <- walletB.acceptDLCOffer(offer, None, None, None)
         sign <- walletA.signDLC(accept)
         contractId = sign.contractId
         (_, sig) = DLCWalletUtil.getSigs(contractInfo)

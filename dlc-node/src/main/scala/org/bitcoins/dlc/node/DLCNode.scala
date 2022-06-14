@@ -66,6 +66,7 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
     for {
       handler <- connectToPeer(peerAddress)
       accept <- wallet.acceptDLCOffer(dlcOffer.tlv,
+                                      Some(peerAddress),
                                       externalPayoutAddress,
                                       externalChangeAddress)
     } yield {

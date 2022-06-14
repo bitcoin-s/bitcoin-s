@@ -44,6 +44,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import scodec.bits.ByteVector
 import ujson._
 
+import java.net.InetSocketAddress
 import java.time.{ZoneId, ZonedDateTime}
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
@@ -989,6 +990,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
             _: Option[SatoshisPerVirtualByte],
             _: UInt32,
             _: UInt32,
+            _: Option[InetSocketAddress],
             _: Option[BitcoinAddress],
             _: Option[BitcoinAddress]
           )
@@ -999,6 +1001,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           Some(SatoshisPerVirtualByte(Satoshis.one)),
           UInt32(contractMaturity),
           UInt32(contractTimeout),
+          None,
           None,
           None
         )
@@ -1059,9 +1062,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     "accept a dlc offer" in {
       (mockWalletApi
         .acceptDLCOffer(_: DLCOfferTLV,
+                        _: Option[InetSocketAddress],
                         _: Option[BitcoinAddress],
                         _: Option[BitcoinAddress]))
-        .expects(offer.toTLV, None, None)
+        .expects(offer.toTLV, None, None, None)
         .returning(Future.successful(accept))
 
       val route = walletRoutes.handleCommand(
