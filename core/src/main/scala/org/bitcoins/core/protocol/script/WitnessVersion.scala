@@ -31,7 +31,7 @@ case object WitnessVersion0 extends WitnessVersion {
   override def rebuild(
       scriptWitness: ScriptWitness,
       witnessSPK: WitnessScriptPubKey): Either[ScriptError, ScriptPubKey] = {
-    val witnessProgram = witnessSPK.asm
+    val witnessProgram = witnessSPK.witnessProgram
     val programBytes = BytesUtil.toByteVector(witnessProgram)
     programBytes.size match {
       case 20 =>
