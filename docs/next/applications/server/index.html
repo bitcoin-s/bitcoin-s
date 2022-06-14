@@ -330,7 +330,8 @@ the <code>-p 9999:9999</code> port mapping on the docker container to adjust for
 <li><code>collateral</code> - Satoshis to fund your side of the DLC</li>
 <li><code>feerate</code> - Fee rate for both funding and closing transactions, in sats/vbytes</li>
 <li><code>refundlocktime</code> - Locktime of the refund transaction</li>
-<li><code>--cetlocktime &lt;value&gt;</code> - Should not be set unless you know what you are doing. Locktime of the contract execution transactions (defaults to current height)</li>
+<li><code>cetlocktime &lt;value&gt;</code> - Should not be set unless you know what you are doing. Locktime of the contract execution transactions (defaults to current height)</li>
+<li><code>peer</code> - Peer's network address</li>
 </ul></li>
 <li><code>acceptdlc</code> <code>offer</code> <code>peer</code> - Accepts a DLC offer given from another party
 <ul>
@@ -341,6 +342,7 @@ the <code>-p 9999:9999</code> port mapping on the docker container to adjust for
 <ul>
 <li><code>offer</code> - Hex encoded offer message</li>
 </ul></li>
+<li><code>peer</code> - Peer's network address</li>
 <li><code>acceptdlcofferfromfile</code> <code>path</code> <code>[destination]</code> - Accepts a DLC offer given from another party
 <ul>
 <li><code>path</code> - Path to dlc offer file</li>
@@ -354,6 +356,11 @@ the <code>-p 9999:9999</code> port mapping on the docker container to adjust for
 </ul></li>
 <li><code>contacts-list</code> - lists all contacts in the wallet</li>
 <li><code>contact-remove</code> <code>address</code>
+<ul>
+<li><code>address</code> - the tor address for the peer to remove</li>
+</ul></li>
+<li><code>dlc-contact-add</code> <code>dlcid</code> <code>address</code> - Associated a DLC with a peer</li>
+<li><code>dlc-contact-remove</code> <code>dlcid</code> - Removes a DLC-peer association
 <ul>
 <li><code>address</code> - the tor address for the peer to remove</li>
 </ul></li>
@@ -405,7 +412,10 @@ the <code>-p 9999:9999</code> port mapping on the docker container to adjust for
 <ul>
 <li><code>dlcId</code> - Internal id of the DLC</li>
 </ul></li>
-<li><code>getdlcs</code> - Returns all dlcs in the wallet</li>
+<li><code>getdlcs</code> - Returns all dlcs in the wallet
+<ul>
+<li><code>address</code> - optional contact address, if specified the RPC returns only DLCs associated with the given address</li>
+</ul></li>
 <li><code>getdlc</code> <code>dlcId</code> - Gets a specific dlc in the wallet
 <ul>
 <li><code>dlcId</code> - Internal id of the DLC</li>
