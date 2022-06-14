@@ -233,13 +233,13 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
      - `passphrase` - Passphrase to encrypt this seed with
  - `exportseed` `walletname` `passphrase` - Exports the mnemonic seed phrase
     - `walletname` - Name to associate with this seed
-    - `passphrase` - Passphrase to encrypt this seed with
+    - `passphrase` - Passphrase to decrypt this seed with
  - `markseedasbackedup` `walletname` `passphrase` - Marks the seed as backed up. It prevents `exportseed` from returning the mnemonic phrase
     - `walletname` - Name to associate with this seed
-    - `passphrase` - Passphrase to encrypt this seed with
+    - `passphrase` - Passphrase to decrypt this seed with
  - `getseedbackuptime` `walletname` `passphrase` - Returns time when the seed was backed up
     - `walletname` - Name to associate with this seed
-    - `passphrase` - Passphrase to encrypt this seed with
+    - `passphrase` - Passphrase to decrypt this seed with
  - `keymanagerpassphrasechange` `oldpassphrase` `newpassphrase` - Changes the wallet passphrase
     - `oldpassphrase` - The current passphrase
     - `newpassphrase` - The new passphrase
