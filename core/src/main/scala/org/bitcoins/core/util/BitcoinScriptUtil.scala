@@ -440,8 +440,7 @@ trait BitcoinScriptUtil {
       case w: WitnessScriptPubKey =>
         txSignatureComponent match {
           case wtxSigComponent: WitnessTxSigComponent =>
-            val scriptE = w.witnessVersion.rebuild(wtxSigComponent.witness,
-                                                   w.witnessProgram)
+            val scriptE = w.witnessVersion.rebuild(wtxSigComponent.witness, w)
             parseScriptEither(scriptE)
           case rWTxSigComponent: WitnessTxSigComponentRebuilt =>
             rWTxSigComponent.scriptPubKey.asm
@@ -492,7 +491,7 @@ trait BitcoinScriptUtil {
       case w: WitnessScriptPubKey =>
         val wtx = spendingTransaction.asInstanceOf[WitnessTransaction]
         val scriptT =
-          w.witnessVersion.rebuild(wtx.witness.witnesses(idx), w.witnessProgram)
+          w.witnessVersion.rebuild(wtx.witness.witnesses(idx), w)
         parseScriptEither(scriptT)
 
       case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |

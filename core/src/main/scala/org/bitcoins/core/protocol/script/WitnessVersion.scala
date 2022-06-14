@@ -20,7 +20,7 @@ sealed trait WitnessVersion {
     */
   def rebuild(
       scriptWitness: ScriptWitness,
-      witnessProgram: Seq[ScriptToken]): Either[ScriptError, ScriptPubKey]
+      witnessSPK: WitnessScriptPubKey): Either[ScriptError, ScriptPubKey]
 
   def version: ScriptNumberOperation
 }
@@ -30,7 +30,8 @@ case object WitnessVersion0 extends WitnessVersion {
   /** Rebuilds a witness version 0 SPK program, see BIP141 */
   override def rebuild(
       scriptWitness: ScriptWitness,
-      witnessProgram: Seq[ScriptToken]): Either[ScriptError, ScriptPubKey] = {
+      witnessSPK: WitnessScriptPubKey): Either[ScriptError, ScriptPubKey] = {
+    val witnessProgram = witnessSPK.asm
     val programBytes = BytesUtil.toByteVector(witnessProgram)
     programBytes.size match {
       case 20 =>
@@ -68,8 +69,9 @@ case object WitnessVersion1 extends WitnessVersion {
 
   override def rebuild(
       scriptWitness: ScriptWitness,
-      witnessProgram: Seq[ScriptToken]): Either[ScriptError, ScriptPubKey] = {
-    throw new UnsupportedOperationException("Taproot is not yet supported")
+      witnessSPK: WitnessScriptPubKey): Either[ScriptError, ScriptPubKey] = {
+    throw new UnsupportedOperationException(
+      s"Taproot is not yet supported $scriptWitness $witnessSPK")
   }
 
   override def version: ScriptNumberOperation = OP_1
@@ -85,8 +87,9 @@ case class UnassignedWitness(version: ScriptNumberOperation)
 
   override def rebuild(
       scriptWitness: ScriptWitness,
-      witnessProgram: Seq[ScriptToken]): Either[ScriptError, ScriptPubKey] =
+      witnessSPK: WitnessScriptPubKey): Either[ScriptError, ScriptPubKey] = {
     Left(ScriptErrorDiscourageUpgradeableWitnessProgram)
+  }
 }
 
 object WitnessVersion {
