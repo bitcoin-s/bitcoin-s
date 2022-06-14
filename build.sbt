@@ -145,11 +145,13 @@ lazy val clightningRpc = project
 
 lazy val lnurl = project
   .in(file("lnurl"))
+  .settings(name := "bitcoin-s-lnurl")
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(appCommons, asyncUtilsJVM, tor)
 
 lazy val lnurlTest = project
   .in(file("lnurl-test"))
+  .settings(name := "bitcoin-s-lnurl-test")
   .settings(CommonSettings.testSettings: _*)
   .dependsOn(lnurl, testkit)
 
