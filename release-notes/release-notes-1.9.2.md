@@ -78,6 +78,7 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## App server
 
+1ad540703c Improve bitcoind connection retry logic (#4386)
 8a01432db4 Try to debug why shutdown isn't working on windows (#4349)
 d335cd1933 Enable LauncherJarPlugin on oracleServer/appServer (#4338)
 5036b37729 2022 05 11 tor race condition (#4333)
@@ -95,6 +96,9 @@ e3e59923c4 Parallelize some startup on startBitcoinSBackend() to increase perfor
 
 ## Build
 
+cbeae5cdbc Remove carve out for protoc on aarch64 now that the akka grpc plugin has been updated (#4384)
+171001273c Implement a workaround for 4369 on docker images and m1 macs IF the user has another java installed on their machine (#4377)
+0a0fc92f32 Switch base docker image to ubuntu to get docker working again (#4367)
 e4d38ba53a 2022 05 05 OS specific jlink builds (#4322)
 dd9a9dcea6 Remove explicit inclusion of jdk.unsupported as its not included by default (#4319)
 087b9f90b5 2022 05 03 oracle server jlink build (#4316)
@@ -102,6 +106,13 @@ cbfe684352 Reduce what gets tested on tor CI (#4274)
 
 ## Core
 
+ddbdde495d 2022 06 13 taprootspk xonlypubkey (#4388)
+7e2ecd9d6a Added data structure for x-only public keys with undetermined parity (#4387)
+5f82307e27 Added Compute Contract Id test Vectors (#4385)
+344a8fd759 Add TLVs defined in BOLT 4 (#4380)
+b021649ac4 Refactor WitnessVersion.rebuild() to be Either[ScriptError,ScriptPubKey] to make the taproot implemtation easier (#4382)
+ab215e26df Set recovery id properly for buildLnInvoiceSignature (#4379)
+efc1f9fb77 Have Satoshis extend Numeric (#4364)
 676c0b4261 Add isStandard to Address (#4353)
 90970058f9 Improve TLV error message (#4283)
 
@@ -110,12 +121,17 @@ cbfe684352 Reduce what gets tested on tor CI (#4274)
 b80bf4649e Add HashType to ECDigitalSignature API (#4320)
 f42d7ae8e7 Added validation to signature methods to avoid corruption edge cases (#4214)
 
+## db commons
+
+441937238f Make flyway protected so other apps can access it (#4372)
+
 ## DLC node
 
 272f31aeaa Fix race condition on DLC node startup wrt to tor (#4335)
 
 ## DLC wallet
 
+fdf281b469 DLC <-> contact mapping (#4346)
 79b4f096ec Improve logging around signDLC (#4299)
 525fb2ac0d Default createDLCOffer to current block height (#4285)
 f5940c93d4 Contact list (#4234)
@@ -127,6 +143,10 @@ d29bad3437 Add better logs for a DLCWallet.cancelDLC() (#4278)
 
 ## Lnd rpc
 
+762202a54d Add test/example on how to use the channel acceptor (#4375)
+c2d8735dd7 LND: Add configs for gossip in test env (#4378)
+45777f2bb0 Fix outPointToChannelPoint to use correct endianness (#4376)
+54c3f77f8e Improve lnd test suite reliability (#4361)
 527e3ae862 Fix lnd sendToRoute for 0 amount invoices (#4348)
 e9582d2145 Update lnd to v0.14.3-beta (#4347)
 63e8d76dfc Add ability to get LndInstanceRemote from config (#4334)
@@ -176,6 +196,10 @@ fac0713405 Reduce rescan threadpool size to just be number of available processo
 
 ## Website
 
+4c74f54741 Made change to cli.md file, clarifed only need to do either (Building the command line interface) or (Native binaries) section (#4373)
+1706ec8e84 Fix typo (#4365)
+4fc3b05ed5 Upgrade website dependencies (#4363)
+72fef5a27e initial draft of 1.9.2 release notes (#4362)
 c911808996 Fix example (#4324)
 67f8ac8294 Add cd bitcoin-s-server (#4298)
 a739a2dd2b Bump README versions (#4284)
@@ -198,11 +222,3 @@ e05cf21827 Upgrade dropWizards to 4.2.9 (#4313)
 813b58e977 Update deps (#4279)
 ca5bde46d4 Bump prismjs from 1.26.0 to 1.27.0 in /website (#4133)
 47b65cae65 Bump async from 2.6.3 to 2.6.4 in /website (#4271)
-
-
-
-
-
-
-
-
