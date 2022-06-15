@@ -221,6 +221,13 @@ trait TransactionSignatureChecker {
     }
   }
 
+  def checkSigTapscript(txSignatureComponent: TxSigComponent,
+                        script: Seq[ScriptToken],
+                        pubKey: SchnorrPublicKey,
+                        signature: SchnorrDigitalSignature,
+                        flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
+    ???
+  }
   /** This is a helper function to check digital signatures against public keys
     * if the signature does not match this public key, check it against the next
     * public key in the sequence

@@ -422,46 +422,16 @@ sealed abstract class ScriptInterpreter {
     else evaluated
   }
 
-  private def rebuildV0(
-      witness: ScriptWitness,
-      program: Seq[ScriptToken]): Either[
-    ScriptError,
-    (Seq[ScriptToken], ScriptPubKey)] = {
-    val programBytes = BytesUtil.toByteVector(program)
-    programBytes.size match {
-      case 20 =>
-        //p2wpkh
-        if (witness.stack.size != 2) {
-          Left(ScriptErrorWitnessProgramMisMatch)
-        } else {
-          for {
-            rebuilt <- WitnessVersion0.rebuild(witness, program)
-            r <- Right((witness.stack.map(ScriptConstant(_)), rebuilt))
-          } yield r
-        }
-      case 32 =>
-        //p2wsh
-        if (witness.stack.isEmpty)
-          Left(ScriptErrorWitnessProgramWitnessEmpty)
-        else {
-          WitnessVersion0.rebuild(witness, program) match {
-            case Right(rebuilt) =>
-              Right((witness.stack.tail.map(ScriptConstant(_)), rebuilt))
-            case Left(err) => Left(err)
-          }
-        }
-      case _ =>
-        //witness version 0 programs need to be 20 bytes or 32 bytes in size
-        Left(ScriptErrorWitnessProgramWrongLength)
-    }
-  }
-
   /** Rebuilds a [[WitnessVersion1]] witness program for execution in the script interpreter */
   private def rebuildV1(
       witness: TaprootWitness,
-      program: Seq[ScriptToken]): Either[
+      witnessSPK: WitnessScriptPubKey): Either[
     ScriptError,
-    (Seq[ScriptToken], TaprootScriptPubKey)] = {
+    (Seq[ScriptToken], ScriptPubKey)] = {
+    require(witnessSPK.isInstanceOf[TaprootScriptPubKey],
+            s"WitnessScriptPubKey must be a taproot spk, got=${witnessSPK}")
+    val taprootSPK = witnessSPK.asInstanceOf[TaprootScriptPubKey]
+    val program = witnessSPK.witnessProgram
     val programBytes = BytesUtil.toByteVector(program)
     programBytes.size match {
       case 32 =>
@@ -469,7 +439,7 @@ sealed abstract class ScriptInterpreter {
         if (witness.stack.isEmpty) {
           Left(ScriptErrorWitnessProgramWitnessEmpty)
         } else {
-          val rebuiltE = WitnessVersion1.rebuild(witness, program)
+          val rebuiltE = WitnessVersion1.rebuild(witness, taprootSPK)
 
           rebuiltE match {
             case Right(rebuilt) =>
@@ -498,7 +468,8 @@ sealed abstract class ScriptInterpreter {
       scriptWitness: ScriptWitness,
       witnessSPK: WitnessScriptPubKey,
       wTxSigComponent: WitnessTxSigComponent,
-  scriptPubKeyExecutedProgram: ExecutedScriptProgram): Try[ExecutedScriptProgram] = {
+      scriptPubKeyExecutedProgram: ExecutedScriptProgram): Try[
+    ExecutedScriptProgram] = {
 
     /** Helper function to run the post segwit execution checks */
     def postSegWitProgramChecks(
@@ -593,16 +564,15 @@ sealed abstract class ScriptInterpreter {
           scriptWitness.isInstanceOf[TaprootWitness],
           s"witness must be taproot witness for witness version 1 script execution, got=$scriptWitness")
         val taprootWitness = scriptWitness.asInstanceOf[TaprootWitness]
-        val either: Either[
-          ScriptError,
-          (Seq[ScriptToken], TaprootScriptPubKey)] =
+        val either: Either[ScriptError, (Seq[ScriptToken], ScriptPubKey)] =
           rebuildV1(taprootWitness, witnessSPK)
         logger.info(s"WitnessVersion1")
         either match {
           case Right((stack, scriptPubKey)) =>
             executeTapscript(
               taprootWitness = taprootWitness,
-              scriptPubKey = scriptPubKey,
+              taprootSPK = witnessSPK.asInstanceOf[TaprootScriptPubKey],
+              rebuiltSPK = scriptPubKey,
               stack = stack.toVector,
               wTxSigComponent = wTxSigComponent,
               scriptPubKeyExecutedProgram = scriptPubKeyExecutedProgram
@@ -625,17 +595,18 @@ sealed abstract class ScriptInterpreter {
 
   private def executeTapscript(
       taprootWitness: TaprootWitness,
-      scriptPubKey: TaprootScriptPubKey,
+      taprootSPK: TaprootScriptPubKey,
+      rebuiltSPK: ScriptPubKey,
       stack: Vector[ScriptToken],
       wTxSigComponent: WitnessTxSigComponent,
       scriptPubKeyExecutedProgram: ExecutedScriptProgram): Try[
     ExecutedScriptProgram] = {
     taprootWitness match {
       case keypath: TaprootKeyPath =>
-        val program = checkSchnorrSignature(
-          keypath,
-          scriptPubKey.pubKey.schnorrPublicKey,
-          program = scriptPubKeyExecutedProgram)
+        val program = checkSchnorrSignature(keypath,
+                                            taprootSPK.pubKey.schnorrPublicKey,
+                                            program =
+                                              scriptPubKeyExecutedProgram)
         Success(program)
       case taprootScriptPath: TaprootScriptPath =>
         val controlBlock = taprootScriptPath.controlBlock
@@ -657,7 +628,7 @@ sealed abstract class ScriptInterpreter {
           val isValidTaprootCommitment =
             TaprootScriptPath.verifyTaprootCommitment(controlBlock =
                                                         controlBlock,
-                                                      program = scriptPubKey,
+                                                      program = taprootSPK,
                                                       tapLeafHash = tapLeafHash)
           if (!isValidTaprootCommitment) {
             val p = scriptPubKeyExecutedProgram.failExecution(
@@ -669,13 +640,13 @@ sealed abstract class ScriptInterpreter {
                 _ == ScriptVerifyDiscourageUpgradableTaprootVersion)
             if (controlBlock.isTapLeafMask) {
               val newWTxSigComponent =
-                rebuildWTxSigComponent(wTxSigComponent, scriptPubKey)
+                rebuildWTxSigComponent(wTxSigComponent, rebuiltSPK)
               val newProgram = newWTxSigComponent.map { comp =>
                 PreExecutionScriptProgram(txSignatureComponent = comp,
                                           stack = stack.toList,
-                                          script = scriptPubKey.asm.toList,
+                                          script = rebuiltSPK.asm.toList,
                                           originalScript =
-                                            scriptPubKey.asm.toList,
+                                            taprootSPK.asm.toList,
                                           altStack = Nil,
                                           flags = comp.flags)
               }
@@ -748,8 +719,8 @@ sealed abstract class ScriptInterpreter {
   private def loop(
       program: ExecutionInProgressScriptProgram,
       opCount: Int): ExecutedScriptProgram = {
-    logger.debug(s"stack=${program.stack}")
-    logger.debug(s"script=${program.script}")
+    logger.debug(s"program.stack=${program.stack}")
+    logger.debug(s"program.script=${program.script}")
     val scriptByteVector = BytesUtil.toByteVector(program.script)
 
     if (opCount > MAX_SCRIPT_OPS) {

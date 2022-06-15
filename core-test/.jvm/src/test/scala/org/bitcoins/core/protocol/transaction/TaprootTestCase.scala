@@ -60,7 +60,7 @@ case class TaprootTestCase(
         TxSigComponent(transaction = tx,
                        inputIndex = UInt32(index),
                        output,
-                       Policy.standardFlags)
+                       flags)
     }
 
   }
