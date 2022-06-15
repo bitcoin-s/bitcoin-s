@@ -260,7 +260,7 @@ case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
           s"Invalid witness stack for TaprootScriptPath, got=$stack")
 
   val controlBlock: ControlBlock = {
-    if (stack.headOption.map(_.head) == TaprootScriptPath.annexOpt) {
+    if (TaprootScriptPath.hasAnnex(stack)) {
       //If there are at least two witness elements, and the first byte of the last element is 0x50[4],
       // this last element is called annex a[5] and is removed from the witness stack.
       // The annex (or the lack of thereof) is always covered by the signature and contributes to transaction weight,
@@ -271,10 +271,6 @@ case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
       ControlBlock.fromBytes(stack.head)
     }
   }
-
-  //  require(
-  //    controlBlock.length >= 33 && controlBlock.length < 33 + (32 * 128),
-  //    s"Control block length is wrong, got=${controlBlock.length}, max=${33 + (32 * 128)}")
 
   /** If there are at least two witness elements, and the first byte of the last element is 0x50[4],
     * this last element is called annex a[5] and is removed from the witness stack.
@@ -294,7 +290,7 @@ case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
   def script: ScriptPubKey = {
     annexOpt match {
       case Some(_) =>
-        ScriptPubKey.fromAsmBytes(stack(1))
+        ScriptPubKey.fromAsmBytes(stack(2))
       case None =>
         val spk = ScriptPubKey.fromAsmBytes(stack(1))
         spk
@@ -327,7 +323,7 @@ object TaprootScriptPath {
   def isValid(stack: Vector[ByteVector]): Boolean = {
     if (stack.length >= 2) {
       val controlBlock = {
-        if (stack.headOption.map(_.head) == annexOpt) {
+        if (TaprootScriptPath.hasAnnex(stack)) {
           //If there are at least two witness elements, and the first byte of the last element is 0x50[4],
           // this last element is called annex a[5] and is removed from the witness stack.
           // The annex (or the lack of thereof) is always covered by the signature and contributes to transaction weight,
@@ -406,6 +402,11 @@ object TaprootScriptPath {
       i += 1
     }
     k
+  }
+
+  /** Checks the witness stack has an annex in it */
+  def hasAnnex(stack: Vector[ByteVector]): Boolean = {
+    stack.headOption.map(_.head) == annexOpt
   }
 
   private def hashTapBranch(bytes: ByteVector): Sha256Digest = {
