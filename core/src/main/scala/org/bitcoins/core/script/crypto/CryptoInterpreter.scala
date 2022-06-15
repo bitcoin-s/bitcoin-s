@@ -2,6 +2,11 @@ package org.bitcoins.core.script.crypto
 
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.protocol.script.{
+  SigVersionTaprootKeySpend,
+  SigVersionTapscript,
+  SigVersionWitnessV0
+}
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{
@@ -15,7 +20,10 @@ import org.bitcoins.crypto.{
   CryptoUtil,
   ECDigitalSignature,
   ECPublicKeyBytes,
-  HashDigest
+  HashDigest,
+  HashType,
+  SchnorrDigitalSignature,
+  SchnorrPublicKey
 }
 import scodec.bits.ByteVector
 
@@ -77,19 +85,69 @@ sealed abstract class CryptoInterpreter {
     if (program.stack.size < 2) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
-      val pubKey = ECPublicKeyBytes(program.stack.head.bytes)
-      val signature = ECDigitalSignature(program.stack.tail.head.bytes)
       val flags = program.flags
       val restOfStack = program.stack.tail.tail
-      val removedOpCodeSeparatorsScript =
-        BitcoinScriptUtil.removeOpCodeSeparator(program)
-      val result = TransactionSignatureChecker.checkSignature(
-        program.txSignatureComponent,
-        removedOpCodeSeparatorsScript,
-        pubKey,
-        signature,
-        flags)
-      handleSignatureValidation(program, result, restOfStack)
+
+      program.txSignatureComponent.sigVersion match {
+        case SigVersionWitnessV0 | SigVersionWitnessV0 =>
+          val pubKey = ECPublicKeyBytes(program.stack.head.bytes)
+          val signature = ECDigitalSignature(program.stack.tail.head.bytes)
+          val removedOpCodeSeparatorsScript =
+            BitcoinScriptUtil.removeOpCodeSeparator(program)
+          val result = TransactionSignatureChecker.checkSignature(
+            program.txSignatureComponent,
+            removedOpCodeSeparatorsScript,
+            pubKey,
+            signature,
+            flags)
+          handleSignatureValidation(program, result, restOfStack)
+        case SigVersionTapscript =>
+          println(s"opCheckSig.stack=${program.stack}")
+          //drop control block + script bytes
+          //https://github.com/bitcoin/bitcoin/blob/8ae4ba481ce8f7da173bef24432729c87a36cb70/src/script/interpreter.cpp#L1937
+          val stack = program.stack
+          val schnorrPubKeyT =
+            SchnorrPublicKey.fromBytesT(stack.head.bytes)
+          val (signature, hashType) = {
+            val sigBytes = stack.tail.head.bytes
+            if (sigBytes.length == 64) {
+              val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
+              (sig, HashType.sigHashAll)
+            } else if (sigBytes.length == 65) {
+              val hashTypeByte = sigBytes.last
+              val hashType = HashType.fromByte(hashTypeByte)
+              val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
+              (sig, hashType)
+            } else {
+              sys.error(
+                s"Incorrect length for schnorr digital signature, got=${sigBytes.length}, expected 64 or 65 sigBytes=${sigBytes}")
+            }
+          }
+
+          //need to do weight validation
+          if (schnorrPubKeyT.isFailure) {
+            //this failure catches two types of errors, if the pubkey is empty
+            //and if its using an "upgraded" pubkey from a future soft fork
+            //see: https://github.com/bitcoin/bitcoin/blob/9e4fbebcc8e497016563e46de4c64fa094edab2d/src/script/interpreter.cpp#L374
+            program.failExecution(ScriptErrorPubKeyType)
+          } else {
+            val result = TransactionSignatureChecker.checkSigTapscript(
+              txSignatureComponent = program.txSignatureComponent,
+              script = restOfStack,
+              pubKey = schnorrPubKeyT.get,
+              signature = signature,
+              hashType = hashType,
+              tapLeafHash = program.tapLeafHashOpt.get,
+              flags = flags
+            )
+            handleSignatureValidation(program, result, restOfStack)
+          }
+
+        case SigVersionTaprootKeySpend =>
+          sys.error(s"Cannot use taproot keyspend with OP_CHECKSIG")
+
+      }
+
     }
   }
 

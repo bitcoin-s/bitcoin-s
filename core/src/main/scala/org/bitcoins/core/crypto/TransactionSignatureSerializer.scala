@@ -327,6 +327,7 @@ sealed abstract class TransactionSignatureSerializer {
         val spendType: Byte = ((extFlag << 1) + annexByte).toByte
 
         val inputIndexBytes = inputIndex.bytes.reverse
+        println(s"inputIndexInt=${inputIndex}")
 
         val codeSeparatorPos: UInt32 = taprootOptions.codeSeparatorPos
 

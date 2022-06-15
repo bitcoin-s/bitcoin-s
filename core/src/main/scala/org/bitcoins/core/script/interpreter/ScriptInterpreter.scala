@@ -609,6 +609,12 @@ sealed abstract class ScriptInterpreter {
                                               scriptPubKeyExecutedProgram)
         Success(program)
       case taprootScriptPath: TaprootScriptPath =>
+        require(
+          wTxSigComponent.isInstanceOf[TaprootTxSigComponent],
+          s"Must have taproot tx sig component to execute tapscript, got=${wTxSigComponent.getClass.getSimpleName}"
+        )
+        val taprootTxSigComponent =
+          wTxSigComponent.asInstanceOf[TaprootTxSigComponent]
         val controlBlock = taprootScriptPath.controlBlock
         val script = taprootScriptPath.script
         val isCorrectSize = {
@@ -639,19 +645,20 @@ sealed abstract class ScriptInterpreter {
               scriptPubKeyExecutedProgram.flags.exists(
                 _ == ScriptVerifyDiscourageUpgradableTaprootVersion)
             if (controlBlock.isTapLeafMask) {
-              val newWTxSigComponent =
-                rebuildWTxSigComponent(wTxSigComponent, rebuiltSPK)
-              val newProgram = newWTxSigComponent.map { comp =>
-                PreExecutionScriptProgram(txSignatureComponent = comp,
-                                          stack = stack.toList,
-                                          script = rebuiltSPK.asm.toList,
-                                          originalScript =
-                                            taprootSPK.asm.toList,
-                                          altStack = Nil,
-                                          flags = comp.flags)
-              }
-              val evaluated = newProgram.map(executeProgram)
-              evaluated.map(e => postSegWitProgramChecks(e))
+
+              //drop the control block & script in the witness
+              val stackNoControlBlockOrScript = stack.tail.tail
+              val newProgram = PreExecutionScriptProgram(
+                txSignatureComponent = taprootTxSigComponent,
+                stack = stackNoControlBlockOrScript.toList,
+                script = rebuiltSPK.asm.toList,
+                originalScript = taprootSPK.asm.toList,
+                altStack = Nil,
+                flags = taprootTxSigComponent.flags
+              )
+              val evaluated = executeProgram(newProgram)
+              val segwitChecks = postSegWitProgramChecks(evaluated)
+              Success(segwitChecks)
             } else if (isDiscouragedTaprootVersion) {
               val p = scriptPubKeyExecutedProgram.failExecution(
                 ScriptErrorDiscourageUpgradableTaprootVersion)
@@ -677,7 +684,8 @@ sealed abstract class ScriptInterpreter {
     val scriptResult = TransactionSignatureChecker.checkSchnorrSignature(
       program.txSignatureComponent,
       pubKey,
-      witness)
+      witness,
+      program.tapLeafHashOpt)
     scriptResult match {
       case ScriptOk         => program
       case err: ScriptError => program.failExecution(err)
