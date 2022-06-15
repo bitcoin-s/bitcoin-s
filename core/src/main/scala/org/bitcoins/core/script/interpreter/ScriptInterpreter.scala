@@ -335,9 +335,7 @@ sealed abstract class ScriptInterpreter {
       case w: WitnessTxSigComponent =>
         val scriptSig =
           scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
-        val (witnessVersion, witnessProgram) =
-          (witnessScriptPubKey.witnessVersion,
-           witnessScriptPubKey.witnessProgram)
+        val witnessVersion = witnessScriptPubKey.witnessVersion
         val witness = w.witness
         //scriptsig must be empty if we have raw p2wsh
         //if script pubkey is a P2SHScriptPubKey then we have P2SH(P2WSH)
@@ -348,7 +346,10 @@ sealed abstract class ScriptInterpreter {
                 scriptPubKeyExecutedProgram.failExecution(ScriptErrorPushSize)
               )
             } else {
-              verifyWitnessProgram(witnessVersion, witness, witnessProgram, w)
+              verifyWitnessProgram(witnessVersion,
+                                   witness,
+                                   witnessScriptPubKey,
+                                   w)
             }
           case (_, _) =>
             Success(
@@ -389,7 +390,7 @@ sealed abstract class ScriptInterpreter {
   private def verifyWitnessProgram(
       witnessVersion: WitnessVersion,
       scriptWitness: ScriptWitness,
-      witnessProgram: Seq[ScriptToken],
+      witnessSPK: WitnessScriptPubKey,
       wTxSigComponent: WitnessTxSigComponent): Try[ExecutedScriptProgram] = {
 
     /** Helper function to run the post segwit execution checks */
@@ -405,9 +406,12 @@ sealed abstract class ScriptInterpreter {
       else evaluated
     }
 
-    def rebuildV0(witness: ScriptWitness, program: Seq[ScriptToken]): Either[
+    def rebuildV0(
+        witness: ScriptWitness,
+        witnessSPKV0: WitnessScriptPubKey): Either[
       ScriptError,
       (Seq[ScriptToken], ScriptPubKey)] = {
+      val program = witnessSPKV0.witnessProgram
       val programBytes = BytesUtil.toByteVector(program)
       programBytes.size match {
         case 20 =>
@@ -416,7 +420,7 @@ sealed abstract class ScriptInterpreter {
             Left(ScriptErrorWitnessProgramMisMatch)
           } else {
             for {
-              rebuilt <- WitnessVersion0.rebuild(witness, program)
+              rebuilt <- WitnessVersion0.rebuild(witness, witnessSPKV0)
               r <- Right((witness.stack.map(ScriptConstant(_)), rebuilt))
             } yield r
           }
@@ -425,7 +429,7 @@ sealed abstract class ScriptInterpreter {
           if (scriptWitness.stack.isEmpty)
             Left(ScriptErrorWitnessProgramWitnessEmpty)
           else {
-            WitnessVersion0.rebuild(witness, program) match {
+            WitnessVersion0.rebuild(witness, witnessSPKV0) match {
               case Right(rebuilt) =>
                 Right((witness.stack.tail.map(ScriptConstant(_)), rebuilt))
               case Left(err) => Left(err)
@@ -440,7 +444,7 @@ sealed abstract class ScriptInterpreter {
     witnessVersion match {
       case WitnessVersion0 =>
         val either: Either[ScriptError, (Seq[ScriptToken], ScriptPubKey)] =
-          rebuildV0(scriptWitness, witnessProgram)
+          rebuildV0(scriptWitness, witnessSPK)
         either match {
           case Right((stack, scriptPubKey)) =>
             val newWTxSigComponent =
