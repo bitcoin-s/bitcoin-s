@@ -52,6 +52,8 @@ trait CryptoRuntime {
 
   def hmac512(key: ByteVector, data: ByteVector): ByteVector
 
+  def hmac256(key: ByteVector, data: ByteVector): ByteVector
+
   def normalize(str: String): String
 
   def serializeForHash(str: String): ByteVector = {

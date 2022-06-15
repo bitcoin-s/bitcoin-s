@@ -1,6 +1,10 @@
 package org.bitcoins.crypto
 
-import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
+import org.bouncycastle.crypto.digests.{
+  RIPEMD160Digest,
+  SHA256Digest,
+  SHA512Digest
+}
 import org.bouncycastle.crypto.macs.{HMac, SipHash}
 import org.bouncycastle.crypto.params.KeyParameter
 import org.bouncycastle.math.ec.{ECPoint, WNafUtil}
@@ -97,6 +101,15 @@ trait BouncycastleCryptoRuntime extends CryptoRuntime {
     val output = new Array[Byte](64)
     hmac512.doFinal(output, 0)
     ByteVector(output)
+  }
+
+  override def hmac256(key: ByteVector, data: ByteVector): ByteVector = {
+    val mac = new HMac(new SHA256Digest())
+    mac.init(new KeyParameter(key.toArray))
+    mac.update(data.toArray, 0, data.length.toInt)
+    val output = new Array[Byte](32)
+    mac.doFinal(output, 0)
+    ByteVector.view(output)
   }
 
   override def ripeMd160(bytes: ByteVector): RipeMd160Digest = {

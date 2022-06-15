@@ -36,6 +36,8 @@ object SHA256 extends js.Object {
   val blockSize: Int = js.native
   val zero: Buffer = js.native
   val ctx: js.Dynamic = js.native
+
+  def hmac: js.Dynamic = js.native
 }
 
 object SHA256Factory {
