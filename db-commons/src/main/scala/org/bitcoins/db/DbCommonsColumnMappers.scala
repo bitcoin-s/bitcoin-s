@@ -16,7 +16,9 @@ import org.bitcoins.core.protocol.dlc.models.{
   DLCState,
   SingleOracleInfo
 }
-import org.bitcoins.core.protocol.ln.LnInvoice
+import org.bitcoins.core.protocol.ln.channel.ShortChannelId
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.tlv._
@@ -519,4 +521,13 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     MappedColumnType.base[InetSocketAddress, String](toString, fromString)
   }
 
+  implicit val PaymentSecretMapper: BaseColumnType[PaymentSecret] =
+    MappedColumnType.base[PaymentSecret, String](_.hex, PaymentSecret.fromHex)
+
+  implicit val ShortChannelIdMapper: BaseColumnType[ShortChannelId] =
+    MappedColumnType.base[ShortChannelId, Long](_.u64.toLong,
+                                                l => ShortChannelId(UInt64(l)))
+
+  implicit val MilliSatoshisMapper: BaseColumnType[MilliSatoshis] =
+    MappedColumnType.base[MilliSatoshis, Long](_.toLong, MilliSatoshis.apply(_))
 }
