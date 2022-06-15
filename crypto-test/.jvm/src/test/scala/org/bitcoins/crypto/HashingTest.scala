@@ -39,25 +39,25 @@ class HashingTest extends BitcoinSCryptoTest {
 
   it must "compute sha1" in {
     val expected = hashes.map(_._2)
-    val actual = hashes.map(_._1).map(BCryptoCryptoRuntime.sha1)
+    val actual = hashes.map(_._1).map(BouncycastleCryptoRuntime.sha1)
     assert(actual == expected)
   }
 
   it must "compute sha256" in {
     val expected = hashes.map(_._3)
-    val actual = hashes.map(_._1).map(BCryptoCryptoRuntime.sha256)
+    val actual = hashes.map(_._1).map(BouncycastleCryptoRuntime.sha256)
     assert(actual == expected)
   }
 
   it must "compute ripemd160" in {
     val expected = hashes.map(_._4)
-    val actual = hashes.map(_._1).map(BCryptoCryptoRuntime.ripeMd160)
+    val actual = hashes.map(_._1).map(BouncycastleCryptoRuntime.ripeMd160)
     assert(actual == expected)
   }
 
   it must "compute sha256hash160" in {
     val expected = hashes.map(_._5)
-    val actual = hashes.map(_._1).map(BCryptoCryptoRuntime.sha256Hash160)
+    val actual = hashes.map(_._1).map(BouncycastleCryptoRuntime.sha256Hash160)
     assert(actual == expected)
   }
 
@@ -66,13 +66,13 @@ class HashingTest extends BitcoinSCryptoTest {
     val actual =
       hashes
         .map(x => (x._1, x._3.bytes))
-        .map(y => BCryptoCryptoRuntime.hmac512(y._1, y._2))
+        .map(y => BouncycastleCryptoRuntime.hmac512(y._1, y._2))
     assert(actual == expected)
   }
 
   it must "compute sha3-256" in {
     val expected = hashes.map(_._7)
-    val actual = hashes.map(_._1).map(BCryptoCryptoRuntime.sha3_256)
+    val actual = hashes.map(_._1).map(BouncycastleCryptoRuntime.sha3_256)
     assert(actual == expected)
   }
 
@@ -81,7 +81,7 @@ class HashingTest extends BitcoinSCryptoTest {
     val actual =
       hashes
         .map(x => (x._1, x._3.bytes))
-        .map(y => BCryptoCryptoRuntime.hmac256(y._1, y._2))
+        .map(y => BouncycastleCryptoRuntime.hmac256(y._1, y._2))
     assert(actual == expected)
   }
 
@@ -90,21 +90,21 @@ class HashingTest extends BitcoinSCryptoTest {
     val singletons = Vector("\u00c5", "\u212b", "\u0041\u030a")
     assert(
       singletons
-        .map(BCryptoCryptoRuntime.normalize)
+        .map(BouncycastleCryptoRuntime.normalize)
         .forall(_ == "\u00c5")
     )
 
     val canonicalComposites = Vector("\u00f4", "\u006f\u0302")
     assert(
       canonicalComposites
-        .map(BCryptoCryptoRuntime.normalize)
+        .map(BouncycastleCryptoRuntime.normalize)
         .forall(_ == "\u00f4")
     )
 
     val multipleCombiningMarks = Vector("\u1e69", "\u0073\u0323\u0307")
     assert(
       multipleCombiningMarks
-        .map(BCryptoCryptoRuntime.normalize)
+        .map(BouncycastleCryptoRuntime.normalize)
         .forall(_ == "\u1e69")
     )
   }

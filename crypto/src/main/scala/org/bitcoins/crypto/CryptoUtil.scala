@@ -79,6 +79,10 @@ trait CryptoUtil extends CryptoRuntime {
     cryptoRuntime.hmac512(key, data)
   }
 
+  override def hmac256(key: ByteVector, data: ByteVector): ByteVector = {
+    cryptoRuntime.hmac256(key, data)
+  }
+
   override def recoverPublicKey(
       signature: ECDigitalSignature,
       message: ByteVector): (ECPublicKey, ECPublicKey) = {

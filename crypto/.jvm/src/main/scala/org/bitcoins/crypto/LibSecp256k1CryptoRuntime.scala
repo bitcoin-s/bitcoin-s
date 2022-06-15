@@ -22,6 +22,9 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
   override def hmac512(key: ByteVector, data: ByteVector): ByteVector =
     BouncycastleCryptoRuntime.hmac512(key, data)
 
+  override def hmac256(key: ByteVector, data: ByteVector): ByteVector =
+    BouncycastleCryptoRuntime.hmac256(key, data)
+
   override def ripeMd160(bytes: ByteVector): RipeMd160Digest = {
     BouncycastleCryptoRuntime.ripeMd160(bytes)
   }
