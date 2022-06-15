@@ -408,7 +408,7 @@ sealed abstract class ScriptInterpreter {
 
     def rebuildV0(
         witness: ScriptWitness,
-        witnessSPKV0: WitnessScriptPubKeyV0): Either[
+        witnessSPKV0: WitnessScriptPubKey): Either[
       ScriptError,
       (Seq[ScriptToken], ScriptPubKey)] = {
       val program = witnessSPKV0.witnessProgram
@@ -443,12 +443,8 @@ sealed abstract class ScriptInterpreter {
 
     witnessVersion match {
       case WitnessVersion0 =>
-        require(
-          witnessSPK.isInstanceOf[WitnessScriptPubKeyV0],
-          s"Must have witness spk v0 to rebuild a witness v0, got=$witnessSPK")
         val either: Either[ScriptError, (Seq[ScriptToken], ScriptPubKey)] =
-          rebuildV0(scriptWitness,
-                    witnessSPK.asInstanceOf[WitnessScriptPubKeyV0])
+          rebuildV0(scriptWitness, witnessSPK)
         either match {
           case Right((stack, scriptPubKey)) =>
             val newWTxSigComponent =
