@@ -7,15 +7,7 @@ import org.bitcoins.core.serializers.script.{
   ScriptParser
 }
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  ECDigitalSignature,
-  ECPublicKey,
-  ECPublicKeyBytes,
-  EmptyDigitalSignature,
-  Factory,
-  NetworkElement
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 /** Created by chris on 11/10/16.
@@ -173,6 +165,8 @@ object P2WSHWitnessV0 {
 
 object ScriptWitness extends Factory[ScriptWitness] {
 
+  val empty: EmptyScriptWitness.type = EmptyScriptWitness
+
   override def fromBytes(bytes: ByteVector): ScriptWitness = {
     RawScriptWitnessParser.read(bytes)
   }
@@ -206,5 +200,216 @@ object ScriptWitness extends Factory[ScriptWitness] {
           P2WSHWitnessV0(spk, t)
       }
     }
+  }
+}
+
+sealed trait TaprootWitness extends ScriptWitness {
+  override def bytes: ByteVector = RawScriptWitnessParser.write(this)
+}
+
+object TaprootWitness {
+
+  def fromStack(stack: Vector[ByteVector]): TaprootWitness = {
+    if (stack.length == 1) TaprootKeyPath.fromStack(stack)
+    else TaprootScriptPath(stack)
+  }
+}
+
+/** Spending a taproot output via the key path spend */
+case class TaprootKeyPath(
+    signature: SchnorrDigitalSignature,
+    hashType: HashType)
+    extends TaprootWitness {
+  override val stack: Vector[ByteVector] = Vector(signature.bytes)
+}
+
+object TaprootKeyPath {
+
+  def fromStack(vec: Vector[ByteVector]): TaprootKeyPath = {
+    require(
+      vec.length == 1,
+      s"Taproot keypath can only have one stack element, got=${vec.length}")
+
+    val sigBytes = vec.head
+
+    val keyPath = if (sigBytes.length == 64) {
+      //means SIGHASH_ALL is implicitly encoded
+      //see: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#Common_signature_message
+      val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
+      TaprootKeyPath(sig, HashType.sigHashAll)
+    } else if (sigBytes.length == 65) {
+      val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
+      val hashType = HashType.fromByte(sigBytes.last)
+      TaprootKeyPath(sig, hashType)
+    } else {
+      sys.error(
+        s"Unknown sig bytes length, should be 64 or 65, got=${sigBytes.length}")
+    }
+
+    keyPath
+  }
+
+  def isValid(stack: Vector[ByteVector]): Boolean = {
+    stack.length == 1 && (stack.length == 64 || stack.head.length == 65)
+  }
+}
+
+/** Spending a taproot output via the script path */
+case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
+  require(TaprootScriptPath.isValid(stack),
+          s"Invalid witness stack for TaprootScriptPath, got=$stack")
+
+  val controlBlock: ControlBlock = {
+    if (TaprootScriptPath.hasAnnex(stack)) {
+      //If there are at least two witness elements, and the first byte of the last element is 0x50[4],
+      // this last element is called annex a[5] and is removed from the witness stack.
+      // The annex (or the lack of thereof) is always covered by the signature and contributes to transaction weight,
+      // but is otherwise ignored during taproot validation.
+      //see: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#script-validation-rules
+      ControlBlock.fromBytes(stack(1))
+    } else {
+      ControlBlock.fromBytes(stack.head)
+    }
+  }
+
+  /** If there are at least two witness elements, and the first byte of the last element is 0x50[4],
+    * this last element is called annex a[5] and is removed from the witness stack.
+    * The annex (or the lack of thereof) is always covered by the signature and contributes to transaction weight,
+    * but is otherwise ignored during taproot validation.
+    */
+  def annexOpt: Option[ByteVector] = {
+    if (stack.headOption.map(_.head) == TaprootScriptPath.annexOpt) {
+      Some(stack.head)
+    } else {
+      None
+    }
+  }
+
+  /** Call the second-to-last stack element s, the script
+    */
+  def script: ScriptPubKey = {
+    annexOpt match {
+      case Some(_) =>
+        ScriptPubKey.fromAsmBytes(stack(2))
+      case None =>
+        val spk = ScriptPubKey.fromAsmBytes(stack(1))
+        spk
+    }
+
+  }
+
+  /** Let p = c[1:33] and let P = lift_x(int(p)) where lift_x and [:] are defined as in BIP340. Fail if this point is not on the curve.
+    */
+  def p: XOnlyPubKey = controlBlock.p
+}
+
+object TaprootScriptPath {
+
+  final val annex: Byte = 0x50
+
+  final val annexOpt: Option[Byte] = Some(annex)
+
+  final val TAPROOT_CONTROL_BASE_SIZE: Byte = 33
+  final val TAPROOT_CONTROL_NODE_SIZE: Byte = 32
+  final val TAPROOT_CONTROL_MAX_NODE_COUNT: Int = 128
+
+  final val TAPROOT_CONTROL_MAX_SIZE: Int = {
+    TAPROOT_CONTROL_BASE_SIZE + TAPROOT_CONTROL_NODE_SIZE * TAPROOT_CONTROL_MAX_NODE_COUNT
+  }
+
+  final val TAPROOT_LEAF_MASK: Byte = 0xfe.toByte
+  final val TAPROOT_LEAF_TAPSCRIPT: Byte = 0xc0.toByte
+
+  def isValid(stack: Vector[ByteVector]): Boolean = {
+    if (stack.length >= 2) {
+      val controlBlock = {
+        if (TaprootScriptPath.hasAnnex(stack)) {
+          //If there are at least two witness elements, and the first byte of the last element is 0x50[4],
+          // this last element is called annex a[5] and is removed from the witness stack.
+          // The annex (or the lack of thereof) is always covered by the signature and contributes to transaction weight,
+          // but is otherwise ignored during taproot validation.
+          //see: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#script-validation-rules
+          stack(1)
+        } else {
+          stack.head
+        }
+      }
+
+      val m = controlBlock.drop(33).length / 32.0
+      if (m >= 0 && m <= 128) {
+        val pubKeyBytes = controlBlock.slice(1, 33)
+        // if not whole, we do not have correct # of bytes for control block
+        m.isWhole && SchnorrPublicKey.fromBytesOpt(pubKeyBytes).isDefined
+      } else {
+        false
+      }
+    } else {
+      false
+    }
+  }
+
+  def fromStack(stack: Vector[ByteVector]): TaprootScriptPath =
+    TaprootScriptPath(stack)
+
+  def verifyTaprootCommitment(
+      controlBlock: ControlBlock,
+      program: TaprootScriptPubKey,
+      tapLeafHash: Sha256Digest): Boolean = {
+    val internalPubKey = controlBlock.p
+    val merkleRoot = computeTaprootMerkleRoot(controlBlock, tapLeafHash)
+
+    val parity = (controlBlock.bytes.head & 1) == 1
+    program.pubKey.checkTapTweak(internal = internalPubKey,
+                                 merkleRootOpt = Some(merkleRoot),
+                                 parity = parity)
+  }
+
+  /** Computes the hash of the script that is a leaf in the tapscript tree
+    * @param leafVersion
+    * @param spk
+    * @see https://github.com/bitcoin/bitcoin/blob/37633d2f61697fc719390767aae740ece978b074/src/script/interpreter.cpp#L1828
+    * @return
+    */
+  def computeTapleafHash(leafVersion: Byte, spk: ScriptPubKey): Sha256Digest = {
+    val bytes =
+      ByteVector.fromByte(leafVersion) ++ spk.bytes
+    CryptoUtil.taggedSha256(bytes, "TapLeaf")
+  }
+
+  /** Computes the merkle root of a tapscript tree
+    * @param controlBlock
+    * @param tapLeafHash
+    * @see https://github.com/bitcoin/bitcoin/blob/37633d2f61697fc719390767aae740ece978b074/src/script/interpreter.cpp#L1833
+    * @return
+    */
+  def computeTaprootMerkleRoot(
+      controlBlock: ControlBlock,
+      tapLeafHash: Sha256Digest): Sha256Digest = {
+    val pathLen =
+      (controlBlock.bytes.size - TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE) / TaprootScriptPath.TAPROOT_CONTROL_NODE_SIZE
+    var k = tapLeafHash
+    var i = 0
+    while (i < pathLen) {
+      val startIdx =
+        TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE + (TaprootScriptPath.TAPROOT_CONTROL_NODE_SIZE * i)
+      val endIdx = startIdx + TaprootScriptPath.TAPROOT_CONTROL_NODE_SIZE
+      val node = controlBlock.bytes.slice(startIdx, endIdx)
+      if (k.hex.compareTo(node.toHex) < 0) {
+        k = hashTapBranch(k.bytes ++ node)
+      } else {
+        k = hashTapBranch(node ++ k.bytes)
+      }
+      i += 1
+    }
+    k
+  }
+
+  /** Checks the witness stack has an annex in it */
+  def hasAnnex(stack: Vector[ByteVector]): Boolean = {
+    stack.headOption.map(_.head) == annexOpt
+  }
+
+  private def hashTapBranch(bytes: ByteVector): Sha256Digest = {
+    CryptoUtil.taggedSha256(bytes, "TapBranch")
   }
 }

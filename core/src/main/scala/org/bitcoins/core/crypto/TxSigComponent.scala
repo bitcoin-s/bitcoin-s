@@ -78,6 +78,9 @@ object TxSigComponent {
         }
       case _: ScriptWitnessV0 =>
         unsignedWtx
+      case t: TaprootWitness =>
+        throw new UnsupportedOperationException(
+          s"Taproot not supported, got=$t")
     }
   }
 
@@ -201,14 +204,15 @@ object TxSigComponent {
   }
 
   def getScriptWitness(
-      txSigComponent: TxSigComponent): Option[ScriptWitnessV0] = {
+      txSigComponent: TxSigComponent): Option[ScriptWitness] = {
     txSigComponent.transaction match {
       case _: NonWitnessTransaction => None
       case wtx: WitnessTransaction =>
         val witness = wtx.witness.witnesses(txSigComponent.inputIndex.toInt)
         witness match {
-          case EmptyScriptWitness       => None
-          case witness: ScriptWitnessV0 => Some(witness)
+          case EmptyScriptWitness             => None
+          case witness: ScriptWitnessV0       => Some(witness)
+          case taprootWitness: TaprootWitness => Some(taprootWitness)
         }
     }
   }

@@ -135,6 +135,9 @@ class SignerTest extends BitcoinSUnitTest {
                 case p2wpkh: P2WPKHWitnessV0 => Vector(p2wpkh.signature)
                 case p2wsh: P2WSHWitnessV0   => p2wsh.signatures
                 case EmptyScriptWitness      => Vector.empty
+                case taprootWitness: TaprootWitness =>
+                  throw new UnsupportedOperationException(
+                    s"Taproot not supported, got=$taprootWitness")
               }
             }
 

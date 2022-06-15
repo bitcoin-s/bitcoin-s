@@ -295,7 +295,8 @@ object BitcoinSigner extends SignerUtils {
                   case None      => wtx
                 }
 
-              case _: P2WPKHWitnessV0 | _: P2WSHWitnessV0 => wtx
+              case _: P2WPKHWitnessV0 | _: P2WSHWitnessV0 | _: TaprootWitness =>
+                wtx
             }
         }
       case _: ScriptPubKey => tx
