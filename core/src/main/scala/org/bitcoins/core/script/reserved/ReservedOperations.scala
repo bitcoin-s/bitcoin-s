@@ -91,7 +91,7 @@ case object OP_NOP10 extends NOP {
 case class UndefinedOP_NOP(opCode: Int) extends ReservedOperation
 
 object ReservedOperation extends ScriptOperationFactory[ReservedOperation] {
-  lazy val undefinedOpCodes = for { i <- 0xba to 0xff } yield UndefinedOP_NOP(i)
+  lazy val undefinedOpCodes = for { i <- 0xbb to 0xff } yield UndefinedOP_NOP(i)
 
   override val operations =
     Vector(OP_RESERVED,

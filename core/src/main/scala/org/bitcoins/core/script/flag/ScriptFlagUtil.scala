@@ -107,6 +107,10 @@ trait ScriptFlagUtil {
   def taprootEnabled(flags: Seq[ScriptFlag]): Boolean = {
     flags.contains(ScriptVerifyTaproot)
   }
+
+  def discourageUpgradablePublicKey(flags: Seq[ScriptFlag]): Boolean = {
+    flags.contains(ScriptVerifyDiscourageUpgradablePubKeyType)
+  }
 }
 
 object ScriptFlagUtil extends ScriptFlagUtil

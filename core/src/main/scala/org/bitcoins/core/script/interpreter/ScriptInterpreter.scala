@@ -1143,6 +1143,11 @@ sealed abstract class ScriptInterpreter {
           val newOpCount =
             calcOpCount(opCount, OP_CHECKSIGVERIFY)
           (programOrError, newOpCount)
+        case OP_CHECKSIGADD :: _ =>
+          val programOrError = CryptoInterpreter.opCheckSigAdd(program)
+          val newOpCount =
+            calcOpCount(opCount, OP_CHECKSIGVERIFY)
+          (programOrError, newOpCount)
 
         case OP_SHA1 :: _ =>
           val programOrError = CryptoInterpreter.opSha1(program)

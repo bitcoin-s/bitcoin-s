@@ -3,6 +3,7 @@ package org.bitcoins.core.script.crypto
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.protocol.script.{
+  SigVersionBase,
   SigVersionTaprootKeySpend,
   SigVersionTapscript,
   SigVersionWitnessV0
@@ -102,53 +103,92 @@ sealed abstract class CryptoInterpreter {
             flags)
           handleSignatureValidation(program, result, restOfStack)
         case SigVersionTapscript =>
-          println(s"opCheckSig.stack=${program.stack}")
           //drop control block + script bytes
           //https://github.com/bitcoin/bitcoin/blob/8ae4ba481ce8f7da173bef24432729c87a36cb70/src/script/interpreter.cpp#L1937
-          val stack = program.stack
-          val schnorrPubKeyT =
-            SchnorrPublicKey.fromBytesT(stack.head.bytes)
-          val (signature, hashType) = {
-            val sigBytes = stack.tail.head.bytes
-            if (sigBytes.length == 64) {
-              val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
-              (sig, HashType.sigHashAll)
-            } else if (sigBytes.length == 65) {
-              val hashTypeByte = sigBytes.last
-              val hashType = HashType.fromByte(hashTypeByte)
-              val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
-              (sig, hashType)
-            } else {
-              sys.error(
-                s"Incorrect length for schnorr digital signature, got=${sigBytes.length}, expected 64 or 65 sigBytes=${sigBytes}")
-            }
-          }
 
-          //need to do weight validation
-          if (schnorrPubKeyT.isFailure) {
-            //this failure catches two types of errors, if the pubkey is empty
-            //and if its using an "upgraded" pubkey from a future soft fork
-            //see: https://github.com/bitcoin/bitcoin/blob/9e4fbebcc8e497016563e46de4c64fa094edab2d/src/script/interpreter.cpp#L374
-            program.failExecution(ScriptErrorPubKeyType)
-          } else {
-            val result = TransactionSignatureChecker.checkSigTapscript(
-              txSignatureComponent = program.txSignatureComponent,
-              script = restOfStack,
-              pubKey = schnorrPubKeyT.get,
-              signature = signature,
-              hashType = hashType,
-              tapLeafHash = program.tapLeafHashOpt.get,
-              flags = flags
-            )
-            handleSignatureValidation(program, result, restOfStack)
+          val tapscriptE: Either[
+            ScriptError,
+            TransactionSignatureCheckerResult] = evalChecksigTapscript(program)
+
+          tapscriptE match {
+            case Left(err) =>
+              if (
+                err == ScriptErrorDiscourageUpgradablePubkeyType && !ScriptFlagUtil
+                  .discourageUpgradablePublicKey(flags)
+              ) {
+                //trivially pass signature validation as required by BIP342
+                //when the public key type is not known and the
+                //SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE is NOT set
+                handleSignatureValidation(program = program,
+                                          result = SignatureValidationSuccess,
+                                          restOfStack = restOfStack)
+              } else {
+                program.failExecution(err)
+              }
+
+            case Right(result) =>
+              handleSignatureValidation(program, result, restOfStack)
           }
 
         case SigVersionTaprootKeySpend =>
           sys.error(s"Cannot use taproot keyspend with OP_CHECKSIG")
 
       }
+    }
+  }
+
+  private def evalChecksigTapscript(
+      program: ExecutionInProgressScriptProgram): Either[
+    ScriptError,
+    TransactionSignatureCheckerResult] = {
+    val stack = program.stack
+    val pubKeyBytes = stack.head.bytes
+    val schnorrPubKeyT =
+      SchnorrPublicKey.fromBytesT(pubKeyBytes)
+    //need to do weight validation
+    if (schnorrPubKeyT.isFailure) {
+      //this failure catches two types of errors, if the pubkey is empty
+      //and if its using an "upgraded" pubkey from a future soft fork
+      //from bip342:
+      //If the public key size is not zero and not 32 bytes, the public key is of an unknown public key type[6] and no actual signature verification is applied.
+      //During script execution of signature opcodes they behave exactly as known public key types except that signature validation is considered to be successful.
+      //see: https://github.com/bitcoin/bitcoin/blob/9e4fbebcc8e497016563e46de4c64fa094edab2d/src/script/interpreter.cpp#L374
+      if (pubKeyBytes.isEmpty) {
+        Left(ScriptErrorPubKeyType)
+      } else {
+        Left(ScriptErrorDiscourageUpgradablePubkeyType)
+      }
+    } else {
+      val (signature, hashType) = {
+        val sigBytes = stack.tail.head.bytes
+        if (sigBytes.length == 64) {
+          val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
+          (sig, HashType.sigHashAll)
+        } else if (sigBytes.length == 65) {
+          val hashTypeByte = sigBytes.last
+          val hashType = HashType.fromByte(hashTypeByte)
+          val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
+          (sig, hashType)
+        } else {
+          sys.error(
+            s"Incorrect length for schnorr digital signature, got=${sigBytes.length}, expected 64 or 65 sigBytes=${sigBytes}")
+        }
+      }
+      val restOfStack = program.stack.tail.tail
+      val result = TransactionSignatureChecker.checkSigTapscript(
+        txSignatureComponent = program.txSignatureComponent,
+        script = restOfStack,
+        pubKey = schnorrPubKeyT.get,
+        signature = signature,
+        hashType = hashType,
+        tapLeafHash = program.tapLeafHashOpt.get,
+        flags = program.flags
+      )
+
+      Right(result)
 
     }
+
   }
 
   /** Runs [[org.bitcoins.core.script.crypto.OP_CHECKSIG OP_CHECKSIG]] with an
@@ -316,6 +356,27 @@ sealed abstract class CryptoInterpreter {
         case p: ExecutionInProgressScriptProgram =>
           ControlOperationsInterpreter.opVerify(p)
       }
+    }
+  }
+
+  def opCheckSigAdd(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(
+      program.script.headOption.contains(OP_CHECKSIGADD),
+      s"Script top must be OP_CHECKSIGADD, got=${program.script.headOption}")
+    program.txSignatureComponent.sigVersion match {
+      case SigVersionBase | SigVersionWitnessV0 =>
+        program.failExecution(ScriptErrorBadOpCode)
+      case SigVersionTapscript | SigVersionTaprootKeySpend =>
+        if (program.stack.length < 3) {
+          program.failExecution(ScriptErrorInvalidStackOperation)
+        } else {
+          val requireMinimal = ScriptFlagUtil.requireMinimalData(program.flags)
+          val pubKey = ECPublicKeyBytes(program.stack.head.bytes)
+          val num = ScriptNumber(program.stack(1).bytes, requireMinimal)
+          val signature = ECDigitalSignature(program.stack(2).bytes)
+          ???
+        }
     }
   }
 
