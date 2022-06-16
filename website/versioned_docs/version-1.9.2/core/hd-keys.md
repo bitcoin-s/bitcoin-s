@@ -30,13 +30,13 @@ import org.bitcoins.core.hd._
 // how long our phrase ends up being
 // 256 bits of entropy results in 24 words
 val entropy: BitVector = MnemonicCode.getEntropy256Bits
-// entropy: BitVector = BitVector(256 bits, 0x2c3bfad990775c8e1f1c0be259d97a5c06965922f1a5e2502dbbdb4dd1da574d)
+// entropy: BitVector = BitVector(256 bits, 0xb0edb8493ed60e0a56470eb95810186a1d375ab0faaca04869a87f1a06a08636)
 
 val mnemonicCode = MnemonicCode.fromEntropy(entropy)
 // mnemonicCode: MnemonicCode = Masked(MnemonicCodeImpl)
 
 mnemonicCode.words // the phrase the user should write down
-// res0: Vector[String] = Vector(club, thank, reopen, can, into, either, ladder, lift, time, solution, future, retreat, harvest, clutch, mesh, cruise, time, lift, humble, repair, tackle, unfold, frog, pave) // the phrase the user should write down
+// res0: Vector[String] = Vector(rail, horse, banner, laundry, genius, ahead, flip, tide, rich, scene, alcohol, stage, square, pull, sentence, few, park, drive, head, wreck, parrot, expect, boat, student) // the phrase the user should write down
 
 // the password argument is an optional, extra security
 // measure. all MnemonicCode instances will give you a
@@ -52,7 +52,7 @@ val xpriv = ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv,
                                         bip39Seed)
 // xpriv: ExtPrivateKey = Masked(ExtPrivateKeyImpl)
 val xpub = xpriv.extPublicKey
-// xpub: ExtPublicKey = zpub6jftahH18ngZwEWTZuNHbNgJ39b2sdz5sMXKRv5pXbugPn2b4frQfi7P97CwqRRYmL6PmAC1erwFRMJf66oE64vdmkR3QW4bsxrotEoGKkh
+// xpub: ExtPublicKey = zpub6jftahH18ngZxBmeQMtqrtZNYY8bhWajyEgKt2VK54x4mz1xm73KN7ZQnLmvupobfvHCW2Zdg5BBkKwdYuFR2DA2m6oHGtYM5n9oDcnbJqg
 
 // you can now use the generated xpriv to derive further
 // private or public keys
@@ -103,7 +103,7 @@ val accountXpub = {
     // can generate addresses with it!
     accountXpriv.extPublicKey
 }
-// accountXpub: ExtPublicKey = zpub6qnQJzSgN1NaJp5kPY7DPbc3joQ7Fw6vkdTCBtwKdsBTxpLECH84qv85LnsPLq3eVKnopY1b4PNBADWCmQs4SxvPbm7iwvkafk2miN8vGhx
+// accountXpub: ExtPublicKey = zpub6qgRsUyUxS6exXvs35hhZkKSfTgJvCDszzwowCyY1G6ht7aYbYfC2w9XG8sZEtsLvBC8UtvYXhwFUS8ZXfkMRzRakoNe8PCA4kqzbrcQeqW
 
                               // address no. 0 ---------------┐
                               // external address ----------┐ |
@@ -126,12 +126,12 @@ val firstAccountAddress = {
     val scriptPubKey = P2WPKHWitnessSPKV0(pubkey)
     Bech32Address(scriptPubKey, TestNet3)
 }
-// firstAccountAddress: Bech32Address = tb1qv32jwzqxyfqz6mss4z9kvq6pnye0chvqpm3a24
+// firstAccountAddress: Bech32Address = tb1qr9ta9y2h9fr33657gdphd80jrulvh43y23du9c
 
 // tada! We just generated an address you can send money to,
 // without having access to the private key!
 firstAccountAddress.value
-// res2: String = tb1qv32jwzqxyfqz6mss4z9kvq6pnye0chvqpm3a24
+// res2: String = tb1qr9ta9y2h9fr33657gdphd80jrulvh43y23du9c
 
 // you can now continue deriving addresses from the same public
 // key, by imitating what we did above. To get the next

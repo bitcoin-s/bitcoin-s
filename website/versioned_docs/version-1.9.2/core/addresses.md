@@ -27,7 +27,7 @@ reason to keep using legacy transaction formats.
 val privkey = ECPrivateKey()
 // privkey: ECPrivateKey = Masked(ECPrivateKey)
 val pubkey = privkey.publicKey
-// pubkey: org.bitcoins.crypto.ECPublicKey = ECPublicKey(0399dea3a0dad9e21812f94ad69262a94fd51a2ed2b1507928afce2a358907a2de)
+// pubkey: org.bitcoins.crypto.ECPublicKey = ECPublicKey(02e5353d265ca23a58828eea596d74449da8851193f3d6e5e937d32b18eb23e466)
 
 val segwitAddress = {
     // see https://bitcoin.org/en/glossary/pubkey-script
@@ -36,10 +36,10 @@ val segwitAddress = {
     val scriptPubKey = P2WPKHWitnessSPKV0(pubkey)
     Bech32Address(scriptPubKey, TestNet3)
 }
-// segwitAddress: Bech32Address = tb1qd5kg59zdpa7xqm3qnqwnuj7sxwzvx6axy8ncja
+// segwitAddress: Bech32Address = tb1qgugqmtwgym5ze6u467h9eddqve3spjgqp94hl8
 
 println(segwitAddress.toString)
-// tb1qd5kg59zdpa7xqm3qnqwnuj7sxwzvx6axy8ncja
+// tb1qgugqmtwgym5ze6u467h9eddqve3spjgqp94hl8
 ```
 
 ## Generating legacy (base58) addresses
@@ -52,8 +52,8 @@ Take a look:
 // we're reusing the same private/public key pair
 // from before. don't do this in an actual application!
 val legacyAddress = P2PKHAddress(pubkey, TestNet3)
-// legacyAddress: P2PKHAddress = mqUDJcXeTYj9R2eU4ksu57UhNFtzAbeaYS
+// legacyAddress: P2PKHAddress = mmzhW5wkMh1Gex4P5TDh2Q1tbdHPKvq74K
 
 println(legacyAddress.toString)
-// mqUDJcXeTYj9R2eU4ksu57UhNFtzAbeaYS
+// mmzhW5wkMh1Gex4P5TDh2Q1tbdHPKvq74K
 ```
