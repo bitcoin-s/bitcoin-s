@@ -28,6 +28,8 @@ import org.bitcoins.crypto.{
 }
 import scodec.bits.ByteVector
 
+import scala.util.{Failure, Success}
+
 /** Created by chris on 1/6/16.
   */
 sealed abstract class CryptoInterpreter {
@@ -101,7 +103,10 @@ sealed abstract class CryptoInterpreter {
             pubKey,
             signature,
             flags)
-          handleSignatureValidation(program, result, restOfStack)
+          handleSignatureValidation(program = program,
+                                    result = result,
+                                    restOfStack = restOfStack,
+                                    numOpt = None)
         case SigVersionTapscript =>
           //drop control block + script bytes
           //https://github.com/bitcoin/bitcoin/blob/8ae4ba481ce8f7da173bef24432729c87a36cb70/src/script/interpreter.cpp#L1937
@@ -121,13 +126,17 @@ sealed abstract class CryptoInterpreter {
                 //SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE is NOT set
                 handleSignatureValidation(program = program,
                                           result = SignatureValidationSuccess,
-                                          restOfStack = restOfStack)
+                                          restOfStack = restOfStack,
+                                          numOpt = None)
               } else {
                 program.failExecution(err)
               }
 
             case Right(result) =>
-              handleSignatureValidation(program, result, restOfStack)
+              handleSignatureValidation(program = program,
+                                        result = result,
+                                        restOfStack = restOfStack,
+                                        numOpt = None)
           }
 
         case SigVersionTaprootKeySpend =>
@@ -135,6 +144,33 @@ sealed abstract class CryptoInterpreter {
 
       }
     }
+  }
+
+  private def getSignatureAndHashType(
+      stack: List[ScriptToken],
+      isCheckSigAdd: Boolean): (SchnorrDigitalSignature, HashType) = {
+    val sigBytes = {
+      if (isCheckSigAdd) {
+        stack(2).bytes
+      } else {
+        stack.tail.head.bytes
+      }
+    }
+    val (signature, hashType) = {
+      if (sigBytes.length == 64) {
+        val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
+        (sig, HashType.sigHashAll)
+      } else if (sigBytes.length == 65) {
+        val hashTypeByte = sigBytes.last
+        val hashType = HashType.fromByte(hashTypeByte)
+        val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
+        (sig, hashType)
+      } else {
+        sys.error(
+          s"Incorrect length for schnorr digital signature, got=${sigBytes.length}, expected 64 or 65 sigBytes=${sigBytes}")
+      }
+    }
+    (signature, hashType)
   }
 
   private def evalChecksigTapscript(
@@ -159,36 +195,44 @@ sealed abstract class CryptoInterpreter {
         Left(ScriptErrorDiscourageUpgradablePubkeyType)
       }
     } else {
-      val (signature, hashType) = {
-        val sigBytes = stack.tail.head.bytes
-        if (sigBytes.length == 64) {
-          val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
-          (sig, HashType.sigHashAll)
-        } else if (sigBytes.length == 65) {
-          val hashTypeByte = sigBytes.last
-          val hashType = HashType.fromByte(hashTypeByte)
-          val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
-          (sig, hashType)
+      val helperE: Either[ScriptError, TapscriptChecksigHelper] = {
+        if (program.script.head != OP_CHECKSIGADD) {
+          val (signature, hashType) = getSignatureAndHashType(stack, false)
+          val restOfStack = program.stack.tail.tail //remove pubkey, signature
+          val helper = TapscriptChecksigHelper(pubKey = schnorrPubKeyT.get,
+                                               signature = signature,
+                                               hashType = hashType,
+                                               restOfStack = restOfStack)
+          Right(helper)
+        } else if (program.script.head == OP_CHECKSIGADD) {
+          val (signature, hashType) = getSignatureAndHashType(stack, true)
+          val restOfStack =
+            program.stack.tail.tail.tail //remove pubkey, num, signature
+          val helper = TapscriptChecksigHelper(pubKey = schnorrPubKeyT.get,
+                                               signature,
+                                               hashType,
+                                               restOfStack)
+          Right(helper)
         } else {
           sys.error(
-            s"Incorrect length for schnorr digital signature, got=${sigBytes.length}, expected 64 or 65 sigBytes=${sigBytes}")
+            s"Can only run eval evalChecksigTapscript if script is at OP_CHECKSIGADD,OP_CHECKSIGVERIFY,OP_CHECKSIG")
         }
       }
-      val restOfStack = program.stack.tail.tail
-      val result = TransactionSignatureChecker.checkSigTapscript(
-        txSignatureComponent = program.txSignatureComponent,
-        script = restOfStack,
-        pubKey = schnorrPubKeyT.get,
-        signature = signature,
-        hashType = hashType,
-        tapLeafHash = program.tapLeafHashOpt.get,
-        flags = program.flags
-      )
-
-      Right(result)
-
+      helperE match {
+        case Right(helper) =>
+          val result = TransactionSignatureChecker.checkSigTapscript(
+            txSignatureComponent = program.txSignatureComponent,
+            script = helper.restOfStack,
+            pubKey = helper.pubKey,
+            signature = helper.signature,
+            hashType = helper.hashType,
+            tapLeafHash = program.tapLeafHashOpt.get,
+            flags = program.flags
+          )
+          Right(result)
+        case Left(err) => Left(err)
+      }
     }
-
   }
 
   /** Runs [[org.bitcoins.core.script.crypto.OP_CHECKSIG OP_CHECKSIG]] with an
@@ -330,7 +374,10 @@ sealed abstract class CryptoInterpreter {
 
           //remove the extra OP_0 (null dummy) for OP_CHECKMULTISIG from the stack
           val restOfStack = stackWithoutPubKeysAndSignatures.tail
-          handleSignatureValidation(program, isValidSignatures, restOfStack)
+          handleSignatureValidation(program = program,
+                                    result = isValidSignatures,
+                                    restOfStack = restOfStack,
+                                    numOpt = None)
         }
       }
     }
@@ -371,11 +418,40 @@ sealed abstract class CryptoInterpreter {
         if (program.stack.length < 3) {
           program.failExecution(ScriptErrorInvalidStackOperation)
         } else {
-          val requireMinimal = ScriptFlagUtil.requireMinimalData(program.flags)
-          val pubKey = ECPublicKeyBytes(program.stack.head.bytes)
-          val num = ScriptNumber(program.stack(1).bytes, requireMinimal)
-          val signature = ECDigitalSignature(program.stack(2).bytes)
-          ???
+          val flags = program.flags
+          val requireMinimal =
+            ScriptFlagUtil.requireMinimalData(program.flags)
+          val numT = ScriptNumber(program.stack(1).bytes, requireMinimal)
+
+          if (numT.isFailure) {
+            throw numT.failed.get
+          }
+          val restOfStack =
+            program.stack.tail.tail.tail //remove signature, num, pubkey
+
+          val tapscriptE = evalChecksigTapscript(program)
+          tapscriptE match {
+            case Left(err) =>
+              if (
+                err == ScriptErrorDiscourageUpgradablePubkeyType && !ScriptFlagUtil
+                  .discourageUpgradablePublicKey(flags)
+              ) {
+                //trivially pass signature validation as required by BIP342
+                //when the public key type is not known and the
+                //SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE is NOT set
+                handleSignatureValidation(program = program,
+                                          result = SignatureValidationSuccess,
+                                          restOfStack = restOfStack,
+                                          numOpt = Some(numT.get))
+              } else {
+                program.failExecution(err)
+              }
+            case Right(result) =>
+              handleSignatureValidation(program = program,
+                                        result = result,
+                                        restOfStack = restOfStack,
+                                        numOpt = Some(numT.get))
+          }
         }
     }
   }
@@ -400,17 +476,43 @@ sealed abstract class CryptoInterpreter {
     }
   }
 
+  /** Pushes the correct data onto the stack after signature validation
+    * Pre-tapscript this meant just pushing OP_TRUE/OP_FALSE onto the stack
+    * With tapscript and OP_CHECKSIGADD we increment the counter and
+    * push it back onto the stack in case there are more signature operations
+    * @param program
+    * @param result
+    * @param restOfStack
+    * @param numOpt
+    * @return
+    */
   private def handleSignatureValidation(
       program: ExecutionInProgressScriptProgram,
       result: TransactionSignatureCheckerResult,
-      restOfStack: Seq[ScriptToken]): StartedScriptProgram =
+      restOfStack: Seq[ScriptToken],
+      numOpt: Option[ScriptNumber]): StartedScriptProgram = {
+    val pushOp = {
+      numOpt match {
+        case Some(num) =>
+          if (result.isValid) {
+            num.+(ScriptNumber.one)
+          } else {
+            num
+          }
+        case None =>
+          if (result.isValid) {
+            OP_TRUE
+          } else {
+            OP_FALSE
+          }
+      }
+    }
     result match {
       case SignatureValidationSuccess =>
         //means that all of the signatures were correctly encoded and
         //that all of the signatures were valid signatures for the given
         //public keys
-        program.updateStackAndScript(OP_TRUE +: restOfStack,
-                                     program.script.tail)
+        program.updateStackAndScript(pushOp +: restOfStack, program.script.tail)
       case SignatureValidationErrorNotStrictDerEncoding =>
         //this means the script fails immediately
         //set the valid flag to false on the script
@@ -420,8 +522,7 @@ sealed abstract class CryptoInterpreter {
       case SignatureValidationErrorIncorrectSignatures =>
         //this means that signature verification failed, however all signatures were encoded correctly
         //just push a OP_FALSE onto the stack
-        program.updateStackAndScript(OP_FALSE +: restOfStack,
-                                     program.script.tail)
+        program.updateStackAndScript(pushOp +: restOfStack, program.script.tail)
       case SignatureValidationErrorSignatureCount =>
         //means that we did not have enough signatures for OP_CHECKMULTISIG
         program.failExecution(ScriptErrorInvalidStackOperation)
@@ -437,6 +538,13 @@ sealed abstract class CryptoInterpreter {
       case SignatureValidationErrorNullFail =>
         program.failExecution(ScriptErrorSigNullFail)
     }
+  }
 }
 
 object CryptoInterpreter extends CryptoInterpreter
+
+case class TapscriptChecksigHelper(
+    pubKey: SchnorrPublicKey,
+    signature: SchnorrDigitalSignature,
+    hashType: HashType,
+    restOfStack: List[ScriptToken])
