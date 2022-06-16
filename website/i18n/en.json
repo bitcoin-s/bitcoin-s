@@ -116,6 +116,9 @@
       "oracle/oracle-server": {
         "title": "Oracle Server"
       },
+      "oracle/oracle-sports-betting-example": {
+        "title": "Sports Betting Example"
+      },
       "rpc/rpc-bitcoind": {
         "title": "bitcoind/Bitcoin Core"
       },
@@ -175,6 +178,9 @@
       },
       "wallet/wallet-rpc": {
         "title": "Wallet RPC Examples"
+      },
+      "wallet/wallet-sports-betting-example": {
+        "title": "Wallet Sports Betting Example"
       },
       "wallet/wallet-sync": {
         "title": "Wallet Sync"
@@ -1058,6 +1064,9 @@
       "version-1.9.2/oracle/version-1.9.2-oracle-server": {
         "title": "Oracle Server"
       },
+      "version-1.9.2/oracle/version-1.9.2-oracle-sports-betting-example": {
+        "title": "Sports Betting Example"
+      },
       "version-1.9.2/secp256k1/version-1.9.2-secp256k1": {
         "title": "Secp256k1"
       },
@@ -1072,6 +1081,9 @@
       },
       "version-1.9.2/wallet/version-1.9.2-wallet-price-example": {
         "title": "Wallet Price Example"
+      },
+      "version-1.9.2/wallet/version-1.9.2-wallet-sports-betting-example": {
+        "title": "Wallet Sports Betting Example"
       }
     },
     "links": {
