@@ -1,4 +1,4 @@
-name := "bitcoin-s-cli"
+name := s"bitcoin-s-cli-${System.getProperty("os.name")}"
 
 libraryDependencies ++= Deps.cli.value
 

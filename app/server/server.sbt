@@ -1,4 +1,4 @@
-name := "bitcoin-s-server"
+name := s"bitcoin-s-server-${System.getProperty("os.name")}"
 
 // Ensure actor system is shut down
 // when server is quit
