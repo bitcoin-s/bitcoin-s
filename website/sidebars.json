@@ -60,7 +60,8 @@
       "wallet/wallet-rpc",
       "wallet/backups",
       "wallet/wallet-election-example",
-      "wallet/wallet-price-example"
+      "wallet/wallet-price-example",
+      "wallet/wallet-sports-betting-example"
     ],
     "Tor": [
       "tor/tor"
@@ -83,7 +84,8 @@
       "oracle/build-oracle-server",
       "oracle/oracle-server",
       "oracle/oracle-election-example",
-      "oracle/oracle-price-example"
+      "oracle/oracle-price-example",
+      "oracle/oracle-sports-betting-example"
     ],
     "Oracle Explorer Client": [
       "oracle-explorer-client/oracle-explorer-client"
