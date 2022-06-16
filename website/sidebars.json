@@ -84,7 +84,7 @@
       "oracle/build-oracle-server",
       "oracle/oracle-server",
       "oracle/oracle-election-example",
-      "oracle/oracle-price-example"
+      "oracle/oracle-price-example",
       "oracle/oracle-sports-betting-example"
     ],
     "Oracle Explorer Client": [
