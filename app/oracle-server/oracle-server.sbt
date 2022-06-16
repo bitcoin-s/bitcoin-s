@@ -1,8 +1,10 @@
 import com.typesafe.sbt.packager.docker.DockerChmodType
 
-name := s"bitcoin-s-oracle-server-${System.getProperty("os.name")}"
+name := "bitcoin-s-oracle-server"
 
-// Ensure actor system is shut down
+Universal / packageName := CommonSettings.buildPackageName((Universal /packageName).value)
+
+  // Ensure actor system is shut down
 // when server is quit
 Compile / fork := true
 

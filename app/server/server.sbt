@@ -1,4 +1,9 @@
-name := s"bitcoin-s-server-${System.getProperty("os.name")}"
+name := s"bitcoin-s-server"
+
+Universal / packageName := {
+  val old = (Universal / packageName).value
+  CommonSettings.buildPackageName(old)
+}
 
 // Ensure actor system is shut down
 // when server is quit
