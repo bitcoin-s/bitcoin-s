@@ -223,7 +223,7 @@ sealed abstract class TransactionSignatureSerializer {
           if (isNotSigHashSingle && isNotSigHashNone) {
             val outputs = spendingTransaction.outputs
             val bytes = BytesUtil.toByteVector(outputs)
-            CryptoUtil.doubleSHA256(bytes).bytes
+            CryptoUtil.sha256(bytes).bytes
           } else if (
             HashType.isSigHashSingle(hashType.num) &&
             inputIndex < UInt32(spendingTransaction.outputs.size)
