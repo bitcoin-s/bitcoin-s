@@ -647,9 +647,16 @@ sealed abstract class ScriptInterpreter {
             if (controlBlock.isTapLeafMask) {
 
               //drop the control block & script in the witness
-              val stackNoControlBlockOrScript = stack.tail.tail
-              logger.info(
-                s"stackNoControlBlockOrScript=${stackNoControlBlockOrScript}")
+              val stackNoControlBlockOrScript = {
+                if (scriptPubKeyExecutedProgram.getAnnexHashOpt.isDefined) {
+                  //if we have an annex we need to drop
+                  //annex,control block, script
+                  stack.tail.tail.tail
+                } else {
+                  //else just drop control block, script
+                  stack.tail.tail
+                }
+              }
               val newProgram = PreExecutionScriptProgram(
                 txSignatureComponent = taprootTxSigComponent,
                 stack = stackNoControlBlockOrScript.toList,

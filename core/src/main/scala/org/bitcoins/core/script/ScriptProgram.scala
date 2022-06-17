@@ -54,22 +54,32 @@ sealed trait ScriptProgram {
     */
   def failExecution(error: ScriptError): ExecutedScriptProgram
 
-  /** Calculates the leaf hash if we have a tapscript, else returns None if we don't have a tapscript */
-  def tapLeafHashOpt: Option[Sha256Digest] = {
+  private def getTapscriptOpt: Option[TaprootScriptPath] = {
     txSignatureComponent match {
       case taprootTxSigComponent: TaprootTxSigComponent =>
         taprootTxSigComponent.witness match {
           case sp: TaprootScriptPath =>
-            val hash = TaprootScriptPath.computeTapleafHash(
-              TaprootScriptPath.TAPROOT_LEAF_TAPSCRIPT,
-              sp.script)
-            Some(hash)
+            Some(sp)
           case _: TaprootKeyPath => None
         }
       case _: BaseTxSigComponent | _: WitnessTxSigComponentRebuilt |
           _: WitnessTxSigComponentP2SH | _: WitnessTxSigComponentRaw =>
         None
     }
+  }
+
+  /** Calculates the leaf hash if we have a tapscript, else returns None if we don't have a tapscript */
+  def tapLeafHashOpt: Option[Sha256Digest] = {
+    getTapscriptOpt.map { sp =>
+      val hash = TaprootScriptPath.computeTapleafHash(
+        TaprootScriptPath.TAPROOT_LEAF_TAPSCRIPT,
+        sp.script)
+      hash
+    }
+  }
+
+  def getAnnexHashOpt: Option[Sha256Digest] = {
+    getTapscriptOpt.flatMap(_.annexHashOpt)
   }
 }
 
