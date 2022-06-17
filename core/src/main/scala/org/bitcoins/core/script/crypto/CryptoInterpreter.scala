@@ -92,7 +92,7 @@ sealed abstract class CryptoInterpreter {
       val restOfStack = program.stack.tail.tail
 
       program.txSignatureComponent.sigVersion match {
-        case SigVersionWitnessV0 | SigVersionWitnessV0 =>
+        case SigVersionWitnessV0 | SigVersionWitnessV0 | SigVersionBase =>
           val pubKey = ECPublicKeyBytes(program.stack.head.bytes)
           val signature = ECDigitalSignature(program.stack.tail.head.bytes)
           val removedOpCodeSeparatorsScript =
