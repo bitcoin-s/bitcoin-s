@@ -214,7 +214,10 @@ trait LndRpcTestUtil extends Logging {
   /** Creates two Lnd nodes that are connected together and returns their
     * respective [[org.bitcoins.lnd.rpc.LndRpcClient LndRpcClient]]s
     */
-  def createNodePair(bitcoind: BitcoindRpcClient)(implicit
+  def createNodePair(
+      bitcoind: BitcoindRpcClient,
+      channelSize: CurrencyUnit = DEFAULT_CHANNEL_AMT,
+      channelPushAmt: CurrencyUnit = DEFAULT_CHANNEL_AMT / Satoshis(2))(implicit
       ec: ExecutionContext): Future[(LndRpcClient, LndRpcClient)] = {
 
     val actorSystemA =
@@ -255,7 +258,11 @@ trait LndRpcTestUtil extends Logging {
       _ <- AsyncUtil.awaitConditionF(() => isSynced)
       _ <- AsyncUtil.awaitConditionF(() => isFunded)
 
-      _ <- openChannel(bitcoind, client, otherClient)
+      _ <- openChannel(bitcoind = bitcoind,
+                       n1 = client,
+                       n2 = otherClient,
+                       amt = channelSize,
+                       pushAmt = channelPushAmt)
     } yield (client, otherClient)
   }
 
