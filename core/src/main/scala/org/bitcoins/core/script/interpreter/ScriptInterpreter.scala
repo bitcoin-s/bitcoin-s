@@ -648,6 +648,8 @@ sealed abstract class ScriptInterpreter {
 
               //drop the control block & script in the witness
               val stackNoControlBlockOrScript = stack.tail.tail
+              logger.info(
+                s"stackNoControlBlockOrScript=${stackNoControlBlockOrScript}")
               val newProgram = PreExecutionScriptProgram(
                 txSignatureComponent = taprootTxSigComponent,
                 stack = stackNoControlBlockOrScript.toList,
@@ -780,7 +782,9 @@ sealed abstract class ScriptInterpreter {
         case Nil =>
           (program.toExecutedProgram, opCount)
 
-        case _ if !program.shouldExecuteNextOperation =>
+        case op :: _ if !program.shouldExecuteNextOperation =>
+          logger.info(
+            s"Skipping operation ${op} since we should not execute current operation in the interpreter")
           (program.updateScript(program.script.tail), opCount)
 
         //stack operations
