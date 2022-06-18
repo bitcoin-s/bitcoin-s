@@ -17,11 +17,13 @@ Compile / scalacOptions ++= Seq(
   "-Wconf:cat=deprecation:site=walletrpc\\..*:silent",
   "-Wconf:cat=deprecation:site=routerrpc\\..*:silent",
   "-Wconf:cat=deprecation:site=invoicesrpc\\..*:silent",
+  "-Wconf:cat=deprecation:site=peersrpc\\..*:silent",
   "-Wconf:cat=unused-imports:site=lnrpc:silent",
   "-Wconf:cat=unused-imports:site=signrpc:silent",
   "-Wconf:cat=unused-imports:site=walletrpc:silent",
   "-Wconf:cat=unused-imports:site=routerrpc:silent",
-  "-Wconf:cat=unused-imports:site=invoicesrpc:silent"
+  "-Wconf:cat=unused-imports:site=invoicesrpc:silent",
+  "-Wconf:cat=unused-imports:site=peersrpc:silent"
 )
 
 TaskKeys.downloadLnd := {
