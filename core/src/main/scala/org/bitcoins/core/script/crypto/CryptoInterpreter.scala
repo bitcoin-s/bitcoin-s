@@ -14,7 +14,10 @@ import org.bitcoins.core.script.control.{
   ControlOperationsInterpreter,
   OP_VERIFY
 }
-import org.bitcoins.core.script.flag.ScriptFlagUtil
+import org.bitcoins.core.script.flag.{
+  ScriptFlagUtil,
+  ScriptVerifyDiscourageUpgradablePubKeyType
+}
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.crypto.{
@@ -146,9 +149,13 @@ sealed abstract class CryptoInterpreter {
     }
   }
 
+  /** Gets the signature and hash type, returns None
+    * if the signature is the empty byte vector which trivially
+    * fails script interpreter validation
+    */
   private def getSignatureAndHashType(
       stack: List[ScriptToken],
-      isCheckSigAdd: Boolean): (SchnorrDigitalSignature, HashType) = {
+      isCheckSigAdd: Boolean): Option[(SchnorrDigitalSignature, HashType)] = {
     val sigBytes = {
       if (isCheckSigAdd) {
         stack(2).bytes
@@ -156,21 +163,23 @@ sealed abstract class CryptoInterpreter {
         stack.tail.head.bytes
       }
     }
-    val (signature, hashType) = {
+    val sigHashTypeOpt: Option[(SchnorrDigitalSignature, HashType)] = {
       if (sigBytes.length == 64) {
         val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
-        (sig, HashType.sigHashAll)
+        Some((sig, HashType.sigHashAll))
       } else if (sigBytes.length == 65) {
         val hashTypeByte = sigBytes.last
         val hashType = HashType.fromByte(hashTypeByte)
         val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
-        (sig, hashType)
+        Some((sig, hashType))
+      } else if (sigBytes.isEmpty) {
+        None
       } else {
         sys.error(
           s"Incorrect length for schnorr digital signature, got=${sigBytes.length}, expected 64 or 65 sigBytes=${sigBytes}")
       }
     }
-    (signature, hashType)
+    sigHashTypeOpt
   }
 
   private def evalChecksigTapscript(
@@ -182,37 +191,53 @@ sealed abstract class CryptoInterpreter {
     val schnorrPubKeyT =
       SchnorrPublicKey.fromBytesT(pubKeyBytes)
     //need to do weight validation
-    if (schnorrPubKeyT.isFailure) {
+    if (pubKeyBytes.isEmpty) {
       //this failure catches two types of errors, if the pubkey is empty
       //and if its using an "upgraded" pubkey from a future soft fork
       //from bip342:
       //If the public key size is not zero and not 32 bytes, the public key is of an unknown public key type[6] and no actual signature verification is applied.
       //During script execution of signature opcodes they behave exactly as known public key types except that signature validation is considered to be successful.
       //see: https://github.com/bitcoin/bitcoin/blob/9e4fbebcc8e497016563e46de4c64fa094edab2d/src/script/interpreter.cpp#L374
-      if (pubKeyBytes.isEmpty) {
-        Left(ScriptErrorPubKeyType)
-      } else {
-        Left(ScriptErrorDiscourageUpgradablePubkeyType)
-      }
+      Left(ScriptErrorPubKeyType)
+    } else if (
+      program.flags.contains(
+        ScriptVerifyDiscourageUpgradablePubKeyType) && schnorrPubKeyT.isFailure
+    ) {
+      Left(ScriptErrorDiscourageUpgradablePubkeyType)
     } else {
       val helperE: Either[ScriptError, TapscriptChecksigHelper] = {
         if (program.script.head != OP_CHECKSIGADD) {
-          val (signature, hashType) = getSignatureAndHashType(stack, false)
-          val restOfStack = program.stack.tail.tail //remove pubkey, signature
-          val helper = TapscriptChecksigHelper(pubKey = schnorrPubKeyT.get,
-                                               signature = signature,
-                                               hashType = hashType,
-                                               restOfStack = restOfStack)
-          Right(helper)
+          val sigHashTypeOpt = getSignatureAndHashType(stack, false)
+          sigHashTypeOpt match {
+            case Some((signature, hashType)) =>
+              val restOfStack =
+                program.stack.tail.tail //remove pubkey, signature
+              val helper = TapscriptChecksigHelper(pubKey = schnorrPubKeyT.get,
+                                                   signature = signature,
+                                                   hashType = hashType,
+                                                   restOfStack = restOfStack)
+              Right(helper)
+            case None =>
+              //this is because the signature was empty
+              Left(ScriptErrorEvalFalse)
+          }
+
         } else if (program.script.head == OP_CHECKSIGADD) {
-          val (signature, hashType) = getSignatureAndHashType(stack, true)
-          val restOfStack =
-            program.stack.tail.tail.tail //remove pubkey, num, signature
-          val helper = TapscriptChecksigHelper(pubKey = schnorrPubKeyT.get,
-                                               signature,
-                                               hashType,
-                                               restOfStack)
-          Right(helper)
+          val sigHashTypeOpt = getSignatureAndHashType(stack, true)
+
+          sigHashTypeOpt match {
+            case Some((signature, hashType)) =>
+              val restOfStack =
+                program.stack.tail.tail.tail //remove pubkey, num, signature
+              val helper = TapscriptChecksigHelper(pubKey = schnorrPubKeyT.get,
+                                                   signature,
+                                                   hashType,
+                                                   restOfStack)
+              Right(helper)
+            case None =>
+              Left(ScriptErrorEvalFalse)
+          }
+
         } else {
           sys.error(
             s"Can only run eval evalChecksigTapscript if script is at OP_CHECKSIGADD,OP_CHECKSIGVERIFY,OP_CHECKSIG")
@@ -443,10 +468,18 @@ sealed abstract class CryptoInterpreter {
                                           result = SignatureValidationSuccess,
                                           restOfStack = restOfStack,
                                           numOpt = Some(numT.get))
+              } else if (err == ScriptErrorEvalFalse) {
+                //means signature validation failed, don't increment the stack counter
+                handleSignatureValidation(
+                  program = program,
+                  result = SignatureValidationErrorIncorrectSignatures,
+                  restOfStack = restOfStack,
+                  numOpt = Some(numT.get))
               } else {
                 program.failExecution(err)
               }
             case Right(result) =>
+              println(s"Right(result)=$result")
               handleSignatureValidation(program = program,
                                         result = result,
                                         restOfStack = restOfStack,
