@@ -81,6 +81,12 @@ sealed trait ScriptProgram {
   def getAnnexHashOpt: Option[Sha256Digest] = {
     getTapscriptOpt.flatMap(_.annexHashOpt)
   }
+
+  def taprootSerializationOptions: TaprootSerializationOptions = {
+    val empty = TaprootSerializationOptions.empty
+    val annex = empty.copy(annexHashOpt = getAnnexHashOpt)
+    annex.copy(tapLeafHashOpt = tapLeafHashOpt)
+  }
 }
 
 /** This represents a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]

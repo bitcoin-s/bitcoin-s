@@ -226,7 +226,7 @@ sealed abstract class CryptoInterpreter {
             pubKey = helper.pubKey,
             signature = helper.signature,
             hashType = helper.hashType,
-            tapLeafHash = program.tapLeafHashOpt.get,
+            taprootOptions = program.taprootSerializationOptions,
             flags = program.flags
           )
           Right(result)

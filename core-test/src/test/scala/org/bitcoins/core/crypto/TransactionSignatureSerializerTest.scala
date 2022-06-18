@@ -636,6 +636,7 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
     val leafHash = Sha256Digest.fromHex(
       "8d76c657582b87b087f36579a9ea78816d7e2a94098bc3e3c6113ed4b6315bb4")
     val taprootOptions = TaprootSerializationOptions(Some(leafHash), None, None)
+
     val serialize = TransactionSignatureSerializer.serializeForSignature(
       taprootTxSigComponent,
       HashType.sigHashNone,
@@ -709,7 +710,9 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
 
     val leafHash = Sha256Digest.fromHex(
       "0c013c8aa4ee2a624a516c877892db854d6ccc9fd1cd8b94895cff88abaccbc6")
+
     val taprootOptions = TaprootSerializationOptions(Some(leafHash), None, None)
+
     val serialize = TransactionSignatureSerializer.serializeForSignature(
       taprootTxSigComponent,
       HashType.sigHashAll,
