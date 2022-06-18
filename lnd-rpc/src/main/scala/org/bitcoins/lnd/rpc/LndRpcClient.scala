@@ -37,6 +37,7 @@ import org.bitcoins.lnd.rpc.LndRpcClient._
 import org.bitcoins.lnd.rpc.LndUtils._
 import org.bitcoins.lnd.rpc.config._
 import org.bitcoins.lnd.rpc.internal._
+import peersrpc.PeersClient
 import routerrpc._
 import scodec.bits._
 import signrpc._
@@ -145,6 +146,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   lazy val signer: SignerClient = SignerClient(clientSettings)
   lazy val router: RouterClient = RouterClient(clientSettings)
   lazy val invoices: InvoicesClient = InvoicesClient(clientSettings)
+  lazy val peersClient: PeersClient = PeersClient(clientSettings)
   lazy val stateClient: StateClient = StateClient(clientSettings)
 
   def genSeed(): Future[GenSeedResponse] = {
