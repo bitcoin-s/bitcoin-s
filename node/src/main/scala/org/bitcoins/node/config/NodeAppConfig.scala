@@ -10,6 +10,7 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.api.node.NodeType
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.{DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
@@ -102,10 +103,23 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     */
   lazy val peers: Vector[String] = {
     val list = config.getStringList("bitcoin-s.node.peers")
+    logger.info(s"peers.list=$list")
     val strs = 0
       .until(list.size())
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
-    strs.map(_.replace("localhost", "127.0.0.1"))
+    val result = strs.map(_.replace("localhost", "127.0.0.1"))
+    if (result.isEmpty) {
+      logger.info(
+        s"No peers found in configuration, resorting to default peers")
+      network match {
+        case MainNet  => Vector("neutrino.suredbits.com:8333")
+        case TestNet3 => Vector("neutrino.testnet3.suredbits.com:18333")
+        case n @ (RegTest | SigNet) =>
+          sys.error(s"Cannot configure any peers by default on $n")
+      }
+    } else {
+      result
+    }
   }
 
   lazy val torConf: TorAppConfig =
