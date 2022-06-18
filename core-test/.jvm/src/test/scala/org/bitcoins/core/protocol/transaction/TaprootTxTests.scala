@@ -59,12 +59,6 @@ class TaprootTxTests extends BitcoinSUnitTest {
       logger.debug(
         s"scriptSig=${testCase.successTxSigComponent.scriptSignature}")
       logger.debug(s"spk=${testCase.successTxSigComponent.scriptPubKey}")
-      testCase.successTxSigComponent match {
-        case witTxSig: WitnessTxSigComponent =>
-          logger.debug(s"wit=${witTxSig.witness}")
-        case _: BaseTxSigComponent | _: WitnessTxSigComponentRebuilt =>
-          ()
-      }
       logger.debug(
         s"======================================================================")
 
