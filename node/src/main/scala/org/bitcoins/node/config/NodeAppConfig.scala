@@ -103,7 +103,6 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     */
   lazy val peers: Vector[String] = {
     val list = config.getStringList("bitcoin-s.node.peers")
-    logger.info(s"peers.list=$list")
     val strs = 0
       .until(list.size())
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
