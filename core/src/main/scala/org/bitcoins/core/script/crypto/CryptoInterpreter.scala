@@ -27,7 +27,8 @@ import org.bitcoins.crypto.{
   HashDigest,
   HashType,
   SchnorrDigitalSignature,
-  SchnorrPublicKey
+  SchnorrPublicKey,
+  XOnlyPubKey
 }
 import scodec.bits.ByteVector
 
@@ -193,12 +194,12 @@ sealed abstract class CryptoInterpreter {
         stack(1).bytes
       }
     }
-    val schnorrPubKeyT = SchnorrPublicKey.fromBytesT(pubKeyBytes)
+    val xOnlyPubKeyT = XOnlyPubKey.fromBytesT(pubKeyBytes)
 
     val discourageUpgradablePubKey =
       ScriptFlagUtil.discourageUpgradablePublicKey(program.flags)
 
-    println(s"pubKeyBytes=$pubKeyBytes schnorrPubKeyT=${schnorrPubKeyT}")
+    println(s"pubKeyBytes=$pubKeyBytes schnorrPubKeyT=${xOnlyPubKeyT}")
     //need to do weight validation
     if (pubKeyBytes.isEmpty) {
       //this failure catches two types of errors, if the pubkey is empty
@@ -211,16 +212,16 @@ sealed abstract class CryptoInterpreter {
     } else if (sigBytes.isEmpty) {
       //fail if we don't have a signature
       Left(ScriptErrorEvalFalse)
-    } else if (discourageUpgradablePubKey && schnorrPubKeyT.isFailure) {
+    } else if (discourageUpgradablePubKey && xOnlyPubKeyT.isFailure) {
       Left(ScriptErrorDiscourageUpgradablePubkeyType)
     } else if (!discourageUpgradablePubKey && pubKeyBytes.length != 32) {
       // if the public key is not valid, and we aren't discouraging upgradable public keys
       //the script trivially succeeds so that we maintain soft fork compatability for
       //new public key types in the feature
       Right(SignatureValidationSuccess)
-    } else if (schnorrPubKeyT.isFailure) {
+    } else if (xOnlyPubKeyT.isFailure) {
       //how can this key be a failure if its 32 bytes in size?
-      sys.error(s"Invalid pubkey with 32 bytes in size, got=${schnorrPubKeyT}")
+      sys.error(s"Invalid pubkey with 32 bytes in size, got=${xOnlyPubKeyT}")
     } else {
       val helperE: Either[ScriptError, TapscriptChecksigHelper] = {
         val sigHashTypeOpt = getSignatureAndHashType(stack, isCheckSigAdd)
@@ -228,7 +229,7 @@ sealed abstract class CryptoInterpreter {
           case Some((signature, hashType)) =>
             val restOfStack =
               program.stack.tail.tail //remove pubkey, signature
-            val helper = TapscriptChecksigHelper(pubKey = schnorrPubKeyT.get,
+            val helper = TapscriptChecksigHelper(pubKey = xOnlyPubKeyT.get,
                                                  signature = signature,
                                                  hashType = hashType,
                                                  restOfStack = restOfStack)
@@ -572,7 +573,7 @@ sealed abstract class CryptoInterpreter {
 object CryptoInterpreter extends CryptoInterpreter
 
 case class TapscriptChecksigHelper(
-    pubKey: SchnorrPublicKey,
+    pubKey: XOnlyPubKey,
     signature: SchnorrDigitalSignature,
     hashType: HashType,
     restOfStack: List[ScriptToken])

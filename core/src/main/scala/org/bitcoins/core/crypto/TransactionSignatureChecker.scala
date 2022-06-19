@@ -210,7 +210,7 @@ trait TransactionSignatureChecker {
       TransactionSignatureSerializer.hashForSignature(txSignatureComponent,
                                                       hashType,
                                                       taprootOptions)
-    val result = pubKey.verify(hash, signature)
+    val result = pubKey.schnorrPublicKey.verify(hash, signature)
     if (result) {
       SignatureValidationSuccess
     } else {
