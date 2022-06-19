@@ -47,7 +47,7 @@ TaskKeys.downloadLnd := {
 
   logger.debug(s"(Maybe) downloading lnd binaries for version: $version")
 
-  val versionDir = binaryDir resolve version
+  val versionDir = binaryDir resolve s"lnd-$platform-v$version"
   val location =
     s"https://github.com/lightningnetwork/lnd/releases/download/v$version/lnd-$platform-v$version.$suffix"
 
