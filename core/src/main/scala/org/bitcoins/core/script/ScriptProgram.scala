@@ -1,9 +1,11 @@
 package org.bitcoins.core.script
 
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{TaprootKeyPath, TaprootScriptPath}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF}
+import org.bitcoins.core.script.crypto.OP_CODESEPARATOR
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BitcoinScriptUtil
@@ -82,10 +84,28 @@ sealed trait ScriptProgram {
     getTapscriptOpt.flatMap(_.annexHashOpt)
   }
 
+  def codeSeparatorPosOpt: Option[UInt32] = {
+    if (originalScript.contains(OP_CODESEPARATOR)) {
+      //determine if we have hit OP_CODESEPARATOR yet
+      //note this doesn't work for multiple code separators
+      val index = originalScript.indexOf(OP_CODESEPARATOR)
+      val currentIndex = originalScript.length - script.length
+      if (currentIndex >= index) {
+        Some(UInt32(index))
+      } else {
+        //haven't reached it yet
+        None
+      }
+    } else {
+      None
+    }
+  }
+
   def taprootSerializationOptions: TaprootSerializationOptions = {
     val empty = TaprootSerializationOptions.empty
     val annex = empty.copy(annexHashOpt = getAnnexHashOpt)
-    annex.copy(tapLeafHashOpt = tapLeafHashOpt)
+    annex.copy(tapLeafHashOpt = tapLeafHashOpt,
+               codeSeparatorPosOpt = codeSeparatorPosOpt)
   }
 }
 
