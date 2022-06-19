@@ -218,42 +218,19 @@ sealed abstract class CryptoInterpreter {
       Right(SignatureValidationSuccess)
     } else {
       val helperE: Either[ScriptError, TapscriptChecksigHelper] = {
-        if (!isCheckSigAdd) {
-          val sigHashTypeOpt = getSignatureAndHashType(stack, false)
-          sigHashTypeOpt match {
-            case Some((signature, hashType)) =>
-              val restOfStack =
-                program.stack.tail.tail //remove pubkey, signature
-              val helper = TapscriptChecksigHelper(pubKey = schnorrPubKeyT.get,
-                                                   signature = signature,
-                                                   hashType = hashType,
-                                                   restOfStack = restOfStack)
-              Right(helper)
-            case None =>
-              //this is because the signature was empty
-              Left(ScriptErrorEvalFalse)
-          }
-
-        } else if (isCheckSigAdd) {
-          val sigHashTypeOpt = getSignatureAndHashType(stack, true)
-
-          sigHashTypeOpt match {
-            case Some((signature, hashType)) =>
-              val restOfStack =
-                program.stack.tail.tail.tail //remove pubkey, num, signature
-
-              val helper = TapscriptChecksigHelper(pubKey = schnorrPubKeyT.get,
-                                                   signature,
-                                                   hashType,
-                                                   restOfStack)
-              Right(helper)
-            case None =>
-              Left(ScriptErrorEvalFalse)
-          }
-
-        } else {
-          sys.error(
-            s"Can only run eval evalChecksigTapscript if script is at OP_CHECKSIGADD,OP_CHECKSIGVERIFY,OP_CHECKSIG")
+        val sigHashTypeOpt = getSignatureAndHashType(stack, isCheckSigAdd)
+        sigHashTypeOpt match {
+          case Some((signature, hashType)) =>
+            val restOfStack =
+              program.stack.tail.tail //remove pubkey, signature
+            val helper = TapscriptChecksigHelper(pubKey = schnorrPubKeyT.get,
+                                                 signature = signature,
+                                                 hashType = hashType,
+                                                 restOfStack = restOfStack)
+            Right(helper)
+          case None =>
+            //this is because the signature was empty
+            Left(ScriptErrorEvalFalse)
         }
       }
       helperE match {
