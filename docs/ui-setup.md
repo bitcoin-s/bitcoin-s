@@ -55,7 +55,7 @@ Here are the instructions to build, you can paste this into your terminal
 
 ```
 git clone https://github.com/bitcoin-s/bitcoin-s-ts.git
-cd bitcoin-s-ts
+cd bitcoin-s-ts && npm i && run build
 cd wallet-server-ui && npm i && npm run build
 cd ../wallet-server-ui-proxy && npm i && npm run startlocal
 ```
