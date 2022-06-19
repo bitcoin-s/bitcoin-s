@@ -197,6 +197,8 @@ sealed abstract class CryptoInterpreter {
 
     val discourageUpgradablePubKey =
       ScriptFlagUtil.discourageUpgradablePublicKey(program.flags)
+
+    println(s"pubKeyBytes=$pubKeyBytes schnorrPubKeyT=${schnorrPubKeyT}")
     //need to do weight validation
     if (pubKeyBytes.isEmpty) {
       //this failure catches two types of errors, if the pubkey is empty
@@ -211,11 +213,14 @@ sealed abstract class CryptoInterpreter {
       Left(ScriptErrorEvalFalse)
     } else if (discourageUpgradablePubKey && schnorrPubKeyT.isFailure) {
       Left(ScriptErrorDiscourageUpgradablePubkeyType)
-    } else if (!discourageUpgradablePubKey && schnorrPubKeyT.isFailure) {
+    } else if (!discourageUpgradablePubKey && pubKeyBytes.length != 32) {
       // if the public key is not valid, and we aren't discouraging upgradable public keys
       //the script trivially succeeds so that we maintain soft fork compatability for
       //new public key types in the feature
       Right(SignatureValidationSuccess)
+    } else if (schnorrPubKeyT.isFailure) {
+      //how can this key be a failure if its 32 bytes in size?
+      sys.error(s"Invalid pubkey with 32 bytes in size, got=${schnorrPubKeyT}")
     } else {
       val helperE: Either[ScriptError, TapscriptChecksigHelper] = {
         val sigHashTypeOpt = getSignatureAndHashType(stack, isCheckSigAdd)
