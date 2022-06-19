@@ -111,9 +111,6 @@ sealed abstract class CryptoInterpreter {
                                     restOfStack = restOfStack,
                                     numOpt = None)
         case SigVersionTapscript =>
-          //drop control block + script bytes
-          //https://github.com/bitcoin/bitcoin/blob/8ae4ba481ce8f7da173bef24432729c87a36cb70/src/script/interpreter.cpp#L1937
-
           val tapscriptE: Either[
             ScriptError,
             TransactionSignatureCheckerResult] = evalChecksigTapscript(program)
@@ -188,8 +185,18 @@ sealed abstract class CryptoInterpreter {
     TransactionSignatureCheckerResult] = {
     val stack = program.stack
     val pubKeyBytes = stack.head.bytes
-    val schnorrPubKeyT =
-      SchnorrPublicKey.fromBytesT(pubKeyBytes)
+    val isCheckSigAdd = program.script.head == OP_CHECKSIGADD
+    val sigBytes = {
+      if (isCheckSigAdd) {
+        stack(2).bytes
+      } else {
+        stack(1).bytes
+      }
+    }
+    val schnorrPubKeyT = SchnorrPublicKey.fromBytesT(pubKeyBytes)
+
+    val discourageUpgradablePubKey =
+      ScriptFlagUtil.discourageUpgradablePublicKey(program.flags)
     //need to do weight validation
     if (pubKeyBytes.isEmpty) {
       //this failure catches two types of errors, if the pubkey is empty
@@ -199,14 +206,19 @@ sealed abstract class CryptoInterpreter {
       //During script execution of signature opcodes they behave exactly as known public key types except that signature validation is considered to be successful.
       //see: https://github.com/bitcoin/bitcoin/blob/9e4fbebcc8e497016563e46de4c64fa094edab2d/src/script/interpreter.cpp#L374
       Left(ScriptErrorPubKeyType)
-    } else if (
-      program.flags.contains(
-        ScriptVerifyDiscourageUpgradablePubKeyType) && schnorrPubKeyT.isFailure
-    ) {
+    } else if (sigBytes.isEmpty) {
+      //fail if we don't have a signature
+      Left(ScriptErrorEvalFalse)
+    } else if (discourageUpgradablePubKey && schnorrPubKeyT.isFailure) {
       Left(ScriptErrorDiscourageUpgradablePubkeyType)
+    } else if (!discourageUpgradablePubKey && schnorrPubKeyT.isFailure) {
+      // if the public key is not valid, and we aren't discouraging upgradable public keys
+      //the script trivially succeeds so that we maintain soft fork compatability for
+      //new public key types in the feature
+      Right(SignatureValidationSuccess)
     } else {
       val helperE: Either[ScriptError, TapscriptChecksigHelper] = {
-        if (program.script.head != OP_CHECKSIGADD) {
+        if (!isCheckSigAdd) {
           val sigHashTypeOpt = getSignatureAndHashType(stack, false)
           sigHashTypeOpt match {
             case Some((signature, hashType)) =>
@@ -222,13 +234,14 @@ sealed abstract class CryptoInterpreter {
               Left(ScriptErrorEvalFalse)
           }
 
-        } else if (program.script.head == OP_CHECKSIGADD) {
+        } else if (isCheckSigAdd) {
           val sigHashTypeOpt = getSignatureAndHashType(stack, true)
 
           sigHashTypeOpt match {
             case Some((signature, hashType)) =>
               val restOfStack =
                 program.stack.tail.tail.tail //remove pubkey, num, signature
+
               val helper = TapscriptChecksigHelper(pubKey = schnorrPubKeyT.get,
                                                    signature,
                                                    hashType,

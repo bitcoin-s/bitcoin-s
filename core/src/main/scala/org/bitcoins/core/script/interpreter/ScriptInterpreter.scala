@@ -745,7 +745,10 @@ sealed abstract class ScriptInterpreter {
     logger.debug(s"program.script=${program.script}")
     val scriptByteVector = BytesUtil.toByteVector(program.script)
 
-    if (opCount > MAX_SCRIPT_OPS) {
+    val sigVersion = program.txSignatureComponent.sigVersion
+    val isTaprootSigVersion =
+      sigVersion == SigVersionTapscript || sigVersion == SigVersionTaprootKeySpend
+    if (opCount > MAX_SCRIPT_OPS && !isTaprootSigVersion) {
       completeProgramExecution(program.failExecution(ScriptErrorOpCount))
     } else if (scriptByteVector.length > 10000) {
       completeProgramExecution(program.failExecution(ScriptErrorScriptSize))
