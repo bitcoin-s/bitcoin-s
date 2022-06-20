@@ -68,6 +68,7 @@
 
     <!-- inspect TCP details -->
     <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
+
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
     <!-- ╚════════════════════╝ -->

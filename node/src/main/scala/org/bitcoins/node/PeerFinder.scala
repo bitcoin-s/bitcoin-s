@@ -104,7 +104,7 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
   //for the peers we try
   private val _peerData: mutable.Map[Peer, PeerData] = mutable.Map.empty
 
-  private val _peersToTry: mutable.Stack[Peer] = mutable.Stack.empty
+  private val _peersToTry: mutable.Stack[Peer] = mutable.Stack.empty[Peer]
 
   val maxPeerSearchCount: Int = 1000
 
@@ -137,8 +137,8 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
       for {
         peersFromDb <- getPeersFromDb
       } yield {
-        _peersToTry.addAll(peersFromDb)
-        _peersToTry.addAll(getPeersFromResources)
+        _peersToTry.pushAll(peersFromDb)
+        _peersToTry.pushAll(getPeersFromResources)
         peerConnectionScheduler //start scheduler
         ()
       }
@@ -198,6 +198,6 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
   }
 
   def addToTry(peers: Peer*): Unit = {
-    _peersToTry.addAll(peers)
+    _peersToTry.pushAll(peers)
   }
 }
