@@ -725,7 +725,12 @@ sealed abstract class ScriptInterpreter {
       program: ExecutedScriptProgram): ExecutedScriptProgram = {
     val countedOps = program.originalScript
       .count(BitcoinScriptUtil.countsTowardsScriptOpLimit)
-    if (countedOps > MAX_SCRIPT_OPS && program.error.isEmpty) {
+    val sigVersion = program.txSignatureComponent.sigVersion
+    val isBaseOrSegwitV0 =
+      sigVersion == SigVersionBase || sigVersion == SigVersionWitnessV0
+    if (
+      isBaseOrSegwitV0 && countedOps > MAX_SCRIPT_OPS && program.error.isEmpty
+    ) {
       completeProgramExecution(program.failExecution(ScriptErrorOpCount))
     } else {
       program
