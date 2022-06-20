@@ -113,8 +113,9 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       network match {
         case MainNet  => Vector("neutrino.suredbits.com:8333")
         case TestNet3 => Vector("neutrino.testnet3.suredbits.com:18333")
-        case n @ (RegTest | SigNet) =>
-          sys.error(s"Cannot configure any peers by default on $n")
+        case _ @ (RegTest | SigNet) =>
+          Vector.empty[String]
+//          sys.error(s"Cannot configure any peers by default on $n")
       }
     } else {
       result
