@@ -40,7 +40,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def node: Node = this
 
-  val peerManager: PeerManager = PeerManager()
+  def peerManager: PeerManager
 
   /** The current data message handler.
     * It should be noted that the dataMessageHandler contains
