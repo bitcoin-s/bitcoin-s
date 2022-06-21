@@ -334,7 +334,7 @@ case class P2PClientActor(
         unalignedBytes
 
       case Tcp.ErrorClosed(cause) =>
-        logger.error(
+        logger.debug(
           s"An error occurred in our connection with $peer, cause=$cause state=${currentPeerMsgHandlerRecv.state}")
         currentPeerMsgHandlerRecv = currentPeerMsgHandlerRecv.disconnect()
         unalignedBytes

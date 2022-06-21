@@ -54,6 +54,6 @@ case class PeerData(
 
   def isDeferred: Boolean = {
     val timePast = System.currentTimeMillis() - lastTimedOut
-    timePast > 30.minutes.toMillis
+    timePast < 30.minutes.toMillis
   }
 }
