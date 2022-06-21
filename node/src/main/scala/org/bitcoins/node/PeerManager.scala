@@ -70,8 +70,8 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
         filteredPeers.partition(p => !peerData(p).isDeferred)
 
       if (good.nonEmpty) good(Random.nextInt(good.length))
-
-      failedRecently(Random.nextInt(failedRecently.length))
+      else
+        failedRecently(Random.nextInt(failedRecently.length))
     }
   }
 
@@ -108,7 +108,7 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
   def awaitPeerWithService(
       f: ServiceIdentifier => Boolean,
       timeout: Duration): Future[Unit] = {
-    logger.info("Waiting for peer connection")
+    logger.debug(s"Waiting for peer connection. ${_peerData.keys}")
     val ret = AsyncUtil
       .retryUntilSatisfied({
                              _peerData.exists(x => f(x._2.serviceIdentifier))
@@ -120,7 +120,6 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
           throw new RuntimeException("No supported peers found!")
         case unknown: Throwable => throw unknown
       }
-      .map(_ => logger.info("Connected to peer. Starting sync."))
 
     ret
   }
@@ -306,7 +305,7 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
   }
 
   def onQueryTimeout(payload: ExpectsResponse, peer: Peer): Future[Unit] = {
-    logger.info(s"Query timeout out for $peer")
+    logger.debug(s"Query timeout out for $peer")
     payload match {
       case _ => //if any times out, try a new peer
         peerData(peer).updateLastFailureTime()

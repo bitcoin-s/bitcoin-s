@@ -75,7 +75,7 @@
 
     <logger name="org.bitcoins.node.PeerFinder" level="DEBUG"/>
     <logger name="org.bitcoins.node.PeerManager" level="DEBUG"/>
-    <logger name="org.bitcoins.node.Node" level="DEBUG"/>
+    <logger name="org.bitcoins.node.NeutrinoNode" level="DEBUG"/>
 
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->

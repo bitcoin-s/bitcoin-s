@@ -273,7 +273,7 @@ class PeerMessageReceiver(
 
   def onResponseTimeout(networkPayload: NetworkPayload): Unit = {
     assert(networkPayload.isInstanceOf[ExpectsResponse])
-    logger.info(s"Called on Response Timeout for ${networkPayload.commandName}")
+    logger.debug(s"Called on Response Timeout for ${networkPayload.commandName}")
 
     //isn't this redundant? No, on response timeout may be called when not cancel timeout
     state match {
