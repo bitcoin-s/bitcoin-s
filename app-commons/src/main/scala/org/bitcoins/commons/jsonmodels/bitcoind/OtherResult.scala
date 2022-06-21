@@ -86,6 +86,7 @@ trait ValidateAddressResult {
   def isvalid: Boolean
   def address: Option[BitcoinAddress]
   def scriptPubKey: Option[ScriptPubKey]
+  def error_locations: Option[Vector[Int]]
 
   @deprecated("Use 'getaddressinfo' instead", since = "0.16")
   def ismine: Option[Boolean]
@@ -131,6 +132,7 @@ case class ValidateAddressResultImpl(
     isvalid: Boolean,
     address: Option[BitcoinAddress],
     scriptPubKey: Option[ScriptPubKey],
+    error_locations: Option[Vector[Int]],
     ismine: Option[Boolean],
     iswatchonly: Option[Boolean],
     isscript: Option[Boolean],

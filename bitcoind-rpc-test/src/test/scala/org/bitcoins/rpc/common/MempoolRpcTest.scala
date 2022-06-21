@@ -1,5 +1,6 @@
 package org.bitcoins.rpc.common
 
+import org.bitcoins.commons.jsonmodels.bitcoind.GetMemPoolEntryResultPostV19
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
@@ -120,9 +121,13 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairV21 {
         txid <-
           BitcoindRpcTestUtil
             .fundMemPoolTransaction(client, address, Bitcoins(3.2))
-        entry <- client.getMemPoolEntry(txid)
+        entry <- client
+          .getMemPoolEntry(txid)
+          .map(_.asInstanceOf[GetMemPoolEntryResultPostV19])
         tt <- client.prioritiseTransaction(txid, Bitcoins(1).satoshis)
-        newEntry <- client.getMemPoolEntry(txid)
+        newEntry <- client
+          .getMemPoolEntry(txid)
+          .map(_.asInstanceOf[GetMemPoolEntryResultPostV19])
       } yield {
         assert(entry.fee == entry.modifiedfee)
         assert(tt)

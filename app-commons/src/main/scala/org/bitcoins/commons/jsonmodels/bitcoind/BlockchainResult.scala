@@ -1,7 +1,5 @@
 package org.bitcoins.commons.jsonmodels.bitcoind
 
-import java.nio.file.Path
-
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
   BlockHeaderDbHelper,
@@ -16,6 +14,8 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import scodec.bits.ByteVector
+
+import java.nio.file.Path
 
 sealed abstract class BlockchainResult
 
@@ -119,6 +119,24 @@ case class GetBlockChainInfoResultPostV19(
     warnings: String)
     extends GetBlockChainInfoResult
 
+// adds time field removes softforks field
+case class GetBlockChainInfoResultPostV23(
+    chain: NetworkParameters,
+    blocks: Int,
+    headers: Int,
+    bestblockhash: DoubleSha256DigestBE,
+    difficulty: BigDecimal,
+    time: Int,
+    mediantime: Int,
+    verificationprogress: BigDecimal,
+    initialblockdownload: Boolean,
+    chainwork: String, // How should this be handled?
+    size_on_disk: Long,
+    pruned: Boolean,
+    pruneheight: Option[Int],
+    warnings: String)
+    extends GetBlockChainInfoResult
+
 case class SoftforkPreV19(
     id: String,
     version: Int,
@@ -219,16 +237,12 @@ case class GetChainTxStatsResult(
 
 sealed trait GetMemPoolResult extends BlockchainResult {
   def size: Int
-  def fee: Option[Bitcoins]
-  def modifiedfee: Option[Bitcoins]
   def time: UInt32
   def height: Int
   def descendantcount: Int
   def descendantsize: Int
-  def descendantfees: Option[Bitcoins]
   def ancestorcount: Int
   def ancestorsize: Int
-  def ancestorfees: Option[Bitcoins]
   def wtxid: DoubleSha256DigestBE
   def fees: FeeInfo
   def depends: Vector[DoubleSha256DigestBE]
@@ -270,6 +284,22 @@ case class GetMemPoolResultPostV19(
   override def size: Int = vsize
 }
 
+// v23 removes 'fee', 'modifiedfee', 'descendantfees', 'ancestorfees'
+case class GetMemPoolResultPostV23(
+    vsize: Int,
+    time: UInt32,
+    height: Int,
+    descendantcount: Int,
+    descendantsize: Int,
+    ancestorcount: Int,
+    ancestorsize: Int,
+    wtxid: DoubleSha256DigestBE,
+    fees: FeeInfo,
+    depends: Vector[DoubleSha256DigestBE])
+    extends GetMemPoolResult {
+  override def size: Int = vsize
+}
+
 case class FeeInfo(
     base: BitcoinFeeUnit,
     modified: BitcoinFeeUnit,
@@ -279,16 +309,12 @@ case class FeeInfo(
 
 sealed trait GetMemPoolEntryResult extends BlockchainResult {
   def size: Int
-  def fee: Bitcoins
-  def modifiedfee: Bitcoins
   def time: UInt32
   def height: Int
   def descendantcount: Int
   def descendantsize: Int
-  def descendantfees: BitcoinFeeUnit
   def ancestorcount: Int
   def ancestorsize: Int
-  def ancestorfees: BitcoinFeeUnit
   def wtxid: DoubleSha256DigestBE
   def fees: FeeInfo
   def depends: Option[Vector[DoubleSha256DigestBE]]
@@ -324,6 +350,22 @@ case class GetMemPoolEntryResultPostV19(
     ancestorcount: Int,
     ancestorsize: Int,
     ancestorfees: BitcoinFeeUnit,
+    wtxid: DoubleSha256DigestBE,
+    fees: FeeInfo,
+    depends: Option[Vector[DoubleSha256DigestBE]])
+    extends GetMemPoolEntryResult {
+  override def size: Int = vsize
+}
+
+case class GetMemPoolEntryResultPostV23(
+    vsize: Int,
+    weight: Int,
+    time: UInt32,
+    height: Int,
+    descendantcount: Int,
+    descendantsize: Int,
+    ancestorcount: Int,
+    ancestorsize: Int,
     wtxid: DoubleSha256DigestBE,
     fees: FeeInfo,
     depends: Option[Vector[DoubleSha256DigestBE]])

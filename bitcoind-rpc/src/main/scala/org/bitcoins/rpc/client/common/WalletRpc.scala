@@ -14,13 +14,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECPrivateKeyBytes,
-  ECPublicKey,
-  HashType
-}
+import org.bitcoins.crypto._
 import org.bitcoins.rpc.client.common.BitcoindVersion._
 import play.api.libs.json._
 
@@ -307,7 +301,7 @@ trait WalletRpc { self: Client =>
   ): Future[SetWalletFlagResult] = {
 
     self.version.flatMap {
-      case V22 | V21 | V20 | V19 | Experimental | Unknown =>
+      case V23 | V22 | V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[SetWalletFlagResult](
           "setwalletflag",
           List(JsString(flag.toString), Json.toJson(value)),
@@ -321,7 +315,7 @@ trait WalletRpc { self: Client =>
 
   def getBalances: Future[GetBalancesResult] = {
     self.version.flatMap {
-      case V22 | V21 | V20 | V19 | Experimental | Unknown =>
+      case V23 | V22 | V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[GetBalancesResult]("getbalances")
       case V16 | V17 | V18 =>
         Future.failed(
@@ -332,7 +326,7 @@ trait WalletRpc { self: Client =>
 
   def getBalances(walletName: String): Future[GetBalancesResult] = {
     self.version.flatMap {
-      case V22 | V21 | V20 | V19 | Experimental | Unknown =>
+      case V23 | V22 | V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[GetBalancesResult]("getbalances",
                                         uriExtensionOpt =
                                           Some(walletExtension(walletName)))
@@ -403,9 +397,21 @@ trait WalletRpc { self: Client =>
       walletName: String,
       disablePrivateKeys: Boolean = false,
       blank: Boolean = false,
-      passphrase: String = ""): Future[CreateWalletResult] =
+      passphrase: String = "",
+      avoidReuse: Boolean = false,
+      descriptors: Boolean = false): Future[CreateWalletResult] =
     self.version.flatMap {
-      case V22 | V21 | V20 | V19 | Experimental | Unknown =>
+      case V23 =>
+        bitcoindCall[CreateWalletResult](
+          "createwallet",
+          List(JsString(walletName),
+               JsBoolean(disablePrivateKeys),
+               JsBoolean(blank),
+               JsString(passphrase),
+               JsBoolean(avoidReuse),
+               JsBoolean(descriptors))
+        )
+      case V23 | V22 | V21 | V20 | V19 | Experimental | Unknown =>
         bitcoindCall[CreateWalletResult]("createwallet",
                                          List(JsString(walletName),
                                               JsBoolean(disablePrivateKeys),
@@ -433,7 +439,7 @@ trait WalletRpc { self: Client =>
           "getaddressinfo",
           List(JsString(address.value)),
           uriExtensionOpt = walletNameOpt.map(walletExtension))
-      case V22 | V21 | Unknown =>
+      case V23 | V22 | V21 | Unknown =>
         bitcoindCall[AddressInfoResultPostV21](
           "getaddressinfo",
           List(JsString(address.value)),

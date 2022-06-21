@@ -13,6 +13,7 @@ The Bitcoin Core RPC client in Bitcoin-S currently supports the Bitcoin Core
 - 0.20
 - 0.21
 - 22
+- 23
 
 version lines. It can be set up to work with both local and remote Bitcoin Core servers.
 

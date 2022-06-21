@@ -34,7 +34,8 @@ case class MultiSigResultPreV20(
 case class MultiSigResultPostV20(
     address: BitcoinAddress,
     redeemScript: ScriptPubKey,
-    descriptor: String)
+    descriptor: String,
+    warnings: Option[String]) //available in v23
     extends MultiSigResult
 
 case class BumpFeeResult(
