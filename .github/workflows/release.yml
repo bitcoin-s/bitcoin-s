@@ -452,7 +452,9 @@ jobs:
           MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
           KRYSTALBULL_PATH: "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-darwin-x64/Krystal Bull.app"
+          DMG_PATH: "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-0.0.1-x64.dmg"
           PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
+          BUNDLE_ID: "org.bitcoins.bundle"
         run: |
           java -version
           jpackage --version
@@ -468,12 +470,28 @@ jobs:
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip/darwin"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip/darwin/x64"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-darwin-x64"
-          krystalbull="$KRYSTALBULL_PATH"
           echo "===Sign App==="
-          echo $krystalbull
-          codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$krystalbull"
+          codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
           echo "===Verify app signature==="
-          codesign -vvv --deep --strict "$krystalbull"
+          codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
+          echo "Running xcrun alttool --notarize app"
+          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id $BUNDLE_ID -u $EMAIL --team-id $TEAM_ID --password "$MAC_NOTARIZATION_PW" --file "$DMG_PATH" | grep RequestUUID | awk '{print $3}')
+          echo "Waiting for notarization from Apple for $REQUEST_UUID"
+          sleep 5
+          xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW"
+          echo "Start while loop"
+          while xcrun altool --notarization-info "$REQUEST_UUID" -u $EMAIL --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW" | grep "Status: in progress" > /dev/null; do
+            echo "Verification in progress..."
+            sleep 30
+          done
+          xcrun stapler staple "$DMG_PATH"
+          echo "Done stapling"
+          spctl -vvv --assess --type exec "$APP_PATH"
+          echo "Done inspecting app with spctl"
+          codesign -vvv --deep --strict "$DMG_PATH"
+          echo "Done verifying code signing deep"
+          codesign -dvv "$DMG_PATH"
+          echo "Done verifying artifacts"
       # TODO : zip up signed app
       - name: View Artifacts
         run: ls -l bitcoin-s-ts/oracle-electron-ts
