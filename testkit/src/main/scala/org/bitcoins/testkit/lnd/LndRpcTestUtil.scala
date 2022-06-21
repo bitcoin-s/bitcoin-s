@@ -73,6 +73,8 @@ trait LndRpcTestUtil extends Logging {
        |bitcoin.regtest = true
        |bitcoin.node = bitcoind
        |norest=true
+       |accept-keysend=true
+       |accept-amp=true
        |debuglevel=critical
        |historicalsyncinterval=1s
        |trickledelay=1000
