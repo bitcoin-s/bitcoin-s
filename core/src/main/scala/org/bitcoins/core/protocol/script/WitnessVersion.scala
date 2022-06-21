@@ -12,6 +12,7 @@ import org.bitcoins.crypto.{CryptoUtil, Sha256Digest, Sha256Hash160Digest}
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program BIP141]]
   */
 sealed trait WitnessVersion {
+
   /** Rebuilds the full script from the given witness and [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
     * Either returns the [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
     * it needs to be executed against or the [[ScriptError]] that was encountered when
