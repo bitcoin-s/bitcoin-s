@@ -202,7 +202,7 @@ trait TransactionSignatureChecker {
 
   def checkSigTapscript(
       txSignatureComponent: TxSigComponent,
-      pubKey: XOnlyPubKey,
+      pubKey: SchnorrPublicKey,
       signature: SchnorrDigitalSignature,
       hashType: HashType,
       taprootOptions: TaprootSerializationOptions,
@@ -211,7 +211,7 @@ trait TransactionSignatureChecker {
       TransactionSignatureSerializer.hashForSignature(txSignatureComponent,
                                                       hashType,
                                                       taprootOptions)
-    val result = pubKey.schnorrPublicKey.verify(hash, signature)
+    val result = pubKey.verify(hash, signature)
     if (result) {
       SignatureValidationSuccess
     } else {

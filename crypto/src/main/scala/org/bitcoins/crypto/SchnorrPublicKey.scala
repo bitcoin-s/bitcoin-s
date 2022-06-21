@@ -61,7 +61,7 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   }
 
   def publicKey: ECPublicKey = {
-    val pubKeyBytes = ByteVector.fromByte(2) ++ bytes
+    val pubKeyBytes = EvenParity.bytes ++ bytes
 
     ECPublicKey(pubKeyBytes)
   }
