@@ -107,15 +107,14 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       .until(list.size())
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
     val result = strs.map(_.replace("localhost", "127.0.0.1"))
-    if (result.isEmpty) {
+    if (result.isEmpty && useDefaultPeers) {
       logger.info(
         s"No peers found in configuration, resorting to default peers")
       network match {
         case MainNet  => Vector("neutrino.suredbits.com:8333")
         case TestNet3 => Vector("neutrino.testnet3.suredbits.com:18333")
-        case _ @(RegTest | SigNet) =>
-          Vector.empty[String]
-//          sys.error(s"Cannot configure any peers by default on $n")
+        case n @ (RegTest | SigNet) =>
+          sys.error(s"Cannot configure any peers by default on $n")
       }
     } else {
       result
@@ -155,6 +154,12 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     if (config.hasPath("bitcoin-s.node.peerDiscoveryTimeout"))
       config.getDuration("bitcoin-s.node.peerDiscoveryTimeout")
     else Duration.ofMinutes(10)
+  }
+
+  lazy val useDefaultPeers: Boolean = {
+    if (config.hasPath("bitcoin-s.node.use-default-peers"))
+      config.getBoolean("bitcoin-s.node.use-default-peers")
+    else true
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */

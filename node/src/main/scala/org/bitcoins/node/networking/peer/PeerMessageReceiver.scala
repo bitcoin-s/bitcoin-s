@@ -45,6 +45,7 @@ class PeerMessageReceiver(
       case Preconnection =>
         logger.debug(s"Connection established with peer=${peer}")
 
+        //todo: init timeout as param
         val timeout =
           system.scheduler.scheduleOnce(10.seconds)(onInitTimeout())
 
@@ -67,8 +68,27 @@ class PeerMessageReceiver(
   private[networking] def initializeDisconnect(): PeerMessageReceiver = {
     logger.debug(s"InitDisconnect for $peer")
     state match {
-      case bad @ (_: Disconnected | _: InitializedDisconnectDone |
-          Preconnection | _: StoppedReconnect) =>
+      //2022-06-21T04:52:58UTC WARN [P2PClientActor] Ignoring reconnection attempts as we initialized disconnect from peer=Peer(195.154.166.219:8333), state=InitializedDisconnect
+      //2022-06-21T04:52:58UTC DEBUG [PeerManager] Client stopped for Peer(195.154.166.219:8333)
+      //2022-06-21T04:52:58UTC DEBUG [PeerFinder] Removing peer Peer(195.154.166.219:8333)
+      //2022-06-21T04:52:58UTC DEBUG [PeerMessageReceiver] Disconnected bitcoin peer=Peer(3.34.133.144:8333)
+      //2022-06-21T04:52:58UTC INFO [P2PClientActor] Received close any state for Peer(3.34.133.144:8333)
+      //2022-06-21T04:52:58UTC DEBUG [PeerMessageReceiver] InitDisconnect for Peer(3.34.133.144:8333)
+      //2022-06-21T04:52:58UTC DEBUG [PeerManager] Client stopped for Peer(3.34.133.144:8333)
+      //2022-06-21T04:52:58UTC DEBUG [PeerFinder] Removing peer Peer(3.34.133.144:8333)
+      //case where we disconnected right before receiving an init disconnect request
+      //in such a case the peer would try to reconnect again
+      case good @ (_: Disconnected) =>
+        //if its already disconnected, just say init disconnect done so it wont reconnect
+        logger.debug(s"Init disconnect called for already disconnected $peer")
+        val newState = InitializedDisconnectDone(
+          clientConnectP = good.clientConnectP,
+          clientDisconnectP = good.clientDisconnectP,
+          versionMsgP = good.versionMsgP,
+          verackMsgP = good.verackMsgP)
+        new PeerMessageReceiver(node, newState, peer)
+      case bad @ (_: InitializedDisconnectDone | Preconnection |
+          _: StoppedReconnect) =>
         throw new RuntimeException(
           s"Cannot initialize disconnect from peer=$peer when in state=$bad")
       case _: InitializedDisconnect =>
@@ -113,7 +133,7 @@ class PeerMessageReceiver(
   }
 
   protected[networking] def disconnect(): PeerMessageReceiver = {
-    logger.trace(s"Disconnecting with internalstate=${state}")
+    logger.debug(s"Disconnecting with internalstate=${state}")
     state match {
       case bad @ (_: Disconnected | Preconnection |
           _: InitializedDisconnectDone | _: StoppedReconnect) =>
@@ -238,7 +258,8 @@ class PeerMessageReceiver(
   }
 
   def onInitTimeout(): Unit = {
-    logger.info(s"Init timeout for peer $peer")
+    logger.debug(s"Init timeout for peer $peer")
+    node.peerManager.onInitializationTimeout(peer)
   }
 
   def onResponseTimeout(networkPayload: NetworkPayload): Unit = {
@@ -266,7 +287,7 @@ class PeerMessageReceiver(
       case good: Normal =>
         logger.debug(s"handling expected response for ${msg.commandName}")
         val timeout =
-          system.scheduler.scheduleOnce(5.seconds)(onResponseTimeout(msg))
+          system.scheduler.scheduleOnce(15.seconds)(onResponseTimeout(msg))
         val newState = Waiting(
           clientConnectP = good.clientConnectP,
           clientDisconnectP = good.clientDisconnectP,

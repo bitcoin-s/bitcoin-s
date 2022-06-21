@@ -42,7 +42,6 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
         }
       })
       .distinct
-      .filter(_.isReachable(500))
       .map(_.getHostAddress)
     stringsToPeers(addresses.toVector)
   }
@@ -63,7 +62,7 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
     val dbF: Future[Vector[PeerDb]] =
       PeerDAO().findAllWithTorFilter(nodeAppConfig.torConf.enabled)
     val partitionF = dbF.map(_.partition(b =>
-      ServiceIdentifier.fromBytes(b.serviceBytes).nodeCompactFilters))
+      !ServiceIdentifier.fromBytes(b.serviceBytes).nodeCompactFilters))
     val addressesF =
       partitionF.map(x => Random.shuffle(x._1) ++ Random.shuffle(x._2))
     val peersF = addressesF.map { addresses =>
@@ -94,7 +93,13 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
   }
 
   private def stringsToPeers(addresses: Vector[String]): Vector[Peer] = {
-    val inetSockets = addresses.map(
+    val formatStrings = addresses.map { s =>
+      //assumes strings are valid, todo: add util functions to check fully for different addresses
+      if (s.count(_ == ':') > 1 && s(0) != '[') //ipv6
+        "[" + s + "]"
+      else s
+    }
+    val inetSockets = formatStrings.map(
       NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port))
     val peers =
       inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
@@ -108,18 +113,18 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
 
   val maxPeerSearchCount: Int = 1000
 
-  val timeoutForTrying: FiniteDuration = 6.second
+  val timeoutForTrying: FiniteDuration = 12.second
 
   private lazy val peerConnectionScheduler: Cancellable =
     system.scheduler.scheduleWithFixedDelay(initialDelay = timeoutForTrying,
-                                            delay = 3 * timeoutForTrying) {
+                                            delay = timeoutForTrying) {
       new Runnable() {
         override def run(): Unit = {
           logger.debug(s"Cache size: ${_peerData.size}. ${_peerData.keys}")
-          if (_peersToTry.size < 24)
+          if (_peersToTry.size < 32)
             _peersToTry.pushAll(getPeersFromDnsSeeds)
 
-          val peers = (for { _ <- 1 to 24 } yield _peersToTry.pop()).distinct
+          val peers = (for { _ <- 1 to 32 } yield _peersToTry.pop()).distinct
             .filterNot(skipPeers().contains(_))
 
           logger.debug(s"Trying next set of peers $peers")
@@ -137,8 +142,9 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
       for {
         peersFromDb <- getPeersFromDb
       } yield {
-        _peersToTry.pushAll(peersFromDb)
+        _peersToTry.pushAll(getPeersFromDnsSeeds)
         _peersToTry.pushAll(getPeersFromResources)
+        _peersToTry.pushAll(peersFromDb)
         peerConnectionScheduler //start scheduler
         ()
       }

@@ -30,7 +30,7 @@ case class PeerData(
       peerMessageReceiver = peerMessageReceiver,
       onReconnect = node.peerManager.onReconnect,
       onStop = node.peerManager.onP2PClientStopped,
-      maxReconnectionTries = 8
+      maxReconnectionTries = 4
     )
   }
 

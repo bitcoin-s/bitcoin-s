@@ -24,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
 case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
-    node: Node,
+    node: NeutrinoNode,
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig)
@@ -45,7 +45,7 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
     _peerData.put(peer, curPeerData)
     logger.info(
       s"Connected to peer $peer. Connected peer count $connectedPeerCount")
-    _peerData(peer).peerMessageSender.sendGetAddrMessage()
+    Future.unit
   }
 
   def peers: Vector[Peer] = _peerData.keys.toVector
@@ -222,7 +222,10 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
 
       logger.debug(s"Initialized peer $peer with $hasCf")
 
-      def managePeer(): Future[Unit] = {
+      def sendAddrReq: Future[Unit] =
+        finder.getData(peer).peerMessageSender.sendGetAddrMessage()
+
+      def managePeerF(): Future[Unit] = {
         //if we have slots remaining, connect
         if (connectedPeerCount < nodeAppConfig.maxConnectedPeers) {
           addPeer(peer)
@@ -236,14 +239,19 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
             replacePeer(replacePeer = notCf.head, withPeer = peer)
           else {
             //no use for this apart from writing in db
-            finder.getData(peer).client.close()
-            Future.unit
+            //we do want to give it enough time to send addr messages
+            AsyncUtil
+              .nonBlockingSleep(duration = 10.seconds)
+              .map(_ => finder.getData(peer).client.close())
           }
         }
       }
 
-      createInDb(peer, finder.getData(peer).serviceIdentifier).flatMap(_ =>
-        managePeer())
+      for {
+        _ <- sendAddrReq
+        _ <- createInDb(peer, finder.getData(peer).serviceIdentifier)
+        _ <- managePeerF()
+      } yield ()
 
     } else if (peerData.contains(peer)) {
       //one of the persistent peers initialized again, this can happen in case of a reconnection attempt
@@ -269,7 +277,10 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
       //actor stopped for one of the persistent peers, can happen in case a reconnection attempt failed due to
       //reconnection tries exceeding the max limit in which the client was stopped to disconnect from it, remove it
       _peerData.remove(peer)
-      syncFromNewPeer()
+      val syncPeer = node.getDataMessageHandler.syncPeer
+      if (syncPeer.isDefined && syncPeer.get == peer)
+        syncFromNewPeer()
+      else Future.unit
     } else if (waitingForDeletion.contains(peer)) {
       //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
       _waitingForDeletion.remove(peer)
@@ -299,7 +310,10 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
     payload match {
       case _ => //if any times out, try a new peer
         peerData(peer).updateLastFailureTime()
-        syncFromNewPeer()
+        val syncPeer = node.getDataMessageHandler.syncPeer
+        if (syncPeer.isDefined && syncPeer.get == peer)
+          syncFromNewPeer()
+        else Future.unit
     }
   }
 

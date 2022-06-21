@@ -54,11 +54,6 @@ case class DataMessageHandler(
       peerMsgSender: PeerMessageSender,
       peer: Peer): Future[DataMessageHandler] = {
 
-    if (syncPeer.isEmpty || peer != syncPeer.get) {
-      logger.debug(s"Ignoring ${payload.commandName} from $peer")
-      Future.successful(this)
-    }
-
     lazy val resultF = payload match {
       case checkpoint: CompactFilterCheckPointMessage =>
         logger.debug(
@@ -324,12 +319,19 @@ case class DataMessageHandler(
         handleInventoryMsg(invMsg = invMsg, peerMsgSender = peerMsgSender)
     }
 
-    resultF.failed.foreach { err =>
-      logger.error(s"Failed to handle data payload=${payload} from $peer", err)
-    }
-
-    resultF.recoverWith { case NonFatal(_) =>
+    if (syncPeer.isEmpty || peer != syncPeer.get) {
+      logger.debug(s"Ignoring ${payload.commandName} from $peer")
       Future.successful(this)
+    } else {
+
+      resultF.failed.foreach { err =>
+        logger.error(s"Failed to handle data payload=${payload} from $peer",
+                     err)
+      }
+      resultF.recoverWith { case NonFatal(_) =>
+        Future.successful(this)
+      }
+
     }
   }
 

@@ -38,6 +38,8 @@ case class NeutrinoNode(
 
   implicit override def chainAppConfig: ChainAppConfig = chainConfig
 
+  implicit def node: NeutrinoNode = this
+
   val controlMessageHandler: ControlMessageHandler = ControlMessageHandler(this)
 
   override def getDataMessageHandler: DataMessageHandler = dataMessageHandler

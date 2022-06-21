@@ -38,8 +38,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def executionContext: ExecutionContext = system.dispatcher
 
-  implicit def node: Node = this
-
   def peerManager: PeerManager
 
   /** The current data message handler.
