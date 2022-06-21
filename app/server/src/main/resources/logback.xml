@@ -62,20 +62,20 @@
     <!-- ╚═════════════════╝ -->
 
     <!-- See incoming message names and the peer it's sent from -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="DEBUG"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="INFO"/>
 
     <!-- See outgoing message names and the peer it's sent to -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="DEBUG"/>
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="INFO"/>
 
     <!-- Inspect handling of headers and inventory messages  -->
-    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="DEBUG"/>
+    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO"/>
 
     <!-- inspect TCP details -->
     <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
 
-    <logger name="org.bitcoins.node.PeerFinder" level="DEBUG"/>
-    <logger name="org.bitcoins.node.PeerManager" level="DEBUG"/>
-    <logger name="org.bitcoins.node.NeutrinoNode" level="DEBUG"/>
+<!--    <logger name="org.bitcoins.node.PeerFinder" level="DEBUG"/>-->
+    <logger name="org.bitcoins.node.PeerManager" level="INFO"/>
+    <logger name="org.bitcoins.node.NeutrinoNode" level="INFO"/>
 
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->

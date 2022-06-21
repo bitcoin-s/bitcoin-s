@@ -213,7 +213,7 @@ class PeerMessageReceiver(
             toState(newState)
           } else this
         case state: Initializing =>
-          if (payload==VerAckMessage)
+          if (payload == VerAckMessage)
             state.timeout.cancel()
           this
         case _ => this
@@ -273,7 +273,8 @@ class PeerMessageReceiver(
 
   def onResponseTimeout(networkPayload: NetworkPayload): Unit = {
     assert(networkPayload.isInstanceOf[ExpectsResponse])
-    logger.debug(s"Called on Response Timeout for ${networkPayload.commandName}")
+    logger.debug(
+      s"Called on Response Timeout for ${networkPayload.commandName}")
 
     //isn't this redundant? No, on response timeout may be called when not cancel timeout
     state match {
@@ -310,7 +311,7 @@ class PeerMessageReceiver(
         logger.debug(s"handleExpectResponse: Current state is now $newState")
         toState(newState)
       case state: Waiting =>
-        logger.warn(
+        logger.debug(
           s"Waiting for response to ${state.responseFor.commandName}. Ignoring next request for ${msg.commandName}")
         this
       case bad @ (_: InitializedDisconnect | _: InitializedDisconnectDone |

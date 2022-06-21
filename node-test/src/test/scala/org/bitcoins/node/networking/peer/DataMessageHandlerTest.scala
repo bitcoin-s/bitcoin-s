@@ -37,7 +37,9 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
       val sender = node.peerMsgSenders(0)
       for {
         chainApi <- node.chainApiFromDb()
-        dataMessageHandler = DataMessageHandler(chainApi, None)(
+        dataMessageHandler = DataMessageHandler(chainApi,
+                                                None,
+                                                syncPeer = Some(peer))(
           node.executionContext,
           node.nodeAppConfig,
           node.chainConfig)
@@ -80,9 +82,10 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
 
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi, None)(node.executionContext,
-                                                    node.nodeAppConfig,
-                                                    node.chainConfig)
+          DataMessageHandler(genesisChainApi, None, syncPeer = Some(peer))(
+            node.executionContext,
+            node.nodeAppConfig,
+            node.chainConfig)
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
       } yield assert(result == block)
@@ -115,9 +118,10 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
 
         _ = node.nodeAppConfig.addCallbacks(callbacks)
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi, None)(node.executionContext,
-                                                    node.nodeAppConfig,
-                                                    node.chainConfig)
+          DataMessageHandler(genesisChainApi, None, syncPeer = Some(peer))(
+            node.executionContext,
+            node.nodeAppConfig,
+            node.chainConfig)
 
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
@@ -149,9 +153,10 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         nodeCallbacks = NodeCallbacks.onCompactFilterReceived(callback)
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi, None)(node.executionContext,
-                                                    node.nodeAppConfig,
-                                                    node.chainConfig)
+          DataMessageHandler(genesisChainApi, None, syncPeer = Some(peer))(
+            node.executionContext,
+            node.nodeAppConfig,
+            node.chainConfig)
 
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
@@ -184,9 +189,10 @@ class DataMessageHandlerTest extends NodeUnitTest with CachedTor {
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
 
         dataMessageHandler =
-          DataMessageHandler(genesisChainApi, None)(node.executionContext,
-                                                    node.nodeAppConfig,
-                                                    node.chainConfig)
+          DataMessageHandler(genesisChainApi, None, syncPeer = Some(peer))(
+            node.executionContext,
+            node.nodeAppConfig,
+            node.chainConfig)
         _ <- dataMessageHandler.handleDataPayload(payload, sender, peer)
         result <- resultP.future
       } yield assert(result == tx)
