@@ -14,10 +14,10 @@ object Deps {
 
     val grizzledSlf4j = "1.3.4"
     val scalacheck = "1.15.4"
-    val scalaTest = "3.2.10"
+    val scalaTest = "3.2.12"
 
     val scalaTestPlus =
-      "3.2.2.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
+      "3.2.12.0-RC2" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
     val slf4j = "1.7.36"
     val spray = "1.3.6"
     val zeromq = "0.5.2"
@@ -239,7 +239,7 @@ object Deps {
         "org.scalatest" %%% "scalatest" % V.scalaTest withSources () withJavadoc ())
 
     val scalaTestPlus = Def.setting(
-      "org.scalatestplus" %%% "scalacheck-1-14" % V.scalaTestPlus withSources () withJavadoc ())
+      "org.scalatestplus" %%% "scalacheck-1-15" % V.scalaTestPlus withSources () withJavadoc ())
 
     val pgEmbedded =
       "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV withSources () withJavadoc ()
