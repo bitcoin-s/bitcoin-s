@@ -45,7 +45,10 @@ sealed abstract class TransactionSignatureCreator {
       sign: ByteVector => ECDigitalSignature,
       hashType: HashType): ECDigitalSignature = {
     val hash =
-      TransactionSignatureSerializer.hashForSignature(component, hashType)
+      TransactionSignatureSerializer.hashForSignature(
+        component,
+        hashType,
+        taprootOptions = TaprootSerializationOptions.empty)
     val signature = sign(hash.bytes)
     //append 1 byte hash type onto the end
     val sig = ECDigitalSignature(
@@ -65,7 +68,10 @@ sealed abstract class TransactionSignatureCreator {
       hashType: HashType)(implicit
       ec: ExecutionContext): Future[ECDigitalSignature] = {
     val hash =
-      TransactionSignatureSerializer.hashForSignature(component, hashType)
+      TransactionSignatureSerializer.hashForSignature(
+        component,
+        hashType,
+        taprootOptions = TaprootSerializationOptions.empty)
     val signature = sign(hash.bytes)
     // append 1 byte hash type onto the end
     val sig = signature.map(s =>
@@ -107,9 +113,10 @@ sealed abstract class TransactionSignatureCreator {
       sign: ByteVector => ECDigitalSignature,
       hashType: HashType): ECDigitalSignature = {
     val hash = TransactionSignatureSerializer.hashForSignature(
-      spendingTransaction,
-      signingInfo,
-      hashType)
+      spendingTransaction = spendingTransaction,
+      signingInfo = signingInfo,
+      hashType = hashType,
+      taprootOptions = TaprootSerializationOptions.empty)
 
     val signature = sign(hash.bytes)
     //append 1 byte hash type onto the end
@@ -130,9 +137,11 @@ sealed abstract class TransactionSignatureCreator {
       hashType: HashType)(implicit
       ec: ExecutionContext): Future[ECDigitalSignature] = {
     val hash =
-      TransactionSignatureSerializer.hashForSignature(spendingTransaction,
-                                                      signingInfo,
-                                                      hashType)
+      TransactionSignatureSerializer.hashForSignature(
+        spendingTransaction,
+        signingInfo,
+        hashType,
+        taprootOptions = TaprootSerializationOptions.empty)
     val signature = sign(hash.bytes)
     // append 1 byte hash type onto the end
     val sig = signature.map(s =>
@@ -151,7 +160,10 @@ sealed abstract class TransactionSignatureCreator {
       adaptorSign: ByteVector => ECAdaptorSignature,
       hashType: HashType): ECAdaptorSignature = {
     val hash =
-      TransactionSignatureSerializer.hashForSignature(component, hashType)
+      TransactionSignatureSerializer.hashForSignature(
+        component,
+        hashType,
+        taprootOptions = TaprootSerializationOptions.empty)
     adaptorSign(hash.bytes)
   }
 }

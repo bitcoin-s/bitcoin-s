@@ -226,11 +226,54 @@ case object ScriptErrorWitnessPubKeyType extends ScriptError {
   override def description = "WITNESS_PUBKEYTYPE"
 }
 
+case object ScriptErrorSchnorrSigSize extends ScriptError {
+  override val description: String = "SCHNORR_SIG_SIZE"
+}
+
+case object ScriptErrorSchnorrSigHashType extends ScriptError {
+  override val description: String = "SCHNORR_SIG_HASHTYPE"
+}
+
+case object ScriptErrorSchnorrSig extends ScriptError {
+  override val description: String = "SCHNORR_SIG"
+}
+
+case object ScriptErrorTaprootWrongControlSize extends ScriptError {
+  override val description: String = "TAPROOT_WRONG_CONTROL_SIZE"
+}
+
+case object ScriptErrorTapScriptValidationWeight extends ScriptError {
+  override val description: String = "TAPSCRIPT_VALIDATION_WEIGHT"
+}
+
+case object ScriptErrorTapScriptCheckMultiSig extends ScriptError {
+  override val description: String = "TAPSCRIPT_CHECKMULTISIG"
+}
+
+case object ScriptErrorTapScriptMinimalIf extends ScriptError {
+  override val description: String = "TAPSCRIPT_MINIMALIF"
+}
+
+//SCRIPT_ERR_DISCOURAGE_UPGRADABLE_TAPROOT_VERSION,
+case object ScriptErrorDiscourageUpgradableTaprootVersion extends ScriptError {
+  override val description: String = "DISCOURAGE_UPGRADABLE_TAPROOT_VERSION"
+}
+
+//SCRIPT_ERR_DISCOURAGE_OP_SUCCESS,
+case object ScriptErrorDiscourageOpSuccess extends ScriptError {
+  override val description: String = "DISCOURAGE_OP_SUCCESS"
+}
+
+//SCRIPT_ERR_DISCOURAGE_UPGRADABLE_PUBKEYTYPE,
+case object ScriptErrorDiscourageUpgradablePubkeyType extends ScriptError {
+  override val description: String = "DISCOURAGE_UPGRADABLE_PUBKEYTYPE"
+}
+
 /** Factory companion object for creating ScriptError objects
   */
 object ScriptResult {
 
-  def results: Seq[ScriptResult] =
+  val results: Seq[ScriptResult] =
     Seq(
       ScriptOk,
       ScriptErrorUnknownError,
@@ -273,7 +316,17 @@ object ScriptResult {
       ScriptErrorWitnessMalleated,
       ScriptErrorWitnessMalleatedP2SH,
       ScriptErrorWitnessUnexpected,
-      ScriptErrorWitnessPubKeyType
+      ScriptErrorWitnessPubKeyType,
+      ScriptErrorSchnorrSigSize,
+      ScriptErrorSchnorrSigHashType,
+      ScriptErrorSchnorrSig,
+      ScriptErrorTaprootWrongControlSize,
+      ScriptErrorTapScriptValidationWeight,
+      ScriptErrorTapScriptCheckMultiSig,
+      ScriptErrorTapScriptMinimalIf,
+      ScriptErrorDiscourageUpgradableTaprootVersion,
+      ScriptErrorDiscourageOpSuccess,
+      ScriptErrorDiscourageUpgradablePubkeyType
     )
 
   def apply(str: String): ScriptResult =

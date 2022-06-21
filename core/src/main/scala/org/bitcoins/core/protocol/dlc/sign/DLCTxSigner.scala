@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.dlc.sign
 
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
+  TaprootSerializationOptions,
   TransactionSignatureCreator,
   TransactionSignatureSerializer
 }
@@ -350,9 +351,11 @@ object DLCTxSigner {
     (ECPublicKey, WitnessTransaction, ECAdaptorSignature)] = {
     outcomesAndCETs.map { case AdaptorPointCETPair(sigPoint, cet) =>
       val hashToSign =
-        TransactionSignatureSerializer.hashForSignature(cet,
-                                                        cetSigningInfo,
-                                                        HashType.sigHashAll)
+        TransactionSignatureSerializer.hashForSignature(
+          cet,
+          cetSigningInfo,
+          HashType.sigHashAll,
+          taprootOptions = TaprootSerializationOptions.empty)
 
       val adaptorSig = fundingKey.adaptorSign(sigPoint, hashToSign.bytes)
       (sigPoint, cet, adaptorSig)

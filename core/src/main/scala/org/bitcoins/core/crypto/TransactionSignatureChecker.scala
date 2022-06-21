@@ -1,20 +1,26 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{
+  ScriptPubKey,
+  SigVersionBase,
+  SigVersionTaprootKeySpend,
+  SigVersionTapscript,
+  SigVersionWitnessV0,
+  TaprootKeyPath
+}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
-import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
-import org.bitcoins.core.util.BitcoinScriptUtil
-import org.bitcoins.crypto.{
-  DERSignatureUtil,
-  ECDigitalSignature,
-  ECPublicKey,
-  ECPublicKeyBytes,
-  HashType
+import org.bitcoins.core.script.result.{
+  ScriptErrorSchnorrSig,
+  ScriptErrorWitnessPubKeyType,
+  ScriptOk,
+  ScriptResult
 }
+import org.bitcoins.core.util.BitcoinScriptUtil
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -56,6 +62,44 @@ trait TransactionSignatureChecker {
                    partialSignature.pubKey,
                    partialSignature.signature)
 
+  /** @param txSigComponent
+    * @param schnorrSignature
+    * @param pubKey
+    * @see https://github.com/bitcoin/bitcoin/blob/8ae4ba481ce8f7da173bef24432729c87a36cb70/src/script/interpreter.cpp#L1695
+    * @return
+    */
+  def checkSchnorrSignature(
+      txSigComponent: TxSigComponent,
+      pubKey: SchnorrPublicKey,
+      witness: TaprootKeyPath,
+      taprootOptions: TaprootSerializationOptions): ScriptResult = {
+    checkSchnorrSignature(txSigComponent = txSigComponent,
+                          pubKey = pubKey,
+                          schnorrSignature = witness.signature,
+                          hashType = witness.hashType,
+                          taprootOptions)
+  }
+
+  def checkSchnorrSignature(
+      txSigComponent: TxSigComponent,
+      pubKey: SchnorrPublicKey,
+      schnorrSignature: SchnorrDigitalSignature,
+      hashType: HashType,
+      taprootOptions: TaprootSerializationOptions): ScriptResult = {
+    require(
+      txSigComponent.sigVersion == SigVersionTaprootKeySpend
+        || txSigComponent.sigVersion == SigVersionTapscript,
+      s"SigVerison must be Taproot or Tapscript, got=${txSigComponent.sigVersion}"
+    )
+    val hash =
+      TransactionSignatureSerializer.hashForSignature(txSigComponent,
+                                                      hashType,
+                                                      taprootOptions)
+
+    val result = pubKey.verify(hash, schnorrSignature)
+    if (result) ScriptOk else ScriptErrorSchnorrSig
+  }
+
   /** Checks the signature of a scriptSig in the spending transaction against the
     * given scriptPubKey & explicitly given public key
     * This is useful for instances of non standard scriptSigs
@@ -74,73 +118,107 @@ trait TransactionSignatureChecker {
       signature: ECDigitalSignature,
       flags: Seq[ScriptFlag] =
         Policy.standardFlags): TransactionSignatureCheckerResult = {
-    val pubKeyEncodedCorrectly = BitcoinScriptUtil.isValidPubKeyEncoding(
-      pubKey,
-      txSignatureComponent.sigVersion,
-      flags)
-    if (
-      ScriptFlagUtil.requiresStrictDerEncoding(flags) && !DERSignatureUtil
-        .isValidSignatureEncoding(signature)
-    ) {
-      SignatureValidationErrorNotStrictDerEncoding
-    } else if (
-      ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil
-        .isLowS(signature)
-    ) {
-      SignatureValidationErrorHighSValue
-    } else if (
-      ScriptFlagUtil.requireStrictEncoding(flags) && signature.bytes.nonEmpty &&
-      !HashType.isDefinedHashtypeSignature(signature)
-    ) {
-      SignatureValidationErrorHashType
-    } else if (pubKeyEncodedCorrectly.isDefined) {
-      val err = pubKeyEncodedCorrectly.get
-      val result =
-        if (err == ScriptErrorWitnessPubKeyType)
-          SignatureValidationErrorWitnessPubKeyType
-        else SignatureValidationErrorPubKeyEncoding
-      result
-    } else {
-      val sigsRemovedScript = BitcoinScriptUtil.calculateScriptForChecking(
-        txSignatureComponent,
-        signature,
-        script)
-      val hashTypeByte =
-        if (signature.bytes.nonEmpty) signature.bytes.last else 0x00.toByte
-      val hashType = HashType(
-        ByteVector(0.toByte, 0.toByte, 0.toByte, hashTypeByte))
-      val spk = ScriptPubKey.fromAsm(sigsRemovedScript)
-      val hashForSignature = txSignatureComponent match {
-        case w: WitnessTxSigComponent =>
-          TransactionSignatureSerializer.hashForSignature(w, hashType)
-        case b: BaseTxSigComponent =>
-          val sigsRemovedTxSigComponent = BaseTxSigComponent(
-            b.transaction,
-            b.inputIndex,
-            TransactionOutput(b.output.value, spk),
-            b.flags)
-          TransactionSignatureSerializer.hashForSignature(
-            sigsRemovedTxSigComponent,
-            hashType)
-        case r: WitnessTxSigComponentRebuilt =>
-          val sigsRemovedTxSigComponent = WitnessTxSigComponentRebuilt(
-            wtx = r.transaction,
-            inputIndex = r.inputIndex,
-            output = TransactionOutput(r.output.value, spk),
-            witScriptPubKey = r.witnessScriptPubKey,
-            flags = r.flags)
-          TransactionSignatureSerializer.hashForSignature(
-            sigsRemovedTxSigComponent,
-            hashType)
-      }
+    txSignatureComponent.sigVersion match {
+      case SigVersionTapscript | SigVersionTaprootKeySpend =>
+        sys.error(
+          s"Call checkTapScript signature to validate a tapscript signature")
+      case SigVersionWitnessV0 | SigVersionBase =>
+        val pubKeyEncodedCorrectly = BitcoinScriptUtil.isValidPubKeyEncoding(
+          pubKey,
+          txSignatureComponent.sigVersion,
+          flags)
+        if (
+          ScriptFlagUtil.requiresStrictDerEncoding(flags) && !DERSignatureUtil
+            .isValidSignatureEncoding(signature)
+        ) {
+          SignatureValidationErrorNotStrictDerEncoding
+        } else if (
+          ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil
+            .isLowS(signature)
+        ) {
+          SignatureValidationErrorHighSValue
+        } else if (
+          ScriptFlagUtil.requireStrictEncoding(
+            flags) && signature.bytes.nonEmpty &&
+          !HashType.isDefinedHashtypeSignature(signature)
+        ) {
+          SignatureValidationErrorHashType
+        } else if (pubKeyEncodedCorrectly.isDefined) {
+          val err = pubKeyEncodedCorrectly.get
+          val result =
+            if (err == ScriptErrorWitnessPubKeyType)
+              SignatureValidationErrorWitnessPubKeyType
+            else SignatureValidationErrorPubKeyEncoding
+          result
+        } else {
+          val sigsRemovedScript = BitcoinScriptUtil.calculateScriptForChecking(
+            txSignatureComponent,
+            signature,
+            script)
+          val hashTypeByte =
+            if (signature.bytes.nonEmpty) signature.bytes.last else 0x00.toByte
+          val hashType = HashType(
+            ByteVector(0.toByte, 0.toByte, 0.toByte, hashTypeByte))
+          val spk = ScriptPubKey.fromAsm(sigsRemovedScript)
+          val hashForSignature = txSignatureComponent match {
+            case w: WitnessTxSigComponent =>
+              TransactionSignatureSerializer.hashForSignature(
+                w,
+                hashType,
+                TaprootSerializationOptions.empty)
+            case b: BaseTxSigComponent =>
+              val sigsRemovedTxSigComponent = BaseTxSigComponent(
+                b.transaction,
+                b.inputIndex,
+                TransactionOutput(b.output.value, spk),
+                b.flags)
+              TransactionSignatureSerializer.hashForSignature(
+                sigsRemovedTxSigComponent,
+                hashType,
+                TaprootSerializationOptions.empty)
+            case r: WitnessTxSigComponentRebuilt =>
+              val sigsRemovedTxSigComponent = WitnessTxSigComponentRebuilt(
+                wtx = r.transaction,
+                inputIndex = r.inputIndex,
+                output = TransactionOutput(r.output.value, spk),
+                witScriptPubKey = r.witnessScriptPubKey,
+                flags = r.flags)
+              TransactionSignatureSerializer.hashForSignature(
+                sigsRemovedTxSigComponent,
+                hashType,
+                TaprootSerializationOptions.empty)
+          }
 
-      val sigWithoutHashType = stripHashType(signature)
-      val isValid = pubKey.verify(hashForSignature, sigWithoutHashType)
-      if (isValid) SignatureValidationSuccess
-      else
-        nullFailCheck(Seq(signature),
-                      SignatureValidationErrorIncorrectSignatures,
-                      flags)
+          val sigWithoutHashType = stripHashType(signature)
+          val isValid = pubKey.verify(hashForSignature, sigWithoutHashType)
+          if (isValid) SignatureValidationSuccess
+          else
+            nullFailCheck(Seq(signature),
+                          SignatureValidationErrorIncorrectSignatures,
+                          flags)
+        }
+    }
+  }
+
+  def checkSigTapscript(
+      txSignatureComponent: TxSigComponent,
+      pubKey: XOnlyPubKey,
+      signature: SchnorrDigitalSignature,
+      hashType: HashType,
+      taprootOptions: TaprootSerializationOptions,
+      flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
+    val hash =
+      TransactionSignatureSerializer.hashForSignature(txSignatureComponent,
+                                                      hashType,
+                                                      taprootOptions)
+    val result = pubKey.schnorrPublicKey.verify(hash, signature)
+    if (result) {
+      SignatureValidationSuccess
+    } else {
+      nullFailCheckSchnorrSig(sigs = Vector(signature),
+                              result =
+                                SignatureValidationErrorIncorrectSignatures,
+                              flags = flags)
     }
   }
 
@@ -219,6 +297,17 @@ trait TransactionSignatureChecker {
     */
   private def nullFailCheck(
       sigs: Seq[ECDigitalSignature],
+      result: TransactionSignatureCheckerResult,
+      flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
+    val nullFailEnabled = ScriptFlagUtil.requireScriptVerifyNullFail(flags)
+    if (nullFailEnabled && !result.isValid && sigs.exists(_.bytes.nonEmpty)) {
+      //we need to check that all signatures were empty byte vectors, else this fails because of BIP146 and nullfail
+      SignatureValidationErrorNullFail
+    } else result
+  }
+
+  private def nullFailCheckSchnorrSig(
+      sigs: Seq[SchnorrDigitalSignature],
       result: TransactionSignatureCheckerResult,
       flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
     val nullFailEnabled = ScriptFlagUtil.requireScriptVerifyNullFail(flags)

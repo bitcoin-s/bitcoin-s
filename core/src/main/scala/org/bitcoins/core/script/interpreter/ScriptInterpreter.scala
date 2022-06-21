@@ -1135,7 +1135,7 @@ sealed abstract class ScriptInterpreter {
   private def hasUnexpectedWitness(program: ScriptProgram): Boolean = {
     val txSigComponent = program.txSignatureComponent
     txSigComponent match {
-      case _: WitnessTxSigComponentRaw => false
+      case _: WitnessTxSigComponentRaw | _: TaprootTxSigComponent => false
       case w: WitnessTxSigComponentP2SH =>
         w.scriptSignature.redeemScript match {
           case _: WitnessScriptPubKey => false
@@ -1180,6 +1180,9 @@ sealed abstract class ScriptInterpreter {
                                          wit,
                                          old.flags)
         }
+
+      case _: TaprootTxSigComponent =>
+        sys.error(s"Taproot tx sig component does not need to be rebuilt")
     }
   }
 
