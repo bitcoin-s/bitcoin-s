@@ -266,7 +266,7 @@ case class P2PClientActor(
       case _: PeerMessageReceiverState.InitializedDisconnect |
           _: PeerMessageReceiverState.InitializedDisconnectDone =>
         //todo: maybe the done part should be different case and noop instead of stop self
-        logger.warn(
+        logger.debug(
           s"Ignoring reconnection attempts as we initialized disconnect from peer=$peer, state=${currentPeerMsgHandlerRecv.state}")
         context.stop(self)
       case bad: PeerMessageReceiverState.StoppedReconnect =>
@@ -459,7 +459,7 @@ case class P2PClientActor(
       //this is for when we want to initialise disconnect if we have a connection
       //and stop retrying if we don't
       case P2PClient.CloseAnyStateCommand =>
-        logger.info(s"Received close any state for $peer")
+        logger.debug(s"Received close any state for $peer")
         peerConnectionOpt match {
           case Some(peerConnection) =>
             currentPeerMsgHandlerRecv =
@@ -474,7 +474,7 @@ case class P2PClientActor(
   }
 
   def handleExpectResponse(msg: NetworkPayload): Unit = {
-    logger.info(
+    logger.debug(
       s"handling expect response for ${msg.commandName} currecv ${currentPeerMsgHandlerRecv.state}")
     currentPeerMsgHandlerRecv =
       currentPeerMsgHandlerRecv.handleExpectResponse(msg)

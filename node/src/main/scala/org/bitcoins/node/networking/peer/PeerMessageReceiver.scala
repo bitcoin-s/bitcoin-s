@@ -151,6 +151,10 @@ class PeerMessageReceiver(
           case wait: Waiting =>
             onResponseTimeout(wait.responseFor)
             wait.timeout.cancel()
+          case wait: Initializing =>
+            wait.timeout.cancel()
+          //in this case we make rather try initializing again, as this was the existing behaviour
+          //trying again would be done by reconnect
           case _ =>
         }
 
@@ -192,6 +196,7 @@ class PeerMessageReceiver(
 
     val payload = networkMsgRecv.msg.payload
 
+    //todo: this works but doesn't seem to be the best place to do this
     val curReceiver: PeerMessageReceiver = {
       state match {
         case state: Waiting =>
@@ -207,6 +212,10 @@ class PeerMessageReceiver(
                                   state.verackMsgP)
             toState(newState)
           } else this
+        case state: Initializing =>
+          if (payload==VerAckMessage)
+            state.timeout.cancel()
+          this
         case _ => this
       }
     }
@@ -266,6 +275,7 @@ class PeerMessageReceiver(
     assert(networkPayload.isInstanceOf[ExpectsResponse])
     logger.info(s"Called on Response Timeout for ${networkPayload.commandName}")
 
+    //isn't this redundant? No, on response timeout may be called when not cancel timeout
     state match {
       case wait: Waiting => wait.timeout.cancel()
       case _             =>
