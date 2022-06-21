@@ -462,7 +462,7 @@ jobs:
           echo "Directory contents"
           ls -l "bitcoin-s-ts/oracle-electron-ts"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out"
-          ls -l "bitcoin-s-ts/oracle-electron-ts/out/make"
+          ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/Krystal\ Bull-darwin-x64/"
           krystalbull="$KRYSTALBULL_PATH"
           echo "===Sign App==="
