@@ -452,7 +452,7 @@ jobs:
           MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
           KRYSTALBULL_PATH: "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-darwin-x64/Krystal Bull.app"
-          DMG_PATH: "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-0.0.1-x64.dmg"
+          DMG_PATH: "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/Krystal Bull-0.0.1-x64.dmg"
           PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
           BUNDLE_ID: "org.bitcoins.bundle"
         run: |
