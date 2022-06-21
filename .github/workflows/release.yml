@@ -464,7 +464,8 @@ jobs:
           ls -l "bitcoin-s-ts/oracle-electron-ts/out"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make"
-          ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal\ Bull-darwin-x64/"
+          ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal\ Bull-darwin-x64"
+          ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip"
           krystalbull="$KRYSTALBULL_PATH"
           echo "===Sign App==="
           echo $krystalbull
