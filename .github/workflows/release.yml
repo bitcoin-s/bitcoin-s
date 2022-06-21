@@ -436,38 +436,40 @@ jobs:
       #     security find-identity -p codesigning -v
       - name: Build oracle-electron-ts
         working-directory: bitcoin-s-ts/oracle-electron-ts
-        env:
-          APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
-          NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
-          NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
-          NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
-          DEBUG: electron-notarizer
+        # env:
+        #   APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+        #   NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
+        #   NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
+        #   NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
+        #   DEBUG: electron-notarizer
         run: |
           npm ci
           npm run build
           npm run make
-      # - name: (macos) Sign application
-      #   if: startsWith(matrix.os,'macos')
-      #   env:
-      #     MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-      #     APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
-      #     KRYSTALBULL_PATH: "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64/Krystal Bull.app"
-      #     PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
-      #   run: |
-      #     java -version
-      #     jpackage --version
-      #     security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
-      #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
-      #     security find-identity -p codesigning -v
-      #     echo "Directory contents"
-      #     ls -l "bitcoin-s-ts/oracle-electron-ts"
-      #     ls -l "bitcoin-s-ts/oracle-electron-ts/out"
-      #     ls -l "bitcoin-s-ts/oracle-electron-ts/out/make"
-      #     ls -l "bitcoin-s-ts/oracle-electron-ts/out/Krystal\ Bull-darwin-x64/"
-      #     echo "===Sign App==="
-      #     codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$krystalbull"
-      #     echo "===Verify app signature==="
-      #     codesign -vvv --deep --strict "$krystalbull"
+      - name: (macos) Sign application
+        if: startsWith(matrix.os,'macos')
+        env:
+          MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+          APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+          KRYSTALBULL_PATH: "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64/Krystal Bull.app"
+          PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
+        run: |
+          java -version
+          jpackage --version
+          security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
+          security find-identity -p codesigning -v
+          echo "Directory contents"
+          ls -l "bitcoin-s-ts/oracle-electron-ts"
+          ls -l "bitcoin-s-ts/oracle-electron-ts/out"
+          ls -l "bitcoin-s-ts/oracle-electron-ts/out/make"
+          ls -l "bitcoin-s-ts/oracle-electron-ts/out/Krystal\ Bull-darwin-x64/"
+          krystalbull="$KRYSTALBULL_PATH"
+          echo "===Sign App==="
+          echo $krystalbull
+          codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$krystalbull"
+          echo "===Verify app signature==="
+          codesign -vvv --deep --strict "$krystalbull"
       # TODO : zip up signed app
       - name: View Artifacts
         run: ls -l bitcoin-s-ts/oracle-electron-ts
