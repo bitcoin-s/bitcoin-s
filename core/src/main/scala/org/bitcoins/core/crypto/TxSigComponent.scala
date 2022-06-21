@@ -180,8 +180,6 @@ object TxSigComponent {
       case _: WitnessScriptPubKey =>
         transaction match {
           case _: NonWitnessTransaction =>
-            /*            throw new IllegalArgumentException(
-              s"Cannot spend from segwit output ($output) with a base transaction ($transaction)")*/
             //before soft fork activation, you can spend a segwit output with a base transaction
             //as segwit outputs are ANYONECANSPEND before soft fork activation
             BaseTxSigComponent(transaction, inputIndex, output, flags)
@@ -392,10 +390,6 @@ case class TaprootTxSigComponent(
   require(
     scriptPubKey.isInstanceOf[TaprootScriptPubKey],
     s"Can only spend taproot spks with TaprootTxSigComponent, got=$scriptPubKey")
-//  require(
-//    transaction.witness(inputIndex.toInt).isInstanceOf[TaprootWitness],
-//    s"Can use taproot witnesses to spend taproot spk, got=${transaction.witness(inputIndex.toInt)}"
-//  )
 
   override lazy val output: TransactionOutput = {
     val outpoint = transaction.inputs(inputIndex.toInt).previousOutput

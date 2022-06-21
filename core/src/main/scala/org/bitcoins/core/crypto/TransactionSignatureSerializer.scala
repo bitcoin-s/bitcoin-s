@@ -66,7 +66,7 @@ sealed abstract class TransactionSignatureSerializer {
 
   }
 
-  private def serializeForSignature(
+  def serializeForSignature(
       spendingTransaction: Transaction,
       inputIndex: UInt32,
       hashType: HashType,
@@ -325,12 +325,6 @@ sealed abstract class TransactionSignatureSerializer {
         val spendType: Byte = ((extFlag << 1) + annexByte).toByte
 
         val inputIndexBytes = inputIndex.bytes.reverse
-
-        //          spendingTransaction.version.bytes.reverse ++ outPointHash ++ sequenceHash ++
-        //            i.previousOutput.bytes ++ CompactSizeUInt.calc(scriptBytes).bytes ++
-        //            scriptBytes ++ amount.bytes ++ i.sequence.bytes.reverse ++
-        //            outputHash ++ spendingTransaction.lockTime.bytes.reverse ++ Int32(
-        //              hashType.num).bytes.reverse
 
         val codeSeparatorPos: UInt32 = taprootOptions.codeSeparatorPos
 
