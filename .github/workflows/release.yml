@@ -286,8 +286,8 @@ jobs:
     steps:
       - name: Echo
         env:
-          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
-        run: echo ${{ secrets.CERTIFICATES_P12 }}
+          p12: ${{ secrets.CERTIFICATES_P12 }}
+        run: echo "$p12"
   # Built bitcoin-s cli, server, oracle-server zips
   package-zips:
     runs-on: ${{ matrix.os }}
