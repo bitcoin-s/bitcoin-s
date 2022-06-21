@@ -340,7 +340,7 @@ object CommonSettings {
     //bitcoin-s-server-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT -> bitcoin-s-server-linux-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT
     //bitcoin-s-cli-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT.zip -> bitcoin-s-cli-linux-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT.zip
 
-      val osName = System.getProperty("os.name").toLowerCase().split('.').head.replaceAll("\\s", "")
+    val osName = System.getProperty("os.name").toLowerCase().split('.').head.replaceAll("\\s", "")
     val split = packageName.split("-")
     val versionIdx = split.zipWithIndex.find(_._1.count(_ =='.') > 1).get._2
     val insertedOSName = split.take(versionIdx) ++ Vector(osName) ++ split.drop(versionIdx)
