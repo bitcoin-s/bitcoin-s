@@ -126,7 +126,9 @@ object PreExecutionScriptProgram {
 }
 
 /** This represents any ScriptProgram that is not PreExecution */
-sealed trait StartedScriptProgram extends ScriptProgram
+sealed trait StartedScriptProgram extends ScriptProgram {
+  def lastCodeSeparator: Option[Int]
+}
 
 /** Implements the counting required for O(1) handling of conditionals in Bitcoin Script.
   * @see [[https://github.com/bitcoin/bitcoin/pull/16902]]
@@ -236,6 +238,7 @@ case class ExecutionInProgressScriptProgram(
       originalScript,
       altStack,
       flags,
+      lastCodeSeparator,
       errorOpt
     )
   }
@@ -348,6 +351,7 @@ case class ExecutedScriptProgram(
     originalScript: List[ScriptToken],
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
+    lastCodeSeparator: Option[Int],
     error: Option[ScriptError])
     extends StartedScriptProgram {
 
