@@ -330,6 +330,7 @@ sealed abstract class TransactionSignatureSerializer {
         println(s"inputIndexInt=${inputIndex}")
 
         val codeSeparatorPos: UInt32 = taprootOptions.codeSeparatorPos
+        println(s"codeSeparatorPos=$codeSeparatorPos")
 
         val tapScriptBytes = {
           if (sigVersion == SigVersionTapscript) {

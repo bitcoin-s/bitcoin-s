@@ -184,7 +184,6 @@ sealed abstract class CryptoInterpreter {
       program: ExecutionInProgressScriptProgram): Either[
     ScriptError,
     TransactionSignatureCheckerResult] = {
-    println(s"program.opCodeSeparator=${program.lastCodeSeparator}")
     val stack = program.stack
     val pubKeyBytes = stack.head.bytes
     val isCheckSigAdd = program.script.head == OP_CHECKSIGADD
@@ -297,6 +296,7 @@ sealed abstract class CryptoInterpreter {
 
     val indexOfOpCodeSeparator =
       program.originalScript.size - program.script.size
+
 
     program
       .updateScript(program.script.tail)

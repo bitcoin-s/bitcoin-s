@@ -161,14 +161,41 @@ object PreExecutionScriptProgram {
 
 /** This represents any ScriptProgram that is not PreExecution */
 sealed trait StartedScriptProgram extends ScriptProgram {
+
+  /** The index of the last code separator WITH push operations in the original script */
   def lastCodeSeparator: Option[Int]
 
   def taprootSerializationOptions: TaprootSerializationOptions = {
     val empty = TaprootSerializationOptions.empty
     val annex = empty.copy(annexHashOpt = getAnnexHashOpt)
-    val lastCodeSeparatorU32 = lastCodeSeparator.map(UInt32(_))
+
+    val lastCodeSeparatorU32 = calculateRealCodeSepIdx.map(UInt32(_))
     annex.copy(tapLeafHashOpt = tapLeafHashOpt,
                codeSeparatorPosOpt = lastCodeSeparatorU32)
+  }
+
+  /** Needs to translate [[OP_CODESEPARATOR]] idx WITH push ops
+    * to [[OP_CODESEPARATOR]] index without push ops
+    */
+  private def calculateRealCodeSepIdx: Option[Int] = {
+
+    lastCodeSeparator match {
+      case Some(lastCodeSeparatorIdx) =>
+        //map original indices to new indices
+        val originalWithIndices = originalScript.zipWithIndex
+        val scriptOpsWithIndices =
+          originalWithIndices.filter(_._1.isInstanceOf[ScriptOperation])
+        val opCodeIdxs =
+          scriptOpsWithIndices.filter(_._2 == lastCodeSeparatorIdx).map(_._2)
+        require(opCodeIdxs.length == 1, s"Should be exactly 1 OP_CODESEPARATOR")
+        //calculate the offset without push operations
+        val offset =
+          opCodeIdxs.head - (originalScript.size - scriptOpsWithIndices.size) + 1
+        println(s"offset=$offset")
+        Some(offset)
+      case None =>
+        None
+    }
   }
 }
 
