@@ -73,8 +73,10 @@
     <!-- inspect TCP details -->
     <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
 
-<!--    <logger name="org.bitcoins.node.PeerFinder" level="DEBUG"/>-->
+    <!-- See peer details -->
     <logger name="org.bitcoins.node.PeerManager" level="INFO"/>
+
+    <!-- See node status messages  -->
     <logger name="org.bitcoins.node.NeutrinoNode" level="INFO"/>
 
     <!-- ╔════════════════════╗ -->

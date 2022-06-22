@@ -22,7 +22,6 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageSender
 }
 
-//import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -38,7 +37,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def executionContext: ExecutionContext = system.dispatcher
 
-  def peerManager: PeerManager
+  val peerManager: PeerManager
 
   /** The current data message handler.
     * It should be noted that the dataMessageHandler contains

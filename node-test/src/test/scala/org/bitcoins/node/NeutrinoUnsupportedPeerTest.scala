@@ -15,7 +15,7 @@ class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
   override protected def getFreshConfig: BitcoinSAppConfig = {
     val config = ConfigFactory.parseString(
       """
-        |bitcoin-s.node.peerDiscoveryTimeout = 10s
+        |bitcoin-s.node.peer-discovery-timeout = 10s
       """.stripMargin
     )
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl, config)

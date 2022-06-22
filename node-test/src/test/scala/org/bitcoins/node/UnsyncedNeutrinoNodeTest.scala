@@ -89,7 +89,6 @@ class UnsyncedNeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   }
 
   //todo: so the disconnection should rather originate from the remote client rather than our side
-  //but doing bitcoind.stop() an error from java being unable to connect (ig in reconnection) as port is not open???
   ignore must "sync with another second peer if the first one is disconnected" in {
     nodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoinds.node

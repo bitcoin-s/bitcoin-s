@@ -105,7 +105,7 @@ case class NeutrinoNode(
     }
   }
 
-  def syncFilters(
+  private def syncFilters(
       bestFilterHeaderOpt: Option[CompactFilterHeaderDb],
       bestFilterOpt: Option[CompactFilterDb],
       bestBlockHeader: BlockHeaderDb,
@@ -142,7 +142,7 @@ case class NeutrinoNode(
   /** Starts sync compact filer headers.
     * Only starts syncing compact filters if our compact filter headers are in sync with block headers
     */
-  def syncCompactFilters(
+  private def syncCompactFilters(
       bestFilterHeader: CompactFilterHeaderDb,
       chainApi: ChainApi,
       bestFilterOpt: Option[CompactFilterDb]): Future[Unit] = {

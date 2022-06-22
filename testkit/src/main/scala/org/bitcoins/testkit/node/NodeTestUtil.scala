@@ -27,7 +27,7 @@ abstract class NodeTestUtil extends P2PLogger {
                     peerMsgReceiver,
                     (_: Peer) => Future.unit,
                     (_: Peer) => Future.unit,
-                    20)
+                    16)
   }
 
   /** Helper method to get the [[java.net.InetSocketAddress]]

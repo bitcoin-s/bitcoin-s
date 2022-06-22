@@ -151,8 +151,8 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   // https://github.com/lightbend/config/blob/master/HOCON.md#duration-format
   lazy val peerDiscoveryTimeout: Duration = {
-    if (config.hasPath("bitcoin-s.node.peerDiscoveryTimeout"))
-      config.getDuration("bitcoin-s.node.peerDiscoveryTimeout")
+    if (config.hasPath("bitcoin-s.node.peer-discovery-timeout"))
+      config.getDuration("bitcoin-s.node.peer-discovery-timeout")
     else Duration.ofMinutes(10)
   }
 

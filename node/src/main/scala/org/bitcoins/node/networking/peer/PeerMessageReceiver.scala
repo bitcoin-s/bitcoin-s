@@ -45,7 +45,7 @@ class PeerMessageReceiver(
       case Preconnection =>
         logger.debug(s"Connection established with peer=${peer}")
 
-        //todo: init timeout as param
+        //todo: initialization timeout make parameter
         val timeout =
           system.scheduler.scheduleOnce(10.seconds)(onInitTimeout())
 
@@ -66,18 +66,8 @@ class PeerMessageReceiver(
     * peer initialized a disconnection from us
     */
   private[networking] def initializeDisconnect(): PeerMessageReceiver = {
-    logger.debug(s"InitDisconnect for $peer")
+    logger.debug(s"Initializing disconnect from $peer")
     state match {
-      //2022-06-21T04:52:58UTC WARN [P2PClientActor] Ignoring reconnection attempts as we initialized disconnect from peer=Peer(195.154.166.219:8333), state=InitializedDisconnect
-      //2022-06-21T04:52:58UTC DEBUG [PeerManager] Client stopped for Peer(195.154.166.219:8333)
-      //2022-06-21T04:52:58UTC DEBUG [PeerFinder] Removing peer Peer(195.154.166.219:8333)
-      //2022-06-21T04:52:58UTC DEBUG [PeerMessageReceiver] Disconnected bitcoin peer=Peer(3.34.133.144:8333)
-      //2022-06-21T04:52:58UTC INFO [P2PClientActor] Received close any state for Peer(3.34.133.144:8333)
-      //2022-06-21T04:52:58UTC DEBUG [PeerMessageReceiver] InitDisconnect for Peer(3.34.133.144:8333)
-      //2022-06-21T04:52:58UTC DEBUG [PeerManager] Client stopped for Peer(3.34.133.144:8333)
-      //2022-06-21T04:52:58UTC DEBUG [PeerFinder] Removing peer Peer(3.34.133.144:8333)
-      //case where we disconnected right before receiving an init disconnect request
-      //in such a case the peer would try to reconnect again
       case good @ (_: Disconnected) =>
         //if its already disconnected, just say init disconnect done so it wont reconnect
         logger.debug(s"Init disconnect called for already disconnected $peer")
@@ -133,7 +123,7 @@ class PeerMessageReceiver(
   }
 
   protected[networking] def disconnect(): PeerMessageReceiver = {
-    logger.debug(s"Disconnecting with internalstate=${state}")
+    logger.trace(s"Disconnecting with internalstate=${state}")
     state match {
       case bad @ (_: Disconnected | Preconnection |
           _: InitializedDisconnectDone | _: StoppedReconnect) =>
@@ -153,8 +143,6 @@ class PeerMessageReceiver(
             wait.timeout.cancel()
           case wait: Initializing =>
             wait.timeout.cancel()
-          //in this case we make rather try initializing again, as this was the existing behaviour
-          //trying again would be done by reconnect
           case _ =>
         }
 
@@ -273,8 +261,7 @@ class PeerMessageReceiver(
 
   def onResponseTimeout(networkPayload: NetworkPayload): Unit = {
     assert(networkPayload.isInstanceOf[ExpectsResponse])
-    logger.debug(
-      s"Called on Response Timeout for ${networkPayload.commandName}")
+    logger.debug(s"Handling response timeout for ${networkPayload.commandName}")
 
     //isn't this redundant? No, on response timeout may be called when not cancel timeout
     state match {
@@ -284,7 +271,7 @@ class PeerMessageReceiver(
 
     networkPayload match {
       case payload: ExpectsResponse =>
-        logger.info(
+        logger.debug(
           s"Response for ${payload.commandName} from $peer timed out.")
         node.peerManager.onQueryTimeout(payload, peer).foreach(_ => ())
       case _ =>
@@ -296,7 +283,7 @@ class PeerMessageReceiver(
   def handleExpectResponse(msg: NetworkPayload): PeerMessageReceiver = {
     state match {
       case good: Normal =>
-        logger.debug(s"handling expected response for ${msg.commandName}")
+        logger.debug(s"Handling expected response for ${msg.commandName}")
         val timeout =
           system.scheduler.scheduleOnce(15.seconds)(onResponseTimeout(msg))
         val newState = Waiting(
@@ -308,7 +295,6 @@ class PeerMessageReceiver(
           waitingSince = System.currentTimeMillis(),
           timeout = timeout
         )
-        logger.debug(s"handleExpectResponse: Current state is now $newState")
         toState(newState)
       case state: Waiting =>
         logger.debug(
@@ -320,10 +306,7 @@ class PeerMessageReceiver(
           s"Cannot expect response for ${msg.commandName} in state $bad")
       case Preconnection | _: Initializing | _: Disconnected =>
         //so we sent a message when things were good, but not we are back to connecting?
-        //can happen when can happen where once we intiailize the remote peer immediately disconnects us
-        //note that we do handle a disconnect when we are in state Waiting and are disconnected upon
-        //but the case where we are disconnected before we could send a message i.e. we were in Normal state
-        //so now the expect request should immediately fail
+        //can happen when can happen where once we initialize the remote peer immediately disconnects us
         onResponseTimeout(msg)
         this
 

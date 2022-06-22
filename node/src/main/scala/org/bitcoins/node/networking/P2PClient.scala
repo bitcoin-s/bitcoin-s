@@ -265,7 +265,6 @@ case class P2PClientActor(
     currentPeerMsgHandlerRecv.state match {
       case _: PeerMessageReceiverState.InitializedDisconnect |
           _: PeerMessageReceiverState.InitializedDisconnectDone =>
-        //todo: maybe the done part should be different case and noop instead of stop self
         logger.debug(
           s"Ignoring reconnection attempts as we initialized disconnect from peer=$peer, state=${currentPeerMsgHandlerRecv.state}")
         context.stop(self)
@@ -399,9 +398,6 @@ case class P2PClientActor(
         val newMsgReceiver = Await.result(newMsgReceiverF, timeout)
         currentPeerMsgHandlerRecv = newMsgReceiver
         if (currentPeerMsgHandlerRecv.isInitialized) {
-          //dont set reconnection try to 0
-          //case: a peer exists where we can connect and init again and again but then it drops connection every time
-          //with reconnectionTry as 0, this would be an infinite loop
           curReconnectionTry = 0
           reconnectHandlerOpt.foreach(_(peer))
           reconnectHandlerOpt = None
@@ -455,9 +451,6 @@ case class P2PClientActor(
             logger.warn(
               s"Attempting to disconnect peer that was not connected!")
         }
-      //initializeDisconnect is for when we have a connection already
-      //this is for when we want to initialise disconnect if we have a connection
-      //and stop retrying if we don't
       case P2PClient.CloseAnyStateCommand =>
         logger.debug(s"Received close any state for $peer")
         peerConnectionOpt match {
@@ -474,8 +467,6 @@ case class P2PClientActor(
   }
 
   def handleExpectResponse(msg: NetworkPayload): Unit = {
-    logger.debug(
-      s"handling expect response for ${msg.commandName} currecv ${currentPeerMsgHandlerRecv.state}")
     currentPeerMsgHandlerRecv =
       currentPeerMsgHandlerRecv.handleExpectResponse(msg)
   }

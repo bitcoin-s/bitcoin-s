@@ -56,6 +56,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
         logger.warn(err)
         Future.unit
     }
+
   }
 
   /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */
