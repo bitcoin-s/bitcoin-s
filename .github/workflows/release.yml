@@ -447,9 +447,7 @@ jobs:
           npm ci
           npm run build
           npm run make
-      # codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
-      # echo "===Verify app signature==="
-      # codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
+      
       - name: (macos) Sign application
         if: startsWith(matrix.os,'macos')
         env:
@@ -477,7 +475,12 @@ jobs:
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip/darwin"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip/darwin/x64"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-darwin-x64"
-          echo "===Sign App==="
+          : # Works
+          echo "=== Sign app ==="
+          : # codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
+          : # echo "===Verify app signature==="
+          : # codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
+          echo "=== Sign dmg ==="
           codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$DMG_PATH"
           echo "===Verify app signature==="
           codesign -vvv --deep --strict "$DMG_PATH"
@@ -493,8 +496,8 @@ jobs:
           done
           xcrun stapler staple "$DMG_PATH"
           echo "Done stapling"
-          spctl -vvv --assess --type exec "$APP_PATH"
-          echo "Done inspecting app with spctl"
+          : # spctl -vvv --assess --type exec "$APP_PATH"
+          : # echo "Done inspecting app with spctl"
           codesign -vvv --deep --strict "$DMG_PATH"
           echo "Done verifying code signing deep"
           codesign -dvv "$DMG_PATH"
