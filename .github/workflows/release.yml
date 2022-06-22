@@ -386,7 +386,7 @@ jobs:
         - os: macos-latest
           TARGET: mac
           FORMAT: dmg
-          KB: "bitcoin-s-ts/oracle-electron-ts/out/my-build/make"
+          KB_MAKE: "bitcoin-s-ts/oracle-electron-ts/out/my-build/make"
           SBW: "bitcoin-s-ts/wallet-electron-ts/out/my-build/make"
         # - os: ubuntu-latest
         #   TARGET: linux
@@ -418,7 +418,7 @@ jobs:
       - name: Download bitcoin-s-oracle-server
         uses: actions/download-artifact@v3
         with:
-          name: bitcoin-s-oracle-server-$TARGET
+          name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
           path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
       # Test with: keychain: signing_temp
       - name: (macos) Import developer cert to keychain
@@ -453,7 +453,6 @@ jobs:
           npm ci
           npm run build
           npm run make
-      
       - name: (macos) Sign application
         if: startsWith(matrix.os,'macos')
         env:
@@ -472,6 +471,7 @@ jobs:
           security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
           security find-identity -p codesigning -v
+          echo ${{matrix.KB_MAKE}}
           echo "Directory contents"
           ls -l "bitcoin-s-ts/oracle-electron-ts"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out"
@@ -483,28 +483,28 @@ jobs:
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-darwin-x64"
           : # Works
           echo "=== Sign app ==="
-          : # codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
-          : # echo "===Verify app signature==="
-          : # codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
-          : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
-          : # echo "Done inspecting app with spctl"
+          codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
+          echo "===Verify app signature==="
+          codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
+          spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
+          echo "Done inspecting app with spctl"
           echo "=== Sign dmg ==="
           codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$DMG_PATH"
           echo "===Verify app signature==="
           codesign -vvv --deep --strict "$DMG_PATH"
-          echo "Running xcrun alttool --notarize app"
-          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id $BUNDLE_ID -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID --password "$NOTORIZE_APPLE_PW" --file "$DMG_PATH" | grep RequestUUID | awk '{print $3}')
-          echo "Waiting for notarization from Apple for $REQUEST_UUID"
-          sleep 5
-          xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID -p "$NOTORIZE_APPLE_PW"
-          echo "Start while loop"
-          while xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID -p "$NOTORIZE_APPLE_PW" | grep "Status: in progress" > /dev/null; do
-            echo "Verification in progress..."
-            sleep 30
-          done
-          echo "End while loop"
-          xcrun stapler staple "$DMG_PATH"
-          echo "Done stapling"
+          : # echo "Running xcrun alttool --notarize app"
+          : # REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id $BUNDLE_ID -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID --password "$NOTORIZE_APPLE_PW" --file "$DMG_PATH" | grep RequestUUID | awk '{print $3}')
+          : # echo "Waiting for notarization from Apple for $REQUEST_UUID"
+          : # sleep 5
+          : # xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID -p "$NOTORIZE_APPLE_PW"
+          : # echo "Start while loop"
+          : # while xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID -p "$NOTORIZE_APPLE_PW" | grep "Status: in progress" > /dev/null; do
+          : #   echo "Verification in progress..."
+          : #   sleep 30
+          : # done
+          : # echo "End while loop"
+          : # xcrun stapler staple "$DMG_PATH"
+          : # echo "Done stapling"
           spctl -a -t open --context context:primary-signature -v "$DMG_PATH"
           echo "Done inspecting dmg"
           codesign -vvv --deep --strict "$DMG_PATH"
@@ -523,7 +523,7 @@ jobs:
         if: startsWith(matrix.os,'ubuntu')
         run: mv bitcoin-s-ts/oracle-electron-ts/out/make/deb/x64/*.deb bitcoin-s-ts/oracle-electron-ts/out/make
       # Capture signed Mac app
-      - name: Upload krystalbull-${{ matrix.TARGET }}-app
+      - name: (macos) Upload krystalbull-${{ matrix.TARGET }}-app
         if: startsWith(matrix.os,'macos')
         uses: actions/upload-artifact@v3
         env:
