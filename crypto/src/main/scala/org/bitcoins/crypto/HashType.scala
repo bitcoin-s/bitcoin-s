@@ -98,7 +98,9 @@ object HashType extends Factory[HashType] {
       case _: SIGHASH_ANYONECANPAY | _: SIGHASH_ALL_ANYONECANPAY |
           _: SIGHASH_SINGLE_ANYONECANPAY | _: SIGHASH_NONE_ANYONECANPAY =>
         true
-      case _: SIGHASH_ALL | _: SIGHASH_SINGLE | _: SIGHASH_NONE => false
+      case _: SIGHASH_ALL | _: SIGHASH_SINGLE | _: SIGHASH_NONE |
+          SIGHASH_DEFAULT =>
+        false
     }
 
   lazy val hashTypes = Seq(sigHashAll,
@@ -110,6 +112,7 @@ object HashType extends Factory[HashType] {
                            sigHashSingleAnyoneCanPay)
 
   lazy val hashTypeBytes: Vector[Byte] = Vector(
+    sigHashDefaultByte,
     sigHashAllByte,
     sigHashSingleByte,
     sigHashNoneByte,
@@ -123,8 +126,12 @@ object HashType extends Factory[HashType] {
 
   def apply(byte: Byte): HashType = fromByte(byte)
 
+  val sigHashDefaultByte: Byte = 0.toByte
+
   /** The default byte used to represent [[SIGHASH_ALL]] */
   val sigHashAllByte = 1.toByte
+
+  val sigHashDefault: SIGHASH_DEFAULT.type = SIGHASH_DEFAULT
 
   /** The default [[SIGHASH_ALL]] value */
   val sigHashAll = SIGHASH_ALL(sigHashAllByte)
@@ -188,6 +195,10 @@ object HashType extends Factory[HashType] {
   def isDefinedHashtypeSignature(sig: ECDigitalSignature): Boolean = {
     sig.bytes.nonEmpty && hashTypeBytes.contains(sig.bytes.last)
   }
+}
+
+case object SIGHASH_DEFAULT extends HashType {
+  override val num: Int = HashType.sigHashDefaultByte
 }
 
 /** defaultValue is the underlying value of the HashType. The last byte of a signature determines the HashType.

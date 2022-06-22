@@ -62,7 +62,7 @@ case object WitnessVersion0 extends WitnessVersion {
     }
   }
 
-  override def version = OP_0
+  override val version: OP_0.type = OP_0
 }
 
 case object WitnessVersion1 extends WitnessVersion {
@@ -70,11 +70,41 @@ case object WitnessVersion1 extends WitnessVersion {
   override def rebuild(
       scriptWitness: ScriptWitness,
       witnessSPK: WitnessScriptPubKey): Either[ScriptError, ScriptPubKey] = {
-    throw new UnsupportedOperationException(
-      s"Taproot is not yet supported $scriptWitness $witnessSPK")
+    require(witnessSPK.isInstanceOf[TaprootScriptPubKey],
+            s"WitnessScriptPubKey must be a taproot spk, got=${witnessSPK}")
+    val taprootSPK = witnessSPK.asInstanceOf[TaprootScriptPubKey]
+    val witnessProgram = taprootSPK.witnessProgram
+    val programBytes = BytesUtil.toByteVector(witnessProgram)
+    programBytes.size match {
+      case 32 =>
+        //p2tr
+        if (scriptWitness.stack.isEmpty) {
+          Left(ScriptErrorWitnessProgramWitnessEmpty)
+        } else {
+          val rebuiltSPK = scriptWitness match {
+            case _: TaprootKeyPath =>
+              Right(witnessSPK)
+            case sp: TaprootScriptPath =>
+              Right(sp.script)
+            case w @ (EmptyScriptWitness | _: P2WPKHWitnessV0 |
+                _: P2WSHWitnessV0) =>
+              sys.error(
+                s"Cannot rebuild witnessv1 with a non v1 witness, got=$w")
+          }
+          rebuiltSPK
+        }
+      case _ =>
+        //witness version 1 programs need to be 32 bytes in size
+        //this is technically wrong as this is dependent on a policy flag
+        //this should only error when the DISCOURAGE_UPGRADABLE_WITNESS policy flag is set
+        //else it should succeed as to maintain future soft fork compatability
+        //this will get addressed on a future PR as I implement test cases
+        //in the interpreter
+        Left(ScriptErrorDiscourageUpgradeableWitnessProgram)
+    }
   }
 
-  override def version: ScriptNumberOperation = OP_1
+  override val version: OP_1.type = OP_1
 }
 
 /** The witness version that represents all witnesses that have not been allocated yet */

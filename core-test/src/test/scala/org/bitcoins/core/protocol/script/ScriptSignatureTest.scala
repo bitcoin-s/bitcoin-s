@@ -141,14 +141,15 @@ class ScriptSignatureTest extends BitcoinSJvmTest {
                                 Policy.standardFlags)
       }
       val hashForSig =
-        TransactionSignatureSerializer.hashForSignature(txSigComponent,
-                                                        testCase.hashType)
+        TransactionSignatureSerializer.hashForSignature(
+          txSigComponent = txSigComponent,
+          hashType = testCase.hashType,
+          taprootOptions = TaprootSerializationOptions.empty)
       val flipHash = BytesUtil.flipEndianness(testCase.hash.hex)
       hashForSig == DoubleSha256Digest(flipHash)
     }
     assert(allTests.forall(x => x))
   }
-
 }
 
 object SigHashJson {

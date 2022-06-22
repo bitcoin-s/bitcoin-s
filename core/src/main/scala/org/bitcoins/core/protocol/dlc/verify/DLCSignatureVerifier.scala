@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.dlc.verify
 
 import org.bitcoins.core.crypto.{
+  TaprootSerializationOptions,
   TransactionSignatureChecker,
   TransactionSignatureSerializer,
   WitnessTxSigComponentRaw
@@ -104,7 +105,10 @@ object DLCSignatureVerifier {
     val hashType = HashType(
       ByteVector(0.toByte, 0.toByte, 0.toByte, HashType.sigHashAll.byte))
     val hash =
-      TransactionSignatureSerializer.hashForSignature(sigComponent, hashType)
+      TransactionSignatureSerializer.hashForSignature(
+        txSigComponent = sigComponent,
+        hashType = hashType,
+        taprootOptions = TaprootSerializationOptions.empty)
 
     remoteFundingPubKey.adaptorVerify(hash.bytes, adaptorPoint, sig)
   }

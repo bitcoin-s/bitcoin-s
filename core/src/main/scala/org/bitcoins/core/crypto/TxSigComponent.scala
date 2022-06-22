@@ -180,8 +180,9 @@ object TxSigComponent {
       case _: WitnessScriptPubKey =>
         transaction match {
           case _: NonWitnessTransaction =>
-            throw new IllegalArgumentException(
-              s"Cannot spend from segwit output ($output) with a base transaction ($transaction)")
+            //before soft fork activation, you can spend a segwit output with a base transaction
+            //as segwit outputs are ANYONECANSPEND before soft fork activation
+            BaseTxSigComponent(transaction, inputIndex, output, flags)
           case wtx: WitnessTransaction =>
             WitnessTxSigComponent(wtx, inputIndex, output, flags)
         }
@@ -263,8 +264,6 @@ sealed trait WitnessTxSigComponent extends TxSigComponent {
   def witness: ScriptWitness = transaction.witness(inputIndex.toInt)
 
   def witnessVersion: WitnessVersion
-
-  override def sigVersion: SignatureVersion = SigVersionWitnessV0
 }
 
 /** This represents checking the [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
@@ -278,6 +277,16 @@ sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
 
   override def witnessVersion: WitnessVersion = {
     scriptPubKey.witnessVersion
+  }
+
+  override def sigVersion: SignatureVersion = {
+    scriptPubKey match {
+      case t: TaprootScriptPubKey =>
+        sys.error(
+          s"Use TaprootTxSigComponent for taproot spks rather than WitnessTxSigComponentRaw, got=$t")
+      case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
+        SigVersionWitnessV0
+    }
   }
 }
 
@@ -321,6 +330,7 @@ sealed abstract class WitnessTxSigComponentP2SH
 
   override def amount: CurrencyUnit = output.value
 
+  override def sigVersion: SignatureVersion = SigVersionWitnessV0
 }
 
 /** This represents a 'rebuilt' [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
@@ -342,10 +352,68 @@ sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
     */
   def witnessScriptPubKey: WitnessScriptPubKey
 
-  override def sigVersion: SignatureVersion = SigVersionWitnessV0
+  override def sigVersion: SignatureVersion = witnessScriptPubKey match {
+    case _: WitnessScriptPubKeyV0 => SigVersionWitnessV0
+    case _: TaprootScriptPubKey   =>
+      //i believe we cannot have keypath spend here because we don't
+      //need to rebuild a spk with keypath spent
+      //https://github.com/bitcoin/bitcoin/blob/9e4fbebcc8e497016563e46de4c64fa094edab2d/src/script/interpreter.cpp#L399
+      SigVersionTapscript
+    case w: UnassignedWitnessScriptPubKey =>
+      sys.error(
+        s"Cannot determine sigVersion for an unassigned witness, got=$w")
+  }
 
   def witnessVersion: WitnessVersion = witnessScriptPubKey.witnessVersion
 
+}
+
+/** Tx sig component that contains the differences between BIP143 (segwit v0)
+  * transaction signature serialization and BIP341.
+  *
+  * The unique thing with BIP341 is the message commits to the scriptPubKeys
+  * of all outputs spent by the transaction, also
+  *
+  * If the SIGHASH_ANYONECANPAY flag is not set, the message commits to the amounts of all transaction inputs.[18]
+  *
+  * This means we need to bring ALL the outputs we are spending, even though this data structure
+  * is for checking the signature of a _single_ output.
+  *
+  * @see https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message
+  */
+case class TaprootTxSigComponent(
+    transaction: WitnessTransaction,
+    inputIndex: UInt32,
+    outputMap: Map[TransactionOutPoint, TransactionOutput],
+    flags: Seq[ScriptFlag])
+    extends WitnessTxSigComponent {
+  require(
+    scriptPubKey.isInstanceOf[TaprootScriptPubKey],
+    s"Can only spend taproot spks with TaprootTxSigComponent, got=$scriptPubKey")
+
+  override lazy val output: TransactionOutput = {
+    val outpoint = transaction.inputs(inputIndex.toInt).previousOutput
+    outputMap(outpoint)
+  }
+
+  val outputs: Vector[TransactionOutput] = outputMap.values.toVector
+
+  override def scriptPubKey: TaprootScriptPubKey = {
+    output.scriptPubKey.asInstanceOf[TaprootScriptPubKey]
+  }
+
+  override def witness: TaprootWitness = {
+    transaction.witness(inputIndex.toInt).asInstanceOf[TaprootWitness]
+  }
+
+  override val witnessVersion: WitnessVersion1.type = WitnessVersion1
+
+  override def sigVersion: SigVersionTaproot = {
+    witness match {
+      case _: TaprootKeyPath    => SigVersionTaprootKeySpend
+      case _: TaprootScriptPath => SigVersionTapscript
+    }
+  }
 }
 
 object BaseTxSigComponent {

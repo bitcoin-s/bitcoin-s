@@ -15,6 +15,10 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
     CryptoUtil.schnorrVerify(data, this, signature)
   }
 
+  def verify(hash: HashDigest, signature: SchnorrDigitalSignature): Boolean = {
+    verify(hash.bytes, signature)
+  }
+
   def computeSigPoint(data: ByteVector, nonce: SchnorrNonce): ECPublicKey = {
     computeSigPoint(data, nonce, compressed = true)
   }
@@ -57,7 +61,7 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   }
 
   def publicKey: ECPublicKey = {
-    val pubKeyBytes = ByteVector.fromByte(2) ++ bytes
+    val pubKeyBytes = EvenParity.bytes ++ bytes
 
     ECPublicKey(pubKeyBytes)
   }
@@ -73,7 +77,6 @@ object SchnorrPublicKey extends Factory[SchnorrPublicKey] {
   def fromBytes(bytes: ByteVector): SchnorrPublicKey = {
     require(bytes.length <= 33,
             s"XOnlyPublicKey must be less than 33 bytes, got $bytes")
-
     if (bytes.length == 32)
       new SchnorrPublicKey(bytes)
     else if (bytes.length < 32) {

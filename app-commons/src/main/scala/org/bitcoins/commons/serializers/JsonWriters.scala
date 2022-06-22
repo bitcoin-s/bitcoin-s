@@ -24,6 +24,7 @@ object JsonWriters {
 
     override def writes(hash: HashType): JsValue =
       hash match {
+        case SIGHASH_DEFAULT                => JsString("DEFAULT")
         case _: SIGHASH_ALL                 => JsString("ALL")
         case _: SIGHASH_NONE                => JsString("NONE")
         case _: SIGHASH_SINGLE              => JsString("SINGLE")

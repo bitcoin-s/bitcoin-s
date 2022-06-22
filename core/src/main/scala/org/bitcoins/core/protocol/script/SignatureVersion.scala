@@ -12,3 +12,15 @@ case object SigVersionBase extends SignatureVersion
 
 /** The digest algorithm implemented by BIP143 [[https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki]] */
 case object SigVersionWitnessV0 extends SignatureVersion
+
+sealed trait SigVersionTaproot extends SignatureVersion
+
+/** For keypath spends
+  * @see https://github.com/bitcoin/bitcoin/blob/e826b22da252e0599c61d21c98ff89f366b3120f/src/script/interpreter.h#L191
+  */
+case object SigVersionTaprootKeySpend extends SigVersionTaproot
+
+/** For script path spends
+  * @see https://github.com/bitcoin/bitcoin/blob/e826b22da252e0599c61d21c98ff89f366b3120f/src/script/interpreter.h#L192
+  */
+case object SigVersionTapscript extends SigVersionTaproot

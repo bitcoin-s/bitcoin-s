@@ -399,7 +399,8 @@ trait BitcoinScriptUtil {
     txSignatureComponent.sigVersion match {
       case SigVersionBase =>
         removeSignatureFromScript(signature, scriptForChecking)
-      case SigVersionWitnessV0 =>
+      case SigVersionWitnessV0 | SigVersionTaprootKeySpend |
+          SigVersionTapscript =>
         //BIP143 removes requirement for calling FindAndDelete
         //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#no-findanddelete
         scriptForChecking
