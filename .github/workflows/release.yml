@@ -429,6 +429,7 @@ jobs:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           keychain-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+          keychain: signing_temp
       # - name: (macos) Unlock keychain, find-identity
       #   if: startsWith(matrix.os,'macos')
       #   env:
@@ -443,12 +444,12 @@ jobs:
       #     security find-identity -p codesigning -v
       - name: Build oracle-electron-ts
         working-directory: bitcoin-s-ts/oracle-electron-ts
-        # env:
-        #   APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
-        #   NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
-        #   NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
-        #   NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
-        #   DEBUG: electron-notarizer
+        env:
+          APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+          NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
+          NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
+          NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
+          DEBUG: electron-notarizer
         run: |
           npm ci
           npm run build
@@ -477,10 +478,10 @@ jobs:
           ls -l "bitcoin-s-ts/oracle-electron-ts/out"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make"
-          ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip"
-          ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip/darwin"
-          ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip/darwin/x64"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-darwin-x64"
+          : # ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip"
+          : # ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip/darwin"
+          : # ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip/darwin/x64"
           : # Works
           echo "=== Sign app ==="
           codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
@@ -488,7 +489,8 @@ jobs:
           codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
           : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
           : # echo "Done inspecting app with spctl"
-          echo "=== Sign dmg ==="
+          : # TODO : Make dmg from signed .app
+          echo "=== Sign electron-built dmg ==="
           codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$DMG_PATH"
           echo "=== Verify dmg signature ==="
           codesign -vvv --deep --strict "$DMG_PATH"
