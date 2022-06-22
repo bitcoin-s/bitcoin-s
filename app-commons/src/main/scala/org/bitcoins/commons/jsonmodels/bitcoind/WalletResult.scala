@@ -96,7 +96,7 @@ case class GetWalletInfoResult(
     unconfirmed_balance: Bitcoins,
     immature_balance: Bitcoins,
     txcount: Int,
-    keypoololdest: UInt32,
+    keypoololdest: Option[UInt32],
     keypoolsize: Int,
     keypoolsize_hd_internal: Int,
     paytxfee: BitcoinFeeUnit,

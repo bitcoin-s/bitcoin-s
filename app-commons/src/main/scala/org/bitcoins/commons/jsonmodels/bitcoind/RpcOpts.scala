@@ -194,6 +194,10 @@ object RpcOpts {
     case object Bech32 extends AddressType {
       override def toString: String = "bech32"
     }
+
+    case object Bech32m extends AddressType {
+      override def toString: String = "bech32m"
+    }
   }
 
   sealed trait LabelPurpose
