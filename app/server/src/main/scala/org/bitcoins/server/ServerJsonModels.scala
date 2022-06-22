@@ -283,8 +283,44 @@ object KeyManagerPassphraseSet extends ServerJsonModels {
   }
 }
 
+case class ExportSeed(
+    walletNameOpt: Option[String],
+    passwordOpt: Option[AesPassword])
+
+object ExportSeed extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExportSeed] = Try {
+    val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(jsArr)
+    ExportSeed(walletNameOpt, passwordOpt)
+  }
+}
+
+case class MarkSeedAsBackedUp(
+    walletNameOpt: Option[String],
+    passwordOpt: Option[AesPassword])
+
+object MarkSeedAsBackedUp extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[MarkSeedAsBackedUp] = Try {
+    val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(jsArr)
+    MarkSeedAsBackedUp(walletNameOpt, passwordOpt)
+  }
+}
+
+case class GetSeedBackupTime(
+    walletNameOpt: Option[String],
+    passwordOpt: Option[AesPassword])
+
+object GetSeedBackupTime extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetSeedBackupTime] = Try {
+    val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(jsArr)
+    GetSeedBackupTime(walletNameOpt, passwordOpt)
+  }
+}
+
 case class ImportSeed(
-    walletName: String,
+    walletNameOpt: Option[String],
     mnemonic: MnemonicCode,
     passwordOpt: Option[AesPassword])
 
@@ -294,28 +330,18 @@ object ImportSeed extends ServerJsonModels {
     jsArr.arr.toList match {
       case walletNameJs :: mnemonicJs :: passJs :: Nil =>
         Try {
-          val walletName = walletNameJs.str
+          val walletNameOpt = jsToStringOpt(walletNameJs)
+          val mnemonic = jsToMnemonics(mnemonicJs)
+          val pass = jsToAESPassword(passJs)
 
-          val mnemonicWords = mnemonicJs match {
-            case Str(str) => str.split(' ').toVector
-            case Arr(arr) => arr.map(_.str).toVector
-            case Null | False | True | Num(_) | Obj(_) =>
-              throw new IllegalArgumentException(
-                "mnemonic must be a string or array of strings")
-          }
-          val mnemonic = MnemonicCode.fromWords(mnemonicWords)
+          ImportSeed(walletNameOpt, mnemonic, pass)
+        }
+      case walletNameJs :: mnemonicJs :: Nil =>
+        Try {
+          val walletNameOpt = jsToStringOpt(walletNameJs)
+          val mnemonic = jsToMnemonics(mnemonicJs)
 
-          val pass = passJs match {
-            case Str(str) =>
-              Some(AesPassword.fromString(str))
-            case Null =>
-              None
-            case Arr(_) | False | True | Num(_) | Obj(_) =>
-              throw new IllegalArgumentException(
-                "password must be a string or null")
-          }
-
-          ImportSeed(walletName, mnemonic, pass)
+          ImportSeed(walletNameOpt, mnemonic, None)
         }
       case Nil =>
         Failure(
@@ -330,7 +356,7 @@ object ImportSeed extends ServerJsonModels {
 }
 
 case class ImportXprv(
-    walletName: String,
+    walletNameOpt: Option[String],
     xprv: ExtPrivateKey,
     passwordOpt: Option[AesPassword])
 
@@ -340,21 +366,18 @@ object ImportXprv extends ServerJsonModels {
     jsArr.arr.toList match {
       case walletNameJs :: xprvJs :: passJs :: Nil =>
         Try {
-          val walletName = walletNameJs.str
+          val walletNameOpt = jsToStringOpt(walletNameJs)
+          val xprv = ExtPrivateKey.fromString(xprvJs.str)
+          val pass = jsToAESPassword(passJs)
 
+          ImportXprv(walletNameOpt, xprv, pass)
+        }
+      case walletNameJs :: xprvJs :: Nil =>
+        Try {
+          val walletNameOpt = jsToStringOpt(walletNameJs)
           val xprv = ExtPrivateKey.fromString(xprvJs.str)
 
-          val pass = passJs match {
-            case Str(str) =>
-              Some(AesPassword.fromString(str))
-            case Null =>
-              None
-            case Arr(_) | False | True | Bool(_) | Num(_) | Obj(_) =>
-              throw new IllegalArgumentException(
-                "password must be a string or null")
-          }
-
-          ImportXprv(walletName, xprv, pass)
+          ImportXprv(walletNameOpt, xprv, None)
         }
       case Nil =>
         Failure(
@@ -1642,6 +1665,59 @@ trait ServerJsonModels {
   def jsToOracleAttestmentTLVVec(js: Value): Vector[OracleAttestmentTLV] = {
     js.arr.foldLeft(Vector.empty[OracleAttestmentTLV])((vec, tlv) =>
       vec :+ jsToOracleAttestmentTLV(tlv))
+  }
+
+  def jsToAESPassword(js: Value): Option[AesPassword] = {
+    js match {
+      case Str(str) =>
+        Some(AesPassword.fromString(str))
+      case Null =>
+        None
+      case Arr(_) | False | True | Num(_) | Obj(_) =>
+        throw new IllegalArgumentException("password must be a string or null")
+    }
+  }
+
+  def jsToStringOpt(js: Value): Option[String] = {
+    js match {
+      case Str(str) =>
+        Some(str)
+      case Null =>
+        None
+      case Arr(_) | False | True | Num(_) | Obj(_) =>
+        throw new IllegalArgumentException("password must be a string or null")
+    }
+  }
+
+  def jsToWalletNameAndPassword(
+      js: Value): (Option[String], Option[AesPassword]) = {
+    js match {
+      case Arr(arr) =>
+        arr.toList match {
+          case walletNameJs :: passJs :: Nil =>
+            (jsToStringOpt(walletNameJs), jsToAESPassword(passJs))
+          case walletNameJs :: Nil =>
+            (jsToStringOpt(walletNameJs), None)
+          case Nil =>
+            (None, None)
+          case other =>
+            throw new IllegalArgumentException(
+              s"Bad number of arguments: ${other.length}. Expected: 2")
+        }
+      case _: Value =>
+        throw new IllegalArgumentException(s"Expected json.Arr")
+    }
+  }
+
+  def jsToMnemonics(js: Value): MnemonicCode = {
+    val mnemonicWords = js match {
+      case Str(str) => str.split(' ').toVector
+      case Arr(arr) => arr.map(_.str).toVector
+      case Null | False | True | Num(_) | Obj(_) =>
+        throw new IllegalArgumentException(
+          "mnemonic must be a string or array of strings")
+    }
+    MnemonicCode.fromWords(mnemonicWords)
   }
 
   def jsToInetSocketAddress(

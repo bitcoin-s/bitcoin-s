@@ -141,7 +141,8 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
                                    Some(bip39Pw),
                                    TimeUtil.now)
 
-    val decryptedMnemonic = DecryptedMnemonic(mnemonic, direct.creationTime)
+    val decryptedMnemonic =
+      DecryptedMnemonic(mnemonic, direct.creationTime, None)
     val password = AesPassword.fromNonEmptyString("password")
     WalletStorage.writeSeedToDisk(kmParams.seedPath,
                                   decryptedMnemonic.encrypt(password))
@@ -175,7 +176,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     val rootExtPrivKey = seed.toExtPrivateKey(privVersion)
 
     val decryptedXprv =
-      DecryptedExtPrivKey(rootExtPrivKey, direct.creationTime)
+      DecryptedExtPrivKey(rootExtPrivKey, direct.creationTime, None)
     val password = AesPassword.fromNonEmptyString("password")
     WalletStorage.writeSeedToDisk(kmParams.seedPath,
                                   decryptedXprv.encrypt(password))

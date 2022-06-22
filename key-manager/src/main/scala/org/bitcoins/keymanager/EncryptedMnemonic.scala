@@ -9,6 +9,8 @@ import scala.util.{Failure, Success, Try}
 
 sealed trait SeedState {
   def creationTime: Instant
+  def backupTimeOpt: Option[Instant]
+  def withBackupTime(backupTime: Instant): SeedState
 }
 
 sealed trait DecryptedSeedState extends SeedState {
@@ -20,28 +22,39 @@ sealed trait DecryptedSeedState extends SeedState {
 
     val encrypted = AesCrypt.encrypt(clearText, key)
 
-    EncryptedSeed(encrypted, salt, creationTime)
+    EncryptedSeed(encrypted, salt, creationTime, backupTimeOpt)
   }
 }
 
 case class DecryptedMnemonic(
     private[keymanager] val mnemonicCode: MnemonicCode,
-    creationTime: Instant)
+    creationTime: Instant,
+    backupTimeOpt: Option[Instant])
     extends DecryptedSeedState {
   override protected val strToEncrypt: String = mnemonicCode.words.mkString(" ")
+
+  override def withBackupTime(backupTime: Instant): SeedState = {
+    if (backupTimeOpt.isEmpty) copy(backupTimeOpt = Some(backupTime)) else this
+  }
 }
 
 case class DecryptedExtPrivKey(
     private[keymanager] val xprv: ExtPrivateKey,
-    creationTime: Instant)
+    creationTime: Instant,
+    backupTimeOpt: Option[Instant])
     extends DecryptedSeedState {
   override protected val strToEncrypt: String = xprv.toStringSensitive
+
+  override def withBackupTime(backupTime: Instant): SeedState = {
+    if (backupTimeOpt.isEmpty) copy(backupTimeOpt = Some(backupTime)) else this
+  }
 }
 
 case class EncryptedSeed(
     value: AesEncryptedData,
     salt: AesSalt,
-    creationTime: Instant)
+    creationTime: Instant,
+    backupTimeOpt: Option[Instant])
     extends SeedState {
 
   private def decryptStr(password: AesPassword): Try[String] = {
@@ -67,5 +80,9 @@ case class EncryptedSeed(
 
   def toExtPrivKey(password: AesPassword): Try[ExtPrivateKey] = {
     decryptStr(password).map(ExtPrivateKey.fromString)
+  }
+
+  override def withBackupTime(backupTime: Instant): SeedState = {
+    if (backupTimeOpt.isEmpty) copy(backupTimeOpt = Some(backupTime)) else this
   }
 }

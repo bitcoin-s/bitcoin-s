@@ -863,18 +863,18 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
     case ServerCommand("importseed", arr) =>
       withValidServerCommand(ImportSeed.fromJsArr(arr)) {
-        case ImportSeed(walletName, mnemonic, passwordOpt) =>
+        case ImportSeed(walletNameOpt, mnemonic, passwordOpt) =>
           complete {
-            val seedPath = kmConf.seedFolder.resolve(
-              s"$walletName-${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
+            val seedPath = getSeedPath(walletNameOpt)
 
             val creationTime = Instant.ofEpochSecond(WalletStorage.GENESIS_TIME)
 
             val mnemonicState = passwordOpt match {
               case Some(pass) =>
-                DecryptedMnemonic(mnemonic, creationTime).encrypt(pass)
+                DecryptedMnemonic(mnemonic, creationTime, backupTimeOpt = None)
+                  .encrypt(pass)
               case None =>
-                DecryptedMnemonic(mnemonic, creationTime)
+                DecryptedMnemonic(mnemonic, creationTime, backupTimeOpt = None)
             }
 
             WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
@@ -883,20 +883,63 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           }
       }
 
+    case ServerCommand("exportseed", arr) =>
+      withValidServerCommand(ExportSeed.fromJsArr(arr)) {
+        case ExportSeed(walletNameOpt, passwordOpt) =>
+          complete {
+            val seedPath = getSeedPath(walletNameOpt)
+
+            Server.httpSuccess(
+              WalletStorage
+                .readDecryptedSeedPhraseForBackup(seedPath, passwordOpt)
+                .get)
+          }
+      }
+
+    case ServerCommand("markseedasbackedup", arr) =>
+      withValidServerCommand(MarkSeedAsBackedUp.fromJsArr(arr)) {
+        case MarkSeedAsBackedUp(walletNameOpt, passwordOpt) =>
+          complete {
+            val seedPath = getSeedPath(walletNameOpt)
+
+            WalletStorage.markSeedAsBackedUp(seedPath, passwordOpt).get
+            Server.httpSuccess("ok")
+          }
+      }
+
+    case ServerCommand("getseedbackuptime", arr) =>
+      withValidServerCommand(GetSeedBackupTime.fromJsArr(arr)) {
+        case GetSeedBackupTime(walletNameOpt, passwordOpt) =>
+          complete {
+            val seedPath = getSeedPath(walletNameOpt)
+
+            val backupTimeOpt = WalletStorage
+              .getSeedBackupTime(seedPath, passwordOpt)
+              .get
+
+            val backupTimeJs: ujson.Value = backupTimeOpt match {
+              case Some(value) => ujson.Num(value.getEpochSecond.toDouble)
+              case None        => ujson.Null
+            }
+
+            Server.httpSuccess(backupTimeJs)
+          }
+      }
+
     case ServerCommand("importxprv", arr) =>
       withValidServerCommand(ImportXprv.fromJsArr(arr)) {
-        case ImportXprv(walletName, xprv, passwordOpt) =>
+        case ImportXprv(walletNameOpt, xprv, passwordOpt) =>
           complete {
-            val seedPath = kmConf.seedFolder.resolve(
-              s"$walletName-${WalletStorage.ENCRYPTED_SEED_FILE_NAME}")
+            val seedPath = getSeedPath(walletNameOpt)
 
             val creationTime = Instant.ofEpochSecond(WalletStorage.GENESIS_TIME)
 
             val mnemonicState = passwordOpt match {
               case Some(pass) =>
-                DecryptedExtPrivKey(xprv, creationTime).encrypt(pass)
+                DecryptedExtPrivKey(xprv, creationTime, backupTimeOpt = None)
+                  .encrypt(pass)
               case None =>
-                DecryptedExtPrivKey(xprv, creationTime)
+                DecryptedExtPrivKey(xprv, creationTime, backupTimeOpt = None)
             }
 
             WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
@@ -935,6 +978,13 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           Server.httpSuccess(writeJs(accounting))
         }
       }
+  }
+
+  private def getSeedPath(walletNameOpt: Option[String]): Path = {
+    kmConf.seedFolder.resolve(
+      walletNameOpt
+        .map(_ + "-")
+        .getOrElse("") + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
   }
 
   /** Returns information about the state of our wallet */
