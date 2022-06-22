@@ -277,6 +277,21 @@ the <code>-p 9999:9999</code> port mapping on the docker container to adjust for
 <li><code>xprv</code> - base58 encoded extended private key</li>
 <li><code>passphrase</code> - Passphrase to encrypt this seed with</li>
 </ul></li>
+<li><code>exportseed</code> <code>walletname</code> <code>passphrase</code> - Exports the mnemonic seed phrase
+<ul>
+<li><code>walletname</code> - Name to associate with this seed</li>
+<li><code>passphrase</code> - Passphrase to decrypt this seed with</li>
+</ul></li>
+<li><code>markseedasbackedup</code> <code>walletname</code> <code>passphrase</code> - Marks the seed as backed up. It prevents <code>exportseed</code> from returning the mnemonic phrase
+<ul>
+<li><code>walletname</code> - Name to associate with this seed</li>
+<li><code>passphrase</code> - Passphrase to decrypt this seed with</li>
+</ul></li>
+<li><code>getseedbackuptime</code> <code>walletname</code> <code>passphrase</code> - Returns time when the seed was backed up
+<ul>
+<li><code>walletname</code> - Name to associate with this seed</li>
+<li><code>passphrase</code> - Passphrase to decrypt this seed with</li>
+</ul></li>
 <li><code>keymanagerpassphrasechange</code> <code>oldpassphrase</code> <code>newpassphrase</code> - Changes the wallet passphrase
 <ul>
 <li><code>oldpassphrase</code> - The current passphrase</li>
