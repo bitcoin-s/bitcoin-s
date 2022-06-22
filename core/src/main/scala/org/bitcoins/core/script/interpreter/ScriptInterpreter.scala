@@ -461,14 +461,16 @@ sealed abstract class ScriptInterpreter {
             val evaluated = newProgram.map(executeProgram)
             evaluated.map(e => postSegWitProgramChecks(e))
           case Left(err) =>
-            val program = ExecutedScriptProgram(txSignatureComponent =
-                                                  wTxSigComponent,
-                                                stack = Nil,
-                                                script = Nil,
-                                                originalScript = Nil,
-                                                altStack = Nil,
-                                                flags = wTxSigComponent.flags,
-                                                error = Some(err))
+            val program = ExecutedScriptProgram(
+              txSignatureComponent = wTxSigComponent,
+              stack = Nil,
+              script = Nil,
+              originalScript = Nil,
+              altStack = Nil,
+              flags = wTxSigComponent.flags,
+              lastCodeSeparator = None,
+              error = Some(err)
+            )
             Success(program)
         }
       case WitnessVersion1 =>
@@ -1196,7 +1198,8 @@ sealed abstract class ScriptInterpreter {
         script = Nil,
         originalScript = txSigComponent.scriptPubKey.asm.toList,
         altStack = Nil,
-        flags,
+        flags = flags,
+        lastCodeSeparator = None,
         error = Some(ScriptErrorDiscourageUpgradeableWitnessProgram)
       )
       Success(executed)
