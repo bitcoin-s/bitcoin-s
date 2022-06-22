@@ -184,6 +184,7 @@ sealed abstract class CryptoInterpreter {
       program: ExecutionInProgressScriptProgram): Either[
     ScriptError,
     TransactionSignatureCheckerResult] = {
+    println(s"program.opCodeSeparator=${program.lastCodeSeparator}")
     val stack = program.stack
     val pubKeyBytes = stack.head.bytes
     val isCheckSigAdd = program.script.head == OP_CHECKSIGADD
@@ -243,8 +244,7 @@ sealed abstract class CryptoInterpreter {
         case Right(helper) =>
           val result = TransactionSignatureChecker.checkSigTapscript(
             txSignatureComponent = program.txSignatureComponent,
-            script = helper.restOfStack,
-            pubKey = helper.pubKey,
+            pubKey = helper.pubKey.schnorrPublicKey,
             signature = helper.signature,
             hashType = helper.hashType,
             taprootOptions = program.taprootSerializationOptions,

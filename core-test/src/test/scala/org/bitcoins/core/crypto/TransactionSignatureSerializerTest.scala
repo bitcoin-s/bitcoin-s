@@ -771,7 +771,6 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
     assert(serialize.toHex == expected)
   }
 
-
   it must "serialize a transaction correctly in taproot when it uses code sep" in {
     val expected =
       "000001000000e5010000628a401405f2f1d86ae4b04820202057ed7508a02d3b8780ab306b05bff05dac4d084776dfbb4917170d8535dd7eac99ed2fe7e2a24f648eb68e6de5005558b351ee3db4727461bbab05ac0aec4ec66a611225ee790e2f99fbd19013140e0f5ebe7656e702bca178685c66343fe1d9e91b845099b5f7fbbbb63463277b546933cdda11ea31e190a76cdca66a496322ac5b04ef2f075115444d8f32e046f0c57802000000006757e0866b83772c944df11581616b8752bb2596a43c8941de0e427ce4fa06300006000000"

@@ -210,7 +210,7 @@ trait TransactionSignatureChecker {
       TransactionSignatureSerializer.hashForSignature(txSignatureComponent,
                                                       hashType,
                                                       taprootOptions)
-    val result = pubKey.schnorrPublicKey.verify(hash, signature)
+    val result = pubKey.verify(hash, signature)
     if (result) {
       SignatureValidationSuccess
     } else {
@@ -219,14 +219,6 @@ trait TransactionSignatureChecker {
                                 SignatureValidationErrorIncorrectSignatures,
                               flags = flags)
     }
-  }
-
-  def checkSigTapscript(txSignatureComponent: TxSigComponent,
-                        script: Seq[ScriptToken],
-                        pubKey: SchnorrPublicKey,
-                        signature: SchnorrDigitalSignature,
-                        flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
-    ???
   }
 
   /** This is a helper function to check digital signatures against public keys

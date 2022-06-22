@@ -103,6 +103,10 @@ trait BitcoinScriptUtil {
       case _: ScriptToken                                              => false
     }
 
+  def countOpCodes(opcodes: Vector[ScriptToken]): Int = {
+    opcodes.count(_.isInstanceOf[ScriptOperation])
+  }
+
   /** Counts the amount of sigops in a script.
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L156-L202 Bitcoin Core script.cpp]]
     * @param script the script whose sigops are being counted

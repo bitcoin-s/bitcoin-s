@@ -578,14 +578,16 @@ sealed abstract class ScriptInterpreter {
               scriptPubKeyExecutedProgram = scriptPubKeyExecutedProgram
             )
           case Left(err) =>
-            val program = ExecutedScriptProgram(txSignatureComponent =
-                                                  wTxSigComponent,
-                                                stack = Nil,
-                                                script = Nil,
-                                                originalScript = Nil,
-                                                altStack = Nil,
-                                                flags = wTxSigComponent.flags,
-                                                error = Some(err))
+            val program = ExecutedScriptProgram(
+              txSignatureComponent = wTxSigComponent,
+              stack = Nil,
+              script = Nil,
+              originalScript = Nil,
+              altStack = Nil,
+              flags = wTxSigComponent.flags,
+              lastCodeSeparator = None,
+              error = Some(err)
+            )
             Success(program)
         }
       case UnassignedWitness(_) =>
@@ -1157,6 +1159,7 @@ sealed abstract class ScriptInterpreter {
           (programOrError, newOpCount)
 
         case OP_CHECKSIG :: _ =>
+          println(s"program.opCodeSeparator=${program.lastCodeSeparator}")
           val programOrError = CryptoInterpreter.opCheckSig(program)
           val newOpCount =
             calcOpCount(opCount, OP_CHECKSIG)

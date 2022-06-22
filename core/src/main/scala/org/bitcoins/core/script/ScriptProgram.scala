@@ -84,29 +84,6 @@ sealed trait ScriptProgram {
     getTapscriptOpt.flatMap(_.annexHashOpt)
   }
 
-  def codeSeparatorPosOpt: Option[UInt32] = {
-    if (originalScript.contains(OP_CODESEPARATOR)) {
-      //determine if we have hit OP_CODESEPARATOR yet
-      //note this doesn't work for multiple code separators
-      val index = originalScript.indexOf(OP_CODESEPARATOR)
-      val currentIndex = originalScript.length - script.length
-      if (currentIndex >= index) {
-        Some(UInt32(index))
-      } else {
-        //haven't reached it yet
-        None
-      }
-    } else {
-      None
-    }
-  }
-
-  def taprootSerializationOptions: TaprootSerializationOptions = {
-    val empty = TaprootSerializationOptions.empty
-    val annex = empty.copy(annexHashOpt = getAnnexHashOpt)
-    annex.copy(tapLeafHashOpt = tapLeafHashOpt,
-               codeSeparatorPosOpt = codeSeparatorPosOpt)
-  }
 }
 
 /** This represents a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
@@ -185,6 +162,14 @@ object PreExecutionScriptProgram {
 /** This represents any ScriptProgram that is not PreExecution */
 sealed trait StartedScriptProgram extends ScriptProgram {
   def lastCodeSeparator: Option[Int]
+
+  def taprootSerializationOptions: TaprootSerializationOptions = {
+    val empty = TaprootSerializationOptions.empty
+    val annex = empty.copy(annexHashOpt = getAnnexHashOpt)
+    val lastCodeSeparatorU32 = lastCodeSeparator.map(UInt32(_))
+    annex.copy(tapLeafHashOpt = tapLeafHashOpt,
+               codeSeparatorPosOpt = lastCodeSeparatorU32)
+  }
 }
 
 /** Implements the counting required for O(1) handling of conditionals in Bitcoin Script.
