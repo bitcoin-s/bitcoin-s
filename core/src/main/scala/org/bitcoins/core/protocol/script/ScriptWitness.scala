@@ -295,7 +295,6 @@ case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
         val spk = ScriptPubKey.fromAsmBytes(stack(1))
         spk
     }
-
   }
 
   /** Let p = c[1:33] and let P = lift_x(int(p)) where lift_x and [:] are defined as in BIP340. Fail if this point is not on the curve.
@@ -307,7 +306,6 @@ case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
     *  @see https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#signature-validation-rules
     */
   def annexHashOpt: Option[Sha256Digest] = {
-
     annexOpt.map { annex =>
       val cmpct = CompactSizeUInt.calc(annex)
       CryptoUtil.sha256(cmpct.bytes ++ annex)

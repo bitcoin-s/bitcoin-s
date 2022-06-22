@@ -262,13 +262,10 @@ sealed abstract class TransactionSignatureSerializer {
           val prevOuts = spendingTransaction.inputs.map(_.previousOutput)
           val bytes: ByteVector = BytesUtil.toByteVector(prevOuts)
           CryptoUtil.sha256(bytes).bytes
-        } else if (!isNotAnyoneCanPay) {
+        } else {
           val b = spendingTransaction.inputs(inputIndex.toInt).previousOutput
           b.bytes
-        } else {
-          emptyHash.bytes
         }
-
         val amounts = {
           if (isNotAnyoneCanPay) {
             val b = BytesUtil.toByteVector(outputs.map(_.value))
