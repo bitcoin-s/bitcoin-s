@@ -414,6 +414,7 @@ jobs:
         with:
           name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
           path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
+      # Test with: keychain: signing_temp
       - name: (macos) Import developer cert to keychain
         if: startsWith(matrix.os,'macos')
         uses: apple-actions/import-codesign-certs@v1
@@ -451,7 +452,6 @@ jobs:
         env:
           MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
-          
           KRYSTALBULL_PATH: "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-darwin-x64/Krystal Bull.app"
           DMG_PATH: "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/Krystal Bull-0.0.1-x64.dmg"
           PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
@@ -482,9 +482,9 @@ jobs:
           REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id $BUNDLE_ID -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID --password "$NOTORIZE_APPLE_PW" --file "$DMG_PATH" | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
           sleep 5
-          xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW"
+          xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID -p "$NOTORIZE_APPLE_PW"
           echo "Start while loop"
-          while xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID -p "$MAC_NOTARIZATION_PW" | grep "Status: in progress" > /dev/null; do
+          while xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID -p "$NOTORIZE_APPLE_PW" | grep "Status: in progress" > /dev/null; do
             echo "Verification in progress..."
             sleep 30
           done
