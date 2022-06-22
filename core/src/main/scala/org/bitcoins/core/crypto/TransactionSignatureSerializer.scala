@@ -248,7 +248,6 @@ sealed abstract class TransactionSignatureSerializer {
         val isNotAnyoneCanPay = !HashType.isAnyoneCanPay(hashType)
         val isNotSigHashSingle = !HashType.isSigHashSingle(hashType.num)
         val isNotSigHashNone = !HashType.isSigHashNone(hashType.num)
-        val emptyHash = DoubleSha256Digest.empty
 
         val extFlag = taprootSigVersion match {
           case SigVersionTaprootKeySpend => 0.toByte

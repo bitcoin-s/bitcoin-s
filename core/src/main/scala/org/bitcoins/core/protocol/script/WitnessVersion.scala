@@ -95,7 +95,12 @@ case object WitnessVersion1 extends WitnessVersion {
         }
       case _ =>
         //witness version 1 programs need to be 32 bytes in size
-        Left(ScriptErrorWitnessProgramWrongLength)
+        //this is technically wrong as this is dependent on a policy flag
+        //this should only error when the DISCOURAGE_UPGRADABLE_WITNESS policy flag is set
+        //else it should succeed as to maintain future soft fork compatability
+        //this will get addressed on a future PR as I implement test cases
+        //in the interpreter
+        Left(ScriptErrorDiscourageUpgradeableWitnessProgram)
     }
   }
 
