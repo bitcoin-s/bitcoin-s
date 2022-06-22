@@ -95,23 +95,24 @@ case class ControlMessageHandler(node: Node)(implicit ec: ExecutionContext)
           val peer = Peer.fromSocket(socket = inetAddress,
                                      socks5ProxyParams =
                                        node.nodeAppConfig.socks5ProxyParams)
-          node.peerManager.addToFinder(peer)
+          node.peerManager.finder.addToTry(Vector(peer), 0)
         }
       case addr: AddrV2Message =>
         val bytes = addr.bytes
         val port = addr.port.toInt
+        val services = ServiceIdentifier.fromBytes(addr.services.bytes)
         val inetAddress =
           NetworkUtil.parseInetSocketAddress(bytes, port)
         val peer = Peer.fromSocket(socket = inetAddress,
                                    socks5ProxyParams =
                                      node.nodeAppConfig.socks5ProxyParams)
+        val priority = if (services.nodeCompactFilters) 1 else 0
         addr match {
           case IPv4AddrV2Message(_, _, _, _) | IPv6AddrV2Message(_, _, _, _) =>
-            //todo: ensure finder prioritises ones with filters
-            node.peerManager.addToFinder(peer)
+            node.peerManager.finder.addToTry(Vector(peer), priority = priority)
           case TorV3AddrV2Message(_, _, _, _) =>
             if (node.nodeAppConfig.torConf.enabled)
-              node.peerManager.addToFinder(peer)
+              node.peerManager.finder.addToTry(Vector(peer), priority)
           case _ => logger.debug(s"Unsupported network. Skipping.")
         }
     }

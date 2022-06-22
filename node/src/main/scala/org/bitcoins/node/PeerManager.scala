@@ -148,11 +148,6 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
     peerData.contains(peer)
   }
 
-  //maintain sources and clean up finder q
-  def addToFinder(peer: Peer*): Unit = {
-    finder.addToTry(peer: _*)
-  }
-
   def start: Future[Unit] = {
     logger.debug(s"Starting PeerManager")
     finder.start.map(_ => logger.info("Done starting PeerManager"))

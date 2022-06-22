@@ -28,7 +28,7 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
     extends P2PLogger {
 
   /** Returns peers by querying each dns seed once. These will be IPv4 addresses. */
-  def getPeersFromDnsSeeds: Vector[Peer] = {
+  private def getPeersFromDnsSeeds: Vector[Peer] = {
     val dnsSeeds = nodeAppConfig.network.dnsSeeds
     val addresses = dnsSeeds
       .flatMap(seed => {
@@ -47,7 +47,7 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
   }
 
   /** Returns peers from hardcoded addresses taken from https://github.com/bitcoin/bitcoin/blob/master/contrib/seeds/nodes_main.txt */
-  def getPeersFromResources: Vector[Peer] = {
+  private def getPeersFromResources: Vector[Peer] = {
     val source = Source.fromURL(getClass.getResource("/hardcoded-peers.txt"))
     val addresses = source
       .getLines()
@@ -57,23 +57,24 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
     Random.shuffle(peers)
   }
 
-  /** Returns all peers stored in database */
-  def getPeersFromDb: Future[Vector[Peer]] = {
+  /** Returns tuple (non-filter peer, filter peers) from all peers stored in database */
+  private def getPeersFromDb: Future[(Vector[Peer], Vector[Peer])] = {
     val dbF: Future[Vector[PeerDb]] =
       PeerDAO().findAllWithTorFilter(nodeAppConfig.torConf.enabled)
+
     val partitionF = dbF.map(_.partition(b =>
       !ServiceIdentifier.fromBytes(b.serviceBytes).nodeCompactFilters))
-    val addressesF =
-      partitionF.map(x => Random.shuffle(x._1) ++ Random.shuffle(x._2))
-    val peersF = addressesF.map { addresses =>
-      val inetSockets = addresses.map(a => {
+
+    def toPeers(peerDbs: Vector[PeerDb]): Vector[Peer] = {
+      val inetSockets = peerDbs.map(a => {
         NetworkUtil.parseInetSocketAddress(a.address, a.port)
       })
       val peers =
         inetSockets.map(Peer.fromSocket(_, nodeAppConfig.socks5ProxyParams))
-      peers
+      Random.shuffle(peers)
     }
-    peersF
+
+    partitionF.map(p => (toPeers(p._1), toPeers(p._2)))
   }
 
   /** Returns peers from bitcoin-s.config file unless peers are supplied as an argument to [[PeerManager]] in which
@@ -109,7 +110,7 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
   //for the peers we try
   private val _peerData: mutable.Map[Peer, PeerData] = mutable.Map.empty
 
-  private val _peersToTry: mutable.Stack[Peer] = mutable.Stack.empty[Peer]
+  private val _peersToTry: PeerStack = PeerStack()
 
   val maxPeerSearchCount: Int = 1000
 
@@ -140,11 +141,12 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
 
     if (nodeAppConfig.enablePeerDiscovery) {
       for {
-        peersFromDb <- getPeersFromDb
+        (dbNonCf, dbCf) <- getPeersFromDb
       } yield {
         _peersToTry.pushAll(getPeersFromDnsSeeds)
         _peersToTry.pushAll(getPeersFromResources)
-        _peersToTry.pushAll(peersFromDb)
+        _peersToTry.pushAll(dbNonCf)
+        _peersToTry.pushAll(dbCf, priority = 1)
         peerConnectionScheduler //start scheduler
         ()
       }
@@ -203,7 +205,53 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
     _peerData(peer)
   }
 
-  def addToTry(peers: Peer*): Unit = {
-    _peersToTry.pushAll(peers)
+  def addToTry(peers: Vector[Peer], priority: Int = 0): Unit = {
+    _peersToTry.pushAll(peers, priority)
+  }
+}
+
+case class PeerStack() {
+
+  case class PeerOrdering(peer: Peer, priority: Int, id: Int)
+
+  implicit def ordering: Ordering[PeerOrdering] =
+    (x: PeerOrdering, y: PeerOrdering) => {
+      if (x.priority != y.priority) x.priority.compare(y.priority)
+      else x.id.compare(y.id)
+    }
+
+  private var id: Int = 0
+
+  private val maxSize = 5000
+
+  private val set: mutable.SortedSet[PeerOrdering] =
+    mutable.SortedSet[PeerOrdering]().empty
+
+  def push(peer: Peer, priority: Int = 0): Unit = {
+    if (set.size == maxSize) {
+      if (set.head.priority < priority) {
+        set.remove(set.head)
+        set.add(PeerOrdering(peer, priority, id))
+        id += 1
+      }
+    } else {
+      set.add(PeerOrdering(peer, priority, id))
+      id += 1
+    }
+    ()
+  }
+
+  def pop(): Peer = {
+    val res = set.last.peer
+    set.remove(set.last)
+    res
+  }
+
+  def size: Int = set.size
+
+  def clear(): Unit = set.clear()
+
+  def pushAll(peers: Vector[Peer], priority: Int = 0): Unit = {
+    peers.foreach(push(_, priority))
   }
 }
