@@ -447,6 +447,9 @@ jobs:
           npm ci
           npm run build
           npm run make
+      # codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
+      # echo "===Verify app signature==="
+      # codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
       - name: (macos) Sign application
         if: startsWith(matrix.os,'macos')
         env:
@@ -475,9 +478,9 @@ jobs:
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip/darwin/x64"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-darwin-x64"
           echo "===Sign App==="
-          codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
+          codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$DMG_PATH"
           echo "===Verify app signature==="
-          codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
+          codesign -vvv --deep --strict "$DMG_PATH"
           echo "Running xcrun alttool --notarize app"
           REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id $BUNDLE_ID -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID --password "$NOTORIZE_APPLE_PW" --file "$DMG_PATH" | grep RequestUUID | awk '{print $3}')
           echo "Waiting for notarization from Apple for $REQUEST_UUID"
