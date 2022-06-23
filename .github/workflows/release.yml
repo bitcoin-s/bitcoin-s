@@ -515,10 +515,10 @@ jobs:
           done
           echo "End while loop"
           echo "=== notarytool history ==="
-          xcrun notarytool store-credentials --apple-id $NOTORIZE_APPLE_ID --password "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID
-          xcrun notarytool history
+          xcrun notarytool store-credentials "AC_PASSWORD" --apple-id $NOTORIZE_APPLE_ID --password "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID
+          xcrun notarytool history --keychain-profile "AC_PASSWORD"
           echo "=== notarytool info ==="
-          xcrun notarytool info $REQUEST_UUID
+          xcrun notarytool info $REQUEST_UUID --keychain-profile "AC_PASSWORD"
           : # TODO : Staple notarization to app/zip?
           xcrun stapler staple "$KRYSTALBULL_PATH"
           echo "Done stapling"
