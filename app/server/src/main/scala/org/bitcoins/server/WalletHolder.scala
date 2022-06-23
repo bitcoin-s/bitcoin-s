@@ -600,4 +600,6 @@ class WalletHolder(implicit ec: ExecutionContext)
 
   override def getWalletName(): Future[Option[String]] = delegate(
     _.getWalletName())
+
+  override def getInfo(): Future[WalletInfo] = delegate(_.getInfo())
 }

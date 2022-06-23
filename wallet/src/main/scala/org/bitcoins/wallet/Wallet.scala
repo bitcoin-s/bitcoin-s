@@ -4,12 +4,7 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
-import org.bitcoins.core.api.wallet.{
-  AnyHDWalletApi,
-  BlockSyncState,
-  CoinSelectionAlgo,
-  SyncHeightDescriptor
-}
+import org.bitcoins.core.api.wallet._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
@@ -924,6 +919,25 @@ abstract class Wallet
   override def getWalletName(): Future[Option[String]] = {
     Future.successful(walletConfig.walletNameOpt)
   }
+
+  override def getInfo(): Future[WalletInfo] = {
+    for {
+      accountDb <- getDefaultAccount()
+      walletState <- getSyncState()
+      rescan <- isRescanning()
+    } yield {
+      WalletInfo(
+        walletName = walletConfig.walletNameOpt.getOrElse(""),
+        rootXpub = keyManager.getRootXPub,
+        xpub = accountDb.xpub,
+        hdAccount = accountDb.hdAccount,
+        height = walletState.height,
+        blockHash = walletState.blockHash,
+        rescan = rescan
+      )
+    }
+  }
+
 }
 
 // todo: create multiple wallets, need to maintain multiple databases

@@ -1021,22 +1021,20 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(
   /** Returns information about the state of our wallet */
   def getInfo: Future[Obj] = {
     for {
-      accountDb <- wallet.getDefaultAccount()
-      walletState <- wallet.getSyncState()
-      rescan <- wallet.isRescanning()
+      info <- wallet.getInfo()
     } yield {
       Obj(
         WalletAppConfig.moduleName ->
           Obj(
             KeyManagerAppConfig.moduleName -> Obj(
-              "rootXpub" -> Str(wallet.keyManager.getRootXPub.toString)
+              "rootXpub" -> Str(info.rootXpub.toString)
             ),
-            "walletName" -> Str(walletConf.walletNameOpt.getOrElse("")),
-            "xpub" -> Str(accountDb.xpub.toString),
-            "hdPath" -> Str(accountDb.hdAccount.toString),
-            "height" -> Num(walletState.height),
-            "blockHash" -> Str(walletState.blockHash.hex),
-            "rescan" -> rescan
+            "walletName" -> Str(info.walletName),
+            "xpub" -> Str(info.xpub.toString),
+            "hdPath" -> Str(info.hdAccount.toString),
+            "height" -> Num(info.height),
+            "blockHash" -> Str(info.blockHash.hex),
+            "rescan" -> info.rescan
           )
       )
     }

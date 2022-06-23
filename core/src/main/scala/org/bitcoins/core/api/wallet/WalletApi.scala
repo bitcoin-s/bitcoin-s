@@ -6,8 +6,9 @@ import org.bitcoins.core.api.keymanager.KeyManagerApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.db._
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.hd.AddressType
+import org.bitcoins.core.hd.{AddressType, HDAccount}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
@@ -417,7 +418,18 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]]
 
   def getWalletName(): Future[Option[String]]
+
+  def getInfo(): Future[WalletInfo]
 }
+
+case class WalletInfo(
+    walletName: String,
+    rootXpub: ExtPublicKey,
+    xpub: ExtPublicKey,
+    hdAccount: HDAccount,
+    height: Int,
+    blockHash: DoubleSha256DigestBE,
+    rescan: Boolean)
 
 /** An HDWallet that uses Neutrino to sync */
 trait NeutrinoHDWalletApi extends HDWalletApi with NeutrinoWalletApi
