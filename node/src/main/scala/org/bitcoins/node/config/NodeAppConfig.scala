@@ -54,6 +54,11 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     callbacks.atomicUpdate(newCallbacks)(_ + _)
   }
 
+  def replaceCallbacks(newCallbacks: NodeCallbacks): NodeCallbacks = {
+    callbacks.atomicSet(NodeCallbacks.empty)
+    callbacks.atomicUpdate(newCallbacks)(_ + _)
+  }
+
   /** Ensures correct tables and other required information is in
     * place for our node.
     */

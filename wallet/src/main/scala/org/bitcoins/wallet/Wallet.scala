@@ -1,6 +1,5 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -8,7 +7,8 @@ import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.api.wallet.{
   AnyHDWalletApi,
   BlockSyncState,
-  CoinSelectionAlgo
+  CoinSelectionAlgo,
+  SyncHeightDescriptor
 }
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -155,9 +155,13 @@ abstract class Wallet
     }
   }
 
-  override def stop(): Future[Wallet] = Future.successful(this)
+  override def stop(): Future[Wallet] = {
+    for {
+      _ <- walletConfig.stop()
+    } yield this
+  }
 
-  def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
+  override def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
     stateDescriptorDAO.getSyncHeight()
   }
 
@@ -915,6 +919,10 @@ abstract class Wallet
       logger.debug(s"Created new account ${created.hdAccount}")
       this
     }
+  }
+
+  override def getWalletName(): Future[Option[String]] = {
+    Future.successful(walletConfig.walletNameOpt)
   }
 }
 

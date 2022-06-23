@@ -18,7 +18,7 @@ import org.bitcoins.core.wallet.utxo.{
   AddressLabelTagType,
   TxoState
 }
-import org.bitcoins.crypto.NetworkElement
+import org.bitcoins.crypto.{AesPassword, NetworkElement}
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
@@ -31,9 +31,10 @@ import java.time.Instant
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
-    system: ActorSystem,
-    walletConf: WalletAppConfig)
+case class WalletRoutes(wallet: AnyDLCHDWalletApi)(
+    loadWallet: (Option[String], Option[AesPassword]) => Future[Unit] = {
+      (_, _) => Future.unit
+    })(implicit system: ActorSystem, walletConf: WalletAppConfig)
     extends ServerRoute
     with Logging {
   import system.dispatcher
@@ -978,6 +979,46 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
           Server.httpSuccess(writeJs(accounting))
         }
       }
+
+    case ServerCommand("listwallets", _) =>
+      complete {
+        val list = kmConf.seedFolder.toFile
+          .list()
+          .toVector
+          .flatMap { fn =>
+            fn
+              .split(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+              .headOption
+              .flatMap(wn =>
+                if (wn.endsWith("-")) Some(wn.substring(0, wn.length - 1))
+                else None)
+          }
+        Server.httpSuccess(list)
+      }
+
+    case ServerCommand("getwalletname", _) =>
+      complete {
+        wallet.getWalletName().map {
+          case None =>
+            Server.httpSuccess(ujson.Null)
+          case Some(name) =>
+            Server.httpSuccess(name)
+        }
+      }
+
+    case ServerCommand("loadwallet", arr) =>
+      withValidServerCommand(LoadWallet.fromJsArr(arr)) {
+        case LoadWallet(walletNameOpt, aesPasswordOpt, _) =>
+          complete {
+            loadWallet(walletNameOpt, aesPasswordOpt).map { _ =>
+              walletNameOpt match {
+                case None             => Server.httpSuccess(ujson.Null)
+                case Some(walletName) => Server.httpSuccess(walletName)
+              }
+            }
+          }
+      }
+
   }
 
   private def getSeedPath(walletNameOpt: Option[String]): Path = {

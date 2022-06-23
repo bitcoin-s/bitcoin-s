@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
+import org.bitcoins.core.api.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.wallet.utxo.TxoState
@@ -14,6 +14,7 @@ import scala.concurrent.Future
 class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
   it must "correctly catch up to bitcoind" in { walletAppConfigWithBitcoind =>
+    implicit val walletConf = walletAppConfigWithBitcoind.walletAppConfig
     val bitcoind = walletAppConfigWithBitcoind.bitcoind
     val amountToSend = Bitcoins.one
     for {
@@ -53,6 +54,8 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
   }
 
   it must "confirm a utxo" in { walletAppConfigWithBitcoind =>
+    implicit val walletConf = walletAppConfigWithBitcoind.walletAppConfig
+
     val bitcoind = walletAppConfigWithBitcoind.bitcoind
 
     val amountToSend = Bitcoins.one
@@ -129,6 +132,7 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
   it must "sync a filter and update utxos to confirmed" in {
     walletAppConfigWithBitcoind =>
+      implicit val walletConf = walletAppConfigWithBitcoind.walletAppConfig
       val bitcoind =
         walletAppConfigWithBitcoind.bitcoind.asInstanceOf[BitcoindV21RpcClient]
 

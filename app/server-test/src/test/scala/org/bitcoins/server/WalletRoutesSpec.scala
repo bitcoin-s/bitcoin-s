@@ -25,7 +25,7 @@ class WalletRoutesSpec
   val mockWalletApi = mock[MockWalletApi]
 
   val walletRoutes: WalletRoutes =
-    WalletRoutes(mockWalletApi)(system, conf.walletConf)
+    WalletRoutes(mockWalletApi)()(system, conf.walletConf)
   "WalletRoutes" should {
     "estimatefee" in {
 

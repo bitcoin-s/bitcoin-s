@@ -73,7 +73,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
   val nodeRoutes = NodeRoutes(mockNode)
 
   val walletRoutes: WalletRoutes =
-    WalletRoutes(mockWalletApi)(system, conf.walletConf)
+    WalletRoutes(mockWalletApi)()(system, conf.walletConf)
 
   val coreRoutes: CoreRoutes = CoreRoutes()
 

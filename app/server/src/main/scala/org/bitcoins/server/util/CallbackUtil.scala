@@ -1,27 +1,27 @@
 package org.bitcoins.server.util
 
 import grizzled.slf4j.Logging
+import org.bitcoins.core.api.dlc.wallet.AnyDLCHDWalletApi
 import org.bitcoins.core.api.node.{ExternalImplementationNodeType, NodeType}
-import org.bitcoins.node.{
-  NodeCallbacks,
-  OnBlockHeadersReceived,
-  OnBlockReceived,
-  OnCompactFiltersReceived,
-  OnTxReceived
-}
+import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
+import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.wallet.Wallet
+import org.bitcoins.server.WalletNotInitialized
 
 import scala.concurrent.{ExecutionContext, Future}
 
 object CallbackUtil extends Logging {
 
-  def createNeutrinoNodeCallbacksForWallet(wallet: Wallet)(implicit
+  def createNeutrinoNodeCallbacksForWallet(
+      wallet: WalletApi with NeutrinoWalletApi)(implicit
       nodeConf: NodeAppConfig,
       ec: ExecutionContext): Future[NodeCallbacks] = {
     lazy val onTx: OnTxReceived = { tx =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
-      wallet.processTransaction(tx, blockHashOpt = None).map(_ => ())
+      wallet
+        .processTransaction(tx, None)
+        .map(_ => ())
+        .recover { case _: WalletNotInitialized => () }
     }
     lazy val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
       logger.debug(
@@ -29,11 +29,15 @@ object CallbackUtil extends Logging {
       wallet
         .processCompactFilters(blockFilters = blockFilters)
         .map(_ => ())
+        .recover { case _: WalletNotInitialized => () }
     }
     lazy val onBlock: OnBlockReceived = { block =>
       logger.debug(
         s"Executing onBlock callback=${block.blockHeader.hashBE.hex}")
-      wallet.processBlock(block).map(_ => ())
+      wallet
+        .processBlock(block)
+        .map(_ => ())
+        .recover { case _: WalletNotInitialized => () }
     }
     lazy val onHeaders: OnBlockHeadersReceived = { headers =>
       logger.debug(
@@ -41,7 +45,10 @@ object CallbackUtil extends Logging {
       if (headers.isEmpty) {
         Future.unit
       } else {
-        wallet.updateUtxoPendingStates().map(_ => ())
+        wallet
+          .updateUtxoPendingStates()
+          .map(_ => ())
+          .recover { case _: WalletNotInitialized => () }
       }
     }
     nodeConf.nodeType match {
@@ -60,11 +67,14 @@ object CallbackUtil extends Logging {
     }
   }
 
-  def createBitcoindNodeCallbacksForWallet(wallet: Wallet)(implicit
+  def createBitcoindNodeCallbacksForWallet(wallet: AnyDLCHDWalletApi)(implicit
       ec: ExecutionContext): Future[NodeCallbacks] = {
     val onTx: OnTxReceived = { tx =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
-      wallet.processTransaction(tx, blockHashOpt = None).map(_ => ())
+      wallet
+        .processTransaction(tx, blockHash = None)
+        .map(_ => ())
+        .recover { case _: WalletNotInitialized => () }
     }
     Future.successful(NodeCallbacks(onTxReceived = Vector(onTx)))
   }

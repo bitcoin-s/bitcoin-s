@@ -413,6 +413,10 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def getSyncState(): Future[BlockSyncState]
 
   def isRescanning(): Future[Boolean]
+
+  def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]]
+
+  def getWalletName(): Future[Option[String]]
 }
 
 /** An HDWallet that uses Neutrino to sync */

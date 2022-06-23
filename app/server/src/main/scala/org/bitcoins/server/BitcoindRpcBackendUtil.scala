@@ -5,17 +5,19 @@ import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.ChainCallbacks
+import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.WalletApi
+import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.dlc.wallet.DLCWallet
+import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.config.ZmqConfig
 import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.zmq.ZMQSubscriber
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
@@ -26,8 +28,11 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 object BitcoindRpcBackendUtil extends Logging {
 
   /** Has the wallet process all the blocks it has not seen up until bitcoind's chain tip */
-  def syncWalletToBitcoind(bitcoind: BitcoindRpcClient, wallet: Wallet)(implicit
-      system: ActorSystem): Future[Unit] = {
+  def syncWalletToBitcoind(
+      bitcoind: BitcoindRpcClient,
+      wallet: WalletApi with NeutrinoWalletApi)(implicit
+      system: ActorSystem,
+      walletConfig: WalletAppConfig): Future[Unit] = {
     logger.info("Syncing wallet to bitcoind")
     import system.dispatcher
     for {
@@ -72,7 +77,10 @@ object BitcoindRpcBackendUtil extends Logging {
       walletHeight: Int,
       bitcoindHeight: Int,
       bitcoind: BitcoindRpcClient,
-      wallet: Wallet)(implicit system: ActorSystem): Future[Wallet] = {
+      wallet: WalletApi with NeutrinoWalletApi)(implicit
+      system: ActorSystem,
+      walletConfig: WalletAppConfig): Future[
+    WalletApi with NeutrinoWalletApi] = {
     if (walletHeight > bitcoindHeight) {
       val msg = s"Bitcoind and wallet are in incompatible states, " +
         s"wallet height: $walletHeight, bitcoind height: $bitcoindHeight"
@@ -84,7 +92,7 @@ object BitcoindRpcBackendUtil extends Logging {
       import system.dispatcher
 
       val hasFiltersF = bitcoind
-        .getFilter(wallet.walletConfig.chain.genesisHashBE)
+        .getFilter(walletConfig.chain.genesisHashBE)
         .map(_ => true)
         .recover { case _: Throwable => false }
 
@@ -136,7 +144,9 @@ object BitcoindRpcBackendUtil extends Logging {
     pairedWallet
   }
 
-  def startZMQWalletCallbacks(wallet: Wallet, zmqConfig: ZmqConfig): Unit = {
+  def startZMQWalletCallbacks(
+      wallet: WalletApi with NeutrinoWalletApi,
+      zmqConfig: ZmqConfig): Unit = {
     require(zmqConfig != ZmqConfig.empty,
             "Must have the zmq raw configs defined to setup ZMQ callbacks")
 
@@ -182,7 +192,7 @@ object BitcoindRpcBackendUtil extends Logging {
     // We need to create a promise so we can inject the wallet with the callback
     // after we have created it into SyncUtil.getNodeApiWalletCallback
     // so we don't lose the internal state of the wallet
-    val walletCallbackP = Promise[Wallet]()
+    val walletCallbackP = Promise[DLCWallet]()
 
     val pairedWallet = DLCWallet(
       nodeApi =
@@ -198,10 +208,34 @@ object BitcoindRpcBackendUtil extends Logging {
     pairedWallet
   }
 
+  def replaceWithDLCWalletWithBitcoindCallbacks(
+      bitcoind: BitcoindRpcClient,
+      wallet: WalletHolder,
+      chainCallbacksOpt: Option[ChainCallbacks],
+      feeRateApi: FeeRateApi)(implicit
+      system: ActorSystem,
+      walletAppConfig: WalletAppConfig,
+      dlcAppConfig: DLCAppConfig,
+      ec: ExecutionContext): Future[WalletHolder] = {
+    wallet
+      .replaceWallet(
+        DLCWallet(
+          nodeApi = BitcoindRpcBackendUtil.buildBitcoindNodeApi(
+            bitcoind,
+            Future.successful(wallet),
+            chainCallbacksOpt),
+          chainQueryApi = bitcoind,
+          feeRateApi = feeRateApi
+        )(walletAppConfig, dlcAppConfig, ec))
+      .map(_ => wallet)
+
+  }
+
   private def filterSync(
       blockHashes: Vector[DoubleSha256Digest],
       bitcoindRpcClient: V19BlockFilterRpc,
-      wallet: Wallet)(implicit system: ActorSystem): Future[Unit] = {
+      wallet: WalletApi with NeutrinoWalletApi)(implicit
+      system: ActorSystem): Future[Unit] = {
     import system.dispatcher
 
     logger.info("Starting filter sync")
@@ -227,11 +261,11 @@ object BitcoindRpcBackendUtil extends Logging {
   }
 
   /** Creates an anonymous [[NodeApi]] that downloads blocks using
-    * akka streams from bitcoind, and then calls [[Wallet.processBlock]]
+    * akka streams from bitcoind, and then calls [[NeutrinoWalletApi.processBlock]]
     */
   private def buildBitcoindNodeApi(
       bitcoindRpcClient: BitcoindRpcClient,
-      walletF: Future[Wallet],
+      walletF: Future[WalletApi with NeutrinoWalletApi],
       chainCallbacksOpt: Option[ChainCallbacks])(implicit
       system: ActorSystem): NodeApi = {
     import system.dispatcher
@@ -253,28 +287,31 @@ object BitcoindRpcBackendUtil extends Logging {
                 } yield (block, blockHeaderResult)
               }
               .foldAsync(wallet) { case (wallet, (block, blockHeaderResult)) =>
-                val blockProcessedF = wallet.processBlock(block)
-                val executeCallbackF: Future[Wallet] = blockProcessedF.flatMap {
-                  wallet =>
-                    chainCallbacksOpt match {
-                      case None           => Future.successful(wallet)
-                      case Some(callback) =>
-                        //this can be slow as we aren't batching headers at all
-                        val headerWithHeights =
-                          Vector((blockHeaderResult.height, block.blockHeader))
-                        val f = callback
-                          .executeOnBlockHeaderConnectedCallbacks(
-                            logger,
-                            headerWithHeights)
-                        f.map(_ => wallet)
-                    }
+                val blockProcessedF = wallet.processBlock(block).recover {
+                  case _: WalletNotInitialized => wallet
+                }
+                val executeCallbackF = blockProcessedF.flatMap { _ =>
+                  chainCallbacksOpt match {
+                    case None           => Future.successful(wallet)
+                    case Some(callback) =>
+                      //this can be slow as we aren't batching headers at all
+                      val headerWithHeights =
+                        Vector((blockHeaderResult.height, block.blockHeader))
+                      val f = callback
+                        .executeOnBlockHeaderConnectedCallbacks(
+                          logger,
+                          headerWithHeights)
+                      f.map(_ => wallet)
+                  }
                 }
                 executeCallbackF
               }
               .run()
             runStream.map(_ => wallet)
           }
-          .flatMap(_.updateUtxoPendingStates())
+          .flatMap(_.updateUtxoPendingStates().recover {
+            case _: WalletNotInitialized => Vector.empty
+          })
           .map(_ => ())
       }
 

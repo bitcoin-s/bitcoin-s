@@ -17,7 +17,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class KeyManagerAppConfig(
     baseDatadir: Path,
-    configOverrides: Vector[Config])(implicit val ec: ExecutionContext)
+    configOverrides: Vector[Config],
+    walletName: Option[String] = None,
+    aesPassword: Option[AesPassword] = None,
+    bip39Password: Option[String] = None)(implicit val ec: ExecutionContext)
     extends AppConfig {
 
   override type ConfigType = KeyManagerAppConfig
@@ -30,7 +33,8 @@ case class KeyManagerAppConfig(
   lazy val networkParameters: NetworkParameters = chain.network
 
   lazy val walletNameOpt: Option[String] = {
-    val nameOpt = config.getStringOrNone(s"bitcoin-s.wallet.walletName")
+    val nameOpt =
+      walletName.orElse(config.getStringOrNone(s"bitcoin-s.wallet.walletName"))
     require(nameOpt.map(KeyManagerAppConfig.validateWalletName).getOrElse(true),
             s"Invalid wallet name, only alphanumeric with _, got=$nameOpt")
     nameOpt
@@ -130,12 +134,12 @@ case class KeyManagerAppConfig(
 
   override def stop(): Future[Unit] = Future.unit
 
-  lazy val aesPasswordOpt: Option[AesPassword] = {
+  lazy val aesPasswordOpt: Option[AesPassword] = aesPassword.orElse {
     val passOpt = config.getStringOrNone(s"bitcoin-s.$moduleName.aesPassword")
     passOpt.flatMap(AesPassword.fromStringOpt)
   }
 
-  lazy val bip39PasswordOpt: Option[String] = {
+  lazy val bip39PasswordOpt: Option[String] = bip39Password.orElse {
     config.getStringOrNone(s"bitcoin-s.$moduleName.bip39password")
   }
 

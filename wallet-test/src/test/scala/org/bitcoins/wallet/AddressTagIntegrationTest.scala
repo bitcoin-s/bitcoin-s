@@ -123,6 +123,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
     walletWithBitcoind =>
       //see: https://github.com/bitcoin-s/bitcoin-s/issues/4238
       val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
+      implicit val walletConf = wallet.walletConfig
 
       val bitcoindAddrF = bitcoind.getNewAddress
       val walletAddr1F = wallet.getNewAddress()
