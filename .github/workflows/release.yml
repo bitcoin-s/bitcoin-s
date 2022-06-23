@@ -453,11 +453,11 @@ jobs:
       #     security find-identity -p codesigning -v
       - name: Build oracle-electron-ts
         working-directory: bitcoin-s-ts/oracle-electron-ts
-        env:
-          APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
-          NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
-          NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
-          NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
+        # env:
+        #   APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+        #   NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
+        #   NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
+        #   NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
       #   DEBUG: electron-notarizer
         run: |
           npm ci
@@ -473,7 +473,7 @@ jobs:
           PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
           NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
           NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
-          BUNDLE_ID: "org.bitcoins.bundle"
+          BUNDLE_ID: "org.bitcoins.krystalbull"
           TEAM_ID: "9ZG3GPKHX8"
           ZIP_NAME: "KrystalBull-mac.zip"
         run: |
