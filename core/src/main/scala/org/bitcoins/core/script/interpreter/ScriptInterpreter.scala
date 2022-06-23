@@ -603,91 +603,111 @@ sealed abstract class ScriptInterpreter {
       wTxSigComponent: WitnessTxSigComponent,
       scriptPubKeyExecutedProgram: ExecutedScriptProgram): Try[
     ExecutedScriptProgram] = {
-
+    val sigVersion = scriptPubKeyExecutedProgram.txSignatureComponent.sigVersion
     if (ScriptFlagUtil.taprootEnabled(scriptPubKeyExecutedProgram.flags)) {
-      taprootWitness match {
-        case keypath: TaprootKeyPath =>
-          val program = checkSchnorrSignature(
-            keypath,
-            taprootSPK.pubKey.schnorrPublicKey,
-            program = scriptPubKeyExecutedProgram)
-          Success(program)
-        case taprootScriptPath: TaprootScriptPath =>
-          require(
-            wTxSigComponent.isInstanceOf[TaprootTxSigComponent],
-            s"Must have taproot tx sig component to execute tapscript, got=${wTxSigComponent.getClass.getSimpleName}"
-          )
-          val taprootTxSigComponent =
-            wTxSigComponent.asInstanceOf[TaprootTxSigComponent]
-          val controlBlock = taprootScriptPath.controlBlock
-          val script = taprootScriptPath.script
-          val isCorrectSize = {
-            controlBlock.bytes.length < TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE ||
-            controlBlock.bytes.length > TaprootScriptPath.TAPROOT_CONTROL_MAX_SIZE ||
-            ((controlBlock.bytes.length - TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE) % TaprootScriptPath.TAPROOT_CONTROL_NODE_SIZE) != 0
-          }
-          if (isCorrectSize) {
-            val p = scriptPubKeyExecutedProgram.failExecution(
-              ScriptErrorTaprootWrongControlSize)
-            Success(p)
-          } else {
-            //execdata.m_tapleaf_hash = ComputeTapleafHash(control[0] & TAPROOT_LEAF_MASK, exec_script);
-            val tapLeafHash = TaprootScriptPath.computeTapleafHash(
-              controlBlock.leafVersion,
-              script)
-            val isValidTaprootCommitment =
-              TaprootScriptPath.verifyTaprootCommitment(
-                controlBlock = controlBlock,
-                program = taprootSPK,
-                tapLeafHash = tapLeafHash)
-            if (!isValidTaprootCommitment) {
+      val containsOPSuccess =
+        rebuiltSPK.asm.exists(_.isInstanceOf[ReservedOperation])
+
+      if (sigVersion == SigVersionTapscript && containsOPSuccess) {
+        handleOpSuccess(scriptPubKeyExecutedProgram)
+      } else {
+        taprootWitness match {
+          case keypath: TaprootKeyPath =>
+            val program = checkSchnorrSignature(
+              keypath,
+              taprootSPK.pubKey.schnorrPublicKey,
+              program = scriptPubKeyExecutedProgram)
+            Success(program)
+          case taprootScriptPath: TaprootScriptPath =>
+            require(
+              wTxSigComponent.isInstanceOf[TaprootTxSigComponent],
+              s"Must have taproot tx sig component to execute tapscript, got=${wTxSigComponent.getClass.getSimpleName}"
+            )
+            val taprootTxSigComponent =
+              wTxSigComponent.asInstanceOf[TaprootTxSigComponent]
+            val controlBlock = taprootScriptPath.controlBlock
+            val script = taprootScriptPath.script
+            val isCorrectSize = {
+              controlBlock.bytes.length < TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE ||
+              controlBlock.bytes.length > TaprootScriptPath.TAPROOT_CONTROL_MAX_SIZE ||
+              ((controlBlock.bytes.length - TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE) % TaprootScriptPath.TAPROOT_CONTROL_NODE_SIZE) != 0
+            }
+            if (isCorrectSize) {
               val p = scriptPubKeyExecutedProgram.failExecution(
-                ScriptErrorWitnessProgramMisMatch)
+                ScriptErrorTaprootWrongControlSize)
               Success(p)
             } else {
-              val isDiscouragedTaprootVersion =
-                scriptPubKeyExecutedProgram.flags.exists(
-                  _ == ScriptVerifyDiscourageUpgradableTaprootVersion)
-              if (controlBlock.isTapLeafMask) {
-
-                //drop the control block & script in the witness
-                val stackNoControlBlockOrScript = {
-                  if (scriptPubKeyExecutedProgram.getAnnexHashOpt.isDefined) {
-                    //if we have an annex we need to drop
-                    //annex,control block, script
-                    stack.tail.tail.tail
-                  } else {
-                    //else just drop control block, script
-                    stack.tail.tail
-                  }
-                }
-                val newProgram = PreExecutionScriptProgram(
-                  txSignatureComponent = taprootTxSigComponent,
-                  stack = stackNoControlBlockOrScript.toList,
-                  script = rebuiltSPK.asm.toList,
-                  originalScript = rebuiltSPK.asm.toList,
-                  altStack = Nil,
-                  flags = taprootTxSigComponent.flags
-                )
-                val evaluated = executeProgram(newProgram)
-                val segwitChecks = postSegWitProgramChecks(evaluated)
-                Success(segwitChecks)
-              } else if (isDiscouragedTaprootVersion) {
+              //execdata.m_tapleaf_hash = ComputeTapleafHash(control[0] & TAPROOT_LEAF_MASK, exec_script);
+              val tapLeafHash = TaprootScriptPath.computeTapleafHash(
+                controlBlock.leafVersion,
+                script)
+              val isValidTaprootCommitment =
+                TaprootScriptPath.verifyTaprootCommitment(
+                  controlBlock = controlBlock,
+                  program = taprootSPK,
+                  tapLeafHash = tapLeafHash)
+              if (!isValidTaprootCommitment) {
                 val p = scriptPubKeyExecutedProgram.failExecution(
-                  ScriptErrorDiscourageUpgradableTaprootVersion)
+                  ScriptErrorWitnessProgramMisMatch)
                 Success(p)
               } else {
-                //is this right? I believe to maintain softfork compatibility we
-                //just succeed?
-                Success(scriptPubKeyExecutedProgram)
+                val isDiscouragedTaprootVersion =
+                  scriptPubKeyExecutedProgram.flags.exists(
+                    _ == ScriptVerifyDiscourageUpgradableTaprootVersion)
+                if (controlBlock.isTapLeafMask) {
+
+                  //drop the control block & script in the witness
+                  val stackNoControlBlockOrScript = {
+                    if (scriptPubKeyExecutedProgram.getAnnexHashOpt.isDefined) {
+                      //if we have an annex we need to drop
+                      //annex,control block, script
+                      stack.tail.tail.tail
+                    } else {
+                      //else just drop control block, script
+                      stack.tail.tail
+                    }
+                  }
+                  val newProgram = PreExecutionScriptProgram(
+                    txSignatureComponent = taprootTxSigComponent,
+                    stack = stackNoControlBlockOrScript.toList,
+                    script = rebuiltSPK.asm.toList,
+                    originalScript = rebuiltSPK.asm.toList,
+                    altStack = Nil,
+                    flags = taprootTxSigComponent.flags
+                  )
+                  val evaluated = executeProgram(newProgram)
+                  val segwitChecks = postSegWitProgramChecks(evaluated)
+                  Success(segwitChecks)
+                } else if (isDiscouragedTaprootVersion) {
+                  val p = scriptPubKeyExecutedProgram.failExecution(
+                    ScriptErrorDiscourageUpgradableTaprootVersion)
+                  Success(p)
+                } else {
+                  //is this right? I believe to maintain softfork compatibility we
+                  //just succeed?
+                  Success(scriptPubKeyExecutedProgram)
+                }
               }
             }
-          }
+        }
       }
     } else {
       //if taproot flag not set trivially pass
       Success(scriptPubKeyExecutedProgram)
     }
+  }
+
+  private def handleOpSuccess(
+      scriptPubKeyExecutedProgram: ExecutedScriptProgram): Try[
+    ExecutedScriptProgram] = {
+    val discourageOpSuccess =
+      ScriptFlagUtil.discourageOpSuccess(scriptPubKeyExecutedProgram.flags)
+    val p = if (discourageOpSuccess) {
+      scriptPubKeyExecutedProgram.failExecution(ScriptErrorDiscourageOpSuccess)
+    } else {
+      scriptPubKeyExecutedProgram
+    }
+    Success(p)
   }
 
   /** Similar to the check schnorr signature method in bitcoin core

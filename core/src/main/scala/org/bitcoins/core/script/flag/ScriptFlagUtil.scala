@@ -111,6 +111,10 @@ trait ScriptFlagUtil {
   def discourageUpgradablePublicKey(flags: Seq[ScriptFlag]): Boolean = {
     flags.contains(ScriptVerifyDiscourageUpgradablePubKeyType)
   }
+
+  def discourageOpSuccess(flags: Seq[ScriptFlag]): Boolean = {
+    flags.contains(ScriptVerifyDiscourageOpSuccess)
+  }
 }
 
 object ScriptFlagUtil extends ScriptFlagUtil
