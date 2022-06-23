@@ -455,7 +455,14 @@ trait BitcoindRpcTestUtil extends Logging {
     val startedServers = servers.map { server =>
       server.start().flatMap { res =>
         val createWalletF = for {
-          _ <- res.createWallet("")
+          version <- server.version
+          descriptors = version match {
+            case V16 | V17 | V18 | V19 | V20 |
+                V21 | V22 | Experimental | Unknown =>
+              false
+            case V23 => true
+          }
+          _ <- res.createWallet("", descriptors = true)
         } yield res
 
         createWalletF.recoverWith { case NonFatal(_) =>

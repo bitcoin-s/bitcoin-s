@@ -1,9 +1,7 @@
 package org.bitcoins.rpc.v23
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
-import org.bitcoins.core.protocol.P2PKHAddress
-import org.bitcoins.core.script.ScriptType
-import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.core.protocol.Bech32mAddress
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
 import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedV23
@@ -29,24 +27,11 @@ class BitcoindV23RpcClientTest extends BitcoindFixturesFundedCachedV23 {
       }
   }
 
-  it should "be able to decode a reedem script" in {
-    client: BitcoindV23RpcClient =>
-      val ecPrivKey1 = ECPrivateKey.freshPrivateKey
-      val pubKey1 = ecPrivKey1.publicKey
-      for {
-        address <- client.getNewAddress(addressType = AddressType.Legacy)
-        multisig <-
-          client
-            .addMultiSigAddress(
-              2,
-              Vector(Left(pubKey1), Right(address.asInstanceOf[P2PKHAddress])))
-        decoded <- client.decodeScript(multisig.redeemScript)
-      } yield {
-        assert(decoded.typeOfScript.contains(ScriptType.MULTISIG))
-        // these fields are no longer returned since v23
-        // assert(decoded.reqSigs.isEmpty)
-        // assert(decoded.addresses.isEmpty)
-      }
+  it should "generate a bech32m address" in { client: BitcoindV23RpcClient =>
+    for {
+      address <- client.getNewAddress(addressType = AddressType.Bech32m)
+    } yield {
+      assert(address.isInstanceOf[Bech32mAddress])
+    }
   }
-
 }
