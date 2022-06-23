@@ -82,7 +82,7 @@ case class TaprootTestCase(
 
   /** Builds a success witness tx with both the scriptSig/witness added */
   private def successTx: Transaction = {
-    updateTxWithWitness(success._1, success._2)
+    updateTxWithWitness(scriptSig = success._1, witnessOpt = success._2)
   }
 
   private def failureTxT: Try[Transaction] = {
@@ -149,7 +149,8 @@ object TaprootTestCase {
             val stack = success("witness").arr
               .map(_.str)
               .map(ByteVector.fromValidHex(_))
-            val scriptWitnessT = Try(ScriptWitness(stack.toVector.reverse))
+            val scriptWitnessT =
+              Try(TaprootWitness.fromStack(stack.toVector.reverse))
             (scriptSig, scriptWitnessT.toOption)
           case x => sys.error(s"Expected obj for success object, got=$x")
         }

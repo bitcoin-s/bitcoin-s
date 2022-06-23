@@ -225,6 +225,7 @@ sealed trait TaprootWitness extends ScriptWitness {
       CryptoUtil.sha256(cmpct.bytes ++ annex)
     }
   }
+
 }
 
 object TaprootWitness extends Factory[TaprootWitness] {
