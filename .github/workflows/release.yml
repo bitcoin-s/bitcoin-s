@@ -515,6 +515,7 @@ jobs:
           done
           echo "End while loop"
           echo "=== notarytool history ==="
+          xcrun notarytool store-credentials --apple-id $NOTORIZE_APPLE_ID --password "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID
           xcrun notarytool history
           echo "=== notarytool info ==="
           xcrun notarytool info $REQUEST_UUID
