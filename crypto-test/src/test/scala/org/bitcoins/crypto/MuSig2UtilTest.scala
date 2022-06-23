@@ -12,8 +12,8 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     val priv2 = ECPrivateKey.freshPrivateKey
     val pub2 = priv2.publicKey
     val (noncePub2: MultiNoncePub, noncePriv2: MultiNoncePriv) = genMultiNonce()
-    val keySet: KeySet = Vector(pub1, pub2)
-    val msg = CryptoUtil.sha256(keySetSerialize(keySet)).bytes
+    val keySet: KeySet = KeySet(pub1, pub2)
+    val msg = CryptoUtil.sha256(keySet.serialize).bytes
     val aggMultiNoncePub = aggNonces(Vector(noncePub1, noncePub2))
     val (aggNonce1, s1) = sign(noncePriv1, aggMultiNoncePub, priv1, msg, keySet)
     val (aggNonce2, s2) = sign(noncePriv2, aggMultiNoncePub, priv2, msg, keySet)
@@ -21,7 +21,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     assert(aggNonce1 == aggNonce2)
 
     val sig = signAgg(Vector(s1, s2), aggNonce1)
-    val aggPub = keyAgg(keySet)
+    val aggPub = keySet.aggPubKey
 
     // This currently fails, need to debug, starting with
     // TODO check all of the ECPublicKey vs SchnorrPubKey vs SchnorrNonce stuff

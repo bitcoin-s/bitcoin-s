@@ -4,14 +4,47 @@ import scodec.bits.ByteVector
 
 object MuSig2Util {
 
-  private val nonceNum: Int = 2 // 4
+  private val nonceNum: Int = 2
 
   type MultiNoncePriv = Vector[ECPrivateKey]
   type MultiNoncePub = Vector[ECPublicKey]
-  type KeySet = Vector[ECPublicKey]
 
-  def keySetSerialize(keySet: KeySet): ByteVector = {
-    keySet.map(_.schnorrPublicKey.bytes).reduce(_ ++ _)
+  case class KeySet(keys: Vector[ECPublicKey]) {
+    keys.init.zip(keys.tail).foreach { case (key1, key2) =>
+      require(key1.hex.compareTo(key2.hex) <= 0,
+              "Keys must be sorted lexicographically")
+    }
+
+    lazy val serialize: ByteVector = {
+      keys.map(_.schnorrPublicKey.bytes).reduce(_ ++ _)
+    }
+
+    def keyAggCoef(key: ECPublicKey): FieldElement = {
+      val bytes = aggHash(this.serialize ++ key.schnorrPublicKey.bytes)
+
+      FieldElement(bytes)
+    }
+
+    lazy val aggPubKey: ECPublicKey = {
+      keys
+        .map { key =>
+          val coef = keyAggCoef(key)
+          key.multiply(coef)
+        }
+        .reduce(_.add(_))
+    }
+  }
+
+  object KeySet {
+
+    def apply(keys: Vector[ECPublicKey]): KeySet = {
+      val sortedKeys = keys.sorted(Ordering.by[ECPublicKey, String](_.hex))
+      new KeySet(sortedKeys)
+    }
+
+    def apply(keys: ECPublicKey*): KeySet = {
+      KeySet(keys.toVector)
+    }
   }
 
   def aggHash(bytes: ByteVector): ByteVector = {
@@ -24,21 +57,6 @@ object MuSig2Util {
 
   def sigHash(bytes: ByteVector): ByteVector = {
     CryptoUtil.taggedSha256(bytes, "MuSig2/sig").bytes
-  }
-
-  def keyAggCoef(keySet: KeySet, key: ECPublicKey): FieldElement = {
-    val bytes = aggHash(keySetSerialize(keySet) ++ key.schnorrPublicKey.bytes)
-
-    FieldElement(bytes)
-  }
-
-  def keyAgg(keySet: KeySet): ECPublicKey = {
-    keySet
-      .map { key =>
-        val coef = keyAggCoef(keySet, key)
-        key.multiply(coef)
-      }
-      .reduce(_.add(_))
   }
 
   def genMultiNonce(): (MultiNoncePub, MultiNoncePriv) = {
@@ -61,8 +79,8 @@ object MuSig2Util {
       message: ByteVector,
       keySet: KeySet): (ECPublicKey, FieldElement) = {
     val pubKey = privKey.publicKey
-    val coef = keyAggCoef(keySet, pubKey)
-    val aggPubKey = keyAgg(keySet)
+    val coef = keySet.keyAggCoef(pubKey)
+    val aggPubKey = keySet.aggPubKey
     val bBytes = nonHash(
       aggPubKey.schnorrPublicKey.bytes ++ aggMultiNoncePub
         .map(_.schnorrPublicKey.bytes)
