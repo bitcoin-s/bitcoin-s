@@ -207,6 +207,17 @@ sealed trait TaprootWitness extends ScriptWitness {
   override def bytes: ByteVector = RawScriptWitnessParser.write(this)
 
   def annexOpt: Option[ByteVector]
+
+  /** As per bip341
+    *  the SHA256 of (compact_size(size of annex) || annex), where annex includes the mandatory 0x50 prefix.
+    *  @see https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#signature-validation-rules
+    */
+  def annexHashOpt: Option[Sha256Digest] = {
+    annexOpt.map { annex =>
+      val cmpct = CompactSizeUInt.calc(annex)
+      CryptoUtil.sha256(cmpct.bytes ++ annex)
+    }
+  }
 }
 
 object TaprootWitness {
