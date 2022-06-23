@@ -494,7 +494,7 @@ jobs:
           : # ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip/darwin/x64"
           : # Works
           echo "=== Sign app ==="
-          codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
+          codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
           echo "=== Verify app signature ==="
           codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
           : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
@@ -514,11 +514,17 @@ jobs:
             sleep 30
           done
           echo "End while loop"
+          echo "=== notarytool history ==="
+          xcrun notarytool history
+          echo "=== notarytool info ==="
+          xcrun notarytool info $REQUEST_UUID
           : # TODO : Staple notarization to app/zip?
           xcrun stapler staple "$KRYSTALBULL_PATH"
           echo "Done stapling"
           codesign -dvv "$KRYSTALBULL_PATH"
-          echo "Done verifying dmg"
+          echo "Done verifying app stapling"
+          echo "=== zip stapled app ==="
+          zip -r $ZIP_NAME "$KRYSTALBULL_PATH"
           : # echo "=== Sign electron-built dmg ==="
           : # codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$DMG_PATH"
           : # echo "=== Verify dmg signature ==="
@@ -560,7 +566,8 @@ jobs:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: krystalbull-${{ matrix.TARGET }}-app
-          path: bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64/*.app
+          path: bitcoin-s-ts/oracle-electron-ts/KrystalBull-mac.zip
+        #  path: bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64/*.app
       - name: Upload krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         uses: actions/upload-artifact@v3
         env:
