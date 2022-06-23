@@ -273,9 +273,24 @@ case class NodeBanPostV22(
     time_remaining: UInt32
 ) extends NodeBan
 
-final case class GetNodeAddressesResult(
+sealed trait GetNodeAddressesResult extends NetworkResult {
+  def time: FiniteDuration
+  def services: Int
+  def address: java.net.URI
+  def port: Int
+}
+
+case class GetNodeAddressesResultPreV22(
     time: FiniteDuration,
     services: Int,
     address: java.net.URI,
     port: Int
-) extends NetworkResult
+) extends GetNodeAddressesResult
+
+case class GetNodeAddressesResultPostV22(
+    time: FiniteDuration,
+    services: Int,
+    address: java.net.URI,
+    port: Int,
+    network: String
+) extends GetNodeAddressesResult

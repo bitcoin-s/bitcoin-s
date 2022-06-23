@@ -5,9 +5,13 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetRpcInfoResult,
   ListWalletDirResult
 }
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  GetNodeAddressesResultPostV22,
+  GetNodeAddressesResultPreV22
+}
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.rpc.client.common.Client
+import org.bitcoins.rpc.client.common.{BitcoindVersion, Client}
 import play.api.libs.json.{JsString, Json}
 
 import scala.concurrent.Future
@@ -23,8 +27,17 @@ trait V18AssortedRpc {
 
   private def getNodeAddresses(
       count: Option[Int]): Future[Vector[GetNodeAddressesResult]] = {
-    bitcoindCall[Vector[GetNodeAddressesResult]]("getnodeaddresses",
-                                                 List(Json.toJson(count)))
+    self.version.flatMap {
+      case BitcoindVersion.V22 | BitcoindVersion.Unknown =>
+        bitcoindCall[Vector[GetNodeAddressesResultPostV22]](
+          "getnodeaddresses",
+          List(Json.toJson(count)))
+      case BitcoindVersion.V18 | BitcoindVersion.V19 | BitcoindVersion.V20 |
+          BitcoindVersion.V21 =>
+        bitcoindCall[Vector[GetNodeAddressesResultPreV22]](
+          "getnodeaddresses",
+          List(Json.toJson(count)))
+    }
   }
 
   def getNodeAddresses(count: Int): Future[Vector[GetNodeAddressesResult]] =

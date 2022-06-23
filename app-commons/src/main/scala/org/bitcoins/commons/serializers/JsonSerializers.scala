@@ -610,14 +610,31 @@ object JsonSerializers {
   implicit val analyzePsbtResultReads: Reads[AnalyzePsbtResult] =
     Json.reads[AnalyzePsbtResult]
 
-  implicit val getNodeAddressesReads: Reads[GetNodeAddressesResult] =
-    Reads[GetNodeAddressesResult] { js =>
+  implicit val getNodeAddressesPreV22Reads: Reads[
+    GetNodeAddressesResultPreV22] =
+    Reads[GetNodeAddressesResultPreV22] { js =>
       for {
         time <- (js \ "time").validate[Long].map(_.seconds)
         services <- (js \ "services").validate[Int]
         address <- (js \ "address").validate[URI]
         port <- (js \ "port").validate[Int]
-      } yield GetNodeAddressesResult(time, services, address, port)
+      } yield GetNodeAddressesResultPreV22(time, services, address, port)
+    }
+
+  implicit val getNodeAddressesPostV22Reads: Reads[
+    GetNodeAddressesResultPostV22] =
+    Reads[GetNodeAddressesResultPostV22] { js =>
+      for {
+        time <- (js \ "time").validate[Long].map(_.seconds)
+        services <- (js \ "services").validate[Int]
+        address <- (js \ "address").validate[URI]
+        port <- (js \ "port").validate[Int]
+        network <- (js \ "network").validate[String]
+      } yield GetNodeAddressesResultPostV22(time,
+                                            services,
+                                            address,
+                                            port,
+                                            network)
     }
 
   implicit val rgetpcCommandsReads: Reads[RpcCommands] = Reads[RpcCommands] {

@@ -1,19 +1,14 @@
 package org.bitcoins.rpc.v22
 
-import org.bitcoins.commons.jsonmodels.bitcoind.{
-  DecodeScriptResultPreV22,
-  DecodeScriptResultV22
-}
+import org.bitcoins.commons.jsonmodels.bitcoind.{DecodeScriptResultPreV22, DecodeScriptResultV22, GetNodeAddressesResultPostV22}
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.bitcoins.testkit.rpc.{
-  BitcoindFixturesCachedPairV22,
-  BitcoindRpcTestUtil
-}
+import org.bitcoins.rpc.client.v22.BitcoindV22RpcClient
+import org.bitcoins.testkit.rpc.{BitcoindFixturesCachedPairV22, BitcoindRpcTestUtil}
 
 import scala.concurrent.Future
 
@@ -137,6 +132,16 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
         assert(block.tx.length == 1)
         val tx = block.tx.head
         assert(tx.vout.head.n == 0)
+      }
+  }
+
+  it should "return a result" in {client: BitcoindV22RpcClient=>
+    val resultVecF: Future[Vector[GetNodeAddressesResultPostV22]] = client.getNodeAddresses()
+      resultVecF.map {resultVec =>
+        resultVec.foreach{ result =>
+        assert(result.network == "ipv4" || result.network == "ipv6" || result.network == "onion" || result.network == "i2p")
+        }
+        succeed
       }
   }
 }
