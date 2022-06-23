@@ -115,7 +115,6 @@ sealed abstract class CryptoInterpreter {
           val tapscriptE: Either[
             ScriptError,
             TransactionSignatureCheckerResult] = evalChecksigTapscript(program)
-          println(s"tapscripE=$tapscriptE")
           tapscriptE match {
             case Left(err) =>
               if (

@@ -2,7 +2,11 @@ package org.bitcoins.core.script
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{TaprootKeyPath, TaprootScriptPath}
+import org.bitcoins.core.protocol.script.{
+  TaprootKeyPath,
+  TaprootScriptPath,
+  TaprootWitness
+}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF}
 import org.bitcoins.core.script.crypto.OP_CODESEPARATOR
@@ -56,17 +60,23 @@ sealed trait ScriptProgram {
     */
   def failExecution(error: ScriptError): ExecutedScriptProgram
 
-  private def getTapscriptOpt: Option[TaprootScriptPath] = {
+  private def getTaprootWitness: Option[TaprootWitness] = {
     txSignatureComponent match {
       case taprootTxSigComponent: TaprootTxSigComponent =>
         taprootTxSigComponent.witness match {
-          case sp: TaprootScriptPath =>
+          case sp: TaprootWitness =>
             Some(sp)
-          case _: TaprootKeyPath => None
         }
       case _: BaseTxSigComponent | _: WitnessTxSigComponentRebuilt |
           _: WitnessTxSigComponentP2SH | _: WitnessTxSigComponentRaw =>
         None
+    }
+  }
+
+  private def getTapscriptOpt: Option[TaprootScriptPath] = {
+    getTaprootWitness.flatMap {
+      case sp: TaprootScriptPath => Some(sp)
+      case _: TaprootKeyPath     => None
     }
   }
 
@@ -81,7 +91,7 @@ sealed trait ScriptProgram {
   }
 
   def getAnnexHashOpt: Option[Sha256Digest] = {
-    getTapscriptOpt.flatMap(_.annexHashOpt)
+    getTaprootWitness.flatMap(_.annexHashOpt)
   }
 
 }
