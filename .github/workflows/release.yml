@@ -449,7 +449,7 @@ jobs:
           NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
           NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
           NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
-          DEBUG: electron-notarizer
+      #   DEBUG: electron-notarizer
         run: |
           npm ci
           npm run build
