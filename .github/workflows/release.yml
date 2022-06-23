@@ -434,7 +434,7 @@ jobs:
         if: startsWith(matrix.os,'macos')
         env:
           MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-          KEYCHAIN: signing_temp
+          KEYCHAIN: signing_temp.keychain
         run: |
           security unlock-keychain -p $MACOS_CERTIFICATE_PWD $KEYCHAIN
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD $KEYCHAIN
