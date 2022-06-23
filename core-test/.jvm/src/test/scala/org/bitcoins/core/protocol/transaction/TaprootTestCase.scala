@@ -52,10 +52,16 @@ case class TaprootTestCase(
 
     output.scriptPubKey match {
       case _: TaprootScriptPubKey =>
-        TaprootTxSigComponent(transaction = tx.asInstanceOf[WitnessTransaction],
-                              UInt32(index),
-                              outputMap,
-                              flags)
+        tx match {
+          case wtx: WitnessTransaction =>
+            TaprootTxSigComponent(transaction = wtx,
+                                  UInt32(index),
+                                  outputMap,
+                                  flags)
+          case nonWitTx: NonWitnessTransaction =>
+            TxSigComponent(transaction = nonWitTx, UInt32(index), output, flags)
+        }
+
       case _: ScriptPubKey =>
         TxSigComponent(transaction = tx,
                        inputIndex = UInt32(index),
@@ -113,7 +119,7 @@ case class TaprootTestCase(
             sys.error(s"Cannot have empty transaction")
         }
       case None =>
-        withScriptSig.asInstanceOf[WitnessTransaction]
+        withScriptSig
     }
   }
 
