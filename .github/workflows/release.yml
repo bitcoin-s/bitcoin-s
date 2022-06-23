@@ -429,14 +429,15 @@ jobs:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           keychain-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-          keychain: signing_temp
+      #    keychain: signing_temp
       - name: (macos) Unlock keychain
         if: startsWith(matrix.os,'macos')
         env:
           MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+          KEYCHAIN: signing_temp
         run: |
-          security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
+          security unlock-keychain -p $MACOS_CERTIFICATE_PWD $KEYCHAIN
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD $KEYCHAIN
           security find-identity -p codesigning -v
       # - name: (macos) Unlock keychain, find-identity
       #   if: startsWith(matrix.os,'macos')
