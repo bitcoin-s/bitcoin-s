@@ -205,20 +205,26 @@ object ScriptWitness extends Factory[ScriptWitness] {
 
 sealed trait TaprootWitness extends ScriptWitness {
   override def bytes: ByteVector = RawScriptWitnessParser.write(this)
+
+  def annexOpt: Option[ByteVector]
 }
 
 object TaprootWitness {
 
   def fromStack(stack: Vector[ByteVector]): TaprootWitness = {
-    if (stack.length == 1) TaprootKeyPath.fromStack(stack)
-    else TaprootScriptPath(stack)
+    val hasAnnex = TaprootScriptPath.hasAnnex(stack)
+
+    if ((hasAnnex && stack.length == 2) || stack.length == 1) {
+      TaprootKeyPath.fromStack(stack)
+    } else TaprootScriptPath(stack)
   }
 }
 
 /** Spending a taproot output via the key path spend */
 case class TaprootKeyPath(
     signature: SchnorrDigitalSignature,
-    hashType: HashType)
+    hashType: HashType,
+    annexOpt: Option[ByteVector])
     extends TaprootWitness {
   override val stack: Vector[ByteVector] = Vector(signature.bytes)
 }
@@ -226,21 +232,35 @@ case class TaprootKeyPath(
 object TaprootKeyPath {
 
   def fromStack(vec: Vector[ByteVector]): TaprootKeyPath = {
+    val hasAnnex = TaprootScriptPath.hasAnnex(vec)
     require(
-      vec.length == 1,
-      s"Taproot keypath can only have one stack element, got=${vec.length}")
+      vec.length == 1 || (hasAnnex && vec.length == 2),
+      s"Taproot keypath can only have at most 2 stack elements, got=${vec.length}")
 
-    val sigBytes = vec.head
+    val annexOpt = {
+      if (hasAnnex) {
+        Some(vec.head)
+      } else {
+        None
+      }
+    }
+    val sigBytes = {
+      if (hasAnnex) {
+        vec(1)
+      } else {
+        vec.head
+      }
+    }
 
     val keyPath = if (sigBytes.length == 64) {
       //means SIGHASH_ALL is implicitly encoded
       //see: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#Common_signature_message
       val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
-      TaprootKeyPath(sig, HashType.sigHashAll)
+      TaprootKeyPath(sig, HashType.sigHashAll, annexOpt)
     } else if (sigBytes.length == 65) {
       val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
       val hashType = HashType.fromByte(sigBytes.last)
-      TaprootKeyPath(sig, hashType)
+      TaprootKeyPath(sig, hashType, annexOpt)
     } else {
       sys.error(
         s"Unknown sig bytes length, should be 64 or 65, got=${sigBytes.length}")
