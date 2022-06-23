@@ -23,8 +23,9 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
-case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
-    node: NeutrinoNode,
+case class PeerManager(
+    paramPeers: Vector[Peer] = Vector.empty,
+    node: NeutrinoNode)(implicit
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig)
@@ -35,16 +36,19 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
 
   def waitingForDeletion: Set[Peer] = _waitingForDeletion.toSet
 
-  val finder: PeerFinder = PeerFinder(paramPeers, skipPeers = () => peers)
+  val finder: PeerFinder = PeerFinder(paramPeers, node, skipPeers = () => peers)
 
   def connectedPeerCount: Int = _peerData.size
 
   def addPeer(peer: Peer): Future[Unit] = {
-    require(finder.hasPeer(peer), "Unknown peer marked as usable")
+    require(finder.hasPeer(peer), s"Unknown $peer marked as usable")
     val curPeerData = finder.popFromCache(peer).get
     _peerData.put(peer, curPeerData)
+    val hasCf =
+      if (curPeerData.serviceIdentifier.nodeCompactFilters) "with filters"
+      else ""
     logger.info(
-      s"Connected to peer $peer. Connected peer count $connectedPeerCount")
+      s"Connected to peer $peer $hasCf. Connected peer count $connectedPeerCount")
     Future.unit
   }
 
@@ -67,7 +71,7 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
         peerData.filter(p => f(p._2.serviceIdentifier)).keys.toVector
       assert(filteredPeers.nonEmpty)
       val (good, failedRecently) =
-        filteredPeers.partition(p => !peerData(p).isDeferred)
+        filteredPeers.partition(p => !peerData(p).hasFailedRecently)
 
       if (good.nonEmpty) good(Random.nextInt(good.length))
       else
@@ -156,7 +160,8 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
   def peerData: Map[Peer, PeerData] = _peerData.toMap
 
   def stop: Future[Unit] = {
-    logger.debug(s"Stopping PeerManager")
+    logger.info(s"Stopping PeerManager")
+    val beganAt = System.currentTimeMillis()
 
     val finderStopF = finder.stop
 
@@ -170,7 +175,10 @@ case class PeerManager(paramPeers: Vector[Peer] = Vector.empty)(implicit
     for {
       _ <- finderStopF
       _ <- managerStopF
-    } yield ()
+    } yield {
+      logger.info(
+        s"Stopped PeerManager. Took ${System.currentTimeMillis() - beganAt} ms ")
+    }
   }
 
   def isConnected(peer: Peer): Future[Boolean] = {

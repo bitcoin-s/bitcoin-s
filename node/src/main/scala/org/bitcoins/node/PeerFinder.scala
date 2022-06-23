@@ -14,14 +14,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
 import scala.util.Random
 
-object PeerSource extends Enumeration {
-  type PeerSource = Value
-  val Config, Db, Dns, Addr, Param = Value
-}
-
-case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
-    implicit
-    node: Node,
+case class PeerFinder(
+    paramPeers: Vector[Peer],
+    node: NeutrinoNode,
+    skipPeers: () => Vector[Peer])(implicit
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig)
@@ -116,8 +112,13 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
 
   val timeoutForTrying: FiniteDuration = 12.second
 
+  def initialDelay: FiniteDuration = {
+    if (getPeersFromConfig.isEmpty && getPeersFromParam.isEmpty) 0.seconds
+    else timeoutForTrying
+  }
+
   private lazy val peerConnectionScheduler: Cancellable =
-    system.scheduler.scheduleWithFixedDelay(initialDelay = timeoutForTrying,
+    system.scheduler.scheduleWithFixedDelay(initialDelay = initialDelay,
                                             delay = timeoutForTrying) {
       new Runnable() {
         override def run(): Unit = {
@@ -151,7 +152,7 @@ case class PeerFinder(paramPeers: Vector[Peer], skipPeers: () => Vector[Peer])(
         ()
       }
     } else {
-      logger.debug("Peer discovery disabled")
+      logger.info("Peer discovery disabled.")
       Future.unit
     }
   }

@@ -2,7 +2,6 @@ package org.bitcoins.node
 
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
@@ -59,26 +58,18 @@ class UnsyncedNeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       .flatMap(bitcoinds.head.generateToAddress(1, _))
       .map(_.head)
 
-    def awaitAllSync(
-        node: NeutrinoNode,
-        bitcoind: BitcoindRpcClient): Future[Unit] = for {
-      _ <- NodeTestUtil.awaitSync(node, bitcoind)
-      _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
-      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-    } yield ()
-
     for {
       _ <- connAndInit
       _ <- remotesInSync
       _ <- node.sync()
-      _ <- awaitAllSync(node, bitcoinds.head)
-      _ <- awaitAllSync(node, bitcoinds.last)
+      _ <- NodeTestUtil.awaitAllSync(node, bitcoinds.head)
+      _ <- NodeTestUtil.awaitAllSync(node, bitcoinds.last)
       cnt <- node.getBestBlockHash()
       cnt2 <- bitcoinds.head.getBestBlockHash
       cnt3 <- bitcoinds.head.getBestBlockHash
       bestHash <- hashF
-      _ <- awaitAllSync(node, bitcoinds.head)
-      _ <- awaitAllSync(node, bitcoinds.last)
+      _ <- NodeTestUtil.awaitAllSync(node, bitcoinds.head)
+      _ <- NodeTestUtil.awaitAllSync(node, bitcoinds.last)
       cnt4 <- node.getBestBlockHash()
       cnt5 <- bitcoinds.head.getBestBlockHash
       cnt6 <- bitcoinds.head.getBestBlockHash

@@ -135,27 +135,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     *
     * @return
     */
-  def sync(): Future[Unit] = {
-    logger.debug("Started Node.sync")
-    val blockchainsF =
-      BlockHeaderDAO()(executionContext, chainAppConfig).getBlockchains()
-    val syncPeer = peerManager.peers.head
-    for {
-      chainApi <- chainApiFromDb()
-      header <- chainApi.getBestBlockHeader()
-      blockchains <- blockchainsF
-
-      // Get all of our cached headers in case of a reorg
-      cachedHeaders = blockchains.flatMap(_.headers).map(_.hashBE.flip)
-      _ <- peerManager
-        .peerData(syncPeer)
-        .peerMessageSender
-        .sendGetHeadersMessage(cachedHeaders)
-    } yield {
-      logger.info(
-        s"Starting sync node, height=${header.height} hash=${header.hashBE}")
-    }
-  }
+  def sync(): Future[Unit]
 
   /** Broadcasts the given transaction over the P2P network */
   override def broadcastTransactions(

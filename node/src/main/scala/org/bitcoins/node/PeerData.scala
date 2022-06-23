@@ -52,7 +52,9 @@ case class PeerData(
     lastTimedOut = System.currentTimeMillis()
   }
 
-  def isDeferred: Boolean = {
+  /** returns true if the peer has failed due to any reason within the past 30 minutes
+    */
+  def hasFailedRecently: Boolean = {
     val timePast = System.currentTimeMillis() - lastTimedOut
     timePast < 30.minutes.toMillis
   }
