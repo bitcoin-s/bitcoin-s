@@ -26,6 +26,11 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     // This currently fails, need to debug, starting with
     // TODO check all of the ECPublicKey vs SchnorrPubKey vs SchnorrNonce stuff
     // TODO should be using the actual BIP340 signature hash instead of a custom one
-    assert(aggPub.schnorrPublicKey.verify(msg, sig))
+    // TODO key ordering before aggregation
+    // TODO partial signature verification
+    // TODO MuSig2* optimization
+    // TODO SessionContext and renaming of defs
+    // TODO implement tweaking
+    assert(verify(aggPub, msg, sig))
   }
 }

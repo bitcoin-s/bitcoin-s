@@ -104,4 +104,17 @@ object MuSig2Util {
 
     SchnorrDigitalSignature(aggPubNonce.schnorrNonce, s)
   }
+
+  def verify(
+      aggPubKey: ECPublicKey,
+      message: ByteVector,
+      sig: SchnorrDigitalSignature): Boolean = {
+    val aggPubNonce = sig.rx
+    val s = sig.sig
+    val cBytes = sigHash(
+      aggPubKey.schnorrPublicKey.bytes ++ aggPubNonce.bytes ++ message)
+    val c = FieldElement(cBytes)
+
+    s.getPublicKey == aggPubNonce.publicKey.add(aggPubKey.multiply(c))
+  }
 }
