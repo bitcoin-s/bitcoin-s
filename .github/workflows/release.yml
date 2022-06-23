@@ -499,6 +499,8 @@ jobs:
           codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
           echo "=== Verify app signature ==="
           codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
+          codesign -dvv "$KRYSTALBULL_PATH"
+          codesign -d --entitlements :- "$KRYSTALBULL_PATH"
           : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
           : # echo "Done inspecting app with spctl"
           : # TODO : Make dmg from signed .app
