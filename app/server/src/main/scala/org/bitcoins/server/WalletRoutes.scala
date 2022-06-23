@@ -996,16 +996,6 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(
         Server.httpSuccess(list)
       }
 
-    case ServerCommand("getwalletname", _) =>
-      complete {
-        wallet.getWalletName().map {
-          case None =>
-            Server.httpSuccess(ujson.Null)
-          case Some(name) =>
-            Server.httpSuccess(name)
-        }
-      }
-
     case ServerCommand("loadwallet", arr) =>
       withValidServerCommand(LoadWallet.fromJsArr(arr)) {
         case LoadWallet(walletNameOpt, aesPasswordOpt, _) =>

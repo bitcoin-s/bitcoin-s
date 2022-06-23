@@ -143,7 +143,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       wallet = new WalletHolder()
       walletNameOpt <- getWalletName()
       (walletConfig, dlcConfig) <- updateWalletConfigs(walletNameOpt, None)
-        .recover(_ => (walletConf, dlcConf))
+        .recover { case _: Throwable => (walletConf, dlcConf) }
       dlcWallet <- dlcConfig.createDLCWallet(node, chainApi, feeProvider)(
         walletConfig,
         ec)
@@ -292,7 +292,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       for {
         walletNameOpt <- getWalletName()
         (walletConfig, dlcConfig) <- updateWalletConfigs(walletNameOpt, None)
-          .recover(_ => (walletConf, dlcConf))
+          .recover { case _: Throwable => (walletConf, dlcConf) }
         wallet <- BitcoindRpcBackendUtil
           .replaceWithDLCWalletWithBitcoindCallbacks(
             bitcoind,

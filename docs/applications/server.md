@@ -248,7 +248,6 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `loadwallet` `walletname` `passphrase` - Loads a wallet 
     - `walletname` - Name to associate with this seed
     - `passphrase` - Passphrase to decrypt this seed with
- - `getwalletname` - Returns the name of the current wallet
  - `listwallets` - Returns a list of all wallets
 
 ### DLC
