@@ -475,6 +475,7 @@ jobs:
           NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
           BUNDLE_ID: "org.bitcoins.bundle"
           TEAM_ID: "9ZG3GPKHX8"
+          ZIP_NAME: "KrystalBull-mac.zip"
         run: |
           java -version
           jpackage --version
@@ -494,18 +495,37 @@ jobs:
           : # Works
           echo "=== Sign app ==="
           codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
-          echo "===Verify app signature==="
+          echo "=== Verify app signature ==="
           codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
           : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
           : # echo "Done inspecting app with spctl"
           : # TODO : Make dmg from signed .app
-          echo "=== Sign electron-built dmg ==="
-          codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$DMG_PATH"
-          echo "=== Verify dmg signature ==="
-          codesign -vvv --deep --strict "$DMG_PATH"
-          echo "Done verifying code signing deep"
+          echo "=== zip app ==="
+          zip -r $ZIP_NAME "$KRYSTALBULL_PATH"
+          echo "=== Notarize app ==="
+          echo "Running xcrun alttool --notarize app"
+          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id $BUNDLE_ID -u $NOTORIZE_APPLE_ID -p "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID --file "$ZIP_NAME" | grep RequestUUID | awk '{print $3}')
+          echo "Waiting for notarization from Apple for $REQUEST_UUID"
+          sleep 5
+          xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID -p "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID
+          echo "Start while loop"
+          while xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID -p "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID | grep "Status: in progress" > /dev/null; do
+            echo "Verification in progress..."
+            sleep 30
+          done
+          echo "End while loop"
+          : # TODO : Staple notarization to app/zip?
+          xcrun stapler staple "$KRYSTALBULL_PATH"
+          echo "Done stapling"
+          codesign -dvv "$KRYSTALBULL_PATH"
+          echo "Done verifying dmg"
+          : # echo "=== Sign electron-built dmg ==="
+          : # codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$DMG_PATH"
+          : # echo "=== Verify dmg signature ==="
+          : # codesign -vvv --deep --strict "$DMG_PATH"
+          : # echo "Done verifying code signing deep"
           : # echo "Running xcrun alttool --notarize app"
-          : # REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id $BUNDLE_ID -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID --password "$NOTORIZE_APPLE_PW" --file "$DMG_PATH" | grep RequestUUID | awk '{print $3}')
+          : # REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id $BUNDLE_ID -u $NOTORIZE_APPLE_ID --password "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID --file "$DMG_PATH" | grep RequestUUID | awk '{print $3}')
           : # echo "Waiting for notarization from Apple for $REQUEST_UUID"
           : # sleep 5
           : # xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID -p "$NOTORIZE_APPLE_PW"
@@ -517,10 +537,10 @@ jobs:
           : # echo "End while loop"
           : # xcrun stapler staple "$DMG_PATH"
           : # echo "Done stapling"
-          spctl -a -t open --context context:primary-signature -v "$DMG_PATH"
-          echo "Done inspecting dmg"
-          codesign -dvv "$DMG_PATH"
-          echo "Done verifying dmg"
+          : # spctl -a -t open --context context:primary-signature -v "$DMG_PATH"
+          : # echo "Done inspecting dmg"
+          : # codesign -dvv "$DMG_PATH"
+          : # echo "Done verifying dmg"
       # TODO : zip up signed app
       # - name: View Artifacts
       #   run: ls -l bitcoin-s-ts/oracle-electron-ts
