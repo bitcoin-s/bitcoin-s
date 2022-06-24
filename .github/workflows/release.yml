@@ -201,7 +201,7 @@ jobs:
       - name: (macos) Validate application signing and notarization
         if: startsWith(matrix.os,'macos')
         env:
-          KRYSTALBULL_PATH: "${{KB_OUT}}/Krystal Bull-darwin-x64/Krystal Bull.app"
+          KRYSTALBULL_PATH: "${{env.KB_OUT}}/Krystal Bull-darwin-x64/Krystal Bull.app"
           # TODO : Need to account for version in path changing
           # DMG_PATH: "$KB_MAKE/Krystal Bull-0.0.1-x64.dmg"
         run: |
@@ -360,7 +360,7 @@ jobs:
       - name: (macos) Validate application signing and notarization
         if: startsWith(matrix.os,'macos')
         env:
-          WALLET_PATH: "${{W_OUT}}/Suredbits Wallet-darwin-x64/Suredbits Wallet.app"
+          WALLET_PATH: "${{env.W_OUT}}/Suredbits Wallet-darwin-x64/Suredbits Wallet.app"
           # TODO : Need to account for version in path changing
           # DMG_PATH: "$W_MAKE/Suredbits Wallet-0.0.1-x64.dmg"
         run: |
