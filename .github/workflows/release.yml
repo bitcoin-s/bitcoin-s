@@ -386,8 +386,8 @@ jobs:
         - os: macos-latest
           TARGET: mac
           FORMAT: dmg
-          KB_MAKE: "bitcoin-s-ts/oracle-electron-ts/out/my-build/make"
-          SBW: "bitcoin-s-ts/wallet-electron-ts/out/my-build/make"
+          # KB_MAKE: "bitcoin-s-ts/oracle-electron-ts/out/my-build/make"
+          # SBW: "bitcoin-s-ts/wallet-electron-ts/out/my-build/make"
         # - os: ubuntu-latest
         #   TARGET: linux
         #   FORMAT: deb
@@ -395,9 +395,9 @@ jobs:
         #   TARGET: windows
         #   FORMAT: msi # ???
     # Are these platform dependent?
-    # env:
-    #   kb-build: "bitcoin-s-ts/oracle-electron-ts/out/my-build/make"
-    #   sb-build: "bitcoin-s-ts/wallet-electron-ts/out/my-build/make"
+    env:
+      KB_MAKE: "bitcoin-s-ts/oracle-electron-ts/out/make"
+      W_MAKE: "bitcoin-s-ts/wallet-electron-ts/out/make"
     steps:
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -458,13 +458,14 @@ jobs:
           echo "Directory contents"
           ls -l "bitcoin-s-ts/oracle-electron-ts"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out"
-          ls -l "bitcoin-s-ts/oracle-electron-ts/out/make"
+          ls -l $KB_MAKE
           ls -l "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64"
           echo "=== Verify app signature ==="
           codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
           codesign -dvv "$KRYSTALBULL_PATH"
           codesign -d --entitlements :- "$KRYSTALBULL_PATH"
-          spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
+          : # echo "=== Verify app notarization ==="
+          : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
       # - name: (macos) Sign application
       #   if: startsWith(matrix.os,'macos')
       #   env:
@@ -582,7 +583,7 @@ jobs:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
-          path: bitcoin-s-ts/oracle-electron-ts/out/make/*.${{ matrix.FORMAT }}
+          path: $KB_MAKE/*.${{ matrix.FORMAT }}
       - name: (release) Upload krystallbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
