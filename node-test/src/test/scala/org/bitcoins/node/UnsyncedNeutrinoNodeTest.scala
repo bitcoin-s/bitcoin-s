@@ -6,6 +6,7 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeTestWithCachedBitcoindPair}
+import org.bitcoins.testkit.util.AkkaUtil
 import org.scalatest.{Assertion, FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -79,23 +80,56 @@ class UnsyncedNeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
     }
   }
 
-  //todo: so the disconnection should rather originate from the remote client rather than our side
-  ignore must "sync with another second peer if the first one is disconnected" in {
+  it must "switch to different peer and sync if current is unavailable" in {
     nodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoinds.node
       val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
       val peerManager = node.peerManager
 
+      def peers = peerManager.peers
+
+      val bitcoindPeersF =
+        Future.sequence(bitcoinds.map(NodeTestUtil.getBitcoindPeer))
+
+      def connAndInit: Future[Assertion] = for {
+        _ <- AsyncUtil
+          .retryUntilSatisfied(peers.size == 2,
+                               interval = 1.second,
+                               maxTries = 5)
+        _ <- Future
+          .sequence(peers.map(peerManager.isConnected))
+          .flatMap(p => assert(p.forall(_ == true)))
+        res <- Future
+          .sequence(peers.map(peerManager.isConnected))
+          .flatMap(p => assert(p.forall(_ == true)))
+      } yield res
+
+      val remotesInSync: Future[Assertion] = for {
+        h1 <- bitcoinds(0).getBestBlockHash
+        h2 <- bitcoinds(1).getBestBlockHash
+      } yield assert(h1 == h2)
+
       for {
+        bitcoindPeers <- bitcoindPeersF
+        _ <- remotesInSync
+        zipped = bitcoinds.zip(bitcoindPeers)
+        _ <- connAndInit
         _ <- node.sync()
-        //currently syncing with this
-        syncPeer1 = node.getDataMessageHandler.syncPeer.get
-        _ = peerManager.peerData(syncPeer1).client.close()
-        _ <- NodeTestUtil.awaitSync(node, bitcoinds(0))
+        sync1 = zipped.find(_._2 == node.getDataMessageHandler.syncPeer.get).get
+        h1 <- sync1._1.getBestHashBlockHeight()
+        _ <- sync1._1.stop()
+        // generating new blocks from the other bitcoind instance
+        other = bitcoinds.filterNot(_ == sync1._1).head
+        _ <- other.getNewAddress.flatMap(other.generateToAddress(10, _))
+        _ <- node.sync()
+        _ <- AkkaUtil.nonBlockingSleep(3.seconds)
+        sync2 = zipped.find(_._2 == node.getDataMessageHandler.syncPeer.get).get
+        _ <- NodeTestUtil.awaitSync(node, sync2._1)
+        h2 <- sync2._1.getBestHashBlockHeight()
+        //these are shared fixtures so, starting it again
+        _ <- sync1._1.start()
       } yield {
-        val syncPeer2 = node.getDataMessageHandler.syncPeer
-        assert(syncPeer2.isDefined && syncPeer2.get != syncPeer1)
+        assert(sync1._2 != sync2._2 && h2 - h1 == 10)
       }
-    //restart the stopped bitcoind since these are shared ones???
   }
 }
