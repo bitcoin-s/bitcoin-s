@@ -314,7 +314,7 @@ jobs:
       # Platform specific values here for folder depth
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
-        run: mv ${{KB_MAKE}}/deb/x64/*.deb $KB_MAKE
+        run: mv ${{KB_MAKE}}/deb/x64/*.deb ${{KB_MAKE}}
       # Capture signed Mac app
       - name: (macos) Upload krystalbull-mac-zip
         if: startsWith(matrix.os,'macos')
