@@ -142,7 +142,7 @@ jobs:
         # - os: windows-latest
         #   TARGET: windows
         #   FORMAT: msi # ???
-    # Build output folders
+    # Build output paths
     env:
       KB_OUT: "bitcoin-s-ts/oracle-electron-ts/out"
       KB_MAKE: "bitcoin-s-ts/oracle-electron-ts/out/make"
