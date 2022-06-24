@@ -136,7 +136,7 @@ jobs:
         include:
         - os: macos-latest
           TARGET: mac
-          FORMAT: dmg
+          FORMAT: zip
         - os: ubuntu-latest
           TARGET: linux
           FORMAT: deb
@@ -223,18 +223,21 @@ jobs:
           : # echo "=== Verify app notarization ==="
           : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
       # Platform specific values here for folder depth
+      - name: (macos) Move .zip into /make
+        if: startsWith(matrix.os,'macos')
+        run: mv ${{env.W_MAKE}}/zip/darwin/x64/*.zip $W_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
         run: mv ${{env.KB_MAKE}}/deb/x64/*.deb $KB_MAKE
       # Capture signed Mac app
-      - name: (macos) Upload krystalbull-mac-zip
-        if: startsWith(matrix.os,'macos')
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: krystalbull-${{ matrix.TARGET }}-zip
-          path: ${{env.KB_MAKE}}/zip/darwin/x64/*.zip
+      # - name: (macos) Upload krystalbull-mac-zip
+      #   if: startsWith(matrix.os,'macos')
+      #   uses: actions/upload-artifact@v3
+      #   env:
+      #     pkg-version: ${{steps.previoustag.outputs.tag}}
+      #   with:
+      #     name: krystalbull-${{ matrix.TARGET }}-zip
+      #     path: ${{env.KB_MAKE}}/zip/darwin/x64/*.zip
       - name: Upload krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         uses: actions/upload-artifact@v3
         env:
@@ -288,18 +291,22 @@ jobs:
           : # codesign -vvv --deep --strict "$DMG_PATH"
           : # echo "=== Verify app notarization ==="
           : # spctl -vvv --assess --type exec "$WALLET_PATH"
+      # Platform specific values here for folder depth
+      - name: (macos) Move .zip into /make
+        if: startsWith(matrix.os,'macos')
+        run: mv ${{env.W_MAKE}}/zip/darwin/x64/*.zip $W_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
         run: mv ${{env.W_MAKE}}/deb/x64/*.deb $W_MAKE
       # Capture signed Mac app
-      - name: (macos) Upload suredbits-wallet-mac-zip
-        if: startsWith(matrix.os,'macos')
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: suredbits-wallet-${{ matrix.TARGET }}-zip
-          path: ${{env.W_MAKE}}/zip/darwin/x64/*.zip
+      # - name: (macos) Upload suredbits-wallet-mac-zip
+      #   if: startsWith(matrix.os,'macos')
+      #   uses: actions/upload-artifact@v3
+      #   env:
+      #     pkg-version: ${{steps.previoustag.outputs.tag}}
+      #   with:
+      #     name: suredbits-wallet-${{ matrix.TARGET }}-zip
+      #     path: ${{env.W_MAKE}}/zip/darwin/x64/*.zip
       - name: Upload suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         uses: actions/upload-artifact@v3
         env:
