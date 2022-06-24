@@ -314,7 +314,7 @@ jobs:
       # Platform specific values here for folder depth
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
-        run: mv ${{env.KB_MAKE}}/deb/x64/*.deb ${{env.KB_MAKE}}
+        run: mv ${{env.KB_MAKE}}/deb/x64/*.deb $KB_MAKE
       # Capture signed Mac app
       - name: (macos) Upload krystalbull-mac-zip
         if: startsWith(matrix.os,'macos')
@@ -379,7 +379,7 @@ jobs:
           : # spctl -vvv --assess --type exec "$WALLET_PATH"
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
-        run: mv ${{W_MAKE}}/deb/x64/*.deb $W_MAKE
+        run: mv ${{env.W_MAKE}}/deb/x64/*.deb $W_MAKE
       # Capture signed Mac app
       - name: (macos) Upload suredbits-wallet-mac-zip
         if: startsWith(matrix.os,'macos')
@@ -388,20 +388,20 @@ jobs:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: suredbits-wallet-${{ matrix.TARGET }}-zip
-          path: ${{W_MAKE}}/zip/darwin/x64/*.zip
+          path: ${{env.W_MAKE}}/zip/darwin/x64/*.zip
       - name: Upload suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
-          path: ${{W_MAKE}}/*.${{ matrix.FORMAT }}
+          path: ${{env.W_MAKE}}/*.${{ matrix.FORMAT }}
       - name: (release) Upload suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           name: suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}-${{steps.previoustag.outputs.tag}}
-          files: ${{W_MAKE}}/*.${{ matrix.FORMAT }}
+          files: ${{env.W_MAKE}}/*.${{ matrix.FORMAT }}
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
