@@ -136,7 +136,7 @@ jobs:
         include:
         - os: macos-latest
           TARGET: mac
-          FORMAT: zip
+          FORMAT: zip # dmg
         - os: ubuntu-latest
           TARGET: linux
           FORMAT: deb
@@ -210,6 +210,9 @@ jobs:
           echo "$KRYSTALBULL_PATH"
           ls -l $KB_OUT
           ls -l $KB_MAKE
+          ls -l "$KB_MAKE/zip"
+          ls -l "$KB_MAKE/zip/darwin"
+          ls -l "$KB_MAKE/zip/darwin/x64"
           ls -l "$KB_OUT/Krystal Bull-darwin-x64"
           echo "=== Verify app signature ==="
           codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
@@ -225,7 +228,7 @@ jobs:
       # Platform specific values here for folder depth
       - name: (macos) Move .zip into /make
         if: startsWith(matrix.os,'macos')
-        run: mv ${{env.W_MAKE}}/zip/darwin/x64/*.zip $W_MAKE
+        run: mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $KB_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
         run: mv ${{env.KB_MAKE}}/deb/x64/*.deb $KB_MAKE
