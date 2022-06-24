@@ -361,7 +361,7 @@ jobs:
         if: startsWith(matrix.os,'macos')
         env:
           WALLET_PATH: "${{env.W_OUT}}/Suredbits Wallet-darwin-x64/Suredbits Wallet.app"
-          # TODO : Need to account for version in path changing
+          # TODO : Need to account for version in path changing 
           # DMG_PATH: "$W_MAKE/Suredbits Wallet-0.0.1-x64.dmg"
         run: |
           echo "Directory contents"
