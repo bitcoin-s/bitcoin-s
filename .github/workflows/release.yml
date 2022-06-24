@@ -35,7 +35,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest] # , ubuntu-latest, windows-latest
+        os: [macos-latest, ubuntu-latest, windows-latest] # , ubuntu-latest, windows-latest
         # If os values you don't include the matrix os list above are set here, they will be included
         # If you want multiple variables per os see https://github.community/t/create-matrix-with-multiple-os-and-env-for-each-one/16895
         # Can run conditional steps below with https://github.community/t/what-is-the-correct-if-condition-syntax-for-checking-matrix-os-version/16221
@@ -43,10 +43,11 @@ jobs:
         include:
         - os: macos-latest
           TARGET: mac
-        # - os: ubuntu-latest
-        #   TARGET: linux
-        # - os: windows-latest
-        #   TARGET: windows
+        - os: ubuntu-latest
+          TARGET: linux
+        - os: windows-latest
+        # TODO : Do we want to use 'win' or 'windows'?
+          TARGET: windows
     steps:
       - uses: actions/checkout@v3
         with:
@@ -136,9 +137,9 @@ jobs:
         - os: macos-latest
           TARGET: mac
           FORMAT: dmg
-        # - os: ubuntu-latest
-        #   TARGET: linux
-        #   FORMAT: deb
+        - os: ubuntu-latest
+          TARGET: linux
+          FORMAT: deb
         # - os: windows-latest
         #   TARGET: windows
         #   FORMAT: msi # ???
@@ -221,96 +222,6 @@ jobs:
           : # Not happening yet, need entitlements set
           : # echo "=== Verify app notarization ==="
           : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
-      # - name: (macos) Sign application
-      #   if: startsWith(matrix.os,'macos')
-      #   env:
-      #     MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-      #     APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
-      #     KRYSTALBULL_PATH: "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-darwin-x64/Krystal Bull.app"
-      #     DMG_PATH: "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/Krystal Bull-0.0.1-x64.dmg"
-      #     PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
-      #     NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
-      #     NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
-      #     BUNDLE_ID: "org.bitcoins.krystalbull"
-      #     TEAM_ID: "9ZG3GPKHX8"
-      #     ZIP_NAME: "KrystalBull-mac.zip"
-      #   run: |
-      #     java -version
-      #     jpackage --version
-      #     security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
-      #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
-      #     security find-identity -p codesigning -v
-      #     : # Store xcrun creditials
-      #     xcrun notarytool store-credentials "AC_PASSWORD" --apple-id $NOTORIZE_APPLE_ID --password $NOTORIZE_APPLE_PW --team-id $TEAM_ID
-      #     echo ${{matrix.KB_MAKE}}
-      #     echo "Directory contents"
-      #     ls -l "bitcoin-s-ts/oracle-electron-ts"
-      #     ls -l "bitcoin-s-ts/oracle-electron-ts/out"
-      #     ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build"
-      #     ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make"
-      #     ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-darwin-x64"
-      #     : # ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip"
-      #     : # ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip/darwin"
-      #     : # ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make/zip/darwin/x64"
-      #     : # Works
-      #     echo "=== Sign app ==="
-      #     codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
-      #     echo "=== Verify app signature ==="
-      #     codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
-      #     codesign -dvv "$KRYSTALBULL_PATH"
-      #     codesign -d --entitlements :- "$KRYSTALBULL_PATH"
-      #     spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
-      #     : # echo "Done inspecting app with spctl"
-      #     : # TODO : Make dmg from signed .app
-      #     echo "=== zip app ==="
-      #     zip -qr $ZIP_NAME "$KRYSTALBULL_PATH"
-      #     echo "=== Notarize app ==="
-      #     echo "Running xcrun alttool --notarize app"
-      #     REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id $BUNDLE_ID -u $NOTORIZE_APPLE_ID -p "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID --file "$ZIP_NAME" | grep RequestUUID | awk '{print $3}')
-      #     echo "Waiting for notarization from Apple for $REQUEST_UUID"
-      #     sleep 5
-      #     xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID -p "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID
-      #     echo "Start while loop"
-      #     while xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID -p "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID | grep "Status: in progress" > /dev/null; do
-      #       echo "Verification in progress..."
-      #       sleep 30
-      #     done
-      #     echo "End while loop"
-      #     echo "=== notarytool history ==="
-      #     : # xcrun notarytool store-credentials "AC_PASSWORD" --apple-id $NOTORIZE_APPLE_ID --password $NOTORIZE_APPLE_PW --team-id $TEAM_ID
-      #     xcrun notarytool history --keychain-profile "AC_PASSWORD"
-      #     echo "=== notarytool info ==="
-      #     xcrun notarytool info $REQUEST_UUID --keychain-profile "AC_PASSWORD"
-      #     : # TODO : Staple notarization to app/zip?
-      #     xcrun stapler staple "$KRYSTALBULL_PATH"
-      #     echo "Done stapling"
-      #     codesign -dvv "$KRYSTALBULL_PATH"
-      #     echo "Done verifying app stapling"
-      #     echo "=== zip stapled app ==="
-      #     : # Need to delete old zip?
-      #     zip -qr $ZIP_NAME "$KRYSTALBULL_PATH"
-      #     : # echo "=== Sign electron-built dmg ==="
-      #     : # codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --options runtime -vvvv --deep "$DMG_PATH"
-      #     : # echo "=== Verify dmg signature ==="
-      #     : # codesign -vvv --deep --strict "$DMG_PATH"
-      #     : # echo "Done verifying code signing deep"
-      #     : # echo "Running xcrun alttool --notarize app"
-      #     : # REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id $BUNDLE_ID -u $NOTORIZE_APPLE_ID --password "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID --file "$DMG_PATH" | grep RequestUUID | awk '{print $3}')
-      #     : # echo "Waiting for notarization from Apple for $REQUEST_UUID"
-      #     : # sleep 5
-      #     : # xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID -p "$NOTORIZE_APPLE_PW"
-      #     : # echo "Start while loop"
-      #     : # while xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID --team-id $TEAM_ID -p "$NOTORIZE_APPLE_PW" | grep "Status: in progress" > /dev/null; do
-      #     : #   echo "Verification in progress..."
-      #     : #   sleep 30
-      #     : # done
-      #     : # echo "End while loop"
-      #     : # xcrun stapler staple "$DMG_PATH"
-      #     : # echo "Done stapling"
-      #     : # spctl -a -t open --context context:primary-signature -v "$DMG_PATH"
-      #     : # echo "Done inspecting dmg"
-      #     : # codesign -dvv "$DMG_PATH"
-      #     : # echo "Done verifying dmg"
       # Platform specific values here for folder depth
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
