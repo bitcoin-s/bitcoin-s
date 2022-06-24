@@ -15,7 +15,8 @@ import org.bitcoins.rpc.client.common.BitcoindVersion.{
   V19,
   V20,
   V21,
-  V22
+  V22,
+  V23
 }
 import play.api.libs.json._
 
@@ -91,7 +92,7 @@ trait TransactionRpc { self: Client =>
       vout: Int,
       includeMemPool: Boolean = true): Future[GetTxOutResult] = {
     self.version.flatMap {
-      case V22 | Unknown =>
+      case V22 | V23 | Unknown =>
         bitcoindCall[GetTxOutResultV22](
           "gettxout",
           List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool)))

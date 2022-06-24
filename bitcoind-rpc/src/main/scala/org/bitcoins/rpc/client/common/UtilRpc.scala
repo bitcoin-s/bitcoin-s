@@ -22,7 +22,7 @@ trait UtilRpc { self: Client =>
 
   def decodeScript(script: ScriptPubKey): Future[DecodeScriptResult] = {
     self.version.flatMap {
-      case V22 | Unknown =>
+      case V22 | V23 | Unknown =>
         bitcoindCall[DecodeScriptResultV22]("decodescript",
                                             List(Json.toJson(script)))
       case V16 | V17 | V18 | V19 | V20 | V21 | Experimental =>

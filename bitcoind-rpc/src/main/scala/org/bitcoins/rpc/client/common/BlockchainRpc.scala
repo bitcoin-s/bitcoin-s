@@ -80,7 +80,7 @@ trait BlockchainRpc { self: Client =>
     GetBlockWithTransactionsResult] = {
     val isVerboseJsonObject = JsNumber(2)
     self.version.flatMap {
-      case V22 | Unknown =>
+      case V22 | V23 | Unknown =>
         bitcoindCall[GetBlockWithTransactionsResultV22](
           "getblock",
           List(JsString(headerHash.hex), isVerboseJsonObject))

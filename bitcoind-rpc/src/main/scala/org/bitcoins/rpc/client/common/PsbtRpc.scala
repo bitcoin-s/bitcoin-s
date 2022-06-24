@@ -22,7 +22,8 @@ import org.bitcoins.rpc.client.common.BitcoindVersion.{
   V19,
   V20,
   V21,
-  V22
+  V22,
+  V23
 }
 import play.api.libs.json._
 
@@ -96,7 +97,7 @@ trait PsbtRpc {
 
   def decodePsbt(psbt: PSBT): Future[DecodePsbtResult] = {
     self.version.flatMap {
-      case V22 | Unknown =>
+      case V22 | V23 | Unknown =>
         bitcoindCall[DecodePsbtResultV22]("decodepsbt", List(Json.toJson(psbt)))
       case V16 | V17 | V18 | V19 | V20 | V21 | Experimental =>
         bitcoindCall[DecodePsbtResultPreV22]("decodepsbt",

@@ -9,17 +9,22 @@ import play.api.libs.json.Json
 
 import scala.concurrent.Future
 
-trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc{ self:Client =>
-  private def getNodeAddresses(
-                                count: Option[Int]): Future[Vector[GetNodeAddressesResultPostV22]] = {
-    bitcoindCall[Vector[GetNodeAddressesResultPostV22]]("getnodeaddresses",
-      List(Json.toJson(count)))
-}
+trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc {
+  self: Client =>
 
-  override def getNodeAddresses(count: Int): Future[Vector[GetNodeAddressesResultPostV22]] =
+  private def getNodeAddresses(
+      count: Option[Int]): Future[Vector[GetNodeAddressesResultPostV22]] = {
+    bitcoindCall[Vector[GetNodeAddressesResultPostV22]](
+      "getnodeaddresses",
+      List(Json.toJson(count)))
+  }
+
+  override def getNodeAddresses(
+      count: Int): Future[Vector[GetNodeAddressesResultPostV22]] =
     getNodeAddresses(Some(count))
 
-  override def getNodeAddresses(): Future[Vector[GetNodeAddressesResultPostV22]] =
+  override def getNodeAddresses(): Future[
+    Vector[GetNodeAddressesResultPostV22]] =
     getNodeAddresses(None)
 
 }

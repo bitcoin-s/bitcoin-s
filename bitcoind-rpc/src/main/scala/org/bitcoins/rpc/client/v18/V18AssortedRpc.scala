@@ -28,12 +28,14 @@ trait V18AssortedRpc {
   private def getNodeAddresses(
       count: Option[Int]): Future[Vector[GetNodeAddressesResult]] = {
     self.version.flatMap {
-      case BitcoindVersion.V22 | BitcoindVersion.Unknown =>
+      case BitcoindVersion.V22 | BitcoindVersion.V23 |
+          BitcoindVersion.Unknown =>
         bitcoindCall[Vector[GetNodeAddressesResultPostV22]](
           "getnodeaddresses",
           List(Json.toJson(count)))
-      case BitcoindVersion.V18 | BitcoindVersion.V19 | BitcoindVersion.V20 |
-          BitcoindVersion.V21 =>
+      case BitcoindVersion.V16 | BitcoindVersion.V17 | BitcoindVersion.V18 |
+          BitcoindVersion.V19 | BitcoindVersion.V20 | BitcoindVersion.V21 |
+          BitcoindVersion.Experimental =>
         bitcoindCall[Vector[GetNodeAddressesResultPreV22]](
           "getnodeaddresses",
           List(Json.toJson(count)))

@@ -8,8 +8,7 @@ import org.bitcoins.rpc.client.common.{
   PsbtRpc
 }
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
-import org.bitcoins.rpc.client.v20.{V20AssortedRpc, V20MultisigRpc}
-import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
+import org.bitcoins.rpc.client.v20.V20MultisigRpc
 import org.bitcoins.rpc.config.BitcoindInstance
 
 import scala.concurrent.Future
