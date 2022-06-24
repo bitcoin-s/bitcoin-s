@@ -52,6 +52,7 @@ class NeutrinoUnsupportedPeerTest extends NodeTestWithCachedBitcoindV19 {
           _ <- startedNode.sync()
         } yield ()
       }
-      exception.map(e => assert(e.getMessage == "No supported peers found!"))
+      exception.map(e =>
+        assert(e.getMessage.startsWith("No supported peers found!")))
   }
 }

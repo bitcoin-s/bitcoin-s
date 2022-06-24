@@ -254,8 +254,7 @@ case class P2PClientActor(
           (peer.socket, None)
       }
     manager ! Tcp.Connect(peerOrProxyAddress,
-                          //todo: connect timeout as param
-                          timeout = Some(5.seconds),
+                          timeout = Some(config.connectionTimeout),
                           options = KeepAlive(true) :: Nil,
                           pullMode = true)
     context become connecting(proxyParams)

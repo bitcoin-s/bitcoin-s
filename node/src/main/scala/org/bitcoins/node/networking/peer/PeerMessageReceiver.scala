@@ -10,7 +10,6 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.{Node, P2PLogger}
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 /** Responsible for receiving messages from a peer on the
   * p2p network. This is called by [[org.bitcoins.rpc.client.common.Client Client]] when doing the p2p
@@ -45,9 +44,9 @@ class PeerMessageReceiver(
       case Preconnection =>
         logger.debug(s"Connection established with peer=${peer}")
 
-        //todo: initialization timeout make parameter
         val timeout =
-          system.scheduler.scheduleOnce(10.seconds)(onInitTimeout())
+          system.scheduler.scheduleOnce(nodeAppConfig.initializationTimeout)(
+            onInitTimeout())
 
         val newState = Preconnection.toInitializing(client, timeout)
 
@@ -285,7 +284,8 @@ class PeerMessageReceiver(
       case good: Normal =>
         logger.debug(s"Handling expected response for ${msg.commandName}")
         val timeout =
-          system.scheduler.scheduleOnce(15.seconds)(onResponseTimeout(msg))
+          system.scheduler.scheduleOnce(nodeAppConfig.queryWaitTime)(
+            onResponseTimeout(msg))
         val newState = Waiting(
           clientConnectP = good.clientConnectP,
           clientDisconnectP = good.clientDisconnectP,

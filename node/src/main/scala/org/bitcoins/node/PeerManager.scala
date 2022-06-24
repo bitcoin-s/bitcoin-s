@@ -33,8 +33,9 @@ case class PeerManager(
     with P2PLogger {
 
   private val _peerData: mutable.Map[Peer, PeerData] = mutable.Map.empty
-  private val _waitingForDeletion: mutable.Set[Peer] = mutable.Set.empty
 
+  /** holds peers removed from peerData whose client actors are not stopped yet. Used for runtime sanity checks. */
+  private val _waitingForDeletion: mutable.Set[Peer] = mutable.Set.empty
   def waitingForDeletion: Set[Peer] = _waitingForDeletion.toSet
 
   val finder: PeerFinder = PeerFinder(paramPeers, node, skipPeers = () => peers)
@@ -62,14 +63,18 @@ case class PeerManager(
 
   def clients: Vector[P2PClient] = _peerData.values.map(_.client).toVector
 
-  def randomPeerWithService(f: ServiceIdentifier => Boolean): Future[Peer] = {
+  def randomPeerWithService(services: ServiceIdentifier): Future[Peer] = {
     //wait when requested
     val waitF =
-      awaitPeerWithService(f, timeout = nodeAppConfig.peerDiscoveryTimeout)
+      awaitPeerWithService(services,
+                           timeout = nodeAppConfig.peerDiscoveryTimeout)
 
     waitF.map { _ =>
       val filteredPeers =
-        peerData.filter(p => f(p._2.serviceIdentifier)).keys.toVector
+        peerData
+          .filter(p => p._2.serviceIdentifier.hasServicesOf(services))
+          .keys
+          .toVector
       assert(filteredPeers.nonEmpty)
       val (good, failedRecently) =
         filteredPeers.partition(p => !peerData(p).hasFailedRecently)
@@ -81,8 +86,8 @@ case class PeerManager(
   }
 
   def randomPeerMsgSenderWithService(
-      f: ServiceIdentifier => Boolean): Future[PeerMessageSender] = {
-    val randomPeerF = randomPeerWithService(f)
+      services: ServiceIdentifier): Future[PeerMessageSender] = {
+    val randomPeerF = randomPeerWithService(services)
     randomPeerF.map(peer => peerData(peer).peerMessageSender)
   }
 
@@ -111,18 +116,21 @@ case class PeerManager(
   }
 
   def awaitPeerWithService(
-      f: ServiceIdentifier => Boolean,
+      services: ServiceIdentifier,
       timeout: Duration): Future[Unit] = {
     logger.debug(s"Waiting for peer connection. ${_peerData.keys}")
+
     val ret = AsyncUtil
-      .retryUntilSatisfied({
-                             _peerData.exists(x => f(x._2.serviceIdentifier))
-                           },
-                           interval = 1.seconds,
-                           maxTries = timeout.getSeconds.toInt)
+      .retryUntilSatisfied(
+        {
+          _peerData.exists(x => x._2.serviceIdentifier.hasServicesOf(services))
+        },
+        interval = 1.seconds,
+        maxTries = timeout.getSeconds.toInt)
       .recover {
         case _: AsyncUtil.RpcRetryException =>
-          throw new RuntimeException("No supported peers found!")
+          throw new RuntimeException(
+            s"No supported peers found! Requested: ${services}")
         case unknown: Throwable => throw unknown
       }
 

@@ -11,6 +11,7 @@ import org.bitcoins.core.api.chain.db.{
   CompactFilterHeaderDb
 }
 import org.bitcoins.core.api.node.NodeType
+import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -76,7 +77,8 @@ case class NeutrinoNode(
       chainApi <- chainApiFromDb()
       _ <- chainApi.getBestBlockHash()
 
-      syncPeer <- peerManager.randomPeerWithService(_.nodeCompactFilters)
+      syncPeer <- peerManager.randomPeerWithService(
+        ServiceIdentifier.NODE_COMPACT_FILTERS)
       _ = logger.info(s"Starting sync with $syncPeer")
       _ = updateDataMessageHandler(
         dataMessageHandler.copy(syncPeer = Some(syncPeer)))

@@ -88,6 +88,11 @@ sealed abstract class ServiceIdentifier extends NetworkElement {
         s"network=$nodeNetwork, compactFilters=$nodeCompactFilters, getUtxo=$nodeGetUtxo, bloom=$nodeBloom, witness=$nodeWitness, xthin=$nodeXthin, networkLimited=$nodeNetworkLimited"
     s"ServiceIdentifier($innerText)"
   }
+
+  /** returns true if this service identifier has at least all services specified in services */
+  def hasServicesOf(services: ServiceIdentifier): Boolean = {
+    (num & services.num) == services.num
+  }
 }
 
 /** Designated type for any service that does not have value of 0 or 1

@@ -111,16 +111,15 @@ case class PeerFinder(
 
   val maxPeerSearchCount: Int = 1000
 
-  val timeoutForTrying: FiniteDuration = 12.second
-
   def initialDelay: FiniteDuration = {
     if (getPeersFromConfig.isEmpty && getPeersFromParam.isEmpty) 0.seconds
-    else timeoutForTrying
+    else nodeAppConfig.tryNextPeersInterval
   }
 
   private lazy val peerConnectionScheduler: Cancellable =
-    system.scheduler.scheduleWithFixedDelay(initialDelay = initialDelay,
-                                            delay = timeoutForTrying) {
+    system.scheduler.scheduleWithFixedDelay(
+      initialDelay = initialDelay,
+      delay = nodeAppConfig.tryNextPeersInterval) {
       new Runnable() {
         override def run(): Unit = {
           logger.debug(s"Cache size: ${_peerData.size}. ${_peerData.keys}")

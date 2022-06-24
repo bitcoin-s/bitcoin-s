@@ -90,7 +90,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
     val chainApiF = chainApiFromDb()
     val startNodeF = for {
-      _ <- peerManager.start
+      _ <- peerManager.start()
     } yield {
       logger.info(s"Our node has been full started. It took=${System
         .currentTimeMillis() - start}ms")
@@ -121,7 +121,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
     val start = System.currentTimeMillis()
 
-    peerManager.stop.map { _ =>
+    peerManager.stop().map { _ =>
       logger.info(
         s"Node stopped! It took=${System.currentTimeMillis() - start}ms")
       this
@@ -178,7 +178,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     if (blockHashes.isEmpty) {
       Future.unit
     } else {
-      val peerMsgSenderF = peerManager.randomPeerMsgSenderWithService(_ => true)
+      val peerMsgSenderF = peerManager.randomPeerMsgSenderWithService(
+        ServiceIdentifier.NODE_NETWORK)
       peerMsgSenderF.flatMap(
         _.sendGetDataMessage(TypeIdentifier.MsgWitnessBlock, blockHashes: _*))
     }
