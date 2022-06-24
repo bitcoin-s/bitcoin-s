@@ -54,7 +54,7 @@ object MuSig2Util {
   object KeySet {
 
     def apply(keys: Vector[SchnorrPublicKey]): KeySet = {
-      val sortedKeys = keys.sorted(Ordering.by[SchnorrPublicKey, String](_.hex))
+      val sortedKeys = keys.sorted(NetworkElement.lexicographicalOrdering)
       new KeySet(sortedKeys)
     }
 
@@ -95,10 +95,9 @@ object MuSig2Util {
       MultiNoncePub,
       MultiNoncePriv) = {
     msgOpt.foreach(msg => require(msg.length == 32))
-    extraInOpt.foreach(extraIn => require(extraIn.length <= 4294967295L))
+    require(extraInOpt.forall(_.length <= 4294967295L))
 
-    val preRand =
-      ECPrivateKey.freshPrivateKey.bytes // TODO this needs to draw 32 bytes uniformily at random
+    val preRand = CryptoUtil.randomBytes(32)
     val rand = privKeyOpt match {
       case Some(privKey) => auxHash(preRand).xor(privKey.bytes)
       case None          => preRand
