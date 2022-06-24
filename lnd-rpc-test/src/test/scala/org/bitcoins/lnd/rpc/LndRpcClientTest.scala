@@ -5,7 +5,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency._
-import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
+import org.bitcoins.core.protocol.script.TaprootScriptPubKey
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkit.fixtures.LndFixture
 
@@ -75,7 +75,7 @@ class LndRpcClientTest extends LndFixture {
   it must "get an on-chain address" in { lnd =>
     for {
       addr <- lnd.getNewAddress
-    } yield assert(addr.scriptPubKey.isInstanceOf[P2WPKHWitnessSPKV0])
+    } yield assert(addr.scriptPubKey.isInstanceOf[TaprootScriptPubKey])
   }
 
   it must "get unspent utxos" in { lnd =>

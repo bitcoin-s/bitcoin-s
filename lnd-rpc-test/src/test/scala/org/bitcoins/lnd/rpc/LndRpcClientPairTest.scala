@@ -106,7 +106,7 @@ class LndRpcClientPairTest extends DualLndFixture {
     val (bitcoind, lnd, _) = param
 
     for {
-      addr <- lnd.getNewAddress
+      addr <- lnd.getNewAddress(AddressType.WITNESS_PUBKEY_HASH)
       _ <- bitcoind.sendToAddress(addr, Bitcoins(1))
       bitcoindAddr <- bitcoind.getNewAddress
       utxo <- lnd.listUnspent.map(_.head)
@@ -197,7 +197,7 @@ class LndRpcClientPairTest extends DualLndFixture {
 
       assert(details.tx == tx)
       assert(details.txId == tx.txIdBE)
-      assert(details.destAddresses.contains(addr))
+      assert(details.outputDetails.map(_.address).contains(addr))
       assert(details.amount == sendAmt)
     }
   }

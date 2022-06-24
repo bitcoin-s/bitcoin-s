@@ -3,7 +3,7 @@ package org.bitcoins.lnd.rpc
 import com.google.protobuf.ByteString
 import lnrpc.ChannelPoint.FundingTxid.FundingTxidBytes
 import lnrpc.{ChannelPoint, OutPoint}
-import org.bitcoins.commons.jsonmodels.lnd.TxDetails
+import org.bitcoins.commons.jsonmodels.lnd.{OutputDetails, TxDetails}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -67,14 +67,25 @@ trait LndUtils {
     ChannelPoint(txId, outPoint.vout)
   }
 
+  implicit def lndOutputDetailToOutputDetails(
+      detail: lnrpc.OutputDetail): OutputDetails = {
+    OutputDetails(
+      address = BitcoinAddress.fromString(detail.address),
+      spk = ScriptPubKey.fromAsmHex(detail.pkScript),
+      outputIndex = detail.outputIndex,
+      amount = Satoshis(detail.amount),
+      isOurAddress = detail.isOurAddress
+    )
+  }
+
   implicit def LndTransactionToTxDetails(
       details: lnrpc.Transaction): TxDetails = {
     val blockHashOpt = if (details.blockHash.isEmpty) {
       None
     } else Some(DoubleSha256DigestBE(details.blockHash))
 
-    val addrs =
-      details.destAddresses.map(BitcoinAddress.fromString).toVector
+    val outputDetails =
+      details.outputDetails.map(lndOutputDetailToOutputDetails).toVector
 
     TxDetails(
       txId = DoubleSha256DigestBE(details.txHash),
@@ -84,7 +95,7 @@ trait LndUtils {
       blockHeight = details.blockHeight,
       timeStamp = details.timeStamp,
       totalFees = Satoshis(details.totalFees),
-      destAddresses = addrs,
+      outputDetails = outputDetails,
       tx = Transaction(details.rawTxHex),
       label = details.label
     )
