@@ -60,6 +60,7 @@ jobs:
         uses: WyriHaximus/github-action-get-previous-tag@v1
         with:
           fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+      # Tested building specific projects that are being exported only, but global packageBin seems to be faster
       - name: Build all zips
         shell: bash
         run: sbt "universal:stage;universal:packageBin"
@@ -186,7 +187,7 @@ jobs:
           security unlock-keychain -p $MACOS_CERTIFICATE_PWD $KEYCHAIN
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD $KEYCHAIN
           security find-identity -p codesigning -v
-      - name: Build oracle-electron-ts
+      - name: Build Krystal Bull
         working-directory: bitcoin-s-ts/oracle-electron-ts
         env:
           APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
@@ -200,11 +201,12 @@ jobs:
       - name: (macos) Validate application signing and notarization
         if: startsWith(matrix.os,'macos')
         env:
-          KRYSTALBULL_PATH: "$KB_OUT/Krystal Bull-darwin-x64/Krystal Bull.app"
+          KRYSTALBULL_PATH: "${{KB_OUT}}/Krystal Bull-darwin-x64/Krystal Bull.app"
           # TODO : Need to account for version in path changing
-          DMG_PATH: "$KB_MAKE/Krystal Bull-0.0.1-x64.dmg"
+          # DMG_PATH: "$KB_MAKE/Krystal Bull-0.0.1-x64.dmg"
         run: |
           echo "Directory contents"
+          echo "$KRYSTALBULL_PATH"
           ls -l $KB_OUT
           ls -l $KB_MAKE
           ls -l "$KB_OUT/Krystal Bull-darwin-x64"
@@ -309,13 +311,6 @@ jobs:
       #     : # echo "Done inspecting dmg"
       #     : # codesign -dvv "$DMG_PATH"
       #     : # echo "Done verifying dmg"
-      # TODO : zip up signed app
-      # - name: View Artifacts
-      #   run: ls -l bitcoin-s-ts/oracle-electron-ts
-      # - name: View Artifacts
-      #   run: ls -l bitcoin-s-ts/oracle-electron-ts/out
-      # - name: View Artifacts
-      #   run: ls -l bitcoin-s-ts/oracle-electron-ts/out/make
       # Platform specific values here for folder depth
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
@@ -351,7 +346,7 @@ jobs:
         with:
           name: bitcoin-s-server-${{ matrix.TARGET }}
           path: bitcoin-s-ts/wallet-electron-ts/bitcoin-s-server
-      - name: Build Wallet Electron
+      - name: Build Suredbits Wallet
         working-directory: bitcoin-s-ts/wallet-electron-ts
         env:
           APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
@@ -365,9 +360,9 @@ jobs:
       - name: (macos) Validate application signing and notarization
         if: startsWith(matrix.os,'macos')
         env:
-          WALLET_PATH: "$W_OUT/Suredbits Wallet-darwin-x64/Suredbits Wallet.app"
+          WALLET_PATH: "${{W_OUT}}/Suredbits Wallet-darwin-x64/Suredbits Wallet.app"
           # TODO : Need to account for version in path changing
-          DMG_PATH: "$W_MAKE/Suredbits Wallet-0.0.1-x64.dmg"
+          # DMG_PATH: "$W_MAKE/Suredbits Wallet-0.0.1-x64.dmg"
         run: |
           echo "Directory contents"
           ls -l "bitcoin-s-ts/wallet-electron-ts"
