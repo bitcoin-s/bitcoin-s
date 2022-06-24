@@ -9,7 +9,7 @@ import org.bitcoins.core.p2p.{
   ServiceIdentifier,
   VersionMessage
 }
-import org.bitcoins.core.util.NetworkUtil
+import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.node.networking.P2PClient
@@ -29,7 +29,8 @@ case class PeerManager(
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig)
-    extends P2PLogger {
+    extends StartStopAsync[PeerManager]
+    with P2PLogger {
 
   private val _peerData: mutable.Map[Peer, PeerData] = mutable.Map.empty
   private val _waitingForDeletion: mutable.Set[Peer] = mutable.Set.empty
@@ -152,18 +153,21 @@ case class PeerManager(
     peerData.contains(peer)
   }
 
-  def start: Future[Unit] = {
+  override def start(): Future[PeerManager] = {
     logger.debug(s"Starting PeerManager")
-    finder.start.map(_ => logger.info("Done starting PeerManager"))
+    finder.start().map { _ =>
+      logger.info("Done starting PeerManager")
+      this
+    }
   }
 
   def peerData: Map[Peer, PeerData] = _peerData.toMap
 
-  def stop: Future[Unit] = {
+  override def stop(): Future[PeerManager] = {
     logger.info(s"Stopping PeerManager")
     val beganAt = System.currentTimeMillis()
 
-    val finderStopF = finder.stop
+    val finderStopF = finder.stop()
 
     peers.foreach(removePeer)
 
@@ -178,6 +182,7 @@ case class PeerManager(
     } yield {
       logger.info(
         s"Stopped PeerManager. Took ${System.currentTimeMillis() - beganAt} ms ")
+      this
     }
   }
 

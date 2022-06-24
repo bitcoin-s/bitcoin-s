@@ -3,7 +3,7 @@ package org.bitcoins.node
 import akka.actor.{ActorSystem, Cancellable}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.p2p.ServiceIdentifier
-import org.bitcoins.core.util.NetworkUtil
+import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 
@@ -21,7 +21,8 @@ case class PeerFinder(
     ec: ExecutionContext,
     system: ActorSystem,
     nodeAppConfig: NodeAppConfig)
-    extends P2PLogger {
+    extends StartStopAsync[PeerFinder]
+    with P2PLogger {
 
   /** Returns peers by querying each dns seed once. These will be IPv4 addresses. */
   private def getPeersFromDnsSeeds: Vector[Peer] = {
@@ -135,13 +136,13 @@ case class PeerFinder(
       }
     }
 
-  def start: Future[Unit] = {
+  override def start(): Future[PeerFinder] = {
     logger.debug(s"Starting PeerFinder")
 
     (getPeersFromParam ++ getPeersFromConfig).distinct.foreach(tryPeer)
 
     if (nodeAppConfig.enablePeerDiscovery) {
-      for {
+      val startedF = for {
         (dbNonCf, dbCf) <- getPeersFromDb
       } yield {
         _peersToTry.pushAll(getPeersFromDnsSeeds)
@@ -149,15 +150,18 @@ case class PeerFinder(
         _peersToTry.pushAll(dbNonCf)
         _peersToTry.pushAll(dbCf, priority = 1)
         peerConnectionScheduler //start scheduler
-        ()
+
+        this
       }
+
+      startedF
     } else {
       logger.info("Peer discovery disabled.")
-      Future.unit
+      Future.successful(this)
     }
   }
 
-  def stop: Future[Unit] = {
+  override def stop(): Future[PeerFinder] = {
     //stop scheduler
     peerConnectionScheduler.cancel()
     //delete try queue
@@ -165,9 +169,11 @@ case class PeerFinder(
 
     _peerData.foreach(_._2.client.close())
 
-    AsyncUtil.retryUntilSatisfied(_peerData.isEmpty,
-                                  interval = 1.seconds,
-                                  maxTries = 10)
+    AsyncUtil
+      .retryUntilSatisfied(_peerData.isEmpty,
+                           interval = 1.seconds,
+                           maxTries = 10)
+      .map(_ => this)
   }
 
   /** creates and initialises a new test peer */
