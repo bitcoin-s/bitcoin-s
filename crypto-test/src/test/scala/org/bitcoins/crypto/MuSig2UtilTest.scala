@@ -26,6 +26,20 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         sign(noncePriv2, aggMultiNoncePub, priv2, msg, keySet)
 
       assert(aggNonce1 == aggNonce2)
+      assert(
+        partialSigVerify(s1,
+                         noncePub1,
+                         aggMultiNoncePub,
+                         pub1.schnorrPublicKey,
+                         keySet,
+                         msg))
+      assert(
+        partialSigVerify(s2,
+                         noncePub2,
+                         aggMultiNoncePub,
+                         pub2.schnorrPublicKey,
+                         keySet,
+                         msg))
 
       val sig = signAgg(Vector(s1, s2), aggNonce1)
       val aggPub = keySet.aggPubKey

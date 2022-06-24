@@ -64,27 +64,23 @@ object MuSig2Util {
   }
 
   def aggListHash(bytes: ByteVector): ByteVector = {
-    CryptoUtil.taggedSha256(bytes, "MuSig2/agg_list").bytes
+    CryptoUtil.taggedSha256(bytes, "KeyAgg list").bytes
   }
 
   def aggCoefHash(bytes: ByteVector): ByteVector = {
-    CryptoUtil.taggedSha256(bytes, "MuSig2/agg_coef").bytes
+    CryptoUtil.taggedSha256(bytes, "KeyAgg coefficient").bytes
   }
 
   def nonHash(bytes: ByteVector): ByteVector = {
-    CryptoUtil.taggedSha256(bytes, "MuSig2/non").bytes
+    CryptoUtil.taggedSha256(bytes, "MuSig/nonce").bytes
   }
 
   def nonCoefHash(bytes: ByteVector): ByteVector = {
-    CryptoUtil.taggedSha256(bytes, "MuSig2/non_coef").bytes
-  }
-
-  def sigHash(bytes: ByteVector): ByteVector = {
-    CryptoUtil.taggedSha256(bytes, "MuSig2/sig").bytes
+    CryptoUtil.taggedSha256(bytes, "MuSig/noncecoef").bytes
   }
 
   def auxHash(bytes: ByteVector): ByteVector = {
-    CryptoUtil.taggedSha256(bytes, "MuSig2/aux").bytes
+    CryptoUtil.taggedSha256(bytes, "MuSig/aux").bytes
   }
 
   def genMultiNonce(
@@ -140,6 +136,33 @@ object MuSig2Util {
     }
   }
 
+  def multiNoncePubSum(
+      multiNoncePub: MultiNoncePub,
+      b: FieldElement): ECPublicKey = {
+    multiNoncePub.tail
+      .foldLeft((FieldElement.one, multiNoncePub.head)) {
+        case ((prevPow, sumSoFar), nonce) =>
+          val pow = prevPow.multiply(b)
+          val point = nonce.multiply(pow)
+
+          (pow, sumSoFar.add(point)) // TODO Deal with infinity here
+      }
+      ._2
+  }
+
+  def multiNoncePrivSum(
+      multiNoncePriv: MultiNoncePriv,
+      b: FieldElement): FieldElement = {
+    multiNoncePriv
+      .foldLeft((FieldElement.one, FieldElement.zero)) {
+        case ((pow, sumSoFar), privNonce) =>
+          val prod = privNonce.fieldElement.multiply(pow)
+
+          (pow.multiply(b), sumSoFar.add(prod))
+      }
+      ._2
+  }
+
   def getSessionValues(
       aggMultiNoncePub: MultiNoncePub,
       keySet: KeySet,
@@ -154,15 +177,7 @@ object MuSig2Util {
         .reduce(_ ++ _) ++ aggPubKey.bytes ++ message)
     val b = FieldElement(new java.math.BigInteger(1, bHash.toArray))
 
-    val aggNonce = aggMultiNoncePub.tail
-      .foldLeft((FieldElement.one, aggMultiNoncePub.head)) {
-        case ((prevPow, sumSoFar), nonce) =>
-          val pow = prevPow.multiply(b)
-          val point = nonce.multiply(pow)
-
-          (pow, sumSoFar.add(point)) // TODO Deal with infinity here
-      }
-      ._2
+    val aggNonce = multiNoncePubSum(aggMultiNoncePub, b)
     val eBytes = CryptoUtil
       .sha256SchnorrChallenge(
         aggNonce.schnorrNonce.bytes ++ aggPubKey.bytes ++ message)
@@ -199,19 +214,52 @@ object MuSig2Util {
 
     val adjustedPrivKey = privKey.fieldElement.multiply(gp).multiply(g)
 
-    val privNonceSum = adjustedNoncePriv
-      .foldLeft((FieldElement.one, FieldElement.zero)) {
-        case ((pow, sumSoFar), privNonce) =>
-          val scalar = privNonce.fieldElement.multiply(pow)
-          val nextPow = pow.multiply(b)
-
-          (nextPow, sumSoFar.add(scalar))
-      }
-      ._2
+    val privNonceSum = multiNoncePrivSum(adjustedNoncePriv, b)
 
     val s = adjustedPrivKey.multiply(e).multiply(coef).add(privNonceSum)
 
-    (aggNonce, s) // TODO require passes internal verification
+    require(
+      partialSigVerify(s,
+                       noncePriv.map(_.publicKey),
+                       pubKey.schnorrPublicKey,
+                       keySet,
+                       b,
+                       aggNonce,
+                       e))
+
+    (aggNonce, s)
+  }
+
+  def partialSigVerify(
+      partialSig: FieldElement,
+      multiNoncePub: MultiNoncePub,
+      aggMultiNoncePub: MultiNoncePub,
+      pubKey: SchnorrPublicKey,
+      keySet: KeySet,
+      message: ByteVector): Boolean = {
+    val (b, aggNonce, e) = getSessionValues(aggMultiNoncePub, keySet, message)
+
+    partialSigVerify(partialSig, multiNoncePub, pubKey, keySet, b, aggNonce, e)
+  }
+
+  def partialSigVerify(
+      partialSig: FieldElement,
+      multiNoncePub: MultiNoncePub,
+      pubKey: SchnorrPublicKey,
+      keySet: KeySet,
+      b: FieldElement,
+      aggNonce: ECPublicKey,
+      e: FieldElement): Boolean = {
+    val nonceSum = multiNoncePubSum(multiNoncePub, b)
+    val nonceSumAdjusted = aggNonce.parity match {
+      case EvenParity => nonceSum
+      case OddParity  => nonceSum.multiply(FieldElement.orderMinusOne)
+    }
+
+    val aggKey = pubKey.toXOnly.publicKey(keySet.aggPubKey.parity)
+    val a = keySet.keyAggCoef(pubKey)
+    partialSig.getPublicKey == nonceSumAdjusted.add(
+      aggKey.multiply(e.multiply(a)))
   }
 
   def signAgg(
