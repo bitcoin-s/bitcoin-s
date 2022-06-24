@@ -458,9 +458,8 @@ jobs:
           echo "Directory contents"
           ls -l "bitcoin-s-ts/oracle-electron-ts"
           ls -l "bitcoin-s-ts/oracle-electron-ts/out"
-          ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build"
-          ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/make"
-          ls -l "bitcoin-s-ts/oracle-electron-ts/out/my-build/Krystal Bull-darwin-x64"
+          ls -l "bitcoin-s-ts/oracle-electron-ts/out/make"
+          ls -l "bitcoin-s-ts/oracle-electron-ts/out/Krystal Bull-darwin-x64"
           echo "=== Verify app signature ==="
           codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
           codesign -dvv "$KRYSTALBULL_PATH"
@@ -568,7 +567,7 @@ jobs:
         if: startsWith(matrix.os,'ubuntu')
         run: mv bitcoin-s-ts/oracle-electron-ts/out/make/deb/x64/*.deb bitcoin-s-ts/oracle-electron-ts/out/make
       # Capture signed Mac app
-      - name: (macos) Upload krystalbull-${{ matrix.TARGET }}-app
+      - name: (macos) Upload krystalbull-mac-app
         if: startsWith(matrix.os,'macos')
         uses: actions/upload-artifact@v3
         env:
@@ -603,13 +602,15 @@ jobs:
         working-directory: bitcoin-s-ts/wallet-electron-ts
         env:
           APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
-          NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
-          NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
-          NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
+          # NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
+          # NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
+          # NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
         run: |
           npm ci
           npm run build
           npm run make
+      - name: View Artifacts
+        run: ls -l bitcoin-s-ts/wallet-electron-ts/out
       - name: View Artifacts
         run: ls -l bitcoin-s-ts/wallet-electron-ts/out/make
       - name: (linux) Move .deb into /make
