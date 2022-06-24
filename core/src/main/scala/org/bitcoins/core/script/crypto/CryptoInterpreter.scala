@@ -97,6 +97,7 @@ sealed abstract class CryptoInterpreter {
 
       program.txSignatureComponent.sigVersion match {
         case SigVersionWitnessV0 | SigVersionWitnessV0 | SigVersionBase =>
+          println(s"sigVersion=${program.txSignatureComponent.sigVersion}")
           val pubKey = ECPublicKeyBytes(program.stack.head.bytes)
           val signature = ECDigitalSignature(program.stack.tail.head.bytes)
           val removedOpCodeSeparatorsScript =
