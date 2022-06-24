@@ -2,13 +2,55 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
+// TODO static test vectors
+// TODO test with more signers
 // TODO implement tweaking
+// TODO suppport js
+// TODO test against secp256k1-zkp
+// TODO refactor for niceness
 object MuSig2Util {
 
   private val nonceNum: Int = 2
 
-  type MultiNoncePriv = Vector[ECPrivateKey]
-  type MultiNoncePub = Vector[ECPublicKey]
+  case class MultiNoncePriv(privNonces: Vector[ECPrivateKey])
+      extends NetworkElement {
+
+    def toPublicNonces: MultiNoncePub = {
+      MultiNoncePub(privNonces.map(_.publicKey))
+    }
+
+    def toFieldElements: Vector[FieldElement] = {
+      privNonces.map(_.fieldElement)
+    }
+
+    def length: Int = privNonces.length
+
+    override def bytes: ByteVector = {
+      privNonces.map(_.bytes).reduce(_ ++ _)
+    }
+
+    def negate: MultiNoncePriv = {
+      MultiNoncePriv(privNonces.map(_.negate))
+    }
+  }
+
+  case class MultiNoncePub(pubNonces: Vector[ECPublicKey])
+      extends NetworkElement {
+
+    def apply(i: Int): ECPublicKey = {
+      pubNonces(i)
+    }
+
+    def toPoints: Vector[SecpPoint] = {
+      pubNonces.map(_.toPoint)
+    }
+
+    def length: Int = pubNonces.length
+
+    override def bytes: ByteVector = {
+      pubNonces.map(_.bytes).reduce(_ ++ _)
+    }
+  }
 
   case class KeyGenContext(
       aggPubKey: ECPublicKey,
@@ -114,7 +156,7 @@ object MuSig2Util {
       case None => ByteVector.fromByte(0)
     }
 
-    val privNonces = 0.until(nonceNum).toVector.map { index =>
+    val privNonceKeys = 0.until(nonceNum).toVector.map { index =>
       val indexByte = ByteVector.fromByte(index.toByte)
 
       val noncePreBytes =
@@ -124,15 +166,18 @@ object MuSig2Util {
 
       FieldElement(noncePreNum).toPrivateKey
     }
-    val pubNonces = privNonces.map(_.publicKey)
+    val privNonces = MultiNoncePriv(privNonceKeys)
+    val pubNonces = privNonces.toPublicNonces
 
     (pubNonces, privNonces)
   }
 
   def aggNonces(nonces: Vector[MultiNoncePub]): MultiNoncePub = {
-    0.until(nonceNum).toVector.map { i =>
+    val aggNonceKeys = 0.until(nonceNum).toVector.map { i =>
       nonces.map(multiNonce => multiNonce(i)).reduce(_.add(_))
     }
+
+    MultiNoncePub(aggNonceKeys)
   }
 
   private def nonceSum[T](
@@ -153,7 +198,7 @@ object MuSig2Util {
   def multiNoncePubSum(
       multiNoncePub: MultiNoncePub,
       b: FieldElement): ECPublicKey = {
-    nonceSum[SecpPoint](multiNoncePub.map(_.toPoint),
+    nonceSum[SecpPoint](multiNoncePub.toPoints,
                         b,
                         _.add(_),
                         _.multiply(_),
@@ -166,7 +211,7 @@ object MuSig2Util {
   def multiNoncePrivSum(
       multiNoncePriv: MultiNoncePriv,
       b: FieldElement): FieldElement = {
-    nonceSum[FieldElement](multiNoncePriv.map(_.fieldElement),
+    nonceSum[FieldElement](multiNoncePriv.toFieldElements,
                            b,
                            _.add(_),
                            _.multiply(_),
@@ -182,9 +227,7 @@ object MuSig2Util {
     val aggPubKey = keySet.aggPubKey.schnorrPublicKey
 
     val bHash = nonCoefHash(
-      aggMultiNoncePub
-        .map(_.bytes)
-        .reduce(_ ++ _) ++ aggPubKey.bytes ++ message)
+      aggMultiNoncePub.bytes ++ aggPubKey.bytes ++ message)
     val b = FieldElement(new java.math.BigInteger(1, bHash.toArray))
 
     val aggNonce = multiNoncePubSum(aggMultiNoncePub, b)
@@ -209,7 +252,7 @@ object MuSig2Util {
 
     val adjustedNoncePriv = aggNonce.parity match {
       case EvenParity => noncePriv
-      case OddParity  => noncePriv.map(_.negate)
+      case OddParity  => noncePriv.negate
     }
 
     val gp = pubKey.parity match {
@@ -230,7 +273,7 @@ object MuSig2Util {
 
     require(
       partialSigVerify(s,
-                       noncePriv.map(_.publicKey),
+                       noncePriv.toPublicNonces,
                        pubKey.schnorrPublicKey,
                        keySet,
                        b,
