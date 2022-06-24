@@ -2,7 +2,7 @@ package org.bitcoins.core.psbt
 
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
@@ -15,6 +15,8 @@ import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{HashType, _}
 import scodec.bits.ByteVector
+
+import scala.annotation.tailrec
 
 sealed trait PSBTRecord extends NetworkElement {
 
@@ -321,6 +323,79 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
     override val value: ByteVector = preImage
   }
 
+  case class TRKeySpendSignature(signature: SchnorrDigitalSignature)
+      extends InputPSBTRecord {
+    override type KeyId = TRKeySpendSignatureKeyId.type
+
+    override val key: ByteVector = ByteVector(TRKeySpendSignatureKeyId.byte)
+    override val value: ByteVector = signature.bytes
+  }
+
+  case class TRScriptSpendSignature(
+      xOnlyPubKey: XOnlyPubKey,
+      leafHash: Sha256Digest,
+      signature: SchnorrDigitalSignature)
+      extends InputPSBTRecord {
+    override type KeyId = TRScriptSpendSignatureKeyId.type
+
+    override val key: ByteVector = ByteVector(
+      TRScriptSpendSignatureKeyId.byte) ++ xOnlyPubKey.bytes ++ leafHash.bytes
+    override val value: ByteVector = signature.bytes
+  }
+
+  case class TRLeafScript(
+      controlBlock: ControlBlock,
+      script: RawScriptPubKey,
+      leafVersion: Byte)
+      extends InputPSBTRecord {
+    override type KeyId = TRLeafScriptKeyId.type
+
+    override val key: ByteVector = {
+      ByteVector(TRLeafScriptKeyId.byte) ++ controlBlock.bytes
+    }
+
+    override val value: ByteVector = {
+      script.asmBytes ++ ByteVector.fromByte(leafVersion)
+    }
+  }
+
+  case class TRBIP32DerivationPath(
+      xOnlyPubKey: XOnlyPubKey,
+      hashes: Vector[Sha256Digest],
+      masterFingerprint: ByteVector,
+      path: BIP32Path)
+      extends InputPSBTRecord {
+
+    override type KeyId = TRBIP32DerivationPathKeyId.type
+
+    override val key: ByteVector =
+      ByteVector(TRBIP32DerivationPathKeyId.byte) ++ xOnlyPubKey.bytes
+
+    override val value: ByteVector = {
+      val hashesBytes = if (hashes.isEmpty) {
+        CompactSizeUInt.zero.bytes
+      } else {
+        CompactSizeUInt(UInt64(hashes.length)).bytes ++
+          hashes.map(_.bytes).reduce(_ ++ _)
+      }
+      hashesBytes ++ path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
+    }
+  }
+
+  case class TRInternalKey(xOnlyPubKey: XOnlyPubKey) extends InputPSBTRecord {
+    override type KeyId = TRInternalKeyKeyId.type
+
+    override val key: ByteVector = ByteVector(TRInternalKeyKeyId.byte)
+    override val value: ByteVector = xOnlyPubKey.bytes
+  }
+
+  case class TRMerkelRoot(hash: Sha256Digest) extends InputPSBTRecord {
+    override type KeyId = TRMerkelRootKeyId.type
+
+    override val key: ByteVector = ByteVector(TRMerkelRootKeyId.byte)
+    override val value: ByteVector = hash.bytes
+  }
+
   case class Unknown(key: ByteVector, value: ByteVector)
       extends InputPSBTRecord {
     override type KeyId = UnknownKeyId.type
@@ -421,6 +496,63 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
         require(record.hash.bytes == hash,
                 "Received invalid HASH256PreImage, hash does not match")
         record
+      case TRKeySpendSignatureKeyId =>
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
+
+        val sig = SchnorrDigitalSignature.fromBytes(value)
+        TRKeySpendSignature(sig)
+      case TRScriptSpendSignatureKeyId =>
+        require(
+          key.size == 65,
+          s"The key must only contain the 65 bytes type, got: ${key.size}")
+
+        val (xOnlyPubKey, leafHash) = key.tail.splitAt(32)
+        val sig = SchnorrDigitalSignature.fromBytes(value)
+
+        TRScriptSpendSignature(XOnlyPubKey(xOnlyPubKey),
+                               Sha256Digest(leafHash),
+                               sig)
+
+      case TRLeafScriptKeyId =>
+        val controlBlock = ControlBlock(key.tail)
+
+        val script = RawScriptPubKey.fromAsmBytes(value.init)
+
+        TRLeafScript(controlBlock, script, value.last)
+      case TRBIP32DerivationPathKeyId =>
+        val pubKey = XOnlyPubKey(key.tail)
+        val numHashes = CompactSizeUInt.fromBytes(value)
+        val hashes = value
+          .drop(numHashes.byteSize)
+          .take(numHashes.num.toInt * 32)
+          .grouped(32)
+          .map(Sha256Digest.fromBytes)
+          .toVector
+        val remaining = value.drop(numHashes.byteSize + hashes.size * 32)
+        val fingerprint = remaining.take(4)
+        val path = BIP32Path.fromBytesLE(remaining.drop(4))
+
+        TRBIP32DerivationPath(xOnlyPubKey = pubKey,
+                              hashes = hashes,
+                              masterFingerprint = fingerprint,
+                              path = path)
+      case TRInternalKeyKeyId =>
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
+
+        require(
+          value.size == 32,
+          s"The value must contain the 32 byte x-only public key, got: ${value.size}")
+        TRInternalKey(XOnlyPubKey.fromBytes(value))
+      case TRMerkelRootKeyId =>
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
+
+        require(
+          value.size == 32,
+          s"The value must contain the 32 byte x-only public key, got: ${value.size}")
+        TRMerkelRoot(Sha256Digest(value))
       case UnknownKeyId =>
         InputPSBTRecord.Unknown(key, value)
     }
@@ -464,6 +596,57 @@ object OutputPSBTRecord extends Factory[OutputPSBTRecord] {
       path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
   }
 
+  case class TaprootTree(
+      leafs: Vector[
+        (Byte, Byte, ByteVector)
+      ] // todo change to TapScriptPubKey when we have a TapScriptPubKey type
+  ) extends OutputPSBTRecord {
+    require(leafs.nonEmpty)
+    override type KeyId = TaprootTreeKeyId.type
+
+    override val key: ByteVector =
+      ByteVector(TaprootTreeKeyId.byte)
+
+    override val value: ByteVector = {
+      leafs.foldLeft(ByteVector.empty) { (acc, leaf) =>
+        val spk = leaf._3
+        acc ++ ByteVector.fromByte(leaf._1) ++ ByteVector.fromByte(
+          leaf._2) ++ CompactSizeUInt.calc(spk).bytes ++ spk
+      }
+    }
+  }
+
+  case class TRBIP32DerivationPath(
+      xOnlyPubKey: XOnlyPubKey,
+      hashes: Vector[Sha256Digest],
+      masterFingerprint: ByteVector,
+      path: BIP32Path)
+      extends OutputPSBTRecord {
+
+    override type KeyId = TRBIP32DerivationPathKeyId.type
+
+    override val key: ByteVector =
+      ByteVector(TRBIP32DerivationPathKeyId.byte) ++ xOnlyPubKey.bytes
+
+    override val value: ByteVector = {
+      val hashesBytes = if (hashes.isEmpty) {
+        CompactSizeUInt.zero.bytes
+      } else {
+        CompactSizeUInt(UInt64(hashes.size)).bytes ++
+          hashes.map(_.bytes).reduce(_ ++ _)
+      }
+      hashesBytes ++ path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
+    }
+  }
+
+  case class TRInternalKey(xOnlyPubKey: XOnlyPubKey) extends OutputPSBTRecord {
+    override type KeyId = TRInternalKeyKeyId.type
+
+    override val key: ByteVector = ByteVector(TRInternalKeyKeyId.byte)
+
+    override val value: ByteVector = xOnlyPubKey.bytes
+  }
+
   case class Unknown(key: ByteVector, value: ByteVector)
       extends OutputPSBTRecord {
     override type KeyId = UnknownKeyId.type
@@ -491,6 +674,49 @@ object OutputPSBTRecord extends Factory[OutputPSBTRecord] {
         val path = BIP32Path.fromBytesLE(value.drop(4))
 
         OutputPSBTRecord.BIP32DerivationPath(pubKey, fingerprint, path)
+      case PSBTOutputKeyId.TRInternalKeyKeyId =>
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
+
+        val xOnlyPubKey = XOnlyPubKey.fromBytes(value)
+        OutputPSBTRecord.TRInternalKey(xOnlyPubKey)
+      case TaprootTreeKeyId =>
+        @tailrec
+        def loop(
+            bytes: ByteVector,
+            accum: Vector[(Byte, Byte, ByteVector)]): Vector[
+          (Byte, Byte, ByteVector)] = {
+          if (bytes.isEmpty) {
+            accum
+          } else {
+            val depth = bytes.head
+            val version = bytes.tail.head
+            val spkLen = CompactSizeUInt.fromBytes(bytes.drop(2))
+            val spk = bytes.drop(spkLen.byteSize + 2)
+
+            val remaining = bytes.drop(2 + spkLen.byteSize + spk.length)
+            loop(remaining, accum :+ (depth, version, spk))
+          }
+        }
+        val leafs = loop(value, Vector.empty)
+        OutputPSBTRecord.TaprootTree(leafs)
+      case PSBTOutputKeyId.TRBIP32DerivationPathKeyId =>
+        val pubKey = XOnlyPubKey(key.tail)
+        val numHashes = CompactSizeUInt.fromBytes(value)
+        val hashes = value
+          .drop(numHashes.byteSize)
+          .take(numHashes.num.toInt * 32)
+          .grouped(32)
+          .map(Sha256Digest.fromBytes)
+          .toVector
+        val remaining = value.drop(numHashes.byteSize + hashes.size * 32)
+        val fingerprint = remaining.take(4)
+        val path = BIP32Path.fromBytesLE(remaining.drop(4))
+
+        OutputPSBTRecord.TRBIP32DerivationPath(xOnlyPubKey = pubKey,
+                                               hashes = hashes,
+                                               masterFingerprint = fingerprint,
+                                               path = path)
       case UnknownKeyId =>
         OutputPSBTRecord.Unknown(key, value)
     }
