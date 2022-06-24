@@ -323,20 +323,20 @@ jobs:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: krystalbull-${{ matrix.TARGET }}-zip
-          path: ${{KB_MAKE}}/zip/darwin/x64/*.zip
+          path: ${{env.KB_MAKE}}/zip/darwin/x64/*.zip
       - name: Upload krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
           name: krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
-          path: ${{KB_MAKE}}/*.${{ matrix.FORMAT }}
+          path: ${{env.KB_MAKE}}/*.${{ matrix.FORMAT }}
       - name: (release) Upload krystallbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           name: krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}-${{steps.previoustag.outputs.tag}}
-          files: ${{KB_MAKE}}/*.${{ matrix.FORMAT }}
+          files: ${{env.KB_MAKE}}/*.${{ matrix.FORMAT }}
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
