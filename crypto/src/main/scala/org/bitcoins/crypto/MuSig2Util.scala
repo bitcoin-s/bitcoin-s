@@ -2,7 +2,6 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-// TODO partial signature verification
 // TODO implement tweaking
 object MuSig2Util {
 
@@ -136,31 +135,42 @@ object MuSig2Util {
     }
   }
 
+  private def nonceSum[T](
+      nonces: Vector[T],
+      b: FieldElement,
+      add: (T, T) => T,
+      multiply: (T, FieldElement) => T,
+      identity: T): T = {
+    nonces
+      .foldLeft((FieldElement.one, identity)) { case ((pow, sumSoFar), nonce) =>
+        val prod = multiply(nonce, pow)
+
+        (pow.multiply(b), add(sumSoFar, prod))
+      }
+      ._2
+  }
+
   def multiNoncePubSum(
       multiNoncePub: MultiNoncePub,
       b: FieldElement): ECPublicKey = {
-    multiNoncePub.tail
-      .foldLeft((FieldElement.one, multiNoncePub.head)) {
-        case ((prevPow, sumSoFar), nonce) =>
-          val pow = prevPow.multiply(b)
-          val point = nonce.multiply(pow)
-
-          (pow, sumSoFar.add(point)) // TODO Deal with infinity here
-      }
-      ._2
+    nonceSum[SecpPoint](multiNoncePub.map(_.toPoint),
+                        b,
+                        _.add(_),
+                        _.multiply(_),
+                        SecpPointInfinity) match {
+      case SecpPointInfinity  => CryptoParams.getG
+      case p: SecpPointFinite => p.toPublicKey
+    }
   }
 
   def multiNoncePrivSum(
       multiNoncePriv: MultiNoncePriv,
       b: FieldElement): FieldElement = {
-    multiNoncePriv
-      .foldLeft((FieldElement.one, FieldElement.zero)) {
-        case ((pow, sumSoFar), privNonce) =>
-          val prod = privNonce.fieldElement.multiply(pow)
-
-          (pow.multiply(b), sumSoFar.add(prod))
-      }
-      ._2
+    nonceSum[FieldElement](multiNoncePriv.map(_.fieldElement),
+                           b,
+                           _.add(_),
+                           _.multiply(_),
+                           FieldElement.zero)
   }
 
   def getSessionValues(

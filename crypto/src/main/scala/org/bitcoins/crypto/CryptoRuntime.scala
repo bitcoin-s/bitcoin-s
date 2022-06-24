@@ -211,6 +211,17 @@ trait CryptoRuntime {
 
   def tweakMultiply(publicKey: ECPublicKey, tweak: FieldElement): ECPublicKey
 
+  def tweakMultiply(point: SecpPoint, tweak: FieldElement): SecpPoint = {
+    point match {
+      case SecpPointInfinity => SecpPointInfinity
+      case pt: SecpPointFinite =>
+        Try(tweakMultiply(pt.toPublicKey, tweak)) match {
+          case Failure(_)       => SecpPointInfinity
+          case Success(multKey) => multKey.toPoint
+        }
+    }
+  }
+
   def add(pk1: ECPrivateKey, pk2: ECPrivateKey): ECPrivateKey =
     pk1.fieldElement.add(pk2.fieldElement).toPrivateKey
 
