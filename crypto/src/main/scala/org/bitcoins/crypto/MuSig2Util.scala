@@ -15,7 +15,7 @@ object MuSig2Util {
       extends NetworkElement {
 
     def toPublicNonces: MultiNoncePub = {
-      MultiNoncePub(privNonces.map(_.publicKey))
+      MultiNoncePub(privNonces.map(_.publicKey.toPoint))
     }
 
     def toFieldElements: Vector[FieldElement] = {
@@ -33,21 +33,22 @@ object MuSig2Util {
     }
   }
 
-  case class MultiNoncePub(pubNonces: Vector[ECPublicKey])
+  case class MultiNoncePub(pubNonces: Vector[SecpPoint])
       extends NetworkElement {
 
-    def apply(i: Int): ECPublicKey = {
+    def apply(i: Int): SecpPoint = {
       pubNonces(i)
-    }
-
-    def toPoints: Vector[SecpPoint] = {
-      pubNonces.map(_.toPoint)
     }
 
     def length: Int = pubNonces.length
 
     override def bytes: ByteVector = {
-      pubNonces.map(_.bytes).reduce(_ ++ _)
+      pubNonces
+        .map {
+          case SecpPointInfinity  => ByteVector.fill(33)(0)
+          case p: SecpPointFinite => p.toPublicKey.bytes
+        }
+        .reduce(_ ++ _)
     }
   }
 
@@ -223,7 +224,7 @@ object MuSig2Util {
   def multiNoncePubSum(
       multiNoncePub: MultiNoncePub,
       b: FieldElement): ECPublicKey = {
-    nonceSum[SecpPoint](multiNoncePub.toPoints,
+    nonceSum[SecpPoint](multiNoncePub.pubNonces,
                         b,
                         _.add(_),
                         _.multiply(_),

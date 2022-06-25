@@ -209,7 +209,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B833"
     ).map { hex =>
       val (p1, p2) = hex.splitAt(66)
-      MultiNoncePub(Vector(p1, p2).map(ECPublicKey.fromHex))
+      MultiNoncePub(Vector(p1, p2).map(ECPublicKey.fromHex).map(_.toPoint))
     }
 
     val expected = ByteVector.fromValidHex(
@@ -234,13 +234,13 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
       ECPublicKey.fromHex(
         "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
 
-    // Vector 5 FAILS because MultiNoncePub doesn't support infinity yet
-    val g = CryptoParams.getG
+    // Vector 5
+    val g = CryptoParams.getG.toPoint
     val negG = g.multiply(FieldElement.orderMinusOne)
     val pnonce1 = MultiNoncePub(Vector(pnonce.head.pubNonces.head, g))
     val pnonce2 = MultiNoncePub(Vector(pnonce.last.pubNonces.head, negG))
-    val x = aggNonces(Vector(pnonce1, pnonce2)).bytes
-    val y = expected.take(33) ++ ByteVector.fill(33)(0)
-    assert(x == y, (x, y))
+    assert(
+      aggNonces(Vector(pnonce1, pnonce2)).bytes == expected.take(
+        33) ++ ByteVector.fill(33)(0))
   }
 }
