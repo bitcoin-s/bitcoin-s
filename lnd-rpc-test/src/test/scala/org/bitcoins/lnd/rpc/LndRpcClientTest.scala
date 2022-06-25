@@ -1,8 +1,9 @@
 package org.bitcoins.lnd.rpc
 
 import lnrpc.Invoice.InvoiceState
+import lnrpc.{HopHint, Invoice, RouteHint}
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.script.TaprootScriptPubKey
@@ -142,5 +143,28 @@ class LndRpcClientTest extends LndFixture {
 
       leases <- lnd.listLeases()
     } yield assert(leases.isEmpty)
+  }
+
+  it must "correctly handle UInt64 & UInt32 converters" in { lnd =>
+    val hopHint = HopHint(
+      nodeId =
+        "037c862ec724bc85462aaeb804dd0941cd77dc4521cabd05edf3d0f23ed6b01f09",
+      chanId = UInt64.max - UInt64.twentyTwo,
+      feeBaseMsat = UInt32.zero,
+      feeProportionalMillionths = UInt32.max,
+      cltvExpiryDelta = UInt32.zero
+    )
+
+    val invoice = Invoice("memo",
+                          value = 100000,
+                          expiry = 1000,
+                          routeHints = Vector(RouteHint(Vector(hopHint))))
+
+    for {
+      res <- lnd.addInvoice(invoice)
+      lookup <- lnd.lookupInvoice(res.rHash)
+    } yield {
+      assert(lookup.routeHints == invoice.routeHints)
+    }
   }
 }
