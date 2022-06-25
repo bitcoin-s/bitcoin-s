@@ -127,6 +127,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     }
   }
 
+  // https://github.com/jonasnick/bips/blob/263a765a77e20efe883ed3b28dc155a0d8c7d61a/bip-musig2/reference.py#L391
   it should "pass key aggregation test vectors" in {
     val inputs = Vector(
       "F9308A019258C31049344F85F89D5229B531C845836F99B08601F113BCE036F9",
@@ -172,10 +173,12 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     // TODO Vectors 7 and 8 are tweaking related
   }
 
+  // https://github.com/jonasnick/bips/blob/263a765a77e20efe883ed3b28dc155a0d8c7d61a/bip-musig2/reference.py#L436
   it should "pass nonce generation test vectors" in {
     val rand = ByteVector.fill(32)(0)
     val msg = Some(ByteVector.fill(32)(1))
     val sk = Some(ECPrivateKey(ByteVector.fill(32)(2)))
+    // TODO make this a pubkey once it is changed in the BIP
     val aggpk = Some(ByteVector.fill(32)(3))
     val extraIn = Some(ByteVector.fill(32)(4))
 
@@ -201,6 +204,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     assert(nonce3._2.bytes == expected(2))
   }
 
+  // https://github.com/jonasnick/bips/blob/263a765a77e20efe883ed3b28dc155a0d8c7d61a/bip-musig2/reference.py#L461
   it should "pass nonce aggregation test vectors" in {
     val pnonce = Vector(
       "020151C80F435648DF67A22B749CD798CE54E0321D034B92B709B567D60A42E666" ++
@@ -242,5 +246,225 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     assert(
       aggNonces(Vector(pnonce1, pnonce2)).bytes == expected.take(
         33) ++ ByteVector.fill(33)(0))
+  }
+
+  // https://github.com/jonasnick/bips/blob/263a765a77e20efe883ed3b28dc155a0d8c7d61a/bip-musig2/reference.py#L504
+  it should "pass signing and verification test vectors" in {
+    val remotePubKeys = Vector(
+      "F9308A019258C31049344F85F89D5229B531C845836F99B08601F113BCE036F9",
+      "DFF1D77F2A671C5F36183726DB2341BE58FEAE1DA2DECED843240F7B502BA659"
+    ).map(SchnorrPublicKey.fromHex)
+
+    val privNonce = MultiNoncePriv(
+      Vector(
+        ECPrivateKey(
+          "508B81A611F100A6B2B6B29656590898AF488BCF2E1F55CF22E5CFB84421FE61"),
+        ECPrivateKey(
+          "FA27FD49B1D50085B481285E1CA205D55C82CC1B31FF5CD54A489829355901F7")
+      ))
+
+    val pubNonces = Vector(
+      "0337C87821AFD50A8644D820A8F3E02E499C931865C2360FB43D0A0D20DAFE07EA" ++
+        "0287BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480",
+      "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798" ++
+        "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798",
+      "032DE2662628C90B03F5E720284EB52FF7D71F4284F627B68A853D78C78E1FFE93" ++
+        "03E4C5524E83FFE1493B9077CF1CA6BEB2090C93D930321071AD40B2F44E599046",
+      "0237C87821AFD50A8644D820A8F3E02E499C931865C2360FB43D0A0D20DAFE07EA" ++
+        "0387BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480"
+    ).map { hex =>
+      val (p1, p2) = hex.splitAt(66)
+      MultiNoncePub(Vector(p1, p2).map(ECPublicKey.fromHex).map(_.toPoint))
+    }
+
+    assert(privNonce.toPublicNonces == pubNonces.head)
+
+    val aggNonce = MultiNoncePub(
+      Vector(
+        "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61",
+        "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9")
+        .map(ECPublicKey.fromHex)
+        .map(_.toPoint)
+    )
+
+    assert(aggNonce == aggNonces(pubNonces.take(3)))
+
+    val sk = ECPrivateKey(
+      "7FB9E0E687ADA1EEBF7ECFE2F21E73EBDB51A7D450948DFE8D76D7F2D1007671")
+    val pk = sk.schnorrPublicKey
+    val msg = ByteVector.fromValidHex(
+      "F95466D086770E689964664219266FE5ED215C92AE20BAB5C9D79ADDDDF3C0CF")
+
+    val expected = Vector(
+      "68537CC5234E505BD14061F8DA9E90C220A181855FD8BDB7F127BB12403B4D3B",
+      "2DF67BFFF18E3DE797E13C6475C963048138DAEC5CB20A357CECA7C8424295EA",
+      "0D5B651E6DE34A29A12DE7A8B4183B4AE6A7F7FBE15CDCAFA4A3D1BCAABC7517",
+      "8D5E0407FB4756EEBCD86264C32D792EE36EEB69E952BBB30B8E41BEBC4D22FA"
+    ).map(FieldElement.fromHex)
+
+    // Vector 1
+    val keySet1 = UnsortedKeySet(Vector(pk, remotePubKeys(0), remotePubKeys(1)))
+    assert(sign(privNonce, aggNonce, sk, msg, keySet1)._2 == expected(0))
+
+    // Vector 2
+    val keySet2 = UnsortedKeySet(Vector(remotePubKeys(0), pk, remotePubKeys(1)))
+    assert(sign(privNonce, aggNonce, sk, msg, keySet2)._2 == expected(1))
+
+    // Vector 3
+    val keySet3 = UnsortedKeySet(Vector(remotePubKeys(0), remotePubKeys(1), pk))
+    assert(sign(privNonce, aggNonce, sk, msg, keySet3)._2 == expected(2))
+
+    // Vector 4
+    val infAggNonce = aggNonces(Vector(pubNonces(0), pubNonces(3)))
+    assert(infAggNonce.pubNonces.forall(_ == SecpPointInfinity))
+    val keySet4 = UnsortedKeySet(Vector(pk, remotePubKeys(0)))
+    assert(sign(privNonce, infAggNonce, sk, msg, keySet4)._2 == expected(3))
+
+    // The following errors must be handled by the caller as we can't even represent them
+    // Vector 5, 17
+    assertThrows[IllegalArgumentException](
+      SchnorrPublicKey(
+        "0000000000000000000000000000000000000000000000000000000000000007"))
+    // Vector 6
+    assertThrows[IllegalArgumentException](
+      ECPublicKey(
+        "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61"))
+    // Vector 7
+    assertThrows[IllegalArgumentException](
+      ECPublicKey(
+        "020000000000000000000000000000000000000000000000000000000000000009"))
+    // Vector 8
+    assertThrows[IllegalArgumentException](
+      ECPublicKey(
+        "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
+
+    // Verification test vectors
+    // Vector 9
+    assert(
+      partialSigVerify(expected(0),
+                       pubNonces.take(3),
+                       keySet1,
+                       msg,
+                       signerIndex = 0))
+    // Vector 10
+    assert(
+      partialSigVerify(expected(1),
+                       Vector(pubNonces(1), pubNonces(0), pubNonces(2)),
+                       keySet2,
+                       msg,
+                       signerIndex = 1))
+    // Vector 11
+    assert(
+      partialSigVerify(expected(2),
+                       Vector(pubNonces(1), pubNonces(2), pubNonces(0)),
+                       keySet3,
+                       msg,
+                       signerIndex = 2))
+
+    // Vector 12
+    assert(
+      partialSigVerify(expected(3),
+                       Vector(pubNonces(0), pubNonces(3)),
+                       keySet4,
+                       msg,
+                       signerIndex = 0))
+
+    // Vector 13
+    val badSig = FieldElement(
+      "97AC833ADCB1AFA42EBF9E0725616F3C9A0D5B614F6FE283CEAAA37A8FFAF406")
+    assert(!partialSigVerify(badSig, pubNonces, keySet1, msg, signerIndex = 0))
+    // Vector 14
+    assert(
+      !partialSigVerify(expected(0),
+                        pubNonces.take(3),
+                        keySet1,
+                        msg,
+                        signerIndex = 1))
+    // The following errors must be handled by the caller as we can't even represent them
+    // Vector 15
+    assertThrows[IllegalArgumentException](
+      FieldElement(
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"))
+    // Vector 16
+    assertThrows[IllegalArgumentException](
+      ECPublicKey(
+        "020000000000000000000000000000000000000000000000000000000000000009"))
+  }
+
+  // TODO tweak test vectors
+  // https://github.com/jonasnick/bips/blob/musig2/bip-musig2/reference.py#L629
+
+  // https://github.com/jonasnick/bips/blob/263a765a77e20efe883ed3b28dc155a0d8c7d61a/bip-musig2/reference.py#L702
+  it should "pass signature aggregation test vectors" in {
+    val pubKeys = Vector(
+      "487D1B83B41B4CBBD07A111F1BBC7BDC8864CFEF5DBF96E46E51C68399B0BEF6",
+      "4795C22501BF534BC478FF619407A7EC9E8D8883646D69BD43A0728944EA802F",
+      "0F5BE837F3AB7E7FEFF1FAA44D673C2017206AE836D2C7893CDE4ACB7D55EDEB",
+      "0FD453223E444FCA91FB5310990AE8A0C5DAA14D2A4C8944E1C0BC80C30DF682"
+    ).map(SchnorrPublicKey.fromHex)
+
+    val aggNonce = Vector(
+      "024FA51009A56F0D6DF737131CE1FBBD833797AF3B4FE6BF0D68F4D49F68B0947E" ++
+        "0248FB3BB9191F0CFF13806A3A2F1429C23012654FCE4E41F7EC9169EAA6056B21",
+      "023B11E63E2460E5E0F1561BB700FEA95B991DD9CA2CBBE92A3960641FA7469F67" ++
+        "02CA4CD38375FE8BEB857C770807225BFC7D712F42BA896B83FC71138E56409B21",
+      "03F98BEAA32B8A38FE3797C4E813DC9CE05ADBE32200035FB37EB0A030B735E9B6" ++
+        "030E6118EC98EA2BA7A358C2E38E7E13E63681EEB683E067061BF7D52DCF08E615",
+      "026491FBCFD47148043A0F7310E62EF898C10F2D0376EE6B232EAAD36F3C2E29E3" ++
+        "03020CB17D168908E2904DE2EB571CD232CA805A6981D0F86CDBBD2F12BD91F6D0",
+      "000000000000000000000000000000000000000000000000000000000000000000" ++
+        "000000000000000000000000000000000000000000000000000000000000000000"
+    ).map { hex =>
+      if (hex.forall(_ == '0')) MultiNoncePub(Vector.fill(2)(SecpPointInfinity))
+      else {
+        val (p1, p2) = hex.splitAt(66)
+        MultiNoncePub(Vector(p1, p2).map(ECPublicKey.fromHex).map(_.toPoint))
+      }
+    }
+
+    val msg = ByteVector.fromValidHex(
+      "599C67EA410D005B9DA90817CF03ED3B1C868E4DA4EDF00A5880B0082C237869")
+
+    val psig = Vector(
+      "E5C1CBD6E7E89FE9EE30D5F3B6D06B9C218846E4A1DEF4EE851410D51ABBD850",
+      "9BC470F7F1C9BC848BDF179B0023282FFEF40908E0EF88459784A4355FC86D0C",
+      "D5D8A09929BA264B2F5DF15ACA1CF2DEFA47C048DF0C3232E965FFE2F2831B1D",
+      "A915197503C1051EA77DC91F01C3A0E60BFD64473BD536CB613F9645BD61C843",
+      "99A144D7076A128022134E036B8BDF33811F7EAED9A1E48549B46D8A63D64DC9",
+      "716A72A0C1E531EBB4555C8E29FD35C796F4F231C3B039193D7E8D7AEFBDF5F7",
+      "06B6DD04BC0F1EF740916730AD7DAC794255B161221719765BDE9686A26633DC",
+      "BF6D85D4930062726EBC6EBB184AFD68DBB3FED159C501989690A62600D6FBAB"
+    ).map(FieldElement.fromHex)
+
+    val expected = Vector(
+      "4006D4D069F3B51E968762FF8074153E278E5BCD221AABE0743CA001B77E79F5" ++
+        "81863CCED9B25C6E7A0FED8EB6F393CD65CD7306D385DCF85CC6567DAA4E041B",
+      "98BCD40DFD94B47A3DA37D7B78EB6CCE8ABEACA23C3ADE6F4678902410EB35C6" ++
+        "7EEDBA0E2D7B2B69D6DBBA79CBE093C64B9647A96B98C8C28AD3379BDFAEA21F",
+      "3741FEDCCDD7508B58DCB9A780FF5D97452EC8C0448D8C97004EA7175C14F200" ++
+        "7A54D1DE356EBA6719278436EF111DFA8F1B832368371B9B7A25001709039679",
+      "F4B3DA3CF0D0F7CF5C1840593BF1A1A415DA341619AE848F2210696DC8C75125" ++
+        "40962C84EF7F0CEC491065F2D577213CF10E8A63D153297361B3B172BE27B61F"
+    ).map(SchnorrDigitalSignature.fromHex)
+
+    // Vector 1
+    val keySet1 = UnsortedKeySet(pubKeys.take(2))
+    val sig1 = signAgg(psig.take(2), aggNonce(0), keySet1, msg)
+    assert(sig1 == expected(0))
+    assert(keySet1.aggPubKey.schnorrPublicKey.verify(msg, sig1))
+
+    // Vector 2
+    val keySet2 = UnsortedKeySet(Vector(pubKeys(0), pubKeys(2)))
+    val sig2 = signAgg(psig.slice(2, 4), aggNonce(1), keySet2, msg)
+    assert(sig2 == expected(1))
+    assert(keySet2.aggPubKey.schnorrPublicKey.verify(msg, sig2))
+
+    // TODO Vectors 3 and 4 require tweaks
+
+    // The following error must be handled by the caller as we can't even represent it
+    // Vector 5
+    assertThrows[IllegalArgumentException](
+      FieldElement(
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"))
   }
 }

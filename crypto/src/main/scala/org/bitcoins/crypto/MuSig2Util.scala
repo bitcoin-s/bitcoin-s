@@ -55,6 +55,8 @@ object MuSig2Util {
   sealed trait KeySet {
     def keys: Vector[SchnorrPublicKey]
 
+    def length: Int = keys.length
+
     def apply(i: Int): SchnorrPublicKey = {
       keys(i)
     }
@@ -311,6 +313,22 @@ object MuSig2Util {
 
   def partialSigVerify(
       partialSig: FieldElement,
+      pubNonces: Vector[MultiNoncePub],
+      keySet: KeySet,
+      message: ByteVector,
+      signerIndex: Int): Boolean = {
+    require(signerIndex >= 0 && signerIndex < keySet.length)
+
+    partialSigVerify(partialSig,
+                     pubNonces(signerIndex),
+                     aggNonces(pubNonces),
+                     keySet(signerIndex),
+                     keySet,
+                     message)
+  }
+
+  def partialSigVerify(
+      partialSig: FieldElement,
       multiNoncePub: MultiNoncePub,
       aggMultiNoncePub: MultiNoncePub,
       pubKey: SchnorrPublicKey,
@@ -339,6 +357,17 @@ object MuSig2Util {
     val a = keySet.keyAggCoef(pubKey)
     partialSig.getPublicKey == nonceSumAdjusted.add(
       aggKey.multiply(e.multiply(a)))
+  }
+
+  def signAgg(
+      sVals: Vector[FieldElement],
+      aggMultiNoncePub: MultiNoncePub,
+      keySet: KeySet,
+      message: ByteVector): SchnorrDigitalSignature = {
+    val (_, aggPubNonce, _) =
+      getSessionValues(aggMultiNoncePub, keySet, message)
+
+    signAgg(sVals, aggPubNonce)
   }
 
   def signAgg(
