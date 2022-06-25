@@ -2,6 +2,7 @@ package org.bitcoins.crypto
 
 import org.bitcoins.crypto.MuSig2Util._
 import org.scalacheck.Gen
+import scodec.bits.ByteVector
 
 class MuSig2UtilTest extends BitcoinSCryptoTest {
   behavior of "MuSig2Util"
@@ -126,7 +127,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     }
   }
 
-  it must "pass test vectors" in {
+  it should "pass key aggregation test vectors" in {
     val inputs = Vector(
       "F9308A019258C31049344F85F89D5229B531C845836F99B08601F113BCE036F9",
       "DFF1D77F2A671C5F36183726DB2341BE58FEAE1DA2DECED843240F7B502BA659",
@@ -157,5 +158,46 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
                inputs(0),
                inputs(1),
                inputs(1))).aggPubKey.schnorrPublicKey == expected(3))
+
+    // The following errors must be handled by the caller as we can't even represent them
+    // Vector 5
+    assertThrows[IllegalArgumentException](
+      SchnorrPublicKey.fromHex(
+        "0000000000000000000000000000000000000000000000000000000000000005"))
+    // Vector 6
+    assertThrows[IllegalArgumentException](
+      SchnorrPublicKey.fromHex(
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
+
+    // TODO Vectors 7 and 8 are tweaking related
+  }
+
+  it should "pass nonce generation test vectors" in {
+    val rand = ByteVector.fill(32)(0)
+    val msg = Some(ByteVector.fill(32)(1))
+    val sk = Some(ECPrivateKey(ByteVector.fill(32)(2)))
+    val aggpk = Some(ByteVector.fill(32)(3))
+    val extraIn = Some(ByteVector.fill(32)(4))
+
+    val expected = Vector(
+      "149378B996F012F70C1016C29AE0A9B1D86AAD557CCD29178A24479756205DFD" ++
+        "6285697E57E8578FCFDE6FE7FA4B6CA8E3A5AECAB4FB92F84B7F9DF8DDEF4DB8",
+      "6613EA4A36A50F34990EAF73612EAA28636ED01325793456C04D8D89DB49372B" ++
+        "54E9DB34D09CBD394DB3FE3CCFFBCA6ED016F3AC877938613095893F54FA70DF",
+      "7B3B5A002356471AF0E961DE2549C121BD0D48ABCEEDC6E034BDDF86AD3E0A18" ++
+        "7ECEE674CEF7364B0BC4BEEFB8B66CAD89F98DE2F8C5A5EAD5D1D1E4BD7D04CD"
+    ).map(ByteVector.fromValidHex(_))
+
+    val nonce1 = genMultiNonceInternal(rand, sk, aggpk, msg, extraIn)
+    // Vector 1
+    assert(nonce1._2.bytes == expected(0))
+
+    val nonce2 = genMultiNonceInternal(rand, sk, aggpk, msgOpt = None, extraIn)
+    // Vector 2
+    assert(nonce2._2.bytes == expected(1))
+
+    val nonce3 = genMultiNonceInternal(rand)
+    // Vector 3
+    assert(nonce3._2.bytes == expected(2))
   }
 }

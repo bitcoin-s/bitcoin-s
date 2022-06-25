@@ -130,24 +130,27 @@ object MuSig2Util {
     CryptoUtil.taggedSha256(bytes, "MuSig/aux").bytes
   }
 
-  def genMultiNonce(
+  // TODO change aggPubKey back to SchnorrPublicKey and remove requirement once test vector is changed to valid x-coordinate
+  def genMultiNonceInternal(
+      preRand: ByteVector,
       privKeyOpt: Option[ECPrivateKey] = None,
-      aggPubKeyOpt: Option[SchnorrPublicKey] = None,
+      aggPubKeyOpt: Option[ByteVector] = None,
       msgOpt: Option[ByteVector] = None,
       extraInOpt: Option[ByteVector] = None): (
       MultiNoncePub,
       MultiNoncePriv) = {
-    msgOpt.foreach(msg => require(msg.length == 32))
+    require(preRand.length == 32)
+    require(msgOpt.forall(msg => msg.length == 32))
+    require(aggPubKeyOpt.forall(aggPubKey => aggPubKey.length == 32))
     require(extraInOpt.forall(_.length <= 4294967295L))
 
-    val preRand = CryptoUtil.randomBytes(32)
     val rand = privKeyOpt match {
       case Some(privKey) => auxHash(preRand).xor(privKey.bytes)
       case None          => preRand
     }
 
     val aggPubKeyBytes = aggPubKeyOpt match {
-      case Some(aggPubKey) => aggPubKey.bytes.+:(aggPubKey.bytes.length.toByte)
+      case Some(aggPubKey) => aggPubKey.+:(aggPubKey.length.toByte)
       case None            => ByteVector.fromByte(0)
     }
 
@@ -158,8 +161,8 @@ object MuSig2Util {
 
     val extraInBytes = extraInOpt match {
       case Some(extraIn) =>
-        ByteVector.fromLong(extraIn.length).padLeft(4) ++ extraIn
-      case None => ByteVector.fromByte(0)
+        ByteVector.fromLong(extraIn.length, size = 4) ++ extraIn
+      case None => ByteVector.fromLong(0, size = 4)
     }
 
     val privNonceKeys = 0.until(nonceNum).toVector.map { index =>
@@ -176,6 +179,22 @@ object MuSig2Util {
     val pubNonces = privNonces.toPublicNonces
 
     (pubNonces, privNonces)
+  }
+
+  def genMultiNonce(
+      privKeyOpt: Option[ECPrivateKey] = None,
+      aggPubKeyOpt: Option[SchnorrPublicKey] = None,
+      msgOpt: Option[ByteVector] = None,
+      extraInOpt: Option[ByteVector] = None): (
+      MultiNoncePub,
+      MultiNoncePriv) = {
+    val preRand = CryptoUtil.randomBytes(32)
+
+    genMultiNonceInternal(preRand,
+                          privKeyOpt,
+                          aggPubKeyOpt.map(_.bytes),
+                          msgOpt,
+                          extraInOpt)
   }
 
   def aggNonces(nonces: Vector[MultiNoncePub]): MultiNoncePub = {
