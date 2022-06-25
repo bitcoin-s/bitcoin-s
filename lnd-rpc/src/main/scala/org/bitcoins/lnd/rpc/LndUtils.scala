@@ -14,6 +14,8 @@ import scalapb.TypeMapper
 import scodec.bits._
 import signrpc.TxOut
 
+import java.lang.Long.toUnsignedString
+import java.math.BigInteger
 import scala.language.implicitConversions
 
 trait LndUtils {
@@ -91,10 +93,15 @@ trait LndUtils {
   }
 
   implicit val uint64Mapper: TypeMapper[Long, UInt64] =
-    TypeMapper[Long, UInt64](UInt64.apply)(_.toBigInt.longValue)
+    TypeMapper[Long, UInt64] { l =>
+      val bigInt = new BigInteger(toUnsignedString(l))
+      UInt64(bigInt)
+    }(_.toBigInt.longValue)
 
   implicit val uint32Mapper: TypeMapper[Int, UInt32] =
-    TypeMapper[Int, UInt32](UInt32.apply)(_.toBigInt.intValue)
+    TypeMapper[Int, UInt32] { i =>
+      UInt32(Integer.toUnsignedLong(i))
+    }(_.toBigInt.intValue)
 }
 
 object LndUtils extends LndUtils
