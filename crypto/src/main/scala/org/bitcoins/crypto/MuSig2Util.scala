@@ -3,7 +3,6 @@ package org.bitcoins.crypto
 import scodec.bits.ByteVector
 
 // TODO static test vectors
-// TODO test with more signers
 // TODO implement tweaking
 // TODO suppport js
 // TODO test against secp256k1-zkp
@@ -66,12 +65,16 @@ object MuSig2Util {
               "Keys must be sorted lexicographically")
     }
 
+    def apply(i: Int): SchnorrPublicKey = {
+      keys(i)
+    }
+
     lazy val serialize: ByteVector = {
       keys.map(_.bytes).reduce(_ ++ _)
     }
 
     def keyAggCoef(key: SchnorrPublicKey): FieldElement = {
-      if (key == secondKey) FieldElement.one
+      if (keys.length > 1 && key == secondKey) FieldElement.one
       else {
         val listHashBytes = aggListHash(serialize)
         val bytes = aggCoefHash(listHashBytes ++ key.bytes)
