@@ -2,11 +2,9 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-// TODO static test vectors
-// TODO implement tweaking
-// TODO suppport js
 // TODO test against secp256k1-zkp
 // TODO refactor for niceness
+// TODO easy optimizations (e.g. remove parity multiplications)
 object MuSig2Util {
 
   private val nonceNum: Int = 2
@@ -52,8 +50,44 @@ object MuSig2Util {
     }
   }
 
+  case class Tweak(tweak: FieldElement, isXOnlyT: Boolean) {
+    def point: ECPublicKey = tweak.getPublicKey
+  }
+
+  case class TweakContext(parityAcc: FieldElement, tweakAcc: FieldElement) {
+
+    def applyTweak(
+        tweak: Tweak,
+        aggPubKey: ECPublicKey): (ECPublicKey, TweakContext) = {
+      val parityMult =
+        if (tweak.isXOnlyT && aggPubKey.parity == OddParity)
+          FieldElement.orderMinusOne
+        else FieldElement.one
+
+      val newAggPubKey = aggPubKey.multiply(parityMult).add(tweak.point)
+      val newParityAcc = parityAcc.multiply(parityMult)
+      val newTweakAcc = tweakAcc.multiply(parityMult).add(tweak.tweak)
+      (newAggPubKey, TweakContext(newParityAcc, newTweakAcc))
+    }
+  }
+
+  object TweakContext {
+    val empty: TweakContext = TweakContext(FieldElement.one, FieldElement.zero)
+  }
+
   sealed trait KeySet {
     def keys: Vector[SchnorrPublicKey]
+
+    def tweaks: Vector[Tweak]
+
+    def withTweaks(newTweaks: Vector[Tweak]): KeySet = {
+      require(tweaks.isEmpty, "withTweaks is not meant for replacing tweaks")
+
+      this match {
+        case ks: LexicographicKeySet => ks.copy(tweaks = newTweaks)
+        case ks: UnsortedKeySet      => ks.copy(tweaks = newTweaks)
+      }
+    }
 
     def length: Int = keys.length
 
@@ -75,14 +109,25 @@ object MuSig2Util {
       }
     }
 
-    lazy val aggPubKey: ECPublicKey = {
-      keys
+    private lazy val computeAggPubKeyAndTweakContext: (
+        ECPublicKey,
+        TweakContext) = {
+      val untweakedAggPubKey = keys
         .map { key =>
           val coef = keyAggCoef(key)
           key.publicKey.multiply(coef)
         }
         .reduce(_.add(_))
+
+      tweaks.foldLeft((untweakedAggPubKey, TweakContext.empty)) {
+        case ((pubKeySoFar, context), tweak) =>
+          context.applyTweak(tweak, pubKeySoFar)
+      }
     }
+
+    lazy val aggPubKey: ECPublicKey = computeAggPubKeyAndTweakContext._1
+
+    lazy val tweakContext: TweakContext = computeAggPubKeyAndTweakContext._2
 
     // In truth this represents the first key different from the head key
     lazy val secondKeyOpt: Option[SchnorrPublicKey] = {
@@ -90,7 +135,9 @@ object MuSig2Util {
     }
   }
 
-  case class LexicographicKeySet(override val keys: Vector[SchnorrPublicKey])
+  case class LexicographicKeySet(
+      override val keys: Vector[SchnorrPublicKey],
+      override val tweaks: Vector[Tweak] = Vector.empty)
       extends KeySet {
     keys.init.zip(keys.tail).foreach { case (key1, key2) =>
       require(key1.hex.compareTo(key2.hex) <= 0,
@@ -108,9 +155,18 @@ object MuSig2Util {
     def apply(keys: SchnorrPublicKey*): LexicographicKeySet = {
       KeySet(keys.toVector)
     }
+
+    def apply(
+        keys: Vector[SchnorrPublicKey],
+        tweaks: Vector[Tweak]): LexicographicKeySet = {
+      val sortedKeys = keys.sorted(NetworkElement.lexicographicalOrdering)
+      LexicographicKeySet(sortedKeys, tweaks)
+    }
   }
 
-  case class UnsortedKeySet(override val keys: Vector[SchnorrPublicKey])
+  case class UnsortedKeySet(
+      override val keys: Vector[SchnorrPublicKey],
+      override val tweaks: Vector[Tweak] = Vector.empty)
       extends KeySet
 
   def aggListHash(bytes: ByteVector): ByteVector = {
@@ -293,7 +349,10 @@ object MuSig2Util {
       case OddParity  => FieldElement.orderMinusOne
     }
 
-    val adjustedPrivKey = privKey.fieldElement.multiply(gp).multiply(g)
+    val adjustedPrivKey = privKey.fieldElement
+      .multiply(gp)
+      .multiply(g)
+      .multiply(keySet.tweakContext.parityAcc)
 
     val privNonceSum = multiNoncePrivSum(adjustedNoncePriv, b)
 
@@ -353,7 +412,19 @@ object MuSig2Util {
       case OddParity  => nonceSum.multiply(FieldElement.orderMinusOne)
     }
 
-    val aggKey = pubKey.toXOnly.publicKey(keySet.aggPubKey.parity)
+    val g = keySet.aggPubKey.parity match {
+      case EvenParity => FieldElement.one
+      case OddParity  => FieldElement.orderMinusOne
+    }
+
+    val aggKeyParity = g.multiply(keySet.tweakContext.parityAcc) match {
+      case FieldElement.one           => EvenParity
+      case FieldElement.orderMinusOne => OddParity
+      case _: FieldElement => // TODO TweakContext.parityAcc needs an ADT
+        throw new RuntimeException("Something has gone very wrong.")
+    }
+
+    val aggKey = pubKey.toXOnly.publicKey(aggKeyParity)
     val a = keySet.keyAggCoef(pubKey)
     partialSig.getPublicKey == nonceSumAdjusted.add(
       aggKey.multiply(e.multiply(a)))
@@ -364,16 +435,37 @@ object MuSig2Util {
       aggMultiNoncePub: MultiNoncePub,
       keySet: KeySet,
       message: ByteVector): SchnorrDigitalSignature = {
-    val (_, aggPubNonce, _) =
+    val (_, aggPubNonce, e) =
       getSessionValues(aggMultiNoncePub, keySet, message)
+    val tweakData = TweakData(keySet.tweakContext, keySet.aggPubKey.parity, e)
 
-    signAgg(sVals, aggPubNonce)
+    signAgg(sVals, aggPubNonce, Some(tweakData))
+  }
+
+  case class TweakData(
+      context: TweakContext,
+      aggPubKeyParity: KeyParity,
+      e: FieldElement) {
+
+    def additiveTweak: FieldElement = {
+      val g = aggPubKeyParity match {
+        case EvenParity => FieldElement.one
+        case OddParity  => FieldElement.orderMinusOne
+      }
+
+      e.multiply(g).multiply(context.tweakAcc)
+    }
   }
 
   def signAgg(
       sVals: Vector[FieldElement],
-      aggPubNonce: ECPublicKey): SchnorrDigitalSignature = {
-    val s = sVals.reduce(_.add(_))
+      aggPubNonce: ECPublicKey,
+      tweakDataOpt: Option[TweakData] = None): SchnorrDigitalSignature = {
+    val sSum = sVals.reduce(_.add(_))
+    val s = tweakDataOpt match {
+      case Some(tweakData) => sSum.add(tweakData.additiveTweak)
+      case None            => sSum
+    }
 
     SchnorrDigitalSignature(aggPubNonce.schnorrNonce, s)
   }
