@@ -200,4 +200,47 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     // Vector 3
     assert(nonce3._2.bytes == expected(2))
   }
+
+  it should "pass nonce aggregation test vectors" in {
+    val pnonce = Vector(
+      "020151C80F435648DF67A22B749CD798CE54E0321D034B92B709B567D60A42E666" ++
+        "03BA47FBC1834437B3212E89A84D8425E7BF12E0245D98262268EBDCB385D50641",
+      "03FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
+        "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B833"
+    ).map { hex =>
+      val (p1, p2) = hex.splitAt(66)
+      MultiNoncePub(Vector(p1, p2).map(ECPublicKey.fromHex))
+    }
+
+    val expected = ByteVector.fromValidHex(
+      "035FE1873B4F2967F52FEA4A06AD5A8ECCBE9D0FD73068012C894E2E87CCB5804B" ++
+        "024725377345BDE0E9C33AF3C43C0A29A9249F2F2956FA8CFEB55C8573D0262DC8"
+    )
+
+    // Vector 1
+    assert(aggNonces(pnonce).bytes == expected)
+
+    // The following errors must be handled by the caller as we can't even represent them
+    // Vector 2
+    assertThrows[IllegalArgumentException](
+      ECPublicKey.fromHex(
+        "04FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6"))
+    // Vector 3
+    assertThrows[IllegalArgumentException](
+      ECPublicKey.fromHex(
+        "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B831"))
+    // Vector 4
+    assertThrows[IllegalArgumentException](
+      ECPublicKey.fromHex(
+        "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
+
+    // Vector 5 FAILS because MultiNoncePub doesn't support infinity yet
+    val g = CryptoParams.getG
+    val negG = g.multiply(FieldElement.orderMinusOne)
+    val pnonce1 = MultiNoncePub(Vector(pnonce.head.pubNonces.head, g))
+    val pnonce2 = MultiNoncePub(Vector(pnonce.last.pubNonces.head, negG))
+    val x = aggNonces(Vector(pnonce1, pnonce2)).bytes
+    val y = expected.take(33) ++ ByteVector.fill(33)(0)
+    assert(x == y, (x, y))
+  }
 }
