@@ -51,19 +51,8 @@ object MuSig2Util {
     }
   }
 
-  case class KeyGenContext(
-      aggPubKey: ECPublicKey,
-      tacc: FieldElement,
-      gacc: Boolean) {
-    def getPubKey: ByteVector = aggPubKey.bytes.tail
-    def getPubKey33: ByteVector = aggPubKey.bytes
-  }
-
-  case class KeySet(keys: Vector[SchnorrPublicKey]) {
-    keys.init.zip(keys.tail).foreach { case (key1, key2) =>
-      require(key1.hex.compareTo(key2.hex) <= 0,
-              "Keys must be sorted lexicographically")
-    }
+  sealed trait KeySet {
+    def keys: Vector[SchnorrPublicKey]
 
     def apply(i: Int): SchnorrPublicKey = {
       keys(i)
@@ -74,7 +63,7 @@ object MuSig2Util {
     }
 
     def keyAggCoef(key: SchnorrPublicKey): FieldElement = {
-      if (keys.length > 1 && key == secondKey) FieldElement.one
+      if (secondKeyOpt.contains(key)) FieldElement.one
       else {
         val listHashBytes = aggListHash(serialize)
         val bytes = aggCoefHash(listHashBytes ++ key.bytes)
@@ -92,20 +81,34 @@ object MuSig2Util {
         .reduce(_.add(_))
     }
 
-    lazy val secondKey: SchnorrPublicKey = keys.tail.head
+    // In truth this represents the first key different from the head key
+    lazy val secondKeyOpt: Option[SchnorrPublicKey] = {
+      keys.find(_ != keys.head)
+    }
+  }
+
+  case class LexicographicKeySet(override val keys: Vector[SchnorrPublicKey])
+      extends KeySet {
+    keys.init.zip(keys.tail).foreach { case (key1, key2) =>
+      require(key1.hex.compareTo(key2.hex) <= 0,
+              "Keys must be sorted lexicographically")
+    }
   }
 
   object KeySet {
 
-    def apply(keys: Vector[SchnorrPublicKey]): KeySet = {
+    def apply(keys: Vector[SchnorrPublicKey]): LexicographicKeySet = {
       val sortedKeys = keys.sorted(NetworkElement.lexicographicalOrdering)
-      new KeySet(sortedKeys)
+      LexicographicKeySet(sortedKeys)
     }
 
-    def apply(keys: SchnorrPublicKey*): KeySet = {
+    def apply(keys: SchnorrPublicKey*): LexicographicKeySet = {
       KeySet(keys.toVector)
     }
   }
+
+  case class UnsortedKeySet(override val keys: Vector[SchnorrPublicKey])
+      extends KeySet
 
   def aggListHash(bytes: ByteVector): ByteVector = {
     CryptoUtil.taggedSha256(bytes, "KeyAgg list").bytes
