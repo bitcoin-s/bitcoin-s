@@ -3,8 +3,7 @@ package org.bitcoins.crypto.musig
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
-// TODO test against secp256k1-zkp
-// TODO scaladocs and require messages
+// TODO test against secp256k1-zkp someday
 /** Contains constants, hash functions, and signing/verification functionality for MuSig */
 object MuSigUtil {
 
@@ -76,14 +75,14 @@ object MuSigUtil {
 
     val s = adjustedPrivKey.multiply(e).multiply(coef).add(privNonceSum)
 
-    require(
-      partialSigVerify(s,
-                       noncePriv.toPublicNonces,
-                       pubKey.schnorrPublicKey,
-                       keySet,
-                       b,
-                       aggNonce,
-                       e))
+    require(partialSigVerify(s,
+                             noncePriv.toPublicNonces,
+                             pubKey.schnorrPublicKey,
+                             keySet,
+                             b,
+                             aggNonce,
+                             e),
+            "Failed verification when generating signature.")
 
     (aggNonce, s)
   }
@@ -94,7 +93,8 @@ object MuSigUtil {
       keySet: KeySet,
       message: ByteVector,
       signerIndex: Int): Boolean = {
-    require(signerIndex >= 0 && signerIndex < keySet.length)
+    require(signerIndex >= 0 && signerIndex < keySet.length,
+            s"Invalid signer index $signerIndex for ${keySet.length} signers")
 
     partialSigVerify(partialSig,
                      pubNonces(signerIndex),

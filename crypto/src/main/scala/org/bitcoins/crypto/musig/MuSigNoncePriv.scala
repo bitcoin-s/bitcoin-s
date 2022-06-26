@@ -6,7 +6,8 @@ import scodec.bits.ByteVector
 /** Wraps the ephemeral private keys making up a MuSig2 nonce */
 case class MuSigNoncePriv(privNonces: Vector[ECPrivateKey])
     extends NetworkElement {
-  require(privNonces.length == MuSigUtil.nonceNum)
+  require(privNonces.length == MuSigUtil.nonceNum,
+          s"Exactly ${MuSigUtil.nonceNum} keys are expected, found $privNonces")
 
   def toPublicNonces: MuSigNoncePub = {
     MuSigNoncePub(privNonces.map(_.publicKey.toPoint))
@@ -54,10 +55,15 @@ object MuSigNoncePriv extends Factory[MuSigNoncePriv] {
       aggPubKeyOpt: Option[ByteVector] = None,
       msgOpt: Option[ByteVector] = None,
       extraInOpt: Option[ByteVector] = None): MuSigNoncePriv = {
-    require(preRand.length == 32)
-    require(msgOpt.forall(msg => msg.length == 32))
-    require(aggPubKeyOpt.forall(aggPubKey => aggPubKey.length == 32))
-    require(extraInOpt.forall(_.length <= 4294967295L))
+    require(preRand.length == 32,
+            s"32 bytes of entropy must be provided, found $preRand")
+    require(msgOpt.forall(msg => msg.length == 32),
+            s"The message to be signed must be 32 bytes, found $msgOpt")
+    require(aggPubKeyOpt.forall(aggPubKey => aggPubKey.length == 32),
+            s"aggPubKey must be a SchnorrPublicKey, found $aggPubKeyOpt")
+    require(
+      extraInOpt.forall(_.length <= 4294967295L),
+      "extraIn too long, its length must be represented by at most four bytes")
 
     def serializeWithLen(
         bytesOpt: Option[ByteVector],
