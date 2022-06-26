@@ -190,7 +190,6 @@ object ScriptWitness extends Factory[ScriptWitness] {
       P2WPKHWitnessV0(pubKey)
     } else if (TaprootScriptPath.isValid(stack.toVector)) {
       TaprootScriptPath.fromStack(stack.toVector)
-
     } else if (isPubKey && stack.size == 2) {
       val pubKey = ECPublicKeyBytes(stack.head)
       val sig = ECDigitalSignature(stack(1))

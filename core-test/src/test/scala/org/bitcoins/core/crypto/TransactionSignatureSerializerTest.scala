@@ -907,7 +907,6 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
       TaprootSerializationOptions.empty
     val serialize = TransactionSignatureSerializer.serializeForSignature(
       taprootTxSigComponent,
-<<<<<<< HEAD
       hashType,
       taprootOptions)
 
