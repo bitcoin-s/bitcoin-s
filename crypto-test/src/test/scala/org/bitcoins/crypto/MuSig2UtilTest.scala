@@ -251,19 +251,19 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "54E9DB34D09CBD394DB3FE3CCFFBCA6ED016F3AC877938613095893F54FA70DF",
       "7B3B5A002356471AF0E961DE2549C121BD0D48ABCEEDC6E034BDDF86AD3E0A18" ++
         "7ECEE674CEF7364B0BC4BEEFB8B66CAD89F98DE2F8C5A5EAD5D1D1E4BD7D04CD"
-    ).map(ByteVector.fromValidHex(_))
+    ).map(MultiNoncePriv.fromHex)
 
     val nonce1 = genMultiNonceInternal(rand, sk, aggpk, msg, extraIn)
     // Vector 1
-    assert(nonce1._2.bytes == expected(0))
+    assert(nonce1._2 == expected(0))
 
     val nonce2 = genMultiNonceInternal(rand, sk, aggpk, msgOpt = None, extraIn)
     // Vector 2
-    assert(nonce2._2.bytes == expected(1))
+    assert(nonce2._2 == expected(1))
 
     val nonce3 = genMultiNonceInternal(rand)
     // Vector 3
-    assert(nonce3._2.bytes == expected(2))
+    assert(nonce3._2 == expected(2))
   }
 
   // https://github.com/jonasnick/bips/blob/263a765a77e20efe883ed3b28dc155a0d8c7d61a/bip-musig2/reference.py#L461
@@ -273,41 +273,41 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "03BA47FBC1834437B3212E89A84D8425E7BF12E0245D98262268EBDCB385D50641",
       "03FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
         "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B833"
-    ).map { hex =>
-      val (p1, p2) = hex.splitAt(66)
-      MultiNoncePub(Vector(p1, p2).map(ECPublicKey.fromHex).map(_.toPoint))
-    }
+    ).map(MultiNoncePub.fromHex)
 
-    val expected = ByteVector.fromValidHex(
+    val expected = MultiNoncePub(
       "035FE1873B4F2967F52FEA4A06AD5A8ECCBE9D0FD73068012C894E2E87CCB5804B" ++
         "024725377345BDE0E9C33AF3C43C0A29A9249F2F2956FA8CFEB55C8573D0262DC8"
     )
 
     // Vector 1
-    assert(aggNonces(pnonce).bytes == expected)
+    assert(aggNonces(pnonce) == expected)
 
     // The following errors must be handled by the caller as we can't even represent them
     // Vector 2
     assertThrows[IllegalArgumentException](
-      ECPublicKey.fromHex(
-        "04FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6"))
+      MultiNoncePub(
+        "04FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
+          "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B833"))
     // Vector 3
     assertThrows[IllegalArgumentException](
-      ECPublicKey.fromHex(
-        "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B831"))
+      MultiNoncePub(
+        "03FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
+          "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B831"))
     // Vector 4
     assertThrows[IllegalArgumentException](
-      ECPublicKey.fromHex(
-        "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
+      MultiNoncePub(
+        "03FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
+          "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
 
     // Vector 5
     val g = CryptoParams.getG.toPoint
     val negG = g.multiply(FieldElement.orderMinusOne)
     val pnonce1 = MultiNoncePub(Vector(pnonce.head.pubNonces.head, g))
     val pnonce2 = MultiNoncePub(Vector(pnonce.last.pubNonces.head, negG))
-    assert(
-      aggNonces(Vector(pnonce1, pnonce2)).bytes == expected.take(
-        33) ++ ByteVector.fill(33)(0))
+    val expected5 =
+      MultiNoncePub(expected.bytes.take(33) ++ MultiNoncePub.infPtBytes)
+    assert(aggNonces(Vector(pnonce1, pnonce2)) == expected5)
   }
 
   // https://github.com/jonasnick/bips/blob/263a765a77e20efe883ed3b28dc155a0d8c7d61a/bip-musig2/reference.py#L504
@@ -318,12 +318,8 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     ).map(SchnorrPublicKey.fromHex)
 
     val privNonce = MultiNoncePriv(
-      Vector(
-        ECPrivateKey(
-          "508B81A611F100A6B2B6B29656590898AF488BCF2E1F55CF22E5CFB84421FE61"),
-        ECPrivateKey(
-          "FA27FD49B1D50085B481285E1CA205D55C82CC1B31FF5CD54A489829355901F7")
-      ))
+      "508B81A611F100A6B2B6B29656590898AF488BCF2E1F55CF22E5CFB84421FE61" ++
+        "FA27FD49B1D50085B481285E1CA205D55C82CC1B31FF5CD54A489829355901F7")
 
     val pubNonces = Vector(
       "0337C87821AFD50A8644D820A8F3E02E499C931865C2360FB43D0A0D20DAFE07EA" ++
@@ -334,20 +330,13 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "03E4C5524E83FFE1493B9077CF1CA6BEB2090C93D930321071AD40B2F44E599046",
       "0237C87821AFD50A8644D820A8F3E02E499C931865C2360FB43D0A0D20DAFE07EA" ++
         "0387BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480"
-    ).map { hex =>
-      val (p1, p2) = hex.splitAt(66)
-      MultiNoncePub(Vector(p1, p2).map(ECPublicKey.fromHex).map(_.toPoint))
-    }
+    ).map(MultiNoncePub.fromHex)
 
     assert(privNonce.toPublicNonces == pubNonces.head)
 
     val aggNonce = MultiNoncePub(
-      Vector(
-        "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61",
+      "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
         "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9")
-        .map(ECPublicKey.fromHex)
-        .map(_.toPoint)
-    )
 
     assert(aggNonce == aggNonces(pubNonces.take(3)))
 
@@ -389,16 +378,19 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "0000000000000000000000000000000000000000000000000000000000000007"))
     // Vector 6
     assertThrows[IllegalArgumentException](
-      ECPublicKey(
-        "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61"))
+      MultiNoncePub(
+        "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
+          "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"))
     // Vector 7
     assertThrows[IllegalArgumentException](
-      ECPublicKey(
-        "020000000000000000000000000000000000000000000000000000000000000009"))
+      MultiNoncePub(
+        "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
+          "020000000000000000000000000000000000000000000000000000000000000009"))
     // Vector 8
     assertThrows[IllegalArgumentException](
-      ECPublicKey(
-        "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
+      MultiNoncePub(
+        "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
+          "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
 
     // Verification test vectors
     // Vector 9
@@ -449,8 +441,9 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"))
     // Vector 16
     assertThrows[IllegalArgumentException](
-      ECPublicKey(
-        "020000000000000000000000000000000000000000000000000000000000000009"))
+      MultiNoncePub(
+        "020000000000000000000000000000000000000000000000000000000000000009" ++
+          pubNonces.head.bytes.drop(33).toHex))
   }
 
   // https://github.com/jonasnick/bips/blob/musig2/bip-musig2/reference.py#L629
@@ -461,12 +454,8 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     ).map(SchnorrPublicKey.fromHex)
 
     val secnonce = MultiNoncePriv(
-      Vector(
-        ECPrivateKey(
-          "508B81A611F100A6B2B6B29656590898AF488BCF2E1F55CF22E5CFB84421FE61"),
-        ECPrivateKey(
-          "FA27FD49B1D50085B481285E1CA205D55C82CC1B31FF5CD54A489829355901F7")
-      ))
+      "508B81A611F100A6B2B6B29656590898AF488BCF2E1F55CF22E5CFB84421FE61" ++
+        "FA27FD49B1D50085B481285E1CA205D55C82CC1B31FF5CD54A489829355901F7")
 
     val pnonce = Vector(
       "0337C87821AFD50A8644D820A8F3E02E499C931865C2360FB43D0A0D20DAFE07EA" ++
@@ -475,17 +464,11 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798",
       "032DE2662628C90B03F5E720284EB52FF7D71F4284F627B68A853D78C78E1FFE93" ++
         "03E4C5524E83FFE1493B9077CF1CA6BEB2090C93D930321071AD40B2F44E599046"
-    ).map { hex =>
-      val (p1, p2) = hex.splitAt(66)
-      MultiNoncePub(Vector(p1, p2).map(ECPublicKey.fromHex).map(_.toPoint))
-    }
+    ).map(MultiNoncePub.fromHex)
 
     val aggnonce = MultiNoncePub(
-      Vector(
-        "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61",
-        "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"
-      ).map(ECPublicKey(_).toPoint)
-    )
+      "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
+        "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9")
 
     val sk = ECPrivateKey(
       "7FB9E0E687ADA1EEBF7ECFE2F21E73EBDB51A7D450948DFE8D76D7F2D1007671")
@@ -572,13 +555,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "03020CB17D168908E2904DE2EB571CD232CA805A6981D0F86CDBBD2F12BD91F6D0",
       "000000000000000000000000000000000000000000000000000000000000000000" ++
         "000000000000000000000000000000000000000000000000000000000000000000"
-    ).map { hex =>
-      if (hex.forall(_ == '0')) MultiNoncePub(Vector.fill(2)(SecpPointInfinity))
-      else {
-        val (p1, p2) = hex.splitAt(66)
-        MultiNoncePub(Vector(p1, p2).map(ECPublicKey.fromHex).map(_.toPoint))
-      }
-    }
+    ).map(MultiNoncePub.fromHex)
 
     val msg = ByteVector.fromValidHex(
       "599C67EA410D005B9DA90817CF03ED3B1C868E4DA4EDF00A5880B0082C237869")

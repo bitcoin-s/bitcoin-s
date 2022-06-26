@@ -11,6 +11,7 @@ object MuSig2Util {
 
   case class MultiNoncePriv(privNonces: Vector[ECPrivateKey])
       extends NetworkElement {
+    require(privNonces.length == nonceNum)
 
     def toPublicNonces: MultiNoncePub = {
       MultiNoncePub(privNonces.map(_.publicKey.toPoint))
@@ -31,8 +32,18 @@ object MuSig2Util {
     }
   }
 
+  object MultiNoncePriv extends Factory[MultiNoncePriv] {
+
+    override def fromBytes(bytes: ByteVector): MultiNoncePriv = {
+      val privs =
+        CryptoBytesUtil.splitEvery(bytes, 32).map(ECPrivateKey.fromBytes)
+      MultiNoncePriv(privs)
+    }
+  }
+
   case class MultiNoncePub(pubNonces: Vector[SecpPoint])
       extends NetworkElement {
+    require(pubNonces.length == nonceNum)
 
     def apply(i: Int): SecpPoint = {
       pubNonces(i)
@@ -47,6 +58,21 @@ object MuSig2Util {
           case p: SecpPointFinite => p.toPublicKey.bytes
         }
         .reduce(_ ++ _)
+    }
+  }
+
+  object MultiNoncePub extends Factory[MultiNoncePub] {
+
+    val infPtBytes: ByteVector = ByteVector.fill(33)(0)
+
+    override def fromBytes(bytes: ByteVector): MultiNoncePub = {
+      val pubs =
+        CryptoBytesUtil.splitEvery(bytes, 33).map { b =>
+          if (b == infPtBytes) SecpPointInfinity
+          else ECPublicKey.fromBytes(b).toPoint
+        }
+
+      MultiNoncePub(pubs)
     }
   }
 
