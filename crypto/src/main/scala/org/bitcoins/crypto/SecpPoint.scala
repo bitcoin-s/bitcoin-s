@@ -15,6 +15,13 @@ sealed trait SecpPoint extends NetworkElement {
   def multiply(fieldElement: FieldElement): SecpPoint = {
     CryptoUtil.tweakMultiply(this, fieldElement)
   }
+
+  def negate: SecpPoint = {
+    this match {
+      case SecpPointInfinity  => SecpPointInfinity
+      case p: SecpPointFinite => p.toPublicKey.negate.toPoint
+    }
+  }
 }
 
 /** The point at infinity, this is the secp256k1 group identity element meaning

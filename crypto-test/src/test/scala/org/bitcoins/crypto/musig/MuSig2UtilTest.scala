@@ -1,6 +1,7 @@
-package org.bitcoins.crypto
+package org.bitcoins.crypto.musig
 
-import org.bitcoins.crypto.MuSig2Util._
+import org.bitcoins.crypto.musig.MuSig2Util._
+import org.bitcoins.crypto._
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 
@@ -14,20 +15,20 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     forAll(CryptoGenerators.privateKey, NumberGenerator.bytevector(32)) {
       case (privKey, msg) =>
         val pubKey = privKey.publicKey
-        val (noncePub: MultiNoncePub, noncePriv: MultiNoncePriv) =
-          genMultiNonce()
+        val noncePriv: MuSigNoncePriv = MuSigNoncePriv.gen()
+        val noncePub: MuSigNoncePub = noncePriv.toPublicNonces
         val keySet = KeySet(pubKey.schnorrPublicKey)
-        val aggMultiNoncePub = aggNonces(Vector(noncePub))
+        val aggMuSigNoncePub = MuSigNoncePub.aggregate(Vector(noncePub))
 
-        assert(aggMultiNoncePub == noncePub)
+        assert(aggMuSigNoncePub == noncePub)
 
         val (aggNonce, s) =
-          sign(noncePriv, aggMultiNoncePub, privKey, msg, keySet)
+          sign(noncePriv, aggMuSigNoncePub, privKey, msg, keySet)
 
         assert(
           partialSigVerify(s,
                            noncePub,
-                           aggMultiNoncePub,
+                           aggMuSigNoncePub,
                            pubKey.schnorrPublicKey,
                            keySet,
                            msg))
@@ -52,30 +53,31 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
            CryptoGenerators.privateKey,
            NumberGenerator.bytevector(32)) { case (priv1, priv2, msg) =>
       val pub1 = priv1.publicKey
-      val (noncePub1: MultiNoncePub, noncePriv1: MultiNoncePriv) =
-        genMultiNonce()
+      val noncePriv1: MuSigNoncePriv = MuSigNoncePriv.gen()
+      val noncePub1: MuSigNoncePub = noncePriv1.toPublicNonces
       val pub2 = priv2.publicKey
-      val (noncePub2: MultiNoncePub, noncePriv2: MultiNoncePriv) =
-        genMultiNonce()
+      val noncePriv2: MuSigNoncePriv = MuSigNoncePriv.gen()
+      val noncePub2: MuSigNoncePub = noncePriv2.toPublicNonces
       val keySet: KeySet = KeySet(pub1.schnorrPublicKey, pub2.schnorrPublicKey)
-      val aggMultiNoncePub = aggNonces(Vector(noncePub1, noncePub2))
+      val aggMuSigNoncePub =
+        MuSigNoncePub.aggregate(Vector(noncePub1, noncePub2))
       val (aggNonce1, s1) =
-        sign(noncePriv1, aggMultiNoncePub, priv1, msg, keySet)
+        sign(noncePriv1, aggMuSigNoncePub, priv1, msg, keySet)
       val (aggNonce2, s2) =
-        sign(noncePriv2, aggMultiNoncePub, priv2, msg, keySet)
+        sign(noncePriv2, aggMuSigNoncePub, priv2, msg, keySet)
 
       assert(aggNonce1 == aggNonce2)
       assert(
         partialSigVerify(s1,
                          noncePub1,
-                         aggMultiNoncePub,
+                         aggMuSigNoncePub,
                          pub1.schnorrPublicKey,
                          keySet,
                          msg))
       assert(
         partialSigVerify(s2,
                          noncePub2,
-                         aggMultiNoncePub,
+                         aggMuSigNoncePub,
                          pub2.schnorrPublicKey,
                          keySet,
                          msg))
@@ -100,12 +102,12 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
       val keySet: KeySet = KeySet(privKeysUnsorted.map(_.schnorrPublicKey))
       val privKeys = keySet.keys.map(pubKey =>
         privKeysUnsorted.find(_.schnorrPublicKey == pubKey).get)
-      val nonceData: Vector[(MultiNoncePub, MultiNoncePriv)] =
-        privKeys.map(_ => genMultiNonce())
-      val aggMultiNoncePub = aggNonces(nonceData.map(_._1))
+      val noncePrivs = privKeys.map(_ => MuSigNoncePriv.gen())
+      val noncePubs = noncePrivs.map(_.toPublicNonces)
+      val aggMuSigNoncePub = MuSigNoncePub.aggregate(noncePubs)
       val partialSigs: Vector[(ECPublicKey, FieldElement)] =
         privKeys.zipWithIndex.map { case (privKey, i) =>
-          sign(nonceData(i)._2, aggMultiNoncePub, privKey, msg, keySet)
+          sign(noncePrivs(i), aggMuSigNoncePub, privKey, msg, keySet)
         }
 
       // All aggregate nonces are the same
@@ -113,8 +115,8 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
       // All partial sigs are valid
       assert(partialSigs.map(_._2).zipWithIndex.forall { case (s, i) =>
         partialSigVerify(s,
-                         nonceData(i)._1,
-                         aggMultiNoncePub,
+                         noncePubs(i),
+                         aggMuSigNoncePub,
                          privKeys(i).schnorrPublicKey,
                          keySet,
                          msg)
@@ -133,14 +135,14 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
       .flatMap(n => Gen.listOfN(n, CryptoGenerators.privateKey))
       .map(_.toVector)
 
-    val tweaksGen: Gen[Vector[Tweak]] = Gen
+    val tweaksGen: Gen[Vector[MuSigTweak]] = Gen
       .choose[Int](0, 10)
       .flatMap(n =>
         Gen.listOfN(n,
                     CryptoGenerators.fieldElement.flatMap(x =>
                       NumberGenerator.bool.map((x, _)))))
       .map(_.toVector)
-      .map(_.map { case (x, b) => Tweak(x, b) })
+      .map(_.map { case (x, b) => MuSigTweak(x, b) })
 
     forAll(
       privKeysGen,
@@ -151,12 +153,12 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         KeySet(privKeysUnsorted.map(_.schnorrPublicKey), tweaks)
       val privKeys = keySet.keys.map(pubKey =>
         privKeysUnsorted.find(_.schnorrPublicKey == pubKey).get)
-      val nonceData: Vector[(MultiNoncePub, MultiNoncePriv)] =
-        privKeys.map(_ => genMultiNonce())
-      val aggMultiNoncePub = aggNonces(nonceData.map(_._1))
+      val noncePrivs = privKeys.map(_ => MuSigNoncePriv.gen())
+      val noncePubs = noncePrivs.map(_.toPublicNonces)
+      val aggMuSigNoncePub = MuSigNoncePub.aggregate(noncePubs)
       val partialSigs: Vector[(ECPublicKey, FieldElement)] =
         privKeys.zipWithIndex.map { case (privKey, i) =>
-          sign(nonceData(i)._2, aggMultiNoncePub, privKey, msg, keySet)
+          sign(noncePrivs(i), aggMuSigNoncePub, privKey, msg, keySet)
         }
 
       // All aggregate nonces are the same
@@ -164,14 +166,14 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
       // All partial sigs are valid
       assert(partialSigs.map(_._2).zipWithIndex.forall { case (s, i) =>
         partialSigVerify(s,
-                         nonceData(i)._1,
-                         aggMultiNoncePub,
+                         noncePubs(i),
+                         aggMuSigNoncePub,
                          privKeys(i).schnorrPublicKey,
                          keySet,
                          msg)
       })
 
-      val sig = signAgg(partialSigs.map(_._2), aggMultiNoncePub, keySet, msg)
+      val sig = signAgg(partialSigs.map(_._2), aggMuSigNoncePub, keySet, msg)
       val aggPub = keySet.aggPubKey
 
       assert(aggPub.schnorrPublicKey.verify(msg, sig))
@@ -222,7 +224,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
     // Vector 7
     assertThrows[IllegalArgumentException](
-      Tweak(
+      MuSigTweak(
         FieldElement(
           "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"),
         isXOnlyT = true))
@@ -231,7 +233,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     val keySetNoTweak = KeySet(schnorrG)
     val coeff = keySetNoTweak.keyAggCoef(schnorrG).negate
     val keySet =
-      keySetNoTweak.withTweaks(Vector(Tweak(coeff, isXOnlyT = false)))
+      keySetNoTweak.withTweaks(Vector(MuSigTweak(coeff, isXOnlyT = false)))
     assertThrows[Exception](keySet.aggPubKey)
   }
 
@@ -251,19 +253,20 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "54E9DB34D09CBD394DB3FE3CCFFBCA6ED016F3AC877938613095893F54FA70DF",
       "7B3B5A002356471AF0E961DE2549C121BD0D48ABCEEDC6E034BDDF86AD3E0A18" ++
         "7ECEE674CEF7364B0BC4BEEFB8B66CAD89F98DE2F8C5A5EAD5D1D1E4BD7D04CD"
-    ).map(MultiNoncePriv.fromHex)
+    ).map(MuSigNoncePriv.fromHex)
 
-    val nonce1 = genMultiNonceInternal(rand, sk, aggpk, msg, extraIn)
+    val nonce1 = MuSigNoncePriv.genInternal(rand, sk, aggpk, msg, extraIn)
     // Vector 1
-    assert(nonce1._2 == expected(0))
+    assert(nonce1 == expected(0))
 
-    val nonce2 = genMultiNonceInternal(rand, sk, aggpk, msgOpt = None, extraIn)
+    val nonce2 =
+      MuSigNoncePriv.genInternal(rand, sk, aggpk, msgOpt = None, extraIn)
     // Vector 2
-    assert(nonce2._2 == expected(1))
+    assert(nonce2 == expected(1))
 
-    val nonce3 = genMultiNonceInternal(rand)
+    val nonce3 = MuSigNoncePriv.genInternal(rand)
     // Vector 3
-    assert(nonce3._2 == expected(2))
+    assert(nonce3 == expected(2))
   }
 
   // https://github.com/jonasnick/bips/blob/263a765a77e20efe883ed3b28dc155a0d8c7d61a/bip-musig2/reference.py#L461
@@ -273,41 +276,41 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "03BA47FBC1834437B3212E89A84D8425E7BF12E0245D98262268EBDCB385D50641",
       "03FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
         "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B833"
-    ).map(MultiNoncePub.fromHex)
+    ).map(MuSigNoncePub.fromHex)
 
-    val expected = MultiNoncePub(
+    val expected = MuSigNoncePub(
       "035FE1873B4F2967F52FEA4A06AD5A8ECCBE9D0FD73068012C894E2E87CCB5804B" ++
         "024725377345BDE0E9C33AF3C43C0A29A9249F2F2956FA8CFEB55C8573D0262DC8"
     )
 
     // Vector 1
-    assert(aggNonces(pnonce) == expected)
+    assert(MuSigNoncePub.aggregate(pnonce) == expected)
 
     // The following errors must be handled by the caller as we can't even represent them
     // Vector 2
     assertThrows[IllegalArgumentException](
-      MultiNoncePub(
+      MuSigNoncePub(
         "04FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
           "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B833"))
     // Vector 3
     assertThrows[IllegalArgumentException](
-      MultiNoncePub(
+      MuSigNoncePub(
         "03FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
           "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B831"))
     // Vector 4
     assertThrows[IllegalArgumentException](
-      MultiNoncePub(
+      MuSigNoncePub(
         "03FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
           "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
 
     // Vector 5
     val g = CryptoParams.getG.toPoint
     val negG = g.multiply(FieldElement.orderMinusOne)
-    val pnonce1 = MultiNoncePub(Vector(pnonce.head.pubNonces.head, g))
-    val pnonce2 = MultiNoncePub(Vector(pnonce.last.pubNonces.head, negG))
+    val pnonce1 = MuSigNoncePub(Vector(pnonce.head.pubNonces.head, g))
+    val pnonce2 = MuSigNoncePub(Vector(pnonce.last.pubNonces.head, negG))
     val expected5 =
-      MultiNoncePub(expected.bytes.take(33) ++ MultiNoncePub.infPtBytes)
-    assert(aggNonces(Vector(pnonce1, pnonce2)) == expected5)
+      MuSigNoncePub(expected.bytes.take(33) ++ MuSigNoncePub.infPtBytes)
+    assert(MuSigNoncePub.aggregate(Vector(pnonce1, pnonce2)) == expected5)
   }
 
   // https://github.com/jonasnick/bips/blob/263a765a77e20efe883ed3b28dc155a0d8c7d61a/bip-musig2/reference.py#L504
@@ -317,7 +320,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
       "DFF1D77F2A671C5F36183726DB2341BE58FEAE1DA2DECED843240F7B502BA659"
     ).map(SchnorrPublicKey.fromHex)
 
-    val privNonce = MultiNoncePriv(
+    val privNonce = MuSigNoncePriv(
       "508B81A611F100A6B2B6B29656590898AF488BCF2E1F55CF22E5CFB84421FE61" ++
         "FA27FD49B1D50085B481285E1CA205D55C82CC1B31FF5CD54A489829355901F7")
 
@@ -330,15 +333,15 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "03E4C5524E83FFE1493B9077CF1CA6BEB2090C93D930321071AD40B2F44E599046",
       "0237C87821AFD50A8644D820A8F3E02E499C931865C2360FB43D0A0D20DAFE07EA" ++
         "0387BF891D2A6DEAEBADC909352AA9405D1428C15F4B75F04DAE642A95C2548480"
-    ).map(MultiNoncePub.fromHex)
+    ).map(MuSigNoncePub.fromHex)
 
     assert(privNonce.toPublicNonces == pubNonces.head)
 
-    val aggNonce = MultiNoncePub(
+    val aggNonce = MuSigNoncePub(
       "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
         "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9")
 
-    assert(aggNonce == aggNonces(pubNonces.take(3)))
+    assert(aggNonce == MuSigNoncePub.aggregate(pubNonces.take(3)))
 
     val sk = ECPrivateKey(
       "7FB9E0E687ADA1EEBF7ECFE2F21E73EBDB51A7D450948DFE8D76D7F2D1007671")
@@ -366,7 +369,8 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     assert(sign(privNonce, aggNonce, sk, msg, keySet3)._2 == expected(2))
 
     // Vector 4
-    val infAggNonce = aggNonces(Vector(pubNonces(0), pubNonces(3)))
+    val infAggNonce =
+      MuSigNoncePub.aggregate(Vector(pubNonces(0), pubNonces(3)))
     assert(infAggNonce.pubNonces.forall(_ == SecpPointInfinity))
     val keySet4 = UnsortedKeySet(Vector(pk, remotePubKeys(0)))
     assert(sign(privNonce, infAggNonce, sk, msg, keySet4)._2 == expected(3))
@@ -378,17 +382,17 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "0000000000000000000000000000000000000000000000000000000000000007"))
     // Vector 6
     assertThrows[IllegalArgumentException](
-      MultiNoncePub(
+      MuSigNoncePub(
         "048465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
           "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9"))
     // Vector 7
     assertThrows[IllegalArgumentException](
-      MultiNoncePub(
+      MuSigNoncePub(
         "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
           "020000000000000000000000000000000000000000000000000000000000000009"))
     // Vector 8
     assertThrows[IllegalArgumentException](
-      MultiNoncePub(
+      MuSigNoncePub(
         "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
           "02FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC30"))
 
@@ -441,7 +445,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"))
     // Vector 16
     assertThrows[IllegalArgumentException](
-      MultiNoncePub(
+      MuSigNoncePub(
         "020000000000000000000000000000000000000000000000000000000000000009" ++
           pubNonces.head.bytes.drop(33).toHex))
   }
@@ -453,7 +457,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
       "DFF1D77F2A671C5F36183726DB2341BE58FEAE1DA2DECED843240F7B502BA659"
     ).map(SchnorrPublicKey.fromHex)
 
-    val secnonce = MultiNoncePriv(
+    val secnonce = MuSigNoncePriv(
       "508B81A611F100A6B2B6B29656590898AF488BCF2E1F55CF22E5CFB84421FE61" ++
         "FA27FD49B1D50085B481285E1CA205D55C82CC1B31FF5CD54A489829355901F7")
 
@@ -464,9 +468,9 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798",
       "032DE2662628C90B03F5E720284EB52FF7D71F4284F627B68A853D78C78E1FFE93" ++
         "03E4C5524E83FFE1493B9077CF1CA6BEB2090C93D930321071AD40B2F44E599046"
-    ).map(MultiNoncePub.fromHex)
+    ).map(MuSigNoncePub.fromHex)
 
-    val aggnonce = MultiNoncePub(
+    val aggnonce = MuSigNoncePub(
       "028465FCF0BBDBCF443AABCCE533D42B4B5A10966AC09A49655E8C42DAAB8FCD61" ++
         "037496A3CC86926D452CAFCFD55D25972CA1675D549310DE296BFF42F72EEEA8C9")
 
@@ -495,32 +499,32 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     val pnonces = Vector(pnonce(1), pnonce(2), pnonce(0))
 
     // Vector 1
-    val tweaks1 = Vector(Tweak(tweaks(0), isXOnlyT = true))
+    val tweaks1 = Vector(MuSigTweak(tweaks(0), isXOnlyT = true))
     val keySet1 = keySet.withTweaks(tweaks1)
     assert(sign(secnonce, aggnonce, sk, msg, keySet1)._2 == expected(0))
     assert(
       partialSigVerify(expected(0), pnonces, keySet1, msg, signerIndex = 2))
 
     // Vector 2
-    val tweaks2 = Vector(Tweak(tweaks(0), isXOnlyT = false))
+    val tweaks2 = Vector(MuSigTweak(tweaks(0), isXOnlyT = false))
     val keySet2 = keySet.withTweaks(tweaks2)
     assert(sign(secnonce, aggnonce, sk, msg, keySet2)._2 == expected(1))
     assert(
       partialSigVerify(expected(1), pnonces, keySet2, msg, signerIndex = 2))
 
     // Vector 3
-    val tweaks3 = Vector(Tweak(tweaks(0), isXOnlyT = false),
-                         Tweak(tweaks(1), isXOnlyT = true))
+    val tweaks3 = Vector(MuSigTweak(tweaks(0), isXOnlyT = false),
+                         MuSigTweak(tweaks(1), isXOnlyT = true))
     val keySet3 = keySet.withTweaks(tweaks3)
     assert(sign(secnonce, aggnonce, sk, msg, keySet3)._2 == expected(2))
     assert(
       partialSigVerify(expected(2), pnonces, keySet3, msg, signerIndex = 2))
 
     // Vector 4
-    val tweaks4 = Vector(Tweak(tweaks(0), isXOnlyT = true),
-                         Tweak(tweaks(1), isXOnlyT = false),
-                         Tweak(tweaks(2), isXOnlyT = true),
-                         Tweak(tweaks(3), isXOnlyT = false))
+    val tweaks4 = Vector(MuSigTweak(tweaks(0), isXOnlyT = true),
+                         MuSigTweak(tweaks(1), isXOnlyT = false),
+                         MuSigTweak(tweaks(2), isXOnlyT = true),
+                         MuSigTweak(tweaks(3), isXOnlyT = false))
     val keySet4 = keySet.withTweaks(tweaks4)
     assert(sign(secnonce, aggnonce, sk, msg, keySet4)._2 == expected(3))
     assert(
@@ -529,7 +533,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     // The following error must be handled by the caller as we can't even represent it
     // Vector 5
     assertThrows[IllegalArgumentException](
-      Tweak(
+      MuSigTweak(
         FieldElement(
           "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"),
         isXOnlyT = false))
@@ -555,7 +559,7 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
         "03020CB17D168908E2904DE2EB571CD232CA805A6981D0F86CDBBD2F12BD91F6D0",
       "000000000000000000000000000000000000000000000000000000000000000000" ++
         "000000000000000000000000000000000000000000000000000000000000000000"
-    ).map(MultiNoncePub.fromHex)
+    ).map(MuSigNoncePub.fromHex)
 
     val msg = ByteVector.fromValidHex(
       "599C67EA410D005B9DA90817CF03ED3B1C868E4DA4EDF00A5880B0082C237869")
@@ -601,16 +605,16 @@ class MuSig2UtilTest extends BitcoinSCryptoTest {
     assert(keySet2.aggPubKey.schnorrPublicKey.verify(msg, sig2))
 
     // Vector 3
-    val tweaks3 = Vector(Tweak(tweaks(0), isXOnlyT = false))
+    val tweaks3 = Vector(MuSigTweak(tweaks(0), isXOnlyT = false))
     val keySet3 = UnsortedKeySet(Vector(pubKeys(0), pubKeys(2)), tweaks3)
     val sig3 = signAgg(psig.slice(4, 6), aggNonce(2), keySet3, msg)
     assert(sig3 == expected(2))
     assert(keySet3.aggPubKey.schnorrPublicKey.verify(msg, sig3))
 
     // Vector 4
-    val tweaks4 = Vector(Tweak(tweaks(0), isXOnlyT = true),
-                         Tweak(tweaks(1), isXOnlyT = false),
-                         Tweak(tweaks(2), isXOnlyT = true))
+    val tweaks4 = Vector(MuSigTweak(tweaks(0), isXOnlyT = true),
+                         MuSigTweak(tweaks(1), isXOnlyT = false),
+                         MuSigTweak(tweaks(2), isXOnlyT = true))
     val keySet4 = UnsortedKeySet(Vector(pubKeys(0), pubKeys(3)), tweaks4)
     val sig4 = signAgg(psig.slice(6, 8), aggNonce(3), keySet4, msg)
     assert(sig4 == expected(3))
