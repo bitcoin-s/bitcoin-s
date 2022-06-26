@@ -3,9 +3,10 @@ package org.bitcoins.crypto.musig
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
+/** Wraps the ephemeral private keys making up a MuSig2 nonce */
 case class MuSigNoncePriv(privNonces: Vector[ECPrivateKey])
     extends NetworkElement {
-  require(privNonces.length == MuSig2Util.nonceNum)
+  require(privNonces.length == MuSigUtil.nonceNum)
 
   def toPublicNonces: MuSigNoncePub = {
     MuSigNoncePub(privNonces.map(_.publicKey.toPoint))
@@ -25,12 +26,13 @@ case class MuSigNoncePriv(privNonces: Vector[ECPrivateKey])
     MuSigNoncePriv(privNonces.map(_.negate))
   }
 
+  /** Collapses this into a single ephemeral private key */
   def sumToKey(b: FieldElement): FieldElement = {
-    MuSig2Util.nonceSum[FieldElement](toFieldElements,
-                                      b,
-                                      _.add(_),
-                                      _.multiply(_),
-                                      FieldElement.zero)
+    MuSigUtil.nonceSum[FieldElement](toFieldElements,
+                                     b,
+                                     _.add(_),
+                                     _.multiply(_),
+                                     FieldElement.zero)
   }
 }
 
@@ -43,6 +45,9 @@ object MuSigNoncePriv extends Factory[MuSigNoncePriv] {
   }
 
   // TODO change aggPubKey back to SchnorrPublicKey and remove requirement once test vector is changed to valid x-coordinate
+  /** Generates a MuSigNoncePriv given 32 bytes of entropy from preRand,
+    * and possibly some other sources, as specified in the BIP.
+    */
   def genInternal(
       preRand: ByteVector,
       privKeyOpt: Option[ECPrivateKey] = None,
@@ -65,7 +70,7 @@ object MuSigNoncePriv extends Factory[MuSigNoncePriv] {
     }
 
     val rand = privKeyOpt match {
-      case Some(privKey) => MuSig2Util.auxHash(preRand).xor(privKey.bytes)
+      case Some(privKey) => MuSigUtil.auxHash(preRand).xor(privKey.bytes)
       case None          => preRand
     }
 
@@ -74,9 +79,9 @@ object MuSigNoncePriv extends Factory[MuSigNoncePriv] {
     val extraInBytes = serializeWithLen(extraInOpt, lengthSize = 4)
     val dataBytes = rand ++ aggPubKeyBytes ++ msgBytes ++ extraInBytes
 
-    val privNonceKeys = 0.until(MuSig2Util.nonceNum).toVector.map { index =>
+    val privNonceKeys = 0.until(MuSigUtil.nonceNum).toVector.map { index =>
       val indexByte = ByteVector.fromByte(index.toByte)
-      val noncePreBytes = MuSig2Util.nonHash(dataBytes ++ indexByte)
+      val noncePreBytes = MuSigUtil.nonHash(dataBytes ++ indexByte)
       val noncePreNum = new java.math.BigInteger(1, noncePreBytes.toArray)
 
       FieldElement(noncePreNum).toPrivateKey
@@ -85,6 +90,9 @@ object MuSigNoncePriv extends Factory[MuSigNoncePriv] {
     MuSigNoncePriv(privNonceKeys)
   }
 
+  /** Generates 32 bytes of entropy and contructs a MuSigNoncePriv from this,
+    * and possibly some other sources, as specified in the BIP.
+    */
   def gen(
       privKeyOpt: Option[ECPrivateKey] = None,
       aggPubKeyOpt: Option[SchnorrPublicKey] = None,

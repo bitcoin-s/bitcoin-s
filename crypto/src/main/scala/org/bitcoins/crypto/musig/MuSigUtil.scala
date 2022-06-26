@@ -5,7 +5,8 @@ import scodec.bits.ByteVector
 
 // TODO test against secp256k1-zkp
 // TODO scaladocs and require messages
-object MuSig2Util {
+/** Contains constants, hash functions, and signing/verification functionality for MuSig */
+object MuSigUtil {
 
   val nonceNum: Int = 2
 
@@ -29,6 +30,7 @@ object MuSig2Util {
     CryptoUtil.taggedSha256(bytes, "MuSig/aux").bytes
   }
 
+  /** nonces(0) + nonces(1)*b + nonces(2)*b*b + ... */
   private[musig] def nonceSum[T](
       nonces: Vector[T],
       b: FieldElement,
@@ -44,6 +46,7 @@ object MuSig2Util {
       ._2
   }
 
+  /** Generates a MuSig partial signature, accompanied by the aggregate R value */
   def sign(
       noncePriv: MuSigNoncePriv,
       aggNoncePub: MuSigNoncePub,
@@ -137,6 +140,7 @@ object MuSig2Util {
       aggKey.multiply(e.multiply(a)))
   }
 
+  /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature */
   def signAgg(
       sVals: Vector[FieldElement],
       aggNoncePub: MuSigNoncePub,
@@ -150,6 +154,7 @@ object MuSig2Util {
     signAgg(sVals, aggNonce, Some(tweakData))
   }
 
+  /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature */
   def signAgg(
       sVals: Vector[FieldElement],
       aggPubNonce: ECPublicKey,

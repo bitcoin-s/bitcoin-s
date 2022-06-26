@@ -1,12 +1,12 @@
 package org.bitcoins.crypto.musig
 
-import org.bitcoins.crypto.musig.MuSig2Util._
+import org.bitcoins.crypto.musig.MuSigUtil._
 import org.bitcoins.crypto._
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 
-class MuSig2UtilTest extends BitcoinSCryptoTest {
-  behavior of "MuSig2Util"
+class MuSigTest extends BitcoinSCryptoTest {
+  behavior of "MuSig2 Implementation"
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode

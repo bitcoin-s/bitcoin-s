@@ -8,7 +8,10 @@ import org.bitcoins.crypto.{
 }
 import scodec.bits.ByteVector
 
-sealed trait KeySet {
+/** Represents an ordered set of MuSig signers and their tweaks.
+  * This is the data required to (non-interactively) compute the aggPubKey.
+  */
+trait KeySet {
   def keys: Vector[SchnorrPublicKey]
 
   def tweaks: Vector[MuSigTweak]
@@ -32,11 +35,12 @@ sealed trait KeySet {
     keys.map(_.bytes).reduce(_ ++ _)
   }
 
+  /** Returns the coefficient of the given key in the aggPubKey sum */
   def keyAggCoef(key: SchnorrPublicKey): FieldElement = {
     if (secondKeyOpt.contains(key)) FieldElement.one
     else {
-      val listHashBytes = MuSig2Util.aggListHash(serialize)
-      val bytes = MuSig2Util.aggCoefHash(listHashBytes ++ key.bytes)
+      val listHashBytes = MuSigUtil.aggListHash(serialize)
+      val bytes = MuSigUtil.aggCoefHash(listHashBytes ++ key.bytes)
 
       FieldElement(new java.math.BigInteger(1, bytes.toArray))
     }
@@ -58,12 +62,16 @@ sealed trait KeySet {
     }
   }
 
+  /** The aggregate public key that represents the n-of-n signers */
   lazy val aggPubKey: ECPublicKey = computeAggPubKeyAndTweakContext._1
 
+  /** Accumulated tweak information */
   lazy val tweakContext: MuSigTweakContext =
     computeAggPubKeyAndTweakContext._2
 
-  // In truth this represents the first key different from the head key
+  /** The first key different from the keys.head,
+    * optimized MuSig2 allows this key to have coefficient 1
+    */
   lazy val secondKeyOpt: Option[SchnorrPublicKey] = {
     keys.find(_ != keys.head)
   }
@@ -88,6 +96,7 @@ object KeySet {
   }
 }
 
+/** The default way of ordering a KeySet is lexicographically */
 case class LexicographicKeySet(
     override val keys: Vector[SchnorrPublicKey],
     override val tweaks: Vector[MuSigTweak] = Vector.empty)
@@ -98,6 +107,9 @@ case class LexicographicKeySet(
   }
 }
 
+/** This represents an arbitrary KeySet, for use in tests.
+  * If you have a non-lexicographical order, extend KeySet.
+  */
 case class UnsortedKeySet(
     override val keys: Vector[SchnorrPublicKey],
     override val tweaks: Vector[MuSigTweak] = Vector.empty)

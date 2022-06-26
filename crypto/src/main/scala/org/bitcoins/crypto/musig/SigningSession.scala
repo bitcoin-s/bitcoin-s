@@ -8,6 +8,7 @@ import org.bitcoins.crypto.{
 }
 import scodec.bits.ByteVector
 
+/** The data relevant to computing and verifying MuSig partial signatures */
 case class SigningSession(
     b: FieldElement,
     aggNonce: ECPublicKey,
@@ -22,7 +23,7 @@ object SigningSession {
     val aggPubKey = keySet.aggPubKey.schnorrPublicKey
 
     val bHash =
-      MuSig2Util.nonCoefHash(aggNoncePub.bytes ++ aggPubKey.bytes ++ message)
+      MuSigUtil.nonCoefHash(aggNoncePub.bytes ++ aggPubKey.bytes ++ message)
 
     FieldElement(new java.math.BigInteger(1, bHash.toArray))
   }
