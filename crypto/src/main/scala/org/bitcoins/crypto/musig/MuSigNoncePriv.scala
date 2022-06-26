@@ -45,22 +45,19 @@ object MuSigNoncePriv extends Factory[MuSigNoncePriv] {
     MuSigNoncePriv(privs)
   }
 
-  // TODO change aggPubKey back to SchnorrPublicKey and remove requirement once test vector is changed to valid x-coordinate
   /** Generates a MuSigNoncePriv given 32 bytes of entropy from preRand,
     * and possibly some other sources, as specified in the BIP.
     */
   def genInternal(
       preRand: ByteVector,
       privKeyOpt: Option[ECPrivateKey] = None,
-      aggPubKeyOpt: Option[ByteVector] = None,
+      aggPubKeyOpt: Option[SchnorrPublicKey] = None,
       msgOpt: Option[ByteVector] = None,
       extraInOpt: Option[ByteVector] = None): MuSigNoncePriv = {
     require(preRand.length == 32,
             s"32 bytes of entropy must be provided, found $preRand")
     require(msgOpt.forall(msg => msg.length == 32),
             s"The message to be signed must be 32 bytes, found $msgOpt")
-    require(aggPubKeyOpt.forall(aggPubKey => aggPubKey.length == 32),
-            s"aggPubKey must be a SchnorrPublicKey, found $aggPubKeyOpt")
     require(
       extraInOpt.forall(_.length <= 4294967295L),
       "extraIn too long, its length must be represented by at most four bytes")
@@ -80,7 +77,7 @@ object MuSigNoncePriv extends Factory[MuSigNoncePriv] {
       case None          => preRand
     }
 
-    val aggPubKeyBytes = serializeWithLen(aggPubKeyOpt)
+    val aggPubKeyBytes = serializeWithLen(aggPubKeyOpt.map(_.bytes))
     val msgBytes = serializeWithLen(msgOpt)
     val extraInBytes = serializeWithLen(extraInOpt, lengthSize = 4)
     val dataBytes = rand ++ aggPubKeyBytes ++ msgBytes ++ extraInBytes
@@ -106,10 +103,6 @@ object MuSigNoncePriv extends Factory[MuSigNoncePriv] {
       extraInOpt: Option[ByteVector] = None): MuSigNoncePriv = {
     val preRand = CryptoUtil.randomBytes(32)
 
-    genInternal(preRand,
-                privKeyOpt,
-                aggPubKeyOpt.map(_.bytes),
-                msgOpt,
-                extraInOpt)
+    genInternal(preRand, privKeyOpt, aggPubKeyOpt, msgOpt, extraInOpt)
   }
 }
