@@ -105,8 +105,8 @@ trait CryptoBytesUtil {
     0.until(bytes.length.toInt / intervalLen)
       .toVector
       .foldLeft((Vector.empty[ByteVector], bytes)) {
-        case ((privsSoFar, remainingBytes), _) =>
-          (privsSoFar.:+(remainingBytes.take(intervalLen)),
+        case ((chuncksSoFar, remainingBytes), _) =>
+          (chuncksSoFar.:+(remainingBytes.take(intervalLen)),
            remainingBytes.drop(intervalLen))
       }
       ._1
