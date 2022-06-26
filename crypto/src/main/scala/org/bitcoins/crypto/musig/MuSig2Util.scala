@@ -48,14 +48,14 @@ object MuSig2Util {
 
   def sign(
       noncePriv: MuSigNoncePriv,
-      aggMuSigNoncePub: MuSigNoncePub,
+      aggNoncePub: MuSigNoncePub,
       privKey: ECPrivateKey,
       message: ByteVector,
       keySet: KeySet): (ECPublicKey, FieldElement) = {
     val pubKey = privKey.publicKey
     val coef = keySet.keyAggCoef(pubKey.schnorrPublicKey)
     val SigningSession(b, aggNonce, e) =
-      SigningSession(aggMuSigNoncePub, keySet, message)
+      SigningSession(aggNoncePub, keySet, message)
 
     val adjustedNoncePriv = aggNonce.parity match {
       case EvenParity => noncePriv
@@ -111,15 +111,15 @@ object MuSig2Util {
 
   def partialSigVerify(
       partialSig: FieldElement,
-      MuSigNoncePub: MuSigNoncePub,
-      aggMuSigNoncePub: MuSigNoncePub,
+      noncePub: MuSigNoncePub,
+      aggNoncePub: MuSigNoncePub,
       pubKey: SchnorrPublicKey,
       keySet: KeySet,
       message: ByteVector): Boolean = {
     val SigningSession(b, aggNonce, e) =
-      SigningSession(aggMuSigNoncePub, keySet, message)
+      SigningSession(aggNoncePub, keySet, message)
 
-    partialSigVerify(partialSig, MuSigNoncePub, pubKey, keySet, b, aggNonce, e)
+    partialSigVerify(partialSig, noncePub, pubKey, keySet, b, aggNonce, e)
   }
 
   def partialSigVerify(
@@ -156,15 +156,15 @@ object MuSig2Util {
 
   def signAgg(
       sVals: Vector[FieldElement],
-      aggMuSigNoncePub: MuSigNoncePub,
+      aggNoncePub: MuSigNoncePub,
       keySet: KeySet,
       message: ByteVector): SchnorrDigitalSignature = {
-    val SigningSession(_, aggPubNonce, e) =
-      SigningSession(aggMuSigNoncePub, keySet, message)
+    val SigningSession(_, aggNonce, e) =
+      SigningSession(aggNoncePub, keySet, message)
     val tweakData =
       MuSigTweakData(keySet.tweakContext, keySet.aggPubKey.parity, e)
 
-    signAgg(sVals, aggPubNonce, Some(tweakData))
+    signAgg(sVals, aggNonce, Some(tweakData))
   }
 
   def signAgg(

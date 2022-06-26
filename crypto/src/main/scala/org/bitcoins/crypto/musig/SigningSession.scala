@@ -16,13 +16,13 @@ case class SigningSession(
 object SigningSession {
 
   def computeB(
-      aggMuSigNoncePub: MuSigNoncePub,
+      aggNoncePub: MuSigNoncePub,
       keySet: KeySet,
       message: ByteVector): FieldElement = {
     val aggPubKey = keySet.aggPubKey.schnorrPublicKey
 
-    val bHash = MuSig2Util.nonCoefHash(
-      aggMuSigNoncePub.bytes ++ aggPubKey.bytes ++ message)
+    val bHash =
+      MuSig2Util.nonCoefHash(aggNoncePub.bytes ++ aggPubKey.bytes ++ message)
 
     FieldElement(new java.math.BigInteger(1, bHash.toArray))
   }
@@ -40,21 +40,21 @@ object SigningSession {
   }
 
   def getSessionValues(
-      aggMuSigNoncePub: MuSigNoncePub,
+      aggNoncePub: MuSigNoncePub,
       keySet: KeySet,
       message: ByteVector): SigningSession = {
     val aggPubKey = keySet.aggPubKey.schnorrPublicKey
-    val b = computeB(aggMuSigNoncePub, keySet, message)
-    val aggNonce = aggMuSigNoncePub.sumToKey(b)
+    val b = computeB(aggNoncePub, keySet, message)
+    val aggNonce = aggNoncePub.sumToKey(b)
     val e = computeE(aggPubKey, aggNonce, message)
 
     SigningSession(b, aggNonce, e)
   }
 
   def apply(
-      aggMuSigNoncePub: MuSigNoncePub,
+      aggNoncePub: MuSigNoncePub,
       keySet: KeySet,
       message: ByteVector): SigningSession = {
-    getSessionValues(aggMuSigNoncePub, keySet, message)
+    getSessionValues(aggNoncePub, keySet, message)
   }
 }
