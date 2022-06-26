@@ -4,8 +4,6 @@ import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 // TODO test against secp256k1-zkp
-// TODO refactor for niceness
-// TODO easy optimizations (e.g. remove parity multiplications)
 // TODO scaladocs and require messages
 object MuSig2Util {
 
@@ -62,20 +60,14 @@ object MuSig2Util {
       case OddParity  => noncePriv.negate
     }
 
-    val gp = pubKey.parity match {
-      case EvenParity => FieldElement.one
-      case OddParity  => FieldElement.orderMinusOne
-    }
+    val gp = ParityMultiplier.fromParity(pubKey.parity)
 
-    val g = keySet.aggPubKey.parity match {
-      case EvenParity => FieldElement.one
-      case OddParity  => FieldElement.orderMinusOne
-    }
+    val g = ParityMultiplier.fromParity(keySet.aggPubKey.parity)
 
-    val adjustedPrivKey = privKey.fieldElement
-      .multiply(gp)
+    val adjustedPrivKey = gp
       .multiply(g)
       .multiply(keySet.tweakContext.parityAcc)
+      .modify(privKey.fieldElement)
 
     val privNonceSum = adjustedNoncePriv.sumToKey(b)
 
@@ -133,20 +125,11 @@ object MuSig2Util {
     val nonceSum = noncePub.sumToKey(b)
     val nonceSumAdjusted = aggNonce.parity match {
       case EvenParity => nonceSum
-      case OddParity  => nonceSum.multiply(FieldElement.orderMinusOne)
+      case OddParity  => nonceSum.negate
     }
 
-    val g = keySet.aggPubKey.parity match {
-      case EvenParity => FieldElement.one
-      case OddParity  => FieldElement.orderMinusOne
-    }
-
-    val aggKeyParity = g.multiply(keySet.tweakContext.parityAcc) match {
-      case FieldElement.one           => EvenParity
-      case FieldElement.orderMinusOne => OddParity
-      case _: FieldElement => // TODO TweakContext.parityAcc needs an ADT
-        throw new RuntimeException("Something has gone very wrong.")
-    }
+    val g = ParityMultiplier.fromParity(keySet.aggPubKey.parity)
+    val aggKeyParity = g.multiply(keySet.tweakContext.parityAcc).toParity
 
     val aggKey = pubKey.toXOnly.publicKey(aggKeyParity)
     val a = keySet.keyAggCoef(pubKey)

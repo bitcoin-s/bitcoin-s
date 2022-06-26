@@ -2,19 +2,20 @@ package org.bitcoins.crypto.musig
 
 import org.bitcoins.crypto.{ECPublicKey, FieldElement, OddParity}
 
-case class MuSigTweakContext(parityAcc: FieldElement, tweakAcc: FieldElement) {
+case class MuSigTweakContext(
+    parityAcc: ParityMultiplier,
+    tweakAcc: FieldElement) {
 
   def applyTweak(
       tweak: MuSigTweak,
       aggPubKey: ECPublicKey): (ECPublicKey, MuSigTweakContext) = {
     val parityMult =
-      if (tweak.isXOnlyT && aggPubKey.parity == OddParity)
-        FieldElement.orderMinusOne
-      else FieldElement.one
+      if (tweak.isXOnlyT && aggPubKey.parity == OddParity) Neg
+      else Pos
 
-    val newAggPubKey = aggPubKey.multiply(parityMult).add(tweak.point)
+    val newAggPubKey = parityMult.modify(aggPubKey).add(tweak.point)
     val newParityAcc = parityAcc.multiply(parityMult)
-    val newTweakAcc = tweakAcc.multiply(parityMult).add(tweak.tweak)
+    val newTweakAcc = parityMult.modify(tweakAcc).add(tweak.tweak)
     (newAggPubKey, MuSigTweakContext(newParityAcc, newTweakAcc))
   }
 }
@@ -22,5 +23,5 @@ case class MuSigTweakContext(parityAcc: FieldElement, tweakAcc: FieldElement) {
 object MuSigTweakContext {
 
   val empty: MuSigTweakContext =
-    MuSigTweakContext(FieldElement.one, FieldElement.zero)
+    MuSigTweakContext(Pos, FieldElement.zero)
 }
