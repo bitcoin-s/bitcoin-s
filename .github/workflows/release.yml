@@ -331,8 +331,13 @@ jobs:
         working-directory: $W_MAKE
         env:
           APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+          NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
+          NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
+          TEAM_ID: "9ZG3GPKHX8"
           PLIST: "bitcoin-s-ts/wallet-electron-ts/entitlements.plist"
           WALLET_PATH: "${{env.W_OUT}}/Suredbits Wallet-darwin-x64/Suredbits Wallet.app"
+          BUNDLE_ID: "org.bitcoins.suredbitswallet"
+          ZIP_NAME: "SuredbitsWallet-mac.zip"
         run: |
           echo "=== Signing app ==="
           codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$WALLET_PATH"
