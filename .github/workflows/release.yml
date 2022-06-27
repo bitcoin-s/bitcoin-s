@@ -11,25 +11,25 @@ env:
   pkg-name: 'bitcoin-s'
 
 jobs:
-  publish:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: olafurpg/setup-scala@v13
-        with:
-          java-version: openjdk@1.17.0
-      - uses: olafurpg/setup-gpg@v3
-      - run: sbt -J-Xmx2g ci-release docs/publishWebsite
-        env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          GITHUB_DEPLOY_KEY: ${{ secrets.GITHUB_TOKEN }}
-          GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
+  # publish:
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 60
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0
+  #     - uses: olafurpg/setup-scala@v13
+  #       with:
+  #         java-version: openjdk@1.17.0
+  #     - uses: olafurpg/setup-gpg@v3
+  #     - run: sbt -J-Xmx2g ci-release docs/publishWebsite
+  #       env:
+  #         PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+  #         PGP_SECRET: ${{ secrets.PGP_SECRET }}
+  #         SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+  #         SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+  #         GITHUB_DEPLOY_KEY: ${{ secrets.GITHUB_TOKEN }}
+  #         GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
   # Built bitcoin-s cli, appServer, oracleServer zips
   package-zips:
     runs-on: ${{ matrix.os }}
@@ -227,8 +227,8 @@ jobs:
           codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
           codesign -dvv "$KRYSTALBULL_PATH"
           codesign -d --entitlements :- "$KRYSTALBULL_PATH"
-        # : # echo "=== zip app ==="
-        # : # zip -qr $ZIP_NAME "$KRYSTALBULL_PATH"
+          echo "=== zip app ==="
+          zip -qr "$KB_MAKE/$ZIP_NAME" "$KRYSTALBULL_PATH"
         # mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $ZIP_NAME
         # echo "=== Notarizing app ==="
         # : # Store xcrun creditials
@@ -277,9 +277,9 @@ jobs:
       #     : # echo "=== Verify app notarization ==="
       #     : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
       # Platform specific values here for folder depth
-      - name: (macos) Move .zip into /make
-        if: startsWith(matrix.os,'macos')
-        run: mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $KB_MAKE
+      # - name: (macos) Move .zip into /make
+      #   if: startsWith(matrix.os,'macos')
+      #   run: mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $KB_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
         run: mv ${{env.KB_MAKE}}/deb/x64/*.deb $KB_MAKE
@@ -338,6 +338,8 @@ jobs:
           codesign -vvv --deep --strict "$WALLET_PATH"
           codesign -dvv "$WALLET_PATH"
           codesign -d --entitlements :- "$WALLET_PATH"
+          echo "=== zip app ==="
+          zip -qr "$W_MAKE/$ZIP_NAME" "$WALLET_PATH"
       # - name: (macos) Validate application signing and notarization
       #   if: startsWith(matrix.os,'macos')
       #   env:
@@ -359,9 +361,9 @@ jobs:
       #     : # echo "=== Verify app notarization ==="
       #     : # spctl -vvv --assess --type exec "$WALLET_PATH"
       # Platform specific values here for folder depth
-      - name: (macos) Move .zip into /make
-        if: startsWith(matrix.os,'macos')
-        run: mv ${{env.W_MAKE}}/zip/darwin/x64/*.zip $W_MAKE
+      # - name: (macos) Move .zip into /make
+      #   if: startsWith(matrix.os,'macos')
+      #   run: mv ${{env.W_MAKE}}/zip/darwin/x64/*.zip $W_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
         run: mv ${{env.W_MAKE}}/deb/x64/*.deb $W_MAKE
