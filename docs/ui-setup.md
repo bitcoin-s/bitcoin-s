@@ -29,67 +29,77 @@ https://youtu.be/oR0I0aHxNMM?t=219
 
 This requires command line skills.
 
-### Starting the backend
 
-From the image above, download the `bitcoin-s-server` artifact.
-
-![Example banner](/img/installers.png)
-
-After unzipping, you will need to run `chmod +x ./bin/bitcoin-s-server` from the terminal make the file executable.
-
-After making the file executable, you can start the server with 
-
-```
-unzip bitcoin-s-server.zip
-cd bitcoin-s-server
-chmod +x ./bin/bitcoin-s-server
-./bin/bitcoin-s-server
-```
-
-This starts the backend and will begin synchronizing with the bitcoin network.
-
-
-### Building and starting the frontend
-
-Here are the instructions to build, you can paste this into your terminal
+First, clone the bitcoin-s-ts repository by running 
 
 ```
 git clone https://github.com/bitcoin-s/bitcoin-s-ts.git
-cd bitcoin-s-ts && npm i && run build
-cd wallet-server-ui && npm i && npm run build
-cd ../wallet-server-ui-proxy && npm i && npm run startlocal
 ```
 
-The last command, `npm run startlocal` should result in server starting with logs that look like this
+### Setup
+
+(If on a M1 Mac, go to the Generate M1 Mac server section below before continuing)
+
+You must have npm, if you don't then run `brew install node` 
+Next, navigate to the `bitcoin-s-ts` directory and in it run 
 
 ```
-> wallet-server-ui-proxy@1.9.0 startlocal
-> DEFAULT_UI_PASSWORD=none BITCOIN_S_SERVER_RPC_PASSWORD=password npx ts-node server.ts
-
-...
-
-ConfigureServerURL() http://localhost:9999/
-ConfigureAuthorizationHeader() Basic Yml0Y29pbnM6cGFzc3dvcmQ=
-[HPM] Proxy created: /  -> http://localhost:9999/
-[HPM] Proxy rewrite rule created: "^/api/v0" ~> ""
-[HPM] Proxy created: /  -> ws://localhost:19999/events
-[HPM] Proxy rewrite rule created: "^/websocket" ~> ""
-2022-03-11T17:05:19.238Z info: starting HTTP server
-2022-03-11T17:05:19.242Z info: Web Server started on port: 3002 ⚡
+./build-wallet-electron.sh
 ```
+This will download the `bitcoin-s-server.zip` file and set up Suredbits Wallets dependencies. 
 
-Now if you navigate to your web browser, you should see a page like this at `http://localhost:3002` 
+Now, if you wish to run the Suredbits Wallet application in dev mode then run 
 
+```
+cd wallet-electron-ts && npm run start"
+
+```
+###Instill desktop application (Optional)
+
+If you would like to use the desktop application then run
+
+```
+npm make 
+```
+Then, search for the Suredbits Wallet application in finder, windows explorer, ect ... 
+and double click on the icon and complete the installation 
+
+Once you open the Suredbits Wallet application you should see the following screen
+ 
 ![Alt text](/img/Screenshot%20from%202022-03-11%2011-20-17.png)
 
 The password is `none`, enter that and you should see the wallet!
 
 ![Alt text](/img/Screenshot%20from%202022-03-11%2011-21-47.png)
-
-
+ 
 Deposit 100,000 sats and [find an event you want to bet on](https://oracle.suredbits.com/)!
 
 The wallet will take roughly 20-30 minutes to synchronize with the bitcoin network. If you deposit funds before
 the synchronization finishes, the funds may not show up right away. This is expected. They will show up when the sync is done.
 
 After the synchronization is done, you should be good to do a DLC! :tada:
+
+### Generate M1 Mac server
+
+If you are on an M1 Mac, we currently do not offer a `bitcoin-s-sever.zip` file on the website, so the setup requires a few more steps
+
+First, you will need a bitcoin-s node on your machine. If you don't already have one, follow the  instructions here https://bitcoin-s.org/docs/getting-setup 
+
+Next, to generate your the `bitcoin-s-server.zip` file, go into your bitcoin-s directory and run
+
+```
+sbt appServer/universal:packageBin
+```
+Then navigate to the bitcoin-s sub-directory containing the .zip file by running 
+
+```
+cd app/server/target/universal
+```
+
+Now we will copy this file over to `bitcoin-s-ts/wallet-electron-ts` by running 
+
+```
+cp <the zip file> ~/bitcoin-s-ts/walllet-electron-ts
+```
+You now can return to the Setup section
+
