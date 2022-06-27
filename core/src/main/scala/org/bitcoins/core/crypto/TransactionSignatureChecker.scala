@@ -210,6 +210,7 @@ trait TransactionSignatureChecker {
       TransactionSignatureSerializer.hashForSignature(txSignatureComponent,
                                                       hashType,
                                                       taprootOptions)
+    println(s"checkSigTapscript.pubKey=${pubKey.bytes}")
     val result = pubKey.verify(hash, signature)
     if (result) {
       SignatureValidationSuccess

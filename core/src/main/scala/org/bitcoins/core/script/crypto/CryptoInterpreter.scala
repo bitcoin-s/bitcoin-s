@@ -207,7 +207,7 @@ sealed abstract class CryptoInterpreter {
       ScriptFlagUtil.discourageUpgradablePublicKey(program.flags)
 
     println(
-      s"sigBytes=$sigBytes pubKeyBytes=$pubKeyBytes schnorrPubKeyT=${xOnlyPubKeyT} discourageUpgradablePubKey=$discourageUpgradablePubKey")
+      s"sigBytes=$sigBytes pubKeyBytes=$pubKeyBytes xOnlyPubKey=${xOnlyPubKeyT} discourageUpgradablePubKey=$discourageUpgradablePubKey")
     //need to do weight validation
     if (pubKeyBytes.isEmpty) {
       //this failure catches two types of errors, if the pubkey is empty
