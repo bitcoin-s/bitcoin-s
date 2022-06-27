@@ -209,27 +209,27 @@ jobs:
       #     ls -l "$KB_MAKE/zip"
       #     ls -l "$KB_MAKE/zip/windows"
       #     ls -l "$KB_MAKE/zip/windows/x64"
-      # - name: (macos) Manually sign Krystal Bull
-      #   if: startsWith(matrix.os,'macos')
-      #   working-directory: ${{env.KB_MAKE}}
-      #   env:
-      #     APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
-      #     NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
-      #     NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
-      #     TEAM_ID: "9ZG3GPKHX8"
-      #     PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
-      #     KRYSTALBULL_PATH: "${{env.KB_OUT}}/Krystal Bull-darwin-x64/Krystal Bull.app"
-      #     BUNDLE_ID: "org.bitcoins.krystalbull"
-      #     ZIP_NAME: "KrystalBull-mac.zip"
-      #   run: |
-      #     echo "=== Signing app ==="
-      #     codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
-      #     echo "=== Verifying app signature ==="
-      #     codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
-      #     codesign -dvv "$KRYSTALBULL_PATH"
-      #     codesign -d --entitlements :- "$KRYSTALBULL_PATH"
-      #     echo "=== zip app ==="
-      #     zip -qr $ZIP_NAME "$KRYSTALBULL_PATH"
+      - name: (macos) Manually sign Krystal Bull
+        if: startsWith(matrix.os,'macos')
+        working-directory: ${{env.KB_MAKE}}
+        env:
+          APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+          NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
+          NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
+          TEAM_ID: "9ZG3GPKHX8"
+          PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
+          KRYSTALBULL_PATH: "${{env.KB_OUT}}/Krystal Bull-darwin-x64/Krystal Bull.app"
+          BUNDLE_ID: "org.bitcoins.krystalbull"
+          ZIP_NAME: "KrystalBull-mac.zip"
+        run: |
+          echo "=== Signing app ==="
+          codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
+          echo "=== Verifying app signature ==="
+          codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
+          codesign -dvv "$KRYSTALBULL_PATH"
+          codesign -d --entitlements :- "$KRYSTALBULL_PATH"
+          echo "=== zip app ==="
+          zip -qr $ZIP_NAME "$KRYSTALBULL_PATH"
         # mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $ZIP_NAME
         # echo "=== Notarizing app ==="
         # : # Store xcrun creditials
@@ -278,9 +278,9 @@ jobs:
       #     : # echo "=== Verify app notarization ==="
       #     : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
       # Platform specific values here for folder depth
-      - name: (macos) Move .zip into /make
-        if: startsWith(matrix.os,'macos')
-        run: mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $KB_MAKE
+      # - name: (macos) Move .zip into /make
+      #   if: startsWith(matrix.os,'macos')
+      #   run: mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $KB_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
         run: mv ${{env.KB_MAKE}}/deb/x64/*.deb $KB_MAKE
