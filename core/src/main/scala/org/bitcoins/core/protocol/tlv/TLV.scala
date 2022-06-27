@@ -2433,6 +2433,8 @@ object FundingSignaturesV0TLV extends Factory[FundingSignaturesV0TLV] {
           case EmptyScriptWitness =>
             throw new IllegalArgumentException(s"Invalid witness: $stack")
           case witness: ScriptWitnessV0 => witness
+          case tw: TaprootWitness =>
+            sys.error(s"Taproot witness is not supported by dlc spec, got=$tw")
         }
       }
       FundingSignaturesV0TLV(witnesses, DLCSerializationVersion.Gamma)
