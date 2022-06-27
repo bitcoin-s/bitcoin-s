@@ -130,16 +130,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest] # [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest] # [macos-latest, ubuntu-latest, windows-latest]
         # If os values you don't include the matrix os list above are set here, they will be included
         # This is here to get friendly labels for output filenames
         include:
         - os: macos-latest
           TARGET: mac
           FORMAT: zip # dmg
-        - os: ubuntu-latest
-          TARGET: linux
-          FORMAT: deb
+        # - os: ubuntu-latest
+        #   TARGET: linux
+        #   FORMAT: deb
         # - os: windows-latest
         #   TARGET: windows
         #   FORMAT: msi # ???
