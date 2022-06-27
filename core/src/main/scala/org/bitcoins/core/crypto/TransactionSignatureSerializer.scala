@@ -305,7 +305,7 @@ sealed abstract class TransactionSignatureSerializer {
           } else {
             ByteVector.empty
           }
-
+        println(s"sequenceHash=$sequenceHash")
         val outputHash: ByteVector =
           if (isNotSigHashSingle && isNotSigHashNone) {
             val outputs = spendingTransaction.outputs
@@ -321,6 +321,7 @@ sealed abstract class TransactionSignatureSerializer {
               .bytes
             hash
           } else ByteVector.empty
+
         val haveAnnex: Boolean = taprootOptions.haveAnnex
 
         val annexByte = if (haveAnnex) 1.toByte else 0.toByte
