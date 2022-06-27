@@ -4,12 +4,17 @@ import akka.stream._
 import akka.stream.scaladsl._
 import lnrpc._
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  FinalizedPsbt,
+  NonFinalizedPsbt
+}
 import org.bitcoins.core.currency.{currencyUnitNumeric, Bitcoins, Satoshis}
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
   P2WPKHWitnessSPKV0,
+  TaprootKeyPath,
   TaprootScriptPubKey
 }
 import org.bitcoins.core.protocol.tlv.UnknownTLV
@@ -161,7 +166,7 @@ class LndRpcClientPairTest extends DualLndFixture {
                                  Vector(output),
                                  UInt32.zero)
 
-      (scriptSig, wit) <- lnd.computeInputScript(
+      sig <- lnd.signOutputRaw(
         tx = unsigned,
         inputIdx = 0,
         hashType = HashType.sigHashAll,
@@ -173,13 +178,89 @@ class LndRpcClientPairTest extends DualLndFixture {
       psbt = PSBT
         .fromUnsignedTx(unsigned)
         .addWitnessUTXOToInput(prevOut, 0)
-        .addFinalizedScriptWitnessToInput(scriptSig, wit, 0)
-      tx = psbt.extractTransaction
+        .addFinalizedScriptWitnessToInput(
+          EmptyScriptSignature,
+          TaprootKeyPath(SchnorrDigitalSignature(sig),
+                         HashType.sigHashAll,
+                         None),
+          0)
+      res <- bitcoind.finalizePsbt(psbt)
 
-      _ <- lnd.publishTransaction(tx)
+      tx = res match {
+        case FinalizedPsbt(hex)  => hex
+        case NonFinalizedPsbt(_) => sys.error("psbt not finalized")
+      }
+
+      _ = println(tx.asInstanceOf[WitnessTransaction].witness.witnesses)
+
       _ <- bitcoind.sendRawTransaction(tx)
+      _ <- lnd.publishTransaction(tx)
     } yield succeed
   }
+
+//  it must "sign a dual funded taproot transaction" in { param =>
+//    val (bitcoind, lnd, lnd2) = param
+//
+//    for {
+//      addr <- lnd.getNewAddress(AddressType.TAPROOT_PUBKEY)
+//      _ <- bitcoind.sendToAddress(addr, Bitcoins(1))
+//      addr2 <- lnd2.getNewAddress(AddressType.TAPROOT_PUBKEY)
+//      _ <- bitcoind.sendToAddress(addr2, Bitcoins(1))
+//
+//      bitcoindAddr <- bitcoind.getNewAddress
+//
+//      utxo <- lnd.listUnspent.map(
+//        _.find(_.spk.isInstanceOf[TaprootScriptPubKey]).get)
+//      prevOut = TransactionOutput(utxo.amount, utxo.spk)
+//      input = TransactionInput(utxo.outPointOpt.get,
+//                               EmptyScriptSignature,
+//                               TransactionConstants.sequence)
+//
+//      utxo2 <- lnd2.listUnspent.map(
+//        _.find(_.spk.isInstanceOf[TaprootScriptPubKey]).get)
+//      prevOut2 = TransactionOutput(utxo2.amount, utxo2.spk)
+//      input2 = TransactionInput(utxo2.outPointOpt.get,
+//                                EmptyScriptSignature,
+//                                TransactionConstants.sequence)
+//
+//      output = TransactionOutput(utxo.amount + utxo2.amount - Satoshis(1000),
+//                                 bitcoindAddr.scriptPubKey)
+//
+//      unsigned = BaseTransaction(Int32.two,
+//                                 Vector(input, input2),
+//                                 Vector(output),
+//                                 UInt32.zero)
+//
+//      (scriptSig, wit) <- lnd.computeInputScript(
+//        tx = unsigned,
+//        inputIdx = 0,
+//        hashType = HashType.sigHashAll,
+//        output = prevOut,
+//        signMethod = SignMethod.SIGN_METHOD_TAPROOT_KEY_SPEND_BIP0086,
+//        prevOuts = Vector(prevOut2)
+//      )
+//
+//      (scriptSig2, wit2) <- lnd.computeInputScript(
+//        tx = unsigned,
+//        inputIdx = 1,
+//        hashType = HashType.sigHashAll,
+//        output = prevOut2,
+//        signMethod = SignMethod.SIGN_METHOD_TAPROOT_KEY_SPEND_BIP0086,
+//        prevOuts = Vector(prevOut)
+//      )
+//
+//      psbt = PSBT
+//        .fromUnsignedTx(unsigned)
+//        .addWitnessUTXOToInput(prevOut, 0)
+//        .addFinalizedScriptWitnessToInput(scriptSig, wit, 0)
+//        .addWitnessUTXOToInput(prevOut2, 1)
+//        .addFinalizedScriptWitnessToInput(scriptSig2, wit2, 1)
+//      tx = psbt.extractTransaction
+//
+//      _ <- bitcoind.sendRawTransaction(tx)
+//      _ <- lnd.publishTransaction(tx)
+//    } yield succeed
+//  }
 
   it must "pay an invoice" in { param =>
     val (_, lndA, lndB) = param
