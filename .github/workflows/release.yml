@@ -201,7 +201,7 @@ jobs:
           npm ci
           npm run build
           npm run make
-      - name: (windows) Show artifacts
+      - name: (windows) Show artifacts 
         if: startsWith(matrix.os,'windows')
         run: |
           ls -l $KB_OUT
