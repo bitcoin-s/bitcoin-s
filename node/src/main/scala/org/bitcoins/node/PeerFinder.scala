@@ -127,7 +127,7 @@ case class PeerFinder(
             _peersToTry.pushAll(getPeersFromDnsSeeds)
 
           val peers = (for { _ <- 1 to 32 } yield _peersToTry.pop()).distinct
-            .filterNot(skipPeers().contains(_))
+            .filterNot(p => skipPeers().contains(p) || _peerData.contains(p))
 
           logger.debug(s"Trying next set of peers $peers")
           peers.foreach(tryPeer)

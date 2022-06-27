@@ -257,7 +257,11 @@ case class PeerManager(
             //we do want to give it enough time to send addr messages
             AsyncUtil
               .nonBlockingSleep(duration = 10.seconds)
-              .map(_ => finder.getData(peer).client.close())
+              .map { _ =>
+                //could have already been deleted in case of connection issues
+                if (finder.hasPeer(peer))
+                  finder.getData(peer).client.close()
+              }
           }
         }
       }

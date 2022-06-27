@@ -179,7 +179,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     } else 10.seconds
   }
 
-  /** timeout for trying next set of peers in peer discovery */
+  /** time interval for trying next set of peers in peer discovery */
   lazy val tryNextPeersInterval: FiniteDuration = {
     if (config.hasPath("bitcoin-s.node.try-peers-interval")) {
       val duration = config.getDuration("bitcoin-s.node.try-peers-interval")

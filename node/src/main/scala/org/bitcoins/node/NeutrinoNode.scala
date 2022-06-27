@@ -79,7 +79,7 @@ case class NeutrinoNode(
 
       syncPeer <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)
-      _ = logger.info(s"Starting sync with $syncPeer")
+      _ = logger.info(s"Syncing with $syncPeer")
       _ = updateDataMessageHandler(
         dataMessageHandler.copy(syncPeer = Some(syncPeer)))
       peerMsgSender = peerManager.peerData(syncPeer).peerMessageSender
