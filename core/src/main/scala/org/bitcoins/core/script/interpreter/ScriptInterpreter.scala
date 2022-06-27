@@ -595,6 +595,33 @@ sealed abstract class ScriptInterpreter {
     }
   }
 
+  /** Checks if there is an opcode defined as OP_SUCCESSx in BIP342
+    * @see https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki#specification
+    */
+  private def containsOpSuccess(asm: Vector[ScriptToken]): Boolean = {
+    val disabled = Vector(OP_CAT,
+                          OP_SUBSTR,
+                          OP_LEFT,
+                          OP_RIGHT,
+                          OP_INVERT,
+                          OP_AND,
+                          OP_OR,
+                          OP_XOR,
+                          OP_RESERVED1,
+                          OP_RESERVED2,
+                          OP_2MUL,
+                          OP_2DIV,
+                          OP_MUL,
+                          OP_DIV,
+                          OP_MOD,
+                          OP_LSHIFT,
+                          OP_RSHIFT)
+    val containsOPSuccess =
+      asm.exists(o =>
+        o.isInstanceOf[ReservedOperation] || disabled.exists(_ == o))
+    containsOPSuccess
+  }
+
   private def executeTapscript(
       taprootWitness: TaprootWitness,
       taprootSPK: TaprootScriptPubKey,
@@ -605,8 +632,7 @@ sealed abstract class ScriptInterpreter {
     ExecutedScriptProgram] = {
     val sigVersion = scriptPubKeyExecutedProgram.txSignatureComponent.sigVersion
     if (ScriptFlagUtil.taprootEnabled(scriptPubKeyExecutedProgram.flags)) {
-      val containsOPSuccess =
-        rebuiltSPK.asm.exists(_.isInstanceOf[ReservedOperation])
+      val containsOPSuccess = containsOpSuccess(rebuiltSPK.asm.toVector)
 
       if (sigVersion == SigVersionTapscript && containsOPSuccess) {
         handleOpSuccess(scriptPubKeyExecutedProgram)
