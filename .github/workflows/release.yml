@@ -211,7 +211,7 @@ jobs:
       #     ls -l "$KB_MAKE/zip/windows/x64"
       - name: (macos) Manually sign krystalbull
         if: startsWith(matrix.os,'macos')
-        working-directory: $KB_MAKE
+        working-directory: ${{env.KB_MAKE}}
         env:
           APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
           NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
@@ -328,7 +328,7 @@ jobs:
           npm run make
       - name: (macos) Manually sign Suredbits Wallet
         if: startsWith(matrix.os,'macos')
-        working-directory: $W_MAKE
+        working-directory: ${{env.W_MAKE}}
         env:
           APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
           NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
