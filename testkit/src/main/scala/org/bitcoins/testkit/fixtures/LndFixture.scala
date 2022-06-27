@@ -2,7 +2,7 @@ package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.lnd.rpc.LndRpcClient
 import org.bitcoins.lnd.rpc.config.LndInstanceRemote
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
 import org.bitcoins.testkit.lnd._
 import org.bitcoins.testkit.rpc._
 import org.scalatest.FutureOutcome
@@ -38,9 +38,10 @@ trait LndFixture extends BitcoinSFixture with CachedBitcoindV21 {
 }
 
 /** A trait that is useful if you need Lnd fixtures for your test suite */
-trait DualLndFixture extends BitcoinSFixture with CachedBitcoindV21 {
+trait DualLndFixture extends BitcoinSFixture with CachedBitcoindV23 {
 
-  override type FixtureParam = (BitcoindRpcClient, LndRpcClient, LndRpcClient)
+  override type FixtureParam =
+    (BitcoindV23RpcClient, LndRpcClient, LndRpcClient)
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withDualLnd(test)
