@@ -49,7 +49,6 @@ case class TaprootTestCase(
       s"prevOutputs.length=${prevouts.length} outpoints.length=${outpoints.length}")
     val outputMap: Map[TransactionOutPoint, TransactionOutput] =
       outpoints.zip(prevouts).toMap
-
     output.scriptPubKey match {
       case _: TaprootScriptPubKey =>
         tx match {
@@ -155,8 +154,14 @@ object TaprootTestCase {
             val stack = success("witness").arr
               .map(_.str)
               .map(ByteVector.fromValidHex(_))
-            val scriptWitnessT =
-              Try(TaprootWitness.fromStack(stack.toVector.reverse))
+            val scriptWitnessT = {
+              prevouts(index).scriptPubKey match {
+                case _: TaprootScriptPubKey =>
+                  Try(TaprootWitness.fromStack(stack.toVector.reverse))
+                case _ =>
+                  Try(ScriptWitness(stack.toVector.reverse))
+              }
+            }
             (scriptSig, scriptWitnessT.toOption)
           case x => sys.error(s"Expected obj for success object, got=$x")
         }
@@ -169,7 +174,14 @@ object TaprootTestCase {
               val stack = success("witness").arr
                 .map(_.str)
                 .map(ByteVector.fromValidHex(_))
-              val scriptWitnessT = Try(ScriptWitness(stack.toVector.reverse))
+              val scriptWitnessT = {
+                prevouts(index).scriptPubKey match {
+                  case _: TaprootScriptPubKey =>
+                    Try(TaprootWitness.fromStack(stack.toVector.reverse))
+                  case _ =>
+                    Try(ScriptWitness(stack.toVector.reverse))
+                }
+              }
               (scriptSig, scriptWitnessT.toOption)
 
             case x =>
