@@ -211,7 +211,6 @@ jobs:
       #     ls -l "$KB_MAKE/zip/windows/x64"
       - name: (macos) Manually sign Krystal Bull
         if: startsWith(matrix.os,'macos')
-        working-directory: ${{env.KB_MAKE}}
         env:
           APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
           NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
@@ -229,6 +228,7 @@ jobs:
           codesign -dvv "$KRYSTALBULL_PATH"
           codesign -d --entitlements :- "$KRYSTALBULL_PATH"
           echo "=== zip app ==="
+          cd $KB_MAKE
           zip -qr $ZIP_NAME "$KRYSTALBULL_PATH"
         # mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $ZIP_NAME
         # echo "=== Notarizing app ==="
