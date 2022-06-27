@@ -8,11 +8,7 @@ For a complete guide on how to get started with Bitcoin-S, see our website at [B
 ### Contents
 
 - [Running bitcoin-s](#running-bitcoin-s)
-- [What is bitcoin-s?](#what-is-bitcoin-s-)
-- [Is bitcoin-s production ready?](#is-bitcoin-s-production-ready-)
-- [Can I trust the code in bitcoin-s?](#can-i-trust-the-code-in-bitcoin-s-)
 - [Getting started (non-developers)](#getting-started--non-developers-)
-- [Getting setup (developers)](#getting-setup--developers-)
 - [Adding bitcoin-s to your library](#adding-bitcoin-s-to-your-library)
 - [Docker images](#docker-images)
 - [Contributing](#contributing)
@@ -20,14 +16,6 @@ For a complete guide on how to get started with Bitcoin-S, see our website at [B
 - [License](#license)
 
 ### Running bitcoin-s
-
-You have three options to run bitcoin-s. Here are the instructions.
-
-We recommend using the web frontend for beginners.
-
-1. [Web frontend](https://github.com/bitcoin-s/bitcoin-s-ts/tree/master/wallet-server-ui#walletserverui)
-2. [Desktop GUI](https://bitcoin-s.org/docs/applications/gui#running-the-gui)
-3. [Headless backend](https://bitcoin-s.org/docs/applications/server#app-server)
 
 #### Docker
 
@@ -40,33 +28,9 @@ APP_PASSWORD=topsecret docker-compose up
 which will spin up a docker environment that starts syncing the backend and will allow you to visit
 the web frontend of the wallet at `localhost:3002`
 
-### What is bitcoin-s?
+or you can run the binaries natively, here are the instructions.
 
-Bitcoin-S is a loosely coupled set of cryptocurrency libraries for the JVM. They work well together, but also can be used independently. 
-
-This project's goal is NOT to be a full node implementation, rather a set of scalable cryptocurrency libraries that use industry standard tools (rather than esoteric tech often found in cryptocurrency) where possible to make the lives of professional software engineers, security engineers, devops engineers and accountants easier. 
-
-We are rapidly iterating on development with the goal of getting to a set of stable APIs that only change when the underlying bitcoin protocol changes.
-
-If you are a professional working a cryptocurrency business and have feedback on how to make your lives easier, please reach 
-out on [slack](https://suredbits.slack.com/ssb/redirect) or [twitter](https://twitter.com/Chris_Stewart_5/)!
-
-
-### Is bitcoin-s production ready?
-
-Please see our latest releases [here](https://github.com/bitcoin-s/bitcoin-s/actions/workflows/release.yml).
-
-Warning! While we try out best to test every pull request in *master*, this branch may not be stable! Bad things can happen to your node! Beware! 
-
-### Can I trust the code in bitcoin-s?
-
-Please audit and verify any and all code in this toolkit for its suitability and validity. This includes reviewing any and all dependencies.
-
-### Getting started (non-developers)
-
-For a complete guide on how to get started with bitcoin-s, see our [Getting started](https://bitcoin-s.org/docs/getting-started).
-
-This link is intended for individuals who are just interested in installing bitcoin-s rather than developing. If you are interested in development, see **Getting setup** below.
+[Web frontend](https://github.com/bitcoin-s/bitcoin-s-ts/tree/master/wallet-server-ui#walletserverui)
 
 ### Getting setup (developers)
 
