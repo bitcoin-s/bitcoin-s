@@ -171,7 +171,7 @@ sealed abstract class CryptoInterpreter {
     val sigHashTypeOpt: Option[(SchnorrDigitalSignature, HashType)] = {
       if (sigBytes.length == 64) {
         val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
-        Some((sig, HashType.sigHashAll))
+        Some((sig, HashType.sigHashDefault))
       } else if (sigBytes.length == 65) {
         val hashTypeByte = sigBytes.last
         val hashType = HashType.fromByte(hashTypeByte)
