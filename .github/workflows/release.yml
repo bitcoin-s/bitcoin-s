@@ -278,9 +278,9 @@ jobs:
       #     : # echo "=== Verify app notarization ==="
       #     : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
       # Platform specific values here for folder depth
-      # - name: (macos) Move .zip into /make
-      #   if: startsWith(matrix.os,'macos')
-      #   run: mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $KB_MAKE
+      - name: (macos) Move .zip into /make
+        if: startsWith(matrix.os,'macos')
+        run: mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $KB_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
         run: mv ${{env.KB_MAKE}}/deb/x64/*.deb $KB_MAKE
@@ -368,9 +368,9 @@ jobs:
       #     : # echo "=== Verify app notarization ==="
       #     : # spctl -vvv --assess --type exec "$WALLET_PATH"
       # Platform specific values here for folder depth
-      # - name: (macos) Move .zip into /make
-      #   if: startsWith(matrix.os,'macos')
-      #   run: mv ${{env.W_MAKE}}/zip/darwin/x64/*.zip $W_MAKE
+      - name: (macos) Move .zip into /make
+        if: startsWith(matrix.os,'macos')
+        run: mv ${{env.W_MAKE}}/zip/darwin/x64/*.zip $W_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
         run: mv ${{env.W_MAKE}}/deb/x64/*.deb $W_MAKE
