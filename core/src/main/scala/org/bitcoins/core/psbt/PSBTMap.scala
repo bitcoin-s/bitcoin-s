@@ -195,6 +195,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     }
   }
 
+  // todo maybe rethink return type
   /** The HASH160 of each public key that could be used to sign the input,
     * if calculable. [[Sha256Hash160Digest]] is used because we won't know the
     * raw public key for P2PKH scripts
@@ -205,7 +206,15 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       spk: ScriptPubKey): Vector[Sha256Hash160Digest] = {
     spk match {
       case spk: TaprootScriptPubKey =>
-        throw new IllegalArgumentException(s"Taproot not yet supported: $spk")
+        leafScriptOpt match {
+          case Some(script) =>
+            missingSigsFromScript(script.script)
+          case None =>
+            // key spend 1 signature
+            if (partialSignatures.isEmpty) {
+              Vector(CryptoUtil.sha256Hash160(spk.pubKey.bytes))
+            } else Vector.empty
+        }
       case EmptyScriptPubKey | _: WitnessCommitment |
           _: NonStandardScriptPubKey | _: UnassignedWitnessScriptPubKey =>
         Vector.empty
@@ -316,6 +325,26 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
 
   def proofOfReservesCommitmentOpt: Option[ProofOfReservesCommitment] = {
     getRecords(ProofOfReservesCommitmentKeyId).headOption
+  }
+
+  def keySpendSignatureOpt: Option[TRKeySpendSignature] = {
+    getRecords(TRKeySpendSignatureKeyId).headOption
+  }
+
+  def scriptSpendSignatureOpt: Option[TRScriptSpendSignature] = {
+    getRecords(TRScriptSpendSignatureKeyId).headOption
+  }
+
+  def leafScriptOpt: Option[TRLeafScript] = {
+    getRecords(TRLeafScriptKeyId).headOption
+  }
+
+  def taprootInternalKey: Option[TRInternalKey] = {
+    getRecords(TRInternalKeyKeyId).headOption
+  }
+
+  def taprootMerkelRoot: Option[TRMerkelRoot] = {
+    getRecords(TRMerkelRootKeyId).headOption
   }
 
   def getRecords(key: PSBTInputKeyId): Vector[key.RecordType] = {
@@ -606,8 +635,22 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       case EmptyScriptPubKey =>
         val scriptSig = TrivialTrueScriptSignature
         Success(wipeAndAdd(scriptSig))
+      case _: TaprootScriptPubKey =>
+        keySpendSignatureOpt match {
+          case Some(keySpendSignature) =>
+            val sig = keySpendSignature.signature
+            val hashType =
+              sigHashTypeOpt.map(_.hashType).getOrElse(SIGHASH_DEFAULT)
+
+            val witnessScript = TaprootKeyPath(sig, hashType, None)
+            Success(wipeAndAdd(EmptyScriptSignature, Some(witnessScript)))
+          case None =>
+            // todo add script spend support
+            Failure(new UnsupportedOperationException(
+              s"Cannot finalize the following input because no key spend signature was provided: $this"))
+        }
       case _: NonStandardScriptPubKey | _: UnassignedWitnessScriptPubKey |
-          _: WitnessCommitment | _: TaprootScriptPubKey =>
+          _: WitnessCommitment =>
         Failure(
           new UnsupportedOperationException(
             s"$spkToSatisfy is not yet supported"))
@@ -946,6 +989,10 @@ case class OutputPSBTMap(elements: Vector[OutputPSBTRecord])
 
   def BIP32DerivationPaths: Vector[BIP32DerivationPath] = {
     getRecords(BIP32DerivationPathKeyId)
+  }
+
+  def taprootInternalKey: Option[TRInternalKey] = {
+    getRecords(TRInternalKeyKeyId).headOption
   }
 
   def getRecords(key: PSBTOutputKeyId): Vector[key.RecordType] = {
