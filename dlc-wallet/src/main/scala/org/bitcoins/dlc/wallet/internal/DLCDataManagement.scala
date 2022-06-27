@@ -208,11 +208,11 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
             NumericSingleOracleInfo(announcementTLVs.head)
           } else {
             contractDataDb.oracleParamsTLVOpt match {
-              case SomeTLV(params) =>
+              case SomeDLCType(params) =>
                 NumericMultiOracleInfo(contractDataDb.oracleThreshold,
                                        announcementTLVs,
-                                       SomeTLV(params))
-              case NoneTLV =>
+                                       SomeDLCType(params))
+              case NoneDLCType =>
                 NumericExactMultiOracleInfo(contractDataDb.oracleThreshold,
                                             announcementTLVs)
             }

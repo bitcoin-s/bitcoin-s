@@ -21,10 +21,10 @@ import org.bitcoins.core.protocol.tlv.{
   DLCSerializationVersion,
   DLCSpecTypeDeserializable,
   DLCSpecTypeSerializable,
-  NoneTLV,
+  NoneDLCType,
   OracleAnnouncementTLV,
   OracleParamsV0TLV,
-  SomeTLV,
+  SomeDLCType,
   UnsignedNumericOutcome
 }
 import org.bitcoins.core.util.Indexed
@@ -285,7 +285,7 @@ case class SingleContractInfo(
       case ContractOraclePair.NumericPair(descriptor: NumericContractDescriptor,
                                           oracleInfo: NumericMultiOracleInfo) =>
         oracleInfo.oracleParamsOpt match {
-          case SomeTLV(oracleParams) =>
+          case SomeDLCType(oracleParams) =>
             oracleParams match {
               case v0: OracleParamsV0TLV =>
                 val vec = CETCalculator.computeMultiOracleCETsBinary(
@@ -310,7 +310,7 @@ case class SingleContractInfo(
                     }
                   }
             }
-          case NoneTLV =>
+          case NoneDLCType =>
             //if we don't have oracle params we compute exact outcome
             val vec = CETCalculator.computeCETs(base = 2,
                                                 descriptor.numDigits,

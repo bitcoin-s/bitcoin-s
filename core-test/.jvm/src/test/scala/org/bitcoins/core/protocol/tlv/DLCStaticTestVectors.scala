@@ -711,16 +711,16 @@ class DLCStaticTestVectors extends BitcoinSUnitTest {
   }
 
   private def parseOracleParams(
-      obj: ujson.Value): OptionTLV[OracleParamsTLV] = {
+      obj: ujson.Value): OptionDLCType[OracleParamsTLV] = {
     if (obj == ujson.Null) {
       //means we have no oracle params
-      NoneTLV
+      NoneDLCType
     } else {
       val maxErrorExp = obj(maxErrorExpKey).num.toInt
       val minFailExp = obj(minFailExpKey).num.toInt
       val maximizeCoverage = obj(maximizeCoverageKey).bool
       val params = OracleParamsV0TLV(maxErrorExp, minFailExp, maximizeCoverage)
-      SomeTLV(params)
+      SomeDLCType(params)
     }
   }
 

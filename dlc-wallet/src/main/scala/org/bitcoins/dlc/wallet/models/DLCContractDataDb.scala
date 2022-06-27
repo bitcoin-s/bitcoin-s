@@ -5,7 +5,7 @@ import org.bitcoins.core.protocol.BlockTimeStamp
 import org.bitcoins.core.protocol.dlc.models._
 import org.bitcoins.core.protocol.tlv.{
   ContractDescriptorTLV,
-  OptionTLV,
+  OptionDLCType,
   OracleParamsV0TLV
 }
 import org.bitcoins.crypto._
@@ -16,7 +16,7 @@ import org.bitcoins.crypto._
 case class DLCContractDataDb(
     dlcId: Sha256Digest,
     oracleThreshold: Int,
-    oracleParamsTLVOpt: OptionTLV[OracleParamsV0TLV],
+    oracleParamsTLVOpt: OptionDLCType[OracleParamsV0TLV],
     contractDescriptorTLV: ContractDescriptorTLV,
     contractMaturity: BlockTimeStamp,
     contractTimeout: BlockTimeStamp,
@@ -41,7 +41,7 @@ object DLCContractDataDbHelper {
     DLCContractDataDb(
       dlcId = dlcId,
       oracleThreshold = oracleThreshold,
-      oracleParamsTLVOpt = OptionTLV(oracleParamsTLVOpt),
+      oracleParamsTLVOpt = OptionDLCType(oracleParamsTLVOpt),
       contractDescriptorTLV = contractDescriptorTLV,
       contractMaturity = contractMaturity,
       contractTimeout = contractTimeout,

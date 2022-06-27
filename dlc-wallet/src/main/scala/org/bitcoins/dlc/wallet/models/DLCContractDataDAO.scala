@@ -4,7 +4,7 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BlockTimeStamp
 import org.bitcoins.core.protocol.tlv.{
   ContractDescriptorTLV,
-  OptionTLV,
+  OptionDLCType,
   OracleParamsV0TLV
 }
 import org.bitcoins.crypto._
@@ -76,7 +76,7 @@ case class DLCContractDataDAO()(implicit
 
     def oracleThreshold: Rep[Int] = column("oracle_threshold")
 
-    def oracleParamsOpt: Rep[OptionTLV[OracleParamsV0TLV]] = column(
+    def oracleParamsOpt: Rep[OptionDLCType[OracleParamsV0TLV]] = column(
       "oracle_params")
 
     def contractDescriptor: Rep[ContractDescriptorTLV] = column(

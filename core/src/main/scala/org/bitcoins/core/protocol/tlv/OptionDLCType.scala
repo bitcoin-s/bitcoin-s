@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.tlv
 import org.bitcoins.crypto.NetworkElement
 import scodec.bits.ByteVector
 
-sealed abstract class OptionTLV[+A <: NetworkElement]
+sealed abstract class OptionDLCType[+A <: NetworkElement]
     extends Product
     with Serializable
     with NetworkElement {
@@ -105,8 +105,8 @@ sealed abstract class OptionTLV[+A <: NetworkElement]
     *  @see flatMap
     *  @see foreach
     */
-  @inline final def map[B <: NetworkElement](f: A => B): OptionTLV[B] =
-    if (isEmpty) NoneTLV else SomeTLV(f(this.get))
+  @inline final def map[B <: NetworkElement](f: A => B): OptionDLCType[B] =
+    if (isEmpty) NoneDLCType else SomeDLCType(f(this.get))
 
   /** Returns the result of applying $f to this $option's
     *  value if the $option is nonempty.  Otherwise, evaluates
@@ -147,8 +147,8 @@ sealed abstract class OptionTLV[+A <: NetworkElement]
     *  @see foreach
     */
   @inline final def flatMap[B <: NetworkElement](
-      f: A => OptionTLV[B]): OptionTLV[B] =
-    if (isEmpty) NoneTLV else f(this.get)
+      f: A => OptionDLCType[B]): OptionDLCType[B] =
+    if (isEmpty) NoneDLCType else f(this.get)
 
   /** Returns the nested $option value if it is nonempty.  Otherwise,
     * return $none.
@@ -169,8 +169,8 @@ sealed abstract class OptionTLV[+A <: NetworkElement]
     * @see flatMap
     */
   def flatten[B <: NetworkElement](implicit
-      ev: A <:< OptionTLV[B]): OptionTLV[B] =
-    if (isEmpty) NoneTLV else ev(this.get)
+      ev: A <:< OptionDLCType[B]): OptionDLCType[B] =
+    if (isEmpty) NoneDLCType else ev(this.get)
 
   /** Returns this $option if it is nonempty '''and''' applying the predicate $p to
     * this $option's value returns true. Otherwise, return $none.
@@ -184,8 +184,8 @@ sealed abstract class OptionTLV[+A <: NetworkElement]
     * }}}
     *  @param  p   the predicate used for testing.
     */
-  @inline final def filter(p: A => Boolean): OptionTLV[A] =
-    if (isEmpty || p(this.get)) this else NoneTLV
+  @inline final def filter(p: A => Boolean): OptionDLCType[A] =
+    if (isEmpty || p(this.get)) this else NoneDLCType
 
   /** Returns this $option if it is nonempty '''and''' applying the predicate $p to
     * this $option's value returns false. Otherwise, return $none.
@@ -199,8 +199,8 @@ sealed abstract class OptionTLV[+A <: NetworkElement]
     * }}}
     *  @param  p   the predicate used for testing.
     */
-  @inline final def filterNot(p: A => Boolean): OptionTLV[A] =
-    if (isEmpty || !p(this.get)) this else NoneTLV
+  @inline final def filterNot(p: A => Boolean): OptionDLCType[A] =
+    if (isEmpty || !p(this.get)) this else NoneDLCType
 
   /** Returns false if the option is $none, true otherwise.
     *
@@ -225,9 +225,12 @@ sealed abstract class OptionTLV[+A <: NetworkElement]
     *  collection with max size 1.
     */
   class WithFilter(p: A => Boolean) {
-    def map[B <: NetworkElement](f: A => B): OptionTLV[B] = self filter p map f
 
-    def flatMap[B <: NetworkElement](f: A => OptionTLV[B]): OptionTLV[B] =
+    def map[B <: NetworkElement](f: A => B): OptionDLCType[B] =
+      self filter p map f
+
+    def flatMap[B <: NetworkElement](
+        f: A => OptionDLCType[B]): OptionDLCType[B] =
       self filter p flatMap f
     def foreach[U <: NetworkElement](f: A => U): Unit = self filter p foreach f
 
@@ -351,7 +354,7 @@ sealed abstract class OptionTLV[+A <: NetworkElement]
     *  @param alternative the alternative expression.
     */
   @inline final def orElse[B >: A <: NetworkElement](
-      alternative: => OptionTLV[B]): OptionTLV[B] =
+      alternative: => OptionDLCType[B]): OptionDLCType[B] =
     if (isEmpty) alternative else this
 
   /** Converts an Option of a pair into an Option of the first element and an Option of the second element.
@@ -371,12 +374,12 @@ sealed abstract class OptionTLV[+A <: NetworkElement]
     *                of the element pair of this Option.
     */
   final def unzip[A1 <: NetworkElement, A2 <: NetworkElement](implicit
-      asPair: A <:< (A1, A2)): (OptionTLV[A1], OptionTLV[A2]) = {
+      asPair: A <:< (A1, A2)): (OptionDLCType[A1], OptionDLCType[A2]) = {
     if (isEmpty)
-      (NoneTLV, NoneTLV)
+      (NoneDLCType, NoneDLCType)
     else {
       val e = asPair(this.get)
-      (SomeTLV(e._1), SomeTLV(e._2))
+      (SomeDLCType(e._1), SomeDLCType(e._2))
     }
   }
 
@@ -401,14 +404,14 @@ sealed abstract class OptionTLV[+A <: NetworkElement]
       A1 <: NetworkElement,
       A2 <: NetworkElement,
       A3 <: NetworkElement](implicit asTriple: A <:< (A1, A2, A3)): (
-      OptionTLV[A1],
-      OptionTLV[A2],
-      OptionTLV[A3]) = {
+      OptionDLCType[A1],
+      OptionDLCType[A2],
+      OptionDLCType[A3]) = {
     if (isEmpty)
-      (NoneTLV, NoneTLV, NoneTLV)
+      (NoneDLCType, NoneDLCType, NoneDLCType)
     else {
       val e = asTriple(this.get)
-      (SomeTLV(e._1), SomeTLV(e._2), SomeTLV(e._3))
+      (SomeDLCType(e._1), SomeDLCType(e._2), SomeDLCType(e._3))
     }
   }
 
@@ -470,29 +473,30 @@ sealed abstract class OptionTLV[+A <: NetworkElement]
     if (isEmpty) Right(right) else Left(this.get)
 
   def toOption: Option[A] = this match {
-    case SomeTLV(t) => Some(t)
-    case NoneTLV    => None
+    case SomeDLCType(t) => Some(t)
+    case NoneDLCType    => None
   }
 }
 
-final case class SomeTLV[+A <: NetworkElement](value: A) extends OptionTLV[A] {
+final case class SomeDLCType[+A <: NetworkElement](value: A)
+    extends OptionDLCType[A] {
   def get: A = value
 
   override val bytes: ByteVector = ByteVector.fromByte(1) ++ value.bytes
 }
 
-case object NoneTLV extends OptionTLV[Nothing] {
+case object NoneDLCType extends OptionDLCType[Nothing] {
   def get: Nothing = throw new NoSuchElementException("None.get")
 
   override val bytes: ByteVector = ByteVector.fromByte(0)
 }
 
-object OptionTLV {
+object OptionDLCType {
 
-  def apply[T <: NetworkElement](opt: Option[T]): OptionTLV[T] = {
+  def apply[T <: NetworkElement](opt: Option[T]): OptionDLCType[T] = {
     opt match {
-      case Some(t) => SomeTLV(t)
-      case None    => NoneTLV
+      case Some(t) => SomeDLCType(t)
+      case None    => NoneDLCType
     }
   }
 }

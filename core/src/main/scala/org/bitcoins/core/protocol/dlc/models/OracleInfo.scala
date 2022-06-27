@@ -38,9 +38,9 @@ object OracleInfo
       case tlv: OracleInfoV0TLV => SingleOracleInfo.fromSubType(tlv)
       case tlv: OracleInfoV1TLV =>
         tlv.oracleParamsOpt match {
-          case SomeTLV(_) =>
+          case SomeDLCType(_) =>
             NumericMultiOracleInfo.fromSubType(tlv)
-          case NoneTLV =>
+          case NoneDLCType =>
             ExactMultiOracleInfo.fromSubType(tlv)
         }
 
@@ -255,7 +255,7 @@ sealed trait ExactMultiOracleInfo[+T <: SingleOracleInfo]
   override def toSubType: OracleInfoV1TLV =
     OracleInfoV1TLV(threshold,
                     announcements,
-                    NoneTLV,
+                    NoneDLCType,
                     DLCSerializationVersion.current)
 }
 
@@ -311,7 +311,7 @@ case class NumericExactMultiOracleInfo(
 case class NumericMultiOracleInfo(
     threshold: Int,
     announcements: OrderedAnnouncements,
-    oracleParamsOpt: OptionTLV[OracleParamsTLV])
+    oracleParamsOpt: OptionDLCType[OracleParamsTLV])
     extends MultiOracleInfo[NumericSingleOracleInfo]
     with DLCSpecTypeSerializable[OracleInfoV1TLV]
     with NumericOracleInfo {
@@ -321,18 +321,18 @@ case class NumericMultiOracleInfo(
 
   override def toSubType: OracleInfoV1TLV = {
     oracleParamsOpt match {
-      case SomeTLV(params) =>
+      case SomeDLCType(params) =>
         params match {
           case v0: OracleParamsV0TLV =>
             OracleInfoV1TLV(threshold,
                             announcements,
-                            SomeTLV(v0),
+                            SomeDLCType(v0),
                             DLCSerializationVersion.current)
         }
-      case NoneTLV =>
+      case NoneDLCType =>
         OracleInfoV1TLV(threshold,
                         announcements,
-                        NoneTLV,
+                        NoneDLCType,
                         DLCSerializationVersion.current)
     }
   }
@@ -346,7 +346,9 @@ object NumericMultiOracleInfo
       threshold: Int,
       announcements: OrderedAnnouncements,
       paramsOpt: Option[OracleParamsTLV]): NumericMultiOracleInfo = {
-    new NumericMultiOracleInfo(threshold, announcements, OptionTLV(paramsOpt))
+    new NumericMultiOracleInfo(threshold,
+                               announcements,
+                               OptionDLCType(paramsOpt))
   }
 
   override def fromSubType(tlv: OracleInfoV1TLV): NumericMultiOracleInfo = {

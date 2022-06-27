@@ -47,13 +47,13 @@ case class ValueIterator(value: ByteVector) {
   }
 
   def takeOpt[E <: NetworkElement](
-      factory: FactoryOptionTLV[E]): OptionTLV[E] = {
+      factory: FactoryOptionTLV[E]): OptionDLCType[E] = {
     val elemOpt = factory.fromBytes(current)
     elemOpt match {
-      case SomeTLV(e) =>
+      case SomeDLCType(e) =>
         skip(e)
-      case NoneTLV =>
-        skip(NoneTLV.byteSize) //none is represented by 0x00
+      case NoneDLCType =>
+        skip(NoneDLCType.byteSize) //none is represented by 0x00
     }
     elemOpt
   }

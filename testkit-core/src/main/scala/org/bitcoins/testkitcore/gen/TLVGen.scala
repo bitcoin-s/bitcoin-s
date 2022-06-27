@@ -227,7 +227,7 @@ trait TLVGen {
     } yield {
       val announcements = oracles.map(_.announcement).toVector
       //this should randomly generated
-      val oracleParamsOpt = NoneTLV
+      val oracleParamsOpt = NoneDLCType
       OracleInfoV1TLV(threshold,
                       OrderedAnnouncements(announcements),
                       oracleParamsOpt,
@@ -258,7 +258,7 @@ trait TLVGen {
     } yield {
       val announcements = oracles.map(_.announcement).toVector
       //this should randomly generated
-      val oracleParamsOpt = NoneTLV
+      val oracleParamsOpt = NoneDLCType
       OracleInfoV1TLV(threshold,
                       OrderedAnnouncements(announcements),
                       oracleParamsOpt,

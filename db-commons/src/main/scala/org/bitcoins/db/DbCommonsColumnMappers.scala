@@ -310,10 +310,11 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   }
 
   implicit val oracleParamsV0TLVMapper: BaseColumnType[
-    OptionTLV[OracleParamsV0TLV]] = {
+    OptionDLCType[OracleParamsV0TLV]] = {
     MappedColumnType
-      .base[OptionTLV[OracleParamsV0TLV], String](_.hex,
-                                                  OracleParamsV0TLV.fromHex(_))
+      .base[OptionDLCType[OracleParamsV0TLV], String](
+        _.hex,
+        OracleParamsV0TLV.fromHex(_))
   }
 
   implicit val negotiationFieldsTLVMapper: BaseColumnType[
