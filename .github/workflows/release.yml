@@ -35,7 +35,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest] # , ubuntu-latest, windows-latest
+        os: [macos-latest] # , ubuntu-latest, windows-latest
         # If os values you don't include the matrix os list above are set here, they will be included
         # If you want multiple variables per os see https://github.community/t/create-matrix-with-multiple-os-and-env-for-each-one/16895
         # Can run conditional steps below with https://github.community/t/what-is-the-correct-if-condition-syntax-for-checking-matrix-os-version/16221
@@ -43,11 +43,11 @@ jobs:
         include:
         - os: macos-latest
           TARGET: mac
-        - os: ubuntu-latest
-          TARGET: linux
-        - os: windows-latest
-        # TODO : Do we want to use 'win' or 'windows'?
-          TARGET: windows
+        # - os: ubuntu-latest
+        #   TARGET: linux
+        # - os: windows-latest
+        # # TODO : Do we want to use 'win' or 'windows'?
+        #   TARGET: windows
     steps:
       - uses: actions/checkout@v3
         with:
@@ -193,7 +193,7 @@ jobs:
       - name: Build Krystal Bull
         working-directory: bitcoin-s-ts/oracle-electron-ts
         env:
-          APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+          # APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
           # NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
           # NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
           # NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
@@ -201,32 +201,44 @@ jobs:
           npm ci
           npm run build
           npm run make
-      - name: (macos) Validate application signing and notarization
+      - name: (macos) Manually sign krystalbull
         if: startsWith(matrix.os,'macos')
         env:
+          APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+          PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
           KRYSTALBULL_PATH: "${{env.KB_OUT}}/Krystal Bull-darwin-x64/Krystal Bull.app"
-          # TODO : Need to account for version in path changing
-          # DMG_PATH: "${{env.KB_MAKE}}/Krystal Bull-0.0.1-x64.dmg"
         run: |
-          echo "Directory contents"
-          echo "$KRYSTALBULL_PATH"
-          ls -l $KB_OUT
-          ls -l $KB_MAKE
-          ls -l "$KB_MAKE/zip"
-          ls -l "$KB_MAKE/zip/darwin"
-          ls -l "$KB_MAKE/zip/darwin/x64"
-          ls -l "$KB_OUT/Krystal Bull-darwin-x64"
+          codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
           echo "=== Verify app signature ==="
           codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
           codesign -dvv "$KRYSTALBULL_PATH"
           codesign -d --entitlements :- "$KRYSTALBULL_PATH"
-          : # Seeing error like "bitcoin-s-ts/oracle-electron-ts/out/make/Krystal Bull-0.0.1-x64.dmg: code object is not signed at all"
-          : # So the electron build is not doing any code signing on the dmg
-          : # echo "=== Verify dmg signature ==="
-          : # codesign -vvv --deep --strict "$DMG_PATH"
-          : # Not happening yet, need entitlements set
-          : # echo "=== Verify app notarization ==="
-          : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
+      # - name: (macos) Validate application signing and notarization
+      #   if: startsWith(matrix.os,'macos')
+      #   env:
+      #     KRYSTALBULL_PATH: "${{env.KB_OUT}}/Krystal Bull-darwin-x64/Krystal Bull.app"
+      #     # TODO : Need to account for version in path changing
+      #     # DMG_PATH: "${{env.KB_MAKE}}/Krystal Bull-0.0.1-x64.dmg"
+      #   run: |
+      #     echo "Directory contents"
+      #     echo "$KRYSTALBULL_PATH"
+      #     ls -l $KB_OUT
+      #     ls -l $KB_MAKE
+      #     ls -l "$KB_MAKE/zip"
+      #     ls -l "$KB_MAKE/zip/darwin"
+      #     ls -l "$KB_MAKE/zip/darwin/x64"
+      #     ls -l "$KB_OUT/Krystal Bull-darwin-x64"
+      #     echo "=== Verify app signature ==="
+      #     codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
+      #     codesign -dvv "$KRYSTALBULL_PATH"
+      #     codesign -d --entitlements :- "$KRYSTALBULL_PATH"
+      #     : # Seeing error like "bitcoin-s-ts/oracle-electron-ts/out/make/Krystal Bull-0.0.1-x64.dmg: code object is not signed at all"
+      #     : # So the electron build is not doing any code signing on the dmg
+      #     : # echo "=== Verify dmg signature ==="
+      #     : # codesign -vvv --deep --strict "$DMG_PATH"
+      #     : # Not happening yet, need entitlements set
+      #     : # echo "=== Verify app notarization ==="
+      #     : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
       # Platform specific values here for folder depth
       - name: (macos) Move .zip into /make
         if: startsWith(matrix.os,'macos')
@@ -268,7 +280,7 @@ jobs:
       - name: Build Suredbits Wallet
         working-directory: bitcoin-s-ts/wallet-electron-ts
         env:
-          APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+          # APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
           # NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
           # NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
           # NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
@@ -276,26 +288,38 @@ jobs:
           npm ci
           npm run build
           npm run make
-      - name: (macos) Validate application signing and notarization
+      - name: (macos) Manually sign Suredbits Wallet
         if: startsWith(matrix.os,'macos')
         env:
+          APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+          PLIST: "bitcoin-s-ts/wallet-electron-ts/entitlements.plist"
           WALLET_PATH: "${{env.W_OUT}}/Suredbits Wallet-darwin-x64/Suredbits Wallet.app"
-          # TODO : Need to account for version in path changing 
-          # DMG_PATH: "${{env.W_MAKE}}/Suredbits Wallet-0.0.1-x64.dmg"
         run: |
-          echo "Directory contents"
-          ls -l "bitcoin-s-ts/wallet-electron-ts"
-          ls -l $W_OUT
-          ls -l $W_MAKE
-          ls -l "$W_OUT/Suredbits Wallet-darwin-x64"
+          codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$WALLET_PATH"
           echo "=== Verify app signature ==="
           codesign -vvv --deep --strict "$WALLET_PATH"
           codesign -dvv "$WALLET_PATH"
           codesign -d --entitlements :- "$WALLET_PATH"
-          : # echo "=== Verify dmg signature ==="
-          : # codesign -vvv --deep --strict "$DMG_PATH"
-          : # echo "=== Verify app notarization ==="
-          : # spctl -vvv --assess --type exec "$WALLET_PATH"
+      # - name: (macos) Validate application signing and notarization
+      #   if: startsWith(matrix.os,'macos')
+      #   env:
+      #     WALLET_PATH: "${{env.W_OUT}}/Suredbits Wallet-darwin-x64/Suredbits Wallet.app"
+      #     # TODO : Need to account for version in path changing 
+      #     # DMG_PATH: "${{env.W_MAKE}}/Suredbits Wallet-0.0.1-x64.dmg"
+      #   run: |
+      #     echo "Directory contents"
+      #     ls -l "bitcoin-s-ts/wallet-electron-ts"
+      #     ls -l $W_OUT
+      #     ls -l $W_MAKE
+      #     ls -l "$W_OUT/Suredbits Wallet-darwin-x64"
+      #     echo "=== Verify app signature ==="
+      #     codesign -vvv --deep --strict "$WALLET_PATH"
+      #     codesign -dvv "$WALLET_PATH"
+      #     codesign -d --entitlements :- "$WALLET_PATH"
+      #     : # echo "=== Verify dmg signature ==="
+      #     : # codesign -vvv --deep --strict "$DMG_PATH"
+      #     : # echo "=== Verify app notarization ==="
+      #     : # spctl -vvv --assess --type exec "$WALLET_PATH"
       # Platform specific values here for folder depth
       - name: (macos) Move .zip into /make
         if: startsWith(matrix.os,'macos')
