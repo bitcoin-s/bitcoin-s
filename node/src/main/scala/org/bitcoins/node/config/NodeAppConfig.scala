@@ -63,8 +63,10 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     * place for our node.
     */
   override def start(): Future[Unit] = {
+    logger.info(s"node.start()")
     for {
       _ <- super.start()
+      _ = logger.info(s"super.start()")
       _ <- {
         nodeType match {
           case NodeType.BitcoindBackend =>
@@ -83,7 +85,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
         }
       }
     } yield {
-      logger.debug(s"Initializing node setup")
+      logger.info(s"Initializing node setup")
       val numMigrations = migrate()
       val _ = if (isHikariLoggingEnabled) {
         //.get is safe because hikari logging is enabled

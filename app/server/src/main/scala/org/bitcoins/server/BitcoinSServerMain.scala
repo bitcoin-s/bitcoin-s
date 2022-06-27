@@ -46,6 +46,7 @@ import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.SpendingInfoDAO
 
+import java.sql.SQLException
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
@@ -55,20 +56,19 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val conf: BitcoinSAppConfig)
     extends BitcoinSServerRunner {
 
-  implicit lazy val walletConf: WalletAppConfig = conf.walletConf
   implicit lazy val nodeConf: NodeAppConfig = conf.nodeConf
   implicit lazy val chainConf: ChainAppConfig = conf.chainConf
-  implicit lazy val dlcConf: DLCAppConfig = conf.dlcConf
   implicit lazy val dlcNodeConf: DLCNodeAppConfig = conf.dlcNodeConf
   implicit lazy val bitcoindRpcConf: BitcoindRpcAppConfig = conf.bitcoindRpcConf
   implicit lazy val torConf: TorAppConfig = conf.torConf
+  lazy val network = conf.walletConf.network
 
   override def start(): Future[Unit] = {
     logger.info("Starting appServer")
     val startTime = TimeUtil.currentEpochMs
     val startedConfigF = conf.start()
 
-    logger.info(s"Start on network ${walletConf.network}")
+    logger.info(s"Start on network $network")
 
     startedConfigF.failed.foreach { err =>
       logger.error(s"Failed to initialize configuration for BitcoinServerMain",
@@ -118,7 +118,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val chainApiF = runChainWorkCalc(
       serverArgParser.forceChainWorkRecalc || chainConf.forceRecalcChainWork)
 
-    val creationTime: Instant = walletConf.creationTime
+    val creationTime: Instant = conf.walletConf.creationTime
 
     //get a node that isn't started
     val nodeF = nodeConf.createNode(
@@ -126,15 +126,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       walletCreationTimeOpt = Some(creationTime))(chainConf, system)
 
     val defaultApi =
-      MempoolSpaceProvider(HourFeeTarget,
-                           walletConf.network,
-                           walletConf.torConf.socks5ProxyParams)
+      MempoolSpaceProvider(HourFeeTarget, network, torConf.socks5ProxyParams)
     val feeProvider = FeeProviderFactory.getFeeProviderOrElse(
       defaultApi,
-      walletConf.feeProviderNameOpt,
-      walletConf.feeProviderTargetOpt,
-      walletConf.torConf.socks5ProxyParams,
-      walletConf.network)
+      conf.walletConf.feeProviderNameOpt,
+      conf.walletConf.feeProviderTargetOpt,
+      torConf.socks5ProxyParams,
+      network)
     //get our wallet
     val configuredWalletF = for {
       node <- nodeF
@@ -143,17 +141,16 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       wallet = new WalletHolder()
       walletNameOpt <- getWalletName()
       (walletConfig, dlcConfig) <- updateWalletConfigs(walletNameOpt, None)
-        .recover { case _: Throwable => (walletConf, dlcConf) }
       dlcWallet <- dlcConfig.createDLCWallet(node, chainApi, feeProvider)(
         walletConfig,
         ec)
       _ <- wallet.replaceWallet(dlcWallet)
       nodeCallbacks <- CallbackUtil.createNeutrinoNodeCallbacksForWallet(wallet)
-      _ = nodeConf.replaceCallbacks(nodeCallbacks)
+      _ = nodeConf.addCallbacks(nodeCallbacks)
     } yield {
       logger.info(
         s"Done configuring wallet, it took=${System.currentTimeMillis() - start}ms")
-      wallet
+      (wallet, walletConfig, dlcConfig)
     }
 
     //add callbacks to our uninitialized node
@@ -167,7 +164,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
 
     val dlcNodeF = for {
-      wallet <- configuredWalletF
+      (wallet, _, _) <- configuredWalletF
       node = dlcNodeConf.createDLCNode(wallet)
     } yield node
 
@@ -175,8 +172,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     val wsQueue: SourceQueueWithComplete[Message] = tuple._1
     val wsSource: Source[Message, NotUsed] = tuple._2
-    val callbacksF =
-      chainApiF.map(chainApi => buildNeutrinoCallbacks(wsQueue, chainApi))
+    val callbacksF = for {
+      (_, walletConfig, dlcConfig) <- configuredWalletF
+      chainApi <- chainApiF
+    } yield buildNeutrinoCallbacks(wsQueue, chainApi, walletConfig, dlcConfig)
 
     val startedNodeF = {
       //can't start connecting to peers until tor is done starting
@@ -185,8 +184,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         started <- configuredNodeF.flatMap(_.start())
       } yield started
     }
-
-    val startedWalletF = configuredWalletF.flatMap(_.start())
 
     val startedDLCNodeF = {
       for {
@@ -202,7 +199,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- startHttpServer(
         nodeApiF = startedNodeF,
         chainApi = chainApi,
-        walletF = configuredWalletF,
+        walletF = configuredWalletF.map(_._1),
         dlcNodeF = startedDLCNodeF,
         torConfStarted = startedTorConfigF,
         serverCmdLineArgs = serverArgParser,
@@ -213,13 +210,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           s"Starting ${nodeConf.nodeType.shortName} node sync, it took=${System
             .currentTimeMillis() - start}ms")
       }
-      _ <- startedWalletF
       //make sure callbacks are registered before we start sync
       _ <- callbacksF
       node <- startedNodeF
       _ <- startedTorConfigF
-      wallet <- configuredWalletF
-      _ <- handleDuplicateSpendingInfoDb(wallet)
+      (wallet, walletConfig, _) <- configuredWalletF
+      _ <- handleDuplicateSpendingInfoDb(wallet, walletConfig)
       _ <- restartRescanIfNeeded(wallet)
       _ <- node.sync()
     } yield {
@@ -231,7 +227,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
   private def buildNeutrinoCallbacks(
       wsQueue: SourceQueueWithComplete[Message],
-      chainApi: ChainApi): Unit = {
+      chainApi: ChainApi,
+      walletConf: WalletAppConfig,
+      dlcConf: DLCAppConfig): Unit = {
     val chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, chainApi)
     chainConf.addCallbacks(chainCallbacks)
     val walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue)
@@ -281,41 +279,45 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val walletF = bitcoindF.flatMap { bitcoind =>
       val feeProvider = FeeProviderFactory.getFeeProviderOrElse(
         bitcoind,
-        feeProviderNameStrOpt = walletConf.feeProviderNameOpt,
-        feeProviderTargetOpt = walletConf.feeProviderTargetOpt,
-        proxyParamsOpt = walletConf.torConf.socks5ProxyParams,
-        network = walletConf.network
+        feeProviderNameStrOpt = conf.walletConf.feeProviderNameOpt,
+        feeProviderTargetOpt = conf.walletConf.feeProviderTargetOpt,
+        proxyParamsOpt = torConf.socks5ProxyParams,
+        network = network
       )
       logger.info("Creating wallet")
       val walletHolder = new WalletHolder()
       val chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, bitcoind)
+      val nodeApi =
+        BitcoindRpcBackendUtil.buildBitcoindNodeApi(bitcoind,
+                                                    walletHolder,
+                                                    Some(chainCallbacks))
       for {
         walletNameOpt <- getWalletName()
         (walletConfig, dlcConfig) <- updateWalletConfigs(walletNameOpt, None)
-          .recover { case _: Throwable => (walletConf, dlcConf) }
-        wallet <- BitcoindRpcBackendUtil
-          .replaceWithDLCWalletWithBitcoindCallbacks(
-            bitcoind,
-            walletHolder,
-            Some(chainCallbacks),
-            feeProvider)(system, walletConfig, dlcConfig, ec)
+
+        dlcWallet <- dlcConfig.createDLCWallet(
+          nodeApi = nodeApi,
+          chainQueryApi = bitcoind,
+          feeRateApi = feeProvider
+        )(walletConfig, ec)
+
         nodeCallbacks <- CallbackUtil.createBitcoindNodeCallbacksForWallet(
-          wallet)
+          walletHolder)
         _ = nodeConf.addCallbacks(nodeCallbacks)
         _ = logger.info("Starting wallet")
-        _ <- wallet.start().recoverWith {
+        _ <- walletHolder.replaceWallet(dlcWallet).recoverWith {
           //https://github.com/bitcoin-s/bitcoin-s/issues/2917
           //https://github.com/bitcoin-s/bitcoin-s/pull/2918
           case err: IllegalArgumentException
               if err.getMessage.contains("If we have spent a spendinginfodb") =>
-            handleMissingSpendingInfoDb(err, wallet)
+            handleMissingSpendingInfoDb(err, dlcWallet)(walletConfig)
         }
-      } yield wallet
+      } yield (walletHolder, walletConfig, dlcConfig)
     }
 
     val dlcNodeF = {
       for {
-        wallet <- walletF
+        (wallet, _, _) <- walletF
         dlcNode = dlcNodeConf.createDLCNode(wallet)
         _ <- dlcNode.start()
       } yield dlcNode
@@ -328,29 +330,29 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
       bitcoindNetwork <- getBlockChainInfo(bitcoind).map(_.chain)
       _ = require(
-        bitcoindNetwork == walletConf.network,
-        s"bitcoind ($bitcoindNetwork) on different network than wallet (${walletConf.network})")
+        bitcoindNetwork == network,
+        s"bitcoind ($bitcoindNetwork) on different network than wallet ($network)")
       _ <- startHttpServer(
         nodeApiF = Future.successful(bitcoind),
         chainApi = bitcoind,
-        walletF = walletF,
+        walletF = walletF.map(_._1),
         dlcNodeF = dlcNodeF,
         torConfStarted = startedTorConfigF,
         serverCmdLineArgs = serverArgParser,
         wsSource = wsSource
       )
       walletCallbacks = WebsocketUtil.buildWalletCallbacks(wsQueue)
-      _ = walletConf.addCallbacks(walletCallbacks)
+      (wallet, walletConfig, dlcConfig) <- walletF
+      _ = walletConfig.addCallbacks(walletCallbacks)
 
-      wallet <- walletF
       //intentionally doesn't map on this otherwise we
       //wait until we are done syncing the entire wallet
       //which could take 1 hour
-      _ = syncWalletWithBitcoindAndStartPolling(bitcoind, wallet)
+      _ = syncWalletWithBitcoindAndStartPolling(bitcoind, wallet, walletConfig)
       dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
-      _ = dlcConf.addCallbacks(dlcWalletCallbacks)
+      _ = dlcConfig.addCallbacks(dlcWalletCallbacks)
       _ <- startedTorConfigF
-      _ <- handleDuplicateSpendingInfoDb(wallet)
+      _ <- handleDuplicateSpendingInfoDb(wallet, walletConfig)
       _ <- restartRescanIfNeeded(wallet)
     } yield {
       logger.info(s"Done starting Main!")
@@ -495,7 +497,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     */
   private def syncWalletWithBitcoindAndStartPolling(
       bitcoind: BitcoindRpcClient,
-      wallet: WalletApi with NeutrinoWalletApi): Future[Unit] = {
+      wallet: WalletApi with NeutrinoWalletApi,
+      walletConfig: WalletAppConfig): Future[Unit] = {
     val f = for {
       _ <- AsyncUtil.retryUntilSatisfiedF(
         conditionF = { () =>
@@ -509,7 +512,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         interval = 1.second,
         maxTries = 12
       )
-      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
+      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)(
+        system,
+        walletConfig)
       _ <- wallet.updateUtxoPendingStates()
       _ <-
         if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
@@ -566,8 +571,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   private def handleDuplicateSpendingInfoDb(
-      wallet: AnyDLCHDWalletApi): Future[Unit] = {
-    val spendingInfoDAO = SpendingInfoDAO()
+      wallet: AnyDLCHDWalletApi,
+      walletConfig: WalletAppConfig): Future[Unit] = {
+    val spendingInfoDAO = SpendingInfoDAO()(ec, walletConfig)
     for {
       rescanNeeded <- spendingInfoDAO.hasDuplicates()
       _ <-
@@ -609,10 +615,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   private lazy val nodeStateDAO: NodeStateDescriptorDAO =
-    NodeStateDescriptorDAO()
+    NodeStateDescriptorDAO()(ec, nodeConf)
 
   private def getWalletName(): Future[Option[String]] = {
-    nodeStateDAO.getWalletName().map(_.map(_.walletName))
+    nodeStateDAO
+      .getWalletName()
+      .recover { case _: SQLException => None }
+      .map(_.map(_.walletName))
   }
 
   private def updateWalletName(walletNameOpt: Option[String]): Future[Unit] = {
@@ -624,10 +633,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       aesPasswordOpt: Option[AesPassword]): Future[
     (WalletAppConfig, DLCAppConfig)] = {
     val kmConfigF = Future.successful(
-      walletConf.kmConf.copy(walletName = walletNameOpt,
-                             aesPassword = aesPasswordOpt))
+      conf.walletConf.kmConf.copy(walletName = walletNameOpt,
+                                  aesPassword = aesPasswordOpt))
 
-    for {
+    (for {
       kmConfig <- kmConfigF
       _ = if (!kmConfig.seedExists())
         throw new RuntimeException(
@@ -636,9 +645,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       // First thing start the key manager to be able to fail fast if the password is invalid
       _ <- kmConfig.start()
 
-      walletConfig = walletConf.copy(kmConfOpt = Some(kmConfig))
-      dlcConfig = dlcConf.copy(walletConfigOpt = Some(walletConfig))
-    } yield (walletConfig, dlcConfig)
+      walletConfig = conf.walletConf.copy(kmConfOpt = Some(kmConfig))
+      dlcConfig = conf.dlcConf.copy(walletConfigOpt = Some(walletConfig))
+    } yield (walletConfig, dlcConfig))
+      .recover { case _: Throwable => (conf.walletConf, conf.dlcConf) }
   }
 
   private def loadWallet(walletHolder: WalletHolder)(

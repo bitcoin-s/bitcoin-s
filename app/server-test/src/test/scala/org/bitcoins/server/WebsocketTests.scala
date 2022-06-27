@@ -12,13 +12,7 @@ import akka.http.scaladsl.model.{HttpHeader, StatusCodes}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.ws.ChainNotification.BlockProcessedNotification
-import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
-  DLCOfferAddNotification,
-  DLCOfferRemoveNotification,
-  NewAddressNotification,
-  TxBroadcastNotification,
-  TxProcessedNotification
-}
+import org.bitcoins.commons.jsonmodels.ws.WalletNotification._
 import org.bitcoins.commons.jsonmodels.ws.{
   ChainNotification,
   WalletNotification,

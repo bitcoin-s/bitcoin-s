@@ -5,14 +5,13 @@ import akka.actor.{ActorSystem, Cancellable}
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import grizzled.slf4j.Logging
 import org.bitcoins.chain.ChainCallbacks
-import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
+import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.config.ZmqConfig
@@ -208,29 +207,6 @@ object BitcoindRpcBackendUtil extends Logging {
     pairedWallet
   }
 
-  def replaceWithDLCWalletWithBitcoindCallbacks(
-      bitcoind: BitcoindRpcClient,
-      wallet: WalletHolder,
-      chainCallbacksOpt: Option[ChainCallbacks],
-      feeRateApi: FeeRateApi)(implicit
-      system: ActorSystem,
-      walletAppConfig: WalletAppConfig,
-      dlcAppConfig: DLCAppConfig,
-      ec: ExecutionContext): Future[WalletHolder] = {
-    wallet
-      .replaceWallet(
-        DLCWallet(
-          nodeApi = BitcoindRpcBackendUtil.buildBitcoindNodeApi(
-            bitcoind,
-            Future.successful(wallet),
-            chainCallbacksOpt),
-          chainQueryApi = bitcoind,
-          feeRateApi = feeRateApi
-        )(walletAppConfig, dlcAppConfig, ec))
-      .map(_ => wallet)
-
-  }
-
   private def filterSync(
       blockHashes: Vector[DoubleSha256Digest],
       bitcoindRpcClient: V19BlockFilterRpc,
@@ -322,6 +298,64 @@ object BitcoindRpcBackendUtil extends Logging {
         bitcoindRpcClient.broadcastTransactions(transactions)
       }
     }
+  }
+
+  def buildBitcoindNodeApi(
+      bitcoindRpcClient: BitcoindRpcClient,
+      wallet: WalletApi with NeutrinoWalletApi,
+      chainCallbacksOpt: Option[ChainCallbacks])(implicit
+      system: ActorSystem): NodeApi = {
+    import system.dispatcher
+    val nodeApi = new NodeApi {
+
+      override def downloadBlocks(
+          blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
+        logger.info(s"Fetching ${blockHashes.length} blocks from bitcoind")
+        val numParallelism = Runtime.getRuntime.availableProcessors()
+        val runStream: Future[Done] = Source(blockHashes)
+          .mapAsync(parallelism = numParallelism) { hash =>
+            val blockF = bitcoindRpcClient.getBlockRaw(hash)
+            val blockHeaderResultF = bitcoindRpcClient.getBlockHeader(hash)
+            for {
+              block <- blockF
+              blockHeaderResult <- blockHeaderResultF
+            } yield (block, blockHeaderResult)
+          }
+          .foldAsync(wallet) { case (wallet, (block, blockHeaderResult)) =>
+            val blockProcessedF = wallet.processBlock(block).recover {
+              case _: WalletNotInitialized => wallet
+            }
+            val executeCallbackF = blockProcessedF.flatMap { _ =>
+              chainCallbacksOpt match {
+                case None           => Future.successful(wallet)
+                case Some(callback) =>
+                  //this can be slow as we aren't batching headers at all
+                  val headerWithHeights =
+                    Vector((blockHeaderResult.height, block.blockHeader))
+                  val f = callback
+                    .executeOnBlockHeaderConnectedCallbacks(logger,
+                                                            headerWithHeights)
+                  f.map(_ => wallet)
+              }
+            }
+            executeCallbackF
+          }
+          .run()
+        runStream
+          .map(_ => wallet)
+          .map(_.updateUtxoPendingStates().recover {
+            case _: WalletNotInitialized => Vector.empty
+          })
+          .map(_ => ())
+      }
+
+      override def broadcastTransactions(
+          transactions: Vector[Transaction]): Future[Unit] = {
+        bitcoindRpcClient.broadcastTransactions(transactions)
+      }
+    }
+
+    nodeApi
   }
 
   /** Starts the [[ActorSystem]] to poll the [[BitcoindRpcClient]] for its block count,
