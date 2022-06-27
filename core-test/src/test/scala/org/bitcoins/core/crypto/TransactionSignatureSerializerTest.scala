@@ -851,4 +851,92 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
 
     assert(serialize.toHex == expected)
   }
+
+  it must "serialize a SigVersionWitnessV0 tx correctly with SIGHASH_SINGLE_ANYONECANPAY flag" in {
+    val expected =
+      "0200000004d89ccd4eb6d1471fb4046b3bfe6472c94ef32c7af11fd1dc7983cf94b50938c0a7be6fb0410fe40a6186c06ec17aeb25337f599541b3b0b3e72c3765fe99054fba9b57c66346730f1710c3182a2d3bb843cbfb551362749dcaa7fd2343f0630f0100001976a914d3165d2dcffd0c2461e33ee2de0ef4810e1630ec88aca84e9401000000005c976dcc2c78b5d9620c7cf3da08bc45b85616cd291cfd5fc3b3c3c8c3dda70497b2c3ff7bdb5f2e58000000"
+
+    val spendingTxHex =
+      "02000000014fba9b57c66346730f1710c3182a2d3bb843cbfb551362749dcaa7fd2343f0630f010000005c976dcc01e823a10000000000160014ab3ab349d01bdf301b1b78b0b3ed3c7895ebea9a7bdb5f2e"
+    val spendingTx = Transaction.fromHex(spendingTxHex)
+    val inputIndex = UInt32.zero
+    val prevout = TransactionOutput.fromHex(
+      "a84e940100000000160014d3165d2dcffd0c2461e33ee2de0ef4810e1630ec")
+
+    val witnessStackHex = Vector(
+      "304402201ed30e9c471f4feca0557f353b7bacd5ace564ba9de5d51a0fff206468ddbb0602207dc60f5109b2bd3c80f5f79ffa7532a38e7e31a6583e355d83e1e355093d88c858",
+      "041331b230dcbd3d716cc76cbf98e38da769460ec7439c48209b3028d3ab5531425bead44f30346b04806b047ebb4ad33358fa59dc02576c2cbf75f2fba0d7c328"
+    )
+    val witnessStack = witnessStackHex.map(w => ByteVector.fromValidHex(w))
+
+    val witness = ScriptWitness(witnessStack.reverse)
+
+    val hashType = witness match {
+      case p2wpkh: P2WPKHWitnessV0 =>
+        p2wpkh.signature.hashTypeOpt.get
+      case x =>
+        sys.error(s"Not possible, $x")
+    }
+    val witnessTx =
+      WitnessTransaction
+        .toWitnessTx(spendingTx)
+        .updateWitness(inputIndex.toInt, witness)
+
+    val taprootTxSigComponent =
+      WitnessTxSigComponentRaw(witnessTx,
+                               inputIndex,
+                               prevout,
+                               Policy.standardFlags)
+
+    val taprootOptions =
+      TaprootSerializationOptions.empty
+    val serialize = TransactionSignatureSerializer.serializeForSignature(
+      taprootTxSigComponent,
+      hashType,
+      taprootOptions)
+
+    assert(serialize.toHex == expected)
+  }
+
+  it must "serialize a SigVersionTaproot with SIGHASH_SINGLE" in {
+    val expected =
+      "0003f2c9f515dc020000a547b14868cb58fceeaf465ab317839a7796490cd1ed18eff44c080a8121641547b5d9ddab65cda48fa8f8c5d624733056fee1070d99f0af02a107fae870913e91fd3d0d2b685c2c5602153507a49d465b0c17d930b6ff9339ce26bae2d2e973d03635bec2ea8d09a363546c2f77ef96b2703222061a53bf4b855ddc6de8c06c0001000000aa50881629ef1f9c427944545c29e86f5405bd43e397205bd9c39195e1771338"
+
+    val spendingTxHex =
+      "f2c9f5150289433f77f04c11ab6e69d9dc463e8c7650698482ccbae50a6b94084733bf57efd40000000051b2dad3b683a298b504f1c3e5848105e60af2737797cb062c352b06cafb865b4b7c2eb8ef00000000795b6e8402d525a2020000000017a914c46f03d335d72659cff4dc2782b06bf1581496d787580200000000000017a9149f9d6473dd54d01d4e3c7fa34bde4fe83d808d0587dc020000"
+    val spendingTx = Transaction.fromHex(spendingTxHex)
+    val inputIndex = UInt32.one
+    val prevOutputs = Vector(
+      "68002d01000000001976a9141d03185179941e287a525852993d8d5aed712a7588ac",
+      "8d30780100000000225120db51afd5ed217d7a33c04dd0f8b5bb41f78a138d3aec6a6bfc2a03e266334c89"
+    )
+      .map(TransactionOutput.fromHex)
+    val outputMap: Map[TransactionOutPoint, TransactionOutput] =
+      spendingTx.inputs.map(_.previousOutput).zip(prevOutputs).toMap
+
+    val witnessStackHex = Vector(
+      "85b5c1a31fda48328459aec83811bfd5754a24110c3fb7026500561e4880f313fbdb44125ca7e06f3a37490e1fcd0d9383ff970ff7b7f724a9df7dca8cf17d4d03")
+    val witnessStack = witnessStackHex.map(w => ByteVector.fromValidHex(w))
+
+    val witness = TaprootWitness.fromStack(witnessStack.reverse)
+
+    val witnessTx =
+      WitnessTransaction
+        .toWitnessTx(spendingTx)
+        .updateWitness(inputIndex.toInt, witness)
+
+    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx, //spendingTx,
+                                                      inputIndex,
+                                                      outputMap,
+                                                      Policy.standardFlags)
+
+    val taprootOptions =
+      TaprootSerializationOptions.empty
+    val serialize = TransactionSignatureSerializer.serializeForSignature(
+      taprootTxSigComponent,
+      HashType.sigHashSingle,
+      taprootOptions)
+
+    assert(serialize.toHex == expected)
+  }
 }
