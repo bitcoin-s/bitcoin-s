@@ -181,7 +181,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val startedDLCNodeF = {
       for {
         dlcNode <- dlcNodeF
-        _ <- startedTorConfigF
         _ <- dlcNode.start()
       } yield dlcNode
     }
