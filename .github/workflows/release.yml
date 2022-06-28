@@ -1,21 +1,17 @@
 name: Release
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, feature_electron_build]
     tags: ["*"]
   release:
     types: [ published ]
-
-env:
-  pkg-assembly: 'bitcoin-s-bundle.jar'
-  pkg-name: 'bitcoin-s'
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v2.3.4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - uses: olafurpg/setup-scala@v13
@@ -30,375 +26,376 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           GITHUB_DEPLOY_KEY: ${{ secrets.GITHUB_TOKEN }}
           GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
-  osx:
-    runs-on: [ macos-latest ]
+  # Built bitcoin-s cli, appServer, oracleServer zips
+  server:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest] # 
+        # If os values you don't include the matrix os list above are set here, they will be included
+        # If you want multiple variables per os see https://github.community/t/create-matrix-with-multiple-os-and-env-for-each-one/16895
+        # Can run conditional steps below with https://github.community/t/what-is-the-correct-if-condition-syntax-for-checking-matrix-os-version/16221
+        # This is here to get friendly labels for output filenames
+        include:
+        - os: macos-latest
+          TARGET: mac
+        - os: ubuntu-latest
+          TARGET: linux
+        - os: windows-latest
+        # TODO : Do we want to use 'win' or 'windows'?
+          TARGET: windows
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Setup Scala
         uses: olafurpg/setup-scala@v13
         with:
           java-version: openjdk@1.17.0
-      - name: 'Get Previous tag'
+      - name: Get Previous tag
         id: previoustag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        uses: WyriHaximus/github-action-get-previous-tag@v1
         with:
-          fallback: 0.0.0 # Optional fallback tag to use when no tag can be found
-      - name: Import developer cert to keychain
+          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
+      # Tested building specific projects that are being exported only, but global packageBin seems to be faster
+      - name: Build all zips
+        shell: bash # windows needs shell defined
+        run: sbt "universal:stage;universal:packageBin"
+      - name: View Artifacts
+        run: ls -l app/server/target/universal/stage
+      # - name: Build appServer
+      #   shell: bash
+      #   run: sbt "appServer / Universal / stage; appServer / Universal / packageBin"
+      - name: Upload bitcoin-s-server
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: bitcoin-s-server-${{ matrix.TARGET }}
+          path: app/server/target/universal/stage
+      - name: (release) Upload bitcoin-s-server
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          name: bitcoin-s-server-${{ matrix.TARGET }}-${{steps.previoustag.outputs.tag}}
+          files: app/server/target/universal/*.zip
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Build oracleServer
+      #   shell: bash
+      #   run: sbt "oracleServer / Universal / stage; oracleServer / Universal / packageBin"
+      - name: Upload bitcoin-s-oracle-server
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
+          path: app/oracle-server/target/universal/stage
+      - name: (release) Upload bitcoin-s-oracle-server
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          name: bitcoin-s-oracle-server-${{ matrix.TARGET }}-${{steps.previoustag.outputs.tag}}
+          files: app/oracle-server/target/universal/*.zip
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Build cli
+      #   shell: bash
+      #   run: sbt "cli / Universal / stage; cli / Universal / packageBin"
+      - name: Upload bitcoin-s-cli
+        uses: actions/upload-artifact@v3
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+        with:
+          name: bitcoin-s-cli-${{ matrix.TARGET }}
+          path: app/cli/target/universal/stage/
+      - name: (release) Upload bitcoin-s-cli
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          name: bitcoin-s-cli-${{ matrix.TARGET }}-${{steps.previoustag.outputs.tag}}
+          files: app/cli/target/universal/*.zip
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # Native electron applications - Krystal Bull, Suredbits Wallet
+  electron:
+    needs: server
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest] # windows-latest
+        # If os values you don't include the matrix os list above are set here, they will be included
+        # This is here to get friendly labels for output filenames
+        include:
+        - os: macos-latest
+          TARGET: mac
+          FORMAT: zip # dmg
+        - os: ubuntu-latest
+          TARGET: linux
+          FORMAT: deb
+        # - os: windows-latest
+        #   TARGET: windows
+        #   FORMAT: zip # ???
+    # Build output paths
+    env:
+      KB_OUT: "bitcoin-s-ts/oracle-electron-ts/out"
+      KB_MAKE: "bitcoin-s-ts/oracle-electron-ts/out/make"
+      W_OUT: "bitcoin-s-ts/wallet-electron-ts/out"
+      W_MAKE: "bitcoin-s-ts/wallet-electron-ts/out/make"
+    steps:
+      # macos keychain unlocking for signing identity access
+      - name: (macos) Import developer cert to keychain
+        if: startsWith(matrix.os,'macos')
         uses: apple-actions/import-codesign-certs@v1
         with:
           create-keychain: true
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
           keychain-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-      - name: Build fat jar
-        run: sbt "bundle/assembly"
-      - name: Add cert to keychain and unlock keychain & build and sign dmg
+      - name: (macos) Unlock keychain, find-identity
+        if: startsWith(matrix.os,'macos')
         env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
           MACOS_CERTIFICATE_PWD: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-          MAC_NOTARIZATION_PW: ${{secrets.MAC_NOTARIZATION_PW}}
-        # Steps to build a fully signed and notarized bitcoin-s dmg
-        # 1. Unlock the OS x keychain so we don't have to input passwords via GUI prompts
-        # 2. Build bitcoin-s.app that is recursively signed with jpackage --mac-sign
-        # 3. Build an unsigned dmg that contains bitcoin-s.app inside of it (no idea why --mac-sign doesn't work with --type dmg)
-        # 4. Sign the dmg with codesign (jpackage dmg signing is broken for some reason)
-        # 5. Submit the dmg to apple's notarization service so can get it whitelisted for installation (see: https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution)
-        # 6. Sleep until apple notorization is done
-        # 7. Retrieve the signature and staple it to the dmg to so network requests do not need to be made to open the dmg
-        # 8. Check all signatures on bitcoin-s.app (see: https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues#3087735)
-        # 9. Check all dmg signatures
-        # 10. Display information about signed dmg
+          KEYCHAIN: signing_temp.keychain
         run: |
-          echo "Hello world"
-          java -version
-          jpackage --version
-          ls -l
-          security unlock-keychain -p $MACOS_CERTIFICATE_PWD signing_temp.keychain
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD signing_temp.keychain
-          echo "===========jpackage app image begin================"
-          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type app-image -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.gui.BundleGUI --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.icns --mac-sign --mac-signing-keychain /Users/runner/Library/Keychains/signing_temp.keychain-db --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
-          echo "===========jpackage dmg begin================"
-          jpackage --verbose --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --mac-package-name ${{ env.pkg-name }} --type dmg --app-image bitcoin-s.app --mac-sign --mac-signing-key-user-name "Chris Stewart (9ZG3GPKHX8)"
-          echo "Signing dmg with code sign"
-          codesign -s "Developer ID Application: Chris Stewart (9ZG3GPKHX8)" --options runtime -vvvv --deep ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
-          echo "Running xcrun alttool --notarize app"
-          REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id "org.bitcoins.bundle" -u "stewart.chris1234@gmail.com" --team-id "9ZG3GPKHX8" --password "$MAC_NOTARIZATION_PW"  --file ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg | grep RequestUUID | awk '{print $3}')
-          echo "Waiting for notarization from Apple for $REQUEST_UUID"
-          sleep 5
-          xcrun altool --notarization-info "$REQUEST_UUID" -u "stewart.chris1234@gmail.com" --team-id "9ZG3GPKHX8" -p "$MAC_NOTARIZATION_PW"
-          echo "Start while loop"
-          while xcrun altool --notarization-info "$REQUEST_UUID" -u "stewart.chris1234@gmail.com" --team-id "9ZG3GPKHX8" -p "$MAC_NOTARIZATION_PW" | grep "Status: in progress" > /dev/null; do
-            echo "Verification in progress..."
-            sleep 30
-          done
-          xcrun stapler staple ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
-          echo "Done stapling"
-          spctl -vvv --assess --type exec bitcoin-s.app
-          echo "Done inspecting app with spctl"
-          codesign -vvv --deep --strict ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
-          echo "Done verifying code signing deep"
-          codesign -dvv ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
-          echo "Done verifying artifacts"
-          ls -l
-      - name: 'Echo download path'
-        run: echo ${{steps.download.outputs.download-path}}
-      - name: Upload dmg
-        uses: actions/upload-artifact@v1
+          security unlock-keychain -p $MACOS_CERTIFICATE_PWD $KEYCHAIN
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $MACOS_CERTIFICATE_PWD $KEYCHAIN
+          security find-identity -p codesigning -v
+      # Install Node, checkout repo, install dependencies and build repo
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          name: "mac"
-          path: ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
-      - name: Upload if release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+          node-version: 16.x
+      - name: Checkout bitcoin-s-ts repo
+        uses: actions/checkout@v3
         with:
-          name: "mac"
-          files: ${{ env.pkg-name }}-${{steps.previoustag.outputs.tag}}.dmg
+          repository: bitcoin-s/bitcoin-s-ts
+      #    ref: electron-forge-config # TODO : Merge to master and remove
+          path: bitcoin-s-ts
+      - name: bitcoin-s-ts install and build
+        working-directory: bitcoin-s-ts
+        run: |
+          npm ci
+          npm run build
+      # Build Krystal Bull
+      - name: Download bitcoin-s-oracle-server
+        uses: actions/download-artifact@v3
+        with:
+          name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
+          path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
+      - name: Build Krystal Bull
+        working-directory: bitcoin-s-ts/oracle-electron-ts
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  linux:
-    runs-on: [ ubuntu-latest ]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v13
-        with:
-          java-version: openjdk@1.17.0
-      - name: 'Get Previous tag'
-        id: previoustag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
-        with:
-          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-      - name: Build fat jar
-        run: sbt "bundle/assembly"
-      - name: Package jar as debian package
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        run: "jpackage --linux-shortcut --name ${{ env.pkg-name }} --app-version ${{steps.previoustag.outputs.tag}} --type deb -i app/bundle/target/scala-2.13/ --main-class org.bitcoins.bundle.gui.BundleGUI --main-jar ${{ env.pkg-assembly }} --icon app/gui/src/main/resources/icons/bitcoin-s.png"
-      - name: View Artifacts
-        run: ls -l
-      - name: Print working dir
-        run: pwd
-      - name: Upload deb
-        uses: actions/upload-artifact@v1
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: "deb"
-          path: "${{ env.pkg-name }}_${{ steps.previoustag.outputs.tag }}-1_amd64.deb"
-      - name: Upload if release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: "deb"
-          files: "${{ env.pkg-name }}_${{ steps.previoustag.outputs.tag }}-1_amd64.deb"
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  windows:
-    runs-on: [windows-latest]
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v13
-        with:
-          java-version: openjdk@1.17.0
-
-      - name: 'Get Previous tag'
-        id: previoustag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
-        with:
-          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-      - name: Build msi
-        shell: bash
-        run: sbt bundle/windows:packageBin
-      - name: View artifacts
-        run: ls -R .
-      - name: Upload installer
-        uses: actions/upload-artifact@v1
-        with:
-          name: windows
-          path: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
-      - name: Upload if release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: windows
-          files: "D:\\a\\bitcoin-s\\bitcoin-s\\app\\bundle\\target\\windows\\bitcoin-s-bundle.msi"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  mac-zips:
-    runs-on: [ macos-latest ]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v13
-        with:
-          java-version: openjdk@1.17.0
-      - name: 'Get Previous tag'
-        id: previoustag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
-        with:
-          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-      - name: Build zip
-        run: sbt "universal:stage;universal:packageBin"
-      - name: View Artifacts
-        run: ls -l app/server/target/universal/stage
-      - name: pwd
-        run: pwd
-      - name: Upload bitcoin-s-server-mac zip
+          DEBUG: electron-notarizer
+        #   APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+        #   NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
+        #   NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
+        #   NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
+        run: |
+          npm ci
+          npm run build
+          npm run make
+      # - name: (windows) Show windows artifacts 
+      #   if: startsWith(matrix.os,'windows')
+      #   run: |
+      #     ls -l $KB_OUT
+      #     ls -l $KB_MAKE
+      #     ls -l "$KB_MAKE/zip"
+      #     ls -l "$KB_MAKE/zip/windows"
+      #     ls -l "$KB_MAKE/zip/windows/x64"
+      # - name: (macos) Manually sign Krystal Bull
+      #   if: startsWith(matrix.os,'macos')
+      #   env:
+      #     APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+      #     NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
+      #     NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
+      #     TEAM_ID: "9ZG3GPKHX8"
+      #     PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
+      #     KRYSTALBULL_PATH: "${{env.KB_OUT}}/Krystal Bull-darwin-x64/Krystal Bull.app"
+      #     BUNDLE_ID: "org.bitcoins.krystalbull"
+      #     ZIP_NAME: "KrystalBull-mac.zip"
+      #   run: |
+      #     echo "=== Signing app ==="
+      # : # See about signing subsystems - https://gist.github.com/jorangreef/27e708c67b7e6746a98a
+      #     codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
+      #     echo "=== Verifying app signature ==="
+      #     codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
+      #     codesign -dvv "$KRYSTALBULL_PATH"
+      #     codesign -d --entitlements :- "$KRYSTALBULL_PATH"
+      #     echo "=== zip app ==="
+      #     zip -qr $ZIP_NAME "$KRYSTALBULL_PATH"
+      #     mv $ZIP_NAME $KB_MAKE
+        # mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $ZIP_NAME
+        # echo "=== Notarizing app ==="
+        # : # Store xcrun creditials
+        # xcrun notarytool store-credentials "AC_PASSWORD" --apple-id $NOTORIZE_APPLE_ID --password $NOTORIZE_APPLE_PW --team-id $TEAM_ID
+        # REQUEST_UUID=$(xcrun altool --notarize-app --primary-bundle-id $BUNDLE_ID -u $NOTORIZE_APPLE_ID -p "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID --file "$ZIP_NAME" | grep RequestUUID | awk '{print $3}')
+        # echo "Waiting for notarization from Apple for $REQUEST_UUID"
+        # sleep 5
+        # xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID -p "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID
+        # echo "Start while loop"
+        # while xcrun altool --notarization-info "$REQUEST_UUID" -u $NOTORIZE_APPLE_ID -p "$NOTORIZE_APPLE_PW" --team-id $TEAM_ID | grep "Status: in progress" > /dev/null; do
+        #   echo "Verification in progress..."
+        #   sleep 30
+        # done
+        # echo "End while loop"
+        # echo "=== notarytool history ==="
+        # xcrun notarytool history --keychain-profile "AC_PASSWORD"
+        # echo "=== notarytool info ==="
+        # xcrun notarytool info $REQUEST_UUID --keychain-profile "AC_PASSWORD"
+        # : # TODO : Staple notarization to app/zip?
+        # xcrun stapler staple "$KRYSTALBULL_PATH"
+        # echo "Done stapling"
+      # - name: (macos) Validate application signing and notarization
+      #   if: startsWith(matrix.os,'macos')
+      #   env:
+      #     KRYSTALBULL_PATH: "${{env.KB_OUT}}/Krystal Bull-darwin-x64/Krystal Bull.app"
+      #     # TODO : Need to account for version in path changing
+      #     # DMG_PATH: "${{env.KB_MAKE}}/Krystal Bull-0.0.1-x64.dmg"
+      #   run: |
+      #     echo "Directory contents"
+      #     echo "$KRYSTALBULL_PATH"
+      #     ls -l $KB_OUT
+      #     ls -l $KB_MAKE
+      #     ls -l "$KB_MAKE/zip"
+      #     ls -l "$KB_MAKE/zip/darwin"
+      #     ls -l "$KB_MAKE/zip/darwin/x64"
+      #     ls -l "$KB_OUT/Krystal Bull-darwin-x64"
+      #     echo "=== Verify app signature ==="
+      #     codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
+      #     codesign -dvv "$KRYSTALBULL_PATH"
+      #     codesign -d --entitlements :- "$KRYSTALBULL_PATH"
+      #     : # Seeing error like "bitcoin-s-ts/oracle-electron-ts/out/make/Krystal Bull-0.0.1-x64.dmg: code object is not signed at all"
+      #     : # So the electron build is not doing any code signing on the dmg
+      #     : # echo "=== Verify dmg signature ==="
+      #     : # codesign -vvv --deep --strict "$DMG_PATH"
+      #     : # Not happening yet, need entitlements set
+      #     : # echo "=== Verify app notarization ==="
+      #     : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
+      # Platform specific values here for folder depth
+      - name: (macos) Move .zip into /make
+        if: startsWith(matrix.os,'macos')
+        run: mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $KB_MAKE
+      - name: (linux) Move .deb into /make
+        if: startsWith(matrix.os,'ubuntu')
+        run: mv ${{env.KB_MAKE}}/deb/x64/*.deb $KB_MAKE
+      # Capture signed Mac app
+      # - name: (macos) Upload krystalbull-mac-zip
+      #   if: startsWith(matrix.os,'macos')
+      #   uses: actions/upload-artifact@v3
+      #   env:
+      #     pkg-version: ${{steps.previoustag.outputs.tag}}
+      #   with:
+      #     name: krystalbull-${{ matrix.TARGET }}-zip
+      #     path: ${{env.KB_MAKE}}/zip/darwin/x64/*.zip
+      - name: Upload krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
-          name: "bitcoin-s-server-mac"
-          path: app/server/target/universal/stage
-      - name: Upload bitcoin-s-oracle-server zip
+          name: krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
+          path: ${{env.KB_MAKE}}/*.${{ matrix.FORMAT }}
+      - name: (release) Upload krystallbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          name: krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}-${{steps.previoustag.outputs.tag}}
+          files: ${{env.KB_MAKE}}/*.${{ matrix.FORMAT }}
+        env:
+          pkg-version: ${{steps.previoustag.outputs.tag}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Build Suredbits Wallet
+      - name: Download bitcoin-s-server
+        uses: actions/download-artifact@v3
+        with:
+          name: bitcoin-s-server-${{ matrix.TARGET }}
+          path: bitcoin-s-ts/wallet-electron-ts/bitcoin-s-server
+      - name: Build Suredbits Wallet
+        working-directory: bitcoin-s-ts/wallet-electron-ts
+        env:
+          DEBUG: electron-notarizer
+        #   APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+        #   NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
+        #   NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
+        #   NOTORIZE_APPLE_TEAM: 9ZG3GPKHX8
+        run: |
+          npm ci
+          npm run build
+          npm run make
+      # - name: (macos) Manually sign Suredbits Wallet
+      #   if: startsWith(matrix.os,'macos')
+      #   working-directory: ${{env.W_MAKE}}
+      #   env:
+      #     APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+      #     NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
+      #     NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
+      #     TEAM_ID: "9ZG3GPKHX8"
+      #     PLIST: "bitcoin-s-ts/wallet-electron-ts/entitlements.plist"
+      #     WALLET_PATH: "${{env.W_OUT}}/Suredbits Wallet-darwin-x64/Suredbits Wallet.app"
+      #     BUNDLE_ID: "org.bitcoins.suredbitswallet"
+      #     ZIP_NAME: "SuredbitsWallet-mac.zip"
+      #   run: |
+      #     echo "=== Signing app ==="
+      #     codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$WALLET_PATH"
+      #     echo "=== Verifying app signature ==="
+      #     codesign -vvv --deep --strict "$WALLET_PATH"
+      #     codesign -dvv "$WALLET_PATH"
+      #     codesign -d --entitlements :- "$WALLET_PATH"
+      #     echo "=== zip app ==="
+      #     zip -qr $ZIP_NAME "$WALLET_PATH"
+      #     mv $ZIP_NAME $W_MAKE
+      # - name: (macos) Validate application signing and notarization
+      #   if: startsWith(matrix.os,'macos')
+      #   env:
+      #     WALLET_PATH: "${{env.W_OUT}}/Suredbits Wallet-darwin-x64/Suredbits Wallet.app"
+      #     # TODO : Need to account for version in path changing 
+      #     # DMG_PATH: "${{env.W_MAKE}}/Suredbits Wallet-0.0.1-x64.dmg"
+      #   run: |
+      #     echo "Directory contents"
+      #     ls -l "bitcoin-s-ts/wallet-electron-ts"
+      #     ls -l $W_OUT
+      #     ls -l $W_MAKE
+      #     ls -l "$W_OUT/Suredbits Wallet-darwin-x64"
+      #     echo "=== Verify app signature ==="
+      #     codesign -vvv --deep --strict "$WALLET_PATH"
+      #     codesign -dvv "$WALLET_PATH"
+      #     codesign -d --entitlements :- "$WALLET_PATH"
+      #     : # echo "=== Verify dmg signature ==="
+      #     : # codesign -vvv --deep --strict "$DMG_PATH"
+      #     : # echo "=== Verify app notarization ==="
+      #     : # spctl -vvv --assess --type exec "$WALLET_PATH"
+      # Platform specific values here for folder depth
+      - name: (macos) Move .zip into /make
+        if: startsWith(matrix.os,'macos')
+        run: mv ${{env.W_MAKE}}/zip/darwin/x64/*.zip $W_MAKE
+      - name: (linux) Move .deb into /make
+        if: startsWith(matrix.os,'ubuntu')
+        run: mv ${{env.W_MAKE}}/deb/x64/*.deb $W_MAKE
+      # Capture signed Mac app
+      # - name: (macos) Upload suredbits-wallet-mac-zip
+      #   if: startsWith(matrix.os,'macos')
+      #   uses: actions/upload-artifact@v3
+      #   env:
+      #     pkg-version: ${{steps.previoustag.outputs.tag}}
+      #   with:
+      #     name: suredbits-wallet-${{ matrix.TARGET }}-zip
+      #     path: ${{env.W_MAKE}}/zip/darwin/x64/*.zip
+      - name: Upload suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         uses: actions/upload-artifact@v3
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
-          name: "bitcoin-s-oracle-server-mac"
-          path: app/oracle-server/target/universal/stage
-      - name: Upload bitcoin-s-cli zip
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: "bitcoin-s-cli-mac"
-          path: app/cli/target/universal/stage/
-      - name: Upload bitcoin-s-server if release
-        uses: softprops/action-gh-release@v1
+          name: suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
+          path: ${{env.W_MAKE}}/*.${{ matrix.FORMAT }}
+      - name: (release) Upload suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
         if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: "bitcoin-s-server-mac-${{steps.previoustag.outputs.tag}}"
-          files: app/server/target/universal/*.zip
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload bitcoin-s-oracle-server if release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: "bitcoin-s-oracle-server-mac-${{steps.previoustag.outputs.tag}}"
-          files: app/oracle-server/target/universal/*.zip
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload bitcoin-s-cli if release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: "bitcoin-s-cli-mac-${{steps.previoustag.outputs.tag}}"
-          files: app/cli/target/universal/*.zip
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  linux-zips:
-    runs-on: [ ubuntu-latest ]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v13
-        with:
-          java-version: openjdk@1.17.0
-      - name: 'Get Previous tag'
-        id: previoustag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
-        with:
-          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-      - name: Build zip
-        run: sbt "universal:stage;universal:packageBin"
-      - name: View Artifacts
-        run: ls -l app/server/target/universal/stage
-      - name: pwd
-        run: pwd
-      - name: Upload bitcoin-s-server-linux zip
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: "bitcoin-s-server-linux"
-          path: app/server/target/universal/stage/
-      - name: Upload bitcoin-s-oracle-server-linux zip
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: "bitcoin-s-oracle-server-linux"
-          path: app/oracle-server/target/universal/stage/
-      - name: Upload bitcoin-s-cli-linux zip
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: "bitcoin-s-cli-linux"
-          path: app/cli/target/universal/stage/
-      - name: Upload bitcoin-s-server if release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: "bitcoin-s-server-linux-${{steps.previoustag.outputs.tag}}"
-          files: app/server/target/universal/*.zip
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload bitcoin-s-oracle-server if release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: "bitcoin-s-oracle-server-linux-${{steps.previoustag.outputs.tag}}"
-          files: app/oracle-server/target/universal/*.zip
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload bitcoin-s-cli if release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: "bitcoin-s-cli-linux-${{steps.previoustag.outputs.tag}}"
-          files: app/cli/target/universal/*.zip
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  windows-zips:
-    runs-on: [windows-latest]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v13
-        with:
-          java-version: openjdk@1.17.0
-      - name: 'Get Previous tag'
-        id: previoustag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
-        with:
-          fallback: 1.0.0 # Optional fallback tag to use when no tag can be found
-      - name: Build zip
-        shell: bash
-        run: sbt "universal:stage;universal:packageBin"
-      - name: View Artifacts
-        run: ls -l app/server/target/universal/stage
-      - name: pwd
-        run: pwd
-      - name: Upload bitcoin-s-server-windows zip
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: "bitcoin-s-server-windows"
-          path: app/server/target/universal/stage/
-      - name: Upload bitcoin-s-oracle-server zip
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: "bitcoin-s-oracle-server-windows"
-          path: app/oracle-server/target/universal/stage/
-      - name: Upload bitcoin-s-cli zip
-        uses: actions/upload-artifact@v3
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-        with:
-          name: "bitcoin-s-cli-windows"
-          path: app/cli/target/universal/stage/
-      - name: Upload bitcoin-s-server if release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: "bitcoin-s-server-windows-${{steps.previoustag.outputs.tag}}"
-          files: app/server/target/universal/*.zip
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload bitcoin-s-oracle-server if release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: "bitcoin-s-oracle-server-windows-${{steps.previoustag.outputs.tag}}"
-          files: app/oracle-server/target/universal/*.zip
-        env:
-          pkg-version: ${{steps.previoustag.outputs.tag}}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload bitcoin-s-cli if release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: "bitcoin-s-cli-windows-${{steps.previoustag.outputs.tag}}"
-          files: app/cli/target/universal/*.zip
+          name: suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}-${{steps.previoustag.outputs.tag}}
+          files: ${{env.W_MAKE}}/*.${{ matrix.FORMAT }}
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
