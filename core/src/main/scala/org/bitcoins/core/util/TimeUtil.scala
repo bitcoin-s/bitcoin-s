@@ -1,9 +1,11 @@
 package org.bitcoins.core.util
 
 import java.text.SimpleDateFormat
-import java.time.Instant
 import java.time.format.DateTimeFormatter
+import java.time.{Duration, Instant}
+import java.util.concurrent.TimeUnit
 import java.util.{Date, TimeZone}
+import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
 object TimeUtil {
@@ -45,5 +47,9 @@ object TimeUtil {
 
   def iso8601ToString(date: Date): String = {
     DateTimeFormatter.ISO_INSTANT.format(date.toInstant)
+  }
+
+  def durationToFiniteDuration(duration: Duration): FiniteDuration = {
+    FiniteDuration(duration.toNanos, TimeUnit.NANOSECONDS)
   }
 }

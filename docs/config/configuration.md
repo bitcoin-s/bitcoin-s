@@ -151,7 +151,26 @@ bitcoin-s {
         # 18333 for testnet and 18444 for regtest.
         # by default we provide a testnet peer to connect to
         peers = ["neutrino.testnet3.suredbits.com:18333"] 
-
+        
+        # use the defauls suredbits neutrino node as a peer
+        use-default-peers = true
+        
+        # try to connect to peers from dns seeds, database, addr messages etc
+        enable-peer-discovery = false
+        
+        # number of persistent peer connections to maintain for node use
+        maxConnectedPeers = 1
+        
+        # peers discovery configs, ideally you would not want to change this
+        # timeout for tcp connection
+        connection-timeout = 5s
+        # initialization timeout once connected, reconnections resets this
+        initialization-timeout = 10s
+        # time interval for trying next set of peers in peer discovery
+        try-peers-interval = 12s
+        
+        # wait time for queries like getheaders etc before switching to another
+        query-wait-time = 15s
         
         hikari-logging = true
         hikari-logging-interval = 10 minute

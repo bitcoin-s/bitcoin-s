@@ -41,6 +41,7 @@ object BitcoinSTestAppConfig {
          |  node {
          |     mode = neutrino
          |     relay = true
+         |     use-default-peers = false
          |  }
          |  wallet {
          |    allowExternalDLCAddresses = true
@@ -64,10 +65,38 @@ object BitcoinSTestAppConfig {
            |  node {
            |     mode = neutrino
            |     relay = true
+           |     use-default-peers = false
            |  }
            |  proxy.enabled = $torEnabled
            |  tor.enabled = $torEnabled
            |  tor.use-random-ports = false  
+           |}
+      """.stripMargin
+      }
+      .withFallback(genWalletNameConf)
+
+    BitcoinSAppConfig(
+      tmpDir(),
+      (overrideConf +: configWithEmbeddedDb(project = None,
+                                            pgUrl) +: config).toVector)
+  }
+
+  def getMultiPeerNeutrinoWithEmbeddedDbTestConfig(
+      pgUrl: () => Option[String],
+      config: Config*)(implicit system: ActorSystem): BitcoinSAppConfig = {
+    val overrideConf = ConfigFactory
+      .parseString {
+        s"""
+           |bitcoin-s {
+           |  node {
+           |     mode = neutrino
+           |     relay = true
+           |     maxConnectedPeers = 8
+           |     use-default-peers = false
+           |  }
+           |  proxy.enabled = $torEnabled
+           |  tor.enabled = $torEnabled
+           |  tor.use-random-ports = false
            |}
       """.stripMargin
       }

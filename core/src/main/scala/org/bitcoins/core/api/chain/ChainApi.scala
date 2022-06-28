@@ -101,7 +101,7 @@ trait ChainApi extends ChainQueryApi {
     processCheckpoints(Vector(filterHeaderHash), blockHash)
   }
 
-  /** Process all ompact filter header check points.
+  /** Process all compact filter header check points.
     */
   def processCheckpoints(
       checkpoints: Vector[DoubleSha256DigestBE],

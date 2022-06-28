@@ -11,7 +11,7 @@ import org.bitcoins.chain.models.{
 }
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
-import org.bitcoins.core.util.Mutable
+import org.bitcoins.core.util.{Mutable, TimeUtil}
 import org.bitcoins.db.{DbAppConfig, JdbcProfileComponent}
 import org.bitcoins.node._
 import org.bitcoins.node.db.NodeDbManagement
@@ -23,7 +23,8 @@ import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
 
 import java.nio.file.Path
-import java.time.Instant
+import java.time.{Duration, Instant}
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S node
@@ -107,7 +108,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       .until(list.size())
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
     val result = strs.map(_.replace("localhost", "127.0.0.1"))
-    if (result.isEmpty) {
+    if (result.isEmpty && useDefaultPeers) {
       logger.info(
         s"No peers found in configuration, resorting to default peers")
       network match {
@@ -141,6 +142,57 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     if (config.hasPath("bitcoin-s.node.maxConnectedPeers"))
       config.getInt("bitcoin-s.node.maxConnectedPeers")
     else 1
+  }
+
+  lazy val enablePeerDiscovery: Boolean = {
+    if (config.hasPath("bitcoin-s.node.enable-peer-discovery"))
+      config.getBoolean("bitcoin-s.node.enable-peer-discovery")
+    else false
+  }
+
+  // https://github.com/lightbend/config/blob/master/HOCON.md#duration-format
+  lazy val peerDiscoveryTimeout: Duration = {
+    if (config.hasPath("bitcoin-s.node.peer-discovery-timeout"))
+      config.getDuration("bitcoin-s.node.peer-discovery-timeout")
+    else Duration.ofMinutes(10)
+  }
+
+  lazy val useDefaultPeers: Boolean = {
+    if (config.hasPath("bitcoin-s.node.use-default-peers"))
+      config.getBoolean("bitcoin-s.node.use-default-peers")
+    else true
+  }
+
+  /** timeout for tcp connection in P2PClient */
+  lazy val connectionTimeout: FiniteDuration = {
+    if (config.hasPath("bitcoin-s.node.connection-timeout")) {
+      val duration = config.getDuration("bitcoin-s.node.connection-timeout")
+      TimeUtil.durationToFiniteDuration(duration)
+    } else 5.seconds
+  }
+
+  /** initialization timeout once connected, reconnections reset this */
+  lazy val initializationTimeout: FiniteDuration = {
+    if (config.hasPath("bitcoin-s.node.initialization-timeout")) {
+      val duration = config.getDuration("bitcoin-s.node.initialization-timeout")
+      TimeUtil.durationToFiniteDuration(duration)
+    } else 10.seconds
+  }
+
+  /** time interval for trying next set of peers in peer discovery */
+  lazy val tryNextPeersInterval: FiniteDuration = {
+    if (config.hasPath("bitcoin-s.node.try-peers-interval")) {
+      val duration = config.getDuration("bitcoin-s.node.try-peers-interval")
+      TimeUtil.durationToFiniteDuration(duration)
+    } else 12.seconds
+  }
+
+  /** timeout to wait for response the messages extend [[org.bitcoins.core.p2p.ExpectsResponse]] */
+  lazy val queryWaitTime: FiniteDuration = {
+    if (config.hasPath("bitcoin-s.node.query-wait-time")) {
+      val duration = config.getDuration("bitcoin-s.node.query-wait-time")
+      TimeUtil.durationToFiniteDuration(duration)
+    } else 15.seconds
   }
 
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
@@ -185,11 +237,7 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
     nodeConf.nodeType match {
       case NodeType.NeutrinoNode =>
         dmhF.map(dmh =>
-          NeutrinoNode(dmh,
-                       nodeConf,
-                       chainConf,
-                       system,
-                       configPeersOverride = peers))
+          NeutrinoNode(dmh, nodeConf, chainConf, system, paramPeers = peers))
       case NodeType.FullNode =>
         Future.failed(new RuntimeException("Not implemented"))
       case NodeType.BitcoindBackend =>

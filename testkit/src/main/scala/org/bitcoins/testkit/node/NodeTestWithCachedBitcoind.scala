@@ -106,6 +106,56 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       })(test)
   }
 
+  def withUnsyncedNeutrinoNodeConnectedToBitcoinds(
+      test: OneArgAsyncTest,
+      bitcoinds: Vector[BitcoindRpcClient])(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
+    val nodeWithBitcoindBuilder: () => Future[
+      NeutrinoNodeConnectedWithBitcoinds] = { () =>
+      require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
+      for {
+        _ <- appConfig.walletConf.kmConf.start()
+        creationTimeOpt = Some(appConfig.walletConf.creationTime)
+        node <- NodeUnitTest.createNeutrinoNode(bitcoinds, creationTimeOpt)(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf)
+        startedNode <- node.start()
+      } yield NeutrinoNodeConnectedWithBitcoinds(startedNode, bitcoinds)
+    }
+    makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
+      build = nodeWithBitcoindBuilder,
+      { x: NeutrinoNodeConnectedWithBitcoinds =>
+        tearDownNode(x.node)
+      })(test)
+  }
+
+  def withUnsyncedNeutrinoNodeConnectedToBitcoind(
+      test: OneArgAsyncTest,
+      bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
+    val nodeWithBitcoindBuilder: () => Future[
+      NeutrinoNodeConnectedWithBitcoind] = { () =>
+      require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
+      for {
+        _ <- appConfig.walletConf.kmConf.start()
+        creationTimeOpt = Some(appConfig.walletConf.creationTime)
+        node <- NodeUnitTest.createNeutrinoNode(bitcoind, creationTimeOpt)(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf)
+        startedNode <- node.start()
+      } yield NeutrinoNodeConnectedWithBitcoind(startedNode, bitcoind)
+    }
+    makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
+      build = nodeWithBitcoindBuilder,
+      { x: NeutrinoNodeConnectedWithBitcoind =>
+        tearDownNode(x.node)
+      })(test)
+  }
+
   def withNeutrinoNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
       bip39PasswordOpt: Option[String],

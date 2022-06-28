@@ -20,8 +20,14 @@ abstract class NodeTestUtil extends P2PLogger {
 
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(implicit
       ref: ActorRefFactory,
-      conf: NodeAppConfig): P2PClient = {
-    P2PClient.apply(ref, peer, peerMsgReceiver, { () => Future.unit })
+      conf: NodeAppConfig
+  ): P2PClient = {
+    P2PClient.apply(ref,
+                    peer,
+                    peerMsgReceiver,
+                    (_: Peer) => Future.unit,
+                    (_: Peer) => Future.unit,
+                    16)
   }
 
   /** Helper method to get the [[java.net.InetSocketAddress]]
@@ -164,6 +170,17 @@ abstract class NodeTestUtil extends P2PLogger {
       node.chainApiFromDb().flatMap(_.getBestBlockHash())
     }
     TestAsyncUtil.retryUntilSatisfiedF(() => bestHashF.map(_ == hash))
+  }
+
+  /** Awaits header, filter header and filter sync between the neutrino node and rpc client */
+  def awaitAllSync(node: NeutrinoNode, bitcoind: BitcoindRpcClient)(implicit
+      system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
+    for {
+      _ <- NodeTestUtil.awaitSync(node, bitcoind)
+      _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
+      _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+    } yield ()
   }
 
 }
