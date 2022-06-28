@@ -130,7 +130,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest] # [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest] # windows-latest
         # If os values you don't include the matrix os list above are set here, they will be included
         # This is here to get friendly labels for output filenames
         include:
@@ -140,9 +140,9 @@ jobs:
         - os: ubuntu-latest
           TARGET: linux
           FORMAT: deb
-        - os: windows-latest
-          TARGET: windows
-          FORMAT: zip # ???
+        # - os: windows-latest
+        #   TARGET: windows
+        #   FORMAT: zip # ???
     # Build output paths
     env:
       KB_OUT: "bitcoin-s-ts/oracle-electron-ts/out"
@@ -192,7 +192,8 @@ jobs:
           path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
       - name: Build Krystal Bull
         working-directory: bitcoin-s-ts/oracle-electron-ts
-        # env:
+        env:
+          DEBUG: electron-notarizer
         #   APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
         #   NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
         #   NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
@@ -222,6 +223,7 @@ jobs:
       #     ZIP_NAME: "KrystalBull-mac.zip"
       #   run: |
       #     echo "=== Signing app ==="
+      # : # See about signing subsystems - https://gist.github.com/jorangreef/27e708c67b7e6746a98a
       #     codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
       #     echo "=== Verifying app signature ==="
       #     codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
@@ -317,7 +319,8 @@ jobs:
           path: bitcoin-s-ts/wallet-electron-ts/bitcoin-s-server
       - name: Build Suredbits Wallet
         working-directory: bitcoin-s-ts/wallet-electron-ts
-        # env:
+        env:
+          DEBUG: electron-notarizer
         #   APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
         #   NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
         #   NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
