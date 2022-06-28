@@ -390,7 +390,7 @@ lazy val oracleServer = project
   .settings(jlinkModules --= CommonSettings.rmJlinkModules)
   .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
   .settings(jlinkIgnoreMissingDependency := CommonSettings.oracleServerJlinkIgnore)
-  .settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "oracle-server-extra-startup-script.sh"))
+  //.settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "oracle-server-extra-startup-script.sh"))
   .dependsOn(
     dlcOracle,
     serverRoutes
@@ -424,7 +424,7 @@ lazy val appServer = project
   .settings(jlinkModules --= CommonSettings.rmJlinkModules)
   .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
   .settings(jlinkIgnoreMissingDependency := CommonSettings.appServerJlinkIgnore)
-  .settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "wallet-server-extra-startup-script.sh"))
+  //.settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "wallet-server-extra-startup-script.sh"))
   .dependsOn(
     serverRoutes,
     appCommons,

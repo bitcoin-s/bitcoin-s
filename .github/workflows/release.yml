@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, "2022-06-28-rm-m1-jlink-carveout"]
     tags: ["*"]
   release:
     types: [ published ]
