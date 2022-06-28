@@ -9,6 +9,7 @@ import org.bitcoins.rpc.client.common.{
 }
 import org.bitcoins.rpc.client.v19.V19BlockFilterRpc
 import org.bitcoins.rpc.client.v20.V20MultisigRpc
+import org.bitcoins.rpc.client.v21.BitcoindV21RpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 
 import scala.concurrent.Future
@@ -18,7 +19,7 @@ import scala.util.Try
   */
 class BitcoindV22RpcClient(override val instance: BitcoindInstance)(implicit
     actorSystem: ActorSystem)
-    extends BitcoindRpcClient(instance)
+    extends BitcoindV21RpcClient(instance)
     with DescriptorRpc
     with PsbtRpc
     with V19BlockFilterRpc
