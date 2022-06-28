@@ -192,15 +192,22 @@ sealed trait StartedScriptProgram extends ScriptProgram {
     lastCodeSeparator match {
       case Some(lastCodeSeparatorIdx) =>
         //map original indices to new indices
-        val originalWithIndices = originalScript.zipWithIndex
-        val scriptOpsWithIndices =
-          originalWithIndices.filter(_._1.isInstanceOf[ScriptOperation])
-        val opCodeIdxs =
-          scriptOpsWithIndices.filter(_._2 == lastCodeSeparatorIdx).map(_._2)
-        require(opCodeIdxs.length == 1, s"Should be exactly 1 OP_CODESEPARATOR")
+        val originalWithIndices =
+          originalScript.take(lastCodeSeparatorIdx).zipWithIndex
+        val vec = Vector(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4)
+        val scriptOpsWithIndices = originalWithIndices
+          .filter { case (op, _) =>
+            op.isInstanceOf[ScriptOperation] && !vec.contains(op)
+          }
+
+        println(s"scriptOPsWithIndices=$scriptOpsWithIndices")
+        //require(opCodeIdxs.length == 1, s"Should be exactly 1 OP_CODESEPARATOR")
         //calculate the offset without push operations
+        println(s"lastCodeSeparatorIdx=$lastCodeSeparatorIdx")
+        println(s"originalWithIndices.size=${originalWithIndices.size}")
+        println(s"scriptOpsWithIndices.size=${scriptOpsWithIndices.size}")
         val offset =
-          opCodeIdxs.head - (originalScript.size - scriptOpsWithIndices.size) + 1
+          originalWithIndices.size - scriptOpsWithIndices.size
         println(s"offset=$offset")
         Some(offset)
       case None =>
