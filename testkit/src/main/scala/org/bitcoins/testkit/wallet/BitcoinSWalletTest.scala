@@ -670,8 +670,8 @@ object BitcoinSWalletTest extends WalletLogger {
   def destroyWallet(wallet: Wallet): Future[Unit] = {
     import wallet.ec
     for {
-      _ <- wallet.stop()
       _ <- destroyWalletAppConfig(wallet.walletConfig)
+      _ <- wallet.stop()
     } yield ()
   }
 
@@ -688,7 +688,6 @@ object BitcoinSWalletTest extends WalletLogger {
     for {
       _ <- walletAppConfig.dropTable("flyway_schema_history")
       _ <- walletAppConfig.dropAll()
-      _ <- walletAppConfig.stop()
     } yield ()
   }
 
