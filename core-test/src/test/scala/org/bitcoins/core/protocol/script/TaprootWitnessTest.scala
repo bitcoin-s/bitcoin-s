@@ -91,4 +91,13 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
     assert(taprootScriptPath.annexHashOpt.get.hex == expectedAnnexHash)
   }
 
+  it must "construct a taproot keypath witness with an annex" in {
+    val vec = Vector(
+      "c2bdc23435c7bbdce741081181eecd31865f7d94fad6c49c8b1f4619aad72b83354530dbc9446243ff81e0dac2e77b2d437b9d53d279b535a23fb8c599454b3e02",
+      "50ba")
+    val stack = vec.map(ByteVector.fromValidHex(_))
+    val tr = TaprootWitness.fromStack(stack.reverse)
+    assert(tr.isInstanceOf[TaprootKeyPath])
+    assert(tr.annexOpt == Some(stack.last))
+  }
 }

@@ -42,6 +42,14 @@ case class ChannelBalances(
     pendingOpenRemoteBalance: CurrencyUnit
 ) extends LndModel
 
+case class OutputDetails(
+    address: BitcoinAddress,
+    spk: ScriptPubKey,
+    outputIndex: Long,
+    amount: CurrencyUnit,
+    isOurAddress: Boolean
+) extends LndModel
+
 case class TxDetails(
     txId: DoubleSha256DigestBE,
     amount: CurrencyUnit,
@@ -50,7 +58,7 @@ case class TxDetails(
     blockHeight: Int,
     timeStamp: Long,
     totalFees: CurrencyUnit,
-    destAddresses: Vector[BitcoinAddress],
+    outputDetails: Vector[OutputDetails],
     tx: Transaction,
     label: String
 ) extends LndModel

@@ -95,7 +95,6 @@ trait TransactionSignatureChecker {
       TransactionSignatureSerializer.hashForSignature(txSigComponent,
                                                       hashType,
                                                       taprootOptions)
-
     val result = pubKey.verify(hash, schnorrSignature)
     if (result) ScriptOk else ScriptErrorSchnorrSig
   }

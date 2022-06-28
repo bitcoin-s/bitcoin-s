@@ -641,6 +641,38 @@ message Utxo {
     int64 confirmations = 6;
 }
 
+enum OutputScriptType {
+    SCRIPT_TYPE_PUBKEY_HASH = 0;
+    SCRIPT_TYPE_SCRIPT_HASH = 1;
+    SCRIPT_TYPE_WITNESS_V0_PUBKEY_HASH = 2;
+    SCRIPT_TYPE_WITNESS_V0_SCRIPT_HASH = 3;
+    SCRIPT_TYPE_PUBKEY = 4;
+    SCRIPT_TYPE_MULTISIG = 5;
+    SCRIPT_TYPE_NULLDATA = 6;
+    SCRIPT_TYPE_NON_STANDARD = 7;
+    SCRIPT_TYPE_WITNESS_UNKNOWN = 8;
+}
+
+message OutputDetail {
+    // The type of the output
+    OutputScriptType output_type = 1;
+
+    // The address
+    string address = 2;
+
+    // The pkscript in hex
+    string pk_script = 3;
+
+    // The output index used in the raw transaction
+    int64 output_index = 4;
+
+    // The value of the output coin in satoshis
+    int64 amount = 5;
+
+    // Denotes if the output is controlled by the internal wallet
+    bool is_our_address = 6;
+}
+
 message Transaction {
     // The transaction hash
     string tx_hash = 1;
@@ -663,8 +695,12 @@ message Transaction {
     // Fees paid for this transaction
     int64 total_fees = 7;
 
-    // Addresses that received funds for this transaction
-    repeated string dest_addresses = 8;
+    // Addresses that received funds for this transaction. Deprecated as it is
+    // now incorporated in the output_details field.
+    repeated string dest_addresses = 8 [deprecated = true];
+
+    // Outputs that received funds for this transaction
+    repeated OutputDetail output_details = 11;
 
     // The raw transaction hex.
     string raw_tx_hex = 9;
@@ -993,11 +1029,11 @@ message OutPoint {
 }
 
 message LightningAddress {
-    // The identity pubkey of the Lightning node
+    // The identity pubkey of the Lightning node.
     string pubkey = 1;
 
     // The network location of the lightning node, e.g. `69.69.69.69:1337` or
-    // `localhost:10011`
+    // `localhost:10011`.
     string host = 2;
 }
 
@@ -1123,12 +1159,15 @@ message ListUnspentResponse {
 
 - `p2wkh`: Pay to witness key hash (`WITNESS_PUBKEY_HASH` = 0)
 - `np2wkh`: Pay to nested witness key hash (`NESTED_PUBKEY_HASH` = 1)
+- `p2tr`: Pay to taproot pubkey (`TAPROOT_PUBKEY` = 4)
 */
 enum AddressType {
     WITNESS_PUBKEY_HASH = 0;
     NESTED_PUBKEY_HASH = 1;
     UNUSED_WITNESS_PUBKEY_HASH = 2;
     UNUSED_NESTED_PUBKEY_HASH = 3;
+    TAPROOT_PUBKEY = 4;
+    UNUSED_TAPROOT_PUBKEY = 5;
 }
 
 message NewAddressRequest {
@@ -1183,11 +1222,15 @@ message VerifyMessageResponse {
 }
 
 message ConnectPeerRequest {
-    // Lightning address of the peer, in the format `<pubkey>@host`
+    /*
+    Lightning address of the peer to connect to.
+    */
     LightningAddress addr = 1;
 
-    /* If set, the daemon will attempt to persistently connect to the target
-     * peer. Otherwise, the call will be synchronous. */
+    /*
+    If set, the daemon will attempt to persistently connect to the target
+    peer. Otherwise, the call will be synchronous.
+    */
     bool perm = 2;
 
     /*
@@ -1791,6 +1834,11 @@ message GetInfoResponse {
     announcements and invoices.
     */
     map<uint32, Feature> features = 19;
+
+    /*
+    Indicates whether the HTLC interceptor API is in always-on mode.
+    */
+    bool require_htlc_interceptor = 21;
 }
 
 message GetRecoveryInfoRequest {
@@ -2337,14 +2385,14 @@ message PendingChannelsResponse {
 
         // A set of flags showing the current state of the channel.
         string chan_status_flags = 11;
+
+        // Whether this channel is advertised to the network or not.
+        bool private = 12;
     }
 
     message PendingOpenChannel {
         // The pending channel
         PendingChannel channel = 1;
-
-        // The height at which this channel will be confirmed
-        uint32 confirmation_height = 2;
 
         /*
         The amount calculated to be paid in fees for the current set of
@@ -2364,6 +2412,9 @@ message PendingChannelsResponse {
         transaction. This value can later be updated once the channel is open.
         */
         int64 fee_per_kw = 6;
+
+        // Previously used for confirmation_height. Do not reuse.
+        reserved 2;
     }
 
     message WaitingCloseChannel {
@@ -2671,6 +2722,12 @@ message QueryRoutesRequest {
     fallback.
     */
     repeated lnrpc.FeatureBit dest_features = 17;
+
+    /*
+    The time preference for this payment. Set to -1 to optimize for fees
+    only, to 1 to optimize for reliability only or a value inbetween for a mix.
+    */
+    double time_pref = 18;
 }
 
 message NodePair {
@@ -2765,6 +2822,9 @@ message Hop {
     to drop off at each hop within the onion.
     */
     map<uint64, bytes> custom_records = 11;
+
+    // The payment metadata to send along with the payment to the payee.
+    bytes metadata = 13;
 }
 
 message MPPRecord {
@@ -3136,6 +3196,7 @@ message Invoice {
     /*
     The hash of the preimage. When using REST, this field must be encoded as
     base64.
+    Note: Output only, don't specify for creating an invoice.
     */
     bytes r_hash = 4;
 
@@ -3156,16 +3217,23 @@ message Invoice {
     // Whether this invoice has been fulfilled
     bool settled = 6 [deprecated = true];
 
-    // When this invoice was created
+    /*
+    When this invoice was created.
+    Note: Output only, don't specify for creating an invoice.
+    */
     int64 creation_date = 7;
 
-    // When this invoice was settled
+    /*
+    When this invoice was settled.
+    Note: Output only, don't specify for creating an invoice.
+    */
     int64 settle_date = 8;
 
     /*
     A bare-bones invoice for a payment within the Lightning Network. With the
     details of the invoice, the sender has all the data necessary to send a
     payment to the recipient.
+    Note: Output only, don't specify for creating an invoice.
     */
     string payment_request = 9;
 
@@ -3200,6 +3268,7 @@ message Invoice {
     this index making it monotonically increasing. Callers to the
     SubscribeInvoices call can use this to instantly get notified of all added
     invoices with an add_index greater than this one.
+    Note: Output only, don't specify for creating an invoice.
     */
     uint64 add_index = 16;
 
@@ -3208,6 +3277,7 @@ message Invoice {
     increment this index making it monotonically increasing. Callers to the
     SubscribeInvoices call can use this to instantly get notified of all
     settled invoices with an settle_index greater than this one.
+    Note: Output only, don't specify for creating an invoice.
     */
     uint64 settle_index = 17;
 
@@ -3221,6 +3291,7 @@ message Invoice {
     was ultimately accepted. Additionally, it's possible that the sender paid
     MORE that was specified in the original invoice. So we'll record that here
     as well.
+    Note: Output only, don't specify for creating an invoice.
     */
     int64 amt_paid_sat = 19;
 
@@ -3231,6 +3302,7 @@ message Invoice {
     amount was ultimately accepted. Additionally, it's possible that the sender
     paid MORE that was specified in the original invoice. So we'll record that
     here as well.
+    Note: Output only, don't specify for creating an invoice.
     */
     int64 amt_paid_msat = 20;
 
@@ -3243,18 +3315,26 @@ message Invoice {
 
     /*
     The state the invoice is in.
+    Note: Output only, don't specify for creating an invoice.
     */
     InvoiceState state = 21;
 
-    // List of HTLCs paying to this invoice [EXPERIMENTAL].
+    /*
+    List of HTLCs paying to this invoice [EXPERIMENTAL].
+    Note: Output only, don't specify for creating an invoice.
+    */
     repeated InvoiceHTLC htlcs = 22;
 
-    // List of features advertised on the invoice.
+    /*
+    List of features advertised on the invoice.
+    Note: Output only, don't specify for creating an invoice.
+    */
     map<uint32, Feature> features = 24;
 
     /*
     Indicates if this invoice was a spontaneous payment that arrived via keysend
     [EXPERIMENTAL].
+    Note: Output only, don't specify for creating an invoice.
     */
     bool is_keysend = 25;
 
@@ -3262,6 +3342,7 @@ message Invoice {
     The payment address of this invoice. This value will be used in MPP
     payments, and also for newer invoices that always require the MPP payload
     for added end-to-end security.
+    Note: Output only, don't specify for creating an invoice.
     */
     bytes payment_addr = 26;
 
@@ -3277,6 +3358,7 @@ message Invoice {
     given set ID. This field is always populated for AMP invoices, and can be
     used along side LookupInvoice to obtain the HTLC information related to a
     given sub-invoice.
+    Note: Output only, don't specify for creating an invoice.
     */
     map<string, AMPInvoiceState> amp_invoice_state = 28;
 }
@@ -3598,6 +3680,14 @@ message ListPaymentsRequest {
     of the returned payments is always oldest first (ascending index order).
     */
     bool reversed = 4;
+
+    /*
+    If set, all payments (complete and incomplete, independent of the
+    max_payments parameter) will be counted. Note that setting this to true will
+    increase the run time of the call significantly on systems that have a lot
+    of payments, as all of them have to be iterated through to be counted.
+    */
+    bool count_total_payments = 5;
 }
 
 message ListPaymentsResponse {
@@ -3615,6 +3705,14 @@ message ListPaymentsResponse {
     as the index_offset to continue seeking forwards in the next request.
     */
     uint64 last_index_offset = 3;
+
+    /*
+    Will only be set if count_total_payments in the request was set. Represents
+    the total number of payments (complete and incomplete, independent of the
+    number of payments requested in the query) currently present in the payments
+    database.
+    */
+    uint64 total_num_payments = 4;
 }
 
 message DeletePaymentRequest {

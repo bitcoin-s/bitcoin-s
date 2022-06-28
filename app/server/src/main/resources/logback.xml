@@ -73,6 +73,12 @@
     <!-- inspect TCP details -->
     <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
 
+    <!-- See peer details -->
+    <logger name="org.bitcoins.node.PeerManager" level="INFO"/>
+
+    <!-- See node status messages  -->
+    <logger name="org.bitcoins.node.NeutrinoNode" level="INFO"/>
+
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
     <!-- ╚════════════════════╝ -->
@@ -109,5 +115,9 @@
 
     <!-- get rid of "Running CoordinatedShutdown Phase" messages -->
     <logger name="akka.actor.slf4j.CoordinatedShutdown" level="OFF"/>
+
+    <!-- get rid of akka dead letter messages -->
+    <logger name="akka.actor.RepointableActorRef" level="OFF"/>
+    <logger name="akka.actor.LocalActorRef" level="OFF"/>
 
 </configuration>

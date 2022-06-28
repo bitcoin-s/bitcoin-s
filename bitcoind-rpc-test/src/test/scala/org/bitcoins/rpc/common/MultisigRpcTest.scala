@@ -3,7 +3,8 @@ package org.bitcoins.rpc.common
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.crypto.ECPrivateKey
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.config.BitcoindInstanceLocal
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
@@ -11,8 +12,12 @@ import scala.concurrent.Future
 
 class MultisigRpcTest extends BitcoindRpcTest {
 
+  val instance: BitcoindInstanceLocal =
+    BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.V21))
+
   lazy val clientF: Future[BitcoindRpcClient] =
-    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(instanceOpt = Some(instance),
+                                                 clientAccum = clientAccum)
 
   behavior of "MultisigRpc"
 

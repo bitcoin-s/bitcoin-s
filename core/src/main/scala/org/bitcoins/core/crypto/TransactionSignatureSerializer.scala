@@ -283,7 +283,7 @@ sealed abstract class TransactionSignatureSerializer {
           }
         }
         val sequenceHash: ByteVector =
-          if (isNotAnyoneCanPay && isNotSigHashSingle) {
+          if (isNotAnyoneCanPay) {
             val sequences = spendingTransaction.inputs.map(_.sequence)
             val littleEndianSeq =
               sequences.foldLeft(ByteVector.empty)(_ ++ _.bytes.reverse)
@@ -309,10 +309,10 @@ sealed abstract class TransactionSignatureSerializer {
             inputIndex < UInt32(spendingTransaction.outputs.size)
           ) {
             val output = spendingTransaction.outputs(inputIndex.toInt)
-            val bytes = CryptoUtil
-              .sha256(RawTransactionOutputParser.write(output))
+            val hash = CryptoUtil
+              .sha256(output.bytes)
               .bytes
-            bytes
+            hash
           } else ByteVector.empty
 
         val haveAnnex: Boolean = taprootOptions.haveAnnex
@@ -343,12 +343,22 @@ sealed abstract class TransactionSignatureSerializer {
         }
         val result = {
           if (isNotAnyoneCanPay) {
-            epoch ++ ByteVector.fromByte(
-              hashType.byte) ++ version ++ locktimeBytes ++
-              outPointHash ++ amounts ++ spentSPKs ++
-              sequenceHash ++ outputHash ++
-              ByteVector.fromByte(spendType) ++
-              inputIndexBytes ++ annexBytes ++ tapScriptBytes
+            if (!isNotSigHashSingle) {
+              epoch ++ ByteVector.fromByte(
+                hashType.byte) ++ version ++ locktimeBytes ++
+                outPointHash ++ amounts ++ spentSPKs ++
+                sequenceHash ++ ByteVector.fromByte(
+                  spendType) ++ inputIndexBytes ++ outputHash ++
+                annexBytes ++ tapScriptBytes
+            } else {
+              epoch ++ ByteVector.fromByte(
+                hashType.byte) ++ version ++ locktimeBytes ++
+                outPointHash ++ amounts ++ spentSPKs ++
+                sequenceHash ++ outputHash ++
+                ByteVector.fromByte(spendType) ++
+                inputIndexBytes ++ annexBytes ++ tapScriptBytes
+            }
+
           } else {
             //different ordering if we use SIGHASH_ANYONECANPAY
             epoch ++ ByteVector.fromByte(
