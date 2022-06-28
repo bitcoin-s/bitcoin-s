@@ -56,13 +56,7 @@ cd wallet-electron-ts && npm run start"
 ```
 ###Instill desktop application (Optional)
 
-If you would like to use the desktop application then run
-
-```
-npm run make 
-```
-Then, search for the Suredbits Wallet application in finder, windows explorer, ect ... 
-and double click on the icon and complete the installation 
+If you would like to use the desktop application then, search for the Suredbits Wallet application in finder, windows explorer, ect ... double click on the icon and complete the installation 
 
 Once you open the Suredbits Wallet application you should see the following screen
  
