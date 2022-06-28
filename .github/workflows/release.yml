@@ -11,31 +11,31 @@ env:
   pkg-name: 'bitcoin-s'
 
 jobs:
-  # publish:
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 60
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #       with:
-  #         fetch-depth: 0
-  #     - uses: olafurpg/setup-scala@v13
-  #       with:
-  #         java-version: openjdk@1.17.0
-  #     - uses: olafurpg/setup-gpg@v3
-  #     - run: sbt -J-Xmx2g ci-release docs/publishWebsite
-  #       env:
-  #         PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-  #         PGP_SECRET: ${{ secrets.PGP_SECRET }}
-  #         SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-  #         SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-  #         GITHUB_DEPLOY_KEY: ${{ secrets.GITHUB_TOKEN }}
-  #         GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: olafurpg/setup-scala@v13
+        with:
+          java-version: openjdk@1.17.0
+      - uses: olafurpg/setup-gpg@v3
+      - run: sbt -J-Xmx2g ci-release docs/publishWebsite
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          GITHUB_DEPLOY_KEY: ${{ secrets.GITHUB_TOKEN }}
+          GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
   # Built bitcoin-s cli, appServer, oracleServer zips
   package-zips:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest] # , ubuntu-latest, windows-latest
+        os: [macos-latest, ubuntu-latest, windows-latest] # 
         # If os values you don't include the matrix os list above are set here, they will be included
         # If you want multiple variables per os see https://github.community/t/create-matrix-with-multiple-os-and-env-for-each-one/16895
         # Can run conditional steps below with https://github.community/t/what-is-the-correct-if-condition-syntax-for-checking-matrix-os-version/16221
@@ -43,11 +43,11 @@ jobs:
         include:
         - os: macos-latest
           TARGET: mac
-        # - os: ubuntu-latest
-        #   TARGET: linux
-        # - os: windows-latest
-        # # TODO : Do we want to use 'win' or 'windows'?
-        #   TARGET: windows
+        - os: ubuntu-latest
+          TARGET: linux
+        - os: windows-latest
+        # TODO : Do we want to use 'win' or 'windows'?
+          TARGET: windows
     steps:
       - uses: actions/checkout@v3
         with:
@@ -130,19 +130,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest] # [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest] # [macos-latest, ubuntu-latest, windows-latest]
         # If os values you don't include the matrix os list above are set here, they will be included
         # This is here to get friendly labels for output filenames
         include:
         - os: macos-latest
           TARGET: mac
           FORMAT: zip # dmg
-        # - os: ubuntu-latest
-        #   TARGET: linux
-        #   FORMAT: deb
-        # - os: windows-latest
-        #   TARGET: windows
-        #   FORMAT: zip # ???
+        - os: ubuntu-latest
+          TARGET: linux
+          FORMAT: deb
+        - os: windows-latest
+          TARGET: windows
+          FORMAT: zip # ???
     # Build output paths
     env:
       KB_OUT: "bitcoin-s-ts/oracle-electron-ts/out"
