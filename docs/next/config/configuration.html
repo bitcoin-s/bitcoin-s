@@ -185,7 +185,26 @@ to ensure the entire module is initialized correctly.</p>
         <span class="hljs-comment"># 18333 for testnet and 18444 for regtest.</span>
         <span class="hljs-comment"># by default we provide a testnet peer to connect to</span>
         <span class="hljs-attr">peers</span> = [<span class="hljs-string">"neutrino.testnet3.suredbits.com:18333"</span>] 
-
+        
+        <span class="hljs-comment"># use the defauls suredbits neutrino node as a peer</span>
+        <span class="hljs-attr">use-default-peers</span> = <span class="hljs-literal">true</span>
+        
+        <span class="hljs-comment"># try to connect to peers from dns seeds, database, addr messages etc</span>
+        <span class="hljs-attr">enable-peer-discovery</span> = <span class="hljs-literal">false</span>
+        
+        <span class="hljs-comment"># number of persistent peer connections to maintain for node use</span>
+        <span class="hljs-attr">maxConnectedPeers</span> = <span class="hljs-number">1</span>
+        
+        <span class="hljs-comment"># peers discovery configs, ideally you would not want to change this</span>
+        <span class="hljs-comment"># timeout for tcp connection</span>
+        <span class="hljs-attr">connection-timeout</span> = <span class="hljs-number">5</span>s
+        <span class="hljs-comment"># initialization timeout once connected, reconnections resets this</span>
+        <span class="hljs-attr">initialization-timeout</span> = <span class="hljs-number">10</span>s
+        <span class="hljs-comment"># time interval for trying next set of peers in peer discovery</span>
+        <span class="hljs-attr">try-peers-interval</span> = <span class="hljs-number">12</span>s
+        
+        <span class="hljs-comment"># wait time for queries like getheaders etc before switching to another</span>
+        <span class="hljs-attr">query-wait-time</span> = <span class="hljs-number">15</span>s
         
         <span class="hljs-attr">hikari-logging</span> = <span class="hljs-literal">true</span>
         <span class="hljs-attr">hikari-logging-interval</span> = <span class="hljs-number">10</span> minute
