@@ -40,8 +40,12 @@ case class MuSigNoncePriv(privNonces: Vector[ECPrivateKey])
 object MuSigNoncePriv extends Factory[MuSigNoncePriv] {
 
   override def fromBytes(bytes: ByteVector): MuSigNoncePriv = {
-    val privs =
-      CryptoBytesUtil.splitEvery(bytes, 32).map(ECPrivateKey.fromBytes)
+    val privs = bytes.toArray
+      .grouped(32)
+      .toVector
+      .map(ByteVector(_))
+      .map(ECPrivateKey.fromBytes)
+
     MuSigNoncePriv(privs)
   }
 

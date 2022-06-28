@@ -99,18 +99,6 @@ trait CryptoBytesUtil {
   final def toByteVector[T <: NetworkElement](h: Seq[T]): ByteVector = {
     ByteVector.concat(h.map(_.bytes))
   }
-
-  def splitEvery(bytes: ByteVector, intervalLen: Int): Vector[ByteVector] = {
-    require(bytes.length % intervalLen == 0)
-    0.until(bytes.length.toInt / intervalLen)
-      .toVector
-      .foldLeft((Vector.empty[ByteVector], bytes)) {
-        case ((chuncksSoFar, remainingBytes), _) =>
-          (chuncksSoFar.:+(remainingBytes.take(intervalLen)),
-           remainingBytes.drop(intervalLen))
-      }
-      ._1
-  }
 }
 
 object CryptoBytesUtil extends CryptoBytesUtil

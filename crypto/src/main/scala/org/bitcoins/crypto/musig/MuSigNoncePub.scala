@@ -39,14 +39,18 @@ case class MuSigNoncePub(pubNonces: Vector[SecpPoint]) extends NetworkElement {
 object MuSigNoncePub extends Factory[MuSigNoncePub] {
 
   /** In the BIP, the point at infinity is serialized as 33 0x00 bytes */
-  val infPtBytes: ByteVector = ByteVector.fill(33)(0)
+  val infPtBytes: ByteVector = ByteVector.low(33)
 
   override def fromBytes(bytes: ByteVector): MuSigNoncePub = {
     val pubs =
-      CryptoBytesUtil.splitEvery(bytes, 33).map { b =>
-        if (b == infPtBytes) SecpPointInfinity
-        else ECPublicKey.fromBytes(b).toPoint
-      }
+      bytes.toArray
+        .grouped(33)
+        .toVector
+        .map(ByteVector(_))
+        .map { b =>
+          if (b == infPtBytes) SecpPointInfinity
+          else ECPublicKey.fromBytes(b).toPoint
+        }
 
     MuSigNoncePub(pubs)
   }
