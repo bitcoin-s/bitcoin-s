@@ -228,8 +228,8 @@ jobs:
           codesign -dvv "$KRYSTALBULL_PATH"
           codesign -d --entitlements :- "$KRYSTALBULL_PATH"
           echo "=== zip app ==="
-          cd $KB_MAKE
           zip -qr $ZIP_NAME "$KRYSTALBULL_PATH"
+          mv $ZIP_NAME $KB_MAKE
         # mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $ZIP_NAME
         # echo "=== Notarizing app ==="
         # : # Store xcrun creditials
@@ -347,6 +347,7 @@ jobs:
       #     codesign -d --entitlements :- "$WALLET_PATH"
       #     echo "=== zip app ==="
       #     zip -qr $ZIP_NAME "$WALLET_PATH"
+      #     mv $ZIP_NAME $W_MAKE
       # - name: (macos) Validate application signing and notarization
       #   if: startsWith(matrix.os,'macos')
       #   env:
