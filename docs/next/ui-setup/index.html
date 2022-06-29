@@ -76,40 +76,23 @@ the synchronization finishes, the funds may not show up right away. This is expe
 <p><a href="https://youtu.be/oR0I0aHxNMM?t=219">https://youtu.be/oR0I0aHxNMM?t=219</a></p>
 <h1><a class="anchor" aria-hidden="true" id="advanced-setup"></a><a href="#advanced-setup" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Advanced setup</h1>
 <p>This requires command line skills.</p>
-<h3><a class="anchor" aria-hidden="true" id="starting-the-backend"></a><a href="#starting-the-backend" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Starting the backend</h3>
-<p>From the image above, download the <code>bitcoin-s-server</code> artifact.</p>
-<p><img src="/img/installers.png" alt="Example banner"></p>
-<p>After unzipping, you will need to run <code>chmod +x ./bin/bitcoin-s-server</code> from the terminal make the file executable.</p>
-<p>After making the file executable, you can start the server with</p>
-<pre><code class="hljs">unzip bitcoin<span class="hljs-_">-s</span>-server.zip
-<span class="hljs-built_in">cd</span> bitcoin<span class="hljs-_">-s</span>-server
-chmod +x ./bin/bitcoin<span class="hljs-_">-s</span>-server
-./bin/bitcoin<span class="hljs-_">-s</span>-server
-</code></pre>
-<p>This starts the backend and will begin synchronizing with the bitcoin network.</p>
-<h3><a class="anchor" aria-hidden="true" id="building-and-starting-the-frontend"></a><a href="#building-and-starting-the-frontend" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Building and starting the frontend</h3>
-<p>Here are the instructions to build, you can paste this into your terminal</p>
+<p>First, clone the bitcoin-s-ts repository by running</p>
 <pre><code class="hljs">git <span class="hljs-built_in">clone</span> https://github.com/bitcoin<span class="hljs-_">-s</span>/bitcoin<span class="hljs-_">-s</span>-ts.git
-<span class="hljs-built_in">cd</span> bitcoin<span class="hljs-_">-s</span>-ts &amp;&amp; npm i &amp;&amp; run build
-<span class="hljs-built_in">cd</span> wallet-server-ui &amp;&amp; npm i &amp;&amp; npm run build
-<span class="hljs-built_in">cd</span> ../wallet-server-ui-proxy &amp;&amp; npm i &amp;&amp; npm run startlocal
 </code></pre>
-<p>The last command, <code>npm run startlocal</code> should result in server starting with logs that look like this</p>
-<pre><code class="hljs">&gt; wallet-server-ui-proxy@<span class="hljs-number">1.9</span><span class="hljs-number">.0</span> startlocal
-&gt; DEFAULT_UI_PASSWORD=none BITCOIN_S_SERVER_RPC_PASSWORD=password npx ts-node server.ts
+<h3><a class="anchor" aria-hidden="true" id="setup"></a><a href="#setup" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Setup</h3>
+<p>(If on a M1 Mac, go to the Generate M1 Mac server section below before continuing)</p>
+<p>You must have npm, if you don't then run <code>brew install node</code>
+Next, navigate to the <code>bitcoin-s-ts</code> directory and in it run</p>
+<pre><code class="hljs">./<span class="hljs-keyword">build-wallet-electron.sh
+</span></code></pre>
+<p>This will download the <code>bitcoin-s-server.zip</code> file and set up Suredbits Wallets dependencies.</p>
+<p>Now, if you wish to run the Suredbits Wallet application in dev mode then run</p>
+<pre><code class="hljs"><span class="hljs-keyword">cd</span> wallet-electron-<span class="hljs-keyword">ts</span> &amp;&amp; npm run start<span class="hljs-comment">"</span>
 
-...
-
-ConfigureServerURL() <span class="hljs-string">http:</span><span class="hljs-comment">//localhost:9999/</span>
-ConfigureAuthorizationHeader() Basic Yml0Y29pbnM6cGFzc3dvcmQ=
-[HPM] Proxy <span class="hljs-string">created:</span> <span class="hljs-regexp">/  -&gt; http:/</span><span class="hljs-regexp">/localhost:9999/</span>
-[HPM] Proxy rewrite rule <span class="hljs-string">created:</span> <span class="hljs-string">"^/api/v0"</span> ~&gt; <span class="hljs-string">""</span>
-[HPM] Proxy <span class="hljs-string">created:</span> <span class="hljs-regexp">/  -&gt; ws:/</span><span class="hljs-regexp">/localhost:19999/</span>events
-[HPM] Proxy rewrite rule <span class="hljs-string">created:</span> <span class="hljs-string">"^/websocket"</span> ~&gt; <span class="hljs-string">""</span>
-<span class="hljs-number">2022</span><span class="hljs-number">-03</span><span class="hljs-number">-11</span><span class="hljs-string">T17:</span><span class="hljs-number">05</span>:<span class="hljs-number">19.238</span>Z <span class="hljs-string">info:</span> starting HTTP server
-<span class="hljs-number">2022</span><span class="hljs-number">-03</span><span class="hljs-number">-11</span><span class="hljs-string">T17:</span><span class="hljs-number">05</span>:<span class="hljs-number">19.242</span>Z <span class="hljs-string">info:</span> Web Server started on <span class="hljs-string">port:</span> <span class="hljs-number">3002</span> ⚡
 </code></pre>
-<p>Now if you navigate to your web browser, you should see a page like this at <code>http://localhost:3002</code></p>
+<p>###Instill desktop application (Optional)</p>
+<p>If you would like to use the desktop application then, search for the Suredbits Wallet application in finder, windows explorer, ect ... double click on the icon and complete the installation</p>
+<p>Once you open the Suredbits Wallet application you should see the following screen</p>
 <p><img src="/img/Screenshot%20from%202022-03-11%2011-20-17.png" alt="Alt text"></p>
 <p>The password is <code>none</code>, enter that and you should see the wallet!</p>
 <p><img src="/img/Screenshot%20from%202022-03-11%2011-21-47.png" alt="Alt text"></p>
@@ -117,6 +100,19 @@ ConfigureAuthorizationHeader() Basic Yml0Y29pbnM6cGFzc3dvcmQ=
 <p>The wallet will take roughly 20-30 minutes to synchronize with the bitcoin network. If you deposit funds before
 the synchronization finishes, the funds may not show up right away. This is expected. They will show up when the sync is done.</p>
 <p>After the synchronization is done, you should be good to do a DLC! :tada:</p>
+<h3><a class="anchor" aria-hidden="true" id="generate-m1-mac-server"></a><a href="#generate-m1-mac-server" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Generate M1 Mac server</h3>
+<p>If you are on an M1 Mac, we currently do not offer a <code>bitcoin-s-sever.zip</code> file on the website, so the setup requires a few more steps</p>
+<p>First, you will need a bitcoin-s node on your machine. If you don't already have one, follow the  instructions here <a href="https://bitcoin-s.org/docs/getting-setup">https://bitcoin-s.org/docs/getting-setup</a></p>
+<p>Next, to generate your the <code>bitcoin-s-server.zip</code> file, go into your bitcoin-s directory and run</p>
+<pre><code class="hljs">sbt appServer/<span class="hljs-string">universal:</span>packageBin
+</code></pre>
+<p>Then navigate to the bitcoin-s sub-directory containing the .zip file by running</p>
+<pre><code class="hljs"><span class="hljs-keyword">cd</span> <span class="hljs-keyword">app</span>/server/target/universal
+</code></pre>
+<p>Now we will copy this file over to <code>bitcoin-s-ts/wallet-electron-ts</code> by running</p>
+<pre><code class="hljs"><span class="hljs-keyword">cp</span> &lt;the zip <span class="hljs-keyword">file</span>&gt; ~/bitcoin-s-<span class="hljs-keyword">ts</span>/walllet-electron-<span class="hljs-keyword">ts</span>
+</code></pre>
+<p>You now can return to the Setup section</p>
 </span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/getting-setup"><span class="arrow-prev">← </span><span>Getting Bitcoin-S installed on your machine</span></a><a class="docs-next button" href="/docs/next/applications/cli"><span>CLI</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/zt-eavycu0x-WQL7XOakzQo8tAy7jHHZUw" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2022 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
