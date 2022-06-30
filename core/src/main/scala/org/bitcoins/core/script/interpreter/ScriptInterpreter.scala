@@ -761,7 +761,11 @@ sealed abstract class ScriptInterpreter {
   private def executeProgram(
       program: PreExecutionScriptProgram): ExecutedScriptProgram = {
     val scriptByteVector = BytesUtil.toByteVector(program.script)
-    if (scriptByteVector.length > 10000) {
+    val sigVersion = program.txSignatureComponent.sigVersion
+    val isTaprootSigVersion =
+      sigVersion == SigVersionTapscript || sigVersion == SigVersionTaprootKeySpend
+
+    if (scriptByteVector.length > 10000 && !isTaprootSigVersion) {
       program.failExecution(ScriptErrorScriptSize)
     } else {
       loop(program.toExecutionInProgress, 0)
@@ -806,7 +810,7 @@ sealed abstract class ScriptInterpreter {
       sigVersion == SigVersionTapscript || sigVersion == SigVersionTaprootKeySpend
     if (opCount > MAX_SCRIPT_OPS && !isTaprootSigVersion) {
       completeProgramExecution(program.failExecution(ScriptErrorOpCount))
-    } else if (scriptByteVector.length > 10000) {
+    } else if (scriptByteVector.length > 10000 && !isTaprootSigVersion) {
       completeProgramExecution(program.failExecution(ScriptErrorScriptSize))
     } else {
       val (nextProgram, nextOpCount) = program.script match {
