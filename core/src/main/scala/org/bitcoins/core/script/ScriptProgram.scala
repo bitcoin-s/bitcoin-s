@@ -75,7 +75,7 @@ case class PreExecutionScriptProgram(
       altStack = altStack,
       flags = flags,
       lastCodeSeparator = None,
-      codeSeparatorIdx = None,
+      codeSeparatorTapscriptIdx = None,
       conditionalCounter = ConditionalCounter.empty
     )
   }
@@ -222,7 +222,7 @@ case class ExecutionInProgressScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
-    codeSeparatorIdx: Option[Int],
+    codeSeparatorTapscriptIdx: Option[Int],
     conditionalCounter: ConditionalCounter)
     extends StartedScriptProgram {
 
@@ -241,7 +241,7 @@ case class ExecutionInProgressScriptProgram(
       altStack,
       flags,
       lastCodeSeparator,
-      codeSeparatorIdx,
+      codeSeparatorTapscriptIdx,
       errorOpt
     )
   }
@@ -339,8 +339,9 @@ case class ExecutionInProgressScriptProgram(
     this.copy(lastCodeSeparator = Some(newLastCodeSeparator))
   }
 
-  def updateCodeSeparatorIdx(newIdx: Int): ExecutionInProgressScriptProgram = {
-    this.copy(codeSeparatorIdx = Some(newIdx))
+  def updateTapscriptCodeSeparatorIdx(
+      newIdx: Int): ExecutionInProgressScriptProgram = {
+    this.copy(codeSeparatorTapscriptIdx = Some(newIdx))
   }
 }
 
@@ -359,7 +360,7 @@ case class ExecutedScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
-    codeSeparatorIdx: Option[Int],
+    codeSeparatorTapscriptIdx: Option[Int],
     error: Option[ScriptError])
     extends StartedScriptProgram {
 

@@ -138,7 +138,7 @@ sealed abstract class CryptoInterpreter {
     program
       .updateScript(program.script.tail)
       .updateLastCodeSeparator(indexOfOpCodeSeparator)
-      .updateCodeSeparatorIdx(indexOfOpCodeSeparator - constants)
+      .updateTapscriptCodeSeparatorIdx(indexOfOpCodeSeparator - constants)
   }
 
   /** Compares the first signature against each public key until it finds an ECDSA match.
