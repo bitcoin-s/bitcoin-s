@@ -43,7 +43,7 @@ case class ChannelBalances(
 ) extends LndModel
 
 case class OutputDetails(
-    address: BitcoinAddress,
+    addressOpt: Option[BitcoinAddress],
     spk: ScriptPubKey,
     outputIndex: Long,
     amount: CurrencyUnit,

@@ -72,7 +72,7 @@ trait LndUtils {
   implicit def lndOutputDetailToOutputDetails(
       detail: lnrpc.OutputDetail): OutputDetails = {
     OutputDetails(
-      address = BitcoinAddress.fromString(detail.address),
+      addressOpt = BitcoinAddress.fromStringOpt(detail.address),
       spk = ScriptPubKey.fromAsmHex(detail.pkScript),
       outputIndex = detail.outputIndex,
       amount = Satoshis(detail.amount),
