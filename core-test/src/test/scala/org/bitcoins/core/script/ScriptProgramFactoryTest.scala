@@ -73,6 +73,7 @@ class ScriptProgramFactoryTest extends BitcoinSUnitTest {
         altStack = Nil,
         flags = Nil,
         lastCodeSeparator = None,
+        codeSeparatorIdx = None,
         conditionalCounter = ConditionalCounter.empty
       )
     inProgress.stack must be(stack)

@@ -75,6 +75,7 @@ case class PreExecutionScriptProgram(
       altStack = altStack,
       flags = flags,
       lastCodeSeparator = None,
+      codeSeparatorIdx = None,
       conditionalCounter = ConditionalCounter.empty
     )
   }
@@ -221,8 +222,15 @@ case class ExecutionInProgressScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
+    codeSeparatorIdx: Option[Int],
     conditionalCounter: ConditionalCounter)
     extends StartedScriptProgram {
+
+  def taprootSerializationOptions: TaprootSerializationOptions = {
+    TaprootSerializationOptions(tapLeafHashOpt,
+                                getAnnexHashOpt,
+                                codeSeparatorIdx.map(UInt32(_)))
+  }
 
   def toExecutedProgram: ExecutedScriptProgram = {
     val errorOpt = if (conditionalCounter.totalDepth > 0) {
@@ -239,6 +247,7 @@ case class ExecutionInProgressScriptProgram(
       altStack,
       flags,
       lastCodeSeparator,
+      codeSeparatorIdx,
       errorOpt
     )
   }
@@ -335,6 +344,10 @@ case class ExecutionInProgressScriptProgram(
       newLastCodeSeparator: Int): ExecutionInProgressScriptProgram = {
     this.copy(lastCodeSeparator = Some(newLastCodeSeparator))
   }
+
+  def updateCodeSeparatorIdx(newIdx: Int): ExecutionInProgressScriptProgram = {
+    this.copy(codeSeparatorIdx = Some(newIdx))
+  }
 }
 
 /** Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has been
@@ -352,8 +365,15 @@ case class ExecutedScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
+    codeSeparatorIdx: Option[Int],
     error: Option[ScriptError])
     extends StartedScriptProgram {
+
+  def taprootSerializationOptions: TaprootSerializationOptions = {
+    TaprootSerializationOptions(tapLeafHashOpt,
+                                getAnnexHashOpt,
+                                codeSeparatorIdx.map(UInt32(_)))
+  }
 
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {
     this.copy(error = Some(error))
