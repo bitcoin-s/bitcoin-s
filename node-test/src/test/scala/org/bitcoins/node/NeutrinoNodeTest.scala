@@ -9,7 +9,7 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeTestWithCachedBitcoindPair}
-import org.bitcoins.testkit.util.TorUtil
+import org.bitcoins.testkit.util.{AkkaUtil, TorUtil}
 import org.scalatest.{Assertion, FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -30,15 +30,47 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
     val outcomeF: Future[Outcome] = for {
       _ <- torClientF
       bitcoinds <- clientsF
-      outcome = withNeutrinoNodeConnectedToBitcoinds(test, bitcoinds.toVector)(
-        system,
-        getFreshConfig)
+      outcome = withUnsyncedNeutrinoNodeConnectedToBitcoinds(
+        test,
+        bitcoinds.toVector)(system, getFreshConfig)
       f <- outcome.toFuture
     } yield f
     new FutureOutcome(outcomeF)
   }
 
   behavior of "NeutrinoNode"
+
+  it must "be able to sync" in { nodeConnectedWithBitcoinds =>
+    val node = nodeConnectedWithBitcoinds.node
+    val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
+    val peerManager = node.peerManager
+    def peers = peerManager.peers
+
+    val connAndInit = for {
+      _ <- AsyncUtil
+        .retryUntilSatisfied(peers.size == 2, interval = 1.second, maxTries = 5)
+      _ <- Future
+        .sequence(peers.map(peerManager.isConnected))
+        .flatMap(p => assert(p.forall(_ == true)))
+      res <- Future
+        .sequence(peers.map(peerManager.isConnected))
+        .flatMap(p => assert(p.forall(_ == true)))
+    } yield res
+
+    val remotesInSync: Future[Assertion] = for {
+      h1 <- bitcoinds(0).getBestBlockHash
+      h2 <- bitcoinds(1).getBestBlockHash
+    } yield assert(h1 == h2)
+
+    for {
+      _ <- connAndInit
+      _ <- remotesInSync
+      _ <- node.sync()
+      _ <- NodeTestUtil.awaitAllSync(node, bitcoinds.head)
+    } yield {
+      succeed
+    }
+  }
 
   it must "be able to connect, initialize and then disconnect from all peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
@@ -150,6 +182,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
           .retryUntilSatisfied(peers.size == 2,
                                interval = 1.second,
                                maxTries = 5)
+        _ <- node.sync()
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
         _ <- Future
           .sequence(peers.map(peerManager.isConnected))
           .flatMap(p => assert(p.forall(_ == true)))
@@ -179,11 +213,18 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
 
+      val sync = for {
+        _ <- node.sync()
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
+      } yield ()
+
       //we need to generate 1 block for bitcoind to consider
       //itself out of IBD. bitcoind will not sendheaders
       //when it believes itself, or it's peer is in IBD
-      val gen1F =
-        bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
+      val gen1F = for {
+        _ <- sync
+        x <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
+      } yield x
 
       //this needs to be called to get our peer to send us headers
       //as they happen with the 'sendheaders' message
@@ -219,6 +260,59 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         } yield {
           assert(mtp1 == mtp2)
         }
+      }
+  }
+
+  it must "switch to different peer and sync if current is unavailable" in {
+    nodeConnectedWithBitcoinds =>
+      val node = nodeConnectedWithBitcoinds.node
+      val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
+      val peerManager = node.peerManager
+
+      def peers = peerManager.peers
+
+      val bitcoindPeersF =
+        Future.sequence(bitcoinds.map(NodeTestUtil.getBitcoindPeer))
+
+      def connAndInit: Future[Assertion] = for {
+        _ <- AsyncUtil
+          .retryUntilSatisfied(peers.size == 2,
+                               interval = 1.second,
+                               maxTries = 5)
+        _ <- Future
+          .sequence(peers.map(peerManager.isConnected))
+          .flatMap(p => assert(p.forall(_ == true)))
+        res <- Future
+          .sequence(peers.map(peerManager.isConnected))
+          .flatMap(p => assert(p.forall(_ == true)))
+      } yield res
+
+      val remotesInSync: Future[Assertion] = for {
+        h1 <- bitcoinds(0).getBestBlockHash
+        h2 <- bitcoinds(1).getBestBlockHash
+      } yield assert(h1 == h2)
+
+      for {
+        bitcoindPeers <- bitcoindPeersF
+        _ <- remotesInSync
+        zipped = bitcoinds.zip(bitcoindPeers)
+        _ <- connAndInit
+        _ <- node.sync()
+        sync1 = zipped.find(_._2 == node.getDataMessageHandler.syncPeer.get).get
+        h1 <- sync1._1.getBestHashBlockHeight()
+        _ <- sync1._1.stop()
+        // generating new blocks from the other bitcoind instance
+        other = bitcoinds.filterNot(_ == sync1._1).head
+        _ <- other.getNewAddress.flatMap(other.generateToAddress(10, _))
+        _ <- node.sync()
+        _ <- AkkaUtil.nonBlockingSleep(3.seconds)
+        sync2 = zipped.find(_._2 == node.getDataMessageHandler.syncPeer.get).get
+        _ <- NodeTestUtil.awaitSync(node, sync2._1)
+        h2 <- sync2._1.getBestHashBlockHeight()
+        //these are shared fixtures so, starting it again
+        _ <- sync1._1.start()
+      } yield {
+        assert(sync1._2 != sync2._2 && h2 - h1 == 10)
       }
   }
 }
