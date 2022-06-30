@@ -1347,7 +1347,7 @@ case class TaprootScriptPubKey(override val asm: Vector[ScriptToken])
   require(
     witnessVersion == WitnessVersion1,
     s"Taproot scriptpubkeys must have witnessVersion OP_1, got=$witnessVersion")
-  require(bytes.length == 34,
+  require(bytes.length == 35,
           s"Taproot spks must have length 34, got=${bytes.length}")
   override def witnessProgram: Seq[ScriptToken] = asm.tail.tail
   override val scriptType: ScriptType = ScriptType.WITNESS_V1_TAPROOT

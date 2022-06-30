@@ -358,7 +358,6 @@ sealed abstract class ScriptInterpreter {
       case w: WitnessTxSigComponent =>
         val scriptSig =
           scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
-        val witnessVersion = witnessScriptPubKey.witnessVersion
         val witness = w.witness
         //scriptsig must be empty if we have raw p2wsh
         //if script pubkey is a P2SHScriptPubKey then we have P2SH(P2WSH)
