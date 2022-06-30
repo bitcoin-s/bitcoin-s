@@ -175,14 +175,7 @@ sealed trait StartedScriptProgram extends ScriptProgram {
   /** The index of the last code separator WITH push operations in the original script */
   def lastCodeSeparator: Option[Int]
 
-  def taprootSerializationOptions: TaprootSerializationOptions = {
-    val empty = TaprootSerializationOptions.empty
-    val annex = empty.copy(annexHashOpt = getAnnexHashOpt)
-
-    val lastCodeSeparatorU32 = calculateRealCodeSepIdx.map(UInt32(_))
-    annex.copy(tapLeafHashOpt = tapLeafHashOpt,
-               codeSeparatorPosOpt = lastCodeSeparatorU32)
-  }
+  def taprootSerializationOptions: TaprootSerializationOptions
 
   /** Needs to translate [[OP_CODESEPARATOR]] idx WITH push ops
     * to [[OP_CODESEPARATOR]] index without push ops
@@ -428,6 +421,12 @@ case class ExecutionInProgressScriptProgram(
       newIdx: Int): ExecutionInProgressScriptProgram = {
     this.copy(codeSeparatorTapscriptIdx = Some(newIdx))
   }
+
+  def taprootSerializationOptions: TaprootSerializationOptions = {
+    TaprootSerializationOptions(tapLeafHashOpt,
+                                getAnnexHashOpt,
+                                codeSeparatorTapscriptIdx.map(UInt32(_)))
+  }
 }
 
 /** Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has been
@@ -448,6 +447,12 @@ case class ExecutedScriptProgram(
     codeSeparatorTapscriptIdx: Option[Int],
     error: Option[ScriptError])
     extends StartedScriptProgram {
+
+  def taprootSerializationOptions: TaprootSerializationOptions = {
+    TaprootSerializationOptions(tapLeafHashOpt,
+                                getAnnexHashOpt,
+                                codeSeparatorTapscriptIdx.map(UInt32(_)))
+  }
 
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {
     this.copy(error = Some(error))

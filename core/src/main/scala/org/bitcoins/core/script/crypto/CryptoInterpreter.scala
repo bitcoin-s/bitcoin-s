@@ -307,7 +307,6 @@ sealed abstract class CryptoInterpreter {
     val indexOfOpCodeSeparator =
       program.originalScript.size - program.script.size
 
-
     program
       .updateScript(program.script.tail)
       .updateLastCodeSeparator(indexOfOpCodeSeparator)
