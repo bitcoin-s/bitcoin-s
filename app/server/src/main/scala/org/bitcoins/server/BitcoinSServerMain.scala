@@ -141,6 +141,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       wallet = new WalletHolder()
       walletNameOpt <- getWalletName()
       (walletConfig, dlcConfig) <- updateWalletConfigs(walletNameOpt, None)
+        .recover { case _: Throwable => (conf.walletConf, conf.dlcConf) }
       dlcWallet <- dlcConfig.createDLCWallet(node, chainApi, feeProvider)(
         walletConfig,
         ec)
@@ -294,6 +295,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       for {
         walletNameOpt <- getWalletName()
         (walletConfig, dlcConfig) <- updateWalletConfigs(walletNameOpt, None)
+          .recover { case _: Throwable => (conf.walletConf, conf.dlcConf) }
 
         dlcWallet <- dlcConfig.createDLCWallet(
           nodeApi = nodeApi,
@@ -640,7 +642,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       kmConfig <- kmConfigF
       _ = if (!kmConfig.seedExists())
         throw new RuntimeException(
-          s"Wallet ${walletNameOpt.getOrElse("")} does not exist")
+          s"Wallet `${walletNameOpt.getOrElse("")}` does not exist")
 
       // First thing start the key manager to be able to fail fast if the password is invalid
       _ <- kmConfig.start()
@@ -648,7 +650,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       walletConfig = conf.walletConf.copy(kmConfOpt = Some(kmConfig))
       dlcConfig = conf.dlcConf.copy(walletConfigOpt = Some(walletConfig))
     } yield (walletConfig, dlcConfig))
-      .recover { case _: Throwable => (conf.walletConf, conf.dlcConf) }
   }
 
   private def loadWallet(walletHolder: WalletHolder)(
