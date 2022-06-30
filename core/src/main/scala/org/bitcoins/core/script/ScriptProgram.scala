@@ -75,6 +75,7 @@ case class PreExecutionScriptProgram(
       altStack = altStack,
       flags = flags,
       lastCodeSeparator = None,
+      codeSeparatorTapscriptIdx = None,
       conditionalCounter = ConditionalCounter.empty
     )
   }
@@ -221,6 +222,7 @@ case class ExecutionInProgressScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
+    codeSeparatorTapscriptIdx: Option[Int],
     conditionalCounter: ConditionalCounter)
     extends StartedScriptProgram {
 
@@ -239,6 +241,7 @@ case class ExecutionInProgressScriptProgram(
       altStack,
       flags,
       lastCodeSeparator,
+      codeSeparatorTapscriptIdx,
       errorOpt
     )
   }
@@ -335,6 +338,11 @@ case class ExecutionInProgressScriptProgram(
       newLastCodeSeparator: Int): ExecutionInProgressScriptProgram = {
     this.copy(lastCodeSeparator = Some(newLastCodeSeparator))
   }
+
+  def updateTapscriptCodeSeparatorIdx(
+      newIdx: Int): ExecutionInProgressScriptProgram = {
+    this.copy(codeSeparatorTapscriptIdx = Some(newIdx))
+  }
 }
 
 /** Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has been
@@ -352,6 +360,7 @@ case class ExecutedScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
+    codeSeparatorTapscriptIdx: Option[Int],
     error: Option[ScriptError])
     extends StartedScriptProgram {
 
