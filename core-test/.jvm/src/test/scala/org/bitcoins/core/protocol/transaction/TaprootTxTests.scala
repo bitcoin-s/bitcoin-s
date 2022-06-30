@@ -52,9 +52,12 @@ class TaprootTxTests extends BitcoinSUnitTest {
   }
 
   it must "run the success test cases through the script interpreter" in {
+    var counter = 0
     testCases.foreach { testCase =>
       logger.debug(
-        s"=================testCase.comment=${testCase.comment}=================")
+        s"=================testCase.comment=${testCase.comment}================= counter=$counter")
+      logger.debug(s"wtx=${testCase.successTxSigComponent.transaction.hex}")
+      counter += 1
       logger.debug(s"txSigComponent=${testCase.successTxSigComponent}")
       logger.debug(
         s"scriptSig=${testCase.successTxSigComponent.scriptSignature}")

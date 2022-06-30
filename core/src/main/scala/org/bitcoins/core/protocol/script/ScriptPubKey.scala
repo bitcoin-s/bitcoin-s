@@ -1344,10 +1344,19 @@ object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
 
 case class TaprootScriptPubKey(override val asm: Vector[ScriptToken])
     extends WitnessScriptPubKey {
+  require(
+    witnessVersion == WitnessVersion1,
+    s"Taproot scriptpubkeys must have witnessVersion OP_1, got=$witnessVersion")
+  require(bytes.length == 34,
+          s"Taproot spks must have length 34, got=${bytes.length}")
   override def witnessProgram: Seq[ScriptToken] = asm.tail.tail
   override val scriptType: ScriptType = ScriptType.WITNESS_V1_TAPROOT
 
-  val pubKey: XOnlyPubKey = XOnlyPubKey.fromBytes(asm(2).bytes)
+  val pubKey: XOnlyPubKey = {
+    require(asm(2).bytes.length == 32,
+            s"pubKeyBytes must be 32 bytes in length, got=${asm(2).byteSize}")
+    XOnlyPubKey.fromBytes(asm(2).bytes)
+  }
 }
 
 object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {

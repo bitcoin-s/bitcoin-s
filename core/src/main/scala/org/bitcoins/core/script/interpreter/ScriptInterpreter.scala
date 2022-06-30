@@ -365,7 +365,6 @@ sealed abstract class ScriptInterpreter {
         (scriptSig, w.scriptPubKey) match {
           case (EmptyScriptSignature, _) | (_, _: P2SHScriptPubKey) =>
             verifyWitnessProgram(
-              witnessVersion = witnessVersion,
               scriptWitness = witness,
               witnessSPK = witnessScriptPubKey,
               wTxSigComponent = w,
@@ -464,7 +463,6 @@ sealed abstract class ScriptInterpreter {
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1302]]
     */
   private def verifyWitnessProgram(
-      witnessVersion: WitnessVersion,
       scriptWitness: ScriptWitness,
       witnessSPK: WitnessScriptPubKey,
       wTxSigComponent: WitnessTxSigComponent,
@@ -519,8 +517,8 @@ sealed abstract class ScriptInterpreter {
       }
     }
 
-    witnessVersion match {
-      case WitnessVersion0 =>
+    witnessSPK match {
+      case _: WitnessScriptPubKeyV0 =>
         val either: Either[ScriptError, (Seq[ScriptToken], ScriptPubKey)] =
           rebuildV0(scriptWitness, witnessSPK)
         either match {
@@ -559,7 +557,7 @@ sealed abstract class ScriptInterpreter {
             )
             Success(program)
         }
-      case WitnessVersion1 =>
+      case _: TaprootScriptPubKey =>
         require(
           scriptWitness.isInstanceOf[TaprootWitness],
           s"witness must be taproot witness for witness version 1 script execution, got=$scriptWitness")
@@ -591,7 +589,7 @@ sealed abstract class ScriptInterpreter {
             )
             Success(program)
         }
-      case UnassignedWitness(_) =>
+      case _: UnassignedWitnessScriptPubKey =>
         evaluateUnassignedWitness(wTxSigComponent)
     }
   }
@@ -801,8 +799,8 @@ sealed abstract class ScriptInterpreter {
   private def loop(
       program: ExecutionInProgressScriptProgram,
       opCount: Int): ExecutedScriptProgram = {
-    logger.debug(s"program.stack=${program.stack}")
-    logger.debug(s"program.script=${program.script}")
+    //logger.debug(s"program.stack=${program.stack}")
+    //logger.debug(s"program.script=${program.script}")
     val scriptByteVector = BytesUtil.toByteVector(program.script)
 
     val sigVersion = program.txSignatureComponent.sigVersion
