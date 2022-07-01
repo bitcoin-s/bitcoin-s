@@ -980,4 +980,43 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
 
     assert(serialize.toHex == expected)
   }
+
+  it must "serialize a taproot keyspend SIGHASH_ALL_ANYONECANSPEND" in {
+    val expected =
+      "00816c780499da010000a0e6c05b4d684eeb145d9225f15319226c5fd78617f5db646630c0584662a6a3008c033b67f78dfe0867489e0e5a032f24d14ee3c57637c22e71701fd79b64012ad200000094037f010000000022512057c1162a56ec9db80a8eb342634f613c8d990bf305925df7ddb85b356ce8f0bb7138b5c8"
+
+    val spendingTxHex =
+      "6c780499018c033b67f78dfe0867489e0e5a032f24d14ee3c57637c22e71701fd79b64012ad2000000007138b5c80168666e0000000000160014e7f8b1de86947bf379378ebd4368d37361fac307da010000"
+    val spendingTx = Transaction.fromHex(spendingTxHex)
+    val inputIndex = UInt32.zero
+    val prevout = TransactionOutput.fromHex(
+      "94037f010000000022512057c1162a56ec9db80a8eb342634f613c8d990bf305925df7ddb85b356ce8f0bb")
+    val prevOutputs = Vector(prevout)
+    val outputMap: Map[TransactionOutPoint, TransactionOutput] =
+      spendingTx.inputs.map(_.previousOutput).zip(prevOutputs).toMap
+    val witnessStackHex = Vector(
+      "228187c314a903fe94c1c8260c243e0949a3233d404a58f90cd991a44f5dad4d89bd5763525b437a10a973abd8eb99adcfec9e2865fa235fa4d6af82c427f17a81")
+    val witnessStack = witnessStackHex.map(w => ByteVector.fromValidHex(w))
+
+    val witness = TaprootKeyPath.fromStack(witnessStack.reverse)
+
+    val witnessTx =
+      WitnessTransaction
+        .toWitnessTx(spendingTx)
+        .updateWitness(inputIndex.toInt, witness)
+
+    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx, //spendingTx,
+                                                      inputIndex,
+                                                      outputMap,
+                                                      Policy.standardFlags)
+
+    val taprootOptions = TaprootSerializationOptions.empty
+
+    val serialize = TransactionSignatureSerializer.serializeForSignature(
+      taprootTxSigComponent,
+      HashType.sigHashAllAnyoneCanPay,
+      taprootOptions)
+
+    assert(serialize.toHex == expected)
+  }
 }

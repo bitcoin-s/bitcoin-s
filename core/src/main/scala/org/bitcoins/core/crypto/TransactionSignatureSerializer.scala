@@ -248,6 +248,8 @@ sealed abstract class TransactionSignatureSerializer {
         val isNotAnyoneCanPay = !HashType.isAnyoneCanPay(hashType)
         val isNotSigHashSingle = !HashType.isSigHashSingle(hashType.num)
         val isNotSigHashNone = !HashType.isSigHashNone(hashType.num)
+        val isSigHashAllAnyoneCanPay =
+          HashType.isSigHashAllAnyoneCanPay(hashType.num)
 
         val extFlag = taprootSigVersion match {
           case SigVersionTaprootKeySpend => 0.toByte
@@ -265,6 +267,7 @@ sealed abstract class TransactionSignatureSerializer {
           val b = spendingTransaction.inputs(inputIndex.toInt).previousOutput
           b.bytes
         }
+
         val amounts = {
           if (isNotAnyoneCanPay) {
             val b = BytesUtil.toByteVector(outputs.map(_.value))
@@ -282,6 +285,7 @@ sealed abstract class TransactionSignatureSerializer {
             b.bytes
           }
         }
+
         val sequenceHash: ByteVector =
           if (isNotAnyoneCanPay) {
             val sequences = spendingTransaction.inputs.map(_.sequence)
@@ -314,7 +318,6 @@ sealed abstract class TransactionSignatureSerializer {
               .bytes
             hash
           } else ByteVector.empty
-
         val haveAnnex: Boolean = taprootOptions.haveAnnex
 
         val annexByte = if (haveAnnex) 1.toByte else 0.toByte
@@ -362,14 +365,23 @@ sealed abstract class TransactionSignatureSerializer {
             }
 
           } else {
-            //different ordering if we use SIGHASH_ANYONECANPAY
-            epoch ++ ByteVector.fromByte(
-              hashType.byte) ++ version ++ locktimeBytes ++ ByteVector.fromByte(
-              spendType) ++
-              outPointHash ++ amounts ++ spentSPKs ++
-              sequenceHash ++ annexBytes ++ outputHash ++ tapScriptBytes
+            if (isSigHashAllAnyoneCanPay) {
+              //different ordering if we use SIGHASH_ANYONECANPAY
+              epoch ++ ByteVector
+                .fromByte(
+                  hashType.byte) ++ version ++ locktimeBytes ++ outputHash ++
+                ByteVector.fromByte(
+                  spendType) ++ outPointHash ++ amounts ++ spentSPKs ++
+                sequenceHash ++ annexBytes ++ tapScriptBytes
+            } else {
+              //different ordering if we use SIGHASH_ANYONECANPAY
+              epoch ++ ByteVector.fromByte(
+                hashType.byte) ++ version ++ locktimeBytes ++ ByteVector
+                .fromByte(spendType) ++
+                outPointHash ++ amounts ++ spentSPKs ++
+                sequenceHash ++ annexBytes ++ outputHash ++ tapScriptBytes
+            }
           }
-
         }
         result
     }
