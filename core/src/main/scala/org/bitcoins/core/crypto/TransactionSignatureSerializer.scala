@@ -316,6 +316,7 @@ sealed abstract class TransactionSignatureSerializer {
           } else ByteVector.empty
 
         val haveAnnex: Boolean = taprootOptions.haveAnnex
+
         val annexByte = if (haveAnnex) 1.toByte else 0.toByte
 
         val spendType: Byte = ((extFlag << 1) + annexByte).toByte
@@ -341,6 +342,7 @@ sealed abstract class TransactionSignatureSerializer {
         } else {
           ByteVector.empty
         }
+
         val result = {
           if (isNotAnyoneCanPay) {
             if (!isNotSigHashSingle) {
@@ -365,7 +367,7 @@ sealed abstract class TransactionSignatureSerializer {
               hashType.byte) ++ version ++ locktimeBytes ++ ByteVector.fromByte(
               spendType) ++
               outPointHash ++ amounts ++ spentSPKs ++
-              sequenceHash ++ outputHash ++ annexBytes ++ tapScriptBytes
+              sequenceHash ++ annexBytes ++ outputHash ++ tapScriptBytes
           }
 
         }
