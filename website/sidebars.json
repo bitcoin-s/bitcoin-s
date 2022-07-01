@@ -36,7 +36,8 @@
     "Crypto Module": [
       "crypto/crypto-intro",
       "crypto/sign",
-      "crypto/adaptor-signatures"
+      "crypto/adaptor-signatures",
+      "crypto/musig"
     ],
     "Fee Provider": [
       "fee-provider/fee-provider"

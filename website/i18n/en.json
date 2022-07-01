@@ -74,6 +74,9 @@
       "crypto/crypto-intro": {
         "title": "Crypto Module"
       },
+      "crypto/musig": {
+        "title": "MuSig"
+      },
       "crypto/sign": {
         "title": "Sign API"
       },
