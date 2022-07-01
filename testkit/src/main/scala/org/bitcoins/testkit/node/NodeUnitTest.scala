@@ -98,10 +98,9 @@ trait NodeUnitTest extends BaseNodeTest {
     val nodeWithBitcoindBuilder: () => Future[
       NeutrinoNodeConnectedWithBitcoind] = { () =>
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
-      val creationTimeOpt = Some(appConfig.walletConf.creationTime)
       for {
         bitcoind <- BitcoinSFixture.createBitcoind(versionOpt)
-        node <- NodeUnitTest.createNeutrinoNode(bitcoind, creationTimeOpt)(
+        node <- NodeUnitTest.createNeutrinoNode(bitcoind, None)(
           system,
           appConfig.chainConf,
           appConfig.nodeConf)
@@ -114,6 +113,29 @@ trait NodeUnitTest extends BaseNodeTest {
       destroy = NodeUnitTest.destroyNodeConnectedWithBitcoind(
         _: NodeConnectedWithBitcoind)(system, appConfig)
     )(test)
+  }
+
+  def withUnsyncedNeutrinoNodeConnectedToBitcoinds(
+      test: OneArgAsyncTest,
+      bitcoinds: Vector[BitcoindRpcClient])(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
+    val nodeWithBitcoindBuilder: () => Future[
+      NeutrinoNodeConnectedWithBitcoinds] = { () =>
+      require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
+      for {
+        _ <- appConfig.walletConf.kmConf.start()
+        node <- NodeUnitTest.createNeutrinoNode(bitcoinds, None)(
+          system,
+          appConfig.chainConf,
+          appConfig.nodeConf)
+        startedNode <- node.start()
+      } yield NeutrinoNodeConnectedWithBitcoinds(startedNode, bitcoinds)
+    }
+    makeDependentFixture[NeutrinoNodeConnectedWithBitcoinds](
+      build = nodeWithBitcoindBuilder,
+      destroy = NodeUnitTest.destroyNodeConnectedWithBitcoinds(
+        _: NodeConnectedWithBitcoinds)(system, appConfig))(test)
   }
 
   def withNeutrinoNodeFundedWalletBitcoind(
@@ -244,6 +266,26 @@ object NodeUnitTest extends P2PLogger {
     resultF
   }
 
+  //does not destroys the bitcoinds
+  def destroyNodeConnectedWithBitcoinds(
+      nodeConnectedWithBitcoind: NodeConnectedWithBitcoinds)(implicit
+      system: ActorSystem,
+      appConfig: BitcoinSAppConfig): Future[Unit] = {
+    logger.debug(s"Beginning tear down of node connected with bitcoind")
+    import system.dispatcher
+    val node = nodeConnectedWithBitcoind.node
+    val resultF = for {
+      _ <- destroyNode(node)
+      _ = cleanTables(appConfig)
+      _ <- appConfig.stop()
+    } yield {
+      logger.debug(s"Done with teardown of node connected with bitcoind!")
+      ()
+    }
+
+    resultF
+  }
+
   /** Creates a neutrino node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
   def createNeutrinoNodeFundedWalletBitcoind(
       bip39PasswordOpt: Option[String],
@@ -254,12 +296,11 @@ object NodeUnitTest extends P2PLogger {
     NeutrinoNodeFundedWalletBitcoind] = {
     import system.dispatcher
     require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
-    val creationTimeOpt = Some(appConfig.walletConf.creationTime)
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
-      node <- createNeutrinoNode(bitcoind, creationTimeOpt)(system,
-                                                            appConfig.chainConf,
-                                                            appConfig.nodeConf)
+      node <- createNeutrinoNode(bitcoind, None)(system,
+                                                 appConfig.chainConf,
+                                                 appConfig.nodeConf)
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoindRpcClient = bitcoind,
         nodeApi = node,
@@ -292,10 +333,9 @@ object NodeUnitTest extends P2PLogger {
     require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
     for {
       _ <- appConfig.walletConf.kmConf.start()
-      creationTimeOpt = Some(appConfig.walletConf.creationTime)
-      node <- createNeutrinoNode(bitcoind, creationTimeOpt)(system,
-                                                            appConfig.chainConf,
-                                                            appConfig.nodeConf)
+      node <- createNeutrinoNode(bitcoind, None)(system,
+                                                 appConfig.chainConf,
+                                                 appConfig.nodeConf)
 
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(
         bitcoindRpcClient = bitcoind,

@@ -84,7 +84,8 @@ class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindNewest {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       val node = nodeConnectedWithBitcoind.node
       val socket = InetSocketAddress.createUnresolved("google.com", 12345)
-      val client = P2PClient(ActorRef.noSender, Peer(socket, None, None))
+      val peer = Peer(socket, None, None)
+      val client = P2PClient(ActorRef.noSender, peer)
       val clientP = Promise[P2PClient]()
       clientP.success(client)
 
@@ -108,9 +109,7 @@ class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindNewest {
                                                    verackMsgP = verackMsgP)
 
       val peerMsgReceiver =
-        PeerMessageReceiver(normal, node, node.peerManager.peers.head)(
-          system,
-          node.nodeAppConfig)
+        PeerMessageReceiver(normal, node, peer)(system, node.nodeAppConfig)
 
       val newMsgReceiver = peerMsgReceiver.initializeDisconnect()
 
