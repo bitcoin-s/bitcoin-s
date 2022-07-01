@@ -19,8 +19,9 @@ case class KeyManagerAppConfig(
     baseDatadir: Path,
     configOverrides: Vector[Config],
     walletName: Option[String] = None,
-    aesPassword: Option[AesPassword] = None,
-    bip39Password: Option[String] = None)(implicit val ec: ExecutionContext)
+    aesPasswordOverride: Option[Option[AesPassword]] = None,
+    bip39PasswordOverride: Option[Option[String]] = None)(implicit
+    val ec: ExecutionContext)
     extends AppConfig {
 
   override type ConfigType = KeyManagerAppConfig
@@ -134,13 +135,18 @@ case class KeyManagerAppConfig(
 
   override def stop(): Future[Unit] = Future.unit
 
-  lazy val aesPasswordOpt: Option[AesPassword] = aesPassword.orElse {
-    val passOpt = config.getStringOrNone(s"bitcoin-s.$moduleName.aesPassword")
-    passOpt.flatMap(AesPassword.fromStringOpt)
+  lazy val aesPasswordOpt: Option[AesPassword] = aesPasswordOverride match {
+    case None =>
+      val passOpt = config.getStringOrNone(s"bitcoin-s.$moduleName.aesPassword")
+      passOpt.flatMap(AesPassword.fromStringOpt)
+    case Some(passOpt) => passOpt
+
   }
 
-  lazy val bip39PasswordOpt: Option[String] = bip39Password.orElse {
-    config.getStringOrNone(s"bitcoin-s.$moduleName.bip39password")
+  lazy val bip39PasswordOpt: Option[String] = bip39PasswordOverride match {
+    case None =>
+      config.getStringOrNone(s"bitcoin-s.$moduleName.bip39password")
+    case Some(passOpt) => passOpt
   }
 
   /** Checks if our key manager as a mnemonic seed associated with it */

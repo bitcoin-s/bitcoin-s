@@ -632,11 +632,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
   private def updateWalletConfigs(
       walletNameOpt: Option[String],
-      aesPasswordOpt: Option[AesPassword]): Future[
+      aesPasswordOpt: Option[Option[AesPassword]]): Future[
     (WalletAppConfig, DLCAppConfig)] = {
     val kmConfigF = Future.successful(
       conf.walletConf.kmConf.copy(walletName = walletNameOpt,
-                                  aesPassword = aesPasswordOpt))
+                                  aesPasswordOverride = aesPasswordOpt))
 
     (for {
       kmConfig <- kmConfigF
@@ -660,7 +660,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     for {
       (walletConfig, dlcConfig) <- updateWalletConfigs(walletNameOpt,
-                                                       aesPasswordOpt)
+                                                       Some(aesPasswordOpt))
 
       nodeApi = walletHolder.nodeApi
       chainQueryApi = walletHolder.chainQueryApi
