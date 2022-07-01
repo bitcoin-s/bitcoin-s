@@ -561,7 +561,7 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
 
     val outputMap: Map[TransactionOutPoint, TransactionOutput] =
       spendingTx.inputs.map(_.previousOutput).zip(Vector(prevOutput)).toMap
-    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx, //spendingTx,
+    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx,
                                                       inputIndex,
                                                       outputMap,
                                                       Policy.standardFlags)
@@ -616,7 +616,7 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
     val outputMap: Map[TransactionOutPoint, TransactionOutput] =
       spendingTx.inputs.map(_.previousOutput).zip(prevOutputs).toMap
 
-    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx, //spendingTx,
+    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx,
                                                       inputIndex,
                                                       outputMap,
                                                       Policy.standardFlags)
@@ -688,7 +688,7 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
         .toWitnessTx(spendingTx)
         .updateWitness(inputIndex.toInt, witness)
 
-    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx, //spendingTx,
+    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx,
                                                       inputIndex,
                                                       outputMap,
                                                       Policy.standardFlags)
@@ -731,7 +731,7 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
         .toWitnessTx(spendingTx)
         .updateWitness(inputIndex.toInt, witness)
 
-    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx, //spendingTx,
+    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx,
                                                       inputIndex,
                                                       outputMap,
                                                       Policy.standardFlags)
@@ -782,7 +782,7 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
         .toWitnessTx(spendingTx)
         .updateWitness(inputIndex.toInt, witness)
 
-    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx, //spendingTx,
+    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx,
                                                       inputIndex,
                                                       outputMap,
                                                       Policy.standardFlags)
@@ -829,7 +829,7 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
         .toWitnessTx(spendingTx)
         .updateWitness(inputIndex.toInt, witness)
 
-    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx, //spendingTx,
+    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx,
                                                       inputIndex,
                                                       outputMap,
                                                       Policy.standardFlags)
@@ -920,7 +920,7 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
         .toWitnessTx(spendingTx)
         .updateWitness(inputIndex.toInt, witness)
 
-    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx, //spendingTx,
+    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx,
                                                       inputIndex,
                                                       outputMap,
                                                       Policy.standardFlags)
@@ -961,7 +961,7 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
         .toWitnessTx(spendingTx)
         .updateWitness(inputIndex.toInt, witness)
 
-    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx, //spendingTx,
+    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx,
                                                       inputIndex,
                                                       outputMap,
                                                       Policy.standardFlags)
@@ -1005,7 +1005,7 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
         .toWitnessTx(spendingTx)
         .updateWitness(inputIndex.toInt, witness)
 
-    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx, //spendingTx,
+    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx,
                                                       inputIndex,
                                                       outputMap,
                                                       Policy.standardFlags)
