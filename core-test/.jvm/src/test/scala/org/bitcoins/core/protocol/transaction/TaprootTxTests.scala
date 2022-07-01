@@ -70,7 +70,6 @@ class TaprootTxTests extends BitcoinSUnitTest {
         assert(result == ScriptOk)
       }
     }
-    // 0340cff7c056a75c7863186c4143078002b51be9ddeafdda49e340ffd189e4f05aa06e368597184dd738fe632d74435e7cf0ad950dea9b11589f8777c312a36607a20014b7bd36b0268ee872bb0c02976f7ed9586c2864ca0a00
   }
 
   it must "run the failure test cases through the script interpreter" in {
