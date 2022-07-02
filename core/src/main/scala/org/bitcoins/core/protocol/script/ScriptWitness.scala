@@ -281,7 +281,7 @@ object TaprootKeyPath {
   }
 
   def isValid(stack: Vector[ByteVector]): Boolean = {
-    stack.length == 1 && (stack.length == 64 || stack.head.length == 65)
+    stack.length == 1 && (stack.head.length == 64 || stack.head.length == 65)
   }
 }
 
