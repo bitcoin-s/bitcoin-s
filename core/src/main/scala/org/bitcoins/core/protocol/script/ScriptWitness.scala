@@ -237,7 +237,12 @@ case class TaprootKeyPath(
     hashType: HashType,
     annexOpt: Option[ByteVector])
     extends TaprootWitness {
-  override val stack: Vector[ByteVector] = Vector(signature.bytes)
+
+  override val stack: Vector[ByteVector] = {
+    if (hashType == HashType.sigHashDefault) {
+      Vector(signature.bytes)
+    } else Vector(signature.bytes :+ hashType.byte)
+  }
 }
 
 object TaprootKeyPath {
