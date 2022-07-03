@@ -24,6 +24,7 @@ import org.bitcoins.core.script.reserved._
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.splice._
 import org.bitcoins.core.script.stack._
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util._
 
 import scala.annotation.tailrec
@@ -171,7 +172,7 @@ sealed abstract class ScriptInterpreter {
   def verifyInputScript(
       transaction: Transaction,
       inputIndex: Long,
-      outputMap: Map[TransactionOutPoint, TransactionOutput],
+      outputMap: PreviousOutputMap,
       prevOut: TransactionOutput): Boolean = {
     val sigComponent = TxSigComponent(
       transaction,
@@ -185,7 +186,7 @@ sealed abstract class ScriptInterpreter {
 
   def verifyTransaction(
       transaction: Transaction,
-      outputMap: Map[TransactionOutPoint, TransactionOutput]): Boolean = {
+      outputMap: PreviousOutputMap): Boolean = {
     require(
       transaction.inputs.size == outputMap.size,
       s"There must be a prevOut for every input in the transaction, got ${outputMap.size}")

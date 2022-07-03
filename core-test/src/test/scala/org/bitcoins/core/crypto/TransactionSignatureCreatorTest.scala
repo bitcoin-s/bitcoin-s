@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.builder.StandardNonInteractiveFinalizer
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{ECSignatureParams, P2PKHInputInfo}
@@ -122,7 +123,6 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
   }
 
   it should "have old and new createSig functions agree" in {
-
     forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(100))
@@ -133,9 +133,8 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
                   feeRate = fee,
                   changeSPK = changeSPK)
 
-        val prevOutMap = creditingTxsInfo.map { info =>
-          info.outPoint -> info.inputInfo.output
-        }.toMap
+        val prevOutMap =
+          PreviousOutputMap.fromScriptSignatureParams(creditingTxsInfo)
 
         val correctSigs =
           creditingTxsInfo.flatMap { signInfo =>

@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkitcore.Implicits._
 import org.scalacheck.Gen
@@ -494,7 +495,7 @@ object TransactionGenerators {
         signedTx,
         inputIndex,
         output,
-        Map.empty,
+        PreviousOutputMap.empty,
         Policy.standardScriptVerifyFlags)
     } yield (signedTxSignatureComponent, privKeys)
 
@@ -536,7 +537,7 @@ object TransactionGenerators {
         signedTx,
         inputIndex,
         output,
-        Map.empty,
+        PreviousOutputMap.empty,
         Policy.standardScriptVerifyFlags)
     } yield (signedTxSignatureComponent, privKeys)
 

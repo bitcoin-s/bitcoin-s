@@ -6,6 +6,7 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.flag.ScriptFlag
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.utxo._
 
 import scala.util.{Failure, Success, Try}
@@ -48,7 +49,7 @@ object TxSigComponent {
   def apply(
       inputInfo: InputInfo,
       unsignedTx: Transaction,
-      outputMap: Map[TransactionOutPoint, TransactionOutput],
+      outputMap: PreviousOutputMap,
       flags: Seq[ScriptFlag] = Policy.standardFlags): TxSigComponent = {
     inputInfo match {
       case segwit: SegwitV0NativeInputInfo =>
@@ -101,7 +102,7 @@ object TxSigComponent {
   def fromWitnessInput(
       inputInfo: UnassignedSegwitNativeInputInfo,
       unsignedTx: Transaction,
-      outputMap: Map[TransactionOutPoint, TransactionOutput],
+      outputMap: PreviousOutputMap,
       flags: Seq[ScriptFlag]): TxSigComponent = {
     val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
     val wtx = setTransactionWitness(inputInfo, unsignedTx)
@@ -179,7 +180,7 @@ object TxSigComponent {
       transaction: Transaction,
       inputIndex: UInt32,
       output: TransactionOutput,
-      outputMap: Map[TransactionOutPoint, TransactionOutput],
+      outputMap: PreviousOutputMap,
       flags: Seq[ScriptFlag]): TxSigComponent = {
     val scriptSig = transaction.inputs(inputIndex.toInt).scriptSignature
     output.scriptPubKey match {
@@ -390,7 +391,7 @@ sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
 case class TaprootTxSigComponent(
     transaction: WitnessTransaction,
     inputIndex: UInt32,
-    outputMap: Map[TransactionOutPoint, TransactionOutput],
+    outputMap: PreviousOutputMap,
     flags: Seq[ScriptFlag])
     extends WitnessTxSigComponent {
   require(
@@ -475,7 +476,7 @@ object WitnessTxSigComponent {
       transaction: WitnessTransaction,
       inputIndex: UInt32,
       output: TransactionOutput,
-      outputMap: Map[TransactionOutPoint, TransactionOutput],
+      outputMap: PreviousOutputMap,
       flags: Seq[ScriptFlag]): WitnessTxSigComponent =
     output.scriptPubKey match {
       case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>

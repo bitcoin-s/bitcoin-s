@@ -7,6 +7,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
@@ -678,10 +679,8 @@ case class PSBT(
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
-  protected def getPrevOutputMap(): Map[
-    TransactionOutPoint,
-    TransactionOutput] = {
-    transaction.inputs
+  def getPrevOutputMap(): PreviousOutputMap = {
+    val map = transaction.inputs
       .zip(inputMaps)
       .map { case (input, inputMap) =>
         val prevTxOpt = inputMap.nonWitnessOrUnknownUTXOOpt
@@ -701,6 +700,8 @@ case class PSBT(
         input.previousOutput -> output
       }
       .toMap
+
+    PreviousOutputMap(map)
   }
 
   def verifyFinalizedInput(index: Int): Boolean = {
@@ -755,7 +756,7 @@ case class PSBT(
 
             val outputMap = output.scriptPubKey match {
               case _: NonWitnessScriptPubKey | _: WitnessScriptPubKeyV0 =>
-                Map.empty[TransactionOutPoint, TransactionOutput]
+                PreviousOutputMap.empty
               case _: TaprootScriptPubKey | _: UnassignedWitnessScriptPubKey =>
                 getPrevOutputMap()
             }
@@ -773,7 +774,7 @@ case class PSBT(
 
             val outputMap = output.scriptPubKey match {
               case _: NonWitnessScriptPubKey | _: WitnessScriptPubKeyV0 =>
-                Map.empty[TransactionOutPoint, TransactionOutput]
+                PreviousOutputMap.empty
               case _: TaprootScriptPubKey | _: UnassignedWitnessScriptPubKey =>
                 getPrevOutputMap()
             }

@@ -6,6 +6,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.crypto.{ECPrivateKey, HashType}
 import org.scalacheck.Gen
 
@@ -227,13 +228,13 @@ sealed abstract class WitnessGenerators {
         WitnessTxSigComponent(signedSpendingTx,
                               unsignedWTxComponent.inputIndex,
                               wtxP2SH.output,
-                              Map.empty,
+                              PreviousOutputMap.empty,
                               unsignedWTxComponent.flags)
       case wtxRaw: WitnessTxSigComponentRaw =>
         WitnessTxSigComponent(signedSpendingTx,
                               unsignedWTxComponent.inputIndex,
                               wtxRaw.output,
-                              Map.empty,
+                              PreviousOutputMap.empty,
                               unsignedWTxComponent.flags)
       case _: TaprootTxSigComponent =>
         sys.error(s"Cannot build signed taproot sig component yet")

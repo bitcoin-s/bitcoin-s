@@ -16,6 +16,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
 import upickle.default._
 
@@ -109,7 +110,9 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
     // safe to use EmptyTransactionOutPoint because non-taproot
     assert(
       ScriptInterpreter
-        .verifyTransaction(p2shWitTx, Map(EmptyTransactionOutPoint -> prevOut)))
+        .verifyTransaction(
+          p2shWitTx,
+          PreviousOutputMap(Map(EmptyTransactionOutPoint -> prevOut))))
   }
 
   it must "evaluate a witness transaction as valid" in {
@@ -121,7 +124,9 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
     // safe to use EmptyTransactionOutPoint because non-taproot
     assert(
       ScriptInterpreter
-        .verifyTransaction(wtx, Map(EmptyTransactionOutPoint -> prevOut)))
+        .verifyTransaction(
+          wtx,
+          PreviousOutputMap(Map(EmptyTransactionOutPoint -> prevOut))))
   }
 
   it must "evaluate a base transaction as valid" in {
@@ -133,7 +138,9 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
     // safe to use EmptyTransactionOutPoint because non-taproot
     assert(
       ScriptInterpreter
-        .verifyTransaction(tx, Map(EmptyTransactionOutPoint -> prevOut)))
+        .verifyTransaction(
+          tx,
+          PreviousOutputMap(Map(EmptyTransactionOutPoint -> prevOut))))
   }
 }
 

@@ -15,6 +15,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.builder.{
   RawTxSigner,
   StandardNonInteractiveFinalizer
@@ -160,9 +161,8 @@ class SignerTest extends BitcoinSUnitTest {
                   feeRate = fee,
                   changeSPK = changeSPK)
 
-        val prevOutMap = creditingTxsInfo.map { info =>
-          info.outPoint -> info.inputInfo.output
-        }.toMap
+        val prevOutMap =
+          PreviousOutputMap.fromScriptSignatureParams(creditingTxsInfo)
 
         val correctSigs =
           creditingTxsInfo.flatMap { signInfo =>
