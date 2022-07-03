@@ -354,11 +354,13 @@ object DLCWalletUtil extends Logging {
   def verifyInput(
       transaction: Transaction,
       inputIndex: Long,
-      prevOut: TransactionOutput): Boolean = {
+      prevOut: TransactionOutput,
+      outputMap: Map[TransactionOutPoint, TransactionOutput]): Boolean = {
     val sigComponent = WitnessTxSigComponent(
       transaction.asInstanceOf[WitnessTransaction],
       UInt32(inputIndex),
       prevOut,
+      outputMap,
       Policy.standardFlags
     )
     ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent))
@@ -405,8 +407,12 @@ object DLCWalletUtil extends Logging {
 
       val fundOutputIndex = dlcDb.get.fundingOutPointOpt.get.vout.toInt
       val fundingOutput = fundingTx.outputs(fundOutputIndex)
+      val fundingOutPoint =
+        TransactionOutPoint(fundingTx.txId, UInt32(fundOutputIndex))
 
-      verifyInput(tx, 0, fundingOutput)
+      val outputMap = Map(fundingOutPoint -> fundingOutput)
+
+      verifyInput(tx, 0, fundingOutput, outputMap)
     }
   }
 

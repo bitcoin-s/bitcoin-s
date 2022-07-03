@@ -228,6 +228,7 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
       WitnessTxSigComponent(transaction = p2wshTx,
                             inputIndex = UInt32.zero,
                             output = p2wshOutput,
+                            Map.empty,
                             Policy.standardFlags)
 
     val result1 =
@@ -560,6 +561,7 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
       WitnessTxSigComponent(transaction = p2wshTx,
                             inputIndex = UInt32.zero,
                             output = p2wshOutput,
+                            Map.empty,
                             Policy.standardFlags)
 
     val result1 =
@@ -599,6 +601,7 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
       WitnessTxSigComponent(transaction = p2wshTx,
                             inputIndex = UInt32.zero,
                             output = p2wshOutput,
+                            Map.empty,
                             Policy.standardFlags)
 
     val result1 =

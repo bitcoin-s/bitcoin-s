@@ -171,11 +171,13 @@ sealed abstract class ScriptInterpreter {
   def verifyInputScript(
       transaction: Transaction,
       inputIndex: Long,
+      outputMap: Map[TransactionOutPoint, TransactionOutput],
       prevOut: TransactionOutput): Boolean = {
     val sigComponent = TxSigComponent(
       transaction,
       UInt32(inputIndex),
       prevOut,
+      outputMap,
       Policy.standardFlags
     )
     ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent))
@@ -183,13 +185,13 @@ sealed abstract class ScriptInterpreter {
 
   def verifyTransaction(
       transaction: Transaction,
-      prevOuts: Vector[TransactionOutput]): Boolean = {
+      outputMap: Map[TransactionOutPoint, TransactionOutput]): Boolean = {
     require(
-      transaction.inputs.size == prevOuts.size,
-      s"There must be a prevOut for every input in the transaction, got ${prevOuts.size}")
+      transaction.inputs.size == outputMap.size,
+      s"There must be a prevOut for every input in the transaction, got ${outputMap.size}")
 
-    prevOuts.zipWithIndex.forall { case (prevOut, index) =>
-      verifyInputScript(transaction, index, prevOut)
+    outputMap.zipWithIndex.forall { case ((_, prevOut), index) =>
+      verifyInputScript(transaction, index, outputMap, prevOut)
     }
   }
 

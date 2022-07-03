@@ -83,13 +83,16 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       val fundingTxPrevOutputRefs = inputsA.map(_.toOutputReference) ++ inputsB
         .map(_.toOutputReference)
 
+      val prevOutputMap =
+        fundingTxPrevOutputRefs.map(ref => ref.outPoint -> ref.output).toMap
+
       val fundingTxVerify = fundingTx.inputs.zipWithIndex.forall {
         case (input, index) =>
           val output = fundingTxPrevOutputRefs
             .find(_.outPoint == input.previousOutput)
             .get
             .output
-          verifyInput(fundingTx, index, output)
+          verifyInput(fundingTx, index, output, prevOutputMap)
       }
       assert(fundingTxVerify)
     }

@@ -442,11 +442,15 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
                   feeRate = fee,
                   changeSPK = changeSPK)
 
+        val prevOutMap = creditingTxsInfo.map { info =>
+          info.outPoint -> info.inputInfo.output
+        }.toMap
+
         val correctScripts =
           creditingTxsInfo.flatMap { signInfo =>
             signInfo.signers.map { _ =>
               val txSigComponent =
-                TxSigComponent(signInfo.inputInfo, spendingTx)
+                TxSigComponent(signInfo.inputInfo, spendingTx, prevOutMap)
 
               val oldBytes =
                 TransactionSignatureSerializer.serializeForSignature(
@@ -480,11 +484,15 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
                   feeRate = fee,
                   changeSPK = changeSPK)
 
+        val prevOutMap = creditingTxsInfo.map { info =>
+          info.outPoint -> info.inputInfo.output
+        }.toMap
+
         val correctHashes =
           creditingTxsInfo.flatMap { signInfo =>
             signInfo.signers.map { _ =>
               val txSigComponent =
-                TxSigComponent(signInfo.inputInfo, spendingTx)
+                TxSigComponent(signInfo.inputInfo, spendingTx, prevOutMap)
 
               val oldHash =
                 TransactionSignatureSerializer.hashForSignature(
@@ -518,11 +526,15 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
                   feeRate = fee,
                   changeSPK = changeSPK)
 
+        val prevOutMap = creditingTxsInfo.map { info =>
+          info.outPoint -> info.inputInfo.output
+        }.toMap
+
         val correctScripts =
           creditingTxsInfo.flatMap { signInfo =>
             signInfo.signers.map { _ =>
               val txSigComponent =
-                TxSigComponent(signInfo.inputInfo, spendingTx)
+                TxSigComponent(signInfo.inputInfo, spendingTx, prevOutMap)
 
               val oldScript =
                 BitcoinScriptUtil.calculateScriptForSigning(

@@ -160,11 +160,15 @@ class SignerTest extends BitcoinSUnitTest {
                   feeRate = fee,
                   changeSPK = changeSPK)
 
+        val prevOutMap = creditingTxsInfo.map { info =>
+          info.outPoint -> info.inputInfo.output
+        }.toMap
+
         val correctSigs =
           creditingTxsInfo.flatMap { signInfo =>
             signInfo.signers.map { signer =>
               val txSignatureComponent =
-                TxSigComponent(signInfo.inputInfo, spendingTx)
+                TxSigComponent(signInfo.inputInfo, spendingTx, prevOutMap)
               @nowarn val oldSig = BitcoinSigner.doSign(txSignatureComponent,
                                                         signer.sign,
                                                         signInfo.hashType,

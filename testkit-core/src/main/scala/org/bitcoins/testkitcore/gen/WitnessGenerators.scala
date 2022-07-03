@@ -227,11 +227,13 @@ sealed abstract class WitnessGenerators {
         WitnessTxSigComponent(signedSpendingTx,
                               unsignedWTxComponent.inputIndex,
                               wtxP2SH.output,
+                              Map.empty,
                               unsignedWTxComponent.flags)
       case wtxRaw: WitnessTxSigComponentRaw =>
         WitnessTxSigComponent(signedSpendingTx,
                               unsignedWTxComponent.inputIndex,
                               wtxRaw.output,
+                              Map.empty,
                               unsignedWTxComponent.flags)
       case _: TaprootTxSigComponent =>
         sys.error(s"Cannot build signed taproot sig component yet")

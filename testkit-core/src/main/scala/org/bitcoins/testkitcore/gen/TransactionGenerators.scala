@@ -494,6 +494,7 @@ object TransactionGenerators {
         signedTx,
         inputIndex,
         output,
+        Map.empty,
         Policy.standardScriptVerifyFlags)
     } yield (signedTxSignatureComponent, privKeys)
 
@@ -535,6 +536,7 @@ object TransactionGenerators {
         signedTx,
         inputIndex,
         output,
+        Map.empty,
         Policy.standardScriptVerifyFlags)
     } yield (signedTxSignatureComponent, privKeys)
 

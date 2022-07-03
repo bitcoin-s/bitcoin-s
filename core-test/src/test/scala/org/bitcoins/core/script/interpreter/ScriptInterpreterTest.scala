@@ -8,6 +8,7 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
+  EmptyTransactionOutPoint,
   Transaction,
   TransactionOutput,
   WitnessTransaction
@@ -105,7 +106,10 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
     val prevOut = TransactionOutput(
       "48677bda0100000017a914885437151ad21f21c5c714ddffdf67e56fcd63ea87")
 
-    ScriptInterpreter.verifyTransaction(p2shWitTx, Vector(prevOut))
+    // safe to use EmptyTransactionOutPoint because non-taproot
+    assert(
+      ScriptInterpreter
+        .verifyTransaction(p2shWitTx, Map(EmptyTransactionOutPoint -> prevOut)))
   }
 
   it must "evaluate a witness transaction as valid" in {
@@ -114,7 +118,10 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
     val prevOut = TransactionOutput(
       "b82a0000000000002200202d501d0b2df21825d3dca7dc2bdaeea2c484c552b4ccbf687ffa887ae47e42c2")
 
-    ScriptInterpreter.verifyTransaction(wtx, Vector(prevOut))
+    // safe to use EmptyTransactionOutPoint because non-taproot
+    assert(
+      ScriptInterpreter
+        .verifyTransaction(wtx, Map(EmptyTransactionOutPoint -> prevOut)))
   }
 
   it must "evaluate a base transaction as valid" in {
@@ -123,7 +130,10 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
     val prevOut = TransactionOutput(
       "37733ba40b0000001976a914741423cca440e7dc81d3468b832433e4db3c924288ac")
 
-    ScriptInterpreter.verifyTransaction(tx, Vector(prevOut))
+    // safe to use EmptyTransactionOutPoint because non-taproot
+    assert(
+      ScriptInterpreter
+        .verifyTransaction(tx, Map(EmptyTransactionOutPoint -> prevOut)))
   }
 }
 

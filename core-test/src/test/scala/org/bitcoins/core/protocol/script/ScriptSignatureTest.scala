@@ -135,9 +135,12 @@ class ScriptSignatureTest extends BitcoinSJvmTest {
                              output,
                              Policy.standardFlags)
         case wtx: WitnessTransaction =>
+          val outPoint = wtx.inputs(testCase.inputIndex.toInt).previousOutput
+          val outputMap = Map(outPoint -> output)
           WitnessTxSigComponent(wtx,
                                 inputIndex = testCase.inputIndex,
                                 output,
+                                outputMap,
                                 Policy.standardFlags)
       }
       val hashForSig =
