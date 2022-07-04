@@ -29,6 +29,7 @@ import org.bitcoins.core.script.result.{
   ScriptErrorWitnessPubKeyType,
   ScriptOk
 }
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   PreExecutionScriptProgram
@@ -695,6 +696,7 @@ trait BitcoinScriptUtil {
       tx: Transaction,
       inputMap: InputPSBTMap,
       index: Int,
+      outputMap: PreviousOutputMap,
       flags: Seq[ScriptFlag] = Policy.standardFlags): Try[Transaction] = {
 
     val txIn = tx.inputs(index)
@@ -706,7 +708,7 @@ trait BitcoinScriptUtil {
                                          conditionalPath = condPath,
                                          preImages = preImages)
 
-    val txSigComponent = TxSigComponent(inputInfo, tx, flags)
+    val txSigComponent = TxSigComponent(inputInfo, tx, outputMap, flags)
 
     val inputResult =
       ScriptInterpreter.run(PreExecutionScriptProgram(txSigComponent))

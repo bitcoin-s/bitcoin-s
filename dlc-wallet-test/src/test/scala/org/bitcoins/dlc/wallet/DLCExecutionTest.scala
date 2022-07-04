@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.dlc.models.{
 }
 import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.testkit.wallet.DLCWalletUtil._
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
@@ -83,13 +84,17 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       val fundingTxPrevOutputRefs = inputsA.map(_.toOutputReference) ++ inputsB
         .map(_.toOutputReference)
 
+      val prevOutputMap =
+        PreviousOutputMap(
+          fundingTxPrevOutputRefs.map(ref => ref.outPoint -> ref.output).toMap)
+
       val fundingTxVerify = fundingTx.inputs.zipWithIndex.forall {
         case (input, index) =>
           val output = fundingTxPrevOutputRefs
             .find(_.outPoint == input.previousOutput)
             .get
             .output
-          verifyInput(fundingTx, index, output)
+          verifyInput(fundingTx, index, output, prevOutputMap)
       }
       assert(fundingTxVerify)
     }

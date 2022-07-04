@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput,
   WitnessTransaction
 }
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto._
@@ -135,9 +136,12 @@ class ScriptSignatureTest extends BitcoinSJvmTest {
                              output,
                              Policy.standardFlags)
         case wtx: WitnessTransaction =>
+          val outPoint = wtx.inputs(testCase.inputIndex.toInt).previousOutput
+          val outputMap = PreviousOutputMap(Map(outPoint -> output))
           WitnessTxSigComponent(wtx,
                                 inputIndex = testCase.inputIndex,
                                 output,
+                                outputMap,
                                 Policy.standardFlags)
       }
       val hashForSig =
