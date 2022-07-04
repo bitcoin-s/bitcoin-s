@@ -351,7 +351,7 @@ case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
     * The annex (or the lack of thereof) is always covered by the signature and contributes to transaction weight,
     * but is otherwise ignored during taproot validation.
     */
-  def annexOpt: Option[ByteVector] = {
+  override def annexOpt: Option[ByteVector] = {
     if (TaprootScriptPath.hasAnnex(stack)) {
       Some(stack.head)
     } else {
