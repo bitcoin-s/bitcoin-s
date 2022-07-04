@@ -79,7 +79,7 @@ libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-node" % "@STABLE_VERSION@"
 
 libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-oracle-explorer-client" % "@STABLE_VERSION@"
 
-libraryDependencies +="org.bitcoin-s" % "bitcoin-s-secp256k1jni" % "@STABLE_VERSION@"
+libraryDependencies += "org.bitcoin-s" % "bitcoin-s-secp256k1jni" % "@STABLE_VERSION@"
 
 libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit-core" % "@STABLE_VERSION@"
 
