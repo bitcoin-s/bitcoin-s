@@ -20,7 +20,7 @@ class TaprootTxTests extends BitcoinSUnitTest {
   private val logger = LoggerFactory.getLogger(getClass)
   //these tests are from
   //https://raw.githubusercontent.com/bitcoin-core/qa-assets/main/unit_test_data/script_assets_test.json
-  lazy val url = getClass.getResource("/script_assets_test.json")
+  lazy val url = getClass.getResource("/script_assets_test_cp.json")
 
   lazy val lines = {
     scala.io.Source.fromURL(url).getLines().mkString
@@ -52,19 +52,7 @@ class TaprootTxTests extends BitcoinSUnitTest {
   }
 
   it must "run the success test cases through the script interpreter" in {
-    var counter = 0
     testCases.foreach { testCase =>
-      logger.debug(
-        s"=================testCase.comment=${testCase.comment}================= counter=$counter")
-      logger.debug(s"wtx=${testCase.successTxSigComponent.transaction.hex}")
-      counter += 1
-      logger.debug(s"txSigComponent=${testCase.successTxSigComponent}")
-      logger.debug(
-        s"scriptSig=${testCase.successTxSigComponent.scriptSignature}")
-      logger.debug(s"spk=${testCase.successTxSigComponent.scriptPubKey}")
-      logger.debug(
-        s"======================================================================")
-
       withClue(testCase.comment) {
         val result = ScriptInterpreter.run(testCase.successProgram)
         assert(result == ScriptOk)
@@ -76,21 +64,11 @@ class TaprootTxTests extends BitcoinSUnitTest {
     testCases.foreach { testCase =>
       testCase.failureTxSigComponentsOpt match {
         case Some(failureTxSigComponent) =>
-          logger.debug(
-            s"=================testCase.comment=${testCase.comment}=================")
-          logger.debug(s"txSigComponent=${failureTxSigComponent}")
-          logger.debug(
-            s"scriptSig=${testCase.failureTxSigComponentsOpt.map(_.scriptSignature)}")
-          logger.debug(
-            s"spk=${testCase.failureTxSigComponentsOpt.map(_.scriptPubKey)}")
           failureTxSigComponent match {
             case witTxSig: WitnessTxSigComponent =>
-              logger.debug(s"wit=${witTxSig.witness}")
             case _: BaseTxSigComponent | _: WitnessTxSigComponentRebuilt =>
               ()
           }
-          logger.debug(
-            s"======================================================================")
 
           withClue(testCase.comment) {
             val result = ScriptInterpreter.run(testCase.failProgramOpt.get)

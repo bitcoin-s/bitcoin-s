@@ -77,8 +77,7 @@ sealed abstract class TransactionSignatureSerializer {
       sigVersion: SignatureVersion,
       taprootOptions: TaprootSerializationOptions): ByteVector = {
     val keyVersion: Byte = 0.toByte
-    println(
-      s"hashtype=$hashType sigVersion=$sigVersion taprootOptions=$taprootOptions inputIndex=$inputIndex")
+
     sigVersion match {
       case SigVersionBase =>
         require(
@@ -305,7 +304,6 @@ sealed abstract class TransactionSignatureSerializer {
           } else {
             ByteVector.empty
           }
-        println(s"sequenceHash=$sequenceHash")
         val outputHash: ByteVector =
           if (isNotSigHashSingle && isNotSigHashNone) {
             val outputs = spendingTransaction.outputs
@@ -329,10 +327,8 @@ sealed abstract class TransactionSignatureSerializer {
         val spendType: Byte = ((extFlag << 1) + annexByte).toByte
 
         val inputIndexBytes = inputIndex.bytes.reverse
-        println(s"inputIndexInt=${inputIndex}")
 
         val codeSeparatorPos: UInt32 = taprootOptions.codeSeparatorPos
-        println(s"codeSeparatorPos=$codeSeparatorPos")
 
         val tapScriptBytes = {
           if (sigVersion == SigVersionTapscript) {

@@ -97,7 +97,6 @@ sealed abstract class CryptoInterpreter {
 
       program.txSignatureComponent.sigVersion match {
         case SigVersionWitnessV0 | SigVersionWitnessV0 | SigVersionBase =>
-          println(s"sigVersion=${program.txSignatureComponent.sigVersion}")
           val pubKey = ECPublicKeyBytes(program.stack.head.bytes)
           val signature = ECDigitalSignature(program.stack.tail.head.bytes)
           val removedOpCodeSeparatorsScript =
@@ -206,8 +205,6 @@ sealed abstract class CryptoInterpreter {
     val discourageUpgradablePubKey =
       ScriptFlagUtil.discourageUpgradablePublicKey(program.flags)
 
-    println(
-      s"sigBytes=$sigBytes pubKeyBytes=$pubKeyBytes xOnlyPubKey=${xOnlyPubKeyT} discourageUpgradablePubKey=$discourageUpgradablePubKey")
     //need to do weight validation
     if (pubKeyBytes.isEmpty) {
       //this failure catches two types of errors, if the pubkey is empty
@@ -218,13 +215,11 @@ sealed abstract class CryptoInterpreter {
       //see: https://github.com/bitcoin/bitcoin/blob/9e4fbebcc8e497016563e46de4c64fa094edab2d/src/script/interpreter.cpp#L374
       Left(ScriptErrorPubKeyType)
     } else if (sigBytes.isEmpty) {
-      println(s"sigBytes.isEmpty")
       //fail if we don't have a signature
       Left(ScriptErrorEvalFalse)
     } else if (discourageUpgradablePubKey && xOnlyPubKeyT.isFailure) {
       Left(ScriptErrorDiscourageUpgradablePubkeyType)
     } else if (!discourageUpgradablePubKey && pubKeyBytes.length != 32) {
-      println(s"NO DISCOURAGE PUBKEY AND PUBKEYBYTES.length != 32")
       // if the public key is not valid, and we aren't discouraging upgradable public keys
       //the script trivially succeeds so that we maintain soft fork compatability for
       //new public key types in the feature
@@ -484,7 +479,6 @@ sealed abstract class CryptoInterpreter {
                 program.failExecution(err)
               }
             case Right(result) =>
-              println(s"Right(result)=$result")
               handleSignatureValidation(program = program,
                                         result = result,
                                         restOfStack = restOfStack,

@@ -13,6 +13,7 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagFactory}
+import org.bitcoins.core.script.util.PreviousOutputMap
 import scodec.bits.ByteVector
 import upickle.default._
 
@@ -55,16 +56,21 @@ case class TaprootTestCase(
           case wtx: WitnessTransaction =>
             TaprootTxSigComponent(transaction = wtx,
                                   UInt32(index),
-                                  outputMap,
+                                  PreviousOutputMap(outputMap),
                                   flags)
           case nonWitTx: NonWitnessTransaction =>
-            TxSigComponent(transaction = nonWitTx, UInt32(index), output, flags)
+            TxSigComponent(transaction = nonWitTx,
+                           UInt32(index),
+                           output,
+                           PreviousOutputMap.empty,
+                           flags)
         }
 
       case _: ScriptPubKey =>
         TxSigComponent(transaction = tx,
                        inputIndex = UInt32(index),
                        output,
+                       PreviousOutputMap.empty,
                        flags)
     }
 

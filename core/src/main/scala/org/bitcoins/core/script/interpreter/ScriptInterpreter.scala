@@ -353,7 +353,7 @@ sealed abstract class ScriptInterpreter {
   private def executeSegWitScript(
       scriptPubKeyExecutedProgram: ExecutedScriptProgram,
       witnessScriptPubKey: WitnessScriptPubKey): Try[ExecutedScriptProgram] = {
-    logger.info(s"executeSegWitScript")
+
     scriptPubKeyExecutedProgram.txSignatureComponent match {
       case w: WitnessTxSigComponent =>
         val scriptSig =
@@ -563,7 +563,7 @@ sealed abstract class ScriptInterpreter {
         val taprootWitness = scriptWitness.asInstanceOf[TaprootWitness]
         val either: Either[ScriptError, (Seq[ScriptToken], ScriptPubKey)] =
           rebuildV1(taprootWitness, witnessSPK)
-        logger.info(s"WitnessVersion1")
+
         either match {
           case Right((stack, scriptPubKey)) =>
             executeTapscript(
@@ -637,7 +637,6 @@ sealed abstract class ScriptInterpreter {
       } else {
         taprootWitness match {
           case keypath: TaprootKeyPath =>
-            println(s"keypath")
             val program = checkSchnorrSignature(
               keypath,
               taprootSPK.pubKey.schnorrPublicKey,
@@ -648,7 +647,7 @@ sealed abstract class ScriptInterpreter {
               wTxSigComponent.isInstanceOf[TaprootTxSigComponent],
               s"Must have taproot tx sig component to execute tapscript, got=${wTxSigComponent.getClass.getSimpleName}"
             )
-            println(s"taprootScriptPath")
+
             val taprootTxSigComponent =
               wTxSigComponent.asInstanceOf[TaprootTxSigComponent]
             val controlBlock = taprootScriptPath.controlBlock
@@ -855,8 +854,6 @@ sealed abstract class ScriptInterpreter {
           (program.toExecutedProgram, opCount)
 
         case op :: _ if !program.shouldExecuteNextOperation =>
-          logger.info(
-            s"Skipping operation ${op} since we should not execute current operation in the interpreter")
           (program.updateScript(program.script.tail), opCount)
 
         //stack operations
@@ -1209,7 +1206,6 @@ sealed abstract class ScriptInterpreter {
           (programOrError, newOpCount)
 
         case OP_CHECKSIG :: _ =>
-          println(s"program.opCodeSeparator=${program.lastCodeSeparator}")
           val programOrError = CryptoInterpreter.opCheckSig(program)
           val newOpCount =
             calcOpCount(opCount, OP_CHECKSIG)
@@ -1486,7 +1482,6 @@ sealed abstract class ScriptInterpreter {
   /** Logic to evaluate a witnesss version that has not been assigned yet */
   private def evaluateUnassignedWitness(
       txSigComponent: TxSigComponent): Try[ExecutedScriptProgram] = {
-    logger.info(s"evaluating unassigned witness")
     val flags = txSigComponent.flags
     val discourageUpgradableWitnessVersion =
       ScriptFlagUtil.discourageUpgradableWitnessProgram(flags)

@@ -193,15 +193,8 @@ sealed trait StartedScriptProgram extends ScriptProgram {
             op.isInstanceOf[ScriptOperation] && !vec.contains(op)
           }
 
-        println(s"scriptOPsWithIndices=$scriptOpsWithIndices")
-        //require(opCodeIdxs.length == 1, s"Should be exactly 1 OP_CODESEPARATOR")
-        //calculate the offset without push operations
-        println(s"lastCodeSeparatorIdx=$lastCodeSeparatorIdx")
-        println(s"originalWithIndices.size=${originalWithIndices.size}")
-        println(s"scriptOpsWithIndices.size=${scriptOpsWithIndices.size}")
         val offset =
           originalWithIndices.size - scriptOpsWithIndices.size
-        println(s"offset=$offset")
         Some(offset)
       case None =>
         None

@@ -21,7 +21,6 @@ sealed abstract class ControlOperationsInterpreter {
             s"Script top was not $conditional")
 
     if (program.isInExecutionBranch) {
-      println(s"inExecutionBranch for ${conditional}")
       val sigVersion = program.txSignatureComponent.sigVersion
       val flags = program.flags
       val minimalIfEnabled = ScriptFlagUtil.minimalIfEnabled(flags)
@@ -47,7 +46,6 @@ sealed abstract class ControlOperationsInterpreter {
           }
       }
     } else {
-      println(s"Not in executional branch for ${conditional}")
       // Doesn't matter which condition we use here,
       // just that one gets added to keep track of depth
       program.updateScript(program.script.tail).addCondition(condition = true)
