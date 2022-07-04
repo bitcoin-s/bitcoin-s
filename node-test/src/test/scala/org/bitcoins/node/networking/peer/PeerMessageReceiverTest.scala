@@ -9,29 +9,29 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindPair
-import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
+import org.bitcoins.testkit.node.NodeTestWithCachedBitcoindNewest
+import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
 import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import java.net.InetSocketAddress
 import scala.concurrent.{Future, Promise}
 
-class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindPair {
+class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindNewest {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
+    BitcoinSTestAppConfig.getMultiPeerNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
-  override type FixtureParam = NeutrinoNodeConnectedWithBitcoinds
+  override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val torClientF = if (TorUtil.torEnabled) torF else Future.unit
 
     val outcomeF: Future[Outcome] = for {
       _ <- torClientF
-      bitcoinds <- clientsF
-      outcome = withNeutrinoNodeConnectedToBitcoinds(test, bitcoinds.toVector)(
+      bitcoind <- cachedBitcoindWithFundsF
+      outcome = withNeutrinoNodeConnectedToBitcoindCached(test, bitcoind)(
         system,
         getFreshConfig)
       f <- outcome.toFuture
@@ -42,10 +42,11 @@ class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindPair {
   behavior of "PeerMessageReceiverTest"
 
   it must "change a peer message receiver to be disconnected" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       val node = nodeConnectedWithBitcoind.node
       val socket = InetSocketAddress.createUnresolved("google.com", 12345)
-      val client = P2PClient(ActorRef.noSender, Peer(socket, None, None))
+      val peer = Peer(socket, None, None)
+      val client = P2PClient(ActorRef.noSender, peer)
       val clientP = Promise[P2PClient]()
       clientP.success(client)
 
@@ -69,9 +70,7 @@ class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindPair {
                                                    verackMsgP = verackMsgP)
 
       val peerMsgReceiver =
-        PeerMessageReceiver(normal, node, node.peerManager.peers.head)(
-          system,
-          node.nodeAppConfig)
+        PeerMessageReceiver(normal, node, peer)(system, node.nodeAppConfig)
 
       val newMsgReceiver = peerMsgReceiver.disconnect()
 
@@ -82,10 +81,11 @@ class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindPair {
   }
 
   it must "change a peer message receiver to be initializing disconnect" in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       val node = nodeConnectedWithBitcoind.node
       val socket = InetSocketAddress.createUnresolved("google.com", 12345)
-      val client = P2PClient(ActorRef.noSender, Peer(socket, None, None))
+      val peer = Peer(socket, None, None)
+      val client = P2PClient(ActorRef.noSender, peer)
       val clientP = Promise[P2PClient]()
       clientP.success(client)
 
@@ -109,9 +109,7 @@ class PeerMessageReceiverTest extends NodeTestWithCachedBitcoindPair {
                                                    verackMsgP = verackMsgP)
 
       val peerMsgReceiver =
-        PeerMessageReceiver(normal, node, node.peerManager.peers.head)(
-          system,
-          node.nodeAppConfig)
+        PeerMessageReceiver(normal, node, peer)(system, node.nodeAppConfig)
 
       val newMsgReceiver = peerMsgReceiver.initializeDisconnect()
 

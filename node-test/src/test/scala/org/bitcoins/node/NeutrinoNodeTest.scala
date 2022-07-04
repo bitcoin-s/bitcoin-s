@@ -8,7 +8,11 @@ import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoinds
-import org.bitcoins.testkit.node.{NodeTestUtil, NodeTestWithCachedBitcoindPair}
+import org.bitcoins.testkit.node.{
+  NodeTestUtil,
+  NodeTestWithCachedBitcoindPair,
+  NodeUnitTest
+}
 import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{Assertion, FutureOutcome, Outcome}
 
@@ -30,15 +34,40 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
     val outcomeF: Future[Outcome] = for {
       _ <- torClientF
       bitcoinds <- clientsF
-      outcome = withNeutrinoNodeConnectedToBitcoinds(test, bitcoinds.toVector)(
-        system,
-        getFreshConfig)
+      outcome = withUnsyncedNeutrinoNodeConnectedToBitcoinds(
+        test,
+        bitcoinds.toVector)(system, getFreshConfig)
       f <- outcome.toFuture
     } yield f
     new FutureOutcome(outcomeF)
   }
 
   behavior of "NeutrinoNode"
+
+  it must "be able to sync" in { nodeConnectedWithBitcoinds =>
+    val node = nodeConnectedWithBitcoinds.node
+    val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
+    val peerManager = node.peerManager
+    def peers = peerManager.peers
+
+    val connAndInit = for {
+      _ <- AsyncUtil
+        .retryUntilSatisfied(peers.size == 2, interval = 1.second, maxTries = 5)
+      _ <- Future
+        .sequence(peers.map(peerManager.isConnected))
+        .flatMap(p => assert(p.forall(_ == true)))
+      res <- Future
+        .sequence(peers.map(peerManager.isConnected))
+        .flatMap(p => assert(p.forall(_ == true)))
+    } yield res
+
+    for {
+      _ <- connAndInit
+      _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoinds.head)
+    } yield {
+      succeed
+    }
+  }
 
   it must "be able to connect, initialize and then disconnect from all peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
@@ -150,6 +179,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
           .retryUntilSatisfied(peers.size == 2,
                                interval = 1.second,
                                maxTries = 5)
+        _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
         _ <- Future
           .sequence(peers.map(peerManager.isConnected))
           .flatMap(p => assert(p.forall(_ == true)))
@@ -182,8 +212,10 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       //we need to generate 1 block for bitcoind to consider
       //itself out of IBD. bitcoind will not sendheaders
       //when it believes itself, or it's peer is in IBD
-      val gen1F =
-        bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
+      val gen1F = for {
+        _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
+        x <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
+      } yield x
 
       //this needs to be called to get our peer to send us headers
       //as they happen with the 'sendheaders' message
