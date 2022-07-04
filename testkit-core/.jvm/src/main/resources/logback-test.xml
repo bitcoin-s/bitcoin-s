@@ -6,7 +6,7 @@
     <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>
 
 
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
         <file>logs/application.log</file>
         <encoder>
             <!-- UTC ISO8601 date format -->
@@ -85,16 +85,16 @@
     <!-- ╚═════════════════════════╝ -->
 
     <!-- see how long statements took to execute by setting to DEBUG -->
-    <logger name="slick.jdbc.JdbcBackend.benchmark" level="INFO"/>
+    <logger name="slick.jdbc.JdbcBackend.benchmark" level="OFF"/>
 
     <!-- see what statements are executed by setting to DEBUG -->
-    <logger name="slick.jdbc.JdbcBackend.statement" level="INFO"/>
+    <logger name="slick.jdbc.JdbcBackend.statement" level="OFF"/>
 
     <!-- see what slick is compiling to in sql -->
-    <logger name="slick.compiler" level="INFO"/>
+    <logger name="slick.compiler" level="OFF"/>
 
     <!-- see what's returned by Slick -->
-    <logger name="slick.jdbc.StatementInvoker.result" level="INFO"/>
+    <logger name="slick.jdbc.StatementInvoker.result" level="OFF"/>
 
     <!-- Get rid of messages like this:
     Connection attempt failed. Backing off new connection
