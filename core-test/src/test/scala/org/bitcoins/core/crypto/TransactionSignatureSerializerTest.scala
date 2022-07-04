@@ -1039,4 +1039,50 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
 
     assert(serialize.toHex == expected)
   }
+
+  it must "serialize a taproot transaction keyspend with SIGHASH_SINGLE with annex" in {
+    val expected =
+      "000302000000750000002495d592e51050fd51bb6470a99a487867735b70a0642ae47fd647dc45a5e29de5a234bdb1af9478ccd770cd2e9c72c181c16c08b2c94165a4b88524841ce15f6495778e1082884cb1f9952e2413855a598adb17cb62270a773cbe70348233b887ec369281e8627d6baa8f78e1c8ce1996f24a3fb71af38cc7303defce31883a0100000000eee244e957e1df84bc631fa02a0b7d0ef2fea17e7f5aad4a2aaa50a6aca16eee002e88213eefc990d8cc8115f39bcb43ffc09442f8923e716c71624dff0f53e4"
+
+    val spendingTxHex =
+      "020000000123b7a6b840cce4b0d7885738989f92801f48356986dc89bde06bb26813399a945c00000000bef901970387415001000000001976a914d4cdd5162868a9a0b9cf22921b3aa37967b6fb3288ac580200000000000017a9141330bf6152525e123d31a5c571baf641e4cceee8875802000000000000160014756476d75f3facf0051d02a6f46095e2eb92e85675000000"
+    val spendingTx = Transaction.fromHex(spendingTxHex)
+    val inputIndex = UInt32.zero
+    val prevout = TransactionOutput.fromHex(
+      "bf72520100000000225120b38f5c375c5df5852727048cd6d2769430afedabafa5897df1636cb87fecc14f")
+    val prevOutputs = Vector(prevout)
+    val outputMap: Map[TransactionOutPoint, TransactionOutput] =
+      spendingTx.inputs.map(_.previousOutput).zip(prevOutputs).toMap
+    val prevOutputMap = PreviousOutputMap(outputMap)
+    val witnessStackHex = Vector(
+      "d0630a93b0b781658c98c0a2fa53b72067c1de947ff5d73bb98b9c88066928f40ab1db157392d56ce1e137ed7121ae292697a9e29e1c8f26b993c8e839a6839403",
+      "50c2ac"
+    )
+    val witnessStack = witnessStackHex.map(w => ByteVector.fromValidHex(w))
+
+    val witness = TaprootKeyPath.fromStack(witnessStack.reverse)
+
+    val witnessTx =
+      WitnessTransaction
+        .toWitnessTx(spendingTx)
+        .updateWitness(inputIndex.toInt, witness)
+
+    val taprootTxSigComponent = TaprootTxSigComponent(witnessTx, //spendingTx,
+                                                      inputIndex,
+                                                      prevOutputMap,
+                                                      Policy.standardFlags)
+
+    val annexHashHex =
+      "eee244e957e1df84bc631fa02a0b7d0ef2fea17e7f5aad4a2aaa50a6aca16eee"
+    val annexHash = Sha256Digest.fromHex(annexHashHex)
+    val taprootOptions =
+      TaprootSerializationOptions(None, Some(annexHash), None)
+    val serialize = TransactionSignatureSerializer.serializeForSignature(
+      taprootTxSigComponent,
+      HashType.sigHashSingle,
+      taprootOptions)
+
+    assert(serialize.toHex == expected)
+  }
+
 }

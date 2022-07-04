@@ -353,8 +353,8 @@ sealed abstract class TransactionSignatureSerializer {
                 hashType.byte) ++ version ++ locktimeBytes ++
                 outPointHash ++ amounts ++ spentSPKs ++
                 sequenceHash ++ ByteVector.fromByte(
-                  spendType) ++ inputIndexBytes ++ outputHash ++
-                annexBytes ++ tapScriptBytes
+                  spendType) ++ inputIndexBytes ++
+                annexBytes ++ outputHash ++ tapScriptBytes
             } else {
               epoch ++ ByteVector.fromByte(
                 hashType.byte) ++ version ++ locktimeBytes ++
