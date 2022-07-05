@@ -14,6 +14,7 @@ class ScriptWitnessSpec extends BitcoinSUnitTest {
       val x = ScriptWitness(scriptWit.stack)
       val fromBytes = ScriptWitness.fromBytes(scriptWit.bytes)
       assert(scriptWit == x)
+      println(s"2")
       assert(fromBytes == scriptWit)
     }
   }

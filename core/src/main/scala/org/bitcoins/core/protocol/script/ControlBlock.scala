@@ -45,7 +45,8 @@ object ControlBlock extends Factory[ControlBlock] {
   def isValid(bytes: ByteVector): Boolean = {
     bytes.size >= TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE &&
     bytes.size <= TaprootScriptPath.TAPROOT_CONTROL_MAX_SIZE &&
-    (bytes.size - TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE) % TaprootScriptPath.TAPROOT_CONTROL_NODE_SIZE == 0
+    (bytes.size - TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE) % TaprootScriptPath.TAPROOT_CONTROL_NODE_SIZE == 0 &&
+    XOnlyPubKey.fromBytesT(bytes.slice(1, 33)).isSuccess
   }
 
   override def fromBytes(bytes: ByteVector): ControlBlock = {
