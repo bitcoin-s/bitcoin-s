@@ -3,6 +3,8 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.crypto.{Factory, NetworkElement, XOnlyPubKey}
 import scodec.bits.ByteVector
 
+import scala.util.Try
+
 /** Control block as defined by BIP341
   *
   * The last stack element is called the control block c, and must have length 33 + 32m,
@@ -10,12 +12,8 @@ import scodec.bits.ByteVector
   *
   * @see https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#script-validation-rules
   */
-case class ControlBlock(bytes: ByteVector) extends NetworkElement {
-  //invariants from: https://github.com/bitcoin/bitcoin/blob/37633d2f61697fc719390767aae740ece978b074/src/script/interpreter.cpp#L1835
-  require(bytes.size >= TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE)
-  require(bytes.size <= TaprootScriptPath.TAPROOT_CONTROL_MAX_SIZE)
-  require(
-    (bytes.size - TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE) % TaprootScriptPath.TAPROOT_CONTROL_NODE_SIZE == 0)
+sealed trait ControlBlock extends NetworkElement {
+  require(ControlBlock.isValid(bytes), s"Bytes for control block are not valid")
 
   /** Let p = c[1:33] and let P = lift_x(int(p)) where lift_x and [:] are defined as in BIP340. Fail if this point is not on the curve.
     */
@@ -31,9 +29,59 @@ case class ControlBlock(bytes: ByteVector) extends NetworkElement {
   }
 }
 
+case class TapscriptControlBlock(bytes: ByteVector) extends ControlBlock {
+  require(TapscriptControlBlock.isValid(bytes),
+          s"Invalid leaf version for tapscript control block, got=$bytes")
+}
+
+/** A control block that does not have a leaf version defined as per BIP342
+  * This is needed for future soft fork compatability where we introduce new leaf versions
+  * to correspond to new spending rules
+  */
+case class UnknownControlBlock(bytes: ByteVector) extends ControlBlock {
+  require(ControlBlock.isValid(bytes),
+          s"Unknown control block didn't have correct format, got=$bytes")
+}
+
 object ControlBlock extends Factory[ControlBlock] {
 
   override def fromBytes(bytes: ByteVector): ControlBlock = {
-    new ControlBlock(bytes)
+    Try(TapscriptControlBlock(bytes)).getOrElse(UnknownControlBlock(bytes))
   }
+
+  /** invariants from: https://github.com/bitcoin/bitcoin/blob/37633d2f61697fc719390767aae740ece978b074/src/script/interpreter.cpp#L1835
+    */
+  def isValid(bytes: ByteVector): Boolean = {
+    bytes.size >= TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE &&
+    bytes.size <= TaprootScriptPath.TAPROOT_CONTROL_MAX_SIZE &&
+    (bytes.size - TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE) % TaprootScriptPath.TAPROOT_CONTROL_NODE_SIZE == 0
+  }
+}
+
+object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
+
+  /** BIP342 specifies validity rules that apply for leaf version 0xc0,
+    * but future proposals can introduce rules for other leaf versions.
+    *
+    * @see https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#rationale
+    */
+  val knownLeafVersions: Vector[Byte] = Vector(0xc0.toByte, 0xc1.toByte)
+
+  /** invariants from: https://github.com/bitcoin/bitcoin/blob/37633d2f61697fc719390767aae740ece978b074/src/script/interpreter.cpp#L1835
+    */
+  def isValid(bytes: ByteVector): Boolean = {
+    ControlBlock.isValid(bytes) &&
+    knownLeafVersions.contains(bytes.head) &&
+    XOnlyPubKey.fromBytesT(bytes.slice(1, 33)).isSuccess
+  }
+
+  override def fromBytes(bytes: ByteVector): TapscriptControlBlock = {
+    new TapscriptControlBlock(bytes)
+  }
+}
+
+object UnknownControlBlock extends Factory[UnknownControlBlock] {
+
+  override def fromBytes(bytes: ByteVector): UnknownControlBlock =
+    new UnknownControlBlock(bytes)
 }

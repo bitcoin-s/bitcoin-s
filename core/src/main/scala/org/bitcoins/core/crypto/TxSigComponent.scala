@@ -417,8 +417,8 @@ case class TaprootTxSigComponent(
 
   override def sigVersion: SigVersionTaproot = {
     witness match {
-      case _: TaprootKeyPath    => SigVersionTaprootKeySpend
-      case _: TaprootScriptPath => SigVersionTapscript
+      case _: TaprootKeyPath                            => SigVersionTaprootKeySpend
+      case _: TaprootScriptPath | _: TaprootUnknownPath => SigVersionTapscript
     }
   }
 }
