@@ -387,7 +387,6 @@ sealed abstract class ScriptInterpreter {
     }
   }
 
-
   /** Verifies a segregated witness program by running it through the interpreter
     * [[https://github.com/bitcoin/bitcoin/blob/f8528134fc188abc5c7175a19680206964a8fade/src/script/interpreter.cpp#L1302]]
     */

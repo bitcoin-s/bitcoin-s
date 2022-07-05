@@ -189,7 +189,6 @@ object ScriptWitness extends Factory[ScriptWitness] {
       P2WPKHWitnessV0(pubKey)
     } else if (TaprootScriptPath.isValid(stack.toVector)) {
       TaprootScriptPath.fromStack(stack.toVector)
-
     } else if (isPubKey && stack.size == 2) {
       val pubKey = ECPublicKeyBytes(stack.head)
       val sig = ECDigitalSignature(stack(1))
@@ -377,7 +376,6 @@ object TaprootScriptPath {
           stack.head
         }
       }
-
       TapscriptControlBlock.isValid(controlBlock)
     } else {
       false
@@ -442,7 +440,9 @@ object TaprootScriptPath {
 
   /** Checks the witness stack has an annex in it */
   def hasAnnex(stack: Vector[ByteVector]): Boolean = {
-    stack.headOption.map(_.head) == annexOpt
+    stack.headOption
+      .map(_.headOption == annexOpt)
+      .getOrElse(false)
   }
 
   private def hashTapBranch(bytes: ByteVector): Sha256Digest = {
@@ -452,8 +452,6 @@ object TaprootScriptPath {
 
 case class TaprootUnknownPath(stack: Vector[ByteVector])
     extends TaprootWitness {
-  require(TaprootUnknownPath.isValid(bytes),
-          s"Invalid bytes given to TaprootUnknownPath, got=$bytes")
 
   val controlBlock: UnknownControlBlock = {
     if (TaprootScriptPath.hasAnnex(stack)) {
@@ -474,12 +472,5 @@ case class TaprootUnknownPath(stack: Vector[ByteVector])
     } else {
       None
     }
-  }
-}
-
-object TaprootUnknownPath {
-
-  def isValid(bytes: ByteVector): Boolean = {
-    true //any things we need to check here?
   }
 }
