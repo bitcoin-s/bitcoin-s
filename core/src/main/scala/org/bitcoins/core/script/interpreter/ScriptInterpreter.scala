@@ -26,9 +26,7 @@ import org.bitcoins.core.script.splice._
 import org.bitcoins.core.script.stack._
 import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util._
-import org.bitcoins.crypto.{CryptoUtil, SchnorrPublicKey, Sha256Digest}
-import org.slf4j.LoggerFactory
-import scodec.bits.ByteVector
+import org.bitcoins.crypto.SchnorrPublicKey
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
@@ -36,8 +34,6 @@ import scala.util.{Failure, Success, Try}
 /** Created by chris on 1/6/16.
   */
 sealed abstract class ScriptInterpreter {
-
-  private lazy val logger = LoggerFactory.getLogger(getClass)
 
   /** Currently bitcoin core limits the maximum number of non-push operations per script
     * to 201

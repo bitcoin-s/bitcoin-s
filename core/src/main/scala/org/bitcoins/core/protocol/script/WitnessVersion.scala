@@ -3,16 +3,8 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.script.constant.{OP_1, _}
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  SchnorrPublicKey,
-  Sha256Digest,
-  Sha256Hash160Digest,
-  XOnlyPubKey
-}
-import org.slf4j.LoggerFactory
+import org.bitcoins.crypto.{CryptoUtil, Sha256Digest, Sha256Hash160Digest}
 
 /** Created by chris on 11/10/16.
   * The version of the [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]],
@@ -20,7 +12,6 @@ import org.slf4j.LoggerFactory
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program BIP141]]
   */
 sealed trait WitnessVersion {
-  protected lazy val logger = LoggerFactory.getLogger(getClass)
 
   /** Rebuilds the full script from the given witness and [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
     * Either returns the [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
