@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.script.{
   ScriptSignature,
   ScriptWitness,
   TaprootScriptPubKey,
+  TaprootUnknownPath,
   TaprootWitness
 }
 import org.bitcoins.core.script.PreExecutionScriptProgram
@@ -17,7 +18,7 @@ import org.bitcoins.core.script.util.PreviousOutputMap
 import scodec.bits.ByteVector
 import upickle.default._
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 case class TaprootTestCase(
     tx: Transaction,
@@ -163,11 +164,17 @@ object TaprootTestCase {
             val scriptWitnessT = {
               prevouts(index).scriptPubKey match {
                 case _: TaprootScriptPubKey =>
-                  Try(TaprootWitness.fromStack(stack.toVector.reverse))
+                  val t = Try(TaprootWitness.fromStack(stack.toVector.reverse))
+                  t match {
+                    case Success(_) => t
+                    case Failure(_) =>
+                      Try(TaprootUnknownPath(stack.toVector.reverse))
+                  }
                 case _ =>
                   Try(ScriptWitness(stack.toVector.reverse))
               }
             }
+
             (scriptSig, scriptWitnessT.toOption)
           case x => sys.error(s"Expected obj for success object, got=$x")
         }

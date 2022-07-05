@@ -436,12 +436,13 @@ sealed abstract class ScriptInterpreter {
 
           rebuiltE match {
             case Right(rebuilt) =>
+              val constants = witness.stack.map(ScriptConstant(_))
               witness match {
                 case _: TaprootKeyPath =>
-                  val constants = witness.stack.map(ScriptConstant(_))
                   Right((constants, rebuilt))
                 case _: TaprootScriptPath =>
-                  val constants = witness.stack.map(ScriptConstant(_))
+                  Right((constants, rebuilt))
+                case _: TaprootUnknownPath =>
                   Right((constants, rebuilt))
               }
             case Left(err) => Left(err)
@@ -558,7 +559,6 @@ sealed abstract class ScriptInterpreter {
         val taprootWitness = scriptWitness.asInstanceOf[TaprootWitness]
         val either: Either[ScriptError, (Seq[ScriptToken], ScriptPubKey)] =
           rebuildV1(taprootWitness, witnessSPK)
-
         either match {
           case Right((stack, scriptPubKey)) =>
             executeTapscript(
@@ -637,6 +637,10 @@ sealed abstract class ScriptInterpreter {
               taprootSPK.pubKey.schnorrPublicKey,
               program = scriptPubKeyExecutedProgram)
             Success(program)
+          case _: TaprootUnknownPath =>
+            //is this right? I believe to maintain softfork compatibility we
+            //just succeed?
+            Success(scriptPubKeyExecutedProgram)
           case taprootScriptPath: TaprootScriptPath =>
             require(
               wTxSigComponent.isInstanceOf[TaprootTxSigComponent],
