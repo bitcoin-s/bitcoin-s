@@ -17,7 +17,7 @@ abstract class BitcoinSUnitTest
     with ScalaCheckPropertyChecks
     with TimeLimitedTests {
 
-  override val timeLimit: Span = 120.seconds
+  override val timeLimit: Span = 1000.seconds
 
   /** This def ensures that shrinks are disabled for all calls to forAll.
     *

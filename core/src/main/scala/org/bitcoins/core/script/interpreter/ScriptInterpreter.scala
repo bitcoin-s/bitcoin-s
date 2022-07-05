@@ -349,7 +349,6 @@ sealed abstract class ScriptInterpreter {
   private def executeSegWitScript(
       scriptPubKeyExecutedProgram: ExecutedScriptProgram,
       witnessScriptPubKey: WitnessScriptPubKey): Try[ExecutedScriptProgram] = {
-
     scriptPubKeyExecutedProgram.txSignatureComponent match {
       case w: WitnessTxSigComponent =>
         val scriptSig =

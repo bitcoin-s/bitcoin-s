@@ -20,7 +20,7 @@ class TaprootTxTests extends BitcoinSUnitTest {
   private val logger = LoggerFactory.getLogger(getClass)
   //these tests are from
   //https://raw.githubusercontent.com/bitcoin-core/qa-assets/main/unit_test_data/script_assets_test.json
-  lazy val url = getClass.getResource("/script_assets_test_cp.json")
+  lazy val url = getClass.getResource("/script_assets_test.json")
 
   lazy val lines = {
     scala.io.Source.fromURL(url).getLines().mkString

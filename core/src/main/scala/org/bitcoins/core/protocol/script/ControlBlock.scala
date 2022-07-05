@@ -40,12 +40,19 @@ case class UnknownControlBlock(bytes: ByteVector) extends ControlBlock
 
 object ControlBlock extends Factory[ControlBlock] {
 
+  /** BIP342 specifies validity rules that apply for leaf version 0xc0,
+    * but future proposals can introduce rules for other leaf versions.
+    * @see https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#rationale
+    */
+  val knownLeafVersions: Vector[Byte] = Vector(0xc0.toByte, 0xc1.toByte)
+
   /** invariants from: https://github.com/bitcoin/bitcoin/blob/37633d2f61697fc719390767aae740ece978b074/src/script/interpreter.cpp#L1835
     */
   def isValid(bytes: ByteVector): Boolean = {
     bytes.size >= TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE &&
     bytes.size <= TaprootScriptPath.TAPROOT_CONTROL_MAX_SIZE &&
     (bytes.size - TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE) % TaprootScriptPath.TAPROOT_CONTROL_NODE_SIZE == 0 &&
+    knownLeafVersions.contains(bytes.head) &&
     XOnlyPubKey.fromBytesT(bytes.slice(1, 33)).isSuccess
   }
 
