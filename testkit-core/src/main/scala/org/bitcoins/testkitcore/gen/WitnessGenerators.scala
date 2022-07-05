@@ -35,7 +35,8 @@ sealed abstract class WitnessGenerators {
       val spk = if (spkBytes.isEmpty) EmptyScriptPubKey else NonStandardScriptPubKey(cmpctSPK.bytes ++ spkBytes)
       P2WSHWitnessV0(spk,scriptSig)
     }*/
-    Gen.oneOf(p2wpkhWitnessV0, p2wshWitnessV0)
+    //Gen.oneOf(p2wpkhWitnessV0, p2wshWitnessV0)
+    p2wshWitnessV0
   }
 
   def taprootWitness: Gen[TaprootWitness] = {
@@ -238,7 +239,9 @@ sealed abstract class WitnessGenerators {
   def p2wshWitnessV0: Gen[P2WSHWitnessV0] =
     for {
       (redeem, _) <- ScriptGenerators.rawScriptPubKey
+      _ = println(s"redeem=$redeem")
       scriptSig <- ScriptGenerators.scriptSignature
+      _ = println(s"scriptSig=$scriptSig")
     } yield P2WSHWitnessV0(redeem, scriptSig)
 
   /** Takes a signed [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] and an unsignedTx

@@ -10,6 +10,7 @@ class ScriptWitnessSpec extends BitcoinSUnitTest {
 
   it must "have serialization symmetry" in {
     forAll(WitnessGenerators.scriptWitness) { scriptWit =>
+      println(s"Starting")
       val x = ScriptWitness(scriptWit.stack)
       val fromBytes = ScriptWitness.fromBytes(scriptWit.bytes)
       assert(scriptWit == x)
