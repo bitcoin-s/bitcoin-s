@@ -10,7 +10,7 @@ import scodec.bits.ByteVector
   *
   * @see https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#script-validation-rules
   */
-sealed trait ControlBlock extends NetworkElement {
+sealed abstract class ControlBlock extends NetworkElement {
   require(ControlBlock.isValid(bytes), s"Bytes for control block are not valid")
 
   /** Let p = c[1:33] and let P = lift_x(int(p)) where lift_x and [:] are defined as in BIP340. Fail if this point is not on the curve.
@@ -36,10 +36,7 @@ case class TapscriptControlBlock(bytes: ByteVector) extends ControlBlock {
   * This is needed for future soft fork compatability where we introduce new leaf versions
   * to correspond to new spending rules
   */
-case class UnknownControlBlock(bytes: ByteVector) extends ControlBlock {
-  require(ControlBlock.isValid(bytes),
-          s"Unknown control block didn't have correct format, got=$bytes")
-}
+case class UnknownControlBlock(bytes: ByteVector) extends ControlBlock
 
 object ControlBlock extends Factory[ControlBlock] {
 
