@@ -278,7 +278,7 @@ object TaprootKeyPath {
     }
 
     val keyPath = if (sigBytes.length == 64) {
-      //means SIGHASH_ALL is implicitly encoded
+      //means SIGHASH_DEFAULT is implicitly encoded
       //see: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#Common_signature_message
       val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
       TaprootKeyPath(sig, HashType.sigHashDefault, annexOpt)
