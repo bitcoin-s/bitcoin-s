@@ -483,7 +483,6 @@ sealed abstract class ScriptInterpreter {
         witnessSPKV0: WitnessScriptPubKey): Either[
       ScriptError,
       (Seq[ScriptToken], ScriptPubKey)] = {
-      println(s"rebuildV0")
       val program = witnessSPKV0.witnessProgram
       val programBytes = BytesUtil.toByteVector(program)
       programBytes.size match {
