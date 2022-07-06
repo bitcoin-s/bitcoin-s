@@ -100,6 +100,7 @@ case class DataMessageHandler(
             case Some(filterHeaderHeight) =>
               Future.successful(filterHeaderHeight + filterHeaders.size)
           }
+          newChainApi <- newChainApi.setSyncing(newSyncing)
         } yield {
           this.copy(chainApi = newChainApi,
                     syncing = newSyncing,
@@ -147,6 +148,7 @@ case class DataMessageHandler(
                 s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
               sendNextGetCompactFilterCommand(peerMsgSender, newFilterHeight)
             } else Future.unit
+          newChainApi <- newChainApi.setSyncing(newSyncing)
         } yield {
           this.copy(
             chainApi = newChainApi,
@@ -203,7 +205,12 @@ case class DataMessageHandler(
           s"Received headers message with ${count.toInt} headers from $peer")
         logger.trace(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
-        val chainApiF = chainApi.processHeaders(headers)
+        val chainApiF = for {
+          newChainApi <- chainApi.setSyncing(count.toInt > 0)
+          processed <- newChainApi.processHeaders(headers)
+        } yield {
+          processed
+        }
 
         val getHeadersF = chainApiF
           .flatMap { newApi =>

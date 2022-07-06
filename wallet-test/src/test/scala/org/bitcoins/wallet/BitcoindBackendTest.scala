@@ -1,5 +1,6 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
@@ -39,7 +40,12 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       _ <-
         wallet.stateDescriptorDAO.updateSyncHeight(header.hashBE, header.height)
 
+      syncing <- bitcoind.isSyncing()
+      _ = assert(!syncing)
       _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
+      syncing <- bitcoind.isSyncing()
+      _ = assert(syncing)
+      _ <- AsyncUtil.awaitConditionF { () => bitcoind.isSyncing().map(!_) }
 
       balance <- wallet.getBalance()
 

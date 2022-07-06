@@ -59,13 +59,13 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
     val result = chainDbManagement.migrate()
     chainAppConfig.driver match {
       case SQLite =>
-        val expected = 6
+        val expected = 7
         assert(result.migrationsExecuted == expected)
         val flywayInfo = chainDbManagement.info()
         assert(flywayInfo.applied().length == expected)
         assert(flywayInfo.pending().length == 0)
       case PostgreSQL =>
-        val expected = 5
+        val expected = 6
         assert(result.migrationsExecuted == expected)
         val flywayInfo = chainDbManagement.info()
         //+1 for << Flyway Schema Creation >>

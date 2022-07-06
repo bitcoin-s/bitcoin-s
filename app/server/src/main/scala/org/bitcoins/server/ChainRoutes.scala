@@ -68,13 +68,16 @@ case class ChainRoutes(
 
     case ServerCommand("getinfo", _) =>
       complete {
-        chain.getBestBlockHeader().map { header =>
+        for {
+          header <- chain.getBestBlockHeader()
+          sync <- chain.isSyncing()
+        } yield {
           val info = BitcoinSServerInfo(network = network,
                                         blockHeight = header.height,
                                         blockHash = header.hashBE,
                                         torStarted =
-                                          startedTorConfigF.isCompleted)
-
+                                          startedTorConfigF.isCompleted,
+                                        sync = sync)
           Server.httpSuccess(info.toJson)
         }
       }

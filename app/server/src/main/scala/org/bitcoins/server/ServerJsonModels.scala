@@ -613,7 +613,7 @@ object Rescan extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 4"))
+            s"Bad number of arguments: ${other.length}. Expected: 5"))
     }
   }
 

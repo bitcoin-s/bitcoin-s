@@ -164,6 +164,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
         val handler = ChainHandlerCached(chainHandler.blockHeaderDAO,
                                          chainHandler.filterHeaderDAO,
                                          chainHandler.filterDAO,
+                                         chainHandler.stateDAO,
                                          Vector(blockchain),
                                          Map.empty)
         val processorF = Future.successful(handler)

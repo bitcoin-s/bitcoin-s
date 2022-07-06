@@ -35,6 +35,7 @@ class ChainHandler(
     val blockHeaderDAO: BlockHeaderDAO,
     val filterHeaderDAO: CompactFilterHeaderDAO,
     val filterDAO: CompactFilterDAO,
+    val stateDAO: ChainStateDescriptorDAO,
     val blockFilterCheckpoints: Map[
       DoubleSha256DigestBE,
       DoubleSha256DigestBE])(implicit
@@ -145,6 +146,7 @@ class ChainHandler(
         val newChainHandler = ChainHandler(blockHeaderDAO,
                                            filterHeaderDAO,
                                            filterDAO,
+                                           stateDAO,
                                            blockFilterCheckpoints =
                                              blockFilterCheckpoints)
 
@@ -519,6 +521,7 @@ class ChainHandler(
       ChainHandler(blockHeaderDAO = blockHeaderDAO,
                    filterHeaderDAO = filterHeaderDAO,
                    filterDAO = filterDAO,
+                   stateDAO = stateDAO,
                    blockFilterCheckpoints = updatedCheckpoints)
     }
   }
@@ -924,6 +927,7 @@ class ChainHandler(
         blockHeaderDAO = blockHeaderDAO,
         filterHeaderDAO = filterHeaderDAO,
         filterDAO = filterDAO,
+        stateDAO = stateDAO,
         blockFilterCheckpoints = blockFilterCheckpoints
       )
     }
@@ -947,11 +951,13 @@ class ChainHandler(
       blockHeaderDAO: BlockHeaderDAO = blockHeaderDAO,
       filterHeaderDAO: CompactFilterHeaderDAO = filterHeaderDAO,
       filterDAO: CompactFilterDAO = filterDAO,
+      stateDAO: ChainStateDescriptorDAO = stateDAO,
       blockFilterCheckpoints: Map[DoubleSha256DigestBE, DoubleSha256DigestBE] =
         blockFilterCheckpoints): ChainHandler = {
     new ChainHandler(blockHeaderDAO = blockHeaderDAO,
                      filterHeaderDAO = filterHeaderDAO,
                      filterDAO = filterDAO,
+                     stateDAO = stateDAO,
                      blockFilterCheckpoints = blockFilterCheckpoints)
   }
 
@@ -1008,6 +1014,16 @@ class ChainHandler(
         times.sorted.apply(times.size / 2)
       }
   }
+
+  override def isSyncing(): Future[Boolean] = {
+    stateDAO.isSyncing
+  }
+
+  override def setSyncing(value: Boolean): Future[ChainApi] = {
+    for {
+      _ <- stateDAO.updateSyncing(value)
+    } yield this
+  }
 }
 
 object ChainHandler {
@@ -1016,6 +1032,7 @@ object ChainHandler {
       blockHeaderDAO: BlockHeaderDAO,
       filterHeaderDAO: CompactFilterHeaderDAO,
       filterDAO: CompactFilterDAO,
+      stateDAO: ChainStateDescriptorDAO,
       blockFilterCheckpoints: Map[DoubleSha256DigestBE, DoubleSha256DigestBE])(
       implicit
       ec: ExecutionContext,
@@ -1023,6 +1040,7 @@ object ChainHandler {
     new ChainHandler(blockHeaderDAO,
                      filterHeaderDAO,
                      filterDAO,
+                     stateDAO,
                      blockFilterCheckpoints)
   }
 
@@ -1031,6 +1049,7 @@ object ChainHandler {
     new ChainHandler(blockHeaderDAO = cached.blockHeaderDAO,
                      filterHeaderDAO = cached.filterHeaderDAO,
                      filterDAO = cached.filterDAO,
+                     stateDAO = cached.stateDAO,
                      blockFilterCheckpoints = Map.empty)(cached.chainConfig, ec)
   }
 
@@ -1040,24 +1059,29 @@ object ChainHandler {
   def fromDatabase(
       blockHeaderDAO: BlockHeaderDAO,
       filterHeaderDAO: CompactFilterHeaderDAO,
-      filterDAO: CompactFilterDAO)(implicit
+      filterDAO: CompactFilterDAO,
+      stateDAO: ChainStateDescriptorDAO)(implicit
       ec: ExecutionContext,
       chainConfig: ChainAppConfig): ChainHandler = {
     new ChainHandler(blockHeaderDAO = blockHeaderDAO,
                      filterHeaderDAO = filterHeaderDAO,
                      filterDAO = filterDAO,
+                     stateDAO = stateDAO,
                      blockFilterCheckpoints = Map.empty)
   }
 
   def apply(
       blockHeaderDAO: BlockHeaderDAO,
       filterHeaderDAO: CompactFilterHeaderDAO,
-      filterDAO: CompactFilterDAO)(implicit
+      filterDAO: CompactFilterDAO,
+      stateDAO: ChainStateDescriptorDAO
+  )(implicit
       ec: ExecutionContext,
       chainConfig: ChainAppConfig): ChainHandler = {
     new ChainHandler(blockHeaderDAO = blockHeaderDAO,
                      filterHeaderDAO = filterHeaderDAO,
                      filterDAO = filterDAO,
+                     stateDAO = stateDAO,
                      blockFilterCheckpoints = Map.empty)
   }
 
@@ -1067,10 +1091,12 @@ object ChainHandler {
     lazy val blockHeaderDAO = BlockHeaderDAO()
     lazy val filterHeaderDAO = CompactFilterHeaderDAO()
     lazy val filterDAO = CompactFilterDAO()
+    lazy val stateDAO = ChainStateDescriptorDAO()
 
     ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
                               filterHeaderDAO = filterHeaderDAO,
-                              filterDAO = filterDAO)
+                              filterDAO = filterDAO,
+                              stateDAO = stateDAO)
   }
 
   /** Converts a [[ChainHandler]] to [[ChainHandlerCached]] by calling [[BlockHeaderDAO.getBlockchains()]] */
@@ -1083,6 +1109,7 @@ object ChainHandler {
         blockHeaderDAO = chainHandler.blockHeaderDAO,
         filterHeaderDAO = chainHandler.filterHeaderDAO,
         filterDAO = chainHandler.filterDAO,
+        stateDAO = chainHandler.stateDAO,
         blockchains = blockchains,
         blockFilterCheckpoints = chainHandler.blockFilterCheckpoints
       )(chainHandler.chainConfig, ec)

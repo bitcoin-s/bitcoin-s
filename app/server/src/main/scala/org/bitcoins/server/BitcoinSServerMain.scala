@@ -353,7 +353,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val chainApi = ChainHandler.fromDatabase(
       blockHeaderDAO = BlockHeaderDAO()(blockEC, chainConf),
       CompactFilterHeaderDAO()(blockEC, chainConf),
-      CompactFilterDAO()(blockEC, chainConf))
+      CompactFilterDAO()(blockEC, chainConf),
+      ChainStateDescriptorDAO()(blockEC, chainConf)
+    )
     for {
       isMissingChainWork <- chainApi.isMissingChainWork
       chainApiWithWork <-

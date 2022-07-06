@@ -30,7 +30,8 @@ object BitcoindRpcBackendUtil extends Logging {
       system: ActorSystem): Future[Unit] = {
     logger.info("Syncing wallet to bitcoind")
     import system.dispatcher
-    for {
+    val res = for {
+      _ <- bitcoind.setSyncing(true)
       bitcoindHeight <- bitcoind.getBlockCount
       walletStateOpt <- wallet.getSyncDescriptorOpt()
       _ = logger.info(
@@ -65,6 +66,10 @@ object BitcoindRpcBackendUtil extends Logging {
           doSync(syncHeight.height, bitcoindHeight, bitcoind, wallet)
       }
     } yield ()
+    res.onComplete { case _ =>
+      bitcoind.setSyncing(false)
+    }
+    res
   }
 
   /** Helper method to sync the wallet until the bitcoind height */

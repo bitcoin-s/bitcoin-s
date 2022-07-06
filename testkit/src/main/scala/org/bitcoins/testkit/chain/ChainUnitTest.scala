@@ -197,10 +197,12 @@ trait ChainUnitTest
       blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
       filterHeaderDAO <- ChainUnitTest.createPopulatedFilterHeaderDAO()
       filterDAO <- ChainUnitTest.createPopulatedFilterDAO()
+      stateDAO = ChainStateDescriptorDAO()
       chainHandler = ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
                                                filterHeaderDAO =
                                                  filterHeaderDAO,
-                                               filterDAO = filterDAO)
+                                               filterDAO = filterDAO,
+                                               stateDAO = stateDAO)
     } yield chainHandler
   }
 
@@ -417,7 +419,8 @@ trait ChainUnitTest
       blockHeaderDAO: BlockHeaderDAO): Future[ReorgFixtureBlockHeaderDAO] = {
     val handler = ChainHandler.fromDatabase(blockHeaderDAO,
                                             CompactFilterHeaderDAO(),
-                                            CompactFilterDAO())
+                                            CompactFilterDAO(),
+                                            ChainStateDescriptorDAO())
     val chainFixtureF = buildChainHandlerCompetingHeaders(handler)
     for {
       chainFixture <- chainFixtureF
@@ -655,10 +658,12 @@ object ChainUnitTest extends ChainVerificationLogger {
     lazy val blockHeaderDAO = BlockHeaderDAO()
     lazy val filterHeaderDAO = CompactFilterHeaderDAO()
     lazy val filterDAO = CompactFilterDAO()
+    lazy val stateDAO = ChainStateDescriptorDAO()
 
     ChainHandlerCached.fromDatabase(blockHeaderDAO = blockHeaderDAO,
                                     filterHeaderDAO = filterHeaderDAO,
-                                    filterDAO = filterDAO)
+                                    filterDAO = filterDAO,
+                                    stateDAO = stateDAO)
 
   }
 

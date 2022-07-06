@@ -169,9 +169,10 @@ object NodeUnitTest extends P2PLogger {
     val blockHeaderDAO = BlockHeaderDAO()
     val filterHeaderDAO = CompactFilterHeaderDAO()
     val filterDAO = CompactFilterDAO()
+    val stateDAO = ChainStateDescriptorDAO()
 
     val chainApiF = ChainHandlerCached
-      .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO)
+      .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO, stateDAO)
 
     val nodeF = chainApiF.map(buildNode(peer, _, walletCreationTimeOpt))
     for {
@@ -510,11 +511,17 @@ object NodeUnitTest extends P2PLogger {
       system: ActorSystem): Future[NeutrinoNode] = {
     import system.dispatcher
     for {
-
+      syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
+      _ = assert(!syncing)
       _ <- node.sync()
+      syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
+      _ = assert(syncing)
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFilterHeadersSync(node, bitcoind)
       _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+      syncing <- node.chainApiFromDb().flatMap(_.isSyncing())
+      _ = assert(!syncing)
+
     } yield node
   }
 
