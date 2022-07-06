@@ -1,18 +1,15 @@
 package org.bitcoins.node
 
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{Sink, Source, SourceQueueWithComplete}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.node.NodeType
-import org.bitcoins.core.p2p.{
-  AddrV2Message,
-  ExpectsResponse,
-  ServiceIdentifier,
-  VersionMessage
-}
+import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.{NetworkUtil, StartStopAsync}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{Peer, PeerDAO, PeerDb}
-import org.bitcoins.node.networking.peer.PeerMessageSender
+import org.bitcoins.node.networking.peer._
 import org.bitcoins.node.networking.{P2PClient, P2PClientSupervisor}
 import org.bitcoins.node.util.BitcoinSNodeUtil
 import scodec.bits.ByteVector
@@ -149,8 +146,12 @@ case class PeerManager(
     logger.debug(s"Replacing $replacePeer with $withPeer")
     assert(!peerData(replacePeer).serviceIdentifier.nodeCompactFilters,
            s"$replacePeer has cf")
-    removePeer(replacePeer)
-    addPeer(withPeer)
+    for {
+      _ <- removePeer(replacePeer)
+      _ <- addPeer(withPeer)
+    } yield {
+      ()
+    }
   }
 
   def removePeer(peer: Peer): Future[Unit] = {
@@ -192,7 +193,7 @@ case class PeerManager(
       interval = 1.seconds,
       maxTries = 30)
 
-    for {
+    val stopF = for {
       _ <- removeF
       _ <- finderStopF
       _ <- managerStopF
@@ -201,6 +202,14 @@ case class PeerManager(
         s"Stopped PeerManager. Took ${System.currentTimeMillis() - beganAt} ms ")
       this
     }
+
+    stopF.failed.foreach { e =>
+      logger.error(
+        s"Failed to stop peer manager. Peers: $peers, waiting for deletion: $waitingForDeletion",
+        e)
+    }
+
+    stopF
   }
 
   def isConnected(peer: Peer): Future[Boolean] = {
@@ -309,7 +318,7 @@ case class PeerManager(
       _peerData.remove(peer)
       val syncPeer = node.getDataMessageHandler.syncPeer
       if (syncPeer.isDefined && syncPeer.get == peer)
-        syncFromNewPeer()
+        syncFromNewPeer().map(_ => ())
       else Future.unit
     } else if (waitingForDeletion.contains(peer)) {
       //a peer we wanted to disconnect has remove has stopped the client actor, finally mark this as deleted
@@ -337,12 +346,19 @@ case class PeerManager(
 
   def onQueryTimeout(payload: ExpectsResponse, peer: Peer): Future[Unit] = {
     logger.debug(s"Query timeout out for $peer")
+
+    //if we are removing this peer and an existing query timed out because of that
+    // peerData will not have this peer
+    if (peerData.contains(peer)) {
+      peerData(peer).updateLastFailureTime()
+    }
+
     payload match {
-      case _ => //if any times out, try a new peer
-        peerData(peer).updateLastFailureTime()
-        val syncPeer = node.getDataMessageHandler.syncPeer
-        if (syncPeer.isDefined && syncPeer.get == peer)
-          syncFromNewPeer()
+      case _: GetHeadersMessage =>
+        dataMessageStream.offer(HeaderTimeoutWrapper(peer)).map(_ => ())
+      case _ =>
+        if (peer == node.getDataMessageHandler.syncPeer.get)
+          syncFromNewPeer().map(_ => ())
         else Future.unit
     }
   }
@@ -352,10 +368,41 @@ case class PeerManager(
     Future.unit
   }
 
-  def syncFromNewPeer(): Future[Unit] = {
+  def syncFromNewPeer(): Future[DataMessageHandler] = {
     logger.debug(s"Trying to sync from new peer")
     val newNode =
       node.updateDataMessageHandler(node.getDataMessageHandler.reset)
-    newNode.sync()
+    newNode.sync().map(_ => node.getDataMessageHandler)
   }
+
+  private val dataMessageStreamSource = Source
+    .queue[StreamDataMessageWrapper](1000,
+                                     overflowStrategy = OverflowStrategy.fail)
+    .mapAsync(1) {
+      case msg @ DataMessageWrapper(payload, peerMsgSender, peer) =>
+        logger.debug(s"Got ${payload.commandName} from ${peer} in stream")
+        node.getDataMessageHandler
+          .handleDataPayload(payload, peerMsgSender, peer)
+          .map { newDmh =>
+            node.updateDataMessageHandler(newDmh)
+            msg
+          }
+      case msg @ HeaderTimeoutWrapper(peer) =>
+        logger.debug(s"Processing timeout header for $peer")
+        node.getDataMessageHandler.onHeaderRequestTimeout(peer).map { newDmh =>
+          node.updateDataMessageHandler(newDmh)
+          logger.debug(s"Done processing timeout header for $peer")
+          msg
+        }
+    }
+
+  private val dataMessageStreamSink =
+    Sink.foreach[StreamDataMessageWrapper] {
+      case DataMessageWrapper(payload, _, peer) =>
+        logger.debug(s"Done processing ${payload.commandName} in ${peer}")
+      case HeaderTimeoutWrapper(_) =>
+    }
+
+  val dataMessageStream: SourceQueueWithComplete[StreamDataMessageWrapper] =
+    dataMessageStreamSource.to(dataMessageStreamSink).run()
 }

@@ -19,7 +19,6 @@ import org.bitcoins.node._
 import org.bitcoins.node.callback.NodeCallbackStreamManager
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.rpc.config.BitcoindRpcAppConfig
 import org.bitcoins.rpc.util.AppConfigFactoryActorSystem
 import org.bitcoins.tor.config.TorAppConfig
@@ -198,6 +197,13 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     } else 15.seconds
   }
 
+  /** maximum consecutive number of invalid responses allowed from the same peer */
+  lazy val maxInvalidResponsesAllowed: Int = {
+    if (config.hasPath("bitcoin-s.node.max-invalid-response-count")) {
+      config.getInt("bitcoin-s.node.max-invalid-response-count")
+    } else 10
+  }
+
   /** Creates either a neutrino node or a spv node based on the [[NodeAppConfig]] given */
   def createNode(
       peers: Vector[Peer] = Vector.empty[Peer],
@@ -234,14 +240,18 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
     val filterDAO = CompactFilterDAO()
     val stateDAO = ChainStateDescriptorDAO()
 
-    val dmhF = ChainHandlerCached
+    val chainF = ChainHandlerCached
       .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO, stateDAO)
-      .map(handler => DataMessageHandler(handler, walletCreationTimeOpt))
 
     nodeConf.nodeType match {
       case NodeType.NeutrinoNode =>
-        dmhF.map(dmh =>
-          NeutrinoNode(dmh, nodeConf, chainConf, system, paramPeers = peers))
+        chainF.map(chain =>
+          NeutrinoNode(chain,
+                       walletCreationTimeOpt,
+                       nodeConf,
+                       chainConf,
+                       system,
+                       paramPeers = peers))
       case NodeType.FullNode =>
         Future.failed(new RuntimeException("Not implemented"))
       case NodeType.BitcoindBackend =>

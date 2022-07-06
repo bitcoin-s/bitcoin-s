@@ -22,12 +22,7 @@ import org.bitcoins.node.networking.P2PClient.{
   NodeCommand
 }
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
-import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
-  Disconnected,
-  Initializing,
-  Normal,
-  Waiting
-}
+import org.bitcoins.node.networking.peer.PeerMessageReceiverState._
 import org.bitcoins.node.networking.peer.{
   PeerMessageReceiver,
   PeerMessageReceiverState
@@ -116,9 +111,10 @@ case class P2PClientActor(
       unalignedBytes: ByteVector): Receive =
     LoggingReceive {
       case message: NetworkMessage =>
-        message match {
+        message.payload match {
           case _: ExpectsResponse =>
-            logger.debug(s"${message.payload.commandName} expects response")
+            logger.debug(
+              s"${message.payload.commandName} expects response from $peer")
             Await.result(handleExpectResponse(message.payload), timeout)
           case _ =>
         }
@@ -150,8 +146,9 @@ case class P2PClientActor(
   private def ignoreNetworkMessages(
       peerConnectionOpt: Option[ActorRef],
       unalignedBytes: ByteVector): Receive = LoggingReceive {
-    case _ @(_: NetworkMessage | _: NetworkPayload |
+    case msg @ (_: NetworkMessage | _: NetworkPayload |
         _: ExpectResponseCommand) =>
+      logger.debug(s"Ignoring $msg for $peer as disconnecting.")
     case message: Tcp.Event if peerConnectionOpt.isDefined =>
       val newUnalignedBytes =
         handleEvent(message, peerConnectionOpt.get, unalignedBytes)
@@ -191,6 +188,10 @@ case class P2PClientActor(
     case P2PClient.CloseAnyStateCommand =>
       handleNodeCommand(cmd = P2PClient.CloseAnyStateCommand,
                         peerConnectionOpt = None)
+    case msg: NetworkMessage =>
+      logger.debug(s"$peer got ${msg.payload.commandName} while reconnecting.")
+      if (msg.payload.isInstanceOf[ExpectsResponse])
+        Await.result(handleExpectResponse(msg.payload), timeout)
     case ExpectResponseCommand(msg) =>
       Await.result(handleExpectResponse(msg), timeout)
     case metaMsg: P2PClient.MetaMsg =>
@@ -202,6 +203,9 @@ case class P2PClientActor(
       case P2PClient.CloseAnyStateCommand =>
         handleNodeCommand(cmd = P2PClient.CloseAnyStateCommand,
                           peerConnectionOpt = None)
+      case msg: NetworkMessage =>
+        if (msg.payload.isInstanceOf[ExpectsResponse])
+          Await.result(handleExpectResponse(msg.payload), timeout)
       case ExpectResponseCommand(msg) =>
         Await.result(handleExpectResponse(msg), timeout)
       case Tcp.CommandFailed(c: Tcp.Connect) =>
@@ -246,6 +250,14 @@ case class P2PClientActor(
       proxy: ActorRef,
       remoteAddress: InetSocketAddress,
       proxyAddress: InetSocketAddress): Receive = LoggingReceive {
+    case P2PClient.CloseAnyStateCommand =>
+      handleNodeCommand(cmd = P2PClient.CloseAnyStateCommand,
+                        peerConnectionOpt = None)
+    case msg: NetworkMessage =>
+      if (msg.payload.isInstanceOf[ExpectsResponse])
+        Await.result(handleExpectResponse(msg.payload), timeout)
+    case ExpectResponseCommand(msg) =>
+      Await.result(handleExpectResponse(msg), timeout)
     case Tcp.CommandFailed(_: Socks5Connect) =>
       logger.debug(
         s"connection failed to ${remoteAddress} via SOCKS5 ${proxyAddress}")
@@ -421,7 +433,15 @@ case class P2PClientActor(
             logger.trace(s"Processing message=${m}")
             val msg = NetworkMessageReceived(m, P2PClient(self, peer))
             if (peerMsgRecv.isConnected) {
-              peerMsgRecv.handleNetworkMessageReceived(msg)
+              currentPeerMsgHandlerRecv.state match {
+                case _ @(_: Normal | _: Waiting | Preconnection |
+                    _: Initializing) =>
+                  peerMsgRecv.handleNetworkMessageReceived(msg)
+                case _: PeerMessageReceiverState =>
+                  logger.debug(
+                    s"Ignoring ${msg.msg.payload.commandName} from $peer as in state=${currentPeerMsgHandlerRecv.state}")
+                  Future.successful(peerMsgRecv)
+              }
             } else {
               Future.successful(peerMsgRecv)
             }

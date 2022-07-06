@@ -238,11 +238,9 @@ class PeerMessageReceiver(
       curReceiver: PeerMessageReceiver): Future[PeerMessageReceiver] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
-    node.getDataMessageHandler.handleDataPayload(payload, sender, peer).map {
-      handler =>
-        val newNode = node.updateDataMessageHandler(handler)
-        new PeerMessageReceiver(newNode, curReceiver.state, peer)
-    }
+    node.getDataMessageHandler
+      .addToStream(payload, sender, peer)
+      .map(_ => new PeerMessageReceiver(node, curReceiver.state, peer))
   }
 
   /** Handles control payloads defined here https://bitcoin.org/en/developer-reference#control-messages
@@ -266,7 +264,8 @@ class PeerMessageReceiver(
 
   def onResponseTimeout(networkPayload: NetworkPayload): Future[Unit] = {
     assert(networkPayload.isInstanceOf[ExpectsResponse])
-    logger.debug(s"Handling response timeout for ${networkPayload.commandName}")
+    logger.debug(
+      s"Handling response timeout for ${networkPayload.commandName} from $peer")
 
     //isn't this redundant? No, on response timeout may be called when not cancel timeout
     state match {
@@ -287,6 +286,9 @@ class PeerMessageReceiver(
   }
 
   def handleExpectResponse(msg: NetworkPayload): Future[PeerMessageReceiver] = {
+    require(
+      msg.isInstanceOf[ExpectsResponse],
+      s"Cannot expect response for ${msg.commandName} from $peer as ${msg.commandName} does not expect a response.")
     state match {
       case good: Normal =>
         logger.debug(s"Handling expected response for ${msg.commandName}")

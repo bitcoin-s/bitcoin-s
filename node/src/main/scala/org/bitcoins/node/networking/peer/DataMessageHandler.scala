@@ -2,17 +2,20 @@ package org.bitcoins.node.networking.peer
 
 import akka.Done
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models._
+import org.bitcoins.node.networking.peer.DataMessageHandlerState._
+import org.bitcoins.node.{Node, P2PLogger, PeerManager}
 
 import java.time.Instant
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -27,19 +30,21 @@ import scala.util.control.NonFatal
 case class DataMessageHandler(
     chainApi: ChainApi,
     walletCreationTimeOpt: Option[Instant],
+    node: Node,
     initialSyncDone: Option[Promise[Done]] = None,
     currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
     filterHeaderHeightOpt: Option[Int] = None,
     filterHeightOpt: Option[Int] = None,
     syncing: Boolean = false,
-    syncPeer: Option[Peer] = None)(implicit
+    syncPeer: Option[Peer] = None,
+    state: DataMessageHandlerState = HeaderSync)(implicit
     ec: ExecutionContext,
     appConfig: NodeAppConfig,
     chainConfig: ChainAppConfig)
     extends P2PLogger {
 
-  require(appConfig.nodeType != NodeType.BitcoindBackend,
-          "Bitcoind should handle the P2P interactions")
+  require(appConfig.nodeType == NodeType.NeutrinoNode,
+          "DataMessageHandler is meant to be used with NeutrinoNode")
 
   private val txDAO = BroadcastAbleTransactionDAO()
 
@@ -48,7 +53,18 @@ case class DataMessageHandler(
                                        filterHeaderHeightOpt = None,
                                        filterHeightOpt = None,
                                        syncPeer = None,
-                                       syncing = false)
+                                       syncing = false,
+                                       state = HeaderSync)
+
+  def manager: PeerManager = node.peerManager
+
+  def addToStream(
+      payload: DataPayload,
+      peerMsgSender: PeerMessageSender,
+      peer: Peer): Future[Unit] = {
+    val msg = DataMessageWrapper(payload, peerMsgSender, peer)
+    manager.dataMessageStream.offer(msg).map(_ => ())
+  }
 
   def handleDataPayload(
       payload: DataPayload,
@@ -211,72 +227,219 @@ case class DataMessageHandler(
           s"Received headers message with ${count.toInt} headers from $peer")
         logger.trace(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
-        val chainApiF = for {
+        val chainApiHeaderProcessF: Future[DataMessageHandler] = for {
           newChainApi <- chainApi.setSyncing(count.toInt > 0)
           processed <- newChainApi.processHeaders(headers)
         } yield {
-          processed
+          copy(chainApi = processed)
         }
 
-        val getHeadersF = chainApiF
-          .flatMap { newApi =>
-            if (headers.nonEmpty) {
+        chainApiHeaderProcessF.failed.flatMap {
+          case r: RuntimeException
+              if r.getMessage.startsWith(
+                "Failed to connect any headers to our internal chain state") =>
+            logger.info(
+              s"Invalid headers $headers of count $count sent from ${syncPeer.get} in state $state")
 
-              val lastHeader = headers.last
-              val lastHash = lastHeader.hash
-              newApi.getBlockCount().map { count =>
-                logger.trace(
-                  s"Processed headers, most recent has height=$count and hash=$lastHash.")
-              }
+            state match {
+              case HeaderSync =>
+                manager.peerData(peer).updateInvalidMessageCount()
 
-              if (count.toInt == HeadersMessage.MaxHeadersCount) {
-                logger.info(
-                  s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
-                //the same one should sync headers
-                //expect a message with a timeout now
-                peerMsgSender
-                  .sendGetHeadersMessage(lastHash)
-                  .map(_ => syncing)
-              } else {
-                logger.debug(
-                  List(s"Received headers=${count.toInt} in one message,",
-                       "which is less than max. This means we are synced,",
-                       "not requesting more.")
-                    .mkString(" "))
-                // If we are in neutrino mode, we might need to start fetching filters and their headers
-                // if we are syncing we should do this, however, sometimes syncing isn't a good enough check,
-                // so we also check if our cached filter heights have been set as well, if they haven't then
-                // we probably need to sync filters
-                if (
-                  appConfig.nodeType == NodeType.NeutrinoNode && (!syncing ||
-                    (filterHeaderHeightOpt.isEmpty &&
-                      filterHeightOpt.isEmpty))
-                ) {
+                if (manager.peerData(peer).exceededMaxInvalidMessages) {
                   logger.info(
-                    s"Starting to fetch filter headers in data message handler")
-                  sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
+                    s"$peer exceeded max limit of invalid messages. Disconnecting.")
+                  for {
+                    _ <- manager.removePeer(peer)
+                    newDmh <- manager.syncFromNewPeer()
+                  } yield newDmh.copy(state = HeaderSync)
                 } else {
-                  Try(initialSyncDone.map(_.success(Done)))
-                  Future.successful(syncing)
+                  logger.info(s"Re-querying headers from $peer.")
+                  for {
+                    blockchains <- BlockHeaderDAO().getBlockchains()
+                    cachedHeaders = blockchains
+                      .flatMap(_.headers)
+                      .map(_.hashBE.flip)
+                    _ <- peerMsgSender.sendGetHeadersMessage(cachedHeaders)
+                  } yield this
+                }
+
+              case headerState @ ValidatingHeaders(inSyncWith,
+                                                   failedCheck,
+                                                   _) =>
+                //if a peer sends invalid data then mark it as failed, dont disconnect
+                logger.debug(
+                  s"Got invalid headers from $peer while validating. Marking as failed.")
+                failedCheck.add(peer)
+
+                if (headerState.validated) {
+                  logger.info(
+                    s"Done validating headers, inSyncWith=$inSyncWith, failedCheck=$failedCheck")
+                  fetchCompactFilters(this).map(_.copy(state = PostHeaderSync))
+                } else {
+                  Future.successful(this)
+                }
+
+              case _: DataMessageHandlerState =>
+                Future.successful(this)
+            }
+          case throwable: Throwable => throw throwable
+        }
+
+        val getHeadersF: Future[DataMessageHandler] =
+          chainApiHeaderProcessF
+            .flatMap { newDmh =>
+              val newApi = newDmh.chainApi
+              if (headers.nonEmpty) {
+
+                val lastHeader = headers.last
+                val lastHash = lastHeader.hash
+                newApi.getBlockCount().map { count =>
+                  logger.trace(
+                    s"Processed headers, most recent has height=$count and hash=$lastHash.")
+                }
+
+                if (count.toInt == HeadersMessage.MaxHeadersCount) {
+
+                  state match {
+                    case HeaderSync =>
+                      logger.info(
+                        s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
+                      //ask for headers more from the same peer
+                      peerMsgSender
+                        .sendGetHeadersMessage(lastHash)
+                        .map(_ => newDmh)
+
+                    case ValidatingHeaders(inSyncWith, _, _) =>
+                      //In the validation stage, some peer sent max amount of valid headers, revert to HeaderSync with that peer as syncPeer
+                      //disconnect the ones that we have already checked since they are at least out of sync by 2000 headers
+                      val removeFs = inSyncWith.map(p => manager.removePeer(p))
+
+                      val newSyncPeer = Some(peer)
+
+                      //ask for more headers now
+                      val askF = peerMsgSender
+                        .sendGetHeadersMessage(lastHash)
+                        .map(_ => syncing)
+
+                      for {
+                        _ <- Future.sequence(removeFs)
+                        newSyncing <- askF
+                      } yield newDmh.copy(syncing = newSyncing,
+                                          state = HeaderSync,
+                                          syncPeer = newSyncPeer)
+
+                    case _: DataMessageHandlerState =>
+                      Future.successful(newDmh)
+                  }
+
+                } else {
+                  logger.debug(
+                    List(s"Received headers=${count.toInt} in one message,",
+                         "which is less than max. This means we are synced,",
+                         "not requesting more.")
+                      .mkString(" "))
+                  // If we are in neutrino mode, we might need to start fetching filters and their headers
+                  // if we are syncing we should do this, however, sometimes syncing isn't a good enough check,
+                  // so we also check if our cached filter heights have been set as well, if they haven't then
+                  // we probably need to sync filters
+                  state match {
+                    case HeaderSync =>
+                      // headers are synced now with the current sync peer, now move to validating it for all peers
+                      assert(syncPeer.get == peer)
+
+                      if (manager.peers.size > 1) {
+                        val newState =
+                          ValidatingHeaders(inSyncWith = mutable.Set(peer),
+                                            verifyingWith = manager.peers.toSet,
+                                            failedCheck =
+                                              mutable.Set.empty[Peer])
+
+                        logger.info(
+                          s"Starting to validate headers now. Verifying with ${newState.verifyingWith}")
+
+                        val getHeadersAllF = manager.peerData
+                          .filter(_._1 != peer)
+                          .map(
+                            _._2.peerMessageSender.flatMap(
+                              _.sendGetHeadersMessage(lastHash))
+                          )
+
+                        Future
+                          .sequence(getHeadersAllF)
+                          .map(_ => newDmh.copy(state = newState))
+                      } else {
+                        //if just one peer then can proceed ahead directly
+                        fetchCompactFilters(newDmh).map(
+                          _.copy(state = PostHeaderSync))
+                      }
+
+                    case headerState @ ValidatingHeaders(inSyncWith, _, _) =>
+                      //add the current peer to it
+                      inSyncWith.add(peer)
+
+                      if (headerState.validated) {
+                        // If we are in neutrino mode, we might need to start fetching filters and their headers
+                        // if we are syncing we should do this, however, sometimes syncing isn't a good enough check,
+                        // so we also check if our cached filter heights have been set as well, if they haven't then
+                        // we probably need to sync filters
+
+                        fetchCompactFilters(newDmh).map(
+                          _.copy(state = PostHeaderSync))
+                      } else {
+                        //do nothing, we are still waiting for some peers to send headers or timeout
+                        Future.successful(newDmh)
+                      }
+
+                    case PostHeaderSync =>
+                      //send further requests to the same one that sent this
+                      if (
+                        !syncing ||
+                        (filterHeaderHeightOpt.isEmpty &&
+                          filterHeightOpt.isEmpty)
+                      ) {
+                        logger.info(
+                          s"Starting to fetch filter headers in data message handler")
+                        val newSyncingF =
+                          sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
+                        newSyncingF.map(newSyncing =>
+                          newDmh.copy(syncing = newSyncing))
+                      } else {
+                        Try(initialSyncDone.map(_.success(Done)))
+                        Future.successful(newDmh)
+                      }
+
+                  }
+                }
+              } else {
+                //what if we are synced exactly by the 2000th header
+                state match {
+                  case headerState @ ValidatingHeaders(inSyncWith, _, _) =>
+                    inSyncWith.add(peer)
+
+                    if (headerState.validated) {
+                      fetchCompactFilters(newDmh).map(
+                        _.copy(state = PostHeaderSync))
+                    } else {
+                      //do nothing, we are still waiting for some peers to send headers
+                      Future.successful(newDmh)
+                    }
+                  case _: DataMessageHandlerState =>
+                    Future.successful(newDmh)
                 }
               }
-            } else {
-              Try(initialSyncDone.map(_.success(Done)))
-              Future.successful(syncing)
             }
-          }
 
         getHeadersF.failed.map { err =>
           logger.error(s"Error when processing headers message", err)
         }
 
         for {
-          newApi <- chainApiF
-          newSyncing <- getHeadersF
+          _ <- chainApiHeaderProcessF
+          newDmh <- getHeadersF
           _ <- appConfig.callBacks.executeOnBlockHeadersReceivedCallbacks(
             headers)
         } yield {
-          this.copy(chainApi = newApi, syncing = newSyncing)
+          newDmh
         }
       case msg: BlockMessage =>
         val block = msg.block
@@ -324,11 +487,20 @@ case class DataMessageHandler(
         handleInventoryMsg(invMsg = invMsg, peerMsgSender = peerMsgSender)
     }
 
-    if (syncPeer.isEmpty || peer != syncPeer.get) {
+    if (state.isInstanceOf[ValidatingHeaders]) {
+      //process messages from all peers
+      resultF.failed.foreach { err =>
+        logger.error(s"Failed to handle data payload=${payload} from $peer",
+                     err)
+      }
+      resultF.recoverWith { case NonFatal(_) =>
+        Future.successful(this)
+      }
+    } else if (syncPeer.isEmpty || peer != syncPeer.get) {
+      //in other states, process messages only from syncPeer
       logger.debug(s"Ignoring ${payload.commandName} from $peer")
       Future.successful(this)
     } else {
-
       resultF.failed.foreach { err =>
         logger.error(s"Failed to handle data payload=${payload} from $peer",
                      err)
@@ -366,6 +538,48 @@ case class DataMessageHandler(
         }
       }
     } yield syncing
+  }
+
+  private def fetchCompactFilters(
+      currentDmh: DataMessageHandler): Future[DataMessageHandler] = {
+    if (
+      !syncing ||
+      (filterHeaderHeightOpt.isEmpty &&
+        filterHeightOpt.isEmpty)
+    ) {
+      logger.info(
+        s"Starting to fetch filter headers in data message handler. ID ${manager.peers}")
+
+      for {
+        peer <- manager.randomPeerWithService(
+          ServiceIdentifier.NODE_COMPACT_FILTERS)
+        newDmh = currentDmh.copy(syncPeer = Some(peer))
+        _ = logger.info(s"Now syncing filters from $peer")
+        sender <- manager.peerData(peer).peerMessageSender
+        newSyncing <- sendFirstGetCompactFilterHeadersCommand(sender)
+      } yield newDmh.copy(syncing = newSyncing)
+
+    } else {
+      Try(initialSyncDone.map(_.success(Done)))
+      Future.successful(this)
+    }
+  }
+
+  def onHeaderRequestTimeout(peer: Peer): Future[DataMessageHandler] = {
+    logger.info(s"Header request timed out from $peer in state $state")
+    state match {
+      case HeaderSync =>
+        manager.syncFromNewPeer()
+
+      case headerState @ ValidatingHeaders(_, failedCheck, _) =>
+        failedCheck.add(peer)
+
+        if (headerState.validated) {
+          fetchCompactFilters(this).map(_.copy(state = PostHeaderSync))
+        } else Future.successful(this)
+
+      case _: DataMessageHandlerState => Future.successful(this)
+    }
   }
 
   private def sendNextGetCompactFilterHeadersCommand(
@@ -480,3 +694,13 @@ case class DataMessageHandler(
     }
   }
 }
+
+sealed trait StreamDataMessageWrapper
+
+case class DataMessageWrapper(
+    payload: DataPayload,
+    peerMsgSender: PeerMessageSender,
+    peer: Peer)
+    extends StreamDataMessageWrapper
+
+case class HeaderTimeoutWrapper(peer: Peer) extends StreamDataMessageWrapper

@@ -13,7 +13,7 @@ import org.bitcoins.testkit.node.{
   NodeTestWithCachedBitcoindPair,
   NodeUnitTest
 }
-import org.bitcoins.testkit.util.TorUtil
+import org.bitcoins.testkit.util.{AkkaUtil, TorUtil}
 import org.scalatest.{Assertion, FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -108,7 +108,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- bothOurs
         _ <- allConnected
         _ <- allInitialized
-        _ = peers.map(peerManager.removePeer)
+        _ <- Future.sequence(peers.map(peerManager.removePeer))
         _ <- allDisconn
       } yield {
         succeed
@@ -264,6 +264,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
       for {
         _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
+        _ <- AkkaUtil.nonBlockingSleep(3.seconds)
         _ <- bitcoind.generateToAddress(2, junkAddress)
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
       } yield {
