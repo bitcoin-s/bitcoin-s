@@ -49,7 +49,6 @@ sealed abstract class ScriptInterpreter {
     */
   def run(program: PreExecutionScriptProgram): ScriptResult = {
     val scriptPubKey = program.txSignatureComponent.scriptPubKey
-    println(s"spk=$scriptPubKey")
     val flags = program.flags
 
     val p2shEnabled = ScriptFlagUtil.p2shEnabled(flags)
@@ -100,7 +99,6 @@ sealed abstract class ScriptInterpreter {
       }
 
     val result = evaluateExecutedScriptProgram(program, executedProgram)
-    println(s"result=$result")
     result
   }
 
