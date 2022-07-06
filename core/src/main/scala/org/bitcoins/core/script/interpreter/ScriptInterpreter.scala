@@ -729,7 +729,10 @@ sealed abstract class ScriptInterpreter {
       witness,
       program.taprootSerializationOptions)
     scriptResult match {
-      case ScriptOk         => program
+      case ScriptOk =>
+        // Set stack to OP_TRUE so we don't fail
+        // from empty stack
+        program.copy(stack = List(OP_TRUE))
       case err: ScriptError => program.failExecution(err)
     }
   }

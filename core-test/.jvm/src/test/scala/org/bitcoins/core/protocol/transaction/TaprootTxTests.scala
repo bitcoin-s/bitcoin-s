@@ -7,7 +7,6 @@ import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalatest.Assertion
 import org.scalatest.time.Span
-import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.concurrent.Future
