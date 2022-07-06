@@ -135,10 +135,12 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
     val blockHeaderDAO = BlockHeaderDAO()
     val compactFilterHeaderDAO = CompactFilterHeaderDAO()
     val compactFilterDAO = CompactFilterDAO()
+    val stateDAO = ChainStateDescriptorDAO()
     val chainHandler = ChainHandler(
         blockHeaderDAO,
         compactFilterHeaderDAO,
         compactFilterDAO,
+        stateDAO,
         blockFilterCheckpoints = Map.empty)
 
     ChainSync.sync(chainHandler, getBlockHeaderFunc, getBestBlockHashFunc)
