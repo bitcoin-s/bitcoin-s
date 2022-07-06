@@ -4,11 +4,14 @@ import org.bitcoins.core.protocol.script.{ScriptSignature, TaprootKeyPath}
 import org.bitcoins.core.script.flag.ScriptVerifyTaproot
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.scalatest.Assertion
 import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
-class TaprootTxTests extends BitcoinSUnitTest {
+import scala.concurrent.Future
+
+class TaprootTxTests extends BitcoinSJvmTest {
 
   behavior of "Taproot test cases"
 
@@ -47,10 +50,29 @@ class TaprootTxTests extends BitcoinSUnitTest {
   }
 
   it must "run the success test cases through the script interpreter" in {
-    testCases.foreach { testCase =>
-      withClue(testCase.comment) {
-        val result = ScriptInterpreter.run(testCase.successProgram)
-        assert(result == ScriptOk)
+    //execute in parallel as running test cases sequentially takes 17 minutes on CI
+    val groupedTestCases =
+      testCases.grouped(Runtime.getRuntime.availableProcessors())
+
+    val execute: Vector[Future[Vector[Assertion]]] = {
+      groupedTestCases
+        .map(cases => executeSuccessTestCases(cases.toVector))
+        .toVector
+    }
+    Future
+      .sequence(execute)
+      .map(_.flatten)
+      .map(_ => succeed)
+  }
+
+  private def executeSuccessTestCases(
+      testCases: Vector[TaprootTestCase]): Future[Vector[Assertion]] = {
+    Future {
+      testCases.map { testCase =>
+        withClue(testCase.comment) {
+          val result = ScriptInterpreter.run(testCase.successProgram)
+          assert(result == ScriptOk)
+        }
       }
     }
   }
@@ -67,5 +89,7 @@ class TaprootTxTests extends BitcoinSUnitTest {
           logger.info(s"Failed to parse failure test case=${testCase.comment}")
       }
     }
+
+    succeed
   }
 }
