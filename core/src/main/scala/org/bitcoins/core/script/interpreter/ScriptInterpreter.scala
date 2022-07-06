@@ -798,6 +798,19 @@ sealed abstract class ScriptInterpreter {
     }
   }
 
+  private val disabledOpCodes = {
+    val arithmetic =
+      Seq(OP_MUL, OP_2MUL, OP_DIV, OP_2DIV, OP_MOD, OP_LSHIFT, OP_RSHIFT)
+
+    val bitwise = Seq(OP_INVERT, OP_AND, OP_OR, OP_XOR)
+
+    val splice = Seq(OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT)
+
+    arithmetic ++ bitwise ++ splice
+  }
+
+  private val badOpCodes = Vector(OP_VERIF, OP_VERNOTIF)
+
   /** The execution loop for a script
     *
     * @param program the program whose script needs to be evaluated
@@ -822,32 +835,12 @@ sealed abstract class ScriptInterpreter {
       val (nextProgram, nextOpCount) = program.script match {
         //if at any time we see that the program is not valid
         //cease script execution
-        case _
-            if program.script.intersect(Seq(OP_VERIF, OP_VERNOTIF)).nonEmpty =>
+        case _ if program.script.intersect(badOpCodes).nonEmpty =>
           (program.failExecution(ScriptErrorBadOpCode), opCount)
-        //disabled splice operation
+        //disabled operations
         case _
             if program.script
-              .intersect(Seq(OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT))
-              .nonEmpty =>
-          (program.failExecution(ScriptErrorDisabledOpCode), opCount)
-        //disabled bitwise operations
-        case _
-            if program.script
-              .intersect(Seq(OP_INVERT, OP_AND, OP_OR, OP_XOR))
-              .nonEmpty =>
-          (program.failExecution(ScriptErrorDisabledOpCode), opCount)
-        //disabled arithmetic operations
-        case _
-            if program.script
-              .intersect(
-                Seq(OP_MUL,
-                    OP_2MUL,
-                    OP_DIV,
-                    OP_2DIV,
-                    OP_MOD,
-                    OP_LSHIFT,
-                    OP_RSHIFT))
+              .intersect(disabledOpCodes)
               .nonEmpty =>
           (program.failExecution(ScriptErrorDisabledOpCode), opCount)
         //program cannot contain a push operation > 520 bytes
