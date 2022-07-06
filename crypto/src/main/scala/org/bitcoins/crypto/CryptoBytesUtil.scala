@@ -2,7 +2,7 @@ package org.bitcoins.crypto
 
 import scodec.bits.{BitVector, ByteVector}
 
-import scala.math.BigInt
+import java.io.ByteArrayOutputStream
 
 /** Created by chris on 2/26/16.
   */
@@ -97,7 +97,11 @@ trait CryptoBytesUtil {
 
   @inline
   final def toByteVector[T <: NetworkElement](h: Seq[T]): ByteVector = {
-    ByteVector.concat(h.map(_.bytes))
+    val outputStream = new ByteArrayOutputStream()
+    h.foreach { ne =>
+      outputStream.write(ne.bytes.toArray)
+    }
+    ByteVector(outputStream.toByteArray)
   }
 }
 

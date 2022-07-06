@@ -36,7 +36,7 @@ class ScanBitcoind()(implicit
       bitcoind <- bitcoindF
       endHeight <- endHeightF
       //_ <- countWitV1MempoolTxs(bitcoind)
-      _ <- countTaprootTxsInBlocks(endHeight, 10000, bitcoind)
+      _ <- countTaprootTxsInBlocks(endHeight, 250000, bitcoind)
     } yield ()
     f.failed.foreach(err =>
       logger.error(s"Failed to count witness v1 mempool txs", err))
