@@ -170,6 +170,11 @@ trait ChainUnitTest
                 destroy = () => ChainUnitTest.destroyAllTables())(test)
   }
 
+  def withChainStateDescriptorDAO(test: OneArgAsyncTest): FutureOutcome = {
+    makeFixture(build = () => ChainUnitTest.createChainStateDescriptorDAO(),
+                destroy = () => ChainUnitTest.destroyAllTables())(test)
+  }
+
   def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(() => ChainUnitTest.createChainHandler(),
                 () => ChainUnitTest.destroyAllTables())(test)
@@ -479,6 +484,13 @@ object ChainUnitTest extends ChainVerificationLogger {
 
     val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
     chainHandlerF.map(_.blockHeaderDAO)
+  }
+
+  def createChainStateDescriptorDAO()(implicit
+      ec: ExecutionContext,
+      appConfig: ChainAppConfig): Future[ChainStateDescriptorDAO] = {
+    appConfig.migrate()
+    Future.successful(ChainStateDescriptorDAO())
   }
 
   def createFilterHeaderDAO()(implicit
