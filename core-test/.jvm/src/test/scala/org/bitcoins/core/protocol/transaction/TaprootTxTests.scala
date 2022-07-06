@@ -10,8 +10,8 @@ import org.scalatest.Assertion
 import org.scalatest.time.Span
 import scodec.bits.ByteVector
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent._
 
 class TaprootTxTests extends BitcoinSAsyncTest {
 
