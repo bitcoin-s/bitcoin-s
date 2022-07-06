@@ -20,7 +20,6 @@ class TaprootTxTests extends BitcoinSJvmTest {
   //these static test vectors take forever
   override lazy val timeLimit: Span = 10.minutes
 
-  private val logger = LoggerFactory.getLogger(getClass)
   //these tests are from
   //https://raw.githubusercontent.com/bitcoin-core/qa-assets/main/unit_test_data/script_assets_test.json
   lazy val url = getClass.getResource("/script_assets_test_cp.json")
@@ -91,7 +90,7 @@ class TaprootTxTests extends BitcoinSJvmTest {
             assert(result != ScriptOk)
           }
         case None =>
-          logger.info(s"Failed to parse failure test case=${testCase.comment}")
+          ()
       }
     }
 

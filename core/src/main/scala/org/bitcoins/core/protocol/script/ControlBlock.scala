@@ -3,8 +3,6 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.crypto.{Factory, NetworkElement, XOnlyPubKey}
 import scodec.bits.ByteVector
 
-import scala.util.Try
-
 /** Control block as defined by BIP341
   *
   * The last stack element is called the control block c, and must have length 33 + 32m,
@@ -43,7 +41,7 @@ case class UnknownControlBlock(bytes: ByteVector) extends ControlBlock
 object ControlBlock extends Factory[ControlBlock] {
 
   override def fromBytes(bytes: ByteVector): ControlBlock = {
-    Try(TapscriptControlBlock(bytes)).getOrElse(UnknownControlBlock(bytes))
+    new TapscriptControlBlock(bytes)
   }
 
   /** invariants from: https://github.com/bitcoin/bitcoin/blob/37633d2f61697fc719390767aae740ece978b074/src/script/interpreter.cpp#L1835

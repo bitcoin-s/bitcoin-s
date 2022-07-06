@@ -431,11 +431,8 @@ sealed abstract class ScriptInterpreter {
             case Right(rebuilt) =>
               val constants = witness.stack.map(ScriptConstant(_))
               witness match {
-                case _: TaprootKeyPath =>
-                  Right((constants, rebuilt))
-                case _: TaprootScriptPath =>
-                  Right((constants, rebuilt))
-                case _: TaprootUnknownPath =>
+                case _: TaprootKeyPath | _: TaprootScriptPath |
+                    _: TaprootUnknownPath =>
                   Right((constants, rebuilt))
               }
             case Left(err) => Left(err)
@@ -545,7 +542,7 @@ sealed abstract class ScriptInterpreter {
             )
             Success(program)
         }
-      case _: TaprootScriptPubKey =>
+      case trSPK: TaprootScriptPubKey =>
         require(
           scriptWitness.isInstanceOf[TaprootWitness],
           s"witness must be taproot witness for witness version 1 script execution, got=$scriptWitness")
@@ -556,7 +553,7 @@ sealed abstract class ScriptInterpreter {
           case Right((stack, scriptPubKey)) =>
             executeTapscript(
               taprootWitness = taprootWitness,
-              taprootSPK = witnessSPK.asInstanceOf[TaprootScriptPubKey],
+              taprootSPK = trSPK,
               rebuiltSPK = scriptPubKey,
               stack = stack.toVector,
               wTxSigComponent = wTxSigComponent,
@@ -603,26 +600,11 @@ sealed abstract class ScriptInterpreter {
     * @see https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki#specification
     */
   private def containsOpSuccess(asm: Vector[ScriptToken]): Boolean = {
-    val disabled = Vector(OP_CAT,
-                          OP_SUBSTR,
-                          OP_LEFT,
-                          OP_RIGHT,
-                          OP_INVERT,
-                          OP_AND,
-                          OP_OR,
-                          OP_XOR,
-                          OP_RESERVED1,
-                          OP_RESERVED2,
-                          OP_2MUL,
-                          OP_2DIV,
-                          OP_MUL,
-                          OP_DIV,
-                          OP_MOD,
-                          OP_LSHIFT,
-                          OP_RSHIFT)
+
     val containsOPSuccess =
       asm.exists(o =>
-        o.isInstanceOf[ReservedOperation] || disabled.exists(_ == o))
+        o.isInstanceOf[ReservedOperation] ||
+          ScriptInterpreter.bip341DisabledOpCodes.exists(_ == o))
     containsOPSuccess
   }
 
@@ -662,66 +644,55 @@ sealed abstract class ScriptInterpreter {
               wTxSigComponent.asInstanceOf[TaprootTxSigComponent]
             val controlBlock = taprootScriptPath.controlBlock
             val script = taprootScriptPath.script
-            val isCorrectSize = {
-              controlBlock.bytes.length < TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE ||
-              controlBlock.bytes.length > TaprootScriptPath.TAPROOT_CONTROL_MAX_SIZE ||
-              ((controlBlock.bytes.length - TaprootScriptPath.TAPROOT_CONTROL_BASE_SIZE) % TaprootScriptPath.TAPROOT_CONTROL_NODE_SIZE) != 0
-            }
-            if (isCorrectSize) {
+            //execdata.m_tapleaf_hash = ComputeTapleafHash(control[0] & TAPROOT_LEAF_MASK, exec_script);
+            val tapLeafHash = TaprootScriptPath.computeTapleafHash(
+              controlBlock.leafVersion,
+              script)
+            val isValidTaprootCommitment =
+              TaprootScriptPath.verifyTaprootCommitment(
+                controlBlock = controlBlock,
+                program = taprootSPK,
+                tapLeafHash = tapLeafHash)
+            if (!isValidTaprootCommitment) {
               val p = scriptPubKeyExecutedProgram.failExecution(
-                ScriptErrorTaprootWrongControlSize)
+                ScriptErrorWitnessProgramMisMatch)
               Success(p)
             } else {
-              //execdata.m_tapleaf_hash = ComputeTapleafHash(control[0] & TAPROOT_LEAF_MASK, exec_script);
-              val tapLeafHash = TaprootScriptPath.computeTapleafHash(
-                controlBlock.leafVersion,
-                script)
-              val isValidTaprootCommitment =
-                TaprootScriptPath.verifyTaprootCommitment(
-                  controlBlock = controlBlock,
-                  program = taprootSPK,
-                  tapLeafHash = tapLeafHash)
-              if (!isValidTaprootCommitment) {
+              val isDiscouragedTaprootVersion =
+                scriptPubKeyExecutedProgram.flags.exists(
+                  _ == ScriptVerifyDiscourageUpgradableTaprootVersion)
+              if (controlBlock.isTapLeafMask) {
+
+                //drop the control block & script in the witness
+                val stackNoControlBlockOrScript = {
+                  if (scriptPubKeyExecutedProgram.getAnnexHashOpt.isDefined) {
+                    //if we have an annex we need to drop
+                    //annex,control block, script
+                    stack.tail.tail.tail
+                  } else {
+                    //else just drop control block, script
+                    stack.tail.tail
+                  }
+                }
+                val newProgram = PreExecutionScriptProgram(
+                  txSignatureComponent = taprootTxSigComponent,
+                  stack = stackNoControlBlockOrScript.toList,
+                  script = rebuiltSPK.asm.toList,
+                  originalScript = rebuiltSPK.asm.toList,
+                  altStack = Nil,
+                  flags = taprootTxSigComponent.flags
+                )
+                val evaluated = executeProgram(newProgram)
+                val segwitChecks = postSegWitProgramChecks(evaluated)
+                Success(segwitChecks)
+              } else if (isDiscouragedTaprootVersion) {
                 val p = scriptPubKeyExecutedProgram.failExecution(
-                  ScriptErrorWitnessProgramMisMatch)
+                  ScriptErrorDiscourageUpgradableTaprootVersion)
                 Success(p)
               } else {
-                val isDiscouragedTaprootVersion =
-                  scriptPubKeyExecutedProgram.flags.exists(
-                    _ == ScriptVerifyDiscourageUpgradableTaprootVersion)
-                if (controlBlock.isTapLeafMask) {
-
-                  //drop the control block & script in the witness
-                  val stackNoControlBlockOrScript = {
-                    if (scriptPubKeyExecutedProgram.getAnnexHashOpt.isDefined) {
-                      //if we have an annex we need to drop
-                      //annex,control block, script
-                      stack.tail.tail.tail
-                    } else {
-                      //else just drop control block, script
-                      stack.tail.tail
-                    }
-                  }
-                  val newProgram = PreExecutionScriptProgram(
-                    txSignatureComponent = taprootTxSigComponent,
-                    stack = stackNoControlBlockOrScript.toList,
-                    script = rebuiltSPK.asm.toList,
-                    originalScript = rebuiltSPK.asm.toList,
-                    altStack = Nil,
-                    flags = taprootTxSigComponent.flags
-                  )
-                  val evaluated = executeProgram(newProgram)
-                  val segwitChecks = postSegWitProgramChecks(evaluated)
-                  Success(segwitChecks)
-                } else if (isDiscouragedTaprootVersion) {
-                  val p = scriptPubKeyExecutedProgram.failExecution(
-                    ScriptErrorDiscourageUpgradableTaprootVersion)
-                  Success(p)
-                } else {
-                  //is this right? I believe to maintain softfork compatibility we
-                  //just succeed?
-                  Success(scriptPubKeyExecutedProgram)
-                }
+                //is this right? I believe to maintain softfork compatibility we
+                //just succeed?
+                Success(scriptPubKeyExecutedProgram)
               }
             }
         }
@@ -820,8 +791,6 @@ sealed abstract class ScriptInterpreter {
   private def loop(
       program: ExecutionInProgressScriptProgram,
       opCount: Int): ExecutedScriptProgram = {
-    //logger.debug(s"program.stack=${program.stack}")
-    //logger.debug(s"program.script=${program.script}")
     val scriptByteVector = BytesUtil.toByteVector(program.script)
 
     val sigVersion = program.txSignatureComponent.sigVersion
@@ -856,7 +825,7 @@ sealed abstract class ScriptInterpreter {
         case Nil =>
           (program.toExecutedProgram, opCount)
 
-        case _ :: _ if !program.shouldExecuteNextOperation =>
+        case _ if !program.shouldExecuteNextOperation =>
           (program.updateScript(program.script.tail), opCount)
 
         //stack operations
@@ -1517,4 +1486,26 @@ sealed abstract class ScriptInterpreter {
     }
   }
 }
-object ScriptInterpreter extends ScriptInterpreter
+
+object ScriptInterpreter extends ScriptInterpreter {
+
+  val bip341DisabledOpCodes = {
+    Vector(OP_CAT,
+           OP_SUBSTR,
+           OP_LEFT,
+           OP_RIGHT,
+           OP_INVERT,
+           OP_AND,
+           OP_OR,
+           OP_XOR,
+           OP_RESERVED1,
+           OP_RESERVED2,
+           OP_2MUL,
+           OP_2DIV,
+           OP_MUL,
+           OP_DIV,
+           OP_MOD,
+           OP_LSHIFT,
+           OP_RSHIFT)
+  }
+}
