@@ -5,11 +5,11 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
   TaprootKeyPath,
   TaprootScriptPath,
+  TaprootUnknownPath,
   TaprootWitness
 }
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF}
-import org.bitcoins.core.script.crypto.OP_CODESEPARATOR
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BitcoinScriptUtil
@@ -77,6 +77,7 @@ sealed trait ScriptProgram {
     getTaprootWitness.flatMap {
       case sp: TaprootScriptPath => Some(sp)
       case _: TaprootKeyPath     => None
+      case _: TaprootUnknownPath => None
     }
   }
 
@@ -176,30 +177,6 @@ sealed trait StartedScriptProgram extends ScriptProgram {
   def lastCodeSeparator: Option[Int]
 
   def taprootSerializationOptions: TaprootSerializationOptions
-
-  /** Needs to translate [[OP_CODESEPARATOR]] idx WITH push ops
-    * to [[OP_CODESEPARATOR]] index without push ops
-    */
-  private def calculateRealCodeSepIdx: Option[Int] = {
-
-    lastCodeSeparator match {
-      case Some(lastCodeSeparatorIdx) =>
-        //map original indices to new indices
-        val originalWithIndices =
-          originalScript.take(lastCodeSeparatorIdx).zipWithIndex
-        val vec = Vector(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4)
-        val scriptOpsWithIndices = originalWithIndices
-          .filter { case (op, _) =>
-            op.isInstanceOf[ScriptOperation] && !vec.contains(op)
-          }
-
-        val offset =
-          originalWithIndices.size - scriptOpsWithIndices.size
-        Some(offset)
-      case None =>
-        None
-    }
-  }
 }
 
 /** Implements the counting required for O(1) handling of conditionals in Bitcoin Script.

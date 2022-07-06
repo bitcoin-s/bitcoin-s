@@ -6,13 +6,7 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptWitness,
-  P2WPKHWitnessV0,
-  P2WSHWitnessV0,
-  ScriptSignature,
-  TaprootWitness
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -647,9 +641,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairV21 {
                 assert(p2wpkh.signature == partialSig.signature)
               case _: P2WSHWitnessV0 | EmptyScriptWitness | _: TaprootWitness =>
                 fail("Expected P2WPKH")
-              case _: TaprootWitness =>
-                throw new UnsupportedOperationException(
-                  s"Taproot not implemented")
             }
         }
       }

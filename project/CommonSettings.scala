@@ -134,7 +134,7 @@ object CommonSettings {
 
   /** Compiler options for source code */
   private val scala2_13SourceCompilerOpts = {
-    /*Seq("-Xfatal-warnings") ++*/ scala2_13CompilerLinting
+    Seq("-Xfatal-warnings") ++ scala2_13CompilerLinting
   }
 
   private val nonScala2_13CompilerOpts = Seq(

@@ -2,16 +2,7 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.crypto.{TaprootTxSigComponent, TxSigComponent}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{
-  P2SHScriptPubKey,
-  ScriptPubKey,
-  ScriptSignature,
-  ScriptWitness,
-  TaprootScriptPubKey,
-  TaprootUnknownPath,
-  TaprootWitness
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagFactory}
 import org.bitcoins.core.script.util.PreviousOutputMap

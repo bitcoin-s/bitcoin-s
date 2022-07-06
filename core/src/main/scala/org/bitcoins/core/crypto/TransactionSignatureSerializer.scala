@@ -66,8 +66,6 @@ sealed abstract class TransactionSignatureSerializer {
 
   }
 
-  private val sigHashOutputMask: Byte = 3.toByte
-
   private def serializeForSignature(
       spendingTransaction: Transaction,
       inputIndex: UInt32,

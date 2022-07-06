@@ -334,14 +334,6 @@ sealed abstract class ScriptInterpreter {
     }
   }
 
-  private val ANNEX_TAG: Byte = TaprootScriptPath.annex
-
-  /** Validation weight per passing signature (Tapscript only, see BIP342) */
-  private val VALIDATION_WEIGHT_PER_SIGOP_PASSED: Int = 50
-
-  /** How much weight budget is added to the witness size (Tapscript only, BIP342) */
-  private val VALIDATION_WEIGHT_OFFSET: Int = 50
-
   /** Runs a segwit script through our interpreter, mimics this functionality in bitcoin core:
     * [[https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1441-L1452]]
     * @param scriptPubKeyExecutedProgram the program with the
@@ -871,7 +863,7 @@ sealed abstract class ScriptInterpreter {
         case Nil =>
           (program.toExecutedProgram, opCount)
 
-        case op :: _ if !program.shouldExecuteNextOperation =>
+        case _ :: _ if !program.shouldExecuteNextOperation =>
           (program.updateScript(program.script.tail), opCount)
 
         //stack operations

@@ -14,25 +14,11 @@ import org.bitcoins.core.script.control.{
   ControlOperationsInterpreter,
   OP_VERIFY
 }
-import org.bitcoins.core.script.flag.{
-  ScriptFlagUtil,
-  ScriptVerifyDiscourageUpgradablePubKeyType
-}
+import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BitcoinScriptUtil
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  ECDigitalSignature,
-  ECPublicKeyBytes,
-  HashDigest,
-  HashType,
-  SchnorrDigitalSignature,
-  SchnorrPublicKey,
-  XOnlyPubKey
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
-
-import scala.util.{Failure, Success}
 
 /** Created by chris on 1/6/16.
   */

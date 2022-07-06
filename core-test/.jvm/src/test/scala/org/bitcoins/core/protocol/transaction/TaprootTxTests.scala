@@ -1,10 +1,5 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.{
-  BaseTxSigComponent,
-  WitnessTxSigComponent,
-  WitnessTxSigComponentRebuilt
-}
 import org.bitcoins.core.protocol.script.{ScriptSignature, TaprootKeyPath}
 import org.bitcoins.core.script.flag.ScriptVerifyTaproot
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
@@ -63,13 +58,7 @@ class TaprootTxTests extends BitcoinSUnitTest {
   it must "run the failure test cases through the script interpreter" ignore {
     testCases.foreach { testCase =>
       testCase.failureTxSigComponentsOpt match {
-        case Some(failureTxSigComponent) =>
-          failureTxSigComponent match {
-            case witTxSig: WitnessTxSigComponent =>
-            case _: BaseTxSigComponent | _: WitnessTxSigComponentRebuilt =>
-              ()
-          }
-
+        case Some(_) =>
           withClue(testCase.comment) {
             val result = ScriptInterpreter.run(testCase.failProgramOpt.get)
             assert(result != ScriptOk)

@@ -1,6 +1,5 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.crypto.{Sha256Digest, XOnlyPubKey}
 import org.bitcoins.testkitcore.gen.WitnessGenerators
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
