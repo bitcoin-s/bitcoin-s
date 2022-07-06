@@ -49,6 +49,7 @@ sealed abstract class ScriptInterpreter {
     */
   def run(program: PreExecutionScriptProgram): ScriptResult = {
     val scriptPubKey = program.txSignatureComponent.scriptPubKey
+    println(s"spk=$scriptPubKey")
     val flags = program.flags
 
     val p2shEnabled = ScriptFlagUtil.p2shEnabled(flags)
@@ -98,7 +99,9 @@ sealed abstract class ScriptInterpreter {
           }
       }
 
-    evaluateExecutedScriptProgram(program, executedProgram)
+    val result = evaluateExecutedScriptProgram(program, executedProgram)
+    println(s"result=$result")
+    result
   }
 
   private def programFlagsViolated(
@@ -482,6 +485,7 @@ sealed abstract class ScriptInterpreter {
         witnessSPKV0: WitnessScriptPubKey): Either[
       ScriptError,
       (Seq[ScriptToken], ScriptPubKey)] = {
+      println(s"rebuildV0")
       val program = witnessSPKV0.witnessProgram
       val programBytes = BytesUtil.toByteVector(program)
       programBytes.size match {
@@ -583,8 +587,26 @@ sealed abstract class ScriptInterpreter {
             )
             Success(program)
         }
-      case _: UnassignedWitnessScriptPubKey =>
-        evaluateUnassignedWitness(wTxSigComponent)
+      case u: UnassignedWitnessScriptPubKey =>
+        if (u.asm.contains(OP_0)) {
+          //cannot have an v0 unassigned witness as according to BIP141
+          //a witness v0 script must be 20 bytes or 32 bytes
+          val program = ExecutedScriptProgram(
+            txSignatureComponent = wTxSigComponent,
+            stack = Nil,
+            script = Nil,
+            originalScript = Nil,
+            altStack = Nil,
+            flags = wTxSigComponent.flags,
+            lastCodeSeparator = None,
+            codeSeparatorTapscriptIdx = None,
+            error = Some(ScriptErrorWitnessProgramWrongLength)
+          )
+          Success(program)
+        } else {
+          evaluateUnassignedWitness(wTxSigComponent)
+        }
+
     }
   }
 
