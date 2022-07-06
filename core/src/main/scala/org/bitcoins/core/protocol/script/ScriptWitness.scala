@@ -179,15 +179,22 @@ object ScriptWitness extends Factory[ScriptWitness] {
         || (stack.head.size == 65 && stack.head.head == 0x04 && CryptoUtil
           .isValidPubKey(ECPublicKeyBytes(stack.head))))
     }
+
     if (stack.isEmpty) {
       EmptyScriptWitness
+    } else if (TaprootKeyPath.isValid(stack.toVector)) {
+      //taproot key path spend
+      TaprootKeyPath.fromStack(stack.toVector)
+    } else if (isPubKey && stack.size == 1) {
+      val pubKey = ECPublicKeyBytes(stack.head)
+      P2WPKHWitnessV0(pubKey)
+    } else if (TaprootScriptPath.isValid(stack.toVector)) {
+      TaprootScriptPath.fromStack(stack.toVector)
+
     } else if (isPubKey && stack.size == 2) {
       val pubKey = ECPublicKeyBytes(stack.head)
       val sig = ECDigitalSignature(stack(1))
       P2WPKHWitnessV0(pubKey, sig)
-    } else if (isPubKey && stack.size == 1) {
-      val pubKey = ECPublicKeyBytes(stack.head)
-      P2WPKHWitnessV0(pubKey)
     } else {
       //wont match a Vector if I don't convert to list
       val s = stack.toList
@@ -227,7 +234,9 @@ object TaprootWitness {
 
     if ((hasAnnex && stack.length == 2) || stack.length == 1) {
       TaprootKeyPath.fromStack(stack)
-    } else TaprootScriptPath(stack)
+    } else {
+      TaprootScriptPath(stack)
+    }
   }
 }
 
@@ -269,10 +278,10 @@ object TaprootKeyPath {
     }
 
     val keyPath = if (sigBytes.length == 64) {
-      //means SIGHASH_ALL is implicitly encoded
+      //means SIGHASH_DEFAULT is implicitly encoded
       //see: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#Common_signature_message
       val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
-      TaprootKeyPath(sig, HashType.sigHashAll, annexOpt)
+      TaprootKeyPath(sig, HashType.sigHashDefault, annexOpt)
     } else if (sigBytes.length == 65) {
       val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
       val hashType = HashType.fromByte(sigBytes.last)
@@ -295,16 +304,16 @@ case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
   require(TaprootScriptPath.isValid(stack),
           s"Invalid witness stack for TaprootScriptPath, got=$stack")
 
-  val controlBlock: ControlBlock = {
+  val controlBlock: TapscriptControlBlock = {
     if (TaprootScriptPath.hasAnnex(stack)) {
       //If there are at least two witness elements, and the first byte of the last element is 0x50[4],
       // this last element is called annex a[5] and is removed from the witness stack.
       // The annex (or the lack of thereof) is always covered by the signature and contributes to transaction weight,
       // but is otherwise ignored during taproot validation.
       //see: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#script-validation-rules
-      ControlBlock.fromBytes(stack(1))
+      TapscriptControlBlock.fromBytes(stack(1))
     } else {
-      ControlBlock.fromBytes(stack.head)
+      TapscriptControlBlock.fromBytes(stack.head)
     }
   }
 
@@ -369,15 +378,7 @@ object TaprootScriptPath {
           stack.head
         }
       }
-
-      val m = controlBlock.drop(33).length / 32.0
-      if (m >= 0 && m <= 128) {
-        val pubKeyBytes = controlBlock.slice(1, 33)
-        // if not whole, we do not have correct # of bytes for control block
-        m.isWhole && SchnorrPublicKey.fromBytesOpt(pubKeyBytes).isDefined
-      } else {
-        false
-      }
+      TapscriptControlBlock.isValid(controlBlock)
     } else {
       false
     }
@@ -441,10 +442,37 @@ object TaprootScriptPath {
 
   /** Checks the witness stack has an annex in it */
   def hasAnnex(stack: Vector[ByteVector]): Boolean = {
-    stack.headOption.map(_.head) == annexOpt
+    stack.headOption
+      .map(_.headOption == annexOpt)
+      .getOrElse(false)
   }
 
   private def hashTapBranch(bytes: ByteVector): Sha256Digest = {
     CryptoUtil.taggedSha256(bytes, "TapBranch")
+  }
+}
+
+case class TaprootUnknownPath(stack: Vector[ByteVector])
+    extends TaprootWitness {
+
+  val controlBlock: UnknownControlBlock = {
+    if (TaprootScriptPath.hasAnnex(stack)) {
+      //If there are at least two witness elements, and the first byte of the last element is 0x50[4],
+      // this last element is called annex a[5] and is removed from the witness stack.
+      // The annex (or the lack of thereof) is always covered by the signature and contributes to transaction weight,
+      // but is otherwise ignored during taproot validation.
+      //see: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#script-validation-rules
+      UnknownControlBlock.fromBytes(stack(1))
+    } else {
+      UnknownControlBlock.fromBytes(stack.head)
+    }
+  }
+
+  override def annexOpt: Option[ByteVector] = {
+    if (TaprootScriptPath.hasAnnex(stack)) {
+      Some(stack.head)
+    } else {
+      None
+    }
   }
 }

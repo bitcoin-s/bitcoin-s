@@ -86,6 +86,8 @@ case object WitnessVersion1 extends WitnessVersion {
               Right(witnessSPK)
             case sp: TaprootScriptPath =>
               Right(sp.script)
+            case _: TaprootUnknownPath =>
+              Right(witnessSPK)
             case w @ (EmptyScriptWitness | _: P2WPKHWitnessV0 |
                 _: P2WSHWitnessV0) =>
               sys.error(
