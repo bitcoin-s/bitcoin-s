@@ -6,14 +6,19 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import org.scalatest.Assertion
+import org.scalatest.time.Span
 import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class TaprootTxTests extends BitcoinSJvmTest {
 
   behavior of "Taproot test cases"
+
+  //these static test vectors take forever
+  override lazy val timeLimit: Span = 10.minutes
 
   private val logger = LoggerFactory.getLogger(getClass)
   //these tests are from
