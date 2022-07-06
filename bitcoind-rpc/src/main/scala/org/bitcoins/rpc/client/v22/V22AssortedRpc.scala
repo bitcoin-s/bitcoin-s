@@ -19,6 +19,15 @@ trait V22AssortedRpc extends V18AssortedRpc with V20AssortedRpc {
       List(Json.toJson(count)))
   }
 
+  def getNodeAddresses(
+      network: String,
+      count: Int): Future[Vector[GetNodeAddressesResultPostV22]] = {
+    bitcoindCall[Vector[GetNodeAddressesResultPostV22]](
+      "getnodeaddresses",
+      List(Json.toJson(count), Json.toJson(network))
+    )
+  }
+
   override def getNodeAddresses(
       count: Int): Future[Vector[GetNodeAddressesResultPostV22]] =
     getNodeAddresses(Some(count))

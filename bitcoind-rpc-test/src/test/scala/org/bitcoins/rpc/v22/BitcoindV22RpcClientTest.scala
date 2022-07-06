@@ -141,7 +141,36 @@ class BitcoindV22RpcClientTest extends BitcoindFixturesCachedPairV22 {
       }
   }
 
-  it should "return a result" in { nodePair: FixtureParam =>
+  it should "take a network input and output addresses of same network" in {
+    nodePair: FixtureParam =>
+      val client = nodePair.node1
+      val networkOption = Vector("ipv4", "ipv6", "onion", "i2p")
+      networkOption.foreach { networkType =>
+        val resultVecF: Future[Vector[GetNodeAddressesResultPostV22]] =
+          client.getNodeAddresses(networkType, 10)
+        resultVecF.map { resultVec =>
+          resultVec.foreach { result =>
+            println(result.network)
+            assert(result.network == networkType)
+          }
+          succeed
+        }
+      }
+  }
+
+  it should "take a network input exa" in { nodePair: FixtureParam =>
+    val client = nodePair.node1
+    val resultVecF: Future[Vector[GetNodeAddressesResultPostV22]] =
+      client.getNodeAddresses("ipv4", 10)
+    resultVecF.map { resultVec =>
+      resultVec.foreach { result =>
+        assert(result.network == "ipv4")
+      }
+      succeed
+    }
+  }
+
+  it should "return a network address" in { nodePair: FixtureParam =>
     val client = nodePair.node1
     val resultVecF: Future[Vector[GetNodeAddressesResultPostV22]] =
       client.getNodeAddresses()
