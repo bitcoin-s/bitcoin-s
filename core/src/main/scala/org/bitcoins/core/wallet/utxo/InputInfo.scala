@@ -5,7 +5,7 @@ import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.constant.ScriptConstant
+import org.bitcoins.core.script.constant.{OP_TRUE, ScriptConstant}
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.{
   ECPublicKey,
@@ -401,9 +401,13 @@ object RawInputInfo {
                           hashPreImages)
       case EmptyScriptPubKey =>
         EmptyInputInfo(outPoint, amount)
-      case _: NonStandardScriptPubKey | _: WitnessCommitment =>
-        throw new UnsupportedOperationException(
-          s"Currently unsupported ScriptPubKey $scriptPubKey")
+      case spk @ (_: NonStandardScriptPubKey | _: WitnessCommitment) =>
+        if (spk == ScriptPubKey.fromAsm(Vector(OP_TRUE))) {
+          EmptyInputInfo(outPoint, amount)
+        } else {
+          throw new UnsupportedOperationException(
+            s"Currently unsupported ScriptPubKey $scriptPubKey")
+        }
     }
   }
 }
