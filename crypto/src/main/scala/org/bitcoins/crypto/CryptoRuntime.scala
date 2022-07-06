@@ -211,6 +211,26 @@ trait CryptoRuntime {
 
   def tweakMultiply(publicKey: ECPublicKey, tweak: FieldElement): ECPublicKey
 
+  def tweakMultiply(point: SecpPoint, tweak: FieldElement): SecpPoint = {
+    point match {
+      case SecpPointInfinity => SecpPointInfinity
+      case pt: SecpPointFinite =>
+        val pub = pt.toPublicKey
+        Try(tweakMultiply(pub, tweak)) match {
+          case Failure(err) =>
+            /* If tweak*pub = 0, then (tweak - 1)*pub + pub = 0
+             * so (tweak - 1)*pub = -pub. Otherwise err is unrelated.
+             * (Noting that it is impossible to have
+             * tweak*pub = 0 = (tweak - 1)*pub for pub != 0)
+             */
+            val pubNeg = tweakMultiply(pub, tweak.subtract(FieldElement.one))
+            if (pubNeg == pub.negate) SecpPointInfinity
+            else throw err
+          case Success(multKey) => multKey.toPoint
+        }
+    }
+  }
+
   def add(pk1: ECPrivateKey, pk2: ECPrivateKey): ECPrivateKey =
     pk1.fieldElement.add(pk2.fieldElement).toPrivateKey
 
