@@ -17,7 +17,7 @@ class EncryptedMnemonicTest extends BitcoinSUnitTest {
     val badPassword = AesPassword.fromNonEmptyString("bad")
 
     val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
-    val mnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None)
+    val mnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
     val encrypted = mnemonic.encrypt(password)
 
     val decrypted = encrypted.toMnemonic(badPassword)
@@ -28,7 +28,7 @@ class EncryptedMnemonicTest extends BitcoinSUnitTest {
   it must "have encryption/decryption symmetry" in {
     forAll(CryptoGenerators.mnemonicCode, CryptoGenerators.aesPassword) {
       (mnemonicCode, password) =>
-        val mnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None)
+        val mnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
         val encrypted = mnemonic.encrypt(password)
         val decrypted = encrypted.toMnemonic(password) match {
           case Success(clear) => clear

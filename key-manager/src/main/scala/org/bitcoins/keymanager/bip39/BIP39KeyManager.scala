@@ -118,7 +118,10 @@ object BIP39KeyManager
         val writableMnemonicE: Either[KeyManagerInitializeError, SeedState] =
           mnemonicE.map { mnemonic =>
             val decryptedMnemonic =
-              DecryptedMnemonic(mnemonic, time, backupTimeOpt = None)
+              DecryptedMnemonic(mnemonic,
+                                time,
+                                backupTimeOpt = None,
+                                imported = false)
             aesPasswordOpt match {
               case Some(aesPassword) => decryptedMnemonic.encrypt(aesPassword)
               case None =>

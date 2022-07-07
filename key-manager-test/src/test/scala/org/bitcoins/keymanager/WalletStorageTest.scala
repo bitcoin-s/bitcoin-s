@@ -37,7 +37,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   def getAndWriteMnemonic(walletConf: WalletAppConfig): DecryptedMnemonic = {
     val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
-    val decryptedMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None)
+    val decryptedMnemonic =
+      DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
     val encrypted = decryptedMnemonic.encrypt(passphrase.get)
     val seedPath = getSeedPath(walletConf)
     WalletStorage.writeSeedToDisk(seedPath, encrypted)
@@ -46,7 +47,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   def getAndWriteXprv(walletConf: WalletAppConfig): DecryptedExtPrivKey = {
     val xprv = CryptoGenerators.extPrivateKey.sampleSome
-    val decryptedExtPrivKey = DecryptedExtPrivKey(xprv, TimeUtil.now, None)
+    val decryptedExtPrivKey =
+      DecryptedExtPrivKey(xprv, TimeUtil.now, None, false)
     val encrypted = decryptedExtPrivKey.encrypt(passphrase.get)
     val seedPath = getSeedPath(walletConf)
     WalletStorage.writeSeedToDisk(seedPath, encrypted)
@@ -106,7 +108,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     walletConf: WalletAppConfig =>
       assert(!walletConf.kmConf.seedExists())
       val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
-      val writtenMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None)
+      val writtenMnemonic =
+        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
       val seedPath = getSeedPath(walletConf)
       WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
 
@@ -131,7 +134,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     walletConf: WalletAppConfig =>
       assert(!walletConf.kmConf.seedExists())
       val xprv = CryptoGenerators.extPrivateKey.sampleSome
-      val writtenXprv = DecryptedExtPrivKey(xprv, TimeUtil.now, None)
+      val writtenXprv = DecryptedExtPrivKey(xprv, TimeUtil.now, None, false)
       val seedPath = getSeedPath(walletConf)
       WalletStorage.writeSeedToDisk(seedPath, writtenXprv)
 
@@ -184,7 +187,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     walletConf: WalletAppConfig =>
       assert(!walletConf.kmConf.seedExists())
       val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
-      val writtenMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None)
+      val writtenMnemonic =
+        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
       val seedPath = getSeedPath(walletConf)
       WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
 
@@ -271,7 +275,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     walletConf: WalletAppConfig =>
       assert(!walletConf.kmConf.seedExists())
       val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
-      val writtenMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None)
+      val writtenMnemonic =
+        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
       val seedPath = getSeedPath(walletConf)
       WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
 
@@ -622,7 +627,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     walletConf: WalletAppConfig =>
       assert(!walletConf.kmConf.seedExists())
       val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
-      val writtenMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None)
+      val writtenMnemonic =
+        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
       val seedPath = getSeedPath(walletConf)
       WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
 
@@ -698,7 +704,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
   it must "backup an unencrypted seed" in { walletConf: WalletAppConfig =>
     assert(!walletConf.kmConf.seedExists())
     val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
-    val writtenMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None)
+    val writtenMnemonic =
+      DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
     val seedPath = getSeedPath(walletConf)
     WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
     assert(walletConf.kmConf.seedExists())
@@ -725,8 +732,9 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
   it must "backup an encrypted seed" in { walletConf: WalletAppConfig =>
     assert(!walletConf.kmConf.seedExists())
     val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
-    val writtenMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None)
-      .encrypt(passphrase.get)
+    val writtenMnemonic =
+      DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
+        .encrypt(passphrase.get)
     val seedPath = getSeedPath(walletConf)
     WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
     assert(walletConf.kmConf.seedExists())
@@ -750,4 +758,60 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
         .get)
   }
 
+  it must "set imported flag for an encrypted seed" in {
+    walletConf: WalletAppConfig =>
+      assert(!walletConf.kmConf.seedExists())
+      val seedPath = getSeedPath(walletConf)
+      val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
+
+      val writtenMnemonic = DecryptedMnemonic(mnemonicCode,
+                                              TimeUtil.now,
+                                              None,
+                                              false).encrypt(passphrase.get)
+
+      WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
+      WalletStorage.decryptSeedFromDisk(walletConf.seedPath, passphrase) match {
+        case Right(seed) => assert(!seed.imported)
+        case Left(err)   => fail(err.toString)
+      }
+
+      seedPath.toFile.delete()
+
+      val importedWrittenMnemonic =
+        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, true).encrypt(
+          passphrase.get)
+
+      WalletStorage.writeSeedToDisk(seedPath, importedWrittenMnemonic)
+      WalletStorage.decryptSeedFromDisk(walletConf.seedPath, passphrase) match {
+        case Right(seed) => assert(seed.imported)
+        case Left(err)   => fail(err.toString)
+      }
+  }
+
+  it must "set imported flag for an unencrypted seed" in {
+    walletConf: WalletAppConfig =>
+      assert(!walletConf.kmConf.seedExists())
+      val seedPath = getSeedPath(walletConf)
+      val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
+
+      val writtenMnemonic =
+        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
+
+      WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
+      WalletStorage.decryptSeedFromDisk(walletConf.seedPath, None) match {
+        case Right(seed) => assert(!seed.imported)
+        case Left(err)   => fail(err.toString)
+      }
+
+      seedPath.toFile.delete()
+
+      val importedWrittenMnemonic =
+        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, true)
+
+      WalletStorage.writeSeedToDisk(seedPath, importedWrittenMnemonic)
+      WalletStorage.decryptSeedFromDisk(walletConf.seedPath, None) match {
+        case Right(seed) => assert(seed.imported)
+        case Left(err)   => fail(err.toString)
+      }
+  }
 }

@@ -871,10 +871,16 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
             val mnemonicState = passwordOpt match {
               case Some(pass) =>
-                DecryptedMnemonic(mnemonic, creationTime, backupTimeOpt = None)
+                DecryptedMnemonic(mnemonic,
+                                  creationTime,
+                                  backupTimeOpt = None,
+                                  imported = true)
                   .encrypt(pass)
               case None =>
-                DecryptedMnemonic(mnemonic, creationTime, backupTimeOpt = None)
+                DecryptedMnemonic(mnemonic,
+                                  creationTime,
+                                  backupTimeOpt = None,
+                                  imported = true)
             }
 
             WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
@@ -936,10 +942,16 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
 
             val mnemonicState = passwordOpt match {
               case Some(pass) =>
-                DecryptedExtPrivKey(xprv, creationTime, backupTimeOpt = None)
+                DecryptedExtPrivKey(xprv,
+                                    creationTime,
+                                    backupTimeOpt = None,
+                                    imported = true)
                   .encrypt(pass)
               case None =>
-                DecryptedExtPrivKey(xprv, creationTime, backupTimeOpt = None)
+                DecryptedExtPrivKey(xprv,
+                                    creationTime,
+                                    backupTimeOpt = None,
+                                    imported = true)
             }
 
             WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
