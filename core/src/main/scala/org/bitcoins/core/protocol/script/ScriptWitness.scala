@@ -490,7 +490,7 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
 
   /** Checks the witness stack has an annex in it */
   def hasAnnex(stack: Vector[ByteVector]): Boolean = {
-    stack.headOption
+    stack.length > 1 && stack.headOption
       .map(_.headOption == annexOpt)
       .getOrElse(false)
   }

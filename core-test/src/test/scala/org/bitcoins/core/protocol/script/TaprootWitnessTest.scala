@@ -102,6 +102,14 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
     assert(tr.annexOpt == Some(stack.last))
   }
 
+  it must "construct a taproot keypath with a leading byte 0x50 but does NOT have an annex" in {
+    val hex =
+      "50795800afc8005c6d57ddb994ffa8d0e343549b4abd2ce38671cf14c92769091deee4eaa7704e84536f8e0de52789c8cc8e679d21c4ec060f5d92d51ed9562e"
+    val stack = Vector(hex).map(ByteVector.fromValidHex(_))
+    val witness = ScriptWitness(stack)
+    assert(witness.isInstanceOf[TaprootKeyPath])
+  }
+
   it must "have serialization symmetry" in {
     forAll(WitnessGenerators.taprootWitness) { case wit =>
       val fromBytes = TaprootWitness.fromBytes(wit.bytes)
