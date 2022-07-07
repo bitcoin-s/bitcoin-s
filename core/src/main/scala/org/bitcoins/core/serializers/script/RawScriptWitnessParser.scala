@@ -2,7 +2,12 @@ package org.bitcoins.core.serializers.script
 
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script.ScriptWitness
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptWitness,
+  ScriptWitness,
+  ScriptWitnessV0,
+  TaprootWitness
+}
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import scodec.bits.ByteVector
 
@@ -13,7 +18,7 @@ import scala.annotation.tailrec
 sealed abstract class RawScriptWitnessParser
     extends RawBitcoinSerializer[ScriptWitness] {
 
-  def read(bytes: ByteVector): ScriptWitness = {
+  override def read(bytes: ByteVector): ScriptWitness = {
     //first byte is the number of stack items
     val stackSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
     val (_, stackBytes) = bytes.splitAt(stackSize.byteSize.toInt)
@@ -41,7 +46,7 @@ sealed abstract class RawScriptWitnessParser
     witness
   }
 
-  def write(scriptWitness: ScriptWitness): ByteVector = {
+  override def write(scriptWitness: ScriptWitness): ByteVector = {
     @tailrec
     def loop(
         remainingStack: Seq[ByteVector],
@@ -55,8 +60,22 @@ sealed abstract class RawScriptWitnessParser
         loop(remainingStack.tail, serialization +: accum)
       }
     }
+    val stackWithAnnex = scriptWitness match {
+      case _: ScriptWitnessV0 =>
+        //no annex in witness v0
+        scriptWitness.stack
+      case trWit: TaprootWitness =>
+        trWit.annexOpt match {
+          case Some(annex) =>
+            annex +: trWit.stack
+          case None =>
+            trWit.stack
+        }
+      case EmptyScriptWitness =>
+        EmptyScriptWitness.stack
+    }
     val stackItems: Vector[ByteVector] =
-      loop(scriptWitness.stack.reverse, Vector.empty)
+      loop(stackWithAnnex.reverse, Vector.empty)
     val size = CompactSizeUInt(UInt64(stackItems.size))
     (size.bytes +: stackItems).fold(ByteVector.empty)(_ ++ _)
   }

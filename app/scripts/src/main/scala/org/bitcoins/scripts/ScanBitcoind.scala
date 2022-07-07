@@ -36,7 +36,7 @@ class ScanBitcoind()(implicit
       bitcoind <- bitcoindF
       endHeight <- endHeightF
       //_ <- countWitV1MempoolTxs(bitcoind)
-      _ <- countTaprootTxsInBlocks(endHeight, 250000, bitcoind)
+      _ <- countTaprootTxsInBlocks(endHeight, 33000, bitcoind)
     } yield ()
     f.failed.foreach(err =>
       logger.error(s"Failed to count witness v1 mempool txs", err))
@@ -54,8 +54,7 @@ class ScanBitcoind()(implicit
       bitcoind: BitcoindRpcClient,
       source: Source[Int, NotUsed],
       f: Block => T,
-      numParallelism: Int = Runtime.getRuntime.availableProcessors()): Future[
-    Seq[T]] = {
+      numParallelism: Int = 1): Future[Seq[T]] = {
     source
       .mapAsync(parallelism = numParallelism) { height =>
         bitcoind
@@ -68,6 +67,10 @@ class ScanBitcoind()(implicit
           s"Searching block at height=$height hashBE=${block.blockHeader.hashBE.hex}")
         Future {
           f(block)
+        }.map { t =>
+          logger.info(
+            s"Done with height=$height hashBE=${block.blockHeader.hashBE.hex}")
+          t
         }
       }
       .toMat(Sink.seq)(Keep.right)

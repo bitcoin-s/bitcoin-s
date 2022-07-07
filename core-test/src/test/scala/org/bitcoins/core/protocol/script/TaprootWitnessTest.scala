@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.crypto.{Sha256Digest, XOnlyPubKey}
+import org.bitcoins.testkitcore.gen.WitnessGenerators
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
@@ -99,5 +100,11 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
     val tr = TaprootWitness.fromStack(stack.reverse)
     assert(tr.isInstanceOf[TaprootKeyPath])
     assert(tr.annexOpt == Some(stack.last))
+  }
+
+  it must "have serialization symmetry" in {
+    forAll(WitnessGenerators.taprootKeyPath) { case wit =>
+      assert(TaprootKeyPath.fromBytes(wit.bytes) == wit)
+    }
   }
 }

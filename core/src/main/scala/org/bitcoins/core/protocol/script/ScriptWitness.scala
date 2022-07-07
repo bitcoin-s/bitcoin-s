@@ -254,7 +254,14 @@ case class TaprootKeyPath(
   }
 }
 
-object TaprootKeyPath {
+object TaprootKeyPath extends Factory[TaprootKeyPath] {
+
+  override def fromBytes(bytes: ByteVector): TaprootKeyPath = {
+    RawScriptWitnessParser.read(bytes) match {
+      case keypath: TaprootKeyPath => keypath
+      case x                       => sys.error(s"Could not parse taproot keypath, got=$x")
+    }
+  }
 
   def fromStack(vec: Vector[ByteVector]): TaprootKeyPath = {
     val hasAnnex = TaprootScriptPath.hasAnnex(vec)
@@ -295,7 +302,12 @@ object TaprootKeyPath {
   }
 
   def isValid(stack: Vector[ByteVector]): Boolean = {
-    stack.length == 1 && (stack.head.length == 64 || stack.head.length == 65)
+    val noAnnex =
+      stack.length == 1 && (stack.head.length == 64 || stack.head.length == 65)
+    val annex =
+      stack.length == 2 && stack.head.headOption == TaprootScriptPath.annexOpt && (stack(
+        1).length == 64 || stack(1).length == 65)
+    noAnnex || annex
   }
 }
 

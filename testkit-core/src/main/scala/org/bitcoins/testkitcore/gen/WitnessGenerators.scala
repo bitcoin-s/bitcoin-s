@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.crypto.{ECPrivateKey, HashType}
 import org.scalacheck.Gen
+import scodec.bits.ByteVector
 
 /** Created by chris on 11/28/16.
   */
@@ -35,6 +36,21 @@ sealed abstract class WitnessGenerators {
       P2WSHWitnessV0(spk,scriptSig)
     }*/
     Gen.oneOf(p2wpkhWitnessV0, p2wshWitnessV0)
+  }
+
+  def taprootKeyPath: Gen[TaprootKeyPath] = {
+    for {
+      signature <- CryptoGenerators.schnorrDigitalSignature
+      hashType <- CryptoGenerators.hashType
+      annexOpt <- Gen.option(annex)
+    } yield TaprootKeyPath(signature, hashType, annexOpt)
+  }
+
+  /** Generates a taproot annex */
+  def annex: Gen[ByteVector] = {
+    for {
+      annexBytes <- NumberGenerator.bytevector(31)
+    } yield TaprootScriptPath.annex +: annexBytes
   }
 
   /** Generates a [[org.bitcoins.core.protocol.transaction.TransactionWitness]] with
