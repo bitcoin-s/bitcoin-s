@@ -78,11 +78,8 @@ object TxSigComponent {
           case Some(scriptWitness) =>
             unsignedWtx.updateWitness(idx, scriptWitness)
         }
-      case _: ScriptWitnessV0 =>
-        unsignedWtx
-      case t: TaprootWitness =>
-        throw new UnsupportedOperationException(
-          s"Taproot not supported, got=$t")
+      case _: ScriptWitnessV0 => unsignedWtx
+      case _: TaprootWitness  => unsignedWtx
     }
   }
 

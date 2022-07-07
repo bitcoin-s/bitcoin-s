@@ -588,9 +588,8 @@ class PSBTUnitTest extends BitcoinSUnitTest {
 
     val finalizedT = psbt.finalizePSBT
     assert(finalizedT.isSuccess)
-    // todo can't verify taproot yet
-//    val finalized = finalizedT.get
-//    assert(finalized.extractTransactionAndValidate.isSuccess)
+    val finalized = finalizedT.get
+    assert(finalized.extractTransactionAndValidate.isSuccess)
   }
 
   it must "PSBT with one P2TR key only output with internal key and its derivation path" in {
