@@ -275,8 +275,8 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
   override def fromBytes(bytes: ByteVector): TaprootKeyPath = {
     RawScriptWitnessParser.read(bytes) match {
       case keypath: TaprootKeyPath => keypath
-      case x @ (_: TaprootScriptPath | _: TaprootWitness | _: ScriptWitnessV0 |
-          EmptyScriptWitness) =>
+      case x @ (_: TaprootScriptPath | _: TaprootUnknownPath |
+          _: ScriptWitnessV0 | EmptyScriptWitness) =>
         sys.error(s"Could not parse taproot keypath, got=$x")
     }
   }
