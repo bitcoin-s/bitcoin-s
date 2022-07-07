@@ -55,12 +55,14 @@ object ControlBlock extends Factory[ControlBlock] {
 
 object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
 
+  val leafVersion: Byte = 0xc0.toByte
+
   /** BIP342 specifies validity rules that apply for leaf version 0xc0,
     * but future proposals can introduce rules for other leaf versions.
     *
     * @see https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#rationale
     */
-  val knownLeafVersions: Vector[Byte] = Vector(0xc0.toByte, 0xc1.toByte)
+  val knownLeafVersions: Vector[Byte] = Vector(leafVersion, 0xc1.toByte)
 
   /** invariants from: https://github.com/bitcoin/bitcoin/blob/37633d2f61697fc719390767aae740ece978b074/src/script/interpreter.cpp#L1835
     */
@@ -72,6 +74,11 @@ object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
       ControlBlock.isValid(bytes) &&
       XOnlyPubKey.fromBytesT(bytes.slice(1, 33)).isSuccess
     }
+  }
+
+  /** Creates a control block with no scripts, just an internal key */
+  def fromXOnlyPubKey(internalKey: XOnlyPubKey): TapscriptControlBlock = {
+    fromBytes(leafVersion +: internalKey.bytes)
   }
 
   override def fromBytes(bytes: ByteVector): TapscriptControlBlock = {
