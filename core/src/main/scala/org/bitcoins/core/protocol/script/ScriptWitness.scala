@@ -241,9 +241,9 @@ object TaprootWitness extends Factory[TaprootWitness] {
 
   override def fromBytes(bytes: ByteVector): TaprootWitness = {
     RawScriptWitnessParser.read(bytes) match {
-      case k: TaprootKeyPath    => k
-      case s: TaprootScriptPath => s
-      case x                    => sys.error(s"Could not parse taproot witness, got=$x")
+      case w: TaprootWitness => w
+      case x @ (_: ScriptWitnessV0 | EmptyScriptWitness) =>
+        sys.error(s"Could not parse taproot witness, got=$x")
     }
   }
 
@@ -275,7 +275,9 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
   override def fromBytes(bytes: ByteVector): TaprootKeyPath = {
     RawScriptWitnessParser.read(bytes) match {
       case keypath: TaprootKeyPath => keypath
-      case x                       => sys.error(s"Could not parse taproot keypath, got=$x")
+      case x @ (_: TaprootScriptPath | _: TaprootWitness | _: ScriptWitnessV0 |
+          EmptyScriptWitness) =>
+        sys.error(s"Could not parse taproot keypath, got=$x")
     }
   }
 

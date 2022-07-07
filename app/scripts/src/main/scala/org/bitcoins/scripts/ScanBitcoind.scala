@@ -54,7 +54,8 @@ class ScanBitcoind()(implicit
       bitcoind: BitcoindRpcClient,
       source: Source[Int, NotUsed],
       f: Block => T,
-      numParallelism: Int = Runtime.getRuntime.availableProcessors()): Future[Seq[T]] = {
+      numParallelism: Int = Runtime.getRuntime.availableProcessors()): Future[
+    Seq[T]] = {
     source
       .mapAsync(parallelism = numParallelism) { height =>
         bitcoind
