@@ -103,6 +103,18 @@ trait ScriptFlagUtil {
     */
   def minimalIfEnabled(flags: Seq[ScriptFlag]): Boolean =
     flags.contains(ScriptVerifyMinimalIf)
+
+  def taprootEnabled(flags: Seq[ScriptFlag]): Boolean = {
+    flags.contains(ScriptVerifyTaproot)
+  }
+
+  def discourageUpgradablePublicKey(flags: Seq[ScriptFlag]): Boolean = {
+    flags.contains(ScriptVerifyDiscourageUpgradablePubKeyType)
+  }
+
+  def discourageOpSuccess(flags: Seq[ScriptFlag]): Boolean = {
+    flags.contains(ScriptVerifyDiscourageOpSuccess)
+  }
 }
 
 object ScriptFlagUtil extends ScriptFlagUtil

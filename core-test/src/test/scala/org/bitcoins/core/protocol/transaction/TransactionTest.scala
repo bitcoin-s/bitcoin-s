@@ -753,4 +753,5 @@ object JsonTestVectors {
       |["Make diffs cleaner by leaving a comment here without comma at the end"]
       |]
       |""".stripMargin
+
 }

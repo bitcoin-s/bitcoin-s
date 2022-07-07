@@ -4,7 +4,7 @@ import org.bitcoins.core.script.arithmetic.OP_1ADD
 import org.bitcoins.core.script.bitwise.OP_EQUAL
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.OP_IF
-import org.bitcoins.core.script.crypto.OP_RIPEMD160
+import org.bitcoins.core.script.crypto.{OP_CHECKSIGADD, OP_RIPEMD160}
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.splice.OP_SUBSTR
 import org.bitcoins.core.script.stack.OP_TOALTSTACK
@@ -29,6 +29,8 @@ class ScriptOperationFactoryTest extends BitcoinSUnitTest {
 
     ScriptOperation(166.toByte) must be(OP_RIPEMD160)
     ScriptOperation(177.toByte) must be(OP_CHECKLOCKTIMEVERIFY)
+
+    ScriptOperation.fromByte(0xba.toByte) must be(OP_CHECKSIGADD)
 
   }
 

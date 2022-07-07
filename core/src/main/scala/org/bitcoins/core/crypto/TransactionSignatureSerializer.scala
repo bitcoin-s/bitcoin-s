@@ -66,7 +66,7 @@ sealed abstract class TransactionSignatureSerializer {
 
   }
 
-  def serializeForSignature(
+  private def serializeForSignature(
       spendingTransaction: Transaction,
       inputIndex: UInt32,
       hashType: HashType,
@@ -302,7 +302,6 @@ sealed abstract class TransactionSignatureSerializer {
           } else {
             ByteVector.empty
           }
-
         val outputHash: ByteVector =
           if (isNotSigHashSingle && isNotSigHashNone) {
             val outputs = spendingTransaction.outputs
@@ -318,6 +317,7 @@ sealed abstract class TransactionSignatureSerializer {
               .bytes
             hash
           } else ByteVector.empty
+
         val haveAnnex: Boolean = taprootOptions.haveAnnex
 
         val annexByte = if (haveAnnex) 1.toByte else 0.toByte

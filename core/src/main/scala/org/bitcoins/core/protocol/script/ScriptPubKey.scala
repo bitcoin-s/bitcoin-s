@@ -1088,7 +1088,7 @@ object RawScriptPubKey extends ScriptFactory[RawScriptPubKey] {
 object NonWitnessScriptPubKey extends ScriptFactory[NonWitnessScriptPubKey] {
   val empty: NonWitnessScriptPubKey = fromAsm(Nil)
 
-  def fromAsm(asm: Seq[ScriptToken]): NonWitnessScriptPubKey = {
+  override def fromAsm(asm: Seq[ScriptToken]): NonWitnessScriptPubKey = {
     if (P2SHScriptPubKey.isValidAsm(asm)) {
       P2SHScriptPubKey(asm)
     } else {
@@ -1344,10 +1344,19 @@ object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
 
 case class TaprootScriptPubKey(override val asm: Vector[ScriptToken])
     extends WitnessScriptPubKey {
+  require(
+    witnessVersion == WitnessVersion1,
+    s"Taproot scriptpubkeys must have witnessVersion OP_1, got=$witnessVersion")
+  require(bytes.length == 35,
+          s"Taproot spks must have length 35, got=${bytes.length}")
   override def witnessProgram: Seq[ScriptToken] = asm.tail.tail
   override val scriptType: ScriptType = ScriptType.WITNESS_V1_TAPROOT
 
-  val pubKey: XOnlyPubKey = XOnlyPubKey.fromBytes(asm(2).bytes)
+  val pubKey: XOnlyPubKey = {
+    require(asm(2).bytes.length == 32,
+            s"pubKeyBytes must be 32 bytes in length, got=${asm(2).byteSize}")
+    XOnlyPubKey.fromBytes(asm(2).bytes)
+  }
 }
 
 object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
@@ -1355,7 +1364,7 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
   override def fromAsm(asm: Seq[ScriptToken]): TaprootScriptPubKey = {
     buildScript(asm.toVector,
                 TaprootScriptPubKey.apply,
-                s"Given asm was not a P2WSHWitnessSPKV0, got $asm")
+                s"Given asm was not a TaprootScriptPubKey, got $asm")
   }
 
   def apply(xOnlyPubKey: XOnlyPubKey): TaprootScriptPubKey = {
@@ -1372,7 +1381,7 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
     fromPubKey(schnorrPublicKey.toXOnly)
   }
 
-  def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
+  override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
     val asmBytes = BytesUtil.toByteVector(asm)
     asm.length == 3 &&
     asm.headOption.contains(OP_1) &&

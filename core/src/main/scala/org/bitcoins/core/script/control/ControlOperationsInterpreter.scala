@@ -79,7 +79,6 @@ sealed abstract class ControlOperationsInterpreter {
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_ELSE),
             "First script opt must be OP_ELSE")
-
     program.updateScript(program.script.tail).invertCondition()
   }
 

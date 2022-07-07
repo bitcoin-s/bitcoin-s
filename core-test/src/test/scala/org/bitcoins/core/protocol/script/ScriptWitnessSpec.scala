@@ -7,6 +7,7 @@ class ScriptWitnessSpec extends BitcoinSUnitTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
+
   it must "have serialization symmetry" in {
     forAll(WitnessGenerators.scriptWitness) { scriptWit =>
       val x = ScriptWitness(scriptWit.stack)

@@ -41,7 +41,7 @@ case class UnknownControlBlock(bytes: ByteVector) extends ControlBlock
 object ControlBlock extends Factory[ControlBlock] {
 
   override def fromBytes(bytes: ByteVector): ControlBlock = {
-    TapscriptControlBlock(bytes)
+    new TapscriptControlBlock(bytes)
   }
 
   /** invariants from: https://github.com/bitcoin/bitcoin/blob/37633d2f61697fc719390767aae740ece978b074/src/script/interpreter.cpp#L1835

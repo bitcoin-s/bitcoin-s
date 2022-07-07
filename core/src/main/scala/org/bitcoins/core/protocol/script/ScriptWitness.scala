@@ -190,7 +190,6 @@ object ScriptWitness extends Factory[ScriptWitness] {
       P2WPKHWitnessV0(pubKey)
     } else if (TaprootScriptPath.isValid(stack.toVector)) {
       TaprootScriptPath.fromStack(stack.toVector)
-
     } else if (isPubKey && stack.size == 2) {
       val pubKey = ECPublicKeyBytes(stack.head)
       val sig = ECDigitalSignature(stack(1))
@@ -352,7 +351,7 @@ case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
     * The annex (or the lack of thereof) is always covered by the signature and contributes to transaction weight,
     * but is otherwise ignored during taproot validation.
     */
-  def annexOpt: Option[ByteVector] = {
+  override def annexOpt: Option[ByteVector] = {
     if (TaprootScriptPath.hasAnnex(stack)) {
       Some(stack.head)
     } else {
