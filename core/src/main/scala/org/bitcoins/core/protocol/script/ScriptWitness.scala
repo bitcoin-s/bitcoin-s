@@ -227,7 +227,7 @@ sealed trait TaprootWitness extends ScriptWitness {
   }
 }
 
-object TaprootWitness {
+object TaprootWitness extends Factory[TaprootWitness] {
 
   def fromStack(stack: Vector[ByteVector]): TaprootWitness = {
     val hasAnnex = TaprootScriptPath.hasAnnex(stack)
@@ -238,6 +238,15 @@ object TaprootWitness {
       TaprootScriptPath(stack)
     }
   }
+
+  override def fromBytes(bytes: ByteVector): TaprootWitness = {
+    RawScriptWitnessParser.read(bytes) match {
+      case k: TaprootKeyPath    => k
+      case s: TaprootScriptPath => s
+      case x                    => sys.error(s"Could not parse taproot witness, got=$x")
+    }
+  }
+
 }
 
 /** Spending a taproot output via the key path spend */
@@ -248,9 +257,16 @@ case class TaprootKeyPath(
     extends TaprootWitness {
 
   override val stack: Vector[ByteVector] = {
-    if (hashType == HashType.sigHashDefault) {
+    val sig = if (hashType == HashType.sigHashDefault) {
       Vector(signature.bytes)
     } else Vector(signature.bytes :+ hashType.byte)
+
+    annexOpt match {
+      case Some(annex) =>
+        annex +: sig
+      case None =>
+        sig
+    }
   }
 }
 
@@ -359,7 +375,7 @@ case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
   def p: XOnlyPubKey = controlBlock.p
 }
 
-object TaprootScriptPath {
+object TaprootScriptPath extends Factory[TaprootScriptPath] {
 
   final val annex: Byte = 0x50
 
@@ -375,6 +391,14 @@ object TaprootScriptPath {
 
   final val TAPROOT_LEAF_MASK: Byte = 0xfe.toByte
   final val TAPROOT_LEAF_TAPSCRIPT: Byte = 0xc0.toByte
+
+  override def fromBytes(bytes: ByteVector): TaprootScriptPath = {
+    RawScriptWitnessParser.read(bytes) match {
+      case t: TaprootScriptPath => t
+      case x                    => sys.error(s"Could not parse taproot scriptpath, got=$x")
+
+    }
+  }
 
   def isValid(stack: Vector[ByteVector]): Boolean = {
     if (stack.length >= 2) {
@@ -398,6 +422,18 @@ object TaprootScriptPath {
 
   def fromStack(stack: Vector[ByteVector]): TaprootScriptPath =
     TaprootScriptPath(stack)
+
+  def apply(
+      controlBlock: TapscriptControlBlock,
+      annexOpt: Option[ByteVector],
+      spk: RawScriptPubKey): TaprootScriptPath = {
+    annexOpt match {
+      case Some(annex) =>
+        fromStack(Vector(annex, controlBlock.bytes, spk.asmBytes))
+      case None =>
+        fromStack(Vector(controlBlock.bytes, spk.asmBytes))
+    }
+  }
 
   def verifyTaprootCommitment(
       controlBlock: ControlBlock,

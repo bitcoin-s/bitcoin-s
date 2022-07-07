@@ -103,8 +103,9 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
   }
 
   it must "have serialization symmetry" in {
-    forAll(WitnessGenerators.taprootKeyPath) { case wit =>
-      assert(TaprootKeyPath.fromBytes(wit.bytes) == wit)
+    forAll(WitnessGenerators.taprootWitness) { case wit =>
+      assert(TaprootWitness.fromBytes(wit.bytes) == wit)
+      assert(TaprootWitness.fromStack(wit.stack.toVector) == wit)
     }
   }
 }

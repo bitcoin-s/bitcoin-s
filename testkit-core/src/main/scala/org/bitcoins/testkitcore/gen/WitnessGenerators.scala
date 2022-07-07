@@ -38,12 +38,30 @@ sealed abstract class WitnessGenerators {
     Gen.oneOf(p2wpkhWitnessV0, p2wshWitnessV0)
   }
 
+  def taprootWitness: Gen[TaprootWitness] = {
+    Gen.oneOf(taprootScriptPath, taprootKeyPath)
+  }
+
   def taprootKeyPath: Gen[TaprootKeyPath] = {
     for {
       signature <- CryptoGenerators.schnorrDigitalSignature
       hashType <- CryptoGenerators.hashType
       annexOpt <- Gen.option(annex)
     } yield TaprootKeyPath(signature, hashType, annexOpt)
+  }
+
+  def taprootScriptPath: Gen[TaprootScriptPath] = {
+    for {
+      controlBLock <- tapscriptControlBlock
+      (rawSPK, _) <- ScriptGenerators.rawScriptPubKey
+      annexOpt <- Gen.option(annex)
+    } yield TaprootScriptPath(controlBLock, annexOpt, rawSPK)
+  }
+
+  def tapscriptControlBlock: Gen[TapscriptControlBlock] = {
+    for {
+      pubKey <- CryptoGenerators.xOnlyPubKey
+    } yield TapscriptControlBlock.fromXOnlyPubKey(pubKey)
   }
 
   /** Generates a taproot annex */

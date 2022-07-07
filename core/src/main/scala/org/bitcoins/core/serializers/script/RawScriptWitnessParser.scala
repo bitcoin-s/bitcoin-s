@@ -2,12 +2,7 @@ package org.bitcoins.core.serializers.script
 
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptWitness,
-  ScriptWitness,
-  ScriptWitnessV0,
-  TaprootWitness
-}
+import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import scodec.bits.ByteVector
 
@@ -60,22 +55,9 @@ sealed abstract class RawScriptWitnessParser
         loop(remainingStack.tail, serialization +: accum)
       }
     }
-    val stackWithAnnex = scriptWitness match {
-      case _: ScriptWitnessV0 =>
-        //no annex in witness v0
-        scriptWitness.stack
-      case trWit: TaprootWitness =>
-        trWit.annexOpt match {
-          case Some(annex) =>
-            annex +: trWit.stack
-          case None =>
-            trWit.stack
-        }
-      case EmptyScriptWitness =>
-        EmptyScriptWitness.stack
-    }
+
     val stackItems: Vector[ByteVector] =
-      loop(stackWithAnnex.reverse, Vector.empty)
+      loop(scriptWitness.stack.reverse, Vector.empty)
     val size = CompactSizeUInt(UInt64(stackItems.size))
     (size.bytes +: stackItems).fold(ByteVector.empty)(_ ++ _)
   }
