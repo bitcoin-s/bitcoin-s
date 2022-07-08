@@ -253,4 +253,19 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         }
       }
   }
+
+  //intended for test fixtures
+  it must "sync filters when multiple header messages are sent in succession" in {
+    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
+      val node = nodeConnectedWithBitcoind.node
+      val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
+
+      for {
+        _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
+        _ <- bitcoind.generateToAddress(2, junkAddress)
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
+      } yield {
+        succeed
+      }
+  }
 }
