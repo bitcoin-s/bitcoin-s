@@ -52,7 +52,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
-          java-version: '17'
+          java-version: '18'
           cache: 'sbt'
       - name: Get Previous tag
         id: previoustag
