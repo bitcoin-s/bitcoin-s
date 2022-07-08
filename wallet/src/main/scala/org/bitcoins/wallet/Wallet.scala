@@ -90,7 +90,7 @@ abstract class Wallet
   val chainQueryApi: ChainQueryApi
   val creationTime: Instant = keyManager.creationTime
 
-  def walletCallbacks: WalletCallbacks = walletConfig.walletCallbacks
+  def walletCallbacks: WalletCallbacks = walletConfig.callBacks
 
   private def utxosWithMissingTx: Future[Vector[SpendingInfoDb]] = {
     for {

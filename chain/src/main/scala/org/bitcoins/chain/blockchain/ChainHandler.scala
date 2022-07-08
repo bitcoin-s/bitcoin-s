@@ -149,13 +149,13 @@ class ChainHandler(
                                              blockFilterCheckpoints)
 
         createdF.map { headers =>
-          if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
+          if (chainConfig.callBacks.onBlockHeaderConnected.nonEmpty) {
             val headersWithHeight: Vector[(Int, BlockHeader)] = {
               headersToBeCreated.reverseIterator.map(h =>
                 (h.height, h.blockHeader))
             }.toVector
 
-            chainConfig.chainCallbacks
+            chainConfig.callBacks
               .executeOnBlockHeaderConnectedCallbacks(logger, headersWithHeight)
           }
           chains.foreach { c =>

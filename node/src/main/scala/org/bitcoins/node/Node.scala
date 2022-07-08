@@ -49,7 +49,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   def controlMessageHandler: ControlMessageHandler
 
-  def nodeCallbacks: NodeCallbacks = nodeAppConfig.nodeCallbacks
+  def nodeCallbacks: NodeCallbacks = nodeAppConfig.callBacks
 
   lazy val txDAO: BroadcastAbleTransactionDAO = BroadcastAbleTransactionDAO()
 

@@ -168,6 +168,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val callbacksF =
       chainApiF.map(chainApi => buildNeutrinoCallbacks(wsQueue, chainApi))
 
+    val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
+    val _ = torConf.addCallbacks(torCallbacks)
     val startedNodeF = {
       //can't start connecting to peers until tor is done starting
       for {
@@ -267,7 +269,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val tuple = buildWsSource
     val wsQueue: SourceQueueWithComplete[Message] = tuple._1
     val wsSource: Source[Message, NotUsed] = tuple._2
-
+    val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
+    val _ = torConf.addCallbacks(torCallbacks)
     val walletF = bitcoindF.flatMap { bitcoind =>
       val feeProvider = FeeProviderFactory.getFeeProviderOrElse(
         bitcoind,
@@ -327,6 +330,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         serverCmdLineArgs = serverArgParser,
         wsSource = wsSource
       )
+
       walletCallbacks = WebsocketUtil.buildWalletCallbacks(
         wsQueue,
         walletConf.walletNameOpt)
@@ -508,7 +512,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             .map { _ =>
               BitcoindRpcBackendUtil
                 .startBitcoindMempoolPolling(wallet, bitcoind) { tx =>
-                  nodeConf.nodeCallbacks
+                  nodeConf.callBacks
                     .executeOnTxReceivedCallbacks(logger, tx)
                 }
               ()

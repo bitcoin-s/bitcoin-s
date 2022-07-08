@@ -135,7 +135,7 @@ case class DataMessageHandler(
               for {
                 newChainApi <- chainApi.processFilters(filterBatch)
                 _ <-
-                  appConfig.nodeCallbacks
+                  appConfig.callBacks
                     .executeOnCompactFiltersReceivedCallbacks(logger,
                                                               blockFilters)
               } yield (Vector.empty, newChainApi)
@@ -266,7 +266,7 @@ case class DataMessageHandler(
         for {
           newApi <- chainApiF
           newSyncing <- getHeadersF
-          _ <- appConfig.nodeCallbacks.executeOnBlockHeadersReceivedCallbacks(
+          _ <- appConfig.callBacks.executeOnBlockHeadersReceivedCallbacks(
             logger,
             headers)
         } yield {
@@ -286,7 +286,7 @@ case class DataMessageHandler(
                 for {
                   processedApi <- chainApi.processHeader(block.blockHeader)
                   _ <-
-                    appConfig.nodeCallbacks
+                    appConfig.callBacks
                       .executeOnBlockHeadersReceivedCallbacks(
                         logger,
                         Vector(block.blockHeader))
@@ -298,13 +298,13 @@ case class DataMessageHandler(
         for {
           newApi <- newApiF
           _ <-
-            appConfig.nodeCallbacks
+            appConfig.callBacks
               .executeOnBlockReceivedCallbacks(logger, block)
         } yield {
           this.copy(chainApi = newApi)
         }
       case TransactionMessage(tx) =>
-        MerkleBuffers.putTx(tx, appConfig.nodeCallbacks).flatMap {
+        MerkleBuffers.putTx(tx, appConfig.callBacks).flatMap {
           belongsToMerkle =>
             if (belongsToMerkle) {
               logger.trace(
@@ -313,7 +313,7 @@ case class DataMessageHandler(
             } else {
               logger.trace(
                 s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
-              appConfig.nodeCallbacks
+              appConfig.callBacks
                 .executeOnTxReceivedCallbacks(logger, tx)
                 .map(_ => this)
             }
