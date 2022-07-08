@@ -11,7 +11,7 @@ case class BitcoinSServerInfo(
     blockHeight: Int,
     blockHash: DoubleSha256DigestBE,
     torStarted: Boolean,
-    sync: Boolean) {
+    syncing: Boolean) {
 
   lazy val toJson: Value = {
     Obj(
@@ -19,7 +19,7 @@ case class BitcoinSServerInfo(
       PicklerKeys.blockHeightKey -> Num(blockHeight),
       PicklerKeys.blockHashKey -> Str(blockHash.hex),
       PicklerKeys.torStartedKey -> Bool(torStarted),
-      PicklerKeys.syncKey -> Bool(sync)
+      PicklerKeys.syncKey -> Bool(syncing)
     )
   }
 }
@@ -39,6 +39,6 @@ object BitcoinSServerInfo {
                        blockHeight = height,
                        blockHash = blockHash,
                        torStarted = torStarted,
-                       sync = sync)
+                       syncing = sync)
   }
 }

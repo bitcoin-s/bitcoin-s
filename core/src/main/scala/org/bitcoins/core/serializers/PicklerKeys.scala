@@ -48,7 +48,7 @@ object PicklerKeys {
   final val outcomesKey: String = "outcomes"
 
   final val torStartedKey: String = "torStarted"
-  final val syncKey: String = "sync"
+  final val syncKey: String = "syncing"
 
   //tlv points
   final val pointsKey = "points"
