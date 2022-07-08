@@ -6,6 +6,7 @@ import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
   DLCOfferRemoveNotification,
   DLCStateChangeNotification,
   NewAddressNotification,
+  RescanComplete,
   ReservedUtxosNotification,
   TxBroadcastNotification,
   TxProcessedNotification
@@ -75,6 +76,8 @@ object WsPicklers {
         upickle.default.writeJs(offerDb)(Picklers.dlcOfferAddW)
       case DLCOfferRemoveNotification(offerHash) =>
         upickle.default.writeJs(offerHash)(Picklers.dlcOfferRemoveW)
+      case RescanComplete =>
+        ujson.Null
     }
 
     val notificationObj = ujson.Obj(
@@ -113,6 +116,8 @@ object WsPicklers {
         val offerHash =
           upickle.default.read(payloadObj)(Picklers.dlcOfferRemoveR)
         DLCOfferRemoveNotification(offerHash)
+      case WalletWsType.RescanComplete =>
+        WalletNotification.RescanComplete
     }
   }
 
@@ -138,6 +143,13 @@ object WsPicklers {
     readwriter[ujson.Obj].bimap(
       writeWalletNotification(_),
       readWalletNotification(_).asInstanceOf[ReservedUtxosNotification])
+  }
+
+  implicit val rescanPickler: ReadWriter[RescanComplete.type] = {
+    readwriter[ujson.Obj].bimap(
+      writeWalletNotification(_),
+      readWalletNotification(_).asInstanceOf[RescanComplete.type]
+    )
   }
 
   implicit val walletNotificationPickler: ReadWriter[WalletNotification[_]] = {
