@@ -13,7 +13,7 @@ import org.bitcoins.testkit.node.{
   NodeTestWithCachedBitcoindPair,
   NodeUnitTest
 }
-import org.bitcoins.testkit.util.{AkkaUtil, TorUtil}
+import org.bitcoins.testkit.util.TorUtil
 import org.scalatest.{Assertion, FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -44,7 +44,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
   behavior of "NeutrinoNode"
 
-  ignore must "be able to sync" in { nodeConnectedWithBitcoinds =>
+  it must "be able to sync" in { nodeConnectedWithBitcoinds =>
     val node = nodeConnectedWithBitcoinds.node
     val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
     val peerManager = node.peerManager
@@ -69,7 +69,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
     }
   }
 
-  ignore must "be able to connect, initialize and then disconnect from all peers" in {
+  it must "be able to connect, initialize and then disconnect from all peers" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
       def peerManager = node.peerManager
@@ -113,7 +113,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       }
   }
 
-  ignore must "store peers after successful initialization" in {
+  it must "store peers after successful initialization" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
       val peerManager = node.peerManager
@@ -167,7 +167,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       }
   }
 
-  ignore must "receive notification that a block occurred on the p2p network for neutrino" in {
+  it must "receive notification that a block occurred on the p2p network for neutrino" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
@@ -204,7 +204,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       }
   }
 
-  ignore must "stay in sync with a bitcoind instance for neutrino" in {
+  it must "stay in sync with a bitcoind instance for neutrino" in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoinds(0)
@@ -263,12 +263,6 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       for {
         _ <- NodeUnitTest.syncNeutrinoNode(node, bitcoind)
         _ <- bitcoind.generateToAddress(2, junkAddress)
-        _ <- AkkaUtil.nonBlockingSleep(3.seconds)
-        chain <- node.chainApiFromDb()
-        h1 <- chain.getBestHashBlockHeight()
-        h2 <- chain.getFilterHeaderCount()
-        h3 <- chain.getFilterCount()
-        _ = println(s"STATUS $h1 $h2 $h3")
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
       } yield {
         succeed

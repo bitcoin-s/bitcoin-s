@@ -150,7 +150,7 @@ case class DataMessageHandler(
             if (!newSyncing) {
               syncIfHeadersAhead(peerMsgSender)
             } else {
-              Future.successful(syncing)
+              Future.successful(newSyncing)
             }
           }
         } yield {
