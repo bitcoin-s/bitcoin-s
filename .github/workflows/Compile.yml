@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
-          java-version: '17'
+          java-version: '18'
           cache: 'sbt'
       - name: Compile and Check Formatting
         run: sbt -J-Xmx2g +test:compile scalafmtCheckAll
