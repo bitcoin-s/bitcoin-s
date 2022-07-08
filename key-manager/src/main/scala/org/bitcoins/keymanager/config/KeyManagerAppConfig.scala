@@ -112,7 +112,8 @@ case class KeyManagerAppConfig(
         .fromMnemonic(mnemonic = mnemonicEntropy,
                       kmParams = kmParams,
                       bip39PasswordOpt = bip39PasswordOpt,
-                      creationTime = Instant.now)
+                      creationTime = Instant.now,
+                      imported = false)
       val kmRootXpub = toBip39KeyManager.getRootXPub
       require(
         kmEntropy.getRootXPub == kmRootXpub,

@@ -1017,7 +1017,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(implicit
             "hdPath" -> Str(accountDb.hdAccount.toString),
             "height" -> Num(walletState.height),
             "blockHash" -> Str(walletState.blockHash.hex),
-            "rescan" -> rescan
+            "rescan" -> rescan,
+            "imported" -> wallet.keyManager.imported
           )
       )
     }

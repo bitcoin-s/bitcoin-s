@@ -34,10 +34,14 @@ object BIP39LockedKeyManager extends Logging {
           BIP39KeyManager.fromMnemonic(mnemonic.mnemonicCode,
                                        kmParams,
                                        bip39PasswordOpt,
-                                       mnemonic.creationTime))
+                                       mnemonic.creationTime,
+                                       mnemonic.imported))
 
       case Right(xprv: DecryptedExtPrivKey) =>
-        val km = new BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
+        val km = new BIP39KeyManager(xprv.xprv,
+                                     kmParams,
+                                     xprv.creationTime,
+                                     xprv.imported)
         Right(km)
 
       case Left(result) =>

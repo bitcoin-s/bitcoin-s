@@ -85,7 +85,11 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
   it must "initialize a key manager to the same xpub if we call constructor directly or use CreateKeyManagerApi" in {
     val kmParams = buildParams()
     val direct =
-      BIP39KeyManager.fromMnemonic(mnemonic, kmParams, None, TimeUtil.now)
+      BIP39KeyManager.fromMnemonic(mnemonic,
+                                   kmParams,
+                                   None,
+                                   TimeUtil.now,
+                                   false)
 
     val directXpub = direct.getRootXPub
 
@@ -112,7 +116,8 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
       BIP39KeyManager.fromMnemonic(mnemonic,
                                    kmParams,
                                    Some(bip39Pw),
-                                   TimeUtil.now)
+                                   TimeUtil.now,
+                                   false)
 
     val directXpub = direct.getRootXPub
 
@@ -139,7 +144,8 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
       BIP39KeyManager.fromMnemonic(mnemonic,
                                    kmParams,
                                    Some(bip39Pw),
-                                   TimeUtil.now)
+                                   TimeUtil.now,
+                                   false)
 
     val decryptedMnemonic =
       DecryptedMnemonic(mnemonic, direct.creationTime, None, false)
@@ -170,7 +176,8 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
       BIP39KeyManager.fromMnemonic(mnemonic,
                                    kmParams,
                                    Some(bip39Pw),
-                                   TimeUtil.now)
+                                   TimeUtil.now,
+                                   false)
     val seed = BIP39Seed.fromMnemonic(mnemonic, Some(bip39Pw))
     val privVersion = HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
     val rootExtPrivKey = seed.toExtPrivateKey(privVersion)
@@ -203,7 +210,8 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
       BIP39KeyManager.fromMnemonic(mnemonic,
                                    kmParams,
                                    Some(bip39Pw),
-                                   TimeUtil.now)
+                                   TimeUtil.now,
+                                   false)
 
     val directXpub = direct.getRootXPub
 
@@ -232,11 +240,16 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
       BIP39KeyManager.fromMnemonic(mnemonic,
                                    kmParams,
                                    Some(bip39Pw),
-                                   TimeUtil.now)
+                                   TimeUtil.now,
+                                   false)
     val withPasswordXpub = withPassword.getRootXPub
 
     val noPassword =
-      BIP39KeyManager.fromMnemonic(mnemonic, kmParams, None, TimeUtil.now)
+      BIP39KeyManager.fromMnemonic(mnemonic,
+                                   kmParams,
+                                   None,
+                                   TimeUtil.now,
+                                   false)
 
     val noPwXpub = noPassword.getRootXPub
 

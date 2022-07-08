@@ -33,7 +33,8 @@ import scala.util.{Failure, Success, Try}
 class BIP39KeyManager(
     private[this] val rootExtPrivKey: ExtPrivateKey,
     val kmParams: KeyManagerParams,
-    val creationTime: Instant)
+    val creationTime: Instant,
+    val imported: Boolean)
     extends BIP39KeyManagerApi
     with KeyManagerLogger {
 
@@ -75,12 +76,13 @@ object BIP39KeyManager
       mnemonic: MnemonicCode,
       kmParams: KeyManagerParams,
       bip39PasswordOpt: Option[String],
-      creationTime: Instant
+      creationTime: Instant,
+      imported: Boolean
   ): BIP39KeyManager = {
     val seed = BIP39Seed.fromMnemonic(mnemonic, bip39PasswordOpt)
     val privVersion = HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
     val rootExtPrivKey = seed.toExtPrivateKey(privVersion)
-    new BIP39KeyManager(rootExtPrivKey, kmParams, creationTime)
+    new BIP39KeyManager(rootExtPrivKey, kmParams, creationTime, imported)
   }
 
   val badPassphrase: AesPassword = AesPassword.fromString("changeMe")
@@ -140,7 +142,8 @@ object BIP39KeyManager
           fromMnemonic(mnemonic = mnemonic,
                        kmParams = kmParams,
                        bip39PasswordOpt = bip39PasswordOpt,
-                       creationTime = time)
+                       creationTime = time,
+                       imported = writable.imported)
         }
       } else {
         logger.info(
@@ -153,9 +156,13 @@ object BIP39KeyManager
               fromMnemonic(mnemonic = mnemonic.mnemonicCode,
                            kmParams = kmParams,
                            bip39PasswordOpt = bip39PasswordOpt,
-                           creationTime = mnemonic.creationTime))
+                           creationTime = mnemonic.creationTime,
+                           imported = mnemonic.imported))
           case Right(xprv: DecryptedExtPrivKey) =>
-            val km = new BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
+            val km = new BIP39KeyManager(xprv.xprv,
+                                         kmParams,
+                                         xprv.creationTime,
+                                         xprv.imported)
             Right(km)
           case Left(err) =>
             Left(
@@ -215,9 +222,13 @@ object BIP39KeyManager
           fromMnemonic(mnemonic.mnemonicCode,
                        kmParams,
                        bip39PasswordOpt,
-                       mnemonic.creationTime))
+                       mnemonic.creationTime,
+                       mnemonic.imported))
       case Right(xprv: DecryptedExtPrivKey) =>
-        val km = new BIP39KeyManager(xprv.xprv, kmParams, xprv.creationTime)
+        val km = new BIP39KeyManager(xprv.xprv,
+                                     kmParams,
+                                     xprv.creationTime,
+                                     xprv.imported)
         Right(km)
       case Left(v) => Left(v)
     }
