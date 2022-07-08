@@ -14,4 +14,5 @@ trait BIP39KeyManagerApi extends KeyManagerApi {
   def deriveXPub(account: HDAccount): Try[ExtPublicKey]
   def getRootXPub: ExtPublicKey
   def kmParams: KeyManagerParams
+  def imported: Boolean
 }
