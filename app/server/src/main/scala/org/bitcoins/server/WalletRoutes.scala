@@ -1001,10 +1001,7 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(
         case LoadWallet(walletNameOpt, aesPasswordOpt, _) =>
           complete {
             loadWallet(walletNameOpt, aesPasswordOpt).map { _ =>
-              walletNameOpt match {
-                case None             => Server.httpSuccess(ujson.Null)
-                case Some(walletName) => Server.httpSuccess(walletName)
-              }
+              Server.httpSuccess(walletNameOpt.getOrElse(""))
             }
           }
       }
