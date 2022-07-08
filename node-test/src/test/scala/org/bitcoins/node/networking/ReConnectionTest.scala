@@ -37,7 +37,7 @@ class ReConnectionTest extends BitcoindRpcTest with CachedBitcoinSAppConfig {
 
       _ = peerHandler.peerMsgSender.connect()
       _ <- AsyncUtil
-        .retryUntilSatisfiedF(() => peerHandler.p2pClient.isConnected())
+        .retryUntilSatisfiedF(() => peerHandler.p2pClient.isInitialized())
         .recover { case _: RpcRetryException =>
           //expect this to fail, we cannot connect
           //because maxconnections=0

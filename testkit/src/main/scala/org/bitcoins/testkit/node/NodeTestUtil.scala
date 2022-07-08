@@ -183,7 +183,9 @@ abstract class NodeTestUtil extends P2PLogger {
     } yield ()
   }
 
-  /** get our neutrino node's uri from a test bitcoind instance to send rpc commands for our node */
+  /** get our neutrino node's uri from a test bitcoind instance to send rpc commands for our node.
+    * The peer must be initialized by the node.
+    */
   def getNodeURIFromBitcoind(bitcoind: BitcoindRpcClient)(implicit
       system: ActorSystem): Future[URI] = {
     import system.dispatcher
