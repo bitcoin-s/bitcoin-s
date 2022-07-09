@@ -7,9 +7,9 @@ sealed abstract class ChainStateDescriptorType
 object ChainStateDescriptorType
     extends StringFactory[ChainStateDescriptorType] {
 
-  final case object Sync extends ChainStateDescriptorType
+  final case object Syncing extends ChainStateDescriptorType
 
-  val all: Vector[ChainStateDescriptorType] = Vector(Sync)
+  val all: Vector[ChainStateDescriptorType] = Vector(Syncing)
 
   override def fromStringOpt(str: String): Option[ChainStateDescriptorType] = {
     all.find(state => str.toLowerCase() == state.toString.toLowerCase)
@@ -50,7 +50,7 @@ object ChainStateDescriptor extends StringFactory[ChainStateDescriptor] {
 case class SyncDescriptor(syncing: Boolean) extends ChainStateDescriptor {
 
   override val descriptorType: ChainStateDescriptorType =
-    ChainStateDescriptorType.Sync
+    ChainStateDescriptorType.Syncing
 
   override val toString: String = syncing.toString
 }
@@ -58,7 +58,7 @@ case class SyncDescriptor(syncing: Boolean) extends ChainStateDescriptor {
 object SyncDescriptor extends ChainStateDescriptorFactory[SyncDescriptor] {
 
   override val tpe: ChainStateDescriptorType =
-    ChainStateDescriptorType.Sync
+    ChainStateDescriptorType.Syncing
 
   override def fromString(string: String): SyncDescriptor = {
     val rescanning = java.lang.Boolean.parseBoolean(string)

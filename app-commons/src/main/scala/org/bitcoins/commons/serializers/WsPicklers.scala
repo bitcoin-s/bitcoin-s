@@ -1,6 +1,9 @@
 package org.bitcoins.commons.serializers
 
-import org.bitcoins.commons.jsonmodels.ws.ChainNotification.BlockProcessedNotification
+import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{
+  BlockProcessedNotification,
+  SyncFlagChangedNotification
+}
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
   DLCOfferAddNotification,
   DLCOfferRemoveNotification,
@@ -36,6 +39,8 @@ object WsPicklers {
     val payloadJson: ujson.Value = notification match {
       case BlockProcessedNotification(block) =>
         upickle.default.writeJs(block)(Picklers.getBlockHeaderResultPickler)
+      case SyncFlagChangedNotification(syncing) =>
+        upickle.default.writeJs(syncing)
     }
     val notificationObj = ujson.Obj(
       PicklerKeys.typeKey -> writeJs(notification.`type`),
@@ -53,6 +58,9 @@ object WsPicklers {
         val block =
           upickle.default.read(payloadObj)(Picklers.getBlockHeaderResultPickler)
         BlockProcessedNotification(block)
+      case ChainWsType.SyncFlagChanged =>
+        val syncing = payloadObj.bool
+        SyncFlagChangedNotification(syncing)
     }
   }
 
@@ -152,6 +160,14 @@ object WsPicklers {
     readwriter[ujson.Obj].bimap(
       writeChainNotification(_),
       readChainNotification(_).asInstanceOf[BlockProcessedNotification]
+    )
+  }
+
+  implicit val syncFlagChangedPickler: ReadWriter[
+    SyncFlagChangedNotification] = {
+    readwriter[ujson.Obj].bimap(
+      writeChainNotification(_),
+      readChainNotification(_).asInstanceOf[SyncFlagChangedNotification]
     )
   }
 

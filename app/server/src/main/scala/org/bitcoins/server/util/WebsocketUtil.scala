@@ -3,7 +3,11 @@ package org.bitcoins.server.util
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.stream.scaladsl.SourceQueueWithComplete
 import grizzled.slf4j.Logging
-import org.bitcoins.chain.{ChainCallbacks, OnBlockHeaderConnected}
+import org.bitcoins.chain.{
+  ChainCallbacks,
+  OnBlockHeaderConnected,
+  OnSyncFlagChanged
+}
 import org.bitcoins.commons.jsonmodels.ws.{
   ChainNotification,
   WalletNotification,
@@ -61,7 +65,18 @@ object WebsocketUtil extends Logging {
         f
     }
 
-    ChainCallbacks.onBlockHeaderConnected(onBlockProcessed)
+    val onSyncFlagChanged: OnSyncFlagChanged = { syncing =>
+      val notification = ChainNotification.SyncFlagChangedNotification(syncing)
+      val notificationJson =
+        upickle.default.writeJs(notification)(WsPicklers.syncFlagChangedPickler)
+      val msg = TextMessage.Strict(notificationJson.toString())
+      for {
+        _ <- queue.offer(msg)
+      } yield ()
+    }
+
+    ChainCallbacks.onBlockHeaderConnected(onBlockProcessed) +
+      ChainCallbacks.onOnSyncFlagChanged(onSyncFlagChanged)
   }
 
   /** Builds websocket callbacks for the wallet */

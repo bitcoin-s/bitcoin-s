@@ -1021,8 +1021,13 @@ class ChainHandler(
 
   override def setSyncing(value: Boolean): Future[ChainApi] = {
     for {
-      _ <- stateDAO.updateSyncing(value)
-    } yield this
+      changed <- stateDAO.updateSyncing(value)
+    } yield {
+      if (changed && chainConfig.chainCallbacks.onSyncFlagChanged.nonEmpty) {
+        chainConfig.chainCallbacks.executeOnSyncFlagChanged(logger, value)
+      }
+      this
+    }
   }
 }
 

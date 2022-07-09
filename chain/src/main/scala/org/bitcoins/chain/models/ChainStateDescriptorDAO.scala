@@ -1,7 +1,7 @@
 package org.bitcoins.chain.models
 
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.ChainStateDescriptorType.Sync
+import org.bitcoins.chain.models.ChainStateDescriptorType.Syncing
 import org.bitcoins.db.{CRUD, SlickUtil}
 import slick.lifted.ProvenShape
 
@@ -60,7 +60,7 @@ case class ChainStateDescriptorDAO()(implicit
     findByPrimaryKeys(ts.map(_.tpe))
 
   def getSync(): Future[Option[SyncDescriptor]] = {
-    read(Sync).map {
+    read(Syncing).map {
       case Some(db) =>
         val desc = SyncDescriptor.fromString(db.descriptor.toString)
         Some(desc)
@@ -70,9 +70,29 @@ case class ChainStateDescriptorDAO()(implicit
 
   def isSyncing: Future[Boolean] = getSync().map(_.exists(_.syncing))
 
-  def updateSyncing(syncing: Boolean): Future[SyncDescriptor] = {
-    val desc = SyncDescriptor(syncing)
-    upsert(ChainStateDescriptorDb(desc.descriptorType, desc)).map(_ => desc)
+  def updateSyncing(syncing: Boolean): Future[Boolean] = {
+    val tpe: ChainStateDescriptorType = Syncing
+    val query = table.filter(_.tpe === tpe)
+    val actions = for {
+      dbs <- query.result
+      res <- dbs.headOption match {
+        case None =>
+          val desc = SyncDescriptor(syncing)
+          val db = ChainStateDescriptorDb(tpe, desc)
+          (table += db).map(_ => syncing)
+        case Some(db) =>
+          val oldDesc = SyncDescriptor.fromString(db.descriptor.toString)
+          if (oldDesc.syncing != syncing) {
+            val newDesc = SyncDescriptor(syncing)
+            val newDb = ChainStateDescriptorDb(tpe, newDesc)
+            query.update(newDb).map(_ => true)
+          } else {
+            DBIO.successful(false)
+          }
+      }
+    } yield res
+
+    safeDatabase.run(actions)
   }
 
   class ChainStateDescriptorTable(t: Tag)
