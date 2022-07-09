@@ -126,9 +126,9 @@ object WalletNotification {
     override val `type`: WalletWsType = WalletWsType.DLCOfferRemove
   }
 
-  case object RescanComplete extends WalletNotification[Unit] {
+  case class RescanComplete(payload: String)
+      extends WalletNotification[String] {
     override val `type`: WalletWsType = WalletWsType.RescanComplete
-    override val payload: Unit = ()
   }
 }
 

@@ -65,8 +65,10 @@ object WebsocketUtil extends Logging {
   }
 
   /** Builds websocket callbacks for the wallet */
-  def buildWalletCallbacks(walletQueue: SourceQueueWithComplete[Message])(
-      implicit ec: ExecutionContext): WalletCallbacks = {
+  def buildWalletCallbacks(
+      walletQueue: SourceQueueWithComplete[Message],
+      walletNameOpt: Option[String])(implicit
+      ec: ExecutionContext): WalletCallbacks = {
     val onAddressCreated: OnNewAddressGenerated = { addr =>
       val notification = WalletNotification.NewAddressNotification(addr)
       val json =
@@ -99,7 +101,9 @@ object WebsocketUtil extends Logging {
     }
 
     val onRescanComplete: OnRescanComplete = { _ =>
-      val notification = WalletNotification.RescanComplete
+      val name =
+        walletNameOpt.getOrElse("") // default name empty string on the wallet
+      val notification = WalletNotification.RescanComplete(name)
       val notificationJson =
         upickle.default.writeJs(notification)(WsPicklers.rescanPickler)
       val msg = TextMessage.Strict(notificationJson.toString())

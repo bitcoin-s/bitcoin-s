@@ -402,7 +402,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
-      val count = notifications.count(_ == RescanComplete)
+      val count = notifications.count(_.isInstanceOf[RescanComplete])
       assert(count == 1, s"count=$count")
     }
   }

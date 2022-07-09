@@ -76,8 +76,8 @@ object WsPicklers {
         upickle.default.writeJs(offerDb)(Picklers.dlcOfferAddW)
       case DLCOfferRemoveNotification(offerHash) =>
         upickle.default.writeJs(offerHash)(Picklers.dlcOfferRemoveW)
-      case RescanComplete =>
-        ujson.Null
+      case r: RescanComplete =>
+        upickle.default.writeJs(r)(Picklers.rescanComplete)
     }
 
     val notificationObj = ujson.Obj(
@@ -117,7 +117,8 @@ object WsPicklers {
           upickle.default.read(payloadObj)(Picklers.dlcOfferRemoveR)
         DLCOfferRemoveNotification(offerHash)
       case WalletWsType.RescanComplete =>
-        WalletNotification.RescanComplete
+        val complete = upickle.default.read(payloadObj)(Picklers.rescanComplete)
+        complete
     }
   }
 
@@ -145,10 +146,10 @@ object WsPicklers {
       readWalletNotification(_).asInstanceOf[ReservedUtxosNotification])
   }
 
-  implicit val rescanPickler: ReadWriter[RescanComplete.type] = {
+  implicit val rescanPickler: ReadWriter[RescanComplete] = {
     readwriter[ujson.Obj].bimap(
       writeWalletNotification(_),
-      readWalletNotification(_).asInstanceOf[RescanComplete.type]
+      readWalletNotification(_).asInstanceOf[RescanComplete]
     )
   }
 
