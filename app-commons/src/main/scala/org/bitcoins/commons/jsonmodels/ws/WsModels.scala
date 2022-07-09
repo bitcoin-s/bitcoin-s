@@ -34,6 +34,7 @@ object WalletWsType extends StringFactory[WalletWsType] {
   case object DLCStateChange extends WalletWsType
   case object DLCOfferAdd extends WalletWsType
   case object DLCOfferRemove extends WalletWsType
+  case object RescanComplete extends WalletWsType
 
   private val all =
     Vector(TxProcessed,
@@ -42,7 +43,8 @@ object WalletWsType extends StringFactory[WalletWsType] {
            NewAddress,
            DLCStateChange,
            DLCOfferAdd,
-           DLCOfferRemove)
+           DLCOfferRemove,
+           RescanComplete)
 
   override def fromStringOpt(string: String): Option[WalletWsType] = {
     all.find(_.toString.toLowerCase() == string.toLowerCase)
@@ -122,6 +124,11 @@ object WalletNotification {
   case class DLCOfferRemoveNotification(payload: Sha256Digest)
       extends WalletNotification[Sha256Digest] {
     override val `type`: WalletWsType = WalletWsType.DLCOfferRemove
+  }
+
+  case class RescanComplete(payload: String)
+      extends WalletNotification[String] {
+    override val `type`: WalletWsType = WalletWsType.RescanComplete
   }
 }
 

@@ -2,6 +2,7 @@ package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
+import org.bitcoins.commons.jsonmodels.ws.WalletNotification.RescanComplete
 import org.bitcoins.commons.serializers.JsonReaders.jsToSatoshis
 import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, IncomingDLCOfferDb}
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
@@ -1564,5 +1565,17 @@ object Picklers {
   implicit val contactDbPickler: ReadWriter[DLCContactDb] = {
     readwriter[ujson.Obj]
       .bimap(writeContactDb(_), readContactDb(_))
+  }
+
+  implicit val rescanComplete: ReadWriter[RescanComplete] = {
+    readwriter[ujson.Value].bimap(writeRescanComplete(_), readRescanComplete(_))
+  }
+
+  private def writeRescanComplete(rescanComplete: RescanComplete): ujson.Str = {
+    ujson.Str(rescanComplete.payload)
+  }
+
+  private def readRescanComplete(value: ujson.Value): RescanComplete = {
+    RescanComplete(value.str)
   }
 }
