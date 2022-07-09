@@ -164,9 +164,13 @@ object InputInfo {
             getPreImagesAndCondPath(p2wsh.scriptSignature)
           case EmptyScriptWitness =>
             getPreImagesAndCondPath(txIn.scriptSignature)
-          case taprootWitness: TaprootWitness =>
+          case _: TaprootKeyPath =>
+            // No hashes in taproot key path
+            (Vector.empty, Vector.empty)
+          case taprootWitness @ (_: TaprootScriptPath |
+              _: TaprootUnknownPath) =>
             throw new UnsupportedOperationException(
-              s"Taproot not supported, got=$taprootWitness")
+              s"Taproot script path not yet supported, got=$taprootWitness")
         }
     }
 
@@ -287,7 +291,7 @@ object InputInfo {
                       "Script Witness must be defined for (nested) Segwit input")
                   case Some(_: ScriptWitness) =>
                     throw new UnsupportedOperationException(
-                      "Only v0 Segwit is currently supported")
+                      "Only v0 Segwit is supported for wrapped segwit")
                 }
                 P2SHNestedSegwitV0InputInfo(outPoint,
                                             output.value,
@@ -304,7 +308,7 @@ object InputInfo {
                 throw new IllegalArgumentException("Cannot have nested P2SH")
               case _: TaprootScriptPubKey =>
                 throw new UnsupportedOperationException(
-                  s"Unsupported Taproot ScriptPubKey ${output.scriptPubKey}")
+                  s"Taproot cannot be used as a nested P2SH")
               case _: UnassignedWitnessScriptPubKey =>
                 throw new UnsupportedOperationException(
                   s"Unsupported ScriptPubKey ${output.scriptPubKey}")

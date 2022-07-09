@@ -13,7 +13,7 @@ import scala.annotation.tailrec
 sealed abstract class RawScriptWitnessParser
     extends RawBitcoinSerializer[ScriptWitness] {
 
-  def read(bytes: ByteVector): ScriptWitness = {
+  override def read(bytes: ByteVector): ScriptWitness = {
     //first byte is the number of stack items
     val stackSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
     val (_, stackBytes) = bytes.splitAt(stackSize.byteSize.toInt)
@@ -41,7 +41,7 @@ sealed abstract class RawScriptWitnessParser
     witness
   }
 
-  def write(scriptWitness: ScriptWitness): ByteVector = {
+  override def write(scriptWitness: ScriptWitness): ByteVector = {
     @tailrec
     def loop(
         remainingStack: Seq[ByteVector],
@@ -55,6 +55,7 @@ sealed abstract class RawScriptWitnessParser
         loop(remainingStack.tail, serialization +: accum)
       }
     }
+
     val stackItems: Vector[ByteVector] =
       loop(scriptWitness.stack.reverse, Vector.empty)
     val size = CompactSizeUInt(UInt64(stackItems.size))

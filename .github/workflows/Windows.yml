@@ -19,9 +19,11 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v13
+        uses: actions/setup-java@v3
         with:
-          java-version: openjdk@1.17.0
+          distribution: 'adopt'
+          java-version: '18'
+          cache: 'sbt'
       - name: Cache
         uses: actions/cache@v2
         with:

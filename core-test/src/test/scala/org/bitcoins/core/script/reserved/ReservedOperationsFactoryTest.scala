@@ -15,6 +15,6 @@ class ReservedOperationsFactoryTest extends BitcoinSUnitTest {
     ReservedOperation("b0") must be(Some(OP_NOP1))
   }
   it must "find an undefined operation from its hex value" in {
-    ReservedOperation("ba").isDefined must be(true)
+    ReservedOperation("bb").isDefined must be(true)
   }
 }

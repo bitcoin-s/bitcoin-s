@@ -97,7 +97,7 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
   it must "move an old seed into the seeds folder" in {
     // generate and write mnemonic
     val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
-    val mnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None)
+    val mnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
     val seedPath = tempDir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
     WalletStorage.writeSeedToDisk(seedPath, mnemonic)
 

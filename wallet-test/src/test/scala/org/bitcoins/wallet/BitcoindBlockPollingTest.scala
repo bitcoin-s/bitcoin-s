@@ -47,7 +47,7 @@ class BitcoindBlockPollingTest
         // Setup block polling
         _ <- BitcoindRpcBackendUtil.startBitcoindBlockPolling(wallet,
                                                               bitcoind,
-          None,
+                                                              None,
                                                               1.second)
         _ <- bitcoind.generateToAddress(6, bech32Address)
 

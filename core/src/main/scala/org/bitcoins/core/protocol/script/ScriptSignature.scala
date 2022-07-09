@@ -242,7 +242,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
     constructor(asm)
   }
 
-  def fromAsm(asm: Seq[ScriptToken]): P2SHScriptSignature = {
+  override def fromAsm(asm: Seq[ScriptToken]): P2SHScriptSignature = {
     buildScript(asm = asm.toVector,
                 constructor = P2SHScriptSignatureImpl(_),
                 errorMsg =
@@ -251,7 +251,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
 
   /** Tests if the given asm tokens are a [[P2SHScriptSignature]] */
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
-    //as noted above, techinically _anything_ can be a p2sh scriptsig
+    //as noted above, technically _anything_ can be a p2sh scriptsig
     //this applies basic checks to see if it's a standard redeemScript
     //rather than a non standard redeeScript.
 
@@ -610,7 +610,7 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
   def empty: ScriptSignature = EmptyScriptSignature
 
   /** Creates a scriptSignature from the list of script tokens */
-  def fromAsm(tokens: Seq[ScriptToken]): ScriptSignature =
+  override def fromAsm(tokens: Seq[ScriptToken]): ScriptSignature =
     tokens match {
       case Nil => EmptyScriptSignature
       case _ if TrivialTrueScriptSignature.isValid(tokens) =>

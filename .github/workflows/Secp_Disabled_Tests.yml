@@ -18,9 +18,11 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v13
+        uses: actions/setup-java@v3
         with:
-          java-version: openjdk@1.17.0
+          distribution: 'adopt'
+          java-version: '18'
+          cache: 'sbt'
       - name: Cache
         uses: actions/cache@v2
         with:
@@ -30,4 +32,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-cache
       - name: run tests
-        run: sbt ++2.13.7 cryptoTestJVM/test coreTestJVM/test dlcTest/test
+        run: sbt ++2.13.8 cryptoTestJVM/test coreTestJVM/test dlcTest/test

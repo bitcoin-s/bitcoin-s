@@ -12,7 +12,8 @@ trait CryptoSignatureEvaluationFactory
     Vector(OP_CHECKMULTISIG,
            OP_CHECKMULTISIGVERIFY,
            OP_CHECKSIG,
-           OP_CHECKSIGVERIFY)
+           OP_CHECKSIGVERIFY,
+           OP_CHECKSIGADD)
 
 }
 

@@ -294,7 +294,6 @@ object BitcoinSigner extends SignerUtils {
                   case Some(wit) => wtx.updateWitness(inputIndex, wit)
                   case None      => wtx
                 }
-
               case _: P2WPKHWitnessV0 | _: P2WSHWitnessV0 | _: TaprootWitness =>
                 wtx
             }
