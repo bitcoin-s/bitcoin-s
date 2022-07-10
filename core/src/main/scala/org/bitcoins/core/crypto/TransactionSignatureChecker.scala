@@ -15,6 +15,7 @@ import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.bitcoins.core.script.result.{
   ScriptErrorSchnorrSig,
+  ScriptErrorSchnorrSigHashType,
   ScriptErrorWitnessPubKeyType,
   ScriptOk,
   ScriptResult
@@ -95,8 +96,14 @@ trait TransactionSignatureChecker {
       TransactionSignatureSerializer.hashForSignature(txSigComponent,
                                                       hashType,
                                                       taprootOptions)
-    val result = pubKey.verify(hash, schnorrSignature)
-    if (result) ScriptOk else ScriptErrorSchnorrSig
+    if (
+      !(hashType.byte <= 3 || (hashType.byte >= 81.toByte && hashType.byte <= 0x83.toByte))
+    ) {
+      ScriptErrorSchnorrSigHashType
+    } else {
+      val result = pubKey.verify(hash, schnorrSignature)
+      if (result) ScriptOk else ScriptErrorSchnorrSig
+    }
   }
 
   /** Checks the signature of a scriptSig in the spending transaction against the
