@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.control
 
-import org.bitcoins.core.protocol.script.{SigVersionWitnessV0, SignatureVersion}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
@@ -23,7 +23,8 @@ sealed abstract class ControlOperationsInterpreter {
     if (program.isInExecutionBranch) {
       val sigVersion = program.txSignatureComponent.sigVersion
       val flags = program.flags
-      val minimalIfEnabled = ScriptFlagUtil.minimalIfEnabled(flags)
+      val minimalIfEnabled = ScriptFlagUtil.minimalIfEnabled(flags) ||
+        sigVersion == SigVersionTapscript
       val stackTopOpt = program.stack.headOption
 
       stackTopOpt match {
@@ -59,7 +60,10 @@ sealed abstract class ControlOperationsInterpreter {
       minimalIfEnabled: Boolean): Boolean = {
     //see: https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L447-L452
     //https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html
-    (sigVersion == SigVersionWitnessV0 && minimalIfEnabled
+    val correctSigVersion =
+      sigVersion == SigVersionWitnessV0 || sigVersion == SigVersionTapscript
+
+    (correctSigVersion && minimalIfEnabled
     && !BitcoinScriptUtil.isMinimalToken(stackTop))
   }
 
