@@ -451,43 +451,46 @@ sealed abstract class CryptoInterpreter {
           val flags = updatedProgram.flags
           val requireMinimal =
             ScriptFlagUtil.requireMinimalData(updatedProgram.flags)
+
           val numT = ScriptNumber(updatedProgram.stack(1).bytes, requireMinimal)
 
-          if (numT.isFailure) {
-            throw numT.failed.get
-          }
-          val restOfStack =
-            updatedProgram.stack.tail.tail.tail //remove signature, num, pubkey
+          if (numT.isFailure || numT.get.byteSize > 4) {
+            // not sure what error to throw here
+            updatedProgram.failExecution(ScriptErrorInvalidStackOperation)
+          } else {
+            val restOfStack =
+              updatedProgram.stack.tail.tail.tail //remove signature, num, pubkey
 
-          val tapscriptE = evalChecksigTapscript(updatedProgram)
-          tapscriptE match {
-            case Left(err) =>
-              if (
-                err == ScriptErrorDiscourageUpgradablePubkeyType && !ScriptFlagUtil
-                  .discourageUpgradablePublicKey(flags)
-              ) {
-                //trivially pass signature validation as required by BIP342
-                //when the public key type is not known and the
-                //SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE is NOT set
+            val tapscriptE = evalChecksigTapscript(updatedProgram)
+            tapscriptE match {
+              case Left(err) =>
+                if (
+                  err == ScriptErrorDiscourageUpgradablePubkeyType && !ScriptFlagUtil
+                    .discourageUpgradablePublicKey(flags)
+                ) {
+                  //trivially pass signature validation as required by BIP342
+                  //when the public key type is not known and the
+                  //SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE is NOT set
+                  handleSignatureValidation(program = updatedProgram,
+                                            result = SignatureValidationSuccess,
+                                            restOfStack = restOfStack,
+                                            numOpt = Some(numT.get))
+                } else if (err == ScriptErrorEvalFalse) {
+                  //means signature validation failed, don't increment the stack counter
+                  handleSignatureValidation(
+                    program = updatedProgram,
+                    result = SignatureValidationErrorIncorrectSignatures,
+                    restOfStack = restOfStack,
+                    numOpt = Some(numT.get))
+                } else {
+                  updatedProgram.failExecution(err)
+                }
+              case Right(result) =>
                 handleSignatureValidation(program = updatedProgram,
-                                          result = SignatureValidationSuccess,
+                                          result = result,
                                           restOfStack = restOfStack,
                                           numOpt = Some(numT.get))
-              } else if (err == ScriptErrorEvalFalse) {
-                //means signature validation failed, don't increment the stack counter
-                handleSignatureValidation(
-                  program = updatedProgram,
-                  result = SignatureValidationErrorIncorrectSignatures,
-                  restOfStack = restOfStack,
-                  numOpt = Some(numT.get))
-              } else {
-                updatedProgram.failExecution(err)
-              }
-            case Right(result) =>
-              handleSignatureValidation(program = updatedProgram,
-                                        result = result,
-                                        restOfStack = restOfStack,
-                                        numOpt = Some(numT.get))
+            }
           }
         }
     }
