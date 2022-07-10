@@ -601,11 +601,20 @@ sealed abstract class ScriptInterpreter {
     */
   private def containsOpSuccess(asm: Vector[ScriptToken]): Boolean = {
 
-    val containsOPSuccess =
-      asm.exists(o =>
-        o.isInstanceOf[ReservedOperation] ||
-          ScriptInterpreter.bip341DisabledOpCodes.exists(_ == o))
-    containsOPSuccess
+    val opSuccessBytes: Vector[Byte] = {
+      Vector(80.toByte, 98.toByte) ++
+        126.to(129).map(_.toByte).toVector ++
+        131.to(134).map(_.toByte).toVector ++
+        Vector(137.toByte, 138.toByte, 141.toByte, 142.toByte) ++
+        149.to(153).map(_.toByte) ++
+        187.to(254).map(_.toByte)
+    }
+
+    asm.exists {
+      case op: ScriptOperation =>
+        opSuccessBytes.contains(op.toByte)
+      case _: ScriptToken => false
+    }
   }
 
   private def executeTapscript(
