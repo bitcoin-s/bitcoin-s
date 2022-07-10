@@ -20,6 +20,8 @@ import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
+import scala.util.Try
+
 /** Created by chris on 1/6/16.
   */
 sealed abstract class CryptoInterpreter {
@@ -154,33 +156,22 @@ sealed abstract class CryptoInterpreter {
     * if the signature is the empty byte vector which trivially
     * fails script interpreter validation
     */
-  private def getSignatureAndHashType(
-      stack: List[ScriptToken],
-      isCheckSigAdd: Boolean): Option[(SchnorrDigitalSignature, HashType)] = {
-    val sigBytes = {
-      if (isCheckSigAdd) {
-        stack(2).bytes
-      } else {
-        stack.tail.head.bytes
-      }
-    }
-    val sigHashTypeOpt: Option[(SchnorrDigitalSignature, HashType)] = {
-      if (sigBytes.length == 64) {
-        val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
-        Some((sig, HashType.sigHashDefault))
-      } else if (sigBytes.length == 65) {
-        val hashTypeByte = sigBytes.last
-        val hashType = HashType.fromByte(hashTypeByte)
-        val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
-        Some((sig, hashType))
-      } else if (sigBytes.isEmpty) {
-        None
-      } else {
-        sys.error(
-          s"Incorrect length for schnorr digital signature, got=${sigBytes.length}, expected 64 or 65 sigBytes=${sigBytes}")
-      }
-    }
-    sigHashTypeOpt
+  private def getSignatureAndHashType(sigBytes: ByteVector): Either[
+    ScriptError,
+    (SchnorrDigitalSignature, HashType)] = {
+    val parseT = Try(if (sigBytes.length == 64) {
+      val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
+      Right((sig, HashType.sigHashDefault))
+    } else if (sigBytes.length == 65) {
+      val hashTypeByte = sigBytes.last
+      val hashType = HashType.fromByte(hashTypeByte)
+      val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
+      Right((sig, hashType))
+    } else {
+      Left(ScriptErrorSchnorrSigSize)
+    })
+
+    parseT.getOrElse(Left(ScriptErrorSchnorrSig))
   }
 
   private def evalChecksigTapscript(
@@ -226,19 +217,15 @@ sealed abstract class CryptoInterpreter {
       sys.error(s"Invalid pubkey with 32 bytes in size, got=${xOnlyPubKeyT}")
     } else {
       val helperE: Either[ScriptError, TapscriptChecksigHelper] = {
-        val sigHashTypeOpt = getSignatureAndHashType(stack, isCheckSigAdd)
-        sigHashTypeOpt match {
-          case Some((signature, hashType)) =>
-            val restOfStack =
-              program.stack.tail.tail //remove pubkey, signature
-            val helper = TapscriptChecksigHelper(pubKey = xOnlyPubKeyT.get,
-                                                 signature = signature,
-                                                 hashType = hashType,
-                                                 restOfStack = restOfStack)
-            Right(helper)
-          case None =>
-            //this is because the signature was empty
-            Left(ScriptErrorEvalFalse)
+        val sigHashTypeE = getSignatureAndHashType(sigBytes)
+        sigHashTypeE.map { case (signature, hashType) =>
+          val restOfStack =
+            program.stack.tail.tail //remove pubkey, signature
+          val helper = TapscriptChecksigHelper(pubKey = xOnlyPubKeyT.get,
+                                               signature = signature,
+                                               hashType = hashType,
+                                               restOfStack = restOfStack)
+          helper
         }
       }
       helperE match {
