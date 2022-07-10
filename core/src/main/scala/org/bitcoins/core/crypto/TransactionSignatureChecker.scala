@@ -96,9 +96,12 @@ trait TransactionSignatureChecker {
       TransactionSignatureSerializer.hashForSignature(txSigComponent,
                                                       hashType,
                                                       taprootOptions)
-    if (
+                                                      //
+    //bip341 restricts valid hash types: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message
+    val invalidHashType = {
       !(hashType.byte <= 3 || (hashType.byte >= 81.toByte && hashType.byte <= 0x83.toByte))
-    ) {
+    }
+    if (invalidHashType) {
       ScriptErrorSchnorrSigHashType
     } else {
       val result = pubKey.verify(hash, schnorrSignature)
