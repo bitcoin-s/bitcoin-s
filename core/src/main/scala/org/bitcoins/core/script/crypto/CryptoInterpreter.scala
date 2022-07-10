@@ -437,58 +437,62 @@ sealed abstract class CryptoInterpreter {
       case SigVersionBase | SigVersionWitnessV0 =>
         program.failExecution(ScriptErrorBadOpCode)
       case SigVersionTapscript | SigVersionTaprootKeySpend =>
-        val sigBytes = program.stack(2).bytes
-
-        val updatedProgram = if (sigBytes.nonEmpty) {
-          program.decrementValidationWeightRemaining()
-        } else program
-
-        if (updatedProgram.stack.length < 3) {
-          updatedProgram.failExecution(ScriptErrorInvalidStackOperation)
-        } else if (updatedProgram.validationWeightRemaining.exists(_ < 0)) {
-          program.failExecution(ScriptErrorSigCount)
+        if (program.stack.length < 3) {
+          program.failExecution(ScriptErrorInvalidStackOperation)
         } else {
-          val flags = updatedProgram.flags
-          val requireMinimal =
-            ScriptFlagUtil.requireMinimalData(updatedProgram.flags)
+          val sigBytes = program.stack(2).bytes
 
-          val numT = ScriptNumber(updatedProgram.stack(1).bytes, requireMinimal)
+          val updatedProgram = if (sigBytes.nonEmpty) {
+            program.decrementValidationWeightRemaining()
+          } else program
 
-          if (numT.isFailure || numT.get.byteSize > 4) {
-            updatedProgram.failExecution(ScriptErrorUnknownError)
+          if (updatedProgram.validationWeightRemaining.exists(_ < 0)) {
+            program.failExecution(ScriptErrorSigCount)
           } else {
-            val restOfStack =
-              updatedProgram.stack.tail.tail.tail //remove signature, num, pubkey
+            val flags = updatedProgram.flags
+            val requireMinimal =
+              ScriptFlagUtil.requireMinimalData(updatedProgram.flags)
 
-            val tapscriptE = evalChecksigTapscript(updatedProgram)
-            tapscriptE match {
-              case Left(err) =>
-                if (
-                  err == ScriptErrorDiscourageUpgradablePubkeyType && !ScriptFlagUtil
-                    .discourageUpgradablePublicKey(flags)
-                ) {
-                  //trivially pass signature validation as required by BIP342
-                  //when the public key type is not known and the
-                  //SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE is NOT set
+            val numT =
+              ScriptNumber(updatedProgram.stack(1).bytes, requireMinimal)
+
+            if (numT.isFailure || numT.get.byteSize > 4) {
+              updatedProgram.failExecution(ScriptErrorUnknownError)
+            } else {
+              val restOfStack =
+                updatedProgram.stack.tail.tail.tail //remove signature, num, pubkey
+
+              val tapscriptE = evalChecksigTapscript(updatedProgram)
+              tapscriptE match {
+                case Left(err) =>
+                  if (
+                    err == ScriptErrorDiscourageUpgradablePubkeyType && !ScriptFlagUtil
+                      .discourageUpgradablePublicKey(flags)
+                  ) {
+                    //trivially pass signature validation as required by BIP342
+                    //when the public key type is not known and the
+                    //SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE is NOT set
+                    handleSignatureValidation(program = updatedProgram,
+                                              result =
+                                                SignatureValidationSuccess,
+                                              restOfStack = restOfStack,
+                                              numOpt = Some(numT.get))
+                  } else if (err == ScriptErrorEvalFalse) {
+                    //means signature validation failed, don't increment the stack counter
+                    handleSignatureValidation(
+                      program = updatedProgram,
+                      result = SignatureValidationErrorIncorrectSignatures,
+                      restOfStack = restOfStack,
+                      numOpt = Some(numT.get))
+                  } else {
+                    updatedProgram.failExecution(err)
+                  }
+                case Right(result) =>
                   handleSignatureValidation(program = updatedProgram,
-                                            result = SignatureValidationSuccess,
+                                            result = result,
                                             restOfStack = restOfStack,
                                             numOpt = Some(numT.get))
-                } else if (err == ScriptErrorEvalFalse) {
-                  //means signature validation failed, don't increment the stack counter
-                  handleSignatureValidation(
-                    program = updatedProgram,
-                    result = SignatureValidationErrorIncorrectSignatures,
-                    restOfStack = restOfStack,
-                    numOpt = Some(numT.get))
-                } else {
-                  updatedProgram.failExecution(err)
-                }
-              case Right(result) =>
-                handleSignatureValidation(program = updatedProgram,
-                                          result = result,
-                                          restOfStack = restOfStack,
-                                          numOpt = Some(numT.get))
+              }
             }
           }
         }
