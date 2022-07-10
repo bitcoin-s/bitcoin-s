@@ -4,6 +4,7 @@ import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.protocol.script.{
   SigVersionBase,
+  SigVersionTaproot,
   SigVersionTaprootKeySpend,
   SigVersionTapscript,
   SigVersionWitnessV0
@@ -308,7 +309,12 @@ sealed abstract class CryptoInterpreter {
             "Script top must be OP_CHECKMULTISIG")
     val flags = program.flags
 
-    if (program.stack.size < 1) {
+    if (
+      program.txSignatureComponent.sigVersion
+        .isInstanceOf[SigVersionTaproot]
+    ) {
+      program.failExecution(ScriptErrorTapScriptCheckMultiSig)
+    } else if (program.stack.size < 1) {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       //these next lines remove the appropriate stack/script values after the signatures have been checked
