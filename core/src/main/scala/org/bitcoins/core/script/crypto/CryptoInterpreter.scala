@@ -455,8 +455,7 @@ sealed abstract class CryptoInterpreter {
           val numT = ScriptNumber(updatedProgram.stack(1).bytes, requireMinimal)
 
           if (numT.isFailure || numT.get.byteSize > 4) {
-            // not sure what error to throw here
-            updatedProgram.failExecution(ScriptErrorInvalidStackOperation)
+            updatedProgram.failExecution(ScriptErrorUnknownError)
           } else {
             val restOfStack =
               updatedProgram.stack.tail.tail.tail //remove signature, num, pubkey
