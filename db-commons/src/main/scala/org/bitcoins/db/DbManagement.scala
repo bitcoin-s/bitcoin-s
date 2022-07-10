@@ -16,6 +16,15 @@ trait DbManagement extends Logging {
   import scala.language.implicitConversions
 
   protected lazy val flyway: Flyway = {
+    //create the database if it doesn't exist yet in sqlite3
+    appConfig.driver match {
+      case SQLite =>
+        SQLiteUtil.createDbFileIfDNE(appConfig.dbPath, appConfig.dbName)
+        val jdbcUrl = appConfig.jdbcUrl.replace("\"", "")
+        SQLiteUtil.setJournalMode(jdbcUrl, "WAL")
+      case PostgreSQL =>
+        ()
+    }
     val module = appConfig.moduleName
 
     val driverName = appConfig.driver match {
@@ -157,14 +166,6 @@ trait DbManagement extends Logging {
     */
   def migrate(): MigrateResult = {
     try {
-      appConfig.driver match {
-        case SQLite =>
-          SQLiteUtil.createDbFileIfDNE(appConfig.dbPath, appConfig.dbName)
-          val jdbcUrl = appConfig.jdbcUrl.replace("\"", "")
-          SQLiteUtil.setJournalMode(jdbcUrl, "WAL")
-        case PostgreSQL =>
-          ()
-      }
       flyway.migrate()
     } catch {
       case err: FlywayException =>
