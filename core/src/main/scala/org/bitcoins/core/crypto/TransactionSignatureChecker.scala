@@ -15,6 +15,7 @@ import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.bitcoins.core.script.result.{
   ScriptErrorSchnorrSig,
+  ScriptErrorSchnorrSigHashType,
   ScriptErrorWitnessPubKeyType,
   ScriptOk,
   ScriptResult
@@ -91,12 +92,21 @@ trait TransactionSignatureChecker {
         || txSigComponent.sigVersion == SigVersionTapscript,
       s"SigVerison must be Taproot or Tapscript, got=${txSigComponent.sigVersion}"
     )
-    val hash =
-      TransactionSignatureSerializer.hashForSignature(txSigComponent,
-                                                      hashType,
-                                                      taprootOptions)
-    val result = pubKey.verify(hash, schnorrSignature)
-    if (result) ScriptOk else ScriptErrorSchnorrSig
+
+    //bip341 restricts valid hash types: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message
+    val invalidHashType = {
+      !(hashType.byte <= 0x03.toByte || (hashType.byte >= 0x81.toByte && hashType.byte <= 0x83.toByte))
+    }
+    if (invalidHashType) {
+      ScriptErrorSchnorrSigHashType
+    } else {
+      val hash =
+        TransactionSignatureSerializer.hashForSignature(txSigComponent,
+                                                        hashType,
+                                                        taprootOptions)
+      val result = pubKey.verify(hash, schnorrSignature)
+      if (result) ScriptOk else ScriptErrorSchnorrSig
+    }
   }
 
   /** Checks the signature of a scriptSig in the spending transaction against the
