@@ -57,8 +57,6 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
       _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind,
                                                        wallet,
                                                        Some(callbacks))
-      syncing <- bitcoind.isSyncing()
-      _ = assert(syncing)
       _ <- AsyncUtil.awaitConditionF { () => bitcoind.isSyncing().map(!_) }
 
       balance <- wallet.getBalance()
