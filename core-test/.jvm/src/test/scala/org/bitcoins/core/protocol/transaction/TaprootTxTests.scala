@@ -4,20 +4,24 @@ import org.bitcoins.core.protocol.script.{ScriptSignature, TaprootKeyPath}
 import org.bitcoins.core.script.flag.ScriptVerifyTaproot
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
-import org.bitcoins.testkitcore.util.BitcoinSJvmTest
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalatest.Assertion
 import org.scalatest.time.Span
 import scodec.bits.ByteVector
 
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import scala.concurrent._
 
-class TaprootTxTests extends BitcoinSJvmTest {
+class TaprootTxTests extends BitcoinSAsyncTest {
 
   behavior of "Taproot test cases"
 
   //these static test vectors take forever
   override lazy val timeLimit: Span = 10.minutes
+
+  implicit override val executionContext: ExecutionContext =
+    system.dispatchers.lookup("akka.actor.multi-core-dispatcher")
 
   //these tests are from
   //https://raw.githubusercontent.com/bitcoin-core/qa-assets/main/unit_test_data/script_assets_test.json
@@ -30,6 +34,7 @@ class TaprootTxTests extends BitcoinSJvmTest {
   lazy val testCases: Seq[TaprootTestCase] = {
     upickle.default.read[Seq[TaprootTestCase]](lines)
   }
+
   it must "parse a taproot test case" in {
     //https://github.com/bitcoin/bitcoin/blob/v22.0/test/functional/feature_taproot.py#L1112
     //https://github.com/bitcoin/bitcoin/blob/3820090bd619ac85ab35eff376c03136fe4a9f04/src/test/script_tests.cpp#L1673
@@ -70,7 +75,7 @@ class TaprootTxTests extends BitcoinSJvmTest {
 
   private def executeSuccessTestCases(
       testCases: Vector[TaprootTestCase]): Future[Vector[Assertion]] = {
-    Future {
+    FutureUtil.makeAsync { () =>
       testCases.map { testCase =>
         withClue(testCase.comment) {
           val result = ScriptInterpreter.run(testCase.successProgram)

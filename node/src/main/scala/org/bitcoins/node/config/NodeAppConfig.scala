@@ -10,6 +10,7 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
+import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.node.NodeType
 import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.util.{Mutable, TimeUtil}
@@ -36,7 +37,8 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     implicit val system: ActorSystem)
     extends DbAppConfig
     with NodeDbManagement
-    with JdbcProfileComponent[NodeAppConfig] {
+    with JdbcProfileComponent[NodeAppConfig]
+    with CallbackConfig[NodeCallbacks] {
   override protected[bitcoins] def moduleName: String = NodeAppConfig.moduleName
   override protected[bitcoins] type ConfigType = NodeAppConfig
 
@@ -50,9 +52,9 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   private val callbacks = new Mutable(NodeCallbacks.empty)
 
-  def nodeCallbacks: NodeCallbacks = callbacks.atomicGet
+  override def callBacks: NodeCallbacks = callbacks.atomicGet
 
-  def addCallbacks(newCallbacks: NodeCallbacks): NodeCallbacks = {
+  override def addCallbacks(newCallbacks: NodeCallbacks): NodeCallbacks = {
     callbacks.atomicUpdate(newCallbacks)(_ + _)
   }
 

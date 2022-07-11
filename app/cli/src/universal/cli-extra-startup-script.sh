@@ -1,3 +1,4 @@
+#!/bin/bash
 
 if [[ "$OS" == "OSX" ]]; then
   #mac doesn't allow random binaries to be executable
@@ -5,4 +6,10 @@ if [[ "$OS" == "OSX" ]]; then
   xattr -d com.apple.quarantine jre/bin/java
 fi
 
-chmod +x jre/bin/java #make sure java is executable
+if test -f "jre/bin/java"; then
+  chmod +x jre/bin/java #make sure java is executable
+fi
+
+if test -f "../jre/bin/java" ; then
+  chmod +x ../jre/bin/java #make sure java is executable
+fi

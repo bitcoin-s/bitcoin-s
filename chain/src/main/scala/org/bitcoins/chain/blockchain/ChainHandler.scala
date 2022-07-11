@@ -151,13 +151,13 @@ class ChainHandler(
                                              blockFilterCheckpoints)
 
         createdF.map { headers =>
-          if (chainConfig.chainCallbacks.onBlockHeaderConnected.nonEmpty) {
+          if (chainConfig.callBacks.onBlockHeaderConnected.nonEmpty) {
             val headersWithHeight: Vector[(Int, BlockHeader)] = {
               headersToBeCreated.reverseIterator.map(h =>
                 (h.height, h.blockHeader))
             }.toVector
 
-            chainConfig.chainCallbacks
+            chainConfig.callBacks
               .executeOnBlockHeaderConnectedCallbacks(logger, headersWithHeight)
           }
           chains.foreach { c =>
@@ -1023,8 +1023,8 @@ class ChainHandler(
     for {
       changed <- stateDAO.updateSyncing(value)
     } yield {
-      if (changed && chainConfig.chainCallbacks.onSyncFlagChanged.nonEmpty) {
-        chainConfig.chainCallbacks.executeOnSyncFlagChanged(logger, value)
+      if (changed && chainConfig.callBacks.onSyncFlagChanged.nonEmpty) {
+        chainConfig.callBacks.executeOnSyncFlagChanged(logger, value)
       }
       this
     }

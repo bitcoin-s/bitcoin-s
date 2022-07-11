@@ -15,6 +15,7 @@ import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.bitcoins.core.script.result.{
   ScriptErrorSchnorrSig,
+  ScriptErrorSchnorrSigHashType,
   ScriptErrorWitnessPubKeyType,
   ScriptOk,
   ScriptResult
@@ -73,11 +74,15 @@ trait TransactionSignatureChecker {
       pubKey: SchnorrPublicKey,
       witness: TaprootKeyPath,
       taprootOptions: TaprootSerializationOptions): ScriptResult = {
-    checkSchnorrSignature(txSigComponent = txSigComponent,
-                          pubKey = pubKey,
-                          schnorrSignature = witness.signature,
-                          hashType = witness.hashType,
-                          taprootOptions)
+    if (witness.hashTypeOpt.contains(HashType.sigHashDefault)) {
+      ScriptErrorSchnorrSigHashType
+    } else {
+      checkSchnorrSignature(txSigComponent = txSigComponent,
+                            pubKey = pubKey,
+                            schnorrSignature = witness.signature,
+                            hashType = witness.hashType,
+                            taprootOptions)
+    }
   }
 
   def checkSchnorrSignature(
@@ -91,12 +96,32 @@ trait TransactionSignatureChecker {
         || txSigComponent.sigVersion == SigVersionTapscript,
       s"SigVerison must be Taproot or Tapscript, got=${txSigComponent.sigVersion}"
     )
-    val hash =
-      TransactionSignatureSerializer.hashForSignature(txSigComponent,
-                                                      hashType,
-                                                      taprootOptions)
-    val result = pubKey.verify(hash, schnorrSignature)
-    if (result) ScriptOk else ScriptErrorSchnorrSig
+
+    //bip341 restricts valid hash types: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message
+    val validHashType = checkTaprootHashType(hashType)
+    if (!validHashType) {
+      ScriptErrorSchnorrSigHashType
+    } else {
+      val hash =
+        TransactionSignatureSerializer.hashForSignature(txSigComponent,
+                                                        hashType,
+                                                        taprootOptions)
+      val result = pubKey.verify(hash, schnorrSignature)
+      if (result) ScriptOk else ScriptErrorSchnorrSig
+    }
+  }
+
+  //    (hash_type <= 0x03 || (hash_type >= 0x81 && hash_type <= 0x83))
+  private val validTaprootHashTypes: Vector[Byte] = Vector(0x00.toByte,
+                                                           0x01.toByte,
+                                                           0x02.toByte,
+                                                           0x03.toByte,
+                                                           0x81.toByte,
+                                                           0x82.toByte,
+                                                           0x83.toByte)
+
+  def checkTaprootHashType(hashType: HashType): Boolean = {
+    validTaprootHashTypes.contains(hashType.byte)
   }
 
   /** Checks the signature of a scriptSig in the spending transaction against the

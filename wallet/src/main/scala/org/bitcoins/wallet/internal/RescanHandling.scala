@@ -77,9 +77,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
             _ <- clearUtxos(account)
             _ <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
             _ <- stateDescriptorDAO.updateRescanning(false)
+            _ <- walletCallbacks.executeOnRescanComplete(logger)
           } yield {
             logger.info(s"Finished rescanning the wallet. It took ${System
               .currentTimeMillis() - startTime}ms")
+
             RescanState.RescanDone
           }
 

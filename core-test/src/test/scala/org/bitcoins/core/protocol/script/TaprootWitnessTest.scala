@@ -111,11 +111,23 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
   }
 
   it must "have serialization symmetry" in {
-    forAll(WitnessGenerators.taprootWitness) { case wit =>
+    forAll(WitnessGenerators.taprootWitness) { wit =>
       val fromBytes = TaprootWitness.fromBytes(wit.bytes)
       assert(fromBytes == wit)
       assert(TaprootWitness.fromStack(wit.stack.toVector) == wit)
       assert(fromBytes.bytes == wit.bytes)
     }
+  }
+
+  it must "not determine a keypath to be valid with more than two stack elmeents" in {
+    val stackHex = Vector(
+      "50736563726574",
+      "c02e44c9e47eaeb4bb313adecd11012dfad435cd72ce71f525329f24d75c5b9432774e148e9209baf3f1656a46986d5f38ddf4e20912c6ac28f48d6bf747469fb1",
+      "20febe583fa77e49089f89b78fa8c116710715d6e40cc5f5a075ef1681550dd3c4ad20d0fa46cb883e940ac3dc5421f05b03859972639f51ed2eccbf3dc5a62e2e1b15ac",
+      "59155471452f00c6ccc869a4db103985036fe98b5d9e11b95d3fd01396e231dc791a56eee707149629df569f113263a92b9daf4336f3acd6c6f34208895ec597",
+      "84c66fe6dac66f09290320e31f2851b9dbe3849041f0eca2549faf92f4ae142ae7f9134b7cd4b9be97c1b26bfa6ec61c2e32b340c65c6aee8c3d1a5398f4a52301"
+    )
+    val stack = stackHex.map(ByteVector.fromValidHex(_))
+    assert(!TaprootKeyPath.isValid(stack))
   }
 }

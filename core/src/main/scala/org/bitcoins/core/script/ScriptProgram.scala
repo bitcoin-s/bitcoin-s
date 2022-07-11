@@ -110,6 +110,14 @@ case class PreExecutionScriptProgram(
     flags: Seq[ScriptFlag])
     extends ScriptProgram {
 
+  def startingValidationWeight: Option[Long] = txSignatureComponent match {
+    case _: BaseTxSigComponent | _: WitnessTxSigComponentRaw |
+        _: WitnessTxSigComponentRebuilt | _: WitnessTxSigComponentP2SH =>
+      None
+    case tr: TaprootTxSigComponent =>
+      Some(50 + tr.witness.byteSize)
+  }
+
   def toExecutionInProgress: ExecutionInProgressScriptProgram = {
     ExecutionInProgressScriptProgram(
       txSignatureComponent = txSignatureComponent,
@@ -120,6 +128,7 @@ case class PreExecutionScriptProgram(
       flags = flags,
       lastCodeSeparator = None,
       codeSeparatorTapscriptIdx = None,
+      validationWeightRemaining = startingValidationWeight,
       conditionalCounter = ConditionalCounter.empty
     )
   }
@@ -271,6 +280,7 @@ case class ExecutionInProgressScriptProgram(
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
     codeSeparatorTapscriptIdx: Option[Int],
+    validationWeightRemaining: Option[Long],
     conditionalCounter: ConditionalCounter)
     extends StartedScriptProgram {
 
@@ -390,6 +400,10 @@ case class ExecutionInProgressScriptProgram(
   def updateTapscriptCodeSeparatorIdx(
       newIdx: Int): ExecutionInProgressScriptProgram = {
     this.copy(codeSeparatorTapscriptIdx = Some(newIdx))
+  }
+
+  def decrementValidationWeightRemaining(): ExecutionInProgressScriptProgram = {
+    this.copy(validationWeightRemaining = validationWeightRemaining.map(_ - 50))
   }
 
   def taprootSerializationOptions: TaprootSerializationOptions = {

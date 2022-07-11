@@ -24,7 +24,8 @@ object HashType extends Factory[HashType] {
   def fromByte(byte: Byte): HashType = fromBytes(ByteVector.fromByte(byte))
 
   def fromNumber(num: Int): HashType = {
-    if (isSigHashNone(num)) {
+    if (isSigHashDefault(num)) SIGHASH_DEFAULT
+    else if (isSigHashNone(num)) {
       if (isSigHashNoneAnyoneCanPay(num)) {
         SIGHASH_NONE_ANYONECANPAY(num)
       } else {
@@ -52,6 +53,8 @@ object HashType extends Factory[HashType] {
       case _: SIGHASH_ALL => sigHashAllByte
       case h: HashType    => h.byte
     }
+
+  def isSigHashDefault(num: Int): Boolean = num == 0x00
 
   def isSigHashAllOne(num: Int): Boolean = (num & 0x1f) == 1
 
@@ -81,7 +84,8 @@ object HashType extends Factory[HashType] {
         isSigHashAnyoneCanPay(num) ||
         isSigHashAllAnyoneCanPay(num) ||
         isSigHashSingleAnyoneCanPay(num) ||
-        isSigHashNoneAnyoneCanPay(num))
+        isSigHashNoneAnyoneCanPay(num) ||
+        isSigHashDefault(num))
     ) true
     else false
   }
@@ -109,7 +113,8 @@ object HashType extends Factory[HashType] {
                            sigHashAnyoneCanPay,
                            sigHashNoneAnyoneCanPay,
                            sigHashAllAnyoneCanPay,
-                           sigHashSingleAnyoneCanPay)
+                           sigHashSingleAnyoneCanPay,
+                           sigHashDefault)
 
   lazy val hashTypeBytes: Vector[Byte] = Vector(
     sigHashDefaultByte,

@@ -136,9 +136,6 @@ sealed abstract class TransactionSignatureSerializer {
         val sigHashBytes = Int32(hashType.num).bytes.reverse
 
         hashType match {
-          case SIGHASH_DEFAULT =>
-            sys.error(
-              s"SIGHASH_DEFAULT is only available in taproot signature serialization, got=${sigVersion}")
           case _: SIGHASH_NONE =>
             val sigHashNoneTx: Transaction =
               sigHashNone(txWithInputSigsRemoved, inputIndex)
@@ -162,7 +159,7 @@ sealed abstract class TransactionSignatureSerializer {
               sigHashSingleTx.bytes ++ sigHashBytes
             }
 
-          case _: SIGHASH_ALL =>
+          case _: SIGHASH_ALL | SIGHASH_DEFAULT =>
             val sigHashAllTx: Transaction = sigHashAll(txWithInputSigsRemoved)
             sigHashAllTx.bytes ++ sigHashBytes
 

@@ -16,6 +16,7 @@ import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
   DLCOfferAddNotification,
   DLCOfferRemoveNotification,
   NewAddressNotification,
+  RescanComplete,
   TxBroadcastNotification,
   TxProcessedNotification
 }
@@ -374,6 +375,36 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         assert(removeNotification.nonEmpty)
         assert(removeNotification.get.payload == expectedHash)
       }
+  }
+
+  it must "receive updates when a rescan is complete" in { serverWithBitcoind =>
+    val ServerWithBitcoind(_, server) = serverWithBitcoind
+    val cliConfig = Config(rpcPortOpt = Some(server.conf.rpcPort),
+                           rpcPassword = server.conf.rpcPassword)
+
+    val req = buildReq(server.conf)
+    val tuple: (
+        Future[WebSocketUpgradeResponse],
+        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+      Http()
+        .singleWebSocketRequest(req, websocketFlow)
+    }
+    val notificationsF = tuple._2._1
+    val promise = tuple._2._2
+    val cmd = CliCommand.Rescan(addressBatchSize = None,
+                                startBlock = None,
+                                endBlock = None,
+                                force = true,
+                                ignoreCreationTime = false)
+    val _ = ConsoleCli.exec(cmd, cliConfig)
+    for {
+      _ <- AkkaUtil.nonBlockingSleep(5000.millis)
+      _ = promise.success(None)
+      notifications <- notificationsF
+    } yield {
+      val count = notifications.count(_.isInstanceOf[RescanComplete])
+      assert(count == 1, s"count=$count")
+    }
   }
 
   it must "not queue things on the websocket while there is no one connected" in {

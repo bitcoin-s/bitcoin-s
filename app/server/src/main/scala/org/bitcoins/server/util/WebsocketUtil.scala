@@ -8,6 +8,7 @@ import org.bitcoins.chain.{
   OnBlockHeaderConnected,
   OnSyncFlagChanged
 }
+import org.bitcoins.commons.jsonmodels.ws.TorNotification.TorStartedNotification
 import org.bitcoins.commons.jsonmodels.ws.{
   ChainNotification,
   WalletNotification,
@@ -27,6 +28,7 @@ import org.bitcoins.dlc.wallet.{
   OnDLCOfferRemove,
   OnDLCStateChange
 }
+import org.bitcoins.tor.{OnTorStarted, TorCallbacks}
 import org.bitcoins.wallet._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -80,8 +82,10 @@ object WebsocketUtil extends Logging {
   }
 
   /** Builds websocket callbacks for the wallet */
-  def buildWalletCallbacks(walletQueue: SourceQueueWithComplete[Message])(
-      implicit ec: ExecutionContext): WalletCallbacks = {
+  def buildWalletCallbacks(
+      walletQueue: SourceQueueWithComplete[Message],
+      walletNameOpt: Option[String])(implicit
+      ec: ExecutionContext): WalletCallbacks = {
     val onAddressCreated: OnNewAddressGenerated = { addr =>
       val notification = WalletNotification.NewAddressNotification(addr)
       val json =
@@ -113,12 +117,40 @@ object WebsocketUtil extends Logging {
       offerF.map(_ => ())
     }
 
+    val onRescanComplete: OnRescanComplete = { _ =>
+      val name =
+        walletNameOpt.getOrElse("") // default name empty string on the wallet
+      val notification = WalletNotification.RescanComplete(name)
+      val notificationJson =
+        upickle.default.writeJs(notification)(WsPicklers.rescanPickler)
+      val msg = TextMessage.Strict(notificationJson.toString())
+      val offerF = walletQueue.offer(msg)
+      offerF.map(_ => ())
+    }
+
     WalletCallbacks(
       onTransactionProcessed = Vector(onTxProcessed),
-      onNewAddressGenerated = Vector(onAddressCreated),
+      onTransactionBroadcast = Vector(onTxBroadcast),
       onReservedUtxos = Vector(onReservedUtxo),
-      onTransactionBroadcast = Vector(onTxBroadcast)
+      onNewAddressGenerated = Vector(onAddressCreated),
+      onBlockProcessed = Vector.empty,
+      onRescanComplete = Vector(onRescanComplete)
     )
+  }
+
+  def buildTorCallbacks(queue: SourceQueueWithComplete[Message])(implicit
+      ec: ExecutionContext): TorCallbacks = {
+    val onTorStarted: OnTorStarted = { _ =>
+      val notification = TorStartedNotification
+      val json =
+        upickle.default.writeJs(notification)(WsPicklers.torStartedPickler)
+
+      val msg = TextMessage.Strict(json.toString())
+      val offerF = queue.offer(msg)
+      offerF.map(_ => ())
+    }
+
+    TorCallbacks(onTorStarted)
   }
 
   private def buildTxNotification(
@@ -135,7 +167,7 @@ object WebsocketUtil extends Logging {
         upickle.default.writeJs(notification)(WsPicklers.txBroadcastPickler)
       case x @ (WalletWsType.NewAddress | WalletWsType.ReservedUtxos |
           WalletWsType.DLCStateChange | WalletWsType.DLCOfferAdd |
-          WalletWsType.DLCOfferRemove) =>
+          WalletWsType.DLCOfferRemove | WalletWsType.RescanComplete) =>
         sys.error(s"Cannot build tx notification for $x")
     }
 

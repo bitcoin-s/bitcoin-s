@@ -278,16 +278,7 @@ sealed abstract class CryptoGenerators {
     } yield hash
 
   /** Generates a random [[HashType HashType]] */
-  def hashType: Gen[HashType] =
-    Gen.oneOf(
-      HashType.sigHashAll,
-      HashType.sigHashNone,
-      HashType.sigHashSingle,
-      HashType.sigHashAnyoneCanPay,
-      HashType.sigHashSingleAnyoneCanPay,
-      HashType.sigHashNoneAnyoneCanPay,
-      HashType.sigHashAllAnyoneCanPay
-    )
+  def hashType: Gen[HashType] = Gen.oneOf(HashType.hashTypes)
 
   def extVersion: Gen[ExtKeyVersion] = {
     Gen.oneOf(ExtKeyVersion.all)
