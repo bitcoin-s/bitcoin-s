@@ -249,7 +249,7 @@ object TaprootWitness extends Factory[TaprootWitness] {
 }
 
 /** Spending a taproot output via the key path spend */
-case class TaprootKeyPath(
+case class TaprootKeyPath private (
     signature: SchnorrDigitalSignature,
     hashTypeOpt: Option[HashType],
     annexOpt: Option[ByteVector])
@@ -286,7 +286,22 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
       signature: SchnorrDigitalSignature,
       hashType: HashType,
       annexOpt: Option[ByteVector]): TaprootKeyPath = {
-    TaprootKeyPath(signature, Some(hashType), annexOpt)
+    if (hashType == HashType.sigHashDefault) {
+      new TaprootKeyPath(signature, None, annexOpt)
+    } else {
+      new TaprootKeyPath(signature, Some(hashType), annexOpt)
+    }
+  }
+
+  def apply(
+      signature: SchnorrDigitalSignature,
+      hashTypeOpt: Option[HashType],
+      annexOpt: Option[ByteVector]): TaprootKeyPath = {
+    if (hashTypeOpt.contains(HashType.sigHashDefault)) {
+      new TaprootKeyPath(signature, None, annexOpt)
+    } else {
+      new TaprootKeyPath(signature, hashTypeOpt, annexOpt)
+    }
   }
 
   def apply(

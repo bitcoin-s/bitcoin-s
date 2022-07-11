@@ -217,7 +217,7 @@ sealed abstract class CryptoGenerators {
   def digitalSignatureWithSigHash: Gen[ECDigitalSignature] = {
     for {
       sig <- digitalSignature
-      sigHash <- hashType
+      sigHash <- preTaprootHashType
     } yield {
       ECDigitalSignature(sig.bytes :+ sigHash.byte)
     }
@@ -278,17 +278,10 @@ sealed abstract class CryptoGenerators {
     } yield hash
 
   /** Generates a random [[HashType HashType]] */
-  def hashType: Gen[HashType] =
-    Gen.oneOf(
-      HashType.sigHashDefault,
-      HashType.sigHashAll,
-      HashType.sigHashNone,
-      HashType.sigHashSingle,
-      HashType.sigHashAnyoneCanPay,
-      HashType.sigHashSingleAnyoneCanPay,
-      HashType.sigHashNoneAnyoneCanPay,
-      HashType.sigHashAllAnyoneCanPay
-    )
+  def hashType: Gen[HashType] = Gen.oneOf(HashType.hashTypes)
+
+  def preTaprootHashType: Gen[HashType] =
+    Gen.oneOf(HashType.hashTypes.filterNot(_ == HashType.sigHashDefault))
 
   def extVersion: Gen[ExtKeyVersion] = {
     Gen.oneOf(ExtKeyVersion.all)
