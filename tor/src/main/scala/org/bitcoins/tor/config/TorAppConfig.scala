@@ -3,10 +3,11 @@ package org.bitcoins.tor.config
 import com.typesafe.config.Config
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.{AppConfig, AppConfigFactory, ConfigOps}
-import org.bitcoins.core.util.NetworkUtil
+import org.bitcoins.core.api.CallbackConfig
+import org.bitcoins.core.util.{Mutable, NetworkUtil}
 import org.bitcoins.tor.TorProtocolHandler.{Password, SafeCookie}
 import org.bitcoins.tor.client.TorClient
-import org.bitcoins.tor.{Socks5ProxyParams, TorParams}
+import org.bitcoins.tor.{Socks5ProxyParams, TorCallbacks, TorParams}
 
 import java.io.File
 import java.net.{InetAddress, InetSocketAddress}
@@ -23,7 +24,16 @@ case class TorAppConfig(
     baseDatadir: Path,
     private val subModuleNameOpt: Option[String],
     configOverrides: Vector[Config])(implicit ec: ExecutionContext)
-    extends AppConfig {
+    extends AppConfig
+    with CallbackConfig[TorCallbacks] {
+
+  private val callbacks = new Mutable(TorCallbacks.empty)
+
+  override def callBacks: TorCallbacks = callbacks.atomicGet
+
+  override def addCallbacks(newCallbacks: TorCallbacks): TorCallbacks = {
+    callbacks.atomicUpdate(newCallbacks)(_ + _)
+  }
   override protected[bitcoins] def moduleName: String = TorAppConfig.moduleName
   override protected[bitcoins] type ConfigType = TorAppConfig
 
@@ -171,6 +181,8 @@ case class TorAppConfig(
     //see: https://github.com/bitcoin-s/bitcoin-s/pull/3558#issuecomment-899819698
     AsyncUtil
       .retryUntilSatisfied(checkIfLogExists, 1.second, 60)
+      //execute started callbacks
+      .flatMap(_ => callbacks.atomicGet.executeOnTorStarted())
       .recover { case _: AsyncUtil.RpcRetryException =>
         throw new RuntimeException(
           s"Could not start tor, please try again in a few minutes")
@@ -183,7 +195,9 @@ case class TorAppConfig(
       val stream = Files.lines(torLogFile)
       try {
         stream
-          .filter((line: String) => line.contains(isBootstrappedLogLine))
+          .filter { line: String =>
+            line.contains(isBootstrappedLogLine)
+          }
           .count() > 0
       } finally if (stream != null) stream.close()
     }

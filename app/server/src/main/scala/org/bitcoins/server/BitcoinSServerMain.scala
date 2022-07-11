@@ -168,10 +168,19 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val callbacksF =
       chainApiF.map(chainApi => buildNeutrinoCallbacks(wsQueue, chainApi))
 
+    val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
+    val _ = torConf.addCallbacks(torCallbacks)
+    val isTorStartedF = if (torConf.torProvided) {
+      //if tor is provided we need to execute the tor started callback immediately
+      torConf.callBacks.executeOnTorStarted()
+    } else {
+      Future.unit
+    }
     val startedNodeF = {
       //can't start connecting to peers until tor is done starting
       for {
         _ <- startedTorConfigF
+        _ <- isTorStartedF
         started <- configuredNodeF.flatMap(_.start())
       } yield started
     }
@@ -267,7 +276,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val tuple = buildWsSource
     val wsQueue: SourceQueueWithComplete[Message] = tuple._1
     val wsSource: Source[Message, NotUsed] = tuple._2
-
+    val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
+    val _ = torConf.addCallbacks(torCallbacks)
+    val isTorStartedF = if (torConf.torProvided) {
+      //if tor is provided we need to emit a tor started event immediately
+      torConf.callBacks.executeOnTorStarted()
+    } else {
+      Future.unit
+    }
     val walletF = bitcoindF.flatMap { bitcoind =>
       val feeProvider = FeeProviderFactory.getFeeProviderOrElse(
         bitcoind,
@@ -282,6 +298,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                                                feeRateApi = feeProvider)
       val chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, bitcoind)
       for {
+        _ <- isTorStartedF
         tmpWallet <- tmpWalletF
         wallet = BitcoindRpcBackendUtil.createDLCWalletWithBitcoindCallbacks(
           bitcoind,
@@ -327,6 +344,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         serverCmdLineArgs = serverArgParser,
         wsSource = wsSource
       )
+
       walletCallbacks = WebsocketUtil.buildWalletCallbacks(
         wsQueue,
         walletConf.walletNameOpt)
@@ -508,7 +526,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             .map { _ =>
               BitcoindRpcBackendUtil
                 .startBitcoindMempoolPolling(wallet, bitcoind) { tx =>
-                  nodeConf.nodeCallbacks
+                  nodeConf.callBacks
                     .executeOnTxReceivedCallbacks(logger, tx)
                 }
               ()
