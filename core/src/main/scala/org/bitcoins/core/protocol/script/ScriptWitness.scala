@@ -356,7 +356,7 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
     val noAnnex =
       stack.length == 1 && (stack.head.length == 64 || stack.head.length == 65)
     val annex =
-      TaprootScriptPath.hasAnnex(stack) &&
+      stack.length == 2 && TaprootScriptPath.hasAnnex(stack) &&
         (stack(1).length == 64 || stack(1).length == 65)
     noAnnex || annex
   }
