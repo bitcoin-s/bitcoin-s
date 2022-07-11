@@ -231,15 +231,19 @@ sealed abstract class CryptoInterpreter {
       }
       helperE match {
         case Right(helper) =>
-          val result = TransactionSignatureChecker.checkSigTapscript(
-            txSignatureComponent = program.txSignatureComponent,
-            pubKey = helper.pubKey.schnorrPublicKey,
-            signature = helper.signature,
-            hashType = helper.hashType,
-            taprootOptions = program.taprootSerializationOptions,
-            flags = program.flags
-          )
-          Right(result)
+          val validHashType =
+            TransactionSignatureChecker.checkTaprootHashType(helper.hashType)
+          if (validHashType) {
+            val result = TransactionSignatureChecker.checkSigTapscript(
+              txSignatureComponent = program.txSignatureComponent,
+              pubKey = helper.pubKey.schnorrPublicKey,
+              signature = helper.signature,
+              hashType = helper.hashType,
+              taprootOptions = program.taprootSerializationOptions,
+              flags = program.flags
+            )
+            Right(result)
+          } else Left(ScriptErrorSchnorrSigHashType)
         case Left(err) => Left(err)
       }
     }

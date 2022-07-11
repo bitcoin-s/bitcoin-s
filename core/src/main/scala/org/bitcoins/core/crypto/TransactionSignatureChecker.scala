@@ -94,10 +94,8 @@ trait TransactionSignatureChecker {
     )
 
     //bip341 restricts valid hash types: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message
-    val invalidHashType = {
-      !(hashType.byte <= 0x03.toByte || (hashType.byte >= 0x81.toByte && hashType.byte <= 0x83.toByte))
-    }
-    if (invalidHashType) {
+    val validHashType = checkTaprootHashType(hashType)
+    if (!validHashType) {
       ScriptErrorSchnorrSigHashType
     } else {
       val hash =
@@ -107,6 +105,19 @@ trait TransactionSignatureChecker {
       val result = pubKey.verify(hash, schnorrSignature)
       if (result) ScriptOk else ScriptErrorSchnorrSig
     }
+  }
+
+  //    (hash_type <= 0x03 || (hash_type >= 0x81 && hash_type <= 0x83))
+  private val validTaprootHashTypes: Vector[Byte] = Vector(0x00.toByte,
+                                                           0x01.toByte,
+                                                           0x02.toByte,
+                                                           0x03.toByte,
+                                                           0x81.toByte,
+                                                           0x82.toByte,
+                                                           0x83.toByte)
+
+  def checkTaprootHashType(hashType: HashType): Boolean = {
+    validTaprootHashTypes.contains(hashType.byte)
   }
 
   /** Checks the signature of a scriptSig in the spending transaction against the
