@@ -7,12 +7,10 @@ if [[ "$OS" == "OSX" ]]; then
 fi
 
 if test -f "jre/bin/java"; then
-  echo "TOPLEVELJAVA";
   chmod +x jre/bin/java #make sure java is executable
 fi
 
 if test -f "../jre/bin/java" ; then
-  echo "NESTED JAVA";
   chmod +x ../jre/bin/java #make sure java is executable
 fi
 
