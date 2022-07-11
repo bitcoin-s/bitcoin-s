@@ -215,7 +215,7 @@ sealed abstract class CreditingTxGen {
 
   def p2shOutput: Gen[ScriptSignatureParams[InputInfo]] =
     nonP2SHOutput.flatMap { o =>
-      CryptoGenerators.preTaprootHashType.map { hashType =>
+      CryptoGenerators.hashType.map { hashType =>
         val oldOutput = o.output
         val redeemScript = o.output.scriptPubKey
         val p2sh = P2SHScriptPubKey(redeemScript)
@@ -250,7 +250,7 @@ sealed abstract class CreditingTxGen {
   def cltvOutput: Gen[ScriptSignatureParams[InputInfo]] =
     TransactionGenerators.spendableCLTVValues.flatMap { case (scriptNum, _) =>
       basicOutput.flatMap { o =>
-        CryptoGenerators.preTaprootHashType.map { hashType =>
+        CryptoGenerators.hashType.map { hashType =>
           val oldOutput = o.output
           val csvSPK = CLTVScriptPubKey(scriptNum, oldOutput.scriptPubKey)
           val updatedOutput = TransactionOutput(oldOutput.value, csvSPK)
@@ -284,7 +284,7 @@ sealed abstract class CreditingTxGen {
   def csvOutput: Gen[ScriptSignatureParams[InputInfo]] =
     TransactionGenerators.spendableCSVValues.flatMap { case (scriptNum, _) =>
       basicOutput.flatMap { o =>
-        CryptoGenerators.preTaprootHashType.map { hashType =>
+        CryptoGenerators.hashType.map { hashType =>
           val oldOutput = o.output
           val csvSPK = CSVScriptPubKey(scriptNum, oldOutput.scriptPubKey)
           val updatedOutput = TransactionOutput(oldOutput.value, csvSPK)
@@ -357,7 +357,7 @@ sealed abstract class CreditingTxGen {
       Gen.choose(0, outputs.size - 1).flatMap { outputIndex: Int =>
         ScriptGenerators.scriptPubKey.flatMap { case (spk, keys) =>
           WitnessGenerators.scriptWitness.flatMap { wit: ScriptWitness =>
-            CryptoGenerators.preTaprootHashType.map { hashType: HashType =>
+            CryptoGenerators.hashType.map { hashType: HashType =>
               val tc = TransactionConstants
               val signers: Vector[Sign] = keys.toVector
               val creditingTx =
@@ -434,7 +434,7 @@ sealed abstract class CreditingTxGen {
       scriptWitness: Option[ScriptWitness]): Gen[
     ScriptSignatureParams[InputInfo]] =
     nonEmptyOutputs.flatMap { outputs =>
-      CryptoGenerators.preTaprootHashType.flatMap { hashType =>
+      CryptoGenerators.hashType.flatMap { hashType =>
         Gen.choose(0, outputs.size - 1).map { idx =>
           val old = outputs(idx)
           val updated = outputs.updated(idx, TransactionOutput(old.value, spk))

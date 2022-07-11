@@ -99,9 +99,6 @@ sealed abstract class CryptoGenerators {
     Gen.oneOf(HashType.hashTypes)
   }
 
-  def preTaprootHashType: Gen[HashType] =
-    Gen.oneOf(HashType.hashTypes.filterNot(_ == HashType.sigHashDefault))
-
   def schnorrDigitalSignature: Gen[SchnorrDigitalSignature] = {
     for {
       privKey <- privateKey
