@@ -670,7 +670,6 @@ sealed abstract class ScriptInterpreter {
                 scriptPubKeyExecutedProgram.flags.exists(
                   _ == ScriptVerifyDiscourageUpgradableTaprootVersion)
               if (controlBlock.isTapLeafMask) {
-
                 //drop the control block & script in the witness
                 val stackNoControlBlockOrScript = {
                   if (scriptPubKeyExecutedProgram.getAnnexHashOpt.isDefined) {
@@ -682,17 +681,27 @@ sealed abstract class ScriptInterpreter {
                     stack.tail.tail
                   }
                 }
-                val newProgram = PreExecutionScriptProgram(
-                  txSignatureComponent = taprootTxSigComponent,
-                  stack = stackNoControlBlockOrScript.toList,
-                  script = rebuiltSPK.asm.toList,
-                  originalScript = rebuiltSPK.asm.toList,
-                  altStack = Nil,
-                  flags = taprootTxSigComponent.flags
-                )
-                val evaluated = executeProgram(newProgram)
-                val segwitChecks = postSegWitProgramChecks(evaluated)
-                Success(segwitChecks)
+                if (
+                  stackNoControlBlockOrScript.exists(
+                    _.bytes.length > MAX_PUSH_SIZE)
+                ) {
+                  val fail =
+                    scriptPubKeyExecutedProgram.failExecution(
+                      ScriptErrorPushSize)
+                  Success(fail)
+                } else {
+                  val newProgram = PreExecutionScriptProgram(
+                    txSignatureComponent = taprootTxSigComponent,
+                    stack = stackNoControlBlockOrScript.toList,
+                    script = rebuiltSPK.asm.toList,
+                    originalScript = rebuiltSPK.asm.toList,
+                    altStack = Nil,
+                    flags = taprootTxSigComponent.flags
+                  )
+                  val evaluated = executeProgram(newProgram)
+                  val segwitChecks = postSegWitProgramChecks(evaluated)
+                  Success(segwitChecks)
+                }
               } else if (isDiscouragedTaprootVersion) {
                 val p = scriptPubKeyExecutedProgram.failExecution(
                   ScriptErrorDiscourageUpgradableTaprootVersion)
