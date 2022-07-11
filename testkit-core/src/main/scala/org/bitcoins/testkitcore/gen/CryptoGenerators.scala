@@ -280,6 +280,7 @@ sealed abstract class CryptoGenerators {
   /** Generates a random [[HashType HashType]] */
   def hashType: Gen[HashType] =
     Gen.oneOf(
+      HashType.sigHashDefault,
       HashType.sigHashAll,
       HashType.sigHashNone,
       HashType.sigHashSingle,

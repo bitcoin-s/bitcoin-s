@@ -74,11 +74,15 @@ trait TransactionSignatureChecker {
       pubKey: SchnorrPublicKey,
       witness: TaprootKeyPath,
       taprootOptions: TaprootSerializationOptions): ScriptResult = {
-    checkSchnorrSignature(txSigComponent = txSigComponent,
-                          pubKey = pubKey,
-                          schnorrSignature = witness.signature,
-                          hashType = witness.hashType,
-                          taprootOptions)
+    if (witness.hashTypeOpt.contains(HashType.sigHashDefault)) {
+      ScriptErrorSchnorrSigHashType
+    } else {
+      checkSchnorrSignature(txSigComponent = txSigComponent,
+                            pubKey = pubKey,
+                            schnorrSignature = witness.signature,
+                            hashType = witness.hashType,
+                            taprootOptions)
+    }
   }
 
   def checkSchnorrSignature(

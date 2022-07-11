@@ -251,9 +251,11 @@ object TaprootWitness extends Factory[TaprootWitness] {
 /** Spending a taproot output via the key path spend */
 case class TaprootKeyPath(
     signature: SchnorrDigitalSignature,
-    hashType: HashType,
+    hashTypeOpt: Option[HashType],
     annexOpt: Option[ByteVector])
     extends TaprootWitness {
+
+  val hashType: HashType = hashTypeOpt.getOrElse(HashType.sigHashDefault)
 
   override val stack: Vector[ByteVector] = {
     val sig = if (hashType == HashType.sigHashDefault) {
@@ -278,6 +280,23 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
           _: ScriptWitnessV0 | EmptyScriptWitness) =>
         sys.error(s"Could not parse taproot keypath, got=$x")
     }
+  }
+
+  def apply(
+      signature: SchnorrDigitalSignature,
+      hashType: HashType,
+      annexOpt: Option[ByteVector]): TaprootKeyPath = {
+    TaprootKeyPath(signature, Some(hashType), annexOpt)
+  }
+
+  def apply(
+      signature: SchnorrDigitalSignature,
+      annexOpt: Option[ByteVector]): TaprootKeyPath = {
+    TaprootKeyPath(signature, None, annexOpt)
+  }
+
+  def apply(signature: SchnorrDigitalSignature): TaprootKeyPath = {
+    TaprootKeyPath(signature, None, None)
   }
 
   def fromStack(vec: Vector[ByteVector]): TaprootKeyPath = {
@@ -305,11 +324,11 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
       //means SIGHASH_DEFAULT is implicitly encoded
       //see: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#Common_signature_message
       val sig = SchnorrDigitalSignature.fromBytes(sigBytes)
-      TaprootKeyPath(sig, HashType.sigHashDefault, annexOpt)
+      TaprootKeyPath(sig, None, annexOpt)
     } else if (sigBytes.length == 65) {
       val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
       val hashType = HashType.fromByte(sigBytes.last)
-      TaprootKeyPath(sig, hashType, annexOpt)
+      TaprootKeyPath(sig, Some(hashType), annexOpt)
     } else {
       sys.error(
         s"Unknown sig bytes length, should be 64 or 65, got=${sigBytes.length}")
