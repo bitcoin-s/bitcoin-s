@@ -20,7 +20,7 @@ class HashTypeTest extends BitcoinSCryptoTest {
   }
 
   it must "find a hash type by its byte value" in {
-    HashType(0.toByte) must be(SIGHASH_ALL(0))
+    HashType(0.toByte) must be(SIGHASH_DEFAULT)
     HashType(1.toByte) must be(SIGHASH_ALL(1))
     HashType(2.toByte) must be(HashType.sigHashNone)
     HashType(3.toByte) must be(HashType.sigHashSingle)
@@ -41,10 +41,11 @@ class HashTypeTest extends BitcoinSCryptoTest {
   }
 
   it must "determine if a given number is of hashType SIGHASH_ALL" in {
-    HashType.isSigHashAll(0) must be(true)
     HashType.isSigHashAll(1) must be(true)
     HashType.isSigHashAll(5) must be(true)
+    HashType.isSigHashAll(90) must be(true)
 
+    HashType.isSigHashAll(0) must be(false)
     HashType.isSigHashAll(HashType.sigHashNone.num) must be(false)
     HashType.isSigHashAll(HashType.sigHashSingle.num) must be(false)
   }
