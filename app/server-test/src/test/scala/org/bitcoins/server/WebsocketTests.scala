@@ -423,13 +423,13 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val notificationsF = tuple._2._1
     val promise = tuple._2._2
     for {
-      _ <- AkkaUtil.nonBlockingSleep(5000.millis)
+      _ <- AkkaUtil.nonBlockingSleep(15.seconds)
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
-      val count =
-        notifications.count(_.isInstanceOf[SyncFlagChangedNotification])
-      assert(count == 1, s"count=$count")
+      val syncingNotifications =
+        notifications.filter(_.isInstanceOf[SyncFlagChangedNotification])
+      assert(syncingNotifications.nonEmpty)
     }
   }
 
