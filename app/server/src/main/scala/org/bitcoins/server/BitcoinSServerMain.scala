@@ -309,13 +309,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           wallet)
         _ = nodeConf.addCallbacks(nodeCallbacks)
         _ = logger.info("Starting wallet")
-        _ <- wallet.start().recoverWith {
-          //https://github.com/bitcoin-s/bitcoin-s/issues/2917
-          //https://github.com/bitcoin-s/bitcoin-s/pull/2918
-          case err: IllegalArgumentException
-              if err.getMessage.contains("If we have spent a spendinginfodb") =>
-            handleMissingSpendingInfoDb(err, wallet)
-        }
+        _ <- wallet.start()
       } yield (wallet, chainCallbacks)
     }
 
@@ -469,32 +463,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       serverBindingsOpt = Some(bindings)
       server
     }
-  }
-
-  /** Handles a bug we had in our wallet with missing the spendingTxId for transactions spent from our wallet database.
-    * This clears the utxos/addresses from the wallet and then
-    * starts a rescan to find the missing spending txids
-    * @see https://github.com/bitcoin-s/bitcoin-s/issues/2917
-    * @see https://github.com/bitcoin-s/bitcoin-s/pull/2918
-    */
-  private def handleMissingSpendingInfoDb(err: Throwable, wallet: Wallet)(
-      implicit walletConf: WalletAppConfig): Future[Unit] = {
-    logger.warn(
-      s"Found corrupted wallet, rescanning to find spendinginfodbs.spendingTxId as detailed in issue 2917",
-      err)
-
-    //clear the entire wallet, then rescan to make sure we get out of a corrupted state
-    val clearedF = wallet.clearAllUtxos()
-    val walletF = for {
-      clearedWallet <- clearedF
-      _ <- clearedWallet.rescanNeutrinoWallet(startOpt = None,
-                                              endOpt = None,
-                                              addressBatchSize =
-                                                walletConf.discoveryBatchSize,
-                                              useCreationTime = true,
-                                              force = true)
-    } yield clearedWallet
-    walletF.map(_ => ())
   }
 
   /** Syncs the bitcoin-s wallet against bitcoind and then
