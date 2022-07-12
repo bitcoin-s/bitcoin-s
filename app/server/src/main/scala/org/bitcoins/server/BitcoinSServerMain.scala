@@ -161,8 +161,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val wsQueue: SourceQueueWithComplete[Message] = tuple._1
     val wsSource: Source[Message, NotUsed] = tuple._2
     val _ = buildNeutrinoCallbacks(wsQueue, chainApi)
-
-    val torCallbacks =
+    val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
     torConf.addCallbacks(torCallbacks)
 
     val isTorStartedF = if (torConf.torProvided) {
