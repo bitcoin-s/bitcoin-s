@@ -61,7 +61,15 @@ class WalletHolder(implicit ec: ExecutionContext)
     extends AnyDLCHDWalletApi
     with Logging {
 
-  @volatile private var wallet: AnyDLCHDWalletApi = _
+  @volatile private var walletOpt: Option[AnyDLCHDWalletApi] = None
+
+  private def wallet: AnyDLCHDWalletApi = {
+    walletOpt match {
+      case Some(wallet) => wallet
+      case None =>
+        throw new WalletNotInitialized
+    }
+  }
 
   def isInitialized: Boolean = synchronized {
     wallet != null
@@ -69,14 +77,19 @@ class WalletHolder(implicit ec: ExecutionContext)
 
   def replaceWallet(newWallet: AnyDLCHDWalletApi): Future[AnyDLCHDWalletApi] =
     synchronized {
-      val oldWallet = wallet
-      wallet = null
+      val oldWalletOpt = walletOpt
+      walletOpt = None
       val res = for {
-        _ <- if (oldWallet == null) Future.unit else oldWallet.stop()
+        _ <- {
+          oldWalletOpt match {
+            case Some(oldWallet) => oldWallet.stop()
+            case None            => Future.unit
+          }
+        }
         _ <- newWallet.start()
       } yield {
         synchronized {
-          wallet = newWallet
+          walletOpt = Some(newWallet)
           newWallet
         }
       }
@@ -93,7 +106,9 @@ class WalletHolder(implicit ec: ExecutionContext)
       wallet
   }
 
-  private def delegate[T] = Future(w).flatMap[T](_)
+  private def delegate[T]: (AnyDLCHDWalletApi => Future[T]) => Future[T] = {
+    Future(w).flatMap[T](_)
+  }
 
   override def processBlock(
       block: Block): Future[WalletApi with NeutrinoWalletApi] =
@@ -140,7 +155,7 @@ class WalletHolder(implicit ec: ExecutionContext)
 
     res.onComplete { _ =>
       synchronized {
-        wallet = null
+        walletOpt = None
       }
     }
 
