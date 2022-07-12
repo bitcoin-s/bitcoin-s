@@ -460,6 +460,7 @@ sealed abstract class CryptoInterpreter {
                 updatedProgram.stack.tail.tail.tail //remove signature, num, pubkey
 
               val tapscriptE = evalChecksigTapscript(updatedProgram)
+
               tapscriptE match {
                 case Left(err) =>
                   if (
@@ -485,10 +486,15 @@ sealed abstract class CryptoInterpreter {
                     updatedProgram.failExecution(err)
                   }
                 case Right(result) =>
-                  handleSignatureValidation(program = updatedProgram,
-                                            result = result,
-                                            restOfStack = restOfStack,
-                                            numOpt = Some(numT.get))
+                  if (result == SignatureValidationErrorIncorrectSignatures) {
+                    program.failExecution(ScriptErrorSchnorrSig)
+                  } else {
+                    handleSignatureValidation(program = updatedProgram,
+                                              result = result,
+                                              restOfStack = restOfStack,
+                                              numOpt = Some(numT.get))
+                  }
+
               }
             }
           }
@@ -531,6 +537,7 @@ sealed abstract class CryptoInterpreter {
       result: TransactionSignatureCheckerResult,
       restOfStack: Seq[ScriptToken],
       numOpt: Option[ScriptNumber]): StartedScriptProgram = {
+
     val pushOp = {
       numOpt match {
         case Some(num) =>
