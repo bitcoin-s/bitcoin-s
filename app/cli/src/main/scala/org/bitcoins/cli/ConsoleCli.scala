@@ -845,6 +845,39 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("loadwallet")
+        .action((_, conf) => conf.copy(command = LoadWallet(None, None, None)))
+        .text("Load a wallet")
+        .children(
+          opt[String]("walletname")
+            .text(
+              "Wallet's name (the default wallet will be loaded if omitted)")
+            .optional()
+            .action((walletName, conf) =>
+              conf.copy(command = conf.command match {
+                case is: LoadWallet =>
+                  is.copy(walletNameOpt = Some(walletName))
+                case other => other
+              })),
+          opt[AesPassword]("passphrase")
+            .text("Passphrase to encrypt the seed with")
+            .optional()
+            .action((password, conf) =>
+              conf.copy(command = conf.command match {
+                case is: LoadWallet =>
+                  is.copy(passwordOpt = Some(password))
+                case other => other
+              })),
+          opt[String]("bip39passphrase")
+            .text("BIP39 passphrase")
+            .optional()
+            .action((bip39Password, conf) =>
+              conf.copy(command = conf.command match {
+                case is: LoadWallet =>
+                  is.copy(bip39PasswordOpt = Some(bip39Password))
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== DLC ==="),
       cmd("decodecontractinfo")
         .action((_, conf) => conf.copy(command = DecodeContractInfo(null)))
@@ -2116,6 +2149,16 @@ object ConsoleCli {
                          up.writeJs(xprv),
                          passwordOpt.map(p => up.writeJs(p)).getOrElse(Null)))
 
+      case LoadWallet(walletNameOpt, passwordOpt, bip39PasswordOpt) =>
+        RequestParam(
+          "loadwallet",
+          Seq(
+            walletNameOpt.map(w => up.writeJs(w)).getOrElse(Null),
+            passwordOpt.map(p => up.writeJs(p)).getOrElse(Null),
+            bip39PasswordOpt.map(p => up.writeJs(p)).getOrElse(Null)
+          )
+        )
+
       case GetBlockHeader(hash) =>
         RequestParam("getblockheader", Seq(up.writeJs(hash)))
       // height
@@ -2595,6 +2638,12 @@ object CliCommand {
       walletNameOpt: Option[String],
       xprv: ExtPrivateKey,
       passwordOpt: Option[AesPassword])
+      extends AppServerCliCommand
+
+  case class LoadWallet(
+      walletNameOpt: Option[String],
+      passwordOpt: Option[AesPassword],
+      bip39PasswordOpt: Option[String])
       extends AppServerCliCommand
 
   // Node

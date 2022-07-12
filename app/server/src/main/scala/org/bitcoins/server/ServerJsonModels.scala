@@ -1555,12 +1555,14 @@ object LoadWallet extends ServerJsonModels {
   def fromJsArr(arr: ujson.Arr): Try[LoadWallet] = Try {
     arr.arr.toList match {
       case _ :: _ :: bip39PasswordJs :: Nil =>
-        val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(arr)
+        val (walletNameOpt, passwordOpt) =
+          jsToWalletNameAndPassword(arr.arr.slice(0, 1))
         LoadWallet(walletNameOpt,
                    passwordOpt,
                    nullToOpt(bip39PasswordJs).map(_.str))
       case _ :: _ :: Nil =>
-        val (walletNameOpt, passwordOpt) = jsToWalletNameAndPassword(arr)
+        val (walletNameOpt, passwordOpt) =
+          jsToWalletNameAndPassword(arr.arr.slice(0, 1))
         LoadWallet(walletNameOpt, passwordOpt, None)
       case walletNameJs :: Nil =>
         LoadWallet(jsToStringOpt(walletNameJs), None, None)
@@ -1718,17 +1720,11 @@ trait ServerJsonModels {
       js: Value): (Option[String], Option[AesPassword]) = {
     js match {
       case Arr(arr) =>
-        arr.toList match {
-          case walletNameJs :: passJs :: Nil =>
-            (jsToStringOpt(walletNameJs), jsToAESPassword(passJs))
-          case walletNameJs :: Nil =>
-            (jsToStringOpt(walletNameJs), None)
-          case Nil =>
-            (None, None)
-          case other =>
-            throw new IllegalArgumentException(
-              s"Bad number of arguments: ${other.length}. Expected: 2")
-        }
+        if (arr.size >= 2) {
+          (jsToStringOpt(arr(0)), jsToAESPassword(arr(1)))
+        } else if (arr.size == 1) {
+          (jsToStringOpt(arr(0)), None)
+        } else { (None, None) }
       case _: Value =>
         throw new IllegalArgumentException(s"Expected json.Arr")
     }

@@ -63,7 +63,7 @@ class WalletHolder(implicit ec: ExecutionContext)
 
   @volatile private var walletOpt: Option[AnyDLCHDWalletApi] = None
 
-  private def wallet: AnyDLCHDWalletApi = {
+  private def wallet: AnyDLCHDWalletApi = synchronized {
     walletOpt match {
       case Some(wallet) => wallet
       case None =>
