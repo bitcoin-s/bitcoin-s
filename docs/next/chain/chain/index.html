@@ -107,10 +107,11 @@ val chainProjectInitF = chainConfig.start()
 val blockHeaderDAO = BlockHeaderDAO()
 val compactFilterHeaderDAO = CompactFilterHeaderDAO()
 val compactFilterDAO = CompactFilterDAO()
+val stateDAO = ChainStateDescriptorDAO()
 
 
 //initialize the chain handler from the database
-val chainHandler = ChainHandler.fromDatabase(blockHeaderDAO, compactFilterHeaderDAO, compactFilterDAO)
+val chainHandler = ChainHandler.fromDatabase(blockHeaderDAO, compactFilterHeaderDAO, compactFilterDAO, stateDAO)
 
 // Now, do the actual syncing:
 val syncedChainApiF = for {
