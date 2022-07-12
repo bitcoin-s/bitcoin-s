@@ -14,6 +14,7 @@ import akka.stream.scaladsl.{
 import akka.{Done, NotUsed}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.asyncutil.AsyncUtil.Exponential
+import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
@@ -315,12 +316,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
               if err.getMessage.contains("If we have spent a spendinginfodb") =>
             handleMissingSpendingInfoDb(err, wallet)
         }
-      } yield wallet
+      } yield (wallet, chainCallbacks)
     }
 
     val dlcNodeF = {
       for {
-        wallet <- walletF
+        (wallet, _) <- walletF
         dlcNode = dlcNodeConf.createDLCNode(wallet)
         _ <- dlcNode.start()
       } yield dlcNode
@@ -338,7 +339,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       _ <- startHttpServer(
         nodeApiF = Future.successful(bitcoind),
         chainApi = bitcoind,
-        walletF = walletF,
+        walletF = walletF.map(_._1),
         dlcNodeF = dlcNodeF,
         torConfStarted = startedTorConfigF,
         serverCmdLineArgs = serverArgParser,
@@ -350,11 +351,13 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         walletConf.walletNameOpt)
       _ = walletConf.addCallbacks(walletCallbacks)
 
-      wallet <- walletF
+      (wallet, chainCallbacks) <- walletF
       //intentionally doesn't map on this otherwise we
       //wait until we are done syncing the entire wallet
       //which could take 1 hour
-      _ = syncWalletWithBitcoindAndStartPolling(bitcoind, wallet)
+      _ = syncWalletWithBitcoindAndStartPolling(bitcoind,
+                                                wallet,
+                                                Some(chainCallbacks))
       dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
       _ = dlcConf.addCallbacks(dlcWalletCallbacks)
       _ <- startedTorConfigF
@@ -374,7 +377,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val chainApi = ChainHandler.fromDatabase(
       blockHeaderDAO = BlockHeaderDAO()(blockEC, chainConf),
       CompactFilterHeaderDAO()(blockEC, chainConf),
-      CompactFilterDAO()(blockEC, chainConf))
+      CompactFilterDAO()(blockEC, chainConf),
+      ChainStateDescriptorDAO()(blockEC, chainConf)
+    )
     for {
       isMissingChainWork <- chainApi.isMissingChainWork
       chainApiWithWork <-
@@ -503,7 +508,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     */
   private def syncWalletWithBitcoindAndStartPolling(
       bitcoind: BitcoindRpcClient,
-      wallet: Wallet): Future[Unit] = {
+      wallet: Wallet,
+      chainCallbacksOpt: Option[ChainCallbacks]): Future[Unit] = {
     val f = for {
       _ <- AsyncUtil.retryUntilSatisfiedF(
         conditionF = { () =>
@@ -517,12 +523,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         interval = 1.second,
         maxTries = 12
       )
-      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet)
+      _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind,
+                                                       wallet,
+                                                       chainCallbacksOpt)
       _ <- wallet.updateUtxoPendingStates()
       _ <-
         if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
           BitcoindRpcBackendUtil
-            .startBitcoindBlockPolling(wallet, bitcoind)
+            .startBitcoindBlockPolling(wallet, bitcoind, chainCallbacksOpt)
             .map { _ =>
               BitcoindRpcBackendUtil
                 .startBitcoindMempoolPolling(wallet, bitcoind) { tx =>

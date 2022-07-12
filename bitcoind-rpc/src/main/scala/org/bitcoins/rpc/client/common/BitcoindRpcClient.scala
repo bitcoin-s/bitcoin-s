@@ -32,6 +32,7 @@ import org.bitcoins.rpc.client.v23.BitcoindV23RpcClient
 import org.bitcoins.rpc.config._
 
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.Future
 
 /** This class is not guaranteed to be compatible with any particular
@@ -66,6 +67,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     with WalletRpc
     with PsbtRpc
     with UtilRpc {
+
+  private val syncing = new AtomicBoolean(false)
 
   override lazy val version: Future[BitcoindVersion] = {
     instance match {
@@ -274,6 +277,13 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
       throw new UnsupportedOperationException(
         s"Bitcoin Core $v does not support block filters headers through the rpc")
     }
+  }
+
+  override def isSyncing(): Future[Boolean] = Future.successful(syncing.get())
+
+  override def setSyncing(value: Boolean): Future[ChainApi] = {
+    syncing.set(value)
+    Future.successful(this)
   }
 }
 

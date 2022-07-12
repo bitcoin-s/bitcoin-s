@@ -1,7 +1,12 @@
 package org.bitcoins.chain.blockchain
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.pow.Pow
-import org.bitcoins.chain.{ChainCallbacks, OnBlockHeaderConnected}
+import org.bitcoins.chain.{
+  ChainCallbacks,
+  OnBlockHeaderConnected,
+  OnSyncFlagChanged
+}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.chain.db.{
@@ -704,6 +709,33 @@ class ChainHandlerTest extends ChainDbUnitTest {
       assert(bestFilterOpt.isDefined)
       assert(bestFilterOpt.get.hashBE == bestFilterHeaderOpt.get.filterHashBE)
     }
+  }
+
+  it must "execute sync callback" in { chainHandler: ChainHandler =>
+    @volatile var values = Vector.empty[Boolean]
+    val callback: OnSyncFlagChanged = { (value: Boolean) =>
+      Future {
+        synchronized {
+          values = values :+ value
+        }
+      }
+    }
+
+    val callbacks = ChainCallbacks.onOnSyncFlagChanged(callback)
+    chainHandler.chainConfig.addCallbacks(callbacks)
+
+    for {
+      _ <- chainHandler.setSyncing(false)
+      _ <- chainHandler.setSyncing(false)
+      _ <- chainHandler.setSyncing(true)
+      _ <- chainHandler.setSyncing(true)
+      _ <- chainHandler.setSyncing(false)
+      _ <- chainHandler.setSyncing(false)
+      _ <- AsyncUtil.awaitCondition { () => synchronized { values.size == 2 } }
+    } yield {
+      assert(values == Vector(true, false))
+    }
+
   }
 
   /** Checks that

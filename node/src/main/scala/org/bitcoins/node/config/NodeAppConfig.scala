@@ -6,6 +6,7 @@ import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
+  ChainStateDescriptorDAO,
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
@@ -231,9 +232,10 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
     val blockHeaderDAO = BlockHeaderDAO()
     val filterHeaderDAO = CompactFilterHeaderDAO()
     val filterDAO = CompactFilterDAO()
+    val stateDAO = ChainStateDescriptorDAO()
 
     val dmhF = ChainHandlerCached
-      .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO)
+      .fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO, stateDAO)
       .map(handler => DataMessageHandler(handler, walletCreationTimeOpt))
 
     nodeConf.nodeType match {

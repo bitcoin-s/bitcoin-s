@@ -11,7 +11,10 @@ import akka.http.scaladsl.model.ws.{
 import akka.http.scaladsl.model.{HttpHeader, StatusCodes}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
-import org.bitcoins.commons.jsonmodels.ws.ChainNotification.BlockProcessedNotification
+import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{
+  BlockProcessedNotification,
+  SyncFlagChangedNotification
+}
 import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
   DLCOfferAddNotification,
   DLCOfferRemoveNotification,
@@ -404,6 +407,29 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     } yield {
       val count = notifications.count(_.isInstanceOf[RescanComplete])
       assert(count == 1, s"count=$count")
+    }
+  }
+
+  it must "receive updates when sync flag changes" in { serverWithBitcoind =>
+    val ServerWithBitcoind(_, server) = serverWithBitcoind
+
+    val req = buildReq(server.conf)
+    val tuple: (
+        Future[WebSocketUpgradeResponse],
+        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])) = {
+      Http()
+        .singleWebSocketRequest(req, websocketFlow)
+    }
+    val notificationsF = tuple._2._1
+    val promise = tuple._2._2
+    for {
+      _ <- AkkaUtil.nonBlockingSleep(15.seconds)
+      _ = promise.success(None)
+      notifications <- notificationsF
+    } yield {
+      val syncingNotifications =
+        notifications.filter(_.isInstanceOf[SyncFlagChangedNotification])
+      assert(syncingNotifications.nonEmpty)
     }
   }
 

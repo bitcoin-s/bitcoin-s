@@ -76,6 +76,7 @@ case class NeutrinoNode(
     for {
       chainApi <- chainApiFromDb()
       _ <- chainApi.getBestBlockHash()
+      _ <- chainApi.setSyncing(true)
 
       syncPeer <- peerManager.randomPeerWithService(
         ServiceIdentifier.NODE_COMPACT_FILTERS)

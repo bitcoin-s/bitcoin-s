@@ -100,6 +100,7 @@ case class DataMessageHandler(
             case Some(filterHeaderHeight) =>
               Future.successful(filterHeaderHeight + filterHeaders.size)
           }
+          newChainApi <- newChainApi.setSyncing(newSyncing)
         } yield {
           this.copy(chainApi = newChainApi,
                     syncing = newSyncing,
@@ -153,6 +154,7 @@ case class DataMessageHandler(
               Future.successful(newSyncing)
             }
           }
+          newChainApi <- newChainApi.setSyncing(newSyncing2)
         } yield {
           this.copy(
             chainApi = newChainApi,
@@ -209,7 +211,12 @@ case class DataMessageHandler(
           s"Received headers message with ${count.toInt} headers from $peer")
         logger.trace(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
-        val chainApiF = chainApi.processHeaders(headers)
+        val chainApiF = for {
+          newChainApi <- chainApi.setSyncing(count.toInt > 0)
+          processed <- newChainApi.processHeaders(headers)
+        } yield {
+          processed
+        }
 
         val getHeadersF = chainApiF
           .flatMap { newApi =>
@@ -349,9 +356,9 @@ case class DataMessageHandler(
       filterHeaderCount <- chainApi.getFilterHeaderCount()
       filterCount <- chainApi.getFilterCount()
       syncing <- {
-        assert(headerHeight >= Math.max(filterHeaderCount, filterCount),
-               "Header chain cannot be behind filter or filter header chain")
-        assert(
+        require(headerHeight >= Math.max(filterHeaderCount, filterCount),
+                "Header chain cannot be behind filter or filter header chain")
+        require(
           filterHeaderCount >= filterCount,
           s"Filter header height $filterHeaderCount must be atleast filter height $filterCount")
         if (headerHeight > filterHeaderCount) {
@@ -359,7 +366,7 @@ case class DataMessageHandler(
             s"Starting to fetch filter headers in data message handler")
           sendFirstGetCompactFilterHeadersCommand(peerMessageSender)
         } else {
-          assert(
+          require(
             headerHeight == filterHeaderCount && headerHeight == filterCount)
           logger.info(s"We are synced")
           Try(initialSyncDone.map(_.success(Done)))

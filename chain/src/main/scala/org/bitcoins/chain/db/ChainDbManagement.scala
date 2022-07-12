@@ -3,6 +3,7 @@ package org.bitcoins.chain.db
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
+  ChainStateDescriptorDAO,
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
@@ -30,6 +31,10 @@ trait ChainDbManagement extends DbManagement {
     CompactFilterDAO()(ec, appConfig).table
   }
 
+  private lazy val stateTable: TableQuery[Table[_]] = {
+    ChainStateDescriptorDAO()(ec, appConfig).table
+  }
+
   override lazy val allTables: List[TableQuery[Table[_]]] =
-    List(chainTable, filterHeaderTable, filterTable)
+    List(chainTable, filterHeaderTable, filterTable, stateTable)
 }

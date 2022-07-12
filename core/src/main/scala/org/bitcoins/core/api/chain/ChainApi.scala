@@ -20,6 +20,7 @@ trait ChainApi extends ChainQueryApi {
   /** Adds a block header to our chain project.
     * This will return a failed future when the
     * given header is invalid.
+    *
     * @param header
     * @return
     */
@@ -32,6 +33,7 @@ trait ChainApi extends ChainQueryApi {
     * that they are given. If the headers are out of order, this method will fail.
     *
     * This method will also fail when there are zero headers given that are valid.
+    *
     * @param headers
     * @return
     */
@@ -49,8 +51,8 @@ trait ChainApi extends ChainQueryApi {
   /** Gets the number of blocks in the database */
   def getBlockCount(): Future[Int]
 
-//  /** Gets the hash of the block that is what we consider "best" */
-//  override def getBestBlockHash: Future[DoubleSha256DigestBE]
+  //  /** Gets the hash of the block that is what we consider "best" */
+  //  override def getBestBlockHash: Future[DoubleSha256DigestBE]
 
   /** Gets the best block header we have */
   def getBestBlockHeader(): Future[BlockHeaderDb]
@@ -147,4 +149,8 @@ trait ChainApi extends ChainQueryApi {
   def getHeadersBetween(
       from: BlockHeaderDb,
       to: BlockHeaderDb): Future[Vector[BlockHeaderDb]]
+
+  def isSyncing(): Future[Boolean]
+
+  def setSyncing(value: Boolean): Future[ChainApi]
 }

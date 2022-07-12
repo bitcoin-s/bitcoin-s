@@ -5,6 +5,7 @@ import org.bitcoins.chain.blockchain.ChainHandlerCached
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
+  ChainStateDescriptorDAO,
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
@@ -63,7 +64,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       executionContext: ExecutionContext): Future[ChainHandlerCached] = {
     ChainHandlerCached.fromDatabase(BlockHeaderDAO(),
                                     CompactFilterHeaderDAO(),
-                                    CompactFilterDAO())
+                                    CompactFilterDAO(),
+                                    ChainStateDescriptorDAO())
   }
 
   /** Unlike our chain api, this is cached inside our node
