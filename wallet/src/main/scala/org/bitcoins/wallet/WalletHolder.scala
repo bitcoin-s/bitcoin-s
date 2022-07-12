@@ -72,7 +72,7 @@ class WalletHolder(implicit ec: ExecutionContext)
   }
 
   def isInitialized: Boolean = synchronized {
-    wallet != null
+    walletOpt.isDefined
   }
 
   def replaceWallet(newWallet: AnyDLCHDWalletApi): Future[AnyDLCHDWalletApi] =
@@ -99,15 +99,8 @@ class WalletHolder(implicit ec: ExecutionContext)
       res
     }
 
-  private def w: AnyDLCHDWalletApi = synchronized {
-    if (wallet == null)
-      throw new WalletNotInitialized
-    else
-      wallet
-  }
-
   private def delegate[T]: (AnyDLCHDWalletApi => Future[T]) => Future[T] = {
-    Future(w).flatMap[T](_)
+    Future(wallet).flatMap[T](_)
   }
 
   override def processBlock(
@@ -141,12 +134,12 @@ class WalletHolder(implicit ec: ExecutionContext)
                              useCreationTime,
                              force))
 
-  override def discoveryBatchSize(): Int = w.discoveryBatchSize()
+  override def discoveryBatchSize(): Int = wallet.discoveryBatchSize()
 
-  override lazy val nodeApi: NodeApi = w.nodeApi
-  override lazy val chainQueryApi: ChainQueryApi = w.chainQueryApi
-  override lazy val feeRateApi: FeeRateApi = w.feeRateApi
-  override lazy val creationTime: Instant = w.creationTime
+  override lazy val nodeApi: NodeApi = wallet.nodeApi
+  override lazy val chainQueryApi: ChainQueryApi = wallet.chainQueryApi
+  override lazy val feeRateApi: FeeRateApi = wallet.feeRateApi
+  override lazy val creationTime: Instant = wallet.creationTime
 
   override def start(): Future[WalletApi] = delegate(_.start())
 
@@ -471,7 +464,7 @@ class WalletHolder(implicit ec: ExecutionContext)
       address: InetSocketAddress): Future[Vector[DLCStatus]] = delegate(
     _.listDLCsByContact(address))
 
-  override def keyManager: BIP39KeyManagerApi = w.keyManager
+  override def keyManager: BIP39KeyManagerApi = wallet.keyManager
 
   override def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit] =
     delegate(_.getConfirmedBalance(account))
