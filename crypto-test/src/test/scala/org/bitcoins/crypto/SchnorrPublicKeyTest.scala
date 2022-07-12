@@ -39,4 +39,5 @@ class SchnorrPublicKeyTest extends BitcoinSCryptoTest {
       assert(SchnorrPublicKey(pubKey.xCoord) == pubKey)
     }
   }
+
 }

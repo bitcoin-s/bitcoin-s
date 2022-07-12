@@ -6,6 +6,7 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.flag.ScriptFlag
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.utxo._
 
 import scala.util.{Failure, Success, Try}
@@ -48,12 +49,13 @@ object TxSigComponent {
   def apply(
       inputInfo: InputInfo,
       unsignedTx: Transaction,
+      outputMap: PreviousOutputMap,
       flags: Seq[ScriptFlag] = Policy.standardFlags): TxSigComponent = {
     inputInfo match {
       case segwit: SegwitV0NativeInputInfo =>
         fromWitnessInput(segwit, unsignedTx, flags)
       case unassigned: UnassignedSegwitNativeInputInfo =>
-        fromWitnessInput(unassigned, unsignedTx, flags)
+        fromWitnessInput(unassigned, unsignedTx, outputMap, flags)
       case p2sh: P2SHInputInfo =>
         fromP2SHInput(p2sh, unsignedTx, flags)
       case raw: RawInputInfo =>
@@ -76,11 +78,8 @@ object TxSigComponent {
           case Some(scriptWitness) =>
             unsignedWtx.updateWitness(idx, scriptWitness)
         }
-      case _: ScriptWitnessV0 =>
-        unsignedWtx
-      case t: TaprootWitness =>
-        throw new UnsupportedOperationException(
-          s"Taproot not supported, got=$t")
+      case _: ScriptWitnessV0 => unsignedWtx
+      case _: TaprootWitness  => unsignedWtx
     }
   }
 
@@ -91,17 +90,21 @@ object TxSigComponent {
     val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
     val wtx = setTransactionWitness(inputInfo, unsignedTx)
 
-    WitnessTxSigComponent(wtx, UInt32(idx), inputInfo.output, flags)
+    WitnessTxSigComponentRaw(transaction = wtx,
+                             inputIndex = UInt32(idx),
+                             output = inputInfo.output,
+                             flags = flags)
   }
 
   def fromWitnessInput(
       inputInfo: UnassignedSegwitNativeInputInfo,
       unsignedTx: Transaction,
+      outputMap: PreviousOutputMap,
       flags: Seq[ScriptFlag]): TxSigComponent = {
     val idx = TxUtil.inputIndex(inputInfo, unsignedTx)
     val wtx = setTransactionWitness(inputInfo, unsignedTx)
 
-    WitnessTxSigComponent(wtx, UInt32(idx), inputInfo.output, flags)
+    WitnessTxSigComponent(wtx, UInt32(idx), inputInfo.output, outputMap, flags)
   }
 
   def fromWitnessInput(
@@ -174,6 +177,7 @@ object TxSigComponent {
       transaction: Transaction,
       inputIndex: UInt32,
       output: TransactionOutput,
+      outputMap: PreviousOutputMap,
       flags: Seq[ScriptFlag]): TxSigComponent = {
     val scriptSig = transaction.inputs(inputIndex.toInt).scriptSignature
     output.scriptPubKey match {
@@ -184,7 +188,7 @@ object TxSigComponent {
             //as segwit outputs are ANYONECANSPEND before soft fork activation
             BaseTxSigComponent(transaction, inputIndex, output, flags)
           case wtx: WitnessTransaction =>
-            WitnessTxSigComponent(wtx, inputIndex, output, flags)
+            WitnessTxSigComponent(wtx, inputIndex, output, outputMap, flags)
         }
       case _: P2SHScriptPubKey =>
         val p2shScriptSig = scriptSig.asInstanceOf[P2SHScriptSignature]
@@ -384,7 +388,7 @@ sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
 case class TaprootTxSigComponent(
     transaction: WitnessTransaction,
     inputIndex: UInt32,
-    outputMap: Map[TransactionOutPoint, TransactionOutput],
+    outputMap: PreviousOutputMap,
     flags: Seq[ScriptFlag])
     extends WitnessTxSigComponent {
   require(
@@ -410,8 +414,8 @@ case class TaprootTxSigComponent(
 
   override def sigVersion: SigVersionTaproot = {
     witness match {
-      case _: TaprootKeyPath    => SigVersionTaprootKeySpend
-      case _: TaprootScriptPath => SigVersionTapscript
+      case _: TaprootKeyPath                            => SigVersionTaprootKeySpend
+      case _: TaprootScriptPath | _: TaprootUnknownPath => SigVersionTapscript
     }
   }
 }
@@ -469,10 +473,13 @@ object WitnessTxSigComponent {
       transaction: WitnessTransaction,
       inputIndex: UInt32,
       output: TransactionOutput,
+      outputMap: PreviousOutputMap,
       flags: Seq[ScriptFlag]): WitnessTxSigComponent =
     output.scriptPubKey match {
-      case _: WitnessScriptPubKey =>
+      case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
         WitnessTxSigComponentRaw(transaction, inputIndex, output, flags)
+      case _: TaprootScriptPubKey =>
+        TaprootTxSigComponent(transaction, inputIndex, outputMap, flags)
       case _: P2SHScriptPubKey =>
         WitnessTxSigComponentP2SH(transaction, inputIndex, output, flags)
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |

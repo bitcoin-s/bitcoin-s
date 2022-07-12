@@ -24,6 +24,7 @@ object WsType extends StringFactory[WsType] {
 
 sealed trait WalletWsType extends WsType
 sealed trait ChainWsType extends WsType
+sealed trait TorWsType extends WsType
 
 object WalletWsType extends StringFactory[WalletWsType] {
   case object TxProcessed extends WalletWsType
@@ -34,6 +35,7 @@ object WalletWsType extends StringFactory[WalletWsType] {
   case object DLCStateChange extends WalletWsType
   case object DLCOfferAdd extends WalletWsType
   case object DLCOfferRemove extends WalletWsType
+  case object RescanComplete extends WalletWsType
 
   private val all =
     Vector(TxProcessed,
@@ -42,7 +44,8 @@ object WalletWsType extends StringFactory[WalletWsType] {
            NewAddress,
            DLCStateChange,
            DLCOfferAdd,
-           DLCOfferRemove)
+           DLCOfferRemove,
+           RescanComplete)
 
   override def fromStringOpt(string: String): Option[WalletWsType] = {
     all.find(_.toString.toLowerCase() == string.toLowerCase)
@@ -69,6 +72,21 @@ object ChainWsType extends StringFactory[ChainWsType] {
   }
 }
 
+object TorWsType extends StringFactory[TorWsType] {
+  case object TorStarted extends TorWsType
+
+  private val all = Vector(TorStarted)
+
+  override def fromStringOpt(string: String): Option[TorWsType] = {
+    all.find(_.toString.toLowerCase() == string.toLowerCase)
+  }
+
+  override def fromString(string: String): TorWsType = {
+    fromStringOpt(string)
+      .getOrElse(sys.error(s"Cannot find chain ws type for string=$string"))
+  }
+}
+
 /** A notification that we send over the websocket.
   * The type of the notification is indicated by [[WsType]].
   * An example is [[org.bitcoins.commons.jsonmodels.ws.WalletNotification.NewAddressNotification]]
@@ -85,6 +103,10 @@ sealed trait ChainNotification[T] extends WsNotification[T] {
 
 sealed trait WalletNotification[T] extends WsNotification[T] {
   override def `type`: WalletWsType
+}
+
+sealed trait TorNotification[T] extends WsNotification[T] {
+  override def `type`: TorWsType
 }
 
 object WalletNotification {
@@ -123,6 +145,11 @@ object WalletNotification {
       extends WalletNotification[Sha256Digest] {
     override val `type`: WalletWsType = WalletWsType.DLCOfferRemove
   }
+
+  case class RescanComplete(payload: String)
+      extends WalletNotification[String] {
+    override val `type`: WalletWsType = WalletWsType.RescanComplete
+  }
 }
 
 object ChainNotification {
@@ -130,5 +157,13 @@ object ChainNotification {
   case class BlockProcessedNotification(payload: GetBlockHeaderResult)
       extends ChainNotification[GetBlockHeaderResult] {
     override val `type`: ChainWsType = ChainWsType.BlockProcessed
+  }
+}
+
+object TorNotification {
+
+  case object TorStartedNotification extends TorNotification[Unit] {
+    override val `type`: TorWsType = TorWsType.TorStarted
+    override val payload: Unit = ()
   }
 }

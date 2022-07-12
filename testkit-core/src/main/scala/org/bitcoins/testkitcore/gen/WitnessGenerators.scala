@@ -6,8 +6,10 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.crypto.{ECPrivateKey, HashType}
 import org.scalacheck.Gen
+import scodec.bits.ByteVector
 
 /** Created by chris on 11/28/16.
   */
@@ -34,6 +36,39 @@ sealed abstract class WitnessGenerators {
       P2WSHWitnessV0(spk,scriptSig)
     }*/
     Gen.oneOf(p2wpkhWitnessV0, p2wshWitnessV0)
+  }
+
+  def taprootWitness: Gen[TaprootWitness] = {
+    Gen.oneOf(taprootScriptPath, taprootKeyPath)
+  }
+
+  def taprootKeyPath: Gen[TaprootKeyPath] = {
+    for {
+      signature <- CryptoGenerators.schnorrDigitalSignature
+      hashType <- CryptoGenerators.hashType
+      annexOpt <- Gen.option(annex)
+    } yield TaprootKeyPath(signature, hashType, annexOpt)
+  }
+
+  def taprootScriptPath: Gen[TaprootScriptPath] = {
+    for {
+      controlBLock <- tapscriptControlBlock
+      (rawSPK, _) <- ScriptGenerators.rawScriptPubKey
+      annexOpt <- Gen.option(annex)
+    } yield TaprootScriptPath(controlBLock, annexOpt, rawSPK)
+  }
+
+  def tapscriptControlBlock: Gen[TapscriptControlBlock] = {
+    for {
+      pubKey <- CryptoGenerators.xOnlyPubKey
+    } yield TapscriptControlBlock.fromXOnlyPubKey(pubKey)
+  }
+
+  /** Generates a taproot annex */
+  def annex: Gen[ByteVector] = {
+    for {
+      annexBytes <- NumberGenerator.bytevector(31)
+    } yield TaprootScriptPath.annex +: annexBytes
   }
 
   /** Generates a [[org.bitcoins.core.protocol.transaction.TransactionWitness]] with
@@ -227,11 +262,13 @@ sealed abstract class WitnessGenerators {
         WitnessTxSigComponent(signedSpendingTx,
                               unsignedWTxComponent.inputIndex,
                               wtxP2SH.output,
+                              PreviousOutputMap.empty,
                               unsignedWTxComponent.flags)
       case wtxRaw: WitnessTxSigComponentRaw =>
         WitnessTxSigComponent(signedSpendingTx,
                               unsignedWTxComponent.inputIndex,
                               wtxRaw.output,
+                              PreviousOutputMap.empty,
                               unsignedWTxComponent.flags)
       case _: TaprootTxSigComponent =>
         sys.error(s"Cannot build signed taproot sig component yet")

@@ -29,6 +29,7 @@ import org.bitcoins.core.script.result.{
   ScriptErrorWitnessPubKeyType,
   ScriptOk
 }
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   PreExecutionScriptProgram
@@ -101,6 +102,14 @@ trait BitcoinScriptUtil {
       case scriptOp: ScriptOperation if scriptOp.opCode > OP_16.opCode => true
       case _: ScriptToken                                              => false
     }
+
+  def countOpCodes(opcodes: Vector[ScriptToken]): Int = {
+    opcodes.count(_.isInstanceOf[ScriptOperation])
+  }
+
+  def filterOpCodes(tokens: Vector[ScriptToken]): Vector[ScriptToken] = {
+    tokens.filter(_.isInstanceOf[ScriptOperation])
+  }
 
   /** Counts the amount of sigops in a script.
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/script.cpp#L156-L202 Bitcoin Core script.cpp]]
@@ -695,6 +704,7 @@ trait BitcoinScriptUtil {
       tx: Transaction,
       inputMap: InputPSBTMap,
       index: Int,
+      outputMap: PreviousOutputMap,
       flags: Seq[ScriptFlag] = Policy.standardFlags): Try[Transaction] = {
 
     val txIn = tx.inputs(index)
@@ -706,7 +716,7 @@ trait BitcoinScriptUtil {
                                          conditionalPath = condPath,
                                          preImages = preImages)
 
-    val txSigComponent = TxSigComponent(inputInfo, tx, flags)
+    val txSigComponent = TxSigComponent(inputInfo, tx, outputMap, flags)
 
     val inputResult =
       ScriptInterpreter.run(PreExecutionScriptProgram(txSigComponent))

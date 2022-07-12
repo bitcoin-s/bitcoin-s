@@ -119,7 +119,6 @@ case class DataMessageHandler(
             } else {
               val syncing = newFilterHeight < newFilterHeaderHeight
               if (!syncing) {
-                logger.info(s"We are synced")
                 Try(initialSyncDone.map(_.success(Done)))
               }
               syncing
@@ -136,7 +135,7 @@ case class DataMessageHandler(
               for {
                 newChainApi <- chainApi.processFilters(filterBatch)
                 _ <-
-                  appConfig.nodeCallbacks
+                  appConfig.callBacks
                     .executeOnCompactFiltersReceivedCallbacks(logger,
                                                               blockFilters)
               } yield (Vector.empty, newChainApi)
@@ -147,11 +146,18 @@ case class DataMessageHandler(
                 s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
               sendNextGetCompactFilterCommand(peerMsgSender, newFilterHeight)
             } else Future.unit
+          newSyncing2 <- {
+            if (!newSyncing) {
+              syncIfHeadersAhead(peerMsgSender)
+            } else {
+              Future.successful(newSyncing)
+            }
+          }
         } yield {
           this.copy(
             chainApi = newChainApi,
             currentFilterBatch = newBatch,
-            syncing = newSyncing,
+            syncing = newSyncing2,
             filterHeaderHeightOpt = Some(newFilterHeaderHeight),
             filterHeightOpt = Some(newFilterHeight)
           )
@@ -260,7 +266,7 @@ case class DataMessageHandler(
         for {
           newApi <- chainApiF
           newSyncing <- getHeadersF
-          _ <- appConfig.nodeCallbacks.executeOnBlockHeadersReceivedCallbacks(
+          _ <- appConfig.callBacks.executeOnBlockHeadersReceivedCallbacks(
             logger,
             headers)
         } yield {
@@ -280,7 +286,7 @@ case class DataMessageHandler(
                 for {
                   processedApi <- chainApi.processHeader(block.blockHeader)
                   _ <-
-                    appConfig.nodeCallbacks
+                    appConfig.callBacks
                       .executeOnBlockHeadersReceivedCallbacks(
                         logger,
                         Vector(block.blockHeader))
@@ -292,13 +298,13 @@ case class DataMessageHandler(
         for {
           newApi <- newApiF
           _ <-
-            appConfig.nodeCallbacks
+            appConfig.callBacks
               .executeOnBlockReceivedCallbacks(logger, block)
         } yield {
           this.copy(chainApi = newApi)
         }
       case TransactionMessage(tx) =>
-        MerkleBuffers.putTx(tx, appConfig.nodeCallbacks).flatMap {
+        MerkleBuffers.putTx(tx, appConfig.callBacks).flatMap {
           belongsToMerkle =>
             if (belongsToMerkle) {
               logger.trace(
@@ -307,7 +313,7 @@ case class DataMessageHandler(
             } else {
               logger.trace(
                 s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
-              appConfig.nodeCallbacks
+              appConfig.callBacks
                 .executeOnTxReceivedCallbacks(logger, tx)
                 .map(_ => this)
             }
@@ -333,6 +339,34 @@ case class DataMessageHandler(
       }
 
     }
+  }
+
+  /** syncs filter headers in case the header chain is still ahead post filter sync */
+  def syncIfHeadersAhead(
+      peerMessageSender: PeerMessageSender): Future[Boolean] = {
+    for {
+      headerHeight <- chainApi.getBestHashBlockHeight()
+      filterHeaderCount <- chainApi.getFilterHeaderCount()
+      filterCount <- chainApi.getFilterCount()
+      syncing <- {
+        assert(headerHeight >= Math.max(filterHeaderCount, filterCount),
+               "Header chain cannot be behind filter or filter header chain")
+        assert(
+          filterHeaderCount >= filterCount,
+          s"Filter header height $filterHeaderCount must be atleast filter height $filterCount")
+        if (headerHeight > filterHeaderCount) {
+          logger.info(
+            s"Starting to fetch filter headers in data message handler")
+          sendFirstGetCompactFilterHeadersCommand(peerMessageSender)
+        } else {
+          assert(
+            headerHeight == filterHeaderCount && headerHeight == filterCount)
+          logger.info(s"We are synced")
+          Try(initialSyncDone.map(_.success(Done)))
+          Future.successful(false)
+        }
+      }
+    } yield syncing
   }
 
   private def sendNextGetCompactFilterHeadersCommand(

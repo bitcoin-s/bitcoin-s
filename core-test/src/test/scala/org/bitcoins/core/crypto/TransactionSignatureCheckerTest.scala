@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptToken
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey, ECPublicKeyBytes}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
@@ -228,6 +229,7 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
       WitnessTxSigComponent(transaction = p2wshTx,
                             inputIndex = UInt32.zero,
                             output = p2wshOutput,
+                            PreviousOutputMap.empty,
                             Policy.standardFlags)
 
     val result1 =
@@ -560,6 +562,7 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
       WitnessTxSigComponent(transaction = p2wshTx,
                             inputIndex = UInt32.zero,
                             output = p2wshOutput,
+                            PreviousOutputMap.empty,
                             Policy.standardFlags)
 
     val result1 =
@@ -599,6 +602,7 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
       WitnessTxSigComponent(transaction = p2wshTx,
                             inputIndex = UInt32.zero,
                             output = p2wshOutput,
+                            PreviousOutputMap.empty,
                             Policy.standardFlags)
 
     val result1 =

@@ -3,6 +3,7 @@ package org.bitcoins.wallet.config
 import com.typesafe.config.Config
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.{AppConfigFactory, ConfigOps}
+import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -40,7 +41,8 @@ case class WalletAppConfig(
     extends DbAppConfig
     with WalletDbManagement
     with JdbcProfileComponent[WalletAppConfig]
-    with DBMasterXPubApi {
+    with DBMasterXPubApi
+    with CallbackConfig[WalletCallbacks] {
 
   override protected[bitcoins] def moduleName: String =
     WalletAppConfig.moduleName
@@ -73,9 +75,9 @@ case class WalletAppConfig(
 
   private val callbacks = new Mutable(WalletCallbacks.empty)
 
-  def walletCallbacks: WalletCallbacks = callbacks.atomicGet
+  override def callBacks: WalletCallbacks = callbacks.atomicGet
 
-  def addCallbacks(newCallbacks: WalletCallbacks): WalletCallbacks = {
+  override def addCallbacks(newCallbacks: WalletCallbacks): WalletCallbacks = {
     callbacks.atomicUpdate(newCallbacks)(_ + _)
   }
 

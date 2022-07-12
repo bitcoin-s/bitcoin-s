@@ -872,10 +872,16 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(
 
             val mnemonicState = passwordOpt match {
               case Some(pass) =>
-                DecryptedMnemonic(mnemonic, creationTime, backupTimeOpt = None)
+                DecryptedMnemonic(mnemonic,
+                                  creationTime,
+                                  backupTimeOpt = None,
+                                  imported = true)
                   .encrypt(pass)
               case None =>
-                DecryptedMnemonic(mnemonic, creationTime, backupTimeOpt = None)
+                DecryptedMnemonic(mnemonic,
+                                  creationTime,
+                                  backupTimeOpt = None,
+                                  imported = true)
             }
 
             WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
@@ -937,10 +943,16 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(
 
             val mnemonicState = passwordOpt match {
               case Some(pass) =>
-                DecryptedExtPrivKey(xprv, creationTime, backupTimeOpt = None)
+                DecryptedExtPrivKey(xprv,
+                                    creationTime,
+                                    backupTimeOpt = None,
+                                    imported = true)
                   .encrypt(pass)
               case None =>
-                DecryptedExtPrivKey(xprv, creationTime, backupTimeOpt = None)
+                DecryptedExtPrivKey(xprv,
+                                    creationTime,
+                                    backupTimeOpt = None,
+                                    imported = true)
             }
 
             WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
@@ -1031,7 +1043,8 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(
             "hdPath" -> Str(info.hdAccount.toString),
             "height" -> Num(info.height),
             "blockHash" -> Str(info.blockHash.hex),
-            "rescan" -> info.rescan
+            "rescan" -> info.rescan,
+            "imported" -> info.imported
           )
       )
     }

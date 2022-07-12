@@ -6,6 +6,7 @@ import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
   DLCOfferRemoveNotification,
   DLCStateChangeNotification,
   NewAddressNotification,
+  RescanComplete,
   ReservedUtxosNotification,
   TxBroadcastNotification,
   TxProcessedNotification
@@ -13,6 +14,8 @@ import org.bitcoins.commons.jsonmodels.ws.WalletNotification.{
 import org.bitcoins.commons.jsonmodels.ws.{
   ChainNotification,
   ChainWsType,
+  TorNotification,
+  TorWsType,
   WalletNotification,
   WalletWsType
 }
@@ -29,6 +32,11 @@ object WsPicklers {
   implicit val walletWsTypePickler: ReadWriter[WalletWsType] = {
     readwriter[ujson.Str]
       .bimap(_.toString.toLowerCase, str => WalletWsType.fromString(str.str))
+  }
+
+  implicit val torWsTypePickler: ReadWriter[TorWsType] = {
+    readwriter[ujson.Str]
+      .bimap(_.toString.toLowerCase, str => TorWsType.fromString(str.str))
   }
 
   private def writeChainNotification(
@@ -75,6 +83,8 @@ object WsPicklers {
         upickle.default.writeJs(offerDb)(Picklers.dlcOfferAddW)
       case DLCOfferRemoveNotification(offerHash) =>
         upickle.default.writeJs(offerHash)(Picklers.dlcOfferRemoveW)
+      case r: RescanComplete =>
+        upickle.default.writeJs(r)(Picklers.rescanComplete)
     }
 
     val notificationObj = ujson.Obj(
@@ -113,6 +123,31 @@ object WsPicklers {
         val offerHash =
           upickle.default.read(payloadObj)(Picklers.dlcOfferRemoveR)
         DLCOfferRemoveNotification(offerHash)
+      case WalletWsType.RescanComplete =>
+        val complete = upickle.default.read(payloadObj)(Picklers.rescanComplete)
+        complete
+    }
+  }
+
+  private def writeTorNotification(
+      notification: TorNotification[_]): ujson.Obj = {
+    val payloadJson = notification.`type` match {
+      case TorWsType.TorStarted =>
+        ujson.Null
+    }
+
+    val notificationObj = ujson.Obj(
+      PicklerKeys.typeKey -> writeJs(notification.`type`),
+      PicklerKeys.payloadKey -> payloadJson
+    )
+    notificationObj
+  }
+
+  private def readTorNotification(obj: ujson.Obj): TorNotification[_] = {
+    val typeObj = read[TorWsType](obj(PicklerKeys.typeKey))
+    typeObj match {
+      case TorWsType.TorStarted =>
+        TorNotification.TorStartedNotification
     }
   }
 
@@ -138,6 +173,13 @@ object WsPicklers {
     readwriter[ujson.Obj].bimap(
       writeWalletNotification(_),
       readWalletNotification(_).asInstanceOf[ReservedUtxosNotification])
+  }
+
+  implicit val rescanPickler: ReadWriter[RescanComplete] = {
+    readwriter[ujson.Obj].bimap(
+      writeWalletNotification(_),
+      readWalletNotification(_).asInstanceOf[RescanComplete]
+    )
   }
 
   implicit val walletNotificationPickler: ReadWriter[WalletNotification[_]] = {
@@ -172,4 +214,13 @@ object WsPicklers {
       writeWalletNotification(_),
       readWalletNotification(_).asInstanceOf[DLCOfferRemoveNotification])
   }
+
+  implicit val torStartedPickler: ReadWriter[
+    TorNotification.TorStartedNotification.type] = {
+    readwriter[ujson.Obj].bimap(
+      writeTorNotification(_),
+      readTorNotification(_)
+        .asInstanceOf[TorNotification.TorStartedNotification.type])
+  }
+
 }

@@ -23,3 +23,10 @@ trait NetworkElement extends Any {
   /** The byte representation of the NetworkElement in little endian */
   def bytesLE: ByteVector = bytes.reverse
 }
+
+object NetworkElement {
+
+  val lexicographicalOrdering: Ordering[NetworkElement] = {
+    Ordering.by[NetworkElement, String](_.hex)
+  }
+}

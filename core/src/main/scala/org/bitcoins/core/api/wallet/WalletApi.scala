@@ -429,7 +429,8 @@ case class WalletInfo(
     hdAccount: HDAccount,
     height: Int,
     blockHash: DoubleSha256DigestBE,
-    rescan: Boolean)
+    rescan: Boolean,
+    imported: Boolean)
 
 /** An HDWallet that uses Neutrino to sync */
 trait NeutrinoHDWalletApi extends HDWalletApi with NeutrinoWalletApi

@@ -1,6 +1,7 @@
 package org.bitcoins.core.util
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Try
 
 object FutureUtil {
 
@@ -100,8 +101,8 @@ object FutureUtil {
     val resultP = Promise[T]()
 
     ec.execute { () =>
-      val result = func()
-      resultP.success(result)
+      val resultT = Try(func())
+      resultP.complete(resultT)
     }
 
     resultP.future

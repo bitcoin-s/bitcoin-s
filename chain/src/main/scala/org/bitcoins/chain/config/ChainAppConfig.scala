@@ -6,6 +6,7 @@ import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.commons.config.{AppConfigFactory, ConfigOps}
+import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.db._
@@ -21,7 +22,8 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     implicit override val ec: ExecutionContext)
     extends DbAppConfig
     with ChainDbManagement
-    with JdbcProfileComponent[ChainAppConfig] {
+    with JdbcProfileComponent[ChainAppConfig]
+    with CallbackConfig[ChainCallbacks] {
 
   override protected[bitcoins] def moduleName: String =
     ChainAppConfig.moduleName
@@ -35,9 +37,9 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
 
   private val callbacks = new Mutable(ChainCallbacks.empty)
 
-  def chainCallbacks: ChainCallbacks = callbacks.atomicGet
+  override def callBacks: ChainCallbacks = callbacks.atomicGet
 
-  def addCallbacks(newCallbacks: ChainCallbacks): ChainCallbacks = {
+  override def addCallbacks(newCallbacks: ChainCallbacks): ChainCallbacks = {
     callbacks.atomicUpdate(newCallbacks)(_ + _)
   }
 

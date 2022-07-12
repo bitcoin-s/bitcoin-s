@@ -20,6 +20,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.wallet.DLCWallet
@@ -354,11 +355,13 @@ object DLCWalletUtil extends Logging {
   def verifyInput(
       transaction: Transaction,
       inputIndex: Long,
-      prevOut: TransactionOutput): Boolean = {
+      prevOut: TransactionOutput,
+      outputMap: PreviousOutputMap): Boolean = {
     val sigComponent = WitnessTxSigComponent(
       transaction.asInstanceOf[WitnessTransaction],
       UInt32(inputIndex),
       prevOut,
+      outputMap,
       Policy.standardFlags
     )
     ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent))
@@ -405,8 +408,12 @@ object DLCWalletUtil extends Logging {
 
       val fundOutputIndex = dlcDb.get.fundingOutPointOpt.get.vout.toInt
       val fundingOutput = fundingTx.outputs(fundOutputIndex)
+      val fundingOutPoint =
+        TransactionOutPoint(fundingTx.txId, UInt32(fundOutputIndex))
 
-      verifyInput(tx, 0, fundingOutput)
+      val outputMap = PreviousOutputMap(Map(fundingOutPoint -> fundingOutput))
+
+      verifyInput(tx, 0, fundingOutput, outputMap)
     }
   }
 

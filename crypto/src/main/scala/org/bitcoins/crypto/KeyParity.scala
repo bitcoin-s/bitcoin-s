@@ -5,6 +5,13 @@ import scodec.bits.ByteVector
 sealed trait KeyParity extends NetworkElement {
   def isOdd: Boolean = this == OddParity
   def isEven: Boolean = this == EvenParity
+
+  def negate: KeyParity = {
+    this match {
+      case EvenParity => OddParity
+      case OddParity  => EvenParity
+    }
+  }
 }
 
 object KeyParity extends Factory[KeyParity] {

@@ -178,10 +178,19 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       chainApi <- chainApiF
     } yield buildNeutrinoCallbacks(wsQueue, chainApi, walletConfig, dlcConfig)
 
+    val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
+    val _ = torConf.addCallbacks(torCallbacks)
+    val isTorStartedF = if (torConf.torProvided) {
+      //if tor is provided we need to execute the tor started callback immediately
+      torConf.callBacks.executeOnTorStarted()
+    } else {
+      Future.unit
+    }
     val startedNodeF = {
       //can't start connecting to peers until tor is done starting
       for {
         _ <- startedTorConfigF
+        _ <- isTorStartedF
         started <- configuredNodeF.flatMap(_.start())
       } yield started
     }
@@ -189,7 +198,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val startedDLCNodeF = {
       for {
         dlcNode <- dlcNodeF
-        _ <- startedTorConfigF
         _ <- dlcNode.start()
       } yield dlcNode
     }
@@ -276,7 +284,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val tuple = buildWsSource
     val wsQueue: SourceQueueWithComplete[Message] = tuple._1
     val wsSource: Source[Message, NotUsed] = tuple._2
-
+    val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
+    val _ = torConf.addCallbacks(torCallbacks)
+    val isTorStartedF = if (torConf.torProvided) {
+      //if tor is provided we need to emit a tor started event immediately
+      torConf.callBacks.executeOnTorStarted()
+    } else {
+      Future.unit
+    }
     val walletF = bitcoindF.flatMap { bitcoind =>
       val feeProvider = FeeProviderFactory.getFeeProviderOrElse(
         bitcoind,
@@ -293,6 +308,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                                                     walletHolder,
                                                     Some(chainCallbacks))
       for {
+        _ <- isTorStartedF
         walletNameOpt <- getWalletName()
         (walletConfig, dlcConfig) <- updateWalletConfigs(walletNameOpt, None)
           .recover { case _: Throwable => (conf.walletConf, conf.dlcConf) }
@@ -525,7 +541,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             .map { _ =>
               BitcoindRpcBackendUtil
                 .startBitcoindMempoolPolling(wallet, bitcoind) { tx =>
-                  nodeConf.nodeCallbacks
+                  nodeConf.callBacks
                     .executeOnTxReceivedCallbacks(logger, tx)
                 }
               ()

@@ -1,11 +1,19 @@
 package org.bitcoins.core.script
 
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script.{
+  TaprootKeyPath,
+  TaprootScriptPath,
+  TaprootUnknownPath,
+  TaprootWitness
+}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF}
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BitcoinScriptUtil
+import org.bitcoins.crypto.Sha256Digest
 
 /** Created by chris on 2/3/16.
   */
@@ -51,6 +59,42 @@ sealed trait ScriptProgram {
     * @return the ExecutedScriptProgram with the given error set inside of the trait
     */
   def failExecution(error: ScriptError): ExecutedScriptProgram
+
+  private def getTaprootWitness: Option[TaprootWitness] = {
+    txSignatureComponent match {
+      case taprootTxSigComponent: TaprootTxSigComponent =>
+        taprootTxSigComponent.witness match {
+          case sp: TaprootWitness =>
+            Some(sp)
+        }
+      case _: BaseTxSigComponent | _: WitnessTxSigComponentRebuilt |
+          _: WitnessTxSigComponentP2SH | _: WitnessTxSigComponentRaw =>
+        None
+    }
+  }
+
+  private def getTapscriptOpt: Option[TaprootScriptPath] = {
+    getTaprootWitness.flatMap {
+      case sp: TaprootScriptPath => Some(sp)
+      case _: TaprootKeyPath     => None
+      case _: TaprootUnknownPath => None
+    }
+  }
+
+  /** Calculates the leaf hash if we have a tapscript, else returns None if we don't have a tapscript */
+  def tapLeafHashOpt: Option[Sha256Digest] = {
+    getTapscriptOpt.map { sp =>
+      val hash = TaprootScriptPath.computeTapleafHash(
+        TaprootScriptPath.TAPROOT_LEAF_TAPSCRIPT,
+        sp.script)
+      hash
+    }
+  }
+
+  def getAnnexHashOpt: Option[Sha256Digest] = {
+    getTaprootWitness.flatMap(_.annexHashOpt)
+  }
+
 }
 
 /** This represents a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
@@ -66,6 +110,14 @@ case class PreExecutionScriptProgram(
     flags: Seq[ScriptFlag])
     extends ScriptProgram {
 
+  def startingValidationWeight: Option[Long] = txSignatureComponent match {
+    case _: BaseTxSigComponent | _: WitnessTxSigComponentRaw |
+        _: WitnessTxSigComponentRebuilt | _: WitnessTxSigComponentP2SH =>
+      None
+    case tr: TaprootTxSigComponent =>
+      Some(50 + tr.witness.byteSize)
+  }
+
   def toExecutionInProgress: ExecutionInProgressScriptProgram = {
     ExecutionInProgressScriptProgram(
       txSignatureComponent = txSignatureComponent,
@@ -75,6 +127,8 @@ case class PreExecutionScriptProgram(
       altStack = altStack,
       flags = flags,
       lastCodeSeparator = None,
+      codeSeparatorTapscriptIdx = None,
+      validationWeightRemaining = startingValidationWeight,
       conditionalCounter = ConditionalCounter.empty
     )
   }
@@ -127,7 +181,11 @@ object PreExecutionScriptProgram {
 
 /** This represents any ScriptProgram that is not PreExecution */
 sealed trait StartedScriptProgram extends ScriptProgram {
+
+  /** The index of the last code separator WITH push operations in the original script */
   def lastCodeSeparator: Option[Int]
+
+  def taprootSerializationOptions: TaprootSerializationOptions
 }
 
 /** Implements the counting required for O(1) handling of conditionals in Bitcoin Script.
@@ -221,6 +279,8 @@ case class ExecutionInProgressScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
+    codeSeparatorTapscriptIdx: Option[Int],
+    validationWeightRemaining: Option[Long],
     conditionalCounter: ConditionalCounter)
     extends StartedScriptProgram {
 
@@ -239,6 +299,7 @@ case class ExecutionInProgressScriptProgram(
       altStack,
       flags,
       lastCodeSeparator,
+      codeSeparatorTapscriptIdx,
       errorOpt
     )
   }
@@ -335,6 +396,21 @@ case class ExecutionInProgressScriptProgram(
       newLastCodeSeparator: Int): ExecutionInProgressScriptProgram = {
     this.copy(lastCodeSeparator = Some(newLastCodeSeparator))
   }
+
+  def updateTapscriptCodeSeparatorIdx(
+      newIdx: Int): ExecutionInProgressScriptProgram = {
+    this.copy(codeSeparatorTapscriptIdx = Some(newIdx))
+  }
+
+  def decrementValidationWeightRemaining(): ExecutionInProgressScriptProgram = {
+    this.copy(validationWeightRemaining = validationWeightRemaining.map(_ - 50))
+  }
+
+  def taprootSerializationOptions: TaprootSerializationOptions = {
+    TaprootSerializationOptions(tapLeafHashOpt,
+                                getAnnexHashOpt,
+                                codeSeparatorTapscriptIdx.map(UInt32(_)))
+  }
 }
 
 /** Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has been
@@ -352,8 +428,15 @@ case class ExecutedScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
+    codeSeparatorTapscriptIdx: Option[Int],
     error: Option[ScriptError])
     extends StartedScriptProgram {
+
+  def taprootSerializationOptions: TaprootSerializationOptions = {
+    TaprootSerializationOptions(tapLeafHashOpt,
+                                getAnnexHashOpt,
+                                codeSeparatorTapscriptIdx.map(UInt32(_)))
+  }
 
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {
     this.copy(error = Some(error))

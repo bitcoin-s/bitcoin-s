@@ -116,6 +116,8 @@ case class ECPublicKeyBytes(bytes: ByteVector)
   /** Parse these bytes into the bitcoin-s internal public key type. */
   def toPublicKey: ECPublicKey = ECPublicKey(bytes)
 
+  def toSchnorrPubKey: SchnorrPublicKey = SchnorrPublicKey.fromBytes(bytes)
+
   override private[crypto] def fromBytes(bytes: ByteVector): this.type =
     ECPublicKeyBytes(bytes).asInstanceOf[this.type]
 }
@@ -398,6 +400,10 @@ case class ECPublicKey(private val _bytes: ByteVector)
   def toXOnly: XOnlyPubKey = XOnlyPubKey(bytes.drop(1))
 
   def parity: KeyParity = KeyParity.fromByte(bytes.head)
+
+  def negate: ECPublicKey = {
+    ECPublicKey.fromBytes(parity.negate.bytes ++ bytes.drop(1))
+  }
 }
 
 object ECPublicKey extends Factory[ECPublicKey] {

@@ -10,6 +10,7 @@ import scala.util.{Failure, Success, Try}
 sealed trait SeedState {
   def creationTime: Instant
   def backupTimeOpt: Option[Instant]
+  def imported: Boolean
   def withBackupTime(backupTime: Instant): SeedState
 }
 
@@ -22,14 +23,15 @@ sealed trait DecryptedSeedState extends SeedState {
 
     val encrypted = AesCrypt.encrypt(clearText, key)
 
-    EncryptedSeed(encrypted, salt, creationTime, backupTimeOpt)
+    EncryptedSeed(encrypted, salt, creationTime, backupTimeOpt, imported)
   }
 }
 
 case class DecryptedMnemonic(
     private[keymanager] val mnemonicCode: MnemonicCode,
     creationTime: Instant,
-    backupTimeOpt: Option[Instant])
+    backupTimeOpt: Option[Instant],
+    imported: Boolean)
     extends DecryptedSeedState {
   override protected val strToEncrypt: String = mnemonicCode.words.mkString(" ")
 
@@ -41,7 +43,8 @@ case class DecryptedMnemonic(
 case class DecryptedExtPrivKey(
     private[keymanager] val xprv: ExtPrivateKey,
     creationTime: Instant,
-    backupTimeOpt: Option[Instant])
+    backupTimeOpt: Option[Instant],
+    imported: Boolean)
     extends DecryptedSeedState {
   override protected val strToEncrypt: String = xprv.toStringSensitive
 
@@ -54,7 +57,8 @@ case class EncryptedSeed(
     value: AesEncryptedData,
     salt: AesSalt,
     creationTime: Instant,
-    backupTimeOpt: Option[Instant])
+    backupTimeOpt: Option[Instant],
+    imported: Boolean)
     extends SeedState {
 
   private def decryptStr(password: AesPassword): Try[String] = {

@@ -38,6 +38,7 @@ object WalletStorage extends KeyManagerLogger {
     val MNEMONIC_SEED = "mnemonicSeed"
     val XPRV = "xprv"
     val BACKUP_TIME = "backupTime"
+    val IMPORTED = "imported"
   }
 
   /** Writes the mnemonic to disk.
@@ -70,7 +71,8 @@ object WalletStorage extends KeyManagerLogger {
         CREATION_TIME -> Num(seed.creationTime.getEpochSecond.toDouble),
         BACKUP_TIME -> seed.backupTimeOpt
           .map(ts => ujson.Num(ts.getEpochSecond.toDouble))
-          .getOrElse(ujson.Null)
+          .getOrElse(ujson.Null),
+        IMPORTED -> ujson.Bool(seed.imported)
       )
     }
 
@@ -91,7 +93,8 @@ object WalletStorage extends KeyManagerLogger {
           mnemonic.creationTime.getEpochSecond.toDouble),
         BACKUP_TIME -> mnemonic.backupTimeOpt
           .map(ts => ujson.Num(ts.getEpochSecond.toDouble))
-          .getOrElse(ujson.Null)
+          .getOrElse(ujson.Null),
+        IMPORTED -> ujson.Bool(mnemonic.imported)
       )
     }
 
@@ -169,6 +172,14 @@ object WalletStorage extends KeyManagerLogger {
     }
   }
 
+  private def parseImported(json: Value): Boolean = {
+    Try(json(MnemonicJsonKeys.IMPORTED)) match {
+      case Success(js)                        => js.bool
+      case Failure(_: NoSuchElementException) => false
+      case Failure(exception)                 => throw exception
+    }
+  }
+
   private def readJsonFromDisk(
       seedPath: Path): Either[ReadMnemonicError, Value] = {
     if (Files.isRegularFile(seedPath)) {
@@ -194,7 +205,8 @@ object WalletStorage extends KeyManagerLogger {
       rawCipherText: String,
       rawSalt: String,
       rawCreationTime: Long,
-      rawBackupTime: Option[Long])
+      rawBackupTime: Option[Long],
+      rawImported: Boolean)
 
   /** Reads the raw encrypted mnemonic from json,
     * performing no decryption
@@ -212,11 +224,13 @@ object WalletStorage extends KeyManagerLogger {
         val ivString = json(IV).str
         val cipherTextString = json(CIPHER_TEXT).str
         val rawSaltString = json(SALT).str
+        val imported = parseImported(json)
         RawEncryptedSeed(ivString,
                          cipherTextString,
                          rawSaltString,
                          creationTimeNum,
-                         backupTimeOpt)
+                         backupTimeOpt,
+                         imported)
       } match {
         case Success(value) => Right(value)
         case Failure(exception) =>
@@ -229,7 +243,8 @@ object WalletStorage extends KeyManagerLogger {
                             rawCipherText,
                             rawSalt,
                             rawCreationTime,
-                            rawBackupTime) =>
+                            rawBackupTime,
+                            rawImported) =>
         val encryptedOpt = for {
           iv <- ByteVector.fromHex(rawIv).map(AesIV.fromValidBytes)
           cipherText <- ByteVector.fromHex(rawCipherText)
@@ -239,7 +254,8 @@ object WalletStorage extends KeyManagerLogger {
           EncryptedSeed(AesEncryptedData(cipherText, iv),
                         salt,
                         Instant.ofEpochSecond(rawCreationTime),
-                        rawBackupTime.map(Instant.ofEpochSecond))
+                        rawBackupTime.map(Instant.ofEpochSecond),
+                        rawImported)
         }
 
         encryptedOpt match {
@@ -259,13 +275,14 @@ object WalletStorage extends KeyManagerLogger {
 
     val readJsonTupleEither: Either[
       ReadMnemonicError,
-      (Vector[String], Long, Option[Long])] = {
+      (Vector[String], Long, Option[Long], Boolean)] = {
       logger.trace(s"Read mnemonic JSON: Masked(json)")
       Try {
         val creationTimeNum = parseCreationTime(json)
         val backupTimeOpt = parseBackupTime(json)
         val words = json(MNEMONIC_SEED).arr.toVector.map(_.str)
-        (words, creationTimeNum, backupTimeOpt)
+        val imported = parseImported(json)
+        (words, creationTimeNum, backupTimeOpt, imported)
       } match {
         case Success(value) => Right(value)
         case Failure(exception) =>
@@ -274,7 +291,7 @@ object WalletStorage extends KeyManagerLogger {
     }
 
     readJsonTupleEither.flatMap {
-      case (words, rawCreationTime, rawBackupTimeOpt) =>
+      case (words, rawCreationTime, rawBackupTimeOpt, rawImported) =>
         Try(MnemonicCode.fromWords(words)) match {
           case Failure(_) =>
             Left(JsonParsingError("JSON contents was incorrectly formatted"))
@@ -283,7 +300,8 @@ object WalletStorage extends KeyManagerLogger {
             val decrypted =
               DecryptedMnemonic(mnemonicCode,
                                 Instant.ofEpochSecond(rawCreationTime),
-                                rawBackupTimeOpt.map(Instant.ofEpochSecond))
+                                rawBackupTimeOpt.map(Instant.ofEpochSecond),
+                                rawImported)
             Right(decrypted)
         }
     }
@@ -298,13 +316,14 @@ object WalletStorage extends KeyManagerLogger {
 
     val readJsonTupleEither: Either[
       ReadMnemonicError,
-      (String, Long, Option[Long])] = {
+      (String, Long, Option[Long], Boolean)] = {
       logger.trace(s"Read mnemonic JSON: Masked(json)")
       Try {
         val creationTimeNum = parseCreationTime(json)
         val backupTimeOpt = parseBackupTime(json)
         val xprvStr = json(XPRV).str
-        (xprvStr, creationTimeNum, backupTimeOpt)
+        val imported = parseImported(json)
+        (xprvStr, creationTimeNum, backupTimeOpt, imported)
       } match {
         case Success(value) => Right(value)
         case Failure(exception) =>
@@ -313,7 +332,7 @@ object WalletStorage extends KeyManagerLogger {
     }
 
     readJsonTupleEither.flatMap {
-      case (str, rawCreationTime, rawBackupTimeOpt) =>
+      case (str, rawCreationTime, rawBackupTimeOpt, rawImported) =>
         ExtPrivateKey.fromStringT(str) match {
           case Failure(_) =>
             Left(JsonParsingError("JSON contents was correctly formatted"))
@@ -322,7 +341,8 @@ object WalletStorage extends KeyManagerLogger {
             val decrypted =
               DecryptedExtPrivKey(xprv,
                                   Instant.ofEpochSecond(rawCreationTime),
-                                  rawBackupTimeOpt.map(Instant.ofEpochSecond))
+                                  rawBackupTimeOpt.map(Instant.ofEpochSecond),
+                                  rawImported)
             Right(decrypted)
         }
     }
@@ -346,7 +366,8 @@ object WalletStorage extends KeyManagerLogger {
             val decryptedExtPrivKey =
               DecryptedExtPrivKey(xprv,
                                   encrypted.creationTime,
-                                  encrypted.backupTimeOpt)
+                                  encrypted.backupTimeOpt,
+                                  encrypted.imported)
             Right(decryptedExtPrivKey)
         }
       case Success(mnemonic) =>
@@ -354,7 +375,8 @@ object WalletStorage extends KeyManagerLogger {
         val decryptedMnemonic =
           DecryptedMnemonic(mnemonic,
                             encrypted.creationTime,
-                            encrypted.backupTimeOpt)
+                            encrypted.backupTimeOpt,
+                            encrypted.imported)
         Right(decryptedMnemonic)
     }
   }
@@ -413,9 +435,9 @@ object WalletStorage extends KeyManagerLogger {
     decryptSeedFromDisk(seedPath, passphraseOpt) match {
       case Right(seedState) =>
         seedState match {
-          case DecryptedMnemonic(mnemonicCode, _, None) =>
+          case DecryptedMnemonic(mnemonicCode, _, None, _) =>
             mnemonicCode.words
-          case DecryptedMnemonic(_, _, Some(_)) =>
+          case DecryptedMnemonic(_, _, Some(_), _) =>
             throw new AlreadyBackedUpException(s"The seed is already backed up")
           case unknown: DecryptedSeedState =>
             throw new SecurityException(
@@ -512,10 +534,10 @@ object WalletStorage extends KeyManagerLogger {
     }
 
     decryptedSeed match {
-      case DecryptedMnemonic(mnemonicCode, _, _) =>
+      case DecryptedMnemonic(mnemonicCode, _, _, _) =>
         val seed = BIP39Seed.fromMnemonic(mnemonicCode, bip39PasswordOpt)
         seed.toExtPrivateKey(privKeyVersion).toHardened
-      case DecryptedExtPrivKey(xprv, _, _) =>
+      case DecryptedExtPrivKey(xprv, _, _, _) =>
         xprv.toHardened
     }
   }

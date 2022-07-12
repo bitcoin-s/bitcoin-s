@@ -11,6 +11,7 @@ class CryptoSignatureEvaluationFactoryTest extends BitcoinSUnitTest {
       Seq(OP_CHECKMULTISIG,
           OP_CHECKMULTISIGVERIFY,
           OP_CHECKSIG,
-          OP_CHECKSIGVERIFY))
+          OP_CHECKSIGVERIFY,
+          OP_CHECKSIGADD))
   }
 }

@@ -45,4 +45,8 @@ class CryptoOperationsTest extends BitcoinSUnitTest {
   it must "define OP_CHECKMULTISIGVERIFY" in {
     OP_CHECKMULTISIGVERIFY.opCode must be(175)
   }
+
+  it must "define OP_CHECKSIGADD" in {
+    OP_CHECKSIGADD.opCode must be(186)
+  }
 }

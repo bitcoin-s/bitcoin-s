@@ -30,6 +30,8 @@ trait WalletCallbacks {
 
   def onBlockProcessed: CallbackHandler[Block, OnBlockProcessed]
 
+  def onRescanComplete: CallbackHandler[Option[String], OnRescanComplete]
+
   def +(other: WalletCallbacks): WalletCallbacks
 
   def executeOnTransactionProcessed(logger: Logger, tx: Transaction)(implicit
@@ -80,6 +82,15 @@ trait WalletCallbacks {
                      err))
   }
 
+  def executeOnRescanComplete(logger: Logger, walletNameOpt: Option[String])(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    onRescanComplete.execute(
+      walletNameOpt,
+      (err: Throwable) =>
+        logger.error(s"${onRescanComplete.name} Callback failed with error: ",
+                     err))
+  }
+
 }
 
 /** Callback for handling a processed transaction */
@@ -92,6 +103,9 @@ trait OnReservedUtxos extends Callback[Vector[SpendingInfoDb]]
 trait OnNewAddressGenerated extends Callback[BitcoinAddress]
 
 trait OnBlockProcessed extends Callback[Block]
+
+/** Triggered when a rescan is */
+trait OnRescanComplete extends Callback[Option[String]]
 
 object WalletCallbacks {
 
@@ -106,7 +120,8 @@ object WalletCallbacks {
       onNewAddressGenerated: CallbackHandler[
         BitcoinAddress,
         OnNewAddressGenerated],
-      onBlockProcessed: CallbackHandler[Block, OnBlockProcessed]
+      onBlockProcessed: CallbackHandler[Block, OnBlockProcessed],
+      onRescanComplete: CallbackHandler[Option[String], OnRescanComplete]
   ) extends WalletCallbacks {
 
     override def +(other: WalletCallbacks): WalletCallbacks =
@@ -118,7 +133,8 @@ object WalletCallbacks {
         onReservedUtxos = onReservedUtxos ++ other.onReservedUtxos,
         onNewAddressGenerated =
           onNewAddressGenerated ++ other.onNewAddressGenerated,
-        onBlockProcessed = onBlockProcessed ++ other.onBlockProcessed
+        onBlockProcessed = onBlockProcessed ++ other.onBlockProcessed,
+        onRescanComplete = onRescanComplete ++ other.onRescanComplete
       )
   }
 
@@ -144,14 +160,20 @@ object WalletCallbacks {
 
   /** Empty callbacks that does nothing with the received data */
   val empty: WalletCallbacks =
-    apply(Vector.empty, Vector.empty, Vector.empty, Vector.empty, Vector.empty)
+    apply(Vector.empty,
+          Vector.empty,
+          Vector.empty,
+          Vector.empty,
+          Vector.empty,
+          Vector.empty)
 
   def apply(
       onTransactionProcessed: Vector[OnTransactionProcessed] = Vector.empty,
       onTransactionBroadcast: Vector[OnTransactionBroadcast] = Vector.empty,
       onReservedUtxos: Vector[OnReservedUtxos] = Vector.empty,
       onNewAddressGenerated: Vector[OnNewAddressGenerated] = Vector.empty,
-      onBlockProcessed: Vector[OnBlockProcessed] = Vector.empty
+      onBlockProcessed: Vector[OnBlockProcessed] = Vector.empty,
+      onRescanComplete: Vector[OnRescanComplete] = Vector.empty
   ): WalletCallbacks = {
     WalletCallbacksImpl(
       onTransactionProcessed =
@@ -173,7 +195,10 @@ object WalletCallbacks {
       onBlockProcessed = CallbackHandler[Block, OnBlockProcessed](
         "onBlockProcessed",
         onBlockProcessed
-      )
+      ),
+      onRescanComplete =
+        CallbackHandler[Option[String], OnRescanComplete]("onRescanComplete",
+                                                          onRescanComplete)
     )
   }
 }

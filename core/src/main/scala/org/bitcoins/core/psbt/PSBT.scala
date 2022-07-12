@@ -7,6 +7,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
@@ -678,6 +679,31 @@ case class PSBT(
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
+  def getPrevOutputMap(): PreviousOutputMap = {
+    val map = transaction.inputs
+      .zip(inputMaps)
+      .map { case (input, inputMap) =>
+        val prevTxOpt = inputMap.nonWitnessOrUnknownUTXOOpt
+        val output = prevTxOpt match {
+          case Some(prevTx) =>
+            prevTx.transactionSpent.outputs(input.previousOutput.vout.toInt)
+          case None =>
+            inputMap.witnessUTXOOpt match {
+              case Some(witnessUTXO) =>
+                witnessUTXO.witnessUTXO
+              case None =>
+                throw new IllegalStateException(
+                  "Cannot get previous output for input without previous transaction or witness UTXO")
+            }
+        }
+
+        input.previousOutput -> output
+      }
+      .toMap
+
+    PreviousOutputMap(map)
+  }
+
   def verifyFinalizedInput(index: Int): Boolean = {
     val inputMap = inputMaps(index)
     require(inputMap.isFinalized, "Input must be finalized to verify")
@@ -728,7 +754,14 @@ case class PSBT(
             }
             val output = wUtxo.witnessUTXO
 
-            ScriptInterpreter.verifyInputScript(wtx, index, output)
+            val outputMap = output.scriptPubKey match {
+              case _: NonWitnessScriptPubKey | _: WitnessScriptPubKeyV0 =>
+                PreviousOutputMap.empty
+              case _: TaprootScriptPubKey | _: UnassignedWitnessScriptPubKey =>
+                getPrevOutputMap()
+            }
+
+            ScriptInterpreter.verifyInputScript(wtx, index, outputMap, output)
           case None =>
             false
         }
@@ -739,7 +772,14 @@ case class PSBT(
             val output =
               utxo.transactionSpent.outputs(input.previousOutput.vout.toInt)
 
-            ScriptInterpreter.verifyInputScript(tx, index, output)
+            val outputMap = output.scriptPubKey match {
+              case _: NonWitnessScriptPubKey | _: WitnessScriptPubKeyV0 =>
+                PreviousOutputMap.empty
+              case _: TaprootScriptPubKey | _: UnassignedWitnessScriptPubKey =>
+                getPrevOutputMap()
+            }
+
+            ScriptInterpreter.verifyInputScript(tx, index, outputMap, output)
           case None =>
             false
         }
@@ -753,10 +793,14 @@ case class PSBT(
     * Note: This PSBT must be finalized.
     */
   def extractTransactionAndValidate: Try[Transaction] = {
+    val outputMap = getPrevOutputMap()
     inputMaps.zipWithIndex.foldLeft(Try(extractTransaction)) {
       case (txT, (inputMap, index)) =>
         txT.flatMap { tx =>
-          BitcoinScriptUtil.verifyPSBTInputScript(tx, inputMap, index)
+          BitcoinScriptUtil.verifyPSBTInputScript(tx = tx,
+                                                  inputMap = inputMap,
+                                                  index = index,
+                                                  outputMap = outputMap)
         }
     }
   }

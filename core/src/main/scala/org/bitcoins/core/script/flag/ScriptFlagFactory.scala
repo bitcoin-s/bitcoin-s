@@ -11,8 +11,8 @@ trait ScriptFlagFactory extends StringFactory[ScriptFlag] {
   /** All the [[ScriptFlag]]s found inside of bitcoin core
     * https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.h#L31.
     */
-  private def flags =
-    Seq(
+  private val flags: Vector[ScriptFlag] =
+    Vector(
       ScriptVerifyNone,
       ScriptVerifyP2SH,
       ScriptVerifyStrictEnc,
@@ -29,7 +29,11 @@ trait ScriptFlagFactory extends StringFactory[ScriptFlag] {
       ScriptVerifyDiscourageUpgradableWitnessProgram,
       ScriptVerifyMinimalIf,
       ScriptVerifyNullFail,
-      ScriptVerifyWitnessPubKeyType
+      ScriptVerifyWitnessPubKeyType,
+      ScriptVerifyTaproot,
+      ScriptVerifyDiscourageUpgradableTaprootVersion,
+      ScriptVerifyDiscourageOpSuccess,
+      ScriptVerifyDiscourageUpgradablePubKeyType
     )
 
   /** Takes in a string and tries to match it with a [[ScriptFlag]]. */
