@@ -1013,7 +1013,9 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(
         case LoadWallet(walletNameOpt, aesPasswordOpt, _) =>
           complete {
             loadWallet(walletNameOpt, aesPasswordOpt).map { _ =>
-              Server.httpSuccess(walletNameOpt.getOrElse(""))
+              val walletName =
+                walletNameOpt.getOrElse(WalletAppConfig.DEFAULT_WALLET_NAME)
+              Server.httpSuccess(walletName)
             }
           }
       }
@@ -1021,10 +1023,11 @@ case class WalletRoutes(wallet: AnyDLCHDWalletApi)(
   }
 
   private def getSeedPath(walletNameOpt: Option[String]): Path = {
+    val walletName = walletNameOpt
+      .map(_ + "-")
+      .getOrElse(WalletAppConfig.DEFAULT_WALLET_NAME)
     kmConf.seedFolder.resolve(
-      walletNameOpt
-        .map(_ + "-")
-        .getOrElse("") + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+      walletName + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
   }
 
   /** Returns information about the state of our wallet */

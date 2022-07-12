@@ -659,7 +659,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       kmConfig <- kmConfigF
       _ = if (!kmConfig.seedExists())
         throw new RuntimeException(
-          s"Wallet `${walletNameOpt.getOrElse("")}` does not exist")
+          s"Wallet `${walletNameOpt.getOrElse(WalletAppConfig.DEFAULT_WALLET_NAME)}` does not exist")
 
       // First thing start the key manager to be able to fail fast if the password is invalid
       _ <- kmConfig.start()

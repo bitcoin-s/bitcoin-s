@@ -26,6 +26,7 @@ import org.bitcoins.dlc.wallet.{
 }
 import org.bitcoins.tor.{OnTorStarted, TorCallbacks}
 import org.bitcoins.wallet._
+import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -101,8 +102,10 @@ object WebsocketUtil extends Logging {
     }
 
     val onRescanComplete: OnRescanComplete = { walletNameOpt =>
+      val walletName =
+        walletNameOpt.getOrElse(WalletAppConfig.DEFAULT_WALLET_NAME)
       val notification =
-        WalletNotification.RescanComplete(walletNameOpt.getOrElse(""))
+        WalletNotification.RescanComplete(walletName)
       val notificationJson =
         upickle.default.writeJs(notification)(WsPicklers.rescanPickler)
       val msg = TextMessage.Strict(notificationJson.toString())

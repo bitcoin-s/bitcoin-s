@@ -346,6 +346,8 @@ object WalletAppConfig
     extends AppConfigFactory[WalletAppConfig]
     with WalletLogger {
 
+  final val DEFAULT_WALLET_NAME: String = ""
+
   val moduleName: String = "wallet"
 
   /** Constructs a wallet configuration from the default Bitcoin-S
