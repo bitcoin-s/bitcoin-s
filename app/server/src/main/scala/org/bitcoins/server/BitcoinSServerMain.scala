@@ -1,7 +1,6 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
-import akka.dispatch.Dispatchers
 import akka.http.scaladsl.model.ws.Message
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{
@@ -17,7 +16,6 @@ import org.bitcoins.asyncutil.AsyncUtil.Exponential
 import org.bitcoins.chain.ChainCallbacks
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models._
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockChainInfoResult
 import org.bitcoins.commons.util.{DatadirParser, ServerArgParser}
 import org.bitcoins.core.api.chain.ChainApi
@@ -112,10 +110,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     logger.info(s"startBitcoinSBackend()")
     val start = System.currentTimeMillis()
 
-    //run chain work migration
-    val chainApiF = runChainWorkCalc(
-      serverArgParser.forceChainWorkRecalc || chainConf.forceRecalcChainWork)
-
+    val chainApi = ChainHandler.fromDatabase()
     val creationTime: Instant = walletConf.creationTime
 
     //get a node that isn't started
@@ -136,7 +131,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     //get our wallet
     val configuredWalletF = for {
       node <- nodeF
-      chainApi <- chainApiF
       _ = logger.info("Initialized chain api")
       wallet <- dlcConf.createDLCWallet(node, chainApi, feeProvider)
       nodeCallbacks <- CallbackUtil.createNeutrinoNodeCallbacksForWallet(wallet)
@@ -166,8 +160,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     val wsQueue: SourceQueueWithComplete[Message] = tuple._1
     val wsSource: Source[Message, NotUsed] = tuple._2
-    val callbacksF =
-      chainApiF.map(chainApi => buildNeutrinoCallbacks(wsQueue, chainApi))
+    val _ = buildNeutrinoCallbacks(wsQueue, chainApi)
 
     val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
     val _ = torConf.addCallbacks(torCallbacks)
@@ -195,7 +188,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       } yield dlcNode
     }
 
-    val chainApi = ChainHandler.fromDatabase()
     //start our http server now that we are synced
     for {
       _ <- startHttpServer(
@@ -214,7 +206,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       }
       _ <- startedWalletF
       //make sure callbacks are registered before we start sync
-      _ <- callbacksF
       node <- startedNodeF
       _ <- startedTorConfigF
       wallet <- configuredWalletF
@@ -361,29 +352,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       logger.info(s"Done starting Main!")
       ()
     }
-  }
-
-  /** This is needed for migrations V2/V3 on the chain project to re-calculate the total work for the chain */
-  private def runChainWorkCalc(force: Boolean)(implicit
-      system: ActorSystem): Future[ChainApi] = {
-    val blockEC =
-      system.dispatchers.lookup(Dispatchers.DefaultBlockingDispatcherId)
-    val chainApi = ChainHandler.fromDatabase(
-      blockHeaderDAO = BlockHeaderDAO()(blockEC, chainConf),
-      CompactFilterHeaderDAO()(blockEC, chainConf),
-      CompactFilterDAO()(blockEC, chainConf),
-      ChainStateDescriptorDAO()(blockEC, chainConf)
-    )
-    for {
-      isMissingChainWork <- chainApi.isMissingChainWork
-      chainApiWithWork <-
-        if (isMissingChainWork || force) {
-          chainApi.recalculateChainWork
-        } else {
-          logger.info(s"Chain work already calculated")
-          Future.successful(chainApi)
-        }
-    } yield chainApiWithWork
   }
 
   private var serverBindingsOpt: Option[ServerBindings] = None
