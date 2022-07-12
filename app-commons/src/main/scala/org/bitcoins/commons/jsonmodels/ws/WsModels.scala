@@ -61,7 +61,7 @@ object ChainWsType extends StringFactory[ChainWsType] {
   case object BlockProcessed extends ChainWsType
   case object SyncFlagChanged extends ChainWsType
 
-  private val all: Vector[ChainWsType] = Vector(BlockProcessed)
+  private val all: Vector[ChainWsType] = Vector(BlockProcessed, SyncFlagChanged)
 
   override def fromStringOpt(string: String): Option[ChainWsType] = {
     all.find(_.toString.toLowerCase() == string.toLowerCase)
