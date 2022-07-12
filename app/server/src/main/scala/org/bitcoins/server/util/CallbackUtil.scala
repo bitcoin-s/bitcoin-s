@@ -6,7 +6,7 @@ import org.bitcoins.core.api.node.{ExternalImplementationNodeType, NodeType}
 import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.server.WalletNotInitialized
+import org.bitcoins.wallet.WalletNotInitialized
 
 import scala.concurrent.{ExecutionContext, Future}
 

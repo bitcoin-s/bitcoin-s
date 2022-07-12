@@ -43,6 +43,7 @@ import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util._
 import org.bitcoins.tor.config.TorAppConfig
+import org.bitcoins.wallet.WalletHolder
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.SpendingInfoDAO
 

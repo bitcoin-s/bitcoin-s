@@ -1,4 +1,4 @@
-package org.bitcoins.server
+package org.bitcoins.wallet
 
 import grizzled.slf4j.Logging
 import org.bitcoins.core.api.chain.ChainQueryApi
@@ -27,13 +27,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   OracleSignatures
 }
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.tlv.{
-  ContractInfoTLV,
-  DLCAcceptTLV,
-  DLCOfferTLV,
-  DLCSignTLV,
-  OracleAttestmentTLV
-}
+import org.bitcoins.core.protocol.tlv._
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
