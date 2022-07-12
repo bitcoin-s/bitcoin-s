@@ -162,8 +162,9 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val wsSource: Source[Message, NotUsed] = tuple._2
     val _ = buildNeutrinoCallbacks(wsQueue, chainApi)
 
-    val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
-    val _ = torConf.addCallbacks(torCallbacks)
+    val torCallbacks =
+    torConf.addCallbacks(torCallbacks)
+
     val isTorStartedF = if (torConf.torProvided) {
       //if tor is provided we need to execute the tor started callback immediately
       torConf.callBacks.executeOnTorStarted()
@@ -224,11 +225,16 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       chainApi: ChainApi): Unit = {
     val chainCallbacks = WebsocketUtil.buildChainCallbacks(wsQueue, chainApi)
     chainConf.addCallbacks(chainCallbacks)
+
     val walletCallbacks =
       WebsocketUtil.buildWalletCallbacks(wsQueue, walletConf.walletNameOpt)
     walletConf.addCallbacks(walletCallbacks)
+
     val dlcWalletCallbacks = WebsocketUtil.buildDLCWalletCallbacks(wsQueue)
     dlcConf.addCallbacks(dlcWalletCallbacks)
+
+    val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
+    torConf.addCallbacks(torCallbacks)
 
     ()
   }
