@@ -855,17 +855,17 @@ object ConsoleCli {
             .optional()
             .action((walletName, conf) =>
               conf.copy(command = conf.command match {
-                case is: LoadWallet =>
-                  is.copy(walletNameOpt = Some(walletName))
+                case lw: LoadWallet =>
+                  lw.copy(walletNameOpt = Some(walletName))
                 case other => other
               })),
           opt[AesPassword]("passphrase")
-            .text("Passphrase to encrypt the seed with")
+            .text("Passphrase to decrypt the seed with")
             .optional()
             .action((password, conf) =>
               conf.copy(command = conf.command match {
-                case is: LoadWallet =>
-                  is.copy(passwordOpt = Some(password))
+                case lw: LoadWallet =>
+                  lw.copy(passwordOpt = Some(password))
                 case other => other
               })),
           opt[String]("bip39passphrase")
@@ -873,8 +873,8 @@ object ConsoleCli {
             .optional()
             .action((bip39Password, conf) =>
               conf.copy(command = conf.command match {
-                case is: LoadWallet =>
-                  is.copy(bip39PasswordOpt = Some(bip39Password))
+                case lw: LoadWallet =>
+                  lw.copy(bip39PasswordOpt = Some(bip39Password))
                 case other => other
               }))
         ),
